@@ -28,6 +28,7 @@ Scripts= \
 	gssapi-acquire-test.pl \
 	gssapi-inquire-sec-ctx-by-oid-test.pl \
         indicate-mechs-test.pl \
+        nonterminated-export-cred-test.pl \
         release-name-test.pl
 
 Data= \
@@ -82,6 +83,7 @@ test_PROGRAMS= \
 	gssapi-module-test \
         indicate-mechs-test \
         inquire-names-for-mech-test \
+        nonterminated-export-cred-test \
         release-name-test
 
 LDFLAGS += $(GPT_LDFLAGS)
@@ -144,6 +146,7 @@ duplicate_name_test_SOURCES = duplicate_name_test.c \
 indicate_mechs_test_SOURCES = indicate_mechs_test.c \
                                 gssapi_test_utils.c \
                                 gssapi_test_utils.h
+nonterminated_export_cred_test_SOURCES = nonterminated_export_cred_test.c
 
 test:
 	chmod a+x $(Scripts)

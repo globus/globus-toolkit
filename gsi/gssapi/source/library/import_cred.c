@@ -88,7 +88,7 @@ GSS_CALLCONV gss_import_cred(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
     BIO *                               bp = NULL;
-    char *                              filename;
+    char *                              filename = NULL;
     FILE *                              fp;
 
     static char *                       _function_name_ =
@@ -160,20 +160,37 @@ GSS_CALLCONV gss_import_cred(
         }
         else if(option_req == GSS_IMPEXP_MECH_SPECIFIC) 
         {
-            filename = strchr((char *) import_buffer->value, '=');
+            char *                      p;
+            size_t                      pathlen = 0;
 
-            if(filename == NULL)
+            p = memchr(import_buffer->value, '=', import_buffer->length);
+            if (p == NULL)
             {
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-                    (_GGSL("Import buffer does not contain a =")));
+                    (_GGSL("Invalid import_buffer parameter passed to function: %s"),
+                     _function_name_));
                 major_status = GSS_S_FAILURE;
                 goto exit;
             }
-            
-            filename++;
-            
+
+            pathlen = import_buffer->length -
+                    (p - (char *) import_buffer->value);
+
+            filename = malloc(pathlen);
+
+            if (filename == NULL)
+            {
+                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                major_status = GSS_S_FAILURE;
+                goto exit;
+
+            }
+
+            memcpy(filename, p + 1, pathlen-1);
+            filename[pathlen-1] = '\0';
+
             if ((fp = fopen(filename,"r")) == NULL)
             {
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
@@ -244,6 +261,10 @@ GSS_CALLCONV gss_import_cred(
     if (bp) 
     {
         BIO_free(bp);
+    }
+    if (filename)
+    {
+        free(filename);
     }
     return major_status;
 }

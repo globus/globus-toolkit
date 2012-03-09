@@ -41,6 +41,7 @@ Globus::Testing::Utilities::testcred_setup
             gssapi-acquire-test.pl
             gssapi-context-test.pl gssapi-expimp-test.pl gssapi-inquire-sec-ctx-by-oid-test.pl
             gssapi-import-name.pl
+            nonterminated-export-cred-test.pl
             release-name-test.pl
            );
 
