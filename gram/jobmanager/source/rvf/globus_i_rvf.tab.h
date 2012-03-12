@@ -84,7 +84,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 70 "rvf.y"
+#line 70 "./rvf.y"
 {
     int aspect_name;
     globus_bool_t bool_value;
@@ -100,7 +100,7 @@ typedef union YYSTYPE
     globus_list_t * validation_file;
 }
 /* Line 1529 of yacc.c.  */
-#line 104 "globus_i_rvf.tab.h"
+#line 104 "./globus_i_rvf.tab.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
