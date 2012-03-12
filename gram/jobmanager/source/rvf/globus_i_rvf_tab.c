@@ -118,7 +118,7 @@
 
 
 /* Copy the first part of user declarations.  */
-#line 1 "rvf.y"
+#line 1 "./rvf.y"
 
 /*
  * Copyright 1999-2012 University of Chicago
@@ -197,7 +197,7 @@ globus_l_rvf_attr_match(
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 70 "rvf.y"
+#line 70 "./rvf.y"
 {
     int aspect_name;
     globus_bool_t bool_value;
@@ -213,7 +213,7 @@ typedef union YYSTYPE
     globus_list_t * validation_file;
 }
 /* Line 193 of yacc.c.  */
-#line 217 "globus_i_rvf.tab.c"
+#line 217 "./globus_i_rvf.tab.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -238,7 +238,7 @@ typedef struct YYLTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 242 "globus_i_rvf.tab.c"
+#line 242 "./globus_i_rvf.tab.c"
 
 #ifdef short
 # undef short
@@ -1192,79 +1192,79 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
   switch (yytype)
     {
       case 15: /* "RVF_TOKEN_TEXT" */
-#line 114 "rvf.y"
+#line 114 "./rvf.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
         free((yyvaluep->value).string_value);
     }
 };
-#line 1203 "globus_i_rvf.tab.c"
+#line 1203 "./globus_i_rvf.tab.c"
 	break;
       case 23: /* "records" */
-#line 122 "rvf.y"
+#line 122 "./rvf.y"
 	{ globus_l_rvf_records_destroy((yyvaluep->validation_file)); };
-#line 1208 "globus_i_rvf.tab.c"
+#line 1208 "./globus_i_rvf.tab.c"
 	break;
       case 24: /* "record" */
-#line 121 "rvf.y"
+#line 121 "./rvf.y"
 	{ globus_l_rvf_validation_record_destroy(&(yyvaluep->record)); };
-#line 1213 "globus_i_rvf.tab.c"
+#line 1213 "./globus_i_rvf.tab.c"
 	break;
       case 28: /* "aspect_list" */
-#line 121 "rvf.y"
+#line 121 "./rvf.y"
 	{ globus_l_rvf_validation_record_destroy(&(yyvaluep->record)); };
-#line 1218 "globus_i_rvf.tab.c"
+#line 1218 "./globus_i_rvf.tab.c"
 	break;
       case 32: /* "aspect_value" */
-#line 114 "rvf.y"
+#line 114 "./rvf.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
         free((yyvaluep->value).string_value);
     }
 };
-#line 1228 "globus_i_rvf.tab.c"
+#line 1228 "./globus_i_rvf.tab.c"
 	break;
       case 33: /* "quoted_value" */
-#line 114 "rvf.y"
+#line 114 "./rvf.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
         free((yyvaluep->value).string_value);
     }
 };
-#line 1238 "globus_i_rvf.tab.c"
+#line 1238 "./globus_i_rvf.tab.c"
 	break;
       case 34: /* "unquoted_value" */
-#line 114 "rvf.y"
+#line 114 "./rvf.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
         free((yyvaluep->value).string_value);
     }
 };
-#line 1248 "globus_i_rvf.tab.c"
+#line 1248 "./globus_i_rvf.tab.c"
 	break;
       case 35: /* "when_value_list" */
-#line 114 "rvf.y"
+#line 114 "./rvf.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
         free((yyvaluep->value).string_value);
     }
 };
-#line 1258 "globus_i_rvf.tab.c"
+#line 1258 "./globus_i_rvf.tab.c"
 	break;
       case 36: /* "when_value" */
-#line 114 "rvf.y"
+#line 114 "./rvf.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
         free((yyvaluep->value).string_value);
     }
 };
-#line 1268 "globus_i_rvf.tab.c"
+#line 1268 "./globus_i_rvf.tab.c"
 	break;
 
       default:
@@ -1588,7 +1588,7 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 127 "rvf.y"
+#line 127 "./rvf.y"
     {
         while (!globus_list_empty((yyvsp[(1) - (2)].validation_file)))
         {
@@ -1672,14 +1672,14 @@ yyreduce:
     break;
 
   case 3:
-#line 207 "rvf.y"
+#line 207 "./rvf.y"
     {
         return 1;
     ;}
     break;
 
   case 4:
-#line 212 "rvf.y"
+#line 212 "./rvf.y"
     {
         globus_rvf_record_t *           record;
 
@@ -1692,7 +1692,7 @@ yyreduce:
     break;
 
   case 5:
-#line 221 "rvf.y"
+#line 221 "./rvf.y"
     {
         globus_rvf_record_t *           record;
 
@@ -1706,7 +1706,7 @@ yyreduce:
     break;
 
   case 6:
-#line 234 "rvf.y"
+#line 234 "./rvf.y"
     {
         if ((yyvsp[(1) - (1)].record).attribute != NULL)
         {
@@ -1717,7 +1717,7 @@ yyreduce:
     break;
 
   case 12:
-#line 254 "rvf.y"
+#line 254 "./rvf.y"
     {
         (yyval.record) = (yyvsp[(2) - (2)].record);
 
@@ -1752,21 +1752,21 @@ yyreduce:
     break;
 
   case 13:
-#line 285 "rvf.y"
+#line 285 "./rvf.y"
     {
         (yyval.record) = (yyvsp[(2) - (2)].record);
     ;}
     break;
 
   case 14:
-#line 288 "rvf.y"
+#line 288 "./rvf.y"
     {
         (yyval.record) = empty_record;
     ;}
     break;
 
   case 15:
-#line 291 "rvf.y"
+#line 291 "./rvf.y"
     {
         (yyval.record) = empty_record;
 
@@ -1798,7 +1798,7 @@ yyreduce:
     break;
 
   case 16:
-#line 321 "rvf.y"
+#line 321 "./rvf.y"
     {
           (yyval.aspect) = empty_aspect;
 
@@ -1870,35 +1870,35 @@ yyreduce:
     break;
 
   case 24:
-#line 394 "rvf.y"
+#line 394 "./rvf.y"
     {
         (yyval.aspect_name) = (yyvsp[(1) - (1)].aspect_name);
     ;}
     break;
 
   case 26:
-#line 402 "rvf.y"
+#line 402 "./rvf.y"
     {
         (yyval.value) = (yyvsp[(2) - (3)].value);
     ;}
     break;
 
   case 27:
-#line 405 "rvf.y"
+#line 405 "./rvf.y"
     {
         (yyval.value) = (yyvsp[(1) - (1)].value);
     ;}
     break;
 
   case 28:
-#line 408 "rvf.y"
+#line 408 "./rvf.y"
     {
         (yyval.value).value_type = RVF_EMPTYVAL;
     ;}
     break;
 
   case 29:
-#line 413 "rvf.y"
+#line 413 "./rvf.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = (yyvsp[(1) - (1)].value).when_value;
@@ -1906,7 +1906,7 @@ yyreduce:
     break;
 
   case 30:
-#line 417 "rvf.y"
+#line 417 "./rvf.y"
     {
         (yyval.value).value_type = RVF_BOOLVAL;
         (yyval.value).bool_value = (yyvsp[(1) - (1)].bool_value);
@@ -1914,7 +1914,7 @@ yyreduce:
     break;
 
   case 31:
-#line 421 "rvf.y"
+#line 421 "./rvf.y"
     {
         (yyval.value).value_type = RVF_STRINGVAL;
         (yyval.value).string_value = (yyvsp[(1) - (1)].value).string_value;
@@ -1922,14 +1922,14 @@ yyreduce:
     break;
 
   case 32:
-#line 425 "rvf.y"
+#line 425 "./rvf.y"
     {
         (yyval.value).value_type = RVF_EMPTYVAL;
     ;}
     break;
 
   case 33:
-#line 430 "rvf.y"
+#line 430 "./rvf.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = (yyvsp[(1) - (1)].value).when_value;
@@ -1937,7 +1937,7 @@ yyreduce:
     break;
 
   case 34:
-#line 434 "rvf.y"
+#line 434 "./rvf.y"
     {
         (yyval.value).value_type = RVF_BOOLVAL;
         (yyval.value).bool_value = (yyvsp[(1) - (1)].bool_value);
@@ -1945,7 +1945,7 @@ yyreduce:
     break;
 
   case 35:
-#line 438 "rvf.y"
+#line 438 "./rvf.y"
     {
         (yyval.value).value_type = RVF_STRINGVAL;
         (yyval.value).string_value = (yyvsp[(1) - (1)].value).string_value;
@@ -1953,7 +1953,7 @@ yyreduce:
     break;
 
   case 36:
-#line 444 "rvf.y"
+#line 444 "./rvf.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = (yyvsp[(1) - (2)].value).when_value | (yyvsp[(2) - (2)].value).when_value;
@@ -1961,14 +1961,14 @@ yyreduce:
     break;
 
   case 37:
-#line 448 "rvf.y"
+#line 448 "./rvf.y"
     {
         (yyval.value) = (yyvsp[(1) - (1)].value);
     ;}
     break;
 
   case 38:
-#line 453 "rvf.y"
+#line 453 "./rvf.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = 1;
@@ -1976,7 +1976,7 @@ yyreduce:
     break;
 
   case 39:
-#line 457 "rvf.y"
+#line 457 "./rvf.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = 2;
@@ -1984,7 +1984,7 @@ yyreduce:
     break;
 
   case 40:
-#line 461 "rvf.y"
+#line 461 "./rvf.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = 4;
@@ -1992,14 +1992,14 @@ yyreduce:
     break;
 
   case 42:
-#line 468 "rvf.y"
+#line 468 "./rvf.y"
     {
     ;}
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 2003 "globus_i_rvf.tab.c"
+#line 2003 "./globus_i_rvf.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2219,7 +2219,7 @@ yyreturn:
 }
 
 
-#line 470 "rvf.y"
+#line 470 "./rvf.y"
 
 
 typedef struct globus_rvf_extra_s
@@ -2342,6 +2342,7 @@ globus_rvf_parse_file(
         *errstr = extra.err;
     }
     globus_i_rvf_lex_destroy(scanner);
+    fclose(f);
 
     return rc;
 }

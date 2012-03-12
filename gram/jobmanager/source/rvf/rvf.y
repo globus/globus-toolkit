@@ -589,6 +589,7 @@ globus_rvf_parse_file(
         *errstr = extra.err;
     }
     globus_i_rvf_lex_destroy(scanner);
+    fclose(f);
 
     return rc;
 }
