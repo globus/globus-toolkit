@@ -1,11 +1,11 @@
 /*
  * Sun Grid Engine Scheduler Event Generator implementation for GT4.
- * 
+ *
  * See CREDITS file for attributions.
  * See LICENSE file for license terms.
  */
 
-/* This #define is needed for the correct operation of the GLIBC strptime 
+/* This #define is needed for the correct operation of the GLIBC strptime
  * function. */
 #define _XOPEN_SOURCE 1
 
@@ -18,7 +18,7 @@
 #define SEG_SGE_DEBUG(level, message) \
     GlobusDebugPrintf(SEG_SGE, level, message)
 
-/* This error code is used to represent the 
+/* This error code is used to represent the
  * "we want to skip a log entry" state. */
 #define SEG_SGE_SKIP_LINE -10
 
@@ -64,10 +64,10 @@ enum
  * State of the SGE log file parser.
  *
  * RJP  Jan.2008 added 4 fields to handle file rotation
- * 
+ *
  *
  */
-typedef struct 
+typedef struct
 {
     /** Path of the current log file being parsed */
     char *                              path;
@@ -88,7 +88,7 @@ typedef struct
     /** simple test whether all we're looking for is the timestamp; */
     globus_bool_t                       need_timestamp;
     /** First timestamp in log-file */
-    time_t                              file_timestamp; 
+    time_t                              file_timestamp;
     /** file rotation number at 1st read - assumes N+1 old files labeled 0,1,2,3,4,5,6,...,N */
     int                                 file_number;
     /** file inode for quick test of file rotation */
@@ -177,25 +177,6 @@ globus_l_sge_get_file_timestamp(
         globus_l_sge_logfile_state_t * state);
 
 
-/* Globus-specific module descriptor struct.  This is 
- * inspected by the master globus-scheduler-event-generator process. */
-
-/****  RJP 4.2 change --  comment out this declaration ***
-
-globus_module_descriptor_t
-globus_scheduler_event_module_ptr =
-{
-    "globus_scheduler_event_generator_sge",
-    globus_l_sge_module_activate,
-    globus_l_sge_module_deactivate,
-    NULL,
-    NULL,
-    &local_version,
-    NULL
-};
-
-***************************************************/
-
 /**** RJP 4.2 change -- replace aobve with this  *****/
 
 GlobusExtensionDefineModule(globus_seg_sge) =
@@ -209,10 +190,10 @@ GlobusExtensionDefineModule(globus_seg_sge) =
 
 };
 
-/**************End 4.2 Change  ******************/ 
+/**************End 4.2 Change  ******************/
 
 
-/* This function will be used by the SEG calling code to 
+/* This function will be used by the SEG calling code to
  * initialize this module. */
 static
 int
@@ -448,13 +429,13 @@ globus_l_sge_module_activate(void)
 	goto free_logfile_state_buffer_error;
     }
 
-    /* Locate our logfile. 
-     * Other DRMs need to know the current time to determine which 
+    /* Locate our logfile.
+     * Other DRMs need to know the current time to determine which
      * logfile to inspect.  SGE just keeps a single large 'reporting' log. */
 
-    /* --- Above is true but we've implemented file rotation 
-     * within the finding logfile routine   rjp Jan.2008  
-     */ 
+    /* --- Above is true but we've implemented file rotation
+     * within the finding logfile routine   rjp Jan.2008
+     */
 
     rc = globus_l_sge_find_logfile(logfile_state);
     if (rc == GLOBUS_SUCCESS)
@@ -478,12 +459,11 @@ globus_l_sge_module_activate(void)
 	goto free_logfile_state_path_error;
     }
 
-    /* Setup a callback so that our main read function will be 
-     * invoked at a later time. */
-    /* rjp --> this used to include a pointer to the callback in the logfile_state struct.
-     * as &logfile_state->callback, But this causes a memory leak. Removed and put to NULL */
+    /* Setup a callback so that our main read function will be
+     * invoked at a later time.
+     */
     result = globus_callback_register_oneshot(
-	    NULL,     
+	    NULL,
 	    &delay,
 	    globus_l_sge_read_callback,
 	    logfile_state);
@@ -533,7 +513,7 @@ error:
 }
 /* globus_l_sge_module_activate() */
 
-/* This function is called before we are shut down so that we can 
+/* This function is called before we are shut down so that we can
  * clean up properly. */
 static
 int
@@ -556,7 +536,7 @@ globus_l_sge_module_deactivate(void)
 }
 
 /*
- * This is our master read function.  It will be called periodically 
+ * This is our master read function.  It will be called periodically
  * as a result of a previous globus_callback_register_oneshot() invocation.
  */
 static
@@ -574,7 +554,7 @@ globus_l_sge_read_callback(
 
 
     SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO, ("globus_l_sge_read_callback() invoked.\n"));
-   
+
     globus_mutex_lock(&globus_l_sge_mutex);
     if (shutdown_called)
     {
@@ -584,27 +564,26 @@ globus_l_sge_read_callback(
 	goto error;
     }
     globus_mutex_unlock(&globus_l_sge_mutex);
-    
 
     /* file may not have existed earlier  rjp Jan.2008 */
     if(state->fp == NULL)
-      {
+    {
         if( state->path == NULL )
-	  {
+	{
   	    SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO, ("no file name available"));
             goto error;
-          } 
+        }
 	else
-	  {
-            rc = stat(state->path,&s);  
+	{
+            rc = stat(state->path,&s);
 	    if(rc == 0)
 	      {
 	        SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO, ("opening file in callback"));
                 state->fp = fopen(state->path,"r");
                 state->file_inode = s.st_ino;
 	      }
-	  }
-      }
+	}
+    }
 
 
     /* Provided that we have an open log filehandle.. */
@@ -615,11 +594,11 @@ globus_l_sge_read_callback(
 	    - state->buffer_point;
 
 	SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
-	    ("Reading a maximum of %u bytes from SGE reporting file = %s\n", 
+	    ("Reading a maximum of %u bytes from SGE reporting file = %s\n",
 		max_to_read, state->path));
 
 	/* Actually perform the read. */
-	rc = fread(state->buffer + state->buffer_point + 
+	rc = fread(state->buffer + state->buffer_point +
 		state->buffer_valid, 1, max_to_read, state->fp);
 
 	SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
@@ -637,37 +616,37 @@ globus_l_sge_read_callback(
 	    }
 	    else
 	    {
-		/* Or something bad has happened.  
+		/* Or something bad has happened.
 		 * This error state is currently unhandled... */
 
 		/* XXX: Read error */
 	    }
 	}
 
-	/* Update our state to record that we've added more valid data 
+	/* Update our state to record that we've added more valid data
 	 * to the buffer. */
 	state->buffer_valid += rc;
 
-	/* Parse data.  This function will also generate event 
+	/* Parse data.  This function will also generate event
 	 * notifications and send them to the main server. */
 	SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE, ("Parsing events in buffer.\n"));
 	rc = globus_l_sge_parse_events(state);
 
 	/* Move any remaining log data to the start of the buffer,
 	 * overwriting any old log data that we have already parsed. */
-	SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE, 
+	SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
 	    ("Cleaning buffer of parsed events.\n"));
 	rc = globus_l_sge_clean_buffer(state);
 
     }
-   
-    
+
+
     if( (eof_hit == GLOBUS_TRUE) )
       {
- 
+
         /* Here we hand log-rotation possibility - by resetting file_number
-         *  1. check to see if log has been rotated and 
-         *  2. reset file_number so that next file opened will 
+         *  1. check to see if log has been rotated and
+         *  2. reset file_number so that next file opened will
          *  be correctly identified  rjp Jan.2008
          */
         rc = globus_l_sge_check_rotated(state);
@@ -685,10 +664,10 @@ globus_l_sge_read_callback(
   	      fclose(state->fp);
               state->fp = NULL;
 	     }
-         
-	   /* decrement file number. 
+
+	   /* decrement file number.
 	    * Note if file was rotated while open,
-            * the above increment of file number 
+            * the above increment of file number
             * allows this to work   rjp Jan.2008
             */
 
@@ -707,19 +686,19 @@ globus_l_sge_read_callback(
 	       /* we got a new file */
                eof_hit = GLOBUS_FALSE;
 	     }
-	  } 
+	  }
       }
 
-     
+
       /* Determine if we have reached the EOF on the logfile.
        * If we have, set a moderately long delay.
        * If not, set  zero delay so we can read the rest! */
 
-    if (eof_hit == GLOBUS_TRUE || state->fp == NULL) 
+    if (eof_hit == GLOBUS_TRUE || state->fp == NULL)
     {
 	GlobusTimeReltimeSet(delay, 2, 0);
     }
-    else 
+    else
     {
 	GlobusTimeReltimeSet(delay, 0, 0);
     }
@@ -740,7 +719,7 @@ globus_l_sge_read_callback(
     }
 
     SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
-	  ("globus_l_sge_read_callback() exited with/success \n")); 
+	  ("globus_l_sge_read_callback() exited with/success \n"));
 
     return;
 error:
@@ -754,6 +733,12 @@ error:
 	    globus_cond_signal(&globus_l_sge_cond);
 	}
     }
+    else
+    {
+        fprintf(stderr,
+                "FATAL: Unable to register callback. SGE SEG exiting\n");
+        exit(EXIT_FAILURE);
+    }
     globus_mutex_unlock(&globus_l_sge_mutex);
 
     SEG_SGE_DEBUG(SEG_SGE_DEBUG_WARN,
@@ -763,13 +748,13 @@ error:
 /* globus_l_sge_read_callback() */
 
 /**
- * Determine the SGE log file name.  
+ * Determine the SGE log file name.
  * This is actually really easy for SGE, because the filename doesn't change --
- * it'll always be called 'reporting' and we'll already have the 
+ * it'll always be called 'reporting' and we'll already have the
  * exact path to use.
- * 
- * above is now modified for simple reporting file rotation: rjp Jan.2008 
- *  
+ *
+ * above is now modified for simple reporting file rotation: rjp Jan.2008
+ *
  * @param state
  *     SGE log state structure. The path field of the structure may be
  *     modified by this function.
@@ -794,7 +779,7 @@ globus_l_sge_find_logfile(
     if (state->path == NULL)
     {
 	SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE, ("allocating path\n"));
-	state->path = malloc(strlen(state->log_file) + 10); 
+	state->path = malloc(strlen(state->log_file) + 10);
 	if (state->path == NULL)
 	{
 	    rc = SEG_SGE_ERROR_OUT_OF_MEMORY;
@@ -809,10 +794,10 @@ globus_l_sge_find_logfile(
     stamp = mktime(&state->start_timestamp);
     SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE, ("input timestamp = %d\n",stamp));
 
-    state->file_number=-1; 
+    state->file_number=-1;
     while(!file_found)
       {
-         SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE, 
+         SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
                       ("find file loop with file_number = %d\n",
                        state->file_number));
 
@@ -829,7 +814,7 @@ globus_l_sge_find_logfile(
 	  {
             rc = globus_l_sge_get_file_timestamp(state);
 	  } else {
-            SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE, 
+            SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
                          ("file = %s not found\n",state->path));
             if(state->file_number >= 0)
               {
@@ -842,45 +827,45 @@ globus_l_sge_find_logfile(
                 file_found = GLOBUS_TRUE;
 
               } else {
-                /* it's possible the direct file (file_number = -1) 
+                /* it's possible the direct file (file_number = -1)
                    doesn't exist yet so set to skip over (see next if/else) */
                 state->file_timestamp = 0;
 	      }
 	  }
 
-        if( state->file_timestamp > 0 && state->file_timestamp < stamp ) 
-	  {  
-            SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO, 
+        if( state->file_timestamp > 0 && state->file_timestamp < stamp )
+	  {
+            SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
                          ("found our file = %s with Timestamp %d \n",
                           state->path,state->file_timestamp));
             file_found=GLOBUS_TRUE;
-	  } 
-	else 
+	  }
+	else
 	  {
-            SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO, 
+            SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
                          ("Not file to use = %s with Timestamp %d \n",
                           state->path,state->file_timestamp));
 
 	    /* next file */
             state->file_number++;
-	    
-	    /** now it;s possible under quick file rotations that no 
-             *  timestamp is put in the file, thus state->file_timestamp = 0. 
-             *  In this case, as written above, we'll appropriately skip 
-             *  that file:   rjp Jan.2008 
+	
+	    /** now it;s possible under quick file rotations that no
+             *  timestamp is put in the file, thus state->file_timestamp = 0.
+             *  In this case, as written above, we'll appropriately skip
+             *  that file:   rjp Jan.2008
              */
 	  }
       }
 
     rc = stat(state->path, &s);
-    state->file_inode = s.st_ino; 
+    state->file_inode = s.st_ino;
 
     if (rc < 0)
     {
 	switch (errno)
 	{
 	    case ENOENT:
-		/* Doesn't exist, 
+		/* Doesn't exist,
 		*/
 		SEG_SGE_DEBUG(SEG_SGE_DEBUG_ERROR,
 			("file %s doesn't exist\n", state->path));
@@ -923,7 +908,7 @@ globus_l_sge_find_logfile(
 
     if (rc != 0)
     {
-        state->file_inode = 0;  
+        state->file_inode = 0;
 	goto error;
     }
 
@@ -939,9 +924,9 @@ error:
 /* globus_l_sge_find_logfile() */
 
 
-/**   
- *  rjp Jan.2008 
- *  routine to set the file name based on the file rotation model. 
+/**
+ *  rjp Jan.2008
+ *  routine to set the file name based on the file rotation model.
  *  Here simply all rotated files have '.file_number' extension. If other
  *  models are defined, change this routine accordingly
  *
@@ -954,18 +939,18 @@ globus_l_sge_set_logfile_name(
 
     int                                 rc;
 
-    SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO, 
+    SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
                  ("globus_l_sge_set_logfile_name()\n"));
     if( state->file_number < 0)
       {
-         SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE, 
+         SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
                       ("non-rotated file number \n"));
          rc = sprintf(state->path,"%s",state->log_file);
          state->old_log = GLOBUS_FALSE;
       }
     else
       {
- 	 SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE, 
+ 	 SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
                       ("rotated file file_number >= 0\n"));
          rc = sprintf(state->path,"%s%s%d",state->log_file,".",state->file_number);
          state->old_log = GLOBUS_TRUE;
@@ -976,7 +961,7 @@ globus_l_sge_set_logfile_name(
 /* globus_l_sge_set_logfile_name */
 
 /**
- * Move any data in the state buffer to the beginning, to enable reusing 
+ * Move any data in the state buffer to the beginning, to enable reusing
  * buffer space which has already been parsed.
  */
 static
@@ -1006,7 +991,7 @@ globus_l_sge_clean_buffer(
     return 0;
 }
 /* globus_l_sge_clean_buffer() */
- 
+
 /**
  * Reduce unused space in the log buffer, increasing the size of the buffer
  * if it is full.
@@ -1058,8 +1043,8 @@ error:
 
 /**
  *
- *  Simple routine to check inode number to see if it has changed. 
- *  If so we assume file has been rotated  
+ *  Simple routine to check inode number to see if it has changed.
+ *  If so we assume file has been rotated
  *
  **/
 
@@ -1075,7 +1060,7 @@ globus_l_sge_check_rotated(globus_l_sge_logfile_state_t * state)
 
   rc = stat(state->path,&s);
   if(s.st_ino != state->file_inode)
-     { 
+     {
         SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO, ("file has been rotated().\n"));
         return 1;
      }
@@ -1087,7 +1072,7 @@ globus_l_sge_check_rotated(globus_l_sge_logfile_state_t * state)
 
 
 /* This function's job is to parse any whole events from our read buffer,
- * generate state update messages and deliver them to the main process. 
+ * generate state update messages and deliver them to the main process.
  *
  * It's now also used to grab the 1st timestamped entry in the reporting file
  * when file rotation is activated . rjp Jan.2008
@@ -1114,7 +1099,7 @@ globus_l_sge_parse_events(
     status = 0;
 
     /* Find the next newline */
-    while ( (status != SEG_SGE_FOUND_FILE_TIMESTAMP) && 
+    while ( (status != SEG_SGE_FOUND_FILE_TIMESTAMP) &&
             (eol = memchr(state->buffer + state->buffer_point,
 		    '\n',
 		    state->buffer_valid)) != NULL)
@@ -1125,13 +1110,13 @@ globus_l_sge_parse_events(
 	SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
 		("parsing line %s\n", state->buffer + state->buffer_point));
 
-	rc = globus_l_sge_split_into_fields(state, &fields, &nfields); 
+	rc = globus_l_sge_split_into_fields(state, &fields, &nfields);
 
 	/* If split_into_fields fails, ignore the line.*/
 	if (rc != GLOBUS_SUCCESS)
 	{
 	    SEG_SGE_DEBUG(SEG_SGE_DEBUG_WARN,
-		    ("Failed to parse line %s\n", 
+		    ("Failed to parse line %s\n",
 		     state->buffer + state->buffer_point));
 	    goto free_fields;
 	}
@@ -1139,7 +1124,7 @@ globus_l_sge_parse_events(
 	/* If the first character is a '#', ignore the line. */
 	if (strstr(fields[0], "#") == fields[0]) {
 	    SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
-		    ("Line '%s' is a comment, skipping.\n", 
+		    ("Line '%s' is a comment, skipping.\n",
 		     state->buffer + state->buffer_point));
 	    goto free_fields;
  	}
@@ -1199,13 +1184,13 @@ globus_l_sge_parse_events(
 	}
 
 	/* Batch accounting: resources consumed by the job  */
-	if (strstr(fields[1], "acct") == fields[1]) 
+	if (strstr(fields[1], "acct") == fields[1])
 	{
             char * job_id;
 	    int failed;
-	    /* From the SGE 'reporting' man page: 
-	     * 
-	     * failed: 
+	    /* From the SGE 'reporting' man page:
+	     *
+	     * failed:
 	     * Indicates the problem which occurred in case a job could not  be
 	     * started on the execution host (e.g. because the owner of the job
 	     * did not have a valid account on that machine).  If  Grid  Engine
@@ -1229,21 +1214,21 @@ globus_l_sge_parse_events(
 	    if ( failed != 0)
 	    {
 		SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
-			("New event: job %s has failed with exit status %d.\n", 
+			("New event: job %s has failed with exit status %d.\n",
 			 job_id, exit_status));
 		rc = globus_scheduler_event_failed(stamp, job_id, failed);
 	    }
 	    else
 	    {
 		SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
-			("New event: job %s has done with exit status %d.\n", 
+			("New event: job %s has done with exit status %d.\n",
 			 job_id, exit_status));
 		rc = globus_scheduler_event_done(stamp, job_id, exit_status);
 	    }
             free(job_id);
 	}
 	else if (strstr(fields[1], "job_log") == fields[1])
-	{ 
+	{
             char * job_id;
 
 	    /* Job state change. */
@@ -1314,7 +1299,7 @@ globus_l_sge_get_file_timestamp(globus_l_sge_logfile_state_t* state)
     globus_bool_t    eof_hit = GLOBUS_FALSE;
     int              max_to_read;
     int              rc;
-  
+
     SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO, ("globus_l_sge_get_file_timestamp() invoked.\n"));
 
     if(state->fp != NULL)
@@ -1322,12 +1307,12 @@ globus_l_sge_get_file_timestamp(globus_l_sge_logfile_state_t* state)
         fclose(state->fp);
         state->fp = NULL;
       }
-    
+
     state->fp = fopen(state->path,"r");
 
     if(state->fp == NULL)
       {
-        SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO, 
+        SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
                      ("   unable to open file name = %s\n",state->path));
         goto error;
       }
@@ -1335,21 +1320,21 @@ globus_l_sge_get_file_timestamp(globus_l_sge_logfile_state_t* state)
     /* start with an empty buffer */
     state->buffer_point = 0;
     state->buffer_valid = 0;
-    state->need_timestamp = GLOBUS_TRUE;  
+    state->need_timestamp = GLOBUS_TRUE;
     state->file_timestamp = 0;
 
-    while ( state->file_timestamp == 0  && !eof_hit ) 
+    while ( state->file_timestamp == 0  && !eof_hit )
       {
          /* Calculate how much data will fit within the read-buffer. */
          max_to_read = state->buffer_length - state->buffer_valid
                    - state->buffer_point;
 
          SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
-                   ("Reading a maximum of %u bytes from SGE reporting file\n", 
+                   ("Reading a maximum of %u bytes from SGE reporting file\n",
                      max_to_read));
 
         /* Actually perform the read. */
-         rc = fread(state->buffer + state->buffer_point + 
+         rc = fread(state->buffer + state->buffer_point +
           	  state->buffer_valid, 1, max_to_read, state->fp);
 
         SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
@@ -1366,7 +1351,7 @@ globus_l_sge_get_file_timestamp(globus_l_sge_logfile_state_t* state)
         /* try to find the file timestamp inside the buffer */
         rc = globus_l_sge_parse_events(state);
 
-        SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE, 
+        SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
                    ("     Cleaning buffer of parsed events.\n"));
         rc = globus_l_sge_clean_buffer(state);
       }
@@ -1381,21 +1366,21 @@ globus_l_sge_get_file_timestamp(globus_l_sge_logfile_state_t* state)
     /* End with an empty buffer */
     state->buffer_point = 0;
     state->buffer_valid = 0;
-    state->need_timestamp = GLOBUS_FALSE;   
+    state->need_timestamp = GLOBUS_FALSE;
 
     if(state->file_timestamp == 0 )
       {
-	SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE, 
+	SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
                      (" Could not get timestamp from file "));
         return -1;
       }
 
-    SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO, 
+    SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
                  ("globus_l_sge_get_file_timestamp() exit.\n"));
     return  0;
 
  error:
-    SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE, 
+    SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
                  ("Get Timestamp Problem opening file %s\n",state->path));
     return -1;
 }
@@ -1405,7 +1390,7 @@ globus_l_sge_get_file_timestamp(globus_l_sge_logfile_state_t* state)
 /**
  * @param state
  *     Log state structure. The string pointed to by
- *     state-\>buffer + state-\>buffer_point is modified 
+ *     state-\>buffer + state-\>buffer_point is modified
  * @param fields
  *     Modified to point to a newly allocated array of char * pointers which
  *     point to the start of each field within the state buffer block.
