@@ -21,6 +21,31 @@
 
 static
 void
+globus_l_free_record(void *value)
+{
+    globus_rvf_record_t *record = value;
+
+    if (record->attribute)
+    {
+        free(record->attribute);
+    }
+    if (record->description)
+    {
+        free(record->description);
+    }
+    if (record->default_value)
+    {
+        free(record->default_value);
+    }
+    if (record->enumerated_values)
+    {
+        free(record->enumerated_values);
+    }
+    free(record);
+}
+
+static
+void
 print_string_value(char * aspect, char * value)
 {
     printf("%s: ", aspect);
@@ -167,10 +192,12 @@ int main(int argc, char * argv[])
                     (int)globus_list_size(l),
                     (int)globus_list_size(l)>1 ? "s" : "");
             }
+            globus_list_destroy_all(l, globus_l_free_record);
         }
         else
         {
             printf("%s\n", err);
+            free(err);
             rc |= local_rc;
         }
     }
