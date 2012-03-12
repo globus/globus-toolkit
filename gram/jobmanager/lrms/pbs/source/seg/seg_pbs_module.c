@@ -461,7 +461,9 @@ globus_l_pbs_read_callback(
     {
         SEGPbsDebug(SEG_PBS_DEBUG_ERROR, ("error converting time"));
 
-        goto error;
+        GlobusTimeReltimeSet(delay, 30, 0);
+
+        goto reregister;
     }
     tm_now.tm_sec = 0;
     tm_now.tm_min = 0;
@@ -543,23 +545,22 @@ globus_l_pbs_read_callback(
             state->fp = fopen(state->path, "r");
             if (state->fp == NULL)
             {
-                goto error;
+                eof_hit = GLOBUS_TRUE;
+                GlobusTimeReltimeSet(delay, 30, 0);
             }
-            eof_hit = GLOBUS_FALSE;
-
-            GlobusTimeReltimeSet(delay, 0, 0);
-        }
-        else if (rc == SEG_PBS_ERROR_LOG_NOT_PRESENT)
-        {
-            /* Current day's logfile not present, wait a bit longer for
-             * it to show up
-             */
-            GlobusTimeReltimeSet(delay, 30, 0);
-            eof_hit = GLOBUS_TRUE;
+            else
+            {
+                eof_hit = GLOBUS_FALSE;
+                GlobusTimeReltimeSet(delay, 0, 0);
+            }
         }
         else
         {
-            goto error;
+            /* Current day's logfile not present, or an error occurred, wait a
+             * bit longer for it to show up
+             */
+            GlobusTimeReltimeSet(delay, 30, 0);
+            eof_hit = GLOBUS_TRUE;
         }
     }
     else if(eof_hit)
@@ -573,6 +574,7 @@ globus_l_pbs_read_callback(
         GlobusTimeReltimeSet(delay, 0, 0);
     }
 
+reregister:
     result = globus_callback_register_oneshot(
             NULL,
             &delay,
@@ -594,6 +596,12 @@ error:
         {
             globus_cond_signal(&globus_l_pbs_cond);
         }
+    }
+    else
+    {
+        fprintf(stderr,
+                "FATAL: Unable to register callback. PBS SEG exiting\n");
+        exit(EXIT_FAILURE);
     }
     globus_mutex_unlock(&globus_l_pbs_mutex);
 

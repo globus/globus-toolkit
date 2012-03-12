@@ -435,7 +435,7 @@ globus_l_fork_read_callback(
         }
         else
         {
-            goto error;
+            GlobusTimeReltimeSet(delay, 60, 0);
         }
     }
 
