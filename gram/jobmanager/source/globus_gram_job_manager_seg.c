@@ -1068,7 +1068,7 @@ read_failed:
     poll_length = difftime(time(NULL), poll_time);
     if (poll_length > 1.0)
     {
-        GlobusTimeReltimeSet(delay, (time_t) poll_length, 0);
+        GlobusTimeReltimeSet(delay, (time_t) (poll_length * 5), 0);
     }
     else
     {
