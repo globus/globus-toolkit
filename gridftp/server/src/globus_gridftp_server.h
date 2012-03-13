@@ -75,7 +75,7 @@ typedef enum globus_gfs_operation_type_e
 {
     GLOBUS_GFS_OP_FINAL_REPLY = 1,
     GLOBUS_GFS_OP_EVENT_REPLY,
-    GLOBUS_GFS_OP_EVENT,    
+    GLOBUS_GFS_OP_EVENT,
     GLOBUS_GFS_OP_SESSION_START,
     GLOBUS_GFS_OP_SESSION_STOP,
     GLOBUS_GFS_OP_RECV,
@@ -92,6 +92,8 @@ typedef enum globus_gfs_operation_type_e
     GLOBUS_GFS_OP_SESSION_START_REPLY,
     GLOBUS_GFS_OP_INTERMEDIATE_REPLY
 } globus_gfs_operation_type_t;
+
+#define GLOBUS_GFS_OP_STAT_PARTIAL GLOBUS_GFS_OP_INTERMEDIATE_REPLY
 
 /*
  *  globus_gfs_command_type_t
@@ -111,14 +113,14 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_CKSM,
     GLOBUS_GFS_CMD_SITE_CHMOD,
     GLOBUS_GFS_CMD_SITE_DSI,
-    GLOBUS_GFS_CMD_SITE_CHGRP,
-    GLOBUS_GFS_CMD_SITE_UTIME,
-    GLOBUS_GFS_CMD_SITE_SYMLINKFROM,
-    GLOBUS_GFS_CMD_SITE_SYMLINK,
     GLOBUS_GFS_CMD_SITE_SETNETSTACK,
     GLOBUS_GFS_CMD_SITE_SETDISKSTACK,
     GLOBUS_GFS_CMD_SITE_CLIENTINFO,
-    GLOBUS_GFS_CMD_DCSC
+    GLOBUS_GFS_CMD_DCSC,
+    GLOBUS_GFS_CMD_SITE_CHGRP,
+    GLOBUS_GFS_CMD_SITE_UTIME,
+    GLOBUS_GFS_CMD_SITE_SYMLINKFROM,
+    GLOBUS_GFS_CMD_SITE_SYMLINK
 } globus_gfs_command_type_t;
 
 /*
@@ -406,10 +408,6 @@ typedef struct globus_gfs_transfer_info_s
     char *                              module_args;
     /** type of list requested */
     char *                              list_type;
-    /** levels to descend for listing (0 = no descent) */
-    int                                 list_depth;
-    /** directory traversal options */
-    int                                 traversal_options;
     
     /** offset of partial transfer */
     globus_off_t                        partial_offset;
@@ -439,6 +437,11 @@ typedef struct globus_gfs_transfer_info_s
     /** expected checksum algorithm */
     char *                              expected_checksum_alg;
     
+    /** levels to descend for listing (0 = no descent) */
+    int                                 list_depth;
+    /** directory traversal options */
+    int                                 traversal_options;
+
     /** op info */
     globus_gfs_op_info_t                op_info;
 } globus_gfs_transfer_info_t;
@@ -471,12 +474,6 @@ typedef struct globus_gfs_command_info_s
     /** mode argument to the chmod command */
     mode_t                              chmod_mode;
     
-    /** group argument to the chgrp command */
-    char *                              chgrp_group;
-    
-    /** time argument to the utime command */
-    time_t                              utime_time;
-    
     /** pathname to rename from (to the above pathname) OR 
      *  pathname to link to  */
     char *                              from_pathname;    
@@ -484,6 +481,12 @@ typedef struct globus_gfs_command_info_s
     /** Authorization assertion */
     char *                              authz_assert; 
 
+    /** group argument to the chgrp command */
+    char *                              chgrp_group;
+    
+    /** time argument to the utime command */
+    time_t                              utime_time;
+    
     /** op info */
     globus_gfs_op_info_t                op_info;
 } globus_gfs_command_info_t;
@@ -547,14 +550,14 @@ typedef struct globus_gfs_stat_info_s
 {
     /** if pathname is a directory, should stat report its info or its contents */
     globus_bool_t                       file_only;
-    /** whether to return symbolic link info or target info */
-    globus_bool_t                       use_symlink_info;
-    /** if pathname is a directory, should its stat info be included? */
-    globus_bool_t                       include_path_stat;
     /** this stat is requested internally -- bypasses authorization checks */
     globus_bool_t                       internal;
     /** pathname to stat */
     char *                              pathname;
+    /** whether to return symbolic link info or target info */
+    globus_bool_t                       use_symlink_info;
+    /** if pathname is a directory, should its stat info be included? */
+    globus_bool_t                       include_path_stat;
 
     /** op info */
     globus_gfs_op_info_t                op_info;
@@ -732,7 +735,9 @@ typedef void
  *  realpath
  *
  * This defines the function that will be called to determine a true path
- * free of symlinks or other obsfucation.
+ * free of symlinks or other obsfucation.  
+ * if you implement this, add GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH to your 
+ * globus_gfs_storage_iface_t interface definition.
  */
 
 typedef globus_result_t
@@ -744,6 +749,8 @@ typedef globus_result_t
 
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SENDER 0x01
 #define GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING 0x02
+#define GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH 0x04
+
 /*
  *  globus_gfs_storage_iface_t
  * 
