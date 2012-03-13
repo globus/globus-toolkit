@@ -619,7 +619,8 @@ globus_i_gfs_data_check_path(
     
     if(!globus_list_empty(globus_l_gfs_path_alias_list))
     {   
-        if(!globus_i_gfs_config_bool("rp_follow_symlinks") && 
+        if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH &&
+            !globus_i_gfs_config_bool("rp_follow_symlinks") && 
             strcmp(in_path, "/") != 0 && 
             session_handle->dsi->realpath_func != NULL)
         {            
