@@ -109,6 +109,11 @@ globus_l_blocking_read(
     void                               *buf,
     int                                 len);
 
+static
+void
+globus_l_remove_proxy(
+    gss_buffer_t                        buffer);
+
 globus_xio_driver_t                     globus_i_gram_job_manager_file_driver;
 globus_xio_stack_t                      globus_i_gram_job_manager_file_stack;
 #endif
@@ -946,12 +951,7 @@ sendmsg_failed:
 cred_too_big:
     if (rc != GLOBUS_SUCCESS)
     {
-        char * proxy_filename = strchr(cred_buffer.value, '=');
-
-        if (proxy_filename != NULL)
-        {
-            remove(proxy_filename+1);
-        }
+        globus_l_remove_proxy(&cred_buffer);
     }
     
     gss_release_buffer(
@@ -1173,12 +1173,7 @@ sendmsg_failed:
 cred_too_big:
     if (rc != GLOBUS_SUCCESS)
     {
-        char * proxy_filename = strchr(cred_buffer.value, '=');
-
-        if (proxy_filename != NULL)
-        {
-            remove(proxy_filename+1);
-        }
+        globus_l_remove_proxy(&cred_buffer);
     }
 
     gss_release_buffer(
@@ -1618,12 +1613,7 @@ globus_l_gram_startup_socket_callback(
                 NULL);
 
         {
-            char * proxy_filename = strchr(cred_buffer.value, '=');
-
-            if (proxy_filename != NULL)
-            {
-                remove(proxy_filename+1);
-            }
+            globus_l_remove_proxy(&cred_buffer);
         }
 
         if (GSS_ERROR(major_status))
@@ -2511,3 +2501,44 @@ globus_l_blocking_read(
     return amt_read;
 }
 /* globus_l_blocking_read() */
+
+/**
+ * Remove a proxy named by a buffer in GSS_IMPEXP_MECH_SPECIFIC form
+ * The token may not be NULL-terminated, so we will NULL-terminate explicitly
+ * before trying to remove it.
+ *
+ * @param token
+ *     A GSSAPI cred token which is in GSS_IMPEXP_MECH_SPECIFIC form
+ *     X509_USER_PROXY=path-to-proxy
+ *
+ * @return void
+ */
+static
+void
+globus_l_remove_proxy(
+    gss_buffer_t                        token)
+{
+    char * p;
+    char * q;
+    size_t len;
+
+    q = memchr(token->value, '=', token->length);
+    if (q == NULL)
+    {
+        return;
+    }
+
+    len = token->length - (q - (char *) token->value);
+
+    p = malloc(len);
+    if (p == NULL)
+    {
+        return;
+    }
+    memcpy(p, q+1, len-1);
+    p[len-1] = 0;
+
+    (void) remove(p);
+    free(p);
+}
+/* globus_l_remove_proxy() */

@@ -1958,6 +1958,14 @@ globus_gram_job_manager_set_grace_period_timer(
 }
 /* globus_gram_job_manager_set_grace_period_timer() */
 
+/**
+ * Fake a two-phase commit for jobs that are in a done state, but are older
+ * than their expiration time.
+ * 
+ * @param arg
+ *     Pointer to the job manager structure for this job.
+ * @return void
+ */
 void
 globus_gram_job_manager_expire_old_jobs(
     void *                              arg)
@@ -1970,11 +1978,6 @@ globus_gram_job_manager_expire_old_jobs(
     int                                 expired = 0;
 
     now = time(NULL);
-
-    globus_gram_job_manager_log(
-            manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.expire_jobs.start\n");
 
     GlobusGramJobManagerLock(manager);
     for (ref = globus_hashtable_first(&manager->request_hash);
@@ -2047,15 +2050,18 @@ oneshot_failed:
     }
     GlobusGramJobManagerUnlock(manager);
 
-    globus_gram_job_manager_log(
-            manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.expire_jobs.end "
-            "expired_count=%d "
-            "\n",
-            expired);
+    if (expired > 0)
+    {
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+                "event=gram.expire_jobs.end "
+                "expired_count=%d "
+                "\n",
+                expired);
+    }
 }
-/* globus_gram_job_manager_stop_all_jobs() */
+/* globus_gram_job_manager_expire_old_jobs() */
 
 
 void
