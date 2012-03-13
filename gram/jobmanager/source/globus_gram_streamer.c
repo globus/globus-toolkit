@@ -133,7 +133,6 @@ main(
     globus_module_descriptor_t *        failed_module;
 
     memset(&monitor, 0, sizeof(globus_gram_streamer_monitor_t));
-    monitor.request.job_state_lock_fd = -1;
     globus_mutex_init(&monitor.request.mutex, NULL);
     globus_cond_init(&monitor.request.cond, NULL);
 

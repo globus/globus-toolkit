@@ -676,8 +676,6 @@ typedef struct globus_gram_job_manager_request_s
     char *                              job_contact_path;
     /** Job-specific persistence file */
     char *                              job_state_file;
-    /** Job-specific persistence lock file */
-    char *                              job_state_lock_file;
     /** Job-specific scratch directory after RSL evaluation */
     char *                              scratch_dir_base;
     /**
@@ -693,8 +691,6 @@ typedef struct globus_gram_job_manager_request_s
     char *                              remote_io_url_file;
     /** Job-specific proxy file */
     char *                              x509_user_proxy;
-    /** Job-specific persistence lock descriptor */
-    int                                 job_state_lock_fd;
     /** Thread safety */
     globus_mutex_t                      mutex;
     /** Thread safety */
@@ -1317,8 +1313,7 @@ globus_gram_rsl_add_stream_out(
 int
 globus_gram_job_manager_state_file_set(
     globus_gram_jobmanager_request_t *  request,
-    char **                             state_file,
-    char **                             state_lock_file);
+    char **                             state_file);
 
 int
 globus_gram_job_manager_file_lock(
