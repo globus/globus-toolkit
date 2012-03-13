@@ -412,13 +412,11 @@ globus_gram_job_manager_request_init(
 
     rc = globus_gram_job_manager_state_file_set(
         r,
-        &r->job_state_file,
-        &r->job_state_lock_file);
+        &r->job_state_file);
     if (rc != GLOBUS_SUCCESS)
     {
         goto failed_state_file_set;
     }
-    r->job_state_lock_fd = -1;
 
     r->client_contacts = NULL;
 
@@ -809,12 +807,6 @@ get_gateway_user_failed:
         free(r->cache_tag);
 cache_tag_alloc_failed:
 failed_restart:
-        if (r->job_state_lock_fd >= 0 &&
-            r->job_state_lock_fd != r->manager->lock_fd)
-        {
-            close(r->job_state_lock_fd);
-        }
-        free(r->job_state_lock_file);
         free(r->job_state_file);
 failed_state_file_set:
 cached_stderr_symboltable_failed:
@@ -1282,15 +1274,6 @@ globus_gram_job_manager_request_free(
     if (request->job_state_file)
     {
         free(request->job_state_file);
-    }
-    if (request->job_state_lock_file)
-    {
-        free(request->job_state_lock_file);
-    }
-    if (request->job_state_lock_fd >= 0 &&
-        request->job_state_lock_fd != request->manager->lock_fd)
-    {
-        close(request->job_state_lock_fd);
     }
     if (request->gt3_failure_type)
     {

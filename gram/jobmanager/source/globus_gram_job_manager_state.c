@@ -923,10 +923,6 @@ globus_l_gram_job_manager_state_machine(
         {
             remove(request->job_state_file);
         }
-        if(request->job_state_lock_file)
-        {
-            remove(request->job_state_lock_file);
-        }
         globus_l_gram_job_manager_cancel_queries(request);
 
         break;
@@ -948,10 +944,6 @@ globus_l_gram_job_manager_state_machine(
         if(request->job_state_file)
         {
             remove(request->job_state_file);
-        }
-        if(request->job_state_lock_file)
-        {
-            remove(request->job_state_lock_file);
         }
         globus_l_gram_job_manager_cancel_queries(request);
         /* Write auditing file if job is DONE or FAILED */
