@@ -15,7 +15,7 @@
 
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
-Version:	1.2
+Version:	1.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
@@ -265,6 +265,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Mar 14 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-1
+- GRAM-318: Periodic lockup of SEG
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 1.2-1
 - GRAM-297: job manager service definitions contain unresolved variables
 - GRAM-310: sge configure script error

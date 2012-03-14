@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.22
+Version:	13.25
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -173,21 +173,19 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Mar 14 2012 Joseph Bester <bester@mcs.anl.gov> - 13.25-1
+- GRAM-273: Crufty Condor logs can cause major performance hit
+- GRAM-306: Job Manager stdio_size query logging crash
+- GRAM-315: Job locking doesn't handle ENOENT gracefully
+- GRAM-317: job manager fails transferring job between processes if the proxy is larger than the socket buffer
+
 * Thu Mar 1 2012 Joseph Bester <bester@mcs.anl.gov> - 13.22-1
 - RIC-239: GSSAPI Token inspection fails when using TLS 1.2
 
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 13.21-1
-- GRAM-232: Incorrect directory permissions cause an infinite loop
 - GRAM-272: Allow site-specific RVF entries
-- GRAM-292: GRAM crashes when parsing partial condor log
 - GRAM-294: GRAM should clean up files better
-- GRAM-296: Compile Failure on Solaris
-- GRAM-299: Not all job log messages obey loglevel RSL attribute
-- GRAM-300: GRAM job manager doxygen refers to obsolete command-line options
-- GRAM-301: GRAM validation file parser doesn't handle empty quoted values correctly
-- GRAM-302: Incorrect error when state file write fails
 - GRAM-305: Jobmanager reporting DONE status when stage-out failed
-- GRAM-306: Job Manager stdio_size query logging crash
 - RIC-226: Some dependencies are missing in GPT metadata
 
 * Thu Dec 22 2011 Joseph Bester <bester@mcs.anl.gov> - 13.19-1
