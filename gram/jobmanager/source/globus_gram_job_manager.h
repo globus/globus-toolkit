@@ -510,6 +510,11 @@ typedef struct globus_gram_job_manager_s
      * but didn't have two-phase end happen.
      */
     globus_callback_handle_t            expiration_handle;
+
+    /**
+     * Periodic callback handle to abort if something removes the lock file.
+     */
+    globus_callback_handle_t            lockcheck_handle;
     
 }
 globus_gram_job_manager_t;
