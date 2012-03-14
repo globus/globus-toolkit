@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.25
+Version:	13.26
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -173,6 +173,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Mar 14 2012 Joseph Bester <bester@mcs.anl.gov> - 13.26-1
+- GRAM-314: Jobmanager locking protocol doesn't handle deletion of lockfiles
+
 * Wed Mar 14 2012 Joseph Bester <bester@mcs.anl.gov> - 13.25-1
 - GRAM-273: Crufty Condor logs can cause major performance hit
 - GRAM-306: Job Manager stdio_size query logging crash
