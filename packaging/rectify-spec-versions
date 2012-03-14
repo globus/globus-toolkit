@@ -24,6 +24,7 @@ my $cvs_changelog = undef;
 my $fullname = undef;
 my $bumprelease = undef;
 my $new_release = undef;
+my $dryrun = 0;
 
 GetOptions('gptfile=s' => \$gptfile,
            'packagelistfile=s' => \$packagelistfile,
@@ -31,6 +32,7 @@ GetOptions('gptfile=s' => \$gptfile,
            'verbose' => \$verbose,
            'release=s' => \$gtrelease,
            'changelog=s' => \$changelog,
+           'dryrun|n' => \$dryrun,
            'prompt-for-changelog' => \$prompt_for_changelog,
            'cvs-changelog' => \$cvs_changelog,
            'fullname=s' => \$fullname,
@@ -250,31 +252,37 @@ if ($cvs_changelog && $gtrelease)
     }
 }
 
-if (!$changelog)
+if (!$dryrun)
 {
-    if ($prompt_for_changelog)
+    if ($specfile_changed || $version_changed || $bumprelease)
     {
-        print "Changelog entry [empty line to end]: ";
-        $changelogstring = '';
-
-        while (<>)
+        if (!$changelog)
         {
-            if ($_ eq "\n")
+            if ($prompt_for_changelog)
             {
-                last;
+                print "Changelog entry for $gptname [empty line to end]: ";
+                $changelogstring = '';
+
+                while (<>)
+                {
+                    if ($_ eq "\n")
+                    {
+                        last;
+                    }
+                    $changelogstring .= "- $_";
+                }
             }
-            $changelogstring .= "- $_";
+
+            if ($changelogstring eq '')
+            {
+                $changelogstring = "- Updated version numbers\n";
+            }
+        }
+        else
+        {
+            $changelogstring = "- " . join("\n- ", split(/\n/, $changelog)) . "\n";
         }
     }
-
-    if ($changelogstring eq '')
-    {
-        $changelogstring = "- Updated version numbers\n";
-    }
-}
-else
-{
-    $changelogstring = "- " . join("\n- ", split(/\n/, $changelog)) . "\n";
 }
 
 if ($specfile_changed || $bumprelease)
@@ -295,10 +303,13 @@ if ($specfile_changed || $version_changed || $bumprelease)
 
   $ARRAY[$releaseindex] = "Release:\t$releaseversion$releasesuffix\n";
 
-#Write back the spec file
-seek(FH,0,0) or die "Seeking: $!"; 
-print FH @ARRAY or die "Printing: $!"; 
-truncate(FH,tell(FH)) or die "Truncating: $!"; 
+if (!$dryrun)
+{
+    # Write back the spec file
+    seek(FH,0,0) or die "Seeking: $!"; 
+    print FH @ARRAY or die "Printing: $!"; 
+    truncate(FH,tell(FH)) or die "Truncating: $!"; 
+}
 close(FH) or die "Closing: $!";
 }
 
