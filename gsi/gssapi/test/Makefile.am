@@ -64,6 +64,7 @@ EXTRA_DIST = $(Data) \
 	gssapi-acquire-test.pl \
 	gssapi-inquire-sec-ctx-by-oid-test.pl \
         indicate-mechs-test.pl \
+        nonterminated-export-cred-test.pl \
         release-name-test.pl
 
 test_PROGRAMS= \
