@@ -1,7 +1,8 @@
-globus-gram-job-manager (13.21-1) unstable; urgency=low
+globus-gram-job-manager (13.26-1) unstable; urgency=low
 
   * GRAM-232: Incorrect directory permissions cause an infinite loop
   * GRAM-272: Allow site-specific RVF entries
+  * GRAM-273: Crufty Condor logs can cause major performance hit
   * GRAM-292: GRAM crashes when parsing partial condor log
   * GRAM-294: GRAM should clean up files better
   * GRAM-296: Compile Failure on Solaris
@@ -11,20 +12,15 @@ globus-gram-job-manager (13.21-1) unstable; urgency=low
   * GRAM-302: Incorrect error when state file write fails
   * GRAM-305: Jobmanager reporting DONE status when stage-out failed
   * GRAM-306: Job Manager stdio_size query logging crash
+  * GRAM-314: Jobmanager locking protocol doesn't handle deletion of lockfiles
+  * GRAM-315: Job locking doesn't handle ENOENT gracefully
+  * GRAM-317: job manager fails transferring job between processes if the proxy is
+  * GRAM-317: job manager fails transferring job between processes if the proxy is larger than the socket buffer
+  * GRAM-323: RVF parser leaks file descriptors
   * RIC-226: Some dependencies are missing in GPT metadata
+  * RIC-239: GSSAPI Token inspection fails when using TLS 1.2
 
- -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:43:57 -0500
-
-globus-gram-job-manager (13.19-1) unstable; urgency=low
-  * GRAM-232: Incorrect directory permissions cause an infinite loop
-  * GRAM-302: Incorrect error when state file write fails
-  * GRAM-301: GRAM validation file parser doesn't handle empty quoted values
-            correctly
-  * GRAM-300: GRAM job manager doxygen refers to obsolete command-line options
-  * GRAM-299: Not all job log messages obey loglevel RSL attribute
-  * GRAM-296: Compile Failure on Solaris
-
- -- Globus Toolkit <support@globus.org>  Thu, 22 Dec 2011 10:43:36 -0500
+ -- Globus Toolkit <support@globus.org>  Thu, 15 Mar 2012 16:50:08 -0400
 
 globus-gram-job-manager (13.13-1) unstable; urgency=low
 

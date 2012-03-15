@@ -1,3 +1,10 @@
+globus-ftp-control (4.4-1) unstable; urgency=low
+
+  * GRIDFTP-199: increase efficiency of control channel message processing
+  * RIC-226: Some dependencies are missing in GPT metadata
+
+ -- Globus Toolkit <support@globus.org>  Thu, 15 Mar 2012 16:50:31 -0400
+
 globus-ftp-control (4.3-1) unstable; urgency=low
 
   * RIC-226: Some dependencies are missing in GPT metadata

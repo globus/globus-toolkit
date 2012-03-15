@@ -1,8 +1,17 @@
-globus-gridftp-server-control (2.4-1) unstable; urgency=low
+globus-gridftp-server-control (2.5-1) unstable; urgency=low
 
+  * GRIDFTP-164: improve dir streaming stability
+  * GRIDFTP-165: correct chunking of MLSC response
+  * GRIDFTP-165: fix MLSC over split processes
+  * GRIDFTP-198: performance improvements for control channel messages
+  * GRIDFTP-201: Add heartbeat/status markers to CKSM and RETR
+  * GRIDFTP-217: fix -connections-disabled for inetd
+  * GRIDFTP-218: add -fork-fallback
+  * GRIDFTP-219: allow prot without gsi
+  * GRIDFTP-222: fix threaded issues with streaming dir info for mlsd and mlsc
   * RIC-226: Some dependencies are missing in GPT metadata
 
- -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:52 -0500
+ -- Globus Toolkit <support@globus.org>  Thu, 15 Mar 2012 16:50:50 -0400
 
 globus-gridftp-server-control (2.3-1) unstable; urgency=low
 

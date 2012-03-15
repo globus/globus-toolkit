@@ -1,3 +1,16 @@
+globus-gass-copy (8.4-1) unstable; urgency=low
+
+  * GRIDFTP-200: mixing ftp:// with -cred fails
+  * GRIDFTP-203: -create-dest fails when input is stdin
+  * GRIDFTP-208: Add manpage for globus-url-copy
+  * GRIDFTP-211: potentially unsafe format strings in globus-url-copy
+  * GRIDFTP-216: continue on error doesn't continue when a dir listing fails
+  * GRIDFTP-220: don't attempt mkdir when dir is known to exist.
+  * RIC-224: Eliminate some doxygen warnings
+  * RIC-226: Some dependencies are missing in GPT metadata
+
+ -- Globus Toolkit <support@globus.org>  Thu, 15 Mar 2012 16:50:04 -0400
+
 globus-gass-copy (8.3-1) unstable; urgency=low
 
   * GRIDFTP-208: Add manpage for globus-url-copy
