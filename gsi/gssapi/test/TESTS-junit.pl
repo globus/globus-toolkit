@@ -43,6 +43,7 @@ if (system("grid-proxy-info -exists") != 0)
             indicate-mechs-test.pl
             inquire-names-for-mech-test.pl
             gssapi-import-name.pl
+            nonterminated-export-cred-test.pl
             release-name-test.pl
            );
 
