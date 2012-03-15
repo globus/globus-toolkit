@@ -137,10 +137,10 @@ Or use the -location switch"
 
   # Determine what kind of package directory we have
 
-  $me->{'bundledir'} = "${datadir}/globus/bundles";
-  $me->{'pkgdir'} = "${datadir}/globus/packages";
-  $me->{'flavordir'} = "${datadir}/globus/flavors";
-  $me->{'setupdir'} = "${datadir}/globus/packages/setup";
+  $me->{'bundledir'} = "$me->{'installdir'}/share/globus/bundles";
+  $me->{'pkgdir'} = "$me->{'installdir'}/share/globus/packages";
+  $me->{'flavordir'} = "$me->{'installdir'}/share/globus/flavors";
+  $me->{'setupdir'} = "$me->{'installdir'}/share/globus/packages/setup";
   $me->{'pkg_confdir'} = "${pkg_confdir}";
 }
 
