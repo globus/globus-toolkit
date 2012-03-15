@@ -65,7 +65,7 @@ mkdir -p $tmppath
 
 # Remove all globus-related packages prior to testing
 if test -f /etc/redhat-release; then
-    pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|^gsi_openssh' || true) )"
+    pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|^gsi-openssh' || true) )"
     if [ -n "$pkgs_to_rm" ]; then
         sudo rpm -e --allmatches $pkgs_to_rm
     fi
