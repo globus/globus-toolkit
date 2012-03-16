@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -370,6 +370,8 @@ fi
 
 %{_mandir}/man8/myproxy-server.8.gz
 %{_mandir}/man5/myproxy-server.config.5.gz
+%{_datadir}/myproxy/myproxy-server.conf
+%{_datadir}/myproxy/myproxy-server.service
 
 %doc README.Fedora
 
@@ -412,6 +414,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Wed Mar 16 2012 Joseph Bester <bester@mcs.anl.gov> - 5.6-2
+- Package a few files that were not named in server package
+
 * Wed Feb 29 2012 Joseph Bester <bester@mcs.anl.gov> - 5.6-1
 - Updated to MyProxy 5.6
 
