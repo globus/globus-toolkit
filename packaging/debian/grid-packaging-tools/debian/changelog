@@ -1,4 +1,10 @@
-grid-packaging-tools (5.2-1) unstable; urgency=low
+grid-packaging-tools (3.6.2-1) unstable; urgency=low
+
+  * Update to GPT 3.6.2
+
+ -- Globus Toolkit <support@globus.org>  Mon, 19 Mar 2012 09:04:03 -0400
+
+grid-packaging-tools (3.6.1-1) unstable; urgency=low
 
   * GRAM-292: GRAM crashes when parsing partial condor log
   * GRAM-303: Gatekeeper's syslog output cannot be controlled
