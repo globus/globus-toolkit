@@ -170,7 +170,7 @@ if [ "$chroot" != "" ]; then
         mv "${topdir}-${chroot}" "${topdir}-${chroot}.old"
     fi
     mv "${topdir}" "${topdir}-${chroot}"
-    mkdir "${topdir}"
+    mkdir -p "${topdir}"
     cp -R "${orighome}/.gnupg" "${topdir}/.gnupg"
     cd "${topdir}"
 fi
@@ -248,7 +248,7 @@ rm -rf "${packagingdir}/repo.old"
 if [ -d "${packagingdir}/repo" ]; then
     mv "${packagingdir}/repo" "${packagingdir}/repo.old"
 fi
-mkdir "${packagingdir}/repo"
+mkdir -p "${packagingdir}/repo"
 cd "${packagingdir}/repo"
 mkdir conf
 if [ "$sign" = 1 ] ; then
