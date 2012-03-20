@@ -42,7 +42,7 @@ if [ "$flavor" = "" ]; then
 fi
 
 if [ ! -d fait_accompli ]; then
-    cvs update -Pd "${tag:+-r $tag}"
+    cvs update -Pd ${tag:+-r "$tag"}
 fi
 
 gtversion="$(cat fait_accompli/version)"
