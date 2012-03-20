@@ -89,11 +89,11 @@ if [ "$in_chroot" != 1 ]; then
 fi
 
 if [ "$chroot" != "" ]; then
-    schroot -c "$chroot" -d "$packagingdir" -p -- bash $0 $chroot_args
+    schroot -c "$chroot" -d "$packagingdir" -p -- bash -x $0 $chroot_args
 fi
     
 # Download and install the repo definition package
-mkdir "$flavor"
+mkdir -p "$flavor"
 curl -s "$repopkg_url" > "${flavor}/${repopkg_url##*/}"
 sudo dpkg -i "${flavor}/${repopkg_url##*/}"
 if [ "$test_from_bamboo" = 1 ]; then
@@ -106,19 +106,36 @@ sudo aptitude -y install $(curl -s "${artifact_url}/all-packages/all-packages" |
 
 # Set up security if we dont have it done already
 if [ ! -f /etc/grid-security/hostcert.pem -o ! -f $HOME/.globus/usercert.pem ]; then
-    sudo grid-ca-create -force -noint -pass globus
-    sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/lib/globus/simple_ca/cacert.pem)"
-    sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security" -force
-    sudo grid-ca-sign -in "/etc/grid-security/hostcert_request.pem" -force -out "/etc/grid-security/hostcert.pem" -passin pass:globus
+    x="$( (ls -1 $HOME/globus_simple_ca_*.deb | head -1) || true)"
+    if [ -r "$x" ]; then
+        sudo dpkg -i  "$x"
+    else
+        sudo grid-ca-create -force -noint -pass globus
+        sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/lib/globus/simple_ca/cacert.pem)"
+    fi
+    if [ -r "$HOME/hostcert.pem" ] && [ -r "$HOME/hostkey.pem" ]; then
+        sudo cp "$HOME/hostcert.pem" "/etc/grid-security"
+        sudo cp "$HOME/hostkey" "/etc/grid-security"
+    else
+        sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security" -force
+        sudo grid-ca-sign -in "/etc/grid-security/hostcert_request.pem" -force -out "/etc/grid-security/hostcert.pem" -passin pass:globus
+        sudo cp "/etc/grid-security/hostcert.pem" "$HOME/hostcert.pem"
+        sudo cp "/etc/grid-security/hostkey.pem" "$HOME/hostkey.pem"
+    fi
+
     X509_USER_CERT="$HOME/.globus/usercert.pem"
     X509_USER_KEY="$HOME/.globus/userkey.pem"
     export X509_USER_CERT
     export X509_USER_KEY
 
-    grid-cert-request -cn "$(id -un)" -nopw -force
-    sudo grid-ca-sign -in "$HOME/.globus/usercert_request.pem" -out "/tmp/usercert.pem" -passin pass:globus -force
-    cp /tmp/usercert.pem "$X509_USER_CERT"
-    sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
+    if [ -r "$X509_USER_CERT" ] && [ -r "$X509_USER_KEY" ]; then
+        :
+    else
+        grid-cert-request -cn "$(id -un)" -nopw -force
+        sudo grid-ca-sign -in "$HOME/.globus/usercert_request.pem" -out "/tmp/usercert.pem" -passin pass:globus -force
+        cp /tmp/usercert.pem "$X509_USER_CERT"
+        sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
+    fi
     if which invoke-rc.d > /dev/null 2>&1 ; then
         sudo invoke-rc.d globus-gridftp-server restart 
     else
@@ -204,3 +221,8 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
     fi
     cd ..
 done
+# Remove all globus-related packages after testing
+pkgs_to_rm="$( dpkg-query -W -f "\${Package}\t\${Status}\n" "*globus*" "grid-packaging-tools*" "myproxy*" "gsi-openssh*" | awk -F"	" "\$2 ~ /^install/ { print \$1 }" || true)"
+if [ -n "$pkgs_to_rm" ]; then
+    sudo dpkg -P $pkgs_to_rm
+fi
