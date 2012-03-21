@@ -122,7 +122,7 @@ if [ ! -f /etc/grid-security/hostcert.pem -o ! -f $HOME/.globus/usercert.pem ]; 
     fi
     if [ -f "$HOME/hostcert.pem" ] && [ -f "$HOME/hostkey.pem" ]; then
         sudo cp "$HOME/hostcert.pem" "/etc/grid-security"
-        sudo cp "$HOME/hostkey" "/etc/grid-security"
+        sudo cp "$HOME/hostkey.pem" "/etc/grid-security"
     else
         sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security" -force
         sudo grid-ca-sign -in "/etc/grid-security/hostcert_request.pem" -force -out "/etc/grid-security/hostcert.pem" -passin pass:globus
