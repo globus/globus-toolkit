@@ -106,6 +106,10 @@ elif test -f /etc/debian_version; then
     fi
 fi
 
+if ! expr "$installer_url" : ".*.tar.gz"; then
+    installer_url="$installer_url/gt$(cat fait_accompli/version)-all-source-installer.tar.gz"
+fi
+
 installer_file="${installer_url##*/}"
 installer_dir="${installer_file%%.tar.gz}"
 
