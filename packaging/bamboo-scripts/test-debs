@@ -109,6 +109,10 @@ if [ ! -f /etc/grid-security/hostcert.pem -o ! -f $HOME/.globus/usercert.pem ]; 
     x="$( (ls -1 $HOME/globus-simple-ca-*.deb | head -1) || true)"
     if [ -r "$x" ]; then
         sudo dpkg -i  "$x"
+        hash="$(basename $x)"
+        hash="${hash##globus-simple-ca-}"
+        hash="${hash%%_0.0_all.deb}"
+        sudo grid-default-ca -ca "${hash}"
     else
         sudo grid-ca-create -force -noint -pass globus
         sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/lib/globus/simple_ca/cacert.pem)"
@@ -116,7 +120,7 @@ if [ ! -f /etc/grid-security/hostcert.pem -o ! -f $HOME/.globus/usercert.pem ]; 
         # we are in $HOME
         # sudo cp globus-simple-ca-*.deb $HOME
     fi
-    if [ -r "$HOME/hostcert.pem" ] && [ -r "$HOME/hostkey.pem" ]; then
+    if [ -f "$HOME/hostcert.pem" ] && [ -f "$HOME/hostkey.pem" ]; then
         sudo cp "$HOME/hostcert.pem" "/etc/grid-security"
         sudo cp "$HOME/hostkey" "/etc/grid-security"
     else
