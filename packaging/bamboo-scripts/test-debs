@@ -106,14 +106,14 @@ sudo aptitude -y install $(curl -s "${artifact_url}/all-packages/all-packages" |
 
 # Set up security if we dont have it done already
 if [ ! -f /etc/grid-security/hostcert.pem -o ! -f $HOME/.globus/usercert.pem ]; then
-    x="$( (ls -1 $HOME/globus_simple_ca_*.deb | head -1) || true)"
+    x="$( (ls -1 $HOME/globus-simple-ca-*.deb | head -1) || true)"
     if [ -r "$x" ]; then
         sudo dpkg -i  "$x"
     else
         sudo grid-ca-create -force -noint -pass globus
         sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/lib/globus/simple_ca/cacert.pem)"
         sudo grid-ca-package -d -ca "$(sudo openssl x509 -noout -hash -in /var/lib/globus/simple_ca/cacert.pem)"
-        sudo cp globus_simple_ca_*.deb $HOME
+        sudo cp globus-simple-ca_*.deb $HOME
     fi
     if [ -r "$HOME/hostcert.pem" ] && [ -r "$HOME/hostkey.pem" ]; then
         sudo cp "$HOME/hostcert.pem" "/etc/grid-security"
