@@ -196,7 +196,7 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
 			EOF
                 fi
                 dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
-                export CONTACT_STRING="$globus_hostname/jobmanager-$lrm:$dn" 
+                export CONTACT_STRING="$(globus-hostname)/jobmanager-$lrm:$dn" 
                 export CONTACT_LRM="$lrm"
                 make junit || true
                 unset CONTACT_STRING
