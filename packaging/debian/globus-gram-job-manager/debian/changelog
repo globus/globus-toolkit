@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.27-1) unstable; urgency=low
+
+  * GRAM-325: job manager crashes when reading empty condor log
+
+ -- Globus Toolkit <support@globus.org>  Thu, 22 Mar 2012 10:51:22 -0400
+
 globus-gram-job-manager (13.26-1) unstable; urgency=low
 
   * GRAM-232: Incorrect directory permissions cause an infinite loop

@@ -1677,6 +1677,7 @@ globus_gram_job_manager_seg_parse_condor_id(
     globus_gram_job_manager_ref_t *     ref;
     globus_scheduler_event_t *          event;
 
+    *condor_idp = NULL;
     GlobusGramJobManagerLock(request->manager);
     ref = globus_hashtable_lookup(
             &request->manager->request_hash,
@@ -1706,7 +1707,7 @@ globus_gram_job_manager_seg_parse_condor_id(
         &condor_data,
         NULL);
 
-    if (rc != GLOBUS_SUCCESS)
+    if (rc != GLOBUS_SUCCESS || condor_data == NULL)
     {
         goto read_failed;
     }

@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gram-job-manager
 _name = globus_gram_job_manager
-version = 13.26
+version = 13.27
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
