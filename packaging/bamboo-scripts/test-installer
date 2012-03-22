@@ -135,7 +135,7 @@ for flavor in ${flavors}; do
     cd "${installer_dir}";
     ./configure --prefix="${topdir}/globus-location-${flavor}" \
                 --with-flavor="${flavor}"; 
-    make;
+    env ${profileflags} make;
     env ${profileflags} make globus_simple_ca;
     env ${profileflags} make install;
     make distclean
