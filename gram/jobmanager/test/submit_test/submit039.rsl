@@ -1,2 +1,0 @@
-&(executable = /bin/echo)
- (arguments  = "single quotes shouldn't break things")
