@@ -1579,10 +1579,6 @@ main(
             "Error: unable to drop supplemental group privileges.\n");
         return 1;
     }
-    if(!getenv("GLOBUS_CALLBACK_POLLING_THREADS"))
-    {
-        setenv("GLOBUS_CALLBACK_POLLING_THREADS", "1", 1); 
-    }
 
     /* parse and set envs from config file before loading modules */
     rc = globus_i_gfs_config_init_envs(argc, argv);

@@ -82,7 +82,12 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Change directory when the server starts. This will change directory to the dir specified "
     "by the chdir_to option.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"chdir_to", "chdir_to", NULL, "chdir-to", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Directory to chdir to after starting.  Will use / if not set.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "Directory to chdir to after starting.  Will use / if not set.  Note that this is the "
+    "directory of the process, not the client's home directory.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"threads", "threads", NULL, "threads", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+    "Enable threaded operation and set the number of threads.  The default is 0, which " 
+    "is non-threaded.  When threading is required, a thread count of 1 or 2 should "
+    "be sufficient.", NULL, NULL, GLOBUS_TRUE, NULL},
  {"fork", "fork", NULL, "fork", "f", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Server will fork for each new connection.  Disabling this option is only recommended "
     "when debugging. Note that non-forked servers running as 'root' will only "
@@ -172,6 +177,12 @@ static const globus_l_gfs_config_option_t option_list[] =
     NULL, NULL,GLOBUS_FALSE, NULL},
  {"rp_follow_symlinks", "rp_follow_symlinks", NULL, "rp-follow-symlinks", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow following symlinks that lead to restricted paths.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"use_home_dirs", "use_home_dirs", NULL, "use-home-dirs", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
+    "Set the starting directory to the authenticated users home dir.  Disabling this is the "
+    "same as setting '-home-dir /'.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"home_dir", "home_dir", NULL, "home-dir", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Set a path to override the system defined home/starting directory for authenticated "
+    "users. The string '$USER' may be used and will be substituted for the authenticated username.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"acl", "acl", NULL, "acl", "em", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "A comma separated list of ACL or event modules to load.",
     NULL, NULL,GLOBUS_FALSE, NULL}, 
@@ -271,8 +282,6 @@ static const globus_l_gfs_config_option_t option_list[] =
     "on different storage systems. See the manpage for sync() for more information.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"direct_io", "direct", NULL, "direct", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     NULL /* use O_DIRECT */, NULL, NULL, GLOBUS_FALSE, NULL},
- {"use_home_dirs", "use_home_dirs", NULL, "use-home-dirs", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
-    "Set the startup directory to the authenticated users home dir.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"perms", "perms", NULL, "perms", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Set the default permissions for created files. Should be an octal number "
     "such as 0644.  The default is 0644.  Note: If umask is set it will affect "
@@ -447,7 +456,7 @@ static const globus_l_gfs_config_option_t option_list[] =
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
 
 static globus_hashtable_t               option_table;
-
+static int                              globus_l_gfs_num_threads = -1;
 
 
 /* for string options, setting with an int_val of 1 will free the old one */ 
@@ -719,6 +728,41 @@ globus_l_gfs_config_load_envs_from_file(
         {
             p++;
         }
+        
+        /* parse threads option to apply it before common activates */
+        if(*p == 't' && (rc = sscanf(p, "%s", env_option)) == 1 && 
+            globus_l_gfs_num_threads == -1)
+        {
+            if(!strcmp(env_option, "threads"))
+            {
+                p = p + strlen(env_option);;
+                       
+                while(*p && isspace(*p))
+                {
+                    p++;
+                }
+                if(*p == '"')
+                {
+                    rc = sscanf(p, "\"%[^\"]\"", value);
+                }
+                else
+                {
+                    rc = sscanf(p, "%s", value);
+                }  
+                if(rc == 1)
+                {
+                    globus_l_gfs_num_threads = atoi(value);
+                    if(globus_l_gfs_num_threads > 0)
+                    {
+                        setenv("GLOBUS_CALLBACK_POLLING_THREADS", 
+                            strdup(value), 1);
+                        globus_thread_set_model("pthread");
+                    }
+                }
+            }
+            continue;
+        }
+                
         if(*p != '$')
         {
             continue;
@@ -2413,8 +2457,18 @@ globus_i_gfs_config_init_envs(
         if(!strcmp(argp, "config-base-path") && tmp_argv[arg_num + 1])
         {
             base_str = strdup(tmp_argv[arg_num + 1]);
-            arg_num = argc;
         }
+        else if(!strcmp(argp, "threads") && tmp_argv[arg_num + 1])
+        {            
+            globus_l_gfs_num_threads = atoi(tmp_argv[arg_num + 1]);
+            if(globus_l_gfs_num_threads > 0)
+            {
+                setenv("GLOBUS_CALLBACK_POLLING_THREADS", 
+                    strdup(tmp_argv[arg_num + 1]), 1);
+                globus_thread_set_model("pthread");
+            }
+        }
+
     }
     
     if(base_str)
@@ -2522,7 +2576,7 @@ globus_i_gfs_config_init(
          tmp_str);
         free(tmp_str);
     }
-    else if(exec_name[0] == '.' || strchr(exec_name, '/') == NULL)
+    else if(exec_name[0] != '/' && strchr(exec_name, '/') != NULL)
     {
         exec_name = globus_common_create_string(
          "%s/%s", cwd_str, exec_name);

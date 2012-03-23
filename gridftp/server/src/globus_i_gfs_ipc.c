@@ -642,9 +642,13 @@ globus_l_gfs_ipc_request_destroy(
                 {
                     globus_free(cmd_info->from_pathname);
                 }
-                if (cmd_info->chgrp_group != NULL)
+                if(cmd_info->chgrp_group != NULL)
                 {
                     globus_free(cmd_info->chgrp_group);
+                }
+                if(cmd_info->authz_assert != NULL)
+                {
+                    globus_free(cmd_info->authz_assert);
                 }
                 globus_free(cmd_info);
                 break;
@@ -3305,8 +3309,10 @@ globus_l_gfs_ipc_unpack_command(
     GFSDecodeUInt64(buffer, len, cmd_info->cksm_length);
     GFSDecodeString(buffer, len, cmd_info->cksm_alg);
     GFSDecodeUInt32(buffer, len, cmd_info->chmod_mode);
+    GFSDecodeUInt32(buffer, len, cmd_info->utime_time);
     GFSDecodeString(buffer, len, cmd_info->chgrp_group);
     GFSDecodeString(buffer, len, cmd_info->from_pathname);
+    GFSDecodeString(buffer, len, cmd_info->authz_assert);
 
     GlobusGFSDebugExit();
     return cmd_info;
@@ -3346,6 +3352,8 @@ globus_l_gfs_ipc_unpack_transfer(
     GFSDecodeString(buffer, len, trans_info->module_name);
     GFSDecodeString(buffer, len, trans_info->module_args);
     GFSDecodeString(buffer, len, trans_info->list_type);    
+    GFSDecodeUInt32(buffer, len, trans_info->list_depth);
+    GFSDecodeUInt32(buffer, len, trans_info->traversal_options);
     GFSDecodeUInt64(buffer, len, trans_info->partial_offset);
     GFSDecodeUInt64(buffer, len, trans_info->partial_length);
     GFSDecodeUInt64(buffer, len, trans_info->alloc_size);
@@ -5579,6 +5587,8 @@ globus_l_gfs_ipc_transfer_pack(
     GFSEncodeString(buffer, ipc->buffer_size, ptr, trans_info->module_name);
     GFSEncodeString(buffer, ipc->buffer_size, ptr, trans_info->module_args);
     GFSEncodeString(buffer, ipc->buffer_size, ptr, trans_info->list_type);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->list_depth);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->traversal_options);
     GFSEncodeUInt64(buffer, ipc->buffer_size, ptr, trans_info->partial_offset);
     GFSEncodeUInt64(buffer, ipc->buffer_size, ptr, trans_info->partial_length);
     GFSEncodeUInt64(buffer, ipc->buffer_size, ptr, trans_info->alloc_size);
@@ -5865,10 +5875,14 @@ globus_gfs_ipc_request_command(
             buffer, ipc->buffer_size, ptr, cmd_info->cksm_alg);
         GFSEncodeUInt32(
             buffer, ipc->buffer_size, ptr, cmd_info->chmod_mode);
+        GFSEncodeUInt32(
+            buffer, ipc->buffer_size, ptr, cmd_info->utime_time);
         GFSEncodeString(
             buffer, ipc->buffer_size, ptr, cmd_info->chgrp_group);
         GFSEncodeString(
             buffer, ipc->buffer_size, ptr, cmd_info->from_pathname);
+        GFSEncodeString(
+            buffer, ipc->buffer_size, ptr, cmd_info->authz_assert);
 
         msg_size = ptr - buffer;
         /* now that we know size, add it in */
