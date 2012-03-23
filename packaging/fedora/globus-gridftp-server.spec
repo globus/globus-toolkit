@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.7
+Version:	6.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -180,6 +180,13 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Mar 23 2012 Joseph Bester <bester@mcs.anl.gov> - 6.8-1
+- GRIDFTP-227: Add server option to enable threaded operation and set number of threads.
+- GRIDFTP-226: Fix recursed dir listings in split/striped server mode, when recursion wasn't requested.
+- GRIDFTP-224: Add option to set custom client starting/home directory
+- GRIDFTP-221: additional changes towards maintaining backwards compatibility.
+- GRIDFTP-215: add MFMT synonym to SITE UTIME
+
 * Tue Mar 06 2012 Joseph Bester <bester@mcs.anl.gov> - 6.7-1
 - GRIDFTP-164: improve dir streaming stability
 - GRIDFTP-165: correct chunking of MLSC response

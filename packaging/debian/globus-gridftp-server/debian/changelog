@@ -1,3 +1,18 @@
+globus-gridftp-server (6.8-2) unstable; urgency=low
+
+  * GRIDFTP-227: Add server option to enable threaded operation and set number of threads.
+  * GRIDFTP-226: Fix recursed dir listings in split/striped server mode, when recursion wasn't requested.
+  * GRIDFTP-224: Add option to set custom client starting/home directory
+  * GRIDFTP-221: additional changes towards maintaining backwards compatibility.
+  * GRIDFTP-215: add MFMT synonym to SITE UTIME
+
+ -- Globus Toolkit <support@globus.org>  Fri, 23 Mar 2012 11:12:56 -0400
+
+globus-gridftp-server (6.8-1) unstable; urgency=low
+
+
+ -- Globus Toolkit <support@globus.org>  Fri, 23 Mar 2012 11:11:42 -0400
+
 globus-gridftp-server (6.7-1) unstable; urgency=low
 
   * GRIDFTP-164: improve dir streaming stability
