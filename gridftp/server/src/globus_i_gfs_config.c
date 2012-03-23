@@ -166,23 +166,25 @@ static const globus_l_gfs_config_option_t option_list[] =
     "A comma separated list of client commands that will be disabled.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"cas", "cas", NULL, "cas", "authz-callouts", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Enable the GSI authorization callout framework, for callouts such as CAS.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"restrict_paths", "restrict_paths", NULL, "restrict-paths", "rp", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "A comma separated list of full paths that clients may access.  Each path may be prefixed by R and/or W, denoting "
-    "read or write access, otherwise full access is granted.  If a given path is a directory, "
-    "all contents and subdirectories will be given the same access.  Order of paths does not matter -- "
-    "the permissions on the longest matching path will apply.  The special character '~' will be "
-    "replaced by the authenticated user's home directory.  Note that if the authenticated user's "
-    "home directory is not accessible, the home directory and starting path will be set to '/'.  "
-    "By default all paths are allowed, and access control is handled by the OS.", 
-    NULL, NULL,GLOBUS_FALSE, NULL},
- {"rp_follow_symlinks", "rp_follow_symlinks", NULL, "rp-follow-symlinks", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Allow following symlinks that lead to restricted paths.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"use_home_dirs", "use_home_dirs", NULL, "use-home-dirs", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Set the starting directory to the authenticated users home dir.  Disabling this is the "
     "same as setting '-home-dir /'.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"home_dir", "home_dir", NULL, "home-dir", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Set a path to override the system defined home/starting directory for authenticated "
-    "users. The string '$USER' may be used and will be substituted for the authenticated username.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "users.  The special variable strings '$USER' and '$HOME' may be used.  The authenticated "
+    "username will be substituted for $USER, and the user's real home dir will be substituted for "
+    "$HOME.  Be sure to escape the $ character if using these on the command line.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"restrict_paths", "restrict_paths", NULL, "restrict-paths", "rp", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "A comma separated list of full paths that clients may access.  Each path may be prefixed by R and/or W, denoting "
+    "read or write access, otherwise full access is granted.  If a given path is a directory, "
+    "all contents and subdirectories will be given the same access.  Order of paths does not matter -- "
+    "the permissions on the longest matching path will apply.  The special character '~' will be "
+    "replaced by the authenticated user's home directory, or the -home-dir option, if used. "
+    "Note that if the home directory is not accessible, ~ will be set to '/'.  "
+    "By default all paths are allowed, and access control is handled by the OS.", 
+    NULL, NULL,GLOBUS_FALSE, NULL},
+ {"rp_follow_symlinks", "rp_follow_symlinks", NULL, "rp-follow-symlinks", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Allow following symlinks that lead to restricted paths.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"acl", "acl", NULL, "acl", "em", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "A comma separated list of ACL or event modules to load.",
     NULL, NULL,GLOBUS_FALSE, NULL}, 

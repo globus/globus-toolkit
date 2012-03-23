@@ -138,6 +138,7 @@ typedef struct
     char *                              username;
     char *                              real_username;
     char *                              home_dir;
+    char *                              true_home;
     uid_t                               uid;
     int                                 gid_count;
     gid_t *                             gid_array;
@@ -925,6 +926,10 @@ globus_l_gfs_free_session_handle(
     if(session_handle->home_dir)
     {
         globus_free(session_handle->home_dir);
+    }
+    if(session_handle->true_home)
+    {
+        globus_free(session_handle->true_home);
     }
     if(session_handle->gid_array)
     {
@@ -1854,9 +1859,23 @@ globus_l_gfs_data_update_var_path(
         var += 5;
         new_path = globus_common_create_string(
             "%s%s%s", path, session_handle->username, var);
+        globus_free(path);
+        path = new_path;
+    }
+    if((var = strstr(path, "$HOME")) != NULL)
+    {
+        *var = '\0';
+        var += 5;
+        new_path = globus_common_create_string(
+            "%s%s%s", path, session_handle->true_home, var);
+        globus_free(path);
+        path = new_path;
     }
     
-    globus_free(path);
+    if(path != new_path)
+    {
+        globus_free(path);
+    }
     
     return new_path;
 }    
@@ -2306,13 +2325,17 @@ globus_l_gfs_data_authorize(
         op->session_handle->gid_count * sizeof(gid_t));
     getgroups(op->session_handle->gid_count, op->session_handle->gid_array);
 
-    op->session_handle->home_dir = pwent->pw_dir;
-    globus_l_gfs_data_update_restricted_paths(op->session_handle);
-    
+    if(pwent && pwent->pw_dir)
+    {
+        op->session_handle->true_home = globus_libc_strdup(pwent->pw_dir);
+    }
+    else
+    {
+        op->session_handle->true_home = globus_libc_strdup("/");
+    }
+
     custom_home_dir = globus_i_gfs_config_string("home_dir");
-    if(custom_home_dir
-        && (globus_i_gfs_data_check_path(op->session_handle,
-            custom_home_dir, NULL, GFS_L_LIST) == GLOBUS_SUCCESS))
+    if(custom_home_dir)
     {
         char *                          var_dir;
         op->session_handle->username = session_info->username;
@@ -2322,17 +2345,28 @@ globus_l_gfs_data_authorize(
             
         op->session_handle->home_dir = var_dir ? 
             var_dir : globus_libc_strdup(custom_home_dir);
-    }    
-    else if(globus_i_gfs_config_bool("use_home_dirs") && pwent->pw_dir != NULL 
-        && (globus_i_gfs_data_check_path(op->session_handle,
-            pwent->pw_dir, NULL, GFS_L_LIST) == GLOBUS_SUCCESS))
-    {
-        op->session_handle->home_dir = strdup(pwent->pw_dir);
     }
     else
     {
-        op->session_handle->home_dir = strdup("/");
+        op->session_handle->home_dir = 
+            globus_libc_strdup(op->session_handle->true_home);
     }
+    
+    globus_l_gfs_data_update_restricted_paths(op->session_handle);
+    
+
+    if(!globus_i_gfs_config_bool("use_home_dirs") || 
+        op->session_handle->home_dir == NULL ||
+        globus_i_gfs_data_check_path(op->session_handle,
+           op->session_handle->home_dir, NULL, GFS_L_LIST) != GLOBUS_SUCCESS)
+    {
+        if(op->session_handle->home_dir)
+        {
+            globus_free(op->session_handle->home_dir);
+        }
+        op->session_handle->home_dir = strdup("/");
+    }  
+
     if(op->session_handle->real_username == NULL)
     {
         op->session_handle->real_username = globus_libc_strdup(pwent->pw_name);
@@ -7765,29 +7799,47 @@ globus_i_gfs_data_session_start(
         getgroups(op->session_handle->gid_count, op->session_handle->gid_array);
 
         pwent = getpwuid(op->session_handle->uid);
+        if(pwent && pwent->pw_dir)
+        {
+            op->session_handle->true_home = globus_libc_strdup(pwent->pw_dir);
+        }
+        else
+        {
+            op->session_handle->true_home = globus_libc_strdup("/");
+        }
+    
         custom_home_dir = globus_i_gfs_config_string("home_dir");
-        if(custom_home_dir
-            && (globus_i_gfs_data_check_path(op->session_handle,
-                custom_home_dir, NULL, GFS_L_LIST) == GLOBUS_SUCCESS))
+        if(custom_home_dir)
         {
             char *                          var_dir;
-            
+            op->session_handle->username = session_info->username;
+    
             var_dir = globus_l_gfs_data_update_var_path(
                 op->session_handle, custom_home_dir);
                 
             op->session_handle->home_dir = var_dir ? 
                 var_dir : globus_libc_strdup(custom_home_dir);
-        }    
-        else if(globus_i_gfs_config_bool("use_home_dirs") && pwent->pw_dir != NULL
-            && (globus_i_gfs_data_check_path(op->session_handle,
-                pwent->pw_dir, NULL, GFS_L_LIST) == GLOBUS_SUCCESS))
-        {
-            op->session_handle->home_dir = strdup(pwent->pw_dir);
         }
         else
         {
-             op->session_handle->home_dir = strdup("/");
+            op->session_handle->home_dir = 
+                globus_libc_strdup(op->session_handle->true_home);
         }
+        
+        globus_l_gfs_data_update_restricted_paths(op->session_handle);
+        
+        if(!globus_i_gfs_config_bool("use_home_dirs") || 
+            op->session_handle->home_dir == NULL ||
+            globus_i_gfs_data_check_path(op->session_handle,
+               op->session_handle->home_dir, NULL, GFS_L_LIST) != GLOBUS_SUCCESS)
+        {
+            if(op->session_handle->home_dir)
+            {
+                globus_free(op->session_handle->home_dir);
+            }
+            op->session_handle->home_dir = strdup("/");
+        }  
+
         globus_l_gfs_data_auth_init_cb(
             NULL, GFS_ACL_ACTION_INIT, op, GLOBUS_SUCCESS);
     }
