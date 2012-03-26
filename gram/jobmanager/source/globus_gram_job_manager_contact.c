@@ -1530,7 +1530,15 @@ globus_l_gram_callback_reply(
                 &references_to_restart,
                 references_to_restart);
 
-        GlobusTimeReltimeSet(delay, request->two_phase_commit, 0);
+        GlobusGramJobManagerRequestLock(request);
+        if (request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+        {
+            GlobusTimeReltimeSet(delay, request->two_phase_commit, 0);
+        }
+        else
+        {
+            GlobusTimeReltimeSet(delay, 0, 0);
+        }
 
         rc = globus_gram_job_manager_state_machine_register(
                 request->manager,
@@ -1541,6 +1549,7 @@ globus_l_gram_callback_reply(
                manager,
                request->job_contact_path,
                "Job state callbacks");
+        GlobusGramJobManagerRequestUnlock(request);
     }
 }
 /* globus_l_gram_callback_reply() */
