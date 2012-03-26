@@ -2138,8 +2138,6 @@ globus_gram_job_manager_stop_all_jobs(
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
             request->unsent_status_change = GLOBUS_TRUE;
             break;

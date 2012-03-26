@@ -621,6 +621,7 @@ globus_gram_job_manager_gsi_update_credential(
             goto write_manager_cred_failed;
         }
         set_credential = GLOBUS_TRUE;
+        manager->stop = GLOBUS_FALSE;
     }
 
     if (request)
