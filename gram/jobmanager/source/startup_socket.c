@@ -1603,14 +1603,26 @@ globus_l_gram_startup_socket_callback(
             goto ackfailed;
         }
 
-        major_status = gss_import_cred(
-                &minor_status,
-                &cred,
-                GSS_C_NO_OID,
-                1,
-                &cred_buffer,
-                0,
-                NULL);
+        {
+            char * p;
+            if (cred_buffer.length > GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+
+                goto ackfailed;
+            }
+            p = cred_buffer.value;
+            *(p + cred_buffer.length) = 0;
+
+            major_status = gss_import_cred(
+                    &minor_status,
+                    &cred,
+                    GSS_C_NO_OID,
+                    1,
+                    &cred_buffer,
+                    0,
+                    NULL);
+        }
 
         {
             globus_l_remove_proxy(&cred_buffer);
