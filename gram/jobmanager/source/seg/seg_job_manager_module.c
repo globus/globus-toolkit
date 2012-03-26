@@ -155,7 +155,6 @@ globus_l_job_manager_module_activate(void)
     globus_reltime_t                    delay;
     globus_result_t                     result;
     char *                              scheduler;
-    char                                log_path_key[64];
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if (rc != GLOBUS_SUCCESS)
