@@ -241,7 +241,7 @@ typedef globus_gridftp_server_control_stat_t    globus_gfs_stat_t;
  * Internal operation info.  This handle is passed with the info structs
  * Its data should not be accessed.
  */
-typedef struct globus_l_gfs_data_op_info_s *  globus_gfs_op_info_t;
+typedef struct globus_i_gfs_op_info_s *  globus_gfs_op_info_t;
 
 /*
  *  globus_gfs_data_finished_info_t

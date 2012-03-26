@@ -282,10 +282,10 @@ typedef struct globus_l_gfs_data_operation_s
     globus_bool_t                       finished_delayed;
 } globus_l_gfs_data_operation_t;
 
-typedef struct globus_l_gfs_data_op_info_s
+typedef struct globus_i_gfs_op_info_s
 {
     
-} globus_l_gfs_data_op_info_t;
+} globus_i_gfs_op_info_t;
 
 typedef struct
 {
@@ -1983,8 +1983,9 @@ globus_l_gfs_data_authorize(
 
     auth_level = globus_i_gfs_config_int("auth_level");
     pw_file = (char *) globus_i_gfs_config_string("pw_file");
-    /* if there is a del cred we are using gsi, look it up in the gridmap */
-    if(session_info->del_cred != NULL)
+    /* if there is a subject or del cred we are using gsi, 
+        look it up in the gridmap */
+    if(session_info->subject != NULL || session_info->del_cred != NULL)
     {
         if(!(auth_level & GLOBUS_L_GFS_AUTH_NOGRIDMAP))
         {
