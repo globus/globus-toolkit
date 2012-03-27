@@ -1,3 +1,9 @@
+globus-gridftp-server (6.9-1) unstable; urgency=low
+
+  * GRIDFTP-228: Don't require delegated cred on initial log in.
+
+ -- Globus Toolkit <support@globus.org>  Tue, 27 Mar 2012 00:16:36 -0500
+
 globus-gridftp-server (6.8-2) unstable; urgency=low
 
   * GRIDFTP-227: Add server option to enable threaded operation and set number of threads.
