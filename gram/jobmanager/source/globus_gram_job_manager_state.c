@@ -64,11 +64,11 @@ const char *                     globus_i_gram_job_manager_state_strings[] =
     "GLOBUS_GRAM_JOB_MANAGER_STATE_STOP",
     "GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1",
     "GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2",
-    "GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH",
+    NULL, /*"GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH ,*/
     "GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT",
     "GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1",
     "GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2",
-    "GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH"
+    NULL /*"GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH" */
 };
 
 static
@@ -588,35 +588,6 @@ globus_l_gram_job_manager_state_machine(
                     request,
                     query);
         }
-        else if(query->type == GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH)
-        {
-            if (request->jobmanager_state ==
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1)
-            {
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH;
-            }
-            else
-            {
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH;
-            }
-            rc = globus_gram_protocol_accept_delegation(
-                    query->handle,
-                    GSS_C_NO_OID_SET,
-                    GSS_C_NO_BUFFER_SET,
-                    GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
-                        GSS_C_GLOBUS_SSL_COMPATIBLE,
-                    0,
-                    globus_gram_job_manager_query_delegation_callback,
-                    request);
-
-            if(rc == GLOBUS_SUCCESS)
-            {
-                event_registered = GLOBUS_TRUE;
-            }
-            break;
-        }
         if(rc == GLOBUS_SUCCESS)
         {
             request->jobmanager_state = next_state;
@@ -699,47 +670,6 @@ globus_l_gram_job_manager_state_machine(
         }
         break;
     
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
-        query = globus_fifo_peek(&request->pending_queries);
-
-        globus_assert(query->type == GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH);
-
-        if (request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH)
-        {
-            request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
-        }
-        else if (request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH)
-        {
-            request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2;
-        }
-
-        if(query->delegated_credential != GSS_C_NO_CREDENTIAL)
-        {
-            /*
-             * We got a new credential... update our listener and
-             * store it on disk
-             */
-            rc = globus_gram_job_manager_gsi_update_credential(
-                    request->manager,
-                    request,
-                    query->delegated_credential);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                break;
-            }
-        }
-        else
-        {
-            query->failure_code =
-                GLOBUS_GRAM_PROTOCOL_ERROR_DELEGATION_FAILED;
-        }
-        break;
-
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
         if(request->unsent_status_change)

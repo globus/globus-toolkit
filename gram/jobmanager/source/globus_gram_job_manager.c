@@ -1770,23 +1770,7 @@ globus_gram_job_manager_set_status(
             (void *) key);
     if (ref == NULL)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND,
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                "event=gram.set_job_status.end "
-                "level=WARN "
-                "gramid=%s "
-                "state=%d "
-                "failure_code=%d "
-                "status=%d "
-                "reason=\"%s\" "
-                "\n",
-                key,
-                state,
-                failure_code,
-                -rc,
-                globus_gram_protocol_error_string(rc));
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
 
         goto not_found;
     }
@@ -2138,8 +2122,6 @@ globus_gram_job_manager_stop_all_jobs(
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
             request->unsent_status_change = GLOBUS_TRUE;
             break;
