@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.27
+Version:	13.28
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -173,7 +173,13 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Thu Mar 22 2012 Joe Bester <jbester@mactop2.local> - 13.27-1
+* Tue Mar 27 2012 Joseph Bester <bester@mcs.anl.gov> - 13.28-1
+- GRAM-321: globus-job-manager emits warning about all jobs on restart
+- GRAM-323: RVF parser leaks file descriptors
+- GRAM-326: Can't renew job proxy after GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT error
+- GRAM-328: job manager waits for two-phase delay when stopping
+
+* Thu Mar 22 2012 Joseph Bester <jbester@mcs.anl.gov> - 13.27-1
 - GRAM-325: job manager crashes when reading empty condor log
 
 * Wed Mar 14 2012 Joseph Bester <bester@mcs.anl.gov> - 13.26-1

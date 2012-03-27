@@ -1,3 +1,12 @@
+globus-gram-job-manager (13.28-1) unstable; urgency=low
+
+  * - GRAM-321: globus-job-manager emits warning about all jobs on restart
+  * - GRAM-323: RVF parser leaks file descriptors
+  * - GRAM-326: Can't renew job proxy after GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT error
+  * - GRAM-328: job manager waits for two-phase delay when stopping
+
+ -- Globus Toolkit <support@globus.org>  Tue, 27 Mar 2012 10:29:09 -0400
+
 globus-gram-job-manager (13.27-1) unstable; urgency=low
 
   * GRAM-325: job manager crashes when reading empty condor log
