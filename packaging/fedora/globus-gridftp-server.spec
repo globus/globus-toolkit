@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.8
+Version:	6.9
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -180,6 +180,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Mar 27 2012  <mlink@mcs.anl.gov> - 6.9-1
+- GRIDFTP-228: Don't require delegated cred on initial log in.
+
 * Fri Mar 23 2012 Joseph Bester <bester@mcs.anl.gov> - 6.8-1
 - GRIDFTP-227: Add server option to enable threaded operation and set number of threads.
 - GRIDFTP-226: Fix recursed dir listings in split/striped server mode, when recursion wasn't requested.
