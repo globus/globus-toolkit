@@ -90,10 +90,6 @@ globus_l_gram_job_manager_insert_default_rsl(
                                         when);
 
 static
-globus_rvf_record_t *
-globus_l_gram_job_manager_validation_record_new(void);
-
-static
 void
 globus_l_gram_job_manager_validation_record_free(
     globus_rvf_record_t *               record);
@@ -885,28 +881,6 @@ globus_l_gram_job_manager_attribute_exists(
     return GLOBUS_FALSE;
 }
 /* globus_l_gram_job_manager_attribute_exists() */
-
-static
-globus_rvf_record_t *
-globus_l_gram_job_manager_validation_record_new(void)
-{
-    globus_rvf_record_t *               tmp;
-
-    tmp = malloc(
-            sizeof(globus_rvf_record_t));
-
-    tmp->attribute = NULL;
-    tmp->description = NULL;
-    tmp->default_value = NULL;
-    tmp->enumerated_values = NULL;
-    tmp->required_when = -1;
-    tmp->default_when = -1;
-    tmp->valid_when = -1;
-    tmp->publishable = GLOBUS_TRUE;
-
-    return tmp;
-}
-/* globus_l_gram_job_manager_validation_record_new() */
 
 /**
  * Free a validation record
