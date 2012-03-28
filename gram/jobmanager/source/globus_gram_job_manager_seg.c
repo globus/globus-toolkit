@@ -1745,6 +1745,7 @@ globus_gram_job_manager_seg_parse_condor_id(
             int count;
             int i;
             char *p;
+            size_t subjob_len;
 
             rc = globus_gram_job_manager_rsl_attribute_get_int_value(
                 request->rsl,
@@ -1756,7 +1757,12 @@ globus_gram_job_manager_seg_parse_condor_id(
             }
             sscanf(event->job_id, "%d", &cluster);
 
-            condor_id = malloc(12 * count + 1);
+            subjob_len = globus_libc_printf_length(
+                    "%03d.%03d.%03d,",
+                    cluster,
+                    count,
+                    0);
+            condor_id = malloc(subjob_len * count + 1);
             if (condor_id == NULL)
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -1767,9 +1773,10 @@ globus_gram_job_manager_seg_parse_condor_id(
 
             for (i = 0; i < count; i++)
             {
-                sprintf(p, "%03d.%03d.%03d,",
+                int chars;
+                chars = sprintf(p, "%03d.%03d.%03d,",
                         cluster, i, 0);
-                p += 12;
+                p += chars;
             }
             *(p-1) = 0;
             *condor_idp = condor_id;
