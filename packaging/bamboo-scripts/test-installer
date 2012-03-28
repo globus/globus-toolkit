@@ -20,8 +20,9 @@ in_chroot=0
 flavors=""
 tag=""
 profileflags=""
+configure_options=""
 
-while getopts "ic:r:f:t:p" i; do
+while getopts "ic:r:f:t:po:" i; do
     case "$i" in
         i)
             in_chroot=1
@@ -44,6 +45,9 @@ while getopts "ic:r:f:t:p" i; do
         p)
             profile=1
             profileflags="CFLAGS=--coverage LDFLAGS=--coverage"
+            ;;
+        o)
+            configure_options="$OPTARG"
             ;;
     esac
 done
@@ -134,7 +138,8 @@ fi
 for flavor in ${flavors}; do
     cd "${installer_dir}";
     ./configure --prefix="${topdir}/globus-location-${flavor}" \
-                --with-flavor="${flavor}"; 
+                --with-flavor="${flavor}" \
+                ${configure_options} ;
     env ${profileflags} make;
     env ${profileflags} make globus_simple_ca;
     env ${profileflags} make install;
