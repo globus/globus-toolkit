@@ -138,7 +138,7 @@ BuildGSISSHGPT()
   cp -r openssh.gpt openssh.build
   cd openssh.build
     echo Building GSI-OpenSSH GPT package from CVS to $GLOBUS_LOCATION
-    rm -f gsi_openssh-*.tar.gz
+    rm -f gsi_openssh-*.tar.gz gsi_openssh-*-src
     ./make_gpt_dist
     gpt-build -force -verbose gsi_openssh-*.tar.gz $GLOBUS_FLAVOR_NAME \
       GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
