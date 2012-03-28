@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.29-1) unstable; urgency=low
+
+  * GRAM-330: Buffer overflow in globus_gram_job_manager_seg_parse_condor_id
+
+ -- Globus Toolkit <support@globus.org>  Wed, 28 Mar 2012 11:30:45 -0400
+
 globus-gram-job-manager (13.28-1) unstable; urgency=low
 
   * - GRAM-321: globus-job-manager emits warning about all jobs on restart
