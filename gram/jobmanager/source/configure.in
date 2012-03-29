@@ -23,7 +23,7 @@ xml_catalog_path="notset"
 AC_ARG_WITH(
     xml-catalog,
     AC_HELP_STRING(
-        [--with-xml-catalog-path=PATH],
+        [--with-xml-catalog=PATH],
         [Look for XML catalog in PATH]),
     [xml_catalog_path="$withval"],
     [xml_catalog_path="notset"])

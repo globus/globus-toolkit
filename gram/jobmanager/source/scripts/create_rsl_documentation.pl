@@ -74,14 +74,19 @@ EOF
     foreach(sort keys %values)
     {
 	my $shortname;
+	my $default_value = "";
 	$shortname = lc($_);
 	$shortname =~ s/_//g;
 	next if($values{$_}{Publish} eq "false");
+        if (exists $values{$_}{Default})
+        {
+            $default_value = " [Default: <literal>" . $values{$_}{Default} . "</literal>]";
+        }
 	print <<EOF;
 
     <varlistentry>
         <term><literal>$_</literal></term>
-        <listitem><simpara>$values{$_}{Description}</simpara></listitem>
+        <listitem><simpara>$values{$_}{Description}$default_value</simpara></listitem>
     </varlistentry>
 EOF
     }
