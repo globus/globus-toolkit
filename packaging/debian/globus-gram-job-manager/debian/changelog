@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.30-1) unstable; urgency=low
+
+  * GRAM-327: list default values for RSL attributes
+
+ -- Globus Toolkit <support@globus.org>  Thu, 29 Mar 2012 10:16:43 -0400
+
 globus-gram-job-manager (13.29-1) unstable; urgency=low
 
   * GRAM-330: Buffer overflow in globus_gram_job_manager_seg_parse_condor_id

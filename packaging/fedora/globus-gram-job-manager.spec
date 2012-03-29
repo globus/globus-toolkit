@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.29
+Version:	13.30
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -173,6 +173,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Mar 29 2012 Joseph Bester <bester@mcs.anl.gov> - 13.30-1
+- GRAM-327: list default values for RSL attributes
+
 * Wed Mar 28 2012 Joseph Bester <jbester@mcs.anl.gov> - 13.29-1
 - GRAM-330: Buffer overflow in globus_gram_job_manager_seg_parse_condor_id
 
