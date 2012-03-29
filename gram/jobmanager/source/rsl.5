@@ -2,12 +2,12 @@
 .\"     Title: rsl
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
-.\"      Date: 01/31/2012
-.\"    Manual: University of Chicago
+.\"      Date: 03/29/2012
+.\"    Manual: GRAM5 Commands
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "RSL" "5" "01/31/2012" "University of Chicago" "University of Chicago"
+.TH "RSL" "5" "03/29/2012" "University of Chicago" "GRAM5 Commands"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -39,17 +39,20 @@ The command line arguments for the executable\&. Use quotes, if a space is requi
 .PP
 count
 .RS 4
-The number of executions of the executable\&.
+The number of executions of the executable\&. [Default:
+1]
 .RE
 .PP
 directory
 .RS 4
-Specifies the path of the directory the jobmanager will use as the default directory for the requested job\&.
+Specifies the path of the directory the jobmanager will use as the default directory for the requested job\&. [Default:
+$(HOME)]
 .RE
 .PP
 dry_run
 .RS 4
-If dryrun = yes then the jobmanager will not submit the job for execution and will return success\&.
+If dryrun = yes then the jobmanager will not submit the job for execution and will return success\&. [Default:
+no]
 .RE
 .PP
 environment
@@ -64,7 +67,8 @@ The name of the executable file to run on the remote machine\&. If the value is 
 .PP
 expiration
 .RS 4
-Time (in seconds) after a a job fails to receive a two\-phase commit end signal before it is cleaned up\&.
+Time (in seconds) after a a job fails to receive a two\-phase commit end signal before it is cleaned up\&. [Default:
+14400]
 .RE
 .PP
 file_clean_up
@@ -94,7 +98,8 @@ Specifies location to override the GASS cache location\&.
 .PP
 gram_my_job
 .RS 4
-Obsolete and ignored\&.
+Obsolete and ignored\&. [Default:
+collective]
 .RE
 .PP
 host_count
@@ -104,12 +109,14 @@ Only applies to clusters of SMP computers, such as newer IBM SP systems\&. Defin
 .PP
 job_type
 .RS 4
-This specifies how the jobmanager should start the job\&. Possible values are single (even if the count > 1, only start 1 process or thread), multiple (start count processes or threads), mpi (use the appropriate method (e\&.g\&. mpirun) to start a program compiled with a vendor\-provided MPI library\&. Program is started with count nodes), and condor (starts condor jobs in the "condor" universe\&.)
+This specifies how the jobmanager should start the job\&. Possible values are single (even if the count > 1, only start 1 process or thread), multiple (start count processes or threads), mpi (use the appropriate method (e\&.g\&. mpirun) to start a program compiled with a vendor\-provided MPI library\&. Program is started with count nodes), and condor (starts condor jobs in the "condor" universe\&.) [Default:
+multiple]
 .RE
 .PP
 library_path
 .RS 4
-Specifies a list of paths to be appended to the system\-specific library path environment variables\&.
+Specifies a list of paths to be appended to the system\-specific library path environment variables\&. [Default:
+$(GLOBUS_LOCATION)/lib]
 .RE
 .PP
 loglevel
@@ -184,7 +191,8 @@ Causes the jobmanager to save it\*(Aqs job state information to a persistent fil
 .PP
 savejobdescription
 .RS 4
-Save a copy of the job description to $HOME
+Save a copy of the job description to $HOME [Default:
+no]
 .RE
 .PP
 scratch_dir
@@ -194,7 +202,8 @@ Specifies the location to create a scratch subdirectory in\&. A SCRATCH_DIRECTOR
 .PP
 stderr
 .RS 4
-The name of the remote file to store the standard error from the job\&. If the value is a GASS URL, the standard error from the job is transferred dynamically during the execution of the job\&. There are two accepted forms of this value\&. It can consist of a single destination: stderr = URL, or a sequence of destinations: stderr = (DESTINATION) (DESTINATION)\&. In the latter case, the DESTINATION may itself be a URL or a sequence of an x\-gass\-cache URL followed by a cache tag\&."
+The name of the remote file to store the standard error from the job\&. If the value is a GASS URL, the standard error from the job is transferred dynamically during the execution of the job\&. There are two accepted forms of this value\&. It can consist of a single destination: stderr = URL, or a sequence of destinations: stderr = (DESTINATION) (DESTINATION)\&. In the latter case, the DESTINATION may itself be a URL or a sequence of an x\-gass\-cache URL followed by a cache tag\&. [Default:
+/dev/null]
 .RE
 .PP
 stderr_position
@@ -204,12 +213,14 @@ Specifies where in the file remote standard error streaming should be restarted 
 .PP
 stdin
 .RS 4
-The name of the file to be used as standard input for the executable on the remote machine\&. If the value is a GASS URL, the file is transferred to the remote gass cache before executing the job and removed after the job has terminated\&.
+The name of the file to be used as standard input for the executable on the remote machine\&. If the value is a GASS URL, the file is transferred to the remote gass cache before executing the job and removed after the job has terminated\&. [Default:
+/dev/null]
 .RE
 .PP
 stdout
 .RS 4
-The name of the remote file to store the standard output from the job\&. If the value is a GASS URL, the standard output from the job is transferred dynamically during the execution of the job\&. There are two accepted forms of this value\&. It can consist of a single destination: stdout = URL, or a sequence of destinations: stdout = (DESTINATION) (DESTINATION)\&. In the latter case, the DESTINATION may itself be a URL or a sequence of an x\-gass\-cache URL followed by a cache tag\&.
+The name of the remote file to store the standard output from the job\&. If the value is a GASS URL, the standard output from the job is transferred dynamically during the execution of the job\&. There are two accepted forms of this value\&. It can consist of a single destination: stdout = URL, or a sequence of destinations: stdout = (DESTINATION) (DESTINATION)\&. In the latter case, the DESTINATION may itself be a URL or a sequence of an x\-gass\-cache URL followed by a cache tag\&. [Default:
+/dev/null]
 .RE
 .PP
 stdout_position
