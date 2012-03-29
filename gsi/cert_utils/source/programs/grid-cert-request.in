@@ -77,6 +77,14 @@ elif [ -r "${sysconfdir}/globus-user-ssl.conf" ] &&
     else
         trusted_certs_dir="${datadir}/certificates"
     fi
+else
+    secconfdir="/etc/grid-security"
+    if test ! -z "${X509_CERT_DIR}" ; then
+        trusted_certs_dir="${X509_CERT_DIR}"
+    else
+        trusted_certs_dir="${secconfdir}/certificates"
+    fi
+
 fi
 
 #
