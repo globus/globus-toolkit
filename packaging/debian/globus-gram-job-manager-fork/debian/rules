@@ -60,6 +60,7 @@ configure-stamp: $(QUILT_STAMPFN)
 	   --with-flavor=$(flavor) \
 	   --enable-doxygen \
 	   --docdir='$${datadir}/doc/$(name)' \
+           --with-globus-state-dir='/var/lib/globus' \
 	   --disable-static
 
 	touch $@
