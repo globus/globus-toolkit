@@ -31,7 +31,7 @@ case "$arch" in
         exit 1
         ;;
 esac
-while getopts "ic:r:a:l:bt:" i; do
+while getopts "ic:r:a:l:bt:q" i; do
     case "$i" in
         i)
             in_chroot=1
@@ -59,6 +59,10 @@ while getopts "ic:r:a:l:bt:" i; do
             test_from_bamboo=1
             chroot_args="${chroot_args:+"$chroot_args "}-b"
             ;;
+        q)
+            quick=1
+            chroot_args="${chroot_args:+"$chroot_args "}-q"
+            ;;
     esac
 done
 shift $(($OPTIND - 1))
@@ -82,10 +86,12 @@ if [ -n "$pkgs_to_rm" ]; then
     sudo dpkg -P $pkgs_to_rm
 fi
 
+if [ "$quick" != 1 ]; then
 # Create source packages for the tests
-if [ "$in_chroot" != 1 ]; then
-    ./make-packages.pl ${tag:+-t "$tag"} -a --deps -deporder -bundles=globus-data-management-test,globus-resource-management-test \
-        -flavor=${flavor} -skipbundle
+    if [ "$in_chroot" != 1 ]; then
+        ./make-packages.pl ${tag:+-t "$tag"} -a --deps -deporder -bundles=globus-data-management-test,globus-resource-management-test \
+            -flavor=${flavor} -skipbundle
+    fi
 fi
 
 if [ "$chroot" != "" ]; then
@@ -100,56 +106,70 @@ if [ "$test_from_bamboo" = 1 ]; then
     sudo sed -i /etc/apt/sources.list.d/globus.list -e "s|http://www.globus.org/ftppub/gt[0-9]\{1,\}/[0-9]\{1,\}\.[0-9]\{1,\}/[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}/[a-z]\{1,\}/deb/[a-z]\{1,\}/[0-9\.]\{1,\}|${artifact_url}/repo|"
 fi
 sudo aptitude -y update
+sudo mkdir -p /etc/grid-security/certificates
 
 # Install the binaries that we will test
 sudo aptitude -y install $(curl -s "${artifact_url}/all-packages/all-packages" | sed -e /globus-repository/d -e "s/_.*//" | grep -Ev 'globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge' | sort -u)
 
-# Set up security if we dont have it done already
-if [ ! -f /etc/grid-security/hostcert.pem -o ! -f $HOME/.globus/usercert.pem ]; then
-    x="$( (ls -1 $HOME/globus-simple-ca-*.deb | head -1) || true)"
-    if [ -r "$x" ]; then
-        sudo dpkg -i  "$x"
-        hash="$(basename $x)"
-        hash="${hash##globus-simple-ca-}"
-        hash="${hash%%_0.0_all.deb}"
-        sudo grid-default-ca -ca "${hash}"
-    else
-        sudo grid-ca-create -force -noint -pass globus
-        sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/lib/globus/simple_ca/cacert.pem)"
-        sudo grid-ca-package -d -ca "$(sudo openssl x509 -noout -hash -in /var/lib/globus/simple_ca/cacert.pem)"
-        # we are in $HOME
-        # sudo cp globus-simple-ca-*.deb $HOME
-    fi
-    if [ -f "$HOME/hostcert.pem" ] && [ -f "$HOME/hostkey.pem" ]; then
-        sudo cp "$HOME/hostcert.pem" "/etc/grid-security"
-        sudo cp "$HOME/hostkey.pem" "/etc/grid-security"
-    else
-        sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security" -force
-        sudo grid-ca-sign -in "/etc/grid-security/hostcert_request.pem" -force -out "/etc/grid-security/hostcert.pem" -passin pass:globus
-        sudo cp "/etc/grid-security/hostcert.pem" "$HOME/hostcert.pem"
-        sudo cp "/etc/grid-security/hostkey.pem" "$HOME/hostkey.pem"
-    fi
+SIMPLE_CA_DIR="$HOME/bamboo-simple-ca"
 
-    X509_USER_CERT="$HOME/.globus/usercert.pem"
-    X509_USER_KEY="$HOME/.globus/userkey.pem"
-    export X509_USER_CERT
-    export X509_USER_KEY
-
-    if [ -r "$X509_USER_CERT" ] && [ -r "$X509_USER_KEY" ]; then
-        :
-    else
-        grid-cert-request -cn "$(id -un)" -nopw -force
-        sudo grid-ca-sign -in "$HOME/.globus/usercert_request.pem" -out "/tmp/usercert.pem" -passin pass:globus -force
-        cp /tmp/usercert.pem "$X509_USER_CERT"
-        sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
-    fi
-    if which invoke-rc.d > /dev/null 2>&1 ; then
-        sudo invoke-rc.d globus-gridftp-server restart 
-    else
-        sudo /etc/init.d/globus-gridftp-server restart 
-    fi
-    grid-proxy-init -hours 24
+# Check to see if there's a simpleCA available in $SIMPLE_CA_DIR
+if [ ! -d "$SIMPLE_CA_DIR" ]; then
+    grid-ca-create -force -noint -pass globus -dir "$SIMPLE_CA_DIR"
+    cd "$SIMPLE_CA_DIR"
+    grid-ca-package -d -cadir "$SIMPLE_CA_DIR"
+    cd "$OLDPWD"
 fi
+
+SIMPLE_CA_PACKAGE="$(ls -1 "$SIMPLE_CA_DIR"/*.deb)"
+SIMPLE_CA_HASH="$(grid-cert-info -issuerhash -f "$SIMPLE_CA_DIR"/cacert.pem)"
+
+remove_ca_package=""
+if [ -f "$SIMPLE_CA_PACKAGE" ]; then
+    sudo dpkg -i "$SIMPLE_CA_PACKAGE"
+    if [ ! -r /etc/grid-security/grid-security.conf ]; then
+        sudo grid-default-ca -ca "$SIMPLE_CA_HASH"
+    fi
+    remove_ca_package="yes"
+fi
+
+TEST_CRED_DIR="$HOME/testcreds"
+TEST_HOST_CERT="$TEST_CRED_DIR/hostcert.pem"
+TEST_HOST_CERTREQ="$TEST_CRED_DIR/hostcert_request.pem"
+TEST_HOST_KEY="$TEST_CRED_DIR/hostkey.pem"
+
+TEST_USER_CERT="$TEST_CRED_DIR/usercert.pem"
+TEST_USER_CERTREQ="$TEST_CRED_DIR/usercert_request.pem"
+TEST_USER_KEY="$TEST_CRED_DIR/userkey.pem"
+
+if [ ! -f "$TEST_HOST_CERT" ]; then
+    grid-cert-request -host "$(hostname -f)" -dir "$TEST_CRED_DIR" -ca "$SIMPLE_CA_HASH"
+    grid-ca-sign -dir "$SIMPLE_CA_DIR" -in "$TEST_HOST_CERTREQ" -out "$TEST_HOST_CERT" -passin pass:globus -force
+fi
+
+if [ ! -f "$TEST_USER_CERT" ]; then
+    grid-cert-request -cn "$(id -un)" -dir "$TEST_CRED_DIR" -ca "$SIMPLE_CA_HASH" -nopw
+    grid-ca-sign -dir "$SIMPLE_CA_DIR" -in "$TEST_USER_CERTREQ" -out "$TEST_USER_CERT" -passin pass:globus -force
+fi
+
+if [ ! -f "/etc/grid-security/hostcert.pem" ]; then
+    sudo cp "$TEST_HOST_CERT" /etc/grid-security/
+    sudo cp "$TEST_HOST_KEY" /etc/grid-security/
+fi
+
+X509_USER_CERT="$TEST_USER_CERT"
+X509_USER_KEY="$TEST_USER_KEY"
+export X509_USER_CERT
+export X509_USER_KEY
+
+sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
+
+if which invoke-rc.d > /dev/null 2>&1 ; then
+    sudo invoke-rc.d globus-gridftp-server restart 
+else
+    sudo /etc/init.d/globus-gridftp-server restart 
+fi
+grid-proxy-init -hours 24
 
 mkdir -p "$tmppath/$flavor"
 cd "$tmppath/$flavor"
@@ -158,6 +178,7 @@ flavortestoutdir="${testoutdir}/${flavor}"
 
 mkdir -p "${flavortestoutdir}"
 
+host_dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
 for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
     gzip -dc "$testpkg" | tar xf -
     testpkgname=$( basename $testpkg | sed -e 's/\.tar\.gz//' )
@@ -177,6 +198,11 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
             for mode in $modes; do
                 if [ $mode = none ]; then
                     mode=""
+                    servicename="jobmanager-$lrm"
+                elif [ "$mode" = "-setup-poll" ]; then
+                    servicename="jobmanager-$lrm-poll"
+                elif [ "$mode" = "-setup-seg" ]; then
+                    servicename="jobmanager-$lrm-seg"
                 fi
                 sudo apt-get -y install globus-gram-job-manager-$lrm$mode || continue
                 if which invoke-rc.d > /dev/null 2>&1; then
@@ -195,21 +221,24 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
 			q
 			EOF
                 fi
-                dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
-                export CONTACT_STRING="$(globus-hostname)/jobmanager-$lrm:$dn" 
+                CONTACT_STRING="$(globus-hostname)/$servicename:$host_dn" 
+                export CONTACT_STRING
                 export CONTACT_LRM="$lrm"
+                pids="$( $(ps -u $(id -un) -o pid,args | grep '[g]lobus-job-manager' | cut -d' ' -f1) || true)"
+                if [ "$pids" != "" ]; then
+                    kill $pids
+                fi
+                #killall globus-job-manager
+                rm -rf ~/.globus/job
+                rm -rf /var/lib/globus/gram_job_state/bamboo/*
+                rm -f /var/lib/globus/gram_job_state/job.*
+                rm -rf ~/.globus/.gass_cache
                 make junit || true
                 unset CONTACT_STRING
                 unset CONTACT_LRM
                 sudo apt-get -y remove globus-gram-job-manager-$lrm$mode
                 # Stop the job manager and remove all job state, so that
                 # tests will have a clean state
-                kill $(ps -u $(id -un) -o pid,args | grep '[g]lobus-job-manager' | cut -d' ' -f1) || true
-                #killall globus-job-manager
-                rm -rf ~/.globus/job
-                rm -rf /var/lib/globus/gram_job_state/bamboo/*
-                rm -f /var/lib/globus/gram_job_state/job.*
-                rm -rf ~/.globus/.gass_cache
                 xmlfile="${testpkgname_no_ver}-$lrm.xml"
                 if [ -f "$xmlfile" ]; then
                     sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}-$lrm$mode\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}-$lrm$mode\"/"< "$xmlfile" > "${flavortestoutdir}/${xmlfile%%.*}$mode.xml"
@@ -219,6 +248,8 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
         done
         sudo apt-get -y install globus-gram-job-manager-fork globus-gram-job-manager-fork-setup-poll
     else
+        dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
+        export CONTACT_STRING="$(globus-hostname)/jobmanager-fork-poll:$dn" 
         make junit || true
         for x in "${testpkgname_no_ver}"*.xml; do
             if [ -f "$x" ]; then
@@ -228,6 +259,22 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
     fi
     cd ..
 done
+
+# Remove test credential
+sudo grid-mapfile-delete-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
+rm -f "/tmp/x509up_u$(id -u)"
+
+# Remove test host credentials
+if diff -q "$TEST_HOST_CERT" "/etc/grid-security/hostcert.pem" 2> /dev/null; then
+    sudo rm -f /etc/grid-security/hostcert.pem"
+    sudo rm -f /etc/grid-security/hostkey.pem"
+fi
+
+# Remove simple ca
+if [ "$remove_ca_package" = "yes" ]; then
+    sudo dpkg -P globus-simple-ca-$SIMPLE_CA_HASH
+fi
+
 # Remove all globus-related packages after testing
 pkgs_to_rm="$( dpkg-query -W -f "\${Package}\t\${Status}\n" "*globus*" "grid-packaging-tools*" "myproxy*" "gsi-openssh*" | awk -F"	" "\$2 ~ /^install/ { print \$1 }" || true)"
 if [ -n "$pkgs_to_rm" ]; then
