@@ -1,9 +1,0 @@
-Document: globus-gsi-openssl-error
-Title: Debian globus-gsi-openssl-error Manual
-Author: Globus Alliance
-Abstract: The Globus toolkit, Globus OpenSSL Error Handling
-Section: Programming
-
-Format: HTML
-Index: /usr/share/doc/libglobus-gsi-openssl-error-dev/html/index.html
-Files: /usr/share/doc/libglobus-gsi-openssl-error-dev/html/*.html
