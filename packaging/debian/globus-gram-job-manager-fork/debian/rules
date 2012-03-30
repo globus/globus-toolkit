@@ -142,6 +142,7 @@ install: build-stamp
 	    $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
 	  | grep -v 'libglobus' \
 	  | grep -v '^/etc' \
+          | grep -v 'globus-fork-starter' \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name).install
 
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
@@ -152,6 +153,10 @@ install: build-stamp
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_rtl.filelist \
 	  | grep 'libglobus' \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name)-setup-seg.install
+
+	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_pgm.filelist \
+	  | grep 'globus-fork-starter' \
+	  | sed s!^!debian/tmp$(_prefix)! >> debian/$(name)-setup-seg.install
 
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! >> debian/$(name)-setup-seg.install
