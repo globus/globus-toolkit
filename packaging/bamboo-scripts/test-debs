@@ -124,13 +124,11 @@ fi
 SIMPLE_CA_PACKAGE="$(ls -1 "$SIMPLE_CA_DIR"/*.deb)"
 SIMPLE_CA_HASH="$(grid-cert-info -issuerhash -f "$SIMPLE_CA_DIR"/cacert.pem)"
 
-remove_ca_package=""
 if [ -f "$SIMPLE_CA_PACKAGE" ]; then
     sudo dpkg -i "$SIMPLE_CA_PACKAGE"
     if [ ! -r /etc/grid-security/grid-security.conf ]; then
         sudo grid-default-ca -ca "$SIMPLE_CA_HASH"
     fi
-    remove_ca_package="yes"
 fi
 
 TEST_CRED_DIR="$HOME/testcreds"
@@ -152,9 +150,11 @@ if [ ! -f "$TEST_USER_CERT" ]; then
     grid-ca-sign -dir "$SIMPLE_CA_DIR" -in "$TEST_USER_CERTREQ" -out "$TEST_USER_CERT" -passin pass:globus -force
 fi
 
+remove_hostcert="no"
 if [ ! -f "/etc/grid-security/hostcert.pem" ]; then
     sudo cp "$TEST_HOST_CERT" /etc/grid-security/
     sudo cp "$TEST_HOST_KEY" /etc/grid-security/
+    remove_hostcert="yes"
 fi
 
 X509_USER_CERT="$TEST_USER_CERT"
@@ -265,15 +265,13 @@ sudo grid-mapfile-delete-entry -dn "$(grid-cert-info -subject -file "$X509_USER_
 rm -f "/tmp/x509up_u$(id -u)"
 
 # Remove test host credentials
-if diff -q "$TEST_HOST_CERT" "/etc/grid-security/hostcert.pem" 2> /dev/null; then
+if [ "$remove_hostcert" = "yes" ]; then
     sudo rm -f /etc/grid-security/hostcert.pem"
     sudo rm -f /etc/grid-security/hostkey.pem"
 fi
 
 # Remove simple ca
-if [ "$remove_ca_package" = "yes" ]; then
-    sudo dpkg -P globus-simple-ca-$SIMPLE_CA_HASH
-fi
+sudo dpkg -P globus-simple-ca-$SIMPLE_CA_HASH
 
 # Remove all globus-related packages after testing
 pkgs_to_rm="$( dpkg-query -W -f "\${Package}\t\${Status}\n" "*globus*" "grid-packaging-tools*" "myproxy*" "gsi-openssh*" | awk -F"	" "\$2 ~ /^install/ { print \$1 }" || true)"
