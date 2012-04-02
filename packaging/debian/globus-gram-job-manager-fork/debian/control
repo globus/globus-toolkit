@@ -10,7 +10,9 @@ Homepage: http://www.globus.org/
 Package: globus-gram-job-manager-fork
 Section: net
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, globus-gram-job-manager-setup-fork
+Depends: ${misc:Depends}, ${perl:Depends}, globus-gram-job-manager-fork-setup-poll (= ${binary:Version}) | globus-gram-job-manager-fork-setup-seg (= ${binary:Version}) 
+Provides: globus-gram-job-manager-setup-fork
+Replaces: globus-gram-job-manager-setup-fork
 Recommends: globus-gram-job-manager-fork-doc (= ${binary:Version})
 Description: Globus Toolkit - Fork Job Manager
  The Globus Toolkit is an open source software toolkit used for
@@ -27,7 +29,6 @@ Section: net
 Architecture: all
 Depends: ${misc:Depends}, ${perl:Depends}, globus-gram-job-manager-fork
 Recommends: globus-gram-job-manager-fork-doc (= ${binary:Version})
-Provides: globus-gram-job-manager-setup-fork
 Description: Globus Toolkit - Fork Job Manager
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
@@ -42,7 +43,6 @@ Package: globus-gram-job-manager-fork-setup-seg
 Section: net
 Architecture: any
 Depends: ${misc:Depends}, ${perl:Depends}, globus-gram-job-manager-fork
-Provides: globus-gram-job-manager-setup-fork
 Recommends: globus-gram-job-manager-fork-doc (= ${binary:Version})
 Description: Globus Toolkit - Fork Job Manager
  The Globus Toolkit is an open source software toolkit used for
