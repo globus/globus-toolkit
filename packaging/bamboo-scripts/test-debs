@@ -151,9 +151,9 @@ if [ ! -f "$TEST_USER_CERT" ]; then
 fi
 
 remove_hostcert="no"
+mkdir -p /etc/grid-security
 if [ ! -f "/etc/grid-security/hostcert.pem" ]; then
-    sudo cp "$TEST_HOST_CERT" /etc/grid-security/
-    sudo cp "$TEST_HOST_KEY" /etc/grid-security/
+    sudo cp "$TEST_HOST_CERT" "$TEST_HOST_KEY" /etc/grid-security/
     remove_hostcert="yes"
 fi
 
