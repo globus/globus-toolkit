@@ -371,7 +371,7 @@ globus_gss_assist_token_send_fd_ex(
             ex->flags, size));
 
     if (!(size > 5 && header[0] <= 26 && header[0] >= 20
-          && ((header[1] == 3 && (header[2] == 0 || header[2] == 1))
+          && ((header[1] == 3)
               || (header[1] == 2 && header[2] == 0))))
     {
         
