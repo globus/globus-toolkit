@@ -116,8 +116,9 @@ fi
 
 installer_file="${installer_url##*/}"
 installer_dir="${installer_file%%.tar.gz}"
+source_package_dir="${installer_dir}/source-packages"
 
-# Download the source installer and also create source packages for the tests
+# Download the source installer
 if [ "$in_chroot" != 1 ]; then
     if [ ! -f "${installer_file}" ]; then
         curl -Os "$installer_url"
@@ -125,12 +126,6 @@ if [ "$in_chroot" != 1 ]; then
 
     if [ ! -f "${installer_dir}" ]; then
         tar zxf "${installer_file}"
-    fi
-
-    if [ ! -d package-output ]; then
-        ./make-packages.pl ${tag:+-t $tag} -a --deps -deporder \
-            -bundles=globus-data-management-test \
-            -flavor=${flavors%% *} -skipbundle
     fi
 fi
 
@@ -143,6 +138,13 @@ for flavor in ${flavors}; do
     env ${profileflags} make;
     env ${profileflags} make globus_simple_ca;
     env ${profileflags} make install;
+
+    if [ "$in_chroot" != 1 ]; then
+        # some of the extra packages or patch-and-build packages don't have
+        # working make dist rules, hence -k ||true
+        env ${profileflags} make -k dist || true;
+    fi
+
     make distclean
     cd -
 done
@@ -154,35 +156,65 @@ fi
 export GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
 . ${GLOBUS_LOCATION}/etc/globus-user-env.sh
 
-SIMPLECADIR="${GLOBUS_LOCATION}/var/lib/globus/simple_ca"
-mkdir -p "$(dirname "${SIMPLECADIR}")"
+SIMPLE_CA_DIR="${topdir}/bamboo-simple_ca"
 
-# Set up security if we dont have it done already
-if [ ! -f /etc/grid-security/hostcert.pem -o ! -f $HOME/.globus/usercert.pem ]; then
-    sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-ca-create -force -noint -pass globus -dir ${SIMPLECADIR}"
-    sudo mkdir -p /etc/grid-security/certificates
-    catarball=$(echo globus_simple_ca_*.tar.gz)
-    gzip -dc < $catarball | sudo tar -C /etc/grid-security/certificates --strip 1 -xf -
-    sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-default-ca -ca $(sudo openssl x509 -noout -hash -in ${SIMPLECADIR}/cacert.pem)"
-    sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-cert-request -host \$(globus-hostname) -dir /etc/grid-security -force"
-    sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-ca-sign -in /etc/grid-security/hostcert_request.pem -force -out /etc/grid-security/hostcert.pem -passin pass:globus -dir ${SIMPLECADIR}"
-    X509_USER_CERT="$HOME/.globus/usercert.pem"
-    X509_USER_KEY="$HOME/.globus/userkey.pem"
-    export X509_USER_CERT
-    export X509_USER_KEY
-
-    grid-cert-request -cn "$(id -un)" -nopw -force
-    sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-ca-sign -in $HOME/.globus/usercert_request.pem -out /tmp/usercert.pem -passin pass:globus -force -dir ${SIMPLECADIR}"
-    cp /tmp/usercert.pem "$X509_USER_CERT"
-    sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-add-entry -dn $(grid-cert-info -subject -file "$X509_USER_CERT") -ln $(id -un)"
-    grid-proxy-init -hours 24
+# Check to see if there's a simpleCA available in $SIMPLE_CA_DIR
+if [ ! -d "$SIMPLE_CA_DIR" ]; then
+    grid-ca-create -force -noint -pass globus -dir "$SIMPLE_CA_DIR"
+    cd "$SIMPLE_CA_DIR"
+    grid-ca-package -cadir "$SIMPLE_CA_DIR"
+    cd "$OLDPWD"
 fi
+
+SIMPLE_CA_HASH="$(grid-cert-info -issuerhash -f "$SIMPLE_CA_DIR"/cacert.pem)"
+SIMPLE_CA_PACKAGE="$(ls -1 "SIMPLE_CA_DIR"/globus_simple_ca_${SIMPLE_CA_HASH}.tar.gz)"
+
+sudo mkdir -p /etc/grid-security/certificates
+gzip -dc < "$SIMPLE_CA_PACKAGE" | sudo tar -C /etc/grid-security/certificates --strip 1 -xf -
+
+if [ ! -r /etc/grid-security/grid-security.conf ]; then
+    sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-default-ca -ca $SIMPLE_CA_HASH"
+fi
+
+TEST_CRED_DIR="${topdir}/testcreds"
+TEST_HOST_CERT="$TEST_CRED_DIR/hostcert.pem"
+TEST_HOST_CERTREQ="$TEST_CRED_DIR/hostcert_request.pem"
+TEST_HOST_KEY="$TEST_CRED_DIR/hostkey.pem"
+
+TEST_USER_CERT="$TEST_CRED_DIR/usercert.pem"
+TEST_USER_CERTREQ="$TEST_CRED_DIR/usercert_request.pem"
+TEST_USER_KEY="$TEST_CRED_DIR/userkey.pem"
+
+if [ ! -f "$TEST_HOST_CERT" ]; then
+    grid-cert-request -host "$(hostname -f)" -dir "$TEST_CRED_DIR" -ca "$SIMPLE_CA_HASH"
+    grid-ca-sign -dir "$SIMPLE_CA_DIR" -in "$TEST_HOST_CERTREQ" -out "$TEST_HOST_CERT" -passin pass:globus -force
+fi
+
+if [ ! - f "$TEST_USER_CERT" ]; then
+    grid-cert-request -cn "$(id -un)" -dir "$TEST_CERT_DIR" -ca "$SIMPLE_CA_HASH" -nopw -force
+    grid-ca-sign -dir "$SIMPLE_CA_DIR" -in "$TEST_USER_CERTREQ" -out "$TEST_USER_CERT" -passin pass:globus -force
+fi
+
+if [ ! -f "/etc/grid-security/hostcert.pem" ]; then
+    sudo cp "$TEST_HOST_CERT" /etc/grid-security/
+    sudo cp "$TEST_HOST_KEY" /etc/grid-security/
+fi
+
+X509_USER_CERT="$TEST_USER_CERT"
+X509_USER_KEY="$TEST_USER_KEY"
+export X509_USER_CERT
+export X509_USER_KEY
+
+sudo grid-mapfile-add-entry
+sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-add-entry -dn `grid-cert-info -subject -file $X509_USER_CERT` -ln `id -un`"
+
+
+grid-proxy-init -hours 24
 
 for flavor in $flavors; do
     GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
     . ${GLOBUS_LOCATION}/etc/globus-user-env.sh
 sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh; ${GLOBUS_LOCATION}/etc/init.d/globus-gridftp-server restart "
-
 
     mkdir -p "$tmppath/$flavor"
     cd "$tmppath/$flavor"
@@ -191,7 +223,7 @@ sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh; ${GLOBUS_LOCATI
 
     mkdir -p "${flavortestoutdir}"
 
-    for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
+    for testpkg in $source_package_dir/globus*_test-*.tar.gz; do
         if [ "$profile" = 1 ]; then
             lcov -z -d "${installer_dir}" || true
         fi
@@ -226,3 +258,4 @@ if [ "$profile" = 1 ]; then
     genhtml -o report --show-details --legend \
         --title "Tests for $(cat "$packagingdir/fait_accompli/version")" lcov/*.fixed || true
 fi
+sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-delete-entry -dn `grid-cert-info -subject -file $X509_USER_CERT` -ln `id -un`"

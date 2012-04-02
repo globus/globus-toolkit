@@ -75,4 +75,7 @@ netlogger_c: gpt globus_core globus_common
 # UDT
 udt: gpt globus_xio_udt_ref_driver
 
+source-packages:
+	mkdir source-packages
+
 # Bundle dependencies, expressed in packages.
