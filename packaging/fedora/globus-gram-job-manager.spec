@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.30
+Version:	13.31
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -173,6 +173,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Apr 02 2012 Joseph Bester <bester@mcs.anl.gov> - 13.31-1
+- GRAM-329: Condor fake-SEG loses track of job
+
 * Thu Mar 29 2012 Joseph Bester <bester@mcs.anl.gov> - 13.30-1
 - GRAM-327: list default values for RSL attributes
 
