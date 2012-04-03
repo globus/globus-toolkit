@@ -43,8 +43,12 @@ distclean:
 # Functional group dependencies, expressed in bundles.
 common: gpt globus_core globus_common
 prews: gridftp gram
-gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@
-gram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus_user_env
+gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@ varlockandrundirs
+gram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus_user_env varlockandrundirs
+
+varlockandrundirs:
+	mkdir -p $(DESTDIR)$(GLOBUS_LOCATION)/var/run
+	mkdir -p $(DESTDIR)$(GLOBUS_LOCATION)/var/lock
 
 # GPT targets
 gpt: @gptlocation@/sbin/gpt-postinstall
