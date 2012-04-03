@@ -192,7 +192,7 @@ if [ ! -f "$TEST_HOST_CERT" ]; then
     grid-ca-sign -dir "$SIMPLE_CA_DIR" -in "$TEST_HOST_CERTREQ" -out "$TEST_HOST_CERT" -passin pass:globus -force
 fi
 
-if [ ! - f "$TEST_USER_CERT" ]; then
+if [ ! -f "$TEST_USER_CERT" ]; then
     grid-cert-request -cn "$(id -un)" -dir "$TEST_CERT_DIR" -ca "$SIMPLE_CA_HASH" -nopw -force
     grid-ca-sign -dir "$SIMPLE_CA_DIR" -in "$TEST_USER_CERTREQ" -out "$TEST_USER_CERT" -passin pass:globus -force
 fi
