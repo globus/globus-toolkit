@@ -99,8 +99,8 @@
         <xsl:variable name="bug-title" select="summary"/>
 
         <listitem>
-            <simpara><ulink url="{$bug-url}"><xsl:value-of select="$bug-number"/>:</ulink>
-            <xsl:text> </xsl:text>
+            <simpara><ulink url="{$bug-url}"><xsl:value-of select="$bug-number"/></ulink>
+            <xsl:text>: </xsl:text>
             <xsl:value-of select="$bug-title"/></simpara>
         </listitem>
     </xsl:template>
