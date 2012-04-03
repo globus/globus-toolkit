@@ -42,5 +42,6 @@ use vars qw(@tests);
 	     );
 
 my $harness = TAP::Harness::JUnit->new({
-                        xmlfile => 'globus-common-test.xml' });
+                        xmlfile => 'globus-common-test.xml',
+                        merge => 1});
 $harness->runtests(@tests);
