@@ -172,8 +172,10 @@ SIMPLE_CA_PACKAGE="$(ls -1 "SIMPLE_CA_DIR"/globus_simple_ca_${SIMPLE_CA_HASH}.ta
 sudo mkdir -p /etc/grid-security/certificates
 gzip -dc < "$SIMPLE_CA_PACKAGE" | sudo tar -C /etc/grid-security/certificates --strip 1 -xf -
 
+remove_default_ca="no"
 if [ ! -r /etc/grid-security/grid-security.conf ]; then
     sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-default-ca -ca $SIMPLE_CA_HASH"
+    remove_default_ca="yes"
 fi
 
 TEST_CRED_DIR="${topdir}/testcreds"
@@ -195,9 +197,11 @@ if [ ! - f "$TEST_USER_CERT" ]; then
     grid-ca-sign -dir "$SIMPLE_CA_DIR" -in "$TEST_USER_CERTREQ" -out "$TEST_USER_CERT" -passin pass:globus -force
 fi
 
+remove_host_creds="no"
 if [ ! -f "/etc/grid-security/hostcert.pem" ]; then
     sudo cp "$TEST_HOST_CERT" /etc/grid-security/
     sudo cp "$TEST_HOST_KEY" /etc/grid-security/
+    remove_host_creds="yes"
 fi
 
 X509_USER_CERT="$TEST_USER_CERT"
@@ -264,3 +268,11 @@ for flavor in $flavors; do
     GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
     sudo chown -R bamboo "$GLOBUS_LOCATION"
 done
+
+if [ "$remove_host_creds" = "yes" ]; then
+    sudo rm -f /etc/grid-security/hostcert.pem /etc/grid-security/hostkey.pem
+fi
+
+if [ "$remove_default_ca" = "yes" ]; then
+    sudo rm -f /etc/grid-security/globus-host-ssl.conf /etc/grid-security/globus-user-ssl.conf /etc/grid-security/grid-security.conf
+fi

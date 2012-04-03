@@ -124,10 +124,12 @@ fi
 SIMPLE_CA_PACKAGE="$(ls -1 "$SIMPLE_CA_DIR"/*.deb)"
 SIMPLE_CA_HASH="$(grid-cert-info -issuerhash -f "$SIMPLE_CA_DIR"/cacert.pem)"
 
+remove_default_ca="no"
 if [ -f "$SIMPLE_CA_PACKAGE" ]; then
     sudo dpkg -i "$SIMPLE_CA_PACKAGE"
     if [ ! -r /etc/grid-security/grid-security.conf ]; then
         sudo grid-default-ca -ca "$SIMPLE_CA_HASH"
+        remove_default_ca="yes"
     fi
 fi
 
@@ -270,6 +272,10 @@ if [ "$remove_hostcert" = "yes" ]; then
     sudo rm -f /etc/grid-security/hostkey.pem"
 fi
 
+if [ "$remove_default_ca" = "yes" ]; then
+    sudo rm -f /etc/grid-security/globus-host-ssl.conf /etc/grid-security/globus-user-ssl.conf /etc/grid-security/grid-security.conf
+fi
+
 # Remove simple ca
 sudo dpkg -P globus-simple-ca-$SIMPLE_CA_HASH
 
@@ -278,3 +284,4 @@ pkgs_to_rm="$( dpkg-query -W -f "\${Package}\t\${Status}\n" "*globus*" "grid-pac
 if [ -n "$pkgs_to_rm" ]; then
     sudo dpkg -P $pkgs_to_rm
 fi
+
