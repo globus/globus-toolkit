@@ -115,7 +115,7 @@ if ! expr "$installer_url" : ".*.tar.gz"; then
 fi
 
 installer_file="${installer_url##*/}"
-installer_dir="${installer_file%%.tar.gz}"
+installer_dir="$(pwd)/${installer_file%%.tar.gz}"
 source_package_dir="${installer_dir}/source-packages"
 
 # Download the source installer
@@ -268,6 +268,7 @@ for flavor in $flavors; do
     GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
     sudo chown -R bamboo "$GLOBUS_LOCATION"
 done
+sudo chown -R bamboo "$installer_dir"
 
 if [ "$remove_host_creds" = "yes" ]; then
     sudo rm -f /etc/grid-security/hostcert.pem /etc/grid-security/hostkey.pem
