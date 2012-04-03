@@ -116,6 +116,7 @@ fi
 installer_file="${installer_url##*/}"
 installer_dir="$(pwd)/${installer_file%%.tar.gz}"
 source_package_dir="${installer_dir}/source-packages"
+root_source_prefix="${installer_dir}/source-trees-root"
 
 # Download the source installer
 if [ "$in_chroot" != 1 ]; then
@@ -218,7 +219,14 @@ grid-proxy-init -hours 24
 for flavor in $flavors; do
     GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
     . ${GLOBUS_LOCATION}/etc/globus-user-env.sh
-sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh; ${GLOBUS_LOCATION}/etc/init.d/globus-gridftp-server restart "
+    cat >> ${GLOBUS_LOCATION}/etc/globus-gatekeeper.conf <<EOF 
+GLOBUS_GATEKEEPER_CERT_DIR="/etc/grid-security/certificates"
+GLOBUS_GATEKEEPER_CERT_FILE="/etc/grid-security/hostcert.pem"
+GLOBUS_GATEKEEPER_KEY_FILE="/etc/grid-security/hostkey.pem"
+EOF
+
+    sudo -E env GCOV_PREFIX=${root_source_prefix} ${GLOBUS_LOCATION}/etc/init.d/globus-gridftp-server restart
+    sudo -E env GCOV_PREFIX=${root_source_prefix} ${GLOBUS_LOCATION}/etc/init.d/globus-gatekeeper restart
 
     mkdir -p "$tmppath/$flavor"
     cd "$tmppath/$flavor"
@@ -229,7 +237,7 @@ sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh; ${GLOBUS_LOCATI
 
     for testpkg in $source_package_dir/globus*_test-*.tar.gz; do
         if [ "$profile" = 1 ]; then
-            lcov -z -d "${installer_dir}" || true
+            sudo lcov -z -d "${installer_dir}" || true
         fi
 
         gzip -dc "$testpkg" | tar xf -
@@ -251,6 +259,8 @@ sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh; ${GLOBUS_LOCATI
         fi
         cd ..
     done
+    sudo -E env GCOV_PREFIX=${root_source_prefix} ${GLOBUS_LOCATION}/etc/init.d/globus-gridftp-server stop
+    sudo -E env GCOV_PREFIX=${root_source_prefix} ${GLOBUS_LOCATION}/etc/init.d/globus-gatekeeper stop
 done
 
 if [ "$profile" = 1 ]; then
@@ -277,3 +287,7 @@ fi
 if [ "$remove_default_ca" = "yes" ]; then
     sudo rm -f /etc/grid-security/globus-host-ssl.conf /etc/grid-security/globus-user-ssl.conf /etc/grid-security/grid-security.conf
 fi
+
+for x in /etc/grid-security/certificates/*${SIMPLE_CA_HASH}*; do
+    rm -f "$x"
+done
