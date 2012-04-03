@@ -259,3 +259,8 @@ if [ "$profile" = 1 ]; then
         --title "Tests for $(cat "$packagingdir/fait_accompli/version")" lcov/*.fixed || true
 fi
 sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-delete-entry -dn `grid-cert-info -subject -file $X509_USER_CERT` -ln `id -un`"
+
+for flavor in $flavors; do
+    GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
+    sudo chown -R bamboo "$GLOBUS_LOCATION"
+done
