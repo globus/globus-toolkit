@@ -1,6 +1,5 @@
 #! /bin/sh
 
-set -e
 set -x
 umask 022
 
@@ -209,8 +208,9 @@ X509_USER_KEY="$TEST_USER_KEY"
 export X509_USER_CERT
 export X509_USER_KEY
 
-sudo grid-mapfile-add-entry
-sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-add-entry -dn `grid-cert-info -subject -file $X509_USER_CERT` -ln `id -un`"
+USER_DN="$(grid-cert-info -s -f "$X509_USER_CERT")"
+USER_LN="$(id -un)"
+sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-add-entry -dn \"$USER_DN\" -ln $USER_LN"
 
 
 grid-proxy-init -hours 24
@@ -262,7 +262,7 @@ if [ "$profile" = 1 ]; then
     genhtml -o report --show-details --legend \
         --title "Tests for $(cat "$packagingdir/fait_accompli/version")" lcov/*.fixed || true
 fi
-sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-delete-entry -dn `grid-cert-info -subject -file $X509_USER_CERT` -ln `id -un`"
+sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-delete-entry -dn \"$USER_DN\" -ln \"$USER_LN\""
 
 for flavor in $flavors; do
     GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
