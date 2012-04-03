@@ -167,7 +167,7 @@ if [ ! -d "$SIMPLE_CA_DIR" ]; then
 fi
 
 SIMPLE_CA_HASH="$(grid-cert-info -issuerhash -f "$SIMPLE_CA_DIR"/cacert.pem)"
-SIMPLE_CA_PACKAGE="$(ls -1 "SIMPLE_CA_DIR"/globus_simple_ca_${SIMPLE_CA_HASH}.tar.gz)"
+SIMPLE_CA_PACKAGE="$(ls -1 "$SIMPLE_CA_DIR"/globus_simple_ca_${SIMPLE_CA_HASH}.tar.gz)"
 
 sudo mkdir -p /etc/grid-security/certificates
 gzip -dc < "$SIMPLE_CA_PACKAGE" | sudo tar -C /etc/grid-security/certificates --strip 1 -xf -
