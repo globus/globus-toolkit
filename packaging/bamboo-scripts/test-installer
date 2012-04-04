@@ -289,5 +289,5 @@ if [ "$remove_default_ca" = "yes" ]; then
 fi
 
 for x in /etc/grid-security/certificates/*${SIMPLE_CA_HASH}*; do
-    rm -f "$x"
+    sudo rm -f "$x"
 done
