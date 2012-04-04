@@ -214,10 +214,11 @@ push(@tests, "basic_func(\"-v -s\",\"-v -s\",0,0, '$test-iovec-ssl-wrap');");
 push(@tests, "basic_func(\"-v -c\",\"-v -c\",0,0, '$test-iovec-clear');");
 push(@tests, "basic_func(\"-i \'<anonymous>\'\",\"-a -i \'$identity\'\",0,0, '$test-anonymous');");
 push(@tests, "basic_func(\"\",\"-a -i \'$identity\'\",1,0, '$test-anonymous-identity');");
-push(@tests, "basic_func(\"-b\",\"-b\",0,0, '$test-io-delegation');");
-push(@tests, "basic_func(\"-b -g\",\"-b -g\",0,0, '$test-io-delegation-gsi-wrap');");
-push(@tests, "basic_func(\"-b -s\",\"-b -s\",0,0, '$test-io-delegation-ssl-wrap');");
-push(@tests, "basic_func(\"-b -c\",\"-b -c\",0,0, '$test-io-delegation-clear');");
+# Disabled until "RIC-238: GSI XIO Driver hangs in delegation code" is fixed
+#push(@tests, "basic_func(\"-b\",\"-b\",0,0, '$test-io-delegation');");
+#push(@tests, "basic_func(\"-b -g\",\"-b -g\",0,0, '$test-io-delegation-gsi-wrap');");
+#push(@tests, "basic_func(\"-b -s\",\"-b -s\",0,0, '$test-io-delegation-ssl-wrap');");
+#push(@tests, "basic_func(\"-b -c\",\"-b -c\",0,0, '$test-io-delegation-clear');");
 push(@tests, "basic_func(\"-g -P none\",\"-g -P none\",0,0,'$test-gsi-wrap-noprotect');");
 push(@tests, "basic_func(\"-g -P integrity\",\"-g -P integrity\",0,0,'$test-gsi-wrap-integrity');");
 push(@tests, "basic_func(\"-g -P privacy\",\"-g -P privacy\",0,0, '$test-gsi-wrap-privacy');");
