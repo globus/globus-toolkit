@@ -230,8 +230,10 @@ GLOBUS_GATEKEEPER_KEY_FILE="/etc/grid-security/hostkey.pem"
 EOF
 
     sudo -E env GCOV_PREFIX=${root_source_prefix} ${GLOBUS_LOCATION}/etc/init.d/globus-gridftp-server restart || true
+    sudo -E env GCOV_PREFIX=${root_source_prefix} ${GLOBUS_LOCATION}/etc/init.d/globus-gridftp-server status || true
     sudo -E env GCOV_PREFIX=${root_source_prefix} ${GLOBUS_LOCATION}/etc/init.d/globus-gatekeeper restart || true
-    CONTACT_STRING="$(globus-hostname):$(grid-cert-info -s -f "$TEST_HOST_CERT")"
+    sudo -E env GCOV_PREFIX=${root_source_prefix} ${GLOBUS_LOCATION}/etc/init.d/globus-gatekeeper status || true
+    CONTACT_STRING="$(globus-hostname):2119/jobmanager-fork:$(grid-cert-info -s -f "$TEST_HOST_CERT")"
     CONTACT_LRM="fork"
     export CONTACT_STRING
     export CONTACT_LRM
