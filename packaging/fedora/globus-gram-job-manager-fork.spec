@@ -15,7 +15,7 @@
 
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
-Version:	1.3
+Version:	1.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
@@ -265,6 +265,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Apr 04 2012 Joseph Bester <bester@mcs.anl.gov> - 1.4-1
+- GRAM-333: SEG config in installer has variables that aren't resolved at runtime
+
 * Wed Mar 14 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-1
 - GRAM-318: Periodic lockup of SEG
 
