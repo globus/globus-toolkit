@@ -139,6 +139,10 @@ for flavor in ${flavors}; do
     env ${profileflags} make globus_simple_ca;
     env ${profileflags} make install;
 
+    # work around GRAM-334: job manager doesn't work if unix socket path is too
+    # long
+    echo "    -globus-job-dir /tmp" >> "${topdir}/globus-location-${flavor}"/etc/globus/globus-gram-job-manager.conf
+
     if [ "$in_chroot" != 1 ]; then
         # some of the extra packages or patch-and-build packages don't have
         # working make dist rules, hence -k ||true
