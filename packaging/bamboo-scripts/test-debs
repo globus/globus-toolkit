@@ -226,7 +226,7 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
                 CONTACT_STRING="$(globus-hostname)/$servicename:$host_dn" 
                 export CONTACT_STRING
                 export CONTACT_LRM="$lrm"
-                pids="$( $(ps -u $(id -un) -o pid,args | grep '[g]lobus-job-manager' | cut -d' ' -f1) || true)"
+                pids="$( ps -u $(id -un) -o pid,args | grep '[g]lobus-job-manager' | cut -d' ' -f1 || true)"
                 if [ "$pids" != "" ]; then
                     kill $pids
                 fi
