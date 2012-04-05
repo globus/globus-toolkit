@@ -20,9 +20,11 @@ Scripts = \
 	globus-gram-client-status-test.pl \
         globus-gram-client-stdio-size-test.pl \
         job-status-with-info-test.pl \
+        local-stdio-size-test.pl \
         register-version-test.pl \
         restart-to-new-url-test.pl \
         stdio-update-test.pl \
+        stdio-update-after-failure-test.pl \
         version-test.pl
 
 Data = \
@@ -70,6 +72,7 @@ EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in \
 	TESTS-junit.pl
 
 junit: TESTS-junit.pl $(test_SCRIPTS) $(test_PROGRAMS)
+	chmod +x $(test_SCRIPTS)
 	PATH=${PATH}:. perl -I$(perlmoduledir) TESTS-junit.pl
 
 INCLUDES = $(GPT_INCLUDES)
