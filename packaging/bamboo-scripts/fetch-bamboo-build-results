@@ -366,6 +366,9 @@ if version == 'unset' or destination == 'unset':
 bamboo_version = "GT" + version.replace(".","")
 build_kickoff = bamboo_version + "-BUILD" + version.replace(".", "")
 
+if len(version.split(".")) == 2:
+    version = version + ".X"
+
 client = BambooClient()
 
 client.login()
@@ -375,6 +378,8 @@ build_results = {}
 
 for plan in build_plans:
     if plan.find("-BUILD") != -1 or plan.find("-TEST") != -1:
+        continue
+    if not(build_plans[plan]['enabled']):
         continue
     build_results[plan] = client.get_latest_build_results(plan).get(plan)
     buildKey = build_results[plan].get("buildKey");
