@@ -49,6 +49,13 @@ GLOBUS_GATEKEEPER_PORT="${GLOBUS_GATEKEEPER_PORT:-2119}"
 test -f "${GLOBUS_GATEKEEPER_CERT_FILE:-${sysconfdir}/grid-security/hostcert.pem}" || exit 0
 test -f "${GLOBUS_GATEKEEPER_KEY_FILE:-${sysconfdir}/grid-security/hostkey.pem}" || exit 0
 
+# avoid ksh93 built-in aliases (GRAM-335)
+for aname in "start" "stop" "restart" "status"; do
+    if alias "$aname" > /dev/null 2>&1; then
+        unalias "$aname"
+    fi
+done
+
 start()
 {
     status > /dev/null

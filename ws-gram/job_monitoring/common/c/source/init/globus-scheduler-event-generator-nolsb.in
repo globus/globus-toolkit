@@ -45,6 +45,13 @@ lockfile="@LOCKFILE@"
 
 GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
 
+# avoid ksh93 built-in aliases (GRAM-335)
+for aname in "start" "stop" "restart" "status"; do
+    if alias "$aname" > /dev/null 2>&1; then
+        unalias "$aname"
+    fi
+done
+
 full=1
 if [ -n "$2" ]; then
     full=0
