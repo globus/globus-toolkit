@@ -171,6 +171,15 @@ if which invoke-rc.d > /dev/null 2>&1 ; then
 else
     sudo /etc/init.d/globus-gridftp-server restart 
 fi
+
+if which invoke-rc.d > /dev/null 2>&1; then
+    sudo invoke-rc.d globus-gatekeeper restart
+    sudo invoke-rc.d globus-scheduler-event-generator restart || true
+else
+    sudo /etc/init.d/globus-gatekeeper restart || true
+    sudo /etc/init.d/globus-scheduler-event-generator restart || true
+fi
+
 grid-proxy-init -hours 24
 
 mkdir -p "$tmppath/$flavor"
@@ -249,6 +258,13 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
             done
         done
         sudo apt-get -y install globus-gram-job-manager-fork globus-gram-job-manager-fork-setup-poll
+        if which invoke-rc.d > /dev/null 2>&1; then
+            sudo invoke-rc.d globus-gatekeeper restart
+            sudo invoke-rc.d globus-scheduler-event-generator restart || true
+        else
+            sudo /etc/init.d/globus-gatekeeper restart || true
+            sudo /etc/init.d/globus-scheduler-event-generator restart || true
+        fi
     else
         dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
         export CONTACT_STRING="$(globus-hostname)/jobmanager-fork-poll:$dn" 
