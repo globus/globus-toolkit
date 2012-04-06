@@ -21,7 +21,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-core
 _name = globus_core
-version = 8.7
+version = 8.8
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages

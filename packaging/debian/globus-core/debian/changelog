@@ -1,3 +1,9 @@
+globus-core (8.8-1) unstable; urgency=low
+
+  * RIC-252: solaris build failure
+
+ -- Globus Toolkit <support@globus.org>  Fri, 06 Apr 2012 13:18:23 -0400
+
 globus-core (8.7-1) unstable; urgency=low
 
   * RIC-206: globus-makefile-header doesn't set flavor header dir correctly

@@ -18,7 +18,7 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.7
+Version:	8.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Fri Apr 06 2012 Joseph Bester <bester@mcs.anl.gov> - 8.8-1
+- RIC-252: solaris build failure
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 8.7-1
 - RIC-206: globus-makefile-header doesn't set flavor header dir correctly
 - RIC-232: Simplify search for OpenSSL headers and libraries
