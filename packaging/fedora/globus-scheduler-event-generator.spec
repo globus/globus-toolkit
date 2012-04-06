@@ -12,8 +12,8 @@
 
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	4.4
-Release:	2%{?dist}
+Version:	4.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
@@ -216,6 +216,10 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Apr 06 2012 Joseph Bester <bester@mcs.anl.gov> - 4.5-1
+- GRAM-335: init scripts fail on solaris because of stop alias
+- RIC-205: Missing directories $GLOBUS_LOCATION/var/lock and $GLOBUS_LOCATION/var/run
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 4.4-2
 - Updated version numbers
 

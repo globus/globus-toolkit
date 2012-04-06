@@ -1,3 +1,10 @@
+globus-gatekeeper (9.10-1) unstable; urgency=low
+
+  * GRAM-335: init scripts fail on solaris because of stop alias
+  * RIC-205: Missing directories $GLOBUS_LOCATION/var/lock and $GLOBUS_LOCATION/var/run
+
+ -- Globus Toolkit <support@globus.org>  Fri, 06 Apr 2012 09:51:19 -0400
+
 globus-gatekeeper (9.9-1) unstable; urgency=low
 
   * GRAM-303: Gatekeeper's syslog output cannot be controlled

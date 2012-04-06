@@ -12,7 +12,7 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.9
+Version:	9.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -116,6 +116,10 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Fri Apr 06 2012 Joseph Bester <bester@mcs.anl.gov> - 9.10-1
+- GRAM-335: init scripts fail on solaris because of stop alias
+- RIC-205: Missing directories $GLOBUS_LOCATION/var/lock and $GLOBUS_LOCATION/var/run
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 9.9-1
 - GRAM-303: Gatekeeper's syslog output cannot be controlled
 - GRAM-309: GRAM5 doesn't work with IPv4 only gatekeepers

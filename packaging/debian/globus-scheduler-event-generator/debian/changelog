@@ -1,3 +1,15 @@
+globus-scheduler-event-generator (4.5-2) unstable; urgency=low
+
+  * GRAM-335: init scripts fail on solaris because of stop alias
+  * RIC-205: Missing directories $GLOBUS_LOCATION/var/lock and $GLOBUS_LOCATION/var/run
+
+ -- Globus Toolkit <support@globus.org>  Fri, 06 Apr 2012 09:47:16 -0400
+
+globus-scheduler-event-generator (4.5-1) unstable; urgency=low
+
+
+ -- Globus Toolkit <support@globus.org>  Fri, 06 Apr 2012 09:46:38 -0400
+
 globus-scheduler-event-generator (4.4-2) unstable; urgency=low
 
   * Update version for 5.2.1

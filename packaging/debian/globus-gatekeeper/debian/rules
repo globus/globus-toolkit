@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gatekeeper
 _name = globus_gatekeeper
-version = 9.9
+version = 9.10
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
