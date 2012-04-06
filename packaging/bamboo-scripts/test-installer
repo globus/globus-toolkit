@@ -242,6 +242,11 @@ EOF
     export CONTACT_STRING
     export CONTACT_LRM
 
+    echo "Auth test"
+    globusrun -a -r "$CONTACT_STRING"
+    echo "Dryrun test"
+    globusrun -dryrun -r "$CONTACT_STRING" "&(executable=/bin/sh)"
+
     mkdir -p "$tmppath/$flavor"
     cd "$tmppath/$flavor"
 
