@@ -195,6 +195,9 @@ case ${host}--$1 in
             fi
         fi
         CC="$lac_cv_CC"
+        dnl Some of the components use bits of the headers that aren't in the
+        dnl default compilation environment
+        lac_CFLAGS="-D__EXTENSIONS__ -D_XOPEN_SOURCE -D_XOPEN_SOURCE_EXTENDED $lac_cflags"
 
         if test "$CC" = "/usr/ucb/cc" ; then
             AC_MSG_ERROR([The compiler found was /usr/ucb/cc (not supported)])
@@ -202,20 +205,20 @@ case ${host}--$1 in
         fi
 
         LAC_PROG_CC_GNU($lac_cv_CC,
-                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                        [if test "$1" = "pthreads" ; then
                                 lac_CFLAGS="-D_REENTRANT $lac_CFLAGS"
                          fi],
-                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                        [if test "$1" = "pthreads" ; then
                                 lac_CFLAGS="-mt $lac_CFLAGS"
                          fi
                          lac_cflags_opt="-xO3"])
 
         LAC_PROG_CC_GNU($lac_cv_CXX,
-                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                        [if test "$1" = "pthreads" ; then
                                 lac_CXXFLAGS="-D_REENTRANT $lac_CXXFLAGS"
                          fi
                         ],
-                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                        [if test "$1" = "pthreads" ; then
                                 lac_CXXFLAGS="-mt $lac_CXXFLAGS"
                          fi
                          lac_cxxflags_opt="-xO3"
