@@ -1,2 +1,2 @@
 method = scp
-scp_file = /home/jbasney/gt5.2.0-all-source-installer.tar.gz
+scp_file = /home/jbasney/gt5.2.1rc1-all-source-installer.tar.gz
