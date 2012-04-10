@@ -284,8 +284,8 @@ rm -f "/tmp/x509up_u$(id -u)"
 
 # Remove test host credentials
 if [ "$remove_hostcert" = "yes" ]; then
-    sudo rm -f /etc/grid-security/hostcert.pem"
-    sudo rm -f /etc/grid-security/hostkey.pem"
+    sudo rm -f "/etc/grid-security/hostcert.pem"
+    sudo rm -f "/etc/grid-security/hostkey.pem"
 fi
 
 if [ "$remove_default_ca" = "yes" ]; then
@@ -300,4 +300,3 @@ pkgs_to_rm="$( dpkg-query -W -f "\${Package}\t\${Status}\n" "*globus*" "grid-pac
 if [ -n "$pkgs_to_rm" ]; then
     sudo dpkg -P $pkgs_to_rm
 fi
-
