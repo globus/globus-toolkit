@@ -212,17 +212,12 @@ if [ ! -f "/etc/grid-security/hostcert.pem" ]; then
     remove_host_creds="yes"
 fi
 
-X509_USER_CERT="$TEST_USER_CERT"
-X509_USER_KEY="$TEST_USER_KEY"
-export X509_USER_CERT
-export X509_USER_KEY
-
-USER_DN="$(grid-cert-info -s -f "$X509_USER_CERT")"
+USER_DN="$(grid-cert-info -s -f "$TEST_USER_CERT")"
 USER_LN="$(id -un)"
 sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-add-entry -dn \"$USER_DN\" -ln $USER_LN"
 
 
-grid-proxy-init -hours 24
+grid-proxy-init -hours 24 -cert "$TEST_USER_CERT" -key "$TEST_USER_KEY"
 
 for flavor in $flavors; do
     GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
