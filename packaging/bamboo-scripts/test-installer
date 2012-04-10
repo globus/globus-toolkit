@@ -280,6 +280,16 @@ EOF
     done
     sudo -E env GCOV_PREFIX=${root_source_prefix} ${GLOBUS_LOCATION}/etc/init.d/globus-gridftp-server stop
     sudo -E env GCOV_PREFIX=${root_source_prefix} ${GLOBUS_LOCATION}/etc/init.d/globus-gatekeeper stop
+
+    pids="$( ps -u $(id -un) -o pid,args | grep '[g]lobus-job-manager' | cut -d' ' -f1 || true)"
+    if [ "$pids" != "" ]; then
+        kill $pids
+    fi
+    #killall globus-job-manager
+    rm -rf ~/.globus/job
+    rm -rf /var/lib/globus/gram_job_state/bamboo/*
+    rm -f /var/lib/globus/gram_job_state/job.*
+    rm -rf ~/.globus/.gass_cache
 done
 
 if [ "$profile" = 1 ]; then
