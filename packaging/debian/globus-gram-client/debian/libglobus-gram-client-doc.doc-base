@@ -1,9 +1,0 @@
-Document: globus-gram-client
-Title: Debian globus-gram-client Manual
-Author: Globus Alliance
-Abstract: The Globus toolkit, GRAM Client Library
-Section: Programming
-
-Format: HTML
-Index: /usr/share/doc/libglobus-gram-client-dev/html/index.html
-Files: /usr/share/doc/libglobus-gram-client-dev/html/*.html
