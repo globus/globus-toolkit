@@ -16,6 +16,7 @@ else
 fi
 
 cd "$bamboodir/.."
+topdir="$(pwd)"
 
 tag=''
 flavor=''
@@ -62,9 +63,9 @@ tar cf "${installer_dir}.tar" "${installer_dir}"
 
 gzip -9 "${installer_dir}.tar" 
 
-mkdir artifacts
+artifactsdir="${topdir}/artifacts"
+mkdir "${artifactsdir}"
 
-cp "${installer_dir}.tar.gz" artifacts
+cp "${installer_dir}.tar.gz" "${artifactsdir}"
 
-cd artifacts
-md5sum "${installer_dir}.tar.gz" > "${installer_dir}.tar.gz.md5" 
+md5sum "${artifactsdir}/${installer_dir}.tar.gz" > "${artifactsdir}/${installer_dir}.tar.gz.md5" 
