@@ -56,15 +56,15 @@ chmod a+x *.pl fait_accompli/installer.sh \
 
 ./fait_accompli/installer.sh -a -f "$flavor" ${tag:+-t "$tag"}
 installer_dir="gt${gtversion}-all-source-installer"
-installer_dir_buildnumber="${installer_dir}-rc${build_number}"
 find "${installer_dir}" -name install-sh -exec chmod a+x {} +
 
 tar cf "${installer_dir}.tar" "${installer_dir}"
-mv "${installer_dir}" "${installer_dir_buildnumber}"
-tar cf "${installer_dir_buildnumber}.tar" "${installer_dir_buildnumber}"
 
 gzip -9 "${installer_dir}.tar" 
-gzip -9 "${installer_dir_buildnumber}.tar" 
 
-cp "${installer_dir}.tar.gz" "${bamboodir}"
-cp "${installer_dir_buildnumber}.tar.gz" "${bamboodir}"
+mkdir artifacts
+
+cp "${installer_dir}.tar.gz" artifacts
+
+cd artifacts
+md5sum "${installer_dir}.tar.gz" > "${installer_dir}.tar.gz.md5" 
