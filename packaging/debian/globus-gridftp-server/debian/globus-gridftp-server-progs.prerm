@@ -1,9 +1,0 @@
-#! /bin/sh
-
-if which invoke-rc.d >/dev/null 2>&1; then
-	invoke-rc.d globus-gridftp-server stop
-	invoke-rc.d globus-gridftp-sshftp stop
-else
-	/etc/init.d/globus-gridftp-server stop
-	/etc/init.d/globus-gridftp-sshftp stop
-fi
