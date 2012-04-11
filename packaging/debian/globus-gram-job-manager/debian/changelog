@@ -1,3 +1,12 @@
+globus-gram-job-manager (13.33-1) unstable; urgency=low
+
+  * GRAM-334: job manager doesn't work if unix socket path is too long
+  * GRAM-338: GRAM job manager mishandles peer name when proxying messages through the gatekeeper
+  * GRAM-340: job manager crashes during stdio size query
+  * GRAM-342: intra-job manager protocol doesn't keep do signal-safe reads
+
+ -- Globus Toolkit <support@globus.org>  Wed, 11 Apr 2012 07:02:04 -0500
+
 globus-gram-job-manager (13.31-1) unstable; urgency=low
 
   * GRAM-329: Condor fake-SEG loses track of job

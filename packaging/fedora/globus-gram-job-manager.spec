@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.31
+Version:	13.33
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -173,6 +173,12 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Apr 11 2012 Joseph Bester <bester@mcs.anl.gov> - 13.33-1
+- GRAM-334: job manager doesn't work if unix socket path is too long
+- GRAM-338: GRAM job manager mishandles peer name when proxying messages through the gatekeeper
+- GRAM-340: job manager crashes during stdio size query
+- GRAM-342: intra-job manager protocol doesn't keep do signal-safe reads
+
 * Mon Apr 02 2012 Joseph Bester <bester@mcs.anl.gov> - 13.31-1
 - GRAM-329: Condor fake-SEG loses track of job
 
