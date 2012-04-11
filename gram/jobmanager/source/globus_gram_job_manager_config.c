@@ -614,7 +614,7 @@ globus_gram_job_manager_config_init(
 
     rc = uname(&utsname);
 
-    if (rc == 0)
+    if (rc >= 0)
     {
         if (config->globus_host_osname == NULL)
         {
