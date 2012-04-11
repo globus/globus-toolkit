@@ -1442,8 +1442,8 @@ globus_l_gram_job_manager_signal(
                         "jmstate=%s "
                         "msg=\"%s\" "
                         "status=%d "
-                        "stdout_signal_size=%d "
-                        "stdout_actual_size=%d "
+                        "stdout_signal_size=%ld "
+                        "stdout_actual_size=%ld "
                         "reason=\"%s\" "
                         "\n",
                         request->job_contact_path,
@@ -1452,8 +1452,8 @@ globus_l_gram_job_manager_signal(
                                 request->jobmanager_state],
                         "Stdout size mismatch",
                         -rc,
-                        out_size,
-                        local_size_stdout,
+                        (long int) out_size,
+                        (long int) local_size_stdout,
                         globus_gram_protocol_error_string(rc));
             }
             else if (err_size >= 0 && err_size != local_size_stderr)
@@ -1469,8 +1469,8 @@ globus_l_gram_job_manager_signal(
                         "jmstate=%s "
                         "msg=\"%s\" "
                         "status=%d "
-                        "stderr_signal_size=%d "
-                        "stderr_actual_size=%d "
+                        "stderr_signal_size=%ld "
+                        "stderr_actual_size=%ld "
                         "reason=\"%s\" "
                         "\n",
                         request->job_contact_path,
@@ -1479,8 +1479,8 @@ globus_l_gram_job_manager_signal(
                                 request->jobmanager_state],
                         "Stderr size mismatch",
                         -rc,
-                        err_size,
-                        local_size_stderr,
+                        (long int) err_size,
+                        (long int) local_size_stderr,
                         globus_gram_protocol_error_string(rc));
             }
             else
