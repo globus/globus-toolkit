@@ -167,13 +167,13 @@ export X509_USER_KEY
 sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
 
 if which invoke-rc.d > /dev/null 2>&1 ; then
-    sudo invoke-rc.d globus-gridftp-server restart 
+    sudo invoke-rc.d globus-gridftp-server restart || true
 else
-    sudo /etc/init.d/globus-gridftp-server restart 
+    sudo /etc/init.d/globus-gridftp-server restart || true
 fi
 
 if which invoke-rc.d > /dev/null 2>&1; then
-    sudo invoke-rc.d globus-gatekeeper restart
+    sudo invoke-rc.d globus-gatekeeper restart || true
     sudo invoke-rc.d globus-scheduler-event-generator restart || true
 else
     sudo /etc/init.d/globus-gatekeeper restart || true
@@ -277,6 +277,25 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
     fi
     cd ..
 done
+
+pids="$( ps -u $(id -un) -o pid,args | grep '[g]lobus-job-manager' | cut -d' ' -f1 || true)"
+if [ "$pids" != "" ]; then
+    kill $pids
+fi
+
+if which invoke-rc.d > /dev/null 2>&1 ; then
+    sudo invoke-rc.d globus-gridftp-server stop || true
+else
+    sudo /etc/init.d/globus-gridftp-server stop || true
+fi
+
+if which invoke-rc.d > /dev/null 2>&1; then
+    sudo invoke-rc.d globus-gatekeeper stop || true
+    sudo invoke-rc.d globus-scheduler-event-generator stop || true
+else
+    sudo /etc/init.d/globus-gatekeeper restart || true
+    sudo /etc/init.d/globus-scheduler-event-generator stop || true
+fi
 
 # Remove test credential
 sudo grid-mapfile-delete-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
