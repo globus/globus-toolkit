@@ -103,7 +103,7 @@ mkdir -p "$flavor"
 curl -s "$repopkg_url" > "${flavor}/${repopkg_url##*/}"
 sudo dpkg -i "${flavor}/${repopkg_url##*/}"
 if [ "$test_from_bamboo" = 1 ]; then
-    sudo sed -i /etc/apt/sources.list.d/globus.list -e "s|http://www.globus.org/ftppub/gt[0-9]\{1,\}/[0-9]\{1,\}\.[0-9]\{1,\}/[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}/[a-z]\{1,\}/deb/[a-z]\{1,\}/[0-9\.]\{1,\}|${artifact_url}/repo|"
+    sudo sed -i /etc/apt/sources.list.d/globus.list -e "s|http://www.globus.org/ftppub/gt[0-9]\{1,\}/[0-9]\{1,\}\.[0-9]\{1,\}/[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9rc]\{1,\}/[a-z]\{1,\}/deb/[a-z]\{1,\}/[0-9\.]\{1,\}|${artifact_url}/repo|"
 fi
 sudo aptitude -y update
 sudo mkdir -p /etc/grid-security/certificates
