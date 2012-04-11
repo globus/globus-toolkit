@@ -12,7 +12,7 @@
 
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
-Version:	10.1
+Version:	10.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
@@ -84,6 +84,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Wed Apr 11 2012 Joseph Bester <bester@mcs.anl.gov> - 10.2-1
+- GRAM-331: Remove dead code from globusrun
+- GRAM-341: globusrun ignores state callbacks that occur too early
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 10.1-1
 - GRAM-311: Undefined variable defaults in shell scripts
 - RIC-226: Some dependencies are missing in GPT metadata

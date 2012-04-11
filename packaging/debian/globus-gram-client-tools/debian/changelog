@@ -1,3 +1,10 @@
+globus-gram-client-tools (10.2-1) unstable; urgency=low
+
+  * GRAM-331: Remove dead code from globusrun
+  * GRAM-341: globusrun ignores state callbacks that occur too early
+
+ -- Globus Toolkit <support@globus.org>  Wed, 11 Apr 2012 05:33:53 -0500
+
 globus-gram-client-tools (10.1-1) unstable; urgency=low
 
   * GRAM-311: Undefined variable defaults in shell scripts
