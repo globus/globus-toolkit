@@ -127,10 +127,10 @@ stringify ()
     #
     arg="`${GLOBUS_SH_CAT-cat} -`"
 
-    if [ "X`echo ${arg} | ${GLOBUS_SH_SED-sed} -n '/\$(.*)/p'`" = "X" ]; then
-        echo ${arg} | ${GLOBUS_SH_SED-sed} -e 's/"/""/g' -e 's/^.*$/"&"/g'
+    if [ "X`printf "%s" "${arg}" | ${GLOBUS_SH_SED-sed} -n '/\$(.*)/p'`" = "X" ]; then
+        printf "%s" "${arg}" | ${GLOBUS_SH_SED-sed} -e 's/"/""/g' -e 's/^.*$/"&"/g'
     else
-        echo ${arg}
+        printf "%s" "${arg}"
     fi
 }
 
@@ -401,7 +401,7 @@ parse_user_args ()
     shift_count=0
     temp_arguments=""
     while ${GLOBUS_SH_EXPR-expr} "$#" \> 0 > /dev/null 2> /dev/null ; do
-        arg=`echo "$1" | stringify`
+        arg=`printf "%s" "$1" | stringify`
         temp_arguments="${temp_arguments} ${arg}"
         shift
         shift_count=`${GLOBUS_SH_EXPR-expr} "$shift_count" + 1 2> /dev/null`
@@ -573,7 +573,7 @@ parse_hostclause ()
                         continue
                     fi
 		fi
-		subjob_args="$subjob_args `echo "$1" | stringify`"
+		subjob_args="$subjob_args `printf "%s" "$1" | stringify`"
 		shift_count=`${GLOBUS_SH_EXPR-expr} $shift_count + 1`
 		shift
 	    done
