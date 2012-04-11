@@ -30,6 +30,8 @@
 #include "globus_gram_job_manager.h"
 #include "globus_xio_popen_driver.h"
 
+#include <sys/un.h>
+
 /* This value (in seconds) is the length of time after a job hits a waiting
  * for SEG state before freeing its memory
  */
@@ -144,6 +146,7 @@ globus_gram_job_manager_init(
 {
     int                                 rc;
     char *                              dir_prefix = NULL;
+    struct sockaddr_un                  s;
 
     if (manager == NULL || config == NULL)
     {
@@ -310,6 +313,19 @@ globus_gram_job_manager_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto malloc_socket_path_failed;
     }
+    else if (strlen(manager->socket_path) > sizeof(s.sun_path))
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
+        if (manager->gt3_failure_message == NULL)
+        {
+            manager->gt3_failure_message =
+                globus_common_create_string(
+                    "the job manager wants to use %s as a socket path, but the path is too long (use the -globus-job-dir option in etc/globus/globus-gram-job-manager.conf)",
+                    manager->socket_path);
+
+        }
+        goto malloc_socket_path_failed;
+    }
 
     manager->pid_path = globus_common_create_string(
             "%s/%s.%s.pid",
@@ -410,7 +426,6 @@ request_hashtable_init_failed:
                 manager->validation_records);
         manager->validation_records = NULL;
         
-validation_init_failed:
         globus_cond_destroy(&manager->cond);
 cond_init_failed:
         GlobusGramJobManagerUnlock(manager);
@@ -3226,7 +3241,6 @@ globus_l_gram_script_attr_init(
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
 
-attr_cntl_blocking_failed:
 attr_cntl_env_failed:
 attr_cntl_program_failed:
         globus_xio_attr_destroy(manager->script_attr);
