@@ -48,7 +48,6 @@ CVS Information:
 #include "globus_gass_server_ez.h"
 #include "globus_rsl.h"
 
-#include "globus_rsl_assist.h"
 #include "globus_gss_assist.h"
 #include "version.h" /* provides local_version */
 
@@ -69,6 +68,7 @@ typedef struct globus_i_globusrun_gram_monitor_s
     char *                              failure_message;
     globus_url_t                        job_contact;
     char *                              job_contact_string;
+    globus_list_t *                     premature_callbacks;
 } globus_i_globusrun_gram_monitor_t;
 
 
@@ -1119,6 +1119,37 @@ globus_l_globusrun_gram_callback_func(
     globus_mutex_lock(&monitor->mutex);
     if (!monitor->job_contact_string)
     {
+        globus_gram_client_job_info_t * tmp = malloc(sizeof(globus_gram_client_job_info_t));
+        globus_gram_protocol_extension_t * ext;
+
+        if (job_info->extensions)
+        {
+            rc = globus_hashtable_init(
+                &tmp->extensions,
+                3,
+                globus_hashtable_string_hash,
+                globus_hashtable_string_keyeq);
+
+            for (entry = globus_hashtable_first(&job_info->extensions);
+                 entry != NULL;
+                 entry = globus_hashtable_next(&job_info->extensions))
+            {
+                ext = malloc(sizeof(globus_gram_protocol_extension_t));
+                ext->attribute = strdup(entry->attribute);
+                ext->value = strdup(entry->value);
+
+                globus_hashtable_insert(&tmp->extensions, ext->attribute, ext);
+            }
+        }
+        else
+        {
+            tmp->extensions = NULL;
+        }
+
+        tmp->job_contact = strdup(job_contact);
+        tmp->job_state = job_info->job_state;
+        tmp->protocol_error_code = job_info->protocol_error_code;
+        globus_list_insert(&monitor->premature_callbacks, tmp);
         globus_mutex_unlock(&monitor->mutex);
         return;
     }
@@ -1237,6 +1268,37 @@ globus_l_globusrun_gram_callback_func(
     globus_mutex_unlock(&monitor->mutex);
 } /* globus_l_globusrun_gram_callback_func() */
 
+static
+void
+globus_l_resend_premature_callback(
+    void *                              arg)
+{
+    globus_i_globusrun_gram_monitor_t * monitor = arg;
+
+    globus_mutex_lock(&monitor->mutex);
+
+    while (!globus_list_empty(monitor->premature_callbacks))
+    {
+        globus_gram_client_job_info_t *     info;
+        info = globus_list_remove(
+                &monitor->premature_callbacks,
+                monitor->premature_callbacks);
+
+        globus_mutex_unlock(&monitor->mutex);
+        globus_l_globusrun_gram_callback_func(
+            monitor,
+            info->job_contact,
+            info);
+        globus_mutex_lock(&monitor->mutex);
+
+        globus_gram_protocol_hash_destroy(&info->extensions);
+        free(info->job_contact);
+        free(info);
+    }
+    globus_mutex_unlock(&monitor->mutex);
+}
+/* globus_l_resend_premature_callback() */
+
 /******************************************************************************
 Function: globus_l_globusrun_gramrun()
 
@@ -1252,7 +1314,7 @@ globus_l_globusrun_gramrun(char * request_string,
 			   char *rm_contact)
 {
     char *callback_contact = NULL;
-    globus_i_globusrun_gram_monitor_t monitor;
+    globus_i_globusrun_gram_monitor_t monitor = {0};
     int err;
     globus_bool_t verbose = !(options & GLOBUSRUN_ARG_QUIET);
     globus_bool_t send_commit = GLOBUS_FALSE;
@@ -1425,6 +1487,14 @@ globus_l_globusrun_gramrun(char * request_string,
         monitor.done = GLOBUS_TRUE;
     }
 
+    if (monitor.premature_callbacks)
+    {
+        globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_resend_premature_callback,
+                &monitor);
+    }
     while(!monitor.done)
     {
         /* If we're running in batch mode and need to allow for GASS reads
@@ -1757,28 +1827,6 @@ globus_l_globusrun_sigint_handler(void * user_arg)
     globus_mutex_unlock(&monitor->mutex);
 
 } /* globus_l_globusrun_sigint_handler() */
-
-/******************************************************************************
-Function: globus_l_globusrun_signal()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-static int
-globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int))
-{
-    struct sigaction act;
-
-    memset(&act, '\0', sizeof(struct sigaction));
-    sigemptyset(&(act.sa_mask));
-    act.sa_handler = func;
-    act.sa_flags = 0;
-
-    return sigaction(signum, &act, NULL);
-} /* globus_l_globusrun_signal() */
 
 static
 void
