@@ -1911,18 +1911,26 @@ globus_l_gram_startup_socket_callback(
             socklen_t                   peer_address_len;
             char *                      peer_str = NULL;
 
-            peer_address_len = sizeof(peer_address);
-
-            rc = getpeername(
-                    response_fd,
-                    (struct sockaddr *) &peer_address,
-                    &peer_address_len);
-            if (rc == GLOBUS_SUCCESS)
+            if (peername != NULL)
             {
-                rc = globus_libc_addr_to_contact_string(
-                        &peer_address,
-                        GLOBUS_LIBC_ADDR_NUMERIC,
-                        &peer_str);
+                peer_str = peername;
+                peername = NULL;
+            }
+            else
+            {
+                peer_address_len = sizeof(peer_address);
+
+                rc = getpeername(
+                        response_fd,
+                        (struct sockaddr *) &peer_address,
+                        &peer_address_len);
+                if (rc == GLOBUS_SUCCESS)
+                {
+                    rc = globus_libc_addr_to_contact_string(
+                            &peer_address,
+                            GLOBUS_LIBC_ADDR_NUMERIC,
+                            &peer_str);
+                }
             }
 
             globus_gram_job_manager_request_log(
