@@ -12,7 +12,7 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	10.5
+Version:	10.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -186,6 +186,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Apr 11 2012 Joseph Bester <bester@mcs.anl.gov> - 10.6-1
+- RIC-254: gssapi probe for whether it can use openssl internals doesn't always work
+
 * Fri Mar 09 2012 Joseph Bester <bester@mcs.anl.gov> - 10.5-1
 - RIC-243: gss_import_cred can't handle non-null terminated token
 

@@ -1,3 +1,9 @@
+globus-gssapi-gsi (10.6-1) unstable; urgency=low
+
+  * RIC-254: gssapi probe for whether it can use openssl internals doesn't always work
+
+ -- Globus Toolkit <support@globus.org>  Wed, 11 Apr 2012 07:08:35 -0500
+
 globus-gssapi-gsi (10.5-1) unstable; urgency=low
 
   * RIC-243: gss_import_cred can't handle non-null terminated token
