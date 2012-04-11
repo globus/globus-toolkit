@@ -1439,6 +1439,7 @@ globus_gram_job_manager_read_request(
     int                                 rc;
     globus_hashtable_t                  extensions;
     globus_gram_protocol_extension_t *  entry;
+    size_t                              amt_read = 0;
     globus_byte_t                       buffer[
                                             GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
 
@@ -1471,9 +1472,18 @@ globus_gram_job_manager_read_request(
                 "RSL too large");
         return rc;
     }
-    if ((rc = read(fd, buffer, content_length)) != content_length)
+    do
     {
-        if (rc < 0)
+        errno = 0;
+
+        rc = read(fd, buffer + amt_read, content_length - amt_read);
+
+        if (rc < 0 && (errno == EINTR || errno == EAGAIN))
+        {
+            sleep(1);
+            continue;
+        }
+        else if (rc < 0)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 
@@ -1490,27 +1500,14 @@ globus_gram_job_manager_read_request(
                     "Error reading rsl",
                     errno,
                     strerror(errno));
+            return rc;
         }
         else
         {
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.read_request.end "
-                    "level=ERROR "
-                    "status=%d "
-                    "msg=\"%s\" "
-                    "size=%zd "
-                    "read=%ld "
-                    "\n"
-                    -GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED,
-                    "Short read of rsl",
-                    content_length,
-                    rc);
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+            amt_read += rc;
         }
-        return rc;
     }
+    while (amt_read < content_length);
 
     if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
     {
