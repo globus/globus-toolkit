@@ -12,7 +12,7 @@
 
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
-Version:	10.2
+Version:	10.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
@@ -84,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Wed Apr 11 2012 Joseph Bester <bester@mcs.anl.gov> - 10.3-1
+- GRAM-339: globus-job-run and globus-job-submit can't always handle "-e" as an argument
+
 * Wed Apr 11 2012 Joseph Bester <bester@mcs.anl.gov> - 10.2-1
 - GRAM-331: Remove dead code from globusrun
 - GRAM-341: globusrun ignores state callbacks that occur too early

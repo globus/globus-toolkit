@@ -1,3 +1,9 @@
+globus-gram-client-tools (10.3-1) unstable; urgency=low
+
+  * GRAM-339: globus-job-run and globus-job-submit can't always handle "-e" as an argument
+
+ -- Globus Toolkit <support@globus.org>  Wed, 11 Apr 2012 14:38:21 -0500
+
 globus-gram-client-tools (10.2-1) unstable; urgency=low
 
   * GRAM-331: Remove dead code from globusrun
