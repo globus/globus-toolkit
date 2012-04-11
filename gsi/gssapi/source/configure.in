@@ -24,8 +24,6 @@ esac
 GLOBUS_OPENSSL
 
 AC_MSG_CHECKING([if we can link with internal OpenSSL APIs])
-oldlibs="$LIBS"
-LIBS="$GPT_CONFIG_LIBS"
 AC_LINK_IFELSE(
     AC_LANG_PROGRAM(
         [#include <openssl/ssl.h>
@@ -35,7 +33,7 @@ AC_LINK_IFELSE(
     [ac_cv_can_link_with_openssl_internal_api=no])
 
 AC_MSG_RESULT([$ac_cv_can_link_with_openssl_internal_api])
-LIBS="$oldlibs"
+
 if test "$ac_cv_can_link_with_openssl_internal_api" = yes; then
     AC_DEFINE(LINK_WITH_INTERNAL_OPENSSL_API)
 fi
