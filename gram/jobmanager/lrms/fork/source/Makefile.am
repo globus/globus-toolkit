@@ -29,6 +29,8 @@ jobmanager-fork-seg: jobmanager-fork-seg.in
 
 EXTRA_DIST = fork.pm jobmanager-fork-poll.in jobmanager-fork-seg.in $(doc_DATA)
 
+CLEANFILES = jobmanager-fork-poll jobmanager-fork-seg
+
 if SEG_ENABLED_COND
 install-data-local:
 	mkdir -p "$(DESTDIR)@globusstatedir@"

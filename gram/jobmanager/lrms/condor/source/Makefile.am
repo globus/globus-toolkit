@@ -37,5 +37,7 @@ install-data-hook:
 EXTRA_DIST = condor.pm condor.rvf globus-condor.conf.in jobmanager-condor.in \
 	GLOBUS_LICENSE
 
+CLEANFILES = jobmanager-condor
+
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
