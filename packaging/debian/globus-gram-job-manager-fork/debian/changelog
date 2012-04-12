@@ -1,3 +1,9 @@
+globus-gram-job-manager-fork (1.5-1) unstable; urgency=low
+
+  * GRAM-343: lrm packages grid-service files aren't in CLEANFILES
+
+ -- Globus Toolkit <support@globus.org>  Thu, 12 Apr 2012 10:50:27 -0500
+
 globus-gram-job-manager-fork (1.4-1) unstable; urgency=low
 
   * GRAM-333: SEG config in installer has variables that aren't resolved at runtime

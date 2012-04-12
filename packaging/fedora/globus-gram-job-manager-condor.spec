@@ -8,7 +8,7 @@
 
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
-Version:	1.2
+Version:	1.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
@@ -112,6 +112,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-condor
 
 %changelog
+* Thu Apr 12 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-1
+- GRAM-343: lrm packages grid-service files aren't in CLEANFILES
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 1.2-1
 - GRAM-297: job manager service definitions contain unresolved variables
 - GRAM-310: sge configure script error

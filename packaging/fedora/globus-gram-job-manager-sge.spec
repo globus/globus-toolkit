@@ -15,7 +15,7 @@
 
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
-Version:	1.4
+Version:	1.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
@@ -266,6 +266,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Apr 12 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-1
+- GRAM-343: lrm packages grid-service files aren't in CLEANFILES
+
 * Wed Mar 14 2012 Joseph Bester <bester@mcs.anl.gov> - 1.4-1
 - GRAM-318: Periodic lockup of SEG
 

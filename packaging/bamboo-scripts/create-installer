@@ -68,4 +68,5 @@ mkdir "${artifactsdir}"
 
 cp "${installer_dir}.tar.gz" "${artifactsdir}"
 
-md5sum "${artifactsdir}/${installer_dir}.tar.gz" > "${artifactsdir}/${installer_dir}.tar.gz.md5" 
+md5sum "${artifactsdir}/${installer_dir}.tar.gz" > "${artifactsdir}/${installer_dir}.tar.gz.md5"  || true
+sha1sum "${artifactsdir}/${installer_dir}.tar.gz" > "${artifactsdir}/${installer_dir}.tar.gz.sha1"  || true
