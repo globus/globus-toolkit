@@ -102,7 +102,6 @@ sub submit
     my @arguments;
     my $fork_starter = "$Globus::Core::Paths::sbindir/globus-fork-starter";
     my $streamer = "$Globus::Core::Paths::sbindir/globus-gram-streamer";
-    my $fork_conf = "$Globus::Core::Paths::sysconfdir/globus-fork.conf";
     my $is_grid_monitor = 0;
     my $soft_msc       = "$softenv_dir/bin/soft-msc";
     my $softenv_load   = "$softenv_dir/etc/softenv-load.sh";

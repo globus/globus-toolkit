@@ -31,7 +31,9 @@ jobmanager-pbs-seg: jobmanager-pbs-seg.in
 doc_DATA = GLOBUS_LICENSE
 
 EXTRA_DIST = globus-pbs.conf.in pbs.pm $(doc_DATA) $(validation_DATA) \
-    jobmanager-pbs-poll.in jobmanager-seg-poll.in 
+    jobmanager-pbs-poll.in jobmanager-pbs-seg.in 
+
+CLEANFILES = jobmanager-pbs-poll jobmanager-pbs-seg
 
 if SEG_ENABLED_COND
 install-data-local:
