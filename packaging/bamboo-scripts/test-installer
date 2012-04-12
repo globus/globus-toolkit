@@ -7,11 +7,13 @@ PATH=$PATH:/usr/sbin:/sbin
 
 packagingdir="$(pwd)"
 coveragedir="${packagingdir}/coverage"
+doxygendir="${packagingdir}/doxygen"
 bamboodir=$(pwd)/bamboo-scripts
 topdir=$(pwd)
 tmppath=$(pwd)/tmp
 testoutdir=$(pwd)/test-results
 mkdir -p "${coveragedir}"
+mkdir -p "${doxygendir}"
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 
 chroot=""
@@ -20,8 +22,9 @@ flavors=""
 tag=""
 profileflags=""
 configure_options=""
+skip_build="no"
 
-while getopts "ic:r:f:t:po:" i; do
+while getopts "ic:r:f:t:po:s" i; do
     case "$i" in
         i)
             in_chroot=1
@@ -47,6 +50,9 @@ while getopts "ic:r:f:t:po:" i; do
             ;;
         o)
             configure_options="$OPTARG"
+            ;;
+        s)
+            skip_build="yes"
             ;;
     esac
 done
@@ -116,7 +122,7 @@ source_package_dir="${installer_dir}/source-packages"
 root_source_prefix="${installer_dir}/source-trees-root"
 
 # Download the source installer
-if [ "$in_chroot" != 1 ]; then
+if [ "$in_chroot" != 1 ] && [ "$skip_build" != "yes" ]; then
     if [ ! -f "${installer_file}" ]; then
         curl -Os "$installer_url"
     fi
@@ -126,28 +132,36 @@ if [ "$in_chroot" != 1 ]; then
     fi
 fi
 
+# Don't try to get API docs if doxygen and latex aren't available
+if command -v latex > /dev/null && command -v doxygen > /dev/null; then
+    doxygenflags="--with-buildopts=--enable-doxygen"
+fi
+
 # Build the installer
 for flavor in ${flavors}; do
-    cd "${installer_dir}";
-    ./configure --prefix="${topdir}/globus-location-${flavor}" \
-                --with-flavor="${flavor}" \
-                ${configure_options} ;
-    env ${profileflags} make;
-    env ${profileflags} make globus_simple_ca;
-    env ${profileflags} make install;
+    if [ "$skip_build" != "yes" ]; then
+        cd "${installer_dir}";
+        ./configure --prefix="${topdir}/globus-location-${flavor}" \
+                    --with-flavor="${flavor}" \
+                    ${doxygenflags} \
+                    ${configure_options} ;
+        env ${profileflags} make;
+        env ${profileflags} make globus_simple_ca;
+        env ${profileflags} make install;
 
-    # work around GRAM-334: job manager doesn't work if unix socket path is too
-    # long
-    echo "    -globus-job-dir /tmp" >> "${topdir}/globus-location-${flavor}"/etc/globus/globus-gram-job-manager.conf
+        # work around GRAM-334: job manager doesn't work if unix socket path is too
+        # long
+        echo "    -globus-job-dir /tmp" >> "${topdir}/globus-location-${flavor}"/etc/globus/globus-gram-job-manager.conf
 
-    if [ "$in_chroot" != 1 ]; then
-        # some of the extra packages or patch-and-build packages don't have
-        # working make dist rules, hence -k ||true
-        env ${profileflags} make -k dist || true;
+        if [ "$in_chroot" != 1 ]; then
+            # some of the extra packages or patch-and-build packages don't have
+            # working make dist rules, hence -k ||true
+            env ${profileflags} make -k dist || true;
+        fi
+
+        make distclean
+        cd -
     fi
-
-    make distclean
-    cd -
 done
 
 if [ "$chroot" != "" ]; then
@@ -296,8 +310,11 @@ fi
 sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-delete-entry -dn \"$USER_DN\" -ln \"$USER_LN\""
 
 for flavor in $flavors; do
-    GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
+    export GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
+    . "${GLOBUS_LOCATION}/etc/globus-user-env.sh"
+    ${GLOBUS_LOCATION}/sbin/globus-update-doxygen-index
     sudo chown -R bamboo "$GLOBUS_LOCATION"
+    cp -R "$GLOBUS_LOCATION/share/doc" "${doxygendir}/${flavor}"
 done
 sudo chown -R bamboo "$installer_dir"
 
