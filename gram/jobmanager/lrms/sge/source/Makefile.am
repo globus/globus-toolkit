@@ -35,6 +35,8 @@ jobmanager-sge-seg: jobmanager-sge-seg.in
 EXTRA_DIST = globus-sge.conf.in sge.pm $(doc_DATA) $(validation_DATA) \
         jobmanager-sge-poll.in jobmanager-sge-seg.in
 
+CLEANFILES = jobmanager-sge-poll jobmanager-sge-seg
+
 # Install link to available file after all other install happens
 # native packages can remove this and use globus-gatekeeper-admin to deal
 # with the link
