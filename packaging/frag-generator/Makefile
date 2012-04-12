@@ -1,4 +1,4 @@
-FRAG_VERSION=$(shell cat ../fait_accompli/version)
+FRAG_VERSION=$(shell cat ../fait_accompli/version | sed -e 's/rc[0-9]\{1,\}//')
 all:
 	if [ -d $(FRAG_VERSION) ]; then \
             rm -rf $(FRAG_VERSION) ; \
