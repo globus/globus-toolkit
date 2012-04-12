@@ -76,7 +76,6 @@ mkdir -p $topdir
 mkdir -p $testoutdir
 
 # Reset home to this directory as it is a transient bamboo build dir
-HOME=$topdir
 
 mkdir -p $tmppath
 
@@ -111,7 +110,7 @@ sudo mkdir -p /etc/grid-security/certificates
 # Install the binaries that we will test
 sudo aptitude -y install $(curl -s "${artifact_url}/all-packages/all-packages" | sed -e /globus-repository/d -e "s/_.*//" | grep -Ev 'globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge' | sort -u)
 
-SIMPLE_CA_DIR="$HOME/bamboo-simple-ca"
+SIMPLE_CA_DIR="$topdir/bamboo-simple-ca"
 
 # Check to see if there's a simpleCA available in $SIMPLE_CA_DIR
 if [ ! -d "$SIMPLE_CA_DIR" ]; then
@@ -133,7 +132,7 @@ if [ -f "$SIMPLE_CA_PACKAGE" ]; then
     fi
 fi
 
-TEST_CRED_DIR="$HOME/testcreds"
+TEST_CRED_DIR="$topdir/testcreds"
 TEST_HOST_CERT="$TEST_CRED_DIR/hostcert.pem"
 TEST_HOST_CERTREQ="$TEST_CRED_DIR/hostcert_request.pem"
 TEST_HOST_KEY="$TEST_CRED_DIR/hostkey.pem"
