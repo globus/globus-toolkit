@@ -63,6 +63,7 @@ tar cf "${installer_dir}.tar" "${installer_dir}"
 
 gzip -9 "${installer_dir}.tar" 
 
+# Copy installer and checksums to artifcacts dir
 artifactsdir="${topdir}/artifacts"
 mkdir "${artifactsdir}"
 
@@ -70,3 +71,11 @@ cp "${installer_dir}.tar.gz" "${artifactsdir}"
 
 md5sum "${artifactsdir}/${installer_dir}.tar.gz" > "${artifactsdir}/${installer_dir}.tar.gz.md5"  || true
 sha1sum "${artifactsdir}/${installer_dir}.tar.gz" > "${artifactsdir}/${installer_dir}.tar.gz.sha1"  || true
+
+# Generate release frags and copy to artifacts dir
+fragsdir="${artifactsdir}/frags"
+mkdir -p "${fragsdir}"
+cd "frag-generator"
+make
+cp "$(cat ../fait_accompli/version | sed -e 's/rc[0-9]\{1,\}//')" "${fragsdir}"
+cd "$OLDPWD"

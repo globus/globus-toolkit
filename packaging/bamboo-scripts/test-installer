@@ -10,10 +10,12 @@ coveragedir="${packagingdir}/coverage"
 doxygendir="${packagingdir}/doxygen"
 bamboodir=$(pwd)/bamboo-scripts
 topdir=$(pwd)
+package_artifact_dir="$topdir/packages"
 tmppath=$(pwd)/tmp
 testoutdir=$(pwd)/test-results
 mkdir -p "${coveragedir}"
 mkdir -p "${doxygendir}"
+mkdir -p "${package_artifact_dir}"
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 
 chroot=""
@@ -148,6 +150,8 @@ for flavor in ${flavors}; do
         env ${profileflags} make;
         env ${profileflags} make globus_simple_ca;
         env ${profileflags} make install;
+        # Only build docs once
+        doxygenflags=""
 
         # work around GRAM-334: job manager doesn't work if unix socket path is too
         # long
@@ -160,6 +164,7 @@ for flavor in ${flavors}; do
         fi
 
         make distclean
+        cp "${source_package_dir}"/* "${package_artifact_dir}"
         cd -
     fi
 done
@@ -325,7 +330,6 @@ fi
 if [ "$remove_default_ca" = "yes" ]; then
     sudo rm -f /etc/grid-security/globus-host-ssl.conf /etc/grid-security/globus-user-ssl.conf /etc/grid-security/grid-security.conf
 fi
-
 for x in /etc/grid-security/certificates/*${SIMPLE_CA_HASH}*; do
     sudo rm -f "$x"
 done
