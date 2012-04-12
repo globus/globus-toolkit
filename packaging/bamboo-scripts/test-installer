@@ -61,9 +61,6 @@ mkdir -p $topdir
 mkdir -p $testoutdir
 mkdir -p $coveragedir
 
-# Reset home to this directory as it is a transient bamboo build dir
-HOME=$topdir
-
 mkdir -p $tmppath
 
 # Remove all globus-related packages prior to testing
