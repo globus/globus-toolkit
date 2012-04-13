@@ -12,7 +12,7 @@
 
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	4.5
+Version:	4.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
@@ -216,6 +216,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Apr 13 2012 Joseph Bester <bester@mcs.anl.gov> - 4.6-1
+- RIC-258: Can't rely on MKDIR_P
+
 * Fri Apr 06 2012 Joseph Bester <bester@mcs.anl.gov> - 4.5-1
 - GRAM-335: init scripts fail on solaris because of stop alias
 - RIC-205: Missing directories $GLOBUS_LOCATION/var/lock and $GLOBUS_LOCATION/var/run

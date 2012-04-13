@@ -1,3 +1,9 @@
+globus-scheduler-event-generator (4.6-1) unstable; urgency=low
+
+  * RIC-258: Can't rely on MKDIR_P
+
+ -- Globus Toolkit <support@globus.org>  Fri, 13 Apr 2012 08:44:41 -0400
+
 globus-scheduler-event-generator (4.5-2) unstable; urgency=low
 
   * GRAM-335: init scripts fail on solaris because of stop alias

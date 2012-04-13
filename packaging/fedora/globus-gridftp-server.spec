@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.9
+Version:	6.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -180,6 +180,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Apr 13 2012 Joseph Bester <bester@mcs.anl.gov> - 6.10-1
+- RIC-258: Can't rely on MKDIR_P
+
 * Tue Mar 27 2012  <mlink@mcs.anl.gov> - 6.9-1
 - GRIDFTP-228: Don't require delegated cred on initial log in.
 

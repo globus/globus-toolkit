@@ -12,7 +12,7 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.10
+Version:	9.11
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -116,6 +116,9 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Fri Apr 13 2012 Joseph Bester <bester@mcs.anl.gov> - 9.11-1
+- RIC-258: Can't rely on MKDIR_P
+
 * Fri Apr 06 2012 Joseph Bester <bester@mcs.anl.gov> - 9.10-1
 - GRAM-335: init scripts fail on solaris because of stop alias
 - RIC-205: Missing directories $GLOBUS_LOCATION/var/lock and $GLOBUS_LOCATION/var/run

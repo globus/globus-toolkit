@@ -1,3 +1,9 @@
+globus-gridftp-server (6.10-1) unstable; urgency=low
+
+  * RIC-258: Can't rely on MKDIR_P
+
+ -- Globus Toolkit <support@globus.org>  Fri, 13 Apr 2012 08:44:28 -0400
+
 globus-gridftp-server (6.9-1) unstable; urgency=low
 
   * GRIDFTP-228: Don't require delegated cred on initial log in.

@@ -1,3 +1,9 @@
+globus-gatekeeper (9.11-1) unstable; urgency=low
+
+  * RIC-258: Can't rely on MKDIR_P
+
+ -- Globus Toolkit <support@globus.org>  Fri, 13 Apr 2012 08:44:21 -0400
+
 globus-gatekeeper (9.10-1) unstable; urgency=low
 
   * GRAM-335: init scripts fail on solaris because of stop alias
