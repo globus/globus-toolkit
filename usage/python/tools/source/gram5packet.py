@@ -31,7 +31,6 @@ class GRAM5Packet(CUsagePacket):
     dns_cache = None
     __lrms = dict()
     __job_managers = dict()
-    __job_manager_instances = dict()
     __job_manager_instances_by_uuid = dict()
     clients = dict()
     executables = dict()
@@ -59,7 +58,7 @@ class GRAM5Packet(CUsagePacket):
             GRAM5Packet.__init_versions(cursor)
             GRAM5Packet.__init_lrms(cursor)
             GRAM5Packet.__init_job_managers(cursor)
-            GRAM5Packet.__init_job_manager_instances(cursor)
+            #GRAM5Packet.__init_job_manager_instances(cursor)
             GRAM5Packet.__init_rsl_attributes(cursor)
             GRAM5Packet.__init_rsl_bitfields(cursor)
             GRAM5Packet.__init_job_type_ids(cursor)
@@ -137,6 +136,20 @@ class GRAM5Packet(CUsagePacket):
                 float(self.data.get('A')))
         byuuidresult = GRAM5Packet.__job_manager_instances_by_uuid.get(uuid)
         job_manager_instance_id = None
+
+        if byuuidresult is None:
+            # Not in cache -- check to see if it's in the table
+            cursor.execute("""
+                SELECT id, job_manager_id
+                FROM gram5_job_manager_instances
+                WHERE uuid = '%s'""" % (uuid) )
+            for row in cursor:
+                [jmi_id, job_manager_id] = row
+                GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
+                    (jmi_id, job_manager_id)
+                byuuidresult = (jmi_id, job_manager_id)
+                break
+
         if byuuidresult is not None:
             (job_manager_instance_id, jmid) = byuuidresult
         if job_manager_instance_id is None:
@@ -187,6 +200,18 @@ class GRAM5Packet(CUsagePacket):
                     float(self.data.get('A')))
         job_manager_instance_id = None
         by_uuid_entry = GRAM5Packet.__job_manager_instances_by_uuid.get(uuid)
+        if by_uuid_entry is None:
+            # Not in cache -- check to see if it's in the table
+            cursor.execute("""
+                SELECT id, job_manager_id
+                FROM gram5_job_manager_instances
+                WHERE uuid = '%s'""" % (uuid) )
+            for row in cursor:
+                [jmi_id, job_manager_id] = row
+                GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
+                    (jmi_id, job_manager_id)
+                by_uuid_entry = (jmi_id, job_manager_id)
+                break
         if by_uuid_entry is not None:
             job_manager_instance_id = by_uuid_entry[0]
         if job_manager_instance_id is None:
@@ -203,8 +228,6 @@ class GRAM5Packet(CUsagePacket):
                         start_time)
                 VALUES(%s, %s, %s)
                 ''', values)
-            GRAM5Packet.__job_manager_instances[values] = \
-                    job_manager_instance_id
             GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
                     (job_manager_instance_id, None)
         return job_manager_instance_id
@@ -451,8 +474,8 @@ class GRAM5Packet(CUsagePacket):
     @staticmethod
     def __init_job_manager_instances(cursor):
         """
-        Initialize the dictionary GRAM5Packet.__job_manager_instances which
-        caches the values in the gram5_job_manager_instances table.
+        Initialize the dictionary GRAM5Packet.__job_manager_instances_by_uuid
+        which caches the values in the gram5_job_manager_instances table.
 
         The dictionary maps
         (job_manager_id, uuid, start_time) -> id
@@ -463,7 +486,7 @@ class GRAM5Packet(CUsagePacket):
 
         Returns:
         None, but alters the global variable
-        GRAM5Packet.__job_manager_instances.
+        GRAM5Packet.__job_manager_instances_by_uuid.
 
         """
 
@@ -472,8 +495,6 @@ class GRAM5Packet(CUsagePacket):
             FROM gram5_job_manager_instances""")
         for row in cursor:
             [jmi_id, job_manager_id, uuid, start_time] = row
-            values = (job_manager_id, uuid, start_time)
-            GRAM5Packet.__job_manager_instances[values] = jmi_id
             GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
                 (jmi_id, job_manager_id)
 
