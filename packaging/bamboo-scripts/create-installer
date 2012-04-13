@@ -77,5 +77,6 @@ fragsdir="${artifactsdir}/frags"
 mkdir -p "${fragsdir}"
 cd "frag-generator"
 make
-cp "$(cat ../fait_accompli/version | sed -e 's/rc[0-9]\{1,\}//')" "${fragsdir}"
+frags_version="$(cat ../fait_accompli/version | sed -e 's/rc[0-9]\{1,\}//')"
+cp -R "${frags_version}" "${fragsdir}"
 cd "$OLDPWD"
