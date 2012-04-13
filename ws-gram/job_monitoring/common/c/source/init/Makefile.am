@@ -11,9 +11,9 @@ globus-scheduler-event-generator: globus-scheduler-event-generator$(LSB)
 	cp globus-scheduler-event-generator$(LSB) $@
 
 install-data-hook:
-	$(MKDIR_P) $(DESTDIR)$(sysconfdir)/globus/scheduler-event-generator/available
-	$(MKDIR_P) $(DESTDIR)$(varlockdir)
-	$(MKDIR_P) $(DESTDIR)$(varrundir)
+	mkdir -p $(DESTDIR)$(sysconfdir)/globus/scheduler-event-generator/available
+	mkdir -p $(DESTDIR)$(varlockdir)
+	mkdir -p $(DESTDIR)$(varrundir)
 
 CLEANFILES = globus-scheduler-event-generator
 
