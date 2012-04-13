@@ -12,8 +12,8 @@ globus-gatekeeper: globus-gatekeeper$(LSB)
 	cp globus-gatekeeper$(LSB) $@
 
 install-data-local:
-	$(MKDIR_P) $(DESTDIR)$(varlockdir)
-	$(MKDIR_P) $(DESTDIR)$(varrundir)
+	mkdir -p $(DESTDIR)$(varlockdir)
+	mkdir -p $(DESTDIR)$(varrundir)
 
 CLEANFILES = globus-gatekeeper
 
