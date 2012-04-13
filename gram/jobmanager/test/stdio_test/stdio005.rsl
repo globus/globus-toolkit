@@ -1,5 +1,0 @@
-(* 1 *)
-&(executable = '/bin/sh')
- (arguments = -c 'echo stderr 1>&2; echo stdout')
- (stdout = ($(GLOBUSRUN_GASS_URL) # $(TEST_STDOUT) # ".001" ))
- (stderr = ($(GLOBUSRUN_GASS_URL) # $(TEST_STDERR) # ".001" ))
