@@ -1,16 +1,18 @@
 #! /usr/bin/python
 
+import HTMLParser
+import fnmatch
+import getopt
+import getpass
+import os
+import posix
+import re
+import shutil
+import sys
+import tempfile
+import time
 import urllib
 import xml.etree.ElementTree
-import os
-import sys
-import getopt
-import re
-import posix
-import time
-import getopt
-import HTMLParser
-import getpass
 
 verbose = False
 
@@ -348,9 +350,14 @@ def mkdirtree(d):
         if parent != "": 
             mkdirtree(parent)
         os.mkdir(d)
-opts, args = getopt.getopt(sys.argv[1:], "Vv:d:")
+opts, args = getopt.getopt(sys.argv[1:], "Vv:d:faib")
 
 version = destination = 'unset'
+update_frags = False
+update_api_docs = False
+installers = True
+binaries = True
+
 for (option, value) in opts:
     if option == '-v':
         version = value
@@ -358,16 +365,34 @@ for (option, value) in opts:
         verbose = True
     elif option == '-d':
         destination = value
+    elif option == '-f':
+        update_frags = True
+    elif option == '-a':
+        update_api_docs = True
+    elif option == '-i':
+        installers = False
+    elif option == '-b':
+        binaries = False
 
-if version == 'unset' or destination == 'unset':
-    print "Usage: " + sys.argv[0] + " -v VERSION -d DESTINATION"
+
+# Not ready yet
+update_api_docs = False
+
+if version == 'unset':
+    print "Usage: " + sys.argv[0] + " -v VERSION [-d DESTINATION]"
     sys.exit(1)
 
-bamboo_version = "GT" + version.replace(".","")
-build_kickoff = bamboo_version + "-BUILD" + version.replace(".", "")
+default_dest = "/mcs/globus.org/ftppub"
+if (destination is 'unset') and (os.stat(default_dest) is not None):
+    destination = default_dest
 
-if len(version.split(".")) == 2:
-    version = version + ".X"
+# 5.2.0 has a separate project, others are tagged builds from 5.2.x project
+if version == "5.2.0":
+    bamboo_version = "GT520"
+    build_kickoff = bamboo_version + "-BUILD52"
+else:
+    bamboo_version = "GT" + "".join(version.split(".")[0:2])
+    build_kickoff = bamboo_version + "-BUILD" + "".join(version.split(".")[0:2])
 
 client = BambooClient()
 
@@ -375,9 +400,10 @@ client.login()
 build_plans = client.list_build_plans(bamboo_version)
 plan_binaries = {}
 build_results = {}
+installer_plan = None
 
 for plan in build_plans:
-    if plan.find("-BUILD") != -1 or plan.find("-TEST") != -1:
+    if plan.find("-BUILD") != -1:
         continue
     if not(build_plans[plan]['enabled']):
         continue
@@ -386,10 +412,20 @@ for plan in build_plans:
     buildNumber = build_results[plan].get("buildNumber")
 
     artifacts = None
-    if plan.find("-INSTALLER") != -1:
+    print "Looking at plan " + plan
+    if plan.endswith("-INSTALLER"):
+        installer_plan = plan
         artifacts = client.get_artifact(buildKey, buildNumber, "installers")
-    else:
+    elif "-TESTSOURCE" in plan:
+        try:
+            artifacts = client.get_artifact(buildKey, buildNumber, "doxygen")
+        except:
+            print "Can't find doxygen for " + plan
+            continue
+    elif "-DEB" in plan or "-UBUNTU" in plan or "-RPM" in plan:
         artifacts = client.get_artifact(buildKey, buildNumber, "repo")
+    else:
+        continue
     html = RepoParser()
     html.feed("", artifacts)
     for l in html.links:
@@ -407,90 +443,141 @@ for tree in ["installers/repo", "installers/src", "packages/rpm", "packages/deb"
     mkdirtree(destination_version_root + "/" + tree)
 
 # Put source installer into place
-for plan in plan_binaries:
-    if plan.find("-INSTALLER") != -1:
-        [installer] = [r for r in plan_binaries[plan] \
-            if r.find("all-source-installer.tar.gz") != -1]
-        data = client.get_artifact(build_results[plan].get("buildKey"),
-                build_results[plan].get("buildNumber"),
-                installer)
-        f = file(destination_version_root + "/installers/src/" + \
-            os.path.basename(installer), "w")
-        f.write(data)
-        f.close()
+if installers:
+    for plan in plan_binaries:
+        if plan.find("-INSTALLER") != -1:
+            installer_files = [r for r in plan_binaries[plan] if "installer.tar.gz" in r]
+            for inst in installer_files:
+                data = client.get_artifact(build_results[plan].get("buildKey"),
+                        build_results[plan].get("buildNumber"),
+                        inst)
+                f = file(destination_version_root + "/installers/src/" + \
+                    os.path.basename(inst), "w")
+                f.write(data)
+                f.close()
 
 # Put RPM and Debian repository definition packages into place
-for plan in plan_binaries:
-    if plan.find("-RPM") != -1:
-        repopackage = [r for r in plan_binaries[plan] \
-            if r.find("Globus-repo-config") != -1 and r.find("SRPMS") == -1]
-        data = client.get_artifact(build_results[plan].get("buildKey"),
-                build_results[plan].get("buildNumber"),
-                repopackage[0])
-        f = file(destination_version_root + "/installers/repo/" + \
-            os.path.basename(repopackage[0]), "w")
-        f.write(data)
-        f.close()
-    elif plan.find("-DEB") != -1 or plan.find("-UBUNTU") != -1:
-        repopackage = [r for r in plan_binaries[plan] \
-            if r.find("globus-repository") != -1 and r.find(".deb") != -1]
-        data = client.get_artifact(build_results[plan].get("buildKey"),
-                build_results[plan].get("buildNumber"),
-                repopackage[0])
-        f = file(destination_version_root + "/installers/repo/" + \
-            os.path.basename(repopackage[0]), "w")
-        f.write(data)
-        f.close()
+if binaries:
+    for plan in plan_binaries:
+        if plan.find("-RPM") != -1:
+            repopackage = [r for r in plan_binaries[plan] \
+                if r.find("Globus-repo-config") != -1 and r.find("SRPMS") == -1]
+            data = client.get_artifact(build_results[plan].get("buildKey"),
+                    build_results[plan].get("buildNumber"),
+                    repopackage[0])
+            f = file(destination_version_root + "/installers/repo/" + \
+                os.path.basename(repopackage[0]), "w")
+            f.write(data)
+            f.close()
+        elif plan.find("-DEB") != -1 or plan.find("-UBUNTU") != -1:
+            repopackage = [r for r in plan_binaries[plan] \
+                if r.find("globus-repository") != -1 and r.find(".deb") != -1]
+            data = client.get_artifact(build_results[plan].get("buildKey"),
+                    build_results[plan].get("buildNumber"),
+                    repopackage[0])
+            f = file(destination_version_root + "/installers/repo/" + \
+                os.path.basename(repopackage[0]), "w")
+            f.write(data)
+            f.close()
 
 # Copy binary packages and source tarballs into place
-copied_source_tarballs = False
-source_tarball_dir = destination_version_root + "/packages/src"
-for plan in plan_binaries:
-    if plan.find("-RPM") != -1:
-        for package in plan_binaries[plan]:
-            data = client.get_artifact(build_results[plan].get("buildKey"),
-                    build_results[plan].get("buildNumber"),
-                    package)
-            package_path = destination_version_root + "/packages/rpm/" + \
-                package.replace("/repo/", "", 1)
-            mkdirtree(os.path.dirname(package_path))
-            f = file(package_path, "w")
-            f.write(data)
-            f.close()
+    copied_source_tarballs = False
+    source_tarball_dir = destination_version_root + "/packages/src"
+    for plan in plan_binaries:
+        if plan.find("-RPM") != -1:
+            for package in plan_binaries[plan]:
+                data = client.get_artifact(build_results[plan].get("buildKey"),
+                        build_results[plan].get("buildNumber"),
+                        package)
+                package_path = destination_version_root + "/packages/rpm/" + \
+                    package.replace("/repo/", "", 1)
+                mkdirtree(os.path.dirname(package_path))
+                f = file(package_path, "w")
+                f.write(data)
+                f.close()
 
-            if copied_source_tarballs is False and \
-                    package.find(".src.rpm") != -1:
-                os.system("rpm2cpio %s | (cd %s ; cpio -i '*.tar.gz')" \
-                    %(package_path, source_tarball_dir))
-        copied_source_tarballs = True
-    elif plan.find("-DEB") != -1 or plan.find("-UBUNTU") != -1:
-        distro_artifact = client.get_artifact(
-            build_results[plan].get("buildKey"),
-            build_results[plan].get("buildNumber"),
-            "repo/conf/distributions")
+                if copied_source_tarballs is False and \
+                        package.find(".src.rpm") != -1:
+                    os.system("rpm2cpio %s | (cd %s ; cpio -i '*.tar.gz')" \
+                        %(package_path, source_tarball_dir))
+            copied_source_tarballs = True
+        elif plan.find("-DEB") != -1 or plan.find("-UBUNTU") != -1:
+            distro_artifact = client.get_artifact(
+                build_results[plan].get("buildKey"),
+                build_results[plan].get("buildNumber"),
+                "repo/conf/distributions")
 
-        for line in distro_artifact.split("\n"):
-            if line.startswith("Codename: "):
-                codename = line.split(":")[1].strip()
+            for line in distro_artifact.split("\n"):
+                if line.startswith("Codename: "):
+                    codename = line.split(":")[1].strip()
 
-        planos = None
-        planosver = None
-        if plan.find("-DEB") != -1:
-            planos = "debian"
-            planosver = plan[plan.find("-DEB")+4:]
-        elif plan.find("-UBUNTU") != -1:
-            planos = "ubuntu"
-            planosver = plan[plan.find("-UBUNTU")+7:]
-            planosver = planosver[0:2] + "." + planosver[2:4]
-            
-        plan_root = destination_version_root + "/packages/deb/" + planos + \
-            "/" + planosver
-        for package in plan_binaries[plan]:
-            data = client.get_artifact(build_results[plan].get("buildKey"),
-                    build_results[plan].get("buildNumber"),
-                    package)
-            package_path = plan_root + package.replace("/repo", "", 1)
-            mkdirtree(os.path.dirname(package_path))
-            f = file(package_path, "w")
-            f.write(data)
-            f.close()
+            planos = None
+            planosver = None
+            if plan.find("-DEB") != -1:
+                planos = "debian"
+                planosver = plan[plan.find("-DEB")+4:]
+            elif plan.find("-UBUNTU") != -1:
+                planos = "ubuntu"
+                planosver = plan[plan.find("-UBUNTU")+7:]
+                planosver = planosver[0:2] + "." + planosver[2:4]
+                
+            plan_root = destination_version_root + "/packages/deb/" + planos + \
+                "/" + planosver
+            for package in plan_binaries[plan]:
+                data = client.get_artifact(build_results[plan].get("buildKey"),
+                        build_results[plan].get("buildNumber"),
+                        package)
+                package_path = plan_root + package.replace("/repo", "", 1)
+                mkdirtree(os.path.dirname(package_path))
+                f = file(package_path, "w")
+                f.write(data)
+                f.close()
+
+# Copy frags into place
+if update_frags:
+    if installer_plan is None:
+        print "Unable to copy frags into place"
+    else:
+        frag_co_dir = tempfile.mkdtemp()
+        oldwd = os.getcwd()
+        os.chdir(frag_co_dir)
+        print "Storing frags in %s" %(frag_co_dir)
+
+        docpoint = point
+        if "rc" in point:
+            docpoint = point[0:point.find("rc")]
+
+        os.system("cvs -d cvs.globus.org:/home/globdev/CVS/alliance-web co -d docs alliance/toolkit/docs/%s.%s/%s.%s.%s" %(major, minor, major, minor, docpoint))
+
+        frags = [f for f in plan_binaries[installer_plan] if f.endswith(".xml")]
+        print "frags are %s" %(str(frags))
+        for frag in frags:
+            print "frag basename is " + os.path.basename(frag)
+            for root, dirnames, filenames in os.walk(frag_co_dir):
+                for filename in fnmatch.filter(filenames, os.path.basename(frag)):
+                    destfile = os.path.join(root, filename)
+                    print "matching filename is " + destfile
+                    data = client.get_artifact(build_results[installer_plan].get("buildKey"),
+                            build_results[installer_plan].get("buildNumber"),
+                            frag)
+                    
+                    f = file(destfile, "w")
+                    f.write(data)
+                    f.close();
+        #system("cvs commit docs")
+        os.chdir(oldwd)
+        #shutil.rmtree(frag_co_dir)
+
+
+# Copy API docs into place
+if update_api_docs:
+    print "Trying to update API docs"
+    for plan in build_plans:
+        print "Looking at plan " + plan
+        if "TESTSOURCE" in plan:
+            print "Might be ok"
+            if plan in plan_binaries:
+                #for apidoc in plan_binaries[plan]:
+                    #print "apidoc is %s" %(apidoc)
+            else:
+                print "no binaries!"
