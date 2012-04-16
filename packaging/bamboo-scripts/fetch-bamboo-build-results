@@ -576,8 +576,5 @@ if update_api_docs:
         print "Looking at plan " + plan
         if "TESTSOURCE" in plan:
             print "Might be ok"
-            if plan in plan_binaries:
-                #for apidoc in plan_binaries[plan]:
-                    #print "apidoc is %s" %(apidoc)
-            else:
+            if not(plan in plan_binaries):
                 print "no binaries!"
