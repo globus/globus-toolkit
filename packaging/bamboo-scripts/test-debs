@@ -100,7 +100,7 @@ fi
 # Download and install the repo definition package
 mkdir -p "$flavor"
 if [ "$test_from_bamboo" = 1 ]; then
-    cat <<EOF > globus-testing.list
+    cat <<EOF > globus-bamboo.list
 deb ${artifact_url}/repo $(lsb_release -cs) contrib
 deb-src ${artifact_url}/repo $(lsb_release -cs) contrib
 EOF
