@@ -40,6 +40,12 @@
 #include <sys/cygwin.h>
 #include <io.h>
 
+/* Make sure _WIN32 isn't defined later in the code, otherwise headers from
+   other packages might get the wrong idea about the target system. */
+#ifdef _WIN32
+#undef _WIN32
+#endif
+
 int binary_open(const char *, int , ...);
 int check_ntsec(const char *);
 char **fetch_windows_environment(void);

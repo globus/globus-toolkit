@@ -86,7 +86,7 @@ int tcsendbreak(int, int);
 #endif
 
 #ifndef HAVE_UNSETENV
-void unsetenv(const char *);
+int unsetenv(const char *);
 #endif
 
 /* wrapper for signal interface */
