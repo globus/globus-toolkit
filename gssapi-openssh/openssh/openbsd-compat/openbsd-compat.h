@@ -116,7 +116,7 @@ char *inet_ntoa(struct in_addr in);
 #endif
 
 #ifndef HAVE_INET_NTOP
-const char *inet_ntop(int af, const void *src, char *dst, size_t size);
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #endif
 
 #ifndef HAVE_INET_ATON
