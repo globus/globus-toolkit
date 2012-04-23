@@ -358,5 +358,5 @@ if [ -n "$pkgs_to_rm" ]; then
 fi
 
 if [ "$remove_repo" != "" ]; then
-    rm "$remove_repo"
+    sudo rm "$remove_repo"
 fi
