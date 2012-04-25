@@ -216,23 +216,49 @@ if [ $in_chroot = 0 ]; then
 
     cd "$topdir/globus-repository"
     autoreconf -i
+    TOOLKIT_VERSION=$(cat $packagingdir/fait_accompli/version)
+    TOOLKIT_MAJOR=${TOOLKIT_VERSION%%.*}
+    TOOLKIT_MINOR=${TOOLKIT_VERSION%.*}
+    TOOLKIT_MINOR=${TOOLKIT_MINOR#*.}
 
     # Modify globus-repository to generate globus-repository-@RELEASENAME@
     # packages
     sed -e "s/@RELEASENAME@/${releasename}/g" \
+        -e "s/@TOOLKIT_MAJOR_VERSION@/$TOOLKIT_MAJOR/" \
+        -e "s/@TOOLKIT_MINOR_VERSION@/$TOOLKIT_MINOR/" \
         < debian/control.in > debian/control
     rm -f debian/control.in
 
-    mv debian/globus-repository.postinst \
-        debian/globus-repository-${releasename}.postinst
-    mv debian/globus-repository.postrm \
-        debian/globus-repository-${releasename}.postrm
+    cat > debian/globus-repository-${releasename}.install <<EOF 
+debian/tmp/etc/apt/sources.list.d/globus.list
+debian/tmp/usr/share/tasksel/globus-tasks.desc
+EOF
+    cat > debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-stable-${releasename}.install <<EOF 
+debian/tmp/etc/apt/sources.list.d/globus-stable.list
+debian/tmp/usr/share/tasksel/globus-tasks.desc
+EOF
+    cat > debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-testing-${releasename}.install <<EOF 
+debian/tmp/etc/apt/sources.list.d/globus-testing.list
+debian/tmp/usr/share/tasksel/globus-tasks.desc
+EOF
 
-    if test -n "$artifactroot"; then
-           DEB_CONFIGURE_USER_FLAGS=--with-bamboo-artifact-url=$artifactroot fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
-    else
-           DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
-    fi
+    cp debian/globus-repository.postinst \
+        debian/globus-repository-${releasename}.postinst
+    cp debian/globus-repository.postinst \
+        debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-stable-${releasename}.postinst
+    cp debian/globus-repository.postinst \
+        debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-testing-${releasename}.postinst
+    rm debian/globus-repository.postinst
+
+    cp debian/globus-repository.postrm \
+        debian/globus-repository-${releasename}.postrm
+    cp debian/globus-repository.postrm \
+        debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-stable-${releasename}.postrm
+    cp debian/globus-repository.postrm \
+        debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-testing-${releasename}.postrm
+    rm debian/globus-repository.postrm
+
+    DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
 fi
 
 cd "${topdir}"
