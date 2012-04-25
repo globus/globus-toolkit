@@ -233,11 +233,11 @@ if [ $in_chroot = 0 ]; then
 debian/tmp/etc/apt/sources.list.d/globus.list
 debian/tmp/usr/share/tasksel/globus-tasks.desc
 EOF
-    cat > debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-stable-${releasename}.install <<EOF 
+    cat > debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-stable-${releasename}.install <<EOF 
 debian/tmp/etc/apt/sources.list.d/globus-stable.list
 debian/tmp/usr/share/tasksel/globus-tasks.desc
 EOF
-    cat > debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-testing-${releasename}.install <<EOF 
+    cat > debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-testing-${releasename}.install <<EOF 
 debian/tmp/etc/apt/sources.list.d/globus-testing.list
 debian/tmp/usr/share/tasksel/globus-tasks.desc
 EOF
@@ -245,17 +245,17 @@ EOF
     cp debian/globus-repository.postinst \
         debian/globus-repository-${releasename}.postinst
     cp debian/globus-repository.postinst \
-        debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-stable-${releasename}.postinst
+        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-stable-${releasename}.postinst
     cp debian/globus-repository.postinst \
-        debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-testing-${releasename}.postinst
+        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-testing-${releasename}.postinst
     rm debian/globus-repository.postinst
 
     cp debian/globus-repository.postrm \
         debian/globus-repository-${releasename}.postrm
     cp debian/globus-repository.postrm \
-        debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-stable-${releasename}.postrm
+        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-stable-${releasename}.postrm
     cp debian/globus-repository.postrm \
-        debian/globus-repository-${TOOLKIT_MAJOR_VERSION}.${TOOLKIT_MINOR_VERSION}-testing-${releasename}.postrm
+        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-testing-${releasename}.postrm
     rm debian/globus-repository.postrm
 
     DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
