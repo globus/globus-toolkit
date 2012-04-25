@@ -5,57 +5,38 @@ if ! expr $bambooscriptdir ":" "/" ; then
     bambooscriptdir="$(pwd)/$bambooscriptdir"
 fi
 
-args=$(getopt n:v:b:s:r:g:S $*)
-set -- ${args}
+baseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/packages/rpm/\$osname/\\\$releasever"
 
-baseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/packages/rpm/\$osname/\\\$releasever/\\\$basearch/"
-srcbaseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/packages/rpm/\$osname/\\\$releasever/SRPMS/"
-
-reponame="Globus-repo-config"
-fullglobusversion="5.2.0"
+fullglobusversion="$(cat $bambooscriptdir/../fait_accompli/version)"
 globusversion="${fullglobusversion%.*}"
 majorglobusversion="gt${globusversion%.*}"
 sign=1
-
-for i; do
+reponame=Globus-repo-config
+while getopts "n:v:b:r:SUts" i; do
     case "$i" in
-        -n)
-            osname="$2"
-            shift 2
+        n)
+            osname="$OPTARG"
             ;;
-        -v)
-            osver="$2"
-            shift 2
+        v)
+            osver="$OPTARG"
             ;;
-        -b)
-            baseurl="$2"
-            shift 2
+        b)
+            baseurl="$OPTARG"
             ;;
-        -s)
-            srcbaseurl="$2"
-            shift 2
+        r)
+            reponame="$OPTARG"
             ;;
-        -r)
-            reponame="$2"
-            shift 2
-            ;;
-        -g)
-            if ! expr "$2" : "[0-9]*\.[0-9]*\.[0-9]*" > /dev/null; then
-                echo "Invalid GT version $2" 1>&2
-                exit 1
-            fi
-            fullglobusversion="$2"
-            globusversion="${fullglobusversion%.*}"
-            majorglobusversion="gt${globusversion%.*}"
-            shift 2
-            ;;
-        -S)
+        S)
             sign=0
-            shift
             ;;
-        --)
-            shift
-            break
+        U)
+            no_updates="yes"
+            ;;
+        t)
+            fullglobusversion="testing"
+            ;;
+        s)
+            fullglobusversion="stable"
             ;;
     esac
 done
@@ -67,18 +48,17 @@ if [ "$osver" = "" ]; then
     osver="$(lsb_release -rs)"
 fi
 
-updatebaseurl="$(echo $baseurl | sed -e 's/packages/updates/')"
-updatesrcbaseurl="$(echo $srcbaseurl | sed -e 's/packages/updates/')"
+updatebaseurl="$(echo "$baseurl" | sed -e "s/packages/updates/")"
 
 if [ "$osname" = "" -o "$osver" = "" ]; then
-    echo "Usage: $0 -n OSNAME -v OSVER [-b baseurl] [-s srcbaseurl] [-r repopkgname]" 1>&2
+    echo "Usage: $0 -n OSNAME -v OSVER [-b baseurl] [-r repopkgname]" 1>&2
     exit 1
 fi
 
-baseurlresolved="$(eval echo $baseurl)"
-srcbaseurlresolved="$(eval echo $srcbaseurl)"
-updatebaseurl="$(eval echo $updatebaseurl)"
-updatesrcbaseurl="$(eval echo $updatesrcbaseurl)"
+baseurlresolved="$(eval echo $baseurl)/\$basearch/"
+srcbaseurlresolved="$(eval echo $baseurl)/SRPMS"
+updatebaseurlresolved="$(eval echo $updatebaseurl)/\$basearch"
+updatesrcbaseurlresolved="$(eval echo $updatebaseurl)/SRPMS"
 
 for x in BUILD BUILDROOT RPMS SOURCES SPECS SRPMS; do
     mkdir -p ${HOME}/${x}
@@ -94,14 +74,6 @@ enabled=1
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
  
-[Globus-Updates]
-name=Globus - Updates
-baseurl=$updatebaseurl
-failovermethod=priority
-enabled=1
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
- 
 [Globus-source]
 name=Globus - Source
 baseurl=$srcbaseurlresolved
@@ -109,15 +81,29 @@ failovermethod=priority
 enabled=0
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
+EOF
+
+if [ "$no_updates" != "yes" ]; then
+    cat <<EOF >> $HOME/SOURCES/${reponame}.$osname.repo
+
+[Globus-Updates]
+name=Globus - Updates
+baseurl=$updatebaseurlresolved
+failovermethod=priority
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
  
 [Globus-Updates-source]
 name=Globus - Updates Source
-baseurl=$updatesrcbaseurl
+baseurl=$updatesrcbaseurlresolved
 failovermethod=priority
 enabled=0
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
 EOF
+fi
+
 cp "${bambooscriptdir}/RPM-GPG-KEY-Globus" $HOME/SOURCES
 
 echo "Creating $HOME/SPECS/$reponame.$osname.spec"
