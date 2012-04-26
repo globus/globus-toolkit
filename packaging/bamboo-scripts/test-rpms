@@ -114,7 +114,7 @@ for flavor in gcc64 gcc32; do
     sudo yum clean all
 
     # Install the binary RPMs that we will test
-    ( $archcmd sudo yum -y --skip-broken install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -Ev 'Globus-repo-config|Globus-bamboo-config|globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge') ) || true
+    ( $archcmd sudo yum -y --skip-broken install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -Ev 'Globus.*config|globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge') ) || true
 
     if [ $first = 1 ]; then
         first=0
