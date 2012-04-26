@@ -1,0 +1,20 @@
+README.gpt
+==========
+This is the README file for the GPT package that contains the GSI-OpenSSH code.
+The only thing of use in this file at this time discusses the build-time
+configuration possible through the use of the GPT macro system.
+
+As part of the build process for the GPT package, we have decided to make greater
+use of the "macro" feature of GPT to minimize the number of changes to the
+underlying configure script.  This means that there will be a recommended set of
+configure options on a "per-platform" basis, and that you will specify these on
+the command-line to gpt-build as in:
+
+    $GPT_LOCATION/sbin/gpt-build gsi_openssh-<version>-src.tar.gz gcc32 \
+      GSI_OPENSSH_GPTMACRO="<configureOptions>"
+
+Configure Options
+-----------------
+
+Please see http://grid.ncsa.uiuc.edu/ssh/ for more information about the configure
+options used in this release.

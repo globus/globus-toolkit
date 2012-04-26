@@ -1,0 +1,4 @@
+method = ftp
+ftp_root = http://
+ftp_target = globus.org/HEAD/nightly.tar.gz
+untar = false

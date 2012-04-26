@@ -1,0 +1,4 @@
+method = ftp
+ftp_root = http://
+ftp_target = www.globus.org/ftppub/gt5/5.2/5.2.0/installers/src/gt5.2.0-all-source-installer.tar.gz
+untar = false

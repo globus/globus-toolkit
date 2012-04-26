@@ -1,0 +1,14 @@
+#!/bin/sh
+cp myproxy/nmi/tasklist.nmi .
+# only build VOMS on unmanaged-x86_rhap_5 for now
+if test "x$NMI_PLATFORM" != "xunmanaged-x86_rhap_5"; then
+    grep -v VOMS tasklist.nmi > tasklist.nmi.new
+    mv -f tasklist.nmi.new tasklist.nmi
+fi
+# skip GT4 builds on x86_64_macos
+if test "x$NMI_PLATFORM" = "xx86_64_macos_10.6-updated" -o \
+        "x$NMI_PLATFORM" = "xx86_64_macos_10.7" ; then
+    grep -v GT4 tasklist.nmi > tasklist.nmi.new
+    mv -f tasklist.nmi.new tasklist.nmi
+fi
+exit 0
