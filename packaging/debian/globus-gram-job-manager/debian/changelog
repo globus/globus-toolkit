@@ -1,3 +1,10 @@
+globus-gram-job-manager (13.35-1) unstable; urgency=low
+
+  * GRAM-329: Condor fake-SEG loses track of job
+  * GRAM-345: Job manager deletes job dir sometimes
+
+ -- Globus Toolkit <support@globus.org>  Thu, 03 May 2012 19:28:32 -0400
+
 globus-gram-job-manager (13.33-1) unstable; urgency=low
 
   * GRAM-334: job manager doesn't work if unix socket path is too long
