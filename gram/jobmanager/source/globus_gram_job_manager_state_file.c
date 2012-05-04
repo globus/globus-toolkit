@@ -387,7 +387,7 @@ globus_gram_job_manager_state_file_read(
     char *                              buffer = NULL;
     size_t                              file_len;
     struct stat                         statbuf;
-    int                                 rc;
+    int                                 rc = GLOBUS_SUCCESS;
     int                                 i;
     unsigned long                       tmp_timestamp;
 
@@ -562,6 +562,7 @@ globus_gram_job_manager_state_file_read(
         strcmp(buffer, request->config->jobmanager_type) != 0)
     {
         /* Job should be handled by another job manager */
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
         goto free_cache_tag;
     }
     if (fgets( buffer, file_len, fp ) == NULL)
@@ -816,7 +817,10 @@ free_job_id_string:
         request->job_id_string = NULL;
     }
 error_exit:
-    rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+    if (rc == GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+    }
 
     globus_gram_job_manager_request_log(
             request,
@@ -840,7 +844,7 @@ fopen_state_file_failed:
         free(buffer);
     }
 exit:
-    return GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+    return rc;
 }
 /* globus_gram_job_manager_state_file_read() */
 
