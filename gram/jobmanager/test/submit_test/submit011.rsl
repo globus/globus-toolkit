@@ -1,2 +1,0 @@
-&(executable = /bin/sh)
- (arguments  = -c 'if [ -n "$X509_CERT_DIR" ] && [ -d "$X509_CERT_DIR" ] ; then echo 1; elif [ -z "$X509_CERT_DIR" ]; then echo 1; else echo 0; fi' )
