@@ -110,6 +110,8 @@ for x in BUILD  BUILDROOT SOURCES RPMS  SPECS  SRPMS; do
     mkdir -p $topdir/$x
 done
 
+rm -rf "$topdir/RPMS.x86_64"
+    
 # Fedora 13
 # enable build of 32-bit executables on 64-bit linux (if compilers are present)
 # /usr/lib/rpm/config defines this with -march=i686 but no -m32, so the build
@@ -120,11 +122,20 @@ EOF
 
 target32=i686-redhat-linux
 
+pkgtool="yum"
+gpgskiparg="--nogpgcheck"
+noninteractivearg="-y"
 case $(lsb_release -is):$(lsb_release -rs) in
     CentOS:5*|ScientificSL:5*|RedHatEnterpriseServer:5*)
         target32=i386-redhat-linux
         echo "%rhel                  5" >> $topdir/.rpmmacros
         rhel=5
+        ;;
+    "SUSE LINUX":*)
+        target32=""
+        pkgtool="zypper"
+        gpgskiparg="--no-gpg-checks"
+        noninteractivearg="-n"
         ;;
 esac
 
@@ -150,11 +161,17 @@ fi
 # Remove everything prior to building
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo yum -y remove $pkgs_to_rm < /dev/null || true
+    sudo $pkgtool $noninteractivearg remove $pkgs_to_rm < /dev/null || true
 fi
 
 bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,gram5-pbs,gram5-sge,globus-simple-ca
+
+
+if [ "$(lsb_release -is)" = "SUSE LINUX" ]; then
+packages_to_build=gsi_openssh,globus_gram_audit
+else
 packages_to_build=myproxy,gsi_openssh,globus_gram_audit
+fi
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 if [ -d ${packagingdir}/source-trees/gssapi-openssh ]; then
     cd ${packagingdir}/source-trees/gssapi-openssh 
@@ -187,7 +204,11 @@ cd ../..
 
 # Build source packages from spec files
 cd fedora
-for i in *.spec; do rpmbuild -bs --nodeps $i; done
+for i in *.spec; do
+    if [ "$(lsb_release -is)" != "SUSE LINUX" ] || [ "$i" != "myproxy.spec" ]; then
+	rpmbuild -bs --nodeps $i;
+    fi
+done
 
 for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
@@ -205,7 +226,7 @@ for i in grid-packaging-tools $packages; do
         
         # Don't install LRM RPMs on build machine necessarily
         if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
-            sudo yum localinstall -y --nogpgcheck $rpms || true
+            sudo $pkgtool $noninteractivearg $gpgskiparg install $rpms || true
         fi
     fi
 done
@@ -213,7 +234,7 @@ done
 # Remove everything prior to building
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo yum -y remove $pkgs_to_rm < /dev/null || true
+    sudo $pkgtool $noninteractivearg remove $pkgs_to_rm < /dev/null || true
 fi
 
 # Move rpms out of the way so that find can work when installing.
@@ -223,8 +244,9 @@ mkdir RPMS
 
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|^gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo yum -y remove $pkgs_to_rm < /dev/null || true
+    sudo $pkgtool $noninteractivearg remove $pkgs_to_rm < /dev/null || true
 fi
+if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
 for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
         rpmbuild --target $target32 \
@@ -242,10 +264,11 @@ for i in grid-packaging-tools $packages; do
         
         # Don't install LRM RPMs on build machine necessarily
         if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
-            sudo yum localinstall -y --nogpgcheck $rpms || true
+            sudo $pkgtool $noninteractivearg $gpgskiparg install $rpms || true
         fi
     fi
 done
+fi
 
 cd $topdir
 
@@ -280,15 +303,20 @@ repodir="${reporoot}/${osname}/${osver}"
 # Generate YUM repositories for the different package types
 mkdir -p "${repodir}"
 cp -R RPMS/x86_64 "${repodir}"
-mkdir "${repodir}"/i386
-cp -R RPMS/i?86/* "${repodir}"/i386
+if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
+    mkdir "${repodir}"/i386
+    cp -R RPMS/i?86/* "${repodir}"/i386
+fi
 
 cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
-cp RPMS/noarch/*.rpm "${repodir}"/i386/
 
-if [ "$rhel" = 5 ]; then 
-    cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
+if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
+    cp RPMS/noarch/*.rpm "${repodir}"/i386/
+    if [ "$rhel" = 5 ]; then 
+        cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
+    fi
 fi
+
 cp -R SRPMS "${repodir}"
 
 # Generate group definition for globus-gridftp
@@ -631,14 +659,16 @@ createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/i386"
 allpkgs64="$(find "${reporoot}/${osname}/${osver}/"x86_64 -name '*.rpm' | \
     grep -v '\.i386\.rpm' | \
     sed -e 's|.*/||' -e 's|\.rpm||')"
-allpkgs32="$(find "${reporoot}/${osname}/${osver}/"i386 -name '*.rpm' | \
-    sed -e 's|.*/||' -e 's|\.rpm||')"
 
-echo "$allpkgs32" > packages.gcc32
+if [ "$(lsb_release -is)" != 'SUSE LINUX' ]; then
+    allpkgs32="$(find "${reporoot}/${osname}/${osver}/"i386 -name '*.rpm' | \
+        sed -e 's|.*/||' -e 's|\.rpm||')"
+    echo "$allpkgs32" > packages.gcc32
+fi
 echo "$allpkgs64" > packages.gcc64
 
 # Remove what we built
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo yum -y remove $pkgs_to_rm  < /dev/null || true
+    sudo $pkgtool $noninteractivearg remove $pkgs_to_rm  < /dev/null || true
 fi
