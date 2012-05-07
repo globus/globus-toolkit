@@ -103,7 +103,7 @@ GSS_CALLCONV gss_accept_delegation(
     BIO *                               bio = NULL;
     BIO *                               read_bio = NULL;
     BIO *                               write_bio = NULL;
-    X509 *                              peer_cert;
+    X509 *                              peer_cert = NULL;
     const EVP_MD *                      peer_digest;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
@@ -416,6 +416,11 @@ GSS_CALLCONV gss_accept_delegation(
     }
     
  mutex_unlock:
+    if (peer_cert)
+    {
+        X509_free(peer_cert);
+    }
+    
     globus_mutex_unlock(&context->mutex);
 
  exit:
