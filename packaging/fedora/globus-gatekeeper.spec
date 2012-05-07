@@ -13,7 +13,7 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
 Version:	9.11
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
@@ -27,10 +27,19 @@ Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	globus-gssapi-gsi%{?_isa} >= 9
 Requires:       psmisc
 
+%if 0%{?suse_version} == 0
 Requires:       lsb
+%else
+Requires:       insserv
+%endif
+
 Requires(post): globus-common-progs >= 13.4
 Requires(preun):globus-common-progs >= 13.4
-BuildRequires:  lsb
+%if 0%{?suse_version} == 0
+BuildRequires:       lsb
+%else
+BuildRequires:       insserv
+%endif
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
 BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
@@ -116,6 +125,9 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Mon May 07 2012 Joseph Bester <bester@mcs.anl.gov> - 9.11-1
+- Updates for SUSE 11
+
 * Fri Apr 13 2012 Joseph Bester <bester@mcs.anl.gov> - 9.11-1
 - RIC-258: Can't rely on MKDIR_P
 

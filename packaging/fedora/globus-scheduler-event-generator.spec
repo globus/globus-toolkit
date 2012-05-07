@@ -56,9 +56,17 @@ BuildRequires:	tetex-latex
 %package progs
 Summary:	Globus Toolkit - Scheduler Event Generator Programs
 Group:		Applications/Internet
-BuildRequires:  lsb
+%if 0%{?suse_version} == 0
+BuildRequires:       lsb
+%else
+BuildRequires:       insserv
+%endif
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	lsb
+%if 0%{?suse_version} == 0
+Requires:       lsb
+%else
+Requires:       insserv
+%endif
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires(post): globus-common-progs >= 14
 Requires(preun):globus-common-progs >= 14
