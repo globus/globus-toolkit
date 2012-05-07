@@ -18,7 +18,9 @@ Requires:	autoconf
 Requires:	automake
 Requires:	libtool
 Requires:	rpm
+%if %{?suse_version:0}%{!?suse_version:1}
 Requires:	rpm-build
+%endif
 %if %{?fedora}%{!?fedora:0}
 Requires:	perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 %else

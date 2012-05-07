@@ -128,7 +128,7 @@ fi
 - GRAM-309: GRAM5 doesn't work with IPv4 only gatekeepers
 - RIC-226: Some dependencies are missing in GPT metadata
 
-* Fri Jan 06 2012 Joe Bester <jbester@mactop2.local> - 9.7-1
+* Fri Jan 06 2012 Joseph Bester <bester@mcs.anl.gov> - 9.7-1
 - GRAM-303: Gatekeeper's syslog output cannot be controlled
 
 * Mon Dec 12 2011 Joseph Bester <bester@mcs.anl.gov> - 9.6-1
@@ -165,7 +165,7 @@ fi
 - Fix %post* scripts to check for -eq 1
 - Add explicit dependencies on >= 5.2 libraries
 
-* Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 8.1-1
+* Fri Sep 23 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-1
 - GRAM-260: Detect and workaround bug in start_daemon for LSB < 4
 
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2

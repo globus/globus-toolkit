@@ -13,7 +13,7 @@
 Name:		globus-gsi-proxy-core
 %global _name %(tr - _ <<< %{name})
 Version:	6.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
 
 Group:		System Environment/Libraries
@@ -51,6 +51,8 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
+%else if 0%{?suse_version} > 0
+BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
@@ -182,6 +184,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 6.2-2
+- SLES 11 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 6.2-1
 - RIC-226: Some dependencies are missing in GPT metadata
 

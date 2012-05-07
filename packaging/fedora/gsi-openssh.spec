@@ -111,17 +111,30 @@ Requires: /sbin/nologin
 
 Requires: initscripts >= 5.20
 
+%if 0%{?suse_version} > 0
+BuildRequires: openldap2-devel
+%else
 BuildRequires: openldap-devel
+%endif
 BuildRequires: autoconf, automake, perl, zlib-devel
+%if 0%{?suse_version} > 0
+BuildRequires: audit-devel
+%else
 BuildRequires: audit-libs-devel
+%endif
 BuildRequires: util-linux, groff
 BuildRequires: pam-devel
+%if 0%{?suse_version} > 0
+BuildRequires: tcpd-devel
+BuildRequires: libopenssl-devel
+%else
 %if "%{?rhel}" == "5"
 BuildRequires: tcp_wrappers
 BuildRequires: openssl-devel >= 0.9.8e
 %else
 BuildRequires: tcp_wrappers-devel
 BuildRequires: openssl-devel >= 0.9.8j
+%endif
 %endif
 
 %if %{kerberos5}
@@ -144,13 +157,21 @@ BuildRequires: nss-devel
 %endif
 
 %if %{WITH_SELINUX}
+%if 0%{?suse_version} > 0
+Requires: libselinux1 >= 1.27.7
+%else
 Requires: libselinux >= 1.27.7
+%endif
 BuildRequires: libselinux-devel >= 1.27.7
 Requires: audit-libs >= 1.0.8
 BuildRequires: audit-libs >= 1.0.8
 %endif
 
+%if 0%{?suse_version} > 0
+BuildRequires: xorg-x11-xauth
+%else
 BuildRequires: xauth
+%endif
 
 %package clients
 Summary: SSH client applications with GSI authentication

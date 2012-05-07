@@ -8,8 +8,8 @@
 
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	4.2
-Release:	2%{?dist}
+Version:	4.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
 Group:		Applications/Internet
@@ -20,7 +20,15 @@ Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{vers
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common-progs >= 14
+%if 0%{?suse_version} > 0
+    %if %{suse_version} < 1140
+Requires:     perl = %{perl_version}
+    %else
+%{perl_requires}
+    %endif
+%else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
+%endif
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core >= 8
 
@@ -101,6 +109,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
 
 %changelog
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-1
+- SLES 11 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 4.2-2
 - Updated version numbers
 

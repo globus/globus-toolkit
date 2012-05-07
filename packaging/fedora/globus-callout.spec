@@ -13,7 +13,7 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
 Version:	2.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries
@@ -28,7 +28,9 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-common%{?_isa} >= 14
 
 BuildRequires:	grid-packaging-tools >= 3.4
+%if 0%{?suse_version} == 0
 BuildRequires:	libtool-ltdl-devel%{?_isa} >= 1
+%endif
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
@@ -39,6 +41,8 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
+%else if 0%{?suse_version} > 0
+BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
@@ -166,6 +170,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 2.2-2
+- SLES 11 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 2.2-1
 - RIC-224: Eliminate some doxygen warnings
 - RIC-230: Remove obsolete globus_libtool_windows code

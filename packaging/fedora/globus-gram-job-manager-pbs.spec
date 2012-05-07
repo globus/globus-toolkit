@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
 Version:	1.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
@@ -30,7 +30,15 @@ Requires:       globus-gram-job-manager-scripts >= 4
 Requires:	globus-gass-cache-program >= 5
 Requires:	globus-common-progs >= 14
 Requires:       torque-client
+%if 0%{?suse_version} > 0
+    %if %{suse_version} < 1140
+Requires:     perl = %{perl_version}
+    %else
+%{perl_requires}
+    %endif
+%else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
+%endif
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
@@ -45,6 +53,8 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
+%else if 0%{?suse_version} > 0
+BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
@@ -258,6 +268,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-2
+- SLES 11 patches
+
 * Thu Apr 12 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-1
 - GRAM-343: lrm packages grid-service files aren't in CLEANFILES
 

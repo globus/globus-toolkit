@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.6
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -32,7 +32,9 @@ BuildRequires:  globus-gss-assist-devel >= 8
 BuildRequires:  globus-usage-devel >= 3
 BuildRequires:  pam-devel
 BuildRequires:  graphviz
+%if 0%{?suse_version} == 0
 BuildRequires:  voms-devel >= 1.9.12.1
+%endif
 BuildRequires:  cyrus-sasl-devel
 %if "%{?rhel}" != "4"
 BuildRequires:  openldap-devel >= 2.3
@@ -46,6 +48,8 @@ BuildRequires: graphviz-gd
 
 %if %{?fedora}%{!?fedora:0} >= 9
 BuildRequires:  tex(latex)
+%else if 0%{?suse_version} > 0
+BuildRequires:  texlive-latex
 %else
 %if %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  tex(latex)
@@ -56,7 +60,9 @@ BuildRequires:  tetex-latex
 
 Requires:      myproxy-libs = %{version}-%{release}
 Requires:      globus-proxy-utils >= 5
+%if 0%{?suse_version} == 0
 Requires:      voms-clients
+%endif
 
 Obsoletes:     myproxy-client < 5.1-3
 Provides:      myproxy-client = %{version}-%{release}
@@ -192,9 +198,15 @@ done
                                     --with-voms=%{_usr} --without-openldap \
                                     --with-kerberos5=%{_usr} --with-sasl2=%{_usr}
 %else
+%if 0%{?suse_version} > 0
+%configure --with-flavor=%{flavor}  --enable-doxygen --with-openldap=%{_usr} \
+                                    --without-voms \
+                                    --with-kerberos5=%{_usr} --with-sasl2=%{_usr}
+%else
 %configure --with-flavor=%{flavor}  --enable-doxygen --with-openldap=%{_usr} \
                                     --with-voms=%{_usr} \
                                     --with-kerberos5=%{_usr} --with-sasl2=%{_usr}
+%endif
 %endif
 make %{?_smp_mflags}
 
@@ -218,11 +230,19 @@ sed '/myproxy-server-setup$/d' -i $GLOBUSPACKAGEDIR/%{name}/%{flavor}_pgm.fileli
 
 # Put documentation in Fedora defaults and alter GPT package lists.
 mkdir -p $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/extras
+%if 0%{?suse_version} == 0
 mv $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}/{refman.pdf,html} \
     $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/.
-
 sed -i "s!/share/doc/%{name}/html/!/share/doc/%{name}-doc-%{version}/html/!" $GLOBUSPACKAGEDIR/%{name}/noflavor_doc.filelist
 sed -i "s!/share/doc/%{name}/refman.pdf!/share/doc/%{name}-doc-%{version}/refman.pdf!" $GLOBUSPACKAGEDIR/%{name}/noflavor_doc.filelist
+
+%else
+mv $RPM_BUILD_ROOT/%{_datadir}/doc/%{name}/{refman.pdf,html} \
+    $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/.
+sed -i "s!/share/doc/%{name}/html/!/share/doc/packages/%{name}-doc-%{version}/html/!" $GLOBUSPACKAGEDIR/%{name}/noflavor_doc.filelist
+sed -i "s!/share/doc/%{name}/refman.pdf!/share/doc/packages/%{name}-doc-%{version}/refman.pdf!" $GLOBUSPACKAGEDIR/%{name}/noflavor_doc.filelist
+
+%endif
 
 
 # We are going to zip the man pages later in the package so we need to
@@ -234,17 +254,29 @@ for FILE in login.html myproxy-accepted-credentials-mapapp myproxy-cert-checker 
              myproxy-certreq-checker myproxy-crl.cron myproxy.cron myproxy-get-delegation.cgi \
              myproxy-get-trustroots.cron myproxy-passphrase-policy myproxy-revoke 
 do
+%if 0%{?suse_version} == 0
    mv $RPM_BUILD_ROOT%{_usr}/share/%{name}/$FILE \
       $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/extras/.
    sed -i "s!%{name}/${FILE}!doc/%{name}-doc-%{version}/extras/${FILE}!" $GLOBUSPACKAGEDIR/%{name}/noflavor_data.filelist
+%else
+   mv $RPM_BUILD_ROOT%{_usr}/share/%{name}/$FILE \
+      $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/extras/.
+   sed -i "s!%{name}/${FILE}!doc/packages/%{name}-doc-%{version}/extras/${FILE}!" $GLOBUSPACKAGEDIR/%{name}/noflavor_data.filelist
+%endif
 done
 
 mkdir -p $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-%{version}
 for FILE in INSTALL LICENSE LICENSE.* PROTOCOL README VERSION
 do 
+%if 0%{?suse_version} == 0
   mv  $RPM_BUILD_ROOT%{_usr}/share/%{name}/$FILE \
       $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-%{version}/.
   sed -i "s!%{name}/${FILE}!doc/%{name}-%{version}/${FILE}!" $GLOBUSPACKAGEDIR/%{name}/noflavor_data.filelist
+%else
+  mv  $RPM_BUILD_ROOT%{_usr}/share/%{name}/$FILE \
+      $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-%{version}/.
+  sed -i "s!%{name}/${FILE}!doc/packages/%{name}-%{version}/${FILE}!" $GLOBUSPACKAGEDIR/%{name}/noflavor_data.filelist
+%endif
 done
 
 # Remove irrelavent example configuration files.
@@ -414,6 +446,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 5.6-3
+- SLES 11 patches
+
 * Wed Mar 16 2012 Joseph Bester <bester@mcs.anl.gov> - 5.6-2
 - Package a few files that were not named in server package
 

@@ -13,7 +13,7 @@
 Name:		globus-gssapi-error
 %global _name %(tr - _ <<< %{name})
 Version:	4.1
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Globus Toolkit - GSSAPI Error Library
 
 Group:		System Environment/Libraries
@@ -41,6 +41,8 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
+%else if 0%{?suse_version} > 0
+BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
@@ -167,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 4.1-6
+- SLES 11 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 4.1-5
 - Updated version numbers
 

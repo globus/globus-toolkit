@@ -13,7 +13,7 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
 Version:	4.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
@@ -32,7 +32,9 @@ Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 11
+%if 0%{?suse_version} < 1
 BuildRequires:	libtool-ltdl-devel%{?_isa}
+%endif
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 BuildRequires:	globus-xio-devel%{?_isa} >= 3
@@ -45,6 +47,8 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 5
 BuildRequires:	tex(latex)
+%else if 0%{?suse_version} > 0
+BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
@@ -64,7 +68,9 @@ Summary:	Globus Toolkit - Scheduler Event Generator Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-gram-protocol-devel%{?_isa} >= 11
+%if 0%{?suse_version} < 1
 Requires:	libtool-ltdl-devel%{?_isa}
+%endif
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-xio-devel%{?_isa} >= 3
@@ -216,6 +222,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 4.6-2
+- SLES 11 patches
+
 * Fri Apr 13 2012 Joseph Bester <bester@mcs.anl.gov> - 4.6-1
 - RIC-258: Can't rely on MKDIR_P
 
@@ -243,7 +252,7 @@ fi
 - Add backward-compatibility aging
 - Fix %post* scripts to check for -eq 1
 
-* Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 4.1-1
+* Fri Sep 23 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-1
 - GRAM-260: Detect and workaround bug in start_daemon for LSB < 4
 
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2

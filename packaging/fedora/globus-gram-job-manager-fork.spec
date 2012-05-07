@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	1.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
@@ -28,7 +28,15 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-gram-job-manager-scripts >= 4
 Requires:	globus-gass-cache-program >= 5
 Requires:	globus-common-progs >= 14
+%if 0%{?suse_version} > 0
+    %if %{suse_version} < 1140
+Requires:     perl = %{perl_version}
+    %else
+%{perl_requires}
+    %endif
+%else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
+%endif
 Requires:       %{name}-setup
 Obsoletes:      globus-gram-job-manager-setup-fork < 4.3
 BuildRequires:	grid-packaging-tools >= 3.4
@@ -45,6 +53,8 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
+%else if 0%{?suse_version} > 0
+BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
@@ -265,6 +275,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-2
+- SLES 11 patches
+
 * Thu Apr 12 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-1
 - GRAM-343: lrm packages grid-service files aren't in CLEANFILES
 

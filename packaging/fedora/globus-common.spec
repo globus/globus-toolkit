@@ -19,7 +19,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	14.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -49,13 +49,17 @@ BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
+%if %{?suse_version:0}%{!?suse_version:1}
 BuildRequires:	libtool-ltdl-devel
+%endif
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
+%else if 0%{?suse_version} > 0
+BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
@@ -64,7 +68,15 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - Common Library Programs
 Group:		Applications/Internet
 Requires:	%{name}%{?_isa} = %{version}-%{release}
+%if 0%{?suse_version} > 0
+    %if %{suse_version} < 1140
+Requires:     perl = %{perl_version}
+    %else
+%{perl_requires}
+    %endif
+%else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
+%endif
 
 %package devel
 Summary:	Globus Toolkit - Common Library Development Files
@@ -247,6 +259,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 14.6-2
+- SLES 11 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 14.6-1
 - RIC-221: Remove unnecessary evals of path components from script initializers
 - RIC-223: Some commands in globus_common have no manpage

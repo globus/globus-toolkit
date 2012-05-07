@@ -13,7 +13,7 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
 Version:	13.35
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -69,6 +69,8 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 5
 BuildRequires:	tex(latex)
+%else if 0%{?suse_version} > 0
+BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
@@ -173,7 +175,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Thu May 03 2012 Joe Bester <jbester@mactop2.local> - 13.35-1
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 13.35-2
+- SLES 11 patches
+
+* Thu May 03 2012 Joseph Bester <bester@mcs.anl.gov> - 13.35-1
 - GRAM-329: Condor fake-SEG loses track of job
 - GRAM-345: Job manager deletes job dir sometimes
 

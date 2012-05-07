@@ -9,7 +9,7 @@
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
 Version:	1.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
@@ -22,7 +22,15 @@ Requires:	globus-gram-job-manager-scripts >= 3.4
 Requires:	globus-gass-cache-program >= 2
 Requires:	globus-common-progs >= 2
 Requires:       condor
+%if 0%{?suse_version} > 0
+    %if %{suse_version} < 1140
+Requires:     perl = %{perl_version}
+    %else
+%{perl_requires}
+    %endif
+%else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
+%endif
 Requires(post): globus-gram-job-manager-scripts >= 4
 Requires(preun): globus-gram-job-manager-scripts >= 4
 Provides:       globus-gram-job-manager-setup
@@ -36,6 +44,8 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
+%else if 0%{?suse_version} > 0
+BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
@@ -112,6 +122,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-condor
 
 %changelog
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-2
+- SLES 11 patches
+
 * Thu Apr 12 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-1
 - GRAM-343: lrm packages grid-service files aren't in CLEANFILES
 

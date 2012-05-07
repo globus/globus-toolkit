@@ -137,7 +137,7 @@ rm -rf $RPM_BUILD_ROOT
 * Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 9.1-1
 - Add backward-compatibility aging
 
-* Mon Sep 26 2011 Joe Bester <bester@mcs.anl.gov> - 9.0-2
+* Mon Sep 26 2011 Joseph Bester <bester@mcs.anl.gov> - 9.0-2
 - pick up new GSSAPI version dependency
 
 * Tue Sep 20 2011  <bester@mcs.anl.gov> - 9.0-1

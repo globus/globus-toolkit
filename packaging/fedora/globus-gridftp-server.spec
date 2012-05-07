@@ -233,7 +233,7 @@ fi
 - Add backward-compatibility aging
 - Fix %post* scripts to check for -eq 1
 
-* Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 6.1-1
+* Fri Sep 23 2011 Joseph Bester <bester@mcs.anl.gov> - 6.1-1
 - GRIDFTP-184: Detect and workaround bug in start_daemon for LSB < 4
 
 * Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 6.0-3

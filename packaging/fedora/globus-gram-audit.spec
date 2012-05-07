@@ -16,7 +16,7 @@
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Globus Toolkit - GRAM Auditing
 
 Group:		Applications/Internet
@@ -28,7 +28,15 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 %endif
 Requires:	globus-common >= 14
+%if 0%{?suse_version} > 0
+    %if %{suse_version} < 1140
+Requires:     perl = %{perl_version}
+    %else
+%{perl_requires}
+    %endif
+%else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
+%endif
 Requires:	perl(DBI)
 Requires:	crontabs
 BuildRequires:	grid-packaging-tools >= 3.4
@@ -94,6 +102,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-6
+- SLES 11 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-5
 - GRAM-312: Make crontab not fail if the package is uninstalled
 
