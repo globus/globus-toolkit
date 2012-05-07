@@ -477,6 +477,9 @@ voms_proxy_init()
 	} else if (GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type)) {
         argv[argc++] = "-proxyver=2";
     }
+    if (GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type)) {
+        argv[argc++] = "-limited";
+    }
     argv[argc++] = NULL;
 
     if (debug) {
