@@ -685,7 +685,7 @@ EOF
 	DESCRDIR setup/descr
 	DATADIR RPMS
 EOF
-    cp "${bamboodir}/RPM-GPG-KEY-Globus content.key"
+    cp "${bamboodir}/RPM-GPG-KEY-Globus" content.key
     mkdir RPMS
     mv x86_64 RPMS
     mv SRPMS RPMS/src
