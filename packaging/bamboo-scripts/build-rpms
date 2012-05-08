@@ -652,7 +652,9 @@ EOF
 
 createrepo "${reporoot}/$osname/$osver/SRPMS"
 createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/x86_64"
-createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/i386"
+if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
+    createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/i386"
+fi
 
 # Export the package lists for the full set of RPMS we generated (64- and
 # 32-bit forms)
