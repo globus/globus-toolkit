@@ -650,12 +650,6 @@ cat > globus.xml <<EOF
 </comps>
 EOF
 
-createrepo "${reporoot}/$osname/$osver/SRPMS"
-createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/x86_64"
-if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
-    createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/i386"
-fi
-
 # Export the package lists for the full set of RPMS we generated (64- and
 # 32-bit forms)
 allpkgs64="$(find "${reporoot}/${osname}/${osver}/"x86_64 -name '*.rpm' | \
@@ -668,6 +662,42 @@ if [ "$(lsb_release -is)" != 'SUSE LINUX' ]; then
     echo "$allpkgs32" > packages.gcc32
 fi
 echo "$allpkgs64" > packages.gcc64
+
+if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
+    createrepo "${reporoot}/$osname/$osver/SRPMS"
+    createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/x86_64"
+    createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/i386"
+else
+    cd "${reporoot}/${osname}/${osver}"
+    mkdir "media.1"
+    cat <<-EOF > "media.1/media"
+	Globus Support
+	$(date +%Y%m%d%H%M%S)
+	1
+EOF
+    cat <<-EOF > "content"
+	PRODUCT Globus Toolkit
+	VERSION ${globusversion}
+	LABEL Globus Toolkit (SUSE LINUX 11)
+	VENDOR Globus Support
+	ARCH.x86_64 x86_64 noarch
+	DEFAULTBASE x86_64
+	DESCRDIR setup/descr
+	DATADIR RPMS
+EOF
+    cp "${bamboodir}/RPM-GPG-KEY-Globus content.key"
+    mkdir RPMS
+    mv x86_64 RPMS
+    mv SRPMS RPMS/src
+    ls -A1 > directory.yast
+    create_package_descr -d RPMS
+    for meta in setup/descr/*; do
+        echo "META SHA1 $(cd setup/descr; sha1sum "$(basename "$meta")")" >> content
+    done
+    echo "KEY SHA1 $(sha1sum "content.key")" >> content
+    gpg -ab content
+    cd "$OLDPWD"
+fi
 
 # Remove what we built
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|gsi_openssh' || true) )"
