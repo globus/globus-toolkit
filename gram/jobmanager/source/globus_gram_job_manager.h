@@ -515,7 +515,11 @@ typedef struct globus_gram_job_manager_s
      * Periodic callback handle to abort if something removes the lock file.
      */
     globus_callback_handle_t            lockcheck_handle;
-    
+
+    /**
+     * Periodic callback handle to abort if something removes the lock file.
+     */
+    globus_callback_handle_t            idle_script_handle;
 }
 globus_gram_job_manager_t;
 
@@ -1359,6 +1363,9 @@ void
 globus_gram_job_manager_script_close_all(
     globus_gram_job_manager_t *         manager);
 
+void
+globus_gram_script_close_idle(
+    void *                              arg);
 
 extern globus_xio_driver_t              globus_i_gram_job_manager_popen_driver;
 extern globus_xio_stack_t               globus_i_gram_job_manager_popen_stack;
