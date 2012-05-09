@@ -123,12 +123,11 @@ EOF
 target32=i686-redhat-linux
 
 pkgtool="yum"
-gpgskiparg="--nogpgcheck"
 noninteractivearg="-y"
 case $(lsb_release -is):$(lsb_release -rs) in
     CentOS:4*|ScientificSL:4*|RedHatEnterpriseServer:4*)
         echo "%rhel                  4" >> $topdir/.rpmmacros
-        gpgskiparg=""
+        target32=i386-redhat-linux
         rhel=4
         ;;
     CentOS:5*|ScientificSL:5*|RedHatEnterpriseServer:5*)
@@ -139,7 +138,6 @@ case $(lsb_release -is):$(lsb_release -rs) in
     "SUSE LINUX":*)
         target32=""
         pkgtool="zypper"
-        gpgskiparg="--no-gpg-checks"
         noninteractivearg="-n"
         ;;
 esac
