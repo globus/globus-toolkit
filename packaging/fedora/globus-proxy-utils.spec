@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
 Version:	5.0
-Release:	6%{?dist}
+Release:	7%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 5.0-7
+- RHEL 4 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 5.0-6
 - Updated version numbers
 

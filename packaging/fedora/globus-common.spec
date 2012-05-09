@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -19,7 +19,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	14.6
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -49,8 +49,10 @@ BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
-%if %{?suse_version:0}%{!?suse_version:1}
+%if 0%{?suse_version} == 0
+%if 0%{?rhel} > 4 || 0%{?rhel} == 0
 BuildRequires:	libtool-ltdl-devel
+%endif
 %endif
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
@@ -58,10 +60,12 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
-%else if 0%{?suse_version} > 0
+%else
+%if 0%{?suse_version} > 0
 BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
+%endif
 %endif
 
 %package progs
@@ -259,6 +263,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 14.6-3
+- RHEL 4 patches
+
 * Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 14.6-2
 - SLES 11 patches
 

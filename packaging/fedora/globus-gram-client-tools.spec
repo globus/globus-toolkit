@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
 Version:	10.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
 Group:		Applications/Internet
@@ -84,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 10.3-2
+- RHEL 4 patches
+
 * Wed Apr 11 2012 Joseph Bester <bester@mcs.anl.gov> - 10.3-1
 - GRAM-339: globus-job-run and globus-job-submit can't always handle "-e" as an argument
 

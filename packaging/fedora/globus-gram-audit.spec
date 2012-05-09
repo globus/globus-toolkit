@@ -5,7 +5,7 @@
 %endif
 
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -16,7 +16,7 @@
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	6%{?dist}
+Release:	7%{?dist}
 Summary:	Globus Toolkit - GRAM Auditing
 
 Group:		Applications/Internet
@@ -102,6 +102,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-7
+- RHEL 4 patches
+
 * Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-6
 - SLES 11 patches
 

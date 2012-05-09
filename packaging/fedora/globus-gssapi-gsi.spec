@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
 Version:	10.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
@@ -51,10 +51,12 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
-%else if 0%{?suse_version} > 0
+%else
+%if 0%{?suse_version} > 0
 BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
+%endif
 %endif
 
 %package devel
@@ -188,6 +190,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 10.7-2
+- RHEL 4 patches
+
 * Mon May 07 2012 Joseph Bester <bester@mcs.anl.gov> - 10.7-1
 - RIC-265: Memory leak in gss_accept_delegation()
 

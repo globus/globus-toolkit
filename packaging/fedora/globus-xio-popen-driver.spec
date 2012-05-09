@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-xio-popen-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus XIO Pipe Open Driver
 
 Group:		System Environment/Libraries
@@ -113,6 +113,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 2.3-2
+- RHEL 4 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 2.3-1
 - RIC-226: Some dependencies are missing in GPT metadata
 

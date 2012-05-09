@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
 Version:	9.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
@@ -119,6 +119,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 9.3-2
+- RHEL 4 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 9.3-1
 - RIC-226: Some dependencies are missing in GPT metadata
 

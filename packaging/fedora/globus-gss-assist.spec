@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
 Version:	8.5
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
@@ -46,10 +46,12 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
-%else if 0%{?suse_version} > 0
+%else
+%if 0%{?suse_version} > 0
 BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
+%endif
 %endif
 
 %package progs
@@ -202,6 +204,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 8.5-3
+- RHEL 4 patches
+
 * Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 8.5-2
 - SLES 11 patches
 

@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
 Version:	6.10
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -180,6 +180,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 6.10-2
+- RHEL 4 patches
+
 * Fri Apr 13 2012 Joseph Bester <bester@mcs.anl.gov> - 6.10-1
 - RIC-258: Can't rely on MKDIR_P
 

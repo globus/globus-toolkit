@@ -8,7 +8,7 @@
 
 %global debug_package %{nil}
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5" 
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -19,7 +19,7 @@
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
 Version:	8.8
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 8.8-2
+- RHEL 4 patches
+
 * Fri Apr 06 2012 Joseph Bester <bester@mcs.anl.gov> - 8.8-1
 - RIC-252: solaris build failure
 

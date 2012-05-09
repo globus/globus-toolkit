@@ -1,5 +1,9 @@
 # Do we want SELinux & Audit
+%if "%{?rhel}" == "4"
+%global WITH_SELINUX 0
+%else
 %global WITH_SELINUX 1
+%endif
 
 # OpenSSH privilege separation requires a user & group ID
 # Will let the system choose the UID/GID for the gsisshd user/group; see later
@@ -17,7 +21,7 @@
 %global gsi 1
 
 # Do we want libedit support
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global libedit 0
 %else
 %global libedit 1
@@ -132,8 +136,12 @@ BuildRequires: libopenssl-devel
 BuildRequires: tcp_wrappers
 BuildRequires: openssl-devel >= 0.9.8e
 %else
+%if "%{?rhel}" == "4"
+BuildRequires: openssl-devel
+%else
 BuildRequires: tcp_wrappers-devel
 BuildRequires: openssl-devel >= 0.9.8j
+%endif
 %endif
 %endif
 

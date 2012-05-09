@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.6
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -46,13 +46,11 @@ BuildRequires:  doxygen
 BuildRequires: graphviz-gd
 %endif
 
-%if %{?fedora}%{!?fedora:0} >= 9
+%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  tex(latex)
-%else if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
 %else
-%if %{?rhel}%{!?rhel:0} >= 6
-BuildRequires:  tex(latex)
+%if 0%{?suse_version} > 0
+BuildRequires:  texlive-latex
 %else
 BuildRequires:  tetex-latex
 %endif
@@ -446,6 +444,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 5.6-4
+- RHEL 4 patches
+
 * Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 5.6-3
 - SLES 11 patches
 

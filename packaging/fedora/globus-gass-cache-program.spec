@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-gass-cache-program
 %global _name %(tr - _ <<< %{name})
 Version:	5.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Tools to manipulate local and remote GASS caches
 
 Group:		Applications/Internet
@@ -85,6 +85,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 5.1-2
+- RHEL 4 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 5.1-1
 - GRAM-311: Undefined variable defaults in shell scripts
 - RIC-226: Some dependencies are missing in GPT metadata

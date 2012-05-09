@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
 Version:	9.11
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
@@ -125,6 +125,9 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 9.11-3
+- RHEL 4 patches
+
 * Mon May 07 2012 Joseph Bester <bester@mcs.anl.gov> - 9.11-1
 - Updates for SUSE 11
 

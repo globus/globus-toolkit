@@ -1,4 +1,4 @@
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -11,7 +11,7 @@
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
 Version:	3.0
-Release:	6%{?dist}
+Release:	7%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -90,6 +90,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 3.0-7
+- RHEL 4 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 3.0-6
 - Updated version numbers
 

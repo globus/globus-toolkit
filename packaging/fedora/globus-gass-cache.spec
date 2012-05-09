@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-gass-cache
 %global _name %(tr - _ <<< %{name})
 Version:	8.1
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Globus Toolkit - Globus Gass Cache
 
 Group:		System Environment/Libraries
@@ -108,6 +108,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 8.1-6
+- RHEL 4 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 8.1-5
 - Updated version numbers
 

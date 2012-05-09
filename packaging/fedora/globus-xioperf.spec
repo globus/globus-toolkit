@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-xioperf
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - XIO Performance Tool
 
 Group:		Applications/Internet
@@ -76,6 +76,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-2
+- RHEL 4 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-1
 - RIC-229: Clean up GPT metadata
 

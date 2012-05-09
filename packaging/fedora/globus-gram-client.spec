@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
 Version:	12.4
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
 Group:		System Environment/Libraries
@@ -47,10 +47,12 @@ BuildRequires:	graphviz-gd
 BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 5
 BuildRequires:	tex(latex)
-%else if 0%{?suse_version} > 0
+%else
+%if 0%{?suse_version} > 0
 BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
+%endif
 %endif
 
 %package devel
@@ -173,6 +175,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 12.4-3
+- RHEL 4 patches
+
 * Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 12.4-2
 - SLES 11 patches
 

@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
 Version:	2.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
 Group:		System Environment/Libraries
@@ -115,6 +115,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 2.5-2
+- RHEL 4 patches
+
 * Tue Mar 06 2012 Joseph Bester <bester@mcs.anl.gov> - 2.5-1
 - GRIDFTP-165: correct chunking of MLSC response
 - GRIDFTP-165: fix MLSC over split processes

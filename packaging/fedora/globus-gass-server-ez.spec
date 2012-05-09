@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -13,7 +13,7 @@
 Name:		globus-gass-server-ez
 %global _name %(tr - _ <<< %{name})
 Version:	4.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gass Server_ez
 
 Group:		System Environment/Libraries
@@ -130,6 +130,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-2
+- RHEL 4 patches
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-1
 - RIC-218: Fd leak in gass server when file read fails
 - RIC-226: Some dependencies are missing in GPT metadata

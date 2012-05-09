@@ -1,6 +1,6 @@
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
-%if "%{?rhel}" == "5"
+%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -8,8 +8,8 @@
 
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	4.2
-Release:	3%{?dist}
+Version:	4.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
 Group:		Applications/Internet
@@ -109,6 +109,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-1
+- RHEL 4 patches
+
 * Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 4.2-3
 - SLES 11 patches
 
