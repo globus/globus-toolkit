@@ -126,6 +126,11 @@ pkgtool="yum"
 gpgskiparg="--nogpgcheck"
 noninteractivearg="-y"
 case $(lsb_release -is):$(lsb_release -rs) in
+    CentOS:4*|ScientificSL:4*|RedHatEnterpriseServer:4*)
+        echo "%rhel                  4" >> $topdir/.rpmmacros
+        gpgskiparg=""
+        rhel=4
+        ;;
     CentOS:5*|ScientificSL:5*|RedHatEnterpriseServer:5*)
         target32=i386-redhat-linux
         echo "%rhel                  5" >> $topdir/.rpmmacros
@@ -183,7 +188,7 @@ if [ -d ${packagingdir}/source-trees/gssapi-openssh/setup ]; then
     chmod  a+x ${packagingdir}/source-trees/gssapi-openssh/setup/setup-openssh
 fi
 
-[ ! -d source-trees ] || find source-trees -name bootstrap -exec chmod a+x {} +
+[ ! -d source-trees ] || find source-trees -name bootstrap -exec chmod a+x {} \;
 
 packages="$(./make-packages.pl -faster -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} ${skip_checkout:+-no-updates} \
     ${skip_bootstrap:+-ab} -order-include-runtime-deps | \
@@ -226,7 +231,7 @@ for i in grid-packaging-tools $packages; do
         
         # Don't install LRM RPMs on build machine necessarily
         if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
-            sudo $pkgtool $noninteractivearg $gpgskiparg install $rpms || true
+            sudo rpm -hUv $rpms || true
         fi
     fi
 done
@@ -264,7 +269,7 @@ for i in grid-packaging-tools $packages; do
         
         # Don't install LRM RPMs on build machine necessarily
         if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
-            sudo $pkgtool $noninteractivearg $gpgskiparg install $rpms || true
+            sudo rpm -hUv install $rpms || true
         fi
     fi
 done
@@ -274,11 +279,6 @@ cd $topdir
 
 mv RPMS.x86_64/x86_64 RPMS
 mv RPMS.x86_64/noarch/* RPMS/x86_64
-
-if [ "$sign" = 1 ]; then
-    find RPMS -name '*.rpm' -exec expect ${bamboodir}/sign-rpm {} \;
-    find SRPMS -name '*.rpm' -exec expect ${bamboodir}/sign-rpm {} \;
-fi
 
 # Create yum repo configuration package that includes the path to the
 # yum repositories and the public GPG key
@@ -312,7 +312,7 @@ cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
 
 if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
     cp RPMS/noarch/*.rpm "${repodir}"/i386/
-    if [ "$rhel" = 5 ]; then 
+    if [ "$rhel" = 5 ] || [ "$rhel" = 4 ]; then 
         cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
     fi
 fi
