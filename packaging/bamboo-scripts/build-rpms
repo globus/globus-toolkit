@@ -269,7 +269,7 @@ for i in grid-packaging-tools $packages; do
         
         # Don't install LRM RPMs on build machine necessarily
         if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
-            sudo rpm -hUv install $rpms || true
+            sudo rpm -hUv $rpms || true
         fi
     fi
 done
