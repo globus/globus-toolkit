@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.36-1) unstable; urgency=low
+
+  * GRAM-288: Kill off perl processes when idle
+
+ -- Globus Toolkit <support@globus.org>  Wed, 09 May 2012 13:16:34 -0400
+
 globus-gram-job-manager (13.35-1) unstable; urgency=low
 
   * GRAM-329: Condor fake-SEG loses track of job

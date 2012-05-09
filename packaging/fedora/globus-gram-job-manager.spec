@@ -12,8 +12,8 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.35
-Release:	3%{?dist}
+Version:	13.36
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -177,6 +177,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 13.36-1
+- GRAM-288: Kill off perl processes when idle
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 13.35-3
 - RHEL 4 patches
 
