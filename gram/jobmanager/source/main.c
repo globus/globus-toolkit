@@ -518,6 +518,19 @@ main(
                     globus_l_gram_lockcheck,
                     &manager);
             }
+
+            {
+                globus_reltime_t        idlescript_period;
+
+                GlobusTimeReltimeSet(idlescript_period, 60, 0);
+
+                rc = globus_callback_register_periodic(
+                    &manager.idle_script_handle,
+                    NULL,
+                    &idlescript_period,
+                    globus_gram_script_close_idle,
+                    &manager);
+            }
         }
         else if (http_body_fd >= 0)
         {
@@ -627,6 +640,10 @@ main(
     if (manager.lockcheck_handle != GLOBUS_NULL_HANDLE)
     {
         globus_callback_unregister(manager.lockcheck_handle, NULL, NULL, NULL);
+    }
+    if (manager.idle_script_handle != GLOBUS_NULL_HANDLE)
+    {
+        globus_callback_unregister(manager.idle_script_handle, NULL, NULL, NULL);
     }
     GlobusGramJobManagerUnlock(&manager);
 

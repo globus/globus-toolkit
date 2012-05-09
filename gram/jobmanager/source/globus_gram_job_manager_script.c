@@ -33,6 +33,7 @@ typedef struct globus_gram_script_handle_s
     globus_byte_t                       return_buf[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
     globus_result_t                     result;
     int                                 pending_ops;
+    time_t                              last_use;
 }
 *globus_gram_script_handle_t;
 
@@ -2633,6 +2634,7 @@ globus_l_gram_job_manager_script_done(
     }
     if (handle->result == GLOBUS_SUCCESS)
     {
+        handle->last_use = time(NULL);
         globus_fifo_enqueue(&manager->script_handles, handle);
     }
     else
@@ -2689,6 +2691,7 @@ globus_gram_job_manager_script_handle_init(
     (*handle)->result = GLOBUS_SUCCESS;
     (*handle)->manager = manager;
     (*handle)->pending_ops = 0;
+    (*handle)->last_use = time(NULL);
 
     result = globus_xio_handle_create(
             &(*handle)->handle,
@@ -2760,3 +2763,56 @@ globus_l_script_writev_callback(
     globus_l_gram_job_manager_script_done(script_handle->manager, script_handle);
     GlobusGramJobManagerUnlock(script_handle->manager);
 }
+
+/**
+ * Periodic callback to close idle script handles
+ *
+ * If a script handle hasn't been used in over 30 seconds, and there are
+ * no pending script events, it will be closed by this callback and removed
+ * from the script handle fifo.
+ */
+void
+globus_gram_script_close_idle(
+    void *                              arg)
+{
+    globus_gram_job_manager_t *         manager = arg;
+    globus_gram_script_handle_t         handle;
+    time_t                              now = time(NULL);
+
+    GlobusGramJobManagerLock(manager);
+    if (!globus_priority_q_empty(&manager->script_queue))
+    {
+        goto nonempty_queue;
+    }
+
+    while (!globus_fifo_empty(&manager->script_handles))
+    {
+        handle = globus_fifo_peek(&manager->script_handles);
+
+        if (difftime(now, handle->last_use) > 30.0)
+        {
+            globus_gram_job_manager_log(
+                    manager,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                    "event=gram.script_idle.info "
+                    "level=DEBUG "
+                    "msg=\"closing idle script handle after %.1f seconds"
+                    "\n ",
+                    difftime(now, handle->last_use));
+
+            globus_fifo_dequeue(&manager->script_handles);
+            globus_xio_close(
+                    handle->handle,
+                    NULL);
+            free(handle);
+            manager->script_slots_available++;
+        }
+        else
+        {
+            break;
+        }
+    }
+nonempty_queue:
+    GlobusGramJobManagerUnlock(manager);
+}
+/* globus_gram_script_close_idle() */
