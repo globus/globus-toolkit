@@ -517,7 +517,7 @@ typedef struct globus_gram_job_manager_s
     globus_callback_handle_t            lockcheck_handle;
 
     /**
-     * Periodic callback handle to abort if something removes the lock file.
+     * Periodic callback handle to clse idle perl script xio handles
      */
     globus_callback_handle_t            idle_script_handle;
 }
