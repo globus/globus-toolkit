@@ -862,6 +862,10 @@ class GRAM5JobPacket(GRAM5Packet):
         file_stage_out_timestamp = None
         done_timestamp = None
 
+        # GT-183: Usage stats server doesn't discard bad packets
+        if self.data.get('B') is None or len(self.data.get('B')) != 36:
+            return None
+
         if self.data.get('c') is not None and float(self.data.get('c')) > 1:
             unsubmitted_timestamp = GRAM5Packet.TimestampFromTicks(
                     float(self.data.get("c")))

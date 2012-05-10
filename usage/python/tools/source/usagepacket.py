@@ -104,7 +104,8 @@ class UsagePacket(object):
         """
         Upload multiple usage packets of the same type.
         """
-        values = map(lambda x: x.values(dbclass), packets)
+        # GT-183: Usage stats server doesn't discard bad packets
+        values = filter(lambda x: x is not None, map(lambda x: x.values(dbclass), packets))
         cursor.executemany(
                 packets[0].insert_statement,
                 values)
