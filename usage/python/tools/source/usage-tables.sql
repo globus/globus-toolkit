@@ -528,7 +528,7 @@ CREATE TABLE gram5_rsl_attribute_groups(
     -- Bitwise or of 2^(rsl attribute id)
     bitfield NUMERIC(64),
     -- String containing comma-separated list of attributes
-    attributes VARCHAR(256) NOT NULL,
+    attributes VARCHAR(512) NOT NULL,
     PRIMARY KEY(bitfield));
 
 -- The bitwise operations didn't work to well in practice with > 62 RSL
