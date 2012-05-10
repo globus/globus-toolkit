@@ -3,18 +3,14 @@ include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS= schemas pkgdata
 
-# Where targets are installed
 sbin_SCRIPTS = globus-gram-audit
 
-## man8 = [ DOC ]
 man8_MANS = globus-gram-audit.8
 MANUAL_SOURCE = manual.xml globus-gram-audit-manual.xml 
 
-## globusconf = [ DATA ]
 globusconfdir = $(sysconfdir)/globus
 globusconf_DATA = gram-audit.conf
 
-## cron = [ PROGRAMS ]
 crondir = $(sysconfdir)/cron.hourly
 cron_SCRIPTS = globus-gram-audit.cron
 
