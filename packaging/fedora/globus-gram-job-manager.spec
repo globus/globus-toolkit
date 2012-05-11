@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.36
+Version:	13.37
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -177,6 +177,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 11 2012 Joseph Bester <bester@mcs.anl.gov> - 13.37-1
+- GT-65: GRAM records datagram socket failure, but doesn't record socket name
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 13.36-1
 - GRAM-288: Kill off perl processes when idle
 

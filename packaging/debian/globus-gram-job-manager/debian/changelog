@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.37-1) unstable; urgency=low
+
+  * GT-65: GRAM records datagram socket failure, but doesn't record socket name
+
+ -- Globus Toolkit <support@globus.org>  Fri, 11 May 2012 11:11:31 -0400
+
 globus-gram-job-manager (13.36-1) unstable; urgency=low
 
   * GRAM-288: Kill off perl processes when idle

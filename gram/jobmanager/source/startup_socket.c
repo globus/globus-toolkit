@@ -2171,11 +2171,13 @@ socket_failed:
                 "errno=%d "
                 "msg=\"%s\" "
                 "reason=\"%s\" "
+                "path=\"%s\" "
                 "\n",
                 -rc,
                 save_errno,
                 msg,
-                strerror(save_errno));
+                strerror(save_errno),
+                addr.sun_path);
     }
     *sockptr = sock;
     return rc;
