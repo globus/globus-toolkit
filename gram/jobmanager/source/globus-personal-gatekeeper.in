@@ -478,7 +478,7 @@ ${startargs}
 $single
 ${X509_CERT_DIR:+-x509-cert-dir "$X509_CERT_DIR"}
 -globus-toolkit-version "$globus_toolkit_version"
--service-tag "${file_prefix}.$$"
+-service-tag "$$"
 EOF
 
 
@@ -492,7 +492,7 @@ if test $seg -eq 1; then
     echo "-seg-module $jmtype" >> ${scratch}/jobmanager.conf
 fi
 
-echo "-globus-job-dir ${TMPDIR:-/tmp}/${LOGNAME}/" >> ${scratch}/jobmanager.conf
+echo "-globus-job-dir ${TMPDIR:-/tmp}" >> ${scratch}/jobmanager.conf
 
 docleanup=false
  
