@@ -2156,7 +2156,7 @@ globus_l_create_starter_connect_socket(
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
         save_errno = errno;
-        msg = "Error making datagram connecting to Job Manager";
+        msg = "Error making datagram connection to Job Manager";
 
 setsockopt_failed:
         close(sock);
@@ -2174,7 +2174,7 @@ socket_failed:
                 "\n",
                 -rc,
                 save_errno,
-                "Error creating datagram socket",
+                msg,
                 strerror(save_errno));
     }
     *sockptr = sock;
