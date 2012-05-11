@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.38-1) unstable; urgency=low
+
+  * GT-185: globus-personal-gatekeeper creates too-long paths on MacOS
+
+ -- Globus Toolkit <support@globus.org>  Fri, 11 May 2012 13:38:14 -0400
+
 globus-gram-job-manager (13.37-1) unstable; urgency=low
 
   * GT-65: GRAM records datagram socket failure, but doesn't record socket name
