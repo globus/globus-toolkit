@@ -735,6 +735,8 @@ globus_gram_job_manager_state_file_read(
     buffer[strlen(buffer)-1] = '\0';
     if (request->config && strcmp(buffer, request->config->service_tag) != 0)
     {
+        /* Job should be handled by another job manager */
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
         goto free_client_address;
     }
     if(fgets( buffer, file_len, fp ) == NULL)
