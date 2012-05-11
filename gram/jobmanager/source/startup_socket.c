@@ -2171,11 +2171,13 @@ socket_failed:
                 "errno=%d "
                 "msg=\"%s\" "
                 "reason=\"%s\" "
+                "path=\"%s\" "
                 "\n",
                 -rc,
                 save_errno,
-                "Error creating datagram socket",
-                strerror(save_errno));
+                msg,
+                strerror(save_errno),
+                addr.sun_path);
     }
     *sockptr = sock;
     return rc;
