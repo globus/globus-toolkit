@@ -1,3 +1,9 @@
+globus-gatekeeper (9.12-1) unstable; urgency=low
+
+  * GT-159: globus-gatekeeper init script should report errors better
+
+ -- Globus Toolkit <support@globus.org>  Mon, 14 May 2012 10:25:35 -0400
+
 globus-gatekeeper (9.11-1) unstable; urgency=low
 
   * RIC-258: Can't rely on MKDIR_P

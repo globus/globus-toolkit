@@ -12,8 +12,8 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.11
-Release:	3%{?dist}
+Version:	9.12
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
@@ -125,6 +125,9 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Mon May 14 2012 Joseph Bester <bester@mcs.anl.gov> - 9.12-1
+- GT-159: globus-gatekeeper init script should report errors better
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 9.11-3
 - RHEL 4 patches
 
