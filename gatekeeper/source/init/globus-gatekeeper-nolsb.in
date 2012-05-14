@@ -46,9 +46,6 @@ lockfile="@LOCKFILE@"
 GLOBUS_GATEKEEPER_PIDFILE="${GLOBUS_GATEKEEPER_PIDFILE:-${localstatedir}/run/globus-gatekeeper.pid}"
 GLOBUS_GATEKEEPER_PORT="${GLOBUS_GATEKEEPER_PORT:-2119}"
 
-test -f "${GLOBUS_GATEKEEPER_CERT_FILE:-${sysconfdir}/grid-security/hostcert.pem}" || exit 0
-test -f "${GLOBUS_GATEKEEPER_KEY_FILE:-${sysconfdir}/grid-security/hostkey.pem}" || exit 0
-
 # avoid ksh93 built-in aliases (GRAM-335)
 for aname in "start" "stop" "restart" "status"; do
     if alias "$aname" > /dev/null 2>&1; then
@@ -64,6 +61,20 @@ start()
     if [ $rc -eq 0 ]; then
         echo "$progname is already running"
         return 0
+    fi
+
+    cert="${GLOBUS_GATEKEEPER_CERT_FILE:-${sysconfdir}/grid-security/hostcert.pem}"
+    if [ ! -f $cert ]; then
+        echo "Error: Gatekeeper's certificate file ($cert) is missing."
+        echo "Failed to start globus-gatekeeper"
+        exit 6
+    fi
+
+    key="${GLOBUS_GATEKEEPER_KEY_FILE:-${sysconfdir}/grid-security/hostkey.pem}"
+    if [ ! -f $key ]; then
+        echo "Error: Gatekeeper's private key file is ($key) is missing."
+        echo "Failed to start globus-gatekeeper"
+        exit 6
     fi
 
     if [ "${GLOBUS_GATEKEEPER_KERBEROS_ENABLED:-false}" = "true" ]; then
