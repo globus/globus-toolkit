@@ -16,7 +16,7 @@
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	7%{?dist}
+Release:	8%{?dist}
 Summary:	Globus Toolkit - GRAM Auditing
 
 Group:		Applications/Internet
@@ -38,7 +38,9 @@ Requires:     perl = %{perl_version}
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 %endif
 Requires:	perl(DBI)
+%if 0%{?suse_version} == 0
 Requires:	crontabs
+%endif
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core >= 8
 
@@ -102,6 +104,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Tue May 15 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-8
+- Adjust requirements for SUSE
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-7
 - RHEL 4 patches
 

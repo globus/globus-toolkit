@@ -34,7 +34,7 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 2
+%global gsi_openssh_rel 3
 %global gsi_openssh_ver 5.4
 
 %ifarch alpha ia64 ppc64 s390x sparc64 x86_64
@@ -113,7 +113,11 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: /sbin/nologin
 %endif
 
+%if 0%{?suse_version} == 0
 Requires: initscripts >= 5.20
+%else
+Requires: sysconfig
+%endif
 
 %if 0%{?suse_version} > 0
 BuildRequires: openldap2-devel
@@ -190,7 +194,11 @@ Group: Applications/Internet
 Summary: SSH server daemon with GSI authentication
 Group: System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+%if 0%{?suse_version} == 0
 Requires(post): chkconfig >= 0.9, /sbin/service
+%else
+Requires(post): aaa_base
+%endif
 Requires(pre): /usr/sbin/useradd
 %if "%{?rhel}" == "5"
 Requires: pam >= 0.99.6-2
@@ -457,6 +465,9 @@ fi
 %attr(0755,root,root) /etc/rc.d/init.d/gsisshd
 
 %changelog
+* Tue May 15 2012 Joseph Bester <bester@mcs.anl.gov> - 5.4-3
+- Adjust requirements for SUSE
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.4-2
 - Update to GT 5.1.2
 

@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.6
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -114,8 +114,15 @@ Package %{name}-devel contains development files for MyProxy.
 Requires(pre):    shadow-utils
 Requires(post):   chkconfig
 Requires(preun):  chkconfig
+%if 0%{?suse_version} == 0
 Requires(preun):  initscripts
 Requires(postun): initscripts
+%else
+Requires(preun):  sysconfig
+Requires(preun):  aaa_base
+Requires(postun): sysconfig
+Requires(postun): aaa_base
+%endif
 Requires:         myproxy-libs = %{version}-%{release}
 Summary:          Server for X.509 Public Key Infrastructure (PKI) security credentials 
 Group:            System Environment/Daemons
@@ -444,6 +451,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Tue May 15 2012 Joseph Bester <bester@mcs.anl.gov> - 5.6-5
+- Adjust requirements for SUSE
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 5.6-4
 - RHEL 4 patches
 
