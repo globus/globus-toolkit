@@ -286,9 +286,15 @@ fi
 # Create yum repo configuration package that includes the path to the
 # yum repositories and the public GPG key
 if test "$artifactroot" != ""; then
-    sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" \
-    -b "$artifactroot/repo/\$osname/\\\$releasever" \
-    -r Globus-bamboo-config -U
+    if [ "$osname" = "sles" ]; then
+        sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" \
+        -b "$artifactroot/repo/\$osname/\$osver" \
+        -r Globus-bamboo-config -U
+    else
+        sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" \
+        -b "$artifactroot/repo/\$osname/\\\$releasever" \
+        -r Globus-bamboo-config -U
+    fi
 fi
 if grep rc "${packagingdir}/fait_accompli/version" > /dev/null; then
     sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" \
