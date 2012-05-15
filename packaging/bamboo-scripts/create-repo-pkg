@@ -55,15 +55,23 @@ if [ "$osname" = "" -o "$osver" = "" ]; then
     exit 1
 fi
 
-baseurlresolved="$(eval echo $baseurl)/\$basearch/"
-srcbaseurlresolved="$(eval echo $baseurl)/SRPMS"
-updatebaseurlresolved="$(eval echo $updatebaseurl)/\$basearch"
-updatesrcbaseurlresolved="$(eval echo $updatebaseurl)/SRPMS"
+if [ "$osname" = "sles" ]; then
+    baseurlresolved="$(eval echo $baseurl)"
+    updatebaseurlresolved="$(eval echo $updatebaseurl)"
+else
+    baseurlresolved="$(eval echo $baseurl)/\$basearch/"
+    srcbaseurlresolved="$(eval echo $baseurl)/SRPMS"
+    updatebaseurlresolved="$(eval echo $updatebaseurl)/\$basearch"
+    updatesrcbaseurlresolved="$(eval echo $updatebaseurl)/SRPMS"
+fi
 
 for x in BUILD BUILDROOT RPMS SOURCES SPECS SRPMS; do
     mkdir -p ${HOME}/${x}
 done
 
+if [ "$osname" = "sles" ]; then
+    typeline="type=yast2"
+fi
 echo "Creating $HOME/SOURCES/${reponame}.$osname.repo"
 cat <<EOF > $HOME/SOURCES/${reponame}.$osname.repo
 [Globus]
@@ -73,7 +81,11 @@ failovermethod=priority
 enabled=1
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
- 
+$typeline
+EOF
+
+if [ "$osname" != "sles" ]; then
+    cat <<EOF >> $HOME/SOURCES/${reponame}.$osname.repo
 [Globus-source]
 name=Globus - Source
 baseurl=$srcbaseurlresolved
@@ -81,7 +93,9 @@ failovermethod=priority
 enabled=0
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
+$typeline
 EOF
+fi
 
 if [ "$no_updates" != "yes" ]; then
     cat <<EOF >> $HOME/SOURCES/${reponame}.$osname.repo
@@ -93,7 +107,11 @@ failovermethod=priority
 enabled=1
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
- 
+$typeline
+EOF
+    if [ "$osname" != "sles" ]; then
+    cat <<EOF >> $HOME/SOURCES/${reponame}.$osname.repo
+
 [Globus-Updates-source]
 name=Globus - Updates Source
 baseurl=$updatesrcbaseurlresolved
@@ -101,7 +119,9 @@ failovermethod=priority
 enabled=0
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
+$typeline
 EOF
+    fi
 fi
 
 cp "${bambooscriptdir}/RPM-GPG-KEY-Globus" $HOME/SOURCES
@@ -136,10 +156,17 @@ rm -rf \$RPM_BUILD_ROOT
 install -Dpm 644 %{SOURCE0} \
   \$RPM_BUILD_ROOT%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
 
+%if 0%{?suse_version} > 0
+# yast2
+install -dm 755 \$RPM_BUILD_ROOT%{_sysconfdir}/zypp/repos.d
+install -pm 644 %{SOURCE1} \
+  \$RPM_BUILD_ROOT%{_sysconfdir}/zypp/repos.d
+%else
 # yum
 install -dm 755 \$RPM_BUILD_ROOT%{_sysconfdir}/yum.repos.d
 install -pm 644 %{SOURCE1} \
   \$RPM_BUILD_ROOT%{_sysconfdir}/yum.repos.d
+%endif
 
 %clean
 rm -rf \$RPM_BUILD_ROOT
@@ -147,7 +174,11 @@ rm -rf \$RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %{_sysconfdir}/pki/rpm-gpg/*
+%if 0%{suse_version} > 0
+%config %{_sysconfdir}/zypp/repos.d/*
+%else
 %config %{_sysconfdir}/yum.repos.d/*
+%endif
 EOF
 
 rpmbuild -ba $HOME/SPECS/$reponame.$osname.spec
