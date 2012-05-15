@@ -5051,6 +5051,7 @@ globus_gsi_sysconfig_get_cert_dir_unix(
     char *                              default_cert_dir = NULL;
     char *                              installed_cert_dir = NULL;
     globus_result_t                     result;
+    globus_object_t *                   err = NULL;
     char *                              home = NULL;
     char *                              location;
 
@@ -5099,6 +5100,14 @@ globus_gsi_sysconfig_get_cert_dir_unix(
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR);
                 goto done;
             }
+            else if (result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                if (err)
+                {
+                    globus_object_free(err);
+                }
+            }
         }
         else if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result) &&
                 !GLOBUS_GSI_SYSCONFIG_FILE_HAS_BAD_PERMISSIONS(result))
@@ -5108,6 +5117,14 @@ globus_gsi_sysconfig_get_cert_dir_unix(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR);
             goto done;
+        }
+        else
+        {
+            err = globus_error_get(result);
+            if (err)
+            {
+                globus_object_free(err);
+            }
         }
     }
 
@@ -5126,6 +5143,14 @@ globus_gsi_sysconfig_get_cert_dir_unix(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR);
             goto done;
+        }
+        else if (result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            if (err)
+            {
+                globus_object_free(err);
+            }
         }
     }
 
@@ -5151,6 +5176,14 @@ globus_gsi_sysconfig_get_cert_dir_unix(
                     result,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR);
                 goto done;
+            }
+            else if (result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                if (err)
+                {
+                    globus_object_free(err);
+                }
             }
         }
     }
