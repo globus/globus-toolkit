@@ -5,7 +5,7 @@ if which update-rc.d  > /dev/null 2>&1; then
 fi
 
 if which invoke-rc.d >/dev/null 2>&1; then
-	invoke-rc.d globus-gatekeeper start
+	invoke-rc.d globus-gatekeeper start || true
 else
-	/etc/init.d/globus-gatekeeper start
+	/etc/init.d/globus-gatekeeper start || true
 fi
