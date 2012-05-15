@@ -317,9 +317,9 @@ if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
     cp -R RPMS/i?86/* "${repodir}"/i386
 fi
 
-cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
 
 if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
+    cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
     cp RPMS/noarch/*.rpm "${repodir}"/i386/
     if [ "$rhel" = 5 ] || [ "$rhel" = 4 ]; then 
         cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
@@ -697,6 +697,7 @@ EOF
     cp "${bamboodir}/RPM-GPG-KEY-Globus" content.key
     mkdir RPMS
     mv x86_64 RPMS
+    mv noarch RPMS
     mv SRPMS RPMS/src
     ls -A1 > directory.yast
     create_package_descr -d RPMS
