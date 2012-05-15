@@ -12,8 +12,8 @@
 
 Name:		globus-gsi-sysconfig
 %global _name %(tr - _ <<< %{name})
-Version:	5.2
-Release:	3%{?dist}
+Version:	5.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
 Group:		System Environment/Libraries
@@ -173,6 +173,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue May 15 2012 Joseph Bester <bester@mcs.anl.gov> - 5.3-1
+- GT-149 Memory leaks in globus-job-manager
+- GT-188: gsi sysconfig leaves internal results in the error cache
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 5.2-3
 - RHEL 4 patches
 

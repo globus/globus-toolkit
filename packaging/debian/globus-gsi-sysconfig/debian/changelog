@@ -1,3 +1,10 @@
+globus-gsi-sysconfig (5.3-1) unstable; urgency=low
+
+  * GT-149 Memory leaks in globus-job-manager
+  * GT-188: gsi sysconfig leaves internal results in the error cache
+
+ -- Globus Toolkit <support@globus.org>  Tue, 15 May 2012 13:06:01 -0400
+
 globus-gsi-sysconfig (5.2-1) unstable; urgency=low
 
   * RIC-224: Eliminate some doxygen warnings
