@@ -211,8 +211,7 @@ read_token(const int sock,
 	 * Check and make sure token looks right
 	 */
 	if (((header[flag] < 20) || (header[flag] > 26)) ||
-	    (header[major_version] != 3) ||
-	    ((header[minor_version] != 0) && (header[minor_version] != 1))) {
+	    (header[major_version] != 3)) {
 	    if (*p_buffer != NULL) {
             free(*p_buffer);
             *p_buffer = NULL;
