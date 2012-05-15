@@ -18,6 +18,8 @@ use Socket;
 
 $tmpdir = tempdir(CLEANUP => 1);
 
+$PROXYBITS = "-bits 2048";
+
 #
 # handle cmdline options
 #
@@ -138,7 +140,7 @@ $ENV{'X509_CERT_DIR'}  = "$privcerts/grid-security" ;
 print STDERR "generating a user proxy\n" if ($verbose);
 chomp($grid_proxy_init = `which grid-proxy-init 2>/dev/null`);
   die "grid-proxy-init not found, stopped" if (!(-x $grid_proxy_init));
-&runcmd("$grid_proxy_init -debug");
+&runcmd("$grid_proxy_init -debug $PROXYBITS");
 } #end of generatecerts.
 
 #
@@ -153,7 +155,7 @@ die "grid-cert-info not found, stopped" if (!(-x $grid_cert_info));
 $timeleft = `$grid_proxy_info -timeleft 2>/dev/null`;
 if (!defined($timeleft) || $timeleft eq "" || ($timeleft < 60*60*3)) {
     &debug("Problem with proxy.  Will try to create a new one.");
-    `$grid_proxy_init -pwstdin </dev/null >/dev/null 2>&1`;
+    `$grid_proxy_init $PROXYBITS -pwstdin </dev/null >/dev/null 2>&1`;
     $timeleft = `$grid_proxy_info -timeleft 2>/dev/null`;
 }
 if (!defined($timeleft) || $timeleft eq "") {
@@ -215,7 +217,7 @@ $ENV{'LOGNAME'} = $ENV{'LOGNAME'} . ".myproxy-test";
 # make an independent proxy for a separate identity
 #
 $iproxyloc = "$tmpdir/iproxy.pem";
-&runcmd("$grid_proxy_init -out $iproxyloc -independent -hours 0");
+&runcmd("$grid_proxy_init $PROXYBITS -out $iproxyloc -independent -hours 0");
 chomp($iproxysubject = `$grid_proxy_info -file $iproxyloc -identity`);
 die "grid-proxy-info -file $iproxyloc -identity failed, stopped"
     if (!defined($iproxysubject) || $iproxysubject eq "");
@@ -1206,7 +1208,7 @@ if ($exitstatus == 0) {
 &runtest("myproxy-init -v -a -c 1 -t 1 -S", $passphrase . "\n");
 &runtest("myproxy-init -v -x -R '$cert_subject' -k renew -c 1 -t 1",
 		 undef);
-&runcmd("grid-proxy-init -limited -o \$X509_USER_PROXY.limited", undef);
+&runcmd("grid-proxy-init $PROXYBITS -limited -o \$X509_USER_PROXY.limited", undef);
 rename("\$X509_USER_PROXY", "\$X509_USER_PROXY.orig");
 rename("\$X509_USER_PROXY.limited", "\$X509_USER_PROXY");
 ($exitstatus, $output) =
@@ -1755,7 +1757,7 @@ sub verifyproxy {
     } elsif ($proxytype =~ /RFC 3820 compliant/) {
       $typeopt = "-rfc";
     }
-    $output = `$grid_proxy_init $typeopt -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out $tmpdir/tmpproxy.$$ 2>&1`;
+    $output = `$grid_proxy_init $PROXYBITS $typeopt -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out $tmpdir/tmpproxy.$$ 2>&1`;
     if ($? != 0) {
 	$output = "failed to verify proxy\n" . $output;
 	unlink("$tmpdir/tmpproxy.$$");
@@ -1796,7 +1798,7 @@ sub verifycert {
     } else {
       # shrug
     }
-    local($output) = &runcmd("$grid_proxy_init $proxytype -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out $tmpdir/tmpproxy.$$ -pwstdin", $passphrase);
+    local($output) = &runcmd("$grid_proxy_init $PROXYBITS $proxytype -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out $tmpdir/tmpproxy.$$ -pwstdin", $passphrase);
     if ($? != 0) {
 	$output = "failed to verify certificate from: $certfile and $keyfile\n" . $output;
 	unlink("$tmpdir/tmpproxy.$$");
@@ -1890,7 +1892,7 @@ sub dogpiperftest {
 	$i = $perfiters;
 	while ($i--) {
 	    ($exitstatus, $output) =
-		&runcmd("grid-proxy-init -hours 1 -out $tmpdir/myproxy-test.$$", undef);
+          &runcmd("grid-proxy-init $PROXYBITS -hours 1 -out $tmpdir/myproxy-test.$$", undef);
 	    if ($exitstatus != 0) {
 		print "$$: grid-proxy-init FAILED with $i iters to go.\n";
 		print STDERR $output;
