@@ -10,6 +10,7 @@ v5.7 XX Xxx 2012
   - support limited proxy certificates in myproxy-logon -voms by
     passing -limited option to voms-proxy-init as needed
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7250)
+  - add support for TLS 1.1 and TLS 1.2 in OpenSSL 1.0.1
 
 v5.6 20 Feb 2012
   - in myproxy-logon --voms, use voms-proxy-init -valid H:M rather
