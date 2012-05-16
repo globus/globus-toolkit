@@ -30,6 +30,10 @@ typedef struct globus_gram_seg_resume_s
 }
 globus_gram_seg_resume_t;
 
+static globus_bool_t globus_l_condor_regexes_compiled = GLOBUS_FALSE;
+static regex_t globus_l_condor_outer_re;
+static regex_t globus_l_condor_inner_re;
+
 globus_result_t
 globus_l_gram_seg_event_callback(
     void *                              user_arg,
@@ -991,6 +995,7 @@ globus_l_gram_condor_poll_callback(
         poll_time = last_poll_time;
     }
 
+
     for (ref = globus_hashtable_first(&manager->request_hash);
          ref != NULL;
          ref = globus_hashtable_next(&manager->request_hash))
@@ -1084,6 +1089,12 @@ read_failed:
     {
         manager->seg_last_timestamp = poll_time;
     }
+    if (globus_l_condor_regexes_compiled)
+    {
+        regfree(&globus_l_condor_outer_re);
+        regfree(&globus_l_condor_inner_re);
+        globus_l_condor_regexes_compiled = GLOBUS_FALSE;
+    }
     GlobusGramJobManagerUnlock(manager);
     globus_gram_job_manager_log(
             manager,
@@ -1124,8 +1135,6 @@ globus_l_condor_parse_log(
     globus_gram_job_manager_ref_t *     ref,
     globus_fifo_t *                     events)
 {
-    static int                          once = 0;
-    static regex_t                      outer_re, inner_re;
     regmatch_t                          matches[8];
     const char *                        p;
     int                                 event_type_number;
@@ -1189,17 +1198,18 @@ globus_l_condor_parse_log(
         } r;
     } pu;
 
-    if (!once)
-    {
-        once = 1;
+    p = data;
+    parsed_length = 0;
 
-        rc = regcomp(&outer_re,
+    if (!globus_l_condor_regexes_compiled)
+    {
+        rc = regcomp(&globus_l_condor_outer_re,
             "^([[:space:]]*<c>((<[^/]|</[^c]>|</[^>]{2,}>|[^<])*)</c>[[:space:]]*)",
             REG_EXTENDED);
 
         assert (rc == 0);
 
-        rc = regcomp(&inner_re,
+        rc = regcomp(&globus_l_condor_inner_re,
             "^([[:space:]]*"
             "<a n=\"([[:alpha:]]+)\">[[:space:]]*"
             "(<(b) v=\"([tf])\"/>|<([sire])>([^<]*)</[sire]>)"
@@ -1207,13 +1217,10 @@ globus_l_condor_parse_log(
             REG_EXTENDED);
 
         assert(rc == 0);
+        globus_l_condor_regexes_compiled = GLOBUS_TRUE;
     }
-
-    p = data;
-    parsed_length = 0;
-
     while ((rc = regexec(
-                &outer_re, p, (int) (sizeof(matches)/sizeof(matches[0])),
+                &globus_l_condor_outer_re, p, (int) (sizeof(matches)/sizeof(matches[0])),
                 matches, 0)) == 0)
     {
         const char * e = p + matches[0].rm_eo;
@@ -1221,7 +1228,7 @@ globus_l_condor_parse_log(
 
         p = p + matches[2].rm_so;
 
-        while ((rc = regexec(&inner_re, p,
+        while ((rc = regexec(&globus_l_condor_inner_re, p,
                     (int) (sizeof(matches)/sizeof(matches[0])),
                     matches, 0)) == 0)
         {
