@@ -2228,6 +2228,7 @@ not_found:
                 request->config->job_state_file_dir,
                 request->uniq_id);
         remove(condor_log);
+        free(condor_log);
     }
     return;
 }

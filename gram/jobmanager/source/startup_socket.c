@@ -1217,7 +1217,7 @@ globus_l_gram_startup_socket_callback(
     int                                 response_fd = -1;
     int                                 rc;
     gss_ctx_id_t                        context;
-    char *                              contact;
+    char *                              contact = NULL;
     int                                 job_state_mask;
     globus_gram_jobmanager_request_t *  request;
     OM_uint32                           major_status, minor_status;
@@ -1982,9 +1982,12 @@ globus_l_gram_startup_socket_callback(
         }
 
 update_cred_failed:
-        free(contact);
-
 request_load_failed:
+        if (contact)
+        {
+            free(contact);
+        }
+
         if (old_job_contact != NULL)
         {
             free(old_job_contact);

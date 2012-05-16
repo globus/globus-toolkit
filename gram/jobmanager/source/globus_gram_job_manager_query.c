@@ -2067,30 +2067,39 @@ globus_l_gram_stdio_update_signal(
     new_unevaluated_rsl = globus_gram_job_manager_rsl_merge(
             original_rsl,
             rsl);
+    if (new_unevaluated_rsl == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+
+        goto free_original_rsl_out;
+    }
     globus_rsl_free_recursive(original_rsl);
     new_rsl_spec = globus_rsl_unparse(new_unevaluated_rsl);
     if (new_rsl_spec == NULL)
     {
-        globus_rsl_free_recursive(new_unevaluated_rsl);
-
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
 
-        goto free_rsl_out;
+        goto free_new_unevaluated_rsl_out;
     }
     free(request->rsl_spec);
     request->rsl_spec = new_rsl_spec;
+    new_rsl_spec = NULL;
 
     rc = globus_rsl_eval(rsl, &request->symbol_table);
     if(rc != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
 
-        goto free_rsl_out;
+        goto free_new_unevaluated_rsl_out;
     }
 
     rc = globus_i_gram_request_stdio_update(
             request,
             rsl);
+free_new_unevaluated_rsl_out:
+    globus_rsl_free_recursive(new_unevaluated_rsl);
+free_original_rsl_out:
+    globus_rsl_free_recursive(original_rsl);
 free_rsl_out:
     globus_rsl_free_recursive(rsl);
 error_out:
