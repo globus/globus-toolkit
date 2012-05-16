@@ -685,6 +685,8 @@ if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
     createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/x86_64"
     createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/i386"
 else
+    find "${reporoot}/${osname}/${osver}/" -name '*noarch.rpm' | \
+        sed -e 's|.*/||' -e 's|\.rpm||' >> packages.gcc64
     cd "${reporoot}/${osname}/${osver}"
     mkdir "media.1"
     cat <<-EOF > "media.1/media"
