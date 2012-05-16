@@ -360,10 +360,15 @@ make install sysconfdir=%{_sysconfdir}/gsissh \
      bindir=%{_bindir} DESTDIR=$RPM_BUILD_ROOT
 
 install -d $RPM_BUILD_ROOT/etc/pam.d/
+%if 0%{?suse_version} == 0
 install -d $RPM_BUILD_ROOT/etc/rc.d/init.d
+install -m755 gsisshd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/gsisshd
+%else
+install -d $RPM_BUILD_ROOT/etc/init.d
+install -m755 gsisshd.init $RPM_BUILD_ROOT/etc/init.d/gsisshd
+%endif
 install -d $RPM_BUILD_ROOT%{_libexecdir}/gsissh
 install -m644 gsisshd.pam $RPM_BUILD_ROOT/etc/pam.d/gsisshd
-install -m755 gsisshd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/gsisshd
 
 #rm $RPM_BUILD_ROOT%{_bindir}/gsiscp
 #rm $RPM_BUILD_ROOT%{_bindir}/gsisftp
@@ -462,11 +467,16 @@ fi
 %attr(0644,root,root) %{_mandir}/man8/gsisftp-server.8*
 %attr(0600,root,root) %config(noreplace) %{_sysconfdir}/gsissh/sshd_config
 %attr(0644,root,root) %config(noreplace) /etc/pam.d/gsisshd
+%if 0%{?suse_version} == 0
 %attr(0755,root,root) /etc/rc.d/init.d/gsisshd
+%else
+%attr(0755,root,root) /etc/init.d/gsisshd
+%endif
 
 %changelog
 * Tue May 15 2012 Joseph Bester <bester@mcs.anl.gov> - 5.4-3
 - Adjust requirements for SUSE
+- Fix path to init script for SUSE
 
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.4-2
 - Update to GT 5.1.2
