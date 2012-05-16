@@ -2399,25 +2399,15 @@ globus_i_gram_request_stdio_update(
         rc = globus_i_gram_remote_io_url_update(request);
     }
 
-    /*
-    globus_gram_job_manager_request_log(
-            request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.stdio_update.info "
-                "level=TRACE "
-                "gramid=%s "
-                "orig_rsl_spec=%s "
-                "rsl_spec=%s\n",
-                request->job_contact_path,
-                globus_rsl_unparse(original_rsl),
-                globus_rsl_unparse(request->rsl));
-    */
-
     /* Now that we've recreated the stdio, redo the staging list. */
+    globus_gram_job_manager_staging_free_all(request);
+    /*
+    globus_gram_jobmanager_request_t *  request)
     request->stage_in_todo = NULL;
     request->stage_in_shared_todo = NULL;
     request->stage_out_todo = NULL;
     request->stage_stream_todo = NULL;
+    */
     rc = globus_gram_job_manager_staging_create_list(request);
     if (rc != GLOBUS_SUCCESS) {
         globus_gram_job_manager_request_log(

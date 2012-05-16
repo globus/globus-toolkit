@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.38
+Version:	13.39
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -177,6 +177,13 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed May 16 2012 Joseph Bester <bester@mcs.anl.gov> - 13.39-1
+- GT-149: Memory leaks in globus-job-manager
+- GT-186: GRAM job manager leaks condor log path
+- GT-187: GRAM job manager leaks during stdio update
+- GT-189: GRAM job manager regular expression storage grows
+- GT-190: GRAM job manager leaks callback contact
+
 * Fri May 11 2012 Joseph Bester <bester@mcs.anl.gov> - 13.38-1
 - GT-185: globus-personal-gatekeeper creates too-long paths on MacOS
 
