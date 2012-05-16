@@ -229,7 +229,7 @@ for i in grid-packaging-tools $packages; do
         
         # Don't install LRM RPMs on build machine necessarily
         if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
-            sudo rpm -hUv $rpms || true
+            sudo rpm -hUv --replacepkgs $rpms || true
         fi
     fi
 done
@@ -267,7 +267,7 @@ for i in grid-packaging-tools $packages; do
         
         # Don't install LRM RPMs on build machine necessarily
         if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
-            sudo rpm -hUv $rpms || true
+            sudo rpm -hUv --replacepkgs $rpms || true
         fi
     fi
 done
@@ -324,6 +324,9 @@ if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
     if [ "$rhel" = 5 ] || [ "$rhel" = 4 ]; then 
         cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
     fi
+else
+    mkdir -p "${repodir}"/noarch
+    cp RPMS/noarch/*.rpm "${repodir}"/noarch/
 fi
 
 cp -R SRPMS "${repodir}"
