@@ -276,7 +276,12 @@ fi
 cd $topdir
 
 mv RPMS.x86_64/x86_64 RPMS
-mv RPMS.x86_64/noarch/* RPMS/x86_64
+if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
+    mv RPMS.x86_64/noarch/* RPMS/x86_64
+else
+    mkdir -p RPMS/noarch
+    mv RPMS.x86_64/noarch/* RPMS/noarch
+fi
 
 if [ "$sign" = 1 ]; then
     find RPMS -name '*.rpm' -exec expect ${bamboodir}/sign-rpm {} \;
