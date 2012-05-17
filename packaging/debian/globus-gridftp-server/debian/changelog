@@ -1,3 +1,9 @@
+globus-gridftp-server (6.11-1) unstable; urgency=low
+
+  * GT-195: GridFTP acts as wrong user when user doesn't exist
+
+ -- Globus Toolkit <support@globus.org>  Thu, 17 May 2012 17:04:11 -0400
+
 globus-gridftp-server (6.10-1) unstable; urgency=low
 
   * RIC-258: Can't rely on MKDIR_P

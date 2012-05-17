@@ -12,8 +12,8 @@
 
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
-Version:	2.5
-Release:	2%{?dist}
+Version:	2.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
 Group:		System Environment/Libraries
@@ -115,6 +115,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu May 17 2012 Joseph Bester <bester@mcs.anl.gov> - 2.6-1
+- GT-195: GridFTP acts as wrong user when user doesn't exist
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 2.5-2
 - RHEL 4 patches
 

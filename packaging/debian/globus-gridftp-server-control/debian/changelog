@@ -1,3 +1,9 @@
+globus-gridftp-server-control (2.6-1) unstable; urgency=low
+
+  * GT-195: GridFTP acts as wrong user when user doesn't exist
+
+ -- Globus Toolkit <support@globus.org>  Thu, 17 May 2012 17:04:15 -0400
+
 globus-gridftp-server-control (2.5-1) unstable; urgency=low
 
   * GRIDFTP-164: improve dir streaming stability
