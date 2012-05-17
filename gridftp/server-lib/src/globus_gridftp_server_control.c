@@ -3764,7 +3764,7 @@ globus_libc_cached_getpwuid(
             globus_calloc(1, sizeof(globus_l_libc_cached_pwent_t));
         rc = globus_libc_getpwuid_r(
             uid, &pwent->pw, pwent->buffer, GSU_MAX_PW_LENGTH, &result_pw);
-        if(rc != 0)
+        if(rc != 0 || result_pw == NULL)
         {
             goto error_pwent;
         }

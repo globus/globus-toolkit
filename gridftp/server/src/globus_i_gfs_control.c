@@ -348,7 +348,7 @@ globus_l_gfs_get_full_path(
                 MAXPATHLEN,
                 &res_pwd);
             free(hd_name);
-            if(sc != 0)
+            if(sc != 0 || res_pwd == NULL)
             {
                 /* XXX expand other usernames here */
                 result = GlobusGFSErrorGeneric(
