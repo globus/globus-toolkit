@@ -2073,7 +2073,6 @@ globus_l_gram_stdio_update_signal(
 
         goto free_original_rsl_out;
     }
-    globus_rsl_free_recursive(original_rsl);
     new_rsl_spec = globus_rsl_unparse(new_unevaluated_rsl);
     if (new_rsl_spec == NULL)
     {

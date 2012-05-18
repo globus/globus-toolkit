@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.39
+Version:	13.40
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -177,7 +177,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Wed May 16 2012 Joseph Bester <bester@mcs.anl.gov> - 13.39-1
+* Fri May 18 2012 Joseph Bester <bester@mcs.anl.gov> - 13.40-1
 - GT-149: Memory leaks in globus-job-manager
 - GT-186: GRAM job manager leaks condor log path
 - GT-187: GRAM job manager leaks during stdio update
