@@ -174,7 +174,7 @@ rm -rf \$RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %{_sysconfdir}/pki/rpm-gpg/*
-%if 0%{suse_version} > 0
+%if 0%{?suse_version} > 0
 %config %{_sysconfdir}/zypp/repos.d/*
 %else
 %config %{_sysconfdir}/yum.repos.d/*
