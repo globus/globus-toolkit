@@ -1733,7 +1733,7 @@ globus_l_globusrun_status_job(
 {
     int                                 failure_code;
     int                                 err;
-    globus_gram_client_job_info_t       info;
+    globus_gram_client_job_info_t       info = {0};
     globus_gram_protocol_extension_t *  entry;
 
     err = globus_gram_client_job_status_with_info(job_contact, &info);
@@ -1751,8 +1751,9 @@ globus_l_globusrun_status_job(
          * is a GRAM2 or GRAM5 service.
          */
 	if (failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER ||
+            (info.extensions != NULL &&
             (globus_hashtable_lookup(&info.extensions, "version") != 0 &&
-            failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND))
+            failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND)))
 	{
             err = GLOBUS_SUCCESS;
 	    printf("DONE\n");
