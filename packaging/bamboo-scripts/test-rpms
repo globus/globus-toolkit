@@ -58,17 +58,49 @@ fi
 
 mkdir -p $topdir
 mkdir -p $testoutdir
+mkdir -p $tmppath
+
 
 # Reset home to this directory as it is a transient bamboo build dir
 ORIGHOME="$HOME"
 HOME="$topdir"
 
-mkdir -p $tmppath
-
+flavors="gcc64 gcc32"
+case $(lsb_release -is):$(lsb_release -rs) in
+    "SUSE LINUX":*)
+	flavors="gcc64"
+        remove_packages()
+        {
+            sudo zypper -n remove "$@"
+        }
+        clean_all()
+        {
+            true
+        }
+        install_packages()
+        {
+            sudo zypper -n --gpg-auto-import-keys install "$@"
+        }
+        ;;
+    *)
+        remove_packages()
+        {
+            sudo yum remove -y "$@"
+        }
+        clean_all()
+        {
+            sudo yum clean all
+        }
+        install_packages()
+        {
+            sudo $archcmd sudo yum -y --skip-broken install "$@"
+        }
+        ;;
+esac
 # Remove all globus-related packages prior to testing
 pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|^gsi-openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo yum -y remove $pkgs_to_rm || true
+    remove_packages $pkgs_to_rm || true
 fi
 
 # Download and install the repo definition package
@@ -82,11 +114,11 @@ if [ "${skip_checkout}" = 0 -o ! -d package-output ]; then
 fi
 
 first=1
-for flavor in gcc64 gcc32; do
+for flavor in $flavors; do
     # Remove all globus-related packages prior to testing
     pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^globus-|^myproxy|^gsi-openssh' || true) )"
     if [ -n "$pkgs_to_rm" ]; then
-        sudo yum -y remove $pkgs_to_rm || true
+        remove_packages $pkgs_to_rm || true
     fi
 
     case $(lsb_release -is):$(lsb_release -rs) in
@@ -110,11 +142,11 @@ for flavor in gcc64 gcc32; do
             ;;
     esac
 
-    # yum clean will enable us to download 32-bit or 64-bit below
-    sudo yum clean all
+    # yum clean will enable us to download 32-bit or 64-bit below for older rpm versions
+    clean_all
 
     # Install the binary RPMs that we will test
-    ( $archcmd sudo yum -y --skip-broken install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -Ev 'Globus.*config|globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge') ) || true
+    install_packages $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -Ev 'Globus.*config|globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge') || true
 
     if [ $first = 1 ]; then
         first=0
@@ -164,7 +196,7 @@ for flavor in gcc64 gcc32; do
         ./configure --with-flavor=${flavor}
         make 
         if [ "${testpkgname_no_ver}" = "globus-gram-job-manager-test" ]; then
-            sudo yum -y remove globus-gram-job-manager-fork-setup-poll || true
+            remove_packages globus-gram-job-manager-fork-setup-poll || true
             for lrm in $lrms; do
                 if [ "${lrm}" = "condor" ]; then
                     modes="none"
@@ -191,7 +223,7 @@ for flavor in gcc64 gcc32; do
                     if [ "$lrmpkgs" = "" ]; then
                         continue
                     fi
-                    sudo yum -y install $lrmpkgs || continue
+                    install_packages $lrmpkgs || continue
                     sudo service globus-gatekeeper restart || true
                     sudo service globus-scheduler-event-generator restart || true
                     # Allow multiple processes per node if the nodes are
@@ -209,7 +241,7 @@ for flavor in gcc64 gcc32; do
                     make junit || true
                     unset CONTACT_STRING
                     unset CONTACT_LRM
-                    sudo yum -y remove $lrmpkgs || true
+                    remove_packages $lrmpkgs || true
                     # Stop the job manager and remove all job state, so that
                     # tests will have a clean state
                     killall globus-job-manager
@@ -224,7 +256,7 @@ for flavor in gcc64 gcc32; do
                     fi
                 done
             done
-            sudo yum -y install globus-gram-job-manager-fork-setup-poll || true
+            install_packages globus-gram-job-manager-fork-setup-poll || true
         else
             make junit || true
             for x in "${testpkgname_no_ver}"*.xml; do
