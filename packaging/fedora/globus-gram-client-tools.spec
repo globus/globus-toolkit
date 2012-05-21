@@ -12,8 +12,8 @@
 
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
-Version:	10.3
-Release:	2%{?dist}
+Version:	10.4
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
 Group:		Applications/Internet
@@ -84,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Mon May 21 2012 Joseph Bester <bester@mcs.anl.gov> - 10.4-1
+- GT-198: globusrun crashes when authentication fails for status check
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 10.3-2
 - RHEL 4 patches
 
