@@ -93,7 +93,7 @@ case $(lsb_release -is):$(lsb_release -rs) in
         }
         install_packages()
         {
-            sudo $archcmd sudo yum -y --skip-broken install "$@"
+            sudo $archcmd sudo yum -y install "$@"
         }
         ;;
 esac
