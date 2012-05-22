@@ -171,9 +171,11 @@ bundles=globus-data-management-server,globus-data-management-client,globus-data-
 
 
 if [ "$(lsb_release -is)" = "SUSE LINUX" ]; then
-packages_to_build=gsi_openssh,globus_gram_audit
+    packages_to_build=gsi_openssh,globus_gram_audit
+elif [ "$osname" = "centos" ] && [ "$osver" = "4" ]; then 
+    packages_to_build=gsi_openssh,globus_gram_audit
 else
-packages_to_build=myproxy,gsi_openssh,globus_gram_audit
+    packages_to_build=myproxy,gsi_openssh,globus_gram_audit
 fi
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 if [ -d ${packagingdir}/source-trees/gssapi-openssh ]; then
