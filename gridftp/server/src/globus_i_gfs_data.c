@@ -1007,11 +1007,11 @@ globus_l_gfs_getpwuid(
 
     rc = globus_libc_getpwuid_r(getuid(), &pwent_mem, pw_buffer,
                 GSC_GETPW_PWBUFSIZE, &pw_result);
-    if(rc != 0)
+    if(rc != 0 || pw_result == NULL)
     {
         return NULL;
     }
-    pwent = globus_l_gfs_pw_copy(&pwent_mem);
+    pwent = globus_l_gfs_pw_copy(pw_result);
 
     return pwent;
 }
@@ -1029,12 +1029,12 @@ globus_l_gfs_getpwnam(
 
     rc = globus_libc_getpwnam_r(
         (char *)name, &pwent_mem, pw_buffer,GSC_GETPW_PWBUFSIZE, &pw_result);
-    if(rc != 0)
+    if(rc != 0 || pw_result == NULL)
     {
         return NULL;
     }
 
-    pwent = globus_l_gfs_pw_copy(&pwent_mem);
+    pwent = globus_l_gfs_pw_copy(pw_result);
 
     return pwent;
 }
