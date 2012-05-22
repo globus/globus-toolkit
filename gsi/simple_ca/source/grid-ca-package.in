@@ -338,7 +338,7 @@ create_rpm_binary_package()
     _cahash="${2}"
     _pkgdir=""
 
-    if test ! -f /etc/redhat-release; then
+    if test ! -f /etc/redhat-release && test ! -f /etc/SuSE-release; then
         echo "Skipping RPM binary"
         return 0
     fi

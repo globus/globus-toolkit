@@ -1,3 +1,9 @@
+globus-simple-ca (3.1-1) unstable; urgency=low
+
+  * GT-151: Build RPMS for SuSE 11
+
+ -- Globus Toolkit <support@globus.org>  Tue, 22 May 2012 08:56:59 -0400
+
 globus-simple-ca (3.0-2) unstable; urgency=low
 
   * Update for 5.2.0 release
