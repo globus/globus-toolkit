@@ -1487,6 +1487,10 @@ globus_gram_job_manager_request_log(
     va_list ap;
     int stdio_level = level;
 
+    if (! request->config)
+    {
+        return;
+    }
     /* Allow logging code to determine this thread's current job request to handle
      * per-job log configuration
      */

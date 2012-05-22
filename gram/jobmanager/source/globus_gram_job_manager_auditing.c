@@ -289,7 +289,7 @@ globus_l_gram_audit_get_username(
             sizeof(buffer),
             &res);
 
-    if (rc != 0)
+    if (rc != 0 || res == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
 
