@@ -1,3 +1,10 @@
+globus-gram-job-manager (13.41-1) unstable; urgency=low
+
+  * GT-199: GRAM audit checks result username incorrectly
+  * GT-192: Segfault in globus-gram-streamer
+
+ -- Globus Toolkit <support@globus.org>  Tue, 22 May 2012 14:31:32 -0400
+
 globus-gram-job-manager (13.40-1) unstable; urgency=low
 
   * GT-149: Memory leaks in globus-job-manager
