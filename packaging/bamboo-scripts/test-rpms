@@ -113,7 +113,6 @@ if [ "${skip_checkout}" = 0 -o ! -d package-output ]; then
             -flavor=gcc64 -skipbundle
 fi
 
-first=1
 for flavor in $flavors; do
     # Remove all globus-related packages prior to testing
     pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^globus-|^myproxy|^gsi-openssh' || true) )"
@@ -148,38 +147,70 @@ for flavor in $flavors; do
     # Install the binary RPMs that we will test
     install_packages $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -Ev 'Globus.*config|globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge') || true
 
-    if [ $first = 1 ]; then
-        first=0
-        if [ ! -f /etc/grid-security/hostcert.pem -o \
-             ! -f $HOME/.globus/usercert.pem ]; then
 
-            if [ ! -d /var/lib/globus/simple_ca ]; then
-                sudo grid-ca-create -noint -pass globus
-                sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/lib/globus/simple_ca/cacert.pem)"
-            fi
-
-            if [ ! -f /etc/grid-security/hostcert.pem ]; then
-                sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security" -force
-                sudo grid-ca-sign -in "/etc/grid-security/hostcert_request.pem" -force -out "/etc/grid-security/hostcert.pem" -passin pass:globus
-            fi
-
-            X509_USER_CERT="$HOME/.globus/usercert.pem"
-            X509_USER_KEY="$HOME/.globus/userkey.pem"
-            export X509_USER_CERT
-            export X509_USER_KEY
-
-            if [ ! -f "$X509_USER_CERT" ]; then
-                grid-cert-request -cn "$(id -un)" -nopw -force
-                sudo grid-ca-sign -in "$HOME/.globus/usercert_request.pem" -out "/tmp/usercert.pem" -passin pass:globus -force
-                cp /tmp/usercert.pem "$X509_USER_CERT"
-                sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
-            fi
-        fi
-        cp -R "$ORIGHOME/.ssh" "$HOME/.ssh"
-        sudo service globus-gridftp-server restart 
-        grid-proxy-init -hours 24
-        globus_hostname=$(globus-hostname)
+    # Check to see if there's a simpleCA available in $SIMPLE_CA_DIR
+    SIMPLE_CA_DIR="$topdir/bamboo-simple-ca"
+    if [ ! -d "$SIMPLE_CA_DIR" ]; then
+        grid-ca-create -force -noint -pass globus -dir "$SIMPLE_CA_DIR"
+        cd "$SIMPLE_CA_DIR"
+        grid-ca-package -r -cadir "$SIMPLE_CA_DIR"
+        cd "$OLDPWD"
     fi
+
+    SIMPLE_CA_PACKAGE="$(ls -1 "$SIMPLE_CA_DIR"/*.rpm)"
+    SIMPLE_CA_HASH="$(grid-cert-info -issuerhash -f "$SIMPLE_CA_DIR"/cacert.pem)"
+
+    remove_default_ca="no"
+    if [ -f "$SIMPLE_CA_PACKAGE" ]; then
+        sudo rpm -i "$SIMPLE_CA_PACKAGE"
+        if [ ! -r /etc/grid-security/grid-security.conf ]; then
+            sudo grid-default-ca -ca "$SIMPLE_CA_HASH"
+            remove_default_ca="yes"
+        fi
+    fi
+
+    # Create/install credentials if needed
+    TEST_CRED_DIR="$topdir/testcreds"
+    TEST_HOST_CERT="$TEST_CRED_DIR/hostcert.pem"
+    TEST_HOST_CERTREQ="$TEST_CRED_DIR/hostcert_request.pem"
+    TEST_HOST_KEY="$TEST_CRED_DIR/hostkey.pem"
+
+    TEST_USER_CERT="$TEST_CRED_DIR/usercert.pem"
+    TEST_USER_CERTREQ="$TEST_CRED_DIR/usercert_request.pem"
+    TEST_USER_KEY="$TEST_CRED_DIR/userkey.pem"
+
+    if [ ! -f "$TEST_HOST_CERT" ]; then
+        grid-cert-request -host "$(hostname -f)" -dir "$TEST_CRED_DIR" -ca "$SIMPLE_CA_HASH"
+        grid-ca-sign -dir "$SIMPLE_CA_DIR" -in "$TEST_HOST_CERTREQ" -out "$TEST_HOST_CERT" -passin pass:globus -force
+    fi
+
+    if [ ! -f "$TEST_USER_CERT" ]; then
+        grid-cert-request -cn "$(id -un)" -dir "$TEST_CRED_DIR" -ca "$SIMPLE_CA_HASH" -nopw
+        grid-ca-sign -dir "$SIMPLE_CA_DIR" -in "$TEST_USER_CERTREQ" -out "$TEST_USER_CERT" -passin pass:globus -force
+    fi
+
+    remove_hostcert="no"
+    mkdir -p /etc/grid-security
+    if [ ! -f "/etc/grid-security/hostcert.pem" ]; then
+        sudo cp "$TEST_HOST_CERT" "$TEST_HOST_KEY" /etc/grid-security/
+        remove_hostcert="yes"
+    fi
+
+    X509_USER_CERT="$TEST_USER_CERT"
+    X509_USER_KEY="$TEST_USER_KEY"
+    export X509_USER_CERT
+    export X509_USER_KEY
+
+    sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
+
+    sudo service globus-gridftp-server restart || true
+    sudo service globus-gatekeeper restart || true
+    sudo service globus-scheduler-event-generator restart || true
+
+    grid-proxy-init -hours 24
+
+    cp -R "$ORIGHOME/.ssh" "$HOME/.ssh"
+    globus_hostname=$(globus-hostname)
 
     mkdir -p "$tmppath/$flavor"
     cd "$tmppath/$flavor"
@@ -268,3 +299,20 @@ for flavor in $flavors; do
         cd ..
     done
 done
+
+# Remove test credential
+sudo grid-mapfile-delete-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
+rm -f "/tmp/x509up_u$(id -u)"
+
+# Remove test host credentials
+if [ "$remove_hostcert" = "yes" ]; then
+    sudo rm -f "/etc/grid-security/hostcert.pem"
+    sudo rm -f "/etc/grid-security/hostkey.pem"
+fi
+
+if [ "$remove_default_ca" = "yes" ]; then
+    sudo rm -f /etc/grid-security/globus-host-ssl.conf /etc/grid-security/globus-user-ssl.conf /etc/grid-security/grid-security.conf
+fi
+
+# Remove simple ca
+sudo rpm -E globus-simple-ca-$SIMPLE_CA_HASH
