@@ -127,7 +127,7 @@ noninteractivearg="-y"
 case $(lsb_release -is):$(lsb_release -rs) in
     CentOS:4*|ScientificSL:4*|RedHatEnterpriseServer:4*)
         echo "%rhel                  4" >> $topdir/.rpmmacros
-        target32=i386-redhat-linux
+        target32=""
         rhel=4
         ;;
     CentOS:5*|ScientificSL:5*|RedHatEnterpriseServer:5*)
@@ -256,7 +256,7 @@ pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|^gsi_
 if [ -n "$pkgs_to_rm" ]; then
     sudo $pkgtool $noninteractivearg remove $pkgs_to_rm < /dev/null || true
 fi
-if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
+if [ "$target32" != "" ]; then
 for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
         rpmbuild --target $target32 \
@@ -324,7 +324,7 @@ repodir="${reporoot}/${osname}/${osver}"
 # Generate YUM repositories for the different package types
 mkdir -p "${repodir}"
 cp -R RPMS/x86_64 "${repodir}"
-if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
+if [ "$target32" != "" ]; then
     mkdir "${repodir}"/i386
     cp -R RPMS/i?86/* "${repodir}"/i386
 fi
@@ -332,9 +332,11 @@ fi
 
 if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
     cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
-    cp RPMS/noarch/*.rpm "${repodir}"/i386/
-    if [ "$rhel" = 5 ] || [ "$rhel" = 4 ]; then 
-        cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
+    if [ "$target32" != "" ]; then
+        cp RPMS/noarch/*.rpm "${repodir}"/i386/
+        if [ "$rhel" = 5 ] || [ "$rhel" = 4 ]; then 
+            cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
+        fi
     fi
 else
     mkdir -p "${repodir}"/noarch
@@ -680,7 +682,7 @@ allpkgs64="$(find "${reporoot}/${osname}/${osver}/"x86_64 -name '*.rpm' | \
     grep -v '\.i386\.rpm' | \
     sed -e 's|.*/||' -e 's|\.rpm||')"
 
-if [ "$(lsb_release -is)" != 'SUSE LINUX' ]; then
+if [ "$target32" != '' ]; then
     allpkgs32="$(find "${reporoot}/${osname}/${osver}/"i386 -name '*.rpm' | \
         sed -e 's|.*/||' -e 's|\.rpm||')"
     echo "$allpkgs32" > packages.gcc32
@@ -690,7 +692,9 @@ echo "$allpkgs64" > packages.gcc64
 if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
     createrepo "${reporoot}/$osname/$osver/SRPMS"
     createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/x86_64"
-    createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/i386"
+    if [ "$target32" != "" ]; then
+        createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/i386"
+    fi
 else
     find "${reporoot}/${osname}/${osver}/" -name '*noarch.rpm' | \
         sed -e 's|.*/||' -e 's|\.rpm||' >> packages.gcc64
