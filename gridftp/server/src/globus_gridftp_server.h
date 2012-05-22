@@ -439,7 +439,7 @@ typedef struct globus_gfs_command_info_s
     char *                              cksm_alg;
     
     /** mode argument to the chmod command */
-    mode_t                              chmod_mode;
+    int                                 chmod_mode;
     
     /** pathname to rename from (to the above pathname)  */
     char *                              rnfr_pathname;    
