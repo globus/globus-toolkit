@@ -41,7 +41,7 @@ artifactroot=""
 chroot=""
 in_chroot=0
 chroot_args=""
-binaryonly=0
+binaryonly=""
 
 while getopts ibc:n:v:R:a:St:hg:f:q i; do
     case "$i" in
