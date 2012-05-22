@@ -15,7 +15,7 @@ tag=""
 skip_checkout=0
 
 if [ ! -f ~/.ssh/id_rsa ]; then
-    echo | ssh-keygen -q -P ''
+    echo | ssh-keygen -q -P '' -t rsa
     cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
     chmod 600 ~/.ssh/authorized_keys
 fi
