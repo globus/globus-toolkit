@@ -210,9 +210,14 @@ cd ../..
 # Build source packages from spec files
 cd fedora
 for i in *.spec; do
-    if [ "$(lsb_release -is)" != "SUSE LINUX" ] || [ "$i" != "myproxy.spec" ]; then
-	rpmbuild -bs --nodeps $i;
+    if [ "$i" = "myproxy.spec" ] && [ "$osname" = sles ]; then
+        continue
     fi
+    if [ "$i" = "myproxy.spec" ] && [ "$osname" = centos ] && [ "$osver" = 4 ]
+    then
+        continue
+    fi
+    rpmbuild -bs --nodeps $i;
 done
 
 for i in grid-packaging-tools $packages; do
