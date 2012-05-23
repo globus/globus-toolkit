@@ -1010,6 +1010,8 @@ listen_server(const char *hostname, const char *port, int family)
 {
     int listen_sock=-1;
     struct addrinfo hints, *res, *ressave;
+    int on = 1;
+    struct linger lin = {0,0};
     int n;
 
     memset(&hints, 0, sizeof(struct addrinfo));
@@ -1030,6 +1032,13 @@ listen_server(const char *hostname, const char *port, int family)
                              res->ai_protocol);
 
         if (!(listen_sock < 0)) {
+
+            /* Allow reuse of socket */
+            setsockopt(listen_sock, SOL_SOCKET,
+                       SO_REUSEADDR, (void *) &on, sizeof(on));
+            setsockopt(listen_sock, SOL_SOCKET,
+                       SO_LINGER, (char *) &lin, sizeof(lin));
+
             if (bind(listen_sock, res->ai_addr, res->ai_addrlen) == 0)
                 break;
 
@@ -1060,11 +1069,9 @@ listen_server(const char *hostname, const char *port, int family)
 int 
 myproxy_init_server(myproxy_socket_attrs_t *attrs) 
 {
-    int on = 1;
     int listen_sock=-1;
     struct sockaddr_in sin;
     socklen_t socklen;
-    struct linger lin = {0,0};
     GSI_SOCKET *tmp_gsi_sock;
     char port[6];
 
@@ -1092,10 +1099,6 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     if (listen_sock == -1) {
         failure("Error in socket()");
     } 
-
-    /* Allow reuse of socket */
-    setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, (void *) &on, sizeof(on));
-    setsockopt(listen_sock, SOL_SOCKET, SO_LINGER, (char *) &lin, sizeof(lin));
 
     if (listen(listen_sock, INT_MAX) < 0) {
 	    failure("Error in listen()");
