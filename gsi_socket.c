@@ -985,44 +985,57 @@ GSI_SOCKET_get_peer_name(GSI_SOCKET *self,
 char *
 GSI_SOCKET_get_peer_hostname(GSI_SOCKET *self)
 {
-    struct sockaddr_in		addr;
+    struct sockaddr_storage addr;
     socklen_t			addr_len = sizeof(addr);
-    struct hostent		*info;
+    char host			[NI_MAXHOST];
+    int					loopback=0;
 
     if (getpeername(self->sock, (struct sockaddr *) &addr,
 		    &addr_len) < 0) {
-	self->error_number = errno;
-	GSI_SOCKET_set_error_string(self, "Could not get peer address");
-	return NULL;
+        self->error_number = errno;
+        GSI_SOCKET_set_error_string(self, "Could not get peer address");
+        return NULL;
     }
 
-    info = gethostbyaddr((char *)&addr.sin_addr,
-			 sizeof(addr.sin_addr),
-			 addr.sin_family);
-    if ((info == NULL) || (info->h_name == NULL)) {
-	self->error_number = errno;
-	GSI_SOCKET_set_error_string(self, "Could not get peer hostname");
-	return NULL;
+    if (getnameinfo((struct sockaddr *) &addr, addr_len,
+                    host, sizeof(host),
+                    NULL, 0, NI_NAMEREQD)) {
+        self->error_number = errno;
+        GSI_SOCKET_set_error_string(self, "Could not get peer hostname");
+        return NULL;
     }
 
-    if (info->h_addrtype == AF_INET) { /* check for localhost */
-	struct in_addr inaddr;
-	inaddr = *(struct in_addr *)(info->h_addr);
-	if (ntohl(inaddr.s_addr) == INADDR_LOOPBACK) {
-	    char buf[MAXHOSTNAMELEN];
-	    if (gethostname(buf, sizeof(buf)) < 0) {
-		self->error_number = errno;
-		GSI_SOCKET_set_error_string(self, "gethostname() failed");
-		return NULL;
-	    }
-	    info = gethostbyname(buf);
-	    if (info == NULL || info->h_name == NULL) {
-		return strdup(buf);
-	    }
-	}
+    /* check for localhost / loopback */
+    if (addr.ss_family == AF_INET) {
+        struct sockaddr_in sadder;
+
+        memcpy(&sadder, &addr, sizeof(sadder));
+        if (ntohl(sadder.sin_addr.s_addr) == INADDR_LOOPBACK) {
+            loopback = 1;
+        }
+    }
+#ifdef AF_INET6
+    else if (addr.ss_family == AF_INET6) {
+        struct sockaddr_in6 saddr6;
+
+        memcpy(&saddr6, &addr, sizeof(saddr6));
+        if (IN6_IS_ADDR_LOOPBACK(&saddr6.sin6_addr)) {
+            loopback = 1;
+        }
+    }
+#endif
+
+    if (loopback) {
+        char buf[MAXHOSTNAMELEN];
+        if (gethostname(buf, sizeof(buf)) < 0) {
+            self->error_number = errno;
+            GSI_SOCKET_set_error_string(self, "gethostname() failed");
+            return NULL;
+        }
+        return strdup(buf);
     }
 
-    return strdup(info->h_name);
+    return strdup(host);
 }
 
 #ifdef HAVE_VOMS
