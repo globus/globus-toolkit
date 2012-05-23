@@ -303,7 +303,7 @@ fi
 # yum repositories and the public GPG key
 if test "$artifactroot" != ""; then
     if [ "$build_number" != "-1" ]; then
-        artifactroot="$(echo "$artifactroot" | sed -e "s!/latest/!-$build_number!")"
+        artifactroot="$(echo "$artifactroot" | sed -e "s!/latest!-$build_number!")"
     fi
     
     if [ "$osname" = "sles" ]; then
