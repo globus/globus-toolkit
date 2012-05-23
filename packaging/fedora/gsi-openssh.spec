@@ -34,7 +34,7 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 3
+%global gsi_openssh_rel 4
 %global gsi_openssh_ver 5.4
 
 %ifarch alpha ia64 ppc64 s390x sparc64 x86_64
@@ -203,7 +203,11 @@ Requires(pre): /usr/sbin/useradd
 %if "%{?rhel}" == "5"
 Requires: pam >= 0.99.6-2
 %else
+%if "${?rhel}" == "4"
+Requires: pam >= 0.77
+%else
 Requires: pam >= 1.0.1-3
+%endif
 %endif
 
 %description
@@ -474,6 +478,9 @@ fi
 %endif
 
 %changelog
+* Wed May 23 2012 Joseph Bester <bester@mcs.anl.gov> - 5.4-3
+- Reduce pam required version for CentOS 4
+
 * Tue May 15 2012 Joseph Bester <bester@mcs.anl.gov> - 5.4-3
 - Adjust requirements for SUSE
 - Fix path to init script for SUSE
