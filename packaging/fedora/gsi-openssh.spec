@@ -200,10 +200,10 @@ Requires(post): chkconfig >= 0.9, /sbin/service
 Requires(post): aaa_base
 %endif
 Requires(pre): /usr/sbin/useradd
-%if "%{?rhel}" == "5"
+%if 0%{?rhel} == 05
 Requires: pam >= 0.99.6-2
 %else
-%if "${?rhel}" == "4"
+%if 0%{?rhel} == 04
 Requires: pam >= 0.77
 %else
 Requires: pam >= 1.0.1-3
