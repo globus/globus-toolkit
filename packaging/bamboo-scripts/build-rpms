@@ -27,6 +27,10 @@ globusversion=""
 skip_checkout=""
 skip_bootstrap=""
 skip_packaging=""
+build_number=-1
+if [ -f "$packagingdir/build-number.txt" ]; then
+    build_number="$(cat $packagingdir/build-number.txt | grep build.number | sed -e "s/.*=//")"
+fi
 
 sign=1
 tag=""
@@ -298,6 +302,10 @@ fi
 # Create yum repo configuration package that includes the path to the
 # yum repositories and the public GPG key
 if test "$artifactroot" != ""; then
+    if [ "$build_number" != "-1" ]; then
+        artifactroot="$(echo "$artifactroot" | sed -e "s!/latest/!-$build_number")"
+    fi
+    
     if [ "$osname" = "sles" ]; then
         sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" \
         -b "$artifactroot/repo/\$osname/\$osver" \
