@@ -185,33 +185,6 @@ static int check_port_range(int sockfd) {
 }
 
 /**
- * Returns a socket file descriptor for a newly created socket and
- * attempts to bind that socket to a specific port if the appropriate
- * environment variable is set.  This function first attemts to create
- * a new socket.  It then calls check_port_range() to see if we should
- * bind the socket to a port in a given range.  If everything is okay,
- * the new socket file descriptor is returned.  Otherwise -1 is returned.
- *
- * @return A newly created socket file descriptor, or -1 if error.
- */
-static int get_socket(void) {
-
-    int retsock = -1;  /* Assume error */
-    
-    retsock = socket(AF_INET, SOCK_STREAM, 0);
-    if (retsock == -1) {
-        verror_put_errno(errno);
-        verror_put_string("get_socket() failed");
-    } else {
-       if (!check_port_range(retsock)) {
-           close(retsock);
-           retsock = -1;
-       }
-    }
-    return(retsock);
-}
-
-/**
  * Attempt to connect to a given socket with a timeout (defaults to 10
  * seconds).  This function attemps to duplicate the standard "connect()"
  * function, however with a timeout for unsuccessful connections (using
@@ -293,53 +266,64 @@ static int connect_with_timeout(int sockfd,
 }
 
 /**
- * Attempt to connect a socket file descriptor to a specific host/port.
- * This function takes a previously created socket and attempts to connect
- * it (with a timeout) to a given host:port.  If the host is given as a
+ * Attempt to connect a socket to a specific host/port.
+ * This function attempts to connect a socket
+ * (with a timeout) to a given host:port.  If the host is given as a
  * FQDN which resolves to multiple IPs, we loop through the IPs until we 
  * have successfully connected or we cannot find a valid IP to connect to.  
  *
- * @param sockfd A socket file descriptor to connect with.
  * @param host The FQDN of a host to attempt to connect to.
  * @param port The port to connect to.
- * @return 1 upon successful connection, 0 otherwise
+ * @return socket descriptor upon successful connection, -1 otherwise
  */
-static int connect_socket_to_host(int sockfd, char *host, int port) {
+static int connect_socket_to_host(char *host, int port) {
 
-    int retval = 0;    /* Assume failure; 1 is success */
-    struct hostent *host_info;
-    struct sockaddr_in sin;
-    int i;
+    struct addrinfo hints, *res, *ressave;
+    char service[6];
+    int sockfd = -1;
+    int n;
     
-    host_info = gethostbyname(host);
-    if (host_info == NULL) {
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    snprintf(service, 6, "%d", port);
+
+    n = getaddrinfo(host, service, &hints, &res);
+    if (n < 0) {
         verror_put_string("Unknown host \"%s\"\n", host);
-    } else {
-        memset(&sin, 0, sizeof(sin));
-        sin.sin_family = AF_INET;
-        sin.sin_port = htons(port);
-
-        for (i = 0; host_info->h_addr_list[i]; i++) {
-            verror_clear();
-            memcpy(&(sin.sin_addr), host_info->h_addr_list[i],
-                sizeof(sin.sin_addr));
-
-            myproxy_debug("Attempting to connect to %s:%d\n", 
-                inet_ntoa(*(struct in_addr *)host_info->h_addr_list[i]), port);
-
-            if (connect_with_timeout(sockfd, 
-                    (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-                verror_put_errno(errno);
-                verror_put_string("Unable to connect to %s:%d\n", 
-                    inet_ntoa(*(struct in_addr *)host_info->h_addr_list[i]),
-                    port);
-            } else { /* Success! */
-                retval = 1;
-                break; /* out of for loop */
-            }
-        } /* End for loop thru host_info->h_addr_list[] */
+        return(-1);
     }
-    return(retval);
+
+    ressave = res;
+
+    while (res) {
+        sockfd = socket(res->ai_family,
+                        res->ai_socktype,
+                        res->ai_protocol);
+
+        if (!(sockfd < 0)) {
+            char straddr[INET6_ADDRSTRLEN];
+
+            /* TODO: call check_port_range() */
+
+            inet_ntop(res->ai_family, res->ai_addr, straddr, sizeof(straddr));
+            myproxy_debug("Attempting to connect to %s:%d\n", straddr, port);
+            if (connect_with_timeout(sockfd, 
+                                     res->ai_addr, res->ai_addrlen) < 0) {
+                verror_put_errno(errno);
+                verror_put_string("Unable to connect to %s:%d\n", straddr,port);
+            } else { /* Success! */
+                break; /* out of while loop */
+            }
+            close(sockfd);
+            sockfd=-1;
+        }
+        res=res->ai_next;
+    }
+
+    freeaddrinfo(ressave);
+    return(sockfd);
 }
 
 /**
@@ -386,22 +370,11 @@ static int get_connected_myproxy_host_socket(char *hostlist, int port) {
         else
               spec_port = port;
 
-        /* Init the socket and (possibly) bind to a port if this is the */
-        /* first time looping thru MyProxy hostnames or if a previous   */
-        /* connect_with_timeout() failed requiring a new socket.        */
-        if (retsock < 0) {
-            retsock = get_socket();
-            if (retsock < 0) {
-                break; /* Can't even get a socket? Give up and fail */
-            } 
-        } 
-
-        if (connect_socket_to_host(retsock,tok,spec_port)) { /* Success! */
+        retsock = connect_socket_to_host(tok,spec_port);
+        if (retsock >= 0) { /* Success! */
             connected = 1;
             break; /* out of while loop */
         } else { /* Failed. Get new socket and try next host */
-            close(retsock);
-            retsock = -1;
             verror_put_string("Unable to connect to %s\n", tok);
         }
 
