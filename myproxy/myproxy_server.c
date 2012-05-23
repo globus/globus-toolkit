@@ -1005,6 +1005,51 @@ init_arguments(int argc, char *argv[],
     return arg_error;
 }
 
+static int
+listen_server(const char *hostname, const char *port, int family)
+{
+    int listen_sock=-1;
+    struct addrinfo hints, *res, *ressave;
+    int n;
+
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_flags    = AI_PASSIVE;
+    hints.ai_family   = family;
+    hints.ai_socktype = SOCK_STREAM;
+
+    n = getaddrinfo(hostname, port, &hints, &res);
+    if (n < 0) {
+        myproxy_log("getaddrinfo error:: [%s]", gai_strerror(n));
+        return -1;
+    }
+    ressave=res;
+
+    while (res) {
+        listen_sock = socket(res->ai_family,
+                             res->ai_socktype,
+                             res->ai_protocol);
+
+        if (!(listen_sock < 0)) {
+            if (bind(listen_sock, res->ai_addr, res->ai_addrlen) == 0)
+                break;
+
+            if (errno == EADDRINUSE) {
+                myproxy_log("Port %s on %s already in use, probably by another "
+                    "myproxy-server instance.\nUse the -p option to run "
+                    "multiple myproxy-server instances on different "
+                    "ports.", port, 
+                    ((hostname == NULL) ? "localhost" : hostname) );
+            }
+            close(listen_sock);
+            listen_sock=-1;
+        }
+        res = res->ai_next;
+    }
+
+    freeaddrinfo(ressave);
+    return listen_sock;
+}
+
 /*
  * myproxy_init_server()
  *
@@ -1016,12 +1061,12 @@ int
 myproxy_init_server(myproxy_socket_attrs_t *attrs) 
 {
     int on = 1;
-    int listen_sock;
+    int listen_sock=-1;
     struct sockaddr_in sin;
     socklen_t socklen;
     struct linger lin = {0,0};
     GSI_SOCKET *tmp_gsi_sock;
-    struct hostent *hp;
+    char port[6];
 
     if ((tmp_gsi_sock = GSI_SOCKET_new(0)) == NULL) {
 	failure("malloc() failed in GSI_SOCKET_new()");
@@ -1036,8 +1081,14 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     }
     GSI_SOCKET_destroy(tmp_gsi_sock);
     
-    listen_sock = socket(AF_INET, SOCK_STREAM, 0);
+    snprintf(port, 6, "%d", attrs->psport);
 
+#ifdef AF_INET6
+    listen_sock = listen_server(attrs->pshost, port, AF_INET6); /* prefer v6 */
+#endif
+    if (listen_sock == -1) {
+        listen_sock = listen_server(attrs->pshost, port, AF_UNSPEC);
+    }
     if (listen_sock == -1) {
         failure("Error in socket()");
     } 
@@ -1046,36 +1097,6 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, (void *) &on, sizeof(on));
     setsockopt(listen_sock, SOL_SOCKET, SO_LINGER, (char *) &lin, sizeof(lin));
 
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons(attrs->psport);
-    if (attrs->pshost == NULL) {
-        sin.sin_addr.s_addr = INADDR_ANY;
-    } else {
-        /* First, try inet_addr to see if pshost is an IP addr */
-        sin.sin_addr.s_addr = inet_addr(attrs->pshost);
-        if (sin.sin_addr.s_addr == -1) {
-            /* pshost was not valid IP addr, so try gethostbyname */
-            hp = gethostbyname(attrs->pshost);
-            if (hp != NULL) {
-                /* Got resolv of hostname, so use it */
-                memcpy(&(sin.sin_addr.s_addr),hp->h_addr,hp->h_length);
-            } else {
-                failure("Hostname specified by --listen is invalid.");
-            }
-        }
-    }
-
-    if (bind(listen_sock, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-	if (errno == EADDRINUSE) {
-	    myproxy_log("Port %d on %s already in use, probably by another "
-			"myproxy-server instance.\nUse the -p option to run "
-			"multiple myproxy-server instances on different "
-			"ports.", attrs->psport, 
-            ((attrs->pshost == NULL) ? "localhost" : attrs->pshost) );
-	}
-	failure("Error in bind()");
-    }
     if (listen(listen_sock, INT_MAX) < 0) {
 	    failure("Error in listen()");
     }
