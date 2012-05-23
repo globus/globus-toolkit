@@ -158,8 +158,7 @@ for flavor in $flavors; do
     fi
 
     SIMPLE_CA_PACKAGE="$(ls -1 "$SIMPLE_CA_DIR"/*.rpm)"
-    SIMPLE_CA_HASH="$(grid-cert-info -issuerhash -f "$SIMPLE_CA_DIR"/cacert.pem)"
-
+    SIMPLE_CA_HASH="$(openssl x509 -noout -hash -in "$SIMPLE_CA_DIR"/cacert.pem)"
     remove_default_ca="no"
     if [ -f "$SIMPLE_CA_PACKAGE" ]; then
         sudo rpm -i "$SIMPLE_CA_PACKAGE"
