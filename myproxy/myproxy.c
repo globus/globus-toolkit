@@ -133,13 +133,16 @@ static int get_socket_timeout(void) {
  * @return 1 if bind of socket to a port is successful or if no port
  *         range environment variable was specified.  0 otherwise.
  */
-static int check_port_range(int sockfd) {
+static int check_port_range(int sockfd, struct sockaddr *addr) {
 
     int retval = 1;   /* Assume success; 0 is failure */
     char *port_range;
     unsigned short port=0, min_port=0, max_port=0;
     char *c;
     struct sockaddr_in sin;
+#ifdef AF_INET6
+    struct sockaddr_in6 sin6;
+#endif
 
     if ((port_range = getenv("MYPROXY_TCP_PORT_RANGE")) ||
         (port_range = getenv("GLOBUS_TCP_PORT_RANGE"))) {
@@ -150,13 +153,38 @@ static int check_port_range(int sockfd) {
             *c = ' ';
         }
 
-        if (sscanf(port_range, "%hu %hu", &min_port, &max_port) == 2) {
-            port = min_port;
-            memset(&sin, 0, sizeof(sin));
-            sin.sin_family = AF_INET;
+        if (addr->sa_family == AF_INET) {
+            memcpy(&sin, addr, sizeof(sin));
             sin.sin_addr.s_addr = INADDR_ANY;
-            sin.sin_port = htons(port);
-            while (bind(sockfd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+        }
+#ifdef AF_INET6
+        else if (addr->sa_family == AF_INET6) {
+            memcpy(&sin6, addr, sizeof(sin6));
+            sin6.sin6_addr = in6addr_any;
+        }
+#endif
+        else {
+            verror_put_string("unknown IP address type");
+            return 0;
+        }
+
+        if (sscanf(port_range, "%hu %hu", &min_port, &max_port) == 2) {
+            int bind_rval;
+
+            port = min_port;
+            if (addr->sa_family == AF_INET) {
+                sin.sin_port = htons(port);
+                bind_rval = bind(sockfd,
+                                 (struct sockaddr *)&sin, sizeof(sin));
+            }
+#ifdef AF_INET6
+            else if (addr->sa_family == AF_INET6) {
+                sin6.sin6_port = htons(port);
+                bind_rval = bind(sockfd,
+                                 (struct sockaddr *)&sin6, sizeof(sin6));
+            }
+#endif
+            while (bind_rval < 0) {
                 if (errno != EADDRINUSE) {
                     verror_put_errno(errno);
                     verror_put_string("Error in bind()");
@@ -170,7 +198,18 @@ static int check_port_range(int sockfd) {
                     break;
                 }
                 
-                sin.sin_port = htons(++port);
+                if (addr->sa_family == AF_INET) {
+                    sin.sin_port = htons(++port);
+                    bind_rval = bind(sockfd,
+                                     (struct sockaddr *)&sin, sizeof(sin));
+                }
+#ifdef AF_INET6
+                else if (addr->sa_family == AF_INET6) {
+                    sin6.sin6_port = htons(++port);
+                    bind_rval = bind(sockfd,
+                                     (struct sockaddr *)&sin6, sizeof(sin6));
+                }
+#endif
             }
             if (retval == 1) {
                 myproxy_debug("Socket bound to port %hu.\n", port);
@@ -305,8 +344,7 @@ static int connect_socket_to_host(char *host, int port) {
         if (!(sockfd < 0)) {
             char straddr[INET6_ADDRSTRLEN];
 
-            /* TODO: call check_port_range() */
-
+            if (check_port_range(sockfd, res->ai_addr)) {
             inet_ntop(res->ai_family, res->ai_addr, straddr, sizeof(straddr));
             myproxy_debug("Attempting to connect to %s:%d\n", straddr, port);
             if (connect_with_timeout(sockfd, 
@@ -316,6 +354,7 @@ static int connect_socket_to_host(char *host, int port) {
             } else { /* Success! */
                 break; /* out of while loop */
             }
+            } /* check_port_range() */
             close(sockfd);
             sockfd=-1;
         }
