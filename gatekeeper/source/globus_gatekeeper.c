@@ -559,17 +559,6 @@ main(int xargc,
     unicos_init();
 #endif
 
-    /* 
-     * Don't allow logins of /etc/nologins is defined. 
-     * Silently ignore them, as the sysadmin
-     * must have other problems.
-     */
-
-    if ((rc = stat("/etc/nologin",&statbuf)) == 0 )
-    {
-        exit (1);
-    }
-
     gatekeeper_pid = getpid();
 
     gatekeeper_uid = getuid();
@@ -1470,24 +1459,26 @@ static void doit()
     }
 #endif /* TARGET_ARCH_CRAYT3E */
 
-    /* Do gss authentication here */
-
     /* 
      * if globus nologin is set, error message and exit
      */
-        
+    if (access("/etc/nologin", F_OK) == 0)
+    {
+        failure(FAILED_NOLOGIN,
+                "Not accepting connections at this time (/etc/nologin)");
+    }
     if (stat(genfilename(gatekeeperhome,"etc",globusnologin),
              &statbuf) == 0)
     {
         failure(FAILED_NOLOGIN, 
-                "Not accepting connections at this time");
+                "Not accepting connections at this time ($GLOBUS_LOCATION/etc/globus-nologin)");
     }
 
     if (stat(genfilename(gatekeeperhome,"var",globusnologin),
              &statbuf) == 0)
     {
         failure(FAILED_NOLOGIN, 
-                "Not accepting connections at this time");
+                "Not accepting connections at this time ($GLOBUS_LOCATION/var/globus-nologin");
     }
 
     /* We will use the assist functions here since we 
