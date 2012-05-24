@@ -138,6 +138,13 @@ EESufsL68kNlBuAAnRRI5jFAvyjtQaoQpVqSL4/O45D7AJ9WrW/vxTzN0OyZyUU6
 =r6rU
 -----END PGP PUBLIC KEY BLOCK-----
 EOF
+    cat >> globus.pref <<EOF
+Package: *
+Pin: origin gtbamboo.dyndns.org
+Pin-Priority: 600
+EOF
+    sudo cp globus.pref /etc/apt/preferences.d/globus.pref
+    remove_prefs=/etc/apt/preferences.d/globus.pref
 else
     curl -s "$repopkg_url" > "${flavor}/${repopkg_url##*/}"
     sudo dpkg -i "${flavor}/${repopkg_url##*/}"
@@ -359,4 +366,8 @@ fi
 
 if [ "$remove_repo" != "" ]; then
     sudo rm "$remove_repo"
+fi
+
+if [ "$remove_prefs" != "" ]; then
+    sudo rm "$remove_prefs"
 fi
