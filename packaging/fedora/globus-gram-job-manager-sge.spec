@@ -146,15 +146,10 @@ rm -rf autom4te.cache
 %{_datadir}/globus/globus-bootstrap.sh
 
 # Explicitly set SGE-related command paths
-%if %{?rhel}%{!?rhel:0} == 5
-export QSUB=/usr/bin/qsub
-export QSTAT=/usr/bin/qstat
-export QDEL=/usr/bin/qdel
-%else
 export QSUB=/usr/bin/qsub-ge
 export QSTAT=/usr/bin/qstat-ge
 export QDEL=/usr/bin/qdel-ge
-%endif
+
 export QCONF=/usr/bin/qconf
 export MPIRUN=no
 export SUN_MPRUN=no
@@ -278,6 +273,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu May 24 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-3
+- use qstat-ge and co. on rhel5 as well
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-3
 - RHEL 4 patches
 
