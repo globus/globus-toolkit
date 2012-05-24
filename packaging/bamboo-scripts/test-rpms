@@ -82,7 +82,7 @@ case $(lsb_release -is):$(lsb_release -rs) in
             sudo zypper -n --gpg-auto-import-keys install "$@"
         }
         ;;
-    CentOS:4)
+    CentOS:4*)
         flavors="gcc64"
         remove_packages()
         {
