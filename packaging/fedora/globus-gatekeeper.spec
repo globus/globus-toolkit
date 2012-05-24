@@ -12,7 +12,7 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.12
+Version:	9.13
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -125,6 +125,9 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Thu May 24 2012 Joseph Bester <bester@mcs.anl.gov> - 9.13-1
+- GT-205: gatekeeper should log a message when it exits due to the presence of /etc/nologin
+
 * Mon May 14 2012 Joseph Bester <bester@mcs.anl.gov> - 9.12-1
 - GT-159: globus-gatekeeper init script should report errors better
 

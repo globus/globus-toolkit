@@ -1,3 +1,9 @@
+globus-gatekeeper (9.13-1) unstable; urgency=low
+
+  * GT-205: gatekeeper should log a message when it exits due to the presence of /etc/nologin
+
+ -- Globus Toolkit <support@globus.org>  Thu, 24 May 2012 12:53:08 -0400
+
 globus-gatekeeper (9.12-2) unstable; urgency=low
 
   * Work around issues caused by previous patch
