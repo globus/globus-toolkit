@@ -5,7 +5,7 @@ all:
         fi ;
 	mkdir $(FRAG_VERSION)
 	xsltproc --stringparam output-dir "$(FRAG_VERSION)" \
-            --stringparam release-version "GT $(FRAG_VERSION)" \
+            --stringparam release-version "$(FRAG_VERSION)" \
             generate-frags-docbook.xsl frag-defs.xml
 
 clean:

@@ -112,12 +112,27 @@
 
         <xsl:if test="contains($str, $old)">
             <xsl:value-of select="substring-before($str, $old)"/>
-            <xsl:value-of select="$new"/>
-            <xsl:call-template name="replace">
-                <xsl:with-param name="str" select="substring-after($str, $old)"/>
-                <xsl:with-param name="old" select="$old"/>
-                <xsl:with-param name="new" select="$new"/>
-            </xsl:call-template>
+            <xsl:if test="starts-with(substring-after($str, $old), $old)">
+                <xsl:call-template name="replace">
+                    <xsl:with-param name="str">
+                        <xsl:value-of select="substring-after(substring-after($str, $old),$old)"/>
+                    </xsl:with-param>
+                    <xsl:with-param name="old">
+                        <xsl:value-of select="$old"/>
+                    </xsl:with-param>
+                    <xsl:with-param name="new">
+                        <xsl:value-of select="$new"/>
+                    </xsl:with-param>
+                </xsl:call-template>
+            </xsl:if>
+            <xsl:if test="not(starts-with(substring-after($str, $old), $old))">
+                <xsl:value-of select="$new"/>
+                <xsl:call-template name="replace">
+                    <xsl:with-param name="str" select="substring-after($str, $old)"/>
+                    <xsl:with-param name="old" select="$old"/>
+                    <xsl:with-param name="new" select="$new"/>
+                </xsl:call-template>
+            </xsl:if>
         </xsl:if>
         <xsl:if test="not(contains($str, $old))">
             <xsl:value-of select="$str"/>

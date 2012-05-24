@@ -8,7 +8,7 @@
     version="1.0"
     >
 
-    <xsl:param name="release-version" select="'GT 5.2.1'"/>
+    <xsl:param name="release-version" select="'5.2.1'"/>
 
     <xsl:key name="packages" match="driver:package" use="@name"/>
     <xsl:key name="frags" match="driver:frag" use="@name"/>
@@ -193,8 +193,19 @@
         </xsl:apply-templates>
     </xsl:template>
 
-    <xsl:template match='driver:project' mode='generate-query'>
+    <xsl:template match='driver:project[1]' mode='generate-query'>
         <xsl:text>+(+</xsl:text>
+        <xsl:value-of select="concat('project+%3D+%22', @name, '%22')"/>
+        <xsl:if test="driver:component">
+            <xsl:text>+AND+(+</xsl:text>
+            <xsl:apply-templates mode='generate-query'/>
+            <xsl:text>+)+</xsl:text>
+        </xsl:if>
+        <xsl:text>+)+</xsl:text>
+    </xsl:template>
+
+    <xsl:template match='driver:project' mode='generate-query'>
+        <xsl:text>+OR+(+</xsl:text>
         <xsl:value-of select="concat('project+%3D+%22', @name, '%22')"/>
         <xsl:if test="driver:component">
             <xsl:text>+AND+(+</xsl:text>

@@ -8,8 +8,8 @@
 
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	4.2
-Release:	4%{?dist}
+Version:	4.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
 Group:		Applications/Internet
@@ -109,6 +109,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
 
 %changelog
+* Wed May 23 2012 Joe Bester <jbester@mactop2.local> - 4.3-1
+- Updated version numbers
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 4.2-4
 - RHEL 4 patches
 

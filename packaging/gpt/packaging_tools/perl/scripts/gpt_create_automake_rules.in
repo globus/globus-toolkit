@@ -121,7 +121,22 @@ sub process_automake_file {
   my ($dir_targets, $mpages) = scan_automake_file($file);
   my $dir = cwd();
 #  print "process_automake_file: $dir\n";
-  open (OUTPUT, ">>$rulefile");
+  open (OUTPUT, "+<$rulefile");
+
+  my $trunc_point = 0;
+  while (<OUTPUT>)
+  {
+      chomp();
+      if ($_ =~ m/# BEGIN GPT AUTOMAKE RULES/)
+      {
+          truncate(OUTPUT, $trunc_point);
+          last;
+      }
+      else
+      {
+          $trunc_point = tell(OUTPUT);
+      }
+  }
   my ($d, $t);
   my ($link, $unlink, $rules, $filelist, $phony) = ("link: link-recursive ",
                                                     "unlink: unlink-recursive ",
@@ -148,6 +163,7 @@ sub process_automake_file {
       }
     }
   }
+  print OUTPUT "# BEGIN GPT AUTOMAKE RULES\n";
   print OUTPUT "link-am:\n\nunlink-am:\n\nfilelist-am:\n\n";
   print OUTPUT "$link\n\t:\n\n";
   print OUTPUT "$unlink\n\t:\n\n";

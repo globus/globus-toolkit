@@ -25,6 +25,7 @@ my $fullname = undef;
 my $bumprelease = undef;
 my $new_release = undef;
 my $dryrun = 0;
+my $update;
 
 GetOptions('gptfile=s' => \$gptfile,
            'packagelistfile=s' => \$packagelistfile,
@@ -37,6 +38,7 @@ GetOptions('gptfile=s' => \$gptfile,
            'cvs-changelog' => \$cvs_changelog,
            'fullname=s' => \$fullname,
            'bumprelease' => \$bumprelease,
+           'update' => \$update,
            'help' => \$help);
 
 Pod::Usage::pod2usage() if defined $help;
@@ -46,7 +48,15 @@ setlocale(LC_TIME, 'C');
 if ($gtrelease)
 {
     my ($major, $minor, $micro) = split(/\./, $gtrelease);
-    $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$gtrelease/packages/src/";
+
+    if ($update)
+    {
+        $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$gtrelease/updates/src/";
+    }
+    else
+    {
+        $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$gtrelease/packages/src/";
+    }
 }
 my $login = getlogin || getpwuid($<);
 my $pw = getpwnam($login);

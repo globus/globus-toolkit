@@ -20,8 +20,10 @@ my $gtrelease = undef;
 my $gtreleaseuri = undef;
 my $changelog_from_cvs = 0;
 my $changelog = undef;
+my $prompt = 0;
 my $fullname = "Globus Toolkit";
 my $bumprelease = 0;
+my $update;
 
 GetOptions('gptfile=s' => \$gptfile,
            'packagelistfile=s' => \$packagelistfile,
@@ -32,6 +34,8 @@ GetOptions('gptfile=s' => \$gptfile,
            'changelog=s' => \$changelog,
            'cvs-changelog' => \$changelog_from_cvs,
            'bumprelease' => \$bumprelease,
+           'prompt' => \$prompt,
+           'update' => \$update,
            'help' => \$help);
 
 Pod::Usage::pod2usage() if defined $help;
@@ -47,7 +51,14 @@ if (!$gtrelease)
 }
 
 $gtrelease =~ m/^([0-9])+\.([0-9]+)\.([0-9]+)$/;
-$gtreleaseuri="http://www.globus.org/ftppub/gt$1/$1.$2/$gtrelease/packages/src/";
+if ($update)
+{
+    $gtreleaseuri="http://www.globus.org/ftppub/gt$1/$1.$2/$gtrelease/updates/src/";
+}
+else
+{
+    $gtreleaseuri="http://www.globus.org/ftppub/gt$1/$1.$2/$gtrelease/packages/src/";
+}
 
 my $login = getlogin || getpwuid($<);
 my $pw = getpwnam($login);
@@ -578,6 +589,20 @@ sub update_changelog
             $changelog = "Update version for $gtrelease";
         }
     }
+    elsif ($prompt)
+    {
+        print "Changelog Entry for $package [empty line to end]: ";
+        $changelog = "";
+        while (<>)
+        {
+            if ($_ eq "\n")
+            {
+                last;
+            }
+            $changelog .= "$_";
+        }
+    }
+
     for my $line (split(/\n/, $changelog))
     {
         $update .= "  * $line\n";

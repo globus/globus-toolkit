@@ -150,11 +150,14 @@ for flavor in ${flavors}; do
         env ${profileflags} make;
         env ${profileflags} make globus_simple_ca;
         env ${profileflags} make install;
-        # Only build docs once
-        doxygenflags=""
+        if [ "$doxygen_flavor" = "" ]; then
+            # Only build docs once
+            doxygen_flavor="$flavor"
+            doxygenflags=""
+        fi
 
-        # work around GRAM-334: job manager doesn't work if unix socket path is too
-        # long
+        # work around GRAM-334: job manager doesn't work if unix socket path is
+        # too long
         echo "    -globus-job-dir /tmp" >> "${topdir}/globus-location-${flavor}"/etc/globus/globus-gram-job-manager.conf
 
         if [ "$in_chroot" != 1 ]; then
@@ -315,11 +318,13 @@ fi
 sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-delete-entry -dn \"$USER_DN\" -ln \"$USER_LN\""
 
 for flavor in $flavors; do
-    export GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
-    . "${GLOBUS_LOCATION}/etc/globus-user-env.sh"
-    ${GLOBUS_LOCATION}/sbin/globus-update-doxygen-index
+    if [ "$doxygen_flavor" = "$flavor" ]; then
+        export GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"
+        . "${GLOBUS_LOCATION}/etc/globus-user-env.sh"
+        ${GLOBUS_LOCATION}/sbin/globus-update-doxygen-index
+        (cd "$GLOBUS_LOCATION/share/doc" && tar cf - . ) | (cd "${doxygendir}" && gzip -9 > api.tar.gz)
+    fi
     sudo chown -R bamboo "$GLOBUS_LOCATION"
-    cp -R "$GLOBUS_LOCATION/share/doc" "${doxygendir}/${flavor}"
 done
 sudo chown -R bamboo "$installer_dir"
 

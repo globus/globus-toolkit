@@ -5,34 +5,43 @@
             name is doc set, prefix is used for id attributes 
             within that doc set
         -->
+        <package name='C_Common_Libraries' prefix='ccommonlib'>
+            <project name="GT">
+                <component>Common Libs</component>
+            </project>
+        </package>
+
         <package name='GRAM5' prefix='gram5'>
             <!-- project and components match jira -->
-            <project name="GRAM"/>
-            <!-- Label for misplaced or bugs which affect multiple projects -->
-            <label>GRAM</label>
-        </package>
-
-        <package name='GSIC' prefix='gsic'>
-            <project name="RI_Common">
-                <component>Security</component>
-            </project>
-        </package>
-
-        <package name='C_Common_Libraries' prefix='ccommonlib'>
-            <project name="RI_Common">
-                <component>Common</component>
-            </project>
-        </package>
-
-        <package name='XIO' prefix='xio'>
-            <project name="RI_Common">
-                <component>XIO</component>
+            <project name="GT">
+                <component>GRAM</component>
             </project>
         </package>
 
         <package name='GridFTP' prefix='gridftp'>
-            <project name="GridFTP"/>
+            <project name="GT">
+                <component>GridFTP</component>
+            </project>
         </package>
+
+        <package name='GSIC' prefix='gsic'>
+            <project name="GT">
+                <component>GSI</component>
+            </project>
+        </package>
+
+        <package name='Util_OpenSSH' prefix='gsiopenssh'>
+            <project name="GT">
+                <component>GSI-OpenSSH</component>
+            </project>
+        </package>
+
+        <package name='XIO' prefix='xio'>
+            <project name="GT">
+                <component>XIO</component>
+            </project>
+        </package>
+
     </packages>
 
     <!-- frags to generate -->

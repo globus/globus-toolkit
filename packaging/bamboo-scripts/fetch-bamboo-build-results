@@ -419,6 +419,7 @@ for plan in build_plans:
     elif "-TESTSOURCE" in plan:
         try:
             artifacts = client.get_artifact(buildKey, buildNumber, "doxygen")
+            continue
         except:
             print "Can't find doxygen for " + plan
             continue
@@ -576,5 +577,18 @@ if update_api_docs:
         print "Looking at plan " + plan
         if "TESTSOURCE" in plan:
             print "Might be ok"
-            if not(plan in plan_binaries):
-                print "no binaries!"
+            if plan in plan_binaries:
+                [apitar] = [(name) for name in plan_binaries[plan] if name.endswith(".tar.gz")]
+                api_version_dir = os.path.join(apidir, "/api/c-" + version)
+                os.mkdir(api_version_dir, 0755)
+                data = client.get_artifact(build_results[plan].get("buildKey"),
+                        build_results[plan].get("buildNumber"),
+                        apitar)
+                (fd, name) = tempfile.mkstemp()
+                fd.write(data)
+                fd.close()
+                oldwd = os.getcwd()
+                os.chdir(api_version_dir)
+                tar = tarfile.TarFile(name)
+                tar.extractall()
+                os.remove(name)
