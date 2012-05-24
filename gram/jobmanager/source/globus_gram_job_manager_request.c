@@ -1487,10 +1487,6 @@ globus_gram_job_manager_request_log(
     va_list ap;
     int stdio_level = level;
 
-    if (! request->config)
-    {
-        return;
-    }
     /* Allow logging code to determine this thread's current job request to handle
      * per-job log configuration
      */
@@ -1516,7 +1512,10 @@ globus_gram_job_manager_request_log(
          * config, we need to make sure the log level matches the global type
          * mask so that it won't get discarded by globus_logging_vwrite
          */
-        stdio_level = request->config->log_levels;
+        if (request->config)
+        {
+            stdio_level = request->config->log_levels;
+        }
     }
     va_start(ap, format);
     globus_logging_vwrite(

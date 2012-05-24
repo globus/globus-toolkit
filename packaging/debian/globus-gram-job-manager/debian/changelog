@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.42-1) unstable; urgency=low
+
+  * GT-209: job manager crash in query
+
+ -- Globus Toolkit <support@globus.org>  Thu, 24 May 2012 07:32:15 -0400
+
 globus-gram-job-manager (13.41-1) unstable; urgency=low
 
   * GT-199: GRAM audit checks result username incorrectly

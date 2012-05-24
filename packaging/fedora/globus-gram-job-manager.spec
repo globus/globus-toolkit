@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.41
+Version:	13.42
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -177,6 +177,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu May 24 2012 Joseph Bester <bester@mcs.anl.gov> - 13.42-1
+- GT-209: job manager crash in query
+
 * Tue May 22 2012 Joseph Bester <bester@mcs.anl.gov> - 13.41-1
 - GT-199: GRAM audit checks result username incorrectly
 - GT-192: Segfault in globus-gram-streamer

@@ -499,8 +499,8 @@ globus_l_gram_job_manager_query_reply(
 
         replystring = globus_gram_prepare_log_string((char *) reply);
 
-        globus_gram_job_manager_request_log(
-            request,
+        globus_gram_job_manager_log(
+            manager,
             GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
             "event=gram.query.info "
             "%s%s%s"
