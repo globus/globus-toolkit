@@ -504,16 +504,6 @@ main(int xargc,
         exit(1);
     }
 
-    /* 
-     * Don't allow logins of /etc/nologin exists. 
-     * Silently ignore them, as the sysadmin
-     * must have other problems.
-     */
-    if (access("/etc/nologin", F_OK) == 0)
-    {
-        exit (1);
-    }
-
     gatekeeper_pid = getpid();
 
     gatekeeper_uid = getuid();
@@ -1328,23 +1318,27 @@ static void doit()
 
     notice3(LOG_INFO, "Got connection %s at %s", peernum, timestamp());
 
-    /* Do gss authentication here */
-
     /* 
      * if globus nologin is set, error message and exit
      */
         
+    if (access("/etc/nologin", F_OK) == 0)
+    {
+        failure(FAILED_NOLOGIN, 
+                "Not accepting connections at this time (/etc/nologin)");
+    }
+
     if (getenv("GLOBUS_LOCATION") != NULL &&
         access(genfilename(gatekeeperhome,"etc",globusnologin), F_OK) == 0)
     {
         failure(FAILED_NOLOGIN, 
-                "Not accepting connections at this time");
+                "Not accepting connections at this time ($GLOBUS_LOCATION/etc/nologin)");
     }
 
     if (access("/etc/globus-nologin", F_OK) == 0)
     {
         failure(FAILED_NOLOGIN, 
-                "Not accepting connections at this time");
+                "Not accepting connections at this time (/etc/globus-nologin)");
     }
 
     /* 
