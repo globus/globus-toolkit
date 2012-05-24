@@ -289,7 +289,7 @@ for flavor in $flavors; do
                     remove_packages $lrmpkgs || true
                     # Stop the job manager and remove all job state, so that
                     # tests will have a clean state
-                    killall globus-job-manager
+                    killall globus-job-manager || true
                     rm -rf ~/.globus/job
                     rm -rf /var/lib/globus/gram_job_state/bamboo/*
                     rm -f /var/lib/globus/gram_job_state/job.*
