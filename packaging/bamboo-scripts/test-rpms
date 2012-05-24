@@ -82,6 +82,21 @@ case $(lsb_release -is):$(lsb_release -rs) in
             sudo zypper -n --gpg-auto-import-keys install "$@"
         }
         ;;
+    CentOS:4)
+        flavors="gcc64"
+        remove_packages()
+        {
+            sudo yum remove -y "$@"
+        }
+        clean_all()
+        {
+            sudo yum clean all
+        }
+        install_packages()
+        {
+            sudo $archcmd sudo yum -y install "$@"
+        }
+        ;;
     *)
         remove_packages()
         {
