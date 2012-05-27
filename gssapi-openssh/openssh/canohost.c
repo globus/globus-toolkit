@@ -16,6 +16,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/param.h>          /* for MAXHOSTNAMELEN */
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -437,4 +438,34 @@ int
 get_local_port(void)
 {
 	return get_port(1);
+}
+
+void
+resolve_localhost(char **host)
+{
+    struct hostent *hostinfo;
+
+    hostinfo = gethostbyname(*host);
+    if (hostinfo == NULL || hostinfo->h_name == NULL) {
+	debug("gethostbyname(%s) failed", *host);
+	return;
+    }
+    if (hostinfo->h_addrtype == AF_INET) {
+	struct in_addr addr;
+	addr = *(struct in_addr *)(hostinfo->h_addr);
+	if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
+	    char buf[MAXHOSTNAMELEN];
+	    if (gethostname(buf, sizeof(buf)) < 0) {
+		debug("gethostname() failed");
+		return;
+	    }
+	    hostinfo = gethostbyname(buf);
+	    xfree(*host);
+	    if (hostinfo == NULL || hostinfo->h_name == NULL) {
+		*host = xstrdup(buf);
+	    } else {
+		*host = xstrdup(hostinfo->h_name);
+	    }
+	}
+    }
 }

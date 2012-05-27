@@ -1,7 +1,7 @@
 /* $OpenBSD: gss-serv-krb5.c,v 1.7 2006/08/03 03:34:42 deraadt Exp $ */
 
 /*
- * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001-2007 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,7 +48,7 @@ extern ServerOptions options;
 
 #ifdef HEIMDAL
 # include <krb5.h>
-#else
+#elif !defined(MECHGLUE)
 # ifdef HAVE_GSSAPI_KRB5_H
 #  include <gssapi_krb5.h>
 # elif HAVE_GSSAPI_GSSAPI_KRB5_H
@@ -57,6 +57,23 @@ extern ServerOptions options;
 #endif
 
 static krb5_context krb_context = NULL;
+static int ssh_gssapi_krb5_init();
+static int ssh_gssapi_krb5_userok(ssh_gssapi_client *client, char *name);
+static int ssh_gssapi_krb5_localname(ssh_gssapi_client *client, char **user);
+static void ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client);
+static int ssh_gssapi_krb5_updatecreds(ssh_gssapi_ccache *store,
+                                       ssh_gssapi_client *client);
+
+ssh_gssapi_mech gssapi_kerberos_mech = {
+	"toWM5Slw5Ew8Mqkay+al2g==",
+	"Kerberos",
+	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
+	NULL,
+	&ssh_gssapi_krb5_userok,
+	&ssh_gssapi_krb5_localname,
+	&ssh_gssapi_krb5_storecreds,
+	&ssh_gssapi_krb5_updatecreds
+};
 
 /* Initialise the krb5 library, for the stuff that GSSAPI won't do */
 
@@ -109,6 +126,35 @@ ssh_gssapi_krb5_userok(ssh_gssapi_client *client, char *name)
 }
 
 
+/* Retrieve the local username associated with a set of Kerberos 
+ * credentials. Hopefully we can use this for the 'empty' username
+ * logins discussed in the draft  */
+static int
+ssh_gssapi_krb5_localname(ssh_gssapi_client *client, char **user) {
+	krb5_principal princ;
+	int retval;
+	
+	if (ssh_gssapi_krb5_init() == 0)
+		return 0;
+
+	if ((retval=krb5_parse_name(krb_context, client->displayname.value, 
+				    &princ))) {
+		logit("krb5_parse_name(): %.100s", 
+			krb5_get_err_text(krb_context,retval));
+		return 0;
+	}
+	
+	/* We've got to return a malloc'd string */
+	*user = (char *)xmalloc(256);
+	if (krb5_aname_to_localname(krb_context, princ, 256, *user)) {
+		xfree(*user);
+		*user = NULL;
+		return(0);
+	}
+	
+	return(1);
+}
+	
 /* This writes out any forwarded credentials from the structure populated
  * during userauth. Called after we have setuid to the user */
 
@@ -119,7 +165,9 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client)
 	krb5_error_code problem;
 	krb5_principal princ;
 	OM_uint32 maj_status, min_status;
+	gss_cred_id_t krb5_cred_handle;
 	int len;
+	const char *new_ccname;
 
 	if (client->creds == NULL) {
 		debug("No credentials stored");
@@ -161,18 +209,31 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client)
 
 	krb5_free_principal(krb_context, princ);
 
-	if ((maj_status = gss_krb5_copy_ccache(&min_status,
-	    client->creds, ccache))) {
+#ifdef MECHGLUE
+	krb5_cred_handle =
+	    __gss_get_mechanism_cred(client->creds,
+				     &(gssapi_kerberos_mech.oid));
+#else
+	krb5_cred_handle = client->creds;
+#endif
+
+	if ((maj_status = gss_krb5_copy_ccache(&min_status, 
+	    krb5_cred_handle, ccache))) {
 		logit("gss_krb5_copy_ccache() failed");
 		krb5_cc_destroy(krb_context, ccache);
 		return;
 	}
 
-	client->store.filename = xstrdup(krb5_cc_get_name(krb_context, ccache));
+	new_ccname = krb5_cc_get_name(krb_context, ccache);
+
 	client->store.envvar = "KRB5CCNAME";
-	len = strlen(client->store.filename) + 6;
-	client->store.envval = xmalloc(len);
-	snprintf(client->store.envval, len, "FILE:%s", client->store.filename);
+#ifdef USE_CCAPI
+	xasprintf(&client->store.envval, "API:%s", new_ccname);
+	client->store.filename = NULL;
+#else
+	xasprintf(&client->store.envval, "FILE:%s", new_ccname);
+	client->store.filename = xstrdup(new_ccname);
+#endif
 
 #ifdef USE_PAM
 	if (options.use_pam)
@@ -184,15 +245,70 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client)
 	return;
 }
 
-ssh_gssapi_mech gssapi_kerberos_mech = {
-	"toWM5Slw5Ew8Mqkay+al2g==",
-	"Kerberos",
-	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
-	NULL,
-	&ssh_gssapi_krb5_userok,
-	NULL,
-	&ssh_gssapi_krb5_storecreds
-};
+static int
+ssh_gssapi_krb5_updatecreds(ssh_gssapi_ccache *store, 
+    ssh_gssapi_client *client)
+{
+	krb5_ccache ccache = NULL;
+	krb5_principal principal = NULL;
+	char *name = NULL;
+	krb5_error_code problem;
+	OM_uint32 maj_status, min_status;
+
+   	if ((problem = krb5_cc_resolve(krb_context, store->envval, &ccache))) {
+                logit("krb5_cc_resolve(): %.100s",
+                    krb5_get_err_text(krb_context, problem));
+                return 0;
+       	}
+	
+	/* Find out who the principal in this cache is */
+	if ((problem = krb5_cc_get_principal(krb_context, ccache, 
+	    &principal))) {
+		logit("krb5_cc_get_principal(): %.100s",
+		    krb5_get_err_text(krb_context, problem));
+		krb5_cc_close(krb_context, ccache);
+		return 0;
+	}
+
+	if ((problem = krb5_unparse_name(krb_context, principal, &name))) {
+		logit("krb5_unparse_name(): %.100s",
+		    krb5_get_err_text(krb_context, problem));
+		krb5_free_principal(krb_context, principal);
+		krb5_cc_close(krb_context, ccache);
+		return 0;
+	}
+
+
+	if (strcmp(name,client->exportedname.value)!=0) {
+		debug("Name in local credentials cache differs. Not storing");
+		krb5_free_principal(krb_context, principal);
+		krb5_cc_close(krb_context, ccache);
+		krb5_free_unparsed_name(krb_context, name);
+		return 0;
+	}
+	krb5_free_unparsed_name(krb_context, name);
+
+	/* Name matches, so lets get on with it! */
+
+	if ((problem = krb5_cc_initialize(krb_context, ccache, principal))) {
+		logit("krb5_cc_initialize(): %.100s",
+		    krb5_get_err_text(krb_context, problem));
+		krb5_free_principal(krb_context, principal);
+		krb5_cc_close(krb_context, ccache);
+		return 0;
+	}
+
+	krb5_free_principal(krb_context, principal);
+
+	if ((maj_status = gss_krb5_copy_ccache(&min_status, client->creds,
+	    ccache))) {
+		logit("gss_krb5_copy_ccache() failed. Sorry!");
+		krb5_cc_close(krb_context, ccache);
+		return 0;
+	}
+
+	return 1;
+}
 
 #endif /* KRB5 */
 
