@@ -2258,9 +2258,7 @@ AC_ARG_WITH([ssl-dir],
 		fi
 	]
 )
-if test -z "$GLOBUS_LDFLAGS" ; then
 LIBS="-lcrypto $LIBS"
-fi
 AC_TRY_LINK_FUNC([RAND_add], [AC_DEFINE([HAVE_OPENSSL], [1],
 	[Define if your ssl headers are included
 	with #include <openssl/header.h>])],
