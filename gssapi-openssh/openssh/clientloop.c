@@ -111,6 +111,10 @@
 #include "msg.h"
 #include "roaming.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 /* import options */
 extern Options options;
 
@@ -1540,6 +1544,15 @@ client_loop(int have_pty, int escape_char_arg, int ssh2_chan_id)
 		/* Do channel operations unless rekeying in progress. */
 		if (!rekeying) {
 			channel_after_select(readset, writeset);
+
+#ifdef GSSAPI
+			if (options.gss_renewal_rekey &&
+			    ssh_gssapi_credentials_updated((Gssctxt *)GSS_C_NO_CONTEXT)) {
+				debug("credentials updated - forcing rekey");
+				need_rekeying = 1;
+			}
+#endif
+
 			if (need_rekeying || packet_need_rekeying()) {
 				debug("need rekeying");
 				xxx_kex->done = 0;
@@ -1825,9 +1838,15 @@ client_request_x11(const char *request_type, int rchan)
 	sock = x11_connect_display();
 	if (sock < 0)
 		return NULL;
+	/* again is this really necessary for X11? */
+	if (options.hpn_disabled) 
 	c = channel_new("x11",
 	    SSH_CHANNEL_X11_OPEN, sock, sock, -1,
 	    CHAN_TCP_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT, 0, "x11", 1);
+	else 
+		c = channel_new("x11",
+		    SSH_CHANNEL_X11_OPEN, sock, sock, -1,
+		    options.hpn_buffer_size, CHAN_X11_PACKET_DEFAULT, 0, "x11", 1);
 	c->force_drain = 1;
 	return c;
 }
@@ -1847,9 +1866,15 @@ client_request_agent(const char *request_type, int rchan)
 	sock = ssh_get_authentication_socket();
 	if (sock < 0)
 		return NULL;
+	if (options.hpn_disabled) 
 	c = channel_new("authentication agent connection",
 	    SSH_CHANNEL_OPEN, sock, sock, -1,
-	    CHAN_X11_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0,
+		    CHAN_X11_WINDOW_DEFAULT, CHAN_TCP_WINDOW_DEFAULT, 0,
+		    "authentication agent connection", 1);
+       else
+	c = channel_new("authentication agent connection",
+	    SSH_CHANNEL_OPEN, sock, sock, -1,
+                   options.hpn_buffer_size, options.hpn_buffer_size, 0,
 	    "authentication agent connection", 1);
 	c->force_drain = 1;
 	return c;
@@ -1877,9 +1902,17 @@ client_request_tun_fwd(int tun_mode, int local_tun, int remote_tun)
 		return -1;
 	}
 
+	if(options.hpn_disabled)
 	c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
-	    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);
+				CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
+				0, "tun", 1);
+	else
+	c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
+				options.hpn_buffer_size, CHAN_TCP_PACKET_DEFAULT,
+				0, "tun", 1);
 	c->datagram = 1;
+
+
 
 #if defined(SSH_TUN_FILTER)
 	if (options.tun_open == SSH_TUNMODE_POINTOPOINT)
