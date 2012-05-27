@@ -1,4 +1,4 @@
-/* $OpenBSD: version.h,v 1.62 2011/08/02 23:13:01 djm Exp $ */
+/* $OpenBSD: version.h,v 1.64 2012/02/09 20:00:18 markus Exp $ */
 
 #ifdef GSI
 #define GSI_VERSION	" GSI"
@@ -18,9 +18,9 @@
 #define MGLUE_VERSION	""
 #endif
 
-#define GPT_VERSION	" GSI_GSSAPI_GPT_5.4"
+#define GPT_VERSION	" GSI_GSSAPI_GPT_5.5"
 
-#define SSH_VERSION	"OpenSSH_5.9"
+#define SSH_VERSION	"OpenSSH_6.0"
 
 #define SSH_PORTABLE	"p1"
 #define SSH_HPN         "-hpn13v11"

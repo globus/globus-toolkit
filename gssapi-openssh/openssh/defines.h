@@ -87,6 +87,12 @@ enum
 # define	IPTOS_DSCP_EF		0xb8
 #endif /* IPTOS_DSCP_EF */
 
+#ifndef PATH_MAX
+# ifdef _POSIX_PATH_MAX
+# define PATH_MAX _POSIX_PATH_MAX
+# endif
+#endif
+
 #ifndef MAXPATHLEN
 # ifdef PATH_MAX
 #  define MAXPATHLEN PATH_MAX
@@ -98,12 +104,6 @@ enum
 #  endif /* BROKEN_REALPATH */
 # endif /* PATH_MAX */
 #endif /* MAXPATHLEN */
-
-#ifndef PATH_MAX
-# ifdef _POSIX_PATH_MAX
-# define PATH_MAX _POSIX_PATH_MAX
-# endif
-#endif
 
 #if defined(HAVE_DECL_MAXSYMLINKS) && HAVE_DECL_MAXSYMLINKS == 0
 # define MAXSYMLINKS 5
@@ -194,11 +194,7 @@ typedef unsigned int u_int;
 #endif
 
 #ifndef HAVE_INTXX_T
-# if (SIZEOF_CHAR == 1)
-typedef char int8_t;
-# else
-#  error "8 bit int type not found."
-# endif
+typedef signed char int8_t;
 # if (SIZEOF_SHORT_INT == 2)
 typedef short int int16_t;
 # else

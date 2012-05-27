@@ -261,6 +261,35 @@ AC_CHECK_DECL([RLIMIT_NPROC],
 	#include <sys/types.h>
 	#include <sys/resource.h>
 ])
+AC_CHECK_DECL([PR_SET_NO_NEW_PRIVS], [have_linux_no_new_privs=1], , [
+	#include <sys/types.h>
+	#include <linux/prctl.h>
+])
+if test "x$have_linux_no_new_privs" = "x1" ; then
+AC_CHECK_DECL([SECCOMP_MODE_FILTER], [have_seccomp_filter=1], , [
+	#include <sys/types.h>
+	#include <linux/seccomp.h>
+])
+fi
+if test "x$have_seccomp_filter" = "x1" ; then
+AC_MSG_CHECKING([kernel for seccomp_filter support])
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+		#include <errno.h>
+		#include <linux/seccomp.h>
+		#include <stdlib.h>
+		#include <sys/prctl.h>
+	]],
+	[[ errno = 0;
+	   prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, NULL, 0, 0);
+	   exit(errno == EFAULT ? 0 : 1); ]])],
+	[ AC_MSG_RESULT([yes]) ], [
+		AC_MSG_RESULT([no])
+		# Disable seccomp filter as a target
+		have_seccomp_filter=0
+	],
+	[ AC_MSG_RESULT([cross-compiling, assuming yes]) ]
+)
+fi
 
 use_stack_protector=1
 AC_ARG_WITH([stackprotect],
@@ -280,6 +309,7 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	OSSH_CHECK_CFLAG_COMPILE([-Wpointer-sign], [-Wno-pointer-sign])
 	OSSH_CHECK_CFLAG_COMPILE([-Wunused-result], [-Wno-unused-result])
 	OSSH_CHECK_CFLAG_COMPILE([-fno-strict-aliasing])
+	OSSH_CHECK_CFLAG_COMPILE([-D_FORTIFY_SOURCE=2])
 	AC_MSG_CHECKING([gcc version])
 	GCC_VER=`$CC -v 2>&1 | $AWK '/gcc version /{print $3}'`
 	case $GCC_VER in
@@ -813,6 +843,22 @@ case "$host" in
 		AC_DEFINE([SSH_TUN_PREPEND_AF], [1],
 		    [Prepend the address family to IP tunnel traffic])
 	fi
+	AC_CHECK_HEADERS([linux/seccomp.h linux/filter.h linux/audit.h])
+	AC_CHECK_FUNCS([prctl])
+	have_seccomp_audit_arch=1
+	case "$host" in
+	x86_64-*)
+		AC_DEFINE([SECCOMP_AUDIT_ARCH], [AUDIT_ARCH_X86_64],
+		    [Specify the system call convention in use])
+		;;
+	i*86-*)
+		AC_DEFINE([SECCOMP_AUDIT_ARCH], [AUDIT_ARCH_I386],
+		    [Specify the system call convention in use])
+		;;
+	*)
+		have_seccomp_audit_arch=0
+		;;
+	esac
 	;;
 mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([NEED_SETPGRP], [1], [Need setpgrp to acquire controlling tty])
@@ -1281,9 +1327,13 @@ AC_CHECK_FUNCS([utimes],
 
 dnl    Checks for libutil functions
 AC_CHECK_HEADERS([libutil.h])
-AC_SEARCH_LIBS([login], [util bsd], [AC_DEFINE([HAVE_LOGIN], [1],
-	[Define if your libraries define login()])])
-AC_CHECK_FUNCS([fmt_scaled logout updwtmp logwtmp])
+AC_SEARCH_LIBS([fmt_scaled], [util bsd])
+AC_SEARCH_LIBS([login], [util bsd])
+AC_SEARCH_LIBS([logout], [util bsd])
+AC_SEARCH_LIBS([logwtmp], [util bsd])
+AC_SEARCH_LIBS([openpty], [util bsd])
+AC_SEARCH_LIBS([updwtmp], [util bsd])
+AC_CHECK_FUNCS([fmt_scaled login logout openpty updwtmp logwtmp])
 
 AC_FUNC_STRFTIME
 
@@ -1476,6 +1526,41 @@ int deny_severity = 0, allow_severity = 0;
 	]
 )
 
+# Check whether user wants to use ldns
+LDNS_MSG="no"
+AC_ARG_WITH(ldns,
+	[  --with-ldns[[=PATH]]      Use ldns for DNSSEC support (optionally in PATH)],
+    [
+        if test "x$withval" != "xno" ; then
+
+			if test "x$withval" != "xyes" ; then
+				CPPFLAGS="$CPPFLAGS -I${withval}/include"
+				LDFLAGS="$LDFLAGS -L${withval}/lib"
+			fi
+
+            AC_DEFINE(HAVE_LDNS, 1, [Define if you want ldns support])
+            LIBS="-lldns $LIBS"
+            LDNS_MSG="yes"
+
+            AC_MSG_CHECKING([for ldns support])
+            AC_LINK_IFELSE(
+                [AC_LANG_SOURCE([[
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <ldns/ldns.h>
+int main() { ldns_status status = ldns_verify_trusted(NULL, NULL, NULL, NULL); status=LDNS_STATUS_OK; exit(0); }
+                                ]])
+                ],
+				[AC_MSG_RESULT(yes)],
+				[
+					AC_MSG_RESULT(no)
+					AC_MSG_ERROR([** Incomplete or missing ldns libraries.])
+				])
+        fi
+    ]
+)
+
 # Check whether user wants libedit support
 LIBEDIT_MSG="no"
 AC_ARG_WITH([libedit],
@@ -1555,6 +1640,11 @@ AC_ARG_WITH([audit],
 		# These are optional
 		AC_CHECK_FUNCS([getaudit_addr aug_get_machine])
 		AC_DEFINE([USE_BSM_AUDIT], [1], [Use BSM audit module])
+		if test "$sol2ver" -eq 11; then
+		   	SSHDLIBS="$SSHDLIBS -lscf"
+                   	AC_DEFINE([BROKEN_BSM_API], [1], 
+		        	  [The system has incomplete BSM API])
+		fi
 		;;
 	  linux)
 		AC_MSG_RESULT([linux])
@@ -1623,7 +1713,6 @@ AC_CHECK_FUNCS([ \
 	nsleep \
 	ogetaddrinfo \
 	openlog_r \
-	openpty \
 	poll \
 	prctl \
 	pstat \
@@ -1658,6 +1747,7 @@ AC_CHECK_FUNCS([ \
 	strlcat \
 	strlcpy \
 	strmode \
+	strnlen \
 	strnvis \
 	strptime \
 	strtonum \
@@ -2168,9 +2258,7 @@ AC_ARG_WITH([ssl-dir],
 		fi
 	]
 )
-if test -z "$GLOBUS_LDFLAGS" ; then
 LIBS="-lcrypto $LIBS"
-fi
 AC_TRY_LINK_FUNC([RAND_add], [AC_DEFINE([HAVE_OPENSSL], [1],
 	[Define if your ssl headers are included
 	with #include <openssl/header.h>])],
@@ -2330,7 +2418,7 @@ AC_LINK_IFELSE(
 	]
 )
 
-AC_CHECK_FUNCS([RSA_generate_key_ex DSA_generate_parameters_ex BN_is_prime_ex RSA_get_default_method])
+AC_CHECK_FUNCS([RSA_generate_key_ex DSA_generate_parameters_ex BN_is_prime_ex RSA_get_default_method HMAC_CTX_init])
 
 AC_ARG_WITH([ssl-engine],
 	[  --with-ssl-engine       Enable OpenSSL (hardware) ENGINE support ],
@@ -2638,7 +2726,7 @@ AC_SUBST([SSH_PRIVSEP_USER])
 # Decide which sandbox style to use
 sandbox_arg=""
 AC_ARG_WITH([sandbox],
-	[  --with-sandbox=style    Specify privilege separation sandbox (no, darwin, rlimit, systrace)],
+	[  --with-sandbox=style    Specify privilege separation sandbox (no, darwin, rlimit, systrace, seccomp_filter)],
 	[
 		if test "x$withval" = "xyes" ; then
 			sandbox_arg=""
@@ -2661,6 +2749,23 @@ elif test "x$sandbox_arg" = "xdarwin" || \
 		AC_MSG_ERROR([Darwin seatbelt sandbox requires sandbox.h and sandbox_init function])
 	SANDBOX_STYLE="darwin"
 	AC_DEFINE([SANDBOX_DARWIN], [1], [Sandbox using Darwin sandbox_init(3)])
+elif test "x$sandbox_arg" = "xseccomp_filter" || \
+     ( test -z "$sandbox_arg" && \
+       test "x$have_seccomp_filter" == "x1" && \
+       test "x$ac_cv_header_linux_audit_h" = "xyes" && \
+       test "x$have_seccomp_audit_arch" = "x1" && \
+       test "x$have_linux_no_new_privs" = "x1" && \
+       test "x$ac_cv_func_prctl" = "xyes" ) ; then
+	test "x$have_seccomp_audit_arch" != "x1" && \
+		AC_MSG_ERROR([seccomp_filter sandbox not supported on $host])
+	test "x$have_linux_no_new_privs" != "x1" && \
+		AC_MSG_ERROR([seccomp_filter sandbox requires PR_SET_NO_NEW_PRIVS])
+	test "x$have_seccomp_filter" != "x1" && \
+		AC_MSG_ERROR([seccomp_filter sandbox requires seccomp headers])
+	test "x$ac_cv_func_prctl" != "xyes" && \
+		AC_MSG_ERROR([seccomp_filter sandbox requires prctl function])
+	SANDBOX_STYLE="seccomp_filter"
+	AC_DEFINE([SANDBOX_SECCOMP_FILTER], [1], [Sandbox using seccomp filter])
 elif test "x$sandbox_arg" = "xrlimit" || \
      ( test -z "$sandbox_arg" && test "x$ac_cv_func_setrlimit" = "xyes" ) ; then
 	test "x$ac_cv_func_setrlimit" != "xyes" && \
@@ -2684,7 +2789,6 @@ fi
 AC_CHECK_TYPES([long long, unsigned long long, long double])
 
 # Check datatype sizes
-AC_CHECK_SIZEOF([char], [1])
 AC_CHECK_SIZEOF([short int], [2])
 AC_CHECK_SIZEOF([int], [4])
 AC_CHECK_SIZEOF([long int], [4])
