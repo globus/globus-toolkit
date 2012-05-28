@@ -345,7 +345,9 @@ static int connect_socket_to_host(char *host, int port) {
             char straddr[INET6_ADDRSTRLEN];
 
             if (check_port_range(sockfd, res->ai_addr)) {
-            inet_ntop(res->ai_family, res->ai_addr, straddr, sizeof(straddr));
+            getnameinfo(res->ai_addr, res->ai_addrlen,
+                        straddr, sizeof(straddr),
+                        NULL, 0, NI_NUMERICHOST);
             myproxy_debug("Attempting to connect to %s:%d\n", straddr, port);
             if (connect_with_timeout(sockfd, 
                                      res->ai_addr, res->ai_addrlen) < 0) {
