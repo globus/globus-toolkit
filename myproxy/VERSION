@@ -1,16 +1,18 @@
-This is MyProxy v5.7 XX Xxx 2012.
+This is MyProxy v5.7 May 2012.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v5.7 XX Xxx 2012
+v5.7 May 2012
+  - add IPv6 support
+    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7252)
   - update configure script for platforms where pidfile_open is
     defined in libbsd
   - support limited proxy certificates in myproxy-logon -voms by
     passing -limited option to voms-proxy-init as needed
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7250)
-  - add support for TLS 1.1 and TLS 1.2 in OpenSSL 1.0.1
+  - add support for TLS 1.1 and TLS 1.2 using OpenSSL 1.0.1 and later
 
 v5.6 20 Feb 2012
   - in myproxy-logon --voms, use voms-proxy-init -valid H:M rather
