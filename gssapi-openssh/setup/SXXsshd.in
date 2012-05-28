@@ -18,10 +18,10 @@
 GLOBUS_LOCATION="@GLOBUS_LOCATION@"
 export GLOBUS_LOCATION
 
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+. ${GLOBUS_LOCATION}/share/globus/globus-script-initializer
 . ${libexecdir}/globus-sh-tools.sh
 
-PID_FILE=${localstatedir}/sshd.pid
+PID_FILE=${localstatedir}/gsisshd.pid
 SSHD=${sbindir}/sshd
 
 #
