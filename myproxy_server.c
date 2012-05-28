@@ -175,7 +175,7 @@ int
 main(int argc, char *argv[]) 
 {    
     pid_t childpid, otherpid;
-    struct sockaddr_in client_addr;
+    struct sockaddr_storage client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     sigset_t mysigset;
     struct pidfh *pfh = NULL;
@@ -272,7 +272,14 @@ main(int argc, char *argv[])
     }
 
     if (!server_context->run_as_daemon) {
-       myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
+       server_context->usage.client_ip[0] = '\0';
+       getnameinfo((struct sockaddr *)&client_addr,
+                   sizeof(client_addr),
+                   server_context->usage.client_ip,
+                   sizeof(server_context->usage.client_ip),
+                   NULL, 0,
+                   NI_NUMERICHOST);
+       myproxy_log("Connection from %s", server_context->usage.client_ip);
        socket_attrs->socket_fd = fileno(stdin);
        if (handle_client(socket_attrs, server_context) < 0) {
 	  my_failure("error in handle_client()");
@@ -371,9 +378,13 @@ main(int argc, char *argv[])
 	     }
 	     
 	     /* child process */
-             snprintf(server_context->usage.client_ip,
-                      sizeof(server_context->usage.client_ip), "%s",
-                      inet_ntoa(client_addr.sin_addr)); /* TODO: IPv6 support */
+         server_context->usage.client_ip[0] = '\0';
+         getnameinfo((struct sockaddr *)&client_addr,
+                     sizeof(client_addr),
+                     server_context->usage.client_ip,
+                     sizeof(server_context->usage.client_ip),
+                     NULL, 0,
+                     NI_NUMERICHOST);
              myproxy_log("Connection from %s", server_context->usage.client_ip);
 	     close(0);
 	     close(1);
@@ -1006,20 +1017,32 @@ init_arguments(int argc, char *argv[],
 }
 
 static int
-listen_server(const char *hostname, const char *port, int family)
+listen_server(const char *hostname, int port, int family)
 {
     int listen_sock=-1;
     struct addrinfo hints, *res, *ressave;
     int on = 1;
     struct linger lin = {0,0};
     int n;
+    char portstr[6], *portstrp=NULL;
+
+    if (!hostname && !port) {   /* listen on any interface/port */
+        return socket(family, SOCK_STREAM, 0);
+    }
+
+    /* otherwise, we want to bind to a specific interface and/or port */
+
+    if (port) {
+        snprintf(portstr, 6, "%d", port);
+        portstrp=portstr;
+    }
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_flags    = AI_PASSIVE;
     hints.ai_family   = family;
     hints.ai_socktype = SOCK_STREAM;
 
-    n = getaddrinfo(hostname, port, &hints, &res);
+    n = getaddrinfo(hostname, portstrp, &hints, &res);
     if (n < 0) {
         myproxy_log("getaddrinfo error:: [%s]", gai_strerror(n));
         return -1;
@@ -1070,10 +1093,7 @@ int
 myproxy_init_server(myproxy_socket_attrs_t *attrs) 
 {
     int listen_sock=-1;
-    struct sockaddr_in sin;
-    socklen_t socklen;
     GSI_SOCKET *tmp_gsi_sock;
-    char port[6];
 
     if ((tmp_gsi_sock = GSI_SOCKET_new(0)) == NULL) {
 	failure("malloc() failed in GSI_SOCKET_new()");
@@ -1088,13 +1108,12 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     }
     GSI_SOCKET_destroy(tmp_gsi_sock);
     
-    snprintf(port, 6, "%d", attrs->psport);
-
 #ifdef AF_INET6
-    listen_sock = listen_server(attrs->pshost, port, AF_INET6); /* prefer v6 */
+    listen_sock = listen_server(attrs->pshost, attrs->psport,
+                                AF_INET6); /* prefer v6 */
 #endif
     if (listen_sock == -1) {
-        listen_sock = listen_server(attrs->pshost, port, AF_UNSPEC);
+        listen_sock = listen_server(attrs->pshost, attrs->psport, AF_UNSPEC);
     }
     if (listen_sock == -1) {
         failure("Error in socket()");
@@ -1105,12 +1124,24 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     }
 
     if (attrs->psport == 0) {
-        memset(&sin, 0, sizeof(sin));
-        socklen = sizeof(sin);
-        if (getsockname(listen_sock, (struct sockaddr *) &sin, &socklen) < 0) {
+        struct sockaddr_storage addr;
+        socklen_t socklen = sizeof(addr);
+
+        if (getsockname(listen_sock, (struct sockaddr *) &addr, &socklen) < 0) {
             failure("Error in getsockname()");
         }
-        attrs->psport = ntohs(sin.sin_port);
+        if (addr.ss_family == AF_INET) {
+            struct sockaddr_in saddr;
+            memcpy(&saddr, &addr, sizeof(saddr));
+            attrs->psport = ntohs(saddr.sin_port);
+        }
+#ifdef AF_INET6
+        else if (addr.ss_family == AF_INET6) {
+            struct sockaddr_in6 saddr6;
+            memcpy(&saddr6, &addr, sizeof(saddr6));
+            attrs->psport = ntohs(saddr6.sin6_port);
+        }
+#endif
     }
 
     /* Got this far? Then log success! */
