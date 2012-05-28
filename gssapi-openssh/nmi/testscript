@@ -69,10 +69,10 @@ BuildGT()
     ./install-autotools $GLOBUS_LOCATION
     cd ..
 }
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT5"; then
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT50"; then
     installer="gt5.0.5-all-source-installer.tar.gz"
-    GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt5"
-    installerdir="gt5-src"
+    GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt50"
+    installerdir="gt50-src"
     configopts="--without-openssl-header-check"
     BuildGT
 fi
@@ -138,8 +138,8 @@ BuildGSISSHGPT()
   cd ..
   rm -rf openssh.build
 }
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHTrunkGT5"; then
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHTrunkGT50"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt50
     BuildGSISSHTrunk
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHTrunkGT52"; then
@@ -150,8 +150,8 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHTrunkGTNightly";
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
     BuildGSISSHTrunk
 fi
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGT5"; then
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGT50"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt50
     BuildGSISSHGPT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGT52"; then
