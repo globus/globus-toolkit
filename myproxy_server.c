@@ -409,6 +409,9 @@ main(int argc, char *argv[])
 
  parent_exit:
     pidfile_remove(pfh);
+#ifdef HAVE_GLOBUS_USAGE
+    myproxy_usage_stats_close(server_context);
+#endif
     return 0;
 }   
 
