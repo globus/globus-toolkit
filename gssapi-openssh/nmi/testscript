@@ -100,7 +100,8 @@ BuildGSISSHTrunk()
   echo Environment variables:
   env
   echo ==================================================
-  GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
+  # temporary replace gsi_openssh with globus_proxy_utils
+  GLOBUS_FLAVOR_NAME=`gpt-query -name=globus_proxy_utils | perl -n -e 'if (/globus_proxy_utils-(.*)-pgm/){print "$1\n";}'|head -1`
   export GLOBUS_FLAVOR_NAME
   echo GPT GLOBUS_FLAVOR_NAME is $GLOBUS_FLAVOR_NAME.
   echo ==================================================
@@ -126,7 +127,8 @@ BuildGSISSHGPT()
   echo Environment variables:
   env
   echo ==================================================
-  GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
+  # temporary replace gsi_openssh with globus_proxy_utils
+  GLOBUS_FLAVOR_NAME=`gpt-query -name=globus_proxy_utils | perl -n -e 'if (/globus_proxy_utils-(.*)-pgm/){print "$1\n";}'|head -1`
   export GLOBUS_FLAVOR_NAME
   echo GPT GLOBUS_FLAVOR_NAME is $GLOBUS_FLAVOR_NAME.
   echo ==================================================
