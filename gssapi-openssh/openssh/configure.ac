@@ -713,7 +713,8 @@ case "$host" in
 		[Define to a Set Process Title type if your system is
 		supported by bsd-setproctitle.c])
 	AC_CHECK_FUNCS([sandbox_init])
-	AC_CHECK_HEADERS([sandbox.h])
+    # unreliable with autoconf pre-2.64 (such as used by GPT)
+	# AC_CHECK_HEADERS([sandbox.h])
 	;;
 *-*-dragonfly*)
 	SSHDLIBS="$SSHDLIBS -lcrypt"
