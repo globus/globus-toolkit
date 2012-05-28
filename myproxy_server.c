@@ -1017,21 +1017,18 @@ init_arguments(int argc, char *argv[],
 }
 
 static int
-listen_server(const char *hostname, int port, int family)
+bind_socket(const char *hostname, int port)
 {
-    int listen_sock=-1;
+    int sock=-1;
     struct addrinfo hints, *res, *ressave;
     int on = 1;
     struct linger lin = {0,0};
     int n;
-    char portstr[6], *portstrp=NULL;
+    char portstr[6]={0}, *portstrp=NULL;
 
-    if (!hostname && !port) {   /* listen on any interface/port */
-        return socket(family, SOCK_STREAM, 0);
-    }
-
-    /* otherwise, we want to bind to a specific interface and/or port */
-
+    /* getaddrinfo() requires either hostname or port to be set */
+    assert(hostname || port); 
+        
     if (port) {
         snprintf(portstr, 6, "%d", port);
         portstrp=portstr;
@@ -1039,47 +1036,59 @@ listen_server(const char *hostname, int port, int family)
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_flags    = AI_PASSIVE;
-    hints.ai_family   = family;
+    hints.ai_family   = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
     n = getaddrinfo(hostname, portstrp, &hints, &res);
     if (n < 0) {
-        myproxy_log("getaddrinfo error:: [%s]", gai_strerror(n));
+        myproxy_log("getaddrinfo error: %s", gai_strerror(n));
         return -1;
     }
     ressave=res;
 
     while (res) {
-        listen_sock = socket(res->ai_family,
-                             res->ai_socktype,
-                             res->ai_protocol);
+        char chosenhost[NI_MAXHOST] = { 0 };
+        char chosenport[NI_MAXSERV] = { 0 };
 
-        if (!(listen_sock < 0)) {
+        getnameinfo(res->ai_addr, res->ai_addrlen,
+                    chosenhost, sizeof(chosenhost),
+                    chosenport, sizeof(chosenport),
+                    NI_NUMERICHOST|NI_NUMERICSERV);
+
+        sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+
+        if (sock >= 0) {
 
             /* Allow reuse of socket */
-            setsockopt(listen_sock, SOL_SOCKET,
-                       SO_REUSEADDR, (void *) &on, sizeof(on));
-            setsockopt(listen_sock, SOL_SOCKET,
-                       SO_LINGER, (char *) &lin, sizeof(lin));
+            setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&on, sizeof(on));
+            setsockopt(sock, SOL_SOCKET, SO_LINGER, (char *)&lin, sizeof(lin));
 
-            if (bind(listen_sock, res->ai_addr, res->ai_addrlen) == 0)
+            if (bind(sock, res->ai_addr, res->ai_addrlen) == 0) {
+                myproxy_log("Socket bound to %s:%s", chosenhost, chosenport);
                 break;
+            }
 
             if (errno == EADDRINUSE) {
                 myproxy_log("Port %s on %s already in use, probably by another "
                     "myproxy-server instance.\nUse the -p option to run "
                     "multiple myproxy-server instances on different "
-                    "ports.", port, 
-                    ((hostname == NULL) ? "localhost" : hostname) );
+                    "ports.", chosenport, chosenhost);
+            } else {
+                myproxy_log("Failed to bind socket to %s:%s: %s",
+                            chosenhost, chosenport, strerror(errno));
             }
-            close(listen_sock);
-            listen_sock=-1;
+            close(sock);
+            sock=-1;
+        } else {
+            myproxy_log("Failed to create socket for %s:%s: %s",
+                        chosenhost, chosenport, strerror(errno));
         }
         res = res->ai_next;
     }
 
     freeaddrinfo(ressave);
-    return listen_sock;
+
+    return sock;
 }
 
 /*
@@ -1108,11 +1117,24 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     }
     GSI_SOCKET_destroy(tmp_gsi_sock);
     
-    if (listen_sock == -1) {
-        listen_sock = listen_server(attrs->pshost, attrs->psport, AF_UNSPEC);
+    if (attrs->pshost || attrs->psport) {
+        myproxy_debug("using getaddrinfo() to configure listen socket");
+        listen_sock = bind_socket(attrs->pshost, attrs->psport);
+    } else { /* just create unbound IPv4 socket for now */
+        int on = 1;
+        struct linger lin = {0,0};
+
+        myproxy_debug("creating IPv4 listen socket without binding");
+        listen_sock = socket(AF_INET, SOCK_STREAM, 0);
+
+        /* Allow reuse of socket */
+        setsockopt(listen_sock,
+                   SOL_SOCKET, SO_REUSEADDR, (void *)&on, sizeof(on));
+        setsockopt(listen_sock,
+                   SOL_SOCKET, SO_LINGER, (char *)&lin, sizeof(lin));
     }
     if (listen_sock == -1) {
-        failure("Error in socket()");
+        failure("Error creating server socket");
     } 
 
     if (listen(listen_sock, INT_MAX) < 0) {
@@ -1142,7 +1164,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 
     /* Got this far? Then log success! */
     myproxy_log("Starting myproxy-server on %s:%d...",
-                ((attrs->pshost == NULL) ? "localhost" : attrs->pshost),
+                ((attrs->pshost == NULL) ? "*" : attrs->pshost),
                 attrs->psport);
 
     return listen_sock;
