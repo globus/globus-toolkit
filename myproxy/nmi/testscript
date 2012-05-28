@@ -69,7 +69,7 @@ BuildGT()
     mv gt*-installer $installerdir
     cd $installerdir
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
-    make globus_usage gsi-myproxy install
+    make globus_usage globus_user_env gsi-myproxy install
     cd ..
     rm -rf $installerdir # limit scratch space use
     echo ==================================================
