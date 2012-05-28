@@ -1,4 +1,0 @@
-method = ftp
-ftp_root = http://
-ftp_target = www-unix.globus.org/ftppub/gt4/4.2.1/installers/src/gt4.2.1-all-source-installer.tar.gz
-untar = false
