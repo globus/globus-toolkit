@@ -60,7 +60,9 @@ BuildGT()
     cd $installerdir
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
                 --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION $configopts"
-    make globus_usage gsi-openssh install
+#    temporary work around for gsi-openssh build failure in GT 5.2.1
+#    make globus_usage gsi-openssh install
+    make gpt globus-gsi install
     cd ..
     rm -rf $installerdir # limit scratch space use
     echo ==================================================
