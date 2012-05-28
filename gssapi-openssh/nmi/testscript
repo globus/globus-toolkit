@@ -69,13 +69,6 @@ BuildGT()
     ./install-autotools $GLOBUS_LOCATION
     cd ..
 }
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT4"; then
-    installer="gt4.0.8-all-source-installer.tar.gz"
-    GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt4"
-    installerdir="gt4-src"
-    configopts=""
-    BuildGT
-fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT5"; then
     installer="gt5.0.5-all-source-installer.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt5"
@@ -145,10 +138,6 @@ BuildGSISSHGPT()
   cd ..
   rm -rf openssh.build
 }
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHTrunkGT4"; then
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt4
-    BuildGSISSHTrunk
-fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHTrunkGT5"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
     BuildGSISSHTrunk
@@ -160,10 +149,6 @@ fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHTrunkGTNightly"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
     BuildGSISSHTrunk
-fi
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGT4"; then
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt4
-    BuildGSISSHGPT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGT5"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
