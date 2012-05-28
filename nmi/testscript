@@ -79,10 +79,10 @@ BuildGT()
     cd ..
     rm -f $GLOBUS_LOCATION/include/ltdl.h
 }
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT5"; then
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT50"; then
     installer="gt5.0.5-all-source-installer.tar.gz"
-    GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt5"
-    installerdir="gt5-src"
+    GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt50"
+    installerdir="gt50-src"
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT52"; then
@@ -98,7 +98,7 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGTNightly"; then
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildVOMS"; then
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt50
     export GLOBUS_LOCATION
     . $GLOBUS_LOCATION/etc/globus-user-env.sh
     echo ==================================================
@@ -139,8 +139,8 @@ BuildMyProxyCVS()
     cd ..
     rm -rf myproxy.build
 }
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT5"; then
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT50"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt50
     MYPROXY_CONFIG_OPTS=$voms
     BuildMyProxyCVS
 fi
@@ -171,8 +171,8 @@ TestMyProxyCVS()
     myproxy-test-replicate
     cd ..
 }
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGT5"; then
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGT50"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt50
     valgrindopt=$valgrind
     TestMyProxyCVS
 fi
