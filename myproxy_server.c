@@ -1108,10 +1108,6 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     }
     GSI_SOCKET_destroy(tmp_gsi_sock);
     
-#ifdef AF_INET6
-    listen_sock = listen_server(attrs->pshost, attrs->psport,
-                                AF_INET6); /* prefer v6 */
-#endif
     if (listen_sock == -1) {
         listen_sock = listen_server(attrs->pshost, attrs->psport, AF_UNSPEC);
     }
