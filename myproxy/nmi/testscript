@@ -98,7 +98,7 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGTNightly"; then
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildVOMS"; then
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt50
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt52
     export GLOBUS_LOCATION
     . $GLOBUS_LOCATION/etc/globus-user-env.sh
     echo ==================================================
@@ -141,12 +141,12 @@ BuildMyProxyCVS()
 }
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT50"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt50
-    MYPROXY_CONFIG_OPTS=$voms
+    unset MYPROXY_CONFIG_OPTS
     BuildMyProxyCVS
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT52"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt52
-    unset MYPROXY_CONFIG_OPTS
+    MYPROXY_CONFIG_OPTS=$voms
     BuildMyProxyCVS
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGTNightly"; then
