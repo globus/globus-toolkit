@@ -1,8 +1,0 @@
-#!/bin/sh
-cp gssapi-openssh/nmi/tasklist.nmi .
-# skip GT50 builds on x86_64_macos_10.7
-if test "x$NMI_PLATFORM" = "xx86_64_macos_10.7"; then
-    grep -v GT50 tasklist.nmi > tasklist.nmi.new
-    mv -f tasklist.nmi.new tasklist.nmi
-fi
-exit 0
