@@ -46,14 +46,14 @@
                 </xsl:when>
                 <xsl:when test="$project-query != '' and $label-query = ''">
                     <xsl:value-of select="concat($url-start,
-                                                    $version-query, '+AND+',
-                                                    $project-query,
+                                                    $version-query, '+AND+(',
+                                                    $project-query, ')',
                                                     $url-end)"/>
                 </xsl:when>
                 <xsl:when test="$project-query = '' and $label-query != ''">
                     <xsl:value-of select="concat($url-start,
-                                                    $version-query, '+AND+',
-                                                    $label-query, 
+                                                    $version-query, '+AND+(',
+                                                    $label-query, ')',
                                                     $url-end)"/>
                 </xsl:when>
                 <xsl:otherwise>

@@ -9,6 +9,9 @@
             <project name="GT">
                 <component>Common Libs</component>
             </project>
+            <project name="RI_Common">
+                <component>Common</component>
+            </project>
         </package>
 
         <package name='GRAM5' prefix='gram5'>
@@ -16,17 +19,24 @@
             <project name="GT">
                 <component>GRAM</component>
             </project>
+            <project name="GRAM"/>
+            <!-- Label for misplaced or bugs which affect multiple projects -->
+            <label>GRAM</label>
         </package>
 
         <package name='GridFTP' prefix='gridftp'>
             <project name="GT">
                 <component>GridFTP</component>
             </project>
+            <project name="GridFTP"/>
         </package>
 
         <package name='GSIC' prefix='gsic'>
             <project name="GT">
                 <component>GSI</component>
+            </project>
+            <project name="RI_Common">
+                <component>Security</component>
             </project>
         </package>
 
@@ -38,6 +48,9 @@
 
         <package name='XIO' prefix='xio'>
             <project name="GT">
+                <component>XIO</component>
+            </project>
+            <project name="RI_Common">
                 <component>XIO</component>
             </project>
         </package>
