@@ -75,12 +75,17 @@
         <para>
             <xsl:if test="channel/item[type=$bug-type][resolution = $resolution or not($resolution)]">
                 <itemizedlist>
-                    <xsl:apply-templates select=".//item[./type = $bug-type]">
-                        <xsl:with-param name="doc-package-name" select="$doc-package-name"/>
-                        <xsl:with-param name="components" select="$components"/>
-                        <xsl:with-param name="bug-type" select="bug-type"/>
-                        <xsl:with-param name="resolution" select="resolution"/>
-                    </xsl:apply-templates>
+                    <xsl:for-each select=".//item[./type = $bug-type]">
+                        <xsl:sort select="substring-before(key, '-')"/>
+                        <xsl:sort select="substring-after(key, '-')" data-type="number"/>
+
+                        <xsl:apply-templates select=".">
+                            <xsl:with-param name="doc-package-name" select="$doc-package-name"/>
+                            <xsl:with-param name="components" select="$components"/>
+                            <xsl:with-param name="bug-type" select="bug-type"/>
+                            <xsl:with-param name="resolution" select="resolution"/>
+                        </xsl:apply-templates>
+                    </xsl:for-each>
                 </itemizedlist>
             </xsl:if>
             <xsl:if test="not(channel/item[type=$bug-type][resolution = $resolution or not($resolution)])">
