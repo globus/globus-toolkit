@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.43-1) unstable; urgency=low
+
+  * GT-214: Leaks in the job manager restart code
+
+ -- Globus Toolkit <support@globus.org>  Fri, 01 Jun 2012 13:08:05 -0400
+
 globus-gram-job-manager (13.42-1) unstable; urgency=low
 
   * GT-209: job manager crash in query

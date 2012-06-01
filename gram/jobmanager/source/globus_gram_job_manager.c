@@ -899,7 +899,10 @@ globus_gram_job_manager_add_reference(
                         globus_hashtable_string_keyeq,
                         request->job_contact_path)) != NULL)
     {
-        globus_list_remove(&manager->pending_restarts, pending_restart_ref);
+        char * pending_restarts_key = globus_list_remove(
+                &manager->pending_restarts, pending_restart_ref);
+        free(pending_restarts_key);
+        pending_restarts_key = NULL;
 
         rc = globus_l_gram_add_reference_locked(
                 manager,

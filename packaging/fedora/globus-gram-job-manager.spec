@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.42
+Version:	13.43
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -177,6 +177,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Jun 01 2012 Joseph Bester <bester@mcs.anl.gov> - 13.43-1
+- GT-214: Leaks in the job manager restart code
+
 * Thu May 24 2012 Joseph Bester <bester@mcs.anl.gov> - 13.42-1
 - GT-209: job manager crash in query
 
