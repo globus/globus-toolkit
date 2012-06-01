@@ -629,12 +629,12 @@ globus_gram_job_manager_state_file_read(
     rc = globus_gram_job_manager_read_callback_contacts(request, fp);
     if(rc != GLOBUS_SUCCESS)
     {
-        goto free_scratchdir;
+        goto free_staging;
     }
 
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto free_scratchdir;
+        goto free_callback_contacts;
     }
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
@@ -724,24 +724,24 @@ globus_gram_job_manager_state_file_read(
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto free_client_address;
+        goto free_user_dn;
     }
     request->expected_terminal_state = atoi( buffer );
 
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto free_client_address;
+        goto free_user_dn;
     }
     buffer[strlen(buffer)-1] = '\0';
     if (request->config && strcmp(buffer, request->config->service_tag) != 0)
     {
         /* Job should be handled by another job manager */
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
-        goto free_client_address;
+        goto free_user_dn;
     }
     if(fgets( buffer, file_len, fp ) == NULL)
     {
-        goto free_client_address;
+        goto free_user_dn;
     }
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
@@ -782,6 +782,12 @@ free_original_job_id_string:
         free(request->original_job_id_string);
         request->original_job_id_string = NULL;
     }
+free_user_dn:
+    if (request->job_stats.user_dn)
+    {
+        free(request->job_stats.user_dn);
+    }
+
 free_client_address:
     if (request->job_stats.client_address != NULL)
     {
@@ -794,6 +800,13 @@ free_gateway_user:
         free(request->gateway_user);
         request->gateway_user = NULL;
     }
+
+free_callback_contacts:
+    globus_gram_job_manager_contact_list_free(request);
+
+free_staging:
+    globus_gram_job_manager_staging_free_all(request);
+
 free_scratchdir:
     if (request->scratchdir != NULL)
     {
