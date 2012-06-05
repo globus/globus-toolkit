@@ -79,11 +79,11 @@ $ make dist
    see nmi/README.  The results of all test builds, including
    automated nightly builds, can be viewed at:
 
-   http://nmi-web.cs.wisc.edu/nmi/index.php?page=results%2Foverview&opt_project=MyProxy
+   http://submit-1.batlab.org/nmi/results/overview?project=MyProxy
 
 5. Test the installation.  (-valgrind will work only on x86.)
 
-     $ grid-proxy-init
+     $ grid-proxy-init -bits 2048
      $ myproxy-test -startserver -valgrind
 
 6. Tag CVS with the version number (ex. MYPROXY_3_3).
