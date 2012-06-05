@@ -15,7 +15,16 @@ if [ -z $GLOBUS_LOCATION ]; then
     exit 1
 fi
 
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+if [ -e ${GLOBUS_LOCATION}/share/globus/globus-script-initializer ]; then
+    . ${GLOBUS_LOCATION}/share/globus/globus-script-initializer
+elif [ -e ${GLOBUS_LOCATION}/libexec/globus-script-initializer ]; then
+    . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+else
+    echo "globus-script-initializer not found in"
+    echo "${GLOBUS_LOCATION}/share/globus or"
+    echo "${GLOBUS_LOCATION}/libexec."
+    exit 1
+fi
 . ${libexecdir}/globus-sh-tools.sh
 
 MYPROXY=${GLOBUS_LOCATION}/sbin/myproxy-server
