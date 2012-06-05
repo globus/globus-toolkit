@@ -8,5 +8,5 @@ remote_declare = myproxy/nmi/remote_pre
 remote_task = myproxy/nmi/testscript
 remote_task_timeout = 1080
 max_match_wait = 86400
-platforms = x86_64_macos_10.7, x86_64_fedora_16, x86_64_deb_6.0, x86_64_rhap_6.2
+platforms = x86_64_macos_10.7, x86_64_fedora_16, x86_64_deb_6.0, x86_64_rhap_6.2, x86_64_sol_5.11
 notify = jbasney@illinois.edu
