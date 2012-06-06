@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.44-1) unstable; urgency=low
+
+  * GT-157: Hash gram_job_state directory by user
+
+ -- Globus Toolkit <support@globus.org>  Wed, 06 Jun 2012 09:03:48 -0400
+
 globus-gram-job-manager (13.43-1) unstable; urgency=low
 
   * GT-214: Leaks in the job manager restart code

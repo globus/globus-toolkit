@@ -51,11 +51,6 @@ typedef struct globus_gram_job_id_ref_s
 }
 globus_gram_job_id_ref_t;
 
-static
-int
-globus_l_gram_mkdir(
-    char *                              path);
-
 
 static
 void
@@ -117,6 +112,12 @@ globus_l_gram_script_priority_cmp(
     void *                              priority_1,
     void *                              priority_2);
 
+static
+int
+globus_l_gram_job_manager_request_load_all_from_dir(
+    globus_gram_job_manager_t *         manager,
+    const char *                        state_file_dir,
+    const char *                        state_file_pattern);
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
@@ -224,7 +225,7 @@ globus_gram_job_manager_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto malloc_dir_prefix_failed;
     }
-    rc = globus_l_gram_mkdir(dir_prefix);
+    rc = globus_i_gram_mkdir(dir_prefix);
     if (rc != GLOBUS_SUCCESS)
     {
         goto mkdir_failed;
@@ -2220,15 +2221,6 @@ globus_gram_job_manager_request_load_all(
 {
     int                                 rc = GLOBUS_SUCCESS;
     char *                              state_file_pattern = NULL;
-    int                                 lock;
-    DIR *                               dir;
-    struct dirent *                     entry;
-    uint64_t                            uniq1, uniq2;
-    globus_gram_jobmanager_request_t *  request;
-    globus_gram_job_manager_ref_t *     ref;
-    struct stat                         st;
-    char *                              full_path;
-    uid_t                               uid = getuid();
 
     GlobusGramJobManagerLock(manager);
     globus_gram_job_manager_log(
@@ -2264,8 +2256,88 @@ globus_gram_job_manager_request_load_all(
         goto state_file_pattern_alloc_failed;
     }
 
-    dir = globus_libc_opendir(manager->config->job_state_file_dir);
-    if (dir == NULL)
+    globus_l_gram_job_manager_request_load_all_from_dir(
+            manager,
+            manager->config->job_state_file_dir,
+            state_file_pattern);
+
+    free(state_file_pattern);
+    state_file_pattern = NULL;
+    {
+        char * hashed_job_dir;
+
+        state_file_pattern = globus_common_create_string(
+                "job.%%"PRIu64".%%"PRIu64"%%n");
+        if (state_file_pattern == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto state_file_pattern_alloc_failed;
+        }
+        
+        hashed_job_dir = globus_common_create_string(
+                "%s/%s/%s/%s",
+                manager->config->job_state_file_dir,
+                manager->config->logname,
+                manager->config->service_tag,
+                manager->config->jobmanager_type);
+
+        if (hashed_job_dir == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto hashed_job_dir_alloc_failed;
+        }
+
+        globus_l_gram_job_manager_request_load_all_from_dir(
+                manager,
+                hashed_job_dir,
+                state_file_pattern);
+        free(hashed_job_dir);
+    }
+
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            "event=gram.reload_requests.end "
+            "level=INFO "
+            "statedir=\"%s\" "
+            "status=%d "
+            "requests=%d "
+            "\n",
+            manager->config->job_state_file_dir,
+            0,
+            (int) globus_list_size(manager->pending_restarts));
+
+hashed_job_dir_alloc_failed:
+    if (state_file_pattern)
+    {
+        free(state_file_pattern);
+    }
+state_file_pattern_alloc_failed:
+    GlobusGramJobManagerUnlock(manager);
+    return rc;
+}
+/* globus_gram_job_manager_request_load_all() */
+
+static
+int
+globus_l_gram_job_manager_request_load_all_from_dir(
+    globus_gram_job_manager_t *         manager,
+    const char *                        state_file_dir,
+    const char *                        state_file_pattern)
+{
+    int                                 rc;
+    DIR *                               dir;
+    int                                 lock;
+    struct dirent *                     entry;
+    uint64_t                            uniq1, uniq2;
+    globus_gram_jobmanager_request_t *  request;
+    globus_gram_job_manager_ref_t *     ref;
+    struct stat                         st;
+    char *                              full_path;
+    uid_t                               uid = getuid();
+
+    dir = globus_libc_opendir(state_file_dir);
+    if (dir == NULL && strcmp(state_file_dir, manager->config->job_state_file_dir) == 0)
     {
         int save_errno = errno;
         globus_gram_job_manager_log(
@@ -2277,7 +2349,7 @@ globus_gram_job_manager_request_load_all(
                 "msg=\"%s\" "
                 "errno=%d "
                 "reason=\"%s\"\n",
-                manager->config->job_state_file_dir,
+                state_file_dir,
                 "opendir failed",
                 errno,
                 strerror(errno));
@@ -2287,10 +2359,15 @@ globus_gram_job_manager_request_load_all(
         {
             manager->gt3_failure_message = globus_common_create_string(
                     "the job manager failed to open the job state file directory \"%s\": %s",
-                    manager->config->job_state_file_dir,
+                    state_file_dir,
                     strerror(save_errno));
 
         }
+        goto opendir_failed;
+    }
+    else if (dir == NULL)
+    {
+        rc = GLOBUS_SUCCESS;
         goto opendir_failed;
     }
 
@@ -2322,7 +2399,7 @@ globus_gram_job_manager_request_load_all(
                         "gramid=/%"PRIu64"/%"PRIu64"/ "
                         "errno=%d "
                         "reason=\"%s\"\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         entry->d_name,
                         "Error constructing filename, ignoring state file",
                         uniq1,
@@ -2334,7 +2411,7 @@ globus_gram_job_manager_request_load_all(
                 continue;
             }
             full_path = globus_common_create_string("%s/%s",
-                    manager->config->job_state_file_dir,
+                    state_file_dir,
                     entry->d_name);
             if (full_path == NULL)
             {
@@ -2349,7 +2426,7 @@ globus_gram_job_manager_request_load_all(
                         "gramid=/%"PRIu64"/%"PRIu64"/ "
                         "errno=%d "
                         "reason=\"%s\"\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         entry->d_name,
                         "Error constructing filename, ignoring state file",
                         uniq1,
@@ -2380,7 +2457,7 @@ globus_gram_job_manager_request_load_all(
                         "gramid=/%"PRIu64"/%"PRIu64"/ "
                         "errno=%d "
                         "reason=\"%s\"\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         entry->d_name,
                         "Error checking state file ownership, ignoring state file",
                         uniq1,
@@ -2405,7 +2482,7 @@ globus_gram_job_manager_request_load_all(
                         "statefile=\"%s\" "
                         "msg=\"Ignoring state file\" "
                         "reason=\"File UID is %d, my UID is %d\"\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         entry->d_name,
                         (int) st.st_uid,
                         (int) uid);
@@ -2435,7 +2512,7 @@ globus_gram_job_manager_request_load_all(
                             "gramid=/%"PRIu64"/%"PRIu64"/ "
                             "status=%d "
                             "reason=\"%s\"\n",
-                            manager->config->job_state_file_dir,
+                            state_file_dir,
                             "Error restarting job",
                             uniq1,
                             uniq2,
@@ -2491,7 +2568,7 @@ globus_gram_job_manager_request_load_all(
                             "status=%d "
                             "reason=\"%s\" "
                             "\n",
-                            manager->config->job_state_file_dir,
+                            state_file_dir,
                             "Error registering job id",
                             uniq1,
                             uniq2,
@@ -2524,7 +2601,7 @@ globus_gram_job_manager_request_load_all(
                         "status=%d "
                         "reason=\"%s\" "
                         "\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         "Error registering job id",
                         uniq1,
                         uniq2,
@@ -2572,7 +2649,7 @@ globus_gram_job_manager_request_load_all(
                         "gramid=%"PRIu64"/%"PRIu64" "
                         "errno=%d "
                         "reason=\"%s\"\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         "Error inserting job into request list",
                         uniq1,
                         uniq2,
@@ -2593,30 +2670,13 @@ globus_gram_job_manager_request_load_all(
     rc = 0;
     globus_libc_closedir(dir);
 
-    globus_gram_job_manager_log(
-            manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
-            "event=gram.reload_requests.end "
-            "level=INFO "
-            "statedir=\"%s\" "
-            "status=%d "
-            "requests=%d "
-            "\n",
-            manager->config->job_state_file_dir,
-            0,
-            (int) globus_list_size(manager->pending_restarts));
-
 opendir_failed:
-    free(state_file_pattern);
-state_file_pattern_alloc_failed:
-    GlobusGramJobManagerUnlock(manager);
     return rc;
 }
-/* globus_gram_job_manager_request_load_all() */
+/* globus_l_gram_job_manager_request_load_all_from_dir() */
 
-static
 int
-globus_l_gram_mkdir(
+globus_i_gram_mkdir(
     char *                              path)
 {
     char *                              tmp;
@@ -2661,7 +2721,7 @@ error_exit:
     }
     return rc;
 }
-/* globus_l_gram_mkdir() */
+/* globus_i_gram_mkdir() */
 
 static
 void

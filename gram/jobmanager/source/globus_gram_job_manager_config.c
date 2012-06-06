@@ -805,10 +805,12 @@ globus_gram_job_manager_config_destroy(
     {
         free(config->usage_targets);
     }
+    /*
     if (config->log_pattern)
     {
         free(config->log_pattern);
     }
+    */
     if (config->subject)
     {
         free(config->subject);
