@@ -149,7 +149,7 @@ else
     curl -s "$repopkg_url" > "${flavor}/${repopkg_url##*/}"
     sudo dpkg -i "${flavor}/${repopkg_url##*/}"
 fi
-sudo aptitude -y update
+sudo aptitude -y -o Acquire::PDiffs=false update
 sudo mkdir -p /etc/grid-security/certificates
 
 # Install the binaries that we will test
