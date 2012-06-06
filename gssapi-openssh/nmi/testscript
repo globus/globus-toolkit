@@ -29,6 +29,16 @@ elif test ! -f /usr/lib/libssl.so -a -f /usr/sfw/lib/libssl.so; then
     PATH=/usr/sfw/bin:$PATH
     export PATH
 fi
+# for Solaris
+if test -d /usr/gnu/bin; then
+    PATH=/usr/gnu/bin:$PATH
+    export PATH
+fi
+# for Solaris
+if test -d /usr/perl5/bin; then
+    PATH=/usr/perl5/bin:$PATH
+    export PATH
+fi
 if test -n "${LD_LIBRARY_PATH}" -a -z "${LIBPATH}"; then
     LIBPATH=$LD_LIBRARY_PATH
     export LIBPATH
