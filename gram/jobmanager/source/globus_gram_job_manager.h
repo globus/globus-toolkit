@@ -1552,6 +1552,9 @@ globus_gram_split_subjobs(
     const char *                        job_id,
     globus_list_t **                    subjobs);
 
+int
+globus_i_gram_mkdir(
+    char *                              path);
 /* globus_gram_job_manager_usagestats.c */
 
 globus_result_t

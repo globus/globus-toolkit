@@ -42,30 +42,47 @@ globus_gram_job_manager_state_file_set(
 {
     int                                 rc = GLOBUS_SUCCESS;
 
-    if(request->config->job_state_file_dir == GLOBUS_NULL)
-    {
-        *state_file = globus_common_create_string(
-                "%s/tmp/gram_job_state/%s.%s.%s",
-                request->config->globus_location ?
-                request->config->globus_location : "",
-                request->config->logname,
-                request->config->hostname,
-                request->uniq_id);
-    }
-    else
-    {
-        *state_file = globus_common_create_string(
-                "%s/job.%s.%s",
-                request->config->job_state_file_dir,
-                request->config->hostname,
-                request->uniq_id);
-    }
+    *state_file = globus_common_create_string(
+            "%s/job.%s.%s",
+            request->config->job_state_file_dir,
+            request->config->hostname,
+            request->uniq_id);
 
     if (*state_file == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
         goto create_state_file_failed;
+    }
+
+    if ((access(*state_file, R_OK) != 0) && errno == ENOENT)
+    {
+        char * dirname_end;
+
+        /* If it doesn't exist yet, we'll use a per-user state file dir
+         * to reduce the size of the global state file dir (GT-157)
+         */
+        free(*state_file);
+
+        *state_file = globus_common_create_string(
+                "%s/%s/%s/%s/job.%s",
+                request->config->job_state_file_dir,
+                request->config->logname,
+                request->config->service_tag,
+                request->config->jobmanager_type,
+                request->uniq_id);
+
+        if (*state_file == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto create_state_file_failed;
+        }
+        dirname_end = strrchr(*state_file, '/');
+        *dirname_end = '\0';
+
+        globus_i_gram_mkdir(*state_file);
+        *dirname_end = '/';
     }
 
 create_state_file_failed:
