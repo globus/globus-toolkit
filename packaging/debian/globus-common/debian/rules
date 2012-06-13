@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-common
 _name = globus_common
-version = 14.6
+version = 14.7
 soname = 0
 toolkit_version = 5.2.1
 

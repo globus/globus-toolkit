@@ -33,16 +33,71 @@
 
 EXTERN_C_BEGIN
 
-/*
- * if priority_1 comes after priority_2, return > 0
- * else if priority_1 comes before priority_2, return < 0
- * else return 0
+
+/**
+ * @defgroup globus_priority_q Priority Queue
+ *
+ * @details
+ * This module defines a priority queue for globus.
+ * It is implemented using a binary heap (minheap) and does NOT have
+ * a fifo fallback for like priorities.  If you need fifo fallback,
+ * you should use a compound priority with the primary priority being
+ * the 'real' priority and the secondary being a serial number.
+ *
+ * To use this priority queue type, define a comparison function of type
+ * globus_priority_q_cmp_func_t and pass that to globus_priority_q_init().
+ * 
+ * To add and remove items in priority order, use
+ * globus_priority_q_enqueue() and globus_priority_q_dequeue() respectively.
+ *
+ * To remove a datum ignoring its priority, use globus_priority_q_remove().
+ *
+ * To inspect the first element and its priority, use globus_priority_q_first()
+ * and globus_priority_q_first_priority() respectively.
+ *
+ * To determine whether a queue is empty or the number of data in it, use
+ * globus_priority_q_empty() and globus_priority_q_size().
+ *
+ * To modify the priority of a datum already in the queue, use
+ * globus_priority_q_modify().
+ *
+ * When finished with the queue, use globus_priority_q_destroy() to free data
+ * associated with the priority queue.
  */
  
+/**
+ * @brief Priority Comparison Predicate
+ * @ingroup globus_priority_q
+ * @details
+ * This type is used to implement comparison of two priorities for inserting
+ * items into the priority queue. A function of this type is passed to 
+ * globus_priority_q_init() to determine how priorities are computed in a newly
+ * created priority queue.
+ *
+ * @param priority_1
+ *     First priority to compare
+ * @param priority_2
+ *     Second priority to compare
+ *
+ * @retval > 0
+ *     The priority of priority_1 is less than that of priority_2.
+ * @retval < 0
+ *     The priority of priority_1 is greater than that of priority_2.
+ * @retval = 0
+ *     The priorities of priority_1 and priority_2 are the same.
+ */
 typedef int (*globus_priority_q_cmp_func_t)(
     void *                                  priority_1,
     void *                                  priority_2);
 
+/**
+ * @brief Priority Queue Structure
+ * @ingroup globus_priority_q
+ * @details
+ * A pointer to a structure of this type is passed to all functions in the
+ * @link globus_priority_q Priority Queue @endlink module. It is not intended
+ * to be inspected or modified outside of this API.
+ */
 typedef struct globus_priority_q_s
 {
     struct globus_l_priority_q_entry_s **   heap;

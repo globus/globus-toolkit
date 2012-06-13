@@ -18,8 +18,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.6
-Release:	3%{?dist}
+Version:	14.7
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -263,6 +263,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 13 2012 Joseph Bester <bester@mcs.anl.gov> - 14.7-1
+- GT-227: API Documentation for Globus Priority Queue
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 14.6-3
 - RHEL 4 patches
 

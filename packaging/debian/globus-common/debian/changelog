@@ -1,3 +1,9 @@
+globus-common (14.7-1) unstable; urgency=low
+
+  * GT-227: API Documentation for Globus Priority Queue
+
+ -- Globus Toolkit <support@globus.org>  Wed, 13 Jun 2012 11:02:39 -0400
+
 globus-common (14.6-1) unstable; urgency=low
 
   * RIC-221: Remove unnecessary evals of path components from script initializers
