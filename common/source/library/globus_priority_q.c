@@ -91,6 +91,29 @@ globus_l_priority_q_percolate_down(
     return hole;
 }
 
+/**
+ * @brief Initialize a priority queue
+ * @ingroup globus_priority_q
+ * @details
+ * The globus_priority_q_init() function initializes a globus_priority_q_t structure
+ * for use with the other functions in the
+ * @link globus_priority_q Priority Queue @endlink module. If this function returns
+ * GLOBUS_SUCCESS, the caller is responsible for deallocating the members of this
+ * structure when it is no longer needed by passing it to
+ * globus_priority_q_destroy().
+ *
+ * @param priority_q
+ *     Pointer to the priority queue structure to initialize.
+ * @param cmp_func
+ *     Pointer to a function which computes the relative relationship between two
+ *     priorities. See the documentation of #globus_priority_q_cmp_func_t for 
+ *     details on how to implement that function.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_FAILURE
+ *     Failure
+ */
 int
 globus_priority_q_init(
     globus_priority_q_t *               priority_q,
@@ -129,7 +152,30 @@ globus_priority_q_init(
 
     return GLOBUS_SUCCESS;
 }
+/* globus_priority_q_init() */
 
+/**
+ * @brief Destroy a Priority Queue
+ * @ingroup globus_priority_q
+ * @details
+ * The globus_priority_q_destroy() function destroys the contents of a priority
+ * queue. After this function returns, the structure pointed to by priority_q is
+ * invalid and must not be passed to any functions in the
+ * @link globus_priority_q Priority Queue @endlink module other
+ * globus_priority_q_init().
+ *
+ * Note that this function does not call any destructors for the data inserted
+ * into the priority queue, so the caller must be sure to either have other
+ * references to those data or free them before calling this function.
+ *
+ * @param priority_q
+ *     Pointer to the priority_q to destroy.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_FAILURE
+ *     Failure
+ */
 int
 globus_priority_q_destroy(
     globus_priority_q_t *               priority_q)
@@ -154,7 +200,27 @@ globus_priority_q_destroy(
     
     return GLOBUS_SUCCESS;
 }
+/* globus_priority_q_destroy() */
 
+/**
+ * @brief Priority Queue Empty Predicate
+ * @ingroup globus_priority_q
+ * @details
+ * The globus_priority_q_empty() function checks the given priority queue to determine
+ * if it is empty. It is considered empty if it has been initialized via
+ * globus_priority_q_init() and there are no items which have been inserted via
+ * globus_priority_q_enqueue() which have not been removed by calling
+ * globus_priority_q_remove() or globus_priority_q_dequeue(). If it is empty, this function
+ * returns GLOBUS_TRUE; otherwise it returns GLOBUS_FALSE.
+ * 
+ * @param priority_q
+ *     Pointer to the priority queue to check
+ *
+ * @retval GLOBUS_TRUE
+ *     The priority queue is empty
+ * @retval GLOBUS_FALSE
+ *     The priority queue is not empty, or the priority queue is invalid
+ */
 globus_bool_t
 globus_priority_q_empty(
     globus_priority_q_t *               priority_q)
@@ -166,7 +232,22 @@ globus_priority_q_empty(
 
     return (priority_q->next_slot == GLOBUS_L_PRIORITY_Q_TOP_SLOT);
 }
+/* globus_priority_q_empty() */
 
+/**
+ * @brief Priority Queue Size
+ * @ingroup globus_priority_q
+ * @details
+ * The globus_priority_q_size() function returns the size of the priority queue,
+ * that is, the number of elements that are currently enqueued in it. The special
+ * value GLOBUS_FAILURE is returned if a null pointer is passed to this function.
+ *
+ * @param priority_q
+ *     Pointer to the priority queue to check
+ *
+ * @return This function returns the number of elements in the queue, or GLOBUS_FAILURE
+ * if the priority_q pointer is invalid.
+ */
 int
 globus_priority_q_size(
     globus_priority_q_t *               priority_q)
@@ -178,7 +259,36 @@ globus_priority_q_size(
     
     return priority_q->next_slot - GLOBUS_L_PRIORITY_Q_TOP_SLOT;
 }
+/* globus_priority_q_size() */
 
+/**
+ * @brief Add a Datum to a Priority Queue
+ * @ingroup globus_priority_q
+ * @details
+ * The globus_priority_q_enqueue() function inserts a datum into the priority queue
+ * based on its priority. When an item is inserted, the pointers to both the datum and
+ * the priority are copied into the priority_q data structure, so neither may be
+ * freed until the datum is removed from the priority queue, or undefined behavior may
+ * occur.
+ *
+ * Note that there is no fifo fallback for priorities, so the order of two
+ * items with equivalent priorities is not specified relative to each other. To enable
+ * fifo fallback, use a compound priority that includes a priority level and a sequence
+ * number as the value pointed to by the priority parameter and pass a suitable comparison
+ * function to initialize the priority queue.
+ *
+ * @param priority_q
+ *     Pointer to the priority queue to insert datum into
+ * @param datum
+ *     The datum to insert into the queue
+ * @param priority
+ *     The priority of the datum
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_FAILURE
+ *     Failure
+ */
 int
 globus_priority_q_enqueue(
     globus_priority_q_t *               priority_q,
@@ -229,7 +339,22 @@ globus_priority_q_enqueue(
 
     return GLOBUS_SUCCESS;
 }
+/* globus_priority_q_enqueue() */
 
+/**
+ * @brief Remove a Datum From A Priority Queue
+ * @ingroup globus_priority_q
+ * @details
+ * The globus_priority_q_dequeue() function removes the highest-priority datum from the
+ * given priority queue and returns it. If the priority_q pointer is NULL or the priority
+ * queue is empty, this function returns NULL.
+ *
+ * @param priority_q
+ *     Pointer to the priority queue to remove from.
+ *
+ * @return
+ *     This function returns the highest-priority datum from the priority queue.
+ */
 void *
 globus_priority_q_dequeue(
     globus_priority_q_t *               priority_q)
@@ -261,7 +386,24 @@ globus_priority_q_dequeue(
     
     return datum;
 }
+/* globus_priority_q_dequeue() */
 
+/**
+ * @brief Get the Highest-Priority Datum From a Priority Queue
+ * @ingroup globus_priority_q
+ * @details
+ * The globus_priority_q_first() function returns the highest-priority datum from the
+ * priority queue pointed to by priority_q. The datum is not removed from the queue; to
+ * do that, use globus_priority_q_dequeue() instead. If the priority_q pointer is NULL
+ * or the queue is empty, this function returns NULL. The priority queue retains a reference
+ * to the returned datum, so the pointer value returned must not freed until the datum
+ * is removed from the queue.
+ *
+ * @param priority_q
+ *     Pointer to the priority queue to inspect
+ * @return
+ *     This function returns the highest-priority datum from the priority queue.
+ */
 void *
 globus_priority_q_first (
     globus_priority_q_t *               priority_q)
@@ -277,7 +419,23 @@ globus_priority_q_first (
 
     return entry->datum;
 }
+/* globus_priority_q_first () */
 
+/**
+ * @brief Get the Highest Priority in Priority Queue
+ * @ingroup globus_priority_q
+ * @details
+ * The globus_priority_q_first_priority() function returns the value of highest priority
+ * in the priority queue (not the datum associated with that priority). If the priority_q
+ * pointer is NULL or empty, this function returns NULL. The priority queue
+ * retains a reference to the returned priority, so the pointer value returned must not
+ * be freed until the datum associated with it is removed from the queue.
+ *
+ * @param priority_q
+ *     Pointer to the priority queue to inspect
+ * @return
+ *     This function returns the highest priority value in the priority queue.
+ */
 void *
 globus_priority_q_first_priority(
     globus_priority_q_t *               priority_q)
@@ -293,7 +451,22 @@ globus_priority_q_first_priority(
 
     return entry->priority;
 }
+/* globus_priority_q_first_priority() */
 
+/**
+ * @brief Remove an Arbitrary Datum from a Priority Queue
+ * @ingroup globus_priority_q
+ * @details
+ * The globus_priority_q_remove() function removes the highest-priority instance of the
+ * specified datum from the priority queue and returns the datum if it is found. If the
+ * priority_q is NULL or the datum is not found, this function returns NULL.
+ *
+ * @param priority_q
+ *     Pointer to the priority queue to modify
+ * @param datum
+ *     Pointer to the datum to search for.
+ * @return This function returns datum if it was present in the priority queue
+ */
 void *
 globus_priority_q_remove(
     globus_priority_q_t *               priority_q,
@@ -364,7 +537,26 @@ globus_priority_q_remove(
         return GLOBUS_NULL;
     }
 }
+/* globus_priority_q_remove() */
 
+/**
+ * @brief Modify the Priority of Datum
+ * @ingroup globus_priority_q
+ * @details
+ * The globus_priority_q_modify() function modifies the priority of the highest-priority
+ * instance of datum in the priority queue so that it new_priority. The old priority of
+ * the datum is returned. If the priority_q is NULL or the datum is not present, this
+ * function returns NULL.
+ *
+ * @param priority_q
+ *     Pointer to the priority queue to modify
+ * @param datum
+ *     Pointer to the datum whose priority is being modified
+ * @param new_priority
+ *     Pointer to the new priority
+ *
+ * @return This function returns the old priority of datum.
+ */
 void *
 globus_priority_q_modify(
     globus_priority_q_t *               priority_q,
@@ -420,3 +612,4 @@ globus_priority_q_modify(
         return GLOBUS_NULL;
     }
 }
+/* globus_priority_q_modify() */
