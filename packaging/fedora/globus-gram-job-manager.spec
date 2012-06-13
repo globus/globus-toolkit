@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.44
+Version:	13.45
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -177,6 +177,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 13 2012 Joseph Bester <bester@mcs.anl.gov> - 13.45-1
+- GT-225: GRAM5 skips some SEG events
+
 * Wed Jun 06 2012 Joseph Bester <bester@mcs.anl.gov> - 13.44-1
 - GT-157: Hash gram_job_state directory by user
 

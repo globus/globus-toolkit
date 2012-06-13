@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.45-1) unstable; urgency=low
+
+  * GT-225: GRAM5 skips some SEG events
+
+ -- Globus Toolkit <support@globus.org>  Wed, 13 Jun 2012 08:14:45 -0400
+
 globus-gram-job-manager (13.44-1) unstable; urgency=low
 
   * GT-157: Hash gram_job_state directory by user
