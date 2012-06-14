@@ -200,6 +200,7 @@ globus_l_gram_job_manager_state_machine(
                                      request->two_phase_commit,
                                      0);
 
+                /* TODO: fix lock inversion */
                 rc = globus_gram_job_manager_state_machine_register(
                         request->manager,
                         request,
@@ -220,6 +221,7 @@ globus_l_gram_job_manager_state_machine(
                                  0);
 
             request->commit_extend = 0;
+            /* TODO: fix lock inversion */
             rc = globus_gram_job_manager_state_machine_register(
                     request->manager,
                     request,
@@ -475,8 +477,9 @@ globus_l_gram_job_manager_state_machine(
                 /* Register next poll of job state */
                 GlobusTimeReltimeSet(
                         delay_time,
-                        request->poll_frequency, 0);
+                        10, 0);
 
+                /* TODO: fix lock inversion */
                 rc = globus_gram_job_manager_state_machine_register(
                         request->manager,
                         request,
@@ -518,6 +521,16 @@ globus_l_gram_job_manager_state_machine(
             strcmp(request->config->jobmanager_type, "fork") != 0 &&
             strcmp(request->config->jobmanager_type, "condor") != 0)
         {
+            /* This function returns GLOBUS_SUCCESS if the monitor agent has a new
+             * state change. We'll break here to let the state machine process it in
+             * POLL1
+             */
+            if (globus_gram_job_manager_script_poll_monitor_agent(request) == GLOBUS_SUCCESS)
+            {
+                break;
+            }
+
+            
             rc = globus_gram_job_manager_script_poll(request);
         }
         else if (!globus_fifo_empty(&request->seg_event_queue))
@@ -626,6 +639,7 @@ globus_l_gram_job_manager_state_machine(
                                  request->two_phase_commit,
                                  0);
 
+            /* TODO: fix lock inversion */
             rc = globus_gram_job_manager_state_machine_register(
                     request->manager,
                     request,
@@ -723,6 +737,7 @@ globus_l_gram_job_manager_state_machine(
                                  0);
             request->commit_extend = 0;
 
+            /* TODO: fix lock inversion */
             rc = globus_gram_job_manager_state_machine_register(
                     request->manager,
                     request,
@@ -2252,13 +2267,6 @@ globus_gram_job_manager_state_machine_register(
 {
     int                                 rc = GLOBUS_SUCCESS;
     globus_result_t                     result;
-    globus_reltime_t                    nodelay;
-    if (delay == NULL)
-    {
-        GlobusTimeReltimeSet(nodelay, 0, 0);
-
-        delay = &nodelay;
-    }
 
     /* GRAM-128: Scalable reloading of requests at job manager restart.
      * It's possible now that the job manager has put this job id in the

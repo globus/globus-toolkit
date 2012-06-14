@@ -297,6 +297,7 @@ globus_l_gram_job_manager_script_run(
             &script_context->iov,
             &script_context->iovcnt);
 
+    /* TODO: fix lock inversion */
     rc = globus_l_gram_script_queue(
             request->manager,
             script_context);
@@ -681,60 +682,37 @@ globus_gram_job_manager_script_submit(
 }
 /* globus_gram_job_manager_script_submit() */
 
-
-
 /**
- * Set job request status and fire callback so it registers
+ * Modify job_contact in place to remove the port.
  */
 static
-int
-local_globus_set_status(
-    globus_gram_jobmanager_request_t *  request,
-    globus_gram_protocol_job_state_t    status)
+void
+job_contact_strip_port(
+    char *                              job_contact)
 {
-    globus_reltime_t                    delay;
-    int                                 rc;
+    char *                              first_end;
+    char *                              second_begin;
 
-    if(request->status != status)
+    if (job_contact == 0)
     {
-        globus_gram_job_manager_request_set_status(request, status);
-        request->unsent_status_change = GLOBUS_TRUE;
+        return;
     }
 
-    GlobusTimeReltimeSet(delay, 0, 0);
-
-    rc = globus_gram_job_manager_state_machine_register(
-            request->manager,
-            request,
-            &delay);
-
-    return rc;
-}
-/* local_globus_set_status() */
-
-
-/**
- * Modified job_contact in place to remove the port.
- */
-static void job_contact_strip_port(
-    char * job_contact)
-{
-    char * first_end;
-    char * second_begin;
-
-    if( job_contact == 0 )
+    first_end = strrchr(job_contact, ':');
+    if (first_end == 0) /* malformed job_contact? */
+    {
         return;
+    }
 
-    first_end = strrchr( job_contact, ':' );
-    if( first_end == 0 ) /* malformed job_contact? */
+    second_begin = strchr(first_end, '/');
+    if (second_begin == 0) /* malformed job_contact? */
+    {
         return;
-
-    second_begin = strchr( first_end, '/' );
-    if( second_begin == 0 ) /* malformed job_contact? */
-        return;
+    }
 
     memmove(first_end, second_begin, strlen(second_begin) + 1);
 }
+/* job_contact_strip_port() */
 
 
 
@@ -746,7 +724,7 @@ static void job_contact_strip_port(
  * Expected to be called exclusively from globus_gram_job_manager_script_poll.
  */
 int
-globus_gram_job_manager_script_poll_fast(
+globus_gram_job_manager_script_poll_monitor_agent(
     globus_gram_jobmanager_request_t *    request)
 {
     int i;
@@ -866,7 +844,6 @@ globus_gram_job_manager_script_poll_fast(
          * enough, so we should switch over to using that, we want to avoid
          * firing off a traditional poll.  So, leave the existing status in
          * place and report a successful poll. */
-        local_globus_set_status(request, request->status);
         return_val = GLOBUS_SUCCESS;
         goto FAST_POLL_EXIT;
     }
@@ -941,8 +918,12 @@ globus_gram_job_manager_script_poll_fast(
                 "Reverting to normal polling to get failure code.\n");
             goto FAST_POLL_EXIT_FAILURE;
         }
-        local_globus_set_status(request, new_status);
-
+        if(request->status != new_status)
+        {
+            globus_gram_job_manager_request_set_status(request, new_status);
+            request->unsent_status_change = GLOBUS_TRUE;
+        }
+        
         return_val = GLOBUS_SUCCESS;
         goto FAST_POLL_EXIT;
     }
@@ -961,7 +942,7 @@ FAST_POLL_EXIT:
 
     return return_val;
 }
-/* globus_gram_job_manager_script_poll_fast() */
+/* globus_gram_job_manager_script_poll_monitor_agent() */
 
 /**
  * Poll the status of a job request.
@@ -998,13 +979,6 @@ globus_gram_job_manager_script_poll(
     {
         utime(request->job_state_file, NULL);
     }
-
-
-    if( globus_gram_job_manager_script_poll_fast(request) == GLOBUS_SUCCESS )
-    {
-        return(GLOBUS_SUCCESS);
-    }
-
     rc = globus_l_gram_job_manager_script_run(
                 request,
                 script_cmd,
@@ -1183,12 +1157,11 @@ globus_l_gram_job_manager_default_done(
     }
     if(!variable)
     {
-        globus_reltime_t delay;
-        GlobusTimeReltimeSet(delay, 0, 0);
+        /* TODO: fix lock inversion */
         rc = globus_gram_job_manager_state_machine_register(
                 request->manager,
                 request,
-                &delay);
+                NULL);
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_STATE") == 0)
     {
@@ -1423,7 +1396,6 @@ globus_l_gram_job_manager_query_done(
 {
     int                                 script_status;
     globus_gram_job_manager_query_t *   query;
-    globus_reltime_t                    delay;
     int                                 rc;
 
     query = arg;
@@ -1436,11 +1408,11 @@ globus_l_gram_job_manager_query_done(
     }
     if(!variable)
     {
-        GlobusTimeReltimeSet(delay, 0, 0);
+        /* TODO: fix lock inversion */
         rc = globus_gram_job_manager_state_machine_register(
                 request->manager,
                 request,
-                &delay);
+                NULL);
     }
     else if(strcmp(variable, "GRAM_SCRIPT_ERROR") == 0)
     {

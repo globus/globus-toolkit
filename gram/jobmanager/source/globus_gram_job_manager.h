@@ -1342,6 +1342,11 @@ globus_gram_job_manager_script_stage_out(
 int 
 globus_gram_job_manager_script_submit(
     globus_gram_jobmanager_request_t *  request);
+
+int
+globus_gram_job_manager_script_poll_monitor_agent(
+    globus_gram_jobmanager_request_t *    request);
+
 int 
 globus_gram_job_manager_script_poll(
     globus_gram_jobmanager_request_t *  request);
