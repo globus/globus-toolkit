@@ -5,7 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.8 Xxx 2012
-  - ...
+  - fix for myproxy-server "Failed to load sub-CA certs from file"
+    error when using certificate_issuer_subca_certfile
+    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7259)
 
 v5.7 May 2012
   - add IPv6 support

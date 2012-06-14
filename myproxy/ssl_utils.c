@@ -633,6 +633,7 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
     {
 	cert = NULL;
 	
+    ERR_clear_error();          /* clear any prior OpenSSL errors */
 	if ((cert = PEM_read_X509(cert_file, NULL, PEM_NO_CALLBACK)) == NULL)
 	{
 	    /*
@@ -956,6 +957,7 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
     {
 	X509 *certificate = NULL;
 	
+    ERR_clear_error();          /* clear any prior OpenSSL errors */
 	if (PEM_read_bio_X509(bio, &certificate,
 			      PEM_NO_CALLBACK) == NULL)
 	{
