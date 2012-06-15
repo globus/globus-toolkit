@@ -335,14 +335,16 @@ globus_result_t hdfs_dump_buffer_immed(hdfs_handle_t *hdfs_handle, globus_byte_t
     if (hdfs_handle->syslog_host != NULL) {
         syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes, hdfs_handle->offset);
     }
-    if (hdfs_handle->cksm_types) {
-        hdfs_update_checksums(hdfs_handle, buffer, nbytes);
-    }
     globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
     if (bytes_written != nbytes) {
         SystemError(hdfs_handle, "write into HDFS", rc);
         set_done(hdfs_handle, rc);
         return rc;
+    }
+    // Checksum after writing to disk.  This way, if a non-transient corruption occurs
+    // during writing to Hadoop, we detect it and hopefully fail the file.
+    if (hdfs_handle->cksm_types) {
+        hdfs_update_checksums(hdfs_handle, buffer, nbytes);
     }
     hdfs_handle->offset += bytes_written;
     return rc;
