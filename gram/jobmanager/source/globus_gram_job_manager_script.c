@@ -14,6 +14,28 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file
+ * @brief GRAM Job Manager Perl Script Interface
+ *
+ * @details
+ * This file contains the code which processes perl script invocations on
+ * behalf of the job manager. A number of script instances can be running
+ * concurrently and will be processed via nonblocking callbacks from the XIO
+ * system.
+ *
+ * The manager->script_slots_available variable governs whether the script
+ * subsystem is allowed to open a new XIO handle to start a script. If not, the
+ * script command will be queued in the manager->script_queue priority queue
+ * and will be invoked when another script command terminates.
+ *
+ * If a script has been idle for > 30 seconds, it may be closed by a periodic
+ * event which checks for idle scripts. This allows the job manager to keep a
+ * low memory and CPU use profile during idle times, especially when configured
+ * to use the SEG, even when there are many jobs being managed.
+ */
+
 #include "globus_gram_job_manager.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -22,21 +44,61 @@
 #include <sys/types.h>
 #include <utime.h>
 
+/**
+ * @brief XIO Popen Driver Handle
+ * @details
+ * The script interface uses XIO to communicate with the perl coprocess which
+ * handles the LRM interactions. All of the XIO handles used in this module are
+ * opened using this driver and stack.
+ */
 globus_xio_driver_t                     globus_i_gram_job_manager_popen_driver;
+
+/**
+ * @brief popen driver stack
+ * @see globus_i_gram_job_manager_popen_driver
+ */
 globus_xio_stack_t                      globus_i_gram_job_manager_popen_stack;
+/**
+ * @brief Script priority sequence
+ * @details
+ * This sequence number is incremented for each script that is queued in the
+ * system. It is used with the globus_l_gram_script_priority_cmp() predicate to
+ * allow fifo-fallback behavior with the script_queue globus_priority_q.
+ */
 static uint64_t                         globus_l_gram_next_script_sequence = 0;
 
+/**
+ * @brief IO Handle for a script invocation
+ * @details
+ * This data structure is used to keep information about the I/O related to a
+ * script invocation. This structure is created when a script is to be started
+ * and is freed when the script is terminated. The script handle itself may be
+ * reused multiple times with multiple script contexts.
+ */
 typedef struct globus_gram_script_handle_s
 {
+    /** Link to the global job manager */
     globus_gram_job_manager_t *         manager;
+    /** XIO handle opened with the popen driver */
     globus_xio_handle_t                 handle;
+    /** Buffer for script response data */
     globus_byte_t                       return_buf[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
+    /** XIO result for the last operation */
     globus_result_t                     result;
+    /** Count of pending operations on the XIO handle: these include
+     * read, write, open, and close callbacks. When that is zero, the handle can be destroyed.
+     */
     int                                 pending_ops;
+    /**
+     * Timestamp when this script handle completed its last operation. This is
+     * used to determine whether this script handle can be closed due to its
+     * being idle.
+     */
     time_t                              last_use;
 }
 *globus_gram_script_handle_t;
 
+static
 int
 globus_gram_job_manager_script_handle_init(
     globus_gram_job_manager_t *         manager,
@@ -119,11 +181,6 @@ globus_l_gram_job_manager_query_done(
     const char *                        value);
 
 static
-int
-globus_l_gram_request_validate(
-    globus_gram_jobmanager_request_t *  request);
-
-static
 char *
 globus_l_gram_job_manager_script_prepare_param(
     const char *                        param);
@@ -194,7 +251,35 @@ globus_l_gram_script_register_read_and_write(
                                         script_context);
 
 /**
- * Begin execution of a job manager script
+ * @brief Prepare a script context to execute a script on behalf of a job
+ * request
+ *
+ * @details
+ * Create a new script context to invoke script_cmd for the request passed as
+ * its first parameter. Additional (non-RSL) data which are to be included in
+ * the description passed to the script are included in the varags parameters
+ * after the script_cmd parameter.
+ *
+ * After the script context is created, a reference to the request is added for
+ * the duration of the script, and then the context is inserted into the
+ * priority queue, which may have the side effect of creating a new handle to
+ * execute this or some other script context.
+ *
+ * @param request
+ *     Pointer to the job request to execute
+ * @param script_cmd
+ *     Name of the script command; one of: submit, poll, cancel, signal,
+ *     stage_in, or stage_out
+ * @param ...
+ *     The varargs should follow the form (const char * variable_name, char
+ *     format, TYPE value). If the format is 'd' or 'i', then TYPE is int. If
+ *     the format is 's', then TYPE is a char * pointing to a null-terminated
+ *     string. The varags end when the variable_name is NULL
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed
  */
 static
 int
@@ -297,7 +382,6 @@ globus_l_gram_job_manager_script_run(
             &script_context->iov,
             &script_context->iovcnt);
 
-    /* TODO: fix lock inversion */
     rc = globus_l_gram_script_queue(
             request->manager,
             script_context);
@@ -308,6 +392,7 @@ globus_l_gram_job_manager_script_run(
     if (rc != GLOBUS_SUCCESS)
     {
 queue_failed:
+        /* TODO: fix lock inversion */
         globus_gram_job_manager_remove_reference(
                 request->manager,
                 request->job_contact_path,
@@ -332,6 +417,36 @@ fifo_init_failed:
 }
 /* globus_l_gram_job_manager_script_run() */
 
+/**
+ * @brief Script Read Callback
+ * @details
+ * This function is an XIO read callback used to process output from the perl
+ * script. The script output consists of a number of line-oriented records
+ * defining response attributes. As these are parsed, they are passed to the 
+ * callback associated with the script context, which uses them to modify the job request
+ * structure.
+ *
+ * If the end-of-response terminator (empty line) is not read yet, another read
+ * will be registered. Otherwise, the state machine is registered for the job
+ * that we were processing and the script_done function is called which may
+ * either reuse this script handle to process another script context, or push
+ * it into the fifo of available script handles.
+ *
+ * @param handle
+ *     XIO handle being read from
+ * @param result
+ *     XIO result which may indicate either an end-of-file or an I/O error.
+ * @param buffer
+ *     Pointer to the offset in the response buffer where this read was started.
+ * @param len
+ *     Length of the buffer
+ * @param nbytes
+ *     Number of bytes actually read into the buffer.
+ * @param data_desc
+ *     Unused data descriptor interface
+ * @param user_arg
+ *     Void pointer to the script context
+ */
 static
 void
 globus_l_gram_job_manager_script_read(
@@ -470,10 +585,17 @@ globus_l_gram_job_manager_script_read(
                 script_variable,
                 (char *) script_value);
 
+        if (!script_variable)
+        {
+            globus_gram_job_manager_state_machine_register(
+                    request->manager,
+                    request,
+                    NULL);
+        }
+ 
         /*
          * We need to log the batch job ID to the accounting file.
          */
-
         if(strcmp(script_variable, "GRAM_SCRIPT_JOB_ID") == 0)
         {
             const char * gk_jm_id_var = "GATEKEEPER_JM_ID";
@@ -630,12 +752,6 @@ globus_gram_job_manager_script_submit(
 {
     char * script_cmd = "submit";
     int rc;
-
-    rc = globus_l_gram_request_validate(request);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        return rc;
-    }
 
     /*
      * used to test job manager functionality without actually submitting
@@ -965,12 +1081,6 @@ globus_gram_job_manager_script_poll(
     char *                              script_cmd = "poll";
     int                                 rc;
 
-    rc = globus_l_gram_request_validate(request);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        return rc;
-    }
-
     /* Keep the state file's timestamp up to date so that
      * anything scrubbing the state files of old and dead
      * processes leaves it alone
@@ -1012,12 +1122,6 @@ globus_gram_job_manager_script_cancel(
     char *                              script_cmd = "cancel";
     int                                 rc;
 
-    rc = globus_l_gram_request_validate(request);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        return rc;
-    }
-
     rc = globus_l_gram_job_manager_script_run(
                 request,
                 script_cmd,
@@ -1050,13 +1154,6 @@ globus_gram_job_manager_script_signal(
     char *                              script_cmd = "signal";
     int                                 rc;
 
-    rc = globus_l_gram_request_validate(request);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        return rc;
-    }
-
     /*
      * add the signal and signal_arg to the script arg file
      */
@@ -1084,12 +1181,6 @@ globus_gram_job_manager_script_stage_in(
     char *                              script_cmd = "stage_in";
     int                                 rc;
 
-    rc = globus_l_gram_request_validate(request);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        return rc;
-    }
-
     rc = globus_l_gram_job_manager_script_run(
                 request,
                 script_cmd,
@@ -1112,12 +1203,6 @@ globus_gram_job_manager_script_stage_out(
 {
     char *                              script_cmd = "stage_out";
     int                                 rc;
-
-    rc = globus_l_gram_request_validate(request);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        return rc;
-    }
 
     rc = globus_l_gram_job_manager_script_run(
                 request,
@@ -1147,7 +1232,6 @@ globus_l_gram_job_manager_default_done(
     const char *                        value)
 {
     int                                 script_status;
-    int                                 rc;
 
     GlobusGramJobManagerRequestLock(request);
 
@@ -1155,15 +1239,7 @@ globus_l_gram_job_manager_default_done(
     {
         request->failure_code = failure_code;
     }
-    if(!variable)
-    {
-        /* TODO: fix lock inversion */
-        rc = globus_gram_job_manager_state_machine_register(
-                request->manager,
-                request,
-                NULL);
-    }
-    else if(strcmp(variable, "GRAM_SCRIPT_JOB_STATE") == 0)
+    if(strcmp(variable, "GRAM_SCRIPT_JOB_STATE") == 0)
     {
         script_status = atoi(value);
 
@@ -1396,7 +1472,6 @@ globus_l_gram_job_manager_query_done(
 {
     int                                 script_status;
     globus_gram_job_manager_query_t *   query;
-    int                                 rc;
 
     query = arg;
 
@@ -1406,15 +1481,7 @@ globus_l_gram_job_manager_query_done(
     {
         request->failure_code = failure_code;
     }
-    if(!variable)
-    {
-        /* TODO: fix lock inversion */
-        rc = globus_gram_job_manager_state_machine_register(
-                request->manager,
-                request,
-                NULL);
-    }
-    else if(strcmp(variable, "GRAM_SCRIPT_ERROR") == 0)
+    if(strcmp(variable, "GRAM_SCRIPT_ERROR") == 0)
     {
         script_status = atoi(value);
 
@@ -1830,199 +1897,6 @@ globus_l_gram_job_manager_script_prepare_param(
 }
 /* globus_l_gram_job_manager_script_prepare_param() */
 
-/**
- * Validate that the job manager is properly configured.
- *
- * This function validates the job scripts needed to handle this job
- * request exist and are executable.
- *
- * @param request
- *        The job request we are submitting. This is used to check
- *        that the job manager type is supported by this installation
- *        of the job manager, and for logging.
- *
- * @retval GLOBUS_SUCCESS
- * The job manager is able to submit the job request to the appropriate
- * scripts.
- * @retval GLOBUS_FAILURE
- * The job manager is unable to submit the job request; the request
- * failure code will be updated with the reason why the job couldn't be
- * submitted.
- */
-static
-int
-globus_l_gram_request_validate(
-    globus_gram_jobmanager_request_t *  request)
-{
-    struct stat                         statbuf;
-    char *                              script_path;
-    char *                              script_path_pattern;
-    int                                 rc = GLOBUS_SUCCESS;
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    static globus_bool_t                first = GLOBUS_TRUE;
-
-    if (!first)
-    {
-        return GLOBUS_SUCCESS;
-    }
-
-    globus_gram_job_manager_request_log(
-            request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.request_validate.start "
-            "level=TRACE "
-            "gramid=%s "
-            "\n",
-            request->job_contact_path);
-
-    globus_assert(request->config->jobmanager_type);
-    if(request->rsl == NULL)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-    }
-
-    /*
-     * test that the scheduler script files exist and
-     * that the user has permission to execute then.
-     */
-
-    /*---------------- job manager script -----------------*/
-    result = globus_eval_path("${libexecdir}/globus-job-manager-script.pl", &script_path);
-    if (result != GLOBUS_SUCCESS || script_path == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
-        goto eval_script_path_failed;
-    }
-
-    if (stat(script_path, &statbuf) != 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
-
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.request_validate.end "
-                "level=ERROR "
-                "gramid=%s "
-                "path=\"%s\" "
-                "msg=\"%s\" "
-                "status=%d "
-                "errno=%d "
-                "reason=\"%s\" "
-                "\n",
-                request->job_contact_path,
-                script_path,
-                "Script status failed",
-                -rc,
-                errno,
-                strerror(errno));
-        
-        goto script_path_not_found;
-    }
-
-    if (access(script_path, X_OK) < 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
-
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.request_validate.end "
-                "level=ERROR "
-                "gramid=%s "
-                "path=\"%s\" "
-                "msg=\"%s\" "
-                "status=%d "
-                "\n",
-                request->job_contact_path,
-                script_path,
-                "Script not executable",
-                -rc);
-
-        goto bad_script_permissions;
-    }
-    free(script_path);
-    script_path = NULL;
-
-    script_path_pattern = globus_common_create_string(
-            "${perlmoduledir}/Globus/GRAM/JobManager/%s.pm",
-            request->config->jobmanager_type);
-    if (script_path_pattern == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        goto script_pattern_alloc_failed;
-    }
-
-    /* Verify existence of scheduler specific script.  */
-    result = globus_eval_path(script_path_pattern, &script_path);
-    if (result != GLOBUS_SUCCESS || script_path == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        goto lrm_script_path_failed;
-    }
-
-    if(stat(script_path, &statbuf) != 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
-
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.request_validate.end "
-                "level=ERROR "
-                "gramid=%s "
-                "path=\"%s\" "
-                "msg=\"%s\" "
-                "status=%d "
-                "errno=%d "
-                "reason=\"%s\" "
-                "\n",
-                request->job_contact_path,
-                script_path,
-                "Module status failed",
-                -rc,
-                errno,
-                strerror(errno));
-        
-        goto lrm_module_not_found;
-    }
-
-    globus_gram_job_manager_request_log(
-            request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.request_validate.end "
-            "level=TRACE "
-            "gramid=%s "
-            "status=%d\n",
-            request->job_contact_path,
-            0);
-
-lrm_module_not_found:
-lrm_script_path_failed:
-    if (script_path_pattern != NULL)
-    {
-        free(script_path_pattern);
-        script_path_pattern = NULL;
-    }
-script_pattern_alloc_failed:
-bad_script_permissions:
-script_path_not_found:
-    if (script_path != NULL)
-    {
-        free(script_path);
-        script_path = NULL;
-    }
-eval_script_path_failed:
-    if (rc == GLOBUS_SUCCESS)
-    {
-        first = GLOBUS_FALSE;
-    }
-    return rc;
-}
-/* globus_l_gram_request_validate() */
-
 static
 int
 globus_l_gram_enqueue_string(
@@ -2254,6 +2128,7 @@ globus_l_gram_script_queue(
 {
     int                                 rc;
 
+    /* TODO: fix lock inversion */
     GlobusGramJobManagerLock(manager);
     context->priority.sequence = globus_l_gram_next_script_sequence++;
     rc = globus_priority_q_enqueue(
@@ -2419,14 +2294,10 @@ globus_l_gram_script_open_callback(
         script_handle->manager->script_slots_available++;
         GlobusGramJobManagerUnlock(script_handle->manager);
 
-        context->callback(
-            context->callback_arg,
-            request,
-            GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS,
-            context->starting_jobmanager_state,
-            NULL,
-            NULL);
-
+        rc = globus_gram_job_manager_state_machine_register(
+                request->manager,
+                request,
+                NULL);
         globus_gram_job_manager_remove_reference(
                 request->manager,
                 request->job_contact_path,
@@ -2645,6 +2516,7 @@ globus_gram_job_manager_script_close_all(
 }
 /* globus_gram_job_manager_script_close_all() */
 
+static
 int
 globus_gram_job_manager_script_handle_init(
     globus_gram_job_manager_t *         manager,
@@ -2788,3 +2660,4 @@ nonempty_queue:
     GlobusGramJobManagerUnlock(manager);
 }
 /* globus_gram_script_close_idle() */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
