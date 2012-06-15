@@ -1,5 +1,6 @@
 
 #include "gridftp_hdfs.h"
+#include <syslog.h>
 
 // Forward declarations of local functions
 

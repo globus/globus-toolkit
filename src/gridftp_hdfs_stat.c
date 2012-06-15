@@ -1,5 +1,6 @@
 
 #include "gridftp_hdfs.h"
+#include <grp.h>
 
 /* Forward decls for this file.
  * Copied from the Globus file plugin implementation.
@@ -247,12 +248,26 @@ globus_l_gfs_file_copy_stat(
     const char *                        filename,
     const char *                        symlink_target)
 {
+    struct passwd *result;
+    struct group *gresult;
     GlobusGFSName(globus_l_gfs_file_copy_stat);
 
     stat_object->mode     = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | fileInfo->mPermissions) :  (S_IFREG | fileInfo->mPermissions);
     stat_object->nlink    = (fileInfo->mKind == kObjectKindDirectory) ? 3 : 1;
     stat_object->uid      = default_id;
     stat_object->gid      = default_id;
+    
+    result=getpwnam(fileInfo->mOwner);
+    if (result != NULL)
+    {
+        stat_object->uid=result->pw_uid;
+    }
+    gresult=getgrnam(fileInfo->mOwner);
+    if (gresult != NULL)
+    {
+        stat_object->gid=gresult->gr_gid;
+    }
+
     stat_object->size     = (fileInfo->mKind == kObjectKindDirectory) ? 4096 : fileInfo->mSize;
     stat_object->mtime    = fileInfo->mLastMod;
     stat_object->atime    = fileInfo->mLastMod;

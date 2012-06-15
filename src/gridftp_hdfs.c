@@ -6,7 +6,7 @@
 
 #include <sys/resource.h>
 #include <sys/prctl.h>
-
+#include <syslog.h>
 #include <sys/syscall.h>
 #include <signal.h>
 #include <execinfo.h>
@@ -217,18 +217,33 @@ hdfs_command(
 {
     globus_result_t                    result;
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
+    char *                             PathName;
     GlobusGFSName(hdfs_command);
 
     char * return_value = GLOBUS_NULL;
 
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
+    
+    // Get hadoop path name (ie subtract mount point)
+    PathName=cmd_info->pathname;
+    while (PathName[0] == '/' && PathName[1] == '/')
+    {
+        PathName++;
+    }
+    if (strncmp(PathName, hdfs_handle->mount_point, hdfs_handle->mount_point_len)==0) {
+        PathName += hdfs_handle->mount_point_len;
+    }
+    while (PathName[0] == '/' && PathName[1] == '/')
+    {
+        PathName++;
+    }
 
     GlobusGFSErrorSystemError("command", ENOSYS);
     switch (cmd_info->command) {
     case GLOBUS_GFS_CMD_MKD:
 {
         errno = 0;
-        if (hdfsCreateDirectory(hdfs_handle->fs, cmd_info->pathname) == -1) {
+        if (hdfsCreateDirectory(hdfs_handle->fs, PathName) == -1) {
             if (errno) {
                 result = GlobusGFSErrorSystemError("mkdir", errno);
             } else {
@@ -242,6 +257,18 @@ hdfs_command(
     case GLOBUS_GFS_CMD_RMD:
         break;
     case GLOBUS_GFS_CMD_DELE:
+{
+        errno = 0;
+        if (hdfsDelete(hdfs_handle->fs, PathName) == -1) {
+            if (errno) {
+                result = GlobusGFSErrorSystemError("unlink", errno);
+            } else {
+                GenericError(hdfs_handle, "Unable to delete file (reason unknown)", result);
+            }
+        } else {
+            result = GLOBUS_SUCCESS;
+        }
+}
         break;
     case GLOBUS_GFS_CMD_RNTO:
         break;

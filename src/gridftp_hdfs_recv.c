@@ -1,5 +1,6 @@
 
 #include "gridftp_hdfs.h"
+#include <sys/mman.h>
 
 #define ADVANCE_SLASHES(x) {while (x[0] == '/' && x[1] == '/') x++;}
 

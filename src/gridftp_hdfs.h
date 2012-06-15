@@ -7,23 +7,18 @@
  * http://www.apache.org/licenses/LICENSE-2.0.html.
  */
 
+
+#include <hdfs.h>
+#include <stdint.h>
 #include <openssl/md5.h>
 
 #include "globus_gridftp_server.h"
 #include "gridftp_hdfs_error.h"
 
-#include <grp.h>
-#include <pwd.h>
-#include <syslog.h>
-#include <hdfs.h>
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/mman.h>
 
 // Note that we hide all symbols from the global scope except the module itself.
 #pragma GCC visibility push(hidden)

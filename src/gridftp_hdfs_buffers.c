@@ -1,5 +1,7 @@
 
 #include "gridftp_hdfs.h"
+#include <syslog.h>
+#include <sys/mman.h>
 
 /*************************************************************************
  *  use_file_buffer
