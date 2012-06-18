@@ -149,6 +149,7 @@ AC_PATH_PROGS(RPMBUILD, rpmbuild)
 
 AC_CONFIG_FILES(
         Makefile 
+	gpt_noinstaller
         etc/Makefile
         amdir/Makefile
         perl/Makefile

@@ -38,7 +38,7 @@ my $confopts = "";
 my $logfile;
 my $man = 0;
 my $help = 0;
-my ($verbose, $flavor_cfg, $srcfile, $static, $force,
+my ($verbose, $flavor_cfg, $srcfile, $static, $force, $fhs,
     $installdir, $installonly, $allflavors, $stdflavors, $noflavor, 
     $version, $update, $logdir, $nosrc, $coresrc, $debug, $ignore_errors);
 my %macros;
@@ -57,6 +57,7 @@ GetOptions( 'srcdir=s' => \@srcdirs,
             'std-flavors!' => \$stdflavors, 
             'logdir:s' => \$logdir,
             'force!' => \$force, 
+            'fhs!' => \$fhs, 
             'nosrc!' => \$nosrc,
             'update!' => \$update, 
             'ignore-errors!' => \$ignore_errors, 
@@ -73,6 +74,7 @@ Pod::Usage::pod2usage(-verbose => 2) if $man;
 require Grid::GPT::GPTIdentity;
 Grid::GPT::GPTIdentity::print_gpt_version() if defined $version;
 
+$macros{'CONFIGENV_GPTMACRO'}= "CONFIG_SITE=".$gptexecsharedir."/gpt_noinstaller; export CONFIG_SITE;" if defined $fhs;
 
 require Grid::GPT::PkgMngmt::Build;
 require Grid::GPT::FilelistFunctions;
