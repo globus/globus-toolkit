@@ -413,6 +413,19 @@ typedef struct globus_i_gram_usage_job_tracker_s
     char *                              user_dn;
 } globus_i_gram_usage_job_tracker_t;
 
+typedef struct
+{
+    /** Address of the client which submitted the job (hashtable key) */
+    char *                              client_addr;
+    /** Queue of script contexts ready to run */
+    globus_priority_q_t                 script_queue;
+    /** Number of script slots available for running scripts */
+    int                                 script_slots_available;
+    /** Fifo of available script handles */
+    globus_fifo_t                       script_handles;
+}
+globus_gram_job_manager_scripts_t;
+
 /**
  * Runtime state for a LRM instance. All of these items are
  * computed from the configuration state above and may change during the
@@ -471,13 +484,12 @@ typedef struct globus_gram_job_manager_s
     char *                              lock_path;
     /** Pid file path */
     char *                              pid_path;
-
-    /** Queue of script contexts ready to run */
-    globus_priority_q_t                 script_queue;
-    /** Number of script slots available for running scripts */
-    int                                 script_slots_available;
-    /** Fifo of available script handles */
-    globus_fifo_t                       script_handles;
+    /** OSG wants to have different clients connecting to the same job manager
+     * to have separate script queues fto have scalability with nonresponsive
+     * clients. We hash on client's address and have separate script queue and
+     * available slots.
+     */
+    globus_list_t *                     scripts_per_client;
     /** Fifo of job state callback contexts to run */
     globus_fifo_t                       state_callback_fifo;
     /** Number of job state contact slots available */

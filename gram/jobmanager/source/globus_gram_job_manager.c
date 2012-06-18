@@ -108,12 +108,6 @@ globus_l_gram_script_attr_init(
 
 static
 int
-globus_l_gram_script_priority_cmp(
-    void *                              priority_1,
-    void *                              priority_2);
-
-static
-int
 globus_l_gram_job_manager_request_load_all_from_dir(
     globus_gram_job_manager_t *         manager,
     const char *                        state_file_dir,
@@ -339,25 +333,7 @@ globus_gram_job_manager_init(
         goto malloc_pid_path_failed;
     }
 
-    rc = globus_priority_q_init(
-            &manager->script_queue,
-            globus_l_gram_script_priority_cmp);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto script_queue_init_failed;
-    }
-
-    /* Default number of scripts which can be run simultaneously */
-    manager->script_slots_available = 5;
-
-    rc = globus_fifo_init(&manager->script_handles);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto script_handles_fifo_init_failed;
-    }
-
+    manager->scripts_per_client = NULL;
     rc = globus_fifo_init(&manager->state_callback_fifo);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -393,10 +369,6 @@ globus_gram_job_manager_init(
     {
 script_attr_init_failed:
 state_callback_fifo_init_failed:
-        globus_fifo_destroy(&manager->script_handles);
-script_handles_fifo_init_failed:
-        globus_priority_q_destroy(&manager->script_queue);
-script_queue_init_failed:
         free(manager->pid_path);
         manager->pid_path = NULL;
 malloc_pid_path_failed:
@@ -472,8 +444,20 @@ globus_gram_job_manager_destroy(
     globus_hashtable_destroy(&manager->job_id_hash);
 
     globus_fifo_destroy(&manager->state_callback_fifo);
-    globus_priority_q_destroy(&manager->script_queue);
-    globus_fifo_destroy(&manager->script_handles);
+
+    while (!globus_list_empty(manager->scripts_per_client))
+    {
+        globus_gram_job_manager_scripts_t *scripts;
+        
+        scripts = globus_list_remove(
+                &manager->scripts_per_client,
+                manager->scripts_per_client);
+
+        globus_priority_q_destroy(&scripts->script_queue);
+        globus_fifo_destroy(&scripts->script_handles);
+        free(scripts->client_addr);
+        free(scripts);
+    }
     
     if(manager->usagetracker)
     {
@@ -3378,31 +3362,3 @@ job_id_copy_failed:
     return rc;
 }
 /* globus_gram_split_subjobs() */
-
-static
-int
-globus_l_gram_script_priority_cmp(
-    void *                              priority_1,
-    void *                              priority_2)
-{
-    globus_gram_script_priority_t      *p1 = priority_1, *p2 = priority_2;
-
-    if (p1->priority_level > p2->priority_level)
-    {
-        return 1;
-    }
-    else if (p1->priority_level < p2->priority_level)
-    {
-        return -1;
-    }
-    else if (p1->sequence > p2->sequence)
-    {
-        return 2;
-    }
-    else
-    {
-        assert(p1->sequence < p2->sequence);
-        return -2;
-    }
-}
-/* globus_l_gram_script_priority_cmp() */
