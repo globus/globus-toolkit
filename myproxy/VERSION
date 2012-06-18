@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.8 Xxx 2012
+  - fixes for myproxy-server VOMS attribute support needed because of
+    API updates in libvomsapi
   - fix for myproxy-server "Failed to load sub-CA certs from file"
     error when using certificate_issuer_subca_certfile
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7259)
