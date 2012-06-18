@@ -912,19 +912,19 @@ regex_compare(const char *regex,
 
 
 /*
- * is_name_in_list()
+ * name_in_list_matches_policy()
  *
- * Is the given name in the given list of regular expressions.
+ * Is there a name in the given list that matches a regular expression.
  *
- * Returns 1 if it is, 0 if it isn't, -1 on error setting verror.
+ * Returns 1 if there is, 0 if there isn't, -1 on error setting verror.
  */
 static int
-is_name_in_list(const char **list,
-		const char *name)
+name_in_list_matches_policy(const char **list,
+		const char *policy)
 {
     int return_code = -1;
 
-    assert(name != NULL);
+    assert(policy != NULL);
     
     if (list == NULL)
     {
@@ -937,7 +937,7 @@ is_name_in_list(const char **list,
     {
 	int rc;
 
-	  rc = regex_compare(*list, name);
+	  rc = regex_compare(policy, *list);
 	
 	if (rc != 0)
 	{
@@ -1379,7 +1379,7 @@ myproxy_server_check_policy_ext(const char *policy, myproxy_server_peer_t *clien
        if (client->fqans == NULL)
 	  return 0;
        policy += strlen(MYPROXY_SERVER_POLICY_TYPE_FQAN);
-       return is_name_in_list((const char **)client->fqans, policy);
+       return name_in_list_matches_policy((const char **)client->fqans, policy);
     } else if (strncasecmp(policy, MYPROXY_SERVER_POLICY_TYPE_SUBJECT,
 	     strlen(MYPROXY_SERVER_POLICY_TYPE_SUBJECT)) == 0) {
        policy += strlen(MYPROXY_SERVER_POLICY_TYPE_SUBJECT);
