@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.46-1) unstable; urgency=low
+
+  * GT-224: Manage GRAM execution per client host for scalability for different clients
+
+ -- Globus Toolkit <support@globus.org>  Mon, 18 Jun 2012 11:42:43 -0400
+
 globus-gram-job-manager (13.45-1) unstable; urgency=low
 
   * GT-225: GRAM5 skips some SEG events

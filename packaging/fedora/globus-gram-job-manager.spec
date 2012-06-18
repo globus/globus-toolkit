@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.45
+Version:	13.46
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -177,6 +177,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jun 18 2012 Joseph Bester <bester@mcs.anl.gov> - 13.46-1
+- GT-224: Manage GRAM execution per client host for scalability for different clients
+
 * Wed Jun 13 2012 Joseph Bester <bester@mcs.anl.gov> - 13.45-1
 - GT-225: GRAM5 skips some SEG events
 
