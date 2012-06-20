@@ -1,9 +1,0 @@
-#! /bin/sh
-
-hostname=`hostname`
-cat << EOF
-$hostname
-     state = free
-     np = 1
-     ntype = cluster
-EOF
