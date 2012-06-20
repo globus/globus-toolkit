@@ -1045,9 +1045,14 @@ add_fqan(char ***fqans, const char *fqan)
    int current_len;
    char **new_fqans;
 
+   if (fqans==NULL) {
+      return GSI_SOCKET_ERROR;
+   }
+
+
    current_len = 0;
-   if (fqans != NULL) {
-      while (fqans[current_len] != NULL)
+   if (*fqans != NULL) {
+      while ((*fqans)[current_len] != NULL)
 	 current_len++;
    }
 
