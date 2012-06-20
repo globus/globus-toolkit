@@ -1,15 +1,16 @@
-This is MyProxy v5.8 Xxx 2012.
+This is MyProxy v5.8 Jun 2012.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v5.8 Xxx 2012
-  - fixes for myproxy-server VOMS attribute support needed because of
-    API updates in libvomsapi
+v5.8 Jun 2012
+  - fixes for myproxy-server VOMS attribute support:
+    API updates for libvomsapi, fixes for FQAN regex matching
   - fix for myproxy-server "Failed to load sub-CA certs from file"
     error when using certificate_issuer_subca_certfile
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7259)
+  - update $GLOBUS_LOCATION paths for GT 5.2 in etc.init.d.myproxy
 
 v5.7 May 2012
   - add IPv6 support
