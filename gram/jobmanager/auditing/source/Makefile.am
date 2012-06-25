@@ -29,7 +29,7 @@ $(man8_MANS): $(MANUAL_SOURCE)
 endif
 
 install-data-hook:
-	mkdir -p 01733 $(DESTDIR)$(localstatedir)/lib/globus/gram-audit
+	mkdir -p -m 01733 $(DESTDIR)$(localstatedir)/lib/globus/gram-audit
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

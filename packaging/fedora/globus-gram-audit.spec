@@ -15,14 +15,14 @@
 
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
-Version:	3.1
-Release:	8%{?dist}
+Version:	3.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Auditing
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:      noarch
@@ -104,6 +104,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Mon Jun 25 2012 Joe Bester <bester@mcs.anl.gov> - 3.2-1
+- GT-236: gram audit makefile has missing parameter to mkdir
+
 * Tue May 15 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-8
 - Adjust requirements for SUSE
 
