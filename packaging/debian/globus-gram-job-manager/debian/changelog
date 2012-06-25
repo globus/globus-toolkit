@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.47-1) unstable; urgency=low
+
+  * GT-212: Missing debian packages
+
+ -- Globus Toolkit <support@globus.org>  Mon, 25 Jun 2012 15:15:41 -0400
+
 globus-gram-job-manager (13.46-1) unstable; urgency=low
 
   * GT-224: Manage GRAM execution per client host for scalability for different clients

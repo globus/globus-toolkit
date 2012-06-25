@@ -75,7 +75,7 @@ AC_DEFINE_UNQUOTED(GLOBUS_FLAVOR_NAME, "$GLOBUS_FLAVOR_NAME")
 LOGDIR="`eval_path $localstatedir/log/globus`"
 AC_SUBST(LOGDIR)
 
-AUDITDIR="`eval_path $localstatedir/lib/globus_gram_audit`"
+AUDITDIR="`eval_path $localstatedir/lib/globus/gram-audit`"
 AC_SUBST(AUDITDIR)
 
 GLOBUS_FINALIZE

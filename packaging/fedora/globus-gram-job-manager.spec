@@ -12,14 +12,14 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.46
+Version:	13.47
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -177,6 +177,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jun 25 2012 Joseph Bester <bester@mcs.anl.gov> - 13.47-1
+- GT-212: Missing debian packages
+
 * Mon Jun 18 2012 Joseph Bester <bester@mcs.anl.gov> - 13.46-1
 - GT-224: Manage GRAM execution per client host for scalability for different clients
 
