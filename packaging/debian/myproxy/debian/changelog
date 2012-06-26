@@ -1,3 +1,9 @@
+myproxy (5.8-1) unstable; urgency=low
+
+  * Update to myproxy 5.8 for GT 5.2.2
+
+ -- Globus Toolkit <support@globus.org>  Tue, 26 Jun 2012 14:36:51 -0400
+
 myproxy (5.6-1) unstable; urgency=low
 
   * Update to 5.6

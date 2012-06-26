@@ -34,8 +34,8 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 4
-%global gsi_openssh_ver 5.4
+%global gsi_openssh_rel 1
+%global gsi_openssh_ver 5.5
 
 %ifarch alpha ia64 ppc64 s390x sparc64 x86_64
 %global flavor gcc64
@@ -478,7 +478,10 @@ fi
 %endif
 
 %changelog
-* Wed May 23 2012 Joseph Bester <bester@mcs.anl.gov> - 5.4-3
+* Tue Jun 26 2012 Joseph Bester <bester@mcs.anl.gov> - 5.5-1
+- Update to the 5.5 release
+
+* Wed May 23 2012 Joseph Bester <bester@mcs.anl.gov> - 5.4-4
 - Reduce pam required version for CentOS 4
 
 * Tue May 15 2012 Joseph Bester <bester@mcs.anl.gov> - 5.4-3
