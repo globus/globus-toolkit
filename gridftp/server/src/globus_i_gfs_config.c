@@ -134,7 +134,9 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"ipc_user_name", "ipc_user_name", NULL, "ipc-user-name", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* User name for IPC connect back [not implemented] */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_subject", "ipc_subject", NULL, "ipc-subject", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    NULL /* Expected DN for IPC connect back. */, NULL, NULL,GLOBUS_FALSE, NULL},
+    NULL /* Expected DN for IPC connect back, for connect forward, find this subj in cred search path */, NULL, NULL,GLOBUS_FALSE, NULL},
+ {"ipc_credential", "ipc_credential", NULL, "ipc-credential", "ipc-cred", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    NULL /* cred file to load for connect forward. */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_cookie", "ipc_cookie", NULL, "ipc-cookie", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* [not implemented] */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"allow_anonymous", "allow_anonymous", NULL, "allow-anonymous", "aa", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
@@ -422,6 +424,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     NULL /* full path of server used when fork/execing */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"dsi_options", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* options parsed from load_dsi_module config */, NULL, NULL,GLOBUS_FALSE, NULL},
+ {"ipc_cred", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
+    NULL /* loaded cred to use for ipc connection */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"argv", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
     NULL /* original argv */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"argc", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
@@ -1982,6 +1986,7 @@ globus_l_gfs_config_misc()
     globus_l_gfs_config_adjust_path("banner_file", 1);
     globus_l_gfs_config_adjust_path("login_msg_file", 1);
     globus_l_gfs_config_adjust_path("pidfile", 1);
+    globus_l_gfs_config_adjust_path("ipc_credential", 1);
 
     if(globus_i_gfs_config_bool("detach") && 
         !globus_i_gfs_config_bool("daemon"))
@@ -2356,22 +2361,93 @@ globus_l_gfs_config_misc()
             port = globus_i_gfs_config_int("ipc_port");
             globus_l_gfs_config_set("port", port, NULL);   
         }
-    } 
-    if(globus_i_gfs_config_string("ipc_user_name") == NULL)
-    {
-        struct passwd *                 pwent;
-
-        pwent = getpwuid(getuid());
-        if(pwent == NULL)
-        {
-        }
-        if(pwent->pw_name == NULL)
-        {
-        }
-        globus_l_gfs_config_set("ipc_user_name", 0, 
-            globus_libc_strdup(pwent->pw_name));
     }
     
+    if(globus_i_gfs_config_string("remote_nodes") && 
+        !globus_i_gfs_config_bool("data_node") && 
+        globus_i_gfs_config_string("ipc_subject"))
+    {
+        char *                          ipc_dn;
+        gss_buffer_desc                 buf;
+        OM_uint32                       min_stat;
+        OM_uint32                       maj_stat;
+        gss_name_t                      cred_name;
+        gss_cred_id_t                   cred;
+            
+        ipc_dn = globus_i_gfs_config_string("ipc_subject");
+
+        if(strcasecmp(ipc_dn, "auto") == 0)
+        {
+            cred_name = GSS_C_NO_NAME;
+        }
+        else
+        {
+            buf.value = ipc_dn;
+            buf.length = strlen(ipc_dn);
+            maj_stat = gss_import_name(
+                &min_stat,
+                &buf,
+                GSS_C_NT_USER_NAME,
+                &cred_name);
+            if(maj_stat != GSS_S_COMPLETE || cred_name == GSS_C_NO_NAME)
+            {
+                result = min_stat;
+                goto error_exit;
+            }
+        }
+
+        maj_stat = gss_acquire_cred(
+            &min_stat,
+            cred_name,
+            0,
+            GSS_C_NULL_OID_SET,
+            GSS_C_INITIATE,
+            &cred,
+            NULL,
+            NULL);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = min_stat;
+            goto error_exit;
+        }
+        globus_l_gfs_config_set("ipc_cred", 0, cred);            
+    }
+    
+    else if(globus_i_gfs_config_string("remote_nodes") && 
+        !globus_i_gfs_config_bool("data_node") && 
+        globus_i_gfs_config_string("ipc_credential"))
+    {
+        char *                          cred_file;
+        gss_buffer_desc                 buf;
+        OM_uint32                       min_stat;
+        OM_uint32                       maj_stat;
+        gss_cred_id_t                   cred;
+        
+        cred_file = globus_i_gfs_config_string("ipc_credential");
+
+        buf.value = globus_common_create_string(
+            "X509_USER_PROXY=%s", cred_file);
+        buf.length = strlen(buf.value);
+    
+        maj_stat = gss_import_cred(
+            &min_stat,
+            &cred,
+            GSS_C_NO_OID,
+            1, /* GSS_IMPEXP_MECH_SPECIFIC */
+            &buf,
+            0,
+            NULL);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = min_stat;
+            goto error_exit;
+        }
+    
+        globus_free(buf.value);
+            
+        globus_l_gfs_config_set("ipc_cred", 0, cred);            
+    }
+        
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
     

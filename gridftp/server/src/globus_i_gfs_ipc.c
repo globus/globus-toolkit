@@ -236,7 +236,7 @@ typedef struct globus_i_gfs_ipc_handle_s
     globus_size_t                       buffer_size;
 
     char *                              hash_str;
-    char *                              user_id;
+    char *                              conn_subj;
 
     void *                              outstanding_event_arg;
     globus_bool_t                       transfer_complete;
@@ -1542,6 +1542,7 @@ globus_l_gfs_ipc_read_new_body_cb(
     globus_byte_t *                     ptr;
     globus_byte_t *                     new_buf;
     globus_i_gfs_ipc_handle_t *         ipc;
+    char *                              subj;
     GlobusGFSName(globus_l_gfs_ipc_read_new_body_cb);
     GlobusGFSDebugEnter();
 
@@ -1566,9 +1567,29 @@ globus_l_gfs_ipc_read_new_body_cb(
 
     if(strcmp(ipc->connection_info.version, globus_l_gfs_local_version) != 0)
     {
+        result = GlobusGFSErrorGeneric("IPC version incompatibility detected.");
         goto error;
     }
-
+    
+    if(globus_i_gfs_config_bool("secure_ipc"))
+    {
+        if((subj = globus_i_gfs_config_string("ipc_subject")) != NULL)
+        {
+            if(strcmp(subj, ipc->conn_subj) != 0)
+            {
+                result = GlobusGFSErrorGeneric(
+                    "Invalid credentials for IPC connection.");
+                goto error;
+            }
+        }
+        else if(strcmp(ipc->connection_info.subject, ipc->conn_subj) != 0)
+        {
+            result = GlobusGFSErrorGeneric(
+                "Invalid credentials for IPC connection.");
+            goto error;
+        }
+    }
+    
     new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
     if(new_buf == NULL)
     {
@@ -1873,6 +1894,10 @@ globus_l_gfs_ipc_server_open_cb(
 {
     globus_byte_t *                     buffer = NULL;
     globus_i_gfs_ipc_handle_t *         ipc;
+    OM_uint32                           min_stat;
+    OM_uint32                           maj_stat;
+    gss_name_t                          peer_name;
+    gss_buffer_desc                     peer_buf = GSS_C_EMPTY_BUFFER;
     GlobusGFSName(globus_l_gfs_ipc_server_open_cb);
     GlobusGFSDebugEnter();
 
@@ -1889,6 +1914,31 @@ globus_l_gfs_ipc_server_open_cb(
         goto error;
     }
 
+    if(globus_i_gfs_config_bool("secure_ipc"))
+    {
+        result = globus_xio_handle_cntl(
+            handle, globus_l_gfs_gsi_driver,
+            GLOBUS_XIO_GSI_GET_PEER_NAME,
+            &peer_name);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+            
+        maj_stat = gss_display_name(
+            &min_stat,
+            peer_name,
+            &peer_buf,
+            NULL);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = min_stat;
+            goto error;
+        }
+        
+        ipc->conn_subj = globus_libc_strdup(peer_buf.value);
+    }
+    
     /* send other side our session_info */
     buffer = globus_malloc(GFS_IPC_HEADER_SIZE);
     if(buffer == NULL)
@@ -2452,6 +2502,10 @@ globus_l_gfs_ipc_handle_connect(
     globus_xio_attr_t                   attr;
     int                                 time;
     globus_reltime_t                    timeout;
+    globus_xio_gsi_authorization_mode_t auth_mode;
+    const char *                        auth_mode_str;
+    gss_cred_id_t                       cred;
+
     GlobusGFSName(globus_l_gfs_ipc_handle_connect);
     GlobusGFSDebugEnter();
 
@@ -2496,15 +2550,23 @@ globus_l_gfs_ipc_handle_connect(
 
     globus_xio_attr_init(&attr);
 
-    if(session_info->del_cred != NULL &&
-        globus_i_gfs_config_bool("secure_ipc"))
+    cred = globus_i_gfs_config_get("ipc_cred");
+    if(globus_i_gfs_config_bool("secure_ipc") && 
+        (session_info->del_cred != NULL || cred != NULL))
     {
-        globus_xio_gsi_authorization_mode_t      auth_mode;
-        const char *                             auth_mode_str;
-        globus_xio_attr_cntl(
-            attr, globus_l_gfs_gsi_driver,
-            GLOBUS_XIO_GSI_SET_CREDENTIAL, session_info->del_cred);
-
+        if(cred != NULL)
+        {    
+            globus_xio_attr_cntl(
+                attr, globus_l_gfs_gsi_driver,
+                GLOBUS_XIO_GSI_SET_CREDENTIAL, cred);
+        }
+        else
+        {
+            globus_xio_attr_cntl(
+                attr, globus_l_gfs_gsi_driver,
+                GLOBUS_XIO_GSI_SET_CREDENTIAL, session_info->del_cred);
+        }
+        
         globus_xio_attr_cntl(
             attr, globus_l_gfs_gsi_driver,
             GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
