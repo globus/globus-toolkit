@@ -416,7 +416,10 @@ globus_i_gfs_log_open()
         }
         if(logfilename != NULL)
         {
+            mode_t                  oldmask;
+            oldmask = umask(022);
             globus_l_gfs_log_file = fopen(logfilename, "a");
+            umask(oldmask);
             if(globus_l_gfs_log_file == NULL)
             {
                 if(!globus_i_gfs_config_bool("inetd"))
@@ -482,7 +485,10 @@ globus_i_gfs_log_open()
 
     if((logfilename = globus_i_gfs_config_string("log_transfer")) != NULL)
     {
+        mode_t                  oldmask;
+        oldmask = umask(022);
         globus_l_gfs_transfer_log_file = fopen(logfilename, "a");
+        umask(oldmask);
         if(globus_l_gfs_transfer_log_file == NULL)
         {
             if(!globus_i_gfs_config_bool("inetd"))

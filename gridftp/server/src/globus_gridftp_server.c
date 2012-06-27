@@ -1400,17 +1400,20 @@ globus_l_gfs_server_detached()
     {
         char * pidfile = globus_i_gfs_config_string("pidfile");
 
-        if (pidfile != NULL)
+        if(pidfile != NULL)
         {
             globus_result_t result;
             char * pidfile_evaled;
 
             result = globus_eval_path(pidfile, &pidfile_evaled);
 
-            if (result == GLOBUS_SUCCESS)
+            if(result == GLOBUS_SUCCESS)
             {
+                mode_t                  oldmask;
+                oldmask = umask(022);
                 FILE * fh = fopen(pidfile_evaled, "w");
-
+                umask(oldmask);
+                
                 if (fh != NULL)
                 {
                     fprintf(fh, "%ld\n", (long) pid);

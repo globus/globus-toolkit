@@ -2641,7 +2641,6 @@ globus_i_gfs_config_init(
     else
     {
         base_str = cwd_str;
-        cwd_str = NULL;
         globus_l_gfs_config_set("config_base_path", 0, cwd_str);
     }
 
