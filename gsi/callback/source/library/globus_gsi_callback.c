@@ -50,6 +50,7 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static globus_mutex_t                   globus_l_gsi_callback_oldgaa_mutex;
+static globus_mutex_t                   globus_l_gsi_callback_verify_mutex;
 
 static int globus_l_gsi_callback_activate(void);
 static int globus_l_gsi_callback_deactivate(void);
@@ -132,6 +133,7 @@ globus_l_gsi_callback_activate(void)
     }
 
     globus_mutex_init(&globus_l_gsi_callback_oldgaa_mutex, NULL);
+    globus_mutex_init(&globus_l_gsi_callback_verify_mutex, NULL);
     
     OpenSSL_add_all_algorithms();
 
@@ -158,6 +160,7 @@ globus_l_gsi_callback_deactivate(void)
     EVP_cleanup();
 
     globus_mutex_destroy(&globus_l_gsi_callback_oldgaa_mutex);
+    globus_mutex_destroy(&globus_l_gsi_callback_verify_mutex);
     globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
     globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
@@ -396,7 +399,9 @@ globus_gsi_callback_X509_verify_cert(
     X509_STORE_CTX_set_flags(
                    context, X509_V_FLAG_ALLOW_PROXY_CERTS);
     #endif
+    globus_mutex_lock(&globus_l_gsi_callback_verify_mutex);
     result = X509_verify_cert(context);
+    globus_mutex_unlock(&globus_l_gsi_callback_verify_mutex);
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
