@@ -259,6 +259,12 @@ static const globus_l_gfs_config_option_t option_list[] =
 {NULL, "Single and Striped Remote Data Node Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"remote_nodes", "remote_nodes", NULL, "remote-nodes", "r", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Comma separated list of remote node contact strings.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"hybrid", "hybrid", NULL, "hybrid", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "When a server is configured for striped operation with the 'remote_nodes' option, "
+    "both a frontend and backend process are started even if the client does not request multiple "
+    "stripes.  This option will start backend processes only when striped operation is requested "
+    "by the client, while servicing non-striped requests with a single frontend process. "
+    " ", NULL, NULL,GLOBUS_FALSE, NULL},
  {"data_node", "data_node", NULL, "data-node", "dn", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "This server is a backend data node.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"stripe_blocksize", "stripe_blocksize", NULL, "stripe-blocksize", "sbs", GLOBUS_L_GFS_CONFIG_INT, (1024 * 1024), NULL,
@@ -1967,7 +1973,6 @@ globus_l_gfs_config_misc()
     globus_list_t *                     popen_list = NULL;
     char *                              module;
     char *                              ptr;
-    char *                              default_dsi;
     int                                 rc;
     char *                              value;
     char *                              data;
@@ -2193,7 +2198,8 @@ globus_l_gfs_config_misc()
         if(value)
         {
             if(globus_i_gfs_config_string("load_dsi_module") == NULL &&
-                !globus_i_gfs_config_bool("data_node"))
+                !globus_i_gfs_config_bool("data_node") && 
+                !globus_i_gfs_config_bool("hybrid"))
             {
                 globus_l_gfs_config_set(
                     "load_dsi_module", 0, globus_libc_strdup("remote"));    
@@ -2265,10 +2271,6 @@ globus_l_gfs_config_misc()
         }               
         globus_free(value);             
     }
-
-    default_dsi = globus_i_gfs_config_string("load_dsi_module");
-    globus_assert(default_dsi != NULL);
-    globus_list_insert(&module_list, strdup(default_dsi));
     globus_l_gfs_config_set("module_list", 0, module_list);   
     
     /* if auth_level is -1 it means it has not yet been touched */

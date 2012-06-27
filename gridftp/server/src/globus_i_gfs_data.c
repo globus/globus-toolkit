@@ -49,6 +49,7 @@ do                                                                      \
 
 struct passwd *                         globus_l_gfs_data_pwent = NULL;
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi = NULL;
+static globus_gfs_storage_iface_t *     globus_l_gfs_dsi_hybrid = NULL;
 globus_extension_registry_t             globus_i_gfs_dsi_registry;
 globus_extension_handle_t               globus_i_gfs_active_dsi_handle;
 static globus_bool_t                    globus_l_gfs_data_is_remote_node = GLOBUS_FALSE;
@@ -143,6 +144,9 @@ typedef struct
     int                                 gid_count;
     gid_t *                             gid_array;
 
+    globus_gfs_session_info_t *         session_info_copy;
+    globus_bool_t                       hybrid;
+
     void *                              session_arg;
     void *                              data_handle;
     globus_mutex_t                      mutex;
@@ -162,6 +166,8 @@ typedef struct
     char *                              client_appver;
     char *                              client_scheme;
     gss_cred_id_t                       dcsc_cred;
+    
+    
 } globus_l_gfs_data_session_t;
 
 typedef struct
@@ -268,6 +274,7 @@ typedef struct globus_l_gfs_data_operation_s
     globus_off_t                        list_buffer_offset;
     globus_mutex_t                      stat_lock;
 
+    void *                              hybrid_op;
     /* sort of a state cheat.  for case where:
         start_abort
             -- connecting to abort_closing
@@ -377,6 +384,16 @@ globus_l_gfs_data_list_stat_cb(
 static
 void
 globus_l_gfs_data_end_read_kickout(
+    void *                              user_arg);
+
+static
+void
+globus_l_gfs_data_active_kickout(
+    void *                              user_arg);
+    
+static
+void
+globus_l_gfs_data_passive_kickout(
     void *                              user_arg);
 
 static
@@ -951,6 +968,31 @@ globus_l_gfs_free_session_handle(
         gss_release_cred(
             &min_rc, &session_handle->dcsc_cred);
     }
+    if(session_handle->session_info_copy)
+    {
+        if(session_handle->session_info_copy->username)
+        {
+            globus_free(session_handle->session_info_copy->username);
+        }
+        if(session_handle->session_info_copy->password)
+        {
+            globus_free(session_handle->session_info_copy->password);
+        }
+        if(session_handle->session_info_copy->subject)
+        {
+            globus_free(session_handle->session_info_copy->subject);
+        }
+        if(session_handle->session_info_copy->cookie)
+        {
+            globus_free(session_handle->session_info_copy->cookie);
+        }
+        if(session_handle->session_info_copy->host_id)
+        {
+            globus_free(session_handle->session_info_copy->host_id);
+        }
+        globus_free(session_handle->session_info_copy);
+    }
+        
     globus_handle_table_destroy(&session_handle->handle_table);
     globus_i_gfs_acl_destroy(&session_handle->acl_handle);
     globus_free(session_handle);
@@ -1388,49 +1430,71 @@ globus_i_gfs_monitor_init(
 }
 
 static
-globus_gfs_storage_iface_t *
+globus_result_t
 globus_i_gfs_data_new_dsi(
     globus_extension_handle_t *         dsi_handle,
-    const char *                        dsi_name)
+    const char *                        dsi_name,
+    globus_gfs_storage_iface_t **       dsi_iface,
+    globus_bool_t                       check_name)
 {
     globus_gfs_storage_iface_t *        new_dsi;
+    char *                              module_name;
     int                                 rc;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     GlobusGFSName(globus_i_gfs_data_new_dsi);
     GlobusGFSDebugEnter();
+    
+    if(check_name)
+    {
+        module_name = globus_i_gfs_config_get_module_name(dsi_name);
+        if(module_name == NULL)
+        {
+            GlobusGFSErrorGenericStr(result,
+                ("DSI '%s' is not allowed.", dsi_name));
+            goto err;
+        }
+    }
+    else
+    {
+        module_name = dsi_name;
+    }
 
-    /* see if we already have this name loaded, if so use it */
+    /* see if we already have this module loaded, if so use it */
     new_dsi = (globus_gfs_storage_iface_t *) globus_extension_lookup(
-        dsi_handle, GLOBUS_GFS_DSI_REGISTRY, (void *) dsi_name);
+        dsi_handle, GLOBUS_GFS_DSI_REGISTRY, (void *) module_name);
     if(new_dsi == NULL)
     {
-        /* if not already load it, activate it */
+        /* otherwise load the dll */
         char                            buf[256];
 
-        snprintf(buf, 256, "globus_gridftp_server_%s", dsi_name);
+        snprintf(buf, 256, "globus_gridftp_server_%s", module_name);
         buf[255] = 0;
 
         rc = globus_extension_activate(buf);
         if(rc != GLOBUS_SUCCESS)
         {
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_ERR,
-                "Unable to activate %s: %s\n",
-                buf,
-                globus_error_print_friendly(
-                    globus_error_peek((globus_result_t) rc)));
-        }
-        else
-        {
-            new_dsi = (globus_gfs_storage_iface_t *)
-                globus_extension_lookup(
-                    dsi_handle,
-                    GLOBUS_GFS_DSI_REGISTRY,
-                    (void *) dsi_name);
+            result = GlobusGFSErrorWrapFailed("DSI activation", rc);
+            goto err;
         }
     }
+    
+    /* check again */
+    new_dsi = (globus_gfs_storage_iface_t *) globus_extension_lookup(
+        dsi_handle, GLOBUS_GFS_DSI_REGISTRY, (void *) module_name);
+    if(new_dsi == NULL)
+    {
+        GlobusGFSErrorGenericStr(result,
+            ("DSI '%s' is not available in the module.", dsi_name));
+        goto err;
+    }
 
+    *dsi_iface = new_dsi;
+    return GLOBUS_SUCCESS;
+    
+err:
+    *dsi_iface = NULL;
     GlobusGFSDebugExit();
-    return new_dsi;
+    return result;
 }
 
 static
@@ -1440,6 +1504,7 @@ globus_l_gfs_data_new_dsi(
     const char *                        in_module_name)
 {
     const char *                        module_name;
+    globus_result_t                     result;
     GlobusGFSName(globus_l_gfs_data_new_dsi);
     GlobusGFSDebugEnter();
 
@@ -1468,9 +1533,11 @@ globus_l_gfs_data_new_dsi(
             globus_extension_release(session_handle->mod_dsi_handle);
 
             session_handle->mod_dsi_name = globus_libc_strdup(module_name);
-            session_handle->mod_dsi = globus_i_gfs_data_new_dsi(
+            result = globus_i_gfs_data_new_dsi(
                 &session_handle->mod_dsi_handle,
-                session_handle->mod_dsi_name);
+                session_handle->mod_dsi_name,
+                &session_handle->mod_dsi,
+                GLOBUS_FALSE);
             if(session_handle->mod_dsi == NULL)
             {
                 goto error;
@@ -1480,9 +1547,11 @@ globus_l_gfs_data_new_dsi(
     else
     {
         session_handle->mod_dsi_name =  globus_libc_strdup(module_name);
-        session_handle->mod_dsi = globus_i_gfs_data_new_dsi(
+        result = globus_i_gfs_data_new_dsi(
             &session_handle->mod_dsi_handle,
-            session_handle->mod_dsi_name);
+            session_handle->mod_dsi_name,
+            &session_handle->mod_dsi,
+            GLOBUS_FALSE);
         if(session_handle->mod_dsi == NULL)
         {
             goto error;
@@ -2529,46 +2598,30 @@ globus_i_gfs_data_init()
     char *                              dsi_name;
     char *                              restrict_path;
     int                                 rc;
+    globus_result_t                     result;
     GlobusGFSName(globus_i_gfs_data_init);
     GlobusGFSDebugEnter();
 
-    dsi_name = globus_i_gfs_config_string("load_dsi_module");
-
     globus_extension_register_builtins(local_extensions);
 
-    globus_l_gfs_dsi = (globus_gfs_storage_iface_t *) globus_extension_lookup(
-        &globus_i_gfs_active_dsi_handle, GLOBUS_GFS_DSI_REGISTRY, dsi_name);
-    if(!globus_l_gfs_dsi)
-    {
-        char                            buf[256];
+    dsi_name = globus_i_gfs_config_string("load_dsi_module");
 
-        snprintf(buf, 256, "globus_gridftp_server_%s", dsi_name);
-        buf[255] = 0;
-        rc = globus_extension_activate(buf);
-        if(rc != GLOBUS_SUCCESS)
-        {
-            globus_gfs_log_exit_message(
-                "Unable to activate %s: %s\n",
-                buf,
-                globus_error_print_friendly(
-                    globus_error_peek((globus_result_t) rc)));
-            exit(1);
-        }
+    result = globus_i_gfs_data_new_dsi(
+        &globus_i_gfs_active_dsi_handle, 
+        dsi_name,
+        &globus_l_gfs_dsi, 
+        GLOBUS_FALSE);
 
-        globus_l_gfs_dsi = (globus_gfs_storage_iface_t *) globus_extension_lookup(
-            &globus_i_gfs_active_dsi_handle, GLOBUS_GFS_DSI_REGISTRY, dsi_name);
-    }
-
-    if(!globus_l_gfs_dsi)
+    if(result != GLOBUS_SUCCESS)
     {
         globus_gfs_log_exit_message(
-           "Couldn't find the %s extension\n", dsi_name);
+           "Couldn't load '%s'. %s\n", dsi_name, 
+                globus_error_print_friendly(globus_error_peek(result)));
         exit(1);
     }
 
     globus_mutex_init(&gfs_l_data_brain_mutex, NULL);
 
-    /* XXX is this is how we want to know this? */
     globus_l_gfs_data_is_remote_node = globus_i_gfs_config_bool("data_node");
 
     {
@@ -3307,7 +3360,8 @@ globus_i_gfs_data_request_command(
         case GLOBUS_GFS_CMD_SITE_DSI:
             if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_SENDER)
             {
-                new_dsi = globus_i_gfs_data_new_dsi(&new_dsi_handle, dsi_name);
+                result = globus_i_gfs_data_new_dsi(
+                    &new_dsi_handle, dsi_name, &new_dsi, GLOBUS_TRUE);
 
                 /* if we couldn't load it, error */
                 if(new_dsi == NULL)
@@ -4425,6 +4479,100 @@ globus_i_gfs_data_request_handle_destroy(
 
 static
 void
+globus_l_gfs_data_hybrid_session_start_cb(
+    globus_gfs_data_reply_t *           reply,
+    void *                              user_arg)
+{
+    globus_l_gfs_data_operation_t *     op;
+    globus_l_gfs_data_operation_t *     hybrid_op;
+    
+    op = user_arg;
+    if(op && op->hybrid_op)
+    {
+        hybrid_op = op->hybrid_op;
+    }
+    
+    if(op->type == GLOBUS_L_GFS_DATA_INFO_TYPE_PASSIVE)
+    {
+        if(reply->result != GLOBUS_SUCCESS)
+        {
+            globus_l_gfs_data_passive_bounce_t * bounce_info;
+            bounce_info = (globus_l_gfs_data_passive_bounce_t *)
+                globus_malloc(sizeof(globus_l_gfs_data_passive_bounce_t));
+            if(!bounce_info)
+            {
+                globus_panic(NULL, 0, "small malloc failure, no recovery");
+            }
+            bounce_info->ipc_handle = hybrid_op->ipc_handle;
+            bounce_info->id = hybrid_op->id;
+            bounce_info->callback = hybrid_op->callback;
+            bounce_info->user_arg = hybrid_op->user_arg;
+            bounce_info->result = reply->result;
+            bounce_info->handle = NULL;
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_data_passive_kickout,
+                bounce_info);
+        }
+    
+        else
+        {
+            globus_i_gfs_data_request_passive(
+                hybrid_op->ipc_handle,
+                hybrid_op->session_handle,
+                hybrid_op->id,
+                hybrid_op->info_struct,
+                hybrid_op->callback,
+                hybrid_op->user_arg);
+        }
+    }
+    else
+    {
+
+        if(reply->result != GLOBUS_SUCCESS)
+        {
+            globus_l_gfs_data_active_bounce_t * bounce_info;
+            bounce_info = (globus_l_gfs_data_active_bounce_t *)
+                globus_malloc(sizeof(globus_l_gfs_data_active_bounce_t));
+            if(!bounce_info)
+            {
+                globus_panic(NULL, 0, "small malloc failure, no recovery");
+            }
+            bounce_info->ipc_handle = hybrid_op->ipc_handle;
+            bounce_info->id = hybrid_op->id;
+            bounce_info->callback = hybrid_op->callback;
+            bounce_info->user_arg = hybrid_op->user_arg;
+            bounce_info->result = reply->result;
+            bounce_info->handle = NULL;
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_data_active_kickout,
+                bounce_info);
+        }
+    
+        else
+        {
+            globus_i_gfs_data_request_active(
+                hybrid_op->ipc_handle,
+                hybrid_op->session_handle,
+                hybrid_op->id,
+                hybrid_op->info_struct,
+                hybrid_op->callback,
+                hybrid_op->user_arg);
+        }
+    }
+    if(hybrid_op)
+    {
+        globus_l_gfs_data_operation_destroy(hybrid_op);
+    }
+
+
+}
+
+static
+void
 globus_l_gfs_data_passive_kickout(
     void *                              user_arg)
 {
@@ -4516,6 +4664,61 @@ globus_i_gfs_data_request_passive(
 
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
 
+    if(session_handle->hybrid && data_info->max_cs != 1 && 
+        session_handle->dsi != globus_l_gfs_dsi_hybrid)
+    {
+        globus_l_gfs_data_operation_t *     hybrid_op;
+        result = globus_i_gfs_data_new_dsi(
+            &globus_i_gfs_active_dsi_handle, 
+            "remote", 
+            &globus_l_gfs_dsi_hybrid, 
+            GLOBUS_FALSE);
+        
+        if(!globus_l_gfs_dsi_hybrid)
+        {
+            goto error_op;
+        }
+        session_handle->dsi = globus_l_gfs_dsi_hybrid;
+        
+        result = globus_l_gfs_data_operation_init(&op, session_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_operation_init", result);
+            goto error_op;
+        }
+        
+        result = globus_l_gfs_data_operation_init(&op->hybrid_op, session_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_operation_init", result);
+            goto error_op;
+        }
+
+        hybrid_op = op->hybrid_op;
+        hybrid_op->ipc_handle = ipc_handle;
+        hybrid_op->id = id;
+        hybrid_op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+        hybrid_op->callback = cb;
+        hybrid_op->user_arg = user_arg;
+        hybrid_op->session_handle = session_handle;
+        hybrid_op->info_struct = data_info;
+
+        
+        
+        op->callback = globus_l_gfs_data_hybrid_session_start_cb;
+        op->user_arg = op;
+        op->session_handle = session_handle;
+        op->info_struct = session_handle->session_info_copy;
+        op->ipc_handle = ipc_handle;
+        op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_PASSIVE;
+        globus_l_gfs_data_auth_init_cb(
+                NULL, GFS_ACL_ACTION_INIT, op, GLOBUS_SUCCESS);
+        
+        return;
+    }
+    
     if(session_handle->dsi->passive_func != NULL)
     {
         result = globus_l_gfs_data_operation_init(&op, session_handle);
@@ -4779,6 +4982,62 @@ globus_i_gfs_data_request_active(
 
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
 
+    if(session_handle->hybrid && data_info->cs_count != 1 && 
+        session_handle->dsi != globus_l_gfs_dsi_hybrid)
+    {
+        globus_l_gfs_data_operation_t *     hybrid_op;
+        
+        result = globus_i_gfs_data_new_dsi(
+            &globus_i_gfs_active_dsi_handle,
+            "remote",
+            &globus_l_gfs_dsi_hybrid,
+            GLOBUS_FALSE);
+        
+        if(!globus_l_gfs_dsi_hybrid)
+        {
+            goto error_op;
+        }
+        session_handle->dsi = globus_l_gfs_dsi_hybrid;
+        
+        result = globus_l_gfs_data_operation_init(&op, session_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_operation_init", result);
+            goto error_op;
+        }
+        
+        result = globus_l_gfs_data_operation_init(&op->hybrid_op, session_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_operation_init", result);
+            goto error_op;
+        }
+
+        hybrid_op = op->hybrid_op;
+        hybrid_op->ipc_handle = ipc_handle;
+        hybrid_op->id = id;
+        hybrid_op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+        hybrid_op->callback = cb;
+        hybrid_op->user_arg = user_arg;
+        hybrid_op->session_handle = session_handle;
+        hybrid_op->info_struct = data_info;
+
+        
+        
+        op->callback = globus_l_gfs_data_hybrid_session_start_cb;
+        op->user_arg = op;
+        op->session_handle = session_handle;
+        op->info_struct = session_handle->session_info_copy;
+        op->ipc_handle = ipc_handle;
+        op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_ACTIVE;
+        globus_l_gfs_data_auth_init_cb(
+                NULL, GFS_ACL_ACTION_INIT, op, GLOBUS_SUCCESS);
+        
+        return;
+    }
+    
     if(session_handle->dsi->active_func != NULL)
     {
         result = globus_l_gfs_data_operation_init(&op, session_handle);
@@ -7752,6 +8011,25 @@ globus_i_gfs_data_session_start(
     op->user_arg = user_arg;
     op->info_struct = session_info;
 
+    if(globus_i_gfs_config_bool("hybrid"))
+    {
+        globus_gfs_session_info_t *     session_info_copy;
+        
+        session_info_copy = (globus_gfs_session_info_t *)
+            globus_malloc(sizeof(globus_gfs_session_info_t));
+        session_info_copy->del_cred = session_info->del_cred;
+        session_info_copy->free_cred = GLOBUS_FALSE;
+        session_info_copy->map_user = session_info->map_user;
+        session_info_copy->username = globus_libc_strdup(session_info->username);
+        session_info_copy->password = globus_libc_strdup(session_info->password);
+        session_info_copy->subject = globus_libc_strdup(session_info->subject);
+        session_info_copy->cookie = globus_libc_strdup(session_info->cookie);
+        session_info_copy->host_id = globus_libc_strdup(session_info->host_id);
+        
+        session_handle->session_info_copy = session_info_copy;
+        session_handle->hybrid = GLOBUS_TRUE;
+    }
+                
     result = globus_l_gfs_data_load_stack(
         "default",
         &op->session_handle->net_stack_list,
