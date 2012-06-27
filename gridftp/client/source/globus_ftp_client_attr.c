@@ -268,11 +268,11 @@ globus_ftp_client_handleattr_init(
     i_attr->nl_ftp = GLOBUS_FALSE;
     i_attr->nl_io = GLOBUS_FALSE;
     i_attr->rfc1738_url = GLOBUS_FALSE;
-    i_attr->outstanding_commands = 4;
+    i_attr->outstanding_commands = 10;
     i_attr->pipeline_callback = GLOBUS_NULL;
     i_attr->pipeline_arg = GLOBUS_NULL;
     i_attr->pipeline_done = GLOBUS_FALSE;
-    i_attr->gridftp2 = GLOBUS_FALSE;
+    i_attr->gridftp2 = GLOBUS_TRUE;
     i_attr->clientinfo_app_name = 
         globus_libc_strdup(GLOBUS_L_FTP_CLIENT_CLIENTINFO_APPNAME);
     i_attr->clientinfo_app_ver = 
@@ -693,14 +693,15 @@ globus_ftp_client_handleattr_get_clientinfo(
 /*@{*/
 /**
  * Enable/Disable GridFTP2 [GFD.41] support for servers supporting
- * it. @ingroup globus_ftp_client_handleattr
+ * it.  This currently only applies to the GET/PUT command.
+ * @ingroup globus_ftp_client_handleattr
  *
  *
  * @param attr
  *        Attribute to modify
  * @param gridftp2
- *        Set to GLOBUS_TRUE to enable GridFTP2 support.
- *        Default of GLOBUS_FALSE specifies that GridFTP is disabled.
+ *        Set to GLOBUS_FALSE to disable GridFTP2 support.
+ *        GridFTP2 support is enabled by default for servers that support it.
  */
 globus_result_t
 globus_ftp_client_handleattr_set_gridftp2(
@@ -2794,6 +2795,10 @@ globus_ftp_client_operationattr_set_authorization(
     if(i_attr->auth_info.password)
     {
 	i_attr->auth_info.password = GLOBUS_NULL;
+    }
+    if(i_attr->auth_info.account)
+    {
+	i_attr->auth_info.account = GLOBUS_NULL;
     }
     if(i_attr->auth_info.auth_gssapi_subject)
     {

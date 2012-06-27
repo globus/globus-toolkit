@@ -104,6 +104,7 @@ globus_i_ftp_client_restart_register_oneshot(
        handle->op == GLOBUS_FTP_CLIENT_FEAT   ||
        handle->op == GLOBUS_FTP_CLIENT_MKDIR  ||
        handle->op == GLOBUS_FTP_CLIENT_RMDIR  ||
+       handle->op == GLOBUS_FTP_CLIENT_CWD    ||
        handle->op == GLOBUS_FTP_CLIENT_MOVE   ||
        handle->op == GLOBUS_FTP_CLIENT_NLST   ||
        handle->op == GLOBUS_FTP_CLIENT_MLSD   ||
@@ -767,6 +768,7 @@ globus_i_ftp_client_restart(
 	   handle->op == GLOBUS_FTP_CLIENT_FEAT   ||
 	   handle->op == GLOBUS_FTP_CLIENT_MKDIR  ||
 	   handle->op == GLOBUS_FTP_CLIENT_RMDIR  ||
+	   handle->op == GLOBUS_FTP_CLIENT_CWD    ||
 	   handle->op == GLOBUS_FTP_CLIENT_MOVE   ||
 	   handle->op == GLOBUS_FTP_CLIENT_NLST   ||
 	   handle->op == GLOBUS_FTP_CLIENT_MLSD   ||

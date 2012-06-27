@@ -724,6 +724,16 @@ globus_ftp_client_mlst(
     void *					callback_arg);
 
 globus_result_t
+globus_ftp_client_cwd(
+    globus_ftp_client_handle_t *		u_handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_byte_t **    			cwd_buffer,
+    globus_size_t *                             cwd_buffer_length,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+
+globus_result_t
 globus_ftp_client_stat(
     globus_ftp_client_handle_t *		u_handle,
     const char *				url,
