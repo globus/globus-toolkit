@@ -708,7 +708,7 @@ globus_ftp_client_cwd(
     handle->callback_arg = callback_arg;
     handle->source_url = globus_libc_strdup(url);
     handle->mlst_buffer_pointer = cwd_buffer;
-    handle->mlst_buffer_length_pointer = cwd_buffer_length
+    handle->mlst_buffer_length_pointer = cwd_buffer_length;
     if ( cwd_buffer ) {
 	*cwd_buffer = GLOBUS_NULL;
     }
