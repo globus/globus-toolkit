@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.11
+Version:	6.12
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2rc1/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -180,6 +180,38 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Jun 27 2012 Joseph Bester <bester@mcs.anl.gov> - 6.12-1
+- GRIDFTP-164: improve dir streaming stability
+- GRIDFTP-165: correct chunking of MLSC response
+- GRIDFTP-165: fix MLSC over split processes
+- GRIDFTP-196: fix behaviour for syntax errors in server options
+- GRIDFTP-201: Add heartbeat/status markers to CKSM and RETR
+- GRIDFTP-209: Add manpage for globus-gridftp-server
+- GRIDFTP-212: GridFTP server doesn't build if PATH_MAX is not defined
+- GRIDFTP-215: add MFMT synonym to SITE UTIME
+- GRIDFTP-217: fix -connections-disabled for inetd
+- GRIDFTP-218: add -fork-fallback
+- GRIDFTP-219: allow prot without gsi
+- GRIDFTP-221: additional changes towards maintaining backwards compatibility.
+- GRIDFTP-221: backwards compatibility fix and future binary compatibility stability additions
+- GRIDFTP-221: improvements to backwards compatibility
+- GRIDFTP-222: fix threaded issues with streaming dir info for mlsd and mlsc
+- GRIDFTP-224: Add option to set custom client starting/home directory
+- GRIDFTP-224: make -home-dir option work correctly with -restrict-paths, clarify
+- GRIDFTP-226: Fix recursed dir listings in split/striped server mode, when recursion wasn't requested.
+- GRIDFTP-227: Add server option to enable threaded operation and set number of threads.
+- GRIDFTP-228: Don't require delegated cred on initial log in.
+- GRIDFTP-230: downgrade gfork not loaded message
+- GT-152: GRIDFTP acts as wrong user when gridmap user doesnt exist
+- GT-152: fix issues with CHMOD when mode_t is 2 bytes
+- GT-164: add a hybrid mode to stripe configuration which only creates backend connections if client requests stripes.
+- GT-167: ensure log files are created with acceptable default permissions
+- GT-173: Allow a frontend->backend connection via admin defined credentials
+- GT-3: gridftp server incorrectly handles relative path configuration values
+- RIC-226: Some dependencies are missing in GPT metadata
+- RIC-229: Clean up GPT metadata
+- RIC-258: Can't rely on MKDIR_P
+
 * Thu May 17 2012 Joseph Bester <bester@mcs.anl.gov> - 6.11-1
 - GT-195: GridFTP acts as wrong user when user doesn't exist
 

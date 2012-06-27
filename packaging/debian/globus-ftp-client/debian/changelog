@@ -1,3 +1,12 @@
+globus-ftp-client (7.4-1) unstable; urgency=low
+
+  * GT-153: make gridftp-v2 GET/PUT the default for server that support it
+  * GT-15: Add explicit CWD command to client API
+  * GT-9: Failure in globus_ftp_client_operationattr_set_authorization() results in using freed memory
+  * RIC-226: Some dependencies are missing in GPT metadata
+
+ -- Globus Toolkit <support@globus.org>  Wed, 27 Jun 2012 19:02:14 +0000
+
 globus-ftp-client (7.3-1) unstable; urgency=low
 
   * RIC-226: Some dependencies are missing in GPT metadata

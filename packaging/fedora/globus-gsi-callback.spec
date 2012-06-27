@@ -12,14 +12,14 @@
 
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
-Version:	4.2
-Release:	3%{?dist}
+Version:	4.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2rc1/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -187,6 +187,13 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 27 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-1
+- GT-165: Threaded server has a race condition with parallel data channels and loading crls
+- GT-166: Threaded server data channel connection error
+- RIC-224: Eliminate some doxygen warnings
+- RIC-226: Some dependencies are missing in GPT metadata
+- RIC-227: Potentially unsafe format strings in GSI
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 4.2-3
 - RHEL 4 patches
 

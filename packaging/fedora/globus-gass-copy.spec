@@ -12,14 +12,14 @@
 
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	8.4
-Release:	3%{?dist}
+Version:	8.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2rc1/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -202,6 +202,17 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 27 2012 Joseph Bester <bester@mcs.anl.gov> - 8.5-1
+- GRIDFTP-200: mixing ftp:// with -cred fails
+- GRIDFTP-203: -create-dest fails when input is stdin
+- GRIDFTP-208: Add manpage for globus-url-copy
+- GRIDFTP-211: potentially unsafe format strings in globus-url-copy
+- GRIDFTP-216: continue on error doesn't continue when a dir listing fails
+- GRIDFTP-220: don't attempt mkdir when dir is known to exist.
+- GT-153: make gridftp-v2 GET/PUT the default for server that support it
+- RIC-224: Eliminate some doxygen warnings
+- RIC-226: Some dependencies are missing in GPT metadata
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 8.4-3
 - RHEL 4 patches
 

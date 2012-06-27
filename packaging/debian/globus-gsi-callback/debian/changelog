@@ -1,3 +1,13 @@
+globus-gsi-callback (4.3-1) unstable; urgency=low
+
+  * GT-165: Threaded server has a race condition with parallel data channels and loading crls
+  * GT-166: Threaded server data channel connection error
+  * RIC-224: Eliminate some doxygen warnings
+  * RIC-226: Some dependencies are missing in GPT metadata
+  * RIC-227: Potentially unsafe format strings in GSI
+
+ -- Globus Toolkit <support@globus.org>  Wed, 27 Jun 2012 19:03:11 +0000
+
 globus-gsi-callback (4.2-1) unstable; urgency=low
 
   * RIC-224: Eliminate some doxygen warnings
