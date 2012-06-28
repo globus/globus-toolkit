@@ -70,9 +70,7 @@ BuildGT()
     cd $installerdir
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
                 --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION $configopts"
-#    temporary work around for gsi-openssh build failure in GT 5.2.1
-#    make globus_usage gsi-openssh install
-    make gpt globus_usage globus-gsi install
+    make globus_usage gsi-openssh install
     cd ..
     rm -rf $installerdir # limit scratch space use
     echo ==================================================
@@ -89,7 +87,7 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT50"; then
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT52"; then
-    installer="gt5.2.1-all-source-installer.tar.gz"
+    installer="gt5.2.2rc1-all-source-installer.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt52"
     installerdir="gt52-src"
     configopts=""
@@ -110,8 +108,7 @@ BuildGSISSHTrunk()
   echo Environment variables:
   env
   echo ==================================================
-  # temporary replace gsi_openssh with globus_proxy_utils
-  GLOBUS_FLAVOR_NAME=`gpt-query -name=globus_proxy_utils | perl -n -e 'if (/globus_proxy_utils-(.*)-pgm/){print "$1\n";}'|head -1`
+  GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
   export GLOBUS_FLAVOR_NAME
   echo GPT GLOBUS_FLAVOR_NAME is $GLOBUS_FLAVOR_NAME.
   echo ==================================================
@@ -137,8 +134,7 @@ BuildGSISSHGPT()
   echo Environment variables:
   env
   echo ==================================================
-  # temporary replace gsi_openssh with globus_proxy_utils
-  GLOBUS_FLAVOR_NAME=`gpt-query -name=globus_proxy_utils | perl -n -e 'if (/globus_proxy_utils-(.*)-pgm/){print "$1\n";}'|head -1`
+  GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
   export GLOBUS_FLAVOR_NAME
   echo GPT GLOBUS_FLAVOR_NAME is $GLOBUS_FLAVOR_NAME.
   echo ==================================================
