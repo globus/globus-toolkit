@@ -13,7 +13,7 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
 Version:	7.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
@@ -179,6 +179,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 7.4-2
+- GT 5.2.2 Release
+
 * Wed Jun 27 2012 Joseph Bester <bester@mcs.anl.gov> - 7.4-1
 - GT-153: make gridftp-v2 GET/PUT the default for server that support it
 - GT-15: Add explicit CWD command to client API

@@ -16,7 +16,7 @@
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
 Version:	3.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Auditing
 
 Group:		Applications/Internet
@@ -104,6 +104,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 3.2-2
+- GT 5.2.2 Release
+
 * Mon Jun 25 2012 Joe Bester <bester@mcs.anl.gov> - 3.2-1
 - GT-236: gram audit makefile has missing parameter to mkdir
 

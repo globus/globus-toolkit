@@ -13,7 +13,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
 Version:	6.12
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -180,6 +180,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 6.12-2
+- GT 5.2.2 Release
+
 * Wed Jun 27 2012 Joseph Bester <bester@mcs.anl.gov> - 6.12-1
 - GRIDFTP-164: improve dir streaming stability
 - GRIDFTP-165: correct chunking of MLSC response

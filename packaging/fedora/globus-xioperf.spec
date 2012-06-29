@@ -13,13 +13,13 @@
 Name:		globus-xioperf
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - XIO Performance Tool
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -76,6 +76,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-3
+- GT 5.2.2 Release
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-2
 - RHEL 4 patches
 

@@ -16,13 +16,13 @@
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
 Version:	1.5
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
 License:	LGPL 2.1 and Globus Toolkit Public License 3.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-sge < 4.5
 
@@ -273,6 +273,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-4
+- GT 5.2.2 Release
+
 * Thu May 24 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-3
 - use qstat-ge and co. on rhel5 as well
 

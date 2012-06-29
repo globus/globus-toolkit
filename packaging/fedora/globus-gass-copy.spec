@@ -13,7 +13,7 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
 Version:	8.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
 Group:		System Environment/Libraries
@@ -202,6 +202,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 8.5-2
+- GT 5.2.2 Release
+
 * Wed Jun 27 2012 Joseph Bester <bester@mcs.anl.gov> - 8.5-1
 - GRIDFTP-200: mixing ftp:// with -cred fails
 - GRIDFTP-203: -create-dest fails when input is stdin

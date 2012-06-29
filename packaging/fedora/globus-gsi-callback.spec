@@ -13,7 +13,7 @@
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
 Version:	4.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
 Group:		System Environment/Libraries
@@ -187,6 +187,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-2
+- GT 5.2.2 Release
+
 * Wed Jun 27 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-1
 - GT-165: Threaded server has a race condition with parallel data channels and loading crls
 - GT-166: Threaded server data channel connection error

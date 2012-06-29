@@ -13,13 +13,13 @@
 Name:		globus-gass-cache
 %global _name %(tr - _ <<< %{name})
 Version:	8.1
-Release:	6%{?dist}
+Release:	7%{?dist}
 Summary:	Globus Toolkit - Globus Gass Cache
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	openssl
@@ -108,6 +108,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 8.1-7
+- GT 5.2.2 Release
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 8.1-6
 - RHEL 4 patches
 

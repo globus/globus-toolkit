@@ -13,13 +13,13 @@
 Name:		globus-gssapi-error
 %global _name %(tr - _ <<< %{name})
 Version:	4.1
-Release:	7%{?dist}
+Release:	8%{?dist}
 Summary:	Globus Toolkit - GSSAPI Error Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -171,6 +171,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 4.1-8
+- GT 5.2.2 Release
+
 * Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 4.1-7
 - RHEL 4 patches
 

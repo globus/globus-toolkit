@@ -19,13 +19,13 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	14.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -178,7 +178,7 @@ unset GPT_LOCATION
 %if "%{?globus_version}" != ""
 GLOBUS_VERSION=%{globus_version}
 %else
-GLOBUS_VERSION=5.2.1
+GLOBUS_VERSION=5.2.2
 %endif
 export GLOBUS_VERSION
 %configure --with-flavor=%{flavor} --enable-doxygen \
@@ -263,6 +263,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 14.7-2
+- GT 5.2.2 Release
+
 * Wed Jun 13 2012 Joseph Bester <bester@mcs.anl.gov> - 14.7-1
 - GT-227: API Documentation for Globus Priority Queue
 
