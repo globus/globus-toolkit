@@ -1,3 +1,9 @@
+globus-common (14.7-2) unstable; urgency=low
+
+  * GT 5.2.2 Release
+
+ -- Globus Toolkit <support@globus.org>  Fri, 29 Jun 2012 10:02:19 -0400
+
 globus-common (14.7-1) unstable; urgency=low
 
   * GT-227: API Documentation for Globus Priority Queue
