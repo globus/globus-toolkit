@@ -68,7 +68,7 @@
         fi
         GLOBUS_FLAVOR_NAME=FLAVOR_GPTMACRO
         export GLOBUS_FLAVOR_NAME
-        CONFIGENV_GPTMACRO ./configure $GSI_OPENSSH_ARGS GSI_OPENSSH_GPTMACRO $GSICFG</Build_Step>
+        ./configure $GSI_OPENSSH_ARGS GSI_OPENSSH_GPTMACRO $GSICFG</Build_Step>
 
       <Build_Step>MAKE_GPTMACRO gpt-all</Build_Step>
 
