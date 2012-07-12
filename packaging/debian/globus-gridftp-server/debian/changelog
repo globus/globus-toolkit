@@ -1,3 +1,11 @@
+globus-gridftp-server (6.13-1) unstable; urgency=low
+
+  * GT-172: Removed custom MLSx tag feature
+  * GT-244: Cleaned up memory leaks
+  * GT-243: Fix needless frontend->backend connections
+
+ -- Globus Toolkit <support@globus.org>  Thu, 12 Jul 2012 16:55:58 +0000
+
 globus-gridftp-server (6.12-1) unstable; urgency=low
 
   * GRIDFTP-164: improve dir streaming stability
