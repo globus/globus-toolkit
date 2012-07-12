@@ -3529,7 +3529,8 @@ globus_i_gsc_get_help(
                 _FSMSL("214-Help for %s:\r\n"), command_name);
             while(!globus_list_empty(site_list))
             {
-                list = (globus_list_t *) globus_list_first(site_list);
+                list = (globus_list_t *) 
+                    globus_list_remove(&site_list, site_list);
 
                 while(!globus_list_empty(list))
                 {
@@ -3544,7 +3545,6 @@ globus_i_gsc_get_help(
                     }
                     list = globus_list_rest(list);
                 }
-                site_list = globus_list_rest(site_list);
             }
             tmp_ptr = globus_common_create_string(_FSMSL("%s214 End.\r\n"), help_str);
             globus_free(help_str);
@@ -4256,10 +4256,8 @@ char *
 globus_i_gsc_list_single_line(
     globus_gridftp_server_control_stat_t *  stat_info)
 {
-    char *                              username;
-    char *                              grpname;
-    char                                user[GSU_MAX_USERNAME_LENGTH];
-    char                                grp[GSU_MAX_USERNAME_LENGTH];
+    char                                username[GSU_MAX_USERNAME_LENGTH];
+    char                                grpname[GSU_MAX_USERNAME_LENGTH];
     int                                 tmplen;
     struct passwd *                     pw;
     struct group *                      gr;
@@ -4280,21 +4278,21 @@ globus_i_gsc_list_single_line(
     pw = globus_libc_cached_getpwuid(stat_info->uid);
     if(pw == NULL)
     {
-        username = "(null)";
+        snprintf(username, sizeof(username), "%d", stat_info->uid);
     }
     else
     {
-        username = pw->pw_name;
+        snprintf(username, sizeof(username), "%s", pw->pw_name);
     }
 
     gr = globus_libc_cached_getgrgid(stat_info->gid);
     if(gr == NULL)
     {
-        grpname = "(null)";
+        snprintf(grpname, sizeof(grpname), "%d", stat_info->gid);
     }
     else
     {
-        grpname = gr->gr_name;
+        snprintf(grpname, sizeof(grpname), "%s", gr->gr_name);
     }
                                                                       
     if(S_ISDIR(stat_info->mode))
@@ -4355,36 +4353,12 @@ globus_i_gsc_list_single_line(
         perms[9] = 'x';
     }
 
-    tmplen = strlen(username);
-    if(tmplen < 8)
-    {
-        sprintf(user, "        ");
-        tmp_ptr = user + (8 - tmplen);
-        sprintf(tmp_ptr, "%s", username);
-    }
-    else
-    {
-        snprintf(user, sizeof(user), "%s", username);
-    }
-    
-    tmplen = strlen(grpname);
-    if(tmplen < 8)
-    {
-        sprintf(grp, "        ");
-        tmp_ptr = grp + (8 - tmplen);
-        sprintf(tmp_ptr, "%s", grpname);
-    }
-    else
-    {
-        snprintf(grp, sizeof(grp), "%s", grpname);
-    }
-
     tmp_ptr = globus_common_create_string(
-        "%s %3d %s %s %12"GLOBUS_OFF_T_FORMAT" %s %2d %02d:%02d %s",
+        "%s %3d %8s %8s %12"GLOBUS_OFF_T_FORMAT" %s %2d %02d:%02d %s",
         perms,
         stat_info->nlink,
-        user,
-        grp,
+        username,
+        grpname,
         stat_info->size,
         month_lookup[tm->tm_mon],
         tm->tm_mday,

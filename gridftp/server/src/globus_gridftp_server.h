@@ -120,7 +120,9 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_SITE_CHGRP,
     GLOBUS_GFS_CMD_SITE_UTIME,
     GLOBUS_GFS_CMD_SITE_SYMLINKFROM,
-    GLOBUS_GFS_CMD_SITE_SYMLINK
+    GLOBUS_GFS_CMD_SITE_SYMLINK,
+    
+    GLOBUS_GFS_MIN_CUSTOM_CMD = 4096
 } globus_gfs_command_type_t;
 
 /*
@@ -984,9 +986,79 @@ globus_gridftp_server_register_read(
     void *                              user_arg);
 
 
+/*
+ * register a custom command
+ * 
+ * This must be called during the DSI session_start_func() function.
+ * When a command is triggered, command_func() will be called with a 
+ * command_info->command equal to cmd_id.  Responses are handled as with 
+ * any other command. Call globus_gridftp_server_finished_command() with 
+ * a valid FTP response string in 'command_response' to customize your response
+ * i.e. "250 The command was successful\r\n"
+ * 
+ * cmd_id must be >= GLOBUS_GFS_MIN_CUSTOM_CMD.
+ *
+ * If a command takes a pathname, it must be the final argument, and has_pathname
+ * must be set to GLOBUS_TRUE.  commands should not take multiple pathnames.
+ *
+ * If the command takes a pathname, set access_type to an globus_gfs_acl_action_t
+ * like one of: GFS_ACL_ACTION_READ, GFS_ACL_ACTION_WRITE, 
+ * GFS_ACL_ACTION_CREATE, GFS_ACL_ACTION_DELETE, GFS_ACL_ACTION_LOOKUP.
+ *
+ * The last argument will always be passed in command_info->pathname, whether
+ * it is a pathname or not.
+ * Other args can be obtained by querying command_info->op_info for 
+ * GLOBUS_GFS_OP_INFO_CMD_ARGS.   See globus_gridftp_server_query_op_info().
+ *
+ * Note for min_args and max_args, that the command itself counts as a argument 
+ * (or 2, in the case of SITE commands).
+ * 
+ * A non-SITE command name must be exactly 4 characters long,
+ * A SITE command (command name = "SITE SOMETHING") can be any length 
+ * 
+ * help_string should be of the form "COMMAND <sp> arg1 <sp> arg2 <sp> pathname"
+ * 
+ */ 
+
+globus_result_t
+globus_gridftp_server_add_command(
+    globus_gfs_operation_t              op,
+    const char *                        command_name,
+    int                                 cmd_id,
+    int                                 min_args,
+    int                                 max_args,
+    const char *                        help_string,
+    globus_bool_t                       has_pathname,
+    int                                 access_type);
+
 /**
  * Helper Functions
  **/
+ 
+typedef enum
+{
+    /* return argv and argc for the current command.  usually called when
+     * handling custom commands.
+     * 
+     * char ***                         argv,
+     * int *                            argc
+     */
+    GLOBUS_GFS_OP_INFO_CMD_ARGS = 1
+} globus_gfs_op_info_param_t;
+
+/* query op_info for parameters
+ * query paramters listed in the globus_gfs_op_info_param_t enum.
+ * the varargs should be populated with variables of the correct type to hold
+ * the returning paramters for the requested param type.
+ * 
+*/
+globus_result_t
+globus_gridftp_server_query_op_info(
+    globus_gfs_operation_t              op,
+    globus_gfs_op_info_t                op_info,
+    globus_gfs_op_info_param_t          param,
+    ...);
+
 
 /*
  * update bytes

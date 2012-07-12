@@ -52,7 +52,6 @@ typedef struct globus_l_gfs_remote_handle_s
     void *                              state;
     globus_gfs_session_info_t           session_info;
     int                                 striped_mode;
-    globus_bool_t                       control_used_for_data;
 } globus_l_gfs_remote_handle_t;
 
 typedef struct globus_l_gfs_remote_node_handle_s
@@ -178,13 +177,8 @@ globus_l_gfs_remote_node_release(
     GlobusGFSName(globus_l_gfs_remote_node_release);
     GlobusGFSRemoteDebugEnter();
     
-    if(node_info->my_handle->control_node == node_info &&
-        node_info->my_handle->control_used_for_data)
+    if(node_info->my_handle->control_node != node_info)
     {
-        node_info->my_handle->control_used_for_data = GLOBUS_FALSE;
-    }
-    else
-    {        
         globus_gfs_brain_release_node(
             node_info->brain_node,
             release_reason);
@@ -523,8 +517,7 @@ globus_l_gfs_remote_node_request(
         goto error;
     }
 
-
-    if(my_handle->control_node && !my_handle->control_used_for_data)
+    if(my_handle->control_node)
     {
         bounce = (globus_l_gfs_remote_control_node_bounce_t *) globus_calloc(
             1, sizeof(globus_l_gfs_remote_control_node_bounce_t));
@@ -532,7 +525,6 @@ globus_l_gfs_remote_node_request(
         bounce->callback = callback;
         bounce->user_arg = user_arg;
 
-        my_handle->control_used_for_data = GLOBUS_TRUE;
         nodes_created = 1;
         ndx_offset = 1;
         
@@ -1956,6 +1948,8 @@ globus_l_gfs_remote_session_end(
 {
     globus_l_gfs_remote_handle_t *      my_handle;
     globus_result_t                     result;
+    globus_l_gfs_remote_node_info_t *   control_node;
+
     GlobusGFSName(globus_l_gfs_remote_session_end);
     GlobusGFSRemoteDebugEnter();
 
@@ -1966,8 +1960,10 @@ globus_l_gfs_remote_session_end(
         goto error;
     }
 
+    control_node = my_handle->control_node;
+    my_handle->control_node = NULL;
     result = globus_l_gfs_remote_node_release(
-        my_handle->control_node, my_handle->ipc_release_reason);
+        control_node, my_handle->ipc_release_reason);
     if(result != GLOBUS_SUCCESS)
     {
         globus_gfs_log_result(

@@ -650,6 +650,19 @@ globus_l_gfs_ipc_request_destroy(
                 {
                     globus_free(cmd_info->authz_assert);
                 }
+                if(cmd_info->op_info != NULL)
+                {
+                    if(cmd_info->op_info->argv)
+                    {
+                        for(ctr = 0; ctr < cmd_info->op_info->argc; ctr++)
+                        {
+                            globus_free(cmd_info->op_info->argv[ctr]);
+                        }
+                        globus_free(cmd_info->op_info->argv);
+                    }  
+                    globus_free(cmd_info->op_info);
+                }
+
                 globus_free(cmd_info);
                 break;
 
@@ -3195,7 +3208,7 @@ globus_l_gfs_ipc_unpack_reply(
             break;
 
         case GLOBUS_GFS_OP_COMMAND:
-            GFSDecodeChar(
+            GFSDecodeUInt32(
                 buffer, len, reply->info.command.command);
             GFSDecodeString(
                 buffer, len, reply->info.command.checksum);
@@ -3354,12 +3367,14 @@ globus_l_gfs_ipc_unpack_command(
     globus_byte_t *                     buffer,
     globus_size_t                       len)
 {
-    globus_gfs_command_info_t *        cmd_info;
+    globus_gfs_command_info_t *         cmd_info;
+    int                                 argc;
+    int                                 ctr;
     GlobusGFSName(globus_l_gfs_ipc_unpack_command);
     GlobusGFSDebugEnter();
 
     cmd_info = (globus_gfs_command_info_t *)
-        globus_malloc(sizeof(globus_gfs_command_info_t));
+        globus_calloc(1, sizeof(globus_gfs_command_info_t));
     if(cmd_info == NULL)
     {
         goto error;
@@ -3375,6 +3390,18 @@ globus_l_gfs_ipc_unpack_command(
     GFSDecodeString(buffer, len, cmd_info->chgrp_group);
     GFSDecodeString(buffer, len, cmd_info->from_pathname);
     GFSDecodeString(buffer, len, cmd_info->authz_assert);
+    GFSDecodeUInt32(buffer, len, argc);
+    if(argc > 0)
+    {
+        cmd_info->op_info = 
+            globus_calloc(1, sizeof(globus_i_gfs_op_info_t));
+        cmd_info->op_info->argc = argc;
+        cmd_info->op_info->argv = globus_calloc(argc, sizeof(char *));
+        for(ctr = 0; ctr < cmd_info->op_info->argc; ctr++)
+        {
+            GFSDecodeString(buffer, len, cmd_info->op_info->argv[ctr]);
+        }
+    }
 
     GlobusGFSDebugExit();
     return cmd_info;
@@ -3403,7 +3430,7 @@ globus_l_gfs_ipc_unpack_transfer(
     GlobusGFSDebugEnter();
 
     trans_info = (globus_gfs_transfer_info_t *)
-        globus_malloc(sizeof(globus_gfs_transfer_info_t));
+        globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
     if(trans_info == NULL)
     {
         goto error;
@@ -3466,7 +3493,7 @@ globus_l_gfs_ipc_unpack_data(
     GlobusGFSDebugEnter();
 
     data_info = (globus_gfs_data_info_t *)
-        globus_malloc(sizeof(globus_gfs_data_info_t));
+        globus_calloc(1, sizeof(globus_gfs_data_info_t));
     if(data_info == NULL)
     {
         goto error;
@@ -4972,7 +4999,7 @@ globus_gfs_ipc_reply_finished(
                 buffer, ipc->buffer_size, ptr, reply->type);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->code);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->result);
-            if(reply->result != GLOBUS_SUCCESS)
+            if(reply->result != GLOBUS_SUCCESS && reply->msg == NULL)
             {
                 tmp_msg = globus_error_print_friendly(
                     globus_error_peek(reply->result));
@@ -5063,7 +5090,7 @@ globus_gfs_ipc_reply_finished(
                     break;
 
                 case GLOBUS_GFS_OP_COMMAND:
-                    GFSEncodeChar(
+                    GFSEncodeUInt32(
                         buffer, ipc->buffer_size, ptr, 
                         reply->info.command.command);
                     GFSEncodeString(
@@ -5885,6 +5912,7 @@ globus_gfs_ipc_request_command(
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_byte_t *                     buffer = NULL;
     globus_byte_t *                     ptr;
+    int                                 ctr;
     GlobusGFSName(globus_gfs_ipc_request_command);
     GlobusGFSDebugEnter();
 
@@ -5945,7 +5973,23 @@ globus_gfs_ipc_request_command(
             buffer, ipc->buffer_size, ptr, cmd_info->from_pathname);
         GFSEncodeString(
             buffer, ipc->buffer_size, ptr, cmd_info->authz_assert);
-
+        if(cmd_info->op_info && cmd_info->op_info->argc > 0)
+        {
+            GFSEncodeUInt32(
+                buffer, ipc->buffer_size, ptr, cmd_info->op_info->argc);
+            for(ctr = 0; ctr < cmd_info->op_info->argc; ctr++)
+            {
+                GFSEncodeString(
+                    buffer, ipc->buffer_size, ptr, 
+                    cmd_info->op_info->argv[ctr]);
+            }
+        }
+        else
+        {
+            GFSEncodeUInt32(
+                buffer, ipc->buffer_size, ptr, 0);
+        }
+            
         msg_size = ptr - buffer;
         /* now that we know size, add it in */
         ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;

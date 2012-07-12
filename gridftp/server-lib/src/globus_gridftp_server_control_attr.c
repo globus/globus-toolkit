@@ -345,7 +345,7 @@ globus_gridftp_server_control_attr_add_recv(
         mod_func->key = globus_libc_strdup(module_name);
         globus_hashtable_insert(
             &attr->funcs.recv_cb_table,
-            (void *)module_name,
+            (void *)mod_func->key,
             mod_func);
     }
     GlobusGridFTPServerDebugExit();
@@ -411,7 +411,7 @@ globus_gridftp_server_control_attr_add_send(
         mod_func->key = globus_libc_strdup(module_name);
         globus_hashtable_insert(
             &attr->funcs.send_cb_table,
-            (void *)module_name,
+            (void *)mod_func->key,
             mod_func);
     }
     GlobusGridFTPServerDebugExit();

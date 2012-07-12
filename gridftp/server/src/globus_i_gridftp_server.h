@@ -48,6 +48,27 @@ typedef struct gfs_i_stack_entry_s
     char *                              opts;
 } gfs_i_stack_entry_t;
 
+typedef struct
+{
+    int                                 cmd_id;
+    char *                              cmd_name;
+    char *                              help_str;
+    int                                 max_argc;
+    int                                 min_argc;
+    globus_bool_t                       has_pathname;
+    int                                 access_type;
+} globus_i_gfs_cmd_ent_t;        
+
+typedef struct globus_i_gfs_op_info_s
+{
+    globus_hashtable_t                  custom_command_table;
+    
+    char **                             argv;
+    int                                 argc;
+    globus_i_gfs_cmd_ent_t *            cmd_ent;
+    
+} globus_i_gfs_op_info_t;
+
 void
 globus_i_gfs_monitor_init(
     globus_i_gfs_monitor_t *            monitor);

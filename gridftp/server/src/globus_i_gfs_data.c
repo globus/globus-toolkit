@@ -167,7 +167,7 @@ typedef struct
     char *                              client_scheme;
     gss_cred_id_t                       dcsc_cred;
     
-    
+    globus_hashtable_t                  custom_cmd_table;
 } globus_l_gfs_data_session_t;
 
 typedef struct
@@ -288,11 +288,6 @@ typedef struct globus_l_gfs_data_operation_s
     */
     globus_bool_t                       finished_delayed;
 } globus_l_gfs_data_operation_t;
-
-typedef struct globus_i_gfs_op_info_s
-{
-    
-} globus_i_gfs_op_info_t;
 
 typedef struct
 {
@@ -991,6 +986,31 @@ globus_l_gfs_free_session_handle(
             globus_free(session_handle->session_info_copy->host_id);
         }
         globus_free(session_handle->session_info_copy);
+    }
+    
+    if(session_handle->custom_cmd_table)
+    {
+        globus_list_t *                 list;
+        globus_i_gfs_cmd_ent_t *        cmd_ent;
+        globus_hashtable_to_list(&session_handle->custom_cmd_table, &list);
+        while(!globus_list_empty(list))
+        {
+            cmd_ent = (globus_i_gfs_cmd_ent_t *)
+            globus_list_remove(&list, list);
+            if(cmd_ent)
+            {
+                if(cmd_ent->cmd_name)
+                {
+                    globus_free(cmd_ent->cmd_name);
+                }
+                if(cmd_ent->help_str)
+                {
+                    globus_free(cmd_ent->help_str);
+                }
+                globus_free(cmd_ent);
+            }
+        }
+        globus_hashtable_destroy(&session_handle->custom_cmd_table);
     }
         
     globus_handle_table_destroy(&session_handle->handle_table);
@@ -3659,6 +3679,20 @@ globus_i_gfs_data_request_command(
             break;
 
         default:
+            if(cmd_info->command >= GLOBUS_GFS_MIN_CUSTOM_CMD)
+            {
+                if(cmd_info->op_info && cmd_info->op_info->cmd_ent && 
+                    cmd_info->op_info->cmd_ent->access_type)
+                {
+                    action = cmd_info->op_info->cmd_ent->access_type;
+                }
+                else
+                {
+                    call = GLOBUS_FALSE;
+                    globus_l_gfs_authorize_cb(
+                        &object, action, op, GLOBUS_SUCCESS);
+                }
+            }
             break;
     }
 
@@ -4422,6 +4456,7 @@ globus_i_gfs_data_request_handle_destroy(
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
                 data_handle->state =
                     GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
+                free_it = GLOBUS_TRUE;
                 break;
 
 
@@ -5493,9 +5528,8 @@ globus_l_gfs_data_list_done(
     }
         
     op->current_path = NULL;
-    
-    globus_gridftp_server_finished_transfer(op, result);
     globus_free(op->stat_wrapper);
+    globus_gridftp_server_finished_transfer(op, result);
 }
 
 static
@@ -8186,6 +8220,7 @@ globus_l_gfs_finished_command_kickout(
     reply.id = op->id;
     reply.code = op->user_code;
     reply.result = op->cached_res;
+    reply.msg = op->user_msg;
     reply.info.command.command = op->command;
     reply.info.command.checksum = op->cksm_response;
     reply.info.command.created_dir = op->pathname;
@@ -8256,6 +8291,10 @@ globus_gridftp_server_finished_command(
       case GLOBUS_GFS_CMD_SITE_UTIME:
       case GLOBUS_GFS_CMD_SITE_SYMLINK:
       default:
+        if(op->command >= GLOBUS_GFS_MIN_CUSTOM_CMD)
+        {
+            op->user_msg = globus_libc_strdup(command_data);
+        }
         break;
     }
     op->cached_res = result;
@@ -9014,6 +9053,11 @@ globus_l_gfs_operation_finished_kickout(
         globus_l_gfs_data_operation_destroy(op);
     }
 
+    if(bounce->finished_info->op_info)
+    {
+        globus_free(bounce->finished_info->op_info);
+        bounce->finished_info->op_info = NULL;
+    }
     globus_free(bounce);
 
     GlobusGFSDebugExit();
@@ -9099,6 +9143,14 @@ globus_gridftp_server_operation_finished(
             }
             if(result != GLOBUS_SUCCESS)
             {
+            }
+            if(op->callback != NULL && 
+                !globus_hashtable_empty(
+                    &op->session_handle->custom_cmd_table))
+            {
+                finished_info->op_info = globus_calloc(1, sizeof(globus_i_gfs_op_info_t));
+                finished_info->op_info->custom_command_table = 
+                    op->session_handle->custom_cmd_table;
             }
             break;
 
@@ -9391,6 +9443,134 @@ globus_gridftp_server_get_config_string(
     GlobusGFSDebugExit();
 }
 
+
+
+globus_result_t
+globus_gridftp_server_query_op_info(
+    globus_gfs_operation_t              op,
+    globus_gfs_op_info_t                op_info,
+    globus_gfs_op_info_param_t          param,
+    ...)
+{
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    va_list                             ap;
+    
+    char **                             argv;
+    int *                               argc;
+    GlobusGFSName(globus_gridftp_server_query_op_info);
+    GlobusGFSDebugEnter();
+
+    if(op_info == NULL)
+    {
+        res = GlobusGFSErrorGeneric("Invalid op_info.");;
+        goto err;
+    }
+
+#ifdef HAVE_STDARG_H
+    va_start(ap, param);
+#else
+    va_start(ap);
+#endif
+
+    switch(param)
+    {
+        case GLOBUS_GFS_OP_INFO_CMD_ARGS:
+            argv = va_arg(ap, char ***);
+            argc = va_arg(ap, int *);
+            
+            *argv = op_info->argv;
+            *argc = op_info->argc;
+            break;
+        
+            default:
+                res = GlobusGFSErrorGeneric("Invalid query parameter.");
+                break;
+    }
+    
+    va_end(ap);
+
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+
+err:
+    GlobusGFSDebugExitWithError();
+    return res;
+}        
+    
+
+
+globus_result_t
+globus_gridftp_server_add_command(
+    globus_gfs_operation_t              op,
+    const char *                        command_name,
+    int                                 cmd_id,
+    int                                 min_args,
+    int                                 max_args,
+    const char *                        help_string,
+    globus_bool_t                       has_pathname,
+    int                                 access_type)
+{
+    globus_i_gfs_cmd_ent_t *            cmd_ent;
+    int                                 rc;
+    char *                              ptr;
+    globus_result_t                     result;
+    GlobusGFSName(globus_gridftp_server_add_command);
+    GlobusGFSDebugEnter();
+
+    if(cmd_id < GLOBUS_GFS_MIN_CUSTOM_CMD)
+    {
+        result = GlobusGFSErrorGeneric("Invalid cmd_id.");;
+        goto err;
+    }
+    
+    if(op->session_handle->custom_cmd_table == NULL)
+    {
+        globus_hashtable_init(
+            &op->session_handle->custom_cmd_table,
+            128,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+    }
+    
+    cmd_ent = (globus_i_gfs_cmd_ent_t *)
+        globus_calloc(1, sizeof(globus_i_gfs_cmd_ent_t));
+    
+    cmd_ent->cmd_name = globus_libc_strdup(command_name);
+    ptr = cmd_ent->cmd_name;
+    while(ptr && *ptr)
+    {
+        *ptr = toupper(*ptr);
+        ptr++;
+    }
+    cmd_ent->cmd_id = cmd_id;
+    cmd_ent->min_argc = min_args;
+    cmd_ent->max_argc = max_args;
+    cmd_ent->help_str = globus_libc_strdup(help_string);
+    cmd_ent->has_pathname = has_pathname;
+    cmd_ent->access_type = access_type;
+    
+    rc = globus_hashtable_insert(
+        &op->session_handle->custom_cmd_table, cmd_ent->cmd_name, cmd_ent);
+
+    if(rc != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorGeneric("Could not store command entry.");
+        goto err;
+    }
+    
+    GlobusGFSDebugExit();   
+    return GLOBUS_SUCCESS;
+    
+err:
+    GlobusGFSDebugExitWithError();   
+    return result;
+}
+    
 
 /* this is used to translate the restart and partial offset/lengths into
     a sets of ranges to transfer... storage interface shouldn't know about

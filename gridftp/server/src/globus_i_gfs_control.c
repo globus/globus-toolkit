@@ -46,6 +46,8 @@ typedef struct
     char *                              username;
     globus_gridftp_server_control_t     server_handle;
     globus_object_t *                   close_error;
+    
+    globus_hashtable_t                  custom_cmd_table;
 } globus_l_gfs_server_instance_t;
 
 typedef struct
@@ -85,6 +87,15 @@ globus_l_gfs_control_log(
     globus_gridftp_server_control_t     server_handle,
     const char *                        message,
     int                                 type,
+    void *                              user_arg);
+    
+static
+void
+globus_l_gfs_request_custom_command(
+    globus_gsc_959_op_t                 op,
+    const char *                        full_command,
+    char **                             cmd_array,
+    int                                 argc,
     void *                              user_arg);
 
 static int
@@ -621,6 +632,49 @@ globus_l_gfs_auth_session_cb(
         auth_info->instance->username = 
             globus_libc_strdup(reply->info.session.username);
         
+        if(reply->op_info && 
+            !globus_hashtable_empty(&reply->op_info->custom_command_table))
+        {
+            globus_list_t *             list;
+            int                         rc;
+            globus_result_t             result;
+            globus_i_gfs_cmd_ent_t *    cmd_ent;
+            
+            auth_info->instance->custom_cmd_table = 
+                reply->op_info->custom_command_table;
+                
+            rc = globus_hashtable_to_list(
+                &reply->op_info->custom_command_table, &list);
+            
+            while(!globus_list_empty(list))
+            {
+                cmd_ent = (globus_i_gfs_cmd_ent_t *) 
+                    globus_list_remove(&list, list);
+                    
+                result = globus_gsc_959_command_add(
+                    auth_info->instance->server_handle,
+                    cmd_ent->cmd_name,
+                    globus_l_gfs_request_custom_command,
+                    GLOBUS_GSC_COMMAND_POST_AUTH,
+                    cmd_ent->min_argc,
+                    cmd_ent->max_argc,
+                    cmd_ent->help_str,
+                    auth_info->instance);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    char *              tmp_msg;
+                    tmp_msg = globus_error_print_friendly(
+                        globus_error_peek(result));
+                        
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_ERR,
+                        "Could not register command '%s':\n%s",
+                        cmd_ent->cmd_name,
+                        tmp_msg);
+                    globus_free(tmp_msg);
+                }
+            }
+        }
         globus_gridftp_server_control_finished_auth(
             auth_info->control_op,
             reply->info.session.username,
@@ -917,6 +971,7 @@ globus_l_gfs_data_command_cb(
     char *                              tmp_msg;
     globus_l_gfs_request_info_t *       request;
     globus_gfs_command_info_t *         info;
+    int                                 ctr;
     GlobusGFSName(globus_l_gfs_data_command_cb);
     GlobusGFSDebugEnter();
 
@@ -973,7 +1028,17 @@ globus_l_gfs_data_command_cb(
             break;
 
           default:
-            globus_gsc_959_finished_command(op, "250 OK.\r\n");
+            if(reply->info.command.command >= GLOBUS_GFS_MIN_CUSTOM_CMD)
+            {
+                if(reply->msg != NULL)
+                {
+                    globus_gsc_959_finished_command(op, reply->msg);
+                }
+            }
+            else
+            {                    
+                globus_gsc_959_finished_command(op, "250 OK.\r\n");
+            }
             break;
         }
     }
@@ -1009,6 +1074,22 @@ globus_l_gfs_data_command_cb(
         if(info->chgrp_group)
         {
             globus_free(info->chgrp_group);
+        }
+        if(info->authz_assert)
+        {
+            globus_free(info->authz_assert);
+        }
+        if(info->op_info != NULL)
+        {
+            if(info->op_info->argv)
+            {
+                for(ctr = 0; ctr < info->op_info->argc; ctr++)
+                {
+                    globus_free(info->op_info->argv[ctr]);
+                }
+                globus_free(info->op_info->argv);
+            }           
+            globus_free(info->op_info);
         }
         globus_free(info);
     }
@@ -1064,6 +1145,154 @@ globus_l_gfs_data_internal_stat_cb(
     }
     
     GlobusGFSDebugExit();
+}
+
+static
+void
+globus_l_gfs_request_custom_command(
+    globus_gsc_959_op_t                 op,
+    const char *                        full_command,
+    char **                             cmd_array,
+    int                                 argc,
+    void *                              user_arg)
+{
+    char *                              msg_for_log;
+    int                                 type;
+    globus_l_gfs_server_instance_t *    instance;
+    globus_gfs_command_info_t *         command_info;
+    globus_l_gfs_request_info_t *       request;
+    globus_result_t                     result;
+    globus_bool_t                       done = GLOBUS_FALSE;
+    globus_i_gfs_cmd_ent_t *            cmd_ent;
+    int                                 i;
+    int                                 acc;
+    GlobusGFSName(globus_l_gfs_request_custom_command);
+    GlobusGFSDebugEnter();
+
+    msg_for_log = strdup(full_command);
+
+    instance = (globus_l_gfs_server_instance_t *) user_arg;
+
+    command_info = (globus_gfs_command_info_t *) 
+        globus_calloc(1, sizeof(globus_gfs_command_info_t));
+
+    result = globus_l_gfs_request_info_init(
+        &request, instance, op, command_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_init;
+    }
+
+    if(strcmp(cmd_array[0], "SITE") == 0)
+    {
+        char                            key[1024];
+        
+        snprintf(key, sizeof(key), "%s %s", cmd_array[0], cmd_array[1]);
+        cmd_ent = globus_hashtable_lookup(
+            &instance->custom_cmd_table, key);
+    }
+    else
+    {    
+        cmd_ent = globus_hashtable_lookup(
+            &instance->custom_cmd_table, cmd_array[0]);
+    }
+    
+    if(cmd_ent)
+    {
+        command_info->command = cmd_ent->cmd_id;
+        if(cmd_ent->has_pathname)
+        {   
+            switch(cmd_ent->access_type)
+            {
+                case GFS_ACL_ACTION_READ:
+                    acc = GFS_L_READ;
+                    break;
+                case GFS_ACL_ACTION_LOOKUP:
+                    acc = GFS_L_LIST;
+                    break;
+                case GFS_ACL_ACTION_WRITE:
+                case GFS_ACL_ACTION_DELETE:
+                case GFS_ACL_ACTION_CREATE:
+                default:
+                    acc = GFS_L_WRITE;
+                    break;
+            }                
+            result = globus_l_gfs_get_full_path(
+                instance, 
+                cmd_array[argc - 1], 
+                &command_info->pathname, 
+                acc);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+        }
+        else
+        {
+            command_info->pathname = globus_libc_strdup(cmd_array[argc - 1]);
+        }
+
+        command_info->op_info = 
+            globus_calloc(1, sizeof(globus_i_gfs_op_info_t));
+
+        command_info->op_info->cmd_ent = cmd_ent;
+        command_info->op_info->argc = argc;
+        command_info->op_info->argv = globus_calloc(argc, sizeof(char *));
+        for(i = 0; i < argc; i++)
+        {
+            command_info->op_info->argv[i] = 
+                globus_libc_strdup(cmd_array[i]);
+        }
+
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+    }
+    else
+    {
+        goto err;
+    }
+
+    if(!done)
+    {
+        globus_i_gfs_data_request_command(
+            NULL,
+            instance->session_arg,
+            0,
+            command_info,
+            globus_l_gfs_data_command_cb,
+            request);
+    }
+    globus_l_gfs_control_log(instance->server_handle, msg_for_log,
+        type, instance);
+    free(msg_for_log);
+    
+    GlobusGFSDebugExit();
+    return;
+
+err:   
+error_init:
+
+    globus_l_gfs_control_log(instance->server_handle, msg_for_log,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ERROR, instance);
+    free(msg_for_log);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        char *                          ftp_str;
+        char *                          tmp_str;
+        
+        tmp_str = globus_error_print_friendly(globus_error_peek(result));
+        ftp_str = globus_gsc_string_to_959(500, tmp_str, NULL);
+        globus_gsc_959_finished_command(op, ftp_str);
+        globus_free(tmp_str);
+        globus_free(ftp_str);
+    }
+    else
+    {
+        globus_gsc_959_finished_command(op,
+            "501 Invalid command or arguments.\r\n");
+    }
+
+    GlobusGFSDebugExitWithError();
 }
 
 static
@@ -1257,7 +1486,7 @@ globus_l_gfs_request_command(
              * value.  We have to do contortions here as there is no standard
              * inverse of the 'gmtime' function. */
             tz = getenv("TZ");
-            setenv("TZ", "", 1);
+            setenv("TZ", "UTC", 1);
             tzset();
             command_info->utime_time = mktime(&modtime);
             if (tz)
@@ -1398,7 +1627,7 @@ globus_l_gfs_request_command(
                  * value.  We have to do contortions here as there is no standard
                  * inverse of the 'gmtime' function. */
                 tz = getenv("TZ");
-                setenv("TZ", "", 1);
+                setenv("TZ", "UTC", 1);
                 tzset();
                 command_info->utime_time = mktime(&modtime);
                 if (tz)
