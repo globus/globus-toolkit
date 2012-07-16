@@ -1,3 +1,9 @@
+globus-ftp-control (4.4-2) unstable; urgency=low
+
+  * GT 5.2.2 final
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+
 globus-ftp-control (4.4-1) unstable; urgency=low
 
   * GRIDFTP-199: increase efficiency of control channel message processing

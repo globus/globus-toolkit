@@ -1,3 +1,9 @@
+globus-gsi-callback (4.3-2) unstable; urgency=low
+
+  * GT 5.2.2 final
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+
 globus-gsi-callback (4.3-1) unstable; urgency=low
 
   * GT-165: Threaded server has a race condition with parallel data channels and loading crls

@@ -13,7 +13,7 @@
 Name:		globus-gass-cache-program
 %global _name %(tr - _ <<< %{name})
 Version:	5.1
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Tools to manipulate local and remote GASS caches
 
 Group:		Applications/Internet
@@ -85,6 +85,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 5.1-4
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 5.1-3
 - GT 5.2.2 Release
 

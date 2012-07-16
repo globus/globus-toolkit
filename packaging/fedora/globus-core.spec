@@ -19,7 +19,7 @@
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
 Version:	8.8
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 8.8-4
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 8.8-3
 - GT 5.2.2 Release
 

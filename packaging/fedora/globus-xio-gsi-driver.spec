@@ -13,7 +13,7 @@
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.3
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
 Group:		System Environment/Libraries
@@ -185,6 +185,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 2.3-5
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 2.3-4
 - GT 5.2.2 Release
 

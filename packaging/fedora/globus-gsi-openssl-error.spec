@@ -13,7 +13,7 @@
 Name:		globus-gsi-openssl-error
 %global _name %(tr - _ <<< %{name})
 Version:	2.1
-Release:	8%{?dist}
+Release:	9%{?dist}
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling
 
 Group:		System Environment/Libraries
@@ -169,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 2.1-9
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 2.1-8
 - GT 5.2.2 Release
 

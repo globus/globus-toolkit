@@ -13,7 +13,7 @@
 Name:		globus-xio-popen-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.3
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Globus XIO Pipe Open Driver
 
 Group:		System Environment/Libraries
@@ -113,6 +113,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 2.3-4
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 2.3-3
 - GT 5.2.2 Release
 

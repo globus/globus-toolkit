@@ -13,7 +13,7 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
 Version:	8.5
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
@@ -204,6 +204,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 8.5-5
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 8.5-4
 - GT 5.2.2 Release
 

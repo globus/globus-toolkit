@@ -13,7 +13,7 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
 Version:	9.3
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
@@ -119,6 +119,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 9.3-4
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 9.3-3
 - GT 5.2.2 Release
 

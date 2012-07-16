@@ -1,3 +1,9 @@
+globus-callout (2.2-2) unstable; urgency=low
+
+  * GT 5.2.2 final
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+
 globus-callout (2.2-1) unstable; urgency=low
 
   * RIC-224: Eliminate some doxygen warnings

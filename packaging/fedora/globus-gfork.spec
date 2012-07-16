@@ -13,7 +13,7 @@
 Name:		globus-gfork
 %global _name %(tr - _ <<< %{name})
 Version:	3.2
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - GFork
 
 Group:		System Environment/Libraries
@@ -140,6 +140,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 3.2-4
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 3.2-3
 - GT 5.2.2 Release
 

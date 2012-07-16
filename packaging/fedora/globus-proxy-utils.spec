@@ -13,7 +13,7 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
 Version:	5.0
-Release:	8%{?dist}
+Release:	9%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 5.0-9
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 5.0-8
 - GT 5.2.2 Release
 

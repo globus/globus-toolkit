@@ -1,3 +1,9 @@
+globus-gsi-cert-utils (8.3-2) unstable; urgency=low
+
+  * GT 5.2.2 final
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+
 globus-gsi-cert-utils (8.3-1) unstable; urgency=low
 
   * RIC-248: grid-cert-request can't use non-default CA when a default isn't set

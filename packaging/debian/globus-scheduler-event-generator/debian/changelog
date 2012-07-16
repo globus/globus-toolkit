@@ -1,3 +1,9 @@
+globus-scheduler-event-generator (4.6-2) unstable; urgency=low
+
+  * GT 5.2.2 final
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+
 globus-scheduler-event-generator (4.6-1) unstable; urgency=low
 
   * RIC-258: Can't rely on MKDIR_P

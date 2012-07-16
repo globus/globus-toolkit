@@ -13,7 +13,7 @@
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
 Version:	2.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
 Group:		System Environment/Libraries
@@ -115,6 +115,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 2.7-2
+- GT 5.2.2 final
+
 * Thu Jul 12 2012 Joseph Bester <bester@mcs.anl.gov> - 2.7-1
 - GT-172: Removed custom MLSx tag feature
 - GT-244: Cleaned up memory leaks

@@ -1,3 +1,9 @@
+globus-xio (3.3-2) unstable; urgency=low
+
+  * GT 5.2.2 final
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+
 globus-xio (3.3-1) unstable; urgency=low
 
   * RIC-240: fix memory leak when GLOBUS_XIO_ATTR_SET_CREDENTIAL is used

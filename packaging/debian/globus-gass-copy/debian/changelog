@@ -1,3 +1,9 @@
+globus-gass-copy (8.5-2) unstable; urgency=low
+
+  * GT 5.2.2 final
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+
 globus-gass-copy (8.5-1) unstable; urgency=low
 
   * GRIDFTP-200: mixing ftp:// with -cred fails

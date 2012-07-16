@@ -9,7 +9,7 @@
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
 Version:	1.3
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
@@ -124,6 +124,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-condor
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-5
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-4
 - GT 5.2.2 Release
 

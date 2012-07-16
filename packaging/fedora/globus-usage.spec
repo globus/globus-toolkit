@@ -13,7 +13,7 @@
 Name:		globus-usage
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	7%{?dist}
+Release:	8%{?dist}
 Summary:	Globus Toolkit - Usage Library
 
 Group:		System Environment/Libraries
@@ -109,6 +109,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-8
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-7
 - GT 5.2.2 Release
 

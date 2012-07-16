@@ -13,7 +13,7 @@
 Name:		globus-gsi-proxy-core
 %global _name %(tr - _ <<< %{name})
 Version:	6.2
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
 
 Group:		System Environment/Libraries
@@ -186,6 +186,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 6.2-5
+- GT 5.2.2 final
+
 * Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 6.2-4
 - GT 5.2.2 Release
 

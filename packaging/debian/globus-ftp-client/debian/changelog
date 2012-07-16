@@ -1,3 +1,9 @@
+globus-ftp-client (7.4-2) unstable; urgency=low
+
+  * GT 5.2.2 final
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+
 globus-ftp-client (7.4-1) unstable; urgency=low
 
   * GT-153: make gridftp-v2 GET/PUT the default for server that support it
