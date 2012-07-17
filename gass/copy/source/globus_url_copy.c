@@ -2029,7 +2029,9 @@ main(int argc, char **argv)
     
     if(globus_l_globus_url_copy_ctrlc && !g_monitor.transfer_timeout)
     {
+#ifdef SIGINT
         raise(SIGINT);
+#endif
     }
     
     if(guc_info.udt)
