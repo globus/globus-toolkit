@@ -18,8 +18,8 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.8
-Release:	4%{?dist}
+Version:	8.9
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 8.9-1
+- GT-251: Bad compile flags for S390 build
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 8.8-4
 - GT 5.2.2 final
 

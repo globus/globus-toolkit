@@ -1,3 +1,9 @@
+globus-core (8.9-1) unstable; urgency=low
+
+  * GT-251: Bad compile flags for S390 build
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 Jul 2012 13:48:14 -0400
+
 globus-core (8.8-1) unstable; urgency=low
 
   * RIC-252: solaris build failure
