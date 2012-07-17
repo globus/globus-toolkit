@@ -12,8 +12,8 @@
 
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	8.5
-Release:	3%{?dist}
+Version:	8.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
 Group:		System Environment/Libraries
@@ -202,6 +202,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 8.6-1
+- GT-241: wrong SIGINT handling in globus-url-copy
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 8.5-3
 - GT 5.2.2 final
 

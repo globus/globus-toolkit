@@ -1,3 +1,9 @@
+globus-gass-copy (8.6-1) unstable; urgency=low
+
+  * GT-241: wrong SIGINT handling in globus-url-copy
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 Jul 2012 16:38:16 -0400
+
 globus-gass-copy (8.5-2) unstable; urgency=low
 
   * GT 5.2.2 final
