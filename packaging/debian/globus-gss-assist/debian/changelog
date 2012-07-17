@@ -1,3 +1,9 @@
+globus-gss-assist (8.6-1) unstable; urgency=low
+
+  * GT-255: gridmapdir support doesn't compile on non-POSIX systems
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 Jul 2012 13:52:29 -0400
+
 globus-gss-assist (8.5-2) unstable; urgency=low
 
   * GT 5.2.2 final

@@ -12,8 +12,8 @@
 
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	8.5
-Release:	5%{?dist}
+Version:	8.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
@@ -204,6 +204,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 8.6-1
+- GT-255: gridmapdir support doesn't compile on non-POSIX systems
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 8.5-5
 - GT 5.2.2 final
 

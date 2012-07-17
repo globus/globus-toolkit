@@ -118,6 +118,7 @@ globus_l_gss_assist_line_length(
 #endif
 
 
+#ifndef WIN32
 
 /******************************************************************************
                        Start of gridmapdir functions
@@ -509,6 +510,8 @@ gridmapdir_userok(char *     globusidp,
                      End of gridmapdir functions
 ******************************************************************************/
 
+#endif
+
 /**
  * @brief Look up the default mapping for a Grid identity in a gridmap file
  * @ingroup globus_gsi_gss_assist
@@ -549,8 +552,10 @@ globus_gss_assist_gridmap(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_gss_assist_gridmap_line_t *
                                         gline = NULL;
+#ifndef WIN32
     char                               *usernameprefix;
     int                                 ret;
+#endif
 
     static char *                       _function_name_ =
     "globus_gss_assist_gridmap";
@@ -609,6 +614,7 @@ globus_gss_assist_gridmap(
 	    goto exit;
 	}
 
+#ifndef WIN32
 	if ((*useridp)[0] == '.') /* need to use gridmapdir */
 	{             
 	    usernameprefix = strdup(&((*useridp)[1]));
@@ -617,6 +623,7 @@ globus_gss_assist_gridmap(
 	    free(usernameprefix);
 	    return ret;
         }
+#endif
 
     }
     else
@@ -737,12 +744,14 @@ globus_gss_assist_userok(
         goto exit;
     }
 
+#ifndef WIN32
     if (*((gline->user_ids)[0]) == '.') /* try using gridmapdir */ 
     {
         globus_i_gss_assist_gridmap_line_free(gline);
         return gridmapdir_userok(globusid, userid);
     }
     else
+#endif
     for (useridp = gline->user_ids; *useridp != NULL; useridp++)
     {
 	if (strcmp(*useridp, userid) == 0)
@@ -914,8 +923,12 @@ globus_gss_assist_map_local_user(
         error_obj = globus_error_get(result);
         globus_object_free(error_obj);
 
+#ifndef WIN32
         /* try with gridmapdir before giving up completely */
         return gridmapdir_globusid(local_user, globusidp);
+#else
+        return 1;
+#endif
     }
 } 
 /* globus_gss_assist_map_local_user() */
