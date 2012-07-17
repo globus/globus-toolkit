@@ -12,8 +12,8 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.13
-Release:	2%{?dist}
+Version:	6.14
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -180,6 +180,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 6.14-1
+- GT-254: Gridftp server uses dynamic string as sprintf argument
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 6.13-2
 - GT 5.2.2 final
 

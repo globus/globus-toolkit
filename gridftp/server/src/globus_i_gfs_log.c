@@ -645,7 +645,7 @@ globus_gfs_log_exit_message(
             "Server configuration error.\n\n%s\nPlease notify administrator.",
             msg);
         out_msg = globus_gsc_string_to_959(500, tmp, " ");
-        globus_libc_fprintf(stderr, out_msg);
+        globus_libc_fprintf(stderr, "%s", out_msg);
         globus_free(tmp);
         globus_free(out_msg);
     }
