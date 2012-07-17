@@ -165,6 +165,7 @@ typedef struct
     globus_cond_t                       cond;
     globus_object_t *                   err;
     globus_bool_t                       use_err;
+    globus_bool_t                       transfer_timeout;
     int                                 was_error;
     volatile globus_bool_t              done;
 } globus_l_guc_monitor_t;
@@ -1053,7 +1054,7 @@ static globus_bool_t g_use_debug = GLOBUS_FALSE;
 static globus_bool_t g_use_restart = GLOBUS_FALSE;
 static globus_bool_t g_continue = GLOBUS_FALSE;
 static char *        g_err_msg;
-static globus_l_guc_monitor_t           g_monitor;
+static globus_l_guc_monitor_t           g_monitor = {};
 
 /* for multicast stuff */
 static globus_fifo_t                    guc_mc_url_q;
@@ -1291,7 +1292,11 @@ globus_l_guc_interrupt_handler(
     }
 
     monitor = (globus_l_guc_monitor_t *) user_arg;
-    
+    if(!monitor)
+    {
+        monitor = &g_monitor;
+        monitor->transfer_timeout = GLOBUS_TRUE;
+    }
     globus_mutex_lock(&monitor->mutex);
     {
         globus_l_globus_url_copy_ctrlc = GLOBUS_TRUE;
@@ -1970,7 +1975,7 @@ main(int argc, char **argv)
                 NULL,
                 &delay,
                 globus_l_guc_interrupt_handler,
-                &g_monitor);
+                NULL);
         }
         
         if(guc_info.dumpfile || guc_info.dump_only_file)
@@ -2021,7 +2026,12 @@ main(int argc, char **argv)
     {
         globus_libc_fprintf(stdout, "\n");
     }
-
+    
+    if(globus_l_globus_url_copy_ctrlc && !g_monitor.transfer_timeout)
+    {
+        raise(SIGINT);
+    }
+    
     if(guc_info.udt)
     {
         /* sidestep udt shutdown issues */
@@ -3000,6 +3010,9 @@ globus_l_guc_transfer_files(
                     GLOBUS_NULL);
             }
             globus_l_globus_url_copy_ctrlc_handled = GLOBUS_TRUE;
+            
+            globus_callback_unregister_signal_handler(
+                GLOBUS_SIGNAL_INTERRUPT, GLOBUS_NULL, GLOBUS_NULL);
         }
     }
     globus_mutex_unlock(&g_monitor.mutex);
