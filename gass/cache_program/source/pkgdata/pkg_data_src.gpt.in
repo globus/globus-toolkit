@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_gass_cache_program">
-    <Aging_Version Major="5" Minor="1" Age="0"/>
+    <Aging_Version Major="5" Minor="2" Age="0"/>
     <Description>Tools to manipulate local and remote GASS caches.</Description>
     <Functional_Group>FileAccess</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -58,6 +58,11 @@
             <Dependency Name="globus_gass_copy">
                 <Version>
                     <Simple_Version Major="8"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gass_transfer">
+                <Version>
+                    <Simple_Version Major="7"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gass_server_ez">
