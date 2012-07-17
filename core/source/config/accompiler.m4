@@ -438,9 +438,9 @@ case ${host}--$1 in
                 lac_CXXFLAGS="$lac_CXXFLAGS -m64"
                 lac_LDFLAGS="$lac_LDFLAGS -m64"
             else
-                lac_CFLAGS="$lac_CFLAGS -m32"
-                lac_CXXFLAGS="$lac_CXXFLAGS -m32"
-                lac_LDFLAGS="$lac_LDFLAGS -m32"
+                lac_CFLAGS="$lac_CFLAGS -m31"
+                lac_CXXFLAGS="$lac_CXXFLAGS -m31"
+                lac_LDFLAGS="$lac_LDFLAGS -m31"
             fi
             AC_PATH_PROGS(lac_cv_CC, $CC gcc)
             AC_PATH_PROGS(lac_cv_CXX, $CXX c++ g++)
