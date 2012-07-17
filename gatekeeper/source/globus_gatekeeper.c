@@ -948,7 +948,12 @@ main(int xargc,
         act.sa_handler = SIG_IGN;
         sigemptyset(&act.sa_mask);
         sigaddset(&act.sa_mask, SIGCHLD);
+#ifdef SA_NOCLDWAIT
         act.sa_flags = SA_NOCLDWAIT;
+#else
+        /* This might leave zombies on non-POSIX systems like Hurd */
+        act.sa_flags = 0;
+#endif
         sigaction(SIGCHLD, &act, NULL);
         if (!run_from_inetd)
         {
