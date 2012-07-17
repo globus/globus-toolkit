@@ -948,7 +948,11 @@ main(int xargc,
         act.sa_handler = SIG_IGN;
         sigemptyset(&act.sa_mask);
         sigaddset(&act.sa_mask, SIGCHLD);
+#ifdef SA_NOCLDWAIT
         act.sa_flags = SA_NOCLDWAIT;
+#else
+        act.sa_flags = 0;
+#endif
         sigaction(SIGCHLD, &act, NULL);
         if (!run_from_inetd)
         {
