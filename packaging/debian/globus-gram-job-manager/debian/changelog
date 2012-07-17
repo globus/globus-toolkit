@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.48-1) unstable; urgency=low
+
+  * GT-253: gatekeeper and job manager don't build on hurd
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 Jul 2012 13:50:39 -0400
+
 globus-gram-job-manager (13.47-1) unstable; urgency=low
 
   * GT-212: Missing debian packages

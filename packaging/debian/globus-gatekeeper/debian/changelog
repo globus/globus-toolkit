@@ -1,3 +1,9 @@
+globus-gatekeeper (9.14-1) unstable; urgency=low
+
+  * GT-253: gatekeeper and job manager don't build on hurd
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 Jul 2012 13:50:23 -0400
+
 globus-gatekeeper (9.13-1) unstable; urgency=low
 
   * GT-205: gatekeeper should log a message when it exits due to the presence of /etc/nologin

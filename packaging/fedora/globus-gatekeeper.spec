@@ -12,8 +12,8 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.13
-Release:	3%{?dist}
+Version:	9.14
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
@@ -125,6 +125,9 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 9.14-1
+- GT-253: gatekeeper and job manager don't build on hurd
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 9.13-3
 - GT 5.2.2 final
 

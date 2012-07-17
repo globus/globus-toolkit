@@ -12,8 +12,8 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.47
-Release:	3%{?dist}
+Version:	13.48
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -177,6 +177,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 13.48-1
+- GT-253: gatekeeper and job manager don't build on hurd
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 13.47-3
 - GT 5.2.2 final
 
