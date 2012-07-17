@@ -1,3 +1,9 @@
+globus-gass-cache-program (5.2-1) unstable; urgency=low
+
+  * GT-252: Missing dependency in gass cache program
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 Jul 2012 13:49:24 -0400
+
 globus-gass-cache-program (5.1-1) unstable; urgency=low
 
   * GRAM-311: Undefined variable defaults in shell scripts
