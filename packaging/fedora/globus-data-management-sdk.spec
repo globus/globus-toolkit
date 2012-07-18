@@ -58,7 +58,6 @@ Requires:       globus-xio-gsi-driver-devel
 Requires:       globus-xio-gsi-driver-doc
 Requires:       globus-io
 Requires:       globus-io-devel
-Requires:       globus-io-doc
 Requires:       globus-gass-transfer
 Requires:       globus-gass-transfer-devel
 Requires:       globus-gass-transfer-doc
@@ -67,7 +66,6 @@ Requires:       globus-ftp-control-devel
 Requires:       globus-ftp-control-doc
 Requires:       globus-xio-popen-driver
 Requires:       globus-xio-popen-driver-devel
-Requires:       globus-xio-popen-driver-doc
 Requires:       globus-ftp-client
 Requires:       globus-ftp-client-devel
 Requires:       globus-ftp-client-doc

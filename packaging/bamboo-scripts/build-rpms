@@ -489,7 +489,6 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-xio-gsi-driver-doc</packagereq>
       <packagereq type="default">globus-io</packagereq>
       <packagereq type="default">globus-io-devel</packagereq>
-      <packagereq type="default">globus-io-doc</packagereq>
       <packagereq type="default">globus-gass-transfer</packagereq>
       <packagereq type="default">globus-gass-transfer-devel</packagereq>
       <packagereq type="default">globus-gass-transfer-doc</packagereq>
@@ -498,7 +497,6 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-ftp-control-doc</packagereq>
       <packagereq type="default">globus-xio-popen-driver</packagereq>
       <packagereq type="default">globus-xio-popen-driver-devel</packagereq>
-      <packagereq type="default">globus-xio-popen-driver-doc</packagereq>
       <packagereq type="default">globus-ftp-client</packagereq>
       <packagereq type="default">globus-ftp-client-devel</packagereq>
       <packagereq type="default">globus-ftp-client-doc</packagereq>
@@ -644,7 +642,6 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-callout-doc</packagereq>
       <packagereq type="default">globus-gass-cache</packagereq>
       <packagereq type="default">globus-gass-cache-devel</packagereq>
-      <packagereq type="default">globus-gass-cache-doc</packagereq>
       <packagereq type="default">globus-gsi-openssl-error</packagereq>
       <packagereq type="default">globus-gsi-openssl-error-devel</packagereq>
       <packagereq type="default">globus-gsi-openssl-error-doc</packagereq>
@@ -687,7 +684,6 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-xio-gsi-driver-doc</packagereq>
       <packagereq type="default">globus-io</packagereq>
       <packagereq type="default">globus-io-devel</packagereq>
-      <packagereq type="default">globus-io-doc</packagereq>
       <packagereq type="default">globus-gssapi-error</packagereq>
       <packagereq type="default">globus-gssapi-error-devel</packagereq>
       <packagereq type="default">globus-gssapi-error-doc</packagereq>

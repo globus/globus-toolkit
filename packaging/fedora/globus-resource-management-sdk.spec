@@ -18,7 +18,6 @@ Requires:       globus-callout-devel
 Requires:       globus-callout-doc
 Requires:       globus-gass-cache
 Requires:       globus-gass-cache-devel
-Requires:       globus-gass-cache-doc
 Requires:       globus-gsi-openssl-error
 Requires:       globus-gsi-openssl-error-devel
 Requires:       globus-gsi-openssl-error-doc
@@ -61,7 +60,6 @@ Requires:       globus-xio-gsi-driver-devel
 Requires:       globus-xio-gsi-driver-doc
 Requires:       globus-io
 Requires:       globus-io-devel
-Requires:       globus-io-doc
 Requires:       globus-gssapi-error
 Requires:       globus-gssapi-error-devel
 Requires:       globus-gssapi-error-doc
