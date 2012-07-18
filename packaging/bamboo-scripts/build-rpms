@@ -451,7 +451,7 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gsi-openssl-error</packagereq>
       <packagereq type="default">globus-gsi-openssl-error-devel</packagereq>
       <packagereq type="default">globus-gsi-openssl-error-doc</packagereq>
-      <packagereq type="default">globus-gsi-proxy-devel</packagereq>
+      <packagereq type="default">globus-gsi-proxy-ssl</packagereq>
       <packagereq type="default">globus-gsi-proxy-ssl-devel</packagereq>
       <packagereq type="default">globus-gsi-proxy-ssl-doc</packagereq>
       <packagereq type="default">globus-openssl-module</packagereq>
@@ -648,7 +648,7 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gsi-openssl-error</packagereq>
       <packagereq type="default">globus-gsi-openssl-error-devel</packagereq>
       <packagereq type="default">globus-gsi-openssl-error-doc</packagereq>
-      <packagereq type="default">globus-gsi-proxy-devel</packagereq>
+      <packagereq type="default">globus-gsi-proxy-ssl</packagereq>
       <packagereq type="default">globus-gsi-proxy-ssl-devel</packagereq>
       <packagereq type="default">globus-gsi-proxy-ssl-doc</packagereq>
       <packagereq type="default">globus-rsl</packagereq>

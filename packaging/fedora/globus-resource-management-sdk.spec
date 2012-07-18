@@ -22,7 +22,7 @@ Requires:       globus-gass-cache-doc
 Requires:       globus-gsi-openssl-error
 Requires:       globus-gsi-openssl-error-devel
 Requires:       globus-gsi-openssl-error-doc
-Requires:       globus-gsi-proxy-devel
+Requires:       globus-gsi-proxy-ssl
 Requires:       globus-gsi-proxy-ssl-devel
 Requires:       globus-gsi-proxy-ssl-doc
 Requires:       globus-rsl

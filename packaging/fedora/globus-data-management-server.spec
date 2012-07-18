@@ -13,6 +13,7 @@ Requires: globus-common-progs
 Requires: globus-gfork-progs
 Requires: globus-xio-pipe-driver
 Requires: globus-gsi-cert-utils-progs
+Requires: globus-gss-assist-progs
 Requires: globus-ftp-control
 Requires: globus-authz-callout-error
 Requires: globus-authz
