@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -12,14 +12,14 @@
 
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	4.6
-Release:	5%{?dist}
+Version:	4.4
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -32,11 +32,7 @@ Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 11
-%if 0%{?suse_version} == 0
-%if 0%{?rhel} > 4 || 0%{?rhel} == 0
 BuildRequires:	libtool-ltdl-devel%{?_isa}
-%endif
-%endif
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 BuildRequires:	globus-xio-devel%{?_isa} >= 3
@@ -50,27 +46,15 @@ BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 5
 BuildRequires:	tex(latex)
 %else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
 BuildRequires:	tetex-latex
-%endif
 %endif
 
 %package progs
 Summary:	Globus Toolkit - Scheduler Event Generator Programs
 Group:		Applications/Internet
-%if 0%{?suse_version} == 0
-BuildRequires:       lsb
-%else
-BuildRequires:       insserv
-%endif
+BuildRequires:  lsb
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-%if 0%{?suse_version} == 0
-Requires:       lsb
-%else
-Requires:       insserv
-%endif
+Requires:	lsb
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires(post): globus-common-progs >= 14
 Requires(preun):globus-common-progs >= 14
@@ -80,11 +64,7 @@ Summary:	Globus Toolkit - Scheduler Event Generator Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-gram-protocol-devel%{?_isa} >= 11
-%if 0%{?suse_version} == 0
-%if 0%{?rhel} > 4 || 0%{?rhel} == 0
-Requires:  libtool-ltdl-devel
-%endif
-%endif
+Requires:	libtool-ltdl-devel%{?_isa}
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-xio-devel%{?_isa} >= 3
@@ -236,28 +216,6 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 4.6-5
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 4.6-4
-- GT 5.2.2 Release
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 4.6-3
-- RHEL 4 patches
-
-* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 4.6-2
-- SLES 11 patches
-
-* Fri Apr 13 2012 Joseph Bester <bester@mcs.anl.gov> - 4.6-1
-- RIC-258: Can't rely on MKDIR_P
-
-* Fri Apr 06 2012 Joseph Bester <bester@mcs.anl.gov> - 4.5-1
-- GRAM-335: init scripts fail on solaris because of stop alias
-- RIC-205: Missing directories $GLOBUS_LOCATION/var/lock and $GLOBUS_LOCATION/var/run
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 4.4-2
-- Updated version numbers
-
 * Mon Dec 12 2011 Joseph Bester <bester@mcs.anl.gov> - 4.4-1
 - init script fixes
 
@@ -275,7 +233,7 @@ fi
 - Add backward-compatibility aging
 - Fix %post* scripts to check for -eq 1
 
-* Fri Sep 23 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-1
+* Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 4.1-1
 - GRAM-260: Detect and workaround bug in start_daemon for LSB < 4
 
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2

@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -12,14 +12,14 @@
 
 Name:		globus-gsi-proxy-core
 %global _name %(tr - _ <<< %{name})
-Version:	6.2
-Release:	5%{?dist}
+Version:	6.1
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -52,11 +52,7 @@ BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
 %else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
 BuildRequires:	tetex-latex
-%endif
 %endif
 
 %package devel
@@ -186,24 +182,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 6.2-5
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 6.2-4
-- GT 5.2.2 Release
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 6.2-3
-- RHEL 4 patches
-
-* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 6.2-2
-- SLES 11 patches
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 6.2-1
-- RIC-226: Some dependencies are missing in GPT metadata
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 6.1-4
-- Update for 5.2.0 release
-
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 6.1-3
 - Last sync prior to 5.2.0
 

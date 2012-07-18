@@ -11,19 +11,16 @@ use strict;
 
 my $gptfile;
 my $setupfile;
-my $email = "support\@globus.org";
+my $email;
 my $nodoc;
 my $help;
 my $packagelistfile;
 my $verbose;
 my $gtrelease = undef;
 my $gtreleaseuri = undef;
-my $changelog_from_cvs = 0;
 my $changelog = undef;
-my $prompt = 0;
-my $fullname = "Globus Toolkit";
+my $fullname = undef;
 my $bumprelease = 0;
-my $update;
 
 GetOptions('gptfile=s' => \$gptfile,
            'packagelistfile=s' => \$packagelistfile,
@@ -32,10 +29,7 @@ GetOptions('gptfile=s' => \$gptfile,
            'fullname=s' => \$fullname,
            'release=s' => \$gtrelease,
            'changelog=s' => \$changelog,
-           'cvs-changelog' => \$changelog_from_cvs,
            'bumprelease' => \$bumprelease,
-           'prompt' => \$prompt,
-           'update' => \$update,
            'help' => \$help);
 
 Pod::Usage::pod2usage() if defined $help;
@@ -51,14 +45,7 @@ if (!$gtrelease)
 }
 
 $gtrelease =~ m/^([0-9])+\.([0-9]+)\.([0-9]+)$/;
-if ($update)
-{
-    $gtreleaseuri="http://www.globus.org/ftppub/gt$1/$1.$2/$gtrelease/updates/src/";
-}
-else
-{
-    $gtreleaseuri="http://www.globus.org/ftppub/gt$1/$1.$2/$gtrelease/packages/src/";
-}
+$gtreleaseuri="http://www.globus.org/ftppub/gt$1/$1.$2/$gtrelease/packages/src/";
 
 my $login = getlogin || getpwuid($<);
 my $pw = getpwnam($login);
@@ -175,7 +162,6 @@ sub parse_package
     my $soname = int($gptmajorver) - int($gptage);
 
     return {
-        GPTFILE => $_[0],
         NAME => $gptname,
         DEBNAME => $debname,
         MAJOR => $gptmajorver,
@@ -538,7 +524,7 @@ sub check_if_debian_metadata_changed
 
     for my $filename (<$debianpath/*>)
     {
-        if (-f $filename && int((stat($filename))[9]) > $changelogmtime)
+        if (int((stat($filename))[9]) > $changelogmtime)
         {
             print "$filename is newer than changelog\n" if $verbose;
             return 1;
@@ -573,35 +559,6 @@ sub update_changelog
     }
 
     $update = "$package ($version-$release) unstable; urgency=low\n\n";
-
-    if ($changelog_from_cvs)
-    {
-        my ($major, $minor, $micro) = split(/\./, $gtrelease);
-        my $old_tag = "globus_${major}_${minor}_" . ($micro-1);
-        my $new_tag = "globus_${major}_${minor}_branch";
-        
-        my $changelogdir = $pkgmeta->{GPTFILE};
-        $changelogdir =~ s|(/pkgdata)?/pkg_data_src.gpt(.in)?||;
-        chomp($changelog = `cvs -q log -N -r$old_tag::$new_tag $changelogdir 2> /dev/null | grep -E '^[A-Z]+-[0-9]+'  | sort -u`);
-
-        if ($changelog eq '')
-        {
-            $changelog = "Update version for $gtrelease";
-        }
-    }
-    elsif ($prompt)
-    {
-        print "Changelog Entry for $package [empty line to end]: ";
-        $changelog = "";
-        while (<>)
-        {
-            if ($_ eq "\n")
-            {
-                last;
-            }
-            $changelog .= "$_";
-        }
-    }
 
     for my $line (split(/\n/, $changelog))
     {

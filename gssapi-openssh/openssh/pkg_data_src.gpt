@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
+
+<gpt_package_metadata Format_Version="0.02" Name="gsi_openssh" >
+
+  <Aging_Version Major="5" Minor="5" Age="0" />
+  <Description>GSI-Enabled OpenSSH</Description>
+  <Functional_Group >gsi_openssh</Functional_Group>
+  <Version_Stability Release="stable" />
+
+  <src_pkg >
+
+    <With_Flavors build="yes" />
+
+    <Version_Label>GSI-OpenSSH 5.5 / OpenSSH 6.0p1 / HPN13v11</Version_Label>
+
+    <Source_Dependencies Type="compile">
+      <Dependency Name="globus_gss_assist">
+        <Version>
+          <Simple_Version Major="2"></Simple_Version>
+          <Simple_Version Major="3"></Simple_Version>
+          <Simple_Version Major="8"></Simple_Version>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_usage">
+        <Version>
+          <Simple_Version Major="0"/>
+          <Simple_Version Major="3"/>
+        </Version>
+      </Dependency>
+    </Source_Dependencies>
+
+    <Source_Dependencies Type="pgm_link">
+      <Dependency Name="globus_gss_assist">
+        <Version>
+          <Simple_Version Major="2"></Simple_Version>
+          <Simple_Version Major="3"></Simple_Version>
+          <Simple_Version Major="8"></Simple_Version>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_usage">
+        <Version>
+          <Simple_Version Major="0"/>
+          <Simple_Version Major="3"/>
+        </Version>
+      </Dependency>
+    </Source_Dependencies>
+
+    <Source_Setup_Dependency PkgType="pgm">
+      <Setup_Dependency Name="trusted_ca_setup">
+        <Version>
+          <Simple_Version Major="2"></Simple_Version>
+        </Version>
+      </Setup_Dependency>
+      <Setup_Dependency Name="gsi_openssh_setup">
+        <Version>
+          <Version_Range Upper_Major="5" Upper_Minor="5" Lower_Major="5" Lower_Minor="5" />
+        </Version>
+      </Setup_Dependency>
+    </Source_Setup_Dependency>
+
+    <Build_Instructions>
+
+      <Build_Step>
+        GSICFG="--prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO --disable-strip"
+        if test "STATIC_LINK_GPTMACRO" = "yes"; then 
+          GSICFG="$GSICFG --with-globus-static"
+        fi
+        GLOBUS_FLAVOR_NAME=FLAVOR_GPTMACRO
+        export GLOBUS_FLAVOR_NAME
+        ./configure $GSI_OPENSSH_ARGS GSI_OPENSSH_GPTMACRO $GSICFG</Build_Step>
+
+      <Build_Step>MAKE_GPTMACRO gpt-all</Build_Step>
+
+      <Build_Step>MAKE_GPTMACRO gpt-install</Build_Step>
+
+    </Build_Instructions>
+
+  </src_pkg >
+
+</gpt_package_metadata>

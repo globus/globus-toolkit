@@ -168,8 +168,8 @@ sub create_makefile_installer {
 	    # by itself (yet)
             print INS <<EOF;
 ${packname}-only: gpt
-	\$(LIBPATH_VARIABLE)=\${libdir}:\${\$(LIBPATH_VARIABLE)} \$\{GPT_LOCATION\}/sbin/gpt-build $extras \$(CONFIGOPTS_GPTMACRO) -srcdir=$packagemap{$pack} \${FLAVOR}
-${packname}-dist: ${packname} source-packages
+	\$(LIBPATH_VARIABLE)=\${libdir} \$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=$packagemap{$pack} \${FLAVOR}
+${packname}-dist: ${packname}-only
 	cd $packagemap{$pack}; make dist;
 	. $packagemap{$pack}/gptdata.sh; \\
         cp $packagemap{$pack}/\$\$GPT_NAME-\$\${GPT_MAJOR_VERSION}.\$\${GPT_MINOR_VERSION}.tar.gz source-packages/
@@ -186,7 +186,7 @@ ${packname}-make:
 	cd $packagemap{$pack} ; make
 ${packname}-makeinstall:
 	cd $packagemap{$pack} ; make install
-${packname}-dist: ${packname}-configure source-packages
+${packname}-dist: ${packname}-configure
 	cd $packagemap{$pack}; make dist;
 	. $packagemap{$pack}/gptdata.sh; \\
         cp $packagemap{$pack}/\$\$GPT_NAME-\$\${GPT_MAJOR_VERSION}.\$\${GPT_MINOR_VERSION}.tar.gz source-packages/

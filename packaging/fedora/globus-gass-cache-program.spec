@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -12,14 +12,14 @@
 
 Name:		globus-gass-cache-program
 %global _name %(tr - _ <<< %{name})
-Version:	5.2
-Release:	1%{?dist}
+Version:	5.0
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Tools to manipulate local and remote GASS caches
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -85,25 +85,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
-* Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 5.2-1
-- GT-252: Missing dependency in gass cache program
-
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 5.1-4
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 5.1-3
-- GT 5.2.2 Release
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 5.1-2
-- RHEL 4 patches
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 5.1-1
-- GRAM-311: Undefined variable defaults in shell scripts
-- RIC-226: Some dependencies are missing in GPT metadata
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-5
-- Update for 5.2.0 release
-
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-4
 - Last sync prior to 5.2.0
 

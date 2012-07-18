@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = gsi-openssh
 _name = gsi_openssh
-version = 5.5
+version = 5.3
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages

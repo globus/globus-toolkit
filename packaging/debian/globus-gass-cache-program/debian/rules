@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gass-cache-program
 _name = globus_gass_cache_program
-version = 5.2
+version = 5.0
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages

@@ -1,8 +1,8 @@
 AC_REVISION($Revision$)
-AC_INIT(gpt, 3.6.2)
+AC_INIT(gpt, 3.6.1)
 AC_CONFIG_SRCDIR(Makefile.am)
 AM_INIT_AUTOMAKE([foreign])
- 
+
 AC_ARG_WITH([perl],
     AC_HELP_STRING([--with-perl=PATH],
             [Specify path to perl binary]),

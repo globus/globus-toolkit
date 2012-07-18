@@ -41,7 +41,7 @@ artifactroot=""
 chroot=""
 in_chroot=0
 chroot_args=""
-binaryonly=""
+binaryonly=0
 
 while getopts ibc:n:v:R:a:St:hg:f:q i; do
     case "$i" in
@@ -170,7 +170,7 @@ if [ "$chroot" != "" ]; then
         mv "${topdir}-${chroot}" "${topdir}-${chroot}.old"
     fi
     mv "${topdir}" "${topdir}-${chroot}"
-    mkdir -p "${topdir}"
+    mkdir "${topdir}"
     cp -R "${orighome}/.gnupg" "${topdir}/.gnupg"
     cd "${topdir}"
 fi
@@ -216,49 +216,23 @@ if [ $in_chroot = 0 ]; then
 
     cd "$topdir/globus-repository"
     autoreconf -i
-    TOOLKIT_VERSION=$(cat $packagingdir/fait_accompli/version)
-    TOOLKIT_MAJOR=${TOOLKIT_VERSION%%.*}
-    TOOLKIT_MINOR=${TOOLKIT_VERSION%.*}
-    TOOLKIT_MINOR=${TOOLKIT_MINOR#*.}
 
     # Modify globus-repository to generate globus-repository-@RELEASENAME@
     # packages
     sed -e "s/@RELEASENAME@/${releasename}/g" \
-        -e "s/@TOOLKIT_MAJOR_VERSION@/$TOOLKIT_MAJOR/" \
-        -e "s/@TOOLKIT_MINOR_VERSION@/$TOOLKIT_MINOR/" \
         < debian/control.in > debian/control
     rm -f debian/control.in
 
-    cat > debian/globus-repository-${releasename}.install <<EOF 
-debian/tmp/etc/apt/sources.list.d/globus.list
-debian/tmp/usr/share/tasksel/globus-tasks.desc
-EOF
-    cat > debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-stable-${releasename}.install <<EOF 
-debian/tmp/etc/apt/sources.list.d/globus-stable.list
-debian/tmp/usr/share/tasksel/globus-tasks.desc
-EOF
-    cat > debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-testing-${releasename}.install <<EOF 
-debian/tmp/etc/apt/sources.list.d/globus-testing.list
-debian/tmp/usr/share/tasksel/globus-tasks.desc
-EOF
-
-    cp debian/globus-repository.postinst \
+    mv debian/globus-repository.postinst \
         debian/globus-repository-${releasename}.postinst
-    cp debian/globus-repository.postinst \
-        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-stable-${releasename}.postinst
-    cp debian/globus-repository.postinst \
-        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-testing-${releasename}.postinst
-    rm debian/globus-repository.postinst
-
-    cp debian/globus-repository.postrm \
+    mv debian/globus-repository.postrm \
         debian/globus-repository-${releasename}.postrm
-    cp debian/globus-repository.postrm \
-        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-stable-${releasename}.postrm
-    cp debian/globus-repository.postrm \
-        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-testing-${releasename}.postrm
-    rm debian/globus-repository.postrm
 
-    DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
+    if test -n "$artifactroot"; then
+           DEB_CONFIGURE_USER_FLAGS=--with-bamboo-artifact-url=$artifactroot fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
+    else
+           DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
+    fi
 fi
 
 cd "${topdir}"
@@ -274,10 +248,9 @@ rm -rf "${packagingdir}/repo.old"
 if [ -d "${packagingdir}/repo" ]; then
     mv "${packagingdir}/repo" "${packagingdir}/repo.old"
 fi
-mkdir -p "${packagingdir}/repo"
+mkdir "${packagingdir}/repo"
 cd "${packagingdir}/repo"
-mkdir -p changes
-mkdir -p conf
+mkdir conf
 if [ "$sign" = 1 ] ; then
     sign_with_line="$(printf "\nSignWith: yes")"
 else
@@ -299,7 +272,6 @@ if [ "$in_chroot" -eq 0 ]; then
     # outside of chroot, include all packages
     for x in "${topdir}"/*.changes; do
         reprepro -b . include unstable "$x"
-        cp "$x" changes/
     done
 
     if [ "$chroot" != "" ]; then
@@ -313,10 +285,6 @@ if [ "$in_chroot" -eq 0 ]; then
     cd "${packagingdir}"
     find repo -name '*.deb' -exec basename {} \; > all-packages
 
-    mkdir -p debbuild-out/${flavor}
-    cp "${topdir}"/*.* debbuild-out/${flavor}
-    if [ "$chroot" != "" ]; then
-        mkdir -p debbuild-out/${chroot}
-        cp "${topdir}-${chroot}"/*.* debbuild-out/${chroot}
-    fi
+    mkdir -p debbuild-out
+    cp "${topdir}"/*.* debbuild-out
 fi

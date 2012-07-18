@@ -1,6 +1,8 @@
 #! /bin/sh
 
 set -e
+set -x
+
 usage()
 {
     echo "Usage: $0 -n OSNAME -v OSVER [-a ARTIFACTROOT] [-S] [-t TAG]"
@@ -27,14 +29,10 @@ globusversion=""
 skip_checkout=""
 skip_bootstrap=""
 skip_packaging=""
-build_number=-1
-if [ -f "$packagingdir/build-number.txt" ]; then
-    build_number="$(cat $packagingdir/build-number.txt | grep build.number | sed -e "s/.*=//")"
-fi
 
 sign=1
 tag=""
-while getopts n:v:a:St:hg:qpl i; do
+while getopts n:v:a:St:hg:qp i; do
     case "$i" in
         n)
             osname="$OPTARG"
@@ -71,18 +69,10 @@ while getopts n:v:a:St:hg:qpl i; do
            skip_bootstrap=1
            skip_packaging=1
            ;;
-        l)
-           [ -d log-output ] || mkdir -p log-output
-           exec 1> log-output/build-rpms.out
-           exec 2> log-output/build-rpms.err
-           ;;
     esac
 done
 
 shift $(($OPTIND - 1))
-if [ "$globusversion" = "" ]; then
-    globusversion="$(cat "$packagingdir/fait_accompli/version")"
-fi
 
 if [ "$osname" = "" -o "$osver" = "" ]; then
     usage 1>&2
@@ -114,8 +104,6 @@ for x in BUILD  BUILDROOT SOURCES RPMS  SPECS  SRPMS; do
     mkdir -p $topdir/$x
 done
 
-rm -rf "$topdir/RPMS.x86_64"
-    
 # Fedora 13
 # enable build of 32-bit executables on 64-bit linux (if compilers are present)
 # /usr/lib/rpm/config defines this with -march=i686 but no -m32, so the build
@@ -126,23 +114,11 @@ EOF
 
 target32=i686-redhat-linux
 
-pkgtool="yum"
-noninteractivearg="-y"
 case $(lsb_release -is):$(lsb_release -rs) in
-    CentOS:4*|ScientificSL:4*|RedHatEnterpriseServer:4*)
-        echo "%rhel                  4" >> $topdir/.rpmmacros
-        target32=""
-        rhel=4
-        ;;
     CentOS:5*|ScientificSL:5*|RedHatEnterpriseServer:5*)
         target32=i386-redhat-linux
         echo "%rhel                  5" >> $topdir/.rpmmacros
         rhel=5
-        ;;
-    "SUSE LINUX":*)
-        target32=""
-        pkgtool="zypper"
-        noninteractivearg="-n"
         ;;
 esac
 
@@ -168,19 +144,11 @@ fi
 # Remove everything prior to building
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo $pkgtool $noninteractivearg remove $pkgs_to_rm < /dev/null || true
+    sudo yum -y remove $pkgs_to_rm < /dev/null
 fi
 
 bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,gram5-pbs,gram5-sge,globus-simple-ca
-
-
-if [ "$(lsb_release -is)" = "SUSE LINUX" ]; then
-    packages_to_build=gsi_openssh,globus_gram_audit
-elif [ "$osname" = "centos" ] && [ "$osver" = "4" ]; then 
-    packages_to_build=gsi_openssh,globus_gram_audit
-else
-    packages_to_build=myproxy,gsi_openssh,globus_gram_audit
-fi
+packages_to_build=myproxy,gsi_openssh,globus_gram_audit
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 if [ -d ${packagingdir}/source-trees/gssapi-openssh ]; then
     cd ${packagingdir}/source-trees/gssapi-openssh 
@@ -192,7 +160,7 @@ if [ -d ${packagingdir}/source-trees/gssapi-openssh/setup ]; then
     chmod  a+x ${packagingdir}/source-trees/gssapi-openssh/setup/setup-openssh
 fi
 
-[ ! -d source-trees ] || find source-trees -name bootstrap -exec chmod a+x {} \;
+[ ! -d source-trees ] || find source-trees -name bootstrap -exec chmod a+x {} +
 
 packages="$(./make-packages.pl -faster -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} ${skip_checkout:+-no-updates} \
     ${skip_bootstrap:+-ab} -order-include-runtime-deps | \
@@ -201,15 +169,6 @@ packages="$(./make-packages.pl -faster -a -lp -deps -deporder -bundles=$bundles 
 if [ -z "$skip_packaging" ]; then
     ./make-packages.pl -faster -no-updates ${skip_bootstrap:+-ab} -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
 fi
-metapackages="globus-gridftp
-    globus-data-management-client
-    globus-data-management-server
-    globus-data-management-sdk
-    globus-gram5
-    globus-resource-management-server
-    globus-resource-management-client
-    globus-resource-management-sdk
-    globus-gsi"
 
 cd gpt-*/packaging_tools
 sh ./bootstrap
@@ -222,18 +181,9 @@ cd ../..
 
 # Build source packages from spec files
 cd fedora
-for i in *.spec; do
-    if [ "$i" = "myproxy.spec" ] && [ "$osname" = sles ]; then
-        continue
-    fi
-    if [ "$i" = "myproxy.spec" ] && [ "$osname" = centos ] && [ "$osver" = 4 ]
-    then
-        continue
-    fi
-    rpmbuild -bs --nodeps $i;
-done
+for i in *.spec; do rpmbuild -bs --nodeps $i; done
 
-for i in grid-packaging-tools $packages ; do
+for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
         rpmbuild --rebuild $topdir/SRPMS/$i-[0-9]*src.rpm
         rpmsdir=$topdir/RPMS
@@ -249,22 +199,15 @@ for i in grid-packaging-tools $packages ; do
         
         # Don't install LRM RPMs on build machine necessarily
         if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
-            sudo rpm -hUv --replacepkgs $rpms || true
+            sudo rpm -i $rpms < /dev/null;
         fi
-    fi
-done
-
-# Build but not install metapackages
-for i in $metapackages; do
-    if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
-        rpmbuild --rebuild $topdir/SRPMS/$i-[0-9]*src.rpm
     fi
 done
 
 # Remove everything prior to building
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo $pkgtool $noninteractivearg remove $pkgs_to_rm < /dev/null || true
+    sudo yum -y remove $pkgs_to_rm < /dev/null
 fi
 
 # Move rpms out of the way so that find can work when installing.
@@ -274,9 +217,8 @@ mkdir RPMS
 
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|^gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo $pkgtool $noninteractivearg remove $pkgs_to_rm < /dev/null || true
+    sudo yum -y remove $pkgs_to_rm < /dev/null
 fi
-if [ "$target32" != "" ]; then
 for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
         rpmbuild --target $target32 \
@@ -294,30 +236,15 @@ for i in grid-packaging-tools $packages; do
         
         # Don't install LRM RPMs on build machine necessarily
         if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
-            sudo rpm -hUv --replacepkgs $rpms || true
+            sudo rpm -i $rpms < /dev/null;
         fi
     fi
 done
 
-# Build but not install metapackages
-for i in $metapackages; do
-    if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
-        rpmbuild --target $target32 \
-                 --rebuild $topdir/SRPMS/$i-[0-9]*src.rpm
-    fi
-done
-
-fi
-
 cd $topdir
 
 mv RPMS.x86_64/x86_64 RPMS
-if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
-    mv RPMS.x86_64/noarch/* RPMS/x86_64
-else
-    mkdir -p RPMS/noarch
-    mv RPMS.x86_64/noarch/* RPMS/noarch
-fi
+mv RPMS.x86_64/noarch/* RPMS/x86_64
 
 if [ "$sign" = 1 ]; then
     find RPMS -name '*.rpm' -exec expect ${bamboodir}/sign-rpm {} \;
@@ -326,29 +253,13 @@ fi
 
 # Create yum repo configuration package that includes the path to the
 # yum repositories and the public GPG key
+sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" \
+    ${globusversion:+-g "$globusversion"}
 if test "$artifactroot" != ""; then
-    if [ "$build_number" != "-1" ]; then
-        artifactroot="$(echo "$artifactroot" | sed -e "s!/latest!/build-$build_number!")"
-    fi
-    
-    if [ "$osname" = "sles" ]; then
-        sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" \
-        -b "$artifactroot/repo/\$osname/\$osver" \
-        -r Globus-bamboo-config -U
-    else
-        sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" \
-        -b "$artifactroot/repo/\$osname/\\\$releasever" \
-        -r Globus-bamboo-config -U
-    fi
-fi
-if grep rc "${packagingdir}/fait_accompli/version" > /dev/null; then
     sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" \
-        -t -r Globus-testing-config -U
-    sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" -U
-else
-    sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" -s \
-       -r Globus-5.2.stable-config
-    sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" 
+    -b "$artifactroot/repo/\$osname/\\\$releasever/\\\$basearch/" \
+    -s "$artifactroot/repo/\$osname/\\\$releasever/SRPMS/" \
+    -r Globus-bamboo-config
 fi
 
 reporoot="${topdir}/repo"
@@ -357,25 +268,15 @@ repodir="${reporoot}/${osname}/${osver}"
 # Generate YUM repositories for the different package types
 mkdir -p "${repodir}"
 cp -R RPMS/x86_64 "${repodir}"
-if [ "$target32" != "" ]; then
-    mkdir "${repodir}"/i386
-    cp -R RPMS/i?86/* "${repodir}"/i386
+mkdir "${repodir}"/i386
+cp -R RPMS/i?86/* "${repodir}"/i386
+
+cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
+cp RPMS/noarch/*.rpm "${repodir}"/i386/
+
+if [ "$rhel" = 5 ]; then 
+    cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
 fi
-
-
-if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
-    cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
-    if [ "$target32" != "" ]; then
-        cp RPMS/noarch/*.rpm "${repodir}"/i386/
-        if [ "$rhel" = 5 ] || [ "$rhel" = 4 ]; then 
-            cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
-        fi
-    fi
-else
-    mkdir -p "${repodir}"/noarch
-    cp RPMS/noarch/*.rpm "${repodir}"/noarch/
-fi
-
 cp -R SRPMS "${repodir}"
 
 # Generate group definition for globus-gridftp
@@ -392,7 +293,6 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gass-copy-progs</packagereq>
       <packagereq type="default">globus-common-progs</packagereq>
       <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
-      <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-proxy-utils</packagereq>
     </packagelist>
   </group>
@@ -408,7 +308,6 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gfork-progs</packagereq>
       <packagereq type="default">globus-xio-pipe-driver</packagereq>
       <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
-      <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-ftp-control</packagereq>
       <packagereq type="default">globus-authz-callout-error</packagereq>
       <packagereq type="default">globus-authz</packagereq>
@@ -519,6 +418,7 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
       <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-proxy-utils-progs</packagereq>
+      <packagereq type="default">globus-user-env</packagereq>
       <packagereq type="default">globus-simple-ca</packagereq>
     </packagelist>
   </group>
@@ -532,12 +432,10 @@ cat > globus.xml <<EOF
     <packagelist>
       <packagereq type="default">globus-gatekeeper</packagereq>
       <packagereq type="default">globus-gram-job-manager</packagereq>
-      <packagereq type="default">globus-gram-job-manager-scripts</packagereq>
       <packagereq type="default">globus-gram-job-manager-fork-setup-poll</packagereq>
       <packagereq type="default">globus-gram-client-tools</packagereq>
       <packagereq type="default">globus-gass-cache-program</packagereq>
       <packagereq type="default">globus-gass-server-ez-progs</packagereq>
-      <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-common-progs</packagereq>
       <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
       <packagereq type="default">globus-proxy-utils</packagereq>
@@ -555,7 +453,6 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-common-progs</packagereq>
       <packagereq type="default">globus-callout</packagereq>
       <packagereq type="default">globus-gram-job-manager</packagereq>
-      <packagereq type="default">globus-gram-job-manager</packagereq>
       <packagereq type="default">globus-gram-job-manager-fork-setup-poll</packagereq>
       <packagereq type="default">globus-gass-cache</packagereq>
       <packagereq type="default">globus-gsi-openssl-error</packagereq>
@@ -568,7 +465,6 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gsi-callback</packagereq>
       <packagereq type="default">globus-gsi-credential</packagereq>
       <packagereq type="default">globus-gsi-proxy-core</packagereq>
-      <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-gssapi-gsi</packagereq>
       <packagereq type="default">globus-proxy-utils</packagereq>
       <packagereq type="default">globus-gss-assist</packagereq>
@@ -615,7 +511,6 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gssapi-gsi</packagereq>
       <packagereq type="default">globus-proxy-utils</packagereq>
       <packagereq type="default">globus-gss-assist</packagereq>
-      <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-xio</packagereq>
       <packagereq type="default">globus-xio-gsi-driver</packagereq>
       <packagereq type="default">globus-io</packagereq>
@@ -715,62 +610,23 @@ cat > globus.xml <<EOF
 </comps>
 EOF
 
+createrepo "${reporoot}/$osname/$osver/SRPMS"
+createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/x86_64"
+createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/i386"
+
 # Export the package lists for the full set of RPMS we generated (64- and
 # 32-bit forms)
 allpkgs64="$(find "${reporoot}/${osname}/${osver}/"x86_64 -name '*.rpm' | \
     grep -v '\.i386\.rpm' | \
     sed -e 's|.*/||' -e 's|\.rpm||')"
+allpkgs32="$(find "${reporoot}/${osname}/${osver}/"i386 -name '*.rpm' | \
+    sed -e 's|.*/||' -e 's|\.rpm||')"
 
-if [ "$target32" != '' ]; then
-    allpkgs32="$(find "${reporoot}/${osname}/${osver}/"i386 -name '*.rpm' | \
-        sed -e 's|.*/||' -e 's|\.rpm||')"
-    echo "$allpkgs32" > packages.gcc32
-fi
+echo "$allpkgs32" > packages.gcc32
 echo "$allpkgs64" > packages.gcc64
-
-if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
-    createrepo "${reporoot}/$osname/$osver/SRPMS"
-    createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/x86_64"
-    if [ "$target32" != "" ]; then
-        createrepo -g "$(pwd)/globus.xml" "${reporoot}/$osname/$osver/i386"
-    fi
-else
-    find "${reporoot}/${osname}/${osver}/" -name '*noarch.rpm' | \
-        sed -e 's|.*/||' -e 's|\.rpm||' >> packages.gcc64
-    cd "${reporoot}/${osname}/${osver}"
-    mkdir "media.1"
-    cat <<-EOF > "media.1/media"
-	Globus Support
-	$(date +%Y%m%d%H%M%S)
-	1
-EOF
-    cat <<-EOF > "content"
-	PRODUCT Globus Toolkit
-	VERSION ${globusversion}
-	LABEL Globus Toolkit (SUSE LINUX 11)
-	VENDOR Globus Support
-	ARCH.x86_64 x86_64 noarch
-	DEFAULTBASE x86_64
-	DESCRDIR setup/descr
-	DATADIR RPMS
-EOF
-    cp "${bamboodir}/RPM-GPG-KEY-Globus" content.key
-    mkdir RPMS
-    mv x86_64 RPMS
-    mv noarch RPMS
-    mv SRPMS RPMS/src
-    ls -A1 > directory.yast
-    create_package_descr -d RPMS
-    for meta in setup/descr/*; do
-        echo "META SHA1 $(cd setup/descr; sha1sum "$(basename "$meta")")" >> content
-    done
-    echo "KEY SHA1 $(sha1sum "content.key")" >> content
-    gpg -ab content
-    cd "$OLDPWD"
-fi
 
 # Remove what we built
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo $pkgtool $noninteractivearg remove $pkgs_to_rm  < /dev/null || true
+    sudo yum -y remove $pkgs_to_rm  < /dev/null
 fi

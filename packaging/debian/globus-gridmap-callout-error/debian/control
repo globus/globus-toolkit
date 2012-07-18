@@ -23,7 +23,7 @@ Description: Globus Toolkit - Globus Gridmap Callout Errors
 Package: libglobus-gridmap-callout-error-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gridmap-callout-error0 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, globus-core (>= 4), libglobus-gssapi-error-dev
+Depends: libglobus-gridmap-callout-error0 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, globus-core (>= 4), libglobus-gssapi-error-dev (>= 4)
 Recommends: libglobus-gridmap-callout-error-doc (= ${binary:Version})
 Description: Globus Toolkit - Globus Gridmap Callout Errors Development Files
  The Globus Toolkit is an open source software toolkit used for

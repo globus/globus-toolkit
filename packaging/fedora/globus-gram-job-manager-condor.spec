@@ -1,4 +1,4 @@
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -8,29 +8,21 @@
 
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
-Version:	1.3
+Version:	1.0
 Release:	5%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-condor < 4.5
 Requires:	globus-gram-job-manager-scripts >= 3.4
 Requires:	globus-gass-cache-program >= 2
 Requires:	globus-common-progs >= 2
 Requires:       condor
-%if 0%{?suse_version} > 0
-    %if %{suse_version} < 1140
-Requires:     perl = %{perl_version}
-    %else
-%{perl_requires}
-    %endif
-%else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
-%endif
 Requires(post): globus-gram-job-manager-scripts >= 4
 Requires(preun): globus-gram-job-manager-scripts >= 4
 Provides:       globus-gram-job-manager-setup
@@ -45,11 +37,7 @@ BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
 %else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
 BuildRequires:	tetex-latex
-%endif
 %endif
 
 %description
@@ -124,29 +112,6 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-condor
 
 %changelog
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-5
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-4
-- GT 5.2.2 Release
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-3
-- RHEL 4 patches
-
-* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-2
-- SLES 11 patches
-
-* Thu Apr 12 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-1
-- GRAM-343: lrm packages grid-service files aren't in CLEANFILES
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 1.2-1
-- GRAM-297: job manager service definitions contain unresolved variables
-- GRAM-310: sge configure script error
-- RIC-229: Clean up GPT metadata
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-6
-- Update for 5.2.0 release
-
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-5
 - Last sync prior to 5.2.0
 

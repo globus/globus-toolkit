@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -12,14 +12,14 @@
 
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	9.3
-Release:	4%{?dist}
+Version:	9.2
+Release:	2%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -119,21 +119,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 9.3-4
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 9.3-3
-- GT 5.2.2 Release
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 9.3-2
-- RHEL 4 patches
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 9.3-1
-- RIC-226: Some dependencies are missing in GPT metadata
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 9.2-3
-- Update for 5.2.0 release
-
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 9.2-2
 - Last sync prior to 5.2.0
 
@@ -146,7 +131,7 @@ rm -rf $RPM_BUILD_ROOT
 * Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 9.1-1
 - Add backward-compatibility aging
 
-* Mon Sep 26 2011 Joseph Bester <bester@mcs.anl.gov> - 9.0-2
+* Mon Sep 26 2011 Joe Bester <bester@mcs.anl.gov> - 9.0-2
 - pick up new GSSAPI version dependency
 
 * Tue Sep 20 2011  <bester@mcs.anl.gov> - 9.0-1

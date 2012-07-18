@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gram-job-manager-fork
 _name = globus_gram_job_manager_fork
-version = 1.5
+version = 1.0
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
@@ -60,7 +60,6 @@ configure-stamp: $(QUILT_STAMPFN)
 	   --with-flavor=$(flavor) \
 	   --enable-doxygen \
 	   --docdir='$${datadir}/doc/$(name)' \
-           --with-globus-state-dir='/var/lib/globus' \
 	   --disable-static
 
 	touch $@
@@ -142,7 +141,6 @@ install: build-stamp
 	    $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
 	  | grep -v 'libglobus' \
 	  | grep -v '^/etc' \
-          | grep -v 'globus-fork-starter' \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name).install
 
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
@@ -153,10 +151,6 @@ install: build-stamp
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_rtl.filelist \
 	  | grep 'libglobus' \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name)-setup-seg.install
-
-	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_pgm.filelist \
-	  | grep 'globus-fork-starter' \
-	  | sed s!^!debian/tmp$(_prefix)! >> debian/$(name)-setup-seg.install
 
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! >> debian/$(name)-setup-seg.install

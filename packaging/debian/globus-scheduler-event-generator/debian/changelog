@@ -1,33 +1,3 @@
-globus-scheduler-event-generator (4.6-2) unstable; urgency=low
-
-  * GT 5.2.2 final
-
- -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
-
-globus-scheduler-event-generator (4.6-1) unstable; urgency=low
-
-  * RIC-258: Can't rely on MKDIR_P
-
- -- Globus Toolkit <support@globus.org>  Fri, 13 Apr 2012 08:44:41 -0400
-
-globus-scheduler-event-generator (4.5-2) unstable; urgency=low
-
-  * GRAM-335: init scripts fail on solaris because of stop alias
-  * RIC-205: Missing directories $GLOBUS_LOCATION/var/lock and $GLOBUS_LOCATION/var/run
-
- -- Globus Toolkit <support@globus.org>  Fri, 06 Apr 2012 09:47:16 -0400
-
-globus-scheduler-event-generator (4.5-1) unstable; urgency=low
-
-
- -- Globus Toolkit <support@globus.org>  Fri, 06 Apr 2012 09:46:38 -0400
-
-globus-scheduler-event-generator (4.4-2) unstable; urgency=low
-
-  * Update version for 5.2.1
-
- -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:43:45 -0500
-
 globus-scheduler-event-generator (4.4-1) unstable; urgency=low
 
   * Fix init scripts

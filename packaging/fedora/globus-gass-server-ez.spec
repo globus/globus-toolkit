@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -12,14 +12,14 @@
 
 Name:		globus-gass-server-ez
 %global _name %(tr - _ <<< %{name})
-Version:	4.3
-Release:	4%{?dist}
+Version:	4.1
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus Gass Server_ez
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -130,22 +130,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-4
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-3
-- GT 5.2.2 Release
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-2
-- RHEL 4 patches
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-1
-- RIC-218: Fd leak in gass server when file read fails
-- RIC-226: Some dependencies are missing in GPT metadata
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-4
-- Update for 5.2.0 release
-
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-3
 - Last sync prior to 5.2.0
 

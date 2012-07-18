@@ -13,9 +13,8 @@ include /usr/share/quilt/quilt.make
 
 name = globus-common
 _name = globus_common
-version = 14.7
+version = 14.5
 soname = 0
-toolkit_version = 5.2.2
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages

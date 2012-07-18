@@ -19,13 +19,9 @@ my $verbose;
 my $gtrelease = undef;
 my $gtreleaseuri = undef;
 my $changelog = undef;
-my $prompt_for_changelog = undef;
-my $cvs_changelog = undef;
+my $prompt_for_changelog;
 my $fullname = undef;
 my $bumprelease = undef;
-my $new_release = undef;
-my $dryrun = 0;
-my $update;
 
 GetOptions('gptfile=s' => \$gptfile,
            'packagelistfile=s' => \$packagelistfile,
@@ -33,12 +29,9 @@ GetOptions('gptfile=s' => \$gptfile,
            'verbose' => \$verbose,
            'release=s' => \$gtrelease,
            'changelog=s' => \$changelog,
-           'dryrun|n' => \$dryrun,
            'prompt-for-changelog' => \$prompt_for_changelog,
-           'cvs-changelog' => \$cvs_changelog,
            'fullname=s' => \$fullname,
            'bumprelease' => \$bumprelease,
-           'update' => \$update,
            'help' => \$help);
 
 Pod::Usage::pod2usage() if defined $help;
@@ -48,15 +41,7 @@ setlocale(LC_TIME, 'C');
 if ($gtrelease)
 {
     my ($major, $minor, $micro) = split(/\./, $gtrelease);
-
-    if ($update)
-    {
-        $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$gtrelease/updates/src/";
-    }
-    else
-    {
-        $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$gtrelease/packages/src/";
-    }
+    $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$gtrelease/packages/src/";
 }
 my $login = getlogin || getpwuid($<);
 my $pw = getpwnam($login);
@@ -245,54 +230,30 @@ foreach my $specline (@ARRAY)
 
 my $changelogstring;
 
-if ($cvs_changelog && $gtrelease)
+if (!$changelog)
 {
-    my ($major, $minor, $micro) = split(/\./, $gtrelease);
-    my $old_tag = "globus_${major}_${minor}_" . ($micro-1);
-    my $new_tag = "globus_${major}_${minor}_branch";
-
-    my $changelogdir = $specfilename;
-    $changelogdir = $gptmetadata;
-    $changelogdir =~ s|(/pkgdata)?/pkg_data_src.gpt(.in)?||;
-    chomp($changelog = `cvs -q log -N -r$old_tag::$new_tag $changelogdir 2> /dev/null | grep -E '^[A-Z]+-[0-9]+'  | sort -u`);
-
-    if ($changelog eq '')
+    if ($prompt_for_changelog)
     {
-        $changelog = undef;
+        print "Changelog entry [empty line to end]: ";
+        $changelogstring = '';
+
+        while (<>)
+        {
+            if ($_ eq "\n")
+            {
+                last;
+            }
+            $changelogstring .= "- $_";
+        }
+    }
+    if ($changelogstring eq '')
+    {
+        $changelogstring = "- Updated version numbers\n";
     }
 }
-
-if (!$dryrun)
+else
 {
-    if ($specfile_changed || $version_changed || $bumprelease)
-    {
-        if (!$changelog)
-        {
-            if ($prompt_for_changelog)
-            {
-                print "Changelog entry for $gptname [empty line to end]: ";
-                $changelogstring = '';
-
-                while (<>)
-                {
-                    if ($_ eq "\n")
-                    {
-                        last;
-                    }
-                    $changelogstring .= "- $_";
-                }
-            }
-
-            if ($changelogstring eq '')
-            {
-                $changelogstring = "- Updated version numbers\n";
-            }
-        }
-        else
-        {
-            $changelogstring = "- " . join("\n- ", split(/\n/, $changelog)) . "\n";
-        }
-    }
+    $changelogstring = "- " . join("\n- ", split(/\n/, $changelog)) . "\n";
 }
 
 if ($specfile_changed || $bumprelease)
@@ -313,13 +274,10 @@ if ($specfile_changed || $version_changed || $bumprelease)
 
   $ARRAY[$releaseindex] = "Release:\t$releaseversion$releasesuffix\n";
 
-if (!$dryrun)
-{
-    # Write back the spec file
-    seek(FH,0,0) or die "Seeking: $!"; 
-    print FH @ARRAY or die "Printing: $!"; 
-    truncate(FH,tell(FH)) or die "Truncating: $!"; 
-}
+#Write back the spec file
+seek(FH,0,0) or die "Seeking: $!"; 
+print FH @ARRAY or die "Printing: $!"; 
+truncate(FH,tell(FH)) or die "Truncating: $!"; 
 close(FH) or die "Closing: $!";
 }
 

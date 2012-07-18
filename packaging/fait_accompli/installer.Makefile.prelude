@@ -26,7 +26,6 @@ export GLOBUS_VERSION GLOBUS_VERSIONNAME
 export LOOK_FOR_FC_GLOBUS_INCLUDE
 
 BUILD_OPTS=@buildopts@
-CONFIGOPTS_GPTMACRO=@configopts_gptmacro@
 FLAVOR=@flavor@
 @aixargs@
 
@@ -43,13 +42,10 @@ distclean:
 
 # Functional group dependencies, expressed in bundles.
 common: gpt globus_core globus_common
-prews: gridftp gram
-gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@ varlockandrundirs
-gram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus_user_env varlockandrundirs
-
-varlockandrundirs:
-	mkdir -p $(DESTDIR)$(GLOBUS_LOCATION)/var/run
-	mkdir -p $(DESTDIR)$(GLOBUS_LOCATION)/var/lock
+i18n: gpt common globus-internationalization
+prews: gridftp prewsgram
+gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@
+gram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus_user_env
 
 # GPT targets
 gpt: @gptlocation@/sbin/gpt-postinstall
@@ -75,12 +71,9 @@ globus_binary_openssl:
 
 # Netlogger incubator
 netlogger_c: gpt globus_core globus_common
-	${GPT_LOCATION}/sbin/gpt-build  $(CONFIGOPTS_GPTMACRO) -srcdir=source-trees/netlogger-c-4.0.2 ${FLAVOR}
+	${GPT_LOCATION}/sbin/gpt-build  ${BUILD_OPTS} -srcdir=source-trees/netlogger-c-4.0.2 ${FLAVOR}
 
 # UDT
 udt: gpt globus_xio_udt_ref_driver
-
-source-packages:
-	mkdir source-packages
 
 # Bundle dependencies, expressed in packages.

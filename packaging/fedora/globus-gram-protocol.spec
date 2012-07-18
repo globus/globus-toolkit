@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -15,14 +15,14 @@
 
 Name:		globus-gram-protocol
 %global _name %(tr - _ <<< %{name})
-Version:	11.3
-Release:	5%{?dist}
+Version:	11.2
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Protocol Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -31,15 +31,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-io%{?_isa} >= 8
 
-%if 0%{?suse_version} > 0
-    %if %{suse_version} < 1140
-Requires:     perl = %{perl_version}
-    %else
-%{perl_requires}
-    %endif
-%else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
-%endif
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-io-devel%{?_isa} >= 8
@@ -54,11 +46,7 @@ BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 5
 BuildRequires:	tex(latex)
 %else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
 BuildRequires:	tetex-latex
-%endif
 %endif
 
 %package devel
@@ -190,24 +178,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
 
 %changelog
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 11.3-5
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 11.3-4
-- GT 5.2.2 Release
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 11.3-3
-- RHEL 4 patches
-
-* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 11.3-2
-- SLES 11 patches
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 11.3-1
-- RIC-226: Some dependencies are missing in GPT metadata
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 11.2-3
-- Update for 5.2.0 release
-
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 11.2-2
 - Last sync prior to 5.2.0
 

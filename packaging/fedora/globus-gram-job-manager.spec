@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -12,14 +12,14 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.48
+Version:	13.12
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -70,11 +70,7 @@ BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 5
 BuildRequires:	tex(latex)
 %else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
 BuildRequires:	tetex-latex
-%endif
 %endif
 
 %package doc
@@ -177,123 +173,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 13.48-1
-- GT-253: gatekeeper and job manager don't build on hurd
-
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 13.47-3
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 13.47-2
-- GT 5.2.2 Release
-
-* Mon Jun 25 2012 Joseph Bester <bester@mcs.anl.gov> - 13.47-1
-- GT-212: Missing debian packages
-
-* Mon Jun 18 2012 Joseph Bester <bester@mcs.anl.gov> - 13.46-1
-- GT-224: Manage GRAM execution per client host for scalability for different clients
-
-* Wed Jun 13 2012 Joseph Bester <bester@mcs.anl.gov> - 13.45-1
-- GT-225: GRAM5 skips some SEG events
-
-* Wed Jun 06 2012 Joseph Bester <bester@mcs.anl.gov> - 13.44-1
-- GT-157: Hash gram_job_state directory by user
-
-* Fri Jun 01 2012 Joseph Bester <bester@mcs.anl.gov> - 13.43-1
-- GT-214: Leaks in the job manager restart code
-
-* Thu May 24 2012 Joseph Bester <bester@mcs.anl.gov> - 13.42-1
-- GT-209: job manager crash in query
-
-* Tue May 22 2012 Joseph Bester <bester@mcs.anl.gov> - 13.41-1
-- GT-199: GRAM audit checks result username incorrectly
-- GT-192: Segfault in globus-gram-streamer
-
-* Fri May 18 2012 Joseph Bester <bester@mcs.anl.gov> - 13.40-1
-- GT-149: Memory leaks in globus-job-manager
-- GT-186: GRAM job manager leaks condor log path
-- GT-187: GRAM job manager leaks during stdio update
-- GT-189: GRAM job manager regular expression storage grows
-- GT-190: GRAM job manager leaks callback contact
-
-* Fri May 11 2012 Joseph Bester <bester@mcs.anl.gov> - 13.38-1
-- GT-185: globus-personal-gatekeeper creates too-long paths on MacOS
-
-* Fri May 11 2012 Joseph Bester <bester@mcs.anl.gov> - 13.37-1
-- GT-65: GRAM records datagram socket failure, but doesn't record socket name
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 13.36-1
-- GRAM-288: Kill off perl processes when idle
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 13.35-3
-- RHEL 4 patches
-
-* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 13.35-2
-- SLES 11 patches
-
-* Thu May 03 2012 Joseph Bester <bester@mcs.anl.gov> - 13.35-1
-- GRAM-329: Condor fake-SEG loses track of job
-- GRAM-345: Job manager deletes job dir sometimes
-
-* Wed Apr 11 2012 Joseph Bester <bester@mcs.anl.gov> - 13.33-1
-- GRAM-334: job manager doesn't work if unix socket path is too long
-- GRAM-338: GRAM job manager mishandles peer name when proxying messages through the gatekeeper
-- GRAM-340: job manager crashes during stdio size query
-- GRAM-342: intra-job manager protocol doesn't keep do signal-safe reads
-
-* Mon Apr 02 2012 Joseph Bester <bester@mcs.anl.gov> - 13.31-1
-- GRAM-329: Condor fake-SEG loses track of job
-
-* Thu Mar 29 2012 Joseph Bester <bester@mcs.anl.gov> - 13.30-1
-- GRAM-327: list default values for RSL attributes
-
-* Wed Mar 28 2012 Joseph Bester <jbester@mcs.anl.gov> - 13.29-1
-- GRAM-330: Buffer overflow in globus_gram_job_manager_seg_parse_condor_id
-
-* Tue Mar 27 2012 Joseph Bester <bester@mcs.anl.gov> - 13.28-1
-- GRAM-321: globus-job-manager emits warning about all jobs on restart
-- GRAM-323: RVF parser leaks file descriptors
-- GRAM-326: Can't renew job proxy after GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT error
-- GRAM-328: job manager waits for two-phase delay when stopping
-
-* Thu Mar 22 2012 Joseph Bester <jbester@mcs.anl.gov> - 13.27-1
-- GRAM-325: job manager crashes when reading empty condor log
-
-* Wed Mar 14 2012 Joseph Bester <bester@mcs.anl.gov> - 13.26-1
-- GRAM-314: Jobmanager locking protocol doesn't handle deletion of lockfiles
-
-* Wed Mar 14 2012 Joseph Bester <bester@mcs.anl.gov> - 13.25-1
-- GRAM-273: Crufty Condor logs can cause major performance hit
-- GRAM-306: Job Manager stdio_size query logging crash
-- GRAM-315: Job locking doesn't handle ENOENT gracefully
-- GRAM-317: job manager fails transferring job between processes if the proxy is larger than the socket buffer
-
-* Thu Mar 1 2012 Joseph Bester <bester@mcs.anl.gov> - 13.22-1
-- RIC-239: GSSAPI Token inspection fails when using TLS 1.2
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 13.21-1
-- GRAM-272: Allow site-specific RVF entries
-- GRAM-294: GRAM should clean up files better
-- GRAM-305: Jobmanager reporting DONE status when stage-out failed
-- RIC-226: Some dependencies are missing in GPT metadata
-
-* Thu Dec 22 2011 Joseph Bester <bester@mcs.anl.gov> - 13.19-1
-- GRAM-232: Incorrect directory permissions cause an infinite loop
-- GRAM-302: Incorrect error when state file write fails
-- GRAM-301: GRAM validation file parser doesn't handle empty quoted values
-            correctly
-- GRAM-300: GRAM job manager doxygen refers to obsolete command-line options
-- GRAM-299: Not all job log messages obey loglevel RSL attribute
-- GRAM-296: Compile Failure on Solaris
-
-* Thu Dec 08 2011 Joseph Bester <bester@mcs.anl.gov> - 13.14-1
-- Fix some cases of multiple submits of a GRAM job to condor
-
-* Wed Dec 07 2011  <bester@centos55.local> - 13.13-1
-- GRAM-292: GRAM crashes when parsing partial condor log
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 13.12-2
-- Update for 5.2.0 release
-
 * Thu Dec 01 2011 Joseph Bester <bester@mcs.anl.gov> - 13.12-1
 - GRAM-289: GRAM jobs resubmitted
 

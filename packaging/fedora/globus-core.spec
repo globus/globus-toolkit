@@ -8,7 +8,7 @@
 
 %global debug_package %{nil}
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5" 
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -18,14 +18,14 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.9
+Version:	8.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Provides:	%{name}-devel = %{version}-%{release}
@@ -123,34 +123,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
-* Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 8.9-1
-- GT-251: Bad compile flags for S390 build
-
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 8.8-4
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 8.8-3
-- GT 5.2.2 Release
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 8.8-2
-- RHEL 4 patches
-
-* Fri Apr 06 2012 Joseph Bester <bester@mcs.anl.gov> - 8.8-1
-- RIC-252: solaris build failure
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 8.7-1
-- RIC-206: globus-makefile-header doesn't set flavor header dir correctly
-- RIC-232: Simplify search for OpenSSL headers and libraries
-
-* Thu Dec 22 2011 Joseph Bester <bester@mcs.anl.gov> - 8.6-1
-- RIC-206: globus-makefile-header doesn't set flavor header dir correctly
-
-* Thu Dec 08 2011 Joseph Bester <bester@mcs.anl.gov> - 8.5-2
-- Fix @INC handling for GLOBUS_LOCATION
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 8.4-2
-- Update for 5.2.0 release
-
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 8.4-1
 - Last sync prior to 5.2.0
 

@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -18,14 +18,14 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.7
-Release:	3%{?dist}
+Version:	14.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -49,11 +49,7 @@ BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
-%if 0%{?suse_version} == 0
-%if 0%{?rhel} > 4 || 0%{?rhel} == 0
 BuildRequires:	libtool-ltdl-devel
-%endif
-%endif
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
@@ -61,26 +57,14 @@ BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
 %else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
 BuildRequires:	tetex-latex
-%endif
 %endif
 
 %package progs
 Summary:	Globus Toolkit - Common Library Programs
 Group:		Applications/Internet
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-%if 0%{?suse_version} > 0
-    %if %{suse_version} < 1140
-Requires:     perl = %{perl_version}
-    %else
-%{perl_requires}
-    %endif
-%else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
-%endif
 
 %package devel
 Summary:	Globus Toolkit - Common Library Development Files
@@ -178,7 +162,7 @@ unset GPT_LOCATION
 %if "%{?globus_version}" != ""
 GLOBUS_VERSION=%{globus_version}
 %else
-GLOBUS_VERSION=5.2.2
+GLOBUS_VERSION=5.1.3
 %endif
 export GLOBUS_VERSION
 %configure --with-flavor=%{flavor} --enable-doxygen \
@@ -263,32 +247,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 14.7-3
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 14.7-2
-- GT 5.2.2 Release
-
-* Wed Jun 13 2012 Joseph Bester <bester@mcs.anl.gov> - 14.7-1
-- GT-227: API Documentation for Globus Priority Queue
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 14.6-3
-- RHEL 4 patches
-
-* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 14.6-2
-- SLES 11 patches
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 14.6-1
-- RIC-221: Remove unnecessary evals of path components from script initializers
-- RIC-223: Some commands in globus_common have no manpage
-- RIC-224: Eliminate some doxygen warnings
-- RIC-228: potentially unsafe format strings in common
-- RIC-230: Remove obsolete globus_libtool_windows code
-- RIC-255: Missing default value for shell script variable in globus-sh-exec
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 14.5-2
-- Update for 5.2.0 release
-
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 14.5-1
 - Last sync prior to 5.2.0
 

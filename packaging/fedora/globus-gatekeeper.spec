@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -12,34 +12,25 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.14
+Version:	9.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:         http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:         http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common >= 14
+Requires:	globus-common >= 13.4
 Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	globus-gssapi-gsi%{?_isa} >= 9
 Requires:       psmisc
 
-%if 0%{?suse_version} == 0
 Requires:       lsb
-%else
-Requires:       insserv
-%endif
-
 Requires(post): globus-common-progs >= 13.4
 Requires(preun):globus-common-progs >= 13.4
-%if 0%{?suse_version} == 0
-BuildRequires:       lsb
-%else
-BuildRequires:       insserv
-%endif
+BuildRequires:  lsb
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
 BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
@@ -125,42 +116,6 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
-* Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 9.14-1
-- GT-253: gatekeeper and job manager don't build on hurd
-
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 9.13-3
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 9.13-2
-- GT 5.2.2 Release
-
-* Thu May 24 2012 Joseph Bester <bester@mcs.anl.gov> - 9.13-1
-- GT-205: gatekeeper should log a message when it exits due to the presence of /etc/nologin
-
-* Mon May 14 2012 Joseph Bester <bester@mcs.anl.gov> - 9.12-1
-- GT-159: globus-gatekeeper init script should report errors better
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 9.11-3
-- RHEL 4 patches
-
-* Mon May 07 2012 Joseph Bester <bester@mcs.anl.gov> - 9.11-1
-- Updates for SUSE 11
-
-* Fri Apr 13 2012 Joseph Bester <bester@mcs.anl.gov> - 9.11-1
-- RIC-258: Can't rely on MKDIR_P
-
-* Fri Apr 06 2012 Joseph Bester <bester@mcs.anl.gov> - 9.10-1
-- GRAM-335: init scripts fail on solaris because of stop alias
-- RIC-205: Missing directories $GLOBUS_LOCATION/var/lock and $GLOBUS_LOCATION/var/run
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 9.9-1
-- GRAM-303: Gatekeeper's syslog output cannot be controlled
-- GRAM-309: GRAM5 doesn't work with IPv4 only gatekeepers
-- RIC-226: Some dependencies are missing in GPT metadata
-
-* Fri Jan 06 2012 Joseph Bester <bester@mcs.anl.gov> - 9.7-1
-- GRAM-303: Gatekeeper's syslog output cannot be controlled
-
 * Mon Dec 12 2011 Joseph Bester <bester@mcs.anl.gov> - 9.6-1
 - init script fixes
 
@@ -195,7 +150,7 @@ fi
 - Fix %post* scripts to check for -eq 1
 - Add explicit dependencies on >= 5.2 libraries
 
-* Fri Sep 23 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-1
+* Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 8.1-1
 - GRAM-260: Detect and workaround bug in start_daemon for LSB < 4
 
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2

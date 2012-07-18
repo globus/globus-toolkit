@@ -23,21 +23,23 @@ sbin_SCRIPTS = $(documented_scripts) $(undocumented_scripts)
 
 man8_MANS = 
 
+builddir = $(top_builddir)/$(subdir)
+
 if INSTALL_MANS
 man8_MANS += \
-    gpt-build.8 \
-    gpt-bundle.8 \
-    gpt-install.8 \
-    gpt-pkg.8 \
-    gpt-postinstall.8 \
-    gpt-query.8 \
-    gpt-uninstall.8 \
-    gpt-verify.8 \
-    gpt_build_config.8 \
-    gpt_extract_data.8
+    $(builddir)/gpt-build.8 \
+    $(builddir)/gpt-bundle.8 \
+    $(builddir)/gpt-install.8 \
+    $(builddir)/gpt-pkg.8 \
+    $(builddir)/gpt-postinstall.8 \
+    $(builddir)/gpt-query.8 \
+    $(builddir)/gpt-uninstall.8 \
+    $(builddir)/gpt-verify.8 \
+    $(builddir)/gpt_build_config.8 \
+    $(builddir)/gpt_extract_data.8
 endif
 
-%.8: %
+$(builddir)/%.8: $(srcdir)/%
 	$(POD2MAN) --section 8 $< > $@;
 
 EXTRA_DIST = gpt-to-pkgconfig $(man8_MANS)

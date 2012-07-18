@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gatekeeper
 _name = globus_gatekeeper
-version = 9.14
+version = 9.5
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
@@ -58,8 +58,7 @@ configure-stamp: $(QUILT_STAMPFN)
 	   --with-flavor=$(flavor) \
 	   --docdir='$${datadir}/doc/$(name)' \
 	   --disable-static \
-	   --with-lsb \
-	   --with-default-runlevels=2345 \
+	   --without-lsb \
 	   --with-initscript-config-path=/etc/default/globus-gatekeeper
 
 	touch $@

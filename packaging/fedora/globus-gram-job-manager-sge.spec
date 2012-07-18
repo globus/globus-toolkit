@@ -5,7 +5,7 @@
 %endif
 
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -15,14 +15,14 @@
 
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
-Version:	1.5
-Release:	5%{?dist}
+Version:	1.0
+Release:	6%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
 License:	LGPL 2.1 and Globus Toolkit Public License 3.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-sge < 4.5
 
@@ -30,15 +30,7 @@ Requires:       globus-gram-job-manager-scripts >= 4
 Requires:	globus-gass-cache-program >= 4
 Requires:	globus-common-progs >= 14
 Requires:       gridengine
-%if 0%{?suse_version} > 0
-    %if %{suse_version} < 1140
-Requires:     perl = %{perl_version}
-    %else
-%{perl_requires}
-    %endif
-%else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
-%endif
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
@@ -54,11 +46,7 @@ BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
 %else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
 BuildRequires:	tetex-latex
-%endif
 %endif
 
 %package doc
@@ -146,10 +134,15 @@ rm -rf autom4te.cache
 %{_datadir}/globus/globus-bootstrap.sh
 
 # Explicitly set SGE-related command paths
+%if %{?rhel}%{!?rhel:0} == 5
+export QSUB=/usr/bin/qsub
+export QSTAT=/usr/bin/qstat
+export QDEL=/usr/bin/qdel
+%else
 export QSUB=/usr/bin/qsub-ge
 export QSTAT=/usr/bin/qstat-ge
 export QDEL=/usr/bin/qdel-ge
-
+%endif
 export QCONF=/usr/bin/qconf
 export MPIRUN=no
 export SUN_MPRUN=no
@@ -273,35 +266,6 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-5
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-4
-- GT 5.2.2 Release
-
-* Thu May 24 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-3
-- use qstat-ge and co. on rhel5 as well
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-3
-- RHEL 4 patches
-
-* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-2
-- SLES 11 patches
-
-* Thu Apr 12 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-1
-- GRAM-343: lrm packages grid-service files aren't in CLEANFILES
-
-* Wed Mar 14 2012 Joseph Bester <bester@mcs.anl.gov> - 1.4-1
-- GRAM-318: Periodic lockup of SEG
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-1
-- GRAM-297: job manager service definitions contain unresolved variables
-- GRAM-310: sge configure script error
-- RIC-229: Clean up GPT metadata
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-7
-- Update for 5.2.0 release
-
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-6
 - Last sync prior to 5.2.0
 

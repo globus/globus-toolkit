@@ -5,7 +5,7 @@
 %endif
 
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -15,32 +15,22 @@
 
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
-Version:	3.2
+Version:	3.1
 Release:	3%{?dist}
 Summary:	Globus Toolkit - GRAM Auditing
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:      noarch
 %endif
 Requires:	globus-common >= 14
-%if 0%{?suse_version} > 0
-    %if %{suse_version} < 1140
-Requires:     perl = %{perl_version}
-    %else
-%{perl_requires}
-    %endif
-%else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
-%endif
 Requires:	perl(DBI)
-%if 0%{?suse_version} == 0
 Requires:	crontabs
-%endif
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core >= 8
 
@@ -104,30 +94,6 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 3.2-3
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 3.2-2
-- GT 5.2.2 Release
-
-* Mon Jun 25 2012 Joe Bester <bester@mcs.anl.gov> - 3.2-1
-- GT-236: gram audit makefile has missing parameter to mkdir
-
-* Tue May 15 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-8
-- Adjust requirements for SUSE
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-7
-- RHEL 4 patches
-
-* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-6
-- SLES 11 patches
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-5
-- GRAM-312: Make crontab not fail if the package is uninstalled
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 3.1-4
-- Update for 5.2.0 release
-
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 3.1-3
 - Last sync prior to 5.2.0
 

@@ -4,7 +4,7 @@
 %global flavor gcc32
 %endif
 
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global docdiroption "with-docdir"
 %else
 %global docdiroption "docdir"
@@ -12,14 +12,14 @@
 
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
-Version:	2.2
-Release:	5%{?dist}
+Version:	2.1
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -28,11 +28,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-common%{?_isa} >= 14
 
 BuildRequires:	grid-packaging-tools >= 3.4
-%if 0%{?suse_version} == 0
-%if 0%{?rhel} == 0 || 0%{?rhel} > 4
 BuildRequires:	libtool-ltdl-devel%{?_isa} >= 1
-%endif
-%endif
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
@@ -44,11 +40,7 @@ BuildRequires:	ghostscript
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:	tex(latex)
 %else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
 BuildRequires:	tetex-latex
-%endif
 %endif
 
 %package devel
@@ -174,25 +166,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 2.2-5
-- GT 5.2.2 final
-
-* Fri Jun 29 2012 Joseph Bester <bester@mcs.anl.gov> - 2.2-4
-- GT 5.2.2 Release
-
-* Wed May 09 2012 Joseph Bester <bester@mcs.anl.gov> - 2.2-3
-- RHEL 4 patches
-
-* Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 2.2-2
-- SLES 11 patches
-
-* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 2.2-1
-- RIC-224: Eliminate some doxygen warnings
-- RIC-230: Remove obsolete globus_libtool_windows code
-
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 2.1-4
-- Update for 5.2.0 release
-
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 2.1-3
 - Last sync prior to 5.2.0
 

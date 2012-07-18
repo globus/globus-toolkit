@@ -1,9 +1,5 @@
 # Do we want SELinux & Audit
-%if "%{?rhel}" == "4"
-%global WITH_SELINUX 0
-%else
 %global WITH_SELINUX 1
-%endif
 
 # OpenSSH privilege separation requires a user & group ID
 # Will let the system choose the UID/GID for the gsisshd user/group; see later
@@ -21,7 +17,7 @@
 %global gsi 1
 
 # Do we want libedit support
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
+%if "%{?rhel}" == "5"
 %global libedit 0
 %else
 %global libedit 1
@@ -34,8 +30,8 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 1
-%global gsi_openssh_ver 5.5
+%global gsi_openssh_rel 2
+%global gsi_openssh_ver 5.4
 
 %ifarch alpha ia64 ppc64 s390x sparc64 x86_64
 %global flavor gcc64
@@ -113,40 +109,19 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: /sbin/nologin
 %endif
 
-%if 0%{?suse_version} == 0
 Requires: initscripts >= 5.20
-%else
-Requires: sysconfig
-%endif
 
-%if 0%{?suse_version} > 0
-BuildRequires: openldap2-devel
-%else
 BuildRequires: openldap-devel
-%endif
 BuildRequires: autoconf, automake, perl, zlib-devel
-%if 0%{?suse_version} > 0
-BuildRequires: audit-devel
-%else
 BuildRequires: audit-libs-devel
-%endif
 BuildRequires: util-linux, groff
 BuildRequires: pam-devel
-%if 0%{?suse_version} > 0
-BuildRequires: tcpd-devel
-BuildRequires: libopenssl-devel
-%else
 %if "%{?rhel}" == "5"
 BuildRequires: tcp_wrappers
 BuildRequires: openssl-devel >= 0.9.8e
 %else
-%if "%{?rhel}" == "4"
-BuildRequires: openssl-devel
-%else
 BuildRequires: tcp_wrappers-devel
 BuildRequires: openssl-devel >= 0.9.8j
-%endif
-%endif
 %endif
 
 %if %{kerberos5}
@@ -169,21 +144,13 @@ BuildRequires: nss-devel
 %endif
 
 %if %{WITH_SELINUX}
-%if 0%{?suse_version} > 0
-Requires: libselinux1 >= 1.27.7
-%else
 Requires: libselinux >= 1.27.7
-%endif
 BuildRequires: libselinux-devel >= 1.27.7
 Requires: audit-libs >= 1.0.8
 BuildRequires: audit-libs >= 1.0.8
 %endif
 
-%if 0%{?suse_version} > 0
-BuildRequires: xorg-x11-xauth
-%else
 BuildRequires: xauth
-%endif
 
 %package clients
 Summary: SSH client applications with GSI authentication
@@ -194,20 +161,12 @@ Group: Applications/Internet
 Summary: SSH server daemon with GSI authentication
 Group: System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-%if 0%{?suse_version} == 0
 Requires(post): chkconfig >= 0.9, /sbin/service
-%else
-Requires(post): aaa_base
-%endif
 Requires(pre): /usr/sbin/useradd
-%if 0%{?rhel} == 05
+%if "%{?rhel}" == "5"
 Requires: pam >= 0.99.6-2
 %else
-%if 0%{?rhel} == 04
-Requires: pam >= 0.77
-%else
 Requires: pam >= 1.0.1-3
-%endif
 %endif
 
 %description
@@ -364,15 +323,10 @@ make install sysconfdir=%{_sysconfdir}/gsissh \
      bindir=%{_bindir} DESTDIR=$RPM_BUILD_ROOT
 
 install -d $RPM_BUILD_ROOT/etc/pam.d/
-%if 0%{?suse_version} == 0
 install -d $RPM_BUILD_ROOT/etc/rc.d/init.d
-install -m755 gsisshd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/gsisshd
-%else
-install -d $RPM_BUILD_ROOT/etc/init.d
-install -m755 gsisshd.init $RPM_BUILD_ROOT/etc/init.d/gsisshd
-%endif
 install -d $RPM_BUILD_ROOT%{_libexecdir}/gsissh
 install -m644 gsisshd.pam $RPM_BUILD_ROOT/etc/pam.d/gsisshd
+install -m755 gsisshd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/gsisshd
 
 #rm $RPM_BUILD_ROOT%{_bindir}/gsiscp
 #rm $RPM_BUILD_ROOT%{_bindir}/gsisftp
@@ -471,23 +425,9 @@ fi
 %attr(0644,root,root) %{_mandir}/man8/gsisftp-server.8*
 %attr(0600,root,root) %config(noreplace) %{_sysconfdir}/gsissh/sshd_config
 %attr(0644,root,root) %config(noreplace) /etc/pam.d/gsisshd
-%if 0%{?suse_version} == 0
 %attr(0755,root,root) /etc/rc.d/init.d/gsisshd
-%else
-%attr(0755,root,root) /etc/init.d/gsisshd
-%endif
 
 %changelog
-* Tue Jun 26 2012 Joseph Bester <bester@mcs.anl.gov> - 5.5-1
-- Update to the 5.5 release
-
-* Wed May 23 2012 Joseph Bester <bester@mcs.anl.gov> - 5.4-4
-- Reduce pam required version for CentOS 4
-
-* Tue May 15 2012 Joseph Bester <bester@mcs.anl.gov> - 5.4-3
-- Adjust requirements for SUSE
-- Fix path to init script for SUSE
-
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.4-2
 - Update to GT 5.1.2
 
