@@ -13,6 +13,7 @@ Requires:       globus-gridftp-server-progs
 Requires:       globus-gass-copy-progs
 Requires:       globus-common-progs
 Requires:       globus-gsi-cert-utils-progs
+Requires:       globus-gss-assist-progs
 Requires:       globus-proxy-utils
 
 %description

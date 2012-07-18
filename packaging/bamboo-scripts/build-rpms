@@ -201,6 +201,15 @@ packages="$(./make-packages.pl -faster -a -lp -deps -deporder -bundles=$bundles 
 if [ -z "$skip_packaging" ]; then
     ./make-packages.pl -faster -no-updates ${skip_bootstrap:+-ab} -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
 fi
+metapackages="globus-gridftp.spec
+    globus-data-management-client.spec
+    globus-data-management-server.spec
+    globus-data-management-sdk.spec
+    globus-gram5.spec
+    globus-resource-management-server.spec
+    globus-resource-management-client.spec
+    globus-resource-management-sdk.spec
+    globus-gsi.spec"
 
 cd gpt-*/packaging_tools
 sh ./bootstrap
@@ -224,7 +233,7 @@ for i in *.spec; do
     rpmbuild -bs --nodeps $i;
 done
 
-for i in grid-packaging-tools $packages; do
+for i in grid-packaging-tools $packages ; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
         rpmbuild --rebuild $topdir/SRPMS/$i-[0-9]*src.rpm
         rpmsdir=$topdir/RPMS
@@ -242,6 +251,13 @@ for i in grid-packaging-tools $packages; do
         if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
             sudo rpm -hUv --replacepkgs $rpms || true
         fi
+    fi
+done
+
+# Build but not install metapackages
+for i in $metapackages; do
+    if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
+        rpmbuild --rebuild $topdir/SRPMS/$i-[0-9]*src.rpm
     fi
 done
 
@@ -282,6 +298,15 @@ for i in grid-packaging-tools $packages; do
         fi
     fi
 done
+
+# Build but not install metapackages
+for i in $metapackages; do
+    if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
+        rpmbuild --target $target32 \
+                 --rebuild $topdir/SRPMS/$i-[0-9]*src.rpm
+    fi
+done
+
 fi
 
 cd $topdir
@@ -367,6 +392,7 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gass-copy-progs</packagereq>
       <packagereq type="default">globus-common-progs</packagereq>
       <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
+      <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-proxy-utils</packagereq>
     </packagelist>
   </group>
@@ -382,6 +408,7 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gfork-progs</packagereq>
       <packagereq type="default">globus-xio-pipe-driver</packagereq>
       <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
+      <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-ftp-control</packagereq>
       <packagereq type="default">globus-authz-callout-error</packagereq>
       <packagereq type="default">globus-authz</packagereq>
@@ -492,7 +519,6 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
       <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-proxy-utils-progs</packagereq>
-      <packagereq type="default">globus-user-env</packagereq>
       <packagereq type="default">globus-simple-ca</packagereq>
     </packagelist>
   </group>
@@ -506,10 +532,12 @@ cat > globus.xml <<EOF
     <packagelist>
       <packagereq type="default">globus-gatekeeper</packagereq>
       <packagereq type="default">globus-gram-job-manager</packagereq>
+      <packagereq type="default">globus-gram-job-manager-scripts</packagereq>
       <packagereq type="default">globus-gram-job-manager-fork-setup-poll</packagereq>
       <packagereq type="default">globus-gram-client-tools</packagereq>
       <packagereq type="default">globus-gass-cache-program</packagereq>
       <packagereq type="default">globus-gass-server-ez-progs</packagereq>
+      <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-common-progs</packagereq>
       <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
       <packagereq type="default">globus-proxy-utils</packagereq>
@@ -527,6 +555,7 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-common-progs</packagereq>
       <packagereq type="default">globus-callout</packagereq>
       <packagereq type="default">globus-gram-job-manager</packagereq>
+      <packagereq type="default">globus-gram-job-manager</packagereq>
       <packagereq type="default">globus-gram-job-manager-fork-setup-poll</packagereq>
       <packagereq type="default">globus-gass-cache</packagereq>
       <packagereq type="default">globus-gsi-openssl-error</packagereq>
@@ -539,6 +568,7 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gsi-callback</packagereq>
       <packagereq type="default">globus-gsi-credential</packagereq>
       <packagereq type="default">globus-gsi-proxy-core</packagereq>
+      <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-gssapi-gsi</packagereq>
       <packagereq type="default">globus-proxy-utils</packagereq>
       <packagereq type="default">globus-gss-assist</packagereq>
@@ -585,6 +615,7 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-gssapi-gsi</packagereq>
       <packagereq type="default">globus-proxy-utils</packagereq>
       <packagereq type="default">globus-gss-assist</packagereq>
+      <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-xio</packagereq>
       <packagereq type="default">globus-xio-gsi-driver</packagereq>
       <packagereq type="default">globus-io</packagereq>
