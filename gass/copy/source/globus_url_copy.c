@@ -2010,6 +2010,14 @@ main(int argc, char **argv)
             globus_l_guc_dump_urls(&guc_info);
         }
     }
+
+    if(globus_l_globus_url_copy_ctrlc && !g_monitor.transfer_timeout)
+    {
+#ifdef SIGINT
+        raise(SIGINT);
+#endif
+    }
+    
     /* make sure the timer doesn't go off after a cancel.  setting this
         to true makes the handler ignore everything if it hasn't fired yet */
     globus_mutex_lock(&g_monitor.mutex);
@@ -2025,13 +2033,6 @@ main(int argc, char **argv)
     if(guc_l_newline_exit && !globus_l_globus_url_copy_ctrlc_handled)
     {
         globus_libc_fprintf(stdout, "\n");
-    }
-    
-    if(globus_l_globus_url_copy_ctrlc && !g_monitor.transfer_timeout)
-    {
-#ifdef SIGINT
-        raise(SIGINT);
-#endif
     }
     
     if(guc_info.udt)
