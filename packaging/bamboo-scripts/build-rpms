@@ -201,15 +201,15 @@ packages="$(./make-packages.pl -faster -a -lp -deps -deporder -bundles=$bundles 
 if [ -z "$skip_packaging" ]; then
     ./make-packages.pl -faster -no-updates ${skip_bootstrap:+-ab} -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
 fi
-metapackages="globus-gridftp.spec
-    globus-data-management-client.spec
-    globus-data-management-server.spec
-    globus-data-management-sdk.spec
-    globus-gram5.spec
-    globus-resource-management-server.spec
-    globus-resource-management-client.spec
-    globus-resource-management-sdk.spec
-    globus-gsi.spec"
+metapackages="globus-gridftp
+    globus-data-management-client
+    globus-data-management-server
+    globus-data-management-sdk
+    globus-gram5
+    globus-resource-management-server
+    globus-resource-management-client
+    globus-resource-management-sdk
+    globus-gsi"
 
 cd gpt-*/packaging_tools
 sh ./bootstrap
