@@ -71,8 +71,8 @@ voms_string_array_ensure_capacity(voms_string_array *array,
         return 0;
     }
 
-    new_capacity = sizeof(char *) * (current_capacity + DEFAULT_CAPACITY);
-    new_elements = realloc(array->elements, new_capacity);
+    new_capacity = current_capacity + DEFAULT_CAPACITY;
+    new_elements = realloc(array->elements, sizeof(char *) * new_capacity);
     if (new_elements == NULL) {
         return -1;
     }
