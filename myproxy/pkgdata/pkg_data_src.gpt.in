@@ -2,8 +2,8 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
 <gpt_package_metadata Name="myproxy" Format_Version="0.02">
-<Aging_Version Major="5" Minor="8" Age="0"/>
-<VersionLabel>MyProxy v5.8 Jun 2012</VersionLabel>
+<Aging_Version Major="5" Minor="9" Age="0"/>
+<VersionLabel>MyProxy v5.9 Jul 2012</VersionLabel>
 <Description>
 MyProxy Credential Management Service
 </Description>

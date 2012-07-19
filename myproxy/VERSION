@@ -1,9 +1,14 @@
-This is MyProxy v5.8 Jun 2012.
+This is MyProxy v5.9 Jul 2012.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v5.9 Jul 2012
+  - fix a memory error in myproxy-logon --voms
+    when more than 19 entries in vomses file
+    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7261)
+
 v5.8 Jun 2012
   - fixes for myproxy-server VOMS attribute support:
     API updates for libvomsapi, fixes for FQAN regex matching
