@@ -1,2 +1,0 @@
-deb @BAMBOO_ARTIFACT_URL@/repo @DEBIAN_VERSION_NAME@ contrib
-deb-src @BAMBOO_ARTIFACT_URL@/repo @DEBIAN_VERSION_NAME@ contrib
