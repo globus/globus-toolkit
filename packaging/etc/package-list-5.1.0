@@ -16,7 +16,7 @@ globus_authz_callout_error	gsi/authz/error	gpt
 globus_xio_gsi_driver	xio/drivers/gsi	gpt
 globus_openssl_module	gsi/openssl_module/source	gpt
 globus_gssapi_error	gsi/gssapi_error/source	gpt
-myproxy	myproxy	gpt	globus_5_2_2
+myproxy	myproxy	gpt	MYPROXY_5_9
 globus_gsi_credential	gsi/credential/source	gpt
 globus_proxy_utils	gsi/proxy/proxy_utils/source	gpt
 globus_xioperf	xio/xioperf/source	gpt
