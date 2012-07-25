@@ -1020,211 +1020,302 @@ globus_i_gsi_callback_check_revoked(
     int                                 i, n;
     long                                err = 0;
     globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_bool_t                       crl_was_expired = GLOBUS_FALSE;
+    globus_bool_t                       recheck_crl_done = GLOBUS_FALSE;
     static char *                       _function_name_ =
         "globus_i_gsi_callback_check_revoked";
     
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
                         
-    /* 
-     * SSLeay 0.9.0 handles CRLs but does not check them. 
-     * We will check the crl for this cert, if there
-     * is a CRL in the store. 
-     * If we find the crl is not valid, we will fail, 
-     * as once the sysadmin indicates that CRLs are to 
-     * be checked, he best keep it upto date. 
-     * 
-     * When future versions of SSLeay support this better,
-     * we can remove these tests. 
-     * 
-     * we come through this code for each certificate,
-     * starting with the CA's We will check for a CRL
-     * each time, but only check the signature if the
-     * subject name matches, and check for revoked
-     * if the issuer name matches.
-     * this allows the CA to revoke its own cert as well. 
-     */
-    if (X509_STORE_get_by_subject(
-            x509_context,
-            X509_LU_CRL, 
-            X509_get_issuer_name(x509_context->current_cert),
-            &x509_object))
+    do
     {
-	X509 *				issuer;
-        time_t                          last_time;
-        int                             has_next_time;
-        time_t                          next_time;
-        EVP_PKEY *                      issuer_key;
-
-	contents_freed = 0;
-
-        crl =  x509_object.data.crl;
-        crl_info = crl->crl;
-
-        has_next_time = (crl_info->nextUpdate != NULL);
-        
-        globus_gsi_cert_utils_make_time(crl_info->lastUpdate, &last_time);
-        if (has_next_time) {
-            globus_gsi_cert_utils_make_time(crl_info->nextUpdate, &next_time);
-        }
-
-        GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "CRL last Update: ");
-        GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
-            2, (globus_i_gsi_callback_debug_fstream,
-                "%s", asctime(gmtime(&last_time))));
-        GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "\nCRL next Update: ");
-        GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
-            2, (globus_i_gsi_callback_debug_fstream,
-                "%s", has_next_time ? asctime(gmtime(&next_time)) : "<not set>" ));
-        GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "\n");
-
-        /* verify the signature on this CRL */
-    
-	if(x509_context->get_issuer(&issuer, 
-				    x509_context, 
-				    x509_context->current_cert) <= 0)
-	{
-            char *                      subject_string;
-
-            subject_string = X509_NAME_oneline(
+        /* 
+         * SSLeay 0.9.0 handles CRLs but does not check them. 
+         * We will check the crl for this cert, if there
+         * is a CRL in the store. 
+         * If we find the crl is not valid, we will fail, 
+         * as once the sysadmin indicates that CRLs are to 
+         * be checked, he best keep it upto date. 
+         * 
+         * When future versions of SSLeay support this better,
+         * we can remove these tests. 
+         * 
+         * we come through this code for each certificate,
+         * starting with the CA's We will check for a CRL
+         * each time, but only check the signature if the
+         * subject name matches, and check for revoked
+         * if the issuer name matches.
+         * this allows the CA to revoke its own cert as well. 
+         */
+        if (X509_STORE_get_by_subject(
+                x509_context,
+                X509_LU_CRL, 
                 X509_get_issuer_name(x509_context->current_cert),
-                NULL, 0);
+                &x509_object))
+        {
+            X509 *				issuer;
+            time_t                          last_time;
+            int                             has_next_time;
+            time_t                          next_time;
+            EVP_PKEY *                      issuer_key;
+
+            contents_freed = 0;
+
+            crl =  x509_object.data.crl;
+            crl_info = crl->crl;
+
+            has_next_time = (crl_info->nextUpdate != NULL);
             
-	    GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-		result,
-		GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-		(_CLS("Couldn't get the issuer certificate of the CRL with "
-		 "subject: %s"), subject_string));
-            OPENSSL_free(subject_string);
-            x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
-            goto free_X509_object;
-	}
+            globus_gsi_cert_utils_make_time(crl_info->lastUpdate, &last_time);
+            if (has_next_time) {
+                globus_gsi_cert_utils_make_time(crl_info->nextUpdate, &next_time);
+            }
 
-        issuer_key = X509_get_pubkey(issuer);
+            GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "CRL last Update: ");
+            GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
+                2, (globus_i_gsi_callback_debug_fstream,
+                    "%s", asctime(gmtime(&last_time))));
+            GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "\nCRL next Update: ");
+            GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
+                2, (globus_i_gsi_callback_debug_fstream,
+                    "%s", has_next_time ? asctime(gmtime(&next_time)) : "<not set>" ));
+            GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "\n");
+
+            /* verify the signature on this CRL */
         
-        if(issuer_key == NULL)
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                (_CLS("Couldn't verify that the available CRL is valid")));
-            x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
-            X509_free(issuer);
-            goto free_X509_object;
-        }
-
-        X509_free(issuer);
-
-        if (X509_CRL_verify(crl, issuer_key) <= 0)
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                (_CLS("Couldn't verify that the available CRL is valid")));
-            x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
-            EVP_PKEY_free(issuer_key);
-            goto free_X509_object;
-        }
-
-        EVP_PKEY_free(issuer_key);
-        
-        /* Check date */
-
-        i = X509_cmp_current_time(crl_info->lastUpdate);
-        if (i == 0)
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                (_CLS("In the available CRL, the thisUpdate field is not valid")));
-            x509_context->error = X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD;
-            goto free_X509_object;
-        }
-
-        if (i > 0)
-        {
-            GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                (_CLS("The available CRL is not yet valid")));
-            x509_context->error = X509_V_ERR_CRL_NOT_YET_VALID;
-            goto free_X509_object;
-        }
-        
-        i = (has_next_time) ? X509_cmp_current_time(crl_info->nextUpdate) : 1;
-        if (i == 0)
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                (_CLS("In the available CRL, the nextUpdate field is not valid")));
-            x509_context->error = X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD;
-            goto free_X509_object;
-        }
-           
-        if (i < 0)
-        {
-            GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                (_CLS("The available CRL has expired")));
-            x509_context->error = X509_V_ERR_CRL_HAS_EXPIRED;
-            goto free_X509_object;
-        }
-
-        X509_OBJECT_free_contents(&x509_object);
-	contents_freed = 1;
-
-        /* check if this cert is revoked */
-
-        n = sk_X509_REVOKED_num(crl_info->revoked);
-        for (i = 0; i < n; i++)
-        {
-            revoked = (X509_REVOKED *) 
-		sk_X509_REVOKED_value(crl_info->revoked, i);
-        
-            if(!ASN1_INTEGER_cmp(
-                revoked->serialNumber,
-                X509_get_serialNumber(x509_context->current_cert)))
+            if(x509_context->get_issuer(&issuer, 
+                                        x509_context, 
+                                        x509_context->current_cert) <= 0)
             {
                 char *                      subject_string;
-                long                        serial;
-            
-                serial = ASN1_INTEGER_get(revoked->serialNumber);
 
-                subject_string = X509_NAME_oneline(X509_get_subject_name(
-                    x509_context->current_cert), NULL, 0);
+                subject_string = X509_NAME_oneline(
+                    X509_get_issuer_name(x509_context->current_cert),
+                    NULL, 0);
+                
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                    (_CLS("Couldn't get the issuer certificate of the CRL with "
+                     "subject: %s"), subject_string));
+                OPENSSL_free(subject_string);
+                x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+                goto free_X509_object;
+            }
+
+            issuer_key = X509_get_pubkey(issuer);
             
+            if(issuer_key == NULL)
+            {
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                    (_CLS("Couldn't verify that the available CRL is valid")));
+                x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+                X509_free(issuer);
+                goto free_X509_object;
+            }
+
+            X509_free(issuer);
+
+            if (X509_CRL_verify(crl, issuer_key) <= 0)
+            {
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                    (_CLS("Couldn't verify that the available CRL is valid")));
+                x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+                EVP_PKEY_free(issuer_key);
+                goto free_X509_object;
+            }
+
+            EVP_PKEY_free(issuer_key);
+            
+            /* Check date */
+
+            i = X509_cmp_current_time(crl_info->lastUpdate);
+            if (i == 0)
+            {
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                    (_CLS("In the available CRL, the thisUpdate field is not valid")));
+                x509_context->error = X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD;
+                goto free_X509_object;
+            }
+
+            if (i > 0)
+            {
                 GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                     result,
-                    GLOBUS_GSI_CALLBACK_ERROR_REVOKED_CERT,
-                    (_CLS("Serial number = %ld (0x%lX) "
-		     "Subject=%s"),
-                     serial, serial, subject_string));
+                    GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                    (_CLS("The available CRL is not yet valid")));
+                x509_context->error = X509_V_ERR_CRL_NOT_YET_VALID;
+                goto free_X509_object;
+            }
+            
+            i = (has_next_time) ? X509_cmp_current_time(crl_info->nextUpdate) : 1;
+            if (i == 0)
+            {
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                    (_CLS("In the available CRL, the nextUpdate field is not valid")));
+                x509_context->error = X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD;
+                goto free_X509_object;
+            }
+               
+            /* If we get an expired CRL, we'll delete it from the store
+             * associated with this ssl context and then try this operation one
+             * more time to see if a new one is in place.
+             */
+            if (i < 0 && !crl_was_expired)
+            {
+                int idx;
 
-                x509_context->error = X509_V_ERR_CERT_REVOKED;
+                CRYPTO_w_lock(CRYPTO_LOCK_X509_STORE);
+                idx=sk_X509_OBJECT_find(x509_context->ctx->objs, &x509_object);
+                if (idx >= 0) sk_X509_OBJECT_delete(x509_context->ctx->objs, idx);
+                X509_OBJECT_free_contents(&x509_object);
+                contents_freed = 1;
+                CRYPTO_w_unlock(CRYPTO_LOCK_X509_STORE);
 
-                GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
-                    2, (globus_i_gsi_callback_debug_fstream,
-                        "revoked %lX\n", 
-			ASN1_INTEGER_get(revoked->serialNumber)));
+                /* OpenSSL 1.0.0 will try to reload the CRL if one with next
+                 * index extension .r1 is present, but not reload if an old CRL
+                 * is replaced. We explicitly try to reload it here to get
+                 * around this; otherwise, there's no way to reliably replace
+                 * a CRL so that new and old processes can find it.
+                 */
+                if (OPENSSL_VERSION_NUMBER >= 0x10000000L)
+                {
+                    char * cert_dir;
+                    unsigned long hash;
+                    char * crl_path;
+                    X509_CRL * new_crl = NULL;
+                    FILE * crl_fp;
 
-                OPENSSL_free(subject_string);
+                    result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
+                    if (result != GLOBUS_SUCCESS)
+                    {
+                        return result;
+                    }
+                    hash = X509_issuer_name_hash(x509_context->current_cert);
+
+                    crl_path = globus_common_create_string(
+                            "%s/%lu.r0", cert_dir, hash);
+
+                    free(cert_dir);
+                    cert_dir = NULL;
+
+                    if (crl_path == NULL)
+                    {
+                        GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                            result,
+                            GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                            (_CLS("Unable to find valid CRL")));
+                        goto free_X509_object;
+                    }
+
+                    errno = 0;
+                    crl_fp = fopen(crl_path, "r");
+                    free(crl_path);
+                    crl_path = NULL;
+                    if (crl_fp == NULL && errno == ENOENT)
+                    {
+                        /* CRL was removed */
+                        result = GLOBUS_SUCCESS;
+                        break;
+                    }
+                    else if (crl_fp == NULL)
+                    {
+                        /* Unable to open CRL */
+                        GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                            result,
+                            GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                            (_CLS("Unable to find valid CRL")));
+                        goto free_X509_object;
+                    }
+                    new_crl = PEM_read_X509_CRL(crl_fp, &new_crl, NULL, NULL);
+                    fclose(crl_fp);
+
+                    X509_STORE_add_crl(x509_context->ctx, new_crl);
+                }
+
+                crl_was_expired = GLOBUS_TRUE;
+                continue;
+            }
+            else if (i < 0)
+            {
+                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                    (_CLS("The available CRL has expired")));
+                x509_context->error = X509_V_ERR_CRL_HAS_EXPIRED;
+                goto free_X509_object;
+            }
+
+            /* If we get this far, then we're not going to recheck an expired
+             * CRL and just fall out of the do/while
+             */
+            recheck_crl_done = GLOBUS_TRUE;
+
+            X509_OBJECT_free_contents(&x509_object);
+            contents_freed = 1;
+
+            /* check if this cert is revoked */
+
+            n = sk_X509_REVOKED_num(crl_info->revoked);
+            for (i = 0; i < n; i++)
+            {
+                revoked = (X509_REVOKED *) 
+                    sk_X509_REVOKED_value(crl_info->revoked, i);
+            
+                if(!ASN1_INTEGER_cmp(
+                    revoked->serialNumber,
+                    X509_get_serialNumber(x509_context->current_cert)))
+                {
+                    char *                      subject_string;
+                    long                        serial;
+                
+                    serial = ASN1_INTEGER_get(revoked->serialNumber);
+
+                    subject_string = X509_NAME_oneline(X509_get_subject_name(
+                        x509_context->current_cert), NULL, 0);
+                
+                    GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                        result,
+                        GLOBUS_GSI_CALLBACK_ERROR_REVOKED_CERT,
+                        (_CLS("Serial number = %ld (0x%lX) "
+                         "Subject=%s"),
+                         serial, serial, subject_string));
+
+                    x509_context->error = X509_V_ERR_CERT_REVOKED;
+
+                    GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
+                        2, (globus_i_gsi_callback_debug_fstream,
+                            "revoked %lX\n", 
+                            ASN1_INTEGER_get(revoked->serialNumber)));
+
+                    OPENSSL_free(subject_string);
+                }
             }
         }
-    }
-    else
-    {
-        /* Error reading CRL or CRL not available */
-        err = ERR_get_error();
-
-        if (err != X509_V_OK)
+        else
         {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                (_CLS("Couldn't verify that the available CRL is valid")));
+            /* Error reading CRL or CRL not available */
+            err = ERR_get_error();
+
+            if (err != X509_V_OK)
+            {
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                    (_CLS("Couldn't verify that the available CRL is valid")));
+            }
+            break;
         }
     }
+    while (crl_was_expired && !recheck_crl_done);
 
  free_X509_object:
     
