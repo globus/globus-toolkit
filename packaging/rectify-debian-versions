@@ -266,9 +266,17 @@ sub update_control
         chomp($line);
         if (($in_description || $line =~ m/^Description/) && $line ne '')
         {
+            my $newline;
             $in_description = 1;
-            $changed |= ($line =~ s/lib$pkgmeta->{DEBNAME}([0-9]+)/lib$pkgmeta->{DEBNAME}$pkgmeta->{SONAME}/g);
+            $newline = $line;
+            $newline =~ s/lib$pkgmeta->{DEBNAME}([0-9]+)/lib$pkgmeta->{DEBNAME}$pkgmeta->{SONAME}/g;
 
+            if ($newline ne $line)
+            {
+                print "changed library version in $line\n" if ($verbose);
+                $changed = 1;
+                $line = $newline;
+            }
         }
         elsif ($in_description && $line eq '')
         {
@@ -531,17 +539,20 @@ sub check_if_debian_metadata_changed
     my $pkgmeta = shift;
     my $package = $pkgmeta->{DEBNAME};
     my $debianpath = "debian/$package/debian";
-    my $changelogpath = "debian/$package/debian/changelog";
-    my $changelogmtime;
+    my $status;
 
-    $changelogmtime = int((stat($changelogpath))[9]);
+    open($status, "cvs -q status $debianpath|") || return 0;
 
-    for my $filename (<$debianpath/*>)
+    while (<$status>)
     {
-        if (-f $filename && int((stat($filename))[9]) > $changelogmtime)
-        {
-            print "$filename is newer than changelog\n" if $verbose;
-            return 1;
+        chomp();
+
+        if (/^File: /) {
+            if ($_ !~ /Status: Up-to-date/) {
+                print "Metadata changed: $_\n" if ($verbose);
+                close($status);
+                return 1;
+            }
         }
     }
     return 0;
