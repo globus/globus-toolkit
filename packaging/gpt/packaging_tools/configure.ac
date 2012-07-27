@@ -1,5 +1,5 @@
 AC_REVISION($Revision$)
-AC_INIT(gpt, 3.6.2)
+AC_INIT(gpt, 3.6.3)
 AC_CONFIG_SRCDIR(Makefile.am)
 AM_INIT_AUTOMAKE([foreign])
  
