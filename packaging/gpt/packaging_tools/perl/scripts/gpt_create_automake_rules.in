@@ -121,7 +121,22 @@ sub process_automake_file {
   my ($dir_targets, $mpages) = scan_automake_file($file);
   my $dir = cwd();
 #  print "process_automake_file: $dir\n";
-  open (OUTPUT, ">>$rulefile");
+  open (OUTPUT, "+<$rulefile");
+
+  my $trunc_point = 0;
+  while (<OUTPUT>)
+  {
+      chomp();
+      if ($_ =~ m/# BEGIN GPT AUTOMAKE RULES/)
+      {
+          truncate(OUTPUT, $trunc_point);
+          last;
+      }
+      else
+      {
+          $trunc_point = tell(OUTPUT);
+      }
+  }
   my ($d, $t);
   my ($link, $unlink, $rules, $filelist, $phony) = ("link: link-recursive ",
                                                     "unlink: unlink-recursive ",
@@ -132,13 +147,24 @@ sub process_automake_file {
     my @targets = (sort keys %{$dir_targets->{$d}});
     for $t (@targets) {
       if ($t eq 'MANS') {
-        for my $m (sort keys %$mpages) {
-	  my $mansectdir=$d;
-	  $mansectdir .= $m if ($mansectdir eq 'man');
-          $filelist .= " filelist-$mansectdir ";
-          $phony .= " filelist-$mansectdir ";
-          $rules .= generate_rule($t, $d, $m);
-        }
+            # man_MANS is legal, if that's the case, we'll pull out
+            # all possible mandirs based on the pages in the list
+            if ($d eq 'man') {
+                for my $m (sort keys %$mpages) {
+                    my $mansectdir = $d;
+                    $mansectdir .= $m if ($mansectdir eq 'man');
+                    $filelist .= " filelist-$mansectdir ";
+                    $phony .= " filelist-$mansectdir ";
+                    $rules .= generate_rule($t, $d, $m);
+                }
+            } else {
+                my $mansectdir = $d;
+                my $m = $mansectdir;
+                $m =~ s/.*man//;
+                $filelist .= " filelist-$mansectdir ";
+                $phony .= " filelist-$mansectdir ";
+                $rules .= generate_rule($t, $d, $m);
+            }
       } else {
         $link .= "link-$d$t ";
         $unlink .= "unlink-$d$t ";
@@ -148,6 +174,7 @@ sub process_automake_file {
       }
     }
   }
+  print OUTPUT "# BEGIN GPT AUTOMAKE RULES\n";
   print OUTPUT "link-am:\n\nunlink-am:\n\nfilelist-am:\n\n";
   print OUTPUT "$link\n\t:\n\n";
   print OUTPUT "$unlink\n\t:\n\n";

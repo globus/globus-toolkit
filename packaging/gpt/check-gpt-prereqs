@@ -15,7 +15,7 @@ my %prereqs = (
     'Digest::MD5' => [2, 20],
     'File::Spec' => [0, 8],
     'IO::Zlib' => [1, 1],
-    'Pod::Parser' => [1, 18],
+    'Pod::Parser' => [1, 14],
     'Test::Simple' => [0, 47],
     'XML::Parser' => [2, 0]);
 
