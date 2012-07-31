@@ -1,5 +1,5 @@
 Name:		grid-packaging-tools
-Version:	3.6.2
+Version:	3.6.3
 Release:	1%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 
@@ -86,6 +86,9 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
+* Tue Jul 31 2012 Joseph Bester <bester@mcs.anl.gov> - 3.6.3-1
+- GT-257: gpt_create_automake_rules creates duplicate rules for man pages
+
 * Thu Mar 15 2012 Joseph Bester <bester@mcs.anl.gov> - 3.6.2-1
 - Patch to allow GPT_LOCATION and GLOBUS_LOCATION to be different
 

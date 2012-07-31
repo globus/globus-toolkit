@@ -1,3 +1,9 @@
+grid-packaging-tools (3.6.3-1) unstable; urgency=low
+
+  * GT-257: gpt_create_automake_rules creates duplicate rules for man pages
+
+ -- Globus Toolkit <support@globus.org>  Tue, 31 Jul 2012 09:34:26 -0400
+
 grid-packaging-tools (3.6.2-2) unstable; urgency=low
 
   * GT 5.2.2 final
