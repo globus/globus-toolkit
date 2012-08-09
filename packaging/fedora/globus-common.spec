@@ -18,8 +18,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.7
-Release:	3%{?dist}
+Version:	14.8
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -263,6 +263,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Aug 09 2012 Joseph Bester <bester@mcs.anl.gov> - 14.8-1
+- GT-264: link error in globus-redia
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 14.7-3
 - GT 5.2.2 final
 
