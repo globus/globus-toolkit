@@ -1,5 +1,5 @@
 #include "globus_common.h"
-#include <dlfcn.h>
+#include <ltdl.h>
 
 static char * g_edge_label = "";
 static char * g_outfile = "-";
@@ -149,7 +149,7 @@ main(int argc, char ** argv)
     globus_state_extension_handle_t *   ext_data;
     globus_result_t                     result;
     globus_state_handle_t               handle;
-    void *                              dlo_h;
+    lt_dlhandle                         dlo_h;
     void *                              sym_handle;
     globus_options_handle_t             opt_h;
 
@@ -173,17 +173,17 @@ main(int argc, char ** argv)
         exit(1);
     }
 
-    dlo_h = dlopen(lib_name, RTLD_LAZY);
+    dlo_h = lt_dlopenext(lib_name);
     if(dlo_h == NULL)
     {
-        fprintf(stderr, "Failed to dlopen %s\n%s\n", lib_name, dlerror());
+        fprintf(stderr, "Failed to dlopen %s\n%s\n", lib_name, lt_dlerror());
         exit(1);
     }
 
-    sym_handle = dlsym(dlo_h, symbol_name);
+    sym_handle = lt_dlsym(dlo_h, symbol_name);
     if(sym_handle == NULL)
     {
-        fprintf(stderr, "Failed to dlsym %s\n%s\n", symbol_name, dlerror());
+        fprintf(stderr, "Failed to dlsym %s\n%s\n", symbol_name, lt_dlerror());
         exit(1);
     }
 
