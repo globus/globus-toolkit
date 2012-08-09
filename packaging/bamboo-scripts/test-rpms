@@ -296,7 +296,7 @@ for flavor in $flavors; do
                     rm -rf ~/.globus/.gass_cache
                     xmlfile="${testpkgname_no_ver}-$lrm.xml"
                     if [ -f "$xmlfile" ]; then
-                        sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}-$lrm$mode\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}-$lrm$mode\"/"< "$xmlfile" > "${flavortestoutdir}/${xmlfile%%.*}$mode.xml"
+                        sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"${testpkgname%%-*}.\1_${flavor}-$lrm$mode\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"${testpkgname%%-*}.\1_${flavor}-$lrm$mode\"/"< "$xmlfile" > "${flavortestoutdir}/${xmlfile%%.*}$mode.xml"
                             mv "$xmlfile" "${xmlfile%%.*}$mode.xml"
                     fi
                 done
