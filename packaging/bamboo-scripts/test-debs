@@ -138,13 +138,11 @@ EESufsL68kNlBuAAnRRI5jFAvyjtQaoQpVqSL4/O45D7AJ9WrW/vxTzN0OyZyUU6
 =r6rU
 -----END PGP PUBLIC KEY BLOCK-----
 EOF
+artifact_origin="$(echo "${artifact_url}" | cut -d/ -f3)"
+
     cat >> globus.pref <<EOF
 Package: *
-Pin: origin gtbamboo.dyndns.org
-Pin-Priority: 600
-
-Package: *
-Pin: origin jenkins.mikelink.com
+Pin: origin ${artifact_origin}
 Pin-Priority: 600
 EOF
     sudo cp globus.pref /etc/apt/preferences.d/globus.pref
