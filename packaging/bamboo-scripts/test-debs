@@ -298,7 +298,7 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
                 # tests will have a clean state
                 xmlfile="${testpkgname_no_ver}-$lrm.xml"
                 if [ -f "$xmlfile" ]; then
-                    sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}-$lrm$mode\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}-$lrm$mode\"/"< "$xmlfile" > "${flavortestoutdir}/${xmlfile%%.*}$mode.xml"
+                    sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"${testpkgname%%-*}.\1_${flavor}-$lrm$mode\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"${testpkgname%%-*}.\1_${flavor}-$lrm$mode\"/"< "$xmlfile" > "${flavortestoutdir}/${xmlfile%%.*}$mode.xml"
                         mv "$xmlfile" "${xmlfile%%.*}$mode.xml"
                 fi
             done
@@ -317,7 +317,7 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
         make junit || true
         for x in "${testpkgname_no_ver}"*.xml; do
             if [ -f "$x" ]; then
-                sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}\"/"< "$x" > "${flavortestoutdir}/${x}"
+                sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"${testpkgname%%-*}.\1_${flavor}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"${testpkgname%%-*}.\1_${flavor}\"/"< "$x" > "${flavortestoutdir}/${x}"
             fi
         done
     fi
