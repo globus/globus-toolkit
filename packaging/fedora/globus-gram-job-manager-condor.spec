@@ -9,7 +9,7 @@
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
 Version:	1.3
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
@@ -122,8 +122,12 @@ fi
 %dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-condor
+%config(noreplace) %{_sysconfdir}/globus/globus-condor.conf
 
 %changelog
+* Wed Aug 15 2012 Joe Bester <jbester@mactop2.local> - 1.3-6
+- GT-267: /etc/globus/globus-condor.conf is not marked as a config file in RPM spec
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 1.3-5
 - GT 5.2.2 final
 
