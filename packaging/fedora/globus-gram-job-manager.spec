@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.48
+Version:	13.49
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -177,6 +177,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Aug 17 2012 Joseph Bester <bester@mcs.anl.gov> - 13.49-1
+- GT-268: GRAM job manager seg module fails to replay first log of the month on restart
+- GT-270: job manager crash at shutdown (extra_envvar free)
+
 * Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 13.48-1
 - GT-253: gatekeeper and job manager don't build on hurd
 

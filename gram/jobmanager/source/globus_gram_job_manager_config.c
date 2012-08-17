@@ -787,7 +787,7 @@ globus_gram_job_manager_config_destroy(
     }
     if (config->extra_envvars)
     {
-        free(config->extra_envvars);
+        globus_list_destroy_all(config->extra_envvars, free);
     }
     if (config->seg_module)
     {
