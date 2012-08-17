@@ -424,6 +424,7 @@ globus_l_job_manager_poll_callback(
             state->start_timestamp.tm_hour = 0;
             state->start_timestamp.tm_min = 0;
             state->start_timestamp.tm_sec = 0;
+            globus_l_job_manager_normalize_date(&state->start_timestamp);
         }
 
         rc = globus_l_job_manager_find_logfile(state);
