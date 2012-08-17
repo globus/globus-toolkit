@@ -26,4 +26,6 @@ lsf_profile=@LSF_PROFILE@
 # The bkill command is used to terminate jobs
 # bkill=@BKILL@
 
-log_path=@LSF_LOG_PATH@
+# The log_path is used by the globus-scheduler-event-generator to parse
+# paths to lsb_event files.
+# log_path=@LSF_LOG_PATH@
