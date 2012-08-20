@@ -73,6 +73,9 @@ fi
 log_guess="${LSF_ENVDIR%/}"
 log_guess="${log_guess%/*}"
 log_guess="$(echo "${log_guess}/work/"*)/logdir"
+if test ! -d "$log_guess"; then
+    log_guess="no"
+fi
 AC_ARG_WITH(log-path,
     AC_HELP_STRING(
         [--with-log-path=DIRECTORY],
