@@ -68,6 +68,7 @@ globus_gridftp_server_test	gridftp/server/test	gpt
 globus_gwtftp	gridftp/gwtftp/source	gpt
 globus_gfork_test_plugin	gridftp/gfork/test_plugin	gpt
 globus_gridmap_callout_error	gsi/gridmap_callout/error	gpt
+globus_gridmap_verify_myproxy_callout gsi/gridmap_verify_myproxy_callout gpt
 globus_gsi_callback	gsi/callback/source	gpt
 globus_gsi_cert_utils	gsi/cert_utils/source	gpt
 globus_gsi_credential	gsi/credential/source	gpt

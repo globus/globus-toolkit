@@ -1,0 +1,23 @@
+#! /bin/sh
+
+callout_name=globus_gridmap_verify_myproxy_callout
+callout_line="globus_mapping lib$callout_name.so $callout_name"
+
+case "$1" in
+    configure)
+        if [ ! -f /etc/gsi_authz.conf ]; then
+            echo "$callout_line" > /etc/gsi_authz.conf 
+        elif ! grep -q "$callout_name" /etc/gsi_authz.conf; then
+            echo "$callout_line" >> /etc/gsi_authz.conf 
+        fi
+        ;;
+    abort-upgrade)
+        :
+        ;;
+    abort-remove)
+        :
+        ;;
+    abort-deconfigure)
+        :
+        ;;
+esac

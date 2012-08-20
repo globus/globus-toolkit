@@ -406,6 +406,7 @@ BUNDLE globus-gridftp
         globus_gridftp_server
         globus_gridmap_callout_error
         globus_xio_gridftp_multicast
+        gridmap_verify_myproxy_callout
 
 BUNDLE globus-xio-extra-drivers
         globus_xio_skeleton_driver

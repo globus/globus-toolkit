@@ -1,0 +1,5 @@
+globus-gridmap-verify-myproxy-callout (1.0-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Globus Toolkit <support@globus.org>  Mon, 13 Aug 2012 14:21:33 -0400
