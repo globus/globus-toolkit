@@ -1,0 +1,1 @@
+stderr_log,local_cred - @sbindir@/globus-job-manager globus-job-manager -conf @sysconfdir@/globus/globus-gram-job-manager.conf -type lsf -seg-module lsf
