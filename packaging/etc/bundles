@@ -257,6 +257,7 @@ BUNDLE globus-gsi
 	globus_common
 	globus_core
 	globus_gssapi_error
+        globus_gridmap_verify_myproxy_callout
 
 BUNDLE globus-gsi-test
         globus_gss_assist_test
