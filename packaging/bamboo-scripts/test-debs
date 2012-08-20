@@ -283,7 +283,7 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
                 export CONTACT_LRM="$lrm"
                 pids="$( ps -u $(id -un) -o pid,args | grep '[g]lobus-job-manager' | cut -d' ' -f1 || true)"
                 if [ "$pids" != "" ]; then
-                    kill $pids
+                    kill $pids || true
                 fi
                 #killall globus-job-manager
                 rm -rf ~/.globus/job
@@ -326,7 +326,7 @@ done
 
 pids="$( ps -u $(id -un) -o pid,args | grep '[g]lobus-job-manager' | cut -d' ' -f1 || true)"
 if [ "$pids" != "" ]; then
-    kill $pids
+    kill $pids || true
 fi
 
 if which invoke-rc.d > /dev/null 2>&1 ; then
