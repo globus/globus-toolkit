@@ -68,6 +68,7 @@ globus_gridftp_server_test	gridftp/server/test	gpt
 globus_gwtftp	gridftp/gwtftp/source	gpt
 globus_gfork_test_plugin	gridftp/gfork/test_plugin	gpt
 globus_gridmap_callout_error	gsi/gridmap_callout/error	gpt
+globus_gridmap_verify_myproxy_callout gsi/gridmap_verify_myproxy_callout gpt
 globus_gsi_callback	gsi/callback/source	gpt
 globus_gsi_cert_utils	gsi/cert_utils/source	gpt
 globus_gsi_credential	gsi/credential/source	gpt
@@ -290,10 +291,10 @@ globus_index_util                           ws-mds/index/c/index_add gpt
 globus_wsrf_mds_gkrellm                     ws-mds/gkrellm/source	tar
 globus_wsrf_mds_gkrellm_schema              ws-mds/gkrellm/schema	tar
 
-myproxy		myproxy	gpt null MYPROXY_5_5
+myproxy		myproxy	gpt null MYPROXY_5_9
 
-gsi_openssh	gssapi-openssh/openssh	make_gpt_dist null OPENSSH_GSI_GPT_5_4
-gsi_openssh_setup  gssapi-openssh/setup	make_gpt_dist null OPENSSH_GSI_GPT_5_4
+gsi_openssh	gssapi-openssh/openssh	make_gpt_dist null OPENSSH_GSI_GPT_5_5
+gsi_openssh_setup  gssapi-openssh/setup	make_gpt_dist null OPENSSH_GSI_GPT_5_5
 
 gridshib_schema gridshib/gt/common/schema tar null HEAD
 gridshib_common	gridshib/gt/common/java/source tar null HEAD

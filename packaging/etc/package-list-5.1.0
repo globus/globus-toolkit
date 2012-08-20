@@ -16,7 +16,7 @@ globus_authz_callout_error	gsi/authz/error	gpt
 globus_xio_gsi_driver	xio/drivers/gsi	gpt
 globus_openssl_module	gsi/openssl_module/source	gpt
 globus_gssapi_error	gsi/gssapi_error/source	gpt
-myproxy	myproxy	gpt	MYPROXY_5_5
+myproxy	myproxy	gpt	MYPROXY_5_9
 globus_gsi_credential	gsi/credential/source	gpt
 globus_proxy_utils	gsi/proxy/proxy_utils/source	gpt
 globus_xioperf	xio/xioperf/source	gpt
@@ -30,8 +30,8 @@ globus_gsi_sysconfig	gsi/sysconfig/source	gpt
 globus_gsi_callback	gsi/callback/source	gpt
 globus_gridftp_server_control	gridftp/server-lib/src	gpt
 globus_callout	callout/source	gpt
-gsi_openssh	gssapi-openssh/openssh	NULL	OPENSSH_GSI_GPT_5_4
-gsi_openssh_setup	gssapi-openssh/setup	gpt	OPENSSH_GSI_GPT_5_4
+gsi_openssh	gssapi-openssh/openssh	NULL	OPENSSH_GSI_GPT_5_5
+gsi_openssh_setup	gssapi-openssh/setup	gpt	OPENSSH_GSI_GPT_5_5
 globus_gridftp_server	gridftp/server/src	gpt
 globus_user_env user_env/source gpt
 globus_rsl	gram/rsl/source	gpt
@@ -90,4 +90,5 @@ udt                     xio/external_libs/udt/udt4 tar
 globus_gridftp_server_acl_example     gridftp/server/acl/example	gpt
 globus_authz_null_callout	gsi/authz_null_callout/source	gpt
 globus_gridmap_callout_error	gsi/gridmap_callout/error	gpt
+globus_gridmap_verify_myproxy_callout gsi/gridmap_verify_myproxy_callout gpt
 globus_gridmap_callout	gsi/gridmap_callout/source	gpt
