@@ -1,0 +1,68 @@
+Source: globus-gram-job-manager-lsf
+Priority: optional
+Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
+Build-Depends: debhelper (>= 5), autotools-dev, grid-packaging-tools, globus-core, libglobus-scheduler-event-generator-dev
+Standards-Version: 3.9.0
+Section: net
+DM-Upload-Allowed: yes
+Homepage: http://www.globus.org/
+
+Package: globus-gram-job-manager-lsf
+Section: net
+Architecture: all
+Depends: ${misc:Depends}, ${perl:Depends}, globus-gass-cache-program, globus-common-progs, globus-gram-job-manager, globus-gram-job-manager-setup-lsf
+Description: Globus Toolkit - LSF Job Manager Adapter
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The globus-gram-job-manager-setup-lsf package contains:
+ LSF Job Manager
+
+Package: globus-gram-job-manager-lsf-setup-poll
+Section: net
+Architecture: all
+Provides: globus-gram-job-manager-setup-lsf
+Conflicts: globus-gram-job-manager-lsf-setup-seg
+Depends: ${misc:Depends}, ${perl:Depends}, globus-gass-cache-program, globus-common-progs, globus-gram-job-manager-lsf
+Description: Globus Toolkit - LSF Job Manager Polling Setup
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The globus-gram-job-manager-setup-lsf package contains:
+ LSF Job Manager
+
+Package: globus-gram-job-manager-lsf-setup-seg
+Section: net
+Architecture: any
+Depends: ${misc:Depends}, ${perl:Depends}, globus-gass-cache-program, globus-common-progs, globus-gram-job-manager-lsf, globus-scheduler-event-generator-progs
+Provides: globus-gram-job-manager-setup-lsf
+Conflicts: globus-gram-job-manager-lsf-setup-poll
+Description: Globus Toolkit - LSF Job Manager SEG Setup
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The globus-gram-job-manager-setup-lsf package contains:
+ LSF Job Manager SEG Setup
+
+Package: globus-gram-job-manager-lsf-doc
+Section: doc
+Architecture: all
+Depends: globus-gram-job-manager-lsf (= ${binary:Version}), ${misc:Depends}
+Description: Globus Toolkit - LSF Job Manager Documentation Files
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The globus-gram-job-manager-fork-doc package contains:
+ LSF Job Manager Documentation Files

@@ -423,6 +423,9 @@ BUNDLE gram5-condor
 BUNDLE gram5-sge
         globus_gram_job_manager_sge
 
+BUNDLE gram5-lsf
+        globus_gram_job_manager_lsf
+                
 BUNDLE gsi_openssh_bundle
 	gsi_openssh
 	gsi_openssh_setup

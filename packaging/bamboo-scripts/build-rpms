@@ -171,7 +171,7 @@ if [ -n "$pkgs_to_rm" ]; then
     sudo $pkgtool $noninteractivearg remove $pkgs_to_rm < /dev/null || true
 fi
 
-bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,gram5-pbs,gram5-sge,globus-simple-ca
+bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,gram5-lsf,gram5-pbs,gram5-sge,globus-simple-ca
 
 
 if [ "$(lsb_release -is)" = "SUSE LINUX" ]; then
@@ -248,7 +248,7 @@ for i in grid-packaging-tools $packages ; do
                              -name "$i-setup-poll-[0-9]*rpm" )"
         
         # Don't install LRM RPMs on build machine necessarily
-        if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
+        if ! echo "$i" | grep -qE 'condor|lsf|pbs|sge|gram-audit'; then
             sudo rpm -hUv --replacepkgs $rpms || true
         fi
     fi
@@ -293,7 +293,7 @@ for i in grid-packaging-tools $packages; do
                              -name "$i-setup-poll-[0-9]*rpm" )"
         
         # Don't install LRM RPMs on build machine necessarily
-        if ! echo "$i" | grep -qE 'condor|pbs|sge|gram-audit'; then
+        if ! echo "$i" | grep -qE 'condor|lsf|pbs|sge|gram-audit'; then
             sudo rpm -hUv --replacepkgs $rpms || true
         fi
     fi

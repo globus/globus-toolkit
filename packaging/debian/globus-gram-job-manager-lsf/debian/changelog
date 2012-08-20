@@ -1,0 +1,5 @@
+globus-gram-job-manager-lsf (1.0-1) unstable; urgency=low
+
+  * Initial package
+
+ -- Globus Toolkit <support@globus.org>  Mon, 20 Aug 2012 14:49:26 -0400

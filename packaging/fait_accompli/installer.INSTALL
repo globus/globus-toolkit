@@ -54,6 +54,8 @@ more local resource managers (LRMs) installed that you wish to use
 with gram, build the following optional targets:
 Condor:
 make gram5-condor
+LSF:
+make gram5-lsf
 PBS:
 make gram5-pbs
 SGE:
