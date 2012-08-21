@@ -236,7 +236,7 @@ USER_LN="$(id -un)"
 sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh ; grid-mapfile-add-entry -dn \"$USER_DN\" -ln $USER_LN"
 
 
-grid-proxy-init -hours 24 -cert "$TEST_USER_CERT" -key "$TEST_USER_KEY"
+grid-proxy-init -bits 1024 -hours 24 -cert "$TEST_USER_CERT" -key "$TEST_USER_KEY"
 
 for flavor in $flavors; do
     GLOBUS_LOCATION="${topdir}/globus-location-${flavor}"

@@ -221,7 +221,7 @@ for flavor in $flavors; do
     sudo service globus-gatekeeper restart || true
     sudo service globus-scheduler-event-generator restart || true
 
-    grid-proxy-init -hours 24
+    grid-proxy-init -bits 1024 -hours 24
 
     cp -R "$ORIGHOME/.ssh" "$HOME/.ssh"
     globus_hostname=$(globus-hostname)

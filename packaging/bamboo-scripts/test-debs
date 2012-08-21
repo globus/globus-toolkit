@@ -226,7 +226,7 @@ else
     sudo /etc/init.d/globus-scheduler-event-generator restart || true
 fi
 
-grid-proxy-init -hours 24
+grid-proxy-init -bits 1024 -hours 24
 
 mkdir -p "$tmppath/$flavor"
 cd "$tmppath/$flavor"
