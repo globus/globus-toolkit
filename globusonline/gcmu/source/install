@@ -1,0 +1,1221 @@
+#!/bin/bash
+# 
+# Copyright 2010-2011 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+VERSION=1.1.5
+GOCLI=cli.globusonline.org
+GORELAY=relay.globusonline.org
+LOGFILE=install.log
+umask 0022
+cd `dirname "$0"`
+GC_LOCATION="${PWD}"
+GC_ROOT="${GC_LOCATION}/gc"
+CONFIG=config.`date +%Y%m%d_%H%M`
+
+unset INSTALLATION \
+    HOSTNAME \
+    GO_USER \
+    ENDPOINT \
+    PUBLIC \
+    RESTRICT_PATHS \
+    DATA_INTERFACE \
+    MYPROXY \
+    GRIDFTP_PORT \
+    GRIDFTP_INBOUND \
+    GRIDFTP_OUTBOUND \
+    MYPROXY_PORT \
+    SSHKEY \
+    INETD
+
+help()
+{
+    echo "Usage: ./install [OPTIONS]"
+    echo
+    echo "where OPTIONS are:"
+    echo "    -config <config file>"
+    echo "    -installation 1|2"
+    echo "    -hostname <hostname>"
+    echo "    -go-user <GO username>"
+    echo "    -endpoint <GO endpoint name>"
+    echo "    -public y|n"
+    echo "    -restrict-paths <restricted paths>"
+    echo "    -data-interface <IP address>"
+    echo "    -myproxy <endpoint name>"
+    echo "    -gridftp-port <port number>"
+    echo "    -gridftp-inbound <port number>,<port number>"
+    echo "    -gridftp-outbound <port number>,<port number>"
+    echo "    -myproxy-port <port number>"
+    echo "    -sshid <path to ssh private key>"
+    echo "    -xinetd y|n"
+    echo "    -help"
+    echo
+    echo "Configure Globus Connect Multi-User in the current directory,"
+    echo "connect to Globus Online and create an endpoint referring to"
+    echo "locally installed GridFTP server, create and install configuration"
+    echo "files for the daemon xinetd and restart xinetd."
+    echo
+    echo "Installer save all configuration option in the file 'config.<date>' that"
+    echo "you can use next time with the option -config to avoid an interative"
+    echo "installation."
+    echo
+}
+
+error()
+{
+    echo $1
+    echo "Exiting..."
+    exit 1
+}
+
+prereq_test()
+{
+    SYSTEM=`uname -s`
+    [ -z "$SYSTEM" ] \
+    && error "Could not determine the operating system."
+    [ -x /usr/bin/python ] \
+    || error "Globus Connect Multi-User requires Python interpreter (/usr/bin/python)."
+
+    # GLOBUS_LOCATION is needed by $GC_ROOT/user/share/gcmu/setup.py and
+    # to invoke openssl provided with GT components. We cannot use
+    # system-provided GT because a GridFTP server uses an authz callout
+    case "$SYSTEM" in
+    Linux)
+        [ -e /etc/init.d/xinetd ] \
+        || error "Globus Connect Multi-User requires xinetd daemon."
+	if [ `getconf LONG_BIT` = 64 ]; then
+	    export GLOBUS_LOCATION="$GC_LOCATION/Linux_amd64"
+	else
+	    export GLOBUS_LOCATION="$GC_LOCATION/Linux_i386"
+	fi
+	;;
+    SunOS)
+#	export GLOBUS_LOCATION="$GC_LOCATION/SunOS_amd64"
+	error "The system $SYSTEM is not supported by GCMU."
+	;;
+    Darwin)
+        VER=`uname -r`
+        MAJ=`echo $VER | sed -e 's/\..*//'`
+        [ $MAJ -lt 8 ] \
+        && error "GCMU supports Mac OS X v10.4 (Darwin 8.0) or newer."
+	export GLOBUS_LOCATION="$GC_LOCATION/Darwin_amd64"
+	;;
+    *)
+	error "The system $SYSTEM is not supported by GCMU."
+	;;
+    esac
+}
+prereq_test
+
+save_config() {
+    echo -e "VERSION=\"$VERSION\"" \
+	"\nINSTALLATION=\"$INSTALLATION\"" \
+	"\nHOSTNAME=\"$HOSTNAME\"" \
+	"\nGO_USER=\"$GO_USER\"" \
+	"\nENDPOINT=\"$ENDPOINT\"" \
+	"\nPUBLIC=\"$PUBLIC\"" \
+	"\nRESTRICT_PATHS=\"$RESTRICT_PATHS\"" \
+	"\nDATA_INTERFACE=" \
+	"\nMYPROXY=\"$MYPROXY\"" \
+	"\nGRIDFTP_PORT=\"$GRIDFTP_PORT\"" \
+	"\nGRIDFTP_INBOUND=\"$GRIDFTP_INBOUND\"" \
+	"\nGRIDFTP_OUTBOUND=\"$GRIDFTP_OUTBOUND\"" \
+	"\nMYPROXY_PORT=\"$MYPROXY_PORT\"" \
+	"\nSSHKEY=\"$SSHKEY\"" \
+	"\nINETD=\"$INETD\"" > $CONFIG
+}
+
+while [ $# -gt 0 ]; do
+    case $1 in
+    -installation)
+	GC_INSTALLATION=$2
+        shift 2
+	;;
+    -hostname)
+	GC_HOSTNAME=$2
+	shift 2
+	;;
+    -go-user)
+	GC_GO_USER=$2
+	shift 2
+	;;
+    -endpoint)
+	GC_ENDPOINT=$2
+	shift 2
+	;;
+    -public)
+	GC_PUBLIC=$2
+	shift 2
+	;;
+    -restrict-paths)
+	GC_RESTRICT_PATHS=$2
+	shift 2
+	;;
+    -data-interface)
+	GC_DATA_INTERFACE=$2
+	shift 2
+	;;
+    -myproxy)
+	GC_MYPROXY=$2
+	shift 2
+	;;
+    -gridftp-port)
+	GC_GRIDFTP_PORT=$2
+	shift 2
+	;;
+    -gridftp-inbound)
+	GC_GRIDFTP_INBOUND=$2
+	shift 2
+	;;
+    -gridftp-outbound)
+	GC_GRIDFTP_OUTBOUND=$2
+	shift 2
+	;;
+    -myproxy-port)
+	GC_MYPROXY_PORT=$2
+	shift 2
+	;;
+    -xinetd)
+	GC_INETD=$2
+	shift 2
+	;;
+    -ssh-key)
+	GC_SSHKEY=$2
+	shift 2
+	;;
+    -config)
+	ls -la $2
+	. $2
+	shift 2
+	;;
+    *)
+        [ "$SYSTEM" = Linux ] && help
+	exit
+	;;
+    esac
+done
+
+INSTALLATION=${GC_INSTALLATION:-$INSTALLATION}
+HOSTNAME=${GC_HOSTNAME:-$HOSTNAME}
+GO_USER=${GC_GO_USER:-$GO_USER}
+ENDPOINT=${GC_ENDPOINT:-$ENDPOINT}
+PUBLIC=${GC_PUBLIC:-$PUBLIC}
+RESTRICT_PATHS=${GC_RESTRICT_PATHS:-$RESTRICT_PATHS}
+DATA_INTERFACE=${GC_DATA_INTERFACE:-$DATA_INTERFACE}
+MYPROXY=${GC_MYPROXY:-$MYPROXY}
+GRIDFTP_PORT=${GC_GRIDFTP_PORT:-$GRIDFTP_PORT}
+GRIDFTP_INBOUND=${GC_GRIDFTP_INBOUND:-$GRIDFTP_INBOUND}
+GRIDFTP_OUTBOUND=${GC_GRIDFTP_OUTBOUND:-$GRIDFTP_OUTBOUND}
+MYPROXY_PORT=${GC_MYPROXY_PORT:-$MYPROXY_PORT}
+SSHKEY=${GC_SSHKEY:-$SSHKEY}
+INETD=${GC_INETD:-$INETD}
+
+installation_menu()
+{
+    echo
+    echo " Globus Connect Multi-User v$VERSION."
+    echo
+    if [ `id -u` -ne 0 ]; then
+	echo "Some of the installation steps require root privileges. If you do not run this"
+	echo "installation script as root, you have run the 'root-setup' script as root at"
+	echo "the end of the installation."
+	echo
+    fi
+    echo "Choose installation type:"
+    echo "1. Create new Globus Online endpoint with GridFTP server and MyProxy CA"
+    echo "   server (default)."
+    echo "2. Create new Globus Online endpoint with GridFTP server, but with existing"
+    echo "   MyProxy CA (as created by #1)."
+    echo "X. Exit"
+    echo
+    echo -n "Your choice [1]: "
+    if [ -z "$INSTALLATION" ]; then
+	read INSTALLATION
+    else
+	echo $INSTALLATION
+    fi
+    case $INSTALLATION in
+	1|2|3)
+	    ;;
+	x|X)
+	    exit 0
+	    ;;
+	"")
+	    INSTALLATION=1
+	    ;;
+	*) installation_menu
+	    ;;
+    esac
+}
+installation_menu
+
+if [ $INSTALLATION -ne 1 ]; then
+    rm -f "$GC_ROOT/usr/share/gcmu/myproxy-go" >/dev/null 2>&1 \
+    || error "Could not remove the old configuration file 'myproxy-go'"
+fi
+
+# Get public hostname (FQDN)
+# And public ip address of this machine (if this is EC2 VM)
+get_fqdn()
+{
+    FQDN=`${GC_ROOT}/usr/share/gcmu/ec2.py public-hostname`
+    if [ $? -eq 0 ]; then
+	EC2=true
+	DATA_IP=`${GC_ROOT}/usr/share/gcmu/ec2.py public-ipv4`
+	if [ $? -ne 0 ]; then
+	    echo "The system seems to be an EC2 machine but it was not possible to obtain"
+	    echo "a public hostname nor a public ip address. You will have to provide"
+	    echo "them correctly when you are asked."
+	fi
+    else
+        case "$SYSTEM" in
+	Linux)
+	    FQDN=`hostname --fqdn`
+	    ;;
+	Darwin)
+	    FQDN=`hostname`
+	    ;;
+	esac
+    fi
+}
+get_fqdn
+
+# Ask for a GO username used to maintain GO endpoints
+go_username()
+{
+    echo
+    echo "This Globus Connect Multi-User (GCMU) installation will create a Globus Online"
+    echo "(GO) endpoint in the name of <Your-GO-Username>#<Endpoint-Name>. If you do not"
+    echo "have a GO account already, please go to http://www.globusonline.org, create"
+    echo "an account with a name that you want your endpoint to be identified with."
+    echo "Add your SSH public key to your GO account at"
+    echo "https://www.globusonline.org/account/ManageIdentities. Make sure you can logon"
+    echo "to GO CLI from this machine by doing"
+    echo "'ssh <Your-GO-Username>@cli.globusonline.org'"
+    echo
+    echo -n "GO Username [$LOGNAME]: "
+    if [ -z "$GO_USER" ]; then
+        read GO_USER
+    else
+	echo $GO_USER
+    fi
+    if [ -z "$GO_USER" ]; then
+	GO_USER=${LOGNAME}
+    fi
+}
+go_username
+
+# Ask for a name this GridFTP server will be identified by in GO service.
+go_endpoint()
+{
+    HOST=`echo $FQDN | sed -e 's/\..*//'`
+    echo
+    echo -n "Endpoint name [$HOST]: "
+    if [ -z "$ENDPOINT" ]; then
+	read ENDPOINT
+    else
+	echo $ENDPOINT
+    fi
+    if [ -z "$ENDPOINT" ]; then
+	ENDPOINT=$HOST
+    fi
+}
+go_endpoint
+
+endpoint_public()
+{
+    echo
+    echo "The endpoint name '${ENDPOINT}' can be a private endpoint"
+    echo "(by default) available only by the GO user ${GO_USER} or a public"
+    echo "endpoint seen by all GO users as '${GO_USER}#${ENDPOINT}'."
+    echo "Would you like the endpoint '${ENDPOINT}' to be public?"
+    echo
+    echo -n "Public (Y/N) [N]: "
+    if [ -z "$PUBLIC" ]; then
+	read PUBLIC
+    else
+	echo $PUBLIC
+    fi
+    if [ "x$PUBLIC" = xY -o "x$PUBLIC" = xy ]; then
+	PUBLIC=Y
+    else
+	PUBLIC=N
+    fi
+}
+endpoint_public
+
+# Ask for a hostname of this machine proposing `hostname --fqdn`
+endpoint_fqdn()
+{
+    echo
+    echo "GO will connect to the GridFTP server using an FQDN hostname. Please,"
+    echo "specify an FQDN hostname of this machine."
+    echo
+    echo -n "Hostname [$FQDN]: "
+    if [ -z "$HOSTNAME" ]; then
+	read HOSTNAME
+    else
+	echo $HOSTNAME
+    fi
+    if [ -z $HOSTNAME ]; then
+	HOSTNAME=$FQDN
+    fi
+}
+endpoint_fqdn
+
+restrict_paths()
+{
+    echo
+    echo "Access to the local filesystem can be limited to chosen paths and in two modes:"
+    echo "read or write. To use this feature you must specify a comma separated list of"
+    echo "full paths that users may access. Each path may be prefixed by R and/or W,"
+    echo "denoting read or write access, otherwise access is granted as per"
+    echo "the permission enforced by the OS. If a given path is a directory, all contents"
+    echo "and subdirectories will be given the same access. Order of paths does not"
+    echo "matter -- the permissions on the longest matching path will apply. The special"
+    echo "character '~' will be replaced by the authenticated user's home directory."
+    echo "If the authenticated user's home directory is not accessible, the home"
+    echo "directory and starting path will be set to '/'. By default all paths are"
+    echo "allowed, and access control is handled by the OS."
+    echo "Note that this option will only be able to make the permissions more"
+    echo "restrictive than the ones enforced by OS"
+    echo
+    echo -n "Restrict paths []: "
+    if [ -z "$RESTRICT_PATHS" ]; then
+	read RESTRICT_PATHS
+    else
+	echo $RESTRICT_PATHS
+    fi
+    if [ -z "$RESTRICT_PATHS" -o "x$RESTRICT_PATHS" = "x/" -o "x$RESTRICT_PATHS" = "xW/" ]; then
+	RESTRICT_PATHS="/"
+	unset RPATHS
+    else
+	RPATHS="-rp $RESTRICT_PATHS"
+    fi
+}
+restrict_paths
+
+# Ask for a public ip address it the system has been detected as a EC2 VM
+data_ip_address()
+{
+    echo
+    echo "GridFTP server needs to know what public IP address is used"
+    echo "to access the GridFTP server. Please, specify a public IP address"
+    echo "assigned to this system."
+    echo
+    echo -n "Public IP Address: "
+    read DATA_IP
+}
+if [ x$EC2 = xtrue ]; then
+    if [ "x$DATA_IP" = x ]; then
+	data_ip_address
+    fi
+    if [ -z "$DATA_INTERFACE" ]; then
+	DATA_INTERFACE="-data-interface $DATA_IP"
+    fi
+fi
+
+# Ask for an endpoint associated with a MyProxy server
+myproxy()
+{
+    echo
+    echo "Please, specify an endpoint already associated with a MyProxy server"
+    echo "you would like to use."
+    echo
+    echo -n "GO endpoint [test]: "
+    if [ -z "$MYPROXY" ]; then
+	read MYPROXY
+    else
+	echo $MYPROXY
+    fi
+    if [ -z $MYPROXY ]; then
+	MYPROXY=test
+    fi
+}
+if [ $INSTALLATION -eq 2 ]; then
+    myproxy
+fi
+
+# Ask for ports numbers
+gridftp_control()
+{
+    echo
+    echo "Please specify the TCP port number that the GridFTP server listens on for"
+    echo "control channel connections from clients. The standard GridFTP port number is"
+    echo "2811, but another port may be used for the GridFTP server in GCMU if,"
+    echo "for example, 2811 is already in use on this server. Your firewall must"
+    echo "allow in-bound connections to this server on this port."
+    echo
+    echo -n "Port [2811]: "
+    if [ -z "$GRIDFTP_PORT" ]; then
+	read GRIDFTP_PORT
+    else
+	echo $GRIDFTP_PORT
+    fi
+    if [ -z $GRIDFTP_PORT ]; then
+	GRIDFTP_PORT=2811
+    fi
+}
+gridftp_control
+
+gridftp_inbound()
+{
+    echo
+    echo "Please specify a range of TCP port numbers that the GridFTP server will use"
+    echo "for inbound data channel connections. Your firewall must allow inbound"
+    echo "connections to this server for this port range."
+    echo
+    echo -n "Port [50000,51000]: "
+    if [ -z "$GRIDFTP_INBOUND" ]; then
+	read GRIDFTP_INBOUND
+    else
+	echo $GRIDFTP_INBOUND
+    fi
+    if [ -z $GRIDFTP_INBOUND ]; then
+	GRIDFTP_INBOUND=50000,51000
+    fi
+}
+gridftp_inbound
+
+gridftp_outbound()
+{
+    echo
+    echo "Please specify a range of TCP port numbers that the GridFTP server will use"
+    echo "for outbound data channel connections. Your firewall must allow outbound"
+    echo "connections from this server for this port range."
+    echo
+    echo -n "Port [50000,51000]: "
+    if [ -z "$GRIDFTP_OUTBOUND" ]; then
+	read GRIDFTP_OUTBOUND
+    else
+	echo $GRIDFTP_OUTBOUND
+    fi
+    if [ -z $GRIDFTP_OUTBOUND ]; then
+	GRIDFTP_OUTBOUND=50000,51000
+    fi
+}
+gridftp_outbound
+
+myproxy_port()
+{
+    echo
+    echo "Please specify the TCP port number that the MyProxy CA server listens on for"
+    echo "authentication requests from clients. The standard MyProxy port number is 7512,"
+    echo "but another port may be used for the MyProxy server in GCMU if, for example,"
+    echo "7512 is already in use on this server. Your firewall must allow"
+    echo "in-bound connections to this server on this port."
+    echo
+    echo -n "Port [7512]: "
+    if [ -z "$MYPROXY_PORT" ]; then
+	read MYPROXY_PORT
+    else
+	echo $MYPROXY_PORT
+    fi
+    if [ -z $MYPROXY_PORT ]; then
+	MYPROXY_PORT=7512
+    fi
+}
+if [ $INSTALLATION -eq 1 ]; then
+	myproxy_port
+fi
+
+# Testing ssh access to the CLI
+ssh_test()
+{
+    if [ ! -z $SSH_AUTH_SOCK ]; then
+	SSHID_DEFAULT="SSH authentication agent"
+    elif [ -e $HOME/.ssh/id_rsa ]; then
+	SSHID_DEFAULT=$HOME/.ssh/id_rsa
+    elif [ -e $HOME/.ssh/id_dsa ]; then
+	SSHID_DEFAULT=$HOME/.ssh/id_dsa
+    elif [ -e $HOME/.ssh/id_ecdsa ]; then
+	SSHID_DEFAULT=$HOME/.ssh/id_ecdsa
+    fi
+    echo
+    echo "To complete configuration of GCMU, several configuration steps are required"
+    echo "on Globus Online side. The script will now run an SSH client several times"
+    echo "to connect the GO CLI and run appropriate commands. SSH client will use the key"
+    echo "passed to SSH agent or use the key at $HOME/.ssh. If you want to use"
+    echo "a different key, please provide a path below. If you are not using agent"
+    echo "forwarding or an SSH authentication agent and if your key is passphrase"
+    echo "protected, you will be asked to enter your passphrase several times."
+    echo
+    echo "Trying to connect to the GO CLI."
+    while [ -z "${SSHID}" ]; do
+	echo -n "Enter the full path to a file with ssh private key [$SSHID_DEFAULT]: "
+	if [ -z "$SSHKEY" ]; then
+	    read SSHID
+	elif [ "$SSHKEY" != "agent_forwarding" ]; then
+	    echo $SSHKEY
+	    SSHID="$SSHKEY"
+	fi
+	# Agent Forwarding
+	if [ -z "${SSHID}" -a ! -z "$SSH_AUTH_SOCK" ]; then
+	    break
+	fi
+	# SSH Private Key from file
+	if [ -z "${SSHID}" ]; then
+	    SSHID="$SSHID_DEFAULT"
+	fi
+	if [ ! -e "${SSHID}" ]; then
+	    echo "The file '${SSHID}' does not exist."
+	    unset SSHID
+	elif [ ! -f "${SSHID}" ]; then
+	    echo "The file '${SSHID}' is not a regular file with ssh private key."
+	    unset SSHID
+	fi
+    done
+    if [ -z "$SSHID" ]; then
+	SSHKEY=agent_forwarding
+    else
+	SSHKEY="$SSHID"
+	SSHID="-i $SSHID"
+    fi
+    ind=1
+    while [ 1 ]; do
+	echo -e -n "\rTrying to connect to the GO CLI. Attempt $ind..."
+	ssh ${SSHID} ${GO_USER}@${GOCLI} versions >>${LOGFILE} 2>&1
+	if [ $? -eq 0 ]; then
+	    echo " Success"
+	    break
+	fi
+	sleep 5
+	((++ind))
+    done
+}
+ssh_test
+
+# Create a gc endpoint. First remove an old one if exists
+RET=`ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-list ${ENDPOINT} 2>&1`
+if [ $? -eq 0 ]; then
+    echo "The endpoint ${ENDPOINT} already exists. Removing..."
+    ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-remove ${ENDPOINT} \
+    || error "Could not remove the endpoint ${ENDPOINT}"
+elif [ "$RET" == "${RET#Error}" ]; then
+    error "Could not ssh to ${GO_USER}@${GOCLI}.";
+fi
+
+KEY=`ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-add --gc ${ENDPOINT} 2>&1` \
+|| error "Could not ssh to ${GO_USER}@${GOCLI} or could not create a GC endpoint"
+# GNU sed
+#KEY=`echo $KEY | sed -e 's/^.*\(\w\{8\}-\w\{4\}-\w\{4\}-\w\{4\}-\w\{12\}\).*$/\1/'`
+# BSD sed
+KEY=`echo $KEY | sed -e 's/^.*\([0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]\).*$/\1/'`
+echo $KEY
+
+# Register a gc endpoint to obtain a GC credential and gridmap
+export GC_ROOT
+"${GC_ROOT}/usr/share/gcmu/setup.py" $KEY $GORELAY 2>>$LOGFILE \
+|| error "Could not connect to $GORELAY and obtain an X.509 credential"
+
+SUBJECT=`openssl x509 -noout -subject -in "${GC_ROOT}/etc/grid-security/ltacert.pem"`
+SUBJECT=${SUBJECT#subject= }
+echo $SUBJECT
+
+# Create an endpoint referring to a local GridFTP server being installed
+ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-remove $ENDPOINT \
+|| error "Could not remove the endpoint $ENDPOINT"
+
+ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-add ${ENDPOINT} -p $HOSTNAME:${GRIDFTP_PORT} -s "'$SUBJECT'" \
+|| error "Could not add the endpoint $ENDPOINT"
+if [ $INSTALLATION -eq 1 ]; then
+    ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-modify --myproxy-server $HOSTNAME:${MYPROXY_PORT} $ENDPOINT \
+    || error "Could not modify the endpoint $ENDPOINT"
+    ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-modify --myproxy-dn "'$SUBJECT'" $ENDPOINT \
+    || error "Could not modify the endpoint $ENDPOINT"
+elif [ $INSTALLATION -eq 2 ]; then
+    MPSUBJECT=`ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-list -f myproxy_dn -v $MYPROXY` \
+    || error "Could not list the endpoint $MYPROXY"
+    MPSUBJECT=${MPSUBJECT#MyProxy DN: }
+    MYPROXY=`ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-list -f myproxy_server -v $MYPROXY` \
+    || error "Could not list the endpoint $MYPROXY"
+    MYPROXY=${MYPROXY#MyProxy Server: }
+    ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-modify --myproxy-server=$MYPROXY $ENDPOINT \
+    || error "Could not modify the endpoint $ENDPOINT"
+    ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-modify --myproxy-dn="'$MPSUBJECT'" $ENDPOINT \
+    || error "Could not modify the endpoint $ENDPOINT"
+elif [ $INSTALLATION -eq 3 ]; then
+    sss ${SSHID} ${GO_USER}@${GOCLI} endpoint-modify --myproxy-server myproxy.globusonline.org $ENDPOINT \
+    || error "Could not modify the endpoint $ENDPOINT"
+fi
+if [ $PUBLIC == Y ]; then
+    ssh ${SSHID} ${GO_USER}@${GOCLI} endpoint-modify --public $ENDPOINT \
+    || error "Could not modify the endpoint $ENDPOINT"
+fi
+
+# Create MyProxy CA
+myproxy_ca()
+{
+    OPENSSL_CMD="env GLOBUS_LOCATION=${GLOBUS_LOCATION} \
+        LD_LIBRARY_PATH=${GLOBUS_LOCATION}/lib \
+        PATH=${GLOBUS_LOCATION}/bin:${GLOBUS_LOCATION}/sbin:$PATH \
+        ${GLOBUS_LOCATION}/bin/openssl"
+    PASSPHRASE=`${OPENSSL_CMD} rand -base64 12`
+    SSL_CONFIG="${GC_ROOT}/etc/grid-security/ca_ssl-go.conf"
+    CA_DIR="${GC_ROOT}/usr/share/gcmu/simpleCA"
+    CA_DIR_PERMS=0700
+
+    rm -rf ${CA_DIR}
+    mkdir -p ${CA_DIR}/certs
+    mkdir ${CA_DIR}/crl
+    mkdir ${CA_DIR}/newcerts
+    mkdir ${CA_DIR}/private
+    echo "01" > ${CA_DIR}/serial
+    touch ${CA_DIR}/index.txt
+    chmod ${CA_DIR_PERMS} ${CA_DIR} \
+        ${CA_DIR}/certs \
+        ${CA_DIR}/crl \
+        ${CA_DIR}/newcerts \
+        ${CA_DIR}/private \
+        ${CA_DIR}/serial \
+        ${CA_DIR}/index.txt
+
+    ${OPENSSL_CMD} req -x509 -days 3650 -newkey rsa:1024 \
+        -keyout "${CA_DIR}/private/cakey.pem" -passout "pass:${PASSPHRASE}" \
+        -out "${CA_DIR}/cacert.pem" -subj "${SUBJECT}" -config "${SSL_CONFIG}" \
+    || error "Error generating MyProxy CA"
+
+    HASH=`${OPENSSL_CMD} x509 -noout -hash -in ${CA_DIR}/cacert.pem`
+    echo "Hash of MyProxy CA certificate is $HASH"
+
+    cp "${CA_DIR}/cacert.pem" "${GC_ROOT}/etc/grid-security/certificates/${HASH}.0" \
+    || error "Could not copy ${CA_DIR}/cacert.pem to ${GC_ROOT}/etc/grid-security/certificates/${HASH}.0"
+    cp "${CA_DIR}/cacert.pem" "${GC_ROOT}/etc/grid-security/certificates" \
+    || error "Could not copy ${CA_DIR}/cacert.pem to ${GC_ROOT}/etc/grid-security/certificates"
+
+    cat > "${GC_ROOT}/etc/grid-security/certificates/${HASH}.signing_policy" <<EOF
+# Format:
+#------------------------------------------------------------------------
+#  token type  | def.authority |                value
+#--------------|---------------|-----------------------------------------
+# EACL entry #1|
+
+ access_id_CA      X509         '${SUBJECT}'
+
+ pos_rights        globus        CA:sign
+
+ cond_subjects     globus       '"${SUBJECT}/*"'
+
+# end of EACL
+
+EOF
+}
+
+scripts_and_conf()
+{
+    case "$SYSTEM" in
+    Linux)
+        cat > "$GC_ROOT/usr/share/gcmu/myproxy-go" <<EOF
+service myproxy-server
+{
+    type	= UNLISTED
+    port	= ${MYPROXY_PORT}
+    socket_type	= stream
+    protocol	= tcp
+    wait	= no
+    user	= root
+    env		+=X509_CERT_DIR=${GC_ROOT}/etc/grid-security/certificates
+    env		+=X509_USER_CERT=${GC_ROOT}/etc/grid-security/ltacert.pem
+    env		+=X509_USER_KEY=${GC_ROOT}/etc/grid-security/ltakey.pem
+    env		+=X509_USER_PROXY=""
+    server	= $GLOBUS_LOCATION/sbin/myproxy-server
+    server_args	= -c ${GC_ROOT}/etc/myproxy-go.config -s ${GC_ROOT}/var/myproxy
+    env		+= GLOBUS_LOCATION=$GLOBUS_LOCATION
+    env		+= LD_LIBRARY_PATH=$GLOBUS_LOCATION/lib
+    disable	= no
+}
+EOF
+    ;;
+    Darwin)
+        cat > org.globusonline.myproxy.plist <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Disabled</key>
+	<false/>
+	<key>Label</key>
+	<string>org.globusonline.myproxy</string>
+	<key>Program</key>
+	<string>${GLOBUS_LOCATION}/sbin/myproxy-server</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>myproxy-server</string>
+		<string>-c</string>
+		<string>${GC_ROOT}/etc/myproxy-go.config</string>
+		<string>-s</string>
+		<string>${GC_ROOT}/var/myproxy</string>
+	</array>
+	<key>Sockets</key>
+	<dict>
+		<key>Listeners</key>
+		<dict>
+			<key>SockServiceName</key>
+			<string>${MYPROXY_PORT}</string>
+		</dict>
+	</dict>
+	<key>inetdCompatibility</key>
+	<dict>
+		<key>Wait</key>
+		<false/>
+	</dict>
+	<key>StandardErrorPath</key>
+	<string>/dev/null</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>X509_CERT_DIR</key>
+		<string>${GC_ROOT}/etc/grid-security/certificates</string>
+		<key>X509_USER_CERT</key>
+		<string>${GC_ROOT}/etc/gris-security/ltacert.pem</string>
+		<key>X509_USER_KEY</key>
+		<string>${GC_ROOT}/etc/grid-security/ltakey.pem</string>
+		<key>X509_USER_PROXY</key>
+		<string></string>
+		<key>GLOBUS_LOCATION</key>
+		<string>${GLOBUS_LOCATION}</string>
+		<key>DYLD_LIBRARY_PATH</key>
+		<string>${GLOBUS_LOCATION}/lib</string>
+	</dict>
+</dict>
+</plist>
+EOF
+    ;;
+    esac
+
+    cat > "${GC_ROOT}/etc/myproxy-go.config" <<EOF
+#
+# Complete Sample Policy #1 - Credential Repository
+#
+# The following lines define a sample policy that enables all
+# myproxy-server credential repository features.
+#accepted_credentials       "*"
+authorized_retrievers      "*"
+default_retrievers         "*"
+authorized_renewers        "*"
+default_renewers           "none"
+#authorized_key_retrievers  "*"
+default_key_retrievers     "none"
+trusted_retrievers         "*"
+default_trusted_retrievers "none"
+#disable_usage_stats        "false"
+#usage_stats_target         "default"
+
+#
+# Complete Sample Policy #2 - Certificate Authority
+#
+# The following lines define a sample policy that enables
+# myproxy-server certificate authority features using
+# an existing Globus Simple CA configuration.
+# See below for more examples.
+#authorized_retrievers "*"
+pam  "required"
+pam_id "login"
+certificate_issuer_cert "$GC_ROOT/usr/share/gcmu/simpleCA/cacert.pem"
+certificate_issuer_key "$GC_ROOT/usr/share/gcmu/simpleCA/private/cakey.pem"
+certificate_issuer_key_passphrase "$PASSPHRASE"
+certificate_serialfile "$GC_ROOT/usr/share/gcmu/simpleCA/serial"
+certificate_out_dir "$GC_ROOT/usr/share/gcmu/simpleCA/newcerts"
+certificate_issuer_subca_certfile "$GC_ROOT/usr/share/gcmu/simpleCA/cacert.pem"
+certificate_mapapp "$GC_ROOT/usr/share/gcmu/myproxy-go-mapapp"
+max_cert_lifetime 168
+cert_dir $GC_ROOT/etc/grid-security/certificates
+EOF
+    chmod 600 "$GC_ROOT/etc/myproxy-go.config"
+
+    cat > "$GC_ROOT/usr/share/gcmu/myproxy-go-mapapp" <<EOF
+#!/bin/bash
+username=\$1
+if [ X"\$username" = X ]; then
+    exit 1
+fi
+echo "${SUBJECT}/CN=\${username}"
+exit 0
+EOF
+    chmod 755 "$GC_ROOT/usr/share/gcmu/myproxy-go-mapapp"
+}
+
+if [ $INSTALLATION -eq 1 ]; then
+    echo "Creating MyProxy CA..."
+    myproxy_ca
+    scripts_and_conf
+    echo > "$GC_ROOT/etc/grid-security/grid-mapfile-go"
+fi
+
+case $SYSTEM in
+Linux)
+    cat > "${GC_ROOT}/usr/share/gcmu/gridftp-go" <<EOF
+service gsiftp
+{
+    type		= UNLISTED
+    instances		= 100
+    port		= ${GRIDFTP_PORT}
+    socket_type		= stream
+    protocol		= tcp
+    wait		= no
+    user		= root
+    env			+=GLOBUS_TCP_SOURCE_RANGE=${GRIDFTP_OUTBOUND}
+    env			+=GLOBUS_TCP_PORT_RANGE=${GRIDFTP_INBOUND}
+    env			+=X509_CERT_DIR=$GC_ROOT/etc/grid-security/certificates
+    env			+=X509_USER_CERT=$GC_ROOT/etc/grid-security/ltacert.pem
+    env			+=X509_USER_KEY=$GC_ROOT/etc/grid-security/ltakey.pem
+    env			+=X509_USER_PROXY=""
+    env			+=GRIDMAP=$GC_ROOT/etc/grid-security/grid-mapfile-go
+    env			+=GSI_AUTHZ_CONF=$GLOBUS_LOCATION/etc/gridmap_verify_myproxy_callout-gsi_authz.conf
+    env			+=GLOBUS_MYPROXY_CA_CERT=$GC_ROOT/etc/grid-security/certificates/cacert.pem
+    env			+=LD_LIBRARY_PATH=$GLOBUS_LOCATION/lib
+    server		= $GLOBUS_LOCATION/sbin/globus-gridftp-server
+    server_args		= -i -d ALL -l /var/log/gridftp-go.log ${DATA_INTERFACE} ${RPATHS}
+    log_on_success	+= DURATION
+    nice		= 10
+    disable		= no
+}
+EOF
+    ;;
+Darwin)
+    cat > org.globusonline.gridftp.plist <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Disabled</key>
+	<false/>
+	<key>Label</key>
+	<string>org.globusonline.gridftp</string>
+	<key>Program</key>
+	<string>$GLOBUS_LOCATION/sbin/globus-gridftp-server</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>globus-gridftp-server</string>
+		<string>-i</string>
+		<string>-d</string>
+		<string>ALL</string>
+		<string>-l</string>
+		<string>/var/log/gridftp-go.log</string>
+		<string>-rp</string>
+		<string>${RESTRICT_PATHS}</string>
+	</array>
+	<key>Sockets</key>
+	<dict>
+		<key>Listeners</key>
+		<dict>
+			<key>SockServiceName</key>
+			<string>${GRIDFTP_PORT}</string>
+		</dict>
+	</dict>
+	<key>inetdCompatibility</key>
+	<dict>
+		<key>Wait</key>
+		<false/>
+	</dict>
+	<key>StandardErrorPath</key>
+	<string>/dev/null</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>GLOBUS_TCP_SOURCE_RANGE</key>
+		<string>${GRIDFTP_OUTBOUND}</string>
+		<key>GLOBUS_TCP_PORT_RANGE</key>
+		<string>${GRIDFTP_INBOUND}</string>
+		<key>X509_CERT_DIR</key>
+		<string>${GC_ROOT}/etc/grid-security/certificates</string>
+		<key>X509_USER_CERT</key>
+		<string>${GC_ROOT}/etc/grid-security/ltacert.pem</string>
+		<key>X509_USER_KEY</key>
+		<string>${GC_ROOT}/etc/grid-security/ltakey.pem</string>
+		<key>X509_USER_PROXY</key>
+		<string></string>
+		<key>GRIDMAP</key>
+		<string>${GC_ROOT}/etc/grid-security/grid-mapfile-go</string>
+		<key>GSI_AUTHZ_CONF</key>
+		<string>${GLOBUS_LOCATION}/etc/gridmap_verify_myproxy_callout-gsi_authz.conf</string>
+		<key>GLOBUS_MYPROXY_CA_CERT</key>
+		<string>${GC_ROOT}/etc/grid-security/certificates/cacert.pem</string>
+		<key>DYLD_LIBRARY_PATH</key>
+		<string>${GLOBUS_LOCATION}/lib</string>
+	</dict>
+</dict>
+</plist>
+EOF
+    ;;
+esac
+
+
+if [ `id -u` -eq 0 ]; then
+    if [ -e "${GC_ROOT}/var/myproxy" ]; then
+	chown root "${GC_ROOT}/var/myproxy"
+    else
+	mkdir "${GC_ROOT}/var/myproxy"
+    fi
+    chmod 0700 "${GC_ROOT}/var/myproxy"
+    case $INSTALLATION in
+    1)
+	if [ "$SYSTEM" = Linux ]; then
+	    echo
+	    echo "The GridFTP and MyProxy servers have been configured. The servers need to be"
+	    echo "started by xinetd daemon. Appropriate xinetd configuration files for"
+	    echo "the servers are in ${GC_ROOT}/usr/share/gcmu/gridftp-go and"
+	    echo "${GC_ROOT}/usr/share/gcmu/myproxy-go."
+	    echo "Do you want to copy these files to /etc/xinetd.d and restart xinetd daemon?"
+	    echo -n "(Y/N) [Y]: "
+	    if [ -z "$INETD" ]; then
+		read INETD
+	    else
+		echo $INETD
+	    fi
+	    if [ "x$INETD" = x -o "x$INETD" = xY -o "x$INETD" = xy ]; then
+		INETD=Y
+		cp "$GC_ROOT/usr/share/gcmu/gridftp-go" /etc/xinetd.d
+		cp "$GC_ROOT/usr/share/gcmu/myproxy-go" /etc/xinetd.d
+		service xinetd stop
+		service xinetd start
+	    else
+		INETD=N
+		echo "Please, copy the configuration files 'gridftp-go' and 'myproxy-go'"
+		echo "to /etc/xinetd.d and restart xinetd manually:"
+		echo
+		echo "# service xinetd stop"
+		echo "# service xinetd start"
+		echo
+		echo "After you restart xinetd the GridFTP server should be accessible from GO."
+	    fi
+	elif [ "$SYSTEM" = Darwin ]; then
+	    echo
+	    echo "The GridFTP and MyProxy servers have been configured. The servers need to be"
+	    echo "started by launchd daemon. Appropriate launchd configuration files for"
+	    echo "the servers are in ${GC_LOCATION}/org.globusonline.gridftp.plist"
+	    echo "and ${GC_LOCATION}/org.globusonline.myproxy.plist."
+	    echo "Do you want to copy these files to /System/Library/LaunchDaemons and load?"
+	    echo -n "(Y/N) [Y]: "
+	    if [ -z "$INETD" ]; then
+		read INETD
+	    else
+		echo $INETD
+	    fi
+	    if [ "x$INETD" = x -o "x$INETD" = xY -o "x$INETD" = xy ]; then
+		INETD=Y
+		launchctl list /System/Library/LaunchDaemons/org.globusonline.gridftp.plist >/dev/null 2>&1
+		[ $? -eq 0 ] && launchctl unload /System/Library/LaunchDaemons/org.globusonline.gridftp.plist
+		cp org.globusonline.gridftp.plist /System/Library/LaunchDaemons
+		launchctl load /System/Library/LaunchDaemons/org.globusonline.gridftp.plist
+		launchctl list /System/Library/LaunchDaemons/org.globusonline.gridftp.plist >/dev/null 2>&1
+		[ $? -eq 0 ] && launchctl unload /System/Library/LaunchDaemons/org.globusonline.gridftp.plist
+		cp org.globusonline.myproxy.plist /System/Library/LaunchDaemons
+		launchctl load /System/Library/LaunchDaemons/org.globusonline.myproxy.plist
+	    else
+		INETD=N
+		echo "Please, copy the configuration files 'org.globusonline.gridftp.plist' and"
+		echo "'org.globusonline.myproxy' to /System/Library/LaunchDaemons and load:"
+		echo
+		echo "# launchctl load /System/Library/LaunchDaemons/org.globusonline.gridftp.plist"
+		echo "# launchctl load /System/Library/LaunchDaemons/org.globusonline.myproxy.plist"
+		echo
+		echo "After you load the configuration files the GridFTP server should be accessible"
+		echo "from GO."
+	    fi
+	fi
+	echo
+	echo "GridFTP server log information will be saved in /var/log/gridftp-go.log."
+	echo "It is recommended that you use logrotate or another appropriate tool to prevent"
+	echo "this log file from growing too large."
+	echo
+    ;;
+    2)
+	if [ "$SYSTEM" = Linux ]; then
+	    echo
+	    echo "The GridFTP server has been configured. The server needs to be started by"
+	    echo "xinetd daemon. An appropriate xinetd configuration file for GridFTP server is"
+	    echo "in ${GC_ROOT}/usr/share/gcmu/gridftp-go. Do you want to copy this file"
+	    echo "to /etc/xinetd.d and restart xinetd daemon?"
+	    echo -n "(Y/N) [Y]: "
+	    if [ -z "$INETD" ]; then
+		read INETD
+	    else
+		echo $INETD
+	    fi
+	    if [ "x$INETD" = x -o "x$INETD" = xY -o "x$INETD" = xy ]; then
+		INETD=Y
+		cp gridftp-go /etc/xinetd.d
+		service xinetd stop
+		service xinetd start
+	    else
+		INETD=N
+		echo "Please, copy the configuration file 'gridftp-go' to /etc/xinetd.d"
+		echo "and restart xinetd manually:"
+		echo
+		echo "# service xinetd stop"
+		echo "# service xinetd start"
+		echo
+		echo "After you restart xinetd the GridFTP server should be accessible from GO."
+	    fi
+	elif [ "$SYSTEM" = Darwin ]; then
+	    echo
+	    echo "The GridFTP server has been configured. The server needs to be started by"
+	    echo "lauchd daemon. An appropriate launchd configuration file for GridFTP server is"
+	    echo "in ${GC_LOCATION}/org.globusonline.gridftp.plist. Do you want to copy this file"
+	    echo "to /System/Library/LaunchDaemons and load?"
+	    echo -n "(Y/N) [Y]: "
+	    if [ -z "$INETD" ]; then
+		read INETD
+	    else
+		echo $INETD
+	    fi
+	    if [ "x$INETD" = x -o "x$INETD" = xY -o "x$INETD" = xy ]; then
+		INETD=Y
+		launchctl list /System/Library/LaunchDaemons/org.globusonline.gridftp.plist >/dev/null 2>&1
+		[ $? -eq 0 ] && launchctl unload /System/Library/LaunchDaemons/org.globusonline.gridftp.plist
+		cp org.globusonline.gridftp.plist /System/Library/LaunchDaemons
+		launchctl load /System/Library/LaunchDaemons/org.globusonline.gridftp.plist
+	    else
+		INETD=N
+		echo "Please, copy the configuration file 'org.globusonline.gridftp.plist' to"
+		echo "/System/Library/LaunchDaemons and load manually:"
+		echo
+		echo "# launchctl load /System/Library/LaunchDaemons/org.globusonline.gridftp.plist"
+		echo
+		echo "After you load the configuration file the GridFTP server should be accessible"
+		echo "from GO."
+	    fi
+	fi
+	echo
+	echo "GridFTP server log information will be saved in /var/log/gridftp-go.log."
+	echo "It is recommended that you use logrotate or another appropriate tool to prevent"
+	echo "this log file from growing too large."
+	echo
+	echo "The installed GridFTP server will authorize GO users who present a credential"
+	echo "issued by a MyProxy server already installed on a dedicated machine in your"
+	echo "institution. To make it possible you must copy a MyProxy CA certificate and"
+	echo "signing policy from the directory '$GC_ROOT/etc/grid-security/certificates'"
+	echo "on the machine with MyProxy CA to the directory"
+	echo "'$GC_ROOT/etc/grid-security/certificates' on this local machine."
+	echo
+    ;;
+    3)
+	if [ "$SYSTEM" = Linux ]; then
+	    echo
+	    echo "The GridFTP server has been configured. The server needs to be started by"
+	    echo "xinetd daemon. An appropriate xinetd configuration file for GridFTP server is"
+	    echo "in ${GC_ROOT}/usr/share/gcmu/gridftp-go. Do you want to copy this file"
+	    echo "to /etc/xinetd.d and restart xinetd daemon?"
+	    echo -n "(Y/N) [Y]: "
+	    if [ -z "$INETD" ]; then
+		read INETD
+	    else
+		echo $INETD
+	    fi
+	    if [ "x$INETD" = x -o "x$INETD" = xY -o "x$INETD" = xy ]; then
+		INETD=Y
+		cp "$GC_ROOT/usr/share/gcmu/gridftp-go" /etc/xinetd.d
+		service xinetd stop
+		service xinetd start
+	    else
+		INETD=N
+		echo "Please, copy the configuration file 'gridftp-go' to /etc/xinetd.d"
+		echo "and restart xinetd manually:"
+		echo
+		echo "# service xinetd stop"
+		echo "# service xinetd start"
+		echo
+		echo "After you restart xinetd the GridFTP server should be accessible from GO."
+	    fi
+	elif [ "$SYSTEM" = Darwin ]; then
+	    echo
+	fi
+	echo
+	echo "GridFTP server log information will be saved in /var/log/gridftp-go.log."
+	echo "It is recommended that you use logrotate or another appropriate tool to prevent"
+	echo "this log file from growing too large."
+	echo
+	echo "To allow GO user access local accounts you need to add mappings to"
+	echo "$GC_ROOT/etc/grid-security/grid-mapfile-go."
+	echo "One mapping has been already added:"
+	echo
+	cat "$GC_ROOT/etc/grid-mapfile/grid-mapfile-go"
+	echo
+	echo "The above mapping means that the GO user '$GO_USER' has access to"
+	echo "the local account '$LOGNAME'. Please, remove this exemplary mapping"
+	echo "for obvious security reasons."
+	echo
+    ;;
+    esac
+    echo "To un-install Globus Connect Multi-User, run ./uninstall."
+    echo
+    save_config
+    exit 0
+fi
+
+case $INSTALLATION in
+1)
+    echo
+    echo "The GridFTP server has been configured. Please, execute the script"
+    echo "'root-setup' as root. To switch to root you can use the command"
+    echo "'su -' or 'sudo -s'."
+    echo
+    echo "# ./root-setup"
+    echo
+    echo "After you do this the GridFTP and MyProxy servers should be accessible"
+    echo "from GO."
+    echo
+    echo "GridFTP server log information will be saved in /var/log/gridftp-go.log."
+    echo "It is recommended that you use logrotate or another appropriate tool to prevent"
+    echo "this log file from growing too large."
+    echo
+;;
+2)
+    echo
+    echo "The GridFTP server has been configured. Please, execute the script"
+    echo "'root-setup' as root. To switch to root you can use the command"
+    echo "'su -' or 'sudo -s'".
+    echo
+    echo "# ./root-setup"
+    echo
+    echo "After you do this the GridFTP server should be accessible from GO."
+    echo
+    echo "GridFTP server log information will be saved in /var/log/gridftp-go.log."
+    echo "It is recommended that you use logrotate or another appropriate tool to prevent"
+    echo "this log file from growing too large."
+    echo
+    echo "The installed GridFTP server will authorize GO users who present a credential"
+    echo "issued by a MyProxy server already installed on a dedicated machine in your"
+    echo "institution. To make it possible you must copy MyProxy CA certificate and"
+    echo "signing policy from the directory '$GC_ROOT/etc/grid-security/certificates'"
+    echo "on the machine where MyProxy server and MyProxy CA is installed to the directory"
+    echo "$GC_ROOT/etc/grid-security/certificates on this local machine."
+    echo
+;;
+3)
+    echo
+    echo "The GridFTP server has been configured. Please, execute the script"
+    echo "'root-setup' as root. To switch to root you can use the command"
+    echo "'su -' or 'sudo -s'."
+    echo
+    echo "# ./root-setup"
+    echo
+    echo "GridFTP server log information will be saved in /var/log/gridftp-go.log."
+    echo "It is recommended that you use logrotate or another appropriate tool to prevent"
+    echo "this log file from growing too large."
+    echo
+    echo "To allow GO user access local accounts you need to add mappings to"
+    echo "$GC_ROOT/etc/grid-security/grid-mapfile-go."
+    echo "One mapping has been already added"
+    echo
+    cat "$GC_ROOT/etc/grid-security/grid-mapfile-go"
+    echo
+    echo "The above mapping means that the GO user '$GO_USER' has access to"
+    echo "the local account '$LOGNAME'".
+    echo
+;;
+esac
+echo "To un-install Globus Connect Multi-User, run $GC_LOCATION/uninstall."
+echo
+save_config

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
+<flavors Format_Version="0.1" >
+<flavor_definition label="gcc32" >
+<config nolabel="CPP" switch="CPP='/usr/bin/gcc -E'" />
+<config nolabel="CPPFLAGS" switch="CPPFLAGS=' -I/Users/lukasz/tmp/gcmu/scratch/gt/include -I/Users/lukasz/tmp/gcmu/scratch/gt/include/gcc32 -no-cpp-precomp'" />
+<config nolabel="CFLAGS" switch="CFLAGS='-O -m32  -m32 -fno-common -Wall'" />
+<config nolabel="LDFLAGS" switch="LDFLAGS='-m32 -L/Users/lukasz/tmp/gcmu/scratch/gt/lib -m32'" />
+<config nolabel="CXX" switch="CXX='/usr/bin/c++'" />
+<config nolabel="CXXCPP" switch="CXXCPP='/usr/bin/c++ -E'" />
+<config nolabel="CXXFLAGS" switch="CXXFLAGS='-O  '" />
+<config nolabel="AR" switch="AR='/usr/bin/ar'" />
+<config nolabel="ARFLAGS" switch="ARFLAGS='ruv'" />
+<config nolabel="RANLIB" switch="RANLIB='/usr/bin/ranlib'" />
+<config nolabel="NM" switch="NM='/usr/bin/nm'" />
+<config label="gcc" switch="CC='/usr/bin/gcc'" />
+</flavor_definition>
+</flavors>

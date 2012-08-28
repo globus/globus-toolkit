@@ -1,0 +1,24 @@
+service gridftp2
+{
+    port = 2812
+    instances = 100
+    log_level = 0
+    env = GLOBUS_LOCATION=/Users/lukasz/tmp/gcmu/scratch/gt
+    env += LD_LIBRARY_PATH=/Users/lukasz/tmp/gcmu/scratch/gt/lib
+    env += PATH=/Users/lukasz/tmp/gcmu/scratch/gt/sbin:/Users/lukasz/tmp/gcmu/scratch/gt/bin
+#   might need additional envs for security
+
+    server = /Users/lukasz/tmp/gcmu/scratch/gt/sbin/globus-gridftp-server
+    server_args = -i -aa -l /Users/lukasz/tmp/gcmu/scratch/gt/gridftp-be.log
+    server_args += -d WARN  -ia self
+    nice = -20
+    master = /Users/lukasz/tmp/gcmu/scratch/gt/libexec/gfs-gfork-master
+    master_args = -G y -df /etc/grid-security/grid-mapfile
+    master_args += -l /Users/lukasz/tmp/gcmu/scratch/gt/gridftp-master-be.log
+
+# must set this next value properly
+    master_args += -b <frontend registartion cs>
+
+#   undoc the following for memory limiting
+#   master_args += -m
+}

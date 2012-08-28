@@ -1,0 +1,74 @@
+#!/bin/bash
+# 
+# Copyright 2010-2011 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# The script contains all commands requiring root privileges to uninstall
+# Globus Connect Multi-User.
+
+if [ `id -u` -ne 0 ]; then
+    echo "You must be logged in as root to run this script."
+    exit 1
+fi
+
+error()
+{
+    echo $1
+    echo "Exiting..."
+    exit 1
+}
+
+SYSTEM=`uname -s`
+[ -z "$SYSTEM" ] && error "Could not determine the operating system."
+
+# A user is not allowed to remove a directory owned by root in Darwin
+# although the user is an owner of a parent directory.
+rm -rf "$GC_ROOT/var/myproxy"
+
+case "$SYSTEM" in
+Linux)
+    echo "Deleting /etc/xinetd.d/gridftp-go"
+    rm -f /etc/xinetd.d/gridftp-go
+    if [ -e /etc/xinetd.d/myproxy-go ]; then
+        echo "Deleting /etc/xinetd.d/myproxy-go"
+        rm -f /etc/xinetd.d/myproxy-go
+    fi
+
+    service xinetd stop
+    service xinetd start
+    ;;
+Darwin)
+    launchctl list org.globusonline.gridftp >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo "Unloading the existing configuration file 'org.globusonline.gridftp.plist'"
+        launchctl unload /System/Library/LaunchDaemons/org.globusonline.gridftp.plist
+        echo "Removing '/System/Library/LaunchDaemons/org.globusonline.gridftp.plist'"
+        rm -f /System/Library/LaunchDaemons/org.globusonline.gridftp.plist
+    fi
+
+    if [ -e /System/Library/LaunchDaemons/org.globusonline.myproxy.plist ]; then
+        launchctl list org.globusonline.myproxy >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            echo "Unloading the existing configuration file 'org.globusonline.myproxy.plist'"
+            launchctl unload /System/Library/LaunchDaemons/org.globusonline.myproxy.plist
+            echo "Removing '/System/Library/LaunchDaemons/org.globusonline.myproxy.plist'"
+            rm -f /System/Library/LaunchDaemons/org.globusonline.myproxy.plist
+        fi
+    fi
+    ;;
+*)
+    error "The system $SYSTEM is not supported."
+    ;;
+esac
