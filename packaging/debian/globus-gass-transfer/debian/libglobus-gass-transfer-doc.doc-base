@@ -1,9 +1,0 @@
-Document: globus-gass-transfer
-Title: Debian globus-gass-transfer Manual
-Author: Globus Alliance
-Abstract: The Globus toolkit, Globus Gass Transfer
-Section: Programming
-
-Format: HTML
-Index: /usr/share/doc/libglobus-gass-transfer-dev/html/index.html
-Files: /usr/share/doc/libglobus-gass-transfer-dev/html/*.html
