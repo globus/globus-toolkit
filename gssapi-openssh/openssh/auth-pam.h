@@ -46,5 +46,6 @@ void sshpam_thread_cleanup(void);
 void sshpam_cleanup(void);
 int sshpam_auth_passwd(Authctxt *, const char *);
 int is_pam_session_open(void);
+struct passwd *sshpam_getpw(const char *);
 
 #endif /* USE_PAM */

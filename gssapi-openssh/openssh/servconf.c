@@ -65,6 +65,7 @@ initialize_server_options(ServerOptions *options)
 
 	/* Portable-specific options */
 	options->use_pam = -1;
+	options->permit_pam_user_change = -1;
 
 	/* Standard Options */
 	options->num_ports = 0;
@@ -98,9 +99,19 @@ initialize_server_options(ServerOptions *options)
 	options->kerberos_authentication = -1;
 	options->kerberos_or_local_passwd = -1;
 	options->kerberos_ticket_cleanup = -1;
+#ifdef  SESSION_HOOKS
+        options->session_hooks_allow = -1;
+        options->session_hooks_startup_cmd = NULL;
+        options->session_hooks_shutdown_cmd = NULL;
+#endif
 	options->kerberos_get_afs_token = -1;
-	options->gss_authentication=-1;
+	options->gss_authentication = -1;
+	options->gss_deleg_creds = -1;
+	options->gss_keyex = -1;
 	options->gss_cleanup_creds = -1;
+	options->gss_strict_acceptor = -1;
+	options->gsi_allow_limited_proxy = -1;
+	options->gss_store_rekey = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
 	options->challenge_response_authentication = -1;
@@ -136,9 +147,15 @@ initialize_server_options(ServerOptions *options)
 	options->adm_forced_command = NULL;
 	options->chroot_directory = NULL;
 	options->zero_knowledge_password_authentication = -1;
+	options->disable_usage_stats = 0;
+	options->usage_stats_targets = NULL;
 	options->revoked_keys_file = NULL;
 	options->trusted_user_ca_keys = NULL;
 	options->authorized_principals_file = NULL;
+	options->none_enabled = -1;
+	options->tcp_rcv_buf_poll = -1;
+	options->hpn_disabled = -1;
+	options->hpn_buffer_size = -1;
 	options->ip_qos_interactive = -1;
 	options->ip_qos_bulk = -1;
 	options->version_addendum = NULL;
@@ -147,9 +164,16 @@ initialize_server_options(ServerOptions *options)
 void
 fill_default_server_options(ServerOptions *options)
 {
+	/* needed for hpn socket tests */
+	int sock;
+	int socksize;
+	int socksizelen = sizeof(int);
+
 	/* Portable-specific options */
 	if (options->use_pam == -1)
 		options->use_pam = 0;
+	if (options->permit_pam_user_change == -1)
+		options->permit_pam_user_change = 0;
 
 	/* Standard Options */
 	if (options->protocol == SSH_PROTO_UNKNOWN)
@@ -225,12 +249,26 @@ fill_default_server_options(ServerOptions *options)
 		options->kerberos_or_local_passwd = 1;
 	if (options->kerberos_ticket_cleanup == -1)
 		options->kerberos_ticket_cleanup = 1;
+#ifdef  SESSION_HOOKS
+    if (options->session_hooks_allow == -1)
+        options->session_hooks_allow = 0;
+#endif
 	if (options->kerberos_get_afs_token == -1)
 		options->kerberos_get_afs_token = 0;
 	if (options->gss_authentication == -1)
-		options->gss_authentication = 0;
+		options->gss_authentication = 1;
+	if (options->gss_deleg_creds == -1)
+		options->gss_deleg_creds = 1;
+	if (options->gss_keyex == -1)
+		options->gss_keyex = 1;
 	if (options->gss_cleanup_creds == -1)
 		options->gss_cleanup_creds = 1;
+	if (options->gss_strict_acceptor == -1)
+		options->gss_strict_acceptor = 1;
+	if (options->gsi_allow_limited_proxy == -1)
+		options->gsi_allow_limited_proxy = 0;
+	if (options->gss_store_rekey == -1)
+		options->gss_store_rekey = 0;
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
 	if (options->kbd_interactive_authentication == -1)
@@ -281,6 +319,43 @@ fill_default_server_options(ServerOptions *options)
 		options->ip_qos_interactive = IPTOS_LOWDELAY;
 	if (options->ip_qos_bulk == -1)
 		options->ip_qos_bulk = IPTOS_THROUGHPUT;
+
+	if (options->hpn_disabled == -1) 
+		options->hpn_disabled = 0;
+
+	if (options->hpn_buffer_size == -1) {
+		/* option not explicitly set. Now we have to figure out */
+		/* what value to use */
+		if (options->hpn_disabled == 1) {
+			options->hpn_buffer_size = CHAN_SES_WINDOW_DEFAULT;
+		} else {
+			/* get the current RCV size and set it to that */
+			/*create a socket but don't connect it */
+			/* we use that the get the rcv socket size */
+			sock = socket(AF_INET, SOCK_STREAM, 0);
+			getsockopt(sock, SOL_SOCKET, SO_RCVBUF, 
+				   &socksize, &socksizelen);
+			close(sock);
+			options->hpn_buffer_size = socksize;
+			debug ("HPN Buffer Size: %d", options->hpn_buffer_size);
+			
+		} 
+	} else {
+		/* we have to do this incase the user sets both values in a contradictory */
+		/* manner. hpn_disabled overrrides hpn_buffer_size*/
+		if (options->hpn_disabled <= 0) {
+			if (options->hpn_buffer_size == 0)
+				options->hpn_buffer_size = 1;
+			/* limit the maximum buffer to 64MB */
+			if (options->hpn_buffer_size > 64*1024) {
+				options->hpn_buffer_size = 64*1024*1024;
+			} else {
+				options->hpn_buffer_size *= 1024;
+			}
+		} else
+			options->hpn_buffer_size = CHAN_TCP_WINDOW_DEFAULT;
+	}
+
 	if (options->version_addendum == NULL)
 		options->version_addendum = xstrdup("");
 	/* Turn privilege separation on by default */
@@ -295,14 +370,13 @@ fill_default_server_options(ServerOptions *options)
 		options->compression = 0;
 	}
 #endif
-
 }
 
 /* Keyword tokens. */
 typedef enum {
 	sBadOption,		/* == unknown option */
 	/* Portable-specific options */
-	sUsePAM,
+	sUsePAM, sPermitPAMUserChange,
 	/* Standard Options */
 	sPort, sHostKeyFile, sServerKeyBits, sLoginGraceTime, sKeyRegenerationTime,
 	sPermitRootLogin, sLogFacility, sLogLevel,
@@ -310,6 +384,9 @@ typedef enum {
 	sKerberosAuthentication, sKerberosOrLocalPasswd, sKerberosTicketCleanup,
 	sKerberosGetAFSToken,
 	sKerberosTgtPassing, sChallengeResponseAuthentication,
+#ifdef SESSION_HOOKS
+        sAllowSessionHooks, sSessionHookStartupCmd, sSessionHookShutdownCmd,
+#endif
 	sPasswordAuthentication, sKbdInteractiveAuthentication,
 	sListenAddress, sAddressFamily,
 	sPrintMotd, sPrintLastLog, sIgnoreRhosts,
@@ -323,11 +400,18 @@ typedef enum {
 	sBanner, sUseDNS, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile,
-	sGssAuthentication, sGssCleanupCreds, sAcceptEnv, sPermitTunnel,
+    sGssDelegateCreds,
+    sGssCredsPath,
+	sGsiAllowLimitedProxy,
+	sGssAuthentication, sGssCleanupCreds, sGssStrictAcceptor,
+	sGssKeyEx, sGssStoreRekey,
+	sAcceptEnv, sPermitTunnel,
 	sMatch, sPermitOpen, sForceCommand, sChrootDirectory,
 	sUsePrivilegeSeparation, sAllowAgentForwarding,
+	sDisUsageStats, sUsageStatsTarg,
 	sZeroKnowledgePasswordAuthentication, sHostCertificate,
 	sRevokedKeys, sTrustedUserCAKeys, sAuthorizedPrincipalsFile,
+	sNoneEnabled, sTcpRcvBufPoll, sHPNDisabled, sHPNBufferSize,
 	sKexAlgorithms, sIPQoS, sVersionAddendum,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
@@ -345,8 +429,10 @@ static struct {
 	/* Portable-specific options */
 #ifdef USE_PAM
 	{ "usepam", sUsePAM, SSHCFG_GLOBAL },
+	{ "permitpamuserchange", sPermitPAMUserChange, SSHCFG_GLOBAL },
 #else
 	{ "usepam", sUnsupported, SSHCFG_GLOBAL },
+	{ "permitpamuserchange", sUnsupported, SSHCFG_GLOBAL },
 #endif
 	{ "pamauthenticationviakbdint", sDeprecated, SSHCFG_GLOBAL },
 	/* Standard Options */
@@ -386,11 +472,36 @@ static struct {
 	{ "afstokenpassing", sUnsupported, SSHCFG_GLOBAL },
 #ifdef GSSAPI
 	{ "gssapiauthentication", sGssAuthentication, SSHCFG_ALL },
+	{ "gssapidelegatecredentials", sGssDelegateCreds, SSHCFG_ALL },
 	{ "gssapicleanupcredentials", sGssCleanupCreds, SSHCFG_GLOBAL },
+	{ "gssapicleanupcreds", sGssCleanupCreds, SSHCFG_GLOBAL },
+	{ "gssapicredentialspath", sGssCredsPath, SSHCFG_GLOBAL },
+#ifdef GSI
+	{ "gsiallowlimitedproxy", sGsiAllowLimitedProxy, SSHCFG_GLOBAL },
+#endif
+	{ "gssapistrictacceptorcheck", sGssStrictAcceptor, SSHCFG_GLOBAL },
+	{ "gssapikeyexchange", sGssKeyEx, SSHCFG_GLOBAL },
+	{ "gssapistorecredentialsonrekey", sGssStoreRekey, SSHCFG_GLOBAL },
 #else
 	{ "gssapiauthentication", sUnsupported, SSHCFG_ALL },
+	{ "gssapidelegatecredentials", sUnsupported, SSHCFG_ALL },
 	{ "gssapicleanupcredentials", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapicleanupcreds", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapicredentialspath", sUnsupported, SSHCFG_GLOBAL },
+#ifdef GSI
+	{ "gsiallowlimitedproxy", sUnsupported, SSHCFG_GLOBAL },
 #endif
+	{ "gssapistrictacceptorcheck", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapikeyexchange", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapistorecredentialsonrekey", sUnsupported, SSHCFG_GLOBAL },
+#endif
+#ifdef SESSION_HOOKS
+    { "allowsessionhooks", sAllowSessionHooks, SSHCFG_GLOBAL },
+    { "sessionhookstartupcmd", sSessionHookStartupCmd, SSHCFG_GLOBAL },
+    { "sessionhookshutdowncmd", sSessionHookShutdownCmd, SSHCFG_GLOBAL },
+#endif        
+	{ "gssusesessionccache", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapiusesessioncredcache", sUnsupported, SSHCFG_GLOBAL },
 	{ "passwordauthentication", sPasswordAuthentication, SSHCFG_ALL },
 	{ "kbdinteractiveauthentication", sKbdInteractiveAuthentication, SSHCFG_ALL },
 	{ "challengeresponseauthentication", sChallengeResponseAuthentication, SSHCFG_GLOBAL },
@@ -447,10 +558,16 @@ static struct {
 	{ "permitopen", sPermitOpen, SSHCFG_ALL },
 	{ "forcecommand", sForceCommand, SSHCFG_ALL },
 	{ "chrootdirectory", sChrootDirectory, SSHCFG_ALL },
+	{ "disableusagestats", sDisUsageStats, SSHCFG_GLOBAL},
+	{ "usagestatstargets", sUsageStatsTarg, SSHCFG_GLOBAL},
 	{ "hostcertificate", sHostCertificate, SSHCFG_GLOBAL },
 	{ "revokedkeys", sRevokedKeys, SSHCFG_ALL },
 	{ "trustedusercakeys", sTrustedUserCAKeys, SSHCFG_ALL },
 	{ "authorizedprincipalsfile", sAuthorizedPrincipalsFile, SSHCFG_ALL },
+	{ "noneenabled", sNoneEnabled, SSHCFG_ALL },
+	{ "hpndisabled", sHPNDisabled, SSHCFG_ALL },
+	{ "hpnbuffersize", sHPNBufferSize, SSHCFG_ALL },
+	{ "tcprcvbufpoll", sTcpRcvBufPoll, SSHCFG_ALL },
 	{ "kexalgorithms", sKexAlgorithms, SSHCFG_GLOBAL },
 	{ "ipqos", sIPQoS, SSHCFG_ALL },
 	{ "versionaddendum", sVersionAddendum, SSHCFG_GLOBAL },
@@ -480,6 +597,7 @@ parse_token(const char *cp, const char *filename,
 
 	for (i = 0; keywords[i].name; i++)
 		if (strcasecmp(cp, keywords[i].name) == 0) {
+		        debug ("Config token is %s", keywords[i].name);
 			*flags = keywords[i].flags;
 			return keywords[i].opcode;
 		}
@@ -827,6 +945,10 @@ process_server_config_line(ServerOptions *options, char *line,
 		intptr = &options->use_pam;
 		goto parse_flag;
 
+	case sPermitPAMUserChange:
+		intptr = &options->permit_pam_user_change;
+		goto parse_flag;
+
 	/* Standard Options */
 	case sBadOption:
 		return -1;
@@ -987,6 +1109,22 @@ process_server_config_line(ServerOptions *options, char *line,
 			*intptr = value;
 		break;
 
+	case sNoneEnabled:
+		intptr = &options->none_enabled;
+		goto parse_flag;
+
+	case sTcpRcvBufPoll:
+		intptr = &options->tcp_rcv_buf_poll;
+		goto parse_flag;
+
+	case sHPNDisabled:
+		intptr = &options->hpn_disabled;
+		goto parse_flag;
+
+	case sHPNBufferSize:
+		intptr = &options->hpn_buffer_size;
+		goto parse_int;
+
 	case sIgnoreUserKnownHosts:
 		intptr = &options->ignore_user_known_hosts;
 		goto parse_flag;
@@ -1031,9 +1169,52 @@ process_server_config_line(ServerOptions *options, char *line,
 		intptr = &options->gss_authentication;
 		goto parse_flag;
 
+	case sGssDelegateCreds:
+		intptr = &options->gss_deleg_creds;
+		goto parse_flag;
+
+	case sGssKeyEx:
+		intptr = &options->gss_keyex;
+		goto parse_flag;
+
 	case sGssCleanupCreds:
 		intptr = &options->gss_cleanup_creds;
 		goto parse_flag;
+
+	case sGssCredsPath:
+		charptr = &options->gss_creds_path;
+		goto parse_filename;
+
+	case sGssStrictAcceptor:
+		intptr = &options->gss_strict_acceptor;
+		goto parse_flag;
+
+	case sGssStoreRekey:
+		intptr = &options->gss_store_rekey;
+		goto parse_flag;
+
+#ifdef GSI
+	case sGsiAllowLimitedProxy:
+		intptr = &options->gsi_allow_limited_proxy;
+		goto parse_flag;
+#endif
+
+#ifdef SESSION_HOOKS
+        case sAllowSessionHooks:
+                intptr = &options->session_hooks_allow;
+                goto parse_flag;
+        case sSessionHookStartupCmd:
+        case sSessionHookShutdownCmd:
+                arg = strdelim(&cp);
+                if (!arg || *arg == '\0')
+                    fatal("%s line %d: empty session hook command",
+                          filename, linenum);
+                if (opcode==sSessionHookStartupCmd)
+                    options->session_hooks_startup_cmd = strdup(arg);
+                else
+                    options->session_hooks_shutdown_cmd = strdup(arg);
+                break;
+#endif                  
 
 	case sPasswordAuthentication:
 		intptr = &options->password_authentication;
@@ -1456,6 +1637,39 @@ process_server_config_line(ServerOptions *options, char *line,
 			*charptr = xstrdup(arg);
 		break;
 
+	case sDisUsageStats:
+		charptr = &options->chroot_directory;
+
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: missing value.",
+			    filename, linenum);
+		if (!strcasecmp(arg, "true") ||
+		    !strcasecmp(arg, "enabled") ||
+		    !strcasecmp(arg, "yes") ||
+		    !strcasecmp(arg, "on") ||
+		    !strcasecmp(arg, "1"))
+			options->disable_usage_stats = 1;
+		else if (!strcasecmp(arg, "false") ||
+			 !strcasecmp(arg, "disabled") ||
+			 !strcasecmp(arg, "no") ||
+			 !strcasecmp(arg, "off") ||
+			 !strcasecmp(arg, "0"))
+			options->disable_usage_stats = 0;
+		else
+			fatal("Incorrect value for disable_usage_stats");
+		break;
+
+	case sUsageStatsTarg:
+		charptr = &options->chroot_directory;
+
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: missing value.",
+			    filename, linenum);
+		options->usage_stats_targets = xstrdup(arg);
+		break;
+
 	case sTrustedUserCAKeys:
 		charptr = &options->trusted_user_ca_keys;
 		goto parse_filename;
@@ -1640,6 +1854,7 @@ copy_set_server_options(ServerOptions *dst, ServerOptions *src, int preauth)
 {
 	M_CP_INTOPT(password_authentication);
 	M_CP_INTOPT(gss_authentication);
+	M_CP_INTOPT(gss_deleg_creds);
 	M_CP_INTOPT(rsa_authentication);
 	M_CP_INTOPT(pubkey_authentication);
 	M_CP_INTOPT(kerberos_authentication);
@@ -1868,7 +2083,10 @@ dump_config(ServerOptions *o)
 #endif
 #ifdef GSSAPI
 	dump_cfg_fmtint(sGssAuthentication, o->gss_authentication);
+	dump_cfg_fmtint(sGssKeyEx, o->gss_keyex);
 	dump_cfg_fmtint(sGssCleanupCreds, o->gss_cleanup_creds);
+	dump_cfg_fmtint(sGssStrictAcceptor, o->gss_strict_acceptor);
+	dump_cfg_fmtint(sGssStoreRekey, o->gss_store_rekey);
 #endif
 #ifdef JPAKE
 	dump_cfg_fmtint(sZeroKnowledgePasswordAuthentication,

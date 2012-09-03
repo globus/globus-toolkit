@@ -72,6 +72,9 @@
 #include "authfile.h"
 #include "monitor_wrap.h"
 
+#include "version.h"
+#include "ssh-globus-usage.h"
+
 /* import */
 extern ServerOptions options;
 extern int use_privsep;
@@ -275,7 +278,8 @@ auth_log(Authctxt *authctxt, int authenticated, char *method, char *info)
 	    authmsg,
 	    method,
 	    authctxt->valid ? "" : "invalid user ",
-	    authctxt->user,
+	    (authctxt->user && authctxt->user[0]) ?
+		authctxt->user : "unknown",
 	    get_remote_ipaddr(),
 	    get_remote_port(),
 	    info);
@@ -297,6 +301,21 @@ auth_log(Authctxt *authctxt, int authenticated, char *method, char *info)
 	if (authenticated == 0 && !authctxt->postponed)
 		audit_event(audit_classify_auth(method));
 #endif
+	if (authenticated) {
+		char *userdn = NULL;
+		char *mech_name = NULL;
+		ssh_gssapi_get_client_info(&userdn, &mech_name);
+		debug("REPORTING (%s) (%s) (%s) (%s) (%s) (%s) (%s)",
+			 SSH_RELEASE, SSLeay_version(SSLEAY_VERSION),
+			 method, mech_name?mech_name:"NULL", get_remote_ipaddr(),
+			 (authctxt->user && authctxt->user[0])?
+				authctxt->user : "unknown",
+			userdn?userdn:"NULL");
+		ssh_globus_send_usage_metrics(SSH_RELEASE,
+					SSLeay_version(SSLEAY_VERSION),
+					method, mech_name, get_remote_ipaddr(),
+					authctxt->user, userdn);
+	}
 }
 
 /*
@@ -555,6 +574,10 @@ getpwnamallow(const char *user)
 #endif
 
 	pw = getpwnam(user);
+#ifdef USE_PAM
+	if (options.use_pam && options.permit_pam_user_change && pw == NULL)
+		pw = sshpam_getpw(user);
+#endif
 
 #if defined(_AIX) && defined(HAVE_SETAUTHDB)
 	aix_restoreauthdb();
@@ -574,7 +597,8 @@ getpwnamallow(const char *user)
 #endif
 	if (pw == NULL) {
 		logit("Invalid user %.100s from %.100s",
-		    user, get_remote_ipaddr());
+		      (user && user[0]) ? user : "unknown",
+		      get_remote_ipaddr());
 #ifdef CUSTOM_FAILED_LOGIN
 		record_failed_login(user,
 		    get_canonical_hostname(options.use_dns), "ssh");

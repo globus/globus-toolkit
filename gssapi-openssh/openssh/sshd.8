@@ -761,6 +761,73 @@ AAAA1234.....=
 # A CA key, accepted for any host in *.mydomain.com or *.mydomain.org
 @cert-authority *.mydomain.org,*.mydomain.com ssh-rsa AAAAB5W...
 .Ed
+.Sh ENVIRONMENT
+.Nm
+will normally set the following environment variables:
+.Bl -tag -width "SSH_ORIGINAL_COMMAND"
+.It Ev GLOBUS_USAGE_OPTOUT
+Setting this environment variable to "1" will disable the reporting
+of usage metrics. Usage metrics can also be disabled using the
+.Cm DisableUsageStats
+setting in
+.Xr sshd_config 5 .
+.It Ev GLOBUS_USAGE_TARGETS
+If
+.Cm UsageStatsTargets
+is not specified in
+.Xr sshd_config 5 ,
+a comma-separated list of targets (without any tags specified) if
+specified in the environment variable
+.Ev GLOBUS_USAGE_TARGETS
+will be used.
+.It Ev GRIDMAP
+Applies to GSI authentication/authorization. Specifies the location of the
+gridmapfile. If not specified, the gridmap file is assumed to be available at
+/etc/grid-security/grid-mapfile for services running as root and at
+HOME/.gridmap for services running as non-root where HOME is the home directory
+of the effective user from the password file entry.
+.It Ev GSSAPI_MECH_CONF
+Applies to mechglue used to support both GSI and Kerberos GSSAPI mechanisms.
+Used to specify the location of the mech.conf file that lists the mechanism-
+specific GSSAPI libraries (both Kerberos and GSI versions). If
+.Ev GSSAPI_MECH_CONF
+is not set then /etc/mech.conf is used. This applies to both the clients and
+the server. The NCSA GSSAPI mechglue distribution includes a sample mech.conf
+file. You will need to edit the library paths in that file and install it in
+an appropriate location on your system. If the mech.conf file is not found,
+the GSSAPI mechglue library will not load any GSSAPI mechanisms and GSI-OpenSSH
+will simply skip GSSAPI authentication.
+.It LD_LIBRARY_PATH
+The sshd server is typically linked dynamically with Globus
+security libraries, which must be present in the dynamic linker's
+search path.  This typically requires
+.Cm $GLOBUS_LOCATION/lib
+to be included in the list in the
+.Ev LD_LIBRARY_PATH
+environment variable, which is set by the
+.Cm $GLOBUS_LOCATION/libexec/globus-script-initializer
+script, which should be called from any
+.Cm sshd
+startup script.
+Alternatively, to set
+.Ev LD_LIBRARY_PATH
+appropriately for the Globus libraries in an interactive shell, source
+.Cm $GLOBUS_LOCATION/etc/globus-user-env.sh
+(for sh shells) or
+.Cm $GLOBUS_LOCATION/etc/globus-user.env.csh
+(for csh shells).
+.It Ev X509_CERT_DIR
+Used for GSI authentication. Specifies a non-standard location for the
+CA certificates directory.
+.It Ev X509_USER_CERT
+Used for GSI authentication. Specifies a non-standard location for the
+certificate to be used for authentication to the client.
+.It Ev X509_USER_KEY
+Used for GSI authentication. Specifies a non-standard location for the
+private key to be used for authentication to the client.
+.It Ev X509_USER_PROXY
+Used for GSI authentication. Specifies a non-standard location for the
+proxy credential to be used for authentication to the client.
 .Sh FILES
 .Bl -tag -width Ds -compact
 .It Pa ~/.hushlogin

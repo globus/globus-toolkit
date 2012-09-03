@@ -447,6 +447,7 @@ process_mux_new_session(u_int rid, Channel *c, Buffer *m, Buffer *r)
 		set_nonblock(new_fd[2]);
 
 	window = CHAN_SES_WINDOW_DEFAULT;
+
 	packetmax = CHAN_SES_PACKET_DEFAULT;
 	if (cctx->want_tty) {
 		window >>= 1;

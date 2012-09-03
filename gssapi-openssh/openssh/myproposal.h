@@ -75,6 +75,8 @@
 	"arcfour256,arcfour128," \
 	"aes128-cbc,3des-cbc,blowfish-cbc,cast128-cbc," \
 	"aes192-cbc,aes256-cbc,arcfour,rijndael-cbc@lysator.liu.se"
+#define KEX_ENCRYPT_INCLUDE_NONE KEX_DEFAULT_ENCRYPT \
+	",none"
 #ifdef HAVE_EVP_SHA256
 #define	SHA2_HMAC_MODES \
 	"hmac-sha2-256," \

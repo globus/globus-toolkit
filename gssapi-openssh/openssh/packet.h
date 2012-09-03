@@ -23,6 +23,12 @@
 #include <openssl/ec.h>
 #endif
 
+void
+packet_request_rekeying(void);
+
+void
+packet_request_rekeying(void);
+
 void     packet_set_connection(int, int);
 void     packet_set_timeout(int, int);
 void     packet_set_nonblocking(void);
@@ -38,6 +44,7 @@ void     packet_set_interactive(int, int, int);
 int      packet_is_interactive(void);
 void     packet_set_server(void);
 void     packet_set_authenticated(void);
+int	 packet_authentication_state(void);
 
 void     packet_start(u_char);
 void     packet_put_char(int ch);
@@ -51,7 +58,7 @@ void     packet_put_ecpoint(const EC_GROUP *, const EC_POINT *);
 void     packet_put_string(const void *buf, u_int len);
 void     packet_put_cstring(const char *str);
 void     packet_put_raw(const void *buf, u_int len);
-void     packet_send(void);
+int      packet_send(void);
 
 int      packet_read(void);
 void     packet_read_expect(int type);
@@ -85,7 +92,7 @@ int	 packet_get_ssh1_cipher(void);
 void	 packet_set_iv(int, u_char *);
 void	*packet_get_newkeys(int);
 
-void     packet_write_poll(void);
+int      packet_write_poll(void);
 void     packet_write_wait(void);
 int      packet_have_data_to_write(void);
 int      packet_not_very_much_data_to_write(void);
