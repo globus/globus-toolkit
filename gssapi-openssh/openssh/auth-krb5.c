@@ -238,7 +238,7 @@ ssh_krb5_cc_gen(krb5_context ctx, krb5_ccache *ccache) {
 	char cctemplate[] = "API:krb5cc_%d";
 #else
 	char cctemplate[] = "FILE:/tmp/krb5cc_%d_XXXXXXXXXX";
-	int tmpfd;
+	int tmpfd, oerrno;
 #endif
 
 	ret = snprintf(ccname, sizeof(ccname),
@@ -249,16 +249,18 @@ ssh_krb5_cc_gen(krb5_context ctx, krb5_ccache *ccache) {
 #ifndef USE_CCAPI
 	old_umask = umask(0177);
 	tmpfd = mkstemp(ccname + strlen("FILE:"));
+	oerrno = errno;
 	umask(old_umask);
 	if (tmpfd == -1) {
-		logit("mkstemp(): %.100s", strerror(errno));
-		return errno;
+		logit("mkstemp(): %.100s", strerror(oerrno));
+		return oerrno;
 	}
 
 	if (fchmod(tmpfd,S_IRUSR | S_IWUSR) == -1) {
-		logit("fchmod(): %.100s", strerror(errno));
+		oerrno = errno;
+		logit("fchmod(): %.100s", strerror(oerrno));
 		close(tmpfd);
-		return errno;
+		return oerrno;
 	}
 	close(tmpfd);
 #endif
