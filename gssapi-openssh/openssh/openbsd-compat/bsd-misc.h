@@ -51,6 +51,9 @@ int setegid(uid_t);
 const char *strerror(int);
 #endif 
 
+#if !defined(HAVE_SETLINEBUF)
+#define setlinebuf(a)	(setvbuf((a), NULL, _IOLBF, 0))
+#endif
 
 #ifndef HAVE_UTIMES
 #ifndef HAVE_STRUCT_TIMEVAL
