@@ -97,6 +97,8 @@ globus_l_seg_pbs_level_string(globus_l_seg_pbs_debug_level_t level)
 enum
 {
     SEG_PBS_ERROR_UNKNOWN = 1,
+    SEG_PBS_ERROR_END_OF_FILE,
+    SEG_PBS_ERROR_TIME,
     SEG_PBS_ERROR_OUT_OF_MEMORY,
     SEG_PBS_ERROR_BAD_PATH,
     SEG_PBS_ERROR_LOG_PERMISSIONS,
@@ -110,37 +112,27 @@ typedef struct
 {
     /** Path of the current log file being parsed */
     char *                              path;
+    /** Date of the log file */
+    struct tm                           path_time;
     /** Timestamp of when to start generating events from */
-    struct tm                           start_timestamp;
-    /** Stdio file handle of the log file */
-    FILE *                              fp;
+    time_t                              start_timestamp;
+    /** Offset of the next event to read from the log file */
+    off_t                               log_offset;
     /** Buffer of log file data */
     char *                              buffer;
     /** Length of the buffer */
     size_t                              buffer_length;
-    /** Starting offset of valid data in the buffer. */
-    size_t                              buffer_point;
-    /** Amount of valid data in the buffer */
-    size_t                              buffer_valid;
-    /**
-     * Flag inidicating that this logfile isn't the one corresponding to
-     * today, so and EOF on it should require us to close and open a newer
-     * one
-     */
-    globus_bool_t                       old_log;
-
     /**
      * Path to the directory where the PBS server log files are located
      */
     char *                              log_dir;
 } globus_l_pbs_logfile_state_t;
 
-static const time_t                     SECS_IN_DAY = 60*60*24;
+static const globus_l_pbs_logfile_state_t logfile_state_static_initializer={0};
 static globus_mutex_t                   globus_l_pbs_mutex;
 static globus_cond_t                    globus_l_pbs_cond;
 static globus_bool_t                    shutdown_called;
 static int                              callback_count;
-
 
 GlobusDebugDefine(SEG_PBS);
 
@@ -160,35 +152,24 @@ globus_l_pbs_read_callback(
 static
 int
 globus_l_pbs_parse_events(
-    globus_l_pbs_logfile_state_t *      state);
-
-static
-int
-globus_l_pbs_clean_buffer(
-    globus_l_pbs_logfile_state_t *      state);
-
-static
-int
-globus_l_pbs_increase_buffer(
-    globus_l_pbs_logfile_state_t *      state);
-
-static
-int
-globus_l_pbs_split_into_fields(
     globus_l_pbs_logfile_state_t *      state,
-    char ***                            fields,
-    size_t *                            nfields);
+    FILE *                              fp,
+    off_t *                             end_of_parse);
 
 static
 void
-globus_l_pbs_normalize_date(
+globus_l_pbs_increment_date(
     struct tm *                         tm);
 
 static
 int
-globus_l_pbs_find_logfile(
-    globus_l_pbs_logfile_state_t *      state);
+globus_l_pbs_find_next(
+    globus_l_pbs_logfile_state_t *      state,
+    char **                             next_file);
 
+static
+time_t
+globus_l_pbs_make_start_of_day(time_t * when);
 
 GlobusExtensionDefineModule(globus_seg_pbs) =
 {
@@ -204,7 +185,6 @@ static
 int
 globus_l_pbs_module_activate(void)
 {
-    time_t                              timestamp_val;
     globus_l_pbs_logfile_state_t *      logfile_state;
     int                                 rc;
     globus_reltime_t                    delay;
@@ -240,12 +220,11 @@ globus_l_pbs_module_activate(void)
                 ("Fatal error initializing cond\n"));
         goto destroy_mutex_error;
     }
+
     shutdown_called = GLOBUS_FALSE;
     callback_count = 0;
 
-    logfile_state = globus_libc_calloc(
-            1,
-            sizeof(globus_l_pbs_logfile_state_t));
+    logfile_state = malloc(sizeof(globus_l_pbs_logfile_state_t));
 
     if (logfile_state == NULL)
     {
@@ -253,32 +232,20 @@ globus_l_pbs_module_activate(void)
                 ("Fatal error: out of memory\n"));
         goto destroy_cond_error;
     }
-
-    rc = globus_l_pbs_increase_buffer(logfile_state);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
-                ("Fatal error: out of memory\n"));
-        goto free_logfile_state_error;
-    }
+    *logfile_state = logfile_state_static_initializer;
 
     /* Configuration info */
-    result = globus_scheduler_event_generator_get_timestamp(&timestamp_val);
-
+    result = globus_scheduler_event_generator_get_timestamp(
+            &logfile_state->start_timestamp);
     if (result != GLOBUS_SUCCESS)
     {
         SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
                 ("Fatal error (unable to parse timestamp)\n"));
-        goto free_logfile_state_buffer_error;
+        goto get_timestamp_failed;
     }
-
-    if (timestamp_val != 0)
+    if (logfile_state->start_timestamp == 0)
     {
-        if (globus_libc_localtime_r(&timestamp_val,
-                &logfile_state->start_timestamp) == NULL)
-        {
-            goto free_logfile_state_buffer_error;
-        }
+        logfile_state->start_timestamp = time(NULL);
     }
 
     result = globus_eval_path(
@@ -287,7 +254,7 @@ globus_l_pbs_module_activate(void)
     {
         SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
                 ("Fatal error: unable to allocate path to config file\n"));
-        goto free_logfile_state_buffer_error;
+        goto eval_path_failed;
     }
     result = globus_common_get_attribute_from_config_file(
             "",
@@ -300,7 +267,7 @@ globus_l_pbs_module_activate(void)
                 ("Fatal error: unable to read log_path from "
                 "${sysconfdir}/globus/globus-pbs.conf\n"));
 
-        goto free_logfile_state_buffer_error;
+        goto get_log_path_failed;
     }
 
     if ((rc = stat(logfile_state->log_dir, &st)) != 0)
@@ -309,38 +276,43 @@ globus_l_pbs_module_activate(void)
                     ("Fatal error checking log directory: %s\n",
                      strerror(errno)));
 
-        goto free_logfile_state_buffer_error;
+        goto stat_log_dir_failed;
+    }
+    if (localtime_r(&logfile_state->start_timestamp, &logfile_state->path_time)
+            == NULL)
+    {
+        struct tm initializer = {0};
+
+        logfile_state->path_time = initializer;
+
+        logfile_state->path_time.tm_year = 70;
+        logfile_state->path_time.tm_mon = 0;
+        logfile_state->path_time.tm_mday = 1;
     }
 
-    /* Convert timestamp to filename */
-    rc = globus_l_pbs_find_logfile(logfile_state);
+    logfile_state->path = globus_common_create_string(
+            "%s/%04d%02d%02d",
+            logfile_state->log_dir,
+            logfile_state->path_time.tm_year + 1900,
+            logfile_state->path_time.tm_mon + 1,
+            logfile_state->path_time.tm_mday);
 
-    if (rc == GLOBUS_SUCCESS)
+    if (logfile_state->path == NULL)
     {
-        logfile_state->fp = fopen(logfile_state->path, "r");
+        SEGPbsDebug(SEG_PBS_DEBUG_ERROR, ("error allocating path\n"));
+        goto alloc_path_failed;
+    }
 
-        if (logfile_state->fp == NULL)
-        {
-            SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
-                    ("Error opening %s: %s\n",
-                     logfile_state->path,
-                     strerror(errno)));
-            rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
-
-            goto free_logfile_state_path_error;
-        }
+    if (access(logfile_state->path, R_OK) == 0)
+    {
         GlobusTimeReltimeSet(delay, 0, 0);
-    }
-    else if(rc == SEG_PBS_ERROR_LOG_NOT_PRESENT)
-    {
-            SEGPbsDebug(SEG_PBS_DEBUG_WARN,
-                    ("Log file %s not (currently) present\n",
-                     logfile_state->path));
-        GlobusTimeReltimeSet(delay, 1, 0);
     }
     else
     {
-        goto free_logfile_state_path_error;
+        SEGPbsDebug(SEG_PBS_DEBUG_WARN,
+                ("Log file %s not (currently) present\n",
+                 logfile_state->path));
+        GlobusTimeReltimeSet(delay, 1, 0);
     }
 
     result = globus_callback_register_oneshot(
@@ -354,26 +326,32 @@ globus_l_pbs_module_activate(void)
                 ("Error registering oneshot: %s\n",
                 globus_error_print_friendly(globus_error_peek(result))));
 
-        goto free_logfile_state_path_error;
+        goto oneshot_failed;
     }
     callback_count++;
 
     SEGPbsExit();
     return 0;
 
-free_logfile_state_path_error:
+oneshot_failed:
     if (logfile_state->path)
     {
-        globus_libc_free(logfile_state->path);
+        free(logfile_state->path);
     }
+alloc_path_failed:
+stat_log_dir_failed:
     if (logfile_state->log_dir)
     {
-        globus_libc_free(logfile_state->log_dir);
+        free(logfile_state->log_dir);
     }
-free_logfile_state_buffer_error:
-    globus_libc_free(logfile_state->buffer);
-free_logfile_state_error:
-    globus_libc_free(logfile_state);
+get_log_path_failed:
+    if (config_path)
+    {
+        free(config_path);
+    }
+eval_path_failed:
+get_timestamp_failed:
+    free(logfile_state);
 destroy_cond_error:
     globus_cond_destroy(&globus_l_pbs_cond);
 destroy_mutex_error:
@@ -411,17 +389,16 @@ globus_l_pbs_module_deactivate(void)
 }
 
 /**
- * read_cb:
- *  parse_events(buffer)
+ * read callback
  *
- *  if (!eof) // do i need to check stat state or will this behave well w/local
- *            // files?
- *      register read (read_cb)
- *  else
- *      if (it's an old logfile)
- *          register_close(old_close_cb)
- *      else
- *          register wakeup (wakeup_cb)
+ * Try to open a log file (either the last one we parsed or a newer one if
+ * it doesn't exist or is done).
+ *
+ * Seek to the file's current parse location
+ *
+ * Parse events
+ *
+ * Reregister
  */
 static
 void
@@ -430,18 +407,12 @@ globus_l_pbs_read_callback(
 {
     int                                 rc;
     globus_l_pbs_logfile_state_t *      state = user_arg;
-    size_t                              max_to_read;
-    globus_bool_t                       eof_hit = GLOBUS_FALSE;
     globus_reltime_t                    delay;
     globus_result_t                     result;
-    time_t                              now;
-    struct tm                           tm_now;
-    struct tm *                         tm_result;
-    time_t                              now_day;
-    time_t                              restart_day;
+    FILE *                              fp;
+    time_t                              today;
 
     GlobusFuncName(globus_l_pbs_read_callback);
-
     SEGPbsEnter();
 
     globus_mutex_lock(&globus_l_pbs_mutex);
@@ -454,125 +425,216 @@ globus_l_pbs_read_callback(
     }
     globus_mutex_unlock(&globus_l_pbs_mutex);
 
-    now = time(NULL);
+    today = globus_l_pbs_make_start_of_day(NULL);
 
-    tm_result = globus_libc_localtime_r(&now, &tm_now);
-    if (tm_result == NULL)
-    {
-        SEGPbsDebug(SEG_PBS_DEBUG_ERROR, ("error converting time"));
-
-        GlobusTimeReltimeSet(delay, 30, 0);
-
-        goto reregister;
-    }
-    tm_now.tm_sec = 0;
-    tm_now.tm_min = 0;
-    tm_now.tm_hour = 0;
-    now_day = mktime(&tm_now);
-
-    memcpy(&tm_now, &state->start_timestamp, sizeof(struct tm));
-    tm_now.tm_sec = 0;
-    tm_now.tm_min = 0;
-    tm_now.tm_hour = 0;
-    restart_day = mktime(&tm_now);
-
-    if ((tm_result != NULL) && (now_day > restart_day))
-    {
-        state->old_log = GLOBUS_TRUE;
-    }
-
-    if (state->fp != NULL)
-    {
-        /* Read data */
-        max_to_read = state->buffer_length - state->buffer_valid
-                - state->buffer_point;
-
-        SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
-                ("reading a maximum of %u bytes\n", max_to_read));
-
-        rc = fread(state->buffer + state->buffer_point + state->buffer_valid,
-                1, max_to_read, state->fp);
-        
-        SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
-                ("read %d bytes\n", rc));
-
-        if (rc < max_to_read)
-        {
-            if (feof(state->fp))
-            {
-                SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("hit eof\n"));
-                eof_hit = GLOBUS_TRUE;
-                clearerr(state->fp);
-            }
-            else
-            {
-                /* XXX: Read error */
-            }
-        }
-
-        state->buffer_valid += rc;
-
-        /* Parse data */
-        rc = globus_l_pbs_parse_events(state);
-
-        rc = globus_l_pbs_clean_buffer(state);
-    }
-
-    /* If end of log, close this logfile and look for a new one. Also, if
-     * the current day's log doesn't exist yet, check for it
+    /* We'll start at the file in state->path, moving forward day by day
+     * until we find one we can open. In some cases, we will not find a
+     * valid file, so we'll defer the parsing until another callback.
+     *
      */
-    if ((eof_hit && state->old_log) || state->fp == NULL)
+    do
     {
-        SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("got Log closed msg\n"));
+        fp = fopen(state->path, "r");
 
-        if (state->fp)
+        if (!fp)
         {
-            fclose(state->fp);
-            state->fp = NULL;
-
-            state->start_timestamp.tm_mday++;
-            state->start_timestamp.tm_hour = 0;
-            state->start_timestamp.tm_min = 0;
-            state->start_timestamp.tm_sec = 0;
-            globus_l_pbs_normalize_date(&state->start_timestamp);
-        }
-
-        rc = globus_l_pbs_find_logfile(state);
-
-        if (rc == GLOBUS_SUCCESS)
-        {
-            /* Opening a new logfile, run w/out delay */
-            state->fp = fopen(state->path, "r");
-            if (state->fp == NULL)
+            switch (errno)
             {
-                eof_hit = GLOBUS_TRUE;
+            /* Transient Errors.
+             * These are out of our control, so we'll defer parsing
+             */
+            case EINTR:         /* signal occurred during open */
+            case ENFILE:        /* systemwide file limit reached */
                 GlobusTimeReltimeSet(delay, 30, 0);
+                goto reregister;
+
+            /*
+             * If the file doesn't exist, and it's an old log file, we'll
+             * move forward in time to the next available log file. If it's
+             * the current log file, we'll defer until a future callback
+             */
+            case ENOENT:        /* file doesn't exist */
+                if (mktime(&state->path_time) < today)
+                {
+                    /* If an old file doesn't exist, we'll look for a newer
+                     * one
+                     */
+                    char * next_file;
+
+                    if (globus_l_pbs_find_next(state, &next_file) == 0)
+                    {
+                        /* If it does, and the old one still doesn't, move
+                         * on to the next one
+                         */
+                        if (access(next_file, R_OK) == 0 &&
+                            access(state->path, R_OK) == -1 &&
+                            errno == ENOENT)
+                        {
+                            free(state->path);
+                            state->path = next_file;
+                            state->log_offset = 0;
+
+                            strptime(next_file + strlen(state->log_dir) + 1, 
+                                "%Y%m%d", &state->path_time);
+                            break;
+                        }
+                        else
+                        {
+                            /* Nothing new yet */
+                            free(next_file);
+                        }
+                    }
+                }
+                GlobusTimeReltimeSet(delay, 10, 0);
+                goto reregister;
+
+            /* Misconfiguration or filesystem error we can't handle  */
+            case ELOOP:         /* invalid symlink in path */
+            case EACCES:        /* invalid permissions */
+            case EMFILE:        /* out of file descriptors for this process */
+            case ENAMETOOLONG:  /* path name too long */
+            case EOVERFLOW:     /* file bigger than off_t */
+                perror("open failed");
+                exit(EXIT_FAILURE);
+
+            /* Unexpected Errors */
+            case ENOTDIR:       /* path component contains a non-directory */
+            case EEXIST:        /* Can only happen if trying to create file */
+            case EINVAL:        /* Only related to synchronized I/O */
+            case EIO:           /* STREAMS-related */
+            case EISDIR:        /* Can only happen when open for write to a dir
+                                 */
+            case ENOSR:         /* STREAMS-related */
+            case ENOSPC:        /* Can only happen when creating file */
+            case ENXIO:         /* nonblocking write to a fifo with no reader */
+            case EROFS:         /* write to readonly filesystem */
+            default:            /* Some other non-standard errno */
+                SEGPbsDebug(SEG_PBS_DEBUG_WARN,
+                        ("Log file %s not (currently) present: %s\n",
+                         state->path,
+                         strerror(errno)));
+                GlobusTimeReltimeSet(delay, 30, 0);
+                goto reregister;
             }
-            else
+        }
+    }
+    while (fp == NULL);
+
+    if (fp != NULL)
+    {
+        do
+        {
+            errno = 0;
+            rc = fseeko(fp, state->log_offset, SEEK_SET);
+
+            if (rc != 0)
             {
-                eof_hit = GLOBUS_FALSE;
-                GlobusTimeReltimeSet(delay, 0, 0);
+                switch (errno)
+                {
+                    /* Unexpected, but transient errors */
+                    case EAGAIN:
+                    case EINTR:
+                        SEGPbsDebug(SEG_PBS_DEBUG_WARN,
+                                ("Transient seek error for %s to %e: %s\n",
+                                 state->path,
+                                 (float) state->log_offset,
+                                 strerror(errno)));
+                        continue;
+
+                    /* Errors, we'll fail out here and close the fp and
+                     * try again next callback
+                     */
+                    case EBADF:
+                    case EOVERFLOW:
+                        SEGPbsDebug(SEG_PBS_DEBUG_WARN,
+                                ("Unable to seek %s to %e: %s\n",
+                                 state->path,
+                                 (float) state->log_offset,
+                                 strerror(errno)));
+
+                        GlobusTimeReltimeSet(delay, 10, 0);
+                        goto reregister;
+
+                    /* Shouldn't happen */
+                    case EFBIG:
+                    case EINVAL:
+                    case EIO:
+                    case ENOSPC:
+                    case ENXIO:
+                    case EPIPE:
+                    case ESPIPE:
+                    default:
+                        SEGPbsDebug(SEG_PBS_DEBUG_WARN,
+                                ("Unable to seek %s to %e: %s\n",
+                                 state->path,
+                                 (float) state->log_offset,
+                                 strerror(errno)));
+                        exit(EXIT_FAILURE);
+                }
+            }
+        } while (rc != 0);
+
+        /* Read and parse data */
+        rc = globus_l_pbs_parse_events(state, fp, &state->log_offset);
+
+        /* if above returns 0, we (probably) haven't reached the end of
+         * file, if it returns EOF, then we hit some I/O error (hopefully EOF).
+         * If the latter, we will confirm that we've parsed the entire file,
+         * and the next one exists, and if both conditions are true, we'll move
+         * on to the next file. If not, we'll keep the current one as the
+         * log file to process try again after a bit.
+         */
+        if (rc == EOF)
+        {
+            char * next_file;
+            struct stat st;
+
+            GlobusTimeReltimeSet(delay, 2, 0);
+
+            /* EOF on current logfile check to see if next exists */
+            if (globus_l_pbs_find_next(state, &next_file) == 0)
+            {
+                if (access(next_file, R_OK) == 0)
+                {
+                    /* If we are convinced the next file exists and the
+                     * current file has been completely parsed, we'll move on
+                     * to the beginning of the next file
+                     */
+                    rc = stat(state->path, &st);
+                    if (rc == 0)
+                    {
+                        if (state->log_offset == st.st_size)
+                        {
+                            free(state->path);
+                            state->path = next_file;
+
+                            strptime(next_file + strlen(state->log_dir) + 1, 
+                                "%Y%m%d", &state->path_time);
+
+                            state->log_offset = 0;
+                            next_file = NULL;
+
+                            GlobusTimeReltimeSet(delay, 0, 0);
+                        }
+                    }
+                }
+
+                if (next_file)
+                {
+                    free(next_file);
+                }
             }
         }
         else
         {
-            /* Current day's logfile not present, or an error occurred, wait a
-             * bit longer for it to show up
+            /* still data available in current file, allow other callbacks
+             * to run, then immediately run this one again
              */
-            GlobusTimeReltimeSet(delay, 30, 0);
-            eof_hit = GLOBUS_TRUE;
+            GlobusTimeReltimeSet(delay, 0, 0);
         }
     }
-    else if(eof_hit)
-    {
-        /* eof on current logfile, wait for new data */
-        GlobusTimeReltimeSet(delay, 2, 0);
-    }
-    else
-    {
-        /* still data available in current file, hurry up! */
-        GlobusTimeReltimeSet(delay, 0, 0);
-    }
+
+    fclose(fp);
 
 reregister:
     result = globus_callback_register_oneshot(
@@ -611,12 +673,15 @@ error:
 /* globus_l_pbs_read_callback() */
 
 /**
- * Determine the next available PBS log file name from the 
- * timestamp stored in the logfile state structure.
+ * Determine the next available PBS log file name after the current
+ * state->path value, returning in the string pointed to by next_file. If a
+ * newer log isn't available, the string pointed to by next_file is set to NULL
+ * and an errno value is returned.
  * 
  * @param state
- *     PBS log state structure. The path field of the structure may be
- *     modified by this function.
+ *     PBS log state structure. The path field of the structure is inspected.
+ * @param next_file
+ *     Pointer to a string to contain the file name of the next pbs logfile.
  *
  * @retval GLOBUS_SUCCESS
  *     Name of an log file name has been found and the file exists.
@@ -625,366 +690,218 @@ error:
  */
 static
 int
-globus_l_pbs_find_logfile(
-    globus_l_pbs_logfile_state_t *      state)
+globus_l_pbs_find_next(
+    globus_l_pbs_logfile_state_t *      state,
+    char **                             next_file)
 {
-    struct tm *                         tm_result;
-    struct tm                           tm_val;
-    struct tm                           tm_now;
-    globus_bool_t                       user_timestamp = GLOBUS_TRUE;
-    time_t                              now;
+    char *                              next_path;
+    struct tm                           next_path_day;
+    static size_t                       dirname_len = 0;
     struct stat                         s;
     int                                 rc;
+    time_t                              today_time;
     GlobusFuncName(globus_l_pbs_find_logfile);
 
     SEGPbsEnter();
 
-    if (state->path == NULL)
-    {
-        SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("allocating path\n"));
-        state->path = malloc(strlen(state->log_dir) + 10);
+    *next_file = NULL;
 
-        if (state->path == NULL)
-        {
-            rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
-            goto error;
-        }
+    if (dirname_len == 0)
+    {
+        dirname_len = strlen(state->log_dir) + 1;
     }
 
-    now = time(NULL);
+    /* If we increment to today_tm's date, we stop below.  */
+    today_time = globus_l_pbs_make_start_of_day(NULL);
 
-    tm_result = globus_libc_localtime_r(&now, &tm_now);
-    if (tm_result == NULL)
+    /* Copy the current log file path to next_path. We'll increment that
+     * file name to the next day until we find a file or hit today.
+     */
+    next_path = strdup(state->path);
+    if (next_path == NULL)
     {
-        SEGPbsDebug(SEG_PBS_DEBUG_WARN, ("localtime_r failed\n"));
         rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
-
-        goto error;
+        goto strdup_failed;
     }
-    else
+    if (globus_strptime(next_path + dirname_len, "%Y%m%d", &next_path_day)
+            == NULL)
     {
-        /* Get the first log message of the day */
-        tm_now.tm_sec = 0;
-        tm_now.tm_min = 0;
-        tm_now.tm_hour = 0;
+        rc = SEG_PBS_ERROR_TIME;
+        goto strptime_failed;
     }
-
-    if (state->start_timestamp.tm_sec == 0 &&
-        state->start_timestamp.tm_min == 0 &&
-        state->start_timestamp.tm_hour == 0 &&
-        state->start_timestamp.tm_mday == 0 &&
-        state->start_timestamp.tm_mon == 0 &&
-        state->start_timestamp.tm_year == 0)
-    {
-        SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
-                ("no timestamp set, using current time\n"));
-        memcpy(&state->start_timestamp, &tm_now, sizeof(struct tm));
-        user_timestamp = GLOBUS_FALSE;
-    }
-
-    memcpy(&tm_val, &state->start_timestamp, sizeof(struct tm));
-
-    tm_result = &tm_val;
-
     do
     {
-        if (tm_result == NULL)
-        {
-            SEGPbsDebug(SEG_PBS_DEBUG_WARN,
-                ("couldn't get tm from timestmap\n"));
+        /* Increment the date to see if the next day's file exists */
+        globus_l_pbs_increment_date(&next_path_day);
 
-            rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
-            goto error;
-        }
-        if (tm_val.tm_year < tm_now.tm_year ||
-            (tm_val.tm_year == tm_now.tm_year &&
-             tm_val.tm_mon < tm_now.tm_mon) ||
-            (tm_val.tm_year == tm_now.tm_year &&
-             tm_val.tm_mon == tm_now.tm_mon &&
-             tm_val.tm_mday < tm_now.tm_mday))
+        if (strftime(next_path + dirname_len, 9, "%Y%m%d", &next_path_day) == 0)
         {
-            state->old_log = GLOBUS_TRUE;
-        }
-        else
-        {
-            state->old_log = GLOBUS_FALSE;
+            rc = SEG_PBS_ERROR_TIME;
+            goto strftime_failed;
         }
 
-        rc = sprintf(state->path,
-                "%s/%4d%02d%02d",
-                state->log_dir,
-                tm_val.tm_year+1900,
-                tm_val.tm_mon+1,
-                tm_val.tm_mday);
-
-        if (rc < 0)
-        {
-            SEGPbsDebug(SEG_PBS_DEBUG_WARN,
-                ("couldn't format date to string\n"));
-            rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
-            goto error;
-        }
-        rc = stat(state->path, &s);
-
+        errno = 0;
+        rc = stat(next_path, &s);
         if (rc < 0)
         {
             switch (errno)
             {
+                case EIO:               /* Error reading from filesystem */
+                    SEGPbsDebug(SEG_PBS_DEBUG_WARN,
+                        ("Unable to stat logfile %s: %s\n",
+                        state->path,
+                        strerror(errno)));
+                    rc = SEG_PBS_ERROR_BAD_PATH;
+
+                    goto stat_failed;
+
+
                 case ENOENT:
-                    /* Doesn't exist, advance to the next day's log
-                     * for next try if we're not looking to the future.
+                    /* Doesn't exist, if we're looking into the future, give up
+                     * and return NULL, otherwise, we'll continue to increment
+                     * until we find one
                      */
                     SEGPbsDebug(SEG_PBS_DEBUG_WARN,
-                        ("file %s doesn't exist\n", state->path));
+                        ("file %s doesn't exist\n", next_path_day));
 
-                    /* Increment day by 1, then normalize to be a proper
-                     * struct tm without having tm_mday exceed what is valid
-                     * for the month.
-                     */
-                    tm_val.tm_mday++;
-
-                    globus_l_pbs_normalize_date(&tm_val);
-
-                    if (tm_val.tm_year > tm_now.tm_year ||
-                        (tm_val.tm_year == tm_now.tm_year &&
-                         tm_val.tm_mon > tm_now.tm_mon) ||
-                        (tm_val.tm_year == tm_now.tm_year &&
-                         tm_val.tm_mon == tm_now.tm_mon &&
-                         tm_val.tm_mday > tm_now.tm_mday))
+                    if (today_time <= mktime(&next_path_day))
                     {
                         SEGPbsDebug(SEG_PBS_DEBUG_WARN,
                             ("looking for file in the future!\n"));
                         rc = SEG_PBS_ERROR_LOG_NOT_PRESENT;
-
-                        goto error;
+                        goto file_doesnt_exist;
                     }
-
-                    /* Starting new log, get all messages in that file */
-                    tm_val.tm_sec = 0;
-                    tm_val.tm_min = 0;
-                    tm_val.tm_hour = 0;
-
-                    memcpy(&state->start_timestamp,
-                            &tm_val,
-                            sizeof(struct tm));
-
                     break;
 
-                case EACCES:
+                case EACCES:            /* Bad permissions */
                     SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
-                        ("permissions needed to access logfile %s\n",
-                        state->path));
-                    /* Permission problem (fatal) */
-                    rc = SEG_PBS_ERROR_LOG_PERMISSIONS;
-                    goto error;
-
-                case ENOTDIR:
-                case ELOOP:
-                case ENAMETOOLONG:
-                    /* broken path (fatal) */
-                    SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
-                        ("broken path to logfile %s\n",
-                        state->path));
-                    rc = SEG_PBS_ERROR_BAD_PATH;
-                    goto error;
-
-                case EFAULT:
-                    SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
-                        ("bad pointer\n"));
-                    globus_assert(errno != EFAULT);
-
-                case EINTR:
-                case ENOMEM: /* low kernel mem */
-                    /* try again later */
-                    SEGPbsDebug(SEG_PBS_DEBUG_WARN,
-                        ("going to have to retry stat()\n"));
-                    continue;
-
-                default:
-                    SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
-                        ("unexpected errno\n"));
-                    rc = SEG_PBS_ERROR_UNKNOWN;
-                    goto error;
-            }
-        }
-    }
-    while ((rc != 0) && user_timestamp);
-
-    if (rc != 0)
-    {
-        goto error;
-    }
-
-    SEGPbsExit();
-    return 0;
-
-error:
-    SEGPbsExit();
-    return rc;
-}
-/* globus_l_pbs_find_logfile() */
-
-/**
- * Move any data in the state buffer to the beginning, to enable reusing 
- * buffer space which has already been parsed.
- */
-static
-int
-globus_l_pbs_clean_buffer(
-    globus_l_pbs_logfile_state_t *      state)
-{
-    int                                 rc = GLOBUS_SUCCESS;
-    GlobusFuncName(globus_l_pbs_clean_buffer);
-
-    SEGPbsEnter();
-
-    /* move data to head of buffer */
-    if (state->buffer != NULL)
-    {
-        if(state->buffer_point > 0)
-        {
-            if (state->buffer_valid > 0)
-            {
-                memmove(state->buffer,
-                        state->buffer+state->buffer_point,
-                        state->buffer_valid);
-            }
-            state->buffer_point = 0;
-        }
-        rc = globus_l_pbs_increase_buffer(state);
-    }
-    SEGPbsExit();
-    return rc;
-}
-/* globus_l_pbs_clean_buffer() */
-
-/**
- * Reduce unused space in the log buffer, increasing the size of the buffer
- * if it is full.
- *
- * @param state
- *     PBS log state structure. The buffer-related fields of the structure
- *     may be modified by this function.
- */
-static
-int
-globus_l_pbs_increase_buffer(
-    globus_l_pbs_logfile_state_t *      state)
-{
-    char *                              save = state->buffer;
-    const size_t                        GLOBUS_PBS_READ_BUFFER_SIZE = 4096;
-    int                                 rc;
-    GlobusFuncName(globus_l_pbs_increase_buffer);
-
-    SEGPbsEnter();
-    /* If the buffer is full, resize */
-    if (state->buffer_valid == state->buffer_length)
-    {
-        state->buffer = globus_libc_realloc(state->buffer,
-                    state->buffer_length + GLOBUS_PBS_READ_BUFFER_SIZE);
-        if (state->buffer == NULL)
-        {
-            SEGPbsDebug(SEG_PBS_DEBUG_ERROR, ("realloc() failed: %s\n",
+                        ("Unable to stat logfile %s: %s\n",
+                        state->path,
                         strerror(errno)));
 
-            rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
-            goto error;
+                    rc = SEG_PBS_ERROR_LOG_PERMISSIONS;
+                    goto unable_to_access_file;
+
+                /* Fatal errors */
+                case ELOOP:             /* symlink loop */
+                case ENAMETOOLONG:      /* filename too long */
+                case ENOTDIR:           /* directory path is not a dir */
+                case EOVERFLOW:         /* file size too big to represent in
+                                         * stat struct */
+                default:
+                    SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
+                        ("Unable to stat logfile %s: %s\n",
+                        state->path,
+                        strerror(errno)));
+
+                    rc = SEG_PBS_ERROR_BAD_PATH;
+                    goto unable_to_access_file;
+            }
         }
-        state->buffer_length += GLOBUS_PBS_READ_BUFFER_SIZE;
     }
+    while ((rc != 0));
+
+    *next_file = next_path;
 
     SEGPbsExit();
     return 0;
-
-error:
+stat_failed:
+file_doesnt_exist:
+unable_to_access_file:
+strptime_failed:
+strftime_failed:
+    free(next_path);
+strdup_failed:
     SEGPbsExit();
-    state->buffer = save;
     return rc;
 }
-/* globus_l_pbs_increase_buffer() */
+/* globus_l_pbs_find_next() */
 
+/**
+ * Parse SEG events from the current log file in fp, returning 0 if
+ * successful or EOF if end-of-file or an error was hit.
+ * The value pointed to by end_of_parse is set to the offset in the
+ * file to begin parsing from in the future if more data becomes available.
+ */
 static
 int
 globus_l_pbs_parse_events(
-    globus_l_pbs_logfile_state_t *      state)
+    globus_l_pbs_logfile_state_t *      state,
+    FILE *                              fp,
+    off_t *                             end_of_parse)
 {
-    char *                              eol;
-    char *                              rp;
+    char *                              sep;
     struct tm                           tm;
     time_t                              stamp;
-    char **                             fields = NULL;
+    char *                              f;
+    char *                              fields[15];
     size_t                              nfields;
-    time_t                              when;
     int                                 evttype;
     int                                 rc;
     int                                 exit_status;
+    off_t                               start_of_line;
+    int                                 parse_left=1024;
+
     GlobusFuncName(globus_l_pbs_parse_events);
 
     SEGPbsEnter();
 
-    while ((eol = memchr(state->buffer + state->buffer_point,
-                '\n',
-                state->buffer_valid)) != NULL)
+    start_of_line = ftello(fp);
+    while ((parse_left > 0) &&
+        (rc = getline(&state->buffer, &state->buffer_length, fp)) > 0)
     {
-        *eol = '\0';
-
-        SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
-                ("parsing line %s\n", state->buffer + state->buffer_point));
-
-        rc = globus_l_pbs_split_into_fields(state, &fields, &nfields);
-
-        if (rc != GLOBUS_SUCCESS)
+        if (state->buffer[rc-1] != '\n')
         {
-            goto free_fields;
+            /* Didn't get a full line, reset file pointer */
+            *end_of_parse = start_of_line;
+            return EOF;
+        }
+
+        nfields = 0;
+        for (f = strtok_r(state->buffer, ";\n", &sep);
+             f != NULL && nfields < 15;
+             f = strtok_r(NULL, ";\n", &sep))
+        {
+            fields[nfields++] = f;
         }
 
         if (nfields < 3)
         {
             SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
                     ("too few fields, freeing and getting next line\n"));
-            goto free_fields;
+            goto too_few_fields;
         }
 
-        rp = globus_strptime(fields[0], 
-                "%m/%d/%Y %H:%M:%S",
-                &tm);
-        if (rp == NULL || (*rp) != '\0')
+        sep = globus_strptime(fields[0], "%m/%d/%Y %H:%M:%S", &tm);
+        if (sep == NULL || (*sep) != '\0')
         {
-            goto free_fields;
+            goto strptime_failed;
         }
         stamp = mktime(&tm);
         if (stamp == -1)
         {
-            goto free_fields;
+            goto mktime_failed;
         }
 
         rc = sscanf(fields[1], "%04x", &evttype);
-
         if (rc < 1)
         {
-            goto free_fields;
+            goto evttype_invalid;
         }
         rc = 0;
 
-        when = mktime(&state->start_timestamp);
-
-        if (stamp < when)
+        if (stamp < state->start_timestamp)
         {
             /* Skip messages which are before our start timestamp */
-            goto free_fields;
+            SEGPbsDebug(SEG_PBS_DEBUG_INFO,
+                    ("skipping old event for %s\n", fields[4]));
+            goto old_event;
         }
 
         switch (evttype)
         {
         case 0x0002: /* Batch System/Server Events */
-            if (nfields < 6)
-            {
-                rc = 1;
-                break;
-            }
-            if (strstr(fields[5], "Log closed") == fields[5])
-            {
-            }
+            /* Might be "Log closed", but we don't care */
             break;
 
         case 0x0010: /* Job Resource Usage */
@@ -1029,119 +946,35 @@ globus_l_pbs_parse_events(
             break;
         }
 
-free_fields:
-        if (fields != NULL)
-        {
-            SEGPbsDebug(SEG_PBS_DEBUG_INFO,
-                    ("freeing fields\n"));
-            globus_libc_free(fields);
-            fields = NULL;
-        }
+mktime_failed:
+old_event:
+evttype_invalid:
+strptime_failed:
+too_few_fields:
 
-        state->buffer_valid -= eol + 1 - state->buffer - state->buffer_point;
-        state->buffer_point = eol + 1 - state->buffer;
+        start_of_line = ftello(fp);
+        parse_left--;
+        rc = 0;
     }
 
-    SEGPbsExit();
-    return 0;
-}
-/* globus_l_pbs_parse_events() */
-
-/**
- * Replaces instances of ';' (the PBS log field separator with NULL. Allocates
- * an array of pointers into the state buffer at the beginning of each field.
- *
- * @param state
- *     Log state structure. The string pointed to by
- *     state-\>buffer + state-\>buffer_point is modified 
- * @param fields
- *     Modified to point to a newly allocated array of char * pointers which
- *     point to the start of each field within the state buffer block.
- * @param nfields
- *     Modified value pointed to by this will contain the number of fields in
- *     the @a fields array after completion.
- */
-static
-int
-globus_l_pbs_split_into_fields(
-    globus_l_pbs_logfile_state_t *      state,
-    char ***                            fields,
-    size_t *                            nfields)
-{
-    size_t                              i = 0;
-    size_t                              cnt = 1;
-    char *                              tmp;
-    int                                 rc;
-    GlobusFuncName(globus_l_pbs_split_into_fields);
-
-    SEGPbsEnter();
-
-    *fields = NULL;
-    *nfields = 0;
-
-    tmp = state->buffer + state->buffer_point;
-
-    SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("splitting %s\n", tmp));
-
-    while (*tmp != '\0')
+    if (rc < 0)
     {
-        if (*tmp == ';')
-        {
-            cnt++;
-        }
-        tmp++;
-    }
-    SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("%u fields\n", cnt));
-
-    *fields = globus_libc_calloc(cnt, sizeof(char **));
-
-    if (*fields == NULL)
-    {
-        rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
-        goto error;
-    }
-    *nfields = cnt;
-
-    tmp = state->buffer + state->buffer_point;
-
-    (*fields)[i++] = tmp;
-
-    while (*tmp != '\0' && i < cnt)
-    {
-        if (*tmp == ';')
-        {
-            (*fields)[i++] = tmp+1;
-            *tmp = '\0';
-        }
-        tmp++;
+        rc = EOF;
     }
 
-#   if BUILD_DEBUG
-    {
-        for (i = 0; i < cnt; i++)
-        {
-            SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("field[%u]=%s\n",
-                        i, (*fields)[i]));
-        }
-    }
-#   endif
+    *end_of_parse = start_of_line;
 
-    SEGPbsExit();
-
-    return 0;
-
-error:
     SEGPbsExit();
     return rc;
 }
-/* globus_l_pbs_split_into_fields() */
+/* globus_l_pbs_parse_events() */
 
 /* Leap year is year divisible by 4, unless divisibly by 100 and not by 400 */
 #define IS_LEAP_YEAR(Y) \
      (!(Y % 4)) && ((Y % 100) || !(Y % 400))
 static
 void
-globus_l_pbs_normalize_date(
+globus_l_pbs_increment_date(
     struct tm *                         tm)
 {
     int                                 test_year;
@@ -1155,6 +988,10 @@ globus_l_pbs_normalize_date(
         31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 
     };
 
+    /* Increment day of the month */
+    tm->tm_mday++;
+
+    /* Handle end of month or year overflow */
     do
     {
         if (overflow_days > 0)
@@ -1176,4 +1013,36 @@ globus_l_pbs_normalize_date(
                 : tm->tm_mday - mday_max[tm->tm_mon];
     } while (overflow_days > 0);
 }
+/* globus_l_pbs_increment_date() */
 
+/* Computes a time_t which is the start of a day. If the when param is
+ * non-NULL, the returned value is the time_t value of the start of
+ * the day containing *when. If when is NULL, the returned value is the
+ * time_t value of the start of the current day.
+ */
+static
+time_t
+globus_l_pbs_make_start_of_day(time_t * when)
+{
+    time_t now = time(NULL);
+    struct tm now_tm;
+
+    if (when)
+    {
+        now = *when;
+    }
+
+    if (localtime_r(&now, &now_tm))
+    {
+        now_tm.tm_hour = 0;
+        now_tm.tm_min = 0;
+        now_tm.tm_sec = 0;
+
+        return mktime(&now_tm);
+    }
+    else
+    {
+        return (time_t) -1;
+    }
+}
+/* globus_l_pbs_get_start_of_day() */

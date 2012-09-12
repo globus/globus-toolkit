@@ -15,8 +15,8 @@
 
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
-Version:	1.5
-Release:	5%{?dist}
+Version:	1.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
@@ -270,6 +270,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Sep 12 2012 Joseph Bester <bester@mcs.anl.gov> - 1.6-1
+- GT-276: PBS SEG module isn't robust against log files becoming unavailable
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 1.5-5
 - GT 5.2.2 final
 
