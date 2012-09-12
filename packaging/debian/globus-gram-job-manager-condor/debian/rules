@@ -11,7 +11,7 @@ endif
 
 name = globus-gram-job-manager-condor
 _name = globus_gram_job_manager_condor
-version = 1.3
+version = 1.4
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages

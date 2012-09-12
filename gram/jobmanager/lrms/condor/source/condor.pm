@@ -663,6 +663,7 @@ sub poll
     my $num_run;
     my $num_evict;
     my $num_abort;
+    my $record = {};
     local(*CONDOR_LOG_FILE);
 
     $self->log("polling job " . $description->jobid());

@@ -8,8 +8,8 @@
 
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
-Version:	1.3
-Release:	6%{?dist}
+Version:	1.4
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
@@ -125,6 +125,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/globus-condor.conf
 
 %changelog
+* Wed Sep 12 2012 Joseph Bester <bester@mcs.anl.gov> - 1.4-1
+- globus bugzilla #5143: DONE state never reported for Condor jobs when using Condor-G grid monitor
+
 * Wed Aug 15 2012 Joe Bester <jbester@mactop2.local> - 1.3-6
 - GT-267: /etc/globus/globus-condor.conf is not marked as a config file in RPM spec
 
