@@ -22,7 +22,7 @@ LOGFILE=install.log
 umask 0022
 cd `dirname "$0"`
 GC_LOCATION="${PWD}"
-GC_ROOT="/"
+GC_ROOT=""
 CONFIG=config.`date +%Y%m%d_%H%M`
 
 unset INSTALLATION \

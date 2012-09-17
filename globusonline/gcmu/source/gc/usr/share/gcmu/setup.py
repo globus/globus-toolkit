@@ -37,6 +37,8 @@ except KeyError:
 
 try:
     GC_ROOT = os.environ['GC_ROOT']
+    if GC_ROOT is '':
+        GC_ROOT = '/'
 except KeyError:
     raise Exception("Need GC_ROOT defined")
 
