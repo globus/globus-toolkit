@@ -93,3 +93,6 @@ globus_authz_null_callout	gsi/authz_null_callout/source	gpt
 globus_gridmap_callout_error	gsi/gridmap_callout/error	gpt
 globus_gridmap_verify_myproxy_callout gsi/gridmap_verify_myproxy_callout gpt
 globus_gridmap_callout	gsi/gridmap_callout/source	gpt
+
+# GCMU
+gcmu    globusonline/gcmu/source tar GCMU_NATIVE_1_2_0
