@@ -1,4 +1,0 @@
-method = ftp
-ftp_root = http://
-ftp_target = vdt.cs.wisc.edu/nmi/zlib-1.2.3.tar.gz
-untar = true
