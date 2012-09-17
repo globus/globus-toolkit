@@ -22,7 +22,7 @@ LOGFILE=install.log
 umask 0022
 cd `dirname "$0"`
 GC_LOCATION="${PWD}"
-GC_ROOT="${GC_LOCATION}/gc"
+GC_ROOT="/"
 CONFIG=config.`date +%Y%m%d_%H%M`
 
 unset INSTALLATION \
@@ -88,34 +88,9 @@ prereq_test()
     [ -x /usr/bin/python ] \
     || error "Globus Connect Multi-User requires Python interpreter (/usr/bin/python)."
 
-    # GLOBUS_LOCATION is needed by $GC_ROOT/user/share/gcmu/setup.py and
-    # to invoke openssl provided with GT components. We cannot use
-    # system-provided GT because a GridFTP server uses an authz callout
-    case "$SYSTEM" in
-    Linux)
-        [ -e /etc/init.d/xinetd ] \
-        || error "Globus Connect Multi-User requires xinetd daemon."
-	if [ `getconf LONG_BIT` = 64 ]; then
-	    export GLOBUS_LOCATION="$GC_LOCATION/Linux_amd64"
-	else
-	    export GLOBUS_LOCATION="$GC_LOCATION/Linux_i386"
-	fi
-	;;
-    SunOS)
-#	export GLOBUS_LOCATION="$GC_LOCATION/SunOS_amd64"
-	error "The system $SYSTEM is not supported by GCMU."
-	;;
-    Darwin)
-        VER=`uname -r`
-        MAJ=`echo $VER | sed -e 's/\..*//'`
-        [ $MAJ -lt 8 ] \
-        && error "GCMU supports Mac OS X v10.4 (Darwin 8.0) or newer."
-	export GLOBUS_LOCATION="$GC_LOCATION/Darwin_amd64"
-	;;
-    *)
-	error "The system $SYSTEM is not supported by GCMU."
-	;;
-    esac
+    # GLOBUS_LOCATION is needed by $GC_ROOT/user/share/gcmu/setup.py 
+    # It is easier to set it here than to try to patch other things.
+    export GLOBUS_LOCATION="/usr"
 }
 prereq_test
 
