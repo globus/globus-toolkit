@@ -14,10 +14,9 @@ operating system.
 Prerequisites:
 
 You need a machine (with root privileges) that
- - Runs a supported Linux distribution (with glibc >= 2.3.4) or Mac OS X >= 10.4
-   (Darwin >= 8.0). GCMU is currently tested on Debian 6, Centos 5, Ubuntu 10,
-   Fedora 14, Mac OS X 10.6.8 (Darwin 10.8.0).
- - Has xinetd installed (Linux only)
+ - Runs a supported Linux distribution GCMU is currently tested on Debian 6,
+   Centos 5 and 6, Ubuntu 10.04, 10.10, 11.04, 11.10, and 12.04,
+   Fedora 16 and 17
 
 Load your ssh public key into your Globus Online account (one-time action)
  - Sign in to Globus Online (if you do not have an account, create one at
@@ -38,21 +37,18 @@ Firewall
 
 
 
-To install, reinstall or reconfigure GCMU, change directory to gcmu-1.1.5 and
-execute the script
-
-# ./install
+To install, reinstall or reconfigure GCMU, as root, run the command
+# /usr/share/gcmu/install
 
 The script will ask for all the required information, connect to Globus Online,
 obtain X.509 certificates, configure the environment, run a GridFTP server and
 a MyProxy server with MyProxy CA and make the GridFTP server available as
-an endpoint on Globus Online. If you run the script as a non-root user you will
-be instructed to do an additional configuration step requiring root privileges.
+an endpoint on Globus Online. 
+
 Root privileges are needed to copy xinetd configuration files for GridFTP and
-MyProxy server and restart xinetd daemon. The commands that need root
-privileges are gathered in the script 'root-setup'.
+MyProxy server and restart xinetd daemon. 
 
 To stop all GCMU services (GridFTP server and MyProxy server),
 and uninstall GCMU by removing all files, run
 
-# ./uninstall
+# /usr/share/gcmu/uninstall
