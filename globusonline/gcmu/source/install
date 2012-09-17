@@ -18,12 +18,19 @@
 VERSION=1.1.5
 GOCLI=cli.globusonline.org
 GORELAY=relay.globusonline.org
-LOGFILE=install.log
+LOGFILE=/var/log/gcmu-install.log
 umask 0022
 cd `dirname "$0"`
 GC_LOCATION="${PWD}"
 GC_ROOT=""
 CONFIG=config.`date +%Y%m%d_%H%M`
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "GCMU install must be run as root" 1>&2
+    exit 1
+fi
+
+echo "Logging to /var/log/gcmu-install.log"
 
 unset INSTALLATION \
     HOSTNAME \
