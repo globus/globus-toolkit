@@ -215,24 +215,32 @@ installation_menu()
     echo "   MyProxy CA (as created by #1)."
     echo "X. Exit"
     echo
-    echo -n "Your choice [1]: "
-    if [ -z "$INSTALLATION" ]; then
-	read INSTALLATION
-    else
-	echo $INSTALLATION
-    fi
-    case $INSTALLATION in
-	1|2|3)
-	    ;;
-	x|X)
-	    exit 0
-	    ;;
-	"")
-	    INSTALLATION=1
-	    ;;
-	*) installation_menu
-	    ;;
-    esac
+    installation_choice=0
+
+    while [ "$installation_choice" = "0" ]; do
+        printf "Your choice [1]: "
+        if [ -z "$INSTALLATION" ]; then
+            read INSTALLATION
+        else
+            echo $INSTALLATION
+        fi
+        case $INSTALLATION in
+            1|2|3)
+                installation_choice=1
+                ;;
+            x|X)
+                installation_choice=1
+                exit 0
+                ;;
+            "")
+                installation_choice=1
+                INSTALLATION=1
+                ;;
+            *)  installation_choice=0
+                unset INSTALLATION
+                ;;
+        esac
+    done
 }
 installation_menu
 
@@ -280,7 +288,7 @@ go_username()
     echo "to GO CLI from this machine by doing"
     echo "'ssh <Your-GO-Username>@cli.globusonline.org'"
     echo
-    echo -n "GO Username [$LOGNAME]: "
+    printf "GO Username [$LOGNAME]: "
     if [ -z "$GO_USER" ]; then
         read GO_USER
     else
@@ -297,7 +305,7 @@ go_endpoint()
 {
     HOST=`echo $FQDN | sed -e 's/\..*//'`
     echo
-    echo -n "Endpoint name [$HOST]: "
+    printf "Endpoint name [$HOST]: "
     if [ -z "$ENDPOINT" ]; then
 	read ENDPOINT
     else
@@ -317,7 +325,7 @@ endpoint_public()
     echo "endpoint seen by all GO users as '${GO_USER}#${ENDPOINT}'."
     echo "Would you like the endpoint '${ENDPOINT}' to be public?"
     echo
-    echo -n "Public (Y/N) [N]: "
+    printf "Public (Y/N) [N]: "
     if [ -z "$PUBLIC" ]; then
 	read PUBLIC
     else
@@ -338,7 +346,7 @@ endpoint_fqdn()
     echo "GO will connect to the GridFTP server using an FQDN hostname. Please,"
     echo "specify an FQDN hostname of this machine."
     echo
-    echo -n "Hostname [$FQDN]: "
+    printf "Hostname [$FQDN]: "
     if [ -z "$HOSTNAME" ]; then
 	read HOSTNAME
     else
@@ -367,7 +375,7 @@ restrict_paths()
     echo "Note that this option will only be able to make the permissions more"
     echo "restrictive than the ones enforced by OS"
     echo
-    echo -n "Restrict paths []: "
+    printf "Restrict paths []: "
     if [ -z "$RESTRICT_PATHS" ]; then
 	read RESTRICT_PATHS
     else
@@ -390,7 +398,7 @@ data_ip_address()
     echo "to access the GridFTP server. Please, specify a public IP address"
     echo "assigned to this system."
     echo
-    echo -n "Public IP Address: "
+    printf "Public IP Address: "
     read DATA_IP
 }
 if [ x$EC2 = xtrue ]; then
@@ -409,7 +417,7 @@ myproxy()
     echo "Please, specify an endpoint already associated with a MyProxy server"
     echo "you would like to use."
     echo
-    echo -n "GO endpoint [test]: "
+    printf "GO endpoint [test]: "
     if [ -z "$MYPROXY" ]; then
 	read MYPROXY
     else
@@ -433,7 +441,7 @@ gridftp_control()
     echo "for example, 2811 is already in use on this server. Your firewall must"
     echo "allow in-bound connections to this server on this port."
     echo
-    echo -n "Port [2811]: "
+    printf "Port [2811]: "
     if [ -z "$GRIDFTP_PORT" ]; then
 	read GRIDFTP_PORT
     else
@@ -452,7 +460,7 @@ gridftp_inbound()
     echo "for inbound data channel connections. Your firewall must allow inbound"
     echo "connections to this server for this port range."
     echo
-    echo -n "Port [50000,51000]: "
+    printf "Port [50000,51000]: "
     if [ -z "$GRIDFTP_INBOUND" ]; then
 	read GRIDFTP_INBOUND
     else
@@ -471,7 +479,7 @@ gridftp_outbound()
     echo "for outbound data channel connections. Your firewall must allow outbound"
     echo "connections from this server for this port range."
     echo
-    echo -n "Port [50000,51000]: "
+    printf "Port [50000,51000]: "
     if [ -z "$GRIDFTP_OUTBOUND" ]; then
 	read GRIDFTP_OUTBOUND
     else
@@ -492,7 +500,7 @@ myproxy_port()
     echo "7512 is already in use on this server. Your firewall must allow"
     echo "in-bound connections to this server on this port."
     echo
-    echo -n "Port [7512]: "
+    printf "Port [7512]: "
     if [ -z "$MYPROXY_PORT" ]; then
 	read MYPROXY_PORT
     else
@@ -502,7 +510,7 @@ myproxy_port()
 	MYPROXY_PORT=7512
     fi
 }
-if [ $INSTALLATION -eq 1 ]; then
+if [ "$INSTALLATION" = 1 ]; then
 	myproxy_port
 fi
 
@@ -529,7 +537,7 @@ ssh_test()
     echo
     echo "Trying to connect to the GO CLI."
     while [ -z "${SSHID}" ]; do
-	echo -n "Enter the full path to a file with ssh private key [$SSHID_DEFAULT]: "
+	printf "Enter the full path to a file with ssh private key [$SSHID_DEFAULT]: "
 	if [ -z "$SSHKEY" ]; then
 	    read SSHID
 	elif [ "$SSHKEY" != "agent_forwarding" ]; then
@@ -942,7 +950,7 @@ if [ `id -u` -eq 0 ]; then
 	    echo "the servers are in ${GC_ROOT}/usr/share/gcmu/gridftp-go and"
 	    echo "${GC_ROOT}/usr/share/gcmu/myproxy-go."
 	    echo "Do you want to copy these files to /etc/xinetd.d and restart xinetd daemon?"
-	    echo -n "(Y/N) [Y]: "
+	    printf "(Y/N) [Y]: "
 	    if [ -z "$INETD" ]; then
 		read INETD
 	    else
@@ -971,7 +979,7 @@ if [ `id -u` -eq 0 ]; then
 	    echo "the servers are in ${GC_LOCATION}/org.globusonline.gridftp.plist"
 	    echo "and ${GC_LOCATION}/org.globusonline.myproxy.plist."
 	    echo "Do you want to copy these files to /System/Library/LaunchDaemons and load?"
-	    echo -n "(Y/N) [Y]: "
+	    printf "(Y/N) [Y]: "
 	    if [ -z "$INETD" ]; then
 		read INETD
 	    else
@@ -1012,7 +1020,7 @@ if [ `id -u` -eq 0 ]; then
 	    echo "xinetd daemon. An appropriate xinetd configuration file for GridFTP server is"
 	    echo "in ${GC_ROOT}/usr/share/gcmu/gridftp-go. Do you want to copy this file"
 	    echo "to /etc/xinetd.d and restart xinetd daemon?"
-	    echo -n "(Y/N) [Y]: "
+	    printf "(Y/N) [Y]: "
 	    if [ -z "$INETD" ]; then
 		read INETD
 	    else
@@ -1039,7 +1047,7 @@ if [ `id -u` -eq 0 ]; then
 	    echo "lauchd daemon. An appropriate launchd configuration file for GridFTP server is"
 	    echo "in ${GC_LOCATION}/org.globusonline.gridftp.plist. Do you want to copy this file"
 	    echo "to /System/Library/LaunchDaemons and load?"
-	    echo -n "(Y/N) [Y]: "
+	    printf "(Y/N) [Y]: "
 	    if [ -z "$INETD" ]; then
 		read INETD
 	    else
@@ -1082,7 +1090,7 @@ if [ `id -u` -eq 0 ]; then
 	    echo "xinetd daemon. An appropriate xinetd configuration file for GridFTP server is"
 	    echo "in ${GC_ROOT}/usr/share/gcmu/gridftp-go. Do you want to copy this file"
 	    echo "to /etc/xinetd.d and restart xinetd daemon?"
-	    echo -n "(Y/N) [Y]: "
+	    printf "(Y/N) [Y]: "
 	    if [ -z "$INETD" ]; then
 		read INETD
 	    else
