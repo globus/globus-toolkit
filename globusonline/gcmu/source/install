@@ -703,6 +703,8 @@ myproxy_ca()
 EOF
 }
 
+myproxy_path=/var/lib/gcmu/myproxy
+
 scripts_and_conf()
 {
     case "$SYSTEM" in
@@ -721,7 +723,7 @@ service myproxy-server
     env		+=X509_USER_KEY=${GC_ROOT}/etc/grid-security/ltakey.pem
     env		+=X509_USER_PROXY=""
     server	= $GLOBUS_LOCATION/sbin/myproxy-server
-    server_args	= -c ${GC_ROOT}/etc/myproxy-go.config -s ${GC_ROOT}/var/myproxy
+    server_args	= -c ${GC_ROOT}/etc/myproxy-go.config -s ${GC_ROOT}${myproxy_path}
     env		+= GLOBUS_LOCATION=$GLOBUS_LOCATION
     env		+= LD_LIBRARY_PATH=$GLOBUS_LOCATION/lib
     disable	= no
@@ -746,7 +748,7 @@ EOF
 		<string>-c</string>
 		<string>${GC_ROOT}/etc/myproxy-go.config</string>
 		<string>-s</string>
-		<string>${GC_ROOT}/var/myproxy</string>
+		<string>${GC_ROOT}${myproxy_path}</string>
 	</array>
 	<key>Sockets</key>
 	<dict>
@@ -942,12 +944,12 @@ esac
 
 
 if [ `id -u` -eq 0 ]; then
-    if [ -e "${GC_ROOT}/var/myproxy" ]; then
-	chown root "${GC_ROOT}/var/myproxy"
+    if [ -e "${GC_ROOT}${myproxy_path}" ]; then
+	chown root "${GC_ROOT}${myproxy_path}"
     else
-	mkdir "${GC_ROOT}/var/myproxy"
+	mkdir "${GC_ROOT}${myproxy_path}"
     fi
-    chmod 0700 "${GC_ROOT}/var/myproxy"
+    chmod 0700 "${GC_ROOT}${myproxy_path}"
     case $INSTALLATION in
     1)
 	if [ "$SYSTEM" = Linux ]; then
