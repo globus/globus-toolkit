@@ -1,0 +1,31 @@
+This work was packaged for Debian by:
+
+    Globus Support <support@globus.org> on Wed, 22 Aug 2012 13:04:05 -0400
+
+It was downloaded from:
+
+    http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/gcmu-1.2.tar.gz
+
+Copyright:
+
+    Copyright 2010-2011 University of Chicago
+
+License:
+
+    Apache License 2.0
+
+The Debian packaging is:
+
+    Copyright (C) 2012 Globus Support <support@globus.org>
+
+# Please chose a license for your packaging work. If the program you package
+# uses a mainstream license, using the same license is the safest choice.
+# Please avoid to pick license terms that are more restrictive than the
+# packaged work, as it may make Debian's contributions unacceptable upstream.
+# If you just want it to be GPL version 3, leave the following lines in.
+
+and is licensed under the Apache License 2.0
+see "/usr/share/common-licenses/Apache-2.0".
+
+# Please also look if there are files or directories which have a
+# different copyright/license attached and list them here.
