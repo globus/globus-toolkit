@@ -59,16 +59,17 @@ cp root-unsetup $RPM_BUILD_ROOT/usr/share/gcmu/uninstall
 mkdir -p $RPM_BUILD_ROOT/var/lib/gcmu
 mkdir -p $RPM_BUILD_ROOT/usr/etc/ssh
 mkdir -p $RPM_BUILD_ROOT/usr/share/doc/gcmu
+
+# Compile python modules explicitly. Some RPM versions do this for us, but not
+# all
+python -c "import compileall; compileall.compile_dir('$RPM_BUILD_ROOT/usr/share/gcmu')"
+python -O -c "import compileall; compileall.compile_dir('$RPM_BUILD_ROOT/usr/share/gcmu')"
+
 # Generate package filelists
 cd $RPM_BUILD_ROOT
 find ./ -type f |sed s/^\.// > $RPM_BUILD_DIR/%{_name}-src/package.filelist
 echo "/var/lib/gcmu" >> $RPM_BUILD_DIR/%{_name}-src/package.filelist
 echo "/usr/etc/ssh" >> $RPM_BUILD_DIR/%{_name}-src/package.filelist
-pys=`grep '\.py$' $RPM_BUILD_DIR/%{_name}-src/package.filelist`
-for x in $pys; do
-    echo "$x"c >> $RPM_BUILD_DIR/%{_name}-src/package.filelist
-    echo "$x"o >> $RPM_BUILD_DIR/%{_name}-src/package.filelist
-done
 
 %clean
 rm -rf $RPM_BUILD_ROOT
