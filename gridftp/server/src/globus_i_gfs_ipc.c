@@ -69,6 +69,7 @@ static const char * globus_l_gfs_local_version = "IPC Version 1.1";
 static globus_mutex_t                   globus_l_ipc_mutex;
 static globus_cond_t                    globus_l_ipc_cond;
 static globus_hashtable_t               globus_l_ipc_request_table;
+static globus_hashtable_t               globus_l_ipc_op_info_table;
 static globus_bool_t                    globus_l_ipc_close_called = GLOBUS_FALSE;
 
 globus_xio_stack_t                      globus_i_gfs_ipc_xio_stack;
@@ -197,6 +198,7 @@ typedef struct globus_gfs_ipc_request_s
     globus_gfs_finished_info_t *        reply;
     globus_gfs_event_info_t *           event_reply;
     void *                              info_struct;
+    int                                 op_info_id;
 } globus_gfs_ipc_request_t;
 
 typedef struct globus_l_gfs_ipc_connection_s
@@ -3282,11 +3284,12 @@ globus_gfs_event_info_t *
 globus_l_gfs_ipc_unpack_event_reply(
     globus_i_gfs_ipc_handle_t *         ipc,
     globus_byte_t *                     buffer,
-    globus_size_t                       len)
+    globus_size_t                       len,
+    char **                             remote_ip)
 {
     int                                 ctr;
     int                                 range_size;
-    globus_gfs_event_info_t *      reply;
+    globus_gfs_event_info_t *           reply;
     globus_off_t                        offset;
     globus_off_t                        length;
     GlobusGFSName(globus_l_gfs_ipc_unpack_event_reply);
@@ -3309,6 +3312,10 @@ globus_l_gfs_ipc_unpack_event_reply(
             GFSDecodeUInt32P(buffer, len, reply->event_arg);
             GFSDecodeUInt32(buffer, len, reply->event_mask);
             GFSDecodeUInt32(buffer, len, reply->node_count);
+            break;
+
+        case GLOBUS_GFS_EVENT_TRANSFER_CONNECTED:
+            GFSDecodeString(buffer, len, (*remote_ip));
             break;
             
         case GLOBUS_GFS_EVENT_DISCONNECTED:
@@ -3763,6 +3770,20 @@ globus_l_gfs_ipc_event_reply_kickout(
     GlobusGFSDebugExit();
 }
 
+
+void *
+globus_i_gfs_ipc_query_op_info(
+    int                                 op_info_id)    
+{
+    void *                              data;
+    
+    data = globus_hashtable_remove(
+        &globus_l_ipc_op_info_table, (void *) op_info_id);
+       
+    return data;   
+}
+
+
 static
 void
 globus_l_gfs_ipc_request_read_body_cb(
@@ -3781,6 +3802,7 @@ globus_l_gfs_ipc_request_read_body_cb(
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_gfs_finished_info_t *        reply = NULL;
     globus_gfs_event_info_t *           event_reply;
+    char *                              remote_ip = NULL;
     GlobusGFSName(globus_l_gfs_ipc_request_read_body_cb);
     GlobusGFSDebugEnter();
 
@@ -3847,7 +3869,7 @@ globus_l_gfs_ipc_request_read_body_cb(
 
                     case GLOBUS_GFS_OP_EVENT_REPLY:
                         event_reply = globus_l_gfs_ipc_unpack_event_reply(
-                            ipc, buffer, len);
+                            ipc, buffer, len, &remote_ip);
                         if(event_reply == NULL)
                         {
                             result = GlobusGFSErrorIPC();
@@ -3855,6 +3877,36 @@ globus_l_gfs_ipc_request_read_body_cb(
                         }
                         event_reply->id = request->id;
                         request->event_reply = event_reply;
+                        if(request->op_info_id && remote_ip)
+                        {
+                            char *      ent;
+                            char *      new;
+
+                            ent = globus_hashtable_remove(
+                                &globus_l_ipc_op_info_table, request->op_info_id);
+                            
+                            if(ent)
+                            {
+                                new = globus_common_create_string(
+                                    "%s,%s", ent, remote_ip);
+                                
+                                free(remote_ip);
+                                free(ent);
+                                remote_ip = new;
+                                
+                                globus_hashtable_insert(
+                                    &globus_l_ipc_op_info_table,
+                                    request->op_info_id,
+                                    remote_ip);
+                            }
+                            else
+                            {
+                                globus_hashtable_insert(
+                                    &globus_l_ipc_op_info_table,
+                                    request->op_info_id,
+                                    remote_ip);
+                            }
+                        }
                         globus_l_gfs_ipc_event_reply_kickout(request);
 
                         new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
@@ -4737,6 +4789,13 @@ globus_gfs_ipc_init(
         64,
         globus_l_gfs_ipc_hashtable_session_hash,
         globus_l_gfs_ipc_hashtable_session_keyeq);
+        
+    globus_hashtable_init(
+        &globus_l_ipc_op_info_table, 
+        8,
+        globus_hashtable_int_hash,
+        globus_hashtable_int_keyeq);
+
 
     globus_mutex_init(&globus_l_ipc_mutex, NULL); 
     globus_cond_init(&globus_l_ipc_cond, NULL); 
@@ -5279,6 +5338,12 @@ globus_gfs_ipc_reply_event(
                         buffer, ipc->buffer_size, ptr, reply->node_count);
                     break;
                     
+                case GLOBUS_GFS_EVENT_TRANSFER_CONNECTED:
+                    GFSEncodeString(
+                        buffer, ipc->buffer_size, ptr, 
+                        reply->op_info ? reply->op_info->remote_ip : NULL);
+                    break;
+                    
                 case GLOBUS_GFS_EVENT_DISCONNECTED:
                     GFSEncodeUInt32(
                         buffer, ipc->buffer_size, ptr, reply->data_arg);
@@ -5763,6 +5828,11 @@ globus_gfs_ipc_request_recv(
         request->id = globus_handle_table_insert(
             &ipc_handle->call_table, request, 1);
 
+        if(recv_info->op_info)
+        {
+            request->op_info_id = recv_info->op_info->id;
+        }
+        
         res = globus_l_gfs_ipc_transfer_pack(
             ipc, GLOBUS_GFS_OP_RECV, recv_info, request);
         if(res != GLOBUS_SUCCESS)
@@ -5821,6 +5891,11 @@ globus_gfs_ipc_request_send(
         request->id = globus_handle_table_insert(
             &ipc_handle->call_table, request, 1);
 
+        if(send_info->op_info)
+        {
+            request->op_info_id = send_info->op_info->id;
+        }
+
         res = globus_l_gfs_ipc_transfer_pack(
             ipc, GLOBUS_GFS_OP_SEND, send_info, request);
         if(res != GLOBUS_SUCCESS)
@@ -5873,6 +5948,11 @@ globus_gfs_ipc_request_list(
         request->type = GLOBUS_GFS_OP_LIST;
         request->id = globus_handle_table_insert(
             &ipc_handle->call_table, request, 1);
+
+        if(data_info->op_info)
+        {
+            request->op_info_id = data_info->op_info->id;
+        }
 
         res = globus_l_gfs_ipc_transfer_pack(
             ipc, GLOBUS_GFS_OP_LIST, data_info, request);

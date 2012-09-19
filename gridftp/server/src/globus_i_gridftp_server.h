@@ -61,12 +61,14 @@ typedef struct
 
 typedef struct globus_i_gfs_op_info_s
 {
+    int                                 id;
     globus_hashtable_t                  custom_command_table;
     
     char **                             argv;
     int                                 argc;
     globus_i_gfs_cmd_ent_t *            cmd_ent;
     
+    char *                              remote_ip;
 } globus_i_gfs_op_info_t;
 
 void

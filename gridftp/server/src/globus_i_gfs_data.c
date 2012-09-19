@@ -64,7 +64,7 @@ static globus_bool_t                    gfs_l_data_brain_ready = GLOBUS_FALSE;
 static globus_hashtable_t               gfs_l_data_net_allowed_drivers;
 static globus_hashtable_t               gfs_l_data_disk_allowed_drivers;
 static globus_list_t *                  globus_l_gfs_path_alias_list = NULL;
-
+static int                              globus_l_gfs_op_info_ctr = 1;
 
 typedef enum
 {
@@ -198,6 +198,7 @@ typedef struct globus_l_gfs_data_operation_s
     globus_l_gfs_data_info_type_t       type;
 
     int                                 id;
+    int                                 op_info_id;
     globus_gfs_ipc_handle_t             ipc_handle;
 
     uid_t                               uid;
@@ -5319,6 +5320,15 @@ globus_i_gfs_data_request_recv(
 /*        || data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID);*/
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
 
+    if(!data_handle->is_mine)
+    {
+        op->op_info_id = globus_l_gfs_op_info_ctr++;
+        if(!recv_info->op_info)
+        {
+            recv_info->op_info = globus_calloc(1, sizeof(globus_i_gfs_op_info_t));
+        }
+        recv_info->op_info->id = op->op_info_id;
+    }
 
     op->dsi = globus_l_gfs_data_new_dsi(session_handle, recv_info->module_name);
     if(op->dsi == NULL)
@@ -5448,6 +5458,16 @@ globus_i_gfs_data_request_send(
 /*
         || data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID); */
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
+
+    if(!data_handle->is_mine)
+    {
+        op->op_info_id = globus_l_gfs_op_info_ctr++;
+        if(!send_info->op_info)
+        {
+            send_info->op_info = globus_calloc(1, sizeof(globus_i_gfs_op_info_t));
+        }
+        send_info->op_info->id = op->op_info_id;
+    }
 
     op->dsi = globus_l_gfs_data_new_dsi(session_handle, send_info->module_name);
     if(op->dsi == NULL)
@@ -6128,6 +6148,16 @@ globus_i_gfs_data_request_list(
 */
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
 
+    if(!data_handle->is_mine)
+    {
+        data_op->op_info_id = globus_l_gfs_op_info_ctr++;
+        if(!list_info->op_info)
+        {
+            list_info->op_info =  globus_calloc(1, sizeof(globus_i_gfs_op_info_t));
+        }
+        list_info->op_info->id = data_op->op_info_id;
+    }
+
     if(session_handle->dsi->list_func != NULL)
     {
         object.name = list_info->pathname;
@@ -6471,15 +6501,25 @@ globus_l_gfs_data_begin_cb(
         event_reply.type = GLOBUS_GFS_EVENT_TRANSFER_CONNECTED;
         event_reply.id = op->id;
         event_reply.event_arg = op;
+        
         if(op->event_callback != NULL)
         {
             op->event_callback(&event_reply, op->user_arg);
         }
         else
         {
-            globus_gfs_ipc_reply_event(op->ipc_handle, &event_reply);
-        }
+            event_reply.op_info = globus_calloc(1, sizeof(globus_i_gfs_op_info_t));
+            event_reply.op_info->remote_ip = globus_libc_strdup(op->remote_ip);
 
+            globus_gfs_ipc_reply_event(op->ipc_handle, &event_reply);
+            
+            if(event_reply.op_info->remote_ip)
+            {
+                globus_free(event_reply.op_info->remote_ip);
+            }
+            globus_free(event_reply.op_info);
+        }
+        
         if((!op->writing || op->retr_markers)
             && (op->data_handle->info.mode == 'E' || 
             globus_i_gfs_config_bool("always_send_markers")))
@@ -6697,6 +6737,16 @@ globus_l_gfs_data_end_transfer_kickout(
         }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
+
+    if(!op->data_handle->is_mine)
+    {
+        char *                          remote_ip = NULL;
+        remote_ip = globus_i_gfs_ipc_query_op_info(op->op_info_id);
+        if(remote_ip)
+        {
+            op->remote_ip = remote_ip;
+        }
+    }
 
     if(op->cached_res == GLOBUS_SUCCESS)
     {

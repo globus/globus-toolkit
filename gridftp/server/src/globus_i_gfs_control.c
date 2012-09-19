@@ -1817,6 +1817,10 @@ globus_l_gfs_request_transfer_event(
             {
                 globus_free(info->expected_checksum);
             }
+            if(info->op_info)
+            {
+                globus_free(info->op_info);
+            }
             globus_free(info);
         }
         globus_l_gfs_request_info_destroy(request);
@@ -1987,7 +1991,12 @@ globus_l_gfs_data_transfer_cb(
             {
                 globus_free(info->expected_checksum);
             }
+            if(info->op_info)
+            {
+                globus_free(info->op_info);
+            }
             globus_free(info);
+
         }
         globus_l_gfs_request_info_destroy(request);
     }
