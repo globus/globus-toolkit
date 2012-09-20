@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.14
+Version:	6.15
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2rc1/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/updates/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -180,6 +180,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Sep 19 2012 Michael Link <mlink@mcs.anl.gov> - 6.15-1
+- GT-269: GridFTP servers do not report the DEST IP address in transfer logs or usage stats when configured for striping or split processes
+
 * Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 6.14-1
 - GT-254: Gridftp server uses dynamic string as sprintf argument
 

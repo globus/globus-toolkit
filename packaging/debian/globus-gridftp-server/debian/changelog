@@ -1,3 +1,9 @@
+globus-gridftp-server (6.15-1) unstable; urgency=low
+
+  * GT-269: GridFTP servers do not report the DEST IP address in transfer logs or usage stats when configured for striping or split processes
+
+ -- Globus Toolkit <support@globus.org>  Wed, 19 Sep 2012 18:18:01 -0500
+
 globus-gridftp-server (6.14-1) unstable; urgency=low
 
   * GT-254: Gridftp server uses dynamic string as sprintf argument
