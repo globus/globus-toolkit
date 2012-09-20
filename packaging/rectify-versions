@@ -1,123 +1,29 @@
-#! /usr/bin/perl
+#!/usr/bin/perl
 
 use Getopt::Long;
 use POSIX;
 use XML::Parser;
-use User::pwent;
-use Sys::Hostname;
 use Pod::Usage;
 use Data::Dumper;
 use strict;
 
 my $gptfile;
-my $setupfile;
-my $email = "support\@globus.org";
-my $nodoc;
-my $help;
-my $packagelistfile;
 my $verbose;
 my $gtrelease = undef;
 my $gtreleaseuri = undef;
-my $changelog_from_cvs = 0;
 my $changelog = undef;
-my $prompt = 0;
-my $fullname = "Globus Toolkit";
-my $bumprelease = 0;
+my %changelogs;
+my $prompt_for_changelog = undef;
+my $cvs_changelog = undef;
+my $bumprelease = undef;
+my $new_release = undef;
+my $dryrun = 0;
 my $update;
+my $help;
+my @packagelist = ();
 
-GetOptions('gptfile=s' => \$gptfile,
-           'packagelistfile=s' => \$packagelistfile,
-           'email=s' => \$email,
-           'verbose' => \$verbose,
-           'fullname=s' => \$fullname,
-           'release=s' => \$gtrelease,
-           'changelog=s' => \$changelog,
-           'cvs-changelog' => \$changelog_from_cvs,
-           'bumprelease' => \$bumprelease,
-           'prompt' => \$prompt,
-           'update' => \$update,
-           'help' => \$help);
-
-Pod::Usage::pod2usage() if defined $help;
-
-setlocale(LC_TIME, 'C');
-
-if (!$gtrelease)
-{
-    my $fh;
-    open($fh, "<fait_accompli/version");
-    chomp($gtrelease=<$fh>);
-    close($fh);
-}
-
-$gtrelease =~ m/^([0-9])+\.([0-9]+)\.([0-9]+)$/;
-if ($update)
-{
-    $gtreleaseuri="http://www.globus.org/ftppub/gt$1/$1.$2/$gtrelease/updates/src/";
-}
-else
-{
-    $gtreleaseuri="http://www.globus.org/ftppub/gt$1/$1.$2/$gtrelease/packages/src/";
-}
-
-my $login = getlogin || getpwuid($<);
-my $pw = getpwnam($login);
-my $host = hostname;
-
-$fullname = (split(/,/, $pw->gecos))[0] unless defined $fullname;
-$email = "$login\@$host" unless defined $email;
-
-my @packagelist;
-if ($packagelistfile ne '')
-{
-    open(PKG, "$packagelistfile");
-}
-else
-{
-    open(PKG, "etc/package-list-5.1.0");
-}
-while ( <PKG> )
-{
-    my ($pkg, $subdir, $pnb, $pkgtag) = split(' ', $_);
-    next if ($pkg =~ m/^#/ || $pkg =~ m/^$/);
-
-    next if ($pkg =~ m/openssh/);
-    push(@packagelist, "source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt.in");
-}
-
-my $allpkgmeta = {};
-my $gptpkgname;
-
-# Parse the metadata into an object that contains the name, version,
-# and dependencies
-$gptfile =~ s!^\./!!;
-$gptfile =~ s!/\./|//!!g;
-foreach my $gptmetadata (@packagelist)
-{
-    my $pkgmeta = parse_package($gptmetadata);
-
-    if ($gptmetadata eq $gptfile)
-    {
-        $gptpkgname = $pkgmeta->{DEBNAME};
-    }
-    $allpkgmeta->{$pkgmeta->{DEBNAME}} = $pkgmeta;
-}
-
-# Fake one for GPT
-$allpkgmeta->{'grid-packaging-tools'} = create_meta_for_gpt();
-
-if ($gptfile)
-{
-    update_debian($gptpkgname, $allpkgmeta, $bumprelease);
-}
-else
-{
-    foreach my $pkgname (keys %$allpkgmeta)
-    {
-        update_debian($pkgname, $allpkgmeta, 0);
-    }
-}
-
+# Parse a gpt source metadata package into a perl hash of values that
+# includes the package name, version, soname, and its dependencies.
 sub parse_package
 {
     my $parser = new XML::Parser(Style => 'Objects', Pkg => 'GPT');
@@ -151,33 +57,51 @@ sub parse_package
         {
             my $depname = $dep->{Name};
             my $deppkg = $dep->{Package} if defined $dep->{Package};
-            $depname = $depname . "-progs" if ($deppkg eq "pgm");
-            $depname = $depname . "-doc" if ($deppkg eq "doc");
-            $depname = "lib$depname" . $dep->{SONAME} if ($deppkg eq "rtl");
-            $depname = "lib$depname" . "-dev" if ($deppkg eq "dev");
-            $depname = "lib$depname" . "-dev" if ($type eq "compile");
-            $depname =~ tr/_/-/;
+
+            my ($deb_depname, $rpm_depname) = ($depname, $depname);
+
+            # Debian naming conventions
+            $deb_depname = $depname . "-progs" if ($deppkg eq "pgm");
+            $deb_depname = $depname . "-doc" if ($deppkg eq "doc");
+            $deb_depname = "lib$depname" . $dep->{SONAME} if ($deppkg eq "rtl");
+            $deb_depname = "lib$depname" . "-dev" if ($deppkg eq "dev");
+            $deb_depname = "lib$depname" . "-dev" if ($type eq "compile");
+            $deb_depname =~ tr/_/-/;
+
+            # RPM naming conventions
+            $rpm_depname = $depname . "-progs" if ($deppkg eq 'pgm');
+            $rpm_depname = $depname . "-doc" if ($deppkg eq 'doc');
+            $rpm_depname =~ tr/_/-/;
+
             my $baz = (grep {$_->isa('GPT::Version')} @{$dep->{Kids}})[0];
             my $depver_element = (grep {$_->isa('GPT::Simple_Version')}
                 @{$baz->{Kids}})[0];
             my $depver = $depver_element->{Major};
-            $srcdeps{$type}{$depname} = $depver
-                unless (defined $srcdeps{$type}{$depname}
-                        and $srcdeps{$type}{$depname} >= $depver);
-            $depsuntyped{$depname} = $depver
-                unless (defined $depsuntyped{$depname}
-                        and $depsuntyped{$depname} >= $depver);
+
+            $srcdeps{deb}{$type}{$deb_depname} = $depver
+                unless (defined $srcdeps{deb}{$type}{$deb_depname}
+                        and $srcdeps{deb}{$type}{$deb_depname} >= $depver);
+            $depsuntyped{deb}{$deb_depname} = $depver
+                unless (defined $depsuntyped{deb}{$deb_depname}
+                        and $depsuntyped{deb}{$deb_depname} >= $depver);
+
+            $srcdeps{rpm}{$type}{$rpm_depname} = $depver
+                unless (defined $srcdeps{rpm}{$type}{$rpm_depname}
+                        and $srcdeps{rpm}{$type}{$rpm_depname} >= $depver);
+            $depsuntyped{rpm}{$rpm_depname} = $depver
+                unless (defined $depsuntyped{rpm}{$rpm_depname}
+                        and $depsuntyped{rpm}{$rpm_depname} >= $depver);
         }
     }
-    my $debname = $gptname;
-    $debname =~ tr/_/-/;
+    my $native_name = $gptname;
+    $native_name =~ tr/_/-/;
 
     my $soname = int($gptmajorver) - int($gptage);
 
     return {
         GPTFILE => $_[0],
         NAME => $gptname,
-        DEBNAME => $debname,
+        NATIVE_NAME => $native_name,
         MAJOR => $gptmajorver,
         MINOR => $gptminorver,
         AGE => $gptage,
@@ -187,6 +111,7 @@ sub parse_package
     };
 }
 
+# Fake the above for the gpt package, which has not gpt metadata
 sub create_meta_for_gpt
 {
     my $pkgmeta;
@@ -201,7 +126,7 @@ sub create_meta_for_gpt
 
     $pkgmeta = {
         NAME => 'gpt',
-        DEBNAME => 'grid-packaging-tools',
+        NATIVE_NAME => 'grid-packaging-tools',
         MAJOR => $1,
         MINOR => $2,
         AGE => 0,
@@ -213,7 +138,193 @@ sub create_meta_for_gpt
     return $pkgmeta;
 }
 
-sub update_debian
+sub update_rpm($$$)
+{
+    my ($pkgname, $allpkgmeta, $bumprelease) = @_;
+    my $pkgmeta = $allpkgmeta->{$pkgname};
+    my $specfilename = "./fedora/" . $pkgname . ".spec";
+
+    if ($verbose) {print "Acting on $specfilename \n";}
+
+    my $version = $pkgmeta->{MAJOR} . '.' . $pkgmeta->{MINOR};
+
+    if (!open(FH, "+< $specfilename"))
+    {
+        print "Error opening: $specfilename\n";
+        next; 
+    }
+
+    # What we'll do is modify the line array of the specfile, replacing
+    # version, release, changelog, and any globus dependencies which need
+    # updating
+    my @ARRAY = <FH>; 
+    my $index;
+    my $changelogindex;
+    my $releaseindex;
+    my $releaseversion;
+    my $setreleaseversion;
+    my $releasesuffix;
+    my $specfile_changed = "";
+    my $version_changed = 0;
+
+    for ($index = 0; $index < $#ARRAY; $index++)
+    {
+        my $specline = $ARRAY[$index];
+
+        if ($specline =~ m/Version:\s*(\d+\.\d+)/)
+        {
+            if ($1 ne $version)
+            {
+                $specline = "Version:\t$version\n";
+                $setreleaseversion = 1;
+                $version_changed = 1;
+            }
+        }
+        elsif ($specline =~ m/Release:\s*(\d+)(.*)/)
+        {
+            $releaseindex = $index;
+            $releaseversion = $1;
+            $releasesuffix = $2;
+        }
+        elsif ($specline =~ m/\%changelog/)
+        {
+            $changelogindex = $index;
+        }
+        elsif ($specline =~ m/(Requires:\s*(\S*)\s*>=\s*)([0-9.]+)/)
+        {
+            # Kind of ugly here. What we do is see if the requirement package
+            # name is a gpt dependency. We try some variations on the name
+            # by stripping off common suffixes in the spec files. As long as
+            # no gpt package names end with any of these suffixes, this should
+            # work
+            my $requirement = $2;
+            my $requirever = $3;
+            my $old_requirever = $3;
+            my $base_requirement;
+            my @specsuffixes = ('', '-clients', '-devel', '-libs',
+                '-progs', '-server', '-setup-poll', '-setup-seg');
+
+            $base_requirement = $requirement;
+            $base_requirement =~ s/\%{\?_isa}//;
+
+            for my $suffix (@specsuffixes)
+            {
+                if ($base_requirement =~ m/$suffix$/)
+                {
+                    my $new_base = $base_requirement;
+                    $new_base =~ s/$suffix$//;
+
+                    if (exists $pkgmeta->{DEPSUNTYPED}->{rpm}{$new_base})
+                    {
+                        $requirever = $pkgmeta->{DEPSUNTYPED}->{rpm}{$new_base};
+                        last;
+                    }
+                }
+            }
+            if ($requirever != $old_requirever)
+            {
+                print "Updating version $requirement from $old_requirever to $requirever\n" if ($verbose);
+                $specline =~ s/(Requires:\s*\S+\s*>=\s*)[0-9.]+/$1$requirever/;
+                $specfile_changed = 1;
+            }
+        }
+        elsif ($specline =~ m/^Source:\s*(\S*)/ && $gtrelease)
+        {
+            if ($1 !~ m/$gtrelease/)
+            {
+                my $filename = $1;
+                $filename =~ s/.*\///;
+                $specline =~ s/^(Source:\s*)(\S*)(.*)/$1$gtreleaseuri$filename/;
+                $specfile_changed = 1;
+            }
+        }
+    }
+
+    my $changelogstring;
+
+    if ($cvs_changelog && $gtrelease)
+    {
+        my ($major, $minor, $micro) = split(/\./, $gtrelease);
+        my $old_tag = "globus_${major}_${minor}_" . ($micro-1);
+        my $new_tag = "globus_${major}_${minor}_branch";
+
+        my $changelogdir = $specfilename;
+        $changelogdir = $pkgmeta->{GPTFILE};
+        $changelogdir =~ s|(/pkgdata)?/pkg_data_src.gpt(.in)?||;
+        chomp($changelog = `cvs -q log -N -r$old_tag::$new_tag $changelogdir 2> /dev/null | grep -E '^[A-Z]+-[0-9]+'  | sort -u`);
+
+        if ($changelog eq '')
+        {
+            $changelog = undef;
+        }
+    }
+
+    if (!$dryrun)
+    {
+        if ($specfile_changed || $version_changed || $bumprelease)
+        {
+            if (!$changelog)
+            {
+                if ($changelogs{$pkgname})
+                {
+                    $changelogstring = "- " . join("\n- ", split(/\n/, $changelogs{$pkgname})) . "\n";
+                }
+                elsif ($prompt_for_changelog)
+                {
+                    print "Changelog entry for $pkgname [empty line to end]: ";
+                    $changelogstring = '';
+
+                    while (<>)
+                    {
+                        if ($_ eq "\n")
+                        {
+                            last;
+                        }
+                        $changelogstring .= "- $_";
+                    }
+                }
+
+                if ($changelogstring eq '')
+                {
+                    $changelogstring = "- Updated version numbers\n";
+                }
+            }
+            else
+            {
+                $changelogstring = "- " . join("\n- ", split(/\n/, $changelog)) . "\n";
+            }
+        }
+    }
+
+    if ($specfile_changed || $bumprelease)
+    {
+        $releaseversion++;
+    }
+
+    if ($setreleaseversion)
+    {
+        $releaseversion = $setreleaseversion;
+    }
+
+    if ($specfile_changed || $version_changed || $bumprelease)
+    {
+        $ARRAY[$changelogindex] = "%changelog\n* " . strftime('%a %b %d %Y', localtime) . " Globus Toolkit <support\@globus.org> - $version-$releaseversion\n$changelogstring\n";
+        print "Spec file $specfilename has been updated\n";
+    }
+
+      $ARRAY[$releaseindex] = "Release:\t$releaseversion$releasesuffix\n";
+
+    if (!$dryrun)
+    {
+        # Write back the spec file
+        seek(FH,0,0) or die "Seeking: $!"; 
+        print FH @ARRAY or die "Printing: $!"; 
+        truncate(FH,tell(FH)) or die "Truncating: $!"; 
+    }
+    close(FH) or die "Closing: $!";
+}
+
+sub update_debian($$$)
 {
     my ($pkgname, $allpkgmeta, $changed) = @_;
     my $pkgmeta = $allpkgmeta->{$pkgname};
@@ -250,7 +361,7 @@ sub update_debian
 sub update_control
 {
     my ($pkgmeta, $allpkgmeta) = @_;
-    my $controlpath = "./debian/$pkgmeta->{DEBNAME}/debian/control";
+    my $controlpath = "./debian/$pkgmeta->{NATIVE_NAME}/debian/control";
     my $soname = $pkgmeta->{SONAME};
     my $changed = 0;
     my $fd;
@@ -269,7 +380,7 @@ sub update_control
             my $newline;
             $in_description = 1;
             $newline = $line;
-            $newline =~ s/lib$pkgmeta->{DEBNAME}([0-9]+)/lib$pkgmeta->{DEBNAME}$pkgmeta->{SONAME}/g;
+            $newline =~ s/lib$pkgmeta->{NATIVE_NAME}([0-9]+)/lib$pkgmeta->{NATIVE_NAME}$pkgmeta->{SONAME}/g;
 
             if ($newline ne $line)
             {
@@ -282,7 +393,7 @@ sub update_control
         {
             $in_description = '';
         }
-        elsif ($line =~ /^(Package:\s*lib$pkgmeta->{DEBNAME})(\d+)$/)
+        elsif ($line =~ /^(Package:\s*lib$pkgmeta->{NATIVE_NAME})(\d+)$/)
         {
             my ($oldname, $oldsoname) = ($1, $2);
             print "Checking if Package name line needs update ($line)\n"
@@ -291,7 +402,7 @@ sub update_control
                 if ($verbose);
             if ($oldsoname ne '' && $soname != int($oldsoname))
             {
-                $line =~s/^(Package:\s*lib$pkgmeta->{DEBNAME})(\d+)$/$oldname$soname/;
+                $line =~s/^(Package:\s*lib$pkgmeta->{NATIVE_NAME})(\d+)$/$oldname$soname/;
                 print "new line ($line)\n" if ($verbose);
                 $changed = 1;
             }
@@ -315,17 +426,17 @@ sub update_control
                     # if there's a dependency on $basename and a (>= $version)
                     # associated with that dependency, update the $version
                     # part to match the GPT dependency for that package
-                    if ($pkgmeta->{DEPSUNTYPED}->{$basename}
+                    if ($pkgmeta->{DEPSUNTYPED}->{deb}{$basename}
                         && $dependency_pred)
                     {
                         print "GPT dependency is for "
-                            . $pkgmeta->{DEPSUNTYPED}->{$basename}
+                            . $pkgmeta->{DEPSUNTYPED}->{deb}{$basename}
                             . "\n" if ($verbose);
                         if ($dependency_pred =~ m/>=\s*([0-9\.]+)/)
                         {
                             my $newdep;
                             $newdep = "$basename$suffix (>= "
-                                . $pkgmeta->{DEPSUNTYPED}->{"$basename$suffix"}
+                                . $pkgmeta->{DEPSUNTYPED}->{deb}{"$basename$suffix"}
                                 . ")";
 
                             if ($newdep ne $dep)
@@ -348,14 +459,14 @@ sub update_control
                     print "Checking if dependency on lib$libname$soname$dev "
                         . "$depver needs update\n" if ($verbose);
                     print "Depends on lib$libname$dev "
-                        . $pkgmeta->{DEPSUNTYPED}->{"lib$libname$dev"}
+                        . $pkgmeta->{DEPSUNTYPED}->{deb}{"lib$libname$dev"}
                         . "\n" if ($verbose);
 
                     # If the dependency has either a soname appended to the
                     # library name or a (>= $version), compare them to 
                     # the GPT package dependency version and soname for the 
                     # package
-                    $newdepver = $pkgmeta->{DEPSUNTYPED}->{"lib$libname$dev"};
+                    $newdepver = $pkgmeta->{DEPSUNTYPED}->{deb}{"lib$libname$dev"};
                     $newsoname = $allpkgmeta->{$libname}->{SONAME};
                     if ($depver && $depver ne $newdepver)
                     {
@@ -403,12 +514,12 @@ sub update_control
                 {
                     my ($basename, $suffix, $dependency_pred) = ($1, $2, $4);
 
-                    if ($pkgmeta->{DEPSUNTYPED}->{$basename} && $dependency_pred)
+                    if ($pkgmeta->{DEPSUNTYPED}->{deb}{$basename} && $dependency_pred)
                     {
                         if ($dependency_pred =~ m/>=\s*([0-9\.]+)/)
                         {
                             my $newdep;
-                            $newdep = "$basename$suffix (>= " . $pkgmeta->{DEPSUNTYPED}->{$basename}
+                            $newdep = "$basename$suffix (>= " . $pkgmeta->{DEPSUNTYPED}->{deb}{$basename}
                                 . ")";
 
                             if ($newdep ne $dep)
@@ -435,7 +546,7 @@ sub update_control
                     }
                     if ($depver ne '' && $depver =~ m/[0-9.]+/)
                     {
-                        $depver = $pkgmeta->{DEPSUNTYPED}->{$basedep};
+                        $depver = $pkgmeta->{DEPSUNTYPED}->{deb}{$basedep};
                     }
                     $newdep = "lib$basedep" . ($basedepsoname ne ''?$basedepsoname:"")
                             . $dev . ($depver?" ($op $depver)" : "");
@@ -465,7 +576,7 @@ sub update_rules
 {
     my ($pkgmeta) = @_;
     my ($package, $major, $minor, $age) =
-        ($pkgmeta->{DEBNAME}, $pkgmeta->{MAJOR}, $pkgmeta->{MINOR}, $pkgmeta->{AGE});
+        ($pkgmeta->{NATIVE_NAME}, $pkgmeta->{MAJOR}, $pkgmeta->{MINOR}, $pkgmeta->{AGE});
     my $soname = $pkgmeta->{SONAME};
     my $rulespath = "debian/$package/debian/rules";
     my $fd;
@@ -497,8 +608,9 @@ sub update_rules
         print $fd $line;
     }
 
-    if ($changed)
+    if ($changed && !$dryrun)
     {
+        print "rules file $rulespath changed\n";
         rename "$rulespath.new", $rulespath;
     }
     else
@@ -511,7 +623,7 @@ sub update_rules
 sub check_if_version_is_different
 {
     my $pkgmeta = shift;
-    my $package = $pkgmeta->{DEBNAME};
+    my $package = $pkgmeta->{NATIVE_NAME};
     my $version = "$pkgmeta->{MAJOR}.$pkgmeta->{MINOR}";
     my $old_version;
     my @oldchanges;
@@ -537,7 +649,7 @@ sub check_if_version_is_different
 sub check_if_debian_metadata_changed
 {
     my $pkgmeta = shift;
-    my $package = $pkgmeta->{DEBNAME};
+    my $package = $pkgmeta->{NATIVE_NAME};
     my $debianpath = "debian/$package/debian";
     my $status;
 
@@ -561,7 +673,7 @@ sub check_if_debian_metadata_changed
 sub update_changelog
 {
     my $pkgmeta = $_[0];
-    my $package = $pkgmeta->{DEBNAME};
+    my $package = $pkgmeta->{NATIVE_NAME};
     my $version = "$pkgmeta->{MAJOR}.$pkgmeta->{MINOR}";
     my @oldchanges;
     my $fd;
@@ -585,7 +697,7 @@ sub update_changelog
 
     $update = "$package ($version-$release) unstable; urgency=low\n\n";
 
-    if ($changelog_from_cvs)
+    if ($cvs_changelog)
     {
         my ($major, $minor, $micro) = split(/\./, $gtrelease);
         my $old_tag = "globus_${major}_${minor}_" . ($micro-1);
@@ -600,7 +712,7 @@ sub update_changelog
             $changelog = "Update version for $gtrelease";
         }
     }
-    elsif ($prompt)
+    elsif ($prompt_for_changelog)
     {
         print "Changelog Entry for $package [empty line to end]: ";
         $changelog = "";
@@ -618,25 +730,124 @@ sub update_changelog
     {
         $update .= "  * $line\n";
     }
-    $update .= "\n -- $fullname <$email>  "
+    $update .= "\n -- Globus Toolkit <support\@globus.org>  "
             . strftime("%a, %d %b %Y %H:%M:%S %z\n\n", localtime);
 
-    open($fd, ">$changelogpath");
-    print $fd $update;
-    print $fd join('', @oldchanges);
-    close($fd);
+    if (!$dryrun)
+    {
+        print "Changelog file $changelogpath has been updated\n";
+        open($fd, ">$changelogpath");
+        print $fd $update;
+        print $fd join('', @oldchanges);
+        close($fd);
+    }
     return 1;
+}
+
+
+#MAIN
+GetOptions('gptfile=s' => \$gptfile,
+           'verbose' => \$verbose,
+           'release=s' => \$gtrelease,
+           'dryrun|n' => \$dryrun,
+           'changelog=s' => \$changelog,
+           'prompt-for-changelog' => \$prompt_for_changelog,
+           'cvs-changelog' => \$cvs_changelog,
+           'bumprelease' => \$bumprelease,
+           'update' => \$update,
+           'help' => \$help);
+
+Pod::Usage::pod2usage() if defined $help;
+
+setlocale(LC_TIME, 'C');
+
+if ($gtrelease)
+{
+    my ($major, $minor, $micro) = split(/\./, $gtrelease);
+
+    if ($update)
+    {
+        $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$gtrelease/updates/src/";
+    }
+    else
+    {
+        $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$gtrelease/packages/src/";
+    }
+}
+
+if (!(defined $gptfile))
+{
+    open(PKG, "etc/package-list-5.1.0");
+
+    while ( <PKG> )
+    {
+        my ($pkg, $subdir, $pnb, $pkgtag) = split(' ', $_);
+        next if ($pkg =~ m/^#/ || $pkg =~ m/^$/);
+        #print $subdir."\n";
+        next if ($pkg =~ m/openssh/);
+        if (-f "source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt.in")
+        {
+            push(@packagelist,
+                "source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt.in");
+        }
+        elsif (-f  "source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt")
+        {
+            push(@packagelist,
+                "source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt");
+        }
+    }
+}
+else
+{
+    push(@packagelist, $gptfile);
+}
+
+# Parse the metadata into an object that contains the name, version,
+# and dependencies
+$gptfile =~ s!^\./!!;
+$gptfile =~ s!/\./|//!!g;
+
+my $gptpkgname = undef;
+my $allpkgmeta = {};
+
+foreach my $gptmetadata (@packagelist)
+{
+    my $pkgmeta = parse_package($gptmetadata);
+    
+    if ($gptmetadata eq $gptfile)
+    {
+        $gptpkgname = $pkgmeta->{NATIVE_NAME};
+    }
+    $allpkgmeta->{$pkgmeta->{NATIVE_NAME}} = $pkgmeta;
+}
+
+# Add another fake one for gpt
+$allpkgmeta->{'grid-packaging-tools'} = create_meta_for_gpt();
+
+# Update debian and rpm package metadata for our desired packages
+if ($gptfile)
+{
+    update_debian($gptpkgname, $allpkgmeta, $bumprelease);
+    update_rpm($gptpkgname, $allpkgmeta, $bumprelease);
+}
+else
+{
+    foreach my $pkgname (keys %$allpkgmeta)
+    {
+        update_debian($pkgname, $allpkgmeta, 0);
+        update_rpm($pkgname, $allpkgmeta, 0);
+    }
 }
 
 __END__
 
 =head1 NAME
 
-B<rectify-spec-versions> - Rectify package versions from GPT metadata
+B<rectify-versions> - Rectify package versions from GPT metadata
 
 =head1 SYNOPSIS
 
-B<rectify-spec-versions> [options] 
+B<rectify-versions> [options] 
 
 Options:
 
@@ -644,46 +855,39 @@ Options:
 
 =item B<-gptfile> filename
 
-The package's GPT source package description file (if you want to update only
-one package's metadata). Note that other GPT metadata will be parsed to
-determine library verions for debian dependencies.
-
-=item B<-packagelist> I<filename>
-
-The list of packages/source locations to operate on.  Defaults to
-etc/package-list-5.1.0.  If the -gptfile option is specified, then its 
-argument will be the only package updated; otherwise, all packages in
-I<filename> will be updated
-
-=item B<-email> I<emailaddress>
-
-The packager's e-mail address (default: username@hostname). This is included
-in the debian changelog
-
-=item B<-fullname> I<name>
-
-The packager's full name (default: determined from getpw*). This is included
-int he debian changelog.
-
-=item B<-release> I<version>
-
-Set the package source directory to one based on the Globus Toolkit version
-I<version>. If not specified, the source URL path will not be updated.
-
-=item B<-changelog> I<text>
-
-Set the package's changelog entry to be I<text>.
-
-=item B<-bumprelease>
-
-Increase the package's release number even if the package version or
-dependencies haven't changed.
-
-=item B<-help>
-
-Display this help text
+The package's GPT source package description file (if you want to update only one package metadata)
 
 =item B<-verbose> 
 
-Output info about files being considered for modification and reasons why.
+Output info about each spec file being considered instead of just those changed.
 
+=item B<-release> GT-RELEASE-VERSION
+
+Update the source URL to the source directory for the GT-RELEASE-VERSION
+
+=item B<-changelog> MESSAGE
+
+Use MESSAGE as the changelog message, instead of the default [Updated version numbers]
+
+=item B<-prompt-for-changelog>
+
+Print a prompt to enter the changelog for each package that is modified
+
+=item B<-cvs-changelog>
+
+Use CVS logs to guess changelog value. Looks for strings that contain
+a jira issue name at the beginning of the line since the last patch release
+of the Globus Toolkit.
+
+=item B<-bumprelease>
+
+Increase the package release number and update the changelog, even if nothing
+has changed in the GPT metadata.
+
+=item B<-update>
+
+Describe this is an update package in the default changelog entry.
+
+=item B<-dryrun>
+
+Print which files would be modified, but don't actually change them.
