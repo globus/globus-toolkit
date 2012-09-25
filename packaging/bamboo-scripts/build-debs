@@ -135,7 +135,7 @@ if [ -n "$pkgs_to_rm" ]; then
 fi
 
 bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,gram5-lsf,gram5-pbs,gram5-sge,globus-simple-ca,globus-gsi
-packages_to_build=myproxy,gsi_openssh
+packages_to_build=myproxy,gsi_openssh,globus_gridmap_verify_myproxy_callout,gcmu
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 find debian \( -name rules -o -name '*.postinst' -o -name '*.init' \) -exec chmod a+x {} + 
 
@@ -149,7 +149,7 @@ packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; e
 if [ "$quick" -eq 1 ]; then
 	mv package-output.old package-output
 else
-	./make-packages.pl -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=${flavor} -ab
+	./make-packages.pl -skipbundles -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=${flavor} -ab
 	cd gpt/packaging_tools
 	sh ./bootstrap
 	rm gpt*.tar.gz || true
