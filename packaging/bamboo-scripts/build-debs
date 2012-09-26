@@ -149,7 +149,7 @@ packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; e
 if [ "$quick" -eq 1 ]; then
 	mv package-output.old package-output
 else
-	./make-packages.pl -skipbundles -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=${flavor} -ab
+	./make-packages.pl -skipbundle -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=${flavor} -ab
 	cd gpt/packaging_tools
 	sh ./bootstrap
 	rm gpt*.tar.gz || true
