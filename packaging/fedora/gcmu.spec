@@ -11,20 +11,19 @@ Source:         gcmu-1.2.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
-Requires:       globus-gridftp-server-progs%{?_isa} >= 6
-Requires:       globus-gass-copy-progs%{?_isa} 
-Requires:       globus-gss-assist-progs%{?_isa} 
-Requires:       myproxy%{?_isa} 
-Requires:       myproxy-server%{?_isa} 
-Requires:       gsi-openssh%{?_isa} 
-Requires:       gsi-openssh-clients%{?_isa} 
-Requires:       gsi-openssh-server%{?_isa} 
-Requires:       globus-gsi-cert-utils-progs%{?_isa} 
+Requires:       globus-gridftp-server-progs >= 6
+Requires:       globus-gass-copy-progs 
+Requires:       globus-gss-assist-progs 
+Requires:       myproxy 
+Requires:       myproxy-server 
+Requires:       gsi-openssh 
+Requires:       gsi-openssh-clients 
+Requires:       gsi-openssh-server 
+Requires:       globus-gsi-cert-utils-progs 
 Requires:       globus-simple-ca
 Requires:       globus-gridmap-verify-myproxy-callout 
 Requires:	python
 Requires:	xinetd
-
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
