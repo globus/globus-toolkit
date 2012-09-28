@@ -144,7 +144,7 @@ if [ "$quick" -eq 1 ]; then
 fi
 packages="$(./make-packages.pl $lpopts -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} | \
 	awk "/at version/ { print \$1 }" )"
-packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
+packages="$(echo "${packages}" | egrep -v '^myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
 if [ "$quick" -eq 1 ]; then
 	mv package-output.old package-output
