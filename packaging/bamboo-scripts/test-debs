@@ -82,7 +82,7 @@ mkdir -p $tmppath
 # Remove all globus-related packages prior to testing
 pkgs_to_rm="$( dpkg-query -W -f "\${Package}\t\${Status}\n" "*globus*" "grid-packaging-tools*" "myproxy*" "gsi-openssh*" | awk -F"	" "\$2 ~ /^install/ { print \$1 }" || true)"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo dpkg -P $pkgs_to_rm
+    sudo apt-get purge $pkgs_to_rm
 fi
 
 if [ "$quick" != 1 ]; then
@@ -363,7 +363,7 @@ sudo dpkg -P globus-simple-ca-$SIMPLE_CA_HASH
 # Remove all globus-related packages after testing
 pkgs_to_rm="$( dpkg-query -W -f "\${Package}\t\${Status}\n" "*globus*" "grid-packaging-tools*" "myproxy*" "gsi-openssh*" | awk -F"	" "\$2 ~ /^install/ { print \$1 }" || true)"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo dpkg -P $pkgs_to_rm
+    sudo apt-get purge $pkgs_to_rm
 fi
 
 if [ "$remove_repo" != "" ]; then
