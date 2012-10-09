@@ -151,7 +151,7 @@ sub update_rpm($$$)
     if (!open(FH, "+< $specfilename"))
     {
         print "Error opening: $specfilename\n";
-        next; 
+        return;
     }
 
     # What we'll do is modify the line array of the specfile, replacing
@@ -171,11 +171,11 @@ sub update_rpm($$$)
     {
         my $specline = $ARRAY[$index];
 
-        if ($specline =~ m/Version:\s*(\d+\.\d+)/)
+        if ($specline =~ m/^\s*Version:\s*(\d+\.\d+)/)
         {
             if ($1 ne $version)
             {
-                $specline = "Version:\t$version\n";
+                $ARRAY[$index] = "Version:\t$version\n";
                 $setreleaseversion = 1;
                 $version_changed = 1;
             }
@@ -225,6 +225,7 @@ sub update_rpm($$$)
             {
                 print "Updating version $requirement from $old_requirever to $requirever\n" if ($verbose);
                 $specline =~ s/(Requires:\s*\S+\s*>=\s*)[0-9.]+/$1$requirever/;
+                $ARRAY[$index] = $specline;
                 $specfile_changed = 1;
             }
         }
@@ -235,6 +236,7 @@ sub update_rpm($$$)
                 my $filename = $1;
                 $filename =~ s/.*\///;
                 $specline =~ s/^(Source:\s*)(\S*)(.*)/$1$gtreleaseuri$filename/;
+                $ARRAY[$index] = $specline;
                 $specfile_changed = 1;
             }
         }
@@ -601,9 +603,9 @@ sub update_rules
             $line =~ s|^(version\s*=\s*)([0-9\.]+)|$1$major.$minor|;
             $changed = 1;
         }
-        elsif ($line =~ m|^toolkit_version\s*=\s*([0-9\.]+)| && $1 ne $gtrelease)
+        elsif ($line =~ m|^toolkit_version\s*=\s*([0-9\.rc]+)| && $1 ne $gtrelease)
         {
-            $line =~ s|^(toolkit_version\s*=\s*)([0-9\.]+)|$1$gtrelease|;
+            $line =~ s|^(toolkit_version\s*=\s*)([0-9\.rc]+)|$1$gtrelease|;
         }
         print $fd $line;
     }
@@ -757,6 +759,14 @@ GetOptions('gptfile=s' => \$gptfile,
            'update' => \$update,
            'help' => \$help);
 
+if (!defined($gtrelease))
+{
+    my $fh;
+    open($fh, "<fait_accompli/version");
+    chomp($gtrelease = <$fh>);
+    close($fh);
+
+}
 Pod::Usage::pod2usage() if defined $help;
 
 setlocale(LC_TIME, 'C');
@@ -764,14 +774,20 @@ setlocale(LC_TIME, 'C');
 if ($gtrelease)
 {
     my ($major, $minor, $micro) = split(/\./, $gtrelease);
+    my $microversion = $gtrelease;
+
+    if ($micro =~ m/rc\d+$/)
+    {
+        $microversion = "testing";
+    }
 
     if ($update)
     {
-        $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$gtrelease/updates/src/";
+        $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$microversion/updates/src/";
     }
     else
     {
-        $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$gtrelease/packages/src/";
+        $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$microversion/packages/src/";
     }
 }
 
