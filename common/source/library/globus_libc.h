@@ -35,6 +35,13 @@ Description:
 #define snprintf _snprintf
 #endif
 
+#if __GNUC__
+#   define GLOBUS_DEPRECATED(func) func __attribute__((deprecated))
+#elif defined(_MSC_VER)
+#   define GLOBUS_DEPRECATED(func)  __declspec(deprecated) func
+#else
+#   define GLOBUS_DEPRECATED(func) func
+#endif
 
 EXTERN_C_BEGIN
 
@@ -241,12 +248,12 @@ globus_libc_strncasecmp(
     const char *                            s2,
     globus_size_t                           n);
 
-int globus_libc_setenv(register const char *name,
+GLOBUS_DEPRECATED(int globus_libc_setenv(register const char *name,
 		       register const char *value,
-		       int rewrite);
-void globus_libc_unsetenv(register const char *name);
+		       int rewrite));
+GLOBUS_DEPRECATED(void globus_libc_unsetenv(register const char *name));
 
-char *globus_libc_getenv(register const char *name);
+GLOBUS_DEPRECATED(char *globus_libc_getenv(register const char *name));
 
 char *globus_libc_system_error_string(int the_error);
 
