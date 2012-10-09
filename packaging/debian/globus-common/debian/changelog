@@ -1,3 +1,9 @@
+globus-common (14.9-1) unstable; urgency=low
+
+  * GT-288: Deprecate globus_libc_setenv
+
+ -- Globus Toolkit <support@globus.org>  Tue, 09 Oct 2012 10:35:36 -0400
+
 globus-common (14.8-1) unstable; urgency=low
 
   * GT-264: link error in globus-redia
