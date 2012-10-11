@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_scheduler_event_generator">
-    <Aging_Version Major="4" Minor="6" Age="4"/>
+    <Aging_Version Major="4" Minor="7" Age="4"/>
     <Description>Scheduler Event Generator</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -75,6 +75,13 @@
             <Dependency Name="globus_xio_gsi_driver">
                 <Version>
                     <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
+        <Source_Dependencies Type="pgm_runtime">
+            <Dependency Name="globus_common" Package="pgm">
+                <Version>
+                    <Simple_Version Major="14"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
