@@ -26,7 +26,7 @@ Description: Globus Toolkit - Scheduler Event Generator
 Package: globus-scheduler-event-generator-progs
 Section: net
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libglobus-xio-gsi-driver0
+Depends: ${shlibs:Depends}, ${misc:Depends}, globus-common-progs, libglobus-xio-gsi-driver0
 Description: Globus Toolkit - Scheduler Event Generator Programs
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
