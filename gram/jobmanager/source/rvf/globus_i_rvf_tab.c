@@ -453,18 +453,18 @@ union yyalloc
 #endif
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  19
+#define YYFINAL  7
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   47
+#define YYLAST   51
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  21
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  17
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  42
+#define YYNRULES  43
 /* YYNRULES -- Number of states.  */
-#define YYNSTATES  49
+#define YYNSTATES  51
 
 /* YYTRANSLATE(YYLEX) -- Bison symbol number corresponding to YYLEX.  */
 #define YYUNDEFTOK  2
@@ -511,36 +511,36 @@ static const yytype_uint8 yytranslate[] =
    YYRHS.  */
 static const yytype_uint8 yyprhs[] =
 {
-       0,     0,     3,     6,     8,    12,    14,    16,    17,    19,
-      22,    24,    27,    30,    33,    35,    37,    42,    44,    46,
-      48,    50,    52,    54,    56,    58,    60,    64,    66,    67,
-      69,    71,    73,    74,    76,    78,    80,    83,    85,    87,
-      89,    91,    93
+       0,     0,     3,     7,     9,    11,    15,    17,    19,    20,
+      22,    25,    27,    30,    33,    36,    38,    40,    45,    47,
+      49,    51,    53,    55,    57,    59,    61,    63,    67,    69,
+      70,    72,    74,    76,    77,    79,    81,    83,    86,    88,
+      90,    92,    94,    96
 };
 
 /* YYRHS -- A `-1'-separated list of the rules' RHS.  */
 static const yytype_int8 yyrhs[] =
 {
-      22,     0,    -1,    23,    25,    -1,     1,    -1,    23,    26,
-      24,    -1,    24,    -1,    28,    -1,    -1,    26,    -1,     5,
-      26,    -1,     5,    -1,     4,     5,    -1,    29,    28,    -1,
-      27,    28,    -1,    27,    -1,    29,    -1,    30,    31,    32,
-      37,    -1,     7,    -1,     8,    -1,    10,    -1,    14,    -1,
-       9,    -1,    13,    -1,    12,    -1,    11,    -1,    16,    -1,
-       6,    33,     6,    -1,    34,    -1,    -1,    35,    -1,    20,
-      -1,    15,    -1,    -1,    35,    -1,    20,    -1,    15,    -1,
-      36,    35,    -1,    36,    -1,    17,    -1,    18,    -1,    19,
-      -1,     5,    -1,     4,     5,    -1
+      22,     0,    -1,    25,    23,    25,    -1,    25,    -1,     1,
+      -1,    23,    26,    24,    -1,    24,    -1,    28,    -1,    -1,
+      26,    -1,     5,    26,    -1,     5,    -1,     4,     5,    -1,
+      29,    28,    -1,    27,    28,    -1,    27,    -1,    29,    -1,
+      30,    31,    32,    37,    -1,     7,    -1,     8,    -1,    10,
+      -1,    14,    -1,     9,    -1,    13,    -1,    12,    -1,    11,
+      -1,    16,    -1,     6,    33,     6,    -1,    34,    -1,    -1,
+      35,    -1,    20,    -1,    15,    -1,    -1,    35,    -1,    20,
+      -1,    15,    -1,    36,    35,    -1,    36,    -1,    17,    -1,
+      18,    -1,    19,    -1,     5,    -1,     4,     5,    -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   127,   127,   207,   212,   221,   234,   242,   244,   247,
-     248,   251,   254,   285,   288,   291,   321,   392,   392,   392,
-     392,   393,   393,   393,   394,   399,   402,   405,   408,   413,
-     417,   421,   425,   430,   434,   438,   444,   448,   453,   457,
-     461,   467,   468
+       0,   127,   127,   207,   209,   214,   223,   236,   244,   246,
+     249,   250,   253,   256,   287,   290,   293,   323,   394,   394,
+     394,   394,   395,   395,   395,   396,   401,   404,   407,   410,
+     415,   419,   423,   427,   432,   436,   440,   446,   450,   455,
+     459,   463,   469,   470
 };
 #endif
 
@@ -577,21 +577,21 @@ static const yytype_uint16 yytoknum[] =
 /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    21,    22,    22,    23,    23,    24,    25,    25,    26,
-      26,    27,    28,    28,    28,    28,    29,    30,    30,    30,
-      30,    30,    30,    30,    30,    31,    32,    32,    32,    33,
-      33,    33,    33,    34,    34,    34,    35,    35,    36,    36,
-      36,    37,    37
+       0,    21,    22,    22,    22,    23,    23,    24,    25,    25,
+      26,    26,    27,    28,    28,    28,    28,    29,    30,    30,
+      30,    30,    30,    30,    30,    30,    31,    32,    32,    32,
+      33,    33,    33,    33,    34,    34,    34,    35,    35,    36,
+      36,    36,    37,    37
 };
 
 /* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
-       0,     2,     2,     1,     3,     1,     1,     0,     1,     2,
-       1,     2,     2,     2,     1,     1,     4,     1,     1,     1,
-       1,     1,     1,     1,     1,     1,     3,     1,     0,     1,
-       1,     1,     0,     1,     1,     1,     2,     1,     1,     1,
-       1,     1,     2
+       0,     2,     3,     1,     1,     3,     1,     1,     0,     1,
+       2,     1,     2,     2,     2,     1,     1,     4,     1,     1,
+       1,     1,     1,     1,     1,     1,     1,     3,     1,     0,
+       1,     1,     1,     0,     1,     1,     1,     2,     1,     1,
+       1,     1,     1,     2
 };
 
 /* YYDEFACT[STATE-NAME] -- Default rule to reduce with in state
@@ -599,71 +599,76 @@ static const yytype_uint8 yyr2[] =
    means the default is an error.  */
 static const yytype_uint8 yydefact[] =
 {
-       0,     3,     0,    17,    18,    21,    19,    24,    23,    22,
-      20,     0,     7,     5,    14,     6,    15,     0,    11,     1,
-      10,     2,     8,    13,    12,    25,    28,     9,     4,    32,
-      35,    38,    39,    40,    34,     0,    27,    33,    37,    31,
-      30,     0,    29,     0,    41,    16,    36,    26,    42
+       0,     4,    11,     0,     3,     9,    10,     1,     0,    18,
+      19,    22,    20,    25,    24,    23,    21,     8,     6,    15,
+       7,    16,     0,    12,     2,     9,    14,    13,    26,    29,
+       5,    33,    36,    39,    40,    41,    35,     0,    28,    34,
+      38,    32,    31,     0,    30,     0,    42,    17,    37,    27,
+      43
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,    11,    12,    13,    21,    22,    14,    15,    16,    17,
-      26,    35,    41,    36,    37,    38,    45
+      -1,     3,    17,    18,     4,     5,    19,    20,    21,    22,
+      29,    37,    43,    38,    39,    40,    47
 };
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-#define YYPACT_NINF -29
+#define YYPACT_NINF -30
 static const yytype_int8 yypact[] =
 {
-      14,   -29,    -2,   -29,   -29,   -29,   -29,   -29,   -29,   -29,
-     -29,     8,    11,   -29,    25,   -29,    25,     4,   -29,   -29,
-      11,   -29,    25,   -29,   -29,   -29,    -6,   -29,   -29,   -13,
-     -29,   -29,   -29,   -29,   -29,    26,   -29,   -29,    23,   -29,
-     -29,    37,   -29,    39,   -29,   -29,   -29,   -29,   -29
+       9,   -30,     7,    28,    35,   -30,   -30,   -30,    25,   -30,
+     -30,   -30,   -30,   -30,   -30,   -30,   -30,     7,   -30,    35,
+     -30,    35,    16,   -30,   -30,    35,   -30,   -30,   -30,    18,
+     -30,   -14,   -30,   -30,   -30,   -30,   -30,     3,   -30,   -30,
+       8,   -30,   -30,    34,   -30,    29,   -30,   -30,   -30,   -30,
+     -30
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -29,   -29,   -29,    24,   -29,    27,   -29,     3,   -29,   -29,
-     -29,   -29,   -29,   -29,   -28,   -29,   -29
+     -30,   -30,   -30,    26,    24,    -2,   -30,    10,   -30,   -30,
+     -30,   -30,   -30,   -30,   -29,   -30,   -30
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
    positive, shift that token.  If negative, reduce the rule which
    number is the opposite.  If zero, do what YYDEFACT says.
    If YYTABLE_NINF, syntax error.  */
-#define YYTABLE_NINF -1
-static const yytype_uint8 yytable[] =
+#define YYTABLE_NINF -9
+static const yytype_int8 yytable[] =
 {
-      29,    42,    39,    18,    31,    32,    33,    40,    19,    30,
-      46,    31,    32,    33,    34,     1,    20,    23,     2,    24,
-      25,     3,     4,     5,     6,     7,     8,     9,    10,     2,
-      43,    44,     3,     4,     5,     6,     7,     8,     9,    10,
-      31,    32,    33,    47,    48,     0,    28,    27
+       6,    41,    44,    33,    34,    35,    42,    45,    46,    -8,
+       1,    48,     2,    -8,     2,    25,    -8,    -8,    -8,    -8,
+      -8,    -8,    -8,    -8,    31,    33,    34,    35,     7,    26,
+      23,    27,    28,    32,    50,    33,    34,    35,    36,     8,
+      49,    24,     9,    10,    11,    12,    13,    14,    15,    16,
+       0,    30
 };
 
 static const yytype_int8 yycheck[] =
 {
-       6,    29,    15,     5,    17,    18,    19,    20,     0,    15,
-      38,    17,    18,    19,    20,     1,     5,    14,     4,    16,
-      16,     7,     8,     9,    10,    11,    12,    13,    14,     4,
-       4,     5,     7,     8,     9,    10,    11,    12,    13,    14,
-      17,    18,    19,     6,     5,    -1,    22,    20
+       2,    15,    31,    17,    18,    19,    20,     4,     5,     0,
+       1,    40,     5,     4,     5,    17,     7,     8,     9,    10,
+      11,    12,    13,    14,     6,    17,    18,    19,     0,    19,
+       5,    21,    16,    15,     5,    17,    18,    19,    20,     4,
+       6,    17,     7,     8,     9,    10,    11,    12,    13,    14,
+      -1,    25
 };
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
    symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,     1,     4,     7,     8,     9,    10,    11,    12,    13,
-      14,    22,    23,    24,    27,    28,    29,    30,     5,     0,
-       5,    25,    26,    28,    28,    16,    31,    26,    24,     6,
-      15,    17,    18,    19,    20,    32,    34,    35,    36,    15,
-      20,    33,    35,     4,     5,    37,    35,     6,     5
+       0,     1,     5,    22,    25,    26,    26,     0,     4,     7,
+       8,     9,    10,    11,    12,    13,    14,    23,    24,    27,
+      28,    29,    30,     5,    25,    26,    28,    28,    16,    31,
+      24,     6,    15,    17,    18,    19,    20,    32,    34,    35,
+      36,    15,    20,    33,    35,     4,     5,    37,    35,     6,
+       5
 };
 
 #define yyerrok		(yyerrstatus = 0)
@@ -1199,22 +1204,22 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
         free((yyvaluep->value).string_value);
     }
 };
-#line 1203 "./globus_i_rvf.tab.c"
+#line 1208 "./globus_i_rvf.tab.c"
 	break;
       case 23: /* "records" */
 #line 122 "./rvf.y"
 	{ globus_l_rvf_records_destroy((yyvaluep->validation_file)); };
-#line 1208 "./globus_i_rvf.tab.c"
+#line 1213 "./globus_i_rvf.tab.c"
 	break;
       case 24: /* "record" */
 #line 121 "./rvf.y"
 	{ globus_l_rvf_validation_record_destroy(&(yyvaluep->record)); };
-#line 1213 "./globus_i_rvf.tab.c"
+#line 1218 "./globus_i_rvf.tab.c"
 	break;
       case 28: /* "aspect_list" */
 #line 121 "./rvf.y"
 	{ globus_l_rvf_validation_record_destroy(&(yyvaluep->record)); };
-#line 1218 "./globus_i_rvf.tab.c"
+#line 1223 "./globus_i_rvf.tab.c"
 	break;
       case 32: /* "aspect_value" */
 #line 114 "./rvf.y"
@@ -1224,7 +1229,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
         free((yyvaluep->value).string_value);
     }
 };
-#line 1228 "./globus_i_rvf.tab.c"
+#line 1233 "./globus_i_rvf.tab.c"
 	break;
       case 33: /* "quoted_value" */
 #line 114 "./rvf.y"
@@ -1234,7 +1239,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
         free((yyvaluep->value).string_value);
     }
 };
-#line 1238 "./globus_i_rvf.tab.c"
+#line 1243 "./globus_i_rvf.tab.c"
 	break;
       case 34: /* "unquoted_value" */
 #line 114 "./rvf.y"
@@ -1244,7 +1249,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
         free((yyvaluep->value).string_value);
     }
 };
-#line 1248 "./globus_i_rvf.tab.c"
+#line 1253 "./globus_i_rvf.tab.c"
 	break;
       case 35: /* "when_value_list" */
 #line 114 "./rvf.y"
@@ -1254,7 +1259,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
         free((yyvaluep->value).string_value);
     }
 };
-#line 1258 "./globus_i_rvf.tab.c"
+#line 1263 "./globus_i_rvf.tab.c"
 	break;
       case 36: /* "when_value" */
 #line 114 "./rvf.y"
@@ -1264,7 +1269,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
         free((yyvaluep->value).string_value);
     }
 };
-#line 1268 "./globus_i_rvf.tab.c"
+#line 1273 "./globus_i_rvf.tab.c"
 	break;
 
       default:
@@ -1590,12 +1595,12 @@ yyreduce:
         case 2:
 #line 127 "./rvf.y"
     {
-        while (!globus_list_empty((yyvsp[(1) - (2)].validation_file)))
+        while (!globus_list_empty((yyvsp[(2) - (3)].validation_file)))
         {
             globus_list_t * node;
             globus_rvf_record_t *record;
 
-            record = globus_list_remove(&(yyvsp[(1) - (2)].validation_file), (yyvsp[(1) - (2)].validation_file));
+            record = globus_list_remove(&(yyvsp[(2) - (3)].validation_file), (yyvsp[(2) - (3)].validation_file));
 
             if (record->attribute == NULL)
             {
@@ -1674,12 +1679,18 @@ yyreduce:
   case 3:
 #line 207 "./rvf.y"
     {
-        return 1;
     ;}
     break;
 
   case 4:
-#line 212 "./rvf.y"
+#line 209 "./rvf.y"
+    {
+        return 1;
+    ;}
+    break;
+
+  case 5:
+#line 214 "./rvf.y"
     {
         globus_rvf_record_t *           record;
 
@@ -1691,8 +1702,8 @@ yyreduce:
       ;}
     break;
 
-  case 5:
-#line 221 "./rvf.y"
+  case 6:
+#line 223 "./rvf.y"
     {
         globus_rvf_record_t *           record;
 
@@ -1705,8 +1716,8 @@ yyreduce:
     ;}
     break;
 
-  case 6:
-#line 234 "./rvf.y"
+  case 7:
+#line 236 "./rvf.y"
     {
         if ((yyvsp[(1) - (1)].record).attribute != NULL)
         {
@@ -1716,8 +1727,8 @@ yyreduce:
       ;}
     break;
 
-  case 12:
-#line 254 "./rvf.y"
+  case 13:
+#line 256 "./rvf.y"
     {
         (yyval.record) = (yyvsp[(2) - (2)].record);
 
@@ -1751,22 +1762,22 @@ yyreduce:
     ;}
     break;
 
-  case 13:
-#line 285 "./rvf.y"
+  case 14:
+#line 287 "./rvf.y"
     {
         (yyval.record) = (yyvsp[(2) - (2)].record);
     ;}
     break;
 
-  case 14:
-#line 288 "./rvf.y"
+  case 15:
+#line 290 "./rvf.y"
     {
         (yyval.record) = empty_record;
     ;}
     break;
 
-  case 15:
-#line 291 "./rvf.y"
+  case 16:
+#line 293 "./rvf.y"
     {
         (yyval.record) = empty_record;
 
@@ -1797,8 +1808,8 @@ yyreduce:
     ;}
     break;
 
-  case 16:
-#line 321 "./rvf.y"
+  case 17:
+#line 323 "./rvf.y"
     {
           (yyval.aspect) = empty_aspect;
 
@@ -1869,137 +1880,137 @@ yyreduce:
       ;}
     break;
 
-  case 24:
-#line 394 "./rvf.y"
+  case 25:
+#line 396 "./rvf.y"
     {
         (yyval.aspect_name) = (yyvsp[(1) - (1)].aspect_name);
     ;}
     break;
 
-  case 26:
-#line 402 "./rvf.y"
+  case 27:
+#line 404 "./rvf.y"
     {
         (yyval.value) = (yyvsp[(2) - (3)].value);
     ;}
     break;
 
-  case 27:
-#line 405 "./rvf.y"
+  case 28:
+#line 407 "./rvf.y"
     {
         (yyval.value) = (yyvsp[(1) - (1)].value);
     ;}
     break;
 
-  case 28:
-#line 408 "./rvf.y"
+  case 29:
+#line 410 "./rvf.y"
     {
         (yyval.value).value_type = RVF_EMPTYVAL;
-    ;}
-    break;
-
-  case 29:
-#line 413 "./rvf.y"
-    {
-        (yyval.value).value_type = RVF_WHENVAL;
-        (yyval.value).when_value = (yyvsp[(1) - (1)].value).when_value;
     ;}
     break;
 
   case 30:
-#line 417 "./rvf.y"
-    {
-        (yyval.value).value_type = RVF_BOOLVAL;
-        (yyval.value).bool_value = (yyvsp[(1) - (1)].bool_value);
-    ;}
-    break;
-
-  case 31:
-#line 421 "./rvf.y"
-    {
-        (yyval.value).value_type = RVF_STRINGVAL;
-        (yyval.value).string_value = (yyvsp[(1) - (1)].value).string_value;
-    ;}
-    break;
-
-  case 32:
-#line 425 "./rvf.y"
-    {
-        (yyval.value).value_type = RVF_EMPTYVAL;
-    ;}
-    break;
-
-  case 33:
-#line 430 "./rvf.y"
+#line 415 "./rvf.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = (yyvsp[(1) - (1)].value).when_value;
     ;}
     break;
 
-  case 34:
-#line 434 "./rvf.y"
+  case 31:
+#line 419 "./rvf.y"
     {
         (yyval.value).value_type = RVF_BOOLVAL;
         (yyval.value).bool_value = (yyvsp[(1) - (1)].bool_value);
     ;}
     break;
 
-  case 35:
-#line 438 "./rvf.y"
+  case 32:
+#line 423 "./rvf.y"
     {
         (yyval.value).value_type = RVF_STRINGVAL;
         (yyval.value).string_value = (yyvsp[(1) - (1)].value).string_value;
     ;}
     break;
 
+  case 33:
+#line 427 "./rvf.y"
+    {
+        (yyval.value).value_type = RVF_EMPTYVAL;
+    ;}
+    break;
+
+  case 34:
+#line 432 "./rvf.y"
+    {
+        (yyval.value).value_type = RVF_WHENVAL;
+        (yyval.value).when_value = (yyvsp[(1) - (1)].value).when_value;
+    ;}
+    break;
+
+  case 35:
+#line 436 "./rvf.y"
+    {
+        (yyval.value).value_type = RVF_BOOLVAL;
+        (yyval.value).bool_value = (yyvsp[(1) - (1)].bool_value);
+    ;}
+    break;
+
   case 36:
-#line 444 "./rvf.y"
+#line 440 "./rvf.y"
+    {
+        (yyval.value).value_type = RVF_STRINGVAL;
+        (yyval.value).string_value = (yyvsp[(1) - (1)].value).string_value;
+    ;}
+    break;
+
+  case 37:
+#line 446 "./rvf.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = (yyvsp[(1) - (2)].value).when_value | (yyvsp[(2) - (2)].value).when_value;
     ;}
     break;
 
-  case 37:
-#line 448 "./rvf.y"
+  case 38:
+#line 450 "./rvf.y"
     {
         (yyval.value) = (yyvsp[(1) - (1)].value);
     ;}
     break;
 
-  case 38:
-#line 453 "./rvf.y"
+  case 39:
+#line 455 "./rvf.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = 1;
       ;}
     break;
 
-  case 39:
-#line 457 "./rvf.y"
+  case 40:
+#line 459 "./rvf.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = 2;
       ;}
     break;
 
-  case 40:
-#line 461 "./rvf.y"
+  case 41:
+#line 463 "./rvf.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = 4;
       ;}
     break;
 
-  case 42:
-#line 468 "./rvf.y"
+  case 43:
+#line 470 "./rvf.y"
     {
     ;}
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 2003 "./globus_i_rvf.tab.c"
+#line 2014 "./globus_i_rvf.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2219,7 +2230,7 @@ yyreturn:
 }
 
 
-#line 470 "./rvf.y"
+#line 472 "./rvf.y"
 
 
 typedef struct globus_rvf_extra_s

@@ -1,6 +1,6 @@
-#line 2 "../../rvf/lex.globus_i_rvf_.c"
+#line 2 "./lex.globus_i_rvf_.c"
 
-#line 4 "../../rvf/lex.globus_i_rvf_.c"
+#line 4 "./lex.globus_i_rvf_.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -71,6 +71,7 @@ typedef int16_t flex_int16_t;
 typedef uint16_t flex_uint16_t;
 typedef int32_t flex_int32_t;
 typedef uint32_t flex_uint32_t;
+typedef uint64_t flex_uint64_t;
 #else
 typedef signed char flex_int8_t;
 typedef short int flex_int16_t;
@@ -439,7 +440,7 @@ static void yy_fatal_error (yyconst char msg[] ,yyscan_t yyscanner );
 #define YY_DO_BEFORE_ACTION \
 	yyg->yytext_ptr = yy_bp; \
 /* %% [2.0] code to fiddle yytext and yyleng for yymore() goes here \ */\
-	yyleng = (size_t) (yy_cp - yy_bp); \
+	yyleng = (yy_size_t) (yy_cp - yy_bp); \
 	yyg->yy_hold_char = *yy_cp; \
 	*yy_cp = '\0'; \
 /* %% [3.0] code to copy yytext_ptr to yytext[] goes here, if %array \ */\
@@ -1041,8 +1042,8 @@ static yyconst flex_int16_t yy_rule_linenum[28] =
 #define yymore() yymore_used_but_not_detected
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
-#line 1 "../../rvf/rvf.l"
-#line 2 "../../rvf/rvf.l"
+#line 1 "./rvf.l"
+#line 2 "./rvf.l"
 /*
  * Copyright 1999-2012 University of Chicago
  * 
@@ -1065,7 +1066,7 @@ static yyconst flex_int16_t yy_rule_linenum[28] =
 #include "globus_i_rvf.tab.h"
 
 
-#line 1069 "../../rvf/lex.globus_i_rvf_.c"
+#line 1070 "./lex.globus_i_rvf_.c"
 
 #define INITIAL 0
 #define DELIMITER 1
@@ -1375,10 +1376,10 @@ YY_DECL
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
 /* %% [7.0] user's declarations go here */
-#line 53 "../../rvf/rvf.l"
+#line 53 "./rvf.l"
 
 
-#line 1382 "../../rvf/lex.globus_i_rvf_.c"
+#line 1383 "./lex.globus_i_rvf_.c"
 
     yylval = yylval_param;
 
@@ -1514,14 +1515,14 @@ case 1:
 yyg->yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 55 "../../rvf/rvf.l"
+#line 55 "./rvf.l"
 {
     return RVF_TOKEN_COMMENT;
 }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 59 "../../rvf/rvf.l"
+#line 59 "./rvf.l"
 {
     BEGIN(VALUE_END);
     return RVF_TOKEN_COMMENT;
@@ -1529,7 +1530,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 64 "../../rvf/rvf.l"
+#line 64 "./rvf.l"
 {
     BEGIN(DELIMITER);
     yylval->aspect_name = RVF_TOKEN_ATTRIBUTE;
@@ -1538,7 +1539,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 69 "../../rvf/rvf.l"
+#line 69 "./rvf.l"
 {
     BEGIN(DELIMITER);
     yylval->aspect_name = RVF_TOKEN_DEFAULT;
@@ -1547,7 +1548,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 74 "../../rvf/rvf.l"
+#line 74 "./rvf.l"
 {
     BEGIN(DELIMITER);
     yylval->aspect_name = RVF_TOKEN_DEFAULTWHEN;
@@ -1556,7 +1557,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 79 "../../rvf/rvf.l"
+#line 79 "./rvf.l"
 {
     BEGIN(DELIMITER);
     yylval->aspect_name = RVF_TOKEN_DESCRIPTION;
@@ -1565,7 +1566,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 84 "../../rvf/rvf.l"
+#line 84 "./rvf.l"
 {
     BEGIN(DELIMITER);
     yylval->aspect_name = RVF_TOKEN_PUBLISH;
@@ -1574,7 +1575,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 89 "../../rvf/rvf.l"
+#line 89 "./rvf.l"
 {
     BEGIN(DELIMITER);
     yylval->aspect_name = RVF_TOKEN_REQUIREDWHEN;
@@ -1583,7 +1584,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 95 "../../rvf/rvf.l"
+#line 95 "./rvf.l"
 {
     BEGIN(DELIMITER);
     yylval->aspect_name = RVF_TOKEN_VALIDWHEN;
@@ -1592,7 +1593,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 101 "../../rvf/rvf.l"
+#line 101 "./rvf.l"
 {
     BEGIN(DELIMITER);
     yylval->aspect_name = RVF_TOKEN_VALUES;
@@ -1601,7 +1602,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 107 "../../rvf/rvf.l"
+#line 107 "./rvf.l"
 {
     BEGIN(VALUE);
     return RVF_TOKEN_ASPECT_DELIMITER;
@@ -1609,7 +1610,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 112 "../../rvf/rvf.l"
+#line 112 "./rvf.l"
 {
     ;
 }
@@ -1617,7 +1618,7 @@ YY_RULE_SETUP
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 116 "../../rvf/rvf.l"
+#line 116 "./rvf.l"
 {
     BEGIN(INITIAL);
     
@@ -1629,7 +1630,7 @@ case 14:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 22;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 122 "../../rvf/rvf.l"
+#line 122 "./rvf.l"
 {
     return RVF_TOKEN_SUBMIT;
 }
@@ -1639,7 +1640,7 @@ case 15:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 31;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 126 "../../rvf/rvf.l"
+#line 126 "./rvf.l"
 {
     return RVF_TOKEN_RESTART;
 }
@@ -1649,14 +1650,14 @@ case 16:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 36;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 131 "../../rvf/rvf.l"
+#line 131 "./rvf.l"
 {
     return RVF_TOKEN_STDIO_UPDATE;
 }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 135 "../../rvf/rvf.l"
+#line 135 "./rvf.l"
 {
     yylval->bool_value = (strstr(yytext, "true") != NULL);
 
@@ -1665,7 +1666,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 141 "../../rvf/rvf.l"
+#line 141 "./rvf.l"
 {
     BEGIN(QUOTED);
     return RVF_TOKEN_QUOTE;
@@ -1673,7 +1674,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 146 "../../rvf/rvf.l"
+#line 146 "./rvf.l"
 {
     BEGIN(VALUE_END);
     yylval->value.value_type = RVF_STRINGVAL;
@@ -1684,7 +1685,7 @@ YY_RULE_SETUP
 case 20:
 /* rule 20 can match eol */
 YY_RULE_SETUP
-#line 153 "../../rvf/rvf.l"
+#line 153 "./rvf.l"
 {
     yylval->bool_value = (strstr(yytext, "true") != NULL);
     BEGIN(QUOTE_END);
@@ -1697,7 +1698,7 @@ case 21:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 22;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 158 "../../rvf/rvf.l"
+#line 158 "./rvf.l"
 {
     BEGIN(QUOTED_WHENVAL);
 
@@ -1710,7 +1711,7 @@ case 22:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 36;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 164 "../../rvf/rvf.l"
+#line 164 "./rvf.l"
 {
     BEGIN(QUOTED_WHENVAL);
 
@@ -1723,7 +1724,7 @@ case 23:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 31;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 170 "../../rvf/rvf.l"
+#line 170 "./rvf.l"
 {
     BEGIN(QUOTED_WHENVAL);
 
@@ -1733,7 +1734,7 @@ YY_RULE_SETUP
 case 24:
 /* rule 24 can match eol */
 YY_RULE_SETUP
-#line 176 "../../rvf/rvf.l"
+#line 176 "./rvf.l"
 {
     int len = strlen(yytext);
     int i,j;
@@ -1760,7 +1761,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 200 "../../rvf/rvf.l"
+#line 200 "./rvf.l"
 {
     BEGIN(VALUE_END);
     return RVF_TOKEN_QUOTE;
@@ -1769,7 +1770,7 @@ YY_RULE_SETUP
 case 26:
 /* rule 26 can match eol */
 YY_RULE_SETUP
-#line 205 "../../rvf/rvf.l"
+#line 205 "./rvf.l"
 {
     ;
 }
@@ -1777,15 +1778,15 @@ YY_RULE_SETUP
 case 27:
 /* rule 27 can match eol */
 YY_RULE_SETUP
-#line 209 "../../rvf/rvf.l"
+#line 209 "./rvf.l"
 { return RVF_TOKEN_ERROR; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 210 "../../rvf/rvf.l"
+#line 210 "./rvf.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1789 "../../rvf/lex.globus_i_rvf_.c"
+#line 1790 "./lex.globus_i_rvf_.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(DELIMITER):
 case YY_STATE_EOF(VALUE):
@@ -3072,4 +3073,4 @@ void globus_i_rvf_free (void * ptr , yyscan_t yyscanner)
 
 /* %ok-for-header */
 
-#line 210 "../../rvf/rvf.l"
+#line 210 "./rvf.l"

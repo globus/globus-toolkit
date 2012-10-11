@@ -124,13 +124,13 @@ globus_l_rvf_attr_match(
 %%
 
 validation_file:
-    records optional_record_separator {
-        while (!globus_list_empty($1))
+    optional_record_separator records optional_record_separator {
+        while (!globus_list_empty($2))
         {
             globus_list_t * node;
             globus_rvf_record_t *record;
 
-            record = globus_list_remove(&$1, $1);
+            record = globus_list_remove(&$2, $2);
 
             if (record->attribute == NULL)
             {
@@ -203,6 +203,8 @@ validation_file:
                 globus_list_insert(output, record);
             }
         }
+    }
+    | optional_record_separator {
     }
     | error {
         return 1;
