@@ -2,9 +2,9 @@
 #define globus_i_rvf_HEADER_H 1
 #define globus_i_rvf_IN_HEADER 1
 
-#line 6 "../../rvf/globus_i_rvf_scanner.h"
+#line 6 "./globus_i_rvf_scanner.h"
 
-#line 8 "../../rvf/globus_i_rvf_scanner.h"
+#line 8 "./globus_i_rvf_scanner.h"
 
 #define  YY_INT_ALIGNED short int
 
@@ -69,6 +69,7 @@ typedef int16_t flex_int16_t;
 typedef uint16_t flex_uint16_t;
 typedef int32_t flex_int32_t;
 typedef uint32_t flex_uint32_t;
+typedef uint64_t flex_uint64_t;
 #else
 typedef signed char flex_int8_t;
 typedef short int flex_int16_t;
@@ -461,8 +462,8 @@ extern int globus_i_rvf_lex \
 #undef YY_DECL
 #endif
 
-#line 210 "../../rvf/rvf.l"
+#line 210 "./rvf.l"
 
-#line 467 "../../rvf/globus_i_rvf_scanner.h"
+#line 468 "./globus_i_rvf_scanner.h"
 #undef globus_i_rvf_IN_HEADER
 #endif /* globus_i_rvf_HEADER_H */

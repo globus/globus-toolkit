@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.50-1) unstable; urgency=low
+
+  * GT-298: Leading whitespace confuses rvf parser
+
+ -- Globus Toolkit <support@globus.org>  Thu, 11 Oct 2012 10:22:52 -0400
+
 globus-gram-job-manager (13.49-1) unstable; urgency=low
 
   * GT-268: GRAM job manager seg module fails to replay first log of the month on restart

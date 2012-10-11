@@ -12,14 +12,14 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.49
+Version:	13.50
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -177,6 +177,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 11 2012 Globus Toolkit <support@globus.org> - 13.50-1
+- GT-298: Leading whitespace confuses rvf parser
+
 * Fri Aug 17 2012 Joseph Bester <bester@mcs.anl.gov> - 13.49-1
 - GT-268: GRAM job manager seg module fails to replay first log of the month on restart
 - GT-270: job manager crash at shutdown (extra_envvar free)
