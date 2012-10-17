@@ -151,7 +151,7 @@ fi
 if [ "$cvsroot" != "" ]; then
     CVSROOT="$cvsroot"
     export CVSROOT
-    anonflag
+    anonflag=""
 else
     anonflag="-a"
 fi
