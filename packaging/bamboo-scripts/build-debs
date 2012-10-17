@@ -42,6 +42,7 @@ chroot=""
 in_chroot=0
 chroot_args=""
 binaryonly=""
+cvsroot=""
 
 while getopts ibc:n:v:R:a:St:hg:f:q i; do
     case "$i" in
@@ -52,6 +53,11 @@ while getopts ibc:n:v:R:a:St:hg:f:q i; do
             binaryonly=1
             chroot_args="${chroot_args:+$chroot_args}-b"
            ;;
+        C)
+            cvsroot="$OPTARG"
+            chroot_args="${chroot_args:+$chroot_args }-C $OPTARG"
+            ;;
+
         c)
             chroot="$OPTARG"
             chroot_args="${chroot_args:+$chroot_args }-i"
@@ -142,14 +148,21 @@ find debian \( -name rules -o -name '*.postinst' -o -name '*.init' \) -exec chmo
 if [ "$quick" -eq 1 ]; then
     lpopts="-no-updates"
 fi
-packages="$(./make-packages.pl $lpopts -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} | \
+if [ "$cvsroot" != "" ]; then
+    CVSROOT="$cvsroot"
+    export CVSROOT
+    anonflag
+else
+    anonflag="-a"
+fi
+packages="$(./make-packages.pl $lpopts $anonflag -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} | \
 	awk "/at version/ { print \$1 }" )"
 packages="$(echo "${packages}" | egrep -v '^myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
 if [ "$quick" -eq 1 ]; then
 	mv package-output.old package-output
 else
-	./make-packages.pl -skipbundle -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=${flavor} -ab
+	./make-packages.pl -skipbundle -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -flavor=${flavor} -ab
 	cd gpt/packaging_tools
 	sh ./bootstrap
 	rm gpt*.tar.gz || true
