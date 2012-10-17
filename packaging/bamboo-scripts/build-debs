@@ -44,7 +44,7 @@ chroot_args=""
 binaryonly=""
 cvsroot=""
 
-while getopts ibc:n:v:R:a:St:hg:f:q i; do
+while getopts Cibc:n:v:R:a:St:hg:f:q i; do
     case "$i" in
         i)
            in_chroot=1
