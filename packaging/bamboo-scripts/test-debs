@@ -31,8 +31,14 @@ case "$arch" in
         exit 1
         ;;
 esac
-while getopts "ic:r:a:l:bt:q" i; do
+
+cvsroot=""
+while getopts "C:ic:r:a:l:bt:q" i; do
     case "$i" in
+        C)
+            cvsroot="$OPTARG"
+            chroot_args="${chroot_args:+"$chroot_args "}-C ${OPTARG}"
+            ;;
         i)
             in_chroot=1
             ;;
@@ -85,10 +91,17 @@ if [ -n "$pkgs_to_rm" ]; then
     sudo apt-get -y purge $pkgs_to_rm
 fi
 
+if [ "$cvsroot" != "" ]; then
+    CVSROOT="$cvsroot"
+    export CVSROOT
+    anonflag=""
+else
+    anonflag="-a"
+fi
 if [ "$quick" != 1 ]; then
 # Create source packages for the tests
     if [ "$in_chroot" != 1 ]; then
-        ./make-packages.pl ${tag:+-t "$tag"} -a --deps -deporder -bundles=globus-data-management-test,globus-resource-management-test \
+        ./make-packages.pl ${tag:+-t "$tag"} $anonflag --deps -deporder -bundles=globus-data-management-test,globus-resource-management-test \
             -flavor=${flavor} -skipbundle
     fi
 fi
