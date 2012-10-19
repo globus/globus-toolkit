@@ -23,8 +23,12 @@ fi
 ssh-keyscan -t dsa,rsa \
     localhost $(hostname) $(hostname -f) >> ~/.ssh/known_hosts
 
-while getopts "r:a:l:t:q" i; do
+cvsroot=""
+while getopts "C:r:a:l:t:q" i; do
     case "$i" in
+        C)
+            cvsroot="$OPTARG"
+            ;;
         r)
             repopkg_url="$OPTARG"
             ;;
@@ -121,9 +125,17 @@ fi
 # Download and install the repo definition package
 sudo rpm -hUv "$repopkg_url"
 
+if [ "$cvsroot" != "" ]; then
+    CVSROOT="$cvsroot"
+    export CVSROOT
+    anonflag=""
+else
+    anonflag="-a"
+fi
+
 if [ "${skip_checkout}" = 0 -o ! -d package-output ]; then
 # Create source packages for the tests
-    ./make-packages.pl ${tag:+-t "$tag"} -a -verbose \
+    ./make-packages.pl ${tag:+-t "$tag"} $anonflag -verbose \
             -bundles=globus-data-management-test,globus-resource-management-test \
             -flavor=gcc64 -skipbundle
 fi

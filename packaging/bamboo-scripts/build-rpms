@@ -34,8 +34,12 @@ fi
 
 sign=1
 tag=""
-while getopts n:v:a:St:hg:qpl i; do
+cvsroot=""
+while getopts C:n:v:a:St:hg:qpl i; do
     case "$i" in
+        C)
+            cvsroot="$OPTARG"
+            ;;
         n)
             osname="$OPTARG"
             ;;
@@ -194,12 +198,19 @@ fi
 
 [ ! -d source-trees ] || find source-trees -name bootstrap -exec chmod a+x {} \;
 
-packages="$(./make-packages.pl -faster -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} ${skip_checkout:+-no-updates} \
+if [ "$cvsroot" != "" ]; then
+    CVSROOT="$cvsroot"
+    export CVSROOT
+    anonflag=""
+else
+    anonflag="-a"
+fi
+packages="$(./make-packages.pl -faster ${anonflag} -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} ${skip_checkout:+-no-updates} \
     ${skip_bootstrap:+-ab} -order-include-runtime-deps | \
     awk "/at version/ { gsub(/_/, \"-\", \$1); print \$1 }")"
 
 if [ -z "$skip_packaging" ]; then
-    ./make-packages.pl -skipbundle -faster -no-updates ${skip_bootstrap:+-ab} -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
+    ./make-packages.pl -skipbundle -faster -no-updates ${skip_bootstrap:+-ab} ${anonflag} -deps -deporder -bundles=$bundles -packages=$packages_to_build -flavor=gcc64dbg
 fi
 metapackages="globus-gridftp
     globus-data-management-client
