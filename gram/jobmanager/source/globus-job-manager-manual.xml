@@ -391,6 +391,14 @@ If the following variables affect the execution of <command>globus-job-manager</
             <term><filename><envar>$GLOBUS_LOCATION</envar>/etc/grid-services/jobmanager-<replaceable>LRM</replaceable></filename></term>
             <listitem><simpara>Default location of the LRM-specific gatekeeper configuration file.</simpara></listitem>
         </varlistentry>
+        <varlistentry>
+            <term><filename><envar>$GLOBUS_LOCATION</envar>/etc/globus/gram/job--manager.rvf</filename></term>
+            <listitem><simpara>Default location of the site-specific job manager RSL validation file.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><filename><envar>$GLOBUS_LOCATION</envar>/etc/globus/gram/<replaceable>lrm</replaceable>.rvf</filename></term>
+            <listitem><simpara>Default location of the site-specific job manager RSL validation file for the named lrm.</simpara></listitem>
+        </varlistentry>
     </variablelist>
 </para>
 </refsect1>

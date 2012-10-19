@@ -412,13 +412,11 @@ globus_gram_job_manager_request_init(
 
     rc = globus_gram_job_manager_state_file_set(
         r,
-        &r->job_state_file,
-        &r->job_state_lock_file);
+        &r->job_state_file);
     if (rc != GLOBUS_SUCCESS)
     {
         goto failed_state_file_set;
     }
-    r->job_state_lock_fd = -1;
 
     r->client_contacts = NULL;
 
@@ -809,12 +807,6 @@ get_gateway_user_failed:
         free(r->cache_tag);
 cache_tag_alloc_failed:
 failed_restart:
-        if (r->job_state_lock_fd >= 0 &&
-            r->job_state_lock_fd != r->manager->lock_fd)
-        {
-            close(r->job_state_lock_fd);
-        }
-        free(r->job_state_lock_file);
         free(r->job_state_file);
 failed_state_file_set:
 cached_stderr_symboltable_failed:
@@ -1283,15 +1275,6 @@ globus_gram_job_manager_request_free(
     {
         free(request->job_state_file);
     }
-    if (request->job_state_lock_file)
-    {
-        free(request->job_state_lock_file);
-    }
-    if (request->job_state_lock_fd >= 0 &&
-        request->job_state_lock_fd != request->manager->lock_fd)
-    {
-        close(request->job_state_lock_fd);
-    }
     if (request->gt3_failure_type)
     {
         free(request->gt3_failure_type);
@@ -1457,9 +1440,9 @@ globus_gram_job_manager_request_set_status_time(
 
     globus_gram_job_manager_request_log(
             request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
             "event=gram.job.info "
-            "level=INFO "
+            "level=DEBUG "
             "gramid=%s "
             "job_status=%d "
             "\n",
@@ -1529,7 +1512,10 @@ globus_gram_job_manager_request_log(
          * config, we need to make sure the log level matches the global type
          * mask so that it won't get discarded by globus_logging_vwrite
          */
-        stdio_level = request->config->log_levels;
+        if (request->config)
+        {
+            stdio_level = request->config->log_levels;
+        }
     }
     va_start(ap, format);
     globus_logging_vwrite(
@@ -2416,25 +2402,15 @@ globus_i_gram_request_stdio_update(
         rc = globus_i_gram_remote_io_url_update(request);
     }
 
-    /*
-    globus_gram_job_manager_request_log(
-            request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.stdio_update.info "
-                "level=TRACE "
-                "gramid=%s "
-                "orig_rsl_spec=%s "
-                "rsl_spec=%s\n",
-                request->job_contact_path,
-                globus_rsl_unparse(original_rsl),
-                globus_rsl_unparse(request->rsl));
-    */
-
     /* Now that we've recreated the stdio, redo the staging list. */
+    globus_gram_job_manager_staging_free_all(request);
+    /*
+    globus_gram_jobmanager_request_t *  request)
     request->stage_in_todo = NULL;
     request->stage_in_shared_todo = NULL;
     request->stage_out_todo = NULL;
     request->stage_stream_todo = NULL;
+    */
     rc = globus_gram_job_manager_staging_create_list(request);
     if (rc != GLOBUS_SUCCESS) {
         globus_gram_job_manager_request_log(

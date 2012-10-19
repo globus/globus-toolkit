@@ -37,6 +37,12 @@
 #include <string.h>
 #endif
 
+typedef struct globus_l_gram_renew_s
+{
+    globus_gram_protocol_handle_t       handle;
+    globus_gram_jobmanager_request_t   *request;
+}
+globus_l_gram_renew_t;
 
 static
 globus_bool_t
@@ -95,6 +101,14 @@ globus_l_gram_job_manager_query_valid(
     globus_gram_jobmanager_request_t *  request);
 
 static
+void
+globus_l_delegation_callback(
+    void *                              arg,
+    globus_gram_protocol_handle_t       handle,
+    gss_cred_id_t                       credential,
+    int                                 error_code);
+
+static
 int
 globus_l_gram_job_manager_query_stop_manager(
     globus_gram_jobmanager_request_t *  request);
@@ -141,9 +155,9 @@ globus_gram_job_manager_query_callback(
 
     globus_gram_job_manager_log(
         manager,
-        GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+        GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
         "event=gram.query.start "
-        "level=INFO "
+        "level=DEBUG "
         "uri=\"%s\" "
         "\n",
         uri);
@@ -341,7 +355,7 @@ authz_failed:
     globus_gram_job_manager_log(
             manager,
             rc ? GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR
-                    : GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                    : GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
             "event=gram.query.end "
             "level=%s "
             "%s%s%s"
@@ -350,7 +364,7 @@ authz_failed:
             "status=%d "
             "%s%s "
             "\n",
-            rc ? "ERROR" : "INFO",
+            rc ? "ERROR" : "DEBUG",
             request ? "gramid=" : "",
             request ? request->job_contact_path : "",
             request ? " " : "",
@@ -485,8 +499,8 @@ globus_l_gram_job_manager_query_reply(
 
         replystring = globus_gram_prepare_log_string((char *) reply);
 
-        globus_gram_job_manager_request_log(
-            request,
+        globus_gram_job_manager_log(
+            manager,
             GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
             "event=gram.query.info "
             "%s%s%s"
@@ -575,7 +589,6 @@ globus_l_gram_job_manager_cancel(
     case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
     case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
     case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
-    case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
         query = calloc(1, sizeof(globus_gram_job_manager_query_t));
   
         query->type = GLOBUS_GRAM_JOB_MANAGER_CANCEL;
@@ -693,11 +706,9 @@ globus_l_gram_job_manager_renew(
     globus_gram_protocol_handle_t       handle,
     globus_bool_t *                     reply)
 {
-    globus_result_t                     result;
-    globus_gram_job_manager_query_t *   query;
     int                                 rc = 0;
-    globus_reltime_t                    delay;
-    globus_bool_t                       doit = GLOBUS_FALSE;
+    globus_l_gram_renew_t *             renew;
+    char                               *msg = "Success";
 
     globus_gram_job_manager_request_log(
             request,
@@ -708,102 +719,65 @@ globus_l_gram_job_manager_renew(
             "\n",
             request->job_contact_path);
 
-    if(!globus_l_gram_job_manager_query_valid(request))
+    renew = malloc(sizeof(globus_l_gram_renew_t));
+    if(renew == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
+        msg = "Malloc failed";
 
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.proxyrenew.end "
-                "level=ERROR "
-                "gramid=%s "
-                "status=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\" "
-                "\n",
-                request->job_contact_path,
-                -rc,
-                "Unable to process query",
-                globus_gram_protocol_error_string(rc));
-
-        goto error_exit;
+        goto renew_malloc_failed;
     }
 
-    query = calloc(1, sizeof(globus_gram_job_manager_query_t));
-
-    if(query == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
-
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.proxyrenew.end "
-                "level=ERROR "
-                "gramid=%s "
-                "status=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\" "
-                "\n",
-                request->job_contact_path,
-                -rc,
-                "Malloc failed",
-                globus_gram_protocol_error_string(rc));
-
-        goto error_exit;
-    }
-
-    query->type = GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH;
-    query->handle = handle;
-
-    globus_fifo_enqueue(&request->pending_queries, query);
-    *reply = GLOBUS_FALSE;
-
-    if(request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
-    {
-        request->jobmanager_state =
-            GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1;
-        doit = GLOBUS_TRUE;
-
-    } else if (request->jobmanager_state ==
-            GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE)
-    {
-        request->jobmanager_state =
-            GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1;
-        doit = GLOBUS_TRUE;
-    }
-
-    if(doit && request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
-    {
-        GlobusTimeReltimeSet(delay, 0, 0);
-        result = globus_callback_adjust_oneshot(
-                request->poll_timer,
-                &delay);
-        /* ignore this failure... the callback will happen anyway. */
-        rc = GLOBUS_SUCCESS;
-    }
-    else if (doit && request->manager->seg_started)
-    {
-        rc = globus_gram_job_manager_state_machine_register(
-              request->manager,
-              request,
-              NULL);
-    }
-    globus_gram_job_manager_request_log(
-            request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-            "event=gram.proxyrenew.end "
-            "level=DEBUG "
-            "gramid=%s "
-            "status=%d "
-            "\n",
+    rc = globus_gram_job_manager_add_reference(
+            request->manager,
             request->job_contact_path,
-            0);
+            "renew",
+            &renew->request);
+    renew->handle = handle;
 
-error_exit:
-    if(rc != GLOBUS_SUCCESS)
+    if (rc != GLOBUS_SUCCESS)
     {
+        msg = "Add reference failed";
+        goto add_reference_failed;
+    }
+
+    rc = globus_gram_protocol_accept_delegation(
+            renew->handle,
+            GSS_C_NO_OID_SET,
+            GSS_C_NO_BUFFER_SET,
+            GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
+                GSS_C_GLOBUS_SSL_COMPATIBLE,
+            0,
+            globus_l_delegation_callback,
+            renew);
+    if (rc == GLOBUS_SUCCESS)
+    {
+        *reply = GLOBUS_FALSE;
+    }
+    else
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.proxyrenew.end "
+                "level=ERROR "
+                "gramid=%s "
+                "status=%d "
+                "msg=\"%s\" "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                -rc,
+                msg,
+                globus_gram_protocol_error_string(rc));
+        
+        globus_gram_job_manager_remove_reference(
+                request->manager,
+                request->job_contact_path,
+                "renew");
+add_reference_failed:
+        free(renew);
+renew_malloc_failed:
         *reply = GLOBUS_TRUE;
     }
 
@@ -1468,8 +1442,8 @@ globus_l_gram_job_manager_signal(
                         "jmstate=%s "
                         "msg=\"%s\" "
                         "status=%d "
-                        "stdout_signal_size=%d "
-                        "stdout_actual_size=%d "
+                        "stdout_signal_size=%ld "
+                        "stdout_actual_size=%ld "
                         "reason=\"%s\" "
                         "\n",
                         request->job_contact_path,
@@ -1478,8 +1452,8 @@ globus_l_gram_job_manager_signal(
                                 request->jobmanager_state],
                         "Stdout size mismatch",
                         -rc,
-                        out_size,
-                        local_size_stdout,
+                        (long int) out_size,
+                        (long int) local_size_stdout,
                         globus_gram_protocol_error_string(rc));
             }
             else if (err_size >= 0 && err_size != local_size_stderr)
@@ -1495,8 +1469,8 @@ globus_l_gram_job_manager_signal(
                         "jmstate=%s "
                         "msg=\"%s\" "
                         "status=%d "
-                        "stderr_signal_size=%d "
-                        "stderr_actual_size=%d "
+                        "stderr_signal_size=%ld "
+                        "stderr_actual_size=%ld "
                         "reason=\"%s\" "
                         "\n",
                         request->job_contact_path,
@@ -1505,8 +1479,8 @@ globus_l_gram_job_manager_signal(
                                 request->jobmanager_state],
                         "Stderr size mismatch",
                         -rc,
-                        err_size,
-                        local_size_stderr,
+                        (long int) err_size,
+                        (long int) local_size_stderr,
                         globus_gram_protocol_error_string(rc));
             }
             else
@@ -1666,7 +1640,6 @@ globus_l_gram_job_manager_query_stop_manager(
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
@@ -1674,7 +1647,6 @@ globus_l_gram_job_manager_query_stop_manager(
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
@@ -1729,7 +1701,6 @@ globus_l_gram_job_manager_query_valid(
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2:
@@ -1739,7 +1710,6 @@ globus_l_gram_job_manager_query_valid(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
           return GLOBUS_TRUE;
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
@@ -1766,31 +1736,73 @@ globus_l_gram_job_manager_query_valid(
 /* globus_l_gram_job_manager_query_valid() */
 
 
+static
 void
-globus_gram_job_manager_query_delegation_callback(
+globus_l_delegation_callback(
     void *                              arg,
     globus_gram_protocol_handle_t       handle,
     gss_cred_id_t                       credential,
     int                                 error_code)
 {
-    globus_gram_job_manager_query_t *   query;
+    globus_l_gram_renew_t *             renew;
     globus_gram_jobmanager_request_t *  request;
+    globus_gram_job_manager_t *         manager;
+    int                                 renew_code, failure_code, exit_code;
 
-    request = arg;
+    renew = arg;
+    request = renew->request;
+    manager = request->manager;
 
     GlobusGramJobManagerRequestLock(request);
-
-    query = globus_fifo_peek(&request->pending_queries);
-
-    query->delegated_credential = credential;
-
-    globus_gram_job_manager_state_machine_register(
-            request->manager,
+    GlobusGramJobManagerLock(manager);
+    (void) globus_gram_job_manager_gsi_update_credential(
+            manager,
             request,
-            NULL);
+            credential);
+    GlobusGramJobManagerUnlock(manager);
+
+    renew_code = (credential == GSS_C_NO_CREDENTIAL)
+                ? GLOBUS_GRAM_PROTOCOL_ERROR_DELEGATION_FAILED
+                : 0;
+    failure_code = (credential == GSS_C_NO_CREDENTIAL)
+                ? 0
+                : request->failure_code,
+    exit_code = request->exit_code;
+
+    globus_l_gram_job_manager_query_reply(
+            manager,
+            request,
+            renew->handle,
+            request->status,
+            renew_code,
+            failure_code,
+            exit_code);
+
     GlobusGramJobManagerRequestUnlock(request);
+
+    globus_gram_job_manager_request_log(
+            request,
+            (renew_code == GLOBUS_SUCCESS)
+                ? GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG
+                : GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+            "event=gram.proxyrenew.end "
+            "level=%s "
+            "gramid=%s "
+            "status=%d "
+            "reason=\"%s\" "
+            "\n",
+            (renew_code == GLOBUS_SUCCESS) ? "DEBUG" : "ERROR",
+            request->job_contact_path,
+            -renew_code,
+            globus_gram_protocol_error_string(renew_code));
+
+    (void) globus_gram_job_manager_remove_reference(
+            request->manager,
+            request->job_contact_path,
+            "renew");
+    free(renew);
 }
-/* globus_l_gram_job_manager_delegation_callback() */
+/* globus_l_delegation_callback() */
 
 static
 int
@@ -2055,30 +2067,38 @@ globus_l_gram_stdio_update_signal(
     new_unevaluated_rsl = globus_gram_job_manager_rsl_merge(
             original_rsl,
             rsl);
-    globus_rsl_free_recursive(original_rsl);
+    if (new_unevaluated_rsl == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+
+        goto free_original_rsl_out;
+    }
     new_rsl_spec = globus_rsl_unparse(new_unevaluated_rsl);
     if (new_rsl_spec == NULL)
     {
-        globus_rsl_free_recursive(new_unevaluated_rsl);
-
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
 
-        goto free_rsl_out;
+        goto free_new_unevaluated_rsl_out;
     }
     free(request->rsl_spec);
     request->rsl_spec = new_rsl_spec;
+    new_rsl_spec = NULL;
 
     rc = globus_rsl_eval(rsl, &request->symbol_table);
     if(rc != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
 
-        goto free_rsl_out;
+        goto free_new_unevaluated_rsl_out;
     }
 
     rc = globus_i_gram_request_stdio_update(
             request,
             rsl);
+free_new_unevaluated_rsl_out:
+    globus_rsl_free_recursive(new_unevaluated_rsl);
+free_original_rsl_out:
+    globus_rsl_free_recursive(original_rsl);
 free_rsl_out:
     globus_rsl_free_recursive(rsl);
 error_out:

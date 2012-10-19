@@ -134,6 +134,11 @@ globus_l_time_is_newer(
     struct tm *                         value,
     struct tm *                         benchmark);
 
+static
+globus_bool_t
+globus_l_next_file_exists(
+    globus_l_job_manager_logfile_state_t *      state);
+
 GlobusExtensionDefineModule(globus_seg_job_manager) =
 {
     "globus_seg_job_manager",
@@ -155,7 +160,6 @@ globus_l_job_manager_module_activate(void)
     globus_reltime_t                    delay;
     globus_result_t                     result;
     char *                              scheduler;
-    char                                log_path_key[64];
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -338,6 +342,7 @@ globus_l_job_manager_poll_callback(
     globus_result_t                     result;
     time_t                              poll_time = time(NULL);
     struct tm                           poll_tm, *tm_result;
+    struct stat                         stat;
     char *                              today;
 
     SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_INFO,
@@ -368,10 +373,6 @@ globus_l_job_manager_poll_callback(
 
     if (eof_hit)
     {
-        /*
-         * Read and parsed until end of file in the callback. Check to see if
-         * the current date is past that file's lifetime
-         */
         tm_result = globus_libc_gmtime_r(&poll_time, &poll_tm);
         if (tm_result == NULL)
         {
@@ -388,7 +389,20 @@ globus_l_job_manager_poll_callback(
                     tm_result->tm_mday);
             if (today && (strcmp(today, state->path) != 0))
             {
-                state->old_log = GLOBUS_TRUE;
+                /* New day... if new file exists and the old one hasn't changed since our
+                 * last poll, mark it as old
+                 */
+                if (globus_l_next_file_exists(state))
+                {
+                    rc = fstat(fileno(state->fp), &stat);
+                    if (rc != -1)
+                    {
+                        if (ftello(state->fp) == stat.st_size)
+                        {
+                            state->old_log = GLOBUS_TRUE;
+                        }
+                    }
+                }
             }
             if (today)
             {
@@ -410,6 +424,7 @@ globus_l_job_manager_poll_callback(
             state->start_timestamp.tm_hour = 0;
             state->start_timestamp.tm_min = 0;
             state->start_timestamp.tm_sec = 0;
+            globus_l_job_manager_normalize_date(&state->start_timestamp);
         }
 
         rc = globus_l_job_manager_find_logfile(state);
@@ -881,3 +896,35 @@ globus_l_time_is_newer(
     }
 }
 /* globus_l_time_is_newer() */
+
+static
+globus_bool_t
+globus_l_next_file_exists(
+    globus_l_job_manager_logfile_state_t *      state)
+{
+    struct tm                           next_day;
+    char *                              next_log;
+    globus_bool_t                       file_exists = GLOBUS_FALSE;
+
+    next_day = state->start_timestamp;
+    next_day.tm_mday++;
+    globus_l_job_manager_normalize_date(&next_day);
+    next_day.tm_sec = 0;
+    next_day.tm_min = 0;
+    next_day.tm_hour = 0;
+
+    next_log = globus_common_create_string(
+                "%s/%4d%02d%02d",
+                state->log_dir,
+                next_day.tm_year+1900,
+                next_day.tm_mon+1,
+                next_day.tm_mday);
+    if (access(next_log, R_OK) == 0)
+    {
+        file_exists = GLOBUS_TRUE;
+    }
+    free(next_log);
+
+    return file_exists;
+}
+/* globus_l_next_file_exists() */

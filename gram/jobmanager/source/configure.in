@@ -17,11 +17,13 @@ pkgconffile=""
 LAC_DOXYGEN("../", "*.dox")
 LAC_DOXYGEN_EXAMPLE_DIR("../")
 
+GLOBUS_OPENSSL
+
 xml_catalog_path="notset"
 AC_ARG_WITH(
     xml-catalog,
     AC_HELP_STRING(
-        [--with-xml-catalog-path=PATH],
+        [--with-xml-catalog=PATH],
         [Look for XML catalog in PATH]),
     [xml_catalog_path="$withval"],
     [xml_catalog_path="notset"])
@@ -43,6 +45,9 @@ if test "x$GLOBUS_TOOLKIT_VERSION" = "x"; then
     GLOBUS_TOOLKIT_VERSION="UNKNOWN"
 fi
 AC_SUBST(GLOBUS_TOOLKIT_VERSION)
+
+AM_CONDITIONAL(REBUILD_PARSER, [false])
+AM_CONDITIONAL(REBUILD_SCANNER, [false])
 
 AM_PATH_XML2([2.6.11],
     [ac_cv_have_libxml2=yes],
@@ -70,6 +75,9 @@ AC_DEFINE_UNQUOTED(GLOBUS_FLAVOR_NAME, "$GLOBUS_FLAVOR_NAME")
 LOGDIR="`eval_path $localstatedir/log/globus`"
 AC_SUBST(LOGDIR)
 
+AUDITDIR="`eval_path $localstatedir/lib/globus/gram-audit`"
+AC_SUBST(AUDITDIR)
+
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
@@ -77,6 +85,7 @@ AC_OUTPUT(
 	pkgdata/pkg_data_src.gpt
 	scripts/Makefile
         seg/Makefile
+        rvf/Makefile
 	doxygen/Makefile
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal

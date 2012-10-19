@@ -1,344 +1,502 @@
-.\" ** You probably do not want to edit this file directly **
-.\" It was generated using the DocBook XSL Stylesheets (version 1.69.1).
-.\" Instead of manually editing it, you probably should edit the DocBook XML
-.\" source for it and then use the DocBook XSL Stylesheets to regenerate it.
-.TH "GLOBUS\-JOB\-MANAGER" "8" "10/18/2011" "University of Chicago" "GRAM5 Commands"
+'\" t
+.\"     Title: globus-job-manager
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 03/29/2012
+.\"    Manual: GRAM5 Commands
+.\"    Source: University of Chicago
+.\"  Language: English
+.\"
+.TH "GLOBUS\-JOB\-MANAGER" "8" "03/29/2012" "University of Chicago" "GRAM5 Commands"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
 .ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
 .SH "NAME"
-globus\-job\-manager \- Execute and monitor jobs
+globus-job-manager \- Execute and monitor jobs
 .SH "SYNOPSIS"
-.HP 19
-\fBglobus\-job\-manager\fR {\-type\ \fILRM\fR} [\-conf\ \fICONFIG_PATH\fR] [\-help] [\-globus\-host\-manufacturer\ \fIMANUFACTURER\fR] [\-globus\-host\-cputype\ \fICPUTYPE\fR] [\-globus\-host\-osname\ \fIOSNAME\fR] [\-globus\-host\-osversion\ \fIOSVERSION\fR] [\-globus\-gatekeeper\-host\ \fIHOST\fR] [\-globus\-gatekeeper\-port\ \fIPORT\fR] [\-globus\-gatekeeper\-subject\ \fISUBJECT\fR] [\-home\ \fIGLOBUS_LOCATION\fR] [\-target\-globus\-location\ \fITARGET_GLOBUS_LOCATION\fR] [\-condor\-arch\ \fIARCH\fR] [\-condor\-os\ \fIOS\fR] [\-history\ \fIHISTORY_DIRECTORY\fR] [\-scratch\-dir\-base\ \fISCRATCH_DIRECTORY\fR] [\-enable\-syslog] [\-stdio\-log\ \fILOG_DIRECTORY\fR] [\-log\-pattern\ \fIPATTERN\fR] [\-log\-levels\ \fILEVELS\fR] [\-state\-file\-dir\ \fISTATE_DIRECTORY\fR] [\-globus\-tcp\-port\-range\ \fIPORT_RANGE\fR] [\-globus\-tcp\-source\-range\ \fISOURCE_RANGE\fR] [\-x509\-cert\-dir\ \fITRUSTED_CERTIFICATE_DIRECTORY\fR] [\-cache\-location\ \fIGASS_CACHE_DIRECTORY\fR] [\-k] [\-extra\-envvars\ \fIVAR=VAL,...\fR] [\-seg\-module\ \fISEG_MODULE\fR] [\-audit\-directory\ \fIAUDIT_DIRECTORY\fR] [\-globus\-toolkit\-version\ \fITOOLKIT_VERSION\fR] [\-disable\-streaming] [\-disable\-usagestats] [\-usagestats\-targets\ \fITARGET\fR] [\-service\-tag\ \fISERVICE_TAG\fR]
+.HP \w'\fBglobus\-job\-manager\fR\ 'u
+\fBglobus\-job\-manager\fR {\-type\ \fILRM\fR} [\-conf\ \fICONFIG_PATH\fR] [\-help] [\-globus\-host\-manufacturer\ \fIMANUFACTURER\fR] [\-globus\-host\-cputype\ \fICPUTYPE\fR] [\-globus\-host\-osname\ \fIOSNAME\fR] [\-globus\-host\-osversion\ \fIOSVERSION\fR] [\-globus\-gatekeeper\-host\ \fIHOST\fR] [\-globus\-gatekeeper\-port\ \fIPORT\fR] [\-globus\-gatekeeper\-subject\ \fISUBJECT\fR] [\-home\ \fIGLOBUS_LOCATION\fR] [\-target\-globus\-location\ \fITARGET_GLOBUS_LOCATION\fR] [\-condor\-arch\ \fIARCH\fR] [\-condor\-os\ \fIOS\fR] [\-history\ \fIHISTORY_DIRECTORY\fR] [\-scratch\-dir\-base\ \fISCRATCH_DIRECTORY\fR] [\-enable\-syslog] [\-stdio\-log\ \fILOG_DIRECTORY\fR] [\-log\-pattern\ \fIPATTERN\fR] [\-log\-levels\ \fILEVELS\fR] [\-state\-file\-dir\ \fISTATE_DIRECTORY\fR] [\-globus\-tcp\-port\-range\ \fIPORT_RANGE\fR] [\-globus\-tcp\-source\-range\ \fISOURCE_RANGE\fR] [\-x509\-cert\-dir\ \fITRUSTED_CERTIFICATE_DIRECTORY\fR] [\-cache\-location\ \fIGASS_CACHE_DIRECTORY\fR] [\-k] [\-extra\-envvars\ \fIVAR=VAL,\&.\&.\&.\fR] [\-seg\-module\ \fISEG_MODULE\fR] [\-audit\-directory\ \fIAUDIT_DIRECTORY\fR] [\-globus\-toolkit\-version\ \fITOOLKIT_VERSION\fR] [\-disable\-streaming] [\-disable\-usagestats] [\-usagestats\-targets\ \fITARGET\fR] [\-service\-tag\ \fISERVICE_TAG\fR]
 .SH "DESCRIPTION"
 .PP
 The
 \fBglobus\-job\-manager\fR
-program is a servivce which starts and controls GRAM jobs which are executed by a local resource management system, such as LSF or Condor. The
+program is a servivce which starts and controls GRAM jobs which are executed by a local resource management system, such as LSF or Condor\&. The
 \fBglobus\-job\-manager\fR
 program is typically started by the
 \fBglobus\-gatekeeper\fR
-program and not directly by a user. It runs until all jobs it is managing have terminated or its delegated credentials have expired.
+program and not directly by a user\&. It runs until all jobs it is managing have terminated or its delegated credentials have expired\&.
 .PP
 Typically, users interact with the
 \fBglobus\-job\-manager\fR
 program via client applications such as
 \fBglobusrun\fR,
-\fBglobus\-job\-submit\fR, or tools such as CoG jglobus or Condor\-G.
+\fBglobus\-job\-submit\fR, or tools such as CoG jglobus or Condor\-G\&.
 .PP
 The full set of command\-line options to
 \fBglobus\-job\-manager\fR
 consists of:
-.TP
+.PP
 \fB\-help\fR
+.RS 4
 Display a help message to standard error and exit
-.TP
+.RE
+.PP
 \fB\-type \fR\fB\fILRM\fR\fR
+.RS 4
 Execute jobs using the local resource manager named
-\fILRM\fR.
-.TP
+\fILRM\fR\&.
+.RE
+.PP
 \fB\-conf \fR\fB\fICONFIG_PATH\fR\fR
+.RS 4
 Read additional command\-line arguments from the file
-\fICONFIG_PATH\fR. If present, this must be the first command\-line argument to the
+\fICONFIG_PATH\fR\&. If present, this must be the first command\-line argument to the
 \fBglobus\-job\-manager\fR
-program.
-.TP
+program\&.
+.RE
+.PP
 \fB\-globus\-host\-manufacturer \fR\fB\fIMANUFACTURER\fR\fR
-Indicate the manufacturer of the system which the jobs will execute on. This parameter sets the value of the
+.RS 4
+Indicate the manufacturer of the system which the jobs will execute on\&. This parameter sets the value of the
 \fI$(GLOBUS_HOST_MANUFACTURER)\fR
 RSL substitution to
 \fIMANUFACTURER\fR
-.TP
+.RE
+.PP
 \fB\-globus\-host\-cputype \fR\fB\fICPUTYPE\fR\fR
-Indicate the CPU type of the system which the jobs will execute on. This parameter sets the value of the
+.RS 4
+Indicate the CPU type of the system which the jobs will execute on\&. This parameter sets the value of the
 \fI$(GLOBUS_HOST_CPUTYPE)\fR
 RSL substitution to
 \fICPUTYPE\fR
-.TP
+.RE
+.PP
 \fB\-globus\-host\-osname \fR\fB\fIOSNAME\fR\fR
-Indicate the operating system type of the system which the jobs will execute on. This parameter sets the value of the
+.RS 4
+Indicate the operating system type of the system which the jobs will execute on\&. This parameter sets the value of the
 \fI$(GLOBUS_HOST_OSNAME)\fR
 RSL substitution to
 \fIOSNAME\fR
-.TP
+.RE
+.PP
 \fB\-globus\-host\-osversion \fR\fB\fIOSVERSION\fR\fR
-Indicate the operating system version of the system which the jobs will execute on. This parameter sets the value of the
+.RS 4
+Indicate the operating system version of the system which the jobs will execute on\&. This parameter sets the value of the
 \fI$(GLOBUS_HOST_OSVERSION)\fR
 RSL substitution to
 \fIOSVERSION\fR
-.TP
+.RE
+.PP
 \fB\-globus\-gatekeeper\-host \fR\fB\fIHOST\fR\fR
-Indicate the host name of the machine which the job was submitted to. This parameter sets the value of the
+.RS 4
+Indicate the host name of the machine which the job was submitted to\&. This parameter sets the value of the
 \fI$(GLOBUS_GATEKEEPER_HOST)\fR
 RSL substitution to
 \fIHOST\fR
-.TP
+.RE
+.PP
 \fB\-globus\-gatekeeper\-port \fR\fB\fIPORT\fR\fR
-Indicate the TCP port number of gatekeeper to which jobs are submitted to. This parameter sets the value of the
+.RS 4
+Indicate the TCP port number of gatekeeper to which jobs are submitted to\&. This parameter sets the value of the
 \fI$(GLOBUS_GATEKEEPER_PORT)\fR
 RSL substitution to
 \fIPORT\fR
-.TP
+.RE
+.PP
 \fB\-globus\-gatekeeper\-subject \fR\fB\fISUBJECT\fR\fR
-Indicate the X.509 identity of the gatekeeper to which jobs are submitted to. This parameter sets the value of the
+.RS 4
+Indicate the X\&.509 identity of the gatekeeper to which jobs are submitted to\&. This parameter sets the value of the
 \fI$(GLOBUS_GATEKEEPER_SUBJECT)\fR
 RSL substitution to
 \fISUBJECT\fR
-.TP
+.RE
+.PP
 \fB\-home \fR\fB\fIGLOBUS_LOCATION\fR\fR
-Indicate the path where the Globus Toolkit(r) is installed on the service node. This is used by the job manager to locate its support and configuration files.
-.TP
+.RS 4
+Indicate the path where the Globus Toolkit(r) is installed on the service node\&. This is used by the job manager to locate its support and configuration files\&.
+.RE
+.PP
 \fB\-target\-globus\-location \fR\fB\fITARGET_GLOBUS_LOCATION\fR\fR
-Indicate the path where the Globus Toolkit(r) is installed on the execution host. If this is omitted, the value specified as a parameter to
+.RS 4
+Indicate the path where the Globus Toolkit(r) is installed on the execution host\&. If this is omitted, the value specified as a parameter to
 \fB\-home\fR
-is used. This parameter sets the value of the
+is used\&. This parameter sets the value of the
 \fI$(GLOBUS_LOCATION)\fR
 RSL substitution to
 \fITARGET_GLOBUS_LOCATION\fR
-.TP
+.RE
+.PP
 \fB\-history \fR\fB\fIHISTORY_DIRECTORY\fR\fR
+.RS 4
 Configure the job manager to write job history files to
-\fIHISTORY_DIRECTORY\fR. These files are described in the FILES section below.
-.TP
+\fIHISTORY_DIRECTORY\fR\&. These files are described in the FILES section below\&.
+.RE
+.PP
 \fB\-scratch\-dir\-base \fR\fB\fISCRATCH_DIRECTORY\fR\fR
+.RS 4
 Configure the job manager to use
 \fISCRATCH_DIRECTORY\fR
-as the default scratch directory root if a relative path is specified in the job RSL's
+as the default scratch directory root if a relative path is specified in the job RSL\*(Aqs
 \fIscratch_dir\fR
-attribute.
-.TP
+attribute\&.
+.RE
+.PP
 \fB\-enable\-syslog\fR
-Configure the job manager to write log messages via syslog. Logging is further controlled by the argument to the
+.RS 4
+Configure the job manager to write log messages via syslog\&. Logging is further controlled by the argument to the
 \fB\-log\-levels\fR
-parameter described below.
-.TP
+parameter described below\&.
+.RE
+.PP
 \fB\-log\-pattern \fR\fB\fIPATTERN\fR\fR
+.RS 4
 Configure the job manager to write log messages to files named by the string
-\fIPATTERN\fR. The
+\fIPATTERN\fR\&. The
 \fIPATTERN\fR
 string may contain job\-independent RSL substitutions such as
 $(HOME),
 $(LOGNAME), etc, as well as the special RSL substition
 $(DATE)
-which will be resolved at log time to the date in YYYYMMDD form.
-.TP
+which will be resolved at log time to the date in YYYYMMDD form\&.
+.RE
+.PP
 \fB\-stdio\-log \fR\fB\fILOG_DIRECTORY\fR\fR
+.RS 4
 Configure the job manager to write log messages to files in the
 \fILOG_DIRECTORY\fR
-directory. This is a backward\-compatible parameter, equivalent to
-\fI\-log\-pattern \fR\fI\fILOG_DIRECTORY\fR\fR\fI/gram_$(DATE).log\fR.
-.TP
+directory\&. This is a backward\-compatible parameter, equivalent to
+\fI\-log\-pattern \fR\fI\fILOG_DIRECTORY\fR\fR\fI/gram_$(DATE)\&.log\fR\&.
+.RE
+.PP
 \fB\-log\-levels \fR\fB\fILEVELS\fR\fR
-Configure the job manager to write log messages of certain levels to syslog and/or log files. The available log levels are
+.RS 4
+Configure the job manager to write log messages of certain levels to syslog and/or log files\&. The available log levels are
 FATAL,
 ERROR,
 WARN,
 INFO,
 DEBUG, and
-TRACE. Multiple values can be combined with the
+TRACE\&. Multiple values can be combined with the
 |
-character. The default value of logging when enabled is
-FATAL|ERROR.
-.TP
+character\&. The default value of logging when enabled is
+FATAL|ERROR\&.
+.RE
+.PP
 \fB\-state\-file\-dir \fR\fB\fISTATE_DIRECTORY\fR\fR
+.RS 4
 Configure the job manager to write state files to
-\fISTATE_DIRECTORY\fR. If not specified, the job manager uses the default of
-\fI\fI$GLOBUS_LOCATION\fR\fR\fI/tmp/gram_job_state/\fR. This directory must be writable by all users and be on a file system which supports POSIX advisory file locks.
-.TP
+\fISTATE_DIRECTORY\fR\&. If not specified, the job manager uses the default of
+\fI$GLOBUS_LOCATION\fR/tmp/gram_job_state/\&. This directory must be writable by all users and be on a file system which supports POSIX advisory file locks\&.
+.RE
+.PP
 \fB\-globus\-tcp\-port\-range \fR\fB\fIPORT_RANGE\fR\fR
+.RS 4
 Configure the job manager to restrict its TCP/IP communication to use ports in the range described by
-\fIPORT_RANGE\fR. This value is also made available in the job environment via the
+\fIPORT_RANGE\fR\&. This value is also made available in the job environment via the
 \fIGLOBUS_TCP_PORT_RANGE\fR
-environment variable.
-.TP
+environment variable\&.
+.RE
+.PP
 \fB\-globus\-tcp\-source\-range \fR\fB\fISOURCE_RANGE\fR\fR
+.RS 4
 Configure the job manager to restrict its TCP/IP communication to use source ports in the range described by
-\fISOURCE_RANGE\fR. This value is also made available in the job environment via the
+\fISOURCE_RANGE\fR\&. This value is also made available in the job environment via the
 \fIGLOBUS_TCP_SOURCE_RANGE\fR
-environment variable.
-.TP
+environment variable\&.
+.RE
+.PP
 \fB\-x509\-cert\-dir \fR\fB\fITRUSTED_CERTIFICATE_DIRECTORY\fR\fR
+.RS 4
 Configure the job manager to search
 \fITRUSTED_CERTIFICATE_DIRECTORY\fR
-for its list of trusted CA certificates and their signing policies. This value is also made available in the job environment via the
+for its list of trusted CA certificates and their signing policies\&. This value is also made available in the job environment via the
 \fIX509_CERT_DIR\fR
-environment variable.
-.TP
+environment variable\&.
+.RE
+.PP
 \fB\-cache\-location \fR\fB\fIGASS_CACHE_DIRECTORY\fR\fR
+.RS 4
 Configure the job manager to use the path
 \fIGASS_CACHE_DIRECTORY\fR
-for its temporary GASS\-cache files. This value is also made available in the job environment via the
+for its temporary GASS\-cache files\&. This value is also made available in the job environment via the
 \fIGLOBUS_GASS_CACHE_DEFAULT\fR
-environment variable.
-.TP
+environment variable\&.
+.RE
+.PP
 \fB\-k\fR
-Configure the job manager to assume it is using Kerberos for authentication instead of X.509 certificates. This disables some certificate\-specific processing in the job manager.
-.TP
-\fB\-extra\-envvars \fR\fB\fIVAR=VAL,...\fR\fR
-Configure the job manager to define a set of environment variables in the job environment beyond those defined in the base job environment. The format of the parameter to this argument is a comma\-separated sequence of VAR=VAL pairs, where
+.RS 4
+Configure the job manager to assume it is using Kerberos for authentication instead of X\&.509 certificates\&. This disables some certificate\-specific processing in the job manager\&.
+.RE
+.PP
+\fB\-extra\-envvars \fR\fB\fIVAR=VAL,\&.\&.\&.\fR\fR
+.RS 4
+Configure the job manager to define a set of environment variables in the job environment beyond those defined in the base job environment\&. The format of the parameter to this argument is a comma\-separated sequence of VAR=VAL pairs, where
 VAR
 is the variable name and
 VAL
-is the variable's value. If the value is not specified, then the value of the variable in the job manager's environment is used. This option may be present multiple times on the command\-line or the job manager configuration file to append multiple environment settings.
-.TP
+is the variable\*(Aqs value\&. If the value is not specified, then the value of the variable in the job manager\*(Aqs environment is used\&. This option may be present multiple times on the command\-line or the job manager configuration file to append multiple environment settings\&.
+.RE
+.PP
 \fB\-seg\-module \fR\fB\fISEG_MODULE\fR\fR
+.RS 4
 Configure the job manager to use the schedule event generator module named by
 \fISEG_MODULE\fR
-to detect job state changes events from the local resource manager, in place of the less efficient polling operations used in GT2. To use this, one instance of the
+to detect job state changes events from the local resource manager, in place of the less efficient polling operations used in GT2\&. To use this, one instance of the
 \fBglobus\-job\-manager\-event\-generator\fR
-must be running to process events for the LRM into a generic format that the job manager can parse.
-.TP
+must be running to process events for the LRM into a generic format that the job manager can parse\&.
+.RE
+.PP
 \fB\-audit\-directory \fR\fB\fIAUDIT_DIRECTORY\fR\fR
+.RS 4
 Configure the job manager to write audit records to the directory named by
-\fIAUDIT_DIRECTORY\fR. This records can be loaded into a database using the
+\fIAUDIT_DIRECTORY\fR\&. This records can be loaded into a database using the
 \fBglobus\-gram\-audit\fR
-program.
-.TP
+program\&.
+.RE
+.PP
 \fB\-globus\-toolkit\-version \fR\fB\fITOOLKIT_VERSION\fR\fR
+.RS 4
 Configure the job manager to use
 \fITOOLKIT_VERSION\fR
-as the version for audit and usage stats records.
-.TP
+as the version for audit and usage stats records\&.
+.RE
+.PP
 \fB\-service\-tag \fR\fB\fISERVICE_TAG\fR\fR
+.RS 4
 Configure the job manager to use
 \fISERVICE_TAG\fR
-as a unique identifier to allow multiple GRAM instances to use the same job state directories without interfering with each other's jobs. If not set, the value
+as a unique identifier to allow multiple GRAM instances to use the same job state directories without interfering with each other\*(Aqs jobs\&. If not set, the value
 untagged
-will be used.
-.TP
+will be used\&.
+.RE
+.PP
 \fB\-disable\-streaming\fR
-Configure the job manager to disable file streaming. This is propagated to the LRM script interface but has no effect in GRAM5.
-.TP
+.RS 4
+Configure the job manager to disable file streaming\&. This is propagated to the LRM script interface but has no effect in GRAM5\&.
+.RE
+.PP
 \fB\-disable\-usagestats\fR
+.RS 4
 Disable sending of any usage stats data, even if
 \fB\-usagestats\-targets\fR
-is present in the configuration.
-.TP
+is present in the configuration\&.
+.RE
+.PP
 \fB\-usagestats\-targets \fR\fB\fITARGET\fR\fR
-Send usage packets to a data collection service for analysis. The
+.RS 4
+Send usage packets to a data collection service for analysis\&. The
 \fITARGET\fR
-string consists of a comma\-separated list of HOST:PORT combinations, each contaiing an optional list of data to send. See
-[1]\&\fIUsage Stats Packets\fR
-for more information about the tags. Special tag strings of
+string consists of a comma\-separated list of HOST:PORT combinations, each contaiing an optional list of data to send\&. See
+\m[blue]\fBUsage Stats Packets\fR\m[]\&\s-2\u[1]\d\s+2
+for more information about the tags\&. Special tag strings of
 all
 (which enables all tags) and
 default
-may be used, or a sequence of characters for the various tags. If this option is not present in the configuration, then the default of usage\-stats.globus.org:4810 is used.
-.TP
+may be used, or a sequence of characters for the various tags\&. If this option is not present in the configuration, then the default of usage\-stats\&.globus\&.org:4810 is used\&.
+.RE
+.PP
 \fB\-condor\-arch \fR\fB\fIARCH\fR\fR
+.RS 4
 Set the architecture specification for condor jobs to be
 \fIARCH\fR
-in job classified ads generated by the GRAM5 codnor LRM script. This is required for the condor LRM but ignored for all others.
-.TP
+in job classified ads generated by the GRAM5 codnor LRM script\&. This is required for the condor LRM but ignored for all others\&.
+.RE
+.PP
 \fB\-condor\-os \fR\fB\fIOS\fR\fR
+.RS 4
 Set the operating system specification for condor jobs to be
 \fIOS\fR
-in job classified ads generated by the GRAM5 codnor LRM script. This is required for the condor LRM but ignored for all others.
+in job classified ads generated by the GRAM5 codnor LRM script\&. This is required for the condor LRM but ignored for all others\&.
+.RE
 .SH "ENVIRONMENT"
 .PP
 If the following variables affect the execution of
-\fBglobus\-job\-manager\fR.TP
+\fBglobus\-job\-manager\fR
+.PP
 \fBHOME\fR
-User's home directory.
-.TP
+.RS 4
+User\*(Aqs home directory\&.
+.RE
+.PP
 \fBLOGNAME\fR
-User's name.
-.TP
+.RS 4
+User\*(Aqs name\&.
+.RE
+.PP
 \fBJOBMANAGER_SYSLOG_ID\fR
-String to prepend to syslog audit messages.
-.TP
+.RS 4
+String to prepend to syslog audit messages\&.
+.RE
+.PP
 \fBJOBMANAGER_SYSLOG_FAC\fR
-Facility to log syslog audit messages as.
-.TP
+.RS 4
+Facility to log syslog audit messages as\&.
+.RE
+.PP
 \fBJOBMANAGER_SYSLOG_LVL\fR
-Priority level to use for syslog audit messages.
-.TP
+.RS 4
+Priority level to use for syslog audit messages\&.
+.RE
+.PP
 \fBGATEKEEPER_JM_ID\fR
-Job manager ID to be used in syslog audit records.
-.TP
+.RS 4
+Job manager ID to be used in syslog audit records\&.
+.RE
+.PP
 \fBGATEKEEPER_PEER\fR
+.RS 4
 Peer information to be used in syslog audit records
-.TP
+.RE
+.PP
 \fBGLOBUS_ID\fR
+.RS 4
 Credential information to be used in syslog audit records
-.TP
+.RE
+.PP
 \fBGLOBUS_JOB_MANAGER_SLEEP\fR
-Time (in seconds) to sleep when the job manager is started. [For debugging purposes only]
-.TP
+.RS 4
+Time (in seconds) to sleep when the job manager is started\&. [For debugging purposes only]
+.RE
+.PP
 \fBGRID_SECURITY_HTTP_BODY_FD\fR
-File descriptor of an open file which contains the initial job request and to which the initial job reply should be sent. This file descriptor is inherited from the
-\fBglobus\-gatekeeper\fR.
-.TP
+.RS 4
+File descriptor of an open file which contains the initial job request and to which the initial job reply should be sent\&. This file descriptor is inherited from the
+\fBglobus\-gatekeeper\fR\&.
+.RE
+.PP
 \fBX509_USER_PROXY\fR
-Path to the X.509 user proxy which was delegated by the client to the
+.RS 4
+Path to the X\&.509 user proxy which was delegated by the client to the
 \fBglobus\-gatekeeper\fR
-program to be used by the job manager.
-.TP
+program to be used by the job manager\&.
+.RE
+.PP
 \fBGRID_SECURITY_CONTEXT_FD\fR
-File descriptor containing an exported security context that the job manager should use to reply to the client which submitted the job.
-.TP
+.RS 4
+File descriptor containing an exported security context that the job manager should use to reply to the client which submitted the job\&.
+.RE
+.PP
 \fBGLOBUS_USAGE_TARGETS\fR
-Default list of usagestats services to send usage packets to.
-.TP
+.RS 4
+Default list of usagestats services to send usage packets to\&.
+.RE
+.PP
 \fBGLOBUS_TCP_PORT_RANGE\fR
-Default range of allowed TCP ports to listen on. The
+.RS 4
+Default range of allowed TCP ports to listen on\&. The
 \fB\-globus\-tcp\-port\-range\fR
-command\-line option overrides this.
-.TP
+command\-line option overrides this\&.
+.RE
+.PP
 \fBGLOBUS_TCP_SOURCE_RANGE\fR
-Default range of allowed TCP ports to bind to. The
+.RS 4
+Default range of allowed TCP ports to bind to\&. The
 \fB\-globus\-tcp\-source\-range\fR
-command\-line option overrides this.
+command\-line option overrides this\&.
+.RE
 .SH "FILES"
 .PP
-.TP
-\fI\fB$HOME\fR\fR\fI/.globus/job/\fR\fI\fIHOSTNAME\fR\fR\fI/\fR\fI\fILRM\fR\fR\fI.\fR\fI\fITAG\fR\fR\fI.\fR\fI\fIred\fR\fR
-Job manager delegated user credential.
-.TP
-\fI\fB$HOME\fR\fR\fI/.globus/job/\fR\fI\fIHOSTNAME\fR\fR\fI/\fR\fI\fILRM\fR\fR\fI.\fR\fI\fITAG\fR\fR\fI.\fR\fI\fIlock\fR\fR
-Job manager state lock file.
-.TP
-\fI\fB$HOME\fR\fR\fI/.globus/job/\fR\fI\fIHOSTNAME\fR\fR\fI/\fR\fI\fILRM\fR\fR\fI.\fR\fI\fITAG\fR\fR\fI.\fR\fI\fIpid\fR\fR
-Job manager pid file.
-.TP
-\fI\fB$HOME\fR\fR\fI/.globus/job/\fR\fI\fIHOSTNAME\fR\fR\fI/\fR\fI\fILRM\fR\fR\fI.\fR\fI\fITAG\fR\fR\fI.\fR\fI\fIsock\fR\fR
-Job manager socket for inter\-job manager communications.
-.TP
-\fI\fB$HOME\fR\fR\fI/.globus/job/\fR\fI\fIHOSTNAME\fR\fR\fI/\fR\fI\fIJOB_ID\fR\fR\fI/\fR
-Job\-specific state directory.
-.TP
-\fI\fB$HOME\fR\fR\fI/.globus/job/\fR\fI\fIHOSTNAME\fR\fR\fI/\fR\fI\fIJOB_ID\fR\fR\fI/stdin\fR
-Standard input which has been staged from a remote URL.
-.TP
-\fI\fB$HOME\fR\fR\fI/.globus/job/\fR\fI\fIHOSTNAME\fR\fR\fI/\fR\fI\fIJOB_ID\fR\fR\fI/stdout\fR
-Standard output which will be staged from a remote URL.
-.TP
-\fI\fB$HOME\fR\fR\fI/.globus/job/\fR\fI\fIHOSTNAME\fR\fR\fI/\fR\fI\fIJOB_ID\fR\fR\fI/stderr\fR
-Standard error which will be staged from a remote URL.
-.TP
-\fI\fB$HOME\fR\fR\fI/.globus/job/\fR\fI\fIHOSTNAME\fR\fR\fI/\fR\fI\fIJOB_ID\fR\fR\fI/x509_user_proxy\fR
-Job\-specific delegated credential.
-.TP
-\fI\fB$GLOBUS_LOCATION\fR\fR\fI/tmp/gram_job_state/job.\fR\fI\fIHOSTNAME\fR\fR\fI.\fR\fI\fIJOB_ID\fR\fR
-Job state file.
-.TP
-\fI\fB$GLOBUS_LOCATION\fR\fR\fI/tmp/gram_job_state/job.\fR\fI\fIHOSTNAME\fR\fR\fI.\fR\fI\fIJOB_ID\fR\fR\fI.lock\fR
-Job state lock file. In most cases this will be a symlink to the job manager lock file.
-.TP
-\fI\fB$GLOBUS_LOCATION\fR\fR\fI/etc/globus\-job\-manager.conf\fR
-Default location of the global job manager configuration file.
-.TP
-\fI\fB$GLOBUS_LOCATION\fR\fR\fI/etc/grid\-services/jobmanager\-\fR\fI\fILRM\fR\fR
-Default location of the LRM\-specific gatekeeper configuration file.
+.PP
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fILRM\fR\&.\fITAG\fR\&.\fIred\fR
+.RS 4
+Job manager delegated user credential\&.
+.RE
+.PP
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fILRM\fR\&.\fITAG\fR\&.\fIlock\fR
+.RS 4
+Job manager state lock file\&.
+.RE
+.PP
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fILRM\fR\&.\fITAG\fR\&.\fIpid\fR
+.RS 4
+Job manager pid file\&.
+.RE
+.PP
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fILRM\fR\&.\fITAG\fR\&.\fIsock\fR
+.RS 4
+Job manager socket for inter\-job manager communications\&.
+.RE
+.PP
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fIJOB_ID\fR/
+.RS 4
+Job\-specific state directory\&.
+.RE
+.PP
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fIJOB_ID\fR/stdin
+.RS 4
+Standard input which has been staged from a remote URL\&.
+.RE
+.PP
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fIJOB_ID\fR/stdout
+.RS 4
+Standard output which will be staged from a remote URL\&.
+.RE
+.PP
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fIJOB_ID\fR/stderr
+.RS 4
+Standard error which will be staged from a remote URL\&.
+.RE
+.PP
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fIJOB_ID\fR/x509_user_proxy
+.RS 4
+Job\-specific delegated credential\&.
+.RE
+.PP
+\fB$GLOBUS_LOCATION\fR/tmp/gram_job_state/job\&.\fIHOSTNAME\fR\&.\fIJOB_ID\fR
+.RS 4
+Job state file\&.
+.RE
+.PP
+\fB$GLOBUS_LOCATION\fR/tmp/gram_job_state/job\&.\fIHOSTNAME\fR\&.\fIJOB_ID\fR\&.lock
+.RS 4
+Job state lock file\&. In most cases this will be a symlink to the job manager lock file\&.
+.RE
+.PP
+\fB$GLOBUS_LOCATION\fR/etc/globus\-job\-manager\&.conf
+.RS 4
+Default location of the global job manager configuration file\&.
+.RE
+.PP
+\fB$GLOBUS_LOCATION\fR/etc/grid\-services/jobmanager\-\fILRM\fR
+.RS 4
+Default location of the LRM\-specific gatekeeper configuration file\&.
+.RE
+.PP
+\fB$GLOBUS_LOCATION\fR/etc/globus/gram/job\-\-manager\&.rvf
+.RS 4
+Default location of the site\-specific job manager RSL validation file\&.
+.RE
+.PP
+\fB$GLOBUS_LOCATION\fR/etc/globus/gram/\fIlrm\fR\&.rvf
+.RS 4
+Default location of the site\-specific job manager RSL validation file for the named lrm\&.
+.RE
 .SH "SEE ALSO"
 .PP
+
 \fBglobusrun\fR(1),
-\fBglobus\-gatekeeper\fR(8),
-\fBglobus\-personal\-gatekeeper\fR(1),
-\fBglobus\-gram\-audit\fR(8)
-.SH "REFERENCES"
-.TP 3
-1.\ Usage Stats Packets
+\fBglobus-gatekeeper\fR(8),
+\fBglobus-personal-gatekeeper\fR(1),
+\fBglobus-gram-audit\fR(8)
+.SH "NOTES"
+.IP " 1." 4
+Usage Stats Packets
+.RS 4
 \%http://confluence.globus.org/display/~bester/GRAM5+Usage+Stats+Packets
+.RE

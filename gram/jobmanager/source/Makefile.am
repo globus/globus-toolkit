@@ -1,7 +1,7 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-SUBDIRS= pkgdata doxygen scripts seg
+SUBDIRS= pkgdata doxygen rvf scripts seg
 
 # Extra directories we install files into
 validationdir = $(datadir)/globus/$(PACKAGE)
@@ -24,7 +24,6 @@ libglobus_gram_job_manager_la_SOURCES = \
 	globus_gram_job_manager.h \
         globus_gram_job_manager_config.c \
         globus_gram_job_manager.c \
-	globus_gram_job_manager_validation.h \
 	globus_gram_job_manager_auditing.c \
 	globus_gram_job_manager_contact.c \
 	globus_gram_job_manager_gsi.c \
@@ -46,16 +45,19 @@ libglobus_gram_job_manager_la_SOURCES = \
 globus_job_manager_SOURCES = main.c
 
 # Compiler flags
-INCLUDES = $(GPT_INCLUDES) $(XML_CPPFLAGS)
+INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/rvf $(XML_CPPFLAGS)
 
 globus_job_manager_LDFLAGS = $(GPT_LDFLAGS)
 globus_job_manager_LDADD = \
 	./libglobus_gram_job_manager.la \
-        $(GPT_PGM_LINKS) $(XML_LIBS)
+	./rvf/libglobus_rvf.la \
+	$(GPT_PGM_LINKS) $(XML_LIBS)
 
 globus_gram_streamer_LDFLAGS = $(GPT_LDFLAGS)
 globus_gram_streamer_LDADD = \
-	./libglobus_gram_job_manager.la $(GPT_PGM_LINKS) $(XML_LIBS)
+	./libglobus_gram_job_manager.la \
+	./rvf/libglobus_rvf.la \
+	$(GPT_PGM_LINKS) $(XML_LIBS)
 
 ## man1dir = [ DOC ]
 man1_MANS = globus-personal-gatekeeper.1
@@ -97,9 +99,9 @@ EXTRA_DIST = globus-personal-gatekeeper.in \
 all: $(BUILT_SOURCES)
 
 globus_gram_job_manager_rsl.dox: globus-gram-job-manager.rvf
-	perl scripts/create_rsl_documentation.pl < $< > $@
+	perl $(top_srcdir)/scripts/create_rsl_documentation.pl < $< > $@
 rsl.xml: globus-gram-job-manager.rvf
-	perl scripts/create_rsl_documentation.pl -x < $< > $@
+	perl $(top_srcdir)/scripts/create_rsl_documentation.pl -x < $< > $@
 
 install-data-hook:
 	mkdir -p $(DESTDIR)$(localstatedir)/lib/globus/gram_job_state
@@ -108,6 +110,7 @@ install-data-hook:
 	cp $(srcdir)/gram.logrotate $(DESTDIR)$(logrotatedir)/globus-job-manager
 	mkdir -p $(DESTDIR)@LOGDIR@
 	chmod 1777 $(DESTDIR)@LOGDIR@
+	mkdir -p $(DESTDIR)$(sysconfdir)/globus/gram
 
 CLEANFILES = \
     globus-personal-gatekeeper \

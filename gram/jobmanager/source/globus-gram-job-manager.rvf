@@ -7,6 +7,7 @@ Default: $(HOME)
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 
+
 Attribute: executable
 Description: "The name of the executable file to run on the remote machine.
 	      If the value is a GASS URL, the file is transferred to the
@@ -50,7 +51,7 @@ Description: "The name of the remote file to store the standard error from
               of a single destination: stderr = URL, or a sequence of
               destinations: stderr = (DESTINATION) (DESTINATION). In the latter
               case, the DESTINATION may itself be a URL or a sequence of an
-              x-gass-cache URL followed by a cache tag.""
+              x-gass-cache URL followed by a cache tag."
 Default: "/dev/null"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART GLOBUS_GRAM_JOB_MANAGER_STDIO_UPDATE
 DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT 
@@ -124,7 +125,7 @@ ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Attribute: host_count
 Description: "Only applies to clusters of SMP computers, such as newer IBM SP
 	      systems. Defines the number of nodes (\"pizza boxes\") to
-	      distribute the "count" processes across."
+	      distribute the \"count\" processes across."
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: dry_run

@@ -64,11 +64,11 @@ const char *                     globus_i_gram_job_manager_state_strings[] =
     "GLOBUS_GRAM_JOB_MANAGER_STATE_STOP",
     "GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1",
     "GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2",
-    "GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH",
+    NULL, /*"GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH ,*/
     "GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT",
     "GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1",
     "GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2",
-    "GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH"
+    NULL /*"GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH" */
 };
 
 static
@@ -588,35 +588,6 @@ globus_l_gram_job_manager_state_machine(
                     request,
                     query);
         }
-        else if(query->type == GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH)
-        {
-            if (request->jobmanager_state ==
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1)
-            {
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH;
-            }
-            else
-            {
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH;
-            }
-            rc = globus_gram_protocol_accept_delegation(
-                    query->handle,
-                    GSS_C_NO_OID_SET,
-                    GSS_C_NO_BUFFER_SET,
-                    GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
-                        GSS_C_GLOBUS_SSL_COMPATIBLE,
-                    0,
-                    globus_gram_job_manager_query_delegation_callback,
-                    request);
-
-            if(rc == GLOBUS_SUCCESS)
-            {
-                event_registered = GLOBUS_TRUE;
-            }
-            break;
-        }
         if(rc == GLOBUS_SUCCESS)
         {
             request->jobmanager_state = next_state;
@@ -699,47 +670,6 @@ globus_l_gram_job_manager_state_machine(
         }
         break;
     
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
-        query = globus_fifo_peek(&request->pending_queries);
-
-        globus_assert(query->type == GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH);
-
-        if (request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH)
-        {
-            request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
-        }
-        else if (request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH)
-        {
-            request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2;
-        }
-
-        if(query->delegated_credential != GSS_C_NO_CREDENTIAL)
-        {
-            /*
-             * We got a new credential... update our listener and
-             * store it on disk
-             */
-            rc = globus_gram_job_manager_gsi_update_credential(
-                    request->manager,
-                    request,
-                    query->delegated_credential);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                break;
-            }
-        }
-        else
-        {
-            query->failure_code =
-                GLOBUS_GRAM_PROTOCOL_ERROR_DELEGATION_FAILED;
-        }
-        break;
-
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
         if(request->unsent_status_change)
@@ -923,10 +853,6 @@ globus_l_gram_job_manager_state_machine(
         {
             remove(request->job_state_file);
         }
-        if(request->job_state_lock_file)
-        {
-            remove(request->job_state_lock_file);
-        }
         globus_l_gram_job_manager_cancel_queries(request);
 
         break;
@@ -948,10 +874,6 @@ globus_l_gram_job_manager_state_machine(
         if(request->job_state_file)
         {
             remove(request->job_state_file);
-        }
-        if(request->job_state_lock_file)
-        {
-            remove(request->job_state_lock_file);
         }
         globus_l_gram_job_manager_cancel_queries(request);
         /* Write auditing file if job is DONE or FAILED */
@@ -1517,6 +1439,7 @@ globus_gram_job_manager_read_request(
     int                                 rc;
     globus_hashtable_t                  extensions;
     globus_gram_protocol_extension_t *  entry;
+    size_t                              amt_read = 0;
     globus_byte_t                       buffer[
                                             GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
 
@@ -1549,9 +1472,18 @@ globus_gram_job_manager_read_request(
                 "RSL too large");
         return rc;
     }
-    if ((rc = read(fd, buffer, content_length)) != content_length)
+    do
     {
-        if (rc < 0)
+        errno = 0;
+
+        rc = read(fd, buffer + amt_read, content_length - amt_read);
+
+        if (rc < 0 && (errno == EINTR || errno == EAGAIN))
+        {
+            sleep(1);
+            continue;
+        }
+        else if (rc < 0)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 
@@ -1568,27 +1500,14 @@ globus_gram_job_manager_read_request(
                     "Error reading rsl",
                     errno,
                     strerror(errno));
+            return rc;
         }
         else
         {
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.read_request.end "
-                    "level=ERROR "
-                    "status=%d "
-                    "msg=\"%s\" "
-                    "size=%zd "
-                    "read=%ld "
-                    "\n"
-                    -GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED,
-                    "Short read of rsl",
-                    content_length,
-                    rc);
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+            amt_read += rc;
         }
-        return rc;
     }
+    while (amt_read < content_length);
 
     if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
     {
@@ -2193,7 +2112,7 @@ globus_l_gram_gss_send_fd(
     lengthbuf[3] = length;
     
     if (!(length > 5 && header[0] <= 26 && header[0] >= 20
-          && ((header[1] == 3 && (header[2] == 0 || header[2] == 1))
+          && ((header[1] == 3)
           || (header[1] == 2 && header[2] == 0))))
     {
         written = 0;
@@ -2309,6 +2228,7 @@ not_found:
                 request->config->job_state_file_dir,
                 request->uniq_id);
         remove(condor_log);
+        free(condor_log);
     }
     return;
 }

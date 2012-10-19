@@ -30,6 +30,8 @@
 #include "globus_gram_job_manager.h"
 #include "globus_xio_popen_driver.h"
 
+#include <sys/un.h>
+
 /* This value (in seconds) is the length of time after a job hits a waiting
  * for SEG state before freeing its memory
  */
@@ -48,11 +50,6 @@ typedef struct globus_gram_job_id_ref_s
     char *                              job_contact_path;
 }
 globus_gram_job_id_ref_t;
-
-static
-int
-globus_l_gram_mkdir(
-    char *                              path);
 
 
 static
@@ -111,10 +108,10 @@ globus_l_gram_script_attr_init(
 
 static
 int
-globus_l_gram_script_priority_cmp(
-    void *                              priority_1,
-    void *                              priority_2);
-
+globus_l_gram_job_manager_request_load_all_from_dir(
+    globus_gram_job_manager_t *         manager,
+    const char *                        state_file_dir,
+    const char *                        state_file_pattern);
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
@@ -144,6 +141,7 @@ globus_gram_job_manager_init(
 {
     int                                 rc;
     char *                              dir_prefix = NULL;
+    struct sockaddr_un                  s;
 
     if (manager == NULL || config == NULL)
     {
@@ -179,11 +177,15 @@ globus_gram_job_manager_init(
     manager->seg_last_timestamp = 0;
     manager->seg_started = GLOBUS_FALSE;
 
-    rc = globus_gram_job_manager_validation_init(manager);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto validation_init_failed;
-    }
+    /* After addition of site specific rvf files, reload validation
+     * files when changed
+     */
+    manager->validation_record_timestamp = (time_t) 0;
+    manager->validation_records = NULL;
+    manager->validation_file_exists[0] = 0;
+    manager->validation_file_exists[1] = 0;
+    manager->validation_file_exists[2] = 0;
+    manager->validation_file_exists[3] = 0;
 
     rc = globus_hashtable_init(
             &manager->request_hash,
@@ -217,7 +219,7 @@ globus_gram_job_manager_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto malloc_dir_prefix_failed;
     }
-    rc = globus_l_gram_mkdir(dir_prefix);
+    rc = globus_i_gram_mkdir(dir_prefix);
     if (rc != GLOBUS_SUCCESS)
     {
         goto mkdir_failed;
@@ -306,6 +308,19 @@ globus_gram_job_manager_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto malloc_socket_path_failed;
     }
+    else if (strlen(manager->socket_path) > sizeof(s.sun_path))
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
+        if (manager->gt3_failure_message == NULL)
+        {
+            manager->gt3_failure_message =
+                globus_common_create_string(
+                    "the job manager wants to use %s as a socket path, but the path is too long (use the -globus-job-dir option in etc/globus/globus-gram-job-manager.conf)",
+                    manager->socket_path);
+
+        }
+        goto malloc_socket_path_failed;
+    }
 
     manager->pid_path = globus_common_create_string(
             "%s/%s.%s.pid",
@@ -318,25 +333,7 @@ globus_gram_job_manager_init(
         goto malloc_pid_path_failed;
     }
 
-    rc = globus_priority_q_init(
-            &manager->script_queue,
-            globus_l_gram_script_priority_cmp);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto script_queue_init_failed;
-    }
-
-    /* Default number of scripts which can be run simultaneously */
-    manager->script_slots_available = 5;
-
-    rc = globus_fifo_init(&manager->script_handles);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto script_handles_fifo_init_failed;
-    }
-
+    manager->scripts_per_client = NULL;
     rc = globus_fifo_init(&manager->state_callback_fifo);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -372,10 +369,6 @@ globus_gram_job_manager_init(
     {
 script_attr_init_failed:
 state_callback_fifo_init_failed:
-        globus_fifo_destroy(&manager->script_handles);
-script_handles_fifo_init_failed:
-        globus_priority_q_destroy(&manager->script_queue);
-script_queue_init_failed:
         free(manager->pid_path);
         manager->pid_path = NULL;
 malloc_pid_path_failed:
@@ -406,7 +399,6 @@ request_hashtable_init_failed:
                 manager->validation_records);
         manager->validation_records = NULL;
         
-validation_init_failed:
         globus_cond_destroy(&manager->cond);
 cond_init_failed:
         GlobusGramJobManagerUnlock(manager);
@@ -452,8 +444,20 @@ globus_gram_job_manager_destroy(
     globus_hashtable_destroy(&manager->job_id_hash);
 
     globus_fifo_destroy(&manager->state_callback_fifo);
-    globus_priority_q_destroy(&manager->script_queue);
-    globus_fifo_destroy(&manager->script_handles);
+
+    while (!globus_list_empty(manager->scripts_per_client))
+    {
+        globus_gram_job_manager_scripts_t *scripts;
+        
+        scripts = globus_list_remove(
+                &manager->scripts_per_client,
+                manager->scripts_per_client);
+
+        globus_priority_q_destroy(&scripts->script_queue);
+        globus_fifo_destroy(&scripts->script_handles);
+        free(scripts->client_addr);
+        free(scripts);
+    }
     
     if(manager->usagetracker)
     {
@@ -772,6 +776,7 @@ globus_l_gram_job_manager_add_ref_stub(
     (*ref)->loaded_only = GLOBUS_FALSE;
     (*ref)->seg_last_timestamp = request ? request->seg_last_timestamp : 0;
     (*ref)->seg_last_size = 0;
+    (*ref)->expiration_time = 0;
 
     (*ref)->key = strdup(key);
     if ((*ref)->key == NULL)
@@ -879,7 +884,10 @@ globus_gram_job_manager_add_reference(
                         globus_hashtable_string_keyeq,
                         request->job_contact_path)) != NULL)
     {
-        globus_list_remove(&manager->pending_restarts, pending_restart_ref);
+        char * pending_restarts_key = globus_list_remove(
+                &manager->pending_restarts, pending_restart_ref);
+        free(pending_restarts_key);
+        pending_restarts_key = NULL;
 
         rc = globus_l_gram_add_reference_locked(
                 manager,
@@ -1600,9 +1608,9 @@ globus_gram_job_manager_add_reference_by_jobid(
 
         globus_gram_job_manager_log(
                 manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
                 "event=gram.add_reference_by_jobid.end "
-                "level=INFO "
+                "level=DEBUG "
                 "jobid=\"%s\" "
                 "status=%d "
                 "msg=\"%s\" "
@@ -1765,23 +1773,7 @@ globus_gram_job_manager_set_status(
             (void *) key);
     if (ref == NULL)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND,
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                "event=gram.set_job_status.end "
-                "level=WARN "
-                "gramid=%s "
-                "state=%d "
-                "failure_code=%d "
-                "status=%d "
-                "reason=\"%s\" "
-                "\n",
-                key,
-                state,
-                failure_code,
-                -rc,
-                globus_gram_protocol_error_string(rc));
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
 
         goto not_found;
     }
@@ -1953,6 +1945,14 @@ globus_gram_job_manager_set_grace_period_timer(
 }
 /* globus_gram_job_manager_set_grace_period_timer() */
 
+/**
+ * Fake a two-phase commit for jobs that are in a done state, but are older
+ * than their expiration time.
+ * 
+ * @param arg
+ *     Pointer to the job manager structure for this job.
+ * @return void
+ */
 void
 globus_gram_job_manager_expire_old_jobs(
     void *                              arg)
@@ -1962,6 +1962,7 @@ globus_gram_job_manager_expire_old_jobs(
     globus_gram_jobmanager_request_t *  request;
     int                                 rc;
     time_t                              now;
+    int                                 expired = 0;
 
     now = time(NULL);
 
@@ -1970,7 +1971,8 @@ globus_gram_job_manager_expire_old_jobs(
          ref != NULL;
          ref = globus_hashtable_next(&manager->request_hash))
     {
-        if (ref->reference_count == 0 && now < ref->expiration_time)
+        if (ref->reference_count == 0
+            && ref->expiration_time != 0 && now > ref->expiration_time)
         {
             rc = globus_l_gram_add_reference_locked(
                     manager,
@@ -1984,9 +1986,20 @@ globus_gram_job_manager_expire_old_jobs(
             ref->expiration_time = 0;
 
             if (request->jobmanager_state ==
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END)
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END ||
+                request->jobmanager_state ==
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE)
             {
                 /* Fake the commit */
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                        "event=gram.expire_jobs.info "
+                        "level=DEBUG "
+                        "gramid=%s "
+                        "\n",
+                        ref->key);
+
                 request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED;
 
@@ -2010,6 +2023,7 @@ globus_gram_job_manager_expire_old_jobs(
                     }
                 }
                 
+                expired++;
             }
 oneshot_failed:
             rc = globus_l_gram_job_manager_remove_reference_locked( 
@@ -2022,8 +2036,19 @@ oneshot_failed:
         }
     }
     GlobusGramJobManagerUnlock(manager);
+
+    if (expired > 0)
+    {
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+                "event=gram.expire_jobs.end "
+                "expired_count=%d "
+                "\n",
+                expired);
+    }
 }
-/* globus_gram_job_manager_stop_all_jobs() */
+/* globus_gram_job_manager_expire_old_jobs() */
 
 
 void
@@ -2100,8 +2125,6 @@ globus_gram_job_manager_stop_all_jobs(
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
             request->unsent_status_change = GLOBUS_TRUE;
             break;
@@ -2182,22 +2205,13 @@ globus_gram_job_manager_request_load_all(
 {
     int                                 rc = GLOBUS_SUCCESS;
     char *                              state_file_pattern = NULL;
-    int                                 lock;
-    DIR *                               dir;
-    struct dirent *                     entry;
-    uint64_t                            uniq1, uniq2;
-    globus_gram_jobmanager_request_t *  request;
-    globus_gram_job_manager_ref_t *     ref;
-    struct stat                         st;
-    char *                              full_path;
-    uid_t                               uid = getuid();
 
     GlobusGramJobManagerLock(manager);
     globus_gram_job_manager_log(
             manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
             "event=gram.reload_requests.start "
-            "level=INFO "
+            "level=DEBUG "
             "\n");
 
     state_file_pattern = globus_common_create_string(
@@ -2226,8 +2240,88 @@ globus_gram_job_manager_request_load_all(
         goto state_file_pattern_alloc_failed;
     }
 
-    dir = globus_libc_opendir(manager->config->job_state_file_dir);
-    if (dir == NULL)
+    globus_l_gram_job_manager_request_load_all_from_dir(
+            manager,
+            manager->config->job_state_file_dir,
+            state_file_pattern);
+
+    free(state_file_pattern);
+    state_file_pattern = NULL;
+    {
+        char * hashed_job_dir;
+
+        state_file_pattern = globus_common_create_string(
+                "job.%%"PRIu64".%%"PRIu64"%%n");
+        if (state_file_pattern == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto state_file_pattern_alloc_failed;
+        }
+        
+        hashed_job_dir = globus_common_create_string(
+                "%s/%s/%s/%s",
+                manager->config->job_state_file_dir,
+                manager->config->logname,
+                manager->config->service_tag,
+                manager->config->jobmanager_type);
+
+        if (hashed_job_dir == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto hashed_job_dir_alloc_failed;
+        }
+
+        globus_l_gram_job_manager_request_load_all_from_dir(
+                manager,
+                hashed_job_dir,
+                state_file_pattern);
+        free(hashed_job_dir);
+    }
+
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.reload_requests.end "
+            "level=DEBUG "
+            "statedir=\"%s\" "
+            "status=%d "
+            "requests=%d "
+            "\n",
+            manager->config->job_state_file_dir,
+            0,
+            (int) globus_list_size(manager->pending_restarts));
+
+hashed_job_dir_alloc_failed:
+    if (state_file_pattern)
+    {
+        free(state_file_pattern);
+    }
+state_file_pattern_alloc_failed:
+    GlobusGramJobManagerUnlock(manager);
+    return rc;
+}
+/* globus_gram_job_manager_request_load_all() */
+
+static
+int
+globus_l_gram_job_manager_request_load_all_from_dir(
+    globus_gram_job_manager_t *         manager,
+    const char *                        state_file_dir,
+    const char *                        state_file_pattern)
+{
+    int                                 rc;
+    DIR *                               dir;
+    int                                 lock;
+    struct dirent *                     entry;
+    uint64_t                            uniq1, uniq2;
+    globus_gram_jobmanager_request_t *  request;
+    globus_gram_job_manager_ref_t *     ref;
+    struct stat                         st;
+    char *                              full_path;
+    uid_t                               uid = getuid();
+
+    dir = globus_libc_opendir(state_file_dir);
+    if (dir == NULL && strcmp(state_file_dir, manager->config->job_state_file_dir) == 0)
     {
         int save_errno = errno;
         globus_gram_job_manager_log(
@@ -2239,7 +2333,7 @@ globus_gram_job_manager_request_load_all(
                 "msg=\"%s\" "
                 "errno=%d "
                 "reason=\"%s\"\n",
-                manager->config->job_state_file_dir,
+                state_file_dir,
                 "opendir failed",
                 errno,
                 strerror(errno));
@@ -2249,10 +2343,15 @@ globus_gram_job_manager_request_load_all(
         {
             manager->gt3_failure_message = globus_common_create_string(
                     "the job manager failed to open the job state file directory \"%s\": %s",
-                    manager->config->job_state_file_dir,
+                    state_file_dir,
                     strerror(save_errno));
 
         }
+        goto opendir_failed;
+    }
+    else if (dir == NULL)
+    {
+        rc = GLOBUS_SUCCESS;
         goto opendir_failed;
     }
 
@@ -2284,7 +2383,7 @@ globus_gram_job_manager_request_load_all(
                         "gramid=/%"PRIu64"/%"PRIu64"/ "
                         "errno=%d "
                         "reason=\"%s\"\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         entry->d_name,
                         "Error constructing filename, ignoring state file",
                         uniq1,
@@ -2296,7 +2395,7 @@ globus_gram_job_manager_request_load_all(
                 continue;
             }
             full_path = globus_common_create_string("%s/%s",
-                    manager->config->job_state_file_dir,
+                    state_file_dir,
                     entry->d_name);
             if (full_path == NULL)
             {
@@ -2311,7 +2410,7 @@ globus_gram_job_manager_request_load_all(
                         "gramid=/%"PRIu64"/%"PRIu64"/ "
                         "errno=%d "
                         "reason=\"%s\"\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         entry->d_name,
                         "Error constructing filename, ignoring state file",
                         uniq1,
@@ -2342,7 +2441,7 @@ globus_gram_job_manager_request_load_all(
                         "gramid=/%"PRIu64"/%"PRIu64"/ "
                         "errno=%d "
                         "reason=\"%s\"\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         entry->d_name,
                         "Error checking state file ownership, ignoring state file",
                         uniq1,
@@ -2367,7 +2466,7 @@ globus_gram_job_manager_request_load_all(
                         "statefile=\"%s\" "
                         "msg=\"Ignoring state file\" "
                         "reason=\"File UID is %d, my UID is %d\"\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         entry->d_name,
                         (int) st.st_uid,
                         (int) uid);
@@ -2397,7 +2496,7 @@ globus_gram_job_manager_request_load_all(
                             "gramid=/%"PRIu64"/%"PRIu64"/ "
                             "status=%d "
                             "reason=\"%s\"\n",
-                            manager->config->job_state_file_dir,
+                            state_file_dir,
                             "Error restarting job",
                             uniq1,
                             uniq2,
@@ -2453,7 +2552,7 @@ globus_gram_job_manager_request_load_all(
                             "status=%d "
                             "reason=\"%s\" "
                             "\n",
-                            manager->config->job_state_file_dir,
+                            state_file_dir,
                             "Error registering job id",
                             uniq1,
                             uniq2,
@@ -2486,7 +2585,7 @@ globus_gram_job_manager_request_load_all(
                         "status=%d "
                         "reason=\"%s\" "
                         "\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         "Error registering job id",
                         uniq1,
                         uniq2,
@@ -2534,7 +2633,7 @@ globus_gram_job_manager_request_load_all(
                         "gramid=%"PRIu64"/%"PRIu64" "
                         "errno=%d "
                         "reason=\"%s\"\n",
-                        manager->config->job_state_file_dir,
+                        state_file_dir,
                         "Error inserting job into request list",
                         uniq1,
                         uniq2,
@@ -2555,30 +2654,13 @@ globus_gram_job_manager_request_load_all(
     rc = 0;
     globus_libc_closedir(dir);
 
-    globus_gram_job_manager_log(
-            manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
-            "event=gram.reload_requests.end "
-            "level=INFO "
-            "statedir=\"%s\" "
-            "status=%d "
-            "requests=%d "
-            "\n",
-            manager->config->job_state_file_dir,
-            0,
-            (int) globus_list_size(manager->pending_restarts));
-
 opendir_failed:
-    free(state_file_pattern);
-state_file_pattern_alloc_failed:
-    GlobusGramJobManagerUnlock(manager);
     return rc;
 }
-/* globus_gram_job_manager_request_load_all() */
+/* globus_l_gram_job_manager_request_load_all_from_dir() */
 
-static
 int
-globus_l_gram_mkdir(
+globus_i_gram_mkdir(
     char *                              path)
 {
     char *                              tmp;
@@ -2623,7 +2705,7 @@ error_exit:
     }
     return rc;
 }
-/* globus_l_gram_mkdir() */
+/* globus_i_gram_mkdir() */
 
 static
 void
@@ -2760,6 +2842,17 @@ globus_l_gram_ref_swap_out(
                 request->rsl,
                 GLOBUS_GRAM_JOB_MANAGER_EXPIRATION_ATTR,
                 &expire);
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                    "event=gram.job_ref_swap_out.info "
+                    "level=DEBUG "
+                    "gramid=%s "
+                    "expire=%d "
+                    "\n",
+                    ref->key,
+                    expire);
 
             if (expire != -1)
             {
@@ -3195,7 +3288,6 @@ globus_l_gram_script_attr_init(
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
 
-attr_cntl_blocking_failed:
 attr_cntl_env_failed:
 attr_cntl_program_failed:
         globus_xio_attr_destroy(manager->script_attr);
@@ -3270,31 +3362,3 @@ job_id_copy_failed:
     return rc;
 }
 /* globus_gram_split_subjobs() */
-
-static
-int
-globus_l_gram_script_priority_cmp(
-    void *                              priority_1,
-    void *                              priority_2)
-{
-    globus_gram_script_priority_t      *p1 = priority_1, *p2 = priority_2;
-
-    if (p1->priority_level > p2->priority_level)
-    {
-        return 1;
-    }
-    else if (p1->priority_level < p2->priority_level)
-    {
-        return -1;
-    }
-    else if (p1->sequence > p2->sequence)
-    {
-        return 2;
-    }
-    else
-    {
-        assert(p1->sequence < p2->sequence);
-        return -2;
-    }
-}
-/* globus_l_gram_script_priority_cmp() */

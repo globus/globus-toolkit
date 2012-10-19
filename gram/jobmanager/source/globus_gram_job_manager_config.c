@@ -614,7 +614,7 @@ globus_gram_job_manager_config_init(
 
     rc = uname(&utsname);
 
-    if (rc == 0)
+    if (rc >= 0)
     {
         if (config->globus_host_osname == NULL)
         {
@@ -787,7 +787,7 @@ globus_gram_job_manager_config_destroy(
     }
     if (config->extra_envvars)
     {
-        free(config->extra_envvars);
+        globus_list_destroy_all(config->extra_envvars, free);
     }
     if (config->seg_module)
     {
@@ -801,6 +801,16 @@ globus_gram_job_manager_config_destroy(
     {
         free(config->globus_version);
     }
+    if (config->usage_targets)
+    {
+        free(config->usage_targets);
+    }
+    /*
+    if (config->log_pattern)
+    {
+        free(config->log_pattern);
+    }
+    */
     if (config->subject)
     {
         free(config->subject);
@@ -816,6 +826,18 @@ globus_gram_job_manager_config_destroy(
     if (config->hostname)
     {
         free(config->hostname);
+    }
+    if (config->short_hostname)
+    {
+        free(config->short_hostname);
+    }
+    if (config->service_tag)
+    {
+        free(config->service_tag);
+    }
+    if (config->job_dir_home)
+    {
+        free(config->job_dir_home);
     }
 }
 /* globus_gram_job_manager_config_destroy() */

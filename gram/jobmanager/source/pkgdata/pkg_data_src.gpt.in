@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager">
-    <Aging_Version Major="13" Minor="19" Age="0"/>
+    <Aging_Version Major="13" Minor="51" Age="0"/>
     <Description>GRAM Jobmanager</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -18,6 +18,11 @@
                     <Simple_Version Major="14"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gsi_credential">
+                <Version>
+                    <Simple_Version Major="5"/>
+                </Version>
+            </Dependency>
             <Dependency Name="globus_gass_cache">
                 <Version>
                     <Simple_Version Major="8"/>
@@ -31,6 +36,11 @@
             <Dependency Name="globus_gram_protocol">
                 <Version>
                     <Simple_Version Major="11"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="10"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gss_assist">
@@ -85,6 +95,11 @@
                     <Simple_Version Major="14"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gsi_credential">
+                <Version>
+                    <Simple_Version Major="5"/>
+                </Version>
+            </Dependency>
             <Dependency Name="globus_gass_cache">
                 <Version>
                     <Simple_Version Major="8"/>
@@ -98,6 +113,11 @@
             <Dependency Name="globus_gram_protocol">
                 <Version>
                     <Simple_Version Major="11"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="10"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gss_assist">
@@ -150,6 +170,11 @@
             <Dependency Name="globus_gram_protocol" Package="doc">
                 <Version>
                     <Simple_Version Major="11"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_common" Package="doc">
+                <Version>
+                    <Simple_Version Major="14"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

@@ -30,6 +30,10 @@ typedef struct globus_gram_seg_resume_s
 }
 globus_gram_seg_resume_t;
 
+static globus_bool_t globus_l_condor_regexes_compiled = GLOBUS_FALSE;
+static regex_t globus_l_condor_outer_re;
+static regex_t globus_l_condor_inner_re;
+
 globus_result_t
 globus_l_gram_seg_event_callback(
     void *                              user_arg,
@@ -56,8 +60,6 @@ static
 int
 globus_l_condor_parse_log(
     const char *                        data,
-    time_t                              last_poll_time,
-    time_t                              poll_time,
     globus_gram_job_manager_ref_t *     ref,
     globus_fifo_t *                     events);
 
@@ -67,8 +69,7 @@ globus_l_condor_read_log(
     globus_gram_job_manager_t          *manager,
     const char                         *path,
     size_t                              last_size,
-    char                              **data,
-    size_t                             *new_size);
+    char                              **data);
 
 static
 void
@@ -972,7 +973,6 @@ globus_l_gram_condor_poll_callback(
     globus_gram_job_manager_ref_t *     ref;
     uint64_t                            uniq1, uniq2;
     char *                              path = NULL;
-    size_t                              stat_size;
 
     GlobusGramJobManagerLock(manager);
     poll_time = time(NULL);
@@ -994,6 +994,7 @@ globus_l_gram_condor_poll_callback(
     {
         poll_time = last_poll_time;
     }
+
 
     for (ref = globus_hashtable_first(&manager->request_hash);
          ref != NULL;
@@ -1034,8 +1035,7 @@ globus_l_gram_condor_poll_callback(
                 manager,
                 path,
                 ref->seg_last_size,
-                &condor_log_data,
-                &stat_size);
+                &condor_log_data);
 
         /* condor_log_data is null if the file hasn't changed since
          * seg_last_size or an error happened.
@@ -1047,13 +1047,10 @@ globus_l_gram_condor_poll_callback(
 
         rc = globus_l_condor_parse_log(
                 condor_log_data,
-                last_poll_time,
-                poll_time,
                 ref,
                 &events);
 
         free(condor_log_data);
-        ref->seg_last_size = stat_size;
 read_failed:
         free(path);
         path = NULL;
@@ -1068,7 +1065,7 @@ read_failed:
     poll_length = difftime(time(NULL), poll_time);
     if (poll_length > 1.0)
     {
-        GlobusTimeReltimeSet(delay, (time_t) poll_length, 0);
+        GlobusTimeReltimeSet(delay, (time_t) (poll_length * 5), 0);
     }
     else
     {
@@ -1091,6 +1088,12 @@ read_failed:
     if (poll_time > manager->seg_last_timestamp)
     {
         manager->seg_last_timestamp = poll_time;
+    }
+    if (globus_l_condor_regexes_compiled)
+    {
+        regfree(&globus_l_condor_outer_re);
+        regfree(&globus_l_condor_inner_re);
+        globus_l_condor_regexes_compiled = GLOBUS_FALSE;
     }
     GlobusGramJobManagerUnlock(manager);
     globus_gram_job_manager_log(
@@ -1129,13 +1132,9 @@ static
 int
 globus_l_condor_parse_log(
     const char *                        data,
-    time_t                              last_poll_time,
-    time_t                              poll_time,
     globus_gram_job_manager_ref_t *     ref,
     globus_fifo_t *                     events)
 {
-    static int                          once = 0;
-    static regex_t                      outer_re, inner_re;
     regmatch_t                          matches[8];
     const char *                        p;
     int                                 event_type_number;
@@ -1148,6 +1147,7 @@ globus_l_condor_parse_log(
     struct tm                           event_tm;
     time_t                              event_stamp;
     int                                 rc;
+    globus_off_t                        parsed_length = 0;
     globus_scheduler_event_t *          event;
 
     enum condor_attr_e
@@ -1198,36 +1198,37 @@ globus_l_condor_parse_log(
         } r;
     } pu;
 
-    if (!once)
-    {
-        once = 1;
+    p = data;
+    parsed_length = 0;
 
-        rc = regcomp(&outer_re,
-            "(<c>((<[^/]|</[^c]>|[^<])*)</c>)",
+    if (!globus_l_condor_regexes_compiled)
+    {
+        rc = regcomp(&globus_l_condor_outer_re,
+            "^([[:space:]]*<c>((<[^/]|</[^c]>|</[^>]{2,}>|[^<])*)</c>[[:space:]]*)",
             REG_EXTENDED);
 
         assert (rc == 0);
 
-        rc = regcomp(&inner_re,
+        rc = regcomp(&globus_l_condor_inner_re,
             "^([[:space:]]*"
             "<a n=\"([[:alpha:]]+)\">[[:space:]]*"
-            "(<(b) v=\"([tf])\"/>|<([sir])>([^<]*)</[sir]>)"
+            "(<(b) v=\"([tf])\"/>|<([sire])>([^<]*)</[sire]>)"
             "</a>[[:space:]]*)",
             REG_EXTENDED);
 
         assert(rc == 0);
+        globus_l_condor_regexes_compiled = GLOBUS_TRUE;
     }
-
-    p = data;
-
     while ((rc = regexec(
-                &outer_re, p, (int) (sizeof(matches)/sizeof(matches[0])),
+                &globus_l_condor_outer_re, p, (int) (sizeof(matches)/sizeof(matches[0])),
                 matches, 0)) == 0)
     {
-        const char * e = p + matches[1].rm_eo;
+        const char * e = p + matches[0].rm_eo;
+        regoff_t event_length = matches[0].rm_eo - matches[0].rm_so;
+
         p = p + matches[2].rm_so;
 
-        while ((rc = regexec(&inner_re, p,
+        while ((rc = regexec(&globus_l_condor_inner_re, p,
                     (int) (sizeof(matches)/sizeof(matches[0])),
                     matches, 0)) == 0)
         {
@@ -1320,6 +1321,13 @@ globus_l_condor_parse_log(
                     pu.type = CONDOR_REAL;
                     sscanf(p + matches[7].rm_so, "%f", &pu.r.r);
                 }
+                else if (strncmp(match, "e", matchlen) == 0)
+                {
+                    /* ? */
+                    pu.type = CONDOR_STRING;
+                    pu.s.s = p + matches[7].rm_so;
+                    pu.s.len = (size_t) (matches[7].rm_eo - matches[7].rm_so);
+                }
             }
             switch (condor_attr)
             {
@@ -1366,25 +1374,7 @@ globus_l_condor_parse_log(
         }
         p = e;
 
-        if (event_stamp < ref->seg_last_timestamp || event_stamp >= poll_time)
-        {
-            globus_gram_job_manager_log(
-                    NULL,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                    "event=gram.condor_poll.info "
-                    "level=TRACE "
-                    "message=\"%s\" "
-                    "last_poll_time=%ld "
-                    "poll_time=%ld "
-                    "event_stamp=%ld "
-                    "\n",
-                    "Skipping old event",
-                    (long) ref->seg_last_timestamp,
-                    (long) poll_time,
-                    (long) event_stamp);
-
-            continue;
-        }
+        parsed_length += event_length;
 
         event = NULL;
         switch (event_type_number)
@@ -1439,7 +1429,7 @@ globus_l_condor_parse_log(
             ref->seg_last_timestamp = event->timestamp;
         }
     }
-
+    ref->seg_last_size += parsed_length;
     return 0;
 }
 /* globus_l_condor_parse_log() */
@@ -1450,8 +1440,7 @@ globus_l_condor_read_log(
     globus_gram_job_manager_t          *manager,
     const char                         *path,
     size_t                              last_size,
-    char                              **data,
-    size_t                             *new_size)
+    char                              **data)
 {
     int                                 condor_log_fd;
     char                               *condor_log_data;
@@ -1460,10 +1449,6 @@ globus_l_condor_read_log(
     int                                 rc = GLOBUS_SUCCESS;
 
     *data = NULL;
-    if (new_size)
-    {
-        *new_size = last_size;
-    }
 
     condor_log_fd = open(path, O_RDONLY);
     if (condor_log_fd < 0)
@@ -1570,10 +1555,11 @@ globus_l_condor_read_log(
 
     {
         ssize_t read_res;
-        size_t amt_to_read = st.st_size;
+        size_t amt_to_read = st.st_size - last_size;
         size_t amt_read = 0;
+        off_t off_rc;
 
-        condor_log_data = malloc((size_t) st.st_size + 1);
+        condor_log_data = malloc(amt_to_read + 1);
         if (condor_log_data == NULL)
         {
             globus_gram_job_manager_log(
@@ -1594,7 +1580,30 @@ globus_l_condor_read_log(
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
             goto malloc_data_failed;
         }
-        condor_log_data[(size_t) st.st_size] = 0;
+
+        condor_log_data[amt_to_read] = 0;
+
+        off_rc = lseek(condor_log_fd, (off_t) last_size, SEEK_SET);
+        if (off_rc < 0)
+        {
+            globus_gram_job_manager_log(
+                    manager,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.condor_poll.info "
+                    "level=WARN "
+                    "message=\"%s\" "
+                    "filename=\"%s\" "
+                    "size=%llu "
+                    "errno=%d "
+                    "reason=%s\n",
+                    "Error seeking in condor log",
+                    path,
+                    (unsigned long long) st.st_size,
+                    errno,
+                    strerror(errno));
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_TEMP_SCRIPT_FILE_FAILED;
+            goto seek_failed;
+        }
 
         while (amt_to_read > amt_read)
         {
@@ -1640,16 +1649,13 @@ globus_l_condor_read_log(
             goto read_failed;
         }
         *data = condor_log_data;
-        if (new_size)
-        {
-            *new_size = st.st_size;
-        }
         rc = GLOBUS_SUCCESS;
     }
 
     if (rc != GLOBUS_SUCCESS)
     {
 read_failed:
+seek_failed:
         free(condor_log_data);
     }
 malloc_data_failed:
@@ -1671,12 +1677,13 @@ globus_gram_job_manager_seg_parse_condor_id(
     char *                              condor_data;
     globus_fifo_t                       events;
     int                                 rc = GLOBUS_SUCCESS;
-    time_t                              now = time(NULL);
     time_t                              old_last_timestamp;
+    globus_off_t                        old_last_size;
     char *                              condor_id;
     globus_gram_job_manager_ref_t *     ref;
     globus_scheduler_event_t *          event;
 
+    *condor_idp = NULL;
     GlobusGramJobManagerLock(request->manager);
     ref = globus_hashtable_lookup(
             &request->manager->request_hash,
@@ -1703,10 +1710,9 @@ globus_gram_job_manager_seg_parse_condor_id(
         request->manager,
         condor_name,
         0,
-        &condor_data,
-        NULL);
+        &condor_data);
 
-    if (rc != GLOBUS_SUCCESS)
+    if (rc != GLOBUS_SUCCESS || condor_data == NULL)
     {
         goto read_failed;
     }
@@ -1723,13 +1729,13 @@ globus_gram_job_manager_seg_parse_condor_id(
      * pull out the jobid value
      */
     old_last_timestamp = ref->seg_last_timestamp;
+    old_last_size = ref->seg_last_size;
     globus_l_condor_parse_log(
         condor_data,
-        0,
-        now,
         ref,
         &events);
     ref->seg_last_timestamp = old_last_timestamp;
+    ref->seg_last_size = old_last_size;
 
     /* If there's any event in this file, then we'll assume that's the
      * job id base for this job and construct the subjob ids based on the
@@ -1744,6 +1750,7 @@ globus_gram_job_manager_seg_parse_condor_id(
             int count;
             int i;
             char *p;
+            size_t subjob_len;
 
             rc = globus_gram_job_manager_rsl_attribute_get_int_value(
                 request->rsl,
@@ -1755,7 +1762,12 @@ globus_gram_job_manager_seg_parse_condor_id(
             }
             sscanf(event->job_id, "%d", &cluster);
 
-            condor_id = malloc(12 * count + 1);
+            subjob_len = globus_libc_printf_length(
+                    "%03d.%03d.%03d,",
+                    cluster,
+                    count,
+                    0);
+            condor_id = malloc(subjob_len * count + 1);
             if (condor_id == NULL)
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -1766,9 +1778,10 @@ globus_gram_job_manager_seg_parse_condor_id(
 
             for (i = 0; i < count; i++)
             {
-                sprintf(p, "%03d.%03d.%03d,",
+                int chars;
+                chars = sprintf(p, "%03d.%03d.%03d,",
                         cluster, i, 0);
-                p += 12;
+                p += chars;
             }
             *(p-1) = 0;
             *condor_idp = condor_id;

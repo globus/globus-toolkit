@@ -1,6 +1,8 @@
 include $(top_srcdir)/globus_automake_pre
 
-AM_CPPFLAGS = $(GPT_INCLUDES) -I$(top_srcdir) -DGLOBUS_BUILTIN=1
+# Compiler flags
+INCLUDES = $(GPT_INCLUDES) -I$(top_builddir) -I$(top_srcdir) -I$(top_srcdir)/rvf $(XML_CPPFLAGS)
+AM_CPPFLAGS = -DGLOBUS_BUILTIN=1
 
 lib_LTLIBRARIES = libglobus_seg_job_manager.la
 

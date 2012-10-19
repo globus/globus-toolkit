@@ -71,6 +71,10 @@ void
 globus_l_gram_cputype_and_manufacturer(
     globus_gram_job_manager_config_t *  config);
 
+static
+void
+globus_l_gram_lockcheck(
+    void *                              arg);
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 int
@@ -501,6 +505,32 @@ main(
                     globus_gram_job_manager_expire_old_jobs,
                     &manager);
             }
+
+            {
+                globus_reltime_t        lockcheck_period;
+
+                GlobusTimeReltimeSet(lockcheck_period, 60, 0);
+
+                rc = globus_callback_register_periodic(
+                    &manager.lockcheck_handle,
+                    NULL,
+                    &lockcheck_period,
+                    globus_l_gram_lockcheck,
+                    &manager);
+            }
+
+            {
+                globus_reltime_t        idlescript_period;
+
+                GlobusTimeReltimeSet(idlescript_period, 60, 0);
+
+                rc = globus_callback_register_periodic(
+                    &manager.idle_script_handle,
+                    NULL,
+                    &idlescript_period,
+                    globus_gram_script_close_idle,
+                    &manager);
+            }
         }
         else if (http_body_fd >= 0)
         {
@@ -572,7 +602,12 @@ main(
         act.sa_handler = SIG_IGN;
         sigemptyset(&act.sa_mask);
         sigaddset(&act.sa_mask, SIGCHLD);
+#ifdef SA_NOCLDWAIT
         act.sa_flags = SA_NOCLDWAIT;
+#else
+        /* This may leave zombies running on non-POSIX systems like Hurd */
+        act.sa_flags = 0;
+#endif
         sigaction(SIGCHLD, &act, NULL);
     }
 
@@ -607,11 +642,19 @@ main(
     {
         globus_callback_unregister(manager.expiration_handle, NULL, NULL, NULL);
     }
+    if (manager.lockcheck_handle != GLOBUS_NULL_HANDLE)
+    {
+        globus_callback_unregister(manager.lockcheck_handle, NULL, NULL, NULL);
+    }
+    if (manager.idle_script_handle != GLOBUS_NULL_HANDLE)
+    {
+        globus_callback_unregister(manager.idle_script_handle, NULL, NULL, NULL);
+    }
     GlobusGramJobManagerUnlock(&manager);
 
     globus_gram_job_manager_log(
             &manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
             "event=gram.end "
             "level=DEBUG "
             "\n");
@@ -965,4 +1008,84 @@ globus_l_gram_cputype_and_manufacturer(
     }
 }
 
+static
+void
+globus_l_gram_lockcheck(
+    void *                              arg)
+{
+    globus_gram_job_manager_t *         manager = arg;
+    struct stat                         lockfile_stat = {0}, lockfd_stat = {0};
+    int                                 lockfile_errno = 0, lockfd_errno = 0;
+    int                                 rc;
+    char                               *msg1 = NULL, *msg2 = NULL, *msg3 = NULL;
+
+    errno = 0;
+
+    rc = stat(manager->lock_path, &lockfile_stat);
+    if (rc < 0)
+    {
+        msg1 = "Cannot stat lockfile";
+        lockfile_errno = errno;
+    }
+    rc = fstat(manager->lock_fd, &lockfd_stat);
+    if (rc < 0)
+    {
+        lockfd_errno = errno;
+        msg2 = "Cannot stat lockfd";
+    }
+
+    if (msg1 == NULL && msg2 == NULL)
+    {
+        if (lockfd_stat.st_ino != lockfile_stat.st_ino)
+        {
+            msg3 = "Lockfile replaced";
+        }
+    }
+
+    if (msg1 != NULL || msg2 != NULL || msg3 != NULL)
+    {
+        goto fatal;
+    }
+
+    return;
+
+fatal:
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL,
+            "event=gram.jobmanager.end "
+            "level=FATAL "
+            "message=\"Lockfile sanity check failed, aborting\" "
+            "lockfile=\"%s\" "
+            "lockfile_inode=%ld "
+            "lockfile_errno=%d "
+            "lockfile_message=\"%s\" "
+            "lockfd=%d "
+            "lockfd_inode=%ld "
+            "lockfd_errno=%d "
+            "lockfd_message=\"%s\" "
+            "%s%s%s"
+            "%s%s%s"
+            "%s%s%s"
+            "\n",
+            manager->lock_path,
+            (long int) lockfile_stat.st_ino,
+            lockfile_errno,
+            strerror(lockfile_errno),
+            manager->lock_fd,
+            (long int) lockfd_stat.st_ino,
+            lockfd_errno,
+            strerror(lockfile_errno),
+            (msg1 != NULL) ? "msg1=\"" : "",
+            (msg1 != NULL) ? msg1 : "",
+            (msg1 != NULL) ? "\" " : "",
+            (msg2 != NULL) ? "msg2=\"" : "",
+            (msg2 != NULL) ? msg2 : "",
+            (msg2 != NULL) ? "\" " : "",
+            (msg3 != NULL) ? "msg3=\"" : "",
+            (msg3 != NULL) ? msg3 : "",
+            (msg3 != NULL) ? "\" " : "");
+    abort();
+}
+/* globus_l_gram_lockcheck() */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

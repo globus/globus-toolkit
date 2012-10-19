@@ -29,16 +29,19 @@ static uint64_t                         globus_l_gram_next_script_sequence = 0;
 typedef struct globus_gram_script_handle_s
 {
     globus_gram_job_manager_t *         manager;
+    globus_gram_job_manager_scripts_t * scripts;
     globus_xio_handle_t                 handle;
     globus_byte_t                       return_buf[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
     globus_result_t                     result;
     int                                 pending_ops;
+    time_t                              last_use;
 }
 *globus_gram_script_handle_t;
 
 int
 globus_gram_job_manager_script_handle_init(
     globus_gram_job_manager_t *         manager,
+    globus_gram_job_manager_scripts_t * scripts,
     globus_gram_script_handle_t *       handle);
 
 static
@@ -153,12 +156,14 @@ globus_l_gram_script_queue(
 static
 void
 globus_l_gram_process_script_queue_locked(
-    globus_gram_job_manager_t *         manager);
+    globus_gram_job_manager_t *         manager,
+    globus_gram_job_manager_scripts_t * scripts);
 
 static
 void
 globus_l_gram_job_manager_script_done(
     globus_gram_job_manager_t *         manager,
+    globus_gram_job_manager_scripts_t * scripts,
     globus_gram_script_handle_t         handle);
 
 static
@@ -191,6 +196,18 @@ int
 globus_l_gram_script_register_read_and_write(
     globus_gram_job_manager_script_context_t * 
                                         script_context);
+
+static
+int
+globus_l_gram_script_priority_cmp(
+    void *                              priority_1,
+    void *                              priority_2);
+
+static
+int
+globus_l_match_script_client_addr(
+    void *                              datum,
+    void *                              arg);
 
 /**
  * Begin execution of a job manager script
@@ -352,6 +369,7 @@ globus_l_gram_job_manager_script_read(
     char *                              p;
     int                                 failure_code = 0;
     int                                 i;
+    globus_gram_job_manager_scripts_t * scripts;
 
     script_context = user_arg;
     request = script_context->request;
@@ -568,7 +586,14 @@ globus_l_gram_job_manager_script_read(
 
     GlobusGramJobManagerLock(request->manager);
     script_handle->pending_ops--;
-    globus_l_gram_job_manager_script_done(request->manager, script_handle);
+
+    scripts = globus_list_first(
+            globus_list_search_pred(
+                    request->manager->scripts_per_client,
+                    globus_l_match_script_client_addr,
+                    request->job_stats.client_address));
+
+    globus_l_gram_job_manager_script_done(request->manager, scripts, script_handle);
     GlobusGramJobManagerUnlock(request->manager);
 
     script_context->callback(
@@ -1277,9 +1302,11 @@ globus_l_gram_job_manager_default_done(
                     "event=gram.job.info "
                     "level=INFO "
                     "msg=\"%s\" "
+                    "gramid=%s "
                     "lrm_id=\"%s\" "
                     "\n",
                     "job submitted to lrm",
+                    request->job_contact_path,
                     value);
         }
     }
@@ -2280,22 +2307,96 @@ globus_l_gram_script_queue(
                                         context)
 {
     int                                 rc;
+    globus_list_t *                     tmp;
+    globus_gram_job_manager_scripts_t * scripts = NULL;
 
     GlobusGramJobManagerLock(manager);
     context->priority.sequence = globus_l_gram_next_script_sequence++;
-    rc = globus_priority_q_enqueue(
-            &manager->script_queue,
-            context,
-            &context->priority);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
-        goto fifo_enqueue_failed;
+    tmp = globus_list_search_pred(
+                manager->scripts_per_client,
+                globus_l_match_script_client_addr,
+                context->request->job_stats.client_address);
+
+    if (tmp == NULL)
+    {
+        scripts = malloc(sizeof(globus_gram_job_manager_scripts_t));
+        if (scripts == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto scripts_malloc_failed;
+        }
+        scripts->client_addr = strdup(context->request->job_stats.client_address);
+        if (scripts->client_addr == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto scripts_contact_malloc_failed;
+        }
+        /* Remove port from the client addr */
+        {
+            char * colon = strrchr(scripts->client_addr, ':');
+            if (colon)
+            {
+                *colon = '\0';
+            }
+        }
+
+        rc = globus_priority_q_init(
+                &scripts->script_queue,
+                globus_l_gram_script_priority_cmp);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto script_queue_init_failed;
+        }
+
+        /* Default number of scripts which can be run simultaneously */
+        scripts->script_slots_available = 5;
+
+        rc = globus_fifo_init(&scripts->script_handles);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto script_handles_fifo_init_failed;
+        }
+
+        globus_list_insert(&manager->scripts_per_client, scripts);
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+script_handles_fifo_init_failed:
+            globus_priority_q_destroy(&scripts->script_queue);
+script_queue_init_failed:
+            free(scripts->client_addr);
+scripts_contact_malloc_failed:
+            free(scripts);
+            scripts = NULL;
+        }
+    }
+    else
+    {
+        scripts = globus_list_first(tmp);
     }
 
-    globus_l_gram_process_script_queue_locked(manager);
+    if (scripts)
+    {
+        rc = globus_priority_q_enqueue(
+                &scripts->script_queue,
+                context,
+                &context->priority);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
+            goto fifo_enqueue_failed;
+        }
+
+        globus_l_gram_process_script_queue_locked(manager, scripts);
+    }
+
+scripts_malloc_failed:
 fifo_enqueue_failed:
     GlobusGramJobManagerUnlock(manager);
 
@@ -2315,33 +2416,36 @@ fifo_enqueue_failed:
  * 
  * @param manager
  *     Job manager state
+ * @param scripts
+ *     Client-specific script handle collection
  */
 static
 void
 globus_l_gram_process_script_queue_locked(
-    globus_gram_job_manager_t *         manager)
+    globus_gram_job_manager_t *         manager,
+    globus_gram_job_manager_scripts_t * scripts)
 {
     int                                 rc = GLOBUS_SUCCESS;
     globus_gram_job_manager_script_context_t *
                                         head = NULL;
     globus_result_t                     result;
 
-    while ((!globus_priority_q_empty(&manager->script_queue)) &&
-           (manager->script_slots_available > 0 ||
-            !globus_fifo_empty(&manager->script_handles)))
+    while ((!globus_priority_q_empty(&scripts->script_queue)) &&
+           (scripts->script_slots_available > 0 ||
+            !globus_fifo_empty(&scripts->script_handles)))
     {
         /* head may be non-null if we fail due to an I/O error below (see
          * the "continue" statements
          */
         if (head == NULL)
         {
-            head = globus_priority_q_first(&manager->script_queue);
+            head = globus_priority_q_first(&scripts->script_queue);
         }
 
         /* Prefer to reuse a handle to the script */
-        if (!globus_fifo_empty(&manager->script_handles))
+        if (!globus_fifo_empty(&scripts->script_handles))
         {
-            head->handle = globus_fifo_dequeue(&manager->script_handles);
+            head->handle = globus_fifo_dequeue(&scripts->script_handles);
             globus_gram_job_manager_log(
                     manager,
                     GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
@@ -2362,9 +2466,10 @@ globus_l_gram_process_script_queue_locked(
         else 
         {
             /* Create a new script if more slots are available */
-            assert(manager->script_slots_available > 0);
+            assert(scripts->script_slots_available > 0);
             rc = globus_gram_job_manager_script_handle_init(
                     manager,
+                    scripts,
                     &head->handle);
             globus_gram_job_manager_log(
                     manager,
@@ -2399,9 +2504,9 @@ globus_l_gram_process_script_queue_locked(
             }
 
             head->handle->pending_ops++;
-            manager->script_slots_available--;
+            scripts->script_slots_available--;
         }
-        globus_priority_q_dequeue(&manager->script_queue);
+        globus_priority_q_dequeue(&scripts->script_queue);
         head = NULL;
     }
 
@@ -2422,6 +2527,7 @@ globus_l_gram_script_open_callback(
     globus_gram_jobmanager_request_t *  request = context->request;
     int                                 rc = GLOBUS_SUCCESS;
     int                                 i;
+    globus_gram_job_manager_scripts_t * scripts;
 
     script_handle->pending_ops--;
 
@@ -2438,12 +2544,18 @@ globus_l_gram_script_open_callback(
     if (rc != GLOBUS_SUCCESS)
     {
         GlobusGramJobManagerLock(script_handle->manager);
+        scripts = globus_list_first(
+                globus_list_search_pred(
+                        request->manager->scripts_per_client,
+                        globus_l_match_script_client_addr,
+                        request->job_stats.client_address));
+        
         globus_xio_register_close(
                 handle,
                 NULL,
                 globus_l_script_close_callback,
                 script_handle);
-        script_handle->manager->script_slots_available++;
+        scripts->script_slots_available++;
         GlobusGramJobManagerUnlock(script_handle->manager);
 
         context->callback(
@@ -2478,8 +2590,16 @@ globus_l_gram_script_register_read_and_write(
     int                                 i, total_iov_contents;
     globus_result_t                     result;
     globus_gram_job_manager_t *         manager;
+    globus_gram_jobmanager_request_t *  request = script_context->request;
+    globus_gram_job_manager_scripts_t * scripts;
     
     manager = script_context->handle->manager;
+
+    scripts = globus_list_first(
+            globus_list_search_pred(
+                manager->scripts_per_client,
+                globus_l_match_script_client_addr,
+                request->job_stats.client_address));
 
     for (i = 0, total_iov_contents = 0; i < script_context->iovcnt; i++)
     {
@@ -2523,7 +2643,7 @@ globus_l_gram_script_register_read_and_write(
                 globus_l_script_close_callback,
                 script_context->handle);
         script_context->handle = NULL;
-        manager->script_slots_available++;
+        scripts->script_slots_available++;
         return GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
     }
     script_context->handle->pending_ops++;
@@ -2544,7 +2664,7 @@ globus_l_gram_script_register_read_and_write(
                 globus_l_script_close_callback,
                 script_context->handle);
         script_context->handle = NULL;
-        manager->script_slots_available++;
+        scripts->script_slots_available++;
 
         return GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
     }
@@ -2625,6 +2745,7 @@ static
 void
 globus_l_gram_job_manager_script_done(
     globus_gram_job_manager_t *         manager,
+    globus_gram_job_manager_scripts_t * scripts,
     globus_gram_script_handle_t         handle)
 {
     if (handle->pending_ops > 0)
@@ -2633,7 +2754,8 @@ globus_l_gram_job_manager_script_done(
     }
     if (handle->result == GLOBUS_SUCCESS)
     {
-        globus_fifo_enqueue(&manager->script_handles, handle);
+        handle->last_use = time(NULL);
+        globus_fifo_enqueue(&scripts->script_handles, handle);
     }
     else
     {
@@ -2642,10 +2764,10 @@ globus_l_gram_job_manager_script_done(
                 NULL,
                 globus_l_script_close_callback,
                 handle);
-        manager->script_slots_available++;
+        scripts->script_slots_available++;
     }
 
-    globus_l_gram_process_script_queue_locked(manager);
+    globus_l_gram_process_script_queue_locked(manager, scripts);
 
     return;
 }
@@ -2657,16 +2779,23 @@ globus_gram_job_manager_script_close_all(
     globus_gram_job_manager_t *         manager)
 {
     globus_gram_script_handle_t         handle;
+    globus_list_t *                     tmp;
+    globus_gram_job_manager_scripts_t * scripts;
 
-    while (!globus_fifo_empty(&manager->script_handles))
+    for (tmp = manager->scripts_per_client; tmp != NULL; tmp = globus_list_rest(tmp))
     {
-        handle = globus_fifo_dequeue(&manager->script_handles);
+        scripts = globus_list_first(tmp);
 
-        globus_xio_close(
-                handle->handle,
-                NULL);
-        free(handle);
-        manager->script_slots_available++;
+        while (!globus_fifo_empty(&scripts->script_handles))
+        {
+            handle = globus_fifo_dequeue(&scripts->script_handles);
+
+            globus_xio_close(
+                    handle->handle,
+                    NULL);
+            free(handle);
+            scripts->script_slots_available++;
+        }
     }
 }
 /* globus_gram_job_manager_script_close_all() */
@@ -2674,6 +2803,7 @@ globus_gram_job_manager_script_close_all(
 int
 globus_gram_job_manager_script_handle_init(
     globus_gram_job_manager_t *         manager,
+    globus_gram_job_manager_scripts_t * scripts,
     globus_gram_script_handle_t *       handle)
 {
     globus_result_t                     result;
@@ -2685,10 +2815,12 @@ globus_gram_job_manager_script_handle_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto fail;
     }
+    (*handle)->scripts = scripts;
     (*handle)->return_buf[0] = 0;
     (*handle)->result = GLOBUS_SUCCESS;
     (*handle)->manager = manager;
     (*handle)->pending_ops = 0;
+    (*handle)->last_use = time(NULL);
 
     result = globus_xio_handle_create(
             &(*handle)->handle,
@@ -2757,6 +2889,112 @@ globus_l_script_writev_callback(
         script_handle->result = result;
     }
     script_handle->pending_ops--;
-    globus_l_gram_job_manager_script_done(script_handle->manager, script_handle);
+    globus_l_gram_job_manager_script_done(
+            script_handle->manager,
+            script_handle->scripts,
+            script_handle);
     GlobusGramJobManagerUnlock(script_handle->manager);
 }
+
+/**
+ * Periodic callback to close idle script handles
+ *
+ * If a script handle hasn't been used in over 30 seconds, and there are
+ * no pending script events, it will be closed by this callback and removed
+ * from the script handle fifo.
+ */
+void
+globus_gram_script_close_idle(
+    void *                              arg)
+{
+    globus_gram_job_manager_t *         manager = arg;
+    globus_gram_script_handle_t         handle;
+    time_t                              now = time(NULL);
+    globus_list_t *                     tmp;
+    globus_gram_job_manager_scripts_t * scripts;
+
+    GlobusGramJobManagerLock(manager);
+
+    for (tmp = manager->scripts_per_client; tmp != NULL; tmp = globus_list_rest(tmp))
+    {
+        scripts = globus_list_first(tmp);
+
+        if (!globus_priority_q_empty(&scripts->script_queue))
+        {
+            goto nonempty_queue;
+        }
+
+        while (!globus_fifo_empty(&scripts->script_handles))
+        {
+            handle = globus_fifo_peek(&scripts->script_handles);
+
+            if (difftime(now, handle->last_use) > 30.0)
+            {
+                globus_gram_job_manager_log(
+                        manager,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                        "event=gram.script_idle.info "
+                        "level=DEBUG "
+                        "msg=\"closing idle script handle after %.1f seconds"
+                        "\n ",
+                        difftime(now, handle->last_use));
+
+                globus_fifo_dequeue(&scripts->script_handles);
+                globus_xio_close(
+                        handle->handle,
+                        NULL);
+                free(handle);
+                scripts->script_slots_available++;
+            }
+            else
+            {
+                break;
+            }
+        }
+nonempty_queue:
+        ;
+    }
+    GlobusGramJobManagerUnlock(manager);
+}
+/* globus_gram_script_close_idle() */
+
+static
+int
+globus_l_gram_script_priority_cmp(
+    void *                              priority_1,
+    void *                              priority_2)
+{
+    globus_gram_script_priority_t      *p1 = priority_1, *p2 = priority_2;
+
+    if (p1->priority_level > p2->priority_level)
+    {
+        return 1;
+    }
+    else if (p1->priority_level < p2->priority_level)
+    {
+        return -1;
+    }
+    else if (p1->sequence > p2->sequence)
+    {
+        return 2;
+    }
+    else
+    {
+        assert(p1->sequence < p2->sequence);
+        return -2;
+    }
+}
+/* globus_l_gram_script_priority_cmp() */
+
+static
+int
+globus_l_match_script_client_addr(
+    void *                              datum,
+    void *                              arg)
+{
+    globus_gram_job_manager_scripts_t * scripts = datum;
+    char *                              client_addr = arg;
+
+    return strncmp(scripts->client_addr, client_addr, strlen(scripts->client_addr)) == 0;
+}
+/* globus_l_match_script_client_addr() */

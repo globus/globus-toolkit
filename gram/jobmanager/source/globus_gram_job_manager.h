@@ -86,11 +86,11 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_STOP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1,
     GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT,
+    /* GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH  OBSOLETE STATE, */
+    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2+2,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH
+    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2
+    /* GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH  OBSOLETE STATE */
 }
 globus_gram_jobmanager_state_t;
 
@@ -413,6 +413,19 @@ typedef struct globus_i_gram_usage_job_tracker_s
     char *                              user_dn;
 } globus_i_gram_usage_job_tracker_t;
 
+typedef struct
+{
+    /** Address of the client which submitted the job (hashtable key) */
+    char *                              client_addr;
+    /** Queue of script contexts ready to run */
+    globus_priority_q_t                 script_queue;
+    /** Number of script slots available for running scripts */
+    int                                 script_slots_available;
+    /** Fifo of available script handles */
+    globus_fifo_t                       script_handles;
+}
+globus_gram_job_manager_scripts_t;
+
 /**
  * Runtime state for a LRM instance. All of these items are
  * computed from the configuration state above and may change during the
@@ -436,8 +449,12 @@ typedef struct globus_gram_job_manager_s
      * Callback handle for fork SEG-like polling
      */
     globus_callback_handle_t            fork_callback_handle;
-    /** Scheduler-specific set of validation records */
+    /** LRM-specific set of validation records */
     globus_list_t *                     validation_records;
+    /** Newest validation file timestamp */
+    time_t                              validation_record_timestamp;
+    /** Track when validation files are added or removed */
+    globus_bool_t                       validation_file_exists[4];
     /** GRAM job manager listener contact string */
     char *                              url_base;
     /** Time when the job manager-wide proxy will expire */
@@ -467,13 +484,12 @@ typedef struct globus_gram_job_manager_s
     char *                              lock_path;
     /** Pid file path */
     char *                              pid_path;
-
-    /** Queue of script contexts ready to run */
-    globus_priority_q_t                 script_queue;
-    /** Number of script slots available for running scripts */
-    int                                 script_slots_available;
-    /** Fifo of available script handles */
-    globus_fifo_t                       script_handles;
+    /** OSG wants to have different clients connecting to the same job manager
+     * to have separate script queues fto have scalability with nonresponsive
+     * clients. We hash on client's address and have separate script queue and
+     * available slots.
+     */
+    globus_list_t *                     scripts_per_client;
     /** Fifo of job state callback contexts to run */
     globus_fifo_t                       state_callback_fifo;
     /** Number of job state contact slots available */
@@ -506,7 +522,16 @@ typedef struct globus_gram_job_manager_s
      * but didn't have two-phase end happen.
      */
     globus_callback_handle_t            expiration_handle;
-    
+
+    /**
+     * Periodic callback handle to abort if something removes the lock file.
+     */
+    globus_callback_handle_t            lockcheck_handle;
+
+    /**
+     * Periodic callback handle to clse idle perl script xio handles
+     */
+    globus_callback_handle_t            idle_script_handle;
 }
 globus_gram_job_manager_t;
 
@@ -672,8 +697,6 @@ typedef struct globus_gram_job_manager_request_s
     char *                              job_contact_path;
     /** Job-specific persistence file */
     char *                              job_state_file;
-    /** Job-specific persistence lock file */
-    char *                              job_state_lock_file;
     /** Job-specific scratch directory after RSL evaluation */
     char *                              scratch_dir_base;
     /**
@@ -689,8 +712,6 @@ typedef struct globus_gram_job_manager_request_s
     char *                              remote_io_url_file;
     /** Job-specific proxy file */
     char *                              x509_user_proxy;
-    /** Job-specific persistence lock descriptor */
-    int                                 job_state_lock_fd;
     /** Thread safety */
     globus_mutex_t                      mutex;
     /** Thread safety */
@@ -1001,11 +1022,6 @@ globus_gram_job_manager_validation_when_t;
 
 extern
 int
-globus_gram_job_manager_validation_init(
-    globus_gram_job_manager_t *         config);
-
-extern
-int
 globus_gram_job_manager_validation_destroy(
     globus_list_t *                     validation_records);
 
@@ -1167,13 +1183,6 @@ globus_gram_job_manager_query_callback(
     char *                              uri);
 
 void
-globus_gram_job_manager_query_delegation_callback(
-    void *                              arg,
-    globus_gram_protocol_handle_t       handle,
-    gss_cred_id_t                       credential,
-    int                                 error_code);
-
-void
 globus_gram_job_manager_query_reply(
     globus_gram_jobmanager_request_t *  request,
     globus_gram_job_manager_query_t *   query);
@@ -1318,8 +1327,7 @@ globus_gram_rsl_add_stream_out(
 int
 globus_gram_job_manager_state_file_set(
     globus_gram_jobmanager_request_t *  request,
-    char **                             state_file,
-    char **                             state_lock_file);
+    char **                             state_file);
 
 int
 globus_gram_job_manager_file_lock(
@@ -1367,6 +1375,9 @@ void
 globus_gram_job_manager_script_close_all(
     globus_gram_job_manager_t *         manager);
 
+void
+globus_gram_script_close_idle(
+    void *                              arg);
 
 extern globus_xio_driver_t              globus_i_gram_job_manager_popen_driver;
 extern globus_xio_stack_t               globus_i_gram_job_manager_popen_stack;
@@ -1553,6 +1564,9 @@ globus_gram_split_subjobs(
     const char *                        job_id,
     globus_list_t **                    subjobs);
 
+int
+globus_i_gram_mkdir(
+    char *                              path);
 /* globus_gram_job_manager_usagestats.c */
 
 globus_result_t
