@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.51-1) unstable; urgency=low
+
+  * GT-291: Reduce verbosity of INFO level debug log on GRAM
+
+ -- Globus Toolkit <support@globus.org>  Fri, 19 Oct 2012 10:13:32 -0400
+
 globus-gram-job-manager (13.50-1) unstable; urgency=low
 
   * GT-298: Leading whitespace confuses rvf parser

@@ -754,9 +754,9 @@ globus_gram_job_manager_starter_send(
 
     globus_gram_job_manager_log(
             manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
             "event=gram.send_job.start "
-            "level=INFO "
+            "level=DEBUG "
             "http_body_fd=%d "
             "context_fd=%d "
             "response_fd=%d "
@@ -933,9 +933,9 @@ globus_gram_job_manager_starter_send(
         rc = GLOBUS_SUCCESS;
         globus_gram_job_manager_log(
                 manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
                 "event=gram.send_job.end "
-                "level=INFO "
+                "level=DEBUG "
                 "http_body_fd=%d "
                 "context_fd=%d "
                 "response_fd=%d "
@@ -987,9 +987,9 @@ globus_gram_job_manager_starter_send_v2(
 
     globus_gram_job_manager_log(
             manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
             "event=gram.send_job.start "
-            "level=INFO "
+            "level=DEBUG "
             "\n");
 
     content_length_str = getenv("CONTENT_LENGTH");
@@ -1156,9 +1156,9 @@ globus_gram_job_manager_starter_send_v2(
         rc = GLOBUS_SUCCESS;
         globus_gram_job_manager_log(
                 manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
                 "event=gram.send_job.end "
-                "level=INFO "
+                "level=DEBUG "
                 "status=%d "
                 "\n",
                 0);
@@ -1935,9 +1935,9 @@ globus_l_gram_startup_socket_callback(
 
             globus_gram_job_manager_request_log(
                     request,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
                     "event=gram.job.start "
-                    "level=INFO "
+                    "level=DEBUG "
                     "gramid=%s "
                     "peer=%s "
                     "\n",
@@ -1964,9 +1964,9 @@ globus_l_gram_startup_socket_callback(
             {
                 globus_gram_job_manager_request_log(
                         request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
                         "event=gram.job.end "
-                        "level=INFO "
+                        "level=DEBUG "
                         "gramid=%s "
                         "status=%d "
                         "msg=\"%s\" "

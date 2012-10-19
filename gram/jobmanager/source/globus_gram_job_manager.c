@@ -1608,9 +1608,9 @@ globus_gram_job_manager_add_reference_by_jobid(
 
         globus_gram_job_manager_log(
                 manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
                 "event=gram.add_reference_by_jobid.end "
-                "level=INFO "
+                "level=DEBUG "
                 "jobid=\"%s\" "
                 "status=%d "
                 "msg=\"%s\" "
@@ -1993,9 +1993,9 @@ globus_gram_job_manager_expire_old_jobs(
                 /* Fake the commit */
                 globus_gram_job_manager_request_log(
                         request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
                         "event=gram.expire_jobs.info "
-                        "level=INFO "
+                        "level=DEBUG "
                         "gramid=%s "
                         "\n",
                         ref->key);
@@ -2209,9 +2209,9 @@ globus_gram_job_manager_request_load_all(
     GlobusGramJobManagerLock(manager);
     globus_gram_job_manager_log(
             manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
             "event=gram.reload_requests.start "
-            "level=INFO "
+            "level=DEBUG "
             "\n");
 
     state_file_pattern = globus_common_create_string(
@@ -2280,9 +2280,9 @@ globus_gram_job_manager_request_load_all(
 
     globus_gram_job_manager_log(
             manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
             "event=gram.reload_requests.end "
-            "level=INFO "
+            "level=DEBUG "
             "statedir=\"%s\" "
             "status=%d "
             "requests=%d "
@@ -2845,9 +2845,9 @@ globus_l_gram_ref_swap_out(
 
             globus_gram_job_manager_request_log(
                     request,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
                     "event=gram.job_ref_swap_out.info "
-                    "level=INFO "
+                    "level=DEBUG "
                     "gramid=%s "
                     "expire=%d "
                     "\n",

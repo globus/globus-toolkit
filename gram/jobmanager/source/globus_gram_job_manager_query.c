@@ -155,9 +155,9 @@ globus_gram_job_manager_query_callback(
 
     globus_gram_job_manager_log(
         manager,
-        GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+        GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
         "event=gram.query.start "
-        "level=INFO "
+        "level=DEBUG "
         "uri=\"%s\" "
         "\n",
         uri);
@@ -355,7 +355,7 @@ authz_failed:
     globus_gram_job_manager_log(
             manager,
             rc ? GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR
-                    : GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                    : GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
             "event=gram.query.end "
             "level=%s "
             "%s%s%s"
@@ -364,7 +364,7 @@ authz_failed:
             "status=%d "
             "%s%s "
             "\n",
-            rc ? "ERROR" : "INFO",
+            rc ? "ERROR" : "DEBUG",
             request ? "gramid=" : "",
             request ? request->job_contact_path : "",
             request ? " " : "",

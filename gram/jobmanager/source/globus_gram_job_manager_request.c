@@ -1440,9 +1440,9 @@ globus_gram_job_manager_request_set_status_time(
 
     globus_gram_job_manager_request_log(
             request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
             "event=gram.job.info "
-            "level=INFO "
+            "level=DEBUG "
             "gramid=%s "
             "job_status=%d "
             "\n",

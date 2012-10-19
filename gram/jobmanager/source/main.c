@@ -654,7 +654,7 @@ main(
 
     globus_gram_job_manager_log(
             &manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
             "event=gram.end "
             "level=DEBUG "
             "\n");

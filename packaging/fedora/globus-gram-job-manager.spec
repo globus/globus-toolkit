@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.50
+Version:	13.51
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -177,6 +177,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Oct 19 2012 Globus Toolkit <support@globus.org> - 13.51-1
+- GT-291: Reduce verbosity of INFO level debug log on GRAM
+
 * Thu Oct 11 2012 Globus Toolkit <support@globus.org> - 13.50-1
 - GT-298: Leading whitespace confuses rvf parser
 

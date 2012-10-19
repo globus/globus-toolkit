@@ -1302,9 +1302,11 @@ globus_l_gram_job_manager_default_done(
                     "event=gram.job.info "
                     "level=INFO "
                     "msg=\"%s\" "
+                    "gramid=%s "
                     "lrm_id=\"%s\" "
                     "\n",
                     "job submitted to lrm",
+                    request->job_contact_path,
                     value);
         }
     }
