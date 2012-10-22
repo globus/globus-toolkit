@@ -20,8 +20,14 @@ topdir="$(pwd)"
 
 tag=''
 flavor=''
-while getopts t:f: i; do
+cvsroot=''
+while getopts C:t:f: i; do
     case $i in
+        C)
+            cvsroot="$OPTARG"
+            CVSROOT="$cvsroot"
+            export CVSROOT
+            ;;
         t)
             tag="$OPTARG"
             ;;
@@ -55,7 +61,7 @@ chmod a+x *.pl fait_accompli/installer.sh \
     gpt/install-sh || :
 
 
-./fait_accompli/installer.sh -a -f "$flavor" ${tag:+-t "$tag"}
+./fait_accompli/installer.sh -a -f "$flavor" ${tag:+-t "$tag"} ${cvsroot:+-C "$cvsroot"}
 installer_dir="gt${gtversion}-all-source-installer"
 find "${installer_dir}" -name install-sh -exec chmod a+x {} +
 

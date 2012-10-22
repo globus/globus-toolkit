@@ -17,8 +17,11 @@ echo Step: Checking out source code.
 tag="globus_5_2_branch"
 user=""
 no_updates=""
-while getopts "nt:u:af:" arg; do
+while getopts "C:nt:u:af:" arg; do
     case "$arg" in
+        C)
+            cvsroot="$OPTARG"
+            ;;
         n)
             no_updates=1
             ;;
@@ -38,7 +41,7 @@ while getopts "nt:u:af:" arg; do
 done
 
 if [ "${no_updates:-0}" -ne 1 ]; then
-    ./checkout-specs.pl -f etc/package-list-5.1.0 ${tag:+-t "$tag"} ${user:+-u "$user"}
+    ./checkout-specs.pl -f etc/package-list-5.1.0 ${tag:+-t "$tag"} ${user:+-u "$user"} ${cvsroot:+-C "$cvsroot"}
     if [ $? -ne 0 ]; then
             echo There was trouble checking out sources
             exit 8
