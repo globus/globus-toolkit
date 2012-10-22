@@ -12,7 +12,7 @@ GetOptions( 'f|file=s' => \$sourcelistfile,
             'C|cvsroot=s' => \$cvsroot,
             't|tag=s' => \$tag);
 
-$cvsroot = "$cvsuser\@$cvsroot"
+$cvsroot = "$cvsuser\@$cvsroot";
         
 if ($sourcelistfile ne '') {
     open(PKG, "$sourcelistfile");
