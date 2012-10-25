@@ -3,10 +3,47 @@
 require 5.005;
 
 use strict;
-use TAP::Harness::JUnit;
 use Globus::Core::Paths;
-
 use vars qw(@tests);
+
+my $harness;
+BEGIN {
+    my $xmlfile;
+
+    if (exists $ENV{CONTACT_LRM})
+    {
+        $xmlfile = "globus-gram-job-manager-test-$ENV{CONTACT_LRM}.xml",
+    }
+    else
+    {
+        $xmlfile = "globus-gram-job-manager-test.xml",
+    }
+
+    eval "use TAP::Harness::JUnit";
+    if ($@)
+    {
+        eval "use TAP::Harness;";
+
+        if ($@)
+        {
+            die "Unable to find JUnit TAP formatter";
+        }
+        else
+        {
+            $harness = TAP::Harness->new( {
+                formatter_class => 'TAP::Formatter::JUnit',
+                merge => 1
+            } );
+        }
+        open(STDOUT, ">$xmlfile");
+    }
+    else
+    {
+        $harness = TAP::Harness::JUnit->new({
+                                xmlfile => $xmlfile,
+                                merge => 1});
+    }
+}
 
 my $test_result = 1;
 my $kill_gatekeeper = 0;
@@ -106,20 +143,6 @@ else
     $ENV{CONTACT_STRING} = $contact;
     $kill_gatekeeper = 1;
 }
-
-my $xmlfile;
-
-if (exists $ENV{CONTACT_LRM})
-{
-    $xmlfile = "globus-gram-job-manager-test-$ENV{CONTACT_LRM}.xml",
-}
-else
-{
-    $xmlfile = "globus-gram-job-manager-test.xml",
-}
-my $harness = TAP::Harness::JUnit->new({
-        xmlfile => $xmlfile,
-        merge => 1});
 
 $harness->runtests(@tests);
 

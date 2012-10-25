@@ -3,9 +3,40 @@
 @GLOBUS_PERL_INITIALIZER@
 
 use strict;
-use TAP::Harness::JUnit;
 require 5.005;
 use vars qw(@tests);
+
+my $harness;
+BEGIN {
+    my $xmlfile = 'globus_gram_job_manager_fork_test.xml';
+
+    eval "use TAP::Harness::JUnit";
+    if ($@)
+    {
+        eval "use TAP::Harness;";
+
+        if ($@)
+        {
+            die "Unable to find JUnit TAP formatter";
+        }
+        else
+        {
+            $harness = TAP::Harness->new( {
+                formatter_class => 'TAP::Formatter::JUnit',
+                merge => 1
+            } );
+        }
+        open(STDOUT, ">$xmlfile");
+    }
+    else
+    {
+        $harness = TAP::Harness::JUnit->new({
+                                xmlfile => $xmlfile,
+                                merge => 1});
+    }
+    #$Test::Harness::verbose = 1;
+
+}
 
 my $testdir = $0;
 if ($testdir =~ m|/|)
@@ -31,7 +62,4 @@ else
     push(@tests, "$testdir/test-fork-seg.pl");
 }
 
-my $harness = TAP::Harness::JUnit->new({
-        xmlfile => 'globus_gram_job_manager_fork_test.xml',
-        merge => 1});
 $harness->runtests(@tests);
