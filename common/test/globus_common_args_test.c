@@ -130,7 +130,7 @@ do_test( char *argv[] )
     printf("globus_args_scan returned %d\n", err);
 
     if (error_msg)
-        printf(error_msg);
+        printf("%s", error_msg);
     else
 	printf("error_msg = null\n");
 

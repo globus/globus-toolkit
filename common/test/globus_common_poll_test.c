@@ -934,7 +934,7 @@ void verbose_printf(int level, char * s, ...)
 
     vsprintf(tmp, s, ap);
 
-    globus_libc_printf(tmp);
+    globus_libc_printf("%s", tmp);
     fflush(stdin);
 }
 
