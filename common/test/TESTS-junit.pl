@@ -18,9 +18,38 @@
 
 
 use strict;
-use TAP::Harness::JUnit;
 require 5.005;
 use vars qw(@tests);
+
+my $harness;
+BEGIN {
+    my $xmlfile = "globus-common-test.xml";
+
+    eval "use TAP::Harness::JUnit";
+    if ($@)
+    {
+        eval "use TAP::Harness;";
+
+        if ($@)
+        {
+            die "Unable to find JUnit TAP formatter";
+        }
+        else
+        {
+            $harness = TAP::Harness->new( {
+                formatter_class => 'TAP::Formatter::JUnit',
+                merge => 1
+            } );
+        }
+        open(STDOUT, ">$xmlfile");
+    }
+    else
+    {
+        $harness = TAP::Harness::JUnit->new({
+                                xmlfile => $xmlfile,
+                                merge => 1});
+    }
+}
 
 @tests = qw( globus-common-args-test.pl
 	     globus-common-error-test.pl
@@ -41,6 +70,4 @@ use vars qw(@tests);
              globus-common-largefile-test.pl
 	     );
 
-my $harness = TAP::Harness::JUnit->new({
-                        xmlfile => 'globus-common-test.xml' });
 $harness->runtests(@tests);

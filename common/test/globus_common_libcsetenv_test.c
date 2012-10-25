@@ -181,8 +181,7 @@ int main( int argc, char * argv[] )
 
 void printError( char errorString[], int errorCode, int exitingFlag )
 {
-	fprintf( stderr, "ERROR: " );
-	fprintf( stderr, errorString );
+	fprintf( stderr, "ERROR: %s", errorString );
 	if ( errorCode )
 		fprintf( stderr, "- error code is %d", errorCode );
 	if ( exitingFlag )
@@ -194,6 +193,5 @@ void printError( char errorString[], int errorCode, int exitingFlag )
 
 void printOut( char string[] )
 {
-	printf( string );
-	printf( "\n" );
+	printf( "%s\n", string );
 }

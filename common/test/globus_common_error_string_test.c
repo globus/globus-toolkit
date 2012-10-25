@@ -33,6 +33,6 @@ int main()
 	    __LINE__);
     s = globus_object_printable_to_string(err);
 
-    globus_libc_printf(s);
+    globus_libc_printf("%s",s);
     return globus_module_deactivate_all();
 }
