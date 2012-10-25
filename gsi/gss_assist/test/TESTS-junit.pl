@@ -1,11 +1,39 @@
 #! /usr/bin/perl
 
-
 use strict;
 use warnings;
-use TAP::Harness::JUnit;
 require 5.005;
 use vars qw(@tests);
+
+my $harness;
+BEGIN {
+    my $xmlfile = 'globus-gss-assist-test.xml';
+
+    eval "use TAP::Harness::JUnit";
+    if ($@)
+    {
+        eval "use TAP::Harness;";
+
+        if ($@)
+        {
+            die "Unable to find JUnit TAP formatter";
+        }
+        else
+        {
+            $harness = TAP::Harness->new( {
+                formatter_class => 'TAP::Formatter::JUnit',
+                merge => 1
+            } );
+        }
+        open(STDOUT, ">$xmlfile");
+    }
+    else
+    {
+        $harness = TAP::Harness::JUnit->new({
+                                xmlfile => $xmlfile,
+                                merge => 1});
+    }
+}
 
 if (system("grid-proxy-info -exists") != 0)
 {
@@ -19,8 +47,4 @@ if (system("grid-proxy-info -exists") != 0)
             gridmap-tools-test.pl
             );
 
-my $harness = TAP::Harness::JUnit->new({
-        merge => 1,
-        xmlfile => 'globus-gss-assist-test.xml' });
 $harness->runtests(@tests);
-

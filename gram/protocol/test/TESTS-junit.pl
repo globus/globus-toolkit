@@ -18,11 +18,40 @@
 
 
 use strict;
-use TAP::Harness::JUnit;
 use Globus::Core::Paths;
 
 require 5.005;
 use vars qw(@tests);
+
+my $harness;
+BEGIN {
+    my $xmlfile = 'globus-gram-protocol-test.xml',
+
+    eval "use TAP::Harness::JUnit";
+    if ($@)
+    {
+        eval "use TAP::Harness;";
+
+        if ($@)
+        {
+            die "Unable to find JUnit TAP formatter";
+        }
+        else
+        {
+            $harness = TAP::Harness->new( {
+                formatter_class => 'TAP::Formatter::JUnit',
+                merge => 1
+            } );
+        }
+        open(STDOUT, ">$xmlfile");
+    }
+    else
+    {
+        $harness = TAP::Harness::JUnit->new({
+                                xmlfile => $xmlfile,
+                                merge => 1});
+    }
+}
 
 my @tests = qw(
     globus-gram-protocol-allow-attach-test.pl
@@ -36,10 +65,6 @@ my @tests = qw(
     unpack-job-request-reply-with-extensions-test.pl
     unpack-status-reply-with-extensions-test.pl
 );
-
-my $harness = TAP::Harness::JUnit->new({
-                        xmlfile => 'globus-gram-protocol-test.xml',
-                        merge => 1 });
 
 if(0 != system("$Globus::Core::Paths::bindir/grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
 {

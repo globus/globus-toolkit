@@ -20,9 +20,11 @@ Scripts = \
 	globus-gram-client-status-test.pl \
         globus-gram-client-stdio-size-test.pl \
         job-status-with-info-test.pl \
+        local-stdio-size-test.pl \
         register-version-test.pl \
         restart-to-new-url-test.pl \
         stdio-update-test.pl \
+        stdio-update-after-failure-test.pl \
         version-test.pl
 
 Data = \
