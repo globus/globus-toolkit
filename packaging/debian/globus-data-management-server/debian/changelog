@@ -1,0 +1,5 @@
+globus-data-management-server (0.0.0) unstable; urgency=low
+
+  * New for Globus Toolkit 5.2.3
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Oct 2012 10:42:35 -0400

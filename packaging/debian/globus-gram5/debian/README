@@ -1,0 +1,7 @@
+The Debian Package globus-gram5
+----------------------------
+
+This package contains dependencies to install the packages related to
+the GRAM5 component of the Globus Toolkit.
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Oct 2012 10:39:30 -0400

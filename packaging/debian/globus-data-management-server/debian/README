@@ -1,0 +1,7 @@
+The Debian Package globus-data-management-server
+------------------------------------------------
+
+This package contains dependencies to install of the data management services
+in the Globus Toolkit.
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Oct 2012 10:39:30 -0400

@@ -1,0 +1,7 @@
+The Debian Package globus-resource-management-sdk
+-------------------------------------------------
+
+This package contains dependencies to install the development packages related
+to the resource management components of the Globus Toolkit.
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Oct 2012 10:39:30 -0400

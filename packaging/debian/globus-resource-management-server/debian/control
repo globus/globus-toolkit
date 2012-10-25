@@ -1,0 +1,14 @@
+Source: globus-resource-management-server
+Section: net
+Priority: extra
+Maintainer: Globus Support <support@globus.org>
+Build-Depends: cdbs, debhelper (>= 7)
+Standards-Version: 3.7.3
+Homepage: http://www.globus.org/
+
+Package: globus-resource-management-server
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, globus-core, globus-common-progs, globus-callout, globus-gram-job-manager, globus-gram-job-manager-fork-setup-poll, globus-gass-cache, globus-gsi-openssl-error, globus-gsi-proxy-ssl, globus-rsl, globus-openssl-module, globus-gsi-cert-utils-progs, globus-simple-ca, globus-gsi-sysconfig, globus-gsi-callback, globus-gsi-credential, globus-gsi-proxy-core, globus-gss-assist-progs, globus-gssapi-gsi, globus-proxy-utils, globus-gss-assist, globus-gatekeeper, globus-xio, globus-xio-gsi-driver, globus-io, globus-gssapi-error, globus-ftp-control, globus-gass-transfer, globus-gram-protocol, globus-xio-popen-driver, globus-ftp-client, globus-gass-server-ez-progs, globus-gram-client, globus-gass-copy-progs, globus-gass-cache-program, globus-gram-job-manager-callout-error, globus-gram-job-manager-scripts, globus-scheduler-event-generator
+Description: Globus Resource Management Server Metapackage
+ This package contains dependencies to install the server packages related to
+ the resource management components of the Globus Toolkit.

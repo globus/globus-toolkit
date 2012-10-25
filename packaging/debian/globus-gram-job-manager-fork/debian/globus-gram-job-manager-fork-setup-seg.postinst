@@ -7,6 +7,22 @@ if [ -x /usr/sbin/globus-gatekeeper-admin ]; then
             if [ ! -f /etc/grid-services/jobmanager ]; then
                 globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager
             fi
+            ;;
+        abort-upgrade)
+            :
+            ;;
+        abort-remove)
+            :
+            ;;
+        abort-deconfigure)
+            :
+            ;;
+    esac
+fi
+
+if [ -x /usr/sbin/globus-scheduler-event-generator-admin ]; then
+    case "$1" in
+        configure)
             globus-scheduler-event-generator-admin -e fork
             if [ ! -f /var/lib/globus/globus-fork.log ]; then
                 mkdir -p /var/lib/globus

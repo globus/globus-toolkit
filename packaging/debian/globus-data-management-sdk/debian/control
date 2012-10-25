@@ -1,0 +1,14 @@
+Source: globus-data-management-sdk
+Section: net
+Priority: extra
+Maintainer: Globus Support <support@globus.org>
+Build-Depends: cdbs, debhelper (>= 7)
+Standards-Version: 3.7.3
+Homepage: http://www.globus.org/
+
+Package: globus-data-management-sdk
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, grid-packaging-tools, globus-core, globus-common, globus-common-devel, globus-common-doc, globus-xio, globus-xio-devel, globus-xio-doc, globus-gsi-openssl-error, globus-gsi-openssl-error-devel, globus-gsi-openssl-error-doc, globus-gsi-proxy-ssl, globus-gsi-proxy-ssl-devel, globus-gsi-proxy-ssl-doc, globus-openssl-module, globus-openssl-module-devel, globus-openssl-module-doc, globus-gsi-cert-utils, globus-gsi-cert-utils-devel, globus-gsi-cert-utils-doc, globus-gsi-sysconfig, globus-gsi-sysconfig-devel, globus-gsi-sysconfig-doc, globus-callout, globus-callout-devel, globus-callout-doc, globus-gsi-callback, globus-gsi-callback-devel, globus-gsi-callback-doc, globus-gsi-credential, globus-gsi-credential-devel, globus-gsi-credential-doc, globus-gsi-proxy-core, globus-gsi-proxy-core-devel, globus-gsi-proxy-core-doc, globus-gssapi-gsi, globus-gssapi-gsi-devel, globus-gssapi-gsi-doc, globus-gss-assist, globus-gss-assist-devel, globus-gss-assist-doc, globus-gssapi-error, globus-gssapi-error-devel, globus-gssapi-error-doc, globus-xio-gsi-driver, globus-xio-gsi-driver-devel, globus-xio-gsi-driver-doc, globus-io, globus-io-devel, globus-gass-transfer, globus-gass-transfer-devel, globus-gass-transfer-doc, globus-ftp-control, globus-ftp-control-devel, globus-ftp-control-doc, globus-xio-popen-driver, globus-xio-popen-driver-devel, globus-ftp-client, globus-ftp-client-devel, globus-ftp-client-doc, globus-gass-copy, globus-gass-copy-devel, globus-gass-copy-doc
+Description: Globus Data Management SDK Metapackage
+ This package contains dependencies to install the development packages
+ for the Globus Data Management services.

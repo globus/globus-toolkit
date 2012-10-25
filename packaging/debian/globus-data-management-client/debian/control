@@ -1,0 +1,15 @@
+Source: globus-data-management-client
+Section: net
+Priority: extra
+Maintainer: Globus Support <support@globus.org>
+Build-Depends: cdbs, debhelper (>= 7)
+Standards-Version: 3.7.3
+Homepage: http://www.globus.org/
+
+Package: globus-data-management-client
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, globus-common-progs, globus-gsi-cert-utils-progs, globus-ftp-client, globus-gass-copy-progs, globus-proxy-utils
+
+Description: Globus Data Management Client Metapackage
+ This package contains dependencies to install all of the tools related to
+ running client software to access Globus data management services.

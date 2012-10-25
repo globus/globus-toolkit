@@ -159,6 +159,16 @@ packages="$(./make-packages.pl $lpopts $anonflag -lp -deps -deporder -bundles=$b
 	awk "/at version/ { print \$1 }" )"
 packages="$(echo "${packages}" | egrep -v '^myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
+metapackages="globus-gridftp
+    globus-data-management-client
+    globus-data-management-server
+    globus-data-management-sdk
+    globus-gram5
+    globus-resource-management-server
+    globus-resource-management-client
+    globus-resource-management-sdk
+    globus-gsi"
+
 if [ "$quick" -eq 1 ]; then
 	mv package-output.old package-output
 else
@@ -220,6 +230,21 @@ for i in grid-packaging-tools $packages; do
         if [ "$thisinstall" != "" ]; then
             sudo dpkg -i $thisinstall || true
         fi
+    fi
+done
+
+# Build, but do not install, metapackages such as globus-gridftp and globus-gsi
+for debname in $metapackages; do
+    if [ ! -d "$debiandir/$debname" ]; then
+        echo "Skipping $debname---no debian metadata"
+        continue
+    fi
+    if test -d "$debiandir/$debname"; then
+	cp -R $debiandir/$debname $debname
+
+        cd "$debname";
+        fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
+	cd -
     fi
 done
 

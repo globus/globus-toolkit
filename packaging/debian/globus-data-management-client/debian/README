@@ -1,0 +1,7 @@
+The Debian Package globus-data-management-client
+------------------------------------------------
+
+This package contains dependencies to install of the packages related to
+the being a client of the data management components of the Globus Toolkit.
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Oct 2012 10:39:30 -0400

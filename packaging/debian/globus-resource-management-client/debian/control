@@ -1,0 +1,14 @@
+Source: globus-resource-management-client
+Section: net
+Priority: extra
+Maintainer: Globus Support <support@globus.org>
+Build-Depends: cdbs, debhelper (>= 7)
+Standards-Version: 3.7.3
+Homepage: http://www.globus.org/
+
+Package: globus-resource-management-client
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, globus-core, globus-common-progs, globus-callout, globus-gsi-openssl-error, globus-gsi-proxy-ssl, globus-rsl, globus-openssl-module, globus-gsi-cert-utils-progs, globus-simple-ca, globus-gsi-sysconfig, globus-gsi-callback, globus-gsi-credential, globus-gsi-proxy-core, globus-gssapi-gsi, globus-proxy-utils, globus-gss-assist, globus-gss-assist-progs, globus-xio, globus-xio-gsi-driver, globus-io, globus-gssapi-error, globus-gass-transfer, globus-gram-protocol, globus-gass-server-ez-progs, globus-gram-client, globus-gram-client-tools
+Description: Globus Resource Management Client Metapackage
+ This package contains dependencies to install the client packages related to
+ the resource management components of the Globus Toolkit.

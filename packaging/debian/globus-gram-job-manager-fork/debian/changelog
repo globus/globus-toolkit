@@ -1,3 +1,9 @@
+globus-gram-job-manager-fork (1.5-2) unstable; urgency=low
+
+  * Make sure globus-scheduler-event-generator-admin is installed before using it in  postinst
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Oct 2012 12:40:37 -0400
+
 globus-gram-job-manager-fork (1.5-1) unstable; urgency=low
 
   * GRAM-343: lrm packages grid-service files aren't in CLEANFILES
