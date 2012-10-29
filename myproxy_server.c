@@ -581,6 +581,10 @@ handle_client(myproxy_socket_attrs_t *attrs,
     if (client_request->proxy_lifetime) {
         myproxy_debug("  Requested lifetime: %d seconds",
                       client_request->proxy_lifetime);
+        if (client_request->proxy_lifetime < 0) { /* integer overflow */
+            myproxy_log("requested lifetime is negative. setting to 0 instead.");
+            client_request->proxy_lifetime = 0;
+        }
     }
     if (client_request->retrievers != NULL) {
         myproxy_debug("  Retriever policy: %s", client_request->retrievers);

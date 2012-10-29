@@ -264,6 +264,10 @@ init_arguments(int argc,
         {
 	case 't':       /* Specify proxy lifetime in seconds */
 	  request->proxy_lifetime = 60*60*atoi(optarg);
+      if (request->proxy_lifetime < 0) {
+          fprintf(stderr, "Requested lifetime (-t option) out of bounds.\n");
+          exit(1);
+      }
 	  break;
         case 's': 	/* pshost name */
 	    attrs->pshost = strdup(optarg);
