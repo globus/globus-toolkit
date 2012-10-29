@@ -9,7 +9,6 @@ Homepage: http://www.globus.org/
 Package: globus-gridftp
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}, globus-gridftp-server-progs, globus-gass-copy-progs, globus-common-progs, globus-gsi-cert-utils-progs, globus-gss-assist-progs, globus-proxy-utils
-
 Description: Globus GridFTP Metapackage
  This package contains dependenc to install of the tools related to both run 
  a Globus GridFTP server and use the GridFTP client tools.
