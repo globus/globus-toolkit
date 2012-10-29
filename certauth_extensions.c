@@ -410,10 +410,15 @@ static int
 write_certificate(X509 *cert, const char serial[], const char dir[]) {
     BIO *bp=NULL;
     char *path;
-    int rval = -1;
+    int rval = -1, fd;
 
     path = malloc(strlen(dir)+strlen(serial)+strlen("/.pem")+1);
     sprintf(path, "%s/%s.pem", dir, serial);
+    if ((fd = open(path, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)) < 0) {
+        myproxy_log("failed to create %s: %s"), path, strerror(errno);
+        goto error;
+    }
+    close(fd);
 	if ((bp=BIO_new(BIO_s_file())) == NULL) {
         myproxy_debug("BIO_new(BIO_s_file()) failed");
         goto error;
