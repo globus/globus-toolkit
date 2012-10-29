@@ -1557,10 +1557,9 @@ become_daemon_step1()
     /* 4. `chdir("/")' to ensure that our process doesn't keep any directory in use */
     chdir("/");
 
-    /* 5. `umask(0)' so that we have complete control over the permissions of 
-          anything we write
-    */
-    umask(0);
+    /* 5. umask(0077) as a defensive measure to restrict
+    permissions on any files we create. */
+    umask(0077);
 
     /* 6. Close all file descriptors */
     fdlimit = sysconf(_SC_OPEN_MAX);
