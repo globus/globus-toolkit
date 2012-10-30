@@ -8,7 +8,7 @@ Homepage: http://www.globus.org/
 
 Package: globus-gsi
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends} globus-common-progs globus-gsi-cert-utils-progs globus-gss-assist-progs globus-proxy-utils globus-simple-ca
+Depends: ${shlibs:Depends}, ${misc:Depends}, globus-common-progs, globus-gsi-cert-utils-progs, globus-gss-assist-progs, globus-proxy-utils, globus-simple-ca
 Description: Globus GRAM5 Metapackage
  This package contains dependencies to install the packages related to
  the GSI component of the Globus Toolkit.
