@@ -1,5 +1,11 @@
 gcmu (1.2-1) unstable; urgency=low
 
+  * Fix incorrect path to GSI_AUTHZ callout
+
+ -- Globus Toolkit <support@globus.org>  Wed, Oct 31 2012 14:53:34 -0400
+
+gcmu (1.2-1) unstable; urgency=low
+
   * Initial release
 
  -- Globus Toolkit <support@globus.org>  Tue, 18 Sep 2012 08:54:22 -0400

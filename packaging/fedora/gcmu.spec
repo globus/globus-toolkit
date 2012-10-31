@@ -1,6 +1,6 @@
 Name:           gcmu
 %global _name %(tr - _ <<< %{name})
-Version:        1.2
+Version:        1.3
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 
@@ -76,5 +76,8 @@ rm -rf $RPM_BUILD_ROOT
 %files -f package.filelist
 
 %changelog
+* Wed Oct 31 2012 Joseph Bester <bester@mcs.anl.gov> 1.3
+- Fix incorrect path to GSI_AUTHZ callout
+
 * Mon Sep 17 2012 Joseph Bester <bester@mcs.anl.gov> 1.2
 - Initial packaging
