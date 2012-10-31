@@ -10,8 +10,8 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	3.1
-Release:	3%{?dist}
+Version:	3.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -22,6 +22,8 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   globus-common
 Requires:   globus-common-progs
 Requires:   openssl
+Requires(post):   openssl
+Requires(post):   globus-gsi-cert-utils-progs
 BuildRequires:  grid-packaging-tools >= 3.4
 BuildRequires:  globus-core >= 7.5
 BuildArch:      noarch
@@ -81,6 +83,41 @@ cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%pre
+getent group simpleca >/dev/null || groupadd -r simpleca
+getent passwd simpleca >/dev/null || \
+useradd -r -g simpleca -d %{_localstatedir}/lib/globus/simple_ca \
+   -s /sbin/nologin \
+   -c "User to run the SimpleCA" simpleca
+exit 0
+
+%post
+simplecadir=%{_localstatedir}/lib/globus/simple_ca
+mkdir -p ${simplecadir}
+if [ ! -f ${simplecadir}/cacert.pem ] ; then
+    grid-ca-create -noint -nobuild -dir "${simplecadir}"
+    (umask 077; echo globus > ${simplecadir}/passwd)
+    simplecahash=`openssl x509 -hash -noout -in ${simplecadir}/cacert.pem`
+    cd $simplecadir
+    grid-ca-package -cadir ${simplecadir}
+    tar --strip 1 --no-same-owner -zx --exclude debian -C /etc/grid-security/certificates -f ${simplecadir}/globus_simple_ca_$simplecahash.tar.gz
+    chown -R simpleca:simpleca ${simplecadir}
+    chmod -R g+rw ${simplecadir}
+    find ${simplecadir} -type d -exec chmod g+xs {} \;
+    if [ ! -r /etc/grid-security/globus-user-ssl.conf ]; then
+        grid-default-ca -ca $simplecahash
+    fi
+    if [ ! -f /etc/grid-security/hostcert.pem ] && \
+       [ ! -f /etc/grid-security/hostcert_request.pem ] && \
+       [ ! -f /etc/grid-security/hostkey.pem ]; then
+        grid-cert-request -host `hostname -f`
+        su -s /bin/sh simpleca -c "umask 007; grid-ca-sign \
+                -in /etc/grid-security/hostcert_request.pem \
+                -out ${simplecadir}/hostcert.pem"
+        cp "${simplecadir}/hostcert.pem" /etc/grid-security/hostcert.pem 
+    fi
+    cd -
+fi
 %files -f package.filelist
 %defattr(-,root,root,-)
 %dir %{_datadir}/globus
@@ -90,6 +127,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Mon Oct 29 2012 Joseph Bester <bester@mcs.anl.gov> - 3.2-1
+- GT-312: automate native simple_ca package more
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-3
 - GT 5.2.2 final
 

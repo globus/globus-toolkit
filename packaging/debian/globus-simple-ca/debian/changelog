@@ -1,3 +1,9 @@
+globus-simple-ca (3.2-1) unstable; urgency=low
+
+  * GT-312: automate native simple_ca package more
+
+ -- Globus Toolkit <support@globus.org>  Tue, 30 Oct 2012 16:49:33 -0400
+
 globus-simple-ca (3.1-1) unstable; urgency=low
 
   * GT-151: Build RPMS for SuSE 11

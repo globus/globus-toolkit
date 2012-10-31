@@ -10,7 +10,7 @@ Homepage: http://www.globus.org/
 Package: globus-simple-ca
 Section: net
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, globus-common-progs (>= 13)
+Depends: ${shlibs:Depends}, ${misc:Depends}, openssl, globus-gsi-cert-utils-progs, globus-common-progs (>= 13)
 Description: Globus Simple CA
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

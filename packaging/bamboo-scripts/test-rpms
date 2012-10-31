@@ -178,7 +178,9 @@ for flavor in $flavors; do
     # Check to see if there's a simpleCA available in $SIMPLE_CA_DIR
     SIMPLE_CA_DIR="$topdir/bamboo-simple-ca"
     if [ ! -d "$SIMPLE_CA_DIR" ]; then
-        grid-ca-create -force -noint -pass globus -dir "$SIMPLE_CA_DIR"
+        grid-ca-create -force -noint -pass globus -dir "$SIMPLE_CA_DIR" \
+            -subject "cn=$(hostname -f) Test CA, ou=simpleCA-$(hostname -f), o=Grid"
+
         cd "$SIMPLE_CA_DIR"
         grid-ca-package -r -cadir "$SIMPLE_CA_DIR"
         cd "$OLDPWD"

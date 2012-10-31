@@ -420,6 +420,12 @@ if test ! $res1 = 0; then
     echo ${openssl_options} | grep -- -key > /dev/null
     res1=$?
 fi
+if test ! $res1 = 0; then
+    if test -f ${GRID_CA_DIR}/passwd; then
+        openssl_options="${openssl_options} -passin file:${GRID_CA_DIR}/passwd"
+        res1=0
+    fi
+fi
 
 if test ! $res1 = 0; then
     need_password_input=1
