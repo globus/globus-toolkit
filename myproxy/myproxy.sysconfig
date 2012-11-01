@@ -1,9 +1,0 @@
-# Any environment for MyProxy Startup.
-
-# Override these defaults here.
-## MYPROXY_USER=myproxy
-## MYPROXY_OPTIONS="-s /var/lib/myproxy"
-## X509_USER_CERT=/etc/grid-security/myproxy/hostcert.pem
-## X509_USER_KEY=/etc/grid-security/myproxy/hostkey.pem
-
-
