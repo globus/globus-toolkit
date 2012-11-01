@@ -95,4 +95,4 @@ globus_gridmap_verify_myproxy_callout gsi/gridmap_verify_myproxy_callout gpt
 globus_gridmap_callout	gsi/gridmap_callout/source	gpt
 
 # GCMU
-gcmu    globusonline/gcmu/source tar GCMU_NATIVE_1_2_0
+gcmu    globusonline/gcmu/source tar GCMU_NATIVE_1_3_0

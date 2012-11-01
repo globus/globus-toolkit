@@ -304,4 +304,4 @@ globus_wsrf_bp_schemas wsrf/c/core/tests/ogsa-bp/schema gpt
 globus_usage_tools usage/python/tools/source gpt
 globus_usage_tools_test usage/python/tools/test gpt
 # GCMU
-gcmu    globusonline/gcmu/source tar NULL GCMU_NATIVE_1_2_0
+gcmu    globusonline/gcmu/source tar NULL GCMU_NATIVE_1_3_0
