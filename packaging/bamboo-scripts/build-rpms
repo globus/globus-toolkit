@@ -179,7 +179,7 @@ bundles=globus-data-management-server,globus-data-management-client,globus-data-
 
 
 if [ "$(lsb_release -is)" = "SUSE LINUX" ]; then
-    packages_to_build=gsi_openssh,globus_gram_audit,globus_gridmap_verify_myproxy_callout,gcmu
+    packages_to_build=gsi_openssh,globus_gram_audit,globus_gridmap_verify_myproxy_callout
 elif [ "$osname" = "centos" ] && [ "$osver" = "4" ]; then 
     packages_to_build=gsi_openssh,globus_gram_audit,globus_gridmap_verify_myproxy_callout,gcmu
 else
