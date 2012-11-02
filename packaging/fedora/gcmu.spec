@@ -7,7 +7,7 @@ Summary:        Globus Connect Multi-User
 Group:          System Environment/Libraries
 License:        ASL 2.0
 URL:            http://www.globus.org/
-Source:         gcmu-1.2.tar.gz
+Source:         gcmu-1.3.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
@@ -76,8 +76,8 @@ rm -rf $RPM_BUILD_ROOT
 %files -f package.filelist
 
 %changelog
-* Wed Oct 31 2012 Joseph Bester <bester@mcs.anl.gov> 1.3
+* Wed Oct 31 2012 Joseph Bester <bester@mcs.anl.gov> 1.3-1
 - Fix incorrect path to GSI_AUTHZ callout
 
-* Mon Sep 17 2012 Joseph Bester <bester@mcs.anl.gov> 1.2
+* Mon Sep 17 2012 Joseph Bester <bester@mcs.anl.gov> 1.2-1
 - Initial packaging
