@@ -8,7 +8,8 @@ COPYFILES="/etc/passwd
            /etc/group
            /etc/hosts
            /etc/nsswitch.conf"
-if [ $UID -ne 0 ]; then
+
+if [ $(id -ru) -ne 0 ]; then
     echo "This command must be run as 'root'."
     exit 1
 fi
