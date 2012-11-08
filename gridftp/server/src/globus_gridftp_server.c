@@ -587,6 +587,7 @@ globus_l_gfs_new_server_cb(
     void *                              user_arg)
 {
     globus_xio_system_socket_t          system_handle;
+    char *                              remote_ip;
     char *                              remote_contact;
     char *                              local_contact;
     char *                              tmp_local_contact;
@@ -604,36 +605,40 @@ globus_l_gfs_new_server_cb(
             handle,
             globus_l_gfs_tcp_driver,
             GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
-            &remote_contact);
+            &remote_ip);
         if(result != GLOBUS_SUCCESS)
         {
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_INFO,
-                "Couldn't get remote contact.  Possibly using a non-tcp protocol.\n");
-            remote_contact = strdup("0.0.0.0");
+                "Couldn't get remote IP address.  Possibly using a non-tcp protocol.\n");
+            remote_ip = strdup("0.0.0.0");
+        }        
+        else
+        {
+            result = globus_xio_handle_cntl(
+                handle,
+                globus_l_gfs_tcp_driver,
+                GLOBUS_XIO_TCP_GET_REMOTE_CONTACT,
+                &remote_contact);
+            if(result != GLOBUS_SUCCESS)
+            {
+                globus_gfs_log_result(
+                    GLOBUS_GFS_LOG_INFO,
+                    "Couldn't resolve hostname from remote IP address",
+                    result);
+                remote_contact = strdup(remote_ip);
+            }
         }
-        if(!globus_i_gfs_config_allow_addr(remote_contact, GLOBUS_FALSE))
+        
+        if(!globus_i_gfs_config_allow_addr(remote_ip, GLOBUS_FALSE))
         {
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_WARN,
                 "Connection disallowed by configuration from: %s\n", 
-                remote_contact);
+                remote_ip);
             goto error;
         }
-        globus_free(remote_contact);       
-        result = globus_xio_handle_cntl(
-            handle,
-            globus_l_gfs_tcp_driver,
-            GLOBUS_XIO_TCP_GET_REMOTE_CONTACT,
-            &remote_contact);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_INFO,
-                "Couldn't get remote contact.  Possibly using a non-tcp protocol.\n");
-            remote_contact = strdup("0.0.0.0");
-        }
-        
+
         globus_gfs_log_message(
             GLOBUS_GFS_LOG_INFO,
             "New connection from: %s\n", remote_contact);
@@ -724,13 +729,14 @@ globus_l_gfs_new_server_cb(
         }
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
-
+    globus_free(remote_ip);
     globus_free(local_contact);
     globus_free(remote_contact);
     GlobusGFSDebugExit();
     return;
 
 error_start:
+    globus_free(remote_ip);
     globus_free(remote_contact);   
     globus_free(local_contact);
 error:
