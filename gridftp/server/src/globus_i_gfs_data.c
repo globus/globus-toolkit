@@ -4534,7 +4534,7 @@ globus_l_gfs_data_hybrid_session_start_cb(
         {
             globus_l_gfs_data_passive_bounce_t * bounce_info;
             bounce_info = (globus_l_gfs_data_passive_bounce_t *)
-                globus_malloc(sizeof(globus_l_gfs_data_passive_bounce_t));
+                globus_calloc(1, sizeof(globus_l_gfs_data_passive_bounce_t));
             if(!bounce_info)
             {
                 globus_panic(NULL, 0, "small malloc failure, no recovery");

@@ -186,7 +186,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "By default all paths are allowed, and access control is handled by the OS.", 
     NULL, NULL,GLOBUS_FALSE, NULL},
  {"rp_follow_symlinks", "rp_follow_symlinks", NULL, "rp-follow-symlinks", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Allow following symlinks that lead to restricted paths.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "Do not verify that a symlink points to an allowed path before following.  By default, symlinks are "
+    "followed only when they point to an allowed path.  By enabling this option, symlinks "
+    "will be followed even if they point to a path that is otherwise restricted.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"acl", "acl", NULL, "acl", "em", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "A comma separated list of ACL or event modules to load.",
     NULL, NULL,GLOBUS_FALSE, NULL}, 
@@ -2019,6 +2021,11 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("detach", GLOBUS_FALSE, NULL);
     }
 
+    if(globus_i_gfs_config_bool("data_node"))
+    {
+        globus_l_gfs_config_set("hybrid", GLOBUS_FALSE, NULL);
+    }
+
     if(globus_i_gfs_config_bool("debug"))
     {
         globus_l_gfs_config_set("daemon", GLOBUS_FALSE, NULL);
@@ -2585,6 +2592,10 @@ globus_i_gfs_config_init_envs(
             goto error;
         }
     }
+    else if(!cmdline_config)
+    {
+        rc = globus_l_gfs_config_load_envs_from_file(global_config_file);
+    }
     
     if(local_config_file != NULL)
     {
@@ -2757,6 +2768,11 @@ globus_i_gfs_config_init(
             goto error;
         }
     }
+    else if(!cmdline_config)
+    {
+        rc = globus_l_gfs_config_load_envs_from_file(global_config_file);
+    }
+        
     if(!argv_only)
     {
         globus_l_gfs_config_load_config_env();
