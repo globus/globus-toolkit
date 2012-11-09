@@ -1270,7 +1270,11 @@ globus_l_gfs_authorize_cb(
 
     if(user_arg != NULL)
     {
-        if(result == GLOBUS_SUCCESS)
+        if(action == GFS_ACL_ACTION_COMMIT)
+        {
+            globus_l_gfs_data_end_transfer_kickout(user_arg);
+        }
+        else if(result == GLOBUS_SUCCESS)
         {
             globus_l_gfs_blocking_dispatch_kickout(user_arg);
         }
@@ -7108,6 +7112,7 @@ globus_l_gfs_data_end_read_kickout(
 {
     globus_result_t                     result;
     globus_bool_t                       end = GLOBUS_FALSE;
+    globus_bool_t                       wait_for_commit = GLOBUS_FALSE;
     globus_l_gfs_data_operation_t *     op;
 
     globus_gfs_acl_action_t             action;
@@ -7186,25 +7191,7 @@ globus_l_gfs_data_end_read_kickout(
     }
 
     globus_mutex_lock(&op->session_handle->mutex);
-    {
-
-    recv_info = op->info_struct;
-    object.name = recv_info->pathname;
-    object.size = op->bytes_transferred;
-    object.final = GLOBUS_TRUE;
-    action = GFS_ACL_ACTION_COMMIT;
-    rc = globus_gfs_acl_authorize(
-        &op->session_handle->acl_handle,
-        action,
-        &object,
-        &res,
-        globus_l_gfs_authorize_cb,
-        NULL);
-    if(rc == GLOBUS_GFS_ACL_COMPLETE)
-    {
-        globus_l_gfs_authorize_cb(&object, action, NULL, res);
-    }
-
+    {        
         switch(op->data_handle->state)
         {
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
@@ -7231,9 +7218,31 @@ globus_l_gfs_data_end_read_kickout(
             default:
                 break;
         }
+        
+        recv_info = op->info_struct;
+        object.name = recv_info->pathname;
+        object.size = op->bytes_transferred;
+        object.final = GLOBUS_TRUE;
+        action = GFS_ACL_ACTION_COMMIT;
+        rc = globus_gfs_acl_authorize(
+            &op->session_handle->acl_handle,
+            action,
+            &object,
+            &res,
+            globus_l_gfs_authorize_cb,
+            end ? op : NULL);
+        if(rc == GLOBUS_GFS_ACL_COMPLETE)
+        {
+            globus_l_gfs_authorize_cb(&object, action, NULL, res);
+        }
+        else
+        {
+            wait_for_commit = GLOBUS_TRUE;
+        }
+
     }
     globus_mutex_unlock(&op->session_handle->mutex);
-    if(end)
+    if(end && !wait_for_commit)
     {
         globus_l_gfs_data_end_transfer_kickout(op);
     }

@@ -118,6 +118,15 @@ globus_gfs_acl_cas_authorize(
     {
         goto err;
     }
+
+    action_str = globus_gfs_acl_cas_action_to_string(action);
+    if(!action_str)
+    {
+        *out_res = GLOBUS_SUCCESS;
+        GlobusGFSDebugExit();
+        return GLOBUS_GFS_ACL_COMPLETE;
+    }
+    
     /*
      * If the action is "authz_assert" then the object contains the assertions
      * received over the gridftp control channel - just pass it unmodified to
@@ -132,8 +141,6 @@ globus_gfs_acl_cas_authorize(
         full_object = globus_common_create_string(
             "ftp://%s%s", acl_info->hostname, object->name);
     }    
-
-    action_str = globus_gfs_acl_cas_action_to_string(action);
 
     *out_res = globus_gsi_authorize(
         cas_handle,
