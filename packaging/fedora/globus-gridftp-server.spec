@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.15
+Version:	6.16
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/updates/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -180,6 +180,13 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Thu Nov 08 2012 Globus Toolkit <support@globus.org> - 6.16-1
+- GT-299: fix race condition occuring when transfer finishes while COMMIT event is outstanding
+- GT-304: fix bashim in sh script
+- GT-310: clarify -rp-follow-symlinks help
+- GT-314: fix crash when attempting striping in hybrid mode and backends are not available
+- GT-316: log ip address of incoming connection after failure discovering hostname
+
 * Wed Sep 19 2012 Michael Link <mlink@mcs.anl.gov> - 6.15-1
 - GT-269: GridFTP servers do not report the DEST IP address in transfer logs or usage stats when configured for striping or split processes
 

@@ -1,3 +1,13 @@
+globus-gridftp-server (6.16-1) unstable; urgency=low
+
+  * GT-299: fix race condition occuring when transfer finishes while COMMIT event is outstanding
+  * GT-304: fix bashism in sh script
+  * GT-310: clarify -rp-follow-symlinks help
+  * GT-314: fix crash when attempting striping in hybrid mode and backends are not available
+  * GT-316: log ip address of incoming connection after failure discovering hostname
+
+ -- Globus Toolkit <support@globus.org>  Thu, 08 Nov 2012 07:09:03 -0600
+
 globus-gridftp-server (6.15-1) unstable; urgency=low
 
   * GT-269: GridFTP servers do not report the DEST IP address in transfer logs or usage stats when configured for striping or split processes
