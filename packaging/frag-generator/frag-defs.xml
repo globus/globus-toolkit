@@ -40,7 +40,12 @@
             </project>
         </package>
 
-        <package name='Util_OpenSSH' prefix='gsiopenssh'>
+        <package name='Cred_Mgmt_SimpleCA' nicename="SimpleCA" prefix='simpleca'>
+            <project name="GT">
+                <component>SimpleCA</component>
+            </project>
+        </package>
+        <package name='Util_OpenSSH' nicename="GSI OpenSSH" prefix='gsiopenssh'>
             <project name="GT">
                 <component>GSI-OpenSSH</component>
             </project>

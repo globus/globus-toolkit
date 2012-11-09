@@ -184,12 +184,14 @@
             <xsl:with-param name="doc-url" select="$url"/>
             <xsl:with-param name="doc-package-name" select="@name"/>
             <xsl:with-param name="doc-package-prefix" select="@prefix"/>
+            <xsl:with-param name="doc-package-nicename" select="@nicename"/>
         </xsl:apply-templates>
 
         <xsl:apply-templates select="//driver:frags/driver:frag[@open = 'true']" mode="output">
             <xsl:with-param name="doc-url" select="$open-bugs-url"/>
             <xsl:with-param name="doc-package-name" select="@name"/>
             <xsl:with-param name="doc-package-prefix" select="@prefix"/>
+            <xsl:with-param name="doc-package-nicename" select="@nicename"/>
         </xsl:apply-templates>
     </xsl:template>
 

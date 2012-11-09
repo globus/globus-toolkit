@@ -16,6 +16,7 @@
         <xsl:param name="doc-url"/>
         <xsl:param name="doc-package-name"/>
         <xsl:param name="doc-package-prefix"/>
+        <xsl:param name="doc-package-nicename"/>
 
         <xsl:message>Generating <xsl:value-of select="@name"/> frag for <xsl:value-of select="$doc-package-name"/></xsl:message>
 
@@ -27,11 +28,18 @@
             indent="yes"
         >
             <xsl:variable name="package-nicename">
-                <xsl:call-template name="replace">
-                    <xsl:with-param name="str" select="$doc-package-name"/>
-                    <xsl:with-param name="old" select="'_'"/>
-                    <xsl:with-param name="new" select="' '"/>
-                </xsl:call-template>
+                <xsl:choose>
+                    <xsl:when test="$doc-package-nicename != ''">
+                        <xsl:value-of select="$doc-package-nicename"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:call-template name="replace">
+                            <xsl:with-param name="str" select="$doc-package-name"/>
+                            <xsl:with-param name="old" select="'_'"/>
+                            <xsl:with-param name="new" select="' '"/>
+                        </xsl:call-template>
+                    </xsl:otherwise>
+                </xsl:choose>
             </xsl:variable>
             <section id="{$doc-package-prefix}-{@suffix}">
             <title><xsl:value-of select="concat(@title, $package-nicename)"/></title>
