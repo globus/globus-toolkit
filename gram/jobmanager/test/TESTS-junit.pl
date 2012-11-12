@@ -124,7 +124,7 @@ if(@ARGV)
 
 if(exists($ENV{CONTACT_STRING}))
 {
-    print "Using gatekeeper at " . $ENV{CONTACT_STRING} . "\n";
+    print STDERR "Using gatekeeper at " . $ENV{CONTACT_STRING} . "\n";
     $kill_gatekeeper = 0;
 }
 else

@@ -97,7 +97,7 @@ if(0 != system("$Globus::Core::Paths::bindir/grid-proxy-info -exists -hours 2 2>
 
 if(exists($ENV{CONTACT_STRING}))
 {
-    print "Using gatekeeper at " . $ENV{CONTACT_STRING} . "\n";
+    print STDERR "Using gatekeeper at " . $ENV{CONTACT_STRING} . "\n";
     $kill_gatekeeper = 0;
 }
 else
