@@ -787,7 +787,7 @@ class GRAM5JMPacket(GRAM5Packet):
         values = (
             self.get_job_manager_instance_id(GRAM5Packet.cursor),
             self.data.get("I"),
-            dbclass.Timestamp(*self.send_time),
+            GRAM5Packet.TimestampFromTicks(float(self.data.get("C"))),
             self.get_lifetime(),
             self.data.get("K"),
             self.data.get("L"),
