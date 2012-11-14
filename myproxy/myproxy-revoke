@@ -1,8 +1,0 @@
-#!/bin/sh
-
-FILENAME="$*" # command-line argument
-SIMPLECADIR="/home/globus/.globus/simpleCA"
-PASS="/home/globus/.globus/.simplecapass"
-CONF="$SIMPLECADIR/grid-ca-ssl.conf"
-
-openssl ca -passin file:$PASS -config $CONF -revoke $FILENAME
