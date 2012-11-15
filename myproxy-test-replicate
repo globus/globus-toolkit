@@ -73,7 +73,6 @@ while (($arg = shift @ARGV)) {
 }
 
 # Create a private CA and proxy locally and use them.
-die("-generatecerts option requires -startserver option") unless ($startserver);
 my $privcerts = "$tmpdir/privcerts.$$" ;
 print STDERR "creating a CA in ", $privcerts, "\n" if ($verbose);
 mkdir("$privcerts") ||
