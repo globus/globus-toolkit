@@ -72,6 +72,81 @@ while (($arg = shift @ARGV)) {
     }
 }
 
+# Create a private CA and proxy locally and use them.
+die("-generatecerts option requires -startserver option") unless ($startserver);
+my $privcerts = "$tmpdir/privcerts.$$" ;
+print STDERR "creating a CA in ", $privcerts, "\n" if ($verbose);
+mkdir("$privcerts") ||
+ die("failed to create $privcerts directory, stopped") ;
+open(SSLCNF, ">$privcerts/openssl.cnf") || 
+ die("failed to create $privcerts/openssl.cnf: $!");
+print SSLCNF <<EOF;
+[ ca ]
+default_ca      = CA_default            # The default ca section
+
+[ CA_default ]
+dir            = $privcerts              # top dir
+database       = $privcerts/index.txt        # index file.
+new_certs_dir	= $privcerts/         # new certs dir
+ 
+certificate    = $privcerts/cacert.pem       # The CA cert
+serial         = $privcerts/serial           # serial no file
+private_key    = $privcerts/cakey.pem # CA private key
+RANDFILE       = $privcerts/.rand    # random number file
+default_md     = sha1                   # md to use
+[ req ]
+distinguished_name = req_distinguished_name
+
+[ req_distinguished_name ]
+commonName = Common Name (hostname, IP, or your name)
+commonName_max = 64
+
+[ v3_ca ]
+basicConstraints = CA:TRUE
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer:always
+
+[ policy_anything ]
+commonName              = supplied
+
+EOF
+
+close(SSLCNF);
+open(CAINDEX,">$privcerts/index.txt") ||
+  die("failed to create $privcerts/index.txt");
+close(CAINDEX);
+open(SERIAL,">$privcerts/serial") ||
+  die("failed to create $privcerts/serial");
+print SERIAL "01\n";
+close(SERIAL);
+&runcmd("openssl req -batch -subj '/CN=MyProxy Test CA' -config $privcerts/openssl.cnf -new -x509 -extensions v3_ca -nodes -keyout $privcerts/cakey.pem -out $privcerts/cacert.pem -days 30");
+
+chomp($hash = `openssl x509 -in $privcerts/cacert.pem -hash -noout`) ;
+mkdir("$privcerts/grid-security")  ||
+ die("failed to create $privcerts/grid-security");
+copy("$privcerts/cacert.pem","$privcerts/grid-security/$hash.0") ||
+ die("failed to copy $privcerts/cacert.pem","$privcerts/grid-security/$hash.0");
+open(POLICY,">$privcerts/grid-security/$hash.signing_policy") ||
+ die("failed to create $privcerts/grid-security/$hash.signing_policy");
+print POLICY  "access_id_CA            X509    '/CN=MyProxy Test CA'\n";
+print POLICY  "pos_rights              globus  CA:sign\n";
+print POLICY  "cond_subjects           globus  '\"/*\"'\n";
+close(POLICY);
+print STDERR "creating a user certificate request ", $privcerts, "\n" if ($verbose);
+&runcmd("openssl req -batch -subj '/CN=MyProxy Test User'  -config $privcerts/openssl.cnf -new -nodes -keyout $privcerts/userkey.pem -out $privcerts/usercert.csr -days 7") ;
+print STDERR "signing user certificate with by CA in ", $privcerts, "\n" if ($verbose);
+&runcmd("openssl ca -batch -days 7 -config $privcerts/openssl.cnf -policy policy_anything -out $privcerts/usercert.pem -infiles $privcerts/usercert.csr");
+chmod(oct("0600"),"$privcerts/userkey.pem","$privcerts/usercert.pem") ||
+ die("failed to chmod $privcerts/userkey.pem or $privcerts/usercert.pem");
+$ENV{'X509_USER_CERT'} = "$privcerts/usercert.pem" ;
+$ENV{'X509_USER_KEY'}  = "$privcerts/userkey.pem" ;
+$ENV{'X509_CERT_DIR'}  = "$privcerts/grid-security" ;
+print STDERR "generating a user proxy\n" if ($verbose);
+chomp($grid_proxy_init = `which grid-proxy-init 2>/dev/null`);
+  die "grid-proxy-init not found, stopped" if (!(-x $grid_proxy_init));
+&runcmd("$grid_proxy_init -debug $PROXYBITS");
+#end of generatecerts.
+
 #
 # make sure I have a valid proxy
 #
