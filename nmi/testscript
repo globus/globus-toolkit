@@ -96,7 +96,7 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT50"; then
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT52"; then
-    installer="gt5.2.2-all-source-installer.tar.gz"
+    installer="gt5.2.3rc1-all-source-installer.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt52"
     installerdir="gt52-src"
     BuildGT
