@@ -1,18 +1,11 @@
 #!/bin/sh
+set -e # exit on any error
 LOGNAME=$USER
 export LOGNAME
 VOMS_LOCATION="$_CONDOR_SCRATCH_DIR/voms"
 MYPROXY_CONFIG_OPTS=""
 (
-if test -n "${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}"; then
-    PKG_CONFIG_PATH="${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/lib/pkgconfig"
-    OPENSSL_CFLAGS="-I${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/include"
-    OPENSSL_INCLUDES="-I${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/include"
-    OPENSSL_LDFLAGS="-L${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/lib"
-    OPENSSL_LIBS="-lssl -lcrypto"
-    export PKG_CONFIG_PATH
-    export OPENSSL_CFLAGS OPENSSL_INCLUDES OPENSSL_LDFLAGS OPENSSL_LIBS
-elif test ! -f /usr/lib/libssl.so -a -f /usr/sfw/lib/libssl.so; then
+if test ! -f /usr/lib/libssl.so -a -f /usr/sfw/lib/libssl.so; then
     PKG_CONFIG_PATH="/usr/sfw/lib/pkgconfig"
     OPENSSL_CFLAGS="-I/usr/sfw/include"
     OPENSSL_INCLUDES="-I/usr/sfw/include"
@@ -38,11 +31,7 @@ if test -n "${LD_LIBRARY_PATH}" -a -z "${LIBPATH}"; then
     export LIBPATH
 fi
 valgrind=""
-if test -d /prereq/valgrind-3.5.0/bin; then
-    PATH=/prereq/valgrind-3.5.0/bin:$PATH
-    export PATH
-fi
-valgrind_path=`which valgrind 2>/dev/null`
+valgrind_path=`which valgrind 2>/dev/null || true`
 if test -x "$valgrind_path"; then
     echo valgrind found at $valgrind_path
     valgrind="-valgrind"
@@ -50,11 +39,6 @@ fi
 voms=""
 if test -r "${VOMS_LOCATION}/lib/libvomsc.so"; then
     voms="--with-voms=${VOMS_LOCATION}"
-fi
-if test -d /prereq/java-1.5.0_08/bin; then
-    JAVA_HOME=/prereq/java-1.5.0_08
-    PATH=/prereq/java-1.5.0_08/bin:$PATH
-    export JAVA_HOME PATH
 fi
 if test -n "${JAVA_HOME}"; then
     jglobus="cog-jglobus-1.8.0"
@@ -177,7 +161,7 @@ TestMyProxyCVS()
     cp nmi/*.0 nmi/*.signing_policy $X509_CERT_DIR
     chmod 0600 nmi/userkey.pem
     grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
-    myproxy-test -startserver $valgrindopt
+    myproxy-test -startserver -generatecerts $valgrindopt
     myproxy-test-replicate
     cd ..
 }
