@@ -155,12 +155,6 @@ TestMyProxyCVS()
     echo ==================================================
     echo Testing MyProxy in $GLOBUS_LOCATION
     cd myproxy
-    X509_CERT_DIR=$GLOBUS_LOCATION/share/certificates
-    export X509_CERT_DIR
-    mkdir $X509_CERT_DIR
-    cp nmi/*.0 nmi/*.signing_policy $X509_CERT_DIR
-    chmod 0600 nmi/userkey.pem
-    grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
     myproxy-test -startserver -generatecerts $valgrindopt
     myproxy-test-replicate
     cd ..
