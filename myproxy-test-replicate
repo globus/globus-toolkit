@@ -47,10 +47,13 @@
 #  27. Restart slave server and destroy cred (myproxy-destroy) 
 
 use File::Temp qw(tempdir);
+use File::Copy;
 use IPC::Open3;
 use Socket;
 
 $tmpdir = tempdir(CLEANUP => 1);
+
+$PROXYBITS = "-bits 2048";
 
 #
 # handle cmdline options
@@ -1163,4 +1166,22 @@ sub openport {
     $port++;
   }
   die "failed to find available port";
+}
+
+sub runcmd {
+    local($command, $input) = @_;
+
+    print STDERR "running: ", $command, "\n" if ($verbose); 
+    $pid = open3(*Writer, *Reader, '', "exec $command") ||
+	die "failed to run $command";
+    print Writer $input if (defined($input));
+    close(Writer);
+    @output = <Reader>;
+    close(Reader);
+    waitpid($pid, 0);
+    $exitstatus = $?;
+    $output = join('', @output);
+    print STDERR $output if ($verbose);
+
+    return ($exitstatus, $output);
 }
