@@ -149,7 +149,7 @@ def main(argv):
 
     """
     commit = True
-    opts, args = getopt.getopt(argv[1:], "d:nhc:")
+    opts, args = getopt.getopt(argv[1:], "d:nhc:p:")
     config_file = None
     config_data_dir = None
     pidfile = None
@@ -179,16 +179,16 @@ def main(argv):
         if pidfd is not None:
             pidfd.close()
 
-        if pid is not None:
+        if pid is not None and pidfd:
             try:
                 os.kill(pid, 0)
                 print sys.argv[0] + " is already running with pid %d" % (pid)
                 sys.exit(0)
             except OSError:
-                pidfd.truncate(0)
+                os.remove(pidfile)
         try:
             pidfd = open(pidfile, 'w')
-            pidfd.write(str(os.getpid()))
+            pidfd.write(str(os.getpid()) + "\n")
         except:
             pass
         if pidfd is not None:

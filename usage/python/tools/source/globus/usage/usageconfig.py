@@ -40,7 +40,7 @@ class UsageConfig(object):
                 execfile(path)
             else:
                 exe = sys.argv[0]
-                if sbindir != '':
+                if exe != '':
                     sbindir = os.path.dirname(exe)
                     prefix = os.path.dirname(sbindir)
                     path = os.path.join(prefix,
