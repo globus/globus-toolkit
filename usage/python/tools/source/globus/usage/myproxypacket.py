@@ -18,7 +18,7 @@
 Object definition for processing MyProxy usage packets.
 """
 
-from cusagepacket import CUsagePacket
+from globus.usage.cusagepacket import CUsagePacket
 
 class MyProxyPacket(CUsagePacket):
     """

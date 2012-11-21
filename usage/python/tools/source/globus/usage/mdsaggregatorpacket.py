@@ -15,7 +15,7 @@
 Object definition for processing MDS aggregator usage packets.
 """
 
-from iptimemonitorpacket import IPTimeMonitorPacket
+from globus.usage.iptimemonitorpacket import IPTimeMonitorPacket
 
 class MDSAggregatorPacket(IPTimeMonitorPacket):
     """

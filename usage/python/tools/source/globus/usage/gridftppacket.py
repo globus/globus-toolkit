@@ -16,8 +16,8 @@
 Utilities and objects for processing GridFTP usage packets.
 """
 
-from cusagepacket import CUsagePacket
-from dnscache import DNSCache
+from globus.usage.cusagepacket import CUsagePacket
+from globus.usage.dnscache import DNSCache
 import time
 import re
 
@@ -83,6 +83,8 @@ class GridFTPPacket(CUsagePacket):
         """
         Upload many GridFTPPacket usage packets to the database referred to
         by the given cursor. It will also prepare the caches of id tables
+
+        Returns a list of packets that couldn't be inserted
         """
         if GridFTPPacket.__all_init == 0:
             GridFTPPacket.__db_class = dbclass
@@ -101,7 +103,7 @@ class GridFTPPacket(CUsagePacket):
             GridFTPPacket.__init_gftp_buffer_sizes(cursor)
             GridFTPPacket.__init_gftp_transfer_rate_sizes(cursor)
             GridFTPPacket.__cursor = cursor
-        CUsagePacket.upload_many(dbclass, cursor, packets)
+        return CUsagePacket.upload_many(dbclass, cursor, packets)
         
     def values(self, dbclass):
         """
@@ -165,7 +167,8 @@ class GridFTPPacket(CUsagePacket):
         key may be newly defined and cached.
 
         """
-        return GridFTPPacket.__dns_cache.get_host_id(self.ip_address, self.data.get("HOSTNAME"))
+        return GridFTPPacket.__dns_cache.get_host_id(\
+            self.ip_address, self.data.get("HOSTNAME"))
 
     def get_scheme_id(self, cursor):
         """
@@ -318,7 +321,8 @@ class GridFTPPacket(CUsagePacket):
                     SELECT nextval('gftp_server_id_seq') AS key
                     """)
                 server_id = cursor.fetchone()[0]
-                values_sql = (server_id, host_id, gftp_version, event_modules, conf_id)
+                values_sql = (server_id, host_id, gftp_version, \
+                    event_modules, conf_id)
                 cursor.execute('''
                     INSERT INTO gftp_server(
                         id,
@@ -431,7 +435,6 @@ class GridFTPPacket(CUsagePacket):
         if xfer_type is not None:
             xfer_type_id = GridFTPPacket.__gftp_xfer_type.get(xfer_type)
             if xfer_type_id is None:
-                values = (xfer_type, )
                 cursor.execute("""
                     SELECT nextval('gftp_xfer_type_id_seq') AS key
                     """)

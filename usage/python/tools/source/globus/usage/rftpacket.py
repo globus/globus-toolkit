@@ -12,31 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Object definition for processing Java WS Core (version 1) usage packets.
+Object definition for processing RFT usage packets.
 """
 
-from iptimemonitorpacket import IPTimeMonitorPacket
+from globus.usage.iptimemonitorpacket import IPTimeMonitorPacket
 
-class JavaWSCoreV1Packet(IPTimeMonitorPacket):
+class RFTPacket(IPTimeMonitorPacket):
     """
-    Packet parser and handler for the JavaWS Core V1 packet format. This
-    format was used in GT 4.0.0 - GT 4.0.2
+    RFT Usage Packet handler
     """
     def __init__(self, address, packet):
         IPTimeMonitorPacket.__init__(self, address, packet)
-        [self.container_id, self.container_type, self.event_type] = \
-                self.unpack("ihh")
+        [ self.request_type,
+            self.number_of_files,
+            self.number_of_bytes,
+            self.number_of_resources,
+            self.resource_creation_time,
+            self.factory_start_time
+        ] = self.unpack("Bqqqqq")
+
 
     insert_statement = '''
-            INSERT INTO java_ws_core_packets(
+            INSERT INTO rft_packets(
                 component_code,
                 version_code,
                 send_time,
                 ip_address,
-                container_id,
-                container_type,
-                event_type)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)'''
+                request_type,
+                number_of_files,
+                number_of_bytes,
+                number_of_resources,
+                creation_time,
+                factory_start_time)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
 
     def values(self, dbclass):
         """
@@ -44,15 +52,14 @@ class JavaWSCoreV1Packet(IPTimeMonitorPacket):
         class's insert_statement.
 
         Arguments:
-        self -- A JavaWSCoreV1Packet object
+        self -- A RFTPacket object
 
         Returns:
         Tuple containing
-            (component_code, version_code, send_time,
-            ip_address, container_id, container_type, event_type)
-
-        Returns:
-        None.
+            (component_code, version_code, send_time, ip_address,
+             request_type, number_of_files, number_of_bytes,
+             number_of_resources, creation_time,
+             factory_start_time)
 
         """
         return (
@@ -60,6 +67,10 @@ class JavaWSCoreV1Packet(IPTimeMonitorPacket):
             self.packet_version,
             dbclass.Timestamp(*self.send_time),
             self.ip_address,
-            self.container_id,
-            self.container_type,
-            self.event_type)
+            self.request_type,
+            self.number_of_files,
+            self.number_of_bytes,
+            self.number_of_resources,
+            self.resource_creation_time,
+            self.factory_start_time)
+

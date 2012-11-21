@@ -15,7 +15,7 @@
 Object definition for processing Java WS Core (version 2) usage packets.
 """
 
-from javawscorev1packet import JavaWSCoreV1Packet
+from globus.usage.javawscorev1packet import JavaWSCoreV1Packet
 
 class JavaWSCoreV2Packet(JavaWSCoreV1Packet):
     """

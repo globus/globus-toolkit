@@ -16,8 +16,8 @@
 Utilities and objects for processing GRAM5 usage packets.
 """
 
-from cusagepacket import CUsagePacket
-from dnscache import DNSCache
+from globus.usage.cusagepacket import CUsagePacket
+from globus.usage.dnscache import DNSCache
 import time
 import re
 
@@ -45,11 +45,7 @@ class GRAM5Packet(CUsagePacket):
 
     
     @staticmethod
-    def upload_many(dbclass, cursor, packets):
-        """
-        Upload many GRAM5Packet usage packets to the database referred to
-        by the given cursor. It will also prepare the caches of id tables
-        """
+    def pre_upload(dbclass, cursor):
         if GRAM5Packet.__all_init == 0:
             GRAM5Packet.db_class = dbclass
 
@@ -65,7 +61,18 @@ class GRAM5Packet(CUsagePacket):
             GRAM5Packet.__init_clients(cursor)
             GRAM5Packet.__init_executables(cursor)
             GRAM5Packet.cursor = cursor
-        CUsagePacket.upload_many(dbclass, cursor, packets)
+
+    @staticmethod
+    def upload_many(dbclass, cursor, packets):
+        """
+        Upload many GRAM5Packet usage packets to the database referred to
+        by the given cursor. It will also prepare the caches of id tables.
+
+        Returns an array of bad packets
+        """
+        GRAM5Packet.pre_upload(dbclass, cursor)
+
+        return CUsagePacket.upload_many(dbclass, cursor, packets)
         
     def get_job_manager_id(self, cursor):
         """
@@ -97,7 +104,8 @@ class GRAM5Packet(CUsagePacket):
         if job_manager_id is None:
             cursor.execute("select nextval('gram5_job_managers_id_seq') as key")
             job_manager_id = cursor.fetchone()[0]
-            values_sql = (job_manager_id, host_id, version_id, lrm_id, seg_used, poll_used, audit_used)
+            values_sql = (job_manager_id, host_id, version_id, \
+                lrm_id, seg_used, poll_used, audit_used)
 
             cursor.execute('''
                 INSERT INTO gram5_job_managers(
@@ -153,7 +161,8 @@ class GRAM5Packet(CUsagePacket):
         if byuuidresult is not None:
             (job_manager_instance_id, jmid) = byuuidresult
         if job_manager_instance_id is None:
-            cursor.execute("select nextval('gram5_job_manager_instances_id_seq') as key")
+            cursor.execute( \
+                "select nextval('gram5_job_manager_instances_id_seq') as key")
             job_manager_instance_id = cursor.fetchone()[0]
             values = (job_manager_instance_id, job_manager_id, uuid, start_time)
             cursor.execute('''
@@ -646,7 +655,8 @@ class GRAM5Packet(CUsagePacket):
         send_time = self.send_time_ticks
         return "%f seconds" % (send_time - start_time)
 
-    def get_rsl_attribute_index(self, attr, cursor):
+    @staticmethod
+    def get_rsl_attribute_index(attr, cursor):
         attribute_id = GRAM5Packet.__rsl_attributes.get(attr)
         if attribute_id is None:
             cursor.execute("""
@@ -673,7 +683,7 @@ class GRAM5Packet(CUsagePacket):
         if attrs is not None and attrs != '':
             extra_rsl = attrs.split(',')
             for attr in extra_rsl:
-                attr_index = self.get_rsl_attribute_index(attr, cursor)
+                attr_index = GRAM5Packet.get_rsl_attribute_index(attr, cursor)
                 bitfield = bitfield | (2**attr_index)
 
         attribute_list = []
@@ -728,17 +738,19 @@ class GRAM5Packet(CUsagePacket):
 
     @staticmethod
     def TimestampFromTicks(ticks):
-        timestamp=0
+        timestamp = 0
         try: 
             timestamp = GRAM5Packet.db_class.TimestampFromTicks(float(ticks))
         except:
-            timestamp = GRAM5Packet.db_class.TimestampFromTicks(round(float(ticks),0))
+            timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+                round(float(ticks),0))
         return timestamp
 
 class GRAM5JMPacket(GRAM5Packet):
     """
     GRAM5 Usage Packet handler for job manager status packets
     """
+    __seen_packets__ = {}
     
     def __init__(self, address, packet):
         GRAM5Packet.__init__(self, address, packet)
@@ -784,10 +796,20 @@ class GRAM5JMPacket(GRAM5Packet):
              stage_in, pending, active, stage_out, failed, done)
         """
 
+        jmid = self.get_job_manager_instance_id(GRAM5Packet.cursor)
+        when = GRAM5Packet.TimestampFromTicks(float(self.data.get("C")))
+
+        seenkey = (jmid, when)
+
+        if GRAM5JMPacket.__seen_packets__.get(seenkey):
+            return None
+        else:
+            GRAM5JMPacket.__seen_packets__[seenkey] = 1
+
         values = (
-            self.get_job_manager_instance_id(GRAM5Packet.cursor),
+            jmid,
             self.data.get("I"),
-            GRAM5Packet.TimestampFromTicks(float(self.data.get("C"))),
+            when,
             self.get_lifetime(),
             self.data.get("K"),
             self.data.get("L"),
@@ -1097,7 +1119,8 @@ class GRAM5JobPacket(GRAM5Packet):
                     file_stage_out_https,
                     file_stage_out_ftp,
                     file_stage_out_gsiftp)
-                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                VALUES(%s, %s, %s, %s, %s, %s, %s, 
+                       %s, %s, %s, %s, %s, %s, %s)''',
                 values)
         return file_info_id
 

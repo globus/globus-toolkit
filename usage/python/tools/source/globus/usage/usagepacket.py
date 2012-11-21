@@ -102,14 +102,51 @@ class UsagePacket(object):
     @staticmethod
     def upload_many(dbclass, cursor, packets):
         """
-        Upload multiple usage packets of the same type.
+        Upload multiple usage packets of the same type. Returns an array
+        of packets which could not be uploaded
         """
-        # GT-183: Usage stats server doesn't discard bad packets
-        values = filter(lambda x: x is not None, map(lambda x: x.values(dbclass), packets))
-        cursor.executemany(
-                packets[0].insert_statement,
-                values)
+        values = map(lambda x: x.values(dbclass), packets)
 
+        # Ideally, we'd just upload the whole block of packets at once;
+        # however, sometimes we get an invalid packet that violates some
+        # database constraint. I'm not sure we can get the point where the 
+        # insert failed from the cursor (poor doc), so we'll instead roll back
+        # to our savepoint and try to upload half of the packets, continuing
+        # halfwise until we hit the bad packet. When we find the bad packet,
+        # we'll store it in bad_packets and then try to upload everything
+        # after the bad packet.
+        #
+        # The bad packets are returned so the caller can do something about
+        # reporting them
+        start = 0
+        end = len(values)
+        blocksize = len(values)
+        bad_packets = []
+
+        while start < end:
+            cursor.execute("SAVEPOINT uploadmany")
+            try:
+                cursor.executemany(
+                        packets[0].insert_statement,
+                        values[start:start+blocksize])
+                cursor.execute("RELEASE SAVEPOINT uploadmany")
+                start = start + blocksize
+                blocksize = end - start
+            except:
+                cursor.execute("ROLLBACK TO SAVEPOINT uploadmany")
+                if blocksize > 1:
+                    # If insert fails, roll back to save point, then
+                    # attempt to upload half of the values
+                    blocksize = blocksize / 2
+                else:
+                    # If insert fails with a block size of 1, then 
+                    # we've found a bad packet, so we'll drop it and continue
+                    # with the rest of the packets
+                    if packets[start] is not None:
+                        bad_packets.append(packets[start])
+                    start = start + 1
+                    blocksize = end - start
+        return bad_packets
 
     @staticmethod
     def parse_address(address):

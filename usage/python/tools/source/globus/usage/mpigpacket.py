@@ -15,7 +15,7 @@
 Object definition for processing MPIG usage packets.
 """
 
-from cusagepacket import CUsagePacket
+from globus.usage.cusagepacket import CUsagePacket
 
 class MPIGPacket(CUsagePacket):
     """

@@ -59,7 +59,7 @@ class DNSCache(object):
             if hostname is None:
                 try:
                     hostnames = socket.gethostbyaddr(ip_address)
-                except Exception, detail:
+                except socket.herror:
                     hostnames.append('UNKNOWN')
                 if hostnames is not None:
                     hostname = hostnames[0]
