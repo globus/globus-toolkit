@@ -13,13 +13,13 @@
 Name:		globus-usage
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	8%{?dist}
+Release:	9%{?dist}
 Summary:	Globus Toolkit - Usage Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -109,6 +109,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 3.1-9
+- 5.2.3
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 3.1-8
 - GT 5.2.2 final
 

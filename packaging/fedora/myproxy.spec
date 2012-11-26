@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.9
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -28,8 +28,8 @@ Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}.tar.
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:  globus-gss-assist-devel >= 8
-BuildRequires:  globus-usage-devel >= 3
+BuildRequires:  globus-gss-assist-devel >= 3
+BuildRequires:  globus-usage-devel >= 0
 BuildRequires:  pam-devel
 BuildRequires:  graphviz
 %if 0%{?suse_version} == 0
@@ -94,7 +94,7 @@ Requires:      myproxy-libs = %{version}-%{release}
 # automatically via pkgconfig
 %if  0%{?el4}%{?el5}
 Requires:      globus-gss-assist-devel > 8
-Requires:      globus-usage-devel >= 3
+Requires:      globus-usage-devel >= 0
 %endif
 
 Summary:       Develop X.509 Public Key Infrastructure (PKI) security credentials 
@@ -451,6 +451,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 5.9-2
+- 5.2.3
+
 * Wed Jul 25 2012 Joseph Bester <bester@mcs.anl.gov> - 5.9-1
 - Fix https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7261
 

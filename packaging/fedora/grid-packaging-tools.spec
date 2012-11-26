@@ -1,6 +1,6 @@
 Name:		grid-packaging-tools
 Version:	3.6.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 
 Group:		Development/Tools
@@ -8,7 +8,7 @@ License:	NCSA
 URL:		http://www.gridpackagingtools.com/
 #		Maintenance of GPT has been taken over by the Globus Alliance.
 #		Use the latest source tarball from their repository.
-Source:		http://www-unix.globus.org/ftppub/gt4/4.2.1/gpt/gpt-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/gpt-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:	libtool
 BuildRequires:	perl
@@ -86,6 +86,9 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 3.6.3-2
+- 5.2.3
+
 * Tue Jul 31 2012 Joseph Bester <bester@mcs.anl.gov> - 3.6.3-1
 - GT-257: gpt_create_automake_rules creates duplicate rules for man pages
 

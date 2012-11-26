@@ -13,13 +13,13 @@
 Name:		globus-openssl-module
 %global _name %(tr - _ <<< %{name})
 Version:	3.2
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -179,6 +179,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 3.2-6
+- 5.2.3
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 3.2-5
 - GT 5.2.2 final
 

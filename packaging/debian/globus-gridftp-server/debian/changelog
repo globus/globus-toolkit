@@ -1,3 +1,9 @@
+globus-gridftp-server (6.16-2) unstable; urgency=low
+
+  * 5.2.3
+
+ -- Globus Toolkit <support@globus.org>  Mon, 26 Nov 2012 11:25:55 -0500
+
 globus-gridftp-server (6.16-1) unstable; urgency=low
 
   * GT-299: fix race condition occuring when transfer finishes while COMMIT event is outstanding

@@ -11,9 +11,8 @@
 %endif
 
 Name:		globus-gridftp-server
-%global _name %(tr - _ <<< %{name})
 Version:	6.16
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -180,6 +179,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 6.16-2
+- 5.2.3
+
 * Thu Nov 08 2012 Globus Toolkit <support@globus.org> - 6.16-1
 - GT-299: fix race condition occuring when transfer finishes while COMMIT event is outstanding
 - GT-304: fix bashim in sh script

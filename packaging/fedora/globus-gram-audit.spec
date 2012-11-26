@@ -16,13 +16,13 @@
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
 Version:	3.2
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - GRAM Auditing
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:      noarch
@@ -104,6 +104,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 3.2-4
+- 5.2.3
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 3.2-3
 - GT 5.2.2 final
 

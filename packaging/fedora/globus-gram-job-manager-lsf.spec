@@ -15,14 +15,14 @@
 
 Name:		globus-gram-job-manager-lsf
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
+Version:	1.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-lsf < 4.5
 
@@ -222,5 +222,8 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-lsf-seg
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 1.1-1
+- 5.2.3
+
 * Fri Aug 17 2012 Joseph Bester <bester@mcs.anl.gov> - 1.0-1
 - Initial packaging

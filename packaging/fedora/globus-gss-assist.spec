@@ -13,13 +13,13 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
 Version:	8.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -204,6 +204,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 8.6-2
+- 5.2.3
+
 * Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 8.6-1
 - GT-255: gridmapdir support doesn't compile on non-POSIX systems
 

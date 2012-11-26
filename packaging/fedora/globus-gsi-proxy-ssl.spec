@@ -13,13 +13,13 @@
 Name:		globus-gsi-proxy-ssl
 %global _name %(tr - _ <<< %{name})
 Version:	4.1
-Release:	9%{?dist}
+Release:	10%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -166,6 +166,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 4.1-10
+- 5.2.3
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 4.1-9
 - GT 5.2.2 final
 

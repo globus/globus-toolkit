@@ -1,3 +1,9 @@
+globus-simple-ca (3.2-2) unstable; urgency=low
+
+  * 5.2.3
+
+ -- Globus Toolkit <support@globus.org>  Mon, 26 Nov 2012 11:24:53 -0500
+
 globus-simple-ca (3.2-1) unstable; urgency=low
 
   * GT-312: automate native simple_ca package more

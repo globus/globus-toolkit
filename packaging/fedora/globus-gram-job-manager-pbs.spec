@@ -16,13 +16,13 @@
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
 Version:	1.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-pbs < 4.5
 
@@ -270,6 +270,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 1.6-2
+- 5.2.3
+
 * Wed Sep 12 2012 Joseph Bester <bester@mcs.anl.gov> - 1.6-1
 - GT-276: PBS SEG module isn't robust against log files becoming unavailable
 

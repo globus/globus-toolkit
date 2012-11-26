@@ -1,6 +1,6 @@
 Name: globus-gsi-credential
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www-unix.globus.org/ftppub/gt5/5.0/5.0.2/installers/src/gt5.0.2-all-source-installer.tar.bz2
+Source: http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/globus_gsi_credential-5.3.tar.gz
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 
 Files: *

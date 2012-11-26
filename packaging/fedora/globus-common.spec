@@ -19,13 +19,13 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	14.9
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -263,6 +263,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 14.9-2
+- 5.2.3
+
 * Tue Oct 09 2012 Globus Toolkit <support@globus.org> - 14.9-1
 - GT-288: Deprecate globus_libc_setenv
 

@@ -13,13 +13,13 @@
 Name:		globus-gass-cache-program
 %global _name %(tr - _ <<< %{name})
 Version:	5.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Tools to manipulate local and remote GASS caches
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -85,6 +85,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 5.2-2
+- 5.2.3
+
 * Tue Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 5.2-1
 - GT-252: Missing dependency in gass cache program
 

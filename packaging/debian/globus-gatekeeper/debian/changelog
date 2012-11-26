@@ -1,3 +1,9 @@
+globus-gatekeeper (9.15-1) unstable; urgency=low
+
+  * 5.2.3
+
+ -- Globus Toolkit <support@globus.org>  Mon, 26 Nov 2012 11:25:52 -0500
+
 globus-gatekeeper (9.14-1) unstable; urgency=low
 
   * GT-253: gatekeeper and job manager don't build on hurd

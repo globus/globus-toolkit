@@ -11,13 +11,13 @@
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
 Version:	3.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   globus-common
 Requires:   globus-common-progs
@@ -127,6 +127,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 3.2-2
+- 5.2.3
+
 * Mon Oct 29 2012 Joseph Bester <bester@mcs.anl.gov> - 3.2-1
 - GT-312: automate native simple_ca package more
 

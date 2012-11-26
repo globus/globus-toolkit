@@ -13,13 +13,13 @@
 Name:		globus-xio-pipe-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.2
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Globus Pipe Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -113,6 +113,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 2.2-5
+- 5.2.3
+
 * Mon Jul 16 2012 Joseph Bester <bester@mcs.anl.gov> - 2.2-4
 - GT 5.2.2 final
 
