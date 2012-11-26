@@ -1,3 +1,24 @@
 Attribute: name
 Description: "The name of job to submit to the LSF batch system"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: host_xcount
+Description: "List of numbers of nodes to request for this job."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: xcount
+Description: "List of numbers of processes to run on each of the nodes corresponding to the host_xcount."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+# Disable RSL attributes that aren't supported by LSF
+Attribute: host_count
+ValidWhen: 
+
+Attribute: min_memory
+ValidWhen:
+
+Attribute: host_names
+ValidWhen: 
+
+Attribute: host_types
+ValidWhen: 

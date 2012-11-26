@@ -359,6 +359,59 @@ EOF
             Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
     }
 
+    my @xcount, @host_xcount;
+    @xcount = $description->xcount();
+    @host_xcount = $description->host_xcount();
+
+    if (@host_xcount)
+    {
+        my $res = "";
+        $self->log("host_xcount = " . scalar(@host_xcount));
+        foreach my $this_hostxcount (@host_xcount)
+        {
+            $self->log("host_xcount = " . $this_hostxcount);
+            my $this_xcount = shift @xcount;
+            if (!$this_xcount)
+            {
+                $this_xcount = 1;
+            }
+            my $mult = int($this_xcount) * int($this_hostxcount);
+
+            if ($res ne '')
+            {
+                $res .= " + ";
+            }
+            $res .= "$mult * {span[ptile=$this_xcount]}";
+        }
+        $rc = print JOB "#BSUB -R \"$res\"\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
+    }
+    elsif (@xcount)
+    {
+        my $res = "";
+        $self->log("xcount = " . scalar(@xcount));
+        foreach my $this_xcount (@xcount)
+        {
+            if ($res ne '')
+            {
+                $res .= " + ";
+            }
+            $res .= "$this_xcount * {span[ptile=$this_xcount]}";
+        }
+        $rc = print JOB "#BSUB -R \"$res\"\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
+    }
+
     foreach my $tuple ($description->environment())
     {
 	if(!ref($tuple) || scalar(@$tuple) != 2)
@@ -491,6 +544,7 @@ EOF
                 Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
         }
     }
+
     $rc = close(JOB);
     if (!$rc)
     {
