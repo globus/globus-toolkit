@@ -1,0 +1,6 @@
+Makefile.in
+Makefile
+*.filelist
+*.gpt
+*.pc
+*.pc.in

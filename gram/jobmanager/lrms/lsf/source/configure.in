@@ -1,0 +1,120 @@
+dnl
+
+AC_REVISION($Revision$)
+AC_INIT(Makefile.am)
+
+GLOBUS_INIT
+
+AM_PROG_LIBTOOL
+
+dnl config header goes here
+
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+LAC_DOXYGEN("../", "*.dox")
+
+AC_PATH_PROG(MPIEXEC, mpiexec, no)
+if test "$MPIEXEC" = "no" ; then
+    AC_MSG_WARN([Cannot locate mpiexec])
+fi
+
+AC_PATH_PROG(MPIRUN, mpirun, no)
+if test "$MPIRUN" = "no" ; then
+    AC_MSG_WARN([Cannot locate mpirun])
+fi
+
+AC_ARG_WITH([lsf-profile],
+    AC_HELP_STRING(
+	[--with-lsf-profile=FILE],
+        [Use LSF profile located at PATH ${LSF_ENVDIR:-/etc}/profile.lsf]),
+        [LSF_PROFILE=$withval],
+	[LSF_PROFILE="${LSF_ENVDIR:-/etc}/profile.lsf"
+         AC_MSG_WARN([Using default lsf profile of $LSF_PROFILE])])
+
+AC_SUBST(LSF_PROFILE)
+
+if test ! -r "${LSF_PROFILE}"; then
+    AC_MSG_WARN([Unable to read lsf.profile, manual configuration needed])
+else
+    . "${LSF_PROFILE}"
+fi
+
+AC_PATH_PROG(BSUB, bsub, no)
+if test "$BSUB" = "no" ; then
+    AC_MSG_WARN([Cannot locate bsub])
+fi
+
+AC_PATH_PROG(BQUEUES, bqueues, no)
+if test "$BQUEUES" = "no"; then
+    AC_MSG_WARN([Cannot locate bqueues])
+fi
+
+AC_PATH_PROG(BJOBS, bjobs, no)
+if test "$BJOBS" = "no"; then
+    AC_MSG_WARN([Cannot locate bjobs])
+fi
+
+AC_PATH_PROG(BKILL, bkill, no)
+if test "$BKILL" = "no"; then
+    AC_MSG_WARN([Cannot locate bkill])
+fi
+
+AC_PATH_PROG(BHIST, bhist, no)
+if test "$BHIST" = "no"; then
+    AC_MSG_WARN([Cannot locate bhist])
+fi
+
+AC_PATH_PROG(BACCT, bacct, no)
+if test "$BACCT" = "no"; then
+    AC_MSG_WARN([Cannot locate bacct])
+fi
+
+log_guess="${LSF_ENVDIR%/}"
+log_guess="${log_guess%/*}"
+log_guess="$(echo "${log_guess}/work/"*)/logdir"
+if test ! -d "$log_guess"; then
+    log_guess="no"
+fi
+AC_ARG_WITH(log-path,
+    AC_HELP_STRING(
+        [--with-log-path=DIRECTORY],
+        [Parse LSF logs in DIRECTORY when using the SEG [[$log_guess]]]),
+    [LSF_LOG_PATH=$withval],
+    [LSF_LOG_PATH=${log_guess}])
+AC_SUBST(LSF_LOG_PATH)
+
+globusstatedir="`eval echo $globusstatedir`"
+AC_SUBST(globusstatedir)
+
+AC_ARG_WITH(seg,
+	AC_HELP_STRING(
+		[--with-seg=yes|no],
+		[Enable GRAM configuration with the SEG module]),
+	SEG_ENABLED="$withval",
+	SEG_ENABLED="no")
+case "$SEG_ENABLED" in
+	yes|no)
+            :
+            ;;
+	*)
+	    AC_MSG_ERROR([Invalid argument to --with-seg])
+	    ;;
+esac
+
+
+AM_CONDITIONAL(SEG_ENABLED_COND, [test "$SEG_ENABLED" = "yes"])
+
+GLOBUS_FINALIZE
+
+AC_OUTPUT(
+	Makefile
+	globus-lsf.conf
+	seg/Makefile
+	pkgdata/Makefile
+	pkgdata/pkg_data_src.gpt
+	doxygen/Doxyfile
+	doxygen/Doxyfile-internal
+	doxygen/Makefile
+	version.h
+)

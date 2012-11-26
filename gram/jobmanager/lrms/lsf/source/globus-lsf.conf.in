@@ -1,0 +1,31 @@
+# For the mpi jobtype, this LRM implementation supports both the
+# MPI 2-specified mpiexec command and the non-standard mpirun command common
+# in older mpi systems. If either of these is path to an executable, it will
+# be used to start the job processes (with mpiexec preferred over mpirun). Set
+# to "no" to not use mpiexec or mpirun
+mpiexec=@MPIEXEC@
+mpirun=@MPIRUN@
+
+# The LSF_PROFILE configuration should be set to the path to the profile.lsf
+# file which defines the shell environment needed to use LSF. This file
+# can be used to find the paths to most LSF programs below. 
+lsf_profile=@LSF_PROFILE@
+
+# The bsub command is used to submit jobs to the lsf resource.
+# bsub=@BSUB@
+
+# The bqueues command is used to determine which queues are available to
+# the current user
+# bqueues=@BQUEUES@
+
+# The bjobs, bhist, and bacct commands are used to poll jobs for status
+# bjobs=@BJOBS@
+# bhist=@BHIST@
+# bacct=@BACCT@
+
+# The bkill command is used to terminate jobs
+# bkill=@BKILL@
+
+# The log_path is used by the globus-scheduler-event-generator to parse
+# paths to lsb_event files.
+# log_path=@LSF_LOG_PATH@
