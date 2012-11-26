@@ -1,0 +1,4 @@
+The source for this package comes from
+http://www.globus.org/ftppub/gt5/5.1/5.1.0/packages/src/
+
+See the get-orig-source rule in the debian/rules file for details.

@@ -47,7 +47,6 @@ globus_gram_job_manager_callout_error	gram/jobmanager/callout_error	gpt
 globus_gram_job_manager_scripts	gram/jobmanager/scripts	gpt
 globus_gram_job_manager_fork	gram/jobmanager/lrms/fork/source	gpt
 globus_gram_job_manager_condor	gram/jobmanager/lrms/condor/source	gpt
-globus_gram_job_manager_lsf	gram/jobmanager/lrms/lsf/source	gpt
 globus_gram_job_manager_pbs	gram/jobmanager/lrms/pbs/source	gpt
 globus_gram_job_manager_sge	gram/jobmanager/lrms/sge/source	gpt
 globus_gram_job_manager	gram/jobmanager/source	gpt
@@ -93,6 +92,3 @@ globus_authz_null_callout	gsi/authz_null_callout/source	gpt
 globus_gridmap_callout_error	gsi/gridmap_callout/error	gpt
 globus_gridmap_verify_myproxy_callout gsi/gridmap_verify_myproxy_callout gpt
 globus_gridmap_callout	gsi/gridmap_callout/source	gpt
-
-# GCMU
-gcmu    globusonline/gcmu/source tar GCMU_NATIVE_1_3_0

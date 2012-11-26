@@ -16,18 +16,23 @@ else
 fi
 
 cd "$bamboodir/.."
-topdir="$(pwd)"
+
+if [ ! -d fait_accompli ]; then
+    cvs update -Pd
+fi
+
+gtversion="$(cat fait_accompli/version)"
+
+# fix bamboo cvs checkout losing executable permissions
+chmod a+x *.pl fait_accompli/installer.sh \
+    gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist \
+    gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs \
+    gpt/install-sh || :
 
 tag=''
 flavor=''
-cvsroot=''
-while getopts C:t:f: i; do
+while getopts t:f: i; do
     case $i in
-        C)
-            cvsroot="$OPTARG"
-            CVSROOT="$cvsroot"
-            export CVSROOT
-            ;;
         t)
             tag="$OPTARG"
             ;;
@@ -48,41 +53,17 @@ if [ "$flavor" = "" ]; then
     esac
 fi
 
-if [ ! -d fait_accompli ]; then
-    cvs update -Pd ${tag:+-r "$tag"}
-fi
-
-gtversion="$(cat fait_accompli/version)"
-
-# fix bamboo cvs checkout losing executable permissions
-chmod a+x *.pl fait_accompli/installer.sh \
-    gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist \
-    gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs \
-    gpt/install-sh || :
-
-
-./fait_accompli/installer.sh -a -f "$flavor" ${tag:+-t "$tag"} ${cvsroot:+-C "$cvsroot"}
+./fait_accompli/installer.sh -a -f "$flavor" ${tag:+-t "$tag"}
 installer_dir="gt${gtversion}-all-source-installer"
+installer_dir_buildnumber="${installer_dir}-rc${build_number}"
 find "${installer_dir}" -name install-sh -exec chmod a+x {} +
 
 tar cf "${installer_dir}.tar" "${installer_dir}"
+mv "${installer_dir}" "${installer_dir_buildnumber}"
+tar cf "${installer_dir_buildnumber}.tar" "${installer_dir_buildnumber}"
 
 gzip -9 "${installer_dir}.tar" 
+gzip -9 "${installer_dir_buildnumber}.tar" 
 
-# Copy installer and checksums to artifcacts dir
-artifactsdir="${topdir}/artifacts"
-mkdir "${artifactsdir}"
-
-cp "${installer_dir}.tar.gz" "${artifactsdir}"
-
-md5sum "${artifactsdir}/${installer_dir}.tar.gz" > "${artifactsdir}/${installer_dir}.tar.gz.md5"  || true
-sha1sum "${artifactsdir}/${installer_dir}.tar.gz" > "${artifactsdir}/${installer_dir}.tar.gz.sha1"  || true
-
-# Generate release frags and copy to artifacts dir
-fragsdir="${artifactsdir}/frags"
-mkdir -p "${fragsdir}"
-cd "frag-generator"
-make
-frags_version="$(cat ../fait_accompli/version | sed -e 's/rc[0-9]\{1,\}//')"
-cp -R "${frags_version}" "${fragsdir}"
-cd "$OLDPWD"
+cp "${installer_dir}.tar.gz" "${bamboodir}"
+cp "${installer_dir_buildnumber}.tar.gz" "${bamboodir}"

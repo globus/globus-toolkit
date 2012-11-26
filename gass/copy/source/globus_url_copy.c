@@ -165,7 +165,6 @@ typedef struct
     globus_cond_t                       cond;
     globus_object_t *                   err;
     globus_bool_t                       use_err;
-    globus_bool_t                       transfer_timeout;
     int                                 was_error;
     volatile globus_bool_t              done;
 } globus_l_guc_monitor_t;
@@ -260,7 +259,6 @@ typedef struct
     globus_bool_t                       allo;
     globus_bool_t                       delayed_pasv;
     globus_bool_t                       pipeline;
-    int                                 pipelineq;
     globus_bool_t                       perms;
     globus_bool_t                       sync;
     int                                 sync_level;
@@ -606,8 +604,8 @@ const char * long_usage =
 "       use ipv6 when available (EXPERIMENTAL)\n"
 "  -udt\n"
 "       Use UDT, a reliable udp based transport protocol, for data transfers\n" 
-"  -no-g2 | -nogridftp2\n"
-"       disable use of GridFTP v2 protocol enhancements\n"
+"  -g2 | -gridftp2\n"
+"       use GridFTP v2 protocol enhancements when possible\n"
 "  -dp | -delayed-pasv\n"
 "       enable delayed passive\n"
 "  -mn | -module-name <gridftp storage module name>\n"
@@ -804,7 +802,6 @@ enum
     arg_list,
     arg_ipv6,
     arg_gridftp2,
-    arg_gridftp2_off,
     arg_udt,
     arg_nl_bottleneck,
     arg_nl_interval,
@@ -831,7 +828,6 @@ enum
     arg_noallo,
     arg_delayed_pasv,
     arg_pipeline,
-    arg_pipelineq,
     arg_sync,
     arg_sync_level,
     arg_dump_only,
@@ -890,7 +886,6 @@ flagdef(arg_create_dest, "-cd", "-create-dest");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
 flagdef(arg_gridftp2, "-g2","-gridftp2");
-flagdef(arg_gridftp2_off, "-no-g2","-nogridftp2");
 flagdef(arg_udt, "-u","-udt");
 flagdef(arg_delayed_pasv, "-dp","-delayed-pasv");
 flagdef(arg_pipeline, "-pp","-pipeline");
@@ -904,7 +899,6 @@ flagdef(arg_sync, "-sync","-sync");
 flagdef(arg_preserve, "-preserve", "-preserve");
 flagdef(arg_perms, "-cp","-copy-perms");
 
-oneargdef(arg_pipelineq, "-ppq","-pipelineq", NULL, NULL);
 oneargdef(arg_list, "-list", "-list-url", NULL, NULL);
 oneargdef(arg_nl_interval, "-nli","-nl-interval", NULL, NULL);
 oneargdef(arg_ext, "-X", "-extentions", NULL, NULL);
@@ -1006,7 +1000,6 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_nl_bottleneck);        \
     setupopt(arg_nl_interval);        \
     setupopt(arg_ipv6);         	\
-    setupopt(arg_gridftp2_off);         \
     setupopt(arg_gridftp2);         	\
     setupopt(arg_src_pipe_str);        \
     setupopt(arg_dst_pipe_str);        \
@@ -1025,7 +1018,6 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_cache_dst_authz_assert);     \
     setupopt(arg_delayed_pasv);         \
     setupopt(arg_pipeline);             \
-    setupopt(arg_pipelineq);             \
     setupopt(arg_sync);                 \
     setupopt(arg_sync_level);           \
     setupopt(arg_dump_only);            \
@@ -1054,7 +1046,7 @@ static globus_bool_t g_use_debug = GLOBUS_FALSE;
 static globus_bool_t g_use_restart = GLOBUS_FALSE;
 static globus_bool_t g_continue = GLOBUS_FALSE;
 static char *        g_err_msg;
-static globus_l_guc_monitor_t           g_monitor = {};
+static globus_l_guc_monitor_t           g_monitor;
 
 /* for multicast stuff */
 static globus_fifo_t                    guc_mc_url_q;
@@ -1292,11 +1284,7 @@ globus_l_guc_interrupt_handler(
     }
 
     monitor = (globus_l_guc_monitor_t *) user_arg;
-    if(!monitor)
-    {
-        monitor = &g_monitor;
-        monitor->transfer_timeout = GLOBUS_TRUE;
-    }
+    
     globus_mutex_lock(&monitor->mutex);
     {
         globus_l_globus_url_copy_ctrlc = GLOBUS_TRUE;
@@ -1975,7 +1963,7 @@ main(int argc, char **argv)
                 NULL,
                 &delay,
                 globus_l_guc_interrupt_handler,
-                NULL);
+                &g_monitor);
         }
         
         if(guc_info.dumpfile || guc_info.dump_only_file)
@@ -2010,14 +1998,6 @@ main(int argc, char **argv)
             globus_l_guc_dump_urls(&guc_info);
         }
     }
-
-    if(globus_l_globus_url_copy_ctrlc && !g_monitor.transfer_timeout)
-    {
-#ifdef SIGINT
-        raise(SIGINT);
-#endif
-    }
-    
     /* make sure the timer doesn't go off after a cancel.  setting this
         to true makes the handler ignore everything if it hasn't fired yet */
     globus_mutex_lock(&g_monitor.mutex);
@@ -2034,7 +2014,7 @@ main(int argc, char **argv)
     {
         globus_libc_fprintf(stdout, "\n");
     }
-    
+
     if(guc_info.udt)
     {
         /* sidestep udt shutdown issues */
@@ -3013,9 +2993,6 @@ globus_l_guc_transfer_files(
                     GLOBUS_NULL);
             }
             globus_l_globus_url_copy_ctrlc_handled = GLOBUS_TRUE;
-            
-            globus_callback_unregister_signal_handler(
-                GLOBUS_SIGNAL_INTERRUPT, GLOBUS_NULL, GLOBUS_NULL);
         }
     }
     globus_mutex_unlock(&g_monitor.mutex);
@@ -3642,11 +3619,10 @@ globus_l_guc_parse_arguments(
     guc_info->nl_level = 0;
     guc_info->nl_interval = 0;
     guc_info->ipv6 = GLOBUS_FALSE;
-    guc_info->gridftp2 = GLOBUS_TRUE;
+    guc_info->gridftp2 = GLOBUS_FALSE;
     guc_info->allo = GLOBUS_TRUE;
     guc_info->delayed_pasv = GLOBUS_FALSE;
     guc_info->pipeline = GLOBUS_FALSE;
-    guc_info->pipelineq = 0;
     guc_info->create_dest = GLOBUS_FALSE;
     guc_info->dst_module_name = GLOBUS_NULL;
     guc_info->src_module_name = GLOBUS_NULL;
@@ -3922,9 +3898,6 @@ globus_l_guc_parse_arguments(
 	case arg_gridftp2:
 	    guc_info->gridftp2 = GLOBUS_TRUE;
 	    break;
-	case arg_gridftp2_off:
-	    guc_info->gridftp2 = GLOBUS_FALSE;
-	    break;
 
         case arg_src_pipe_str:
             guc_info->src_pipe_str =
@@ -4059,10 +4032,6 @@ globus_l_guc_parse_arguments(
 	    break;
 	case arg_pipeline:
 	    guc_info->pipeline = GLOBUS_TRUE;
-	    break;
-	case arg_pipelineq:
-	    guc_info->pipeline = GLOBUS_TRUE;
-	    guc_info->pipelineq = atoi(instance->values[0]);
 	    break;
 	case arg_sync:
 	    guc_info->sync = GLOBUS_TRUE;
@@ -5670,22 +5639,25 @@ globus_l_guc_init_gass_copy_handle(
         }
     }        
 
-    result = globus_ftp_client_handleattr_set_gridftp2(
-        &ftp_handleattr, guc_info->gridftp2);
-    if(result != GLOBUS_SUCCESS)
+    if(guc_info->gridftp2)
     {
-        fprintf(stderr, _GASCSL("Error: Unable to enable gridftp2 support %s\n"),
-            globus_error_print_friendly(globus_error_peek(result)));
+        result = globus_ftp_client_handleattr_set_gridftp2(
+            &ftp_handleattr, GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, _GASCSL("Error: Unable to enable gridftp2 support %s\n"),
+                globus_error_print_friendly(globus_error_peek(result)));
 
-        return -1;
-    }
+            return -1;
+        }
+    }        
 
     if(guc_info->pipeline)
     {
         char                            idstr[16];
         sprintf(idstr, "%02d", id);
         result = globus_ftp_client_handleattr_set_pipeline(
-            &ftp_handleattr, guc_info->pipelineq, globus_l_guc_pipeline, guc_info->handles[id]);
+            &ftp_handleattr, 0, globus_l_guc_pipeline, guc_info->handles[id]);
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, _GASCSL("Error: Unable to enable pipeline %s\n"),

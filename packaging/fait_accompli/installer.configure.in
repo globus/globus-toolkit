@@ -143,12 +143,6 @@ AC_ARG_WITH(buildopts, AC_HELP_STRING([--with-buildopts="args"],\
    [buildopts=$withval], [])
 AC_SUBST(buildopts, $buildopts)
 
-configopts_gptmacro=""
-if test "$buildopts" != "" ; then
-    configopts_gptmacro="CONFIGOPTS_GPTMACRO=\"$buildopts\""
-fi
-AC_SUBST(configopts_gptmacro, $configopts_gptmacro)
-
 AC_ARG_WITH(gptlocation, AC_HELP_STRING([--with-gptlocation=dir],\
    [If you want to install GPT into an alternate directory.]),\
    [gptlocation=$withval], [if test x$prefix = "xNONE"; then\

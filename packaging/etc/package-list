@@ -52,7 +52,7 @@ globus_gram_job_manager_fork_test	gram/jobmanager/lrms/fork/test	gpt
 globus_gram_job_manager_condor	gram/jobmanager/lrms/condor/source	gpt
 globus_gram_job_manager_pbs	gram/jobmanager/lrms/pbs/source	gpt
 globus_gram_job_manager_sge	gram/jobmanager/lrms/sge/source	gpt
-globus_gram_job_manager_lsf	gram/jobmanager/lrms/lsf/source	gpt
+globus_gram_job_manager_setup_lsf	gram/jobmanager/setup/lsf	gpt
 globus_gram_audit        gram/jobmanager/auditing/source	gpt
 globus_gram_job_manager_auditing_test    gram/jobmanager/auditing/test gpt
 globus_gram_protocol	gram/protocol/source	gpt
@@ -146,6 +146,7 @@ globus_wsrf_gram_service_java_usage         ws-gram/service/java/usage	tar
 globus_wsrf_gram_service_java_setup_common  ws-gram/service/java/setup/common tar
 globus_wsrf_gram_service_java_setup_database ws-gram/service/java/setup/database tar
 globus_wsrf_gram_service_java_setup_multi   ws-gram/service/java/setup/multi tar
+globus_wsrf_gram_service_java_setup_lsf     ws-gram/service/java/setup/lsf tar
 globus_wsrf_gram_utils_java                 ws-gram/utils/java/source	tar
 
 globus_wsrf_gram_common_java                ws-gram/common/java/source	tar
@@ -158,6 +159,9 @@ globus_wsrf_gram_client_tools_test          ws-gram/client/c/tools/test gpt
 globus_wsrf_gram_scheduler_test             ws-gram/client/test gpt
 globus_scheduler_event_generator            ws-gram/job_monitoring/common/c/source gpt
 globus_scheduler_event_generator_test       ws-gram/job_monitoring/common/c/test gpt
+globus_scheduler_event_generator_lsf        ws-gram/job_monitoring/lsf/c/source gpt
+globus_scheduler_event_generator_lsf_setup  ws-gram/job_monitoring/lsf/c/setup gpt
+globus_scheduler_event_generator_lsf_test   ws-gram/job_monitoring/lsf/c/test gpt
 globus_wsrf_gram_job_monitoring_common_java ws-gram/job_monitoring/common/java/source	tar
 globus_wsrf_gram_service_java_test_scalability ws-gram/service/java/test/scalability	tar
 globus_wsrf_gram_service_java_test_throughput ws-gram/service/java/test/throughput	tar
@@ -165,6 +169,7 @@ globus_wsrf_gram_service_java_test_unit     ws-gram/service/java/test/unit	tar
 globus_gridmap_and_execute                  ws-gram/service/gridmap_and_execute/source  gpt
 globus_gridmap_and_execute_test             ws-gram/service/gridmap_and_execute/test  gpt
 globus_gram_local_proxy_tool                ws-gram/service/proxy-tool/source  gpt
+globus_scheduler_provider_setup_lsf	ws-gram/discovery/providers/setup/lsf gpt
 #GRAM custom authorization, including XACML pieces
 globus_wsrf_gram_authz_java                       ws-gram/authz/java/source	tar
 
@@ -303,5 +308,3 @@ globus_wsrf_bp_schemas wsrf/c/core/tests/ogsa-bp/schema gpt
 # Python usage tools
 globus_usage_tools usage/python/tools/source gpt
 globus_usage_tools_test usage/python/tools/test gpt
-# GCMU
-gcmu    globusonline/gcmu/source tar NULL GCMU_NATIVE_1_3_0

@@ -4,18 +4,13 @@ use Cwd;
 use Getopt::Long;
 
 my $cvsuser = ':pserver:anonymous';
-my $cvsroot = 'cvs.globus.org:/home/globdev/CVS/globus-packages';
 my $sourcelistfile, $tag;
 
 GetOptions( 'f|file=s' => \$sourcelistfile,
             'u|user=s' => \$cvsuser,
-            'C|cvsroot=s' => \$cvsroot,
             't|tag=s' => \$tag);
 
-if ($cvsroot !~ m/\@/)
-{
-    $cvsroot = "$cvsuser\@$cvsroot";
-}
+$cvsroot = "$cvsuser\@cvs.globus.org:/home/globdev/CVS/globus-packages";
         
 if ($sourcelistfile ne '') {
     open(PKG, "$sourcelistfile");

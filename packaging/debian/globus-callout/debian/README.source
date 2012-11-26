@@ -1,0 +1,8 @@
+The source for this package was extracted from the upstream tarfile:
+
+http://www-unix.globus.org/ftppub/gt4/4.2.1/installers/src/gt4.2.1-all-source-installer.tar.bz2
+
+See the get-orig-source rule in the debian/rules file for details.
+
+The version of this package was not changed in Globus Toolkit 5.0.0 so the
+source tarfile extracted from Globus Toolkit 4.2.1 was not replaced.

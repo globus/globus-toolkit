@@ -41,10 +41,9 @@ artifactroot=""
 chroot=""
 in_chroot=0
 chroot_args=""
-binaryonly=""
-cvsroot=""
+binaryonly=0
 
-while getopts C:ibc:n:v:R:a:St:hg:f:q i; do
+while getopts ibc:n:v:R:a:St:hg:f:q i; do
     case "$i" in
         i)
            in_chroot=1
@@ -53,11 +52,6 @@ while getopts C:ibc:n:v:R:a:St:hg:f:q i; do
             binaryonly=1
             chroot_args="${chroot_args:+$chroot_args}-b"
            ;;
-        C)
-            cvsroot="$OPTARG"
-            chroot_args="${chroot_args:+$chroot_args }-C $OPTARG"
-            ;;
-
         c)
             chroot="$OPTARG"
             chroot_args="${chroot_args:+$chroot_args }-i"
@@ -140,39 +134,22 @@ if [ -n "$pkgs_to_rm" ]; then
     sudo dpkg -r $pkgs_to_rm
 fi
 
-bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,gram5-lsf,gram5-pbs,gram5-sge,globus-simple-ca,globus-gsi
-packages_to_build=myproxy,gsi_openssh,globus_gridmap_verify_myproxy_callout
+bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,gram5-pbs,gram5-sge,globus-simple-ca
+packages_to_build=myproxy,gsi_openssh
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 find debian \( -name rules -o -name '*.postinst' -o -name '*.init' \) -exec chmod a+x {} + 
 
 if [ "$quick" -eq 1 ]; then
     lpopts="-no-updates"
 fi
-if [ "$cvsroot" != "" ]; then
-    CVSROOT="$cvsroot"
-    export CVSROOT
-    anonflag=""
-else
-    anonflag="-a"
-fi
-packages="$(./make-packages.pl $lpopts $anonflag -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} | \
+packages="$(./make-packages.pl $lpopts -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} | \
 	awk "/at version/ { print \$1 }" )"
-packages="$(echo "${packages}" | egrep -v '^myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
-
-metapackages="globus-gridftp
-    globus-data-management-client
-    globus-data-management-server
-    globus-data-management-sdk
-    globus-gram5
-    globus-resource-management-server
-    globus-resource-management-client
-    globus-resource-management-sdk
-    globus-gsi"
+packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
 if [ "$quick" -eq 1 ]; then
 	mv package-output.old package-output
 else
-	./make-packages.pl -skipbundle -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -flavor=${flavor} -ab
+	./make-packages.pl -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=${flavor} -ab
 	cd gpt/packaging_tools
 	sh ./bootstrap
 	rm gpt*.tar.gz || true
@@ -193,7 +170,7 @@ if [ "$chroot" != "" ]; then
         mv "${topdir}-${chroot}" "${topdir}-${chroot}.old"
     fi
     mv "${topdir}" "${topdir}-${chroot}"
-    mkdir -p "${topdir}"
+    mkdir "${topdir}"
     cp -R "${orighome}/.gnupg" "${topdir}/.gnupg"
     cd "${topdir}"
 fi
@@ -226,25 +203,10 @@ for i in grid-packaging-tools $packages; do
         cd "$debname";
        fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
 	cd -
-        thisinstall="$(get_package_filenames "$topdir" $debout | grep -Ev 'condor|lsf|pbs|sge|-fork' || true)"
+        thisinstall="$(get_package_filenames "$topdir" $debout | grep -Ev 'condor|pbs|sge|-fork' || true)"
         if [ "$thisinstall" != "" ]; then
             sudo dpkg -i $thisinstall || true
         fi
-    fi
-done
-
-# Build, but do not install, metapackages such as globus-gridftp and globus-gsi
-for debname in $metapackages; do
-    if [ ! -d "$debiandir/$debname" ]; then
-        echo "Skipping $debname---no debian metadata"
-        continue
-    fi
-    if test -d "$debiandir/$debname"; then
-	cp -R $debiandir/$debname $debname
-
-        cd "$debname";
-        fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
-	cd -
     fi
 done
 
@@ -254,49 +216,23 @@ if [ $in_chroot = 0 ]; then
 
     cd "$topdir/globus-repository"
     autoreconf -i
-    TOOLKIT_VERSION=$(cat $packagingdir/fait_accompli/version)
-    TOOLKIT_MAJOR=${TOOLKIT_VERSION%%.*}
-    TOOLKIT_MINOR=${TOOLKIT_VERSION%.*}
-    TOOLKIT_MINOR=${TOOLKIT_MINOR#*.}
 
     # Modify globus-repository to generate globus-repository-@RELEASENAME@
     # packages
     sed -e "s/@RELEASENAME@/${releasename}/g" \
-        -e "s/@TOOLKIT_MAJOR_VERSION@/$TOOLKIT_MAJOR/" \
-        -e "s/@TOOLKIT_MINOR_VERSION@/$TOOLKIT_MINOR/" \
         < debian/control.in > debian/control
     rm -f debian/control.in
 
-    cat > debian/globus-repository-${releasename}.install <<EOF 
-debian/tmp/etc/apt/sources.list.d/globus.list
-debian/tmp/usr/share/tasksel/globus-tasks.desc
-EOF
-    cat > debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-stable-${releasename}.install <<EOF 
-debian/tmp/etc/apt/sources.list.d/globus-stable.list
-debian/tmp/usr/share/tasksel/globus-tasks.desc
-EOF
-    cat > debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-testing-${releasename}.install <<EOF 
-debian/tmp/etc/apt/sources.list.d/globus-testing.list
-debian/tmp/usr/share/tasksel/globus-tasks.desc
-EOF
-
-    cp debian/globus-repository.postinst \
+    mv debian/globus-repository.postinst \
         debian/globus-repository-${releasename}.postinst
-    cp debian/globus-repository.postinst \
-        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-stable-${releasename}.postinst
-    cp debian/globus-repository.postinst \
-        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-testing-${releasename}.postinst
-    rm debian/globus-repository.postinst
-
-    cp debian/globus-repository.postrm \
+    mv debian/globus-repository.postrm \
         debian/globus-repository-${releasename}.postrm
-    cp debian/globus-repository.postrm \
-        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-stable-${releasename}.postrm
-    cp debian/globus-repository.postrm \
-        debian/globus-repository-${TOOLKIT_MAJOR}.${TOOLKIT_MINOR}-testing-${releasename}.postrm
-    rm debian/globus-repository.postrm
 
-    DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
+    if test -n "$artifactroot"; then
+           DEB_CONFIGURE_USER_FLAGS=--with-bamboo-artifact-url=$artifactroot fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
+    else
+           DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
+    fi
 fi
 
 cd "${topdir}"
@@ -312,10 +248,9 @@ rm -rf "${packagingdir}/repo.old"
 if [ -d "${packagingdir}/repo" ]; then
     mv "${packagingdir}/repo" "${packagingdir}/repo.old"
 fi
-mkdir -p "${packagingdir}/repo"
+mkdir "${packagingdir}/repo"
 cd "${packagingdir}/repo"
-mkdir -p changes
-mkdir -p conf
+mkdir conf
 if [ "$sign" = 1 ] ; then
     sign_with_line="$(printf "\nSignWith: yes")"
 else
@@ -337,7 +272,6 @@ if [ "$in_chroot" -eq 0 ]; then
     # outside of chroot, include all packages
     for x in "${topdir}"/*.changes; do
         reprepro -b . include unstable "$x"
-        cp "$x" changes/
     done
 
     if [ "$chroot" != "" ]; then
@@ -351,10 +285,6 @@ if [ "$in_chroot" -eq 0 ]; then
     cd "${packagingdir}"
     find repo -name '*.deb' -exec basename {} \; > all-packages
 
-    mkdir -p debbuild-out/${flavor}
-    cp "${topdir}"/*.* debbuild-out/${flavor}
-    if [ "$chroot" != "" ]; then
-        mkdir -p debbuild-out/${chroot}
-        cp "${topdir}-${chroot}"/*.* debbuild-out/${chroot}
-    fi
+    mkdir -p debbuild-out
+    cp "${topdir}"/*.* debbuild-out
 fi
