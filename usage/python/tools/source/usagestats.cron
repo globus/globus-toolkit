@@ -1,0 +1,4 @@
+# Every hour, upload packets to database
+1 * * * * /usr/sbin/globus-usage-uploader
+# Daily, remove empty usage directories
+59 0 * * * rmdir /var/lib/globus/usage/*

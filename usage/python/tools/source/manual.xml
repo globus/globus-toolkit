@@ -3,13 +3,13 @@
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
 
 <reference id="usagestats-reference">
-<author>
-    <affiliation>
-        <orgname>University of Chicago</orgname>
-    </affiliation>
-</author>
+<referenceinfo/>
+<title>Reference</title>
 
 <refentry>
+<refentryinfo>
+<corpauthor>University of Chicago</corpauthor>
+</refentryinfo>
 <refmeta>
 <refentrytitle>globus-usage-collector</refentrytitle>
 <manvolnum>8</manvolnum>
@@ -46,28 +46,48 @@ The full set of command-line options to
         <tbody>
             <row>
                 <entry>-h</entry>
-                <entry>Display a help message and exit</entry>
+                <entry>
+                    <simpara>
+                        Display a help message and exit
+                    </simpara>
+                </entry>
             </row>
             <row>
                 <entry>-p <replaceable>PORT</replaceable></entry>
-                <entry>Listen on UDP port <replaceable>PORT</replaceable>
-                    instead of the default port 4810</entry>
+                <entry>
+                    <simpara>
+                        Listen on UDP port <replaceable>PORT</replaceable>
+                        instead of the default port 4810
+                    </simpara>
+                </entry>
             </row>
             <row>
                 <entry>-d <replaceable>DIRECTORY</replaceable></entry>
-                <entry>Write data to <replaceable>DIRECTORY</replaceable>
-                    instead of the configured path.</entry>
+                <entry>
+                    <simpara>
+                        Write data to <replaceable>DIRECTORY</replaceable>
+                        instead of the configured path.
+                    </simpara>
+                </entry>
             </row>
             <row>
                 <entry>-b</entry>
-                <entry>Run the <command>globus-usage-collector</command>
-                    process in the background</entry>
+                <entry>
+                    <simpara>
+                        Run the <command>globus-usage-collector</command>
+                        process in the background
+                    </simpara>
+                </entry>
             </row>
             <row>
                 <entry>-f <replaceable>FILE</replaceable></entry>
-                <entry>Write the process ID of the backgrounded
-                <command>globus-usage-collector</command> process to
-                <replaceable>FILE</replaceable>.</entry>
+                <entry>
+                    <simpara>
+                        Write the process ID of the backgrounded
+                        <command>globus-usage-collector</command> process to
+                        <replaceable>FILE</replaceable>.
+                    </simpara>
+                </entry>
             </row>
         </tbody>
     </tgroup>
@@ -95,20 +115,21 @@ usage packet data. Each packet record consists of 4 fields:
     <tgroup cols="2">
         <tbody>
             <row>
-                <entry>Address Length (2 bytes)</entry>
-                <entry>Big-endian length of the Address</entry>
+                <entry><simpara>Address Length (2 bytes)</simpara></entry>
+                <entry><simpara>Big-endian length of the
+                Address</simpara></entry>
             </row>
             <row>
-                <entry>Address</entry>
-                <entry>Big-endian packed binary address</entry>
+                <entry><simpara>Address</simpara></entry>
+                <entry><simpara>Big-endian packed binary address</simpara></entry>
             </row>
             <row>
-                <entry>Packet Length (2 bytes)</entry>
-                <entry>Big-endian length of the packet</entry>
+                <entry><simpara>Packet Length (2 bytes)</simpara></entry>
+                <entry><simpara>Big-endian length of the packet</simpara></entry>
             </row>
             <row>
-                <entry>Packet</entry>
-                <entry>Binary packet data</entry>
+                <entry><simpara>Packet</simpara></entry>
+                <entry><simpara>Binary packet data</simpara></entry>
             </row>
         </tbody>
     </tgroup>
@@ -119,11 +140,9 @@ usage packet data. Each packet record consists of 4 fields:
 </refentry>
 
 <refentry>
-<info>
-<author>
-    <orgname>University of Chicago</orgname>
-</author>
-</info>
+<refentryinfo>
+<corpauthor>University of Chicago</corpauthor>
+</refentryinfo>
 <refmeta>
 <refentrytitle>globus-usage-uploader</refentrytitle>
 <manvolnum>8</manvolnum>
@@ -140,6 +159,8 @@ usage packet data. Each packet record consists of 4 fields:
 <arg>-h</arg>
 <arg>-d <replaceable>DIRECTORY</replaceable></arg>
 <arg>-n</arg>
+<arg>-c <replaceable>CONFIG-FILE</replaceable></arg>
+<arg>-p <replaceable>PIDFILE</replaceable></arg>
 </cmdsynopsis>
 </refsynopsisdiv>
 
@@ -155,26 +176,54 @@ postgresql database.
 The full set of command-line options to
 <command>globus-usage-uploader</command> consists of:
 
-<informaltable>
-    <tgroup cols="2">
-        <tbody>
-            <row>
-                <entry>-h</entry>
-                <entry>Display a help message and exit</entry>
-            </row>
-            <row>
-                <entry>-d <replaceable>DIRECTORY</replaceable></entry>
-                <entry>Read data from <replaceable>DIRECTORY</replaceable>
-                    instead of the configured path.</entry>
-            </row>
-            <row>
-                <entry>-n</entry>
-                <entry>Don't commit usage packets to the database after
-                processing files (for testing)</entry>
-            </row>
-        </tbody>
-    </tgroup>
-</informaltable>
+<variablelist>
+    <varlistentry>
+        <term>-h</term>
+        <listitem>
+            <simpara>Display a help message and exit</simpara>
+        </listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-d <replaceable>DIRECTORY</replaceable></option></term>
+        <listitem>
+            <simpara>
+                Read data from <replaceable>DIRECTORY</replaceable>
+                instead of the configured path.
+            </simpara>
+        </listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-n</option></term>
+        <listitem>
+            <simpara>
+                Don't commit usage packets to the database after
+                processing files (for testing)
+            </simpara>
+        </listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-c <replaceable>CONFIG-FILE</replaceable></option></term>
+        <listitem>
+            <simpara>
+                Read configuration information from
+                <replaceable>CONFIG_FILE</replaceable> instead
+                of the default location
+                <filename><replaceable>PREFIX</replaceable>/etc/globus/usage-tools.conf</filename>.
+            </simpara>
+        </listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-p <replaceable>PIDFILE</replaceable></option></term>
+        <listitem>
+            <simpara>
+                Don't run if <replaceable>PIDFILE</replaceable>
+                exists and contains the PID of an existing process.
+                Write the current process's PID to that file
+                otherwise, and remove it when complete.
+            </simpara>
+        </listitem>
+    </varlistentry>
+</variablelist>
 </para>
 </refsect1>
 

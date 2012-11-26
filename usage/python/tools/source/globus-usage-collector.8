@@ -1,112 +1,35 @@
-'\" t
-.\"     Title: globus-usage-collector
-.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 06/08/2010
-.\"    Manual: Usage Statistics Tools Administrator's Guide
-.\"    Source: [FIXME: source]
-.\"  Language: English
-.\"
-.TH "GLOBUS\-USAGE\-COLLE" "8" "06/08/2010" "[FIXME: source]" "Usage Statistics Tools Adminis"
-.\" -----------------------------------------------------------------
-.\" * set default formatting
-.\" -----------------------------------------------------------------
+.\" ** You probably do not want to edit this file directly **
+.\" It was generated using the DocBook XSL Stylesheets (version 1.69.1).
+.\" Instead of manually editing it, you probably should edit the DocBook XML
+.\" source for it and then use the DocBook XSL Stylesheets to regenerate it.
+.TH "GLOBUS\-USAGE\-COLLECT" "8" "11/17/2012" "University of Chicago" "Reference"
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
 .ad l
-.\" -----------------------------------------------------------------
-.\" * MAIN CONTENT STARTS HERE *
-.\" -----------------------------------------------------------------
 .SH "NAME"
-globus-usage-collector \- Record usage statistics packets
+globus\-usage\-collector \- Record usage statistics packets
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-usage\-collector\fR\ 'u
+.HP 23
 \fBglobus\-usage\-collector\fR [\-h] [\-p\ \fIPORT\fR] [\-b] [\-f\ \fIFILE\fR]
 .SH "DESCRIPTION"
 .PP
 The
 \fBglobus\-usage\-collector\fR
-command is a servivce which accepts usage packets on a UDP port and writes them to a file for later processing\&.
+command is a servivce which accepts usage packets on a UDP port and writes them to a file for later processing.
 .PP
 The full set of command\-line options to
 \fBglobus\-usage\-collector\fR
 consists of:
-.TS
-allbox tab(:);
-l l
-l l
-l l
-l l
-l l.
-T{
-\-h
-T}:T{
-Display a help message and exit
-T}
-T{
-\-p \fIPORT\fR
-T}:T{
-Listen on UDP port \fIPORT\fR
-                    instead of the default port 4810
-T}
-T{
-\-d \fIDIRECTORY\fR
-T}:T{
-Write data to \fIDIRECTORY\fR
-                    instead of the configured path\&.
-T}
-T{
-\-b
-T}:T{
-Run the \fBglobus\-usage\-collector\fR
-                    process in the background
-T}
-T{
-\-f \fIFILE\fR
-T}:T{
-Write the process ID of the backgrounded
-                \fBglobus\-usage\-collector\fR process to
-                \fIFILE\fR\&.
-T}
-.TE
-.sp 1
+\-h Display a help message and exit .sp -p \fIPORT\fR Listen on UDP port \fIPORT\fR instead of the default port 4810 .sp -d \fIDIRECTORY\fR Write data to \fIDIRECTORY\fR instead of the configured path. .sp -b Run the \fBglobus\-usage\-collector\fR process in the background .sp -f \fIFILE\fR Write the process ID of the backgrounded \fBglobus\-usage\-collector\fR process to \fIFILE\fR. .sp
 .SH "USAGE PACKET FILES"
 .PP
-The files are written in a subdirectory of the current directory with its name derived from the current time in UTC\&. The form of this directory name is
-\fIYYYYMMDD\fR, (e\&.g\&. the date July 20, 2009 would be
-20090720)\&. Within that directory, files are generated with name based on the hour (again in UTC)\&. The form of the filename is
-\fIHH\&.gup\fR
-\&.when the packet was processed\&. That is, a packet processed at 3:20 a\&.m\&. on that same day would be stored in the file
-20090720/03\&.gup\&.
+The files are written in a subdirectory of the current directory with its name derived from the current time in UTC. The form of this directory name is
+\fIYYYYMMDD\fR, (e.g. the date July 20, 2009 would be
+\fI20090720\fR). Within that directory, files are generated with name based on the hour (again in UTC). The form of the filename is
+\fIHH.gup\fR
+.when the packet was processed. That is, a packet processed at 3:20 a.m. on that same day would be stored in the file
+\fI20090720/03.gup\fR.
 .PP
-Each usage packet file consists of simple records containing the binary UDP usage packet data\&. Each packet record consists of 4 fields:
-.TS
-allbox tab(:);
-l l
-l l
-l l
-l l.
-T{
-Address Length (2 bytes)
-T}:T{
-Big\-endian length of the Address
-T}
-T{
-Address
-T}:T{
-Big\-endian packed binary address
-T}
-T{
-Packet Length (2 bytes)
-T}:T{
-Big\-endian length of the packet
-T}
-T{
-Packet
-T}:T{
-Binary packet data
-T}
-.TE
-.sp 1
-
+Each usage packet file consists of simple records containing the binary UDP usage packet data. Each packet record consists of 4 fields:
+Address Length (2 bytes) .sp Big\-endian length of the Address .sp Address .sp Big\-endian packed binary address .sp Packet Length (2 bytes) .sp Big\-endian length of the packet .sp Packet .sp Binary packet data .sp
