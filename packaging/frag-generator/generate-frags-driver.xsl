@@ -88,12 +88,13 @@
                             $project-query, ' OR ',
                             $label-query, ') AND ',
                             '(',
-                            '    affectedVersion %3D %22', $release-version, '%22',
+                            '    ( affectedVersion %3D %22', $release-version, '%22',
+                            '      OR affectedVersion is empty )',
                             ' AND ',
                             ' ( ',
                             '     NOT ',
                             '     ( ',
-                            '        fixVersion %3D %22', $release-version, '%22',
+                            '        fixVersion %3C%3D %22', $release-version, '%22',
                             '     ) ',
                             '     OR ',
                             '     (resolution %3D Unresolved)',
@@ -107,12 +108,13 @@
                             $url-start,
                             $project-query, ' AND ',
                             '(',
-                            '    affectedVersion %3D %22', $release-version, '%22',
+                            '    ( affectedVersion %3D %22', $release-version, '%22',
+                            '      OR affectedVersion is empty )',
                             ' AND ',
                             ' ( ',
                             '     NOT ',
                             '     ( ',
-                            '        fixVersion %3D %22', $release-version, '%22',
+                            '        fixVersion %3C%3D %22', $release-version, '%22',
                             '     ) ',
                             '     OR ',
                             '     (resolution %3D Unresolved)',
@@ -126,12 +128,13 @@
                             $url-start,
                             $label-query, ' AND ',
                             '(',
-                            '    affectedVersion %3D %22', $release-version, '%22',
+                            '    ( affectedVersion %3D %22', $release-version, '%22',
+                            '      OR affectedVersion is empty )',
                             ' AND ',
                             ' ( ',
                             '     NOT ',
                             '     ( ',
-                            '        fixVersion %3D %22', $release-version, '%22',
+                            '        fixVersion %3C%3D %22', $release-version, '%22',
                             '     ) ',
                             '     OR ',
                             '     (resolution %3D Unresolved)',
@@ -144,12 +147,13 @@
                         concat(
                             $url-start,
                             '(',
-                            '    affectedVersion %3D %22', $release-version, '%22',
+                            '    ( affectedVersion %3D %22', $release-version, '%22',
+                            '      OR affectedVersion is empty )',
                             ' AND ',
                             ' ( ',
                             '     NOT ',
                             '     ( ',
-                            '        fixVersion %3D %22', $release-version, '%22',
+                            '        fixVersion %3C%3D %22', $release-version, '%22',
                             '     ) ',
                             '     OR ',
                             '     (resolution %3D Unresolved)',
@@ -174,8 +178,8 @@
             </xsl:call-template>
         </xsl:variable>
 
-        <!--
         <xsl:message>open bugs url is <xsl:value-of select="$open-bugs-url"/></xsl:message>
+        <!--
         <xsl:message>closed bugs url is <xsl:value-of select="$url"/></xsl:message>
         -->
 
@@ -196,8 +200,13 @@
     </xsl:template>
 
     <xsl:template match='driver:project[1]' mode='generate-query'>
+        <xsl:if test='../driver:project[2]'>
+            <xsl:text>+(+</xsl:text>
+        </xsl:if>
+        <xsl:text>+(+</xsl:text>
         <xsl:text>+(+</xsl:text>
         <xsl:value-of select="concat('project+%3D+%22', @name, '%22')"/>
+        <xsl:text>+)+</xsl:text>
         <xsl:if test="driver:component">
             <xsl:text>+AND+(+</xsl:text>
             <xsl:apply-templates mode='generate-query'/>
@@ -208,13 +217,20 @@
 
     <xsl:template match='driver:project' mode='generate-query'>
         <xsl:text>+OR+(+</xsl:text>
+        <xsl:text>+(+</xsl:text>
+        <xsl:text>+(+</xsl:text>
         <xsl:value-of select="concat('project+%3D+%22', @name, '%22')"/>
+        <xsl:text>+)+</xsl:text>
         <xsl:if test="driver:component">
             <xsl:text>+AND+(+</xsl:text>
             <xsl:apply-templates mode='generate-query'/>
             <xsl:text>+)+</xsl:text>
         </xsl:if>
         <xsl:text>+)+</xsl:text>
+        <xsl:text>+)+</xsl:text>
+        <xsl:if test="generate-id(../driver:project[last()]) = generate-id(.)">
+            <xsl:text>+)+</xsl:text>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template match='driver:component' mode='generate-query'>
