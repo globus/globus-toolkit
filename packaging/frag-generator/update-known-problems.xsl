@@ -7,6 +7,13 @@
     version="1.0"
     >
 
+    <xsl:output
+            method="xml"
+            doctype-system="http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd"
+            doctype-public="-//OASIS//DTD DocBook XML V4.4//EN"
+            indent="yes"/>
+    
+
     <xsl:param name="release-version" select="'5.2.1'"/>
     <xsl:variable name="branch-version" select="
             concat(
@@ -20,6 +27,7 @@
                 'http://www.globus.org/toolkit/advisories.html?version=',
                 $branch-version)"/>
     <xsl:param name="output-dir" select="frags"/>
+    
 
     <xsl:template match="*">
         <xsl:element name="{local-name()}">
