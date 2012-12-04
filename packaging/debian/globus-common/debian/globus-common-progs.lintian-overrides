@@ -1,3 +1,0 @@
-# These files are created by the postinstallation maintainer script
-file-missing-in-md5sums usr/share/globus/globus-sh-tools-vars.sh
-file-missing-in-md5sums usr/share/globus/setup/globus-sh-tools-vars.sh
