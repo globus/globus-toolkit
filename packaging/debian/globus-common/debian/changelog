@@ -1,3 +1,9 @@
+globus-common (14.9-2) unstable; urgency=low
+
+  * GT-329: globus-version has rc number in debian packages
+
+ -- Globus Toolkit <support@globus.org>  Tue, 4 Dec 2012 10:37:51 -0500
+
 globus-common (14.9-1) unstable; urgency=low
 
   * GT-288: Deprecate globus_libc_setenv
