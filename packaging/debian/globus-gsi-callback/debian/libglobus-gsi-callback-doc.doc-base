@@ -1,9 +1,0 @@
-Document: globus-gsi-callback
-Title: Debian globus-gsi-callback Manual
-Author: Globus Alliance
-Abstract: The Globus toolkit, Globus GSI Callback Library
-Section: Programming
-
-Format: HTML
-Index: /usr/share/doc/libglobus-gsi-callback-dev/html/index.html
-Files: /usr/share/doc/libglobus-gsi-callback-dev/html/*.html
