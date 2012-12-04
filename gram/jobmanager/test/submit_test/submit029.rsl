@@ -1,3 +1,0 @@
-&(executable = /bin/sh)
- (scratch_dir = . )
- (arguments  = -c 'if [ -d "${SCRATCH_DIRECTORY}" ]; then echo 1; else echo 0; fi')
