@@ -250,10 +250,12 @@ def main(argv):
                             config.driver_module, cursor, packets)
 
                     packstats.add(packet_type, len(packets), this_bad)
-            if commit:
-                con.commit()
+            for packet_class in packetparser.packet_classes():
+                packet_class.upload_aggregation(config.driver_module, cursor)
             os.remove(infile + ".upload")
             good_files += 1
+            if commit:
+                con.commit()
     if not commit:
         con.rollback()
     print

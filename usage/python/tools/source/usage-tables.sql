@@ -866,3 +866,34 @@ CREATE TABLE myproxy_packets(
     user_dn VARCHAR(128),
     PRIMARY KEY (id)
 );
+
+-- Note that multiple aggregations may be present with the same
+-- aggregation_time if some are delivered to the usage collector
+-- across multiple hours. For the queries I think we'll be doing, this
+-- should be ok, as we'll be grouping by aggregation_time and server_id
+CREATE TABLE gftp_aggregations_hourly(
+    aggregation_time                    TIMESTAMP,
+    server_id                           INT         REFERENCES gftp_server(id),
+
+    log10_transfer_size_bytes           INT,
+    log2_transfer_rate_kbps             INT,
+
+    transfer_count                      BIGINT,
+    byte_count                          BIGINT
+);
+
+CREATE INDEX gftp_aggregations_hourly_index
+    ON gftp_aggregations_hourly(aggregation_time);
+CREATE INDEX gftp_aggregations_hourly_server_index
+    ON gftp_aggregations_hourly(aggregation_time, server_id);
+
+CREATE TABLE gram5_aggregations_hourly(
+    aggregation_time                    TIMESTAMP,
+    job_manager_instance_id             INT         REFERENCES gram5_job_manager_instances(id),
+    failure_code INTEGER,
+    job_count                           BIGINT);
+
+CREATE INDEX gram5_aggregations_hourly_index
+    ON gram5_aggregations_hourly(aggregation_time);
+CREATE INDEX gram5_aggregations_hourly_server_index
+    ON gram5_aggregations_hourly(aggregation_time, job_manager_instance_id);
