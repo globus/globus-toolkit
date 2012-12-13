@@ -1,6 +1,6 @@
 %define name globus-usage-tools
 %define _name globus_usage_tools
-%define version 0.10
+%define version 0.11
 %define release 1
 %define home http://www.globus.org/toolkit/usagestats_server
 
@@ -68,3 +68,9 @@ rm -rf $RPM_BUILD_ROOT
 %attr(700,usagestats,usagestats) %{_localstatedir}/lib/globus/usage
 %docdir /usr/share/doc/%{name}
 %config(noreplace) /etc/globus/usage-tools.conf
+
+%changelog
+* Wed Dec 12 2012 Globus Toolkit <support@globus.org> - 0.11-1
+- Add gridftp_aggregations_hourly and gram5_aggregations_hourly tables
+- Add automatic aggregation of hourly data after individual transfer and job
+  packets are uploaded

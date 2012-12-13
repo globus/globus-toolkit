@@ -149,6 +149,10 @@ class UsagePacket(object):
         return bad_packets
 
     @staticmethod
+    def upload_aggregation(dbclass, cursor):
+        pass
+
+    @staticmethod
     def parse_address(address):
         """
         Parse an address in the binary usage packet's sender address format.

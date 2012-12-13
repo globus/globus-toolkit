@@ -18,6 +18,7 @@ Utilities and objects for processing GridFTP usage packets.
 
 from globus.usage.cusagepacket import CUsagePacket
 from globus.usage.dnscache import DNSCache
+import math
 import time
 import re
 
@@ -43,9 +44,10 @@ class GridFTPPacket(CUsagePacket):
     __gftp_transfer_rate_sizes = {}
     __db_class = None
 
+    data_aggregation = {}
+
     def __init__(self, address, packet):
         CUsagePacket.__init__(self, address, packet)
-
     
     insert_statement = '''
             INSERT INTO gftp_transfers(
@@ -103,7 +105,61 @@ class GridFTPPacket(CUsagePacket):
             GridFTPPacket.__init_gftp_buffer_sizes(cursor)
             GridFTPPacket.__init_gftp_transfer_rate_sizes(cursor)
             GridFTPPacket.__cursor = cursor
+
+        for pack in packets:
+            if pack is not None:
+                send_time = list(pack.send_time)
+                send_time[4] = send_time[5] = 0
+                agg_time = tuple(send_time)
+
+                server_id = pack.get_server_id(cursor)
+                transfer_size = pack.transfer_size()
+                log10_transfer_size_bytes = None
+                if transfer_size > 0:
+                    log10_transfer_size_bytes = int(
+                        math.log(transfer_size, 10))
+                transfer_rate = pack.transfer_rate()
+                log2_transfer_rate_kbps = None
+                if transfer_rate is not None:
+                    transfer_rate_kbps = 8.0*transfer_rate/1000.0
+                    if transfer_rate_kbps > 2.0:
+                        log2_transfer_rate_kbps = int(
+                            math.log(8.0*transfer_rate/1000.0, 2.0))
+                    else:
+                        log2_transfer_rate_kbps = 0
+
+                agg_key = (agg_time, server_id, log10_transfer_size_bytes, log2_transfer_rate_kbps)
+                if agg_key not in GridFTPPacket.data_aggregation:
+                    GridFTPPacket.data_aggregation[agg_key] = [0, 0]
+
+                GridFTPPacket.data_aggregation[agg_key][0] += 1
+                if transfer_size is not None:
+                    GridFTPPacket.data_aggregation[agg_key][1] += transfer_size
+
         return CUsagePacket.upload_many(dbclass, cursor, packets)
+
+    @staticmethod
+    def upload_aggregation(dbclass, cursor):
+        """
+        Upload aggregate GridFTPPacket usage packet data to the database.
+        """
+
+        try:
+            cursor.executemany(
+                """INSERT INTO gftp_aggregations_hourly(
+                        aggregation_time,
+                        server_id,
+                        log10_transfer_size_bytes,
+                        log2_transfer_rate_kbps,
+                        transfer_count, byte_count)
+                   VALUES(%s,%s,%s,%s,%s,%s)""",
+                [(dbclass.Timestamp(*agg_key[0]), agg_key[1], agg_key[2], 
+                    agg_key[3], GridFTPPacket.data_aggregation[agg_key][0],
+                    GridFTPPacket.data_aggregation[agg_key][1])
+                    for agg_key in GridFTPPacket.data_aggregation.keys()])
+        except:
+            print "Error uploading aggregation data"
+        GridFTPPacket.data_aggregation = {}
         
     def values(self, dbclass):
         """
@@ -149,6 +205,29 @@ class GridFTPPacket(CUsagePacket):
             self.get_block_size_id(),
             self.get_buffer_size_id(),
             self.get_transfer_rate_id())
+
+    def transfer_size(self):
+        res = self.data.get('NBYTES')
+        if res is not None:
+            return long(res)
+        return None
+
+    def transfer_rate(self):
+        rate = None
+
+        transfer_time = self.interval(
+                self.data.get("START"),
+                self.data.get("END"))
+        transfer_size = self.transfer_size()
+
+        if transfer_time != None and transfer_size != None:
+            # Note: critically depend on the interval being in the form
+            # "x.y secs"
+            transfer_time_float = float(transfer_time.split(" ")[0])
+            transfer_size_float = float(transfer_size)
+            if (transfer_time_float > 0) and (transfer_size_float >= 0):
+                rate = transfer_size_float / transfer_time_float
+        return rate
 
     def get_host_id(self):
         """

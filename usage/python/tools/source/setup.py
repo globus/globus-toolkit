@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name = 'globus_usage_tools',
-    version = '0.10',
+    version = '0.11',
     description = 'Globus Usage Collector Tools',
     author = 'Globus Toolkit',
     author_email = 'support@globus.org',

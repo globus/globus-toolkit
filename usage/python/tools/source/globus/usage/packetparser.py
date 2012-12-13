@@ -75,3 +75,6 @@ def parse(address, packet):
         constructor = usagepacket.UsagePacket
 
     return constructor(address, packet)
+
+def packet_classes():
+    return [(__packet_classifier[p]) for p in __packet_classifier]

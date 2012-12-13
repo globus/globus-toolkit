@@ -71,9 +71,8 @@ class GRAM5Packet(CUsagePacket):
         Returns an array of bad packets
         """
         GRAM5Packet.pre_upload(dbclass, cursor)
-
         return CUsagePacket.upload_many(dbclass, cursor, packets)
-        
+
     def get_job_manager_id(self, cursor):
         """
         Determine the job manager key which matches the host, version,
@@ -832,9 +831,55 @@ class GRAM5JobPacket(GRAM5Packet):
     GRAM5 Usage Packet handler for job status packets
     """
     
+    data_aggregation = {}
+
     def __init__(self, address, packet):
         GRAM5Packet.__init__(self, address, packet)
 
+    @staticmethod
+    def upload_many(dbclass, cursor, packets):
+        """
+        Upload many GRAM5Packet usage packets to the database referred to
+        by the given cursor. It will also prepare the caches of id tables.
+
+        Returns an array of bad packets
+        """
+        res = GRAM5Packet.upload_many(dbclass, cursor, packets)
+
+        for pack in packets:
+            if pack is not None and pack not in res:
+                send_time = list(pack.send_time)
+                send_time[4] = send_time[5] = 0
+                send_time = tuple(send_time)
+
+                server_id = pack.get_job_manager_instance_id_by_uuid(cursor)
+                failure_code = pack.data.get('j') or 0
+
+                agg_key = (send_time, server_id, failure_code)
+
+                if agg_key not in GRAM5JobPacket.data_aggregation.keys():
+                    GRAM5JobPacket.data_aggregation[agg_key] = 0
+                GRAM5JobPacket.data_aggregation[agg_key] += 1;
+        return res
+
+    @staticmethod
+    def upload_aggregation(dbclass, cursor):
+        try:
+            cursor.execute("SAVEPOINT gram_aggregation")
+            cursor.executemany(
+                """INSERT INTO gram5_aggregations_hourly(
+                        aggregation_time,
+                        job_manager_instance_id,
+                        failure_code,
+                        job_count)
+                   VALUES(%s,%s,%s,%s)""",
+                [(dbclass.Timestamp(*agg_key[0]), agg_key[1], agg_key[2], 
+                    GRAM5JobPacket.data_aggregation[agg_key])
+                    for agg_key in GRAM5JobPacket.data_aggregation.keys()])
+        except Exception, e:
+            print "Error uploading aggregation data: " + e.message
+            cursor.execute("ROLLBACK TO SAVEPOINT gram_aggregation")
+        GRAM5JobPacket.data_aggregation = {}
     
     insert_statement = '''
             INSERT INTO gram5_job_status(
