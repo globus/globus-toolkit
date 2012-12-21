@@ -77,6 +77,7 @@ globus_scheduler_event_generator_test       ws-gram/job_monitoring/common/c/test
 globus_usage_tools_test usage/python/tools/test gpt
 
 # Example XIO Drivers
+globus_xio_example              xio/example             gpt
 globus_xio_blockz_driver        xio/drivers/blockz	gpt
 globus_xio_gridftp_driver	gridftp/gridftp_driver/source	gpt
 globus_xio_gridftp_multicast	gridftp/server/multi/source	gpt
