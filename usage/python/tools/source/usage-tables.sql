@@ -881,11 +881,24 @@ CREATE TABLE gftp_aggregations_hourly(
     transfer_count                      BIGINT,
     byte_count                          BIGINT
 );
-
 CREATE INDEX gftp_aggregations_hourly_index
     ON gftp_aggregations_hourly(aggregation_time);
 CREATE INDEX gftp_aggregations_hourly_server_index
     ON gftp_aggregations_hourly(aggregation_time, server_id);
+
+
+CREATE TABLE gftp_aggregations_daily(
+    aggregation_time                    DATE,
+    server_id                           INTEGER     REFERENCES gftp_server(id),
+    log10_transfer_size_bytes           INT,
+    log2_transfer_rate_kbps             INT,
+
+    transfer_count                      BIGINT,
+    byte_count                          BIGINT);
+CREATE INDEX gftp_aggregations_daily_index
+    ON gftp_aggregations_daily(aggregation_time);
+CREATE INDEX gftp_aggregations_daily_server_index
+    ON gftp_aggregations_daily(aggregation_time, server_id);
 
 CREATE TABLE gram5_aggregations_hourly(
     aggregation_time                    TIMESTAMP,
@@ -897,3 +910,12 @@ CREATE INDEX gram5_aggregations_hourly_index
     ON gram5_aggregations_hourly(aggregation_time);
 CREATE INDEX gram5_aggregations_hourly_server_index
     ON gram5_aggregations_hourly(aggregation_time, job_manager_instance_id);
+
+CREATE TABLE gram5_aggregations_daily(
+    aggregation_time                    DATE,
+    job_manager_id                      INTEGER     REFERENCES gram5_job_managers(id),
+    failure_code                        INTEGER,
+    job_count                           BIGINT);
+
+CREATE INDEX gram5_aggregations_daily_index
+    ON gram5_aggregations_daily(aggregation_time);

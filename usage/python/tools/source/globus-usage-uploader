@@ -74,7 +74,7 @@ class UploaderPacketStats:
             self.good[packet_type] = 0
         if bad:
             if not(packet_type in self.bad):
-                self.bad[packet_type] = {}
+                self.bad[packet_type] = []
             self.bad[packet_type].extend(bad)
             bad_count = len(bad)
         self.good[packet_type] += total - bad_count
@@ -179,7 +179,7 @@ def main(argv):
         if pidfd is not None:
             pidfd.close()
 
-        if pid is not None and pidfd:
+        if pid is not None:
             try:
                 os.kill(pid, 0)
                 print sys.argv[0] + " is already running with pid %d" % (pid)
@@ -188,7 +188,7 @@ def main(argv):
                 os.remove(pidfile)
         try:
             pidfd = open(pidfile, 'w')
-            pidfd.write(str(os.getpid()) + "\n")
+            pidfd.write(str(os.getpid()))
         except:
             pass
         if pidfd is not None:

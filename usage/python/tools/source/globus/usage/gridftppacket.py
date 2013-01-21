@@ -434,7 +434,7 @@ class GridFTPPacket(CUsagePacket):
         client_id = None
         appname = self.data.get('APP')
         appver = self.data.get('APPVER')
-        if appname is not None and appver is not None:
+        if appname is not None:
             values = (appname, appver)
             client_id = GridFTPPacket.__gftp_clients.get(values)
             if client_id is None:
