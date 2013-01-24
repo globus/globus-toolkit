@@ -145,7 +145,14 @@ globus_i_gfs_data_check_path(
     void *                              session_arg,
     char *                              in_path,
     char **                             ret_path,
-    int                                 access_type);
+    int                                 access_type,
+    globus_bool_t                       is_virtual);
+
+globus_result_t
+globus_i_gfs_data_virtualize_path(
+    void *                              session_arg,
+    char *                              in_string,
+    char **                             ret_string);
     
 #define GFS_L_READ  1<<0
 #define GFS_L_WRITE 1<<1

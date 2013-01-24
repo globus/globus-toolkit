@@ -151,6 +151,23 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"anonymous_group", "anonymous_group", NULL, "anonymous-group", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Group to setgid to for an anonymous connection. If unset, the default group "
     "of anonymous_user will be used.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"sharing_dn", "sharing_dn", NULL, "sharing-dn", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Allow sharing when using the supplied DN.  A client connected with these credentials will "
+    "be able to access any user for which sharing is enabled.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"sharing_file", "sharing_file", NULL, "sharing-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Full path of a file that must exist for a local account to have sharing enabled. "
+    "The special variables '$HOME' and '$USER' can be used to create a dynamic path. "
+    "The default path is '$HOME/.globus_sharing'.  Use 'none' to disable this check and "
+    "allow sharing of any non-root account.  This must refer to a local file, not a file that "
+    "is only accessable via a DSI plugin.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"sharing_file_create", "sharing_file_create", NULL, "sharing-file-create", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Set this to true to allow a user to create its sharing file via a special GridFTP client command. "
+    "This creation is not subject to any GridFTP path restrictions, but the user must "
+    "have filesystem write access to the sharing file.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"sharing_rp", "sharing_rp", NULL, "sharing-rp", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Sharing specific path restrictions.  Follows normal path restriction symantics, but "
+    "is only in effect when an account is being shared.  This will override normal "
+    "path restrictions.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"allow_root", "allow_root", NULL, "allow-root", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow clients to be mapped to the root account.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"pw_file", "pw_file", NULL, "password-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,

@@ -225,11 +225,22 @@ globus_gridftp_server_control_set_cwd(
 
     globus_mutex_lock(&server->mutex);
     {
-        if(server->cwd)
+        if(cwd_string)
         {
-            globus_free(server->cwd);
+            if(server->cwd)
+            {
+                globus_free(server->cwd);
+            }
+            server->cwd = strdup(cwd_string);
         }
-        server->cwd = strdup(cwd_string);
+        else if(server->cwd)
+        {
+            if(server->default_cwd)
+            {
+                globus_free(server->default_cwd);
+            }
+            server->default_cwd = strdup(server->cwd);
+        }
     }
     globus_mutex_unlock(&server->mutex);
 

@@ -64,6 +64,8 @@ static globus_bool_t                    gfs_l_data_brain_ready = GLOBUS_FALSE;
 static globus_hashtable_t               gfs_l_data_net_allowed_drivers;
 static globus_hashtable_t               gfs_l_data_disk_allowed_drivers;
 static globus_list_t *                  globus_l_gfs_path_alias_list = NULL;
+static globus_list_t *                  globus_l_gfs_path_alias_list_base = NULL;
+static globus_list_t *                  globus_l_gfs_path_alias_list_sharing = NULL;
 static int                              globus_l_gfs_op_info_ctr = 1;
 
 typedef enum
@@ -140,6 +142,7 @@ typedef struct
     char *                              real_username;
     char *                              home_dir;
     char *                              true_home;
+    char *                              chroot_path;
     uid_t                               uid;
     int                                 gid_count;
     gid_t *                             gid_array;
@@ -166,6 +169,9 @@ typedef struct
     char *                              client_appver;
     char *                              client_scheme;
     gss_cred_id_t                       dcsc_cred;
+    
+    globus_list_t *                     rp_list;
+    char *                              sharing_file;
     
     globus_hashtable_t                  custom_cmd_table;
 } globus_l_gfs_data_session_t;
@@ -607,11 +613,46 @@ globus_l_gfs_data_post_transfer_event_cb(
 }    
 
 globus_result_t
+globus_i_gfs_data_virtualize_path(
+    void *                              session_arg,
+    char *                              in_string,
+    char **                             ret_string)
+{
+    globus_l_gfs_data_session_t *       session_handle;
+    char *                              tmp_ptr;
+    session_handle = (globus_l_gfs_data_session_t *) session_arg;
+    
+    if(!session_handle->chroot_path)
+    {
+        *ret_string = NULL;
+        return GLOBUS_SUCCESS;
+    }
+    
+    tmp_ptr = strstr(in_string, session_handle->chroot_path);
+    
+    if(!tmp_ptr)
+    {
+        *ret_string = NULL;
+        return GLOBUS_SUCCESS;
+    }
+    
+    *ret_string = globus_malloc(
+        strlen(in_string) + strlen(session_handle->chroot_path));
+        
+    strncpy(*ret_string, in_string, tmp_ptr - in_string);
+    strcpy(*ret_string + (tmp_ptr - in_string), 
+        tmp_ptr + strlen((session_handle->chroot_path)));
+    
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
 globus_i_gfs_data_check_path(
     void *                              session_arg,
     char *                              in_path,
     char **                             ret_path,
-    int                                 access_type)
+    int                                 access_type,
+    globus_bool_t                       is_virtual)
 {
     globus_bool_t                       allowed = GLOBUS_FALSE;
     globus_bool_t                       disallowed = GLOBUS_FALSE;
@@ -619,34 +660,52 @@ globus_i_gfs_data_check_path(
     globus_list_t *                     list;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_gfs_alias_ent_t *          alias_ent;
-    char *                              true_path;
+    char *                              true_path = GLOBUS_NULL;
+    char *                              start_path;
     int                                 in_path_len;
     globus_l_gfs_data_session_t *       session_handle;
     char *                              tmp_ptr;
     int                                 rc = 0;
     char *                              check_path;
     globus_bool_t                       check_again = GLOBUS_FALSE;
-    GlobusGFSName(globus_l_gfs_data_check_path);
+    globus_list_t *                     rp_list;
+    GlobusGFSName(globus_i_gfs_data_check_path);
     GlobusGFSDebugEnter();
     
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
+
+    if(globus_list_empty(globus_l_gfs_path_alias_list) &&
+        globus_list_empty(session_handle->rp_list))
+    {
+        allowed = GLOBUS_TRUE;
+    }
     
-    if(!globus_list_empty(globus_l_gfs_path_alias_list))
-    {   
+    if(is_virtual && session_handle->chroot_path)
+    {
+        start_path = globus_common_create_string(
+            "%s%s", session_handle->chroot_path, in_path);
+    }
+    else
+    {
+        start_path = in_path;
+    }
+    
+    if(!allowed)
+    {
         if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH &&
             !globus_i_gfs_config_bool("rp_follow_symlinks") && 
-            strcmp(in_path, "/") != 0 && 
+            strcmp(start_path, "/") != 0 && 
             session_handle->dsi->realpath_func != NULL)
         {            
             result = session_handle->dsi->realpath_func(
-                in_path, &true_path, session_handle->session_arg);
+                start_path, &true_path, session_handle->session_arg);
             if(result != GLOBUS_SUCCESS)
             {
                 char *                  true_base;
                 char *                  end_slash = "";
                 int                     path_len;
                 
-                strncpy(path, in_path, sizeof(path));
+                strncpy(path, start_path, sizeof(path));
                 path[MAXPATHLEN - 1] = '\0';
                 
                 path_len = strlen(path);
@@ -672,7 +731,7 @@ globus_i_gfs_data_check_path(
                 if(result != GLOBUS_SUCCESS)
                 {
                     result = GLOBUS_SUCCESS;
-                    true_path = globus_libc_strdup(in_path);
+                    true_path = globus_libc_strdup(start_path);
                 }
                 else
                 {
@@ -684,44 +743,83 @@ globus_i_gfs_data_check_path(
         }
         else
         {
-            true_path = globus_libc_strdup(in_path);
+            true_path = globus_libc_strdup(start_path);
+        }
+    }
+    else if(ret_path)
+    {
+        if(session_handle->chroot_path)
+        {
+            *ret_path = globus_libc_strdup(start_path);
+        }
+        else
+        {
+            *ret_path = NULL;
+        }
+    }
+        
+    if(true_path)
+    {
+        if(!globus_list_empty(globus_l_gfs_path_alias_list))
+        {
+            rp_list = globus_l_gfs_path_alias_list;
+        }
+        else
+        {
+            rp_list = session_handle->rp_list;
         }
 
-        
-        check_path = true_path;
-        do
+        while(!globus_list_empty(rp_list))
         {
-            in_path_len = strlen(check_path);
-            
-            for(list = globus_l_gfs_path_alias_list;
-                !globus_list_empty(list) && !allowed && !disallowed;
-                list = globus_list_rest(list))
-            {            
-                alias_ent = globus_list_first(list);
+            check_path = true_path;
+            do
+            {
+                in_path_len = strlen(check_path);
                 
-                /* disallow if this a dir check and any contents are denied */
-                if(access_type & GFS_L_DIR && alias_ent->access & GFS_L_NONE)
-                {
-                    if(strncmp(check_path, alias_ent->alias, in_path_len) == 0 &&
-                        (check_path[in_path_len - 1] == '/' ||
-                            alias_ent->alias[in_path_len] == '\0' || 
-                            alias_ent->alias[in_path_len] == '/'))
+                for(list = rp_list;
+                    !globus_list_empty(list) && !allowed && !disallowed;
+                    list = globus_list_rest(list))
+                {            
+                    alias_ent = globus_list_first(list);
+                    
+                    /* disallow if this a dir check and any contents are denied */
+                    if(access_type & GFS_L_DIR && alias_ent->access & GFS_L_NONE)
                     {
-                        disallowed = GLOBUS_TRUE;
-                        continue;
+                        if(strncmp(check_path, alias_ent->alias, in_path_len) == 0 &&
+                            (check_path[in_path_len - 1] == '/' ||
+                                alias_ent->alias[in_path_len] == '\0' || 
+                                alias_ent->alias[in_path_len] == '/'))
+                        {
+                            disallowed = GLOBUS_TRUE;
+                            continue;
+                        }
+                        else if(fnmatch(alias_ent->alias, check_path, 0) == 0)
+                        {
+                            disallowed = GLOBUS_TRUE;
+                            continue;
+                        }
                     }
-                    else if(fnmatch(alias_ent->alias, check_path, 0) == 0)
+        
+                    /* check if we have an exact match */
+                    if(strcspn(alias_ent->alias, "[*?") != alias_ent->alias_len)
                     {
-                        disallowed = GLOBUS_TRUE;
-                        continue;
+                        rc = fnmatch(alias_ent->alias, check_path, 0);
+                        if(rc == 0)
+                        {
+                            if(alias_ent->access & access_type)
+                            {
+                                allowed = GLOBUS_TRUE;
+                            }
+                            else
+                            {
+                                disallowed = GLOBUS_TRUE;
+                            }
+                        }
                     }
-                }
-    
-                /* check if we have an exact match */
-                if(strcspn(alias_ent->alias, "[*?") != alias_ent->alias_len)
-                {
-                    rc = fnmatch(alias_ent->alias, check_path, 0);
-                    if(rc == 0)
+                    else if(strncmp(check_path, alias_ent->alias, alias_ent->alias_len) == 0 &&
+                        (alias_ent->alias[alias_ent->alias_len - 1] == '/' ||
+                            check_path[alias_ent->alias_len] == '\0' || 
+                            check_path[alias_ent->alias_len] == '/'))
                     {
                         if(alias_ent->access & access_type)
                         {
@@ -732,83 +830,94 @@ globus_i_gfs_data_check_path(
                             disallowed = GLOBUS_TRUE;
                         }
                     }
+                    
+                    /* check if we are a parent of an exact match */
+                    if(!allowed && !disallowed && access_type & GFS_L_LIST)
+                    {
+                        if(strncmp(check_path, alias_ent->alias, in_path_len) == 0 &&
+                            (check_path[in_path_len - 1] == '/' ||
+                                alias_ent->alias[in_path_len] == '\0' || 
+                                alias_ent->alias[in_path_len] == '/'))
+                        {
+                            if(alias_ent->access & access_type)
+                            {
+                                allowed = GLOBUS_TRUE;
+                            }
+                            else
+                            {
+                               /* disallowed = GLOBUS_TRUE; */
+                            }
+                        }
+                    }
                 }
-                else if(strncmp(check_path, alias_ent->alias, alias_ent->alias_len) == 0 &&
-                    (alias_ent->alias[alias_ent->alias_len - 1] == '/' ||
-                        check_path[alias_ent->alias_len] == '\0' || 
-                        check_path[alias_ent->alias_len] == '/'))
+                if(!check_again)
                 {
-                    if(alias_ent->access & access_type)
+                    if(allowed && strcmp(start_path, true_path))
+                    {
+                        check_again = GLOBUS_TRUE;
+                        check_path = start_path;
+                        allowed = GLOBUS_FALSE;
+                    }
+                }
+                else
+                {
+                    if(!disallowed)
                     {
                         allowed = GLOBUS_TRUE;
                     }
-                    else
-                    {
-                        disallowed = GLOBUS_TRUE;
-                    }
+                    check_again = GLOBUS_FALSE;
                 }
-                
-                /* check if we are a parent of an exact match */
-                if(!allowed && !disallowed && access_type & GFS_L_LIST)
-                {
-                    if(strncmp(check_path, alias_ent->alias, in_path_len) == 0 &&
-                        (check_path[in_path_len - 1] == '/' ||
-                            alias_ent->alias[in_path_len] == '\0' || 
-                            alias_ent->alias[in_path_len] == '/'))
-                    {
-                        if(alias_ent->access & access_type)
-                        {
-                            allowed = GLOBUS_TRUE;
-                        }
-                        else
-                        {
-                           /* disallowed = GLOBUS_TRUE; */
-                        }
-                    }
-                }
-            }
-            if(!check_again)
+            } while(check_again);
+    
+            if(!allowed)
             {
-                if(allowed && strcmp(in_path, true_path))
-                {
-                    check_again = GLOBUS_TRUE;
-                    check_path = in_path;
-                    allowed = GLOBUS_FALSE;
-                }
+                result = GlobusGFSErrorGeneric(
+                    "Path not allowed.");
+                    
+                rp_list = NULL;
             }
             else
             {
-                if(!disallowed)
+                if(rp_list == globus_l_gfs_path_alias_list && 
+                    !globus_list_empty(session_handle->rp_list))
                 {
-                    allowed = GLOBUS_TRUE;
+                    rp_list = session_handle->rp_list;
+                    allowed = GLOBUS_FALSE;
                 }
-                check_again = GLOBUS_FALSE;
+                else
+                {
+                    rp_list = NULL;
+                }
+                
+                if(!rp_list && ret_path)
+                {
+                    if(alias_ent->realpath)
+                    {
+                        strncpy(path, alias_ent->realpath, alias_ent->realpath_len);
+                        strcpy(path + alias_ent->realpath_len, 
+                            true_path + alias_ent->alias_len);
+            
+                        *ret_path = globus_libc_strdup(path);
+                    }
+                    else if(session_handle->chroot_path)
+                    {
+                        *ret_path = globus_libc_strdup(start_path);
+                    }
+                    else
+                    {
+                        *ret_path = NULL;
+                    }
+                }
             }
-        } while(check_again);
-
-        if(!allowed)
-        {
-            result = GlobusGFSErrorGeneric(
-                "Path not allowed.");
-        }
-        else if(alias_ent->realpath && ret_path)
-        {
-            strncpy(path, alias_ent->realpath, alias_ent->realpath_len);
-            strcpy(path + alias_ent->realpath_len, 
-                true_path + alias_ent->alias_len);
-
-            *ret_path = globus_libc_strdup(path);
-        }
-        else if(ret_path)
-        {
-            *ret_path = NULL;
         }
         
         globus_free(true_path);
     }
-    else if(ret_path)
+
+    
+    if(is_virtual && session_handle->chroot_path)
     {
-        *ret_path = NULL;
+        globus_free(start_path);
     }
 
     GlobusGFSDebugExit();
@@ -943,6 +1052,14 @@ globus_l_gfs_free_session_handle(
     if(session_handle->true_home)
     {
         globus_free(session_handle->true_home);
+    }
+    if(session_handle->chroot_path)
+    {
+        globus_free(session_handle->chroot_path);
+    }
+    if(session_handle->sharing_file)
+    {
+        globus_free(session_handle->sharing_file);
     }
     if(session_handle->gid_array)
     {
@@ -1965,19 +2082,15 @@ globus_l_gfs_data_update_var_path(
         globus_free(path);
         path = new_path;
     }
-    
-    if(path != new_path)
-    {
-        globus_free(path);
-    }
-    
-    return new_path;
+        
+    return path;
 }    
    
 static
 void
 globus_l_gfs_data_update_restricted_paths(
-    globus_l_gfs_data_session_t *           session_handle)
+    globus_l_gfs_data_session_t *   session_handle,
+    globus_list_t **                rp_list)
 {
     globus_list_t *                     list;
     globus_l_gfs_alias_ent_t *          alias_ent;
@@ -1985,10 +2098,11 @@ globus_l_gfs_data_update_restricted_paths(
     char *                              tmp_ptr;
     GlobusGFSName(globus_l_gfs_data_update_restricted_paths);
     GlobusGFSDebugEnter();
-        
-    if(!globus_list_empty(globus_l_gfs_path_alias_list))
+    
+    
+    if(!globus_list_empty(*rp_list))
     {   
-        for(list = globus_l_gfs_path_alias_list;
+        for(list = *rp_list;
             !globus_list_empty(list);
             list = globus_list_rest(list))
         {            
@@ -2035,12 +2149,13 @@ globus_l_gfs_data_update_restricted_paths(
         
         if(resort)
         {
-            globus_l_gfs_path_alias_list = globus_list_sort_destructive(
-                globus_l_gfs_path_alias_list, globus_list_cmp_alias_ent, NULL);
+            *rp_list = globus_list_sort_destructive(
+                *rp_list, globus_list_cmp_alias_ent, NULL);
         }
     }
 }
 
+#define GLOBUS_SHARING_PREFIX ":globus-sharing:"
 
 static
 void
@@ -2063,6 +2178,9 @@ globus_l_gfs_data_authorize(
     int                                 auth_level;
     char *                              chroot_dir = NULL;
     char *                              custom_home_dir;
+    char *                              sharing_dn = NULL;
+    char *                              shared_user_dn = NULL;
+    globus_bool_t                       sharing_attempted = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_data_authorize);
     GlobusGFSDebugEnter();
 
@@ -2079,28 +2197,110 @@ globus_l_gfs_data_authorize(
     pw_file = (char *) globus_i_gfs_config_string("pw_file");
     /* if there is a subject or del cred we are using gsi, 
         look it up in the gridmap */
+    sharing_dn = globus_i_gfs_config_string("sharing_dn");
+    
     if(session_info->subject != NULL || session_info->del_cred != NULL)
     {
+        if(sharing_dn)
+        {
+            if((strcmp(sharing_dn, session_info->subject) == 0))
+            {
+                if(session_info->username && 
+                    strncmp(session_info->username, 
+                        GLOBUS_SHARING_PREFIX, 
+                        strlen(GLOBUS_SHARING_PREFIX)) == 0)
+                {
+                    shared_user_dn = session_info->username + strlen(GLOBUS_SHARING_PREFIX);
+                    
+                    if(*shared_user_dn == '/')
+                    {                 
+                        globus_free(session_info->subject);
+                        session_info->subject = 
+                            globus_libc_strdup(shared_user_dn);
+                        globus_free(session_info->username);
+                        session_info->username = 
+                            globus_libc_strdup(GLOBUS_MAPPING_STRING);
+                        session_info->map_user = GLOBUS_TRUE;
+                        sharing_attempted = GLOBUS_TRUE;
+                    }
+                    else if(strstr(shared_user_dn, ":/"))
+                    {
+                        char *                  sub_tmp;
+                        sub_tmp = strstr(shared_user_dn, ":/");
+                        *sub_tmp = '\0';
+                        sub_tmp++;
+                        globus_free(session_info->subject);
+                        session_info->subject = globus_libc_strdup(sub_tmp);
+                        sub_tmp = globus_libc_strdup(shared_user_dn);
+                        globus_free(session_info->username);
+                        session_info->username = sub_tmp;
+                        session_info->map_user = GLOBUS_FALSE;
+                        sharing_attempted = GLOBUS_TRUE;
+                    }
+                    else
+                    {
+                        res = GlobusGFSErrorGeneric(
+                            "Invalid user format for " GLOBUS_SHARING_PREFIX ".");
+                        goto pwent_error;
+                    }
+                }   
+            }
+        }
+
+        if(!sharing_attempted && session_info->username && 
+                strncmp(session_info->username, 
+                    GLOBUS_SHARING_PREFIX, 
+                    strlen(GLOBUS_SHARING_PREFIX)) == 0)
+        {
+            GlobusGFSErrorGenericStr(res,
+                ("Sharing not allowed with DN %s", session_info->subject));
+            goto pwent_error;
+        }
+                
         if(!(auth_level & GLOBUS_L_GFS_AUTH_NOGRIDMAP))
         {
             if(context != NULL && globus_i_gfs_config_bool("cas"))
             {
+                globus_bool_t           free_usr = GLOBUS_FALSE;
+                
                 if(session_info->map_user)
                 {
-                    usr = NULL;
+                    if(sharing_attempted)
+                    {
+                        usr = session_info->subject;
+                    }
+                    else
+                    {
+                        usr = NULL;
+                    }
                 }
                 else
                 {
-                    usr = session_info->username;
+                    if(sharing_attempted)
+                    {
+                        usr = globus_common_create_string(
+                            "%s:%s", session_info->username, session_info->subject);
+                        free_usr = GLOBUS_TRUE;
+                    }
+                    else
+                    {
+                        usr = session_info->username;
+                    }
                 }
 
                 *authz_usr = '\0';
                 res = globus_gss_assist_map_and_authorize(
                     context,
-                    FTP_SERVICE_NAME,
+                    sharing_attempted ? "sharing" : FTP_SERVICE_NAME,
                     usr,
                     authz_usr,
                     USER_NAME_MAX);
+                
+                if(free_usr)
+                {
+                    globus_free(usr);
+                }
+                
                 if(res != GLOBUS_SUCCESS)
                 {
                     goto pwent_error;
@@ -2207,6 +2407,63 @@ globus_l_gfs_data_authorize(
                 ("Invalid group id assigned to user '%s'.",
                 session_info->username));
             goto pwent_error;
+        }
+        
+        if(sharing_dn)
+        {
+            char *                      sharing_file;
+            
+            if(pwent && pwent->pw_dir)
+            {
+                op->session_handle->true_home = pwent->pw_dir;
+            }
+            else
+            {
+                op->session_handle->true_home = "/";
+            }
+            op->session_handle->username = session_info->username;
+
+            sharing_file = globus_i_gfs_config_string("sharing_file");
+            if(!sharing_file)
+            {
+                op->session_handle->sharing_file = 
+                    globus_l_gfs_data_update_var_path(
+                        op->session_handle, "$HOME/.globus_sharing");
+                
+                if(!op->session_handle->sharing_file)
+                {
+                    res = GlobusGFSErrorMemory("sharing file");
+                    goto pwent_error;
+                }
+            }
+            else
+            {                
+                op->session_handle->sharing_file = 
+                    globus_l_gfs_data_update_var_path(
+                        op->session_handle, sharing_file);
+                
+                if(!op->session_handle->sharing_file)
+                {
+                    res = GlobusGFSErrorMemory("sharing file");
+                    goto pwent_error;
+                }
+            }
+            op->session_handle->username = NULL;
+            op->session_handle->true_home = NULL;
+            
+            if(sharing_attempted && 
+                strcasecmp(op->session_handle->sharing_file, "none") != 0)
+            {
+                rc = access(op->session_handle->sharing_file, F_OK);
+
+                if(rc != 0)
+                {
+                    GlobusGFSErrorGenericStr(res,
+                        ("Sharing not enabled for user '%s'.",
+                        session_info->username));
+                    goto pwent_error;
+                }
+            }
         }
     }
     /* if anonymous use and we are allowing it */
@@ -2433,27 +2690,35 @@ globus_l_gfs_data_authorize(
     if(custom_home_dir)
     {
         char *                          var_dir;
-        op->session_handle->username = session_info->username;
+        op->session_handle->username = 
+            globus_libc_strdup(session_info->username);
 
         var_dir = globus_l_gfs_data_update_var_path(
             op->session_handle, custom_home_dir);
             
-        op->session_handle->home_dir = var_dir ? 
-            var_dir : globus_libc_strdup(custom_home_dir);
+        op->session_handle->home_dir = var_dir;
     }
     else
     {
         op->session_handle->home_dir = 
             globus_libc_strdup(op->session_handle->true_home);
     }
-    
-    globus_l_gfs_data_update_restricted_paths(op->session_handle);
+    if(sharing_attempted)
+    {
+        globus_l_gfs_path_alias_list = globus_l_gfs_path_alias_list_sharing;
+    }
+    else
+    {
+        globus_l_gfs_path_alias_list = globus_l_gfs_path_alias_list_base;
+    }
+    globus_l_gfs_data_update_restricted_paths(
+        op->session_handle, &globus_l_gfs_path_alias_list);
     
 
     if(!globus_i_gfs_config_bool("use_home_dirs") || 
         op->session_handle->home_dir == NULL ||
         globus_i_gfs_data_check_path(op->session_handle,
-           op->session_handle->home_dir, NULL, GFS_L_LIST) != GLOBUS_SUCCESS)
+           op->session_handle->home_dir, NULL, GFS_L_LIST, 1) != GLOBUS_SUCCESS)
     {
         if(op->session_handle->home_dir)
         {
@@ -2616,6 +2881,225 @@ globus_l_gfs_load_safe(
     }
 }
 
+static
+globus_result_t
+globus_l_gfs_data_parse_restricted_paths(
+    globus_l_gfs_data_session_t *       session_handle,
+    char *                              restrict_paths,
+    globus_list_t **                    out_list,
+    globus_bool_t                       is_virtual)
+{
+    globus_list_t *                     list;
+    globus_list_t *                     tmp_list = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    char *                              chroot_path_esc = NULL;
+    GlobusGFSName(globus_l_gfs_data_parse_restricted_paths);
+    GlobusGFSDebugEnter();
+                                        
+    list = globus_list_from_string(restrict_paths, ',', NULL);
+    
+    /* escape glob chars in chroot */
+    if(is_virtual && session_handle && session_handle->chroot_path &&
+        strcspn(session_handle->chroot_path, "[*?") != 
+            strlen(session_handle->chroot_path))
+    {
+        char * ptr;
+        char * ptr_esc;
+        
+        chroot_path_esc = 
+            (char *) malloc(2 * strlen(session_handle->chroot_path) + 1);
+        
+        ptr = session_handle->chroot_path;
+        ptr_esc = chroot_path_esc;
+        while(*ptr)
+        {
+            switch(*ptr)
+            {
+                case '*':
+                case '?':
+                case '[':
+                case ']':
+                case '\\':
+                    *ptr_esc++ = '\\';
+                
+                default:
+                    *ptr_esc++ = *ptr++;
+                    break;
+            }
+        }
+        *ptr_esc = '\0';
+    }
+    else if(session_handle && session_handle->chroot_path)
+    {
+        chroot_path_esc = session_handle->chroot_path;
+    }
+
+    while(!globus_list_empty(list))
+    {
+        globus_l_gfs_alias_ent_t *      ent;
+        char *                          ent_str;
+        char *                          ptr;
+        char *                          alias;
+        globus_bool_t                   done;
+        
+        ent = (globus_l_gfs_alias_ent_t *)
+            globus_malloc(sizeof(globus_l_gfs_alias_ent_t));
+        ent->access = 0;
+        
+        ent_str = (char *) globus_list_remove(&list, list);    
+                
+        ptr = ent_str;
+        done = GLOBUS_FALSE;
+        while(*ptr && !done)
+        {
+            switch(*ptr)
+            {
+                case 'r':
+                case 'R':
+                    ent->access |= GFS_L_READ;
+                    ptr++;
+                    break;
+                    
+                case 'w':
+                case 'W':
+                    ent->access |= GFS_L_WRITE;
+                    ptr++;
+                    break;
+
+                case 'n':
+                case 'N':
+                    ent->access |= GFS_L_NONE;
+                    ptr++;
+                    break;
+                    
+                case '/':
+                case '~':
+                case '*':
+                case '?':
+                case '[':
+                    if(ent->access == 0)
+                    {
+                       ent->access |= GFS_L_READ;
+                    }
+                    done = GLOBUS_TRUE;
+                    break;
+                    
+                default:
+                    done = GLOBUS_TRUE;
+                    GlobusGFSErrorGenericStr(result,
+                        ("Path restriction entries must be full paths, "
+                        "prefixed only with R, W, or RW. "
+                        "The entry '%s' is invalid.\n", ent_str));
+                    return result;
+                    break;
+            }                
+        }
+        ent->access |= GFS_L_LIST;
+        
+        if(ent->access & GFS_L_NONE)
+        {
+            ent->access = GFS_L_NONE;
+        }
+        
+        if((alias = strchr(ptr, ':')) != NULL)
+        {
+            *alias = '\0';
+            alias++;
+            
+            ent->alias = globus_libc_strdup(alias);
+            globus_url_string_hex_decode(ent->alias);
+            ent->alias_len = strlen(ent->alias);
+            
+            ent->realpath = globus_libc_strdup(ptr);
+            globus_url_string_hex_decode(ent->realpath);
+            ent->realpath_len = strlen(ent->realpath);
+        }
+        else
+        {
+            ent->alias = globus_libc_strdup(ptr);
+            globus_url_string_hex_decode(ent->alias);
+            ent->alias_len = strlen(ent->alias);
+            
+            ent->realpath = NULL;
+            ent->realpath_len = 0;
+        }
+        globus_free(ent_str);
+        
+        if((*ent->alias != '/' && *ent->alias != '~') ||
+            (ent->realpath && *ent->realpath != '/' && *ent->realpath != '~'))
+        {                
+            globus_free(ent->alias);
+            if(ent->realpath)
+            {
+                globus_free(ent->realpath);
+            }
+            globus_free(ent);
+        }
+        else
+        {
+            if(is_virtual)
+            {   
+                char *                  true_path;
+                char *                  tmp_path;
+                
+                if(ent->realpath)
+                {
+                    globus_free(ent->realpath);
+                    ent->realpath = NULL;
+                    ent->realpath_len = 0;
+                }
+                
+                if(ent->alias[0] == '~')
+                {
+                    tmp_path = globus_common_create_string(
+                        "%s%s", 
+                        chroot_path_esc ? 
+                            "/" : session_handle->true_home, 
+                        ent->alias + 1);
+                    globus_free(ent->alias);
+                    ent->alias = tmp_path;
+                    ent->alias_len = strlen(ent->alias);
+                }
+                else
+                {
+                    if(chroot_path_esc)
+                    {
+                        tmp_path = globus_common_create_string("%s%s", 
+                            chroot_path_esc, ent->alias);
+                        globus_free(ent->alias);
+                        ent->alias = tmp_path;
+                        ent->alias_len = strlen(ent->alias);
+                    }
+                }
+                
+                if(ent->alias[ent->alias_len - 1] == '/')
+                {
+                    ent->alias[ent->alias_len - 1] = '\0';
+                    ent->alias_len--;
+                }
+
+                globus_list_insert(&tmp_list, ent);
+            }
+            else
+            {
+                globus_list_insert(&tmp_list, ent);
+            }
+        }
+    }
+    
+    if(!globus_list_empty(tmp_list))
+    {
+        *out_list = globus_list_sort_destructive(
+            tmp_list, globus_list_cmp_alias_ent, NULL);
+    }
+    else
+    {
+         result = GlobusGFSErrorGeneric("No valid paths added to restricted list.");
+    }
+    
+    GlobusGFSDebugExit();
+    return result;
+}
 
 void
 globus_i_gfs_data_init()
@@ -2677,116 +3161,29 @@ globus_i_gfs_data_init()
 
     if((restrict_path = globus_gfs_config_get_string("restrict_paths")) != NULL)
     {
-        globus_list_t *                 list;
-        globus_list_t *                 tmp_list = NULL;
-        list = globus_list_from_string(restrict_path, ',', NULL);
-        
-        while(!globus_list_empty(list))
+        result = globus_l_gfs_data_parse_restricted_paths(
+            NULL, restrict_path, &globus_l_gfs_path_alias_list_base, 0);
+            
+        if(result != GLOBUS_SUCCESS)
         {
-            globus_l_gfs_alias_ent_t *      ent;
-            char *                          ent_str;
-            char *                          ptr;
-            char *                          alias;
-            globus_bool_t                   done;
-            
-            ent = (globus_l_gfs_alias_ent_t *)
-                globus_malloc(sizeof(globus_l_gfs_alias_ent_t));
-            ent->access = 0;
-            
-            ent_str = (char *) globus_list_remove(&list, list);    
-            
-            ptr = ent_str;
-            done = GLOBUS_FALSE;
-            while(*ptr && !done)
-            {
-                switch(*ptr)
-                {
-                    case 'r':
-                    case 'R':
-                        ent->access |= GFS_L_READ;
-                        ptr++;
-                        break;
-                        
-                    case 'w':
-                    case 'W':
-                        ent->access |= GFS_L_WRITE;
-                        ptr++;
-                        break;
-
-                    case 'n':
-                    case 'N':
-                        ent->access |= GFS_L_NONE;
-                        ptr++;
-                        break;
-                        
-                    case '/':
-                    case '~':
-                    case '*':
-                    case '?':
-                    case '[':
-                        if(ent->access == 0)
-                        {
-                           ent->access |= GFS_L_READ | GFS_L_WRITE;
-                        }
-                        done = GLOBUS_TRUE;
-                        break;
-                        
-                    default:
-                        globus_gfs_log_exit_message(
-                            "Path restriction entries must be full paths, "
-                            "prefixed only with R, W, or RW. "
-                            "The entry '%s' is invalid.\n", ent_str);
-                        exit(1);
-                        done = GLOBUS_TRUE;
-                        break;
-                }                
-            }
-            ent->access |= GFS_L_LIST;
-            
-            if(ent->access & GFS_L_NONE)
-            {
-                ent->access = GFS_L_NONE;
-            }
-            
-            if((alias = strchr(ptr, ':')) != NULL)
-            {
-                *alias = '\0';
-                alias++;
-                
-                ent->alias = globus_libc_strdup(alias);
-                ent->alias_len = strlen(ent->alias);
-                
-                ent->realpath = globus_libc_strdup(ptr);
-                ent->realpath_len = strlen(ent->realpath);
-            }
-            else
-            {
-                ent->alias = globus_libc_strdup(ptr);
-                ent->alias_len = strlen(ent->alias);
-                
-                ent->realpath = NULL;
-                ent->realpath_len = 0;
-            }
-            globus_free(ent_str);
-            
-            if((*ent->alias != '/' && *ent->alias != '~') ||
-                (ent->realpath && *ent->realpath != '/' && *ent->realpath != '~'))
-            {                
-                globus_free(ent->alias);
-                if(ent->realpath)
-                {
-                    globus_free(ent->realpath);
-                }
-                globus_free(ent);
-            }
-            else
-            {
-                globus_list_insert(&tmp_list, ent);
-            }
+            globus_gfs_log_exit_result("Error parsing restricted paths", result);
+            exit(1);
         }
-        
-        globus_l_gfs_path_alias_list = globus_list_sort_destructive(
-            tmp_list, globus_list_cmp_alias_ent, NULL);
+    }
+    if((restrict_path = globus_gfs_config_get_string("sharing_rp")) != NULL)
+    {
+        result = globus_l_gfs_data_parse_restricted_paths(
+            NULL, restrict_path, &globus_l_gfs_path_alias_list_sharing, 0);
+            
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_exit_result("Error parsing sharing restricted paths", result);
+            exit(1);
+        }
+    }
+    else
+    {
+        globus_l_gfs_path_alias_list_sharing = globus_l_gfs_path_alias_list_base;
     }
 
     GlobusGFSDebugExit();
@@ -3531,6 +3928,109 @@ globus_i_gfs_data_request_command(
                 op->session_handle->dsi->command_func(
                     op, cmd_info, op->session_handle->session_arg);
             }
+
+            call = GLOBUS_FALSE;
+            break;
+
+        case GLOBUS_GFS_CMD_SITE_SHARING:
+            if(!strcasecmp(cmd_info->pathname, "ON"))
+            {
+                /* is NULL, not enabled */
+                if(!op->session_handle->sharing_file)
+                {
+                    result = GlobusGFSErrorGeneric("Sharing not enabled.");
+                }
+                /* is none, skipping checks */
+                else if(!strcasecmp(op->session_handle->sharing_file, "none"))
+                {
+                    result = GLOBUS_SUCCESS;
+                }
+                /* creation disabled, success only if file exists */
+                else if(!globus_i_gfs_config_bool("sharing_file_create"))
+                {
+                    if(access(op->session_handle->sharing_file, F_OK) < 0)
+                    {
+                        result = GlobusGFSErrorGeneric("Sharing ON command is not enabled.");
+                    }
+                    else
+                    {
+                        result = GLOBUS_SUCCESS;
+                    }
+                }
+                /* create if doesn't exist */
+                else
+                {
+                    result = GLOBUS_SUCCESS;
+                    if(access(op->session_handle->sharing_file, F_OK) < 0)
+                    {
+                        int                 sharingfd;
+                        
+                        sharingfd = open(op->session_handle->sharing_file, 
+                            O_WRONLY | O_CREAT, S_IRUSR);
+                        if(sharingfd < 0)
+                        {
+                            result = GlobusGFSErrorSystemError(
+                                "Creation of sharing file", errno);
+                        }
+                        else
+                        {
+                            rc = close(sharingfd);
+                            if(rc < 0)
+                            {
+                                result = GlobusGFSErrorSystemError(
+                                    "Creation of sharing file", errno);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                result = GlobusGFSErrorGeneric("Command not supported.");
+            }
+            globus_gridftp_server_finished_command(op, result, NULL);
+            call = GLOBUS_FALSE;
+            
+            break;
+                            
+        case GLOBUS_GFS_CMD_SITE_RESTRICT:
+            if(!globus_list_empty(session_handle->rp_list))
+            {
+                result = GlobusGFSErrorGeneric(
+                    "Session restricted paths list already set.");
+            }
+            else
+            {
+                result = globus_l_gfs_data_parse_restricted_paths(
+                    session_handle, cmd_info->pathname, &session_handle->rp_list, 1);
+            }
+            /* globus_l_gfs_data_update_restricted_paths(
+                op->session_handle, &session_handle->rp_list); */
+                
+
+            globus_gridftp_server_finished_command(op, result, NULL);
+
+            call = GLOBUS_FALSE;
+            break;
+
+        case GLOBUS_GFS_CMD_SITE_CHROOT:
+            if(session_handle->chroot_path)
+            {
+                result = GlobusGFSErrorGeneric(
+                    "Root directory is already set.");
+            }
+            else if(strcmp(cmd_info->pathname, "/") == 0)
+            {
+                result = GLOBUS_SUCCESS;
+            }
+            else
+            {
+                session_handle->chroot_path = 
+                    globus_libc_strdup(cmd_info->pathname);
+                    result = GLOBUS_SUCCESS;
+            }
+            
+            globus_gridftp_server_finished_command(op, result, NULL);
 
             call = GLOBUS_FALSE;
             break;
@@ -8184,13 +8684,13 @@ globus_i_gfs_data_session_start(
         if(custom_home_dir)
         {
             char *                          var_dir;
-            op->session_handle->username = session_info->username;
+            op->session_handle->username = 
+                globus_libc_strdup(session_info->username);
     
             var_dir = globus_l_gfs_data_update_var_path(
                 op->session_handle, custom_home_dir);
                 
-            op->session_handle->home_dir = var_dir ? 
-                var_dir : globus_libc_strdup(custom_home_dir);
+            op->session_handle->home_dir = var_dir;
         }
         else
         {
@@ -8198,12 +8698,14 @@ globus_i_gfs_data_session_start(
                 globus_libc_strdup(op->session_handle->true_home);
         }
         
-        globus_l_gfs_data_update_restricted_paths(op->session_handle);
+        globus_l_gfs_path_alias_list = globus_l_gfs_path_alias_list_base;
+        globus_l_gfs_data_update_restricted_paths(
+            op->session_handle, &globus_l_gfs_path_alias_list);
         
         if(!globus_i_gfs_config_bool("use_home_dirs") || 
             op->session_handle->home_dir == NULL ||
             globus_i_gfs_data_check_path(op->session_handle,
-               op->session_handle->home_dir, NULL, GFS_L_LIST) != GLOBUS_SUCCESS)
+               op->session_handle->home_dir, NULL, GFS_L_LIST, 1) != GLOBUS_SUCCESS)
         {
             if(op->session_handle->home_dir)
             {
@@ -8271,6 +8773,7 @@ globus_l_gfs_finished_command_kickout(
     globus_gfs_finished_info_t          reply;
     void *                              remote_data_arg = NULL;
     globus_l_gfs_data_operation_t *     op;
+    globus_result_t                     result;
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
 
@@ -8282,8 +8785,17 @@ globus_l_gfs_finished_command_kickout(
     reply.msg = op->user_msg;
     reply.info.command.command = op->command;
     reply.info.command.checksum = op->cksm_response;
-    reply.info.command.created_dir = op->pathname;
-
+    
+    if(op->command == GLOBUS_GFS_CMD_MKD)
+    {
+        result = globus_i_gfs_data_virtualize_path(
+            op->session_handle, op->pathname, &reply.info.command.created_dir);
+        if(result != GLOBUS_SUCCESS || reply.info.command.created_dir == NULL)
+        {
+            reply.info.command.created_dir = op->pathname;
+        }
+    }
+   
     if(op->callback != NULL)
     {
         op->callback(
@@ -8400,12 +8912,12 @@ globus_gridftp_server_finished_stat_partial(
         }
         else
         {
-        stat_copy = (globus_gfs_stat_t *)
-            globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
-        if(stat_copy == NULL)
-        {
-            result = GlobusGFSErrorMemory("stat_copy");
-        }
+            stat_copy = (globus_gfs_stat_t *)
+                globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
+            if(stat_copy == NULL)
+            {
+                result = GlobusGFSErrorMemory("stat_copy");
+            }
         }
     }
     
@@ -8414,7 +8926,7 @@ globus_gridftp_server_finished_stat_partial(
         base_path = stat_info->pathname;
         /* if we have explicit access on the base path, no need to prune */
         if(stat_info->file_only || globus_i_gfs_data_check_path(op->session_handle,
-            base_path, NULL, GFS_L_READ | GFS_L_WRITE | GFS_L_DIR) == GLOBUS_SUCCESS)
+            base_path, NULL, GFS_L_READ | GFS_L_WRITE | GFS_L_DIR, 0) == GLOBUS_SUCCESS)
         {
             memcpy(
                 stat_copy,
@@ -8459,7 +8971,7 @@ globus_gridftp_server_finished_stat_partial(
                 if(nam && ((nam[0] == '.' && 
                     (nam[1] == '\0' || (nam[1] == '.' && nam[2] == '\0'))) ||
                     (globus_i_gfs_data_check_path(op->session_handle,
-                    full_path, NULL, GFS_L_LIST) == GLOBUS_SUCCESS)))
+                    full_path, NULL, GFS_L_LIST, 0) == GLOBUS_SUCCESS)))
                 {
                     memcpy(
                         &stat_copy[pruned_stat_count], 
@@ -8605,7 +9117,7 @@ globus_gridftp_server_finished_stat(
         base_path = stat_info->pathname;
         /* if we have explicit access on the base path, no need to prune */
         if(stat_info->file_only || globus_i_gfs_data_check_path(op->session_handle,
-            base_path, NULL, GFS_L_READ | GFS_L_WRITE | GFS_L_DIR) == GLOBUS_SUCCESS)
+            base_path, NULL, GFS_L_READ | GFS_L_WRITE | GFS_L_DIR, 0) == GLOBUS_SUCCESS)
         {
             memcpy(
                 stat_copy,
@@ -8650,7 +9162,7 @@ globus_gridftp_server_finished_stat(
                 if(nam && ((nam[0] == '.' && 
                     (nam[1] == '\0' || (nam[1] == '.' && nam[2] == '\0'))) ||
                     (globus_i_gfs_data_check_path(op->session_handle,
-                    full_path, NULL, GFS_L_LIST) == GLOBUS_SUCCESS)))
+                    full_path, NULL, GFS_L_LIST, 0) == GLOBUS_SUCCESS)))
                 {
                     memcpy(
                         &stat_copy[pruned_stat_count], 

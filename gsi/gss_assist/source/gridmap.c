@@ -2216,64 +2216,104 @@ globus_l_gss_assist_gridmap_lookup(
     globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 rc;
     char *                              local_identity;
+    char *                              desired_id = NULL;
     static char *                       _function_name_ =
         "globus_l_gss_assist_gridmap_lookup";
     
-    major_status = gss_inquire_context(&minor_status,
-                                       context,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       &initiator,
-                                       GLOBUS_NULL);
-
-    if(GSS_ERROR(major_status))
+    if(service && strcmp(service, "sharing") == 0)
     {
-        result =  minor_status;
-        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);
-        goto error;
+        char *                          ptr;
+        /* if service is "sharing", desired_identity is used to pass the DN
+         * to map.  The format is [user:]DN */
+         
+        if(desired_identity && *desired_identity == '/')
+        {
+            peer_name_buffer.value = globus_libc_strdup(desired_identity);
+            peer_name_buffer.length = strlen(desired_identity);
+            desired_id = NULL;
+        }
+        else if(desired_identity && 
+            (ptr = strstr(desired_identity, ":/")) != NULL)
+        {            
+            ptr++;
+            peer_name_buffer.value = globus_libc_strdup(ptr);
+            peer_name_buffer.length = strlen(ptr);
+            
+            desired_id = globus_libc_strdup(desired_identity);
+            desired_id[ptr - desired_identity - 1] = '\0';
+        }
+        else
+        {
+            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_GRIDMAP_LOOKUP_FAILED,
+                (_GASL("Missing or invalid DN to map.\n")));
+            goto error;
+        }
     }
-
-    major_status = gss_inquire_context(&minor_status,
-                                       context,
-                                       initiator ? GLOBUS_NULL : &peer,
-                                       initiator ? &peer : GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL);
-
-    if(GSS_ERROR(major_status))
+    else
     {
-        result =  minor_status;
-        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);
-        goto error;
+        if(desired_identity)
+        {
+            desired_id = globus_libc_strdup(desired_identity);
+        }
+        
+        major_status = gss_inquire_context(&minor_status,
+                                           context,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           &initiator,
+                                           GLOBUS_NULL);
+    
+        if(GSS_ERROR(major_status))
+        {
+            result =  minor_status;
+            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);
+            goto error;
+        }
+    
+        major_status = gss_inquire_context(&minor_status,
+                                           context,
+                                           initiator ? GLOBUS_NULL : &peer,
+                                           initiator ? &peer : GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL);
+    
+        if(GSS_ERROR(major_status))
+        {
+            result =  minor_status;
+            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);
+            goto error;
+        }
+        
+        major_status = gss_display_name(&minor_status,
+                                        peer,
+                                        &peer_name_buffer,
+                                        GLOBUS_NULL);
+        if(GSS_ERROR(major_status))
+        {
+            result =  minor_status;
+            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);
+            gss_release_name(&minor_status, &peer);
+            goto error;
+        }
+    
+        gss_release_name(&minor_status, &peer);        
     }
     
-    major_status = gss_display_name(&minor_status,
-                                    peer,
-                                    &peer_name_buffer,
-                                    GLOBUS_NULL);
-    if(GSS_ERROR(major_status))
-    {
-        result =  minor_status;
-        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);
-        gss_release_name(&minor_status, &peer);
-        goto error;
-    }
-
-    gss_release_name(&minor_status, &peer);        
-    
-    if(desired_identity == NULL)
+    if(desired_id == NULL)
     {
         rc = globus_gss_assist_gridmap(
             peer_name_buffer.value, 
@@ -2305,7 +2345,7 @@ globus_l_gss_assist_gridmap_lookup(
     else
     {
         rc = globus_gss_assist_userok(peer_name_buffer.value,
-                                      desired_identity);
+                                      desired_id);
         if(rc != 0)
         {
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
@@ -2313,26 +2353,30 @@ globus_l_gss_assist_gridmap_lookup(
                 GLOBUS_GSI_GSS_ASSIST_GRIDMAP_LOOKUP_FAILED,
                 (_GASL("Could not map %s to %s\n"),
                  peer_name_buffer.value,
-                 desired_identity));
+                 desired_id));
             goto release_peer_name_buffer;
         }
 
-        if(strlen(desired_identity) + 1 > identity_buffer_length)
+        if(strlen(desired_id) + 1 > identity_buffer_length)
         {
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_BUFFER_TOO_SMALL,
                 (_GASL("Desired identity length: %d Buffer length: %d\n"),
-                 strlen(desired_identity), identity_buffer_length));
+                 strlen(desired_id), identity_buffer_length));
         }
         else
         {
-            strcpy(identity_buffer, desired_identity);
+            strcpy(identity_buffer, desired_id);
         }
     }
 
 release_peer_name_buffer:
     gss_release_buffer(&minor_status, &peer_name_buffer);
+    if(desired_id)
+    {
+        globus_free(desired_id);
+    }
 
  error:
     return result;

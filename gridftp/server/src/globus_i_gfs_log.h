@@ -42,6 +42,11 @@ void
 globus_gfs_log_exit_message(
     const char *                        format,
     ...);
+    
+void
+globus_gfs_log_exit_result(
+    const char *                        lead,
+    globus_result_t                     result);
 
 void
 globus_gfs_log_event(

@@ -1060,7 +1060,9 @@ globus_l_xio_gssapi_ftp_unwrap(
         globus_free(buf);
         goto err;
     }
-
+    
+    globus_free(buf);
+    
     /* copy the unwrapped token in */
     len = unwrapped_token.length;
     buf = globus_malloc(len+3);

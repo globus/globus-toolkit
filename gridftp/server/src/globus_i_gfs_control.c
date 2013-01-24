@@ -468,7 +468,7 @@ globus_l_gfs_get_full_path(
     }
 
     result = globus_i_gfs_data_check_path(
-        instance->session_arg, path, ret_path, access_type);
+        instance->session_arg, path, ret_path, access_type, 1);
     if(result != GLOBUS_SUCCESS)
     {
         goto done;
@@ -627,8 +627,17 @@ globus_l_gfs_auth_session_cb(
                 reply->info.session.home_dir);
         }
         
-        auth_info->instance->home_dir = 
-            globus_libc_strdup(reply->info.session.home_dir);
+        if(reply->info.session.home_dir)
+        {
+            auth_info->instance->home_dir = 
+                globus_libc_strdup(reply->info.session.home_dir);
+        }
+        /*      
+        else
+        {
+            auth_info->instance->home_dir = globus_libc_strdup("/");
+        }
+        */
         auth_info->instance->username = 
             globus_libc_strdup(reply->info.session.username);
         
@@ -990,6 +999,21 @@ globus_l_gfs_data_command_cb(
             globus_gsc_959_finished_command(op, msg);
             globus_free(msg);
             break;
+            
+          case GLOBUS_GFS_CMD_SITE_CHROOT:
+            if(request->instance->home_dir)
+            {
+                globus_free(request->instance->home_dir);
+            }
+            request->instance->home_dir = globus_libc_strdup("/");
+
+            globus_gridftp_server_control_set_cwd(
+                request->instance->server_handle, request->instance->home_dir);
+            globus_gridftp_server_control_set_cwd(
+                request->instance->server_handle, NULL);
+            globus_gsc_959_finished_command(op, "250 OK.\r\n");
+            break;
+            
           case GLOBUS_GFS_CMD_RNFR:
             request->instance->rnfr_pathname = info->pathname;
             info->pathname = NULL;
@@ -1044,8 +1068,18 @@ globus_l_gfs_data_command_cb(
     }
     else
     {
+        globus_result_t                 result;
         msg = globus_error_print_friendly(
             globus_error_peek(reply->result));
+        
+        result = globus_i_gfs_data_virtualize_path(
+            request->instance->session_arg, msg, &tmp_msg);
+        if(result == GLOBUS_SUCCESS && tmp_msg != NULL)
+        {
+            globus_free(msg);
+            msg = tmp_msg;
+        }
+
         tmp_msg = globus_common_create_string("Command failed : %s", msg);
         globus_free(msg);
         msg = globus_gsc_string_to_959(500, tmp_msg, NULL);
@@ -1460,7 +1494,7 @@ globus_l_gfs_request_command(
     else if(strcmp(cmd_array[0], "MFMT") == 0)
     {
         command_info->command = GLOBUS_GFS_CMD_SITE_UTIME;
-        globus_l_gfs_get_full_path(
+        result = globus_l_gfs_get_full_path(
             instance, cmd_array[2], &command_info->pathname, GFS_L_WRITE);
         if(command_info->pathname == NULL)
         {
@@ -1589,7 +1623,7 @@ globus_l_gfs_request_command(
         else if(strcmp(cmd_array[1], "CHGRP") == 0)
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_CHGRP;
-            globus_l_gfs_get_full_path(
+            result = globus_l_gfs_get_full_path(
                 instance, cmd_array[3], &command_info->pathname, GFS_L_WRITE);
             if(command_info->pathname == NULL)
             {
@@ -1601,7 +1635,7 @@ globus_l_gfs_request_command(
         else if(strcmp(cmd_array[1], "UTIME") == 0)
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_UTIME;
-            globus_l_gfs_get_full_path(
+            result = globus_l_gfs_get_full_path(
                 instance, cmd_array[3], &command_info->pathname, GFS_L_WRITE);
             if(command_info->pathname == NULL)
             {
@@ -1675,7 +1709,7 @@ globus_l_gfs_request_command(
         else if(strcmp(cmd_array[1], "SYMLINKTO") == 0)
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_SYMLINK;
-            globus_l_gfs_get_full_path(
+            result = globus_l_gfs_get_full_path(
                 instance, cmd_array[2], &command_info->pathname, GFS_L_WRITE);
             if(command_info->pathname == NULL)
             {
@@ -1689,6 +1723,38 @@ globus_l_gfs_request_command(
             instance->slfr_pathname = GLOBUS_NULL;
             type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
         }
+        else if(strcmp(cmd_array[1], "RESTRICT") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_RESTRICT;
+            command_info->pathname = globus_libc_strdup(cmd_array[2]);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
+        }
+        else if(strcmp(cmd_array[1], "CHROOT") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_CHROOT;
+            result = globus_l_gfs_get_full_path(
+                instance, cmd_array[2], &command_info->pathname, GFS_L_LIST);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
+        }
+        else if(strcmp(cmd_array[1], "SHARING") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_SHARING;
+            command_info->pathname = globus_libc_strdup(cmd_array[2]);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
+        }
+
         else
         {
             goto err;
@@ -1946,8 +2012,20 @@ globus_l_gfs_data_transfer_cb(
     destroy_req = !request->transfer_events;
     if(reply->result != GLOBUS_SUCCESS)
     {
+        char *                          msg;
+        globus_result_t                 result;
+        
         tmp_str = globus_error_print_friendly(
             globus_error_peek(reply->result));
+            
+        result = globus_i_gfs_data_virtualize_path(
+            request->instance->session_arg, tmp_str, &msg);
+        if(result == GLOBUS_SUCCESS && msg != NULL)
+        {
+            globus_free(tmp_str);
+            tmp_str = msg;
+        }
+
         globus_gridftp_server_control_finished_transfer(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
@@ -3011,6 +3089,45 @@ globus_l_gfs_add_commands(
         3,
         3,
         "SITE CLIENTINFO <sp> appname=\"<name of app>\";appver=\"<version string>\";scheme=\"<ftp,gsiftp,sshftp>\";anyother=\"<interesting client info>\";",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE RESTRICT",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE RESTRICT <sp> RP string",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE CHROOT",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE CHROOT <sp> new root path",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE SHARING",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE SHARING <sp> command",
         instance);
     if(result != GLOBUS_SUCCESS)
     {
