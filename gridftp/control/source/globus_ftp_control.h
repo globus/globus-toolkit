@@ -1324,6 +1324,14 @@ globus_ftp_control_authenticate(
     void *					callback_arg);
 
 globus_result_t
+globus_ftp_control_authenticate_ex(
+    globus_ftp_control_handle_t *		handle,
+    globus_ftp_control_auth_info_t *            auth_info,
+    globus_bool_t				use_auth,
+    globus_ftp_control_response_callback_t	callback,
+    void *					callback_arg);
+
+globus_result_t
 globus_ftp_control_abort(
     globus_ftp_control_handle_t *		handle,
     globus_ftp_control_response_callback_t	callback,

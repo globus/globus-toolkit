@@ -91,7 +91,8 @@ globus_l_ftp_control_response_init(
 static int 
 globus_l_ftp_control_end_of_reply(
     globus_ftp_cc_handle_t *                cc_handle,
-    int                                     hint);
+    int                                     hint,
+    globus_object_t **                      err);
 
 static void 
 globus_l_ftp_control_read_next(
@@ -752,7 +753,7 @@ globus_l_ftp_control_read_cb(
     globus_ftp_control_rw_queue_element_t *   element;
     globus_ftp_cc_handle_t *                  cc_handle;
     globus_ftp_control_handle_t *             c_handle;
-    globus_object_t *                         error;
+    globus_object_t *                         error = NULL;
     globus_byte_t *                           new_buf;
     int                                       end_of_reply;
     globus_result_t                           rc;
@@ -848,13 +849,13 @@ globus_l_ftp_control_read_cb(
      */
 
     end_of_reply=globus_l_ftp_control_end_of_reply(
-        cc_handle, cc_handle->response.response_length - nbytes);
+        cc_handle, cc_handle->response.response_length - nbytes, &error);
 
     if(end_of_reply == -1)
     {
         error=globus_error_construct_string(
             GLOBUS_FTP_CONTROL_MODULE,
-            GLOBUS_NULL,
+            error,
             "globus_l_ftp_control_read_cb: Error while searching for end of reply");
         goto return_error;
     }
@@ -883,13 +884,13 @@ globus_l_ftp_control_read_cb(
 	    cc_handle->response.response_length=response_length
 		-end_of_reply;
 	    
-	    end_of_reply=globus_l_ftp_control_end_of_reply(cc_handle, 0);
+	    end_of_reply=globus_l_ftp_control_end_of_reply(cc_handle, 0, &error);
 
 	    if(end_of_reply == -1)
 	    {
 		error=globus_error_construct_string(
 		    GLOBUS_FTP_CONTROL_MODULE,
-		    GLOBUS_NULL,
+		    error,
 		    "globus_l_ftp_control_read_cb: Error while searching for end of reply");
 
 		goto return_error;
@@ -947,13 +948,13 @@ globus_l_ftp_control_read_cb(
 		element= (globus_ftp_control_rw_queue_element_t *)
 		    globus_fifo_peek(&cc_handle->readers);
 
-		end_of_reply=globus_l_ftp_control_end_of_reply(cc_handle, 0);
+		end_of_reply=globus_l_ftp_control_end_of_reply(cc_handle, 0, &error);
 
 		if(end_of_reply == -1)
 		{
 		    error=globus_error_construct_string(
 			GLOBUS_FTP_CONTROL_MODULE,
-			GLOBUS_NULL,
+			error,
 			"globus_l_ftp_control_read_cb: Error while searching for end of reply");
 		    goto return_error;
 		}
@@ -1122,7 +1123,8 @@ globus_l_ftp_control_check_final_line_fast(
 int 
 globus_l_ftp_control_end_of_reply(
     globus_ftp_cc_handle_t *            cc_handle,
-    int                                 hint)
+    int                                 hint,
+    globus_object_t **                  err)
 {
 
     int                                       current;
@@ -1229,8 +1231,14 @@ globus_l_ftp_control_end_of_reply(
                     rc=globus_i_ftp_control_radix_decode(
                         &(response->response_buffer[last+5]),
                         &(out_buf[total_length]),&length);
-                    
-
+                    if(rc != GLOBUS_SUCCESS)
+                    {
+                        *err = globus_error_construct_string(
+                            GLOBUS_FTP_CONTROL_MODULE,
+                            GLOBUS_NULL,
+                            "globus_l_ftp_control_end_of_reply: base64 decode failure.");
+                        return -1;
+                    }
 
                     /* Unwrap token */
                     
@@ -1583,10 +1591,64 @@ globus_ftp_control_response_copy(
  *        - 530 Not logged in.
  *
  * @note The server may send other responses.
+ *
+ * @note The function globus_ftp_control_authenticate_ex() is identical except
+ * that the auth_info->req_flags is used.  If delegation flags or any flags
+ * other than GSS_C_MUTUAL_FLAG and GSS_C_CONF_FLAG are desired, they must be 
+ * set explicitly.  It is the caller's responsibility to ensure that req_flags
+ * only contains valid flags.
  */
+
 
 globus_result_t
 globus_ftp_control_authenticate(
+    globus_ftp_control_handle_t *               handle,
+    globus_ftp_control_auth_info_t *            auth_info,
+    globus_bool_t                               use_auth,
+    globus_ftp_control_response_callback_t      callback,
+    void *                                      callback_arg)
+{
+    globus_ftp_control_auth_info_t      tmp_auth_info;
+    globus_result_t                     result;
+    
+    if(auth_info == GLOBUS_NULL)
+    {
+	result = globus_error_put(
+	    globus_error_construct_string(
+		GLOBUS_FTP_CONTROL_MODULE,
+		GLOBUS_NULL,
+		"globus_ftp_control_authenticate: auth_info argument is NULL")
+	    );
+	goto error;
+    }
+        
+    result = globus_i_ftp_control_auth_info_init(&tmp_auth_info, auth_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    
+    /* Do limited delegation */
+    auth_info->req_flags |= 
+        GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG|GSS_C_DELEG_FLAG;
+
+    result = globus_ftp_control_authenticate_ex(
+        handle,
+        &tmp_auth_info,
+        use_auth,
+        callback,
+        callback_arg);
+        
+    globus_i_ftp_control_auth_info_destroy(&tmp_auth_info);
+
+    return result;
+
+error:
+    return result;
+}
+
+globus_result_t
+globus_ftp_control_authenticate_ex(
     globus_ftp_control_handle_t *               handle,
     globus_ftp_control_auth_info_t *            auth_info,
     globus_bool_t                               use_auth,
@@ -1675,6 +1737,8 @@ globus_ftp_control_authenticate(
         goto error;
     }
 
+    handle->cc_handle.auth_info.req_flags = auth_info->req_flags;
+    
     handle->cc_handle.use_auth=use_auth;
     
     auth_cb_arg = (globus_i_ftp_passthru_cb_arg_t *)
@@ -2654,11 +2718,12 @@ globus_l_ftp_control_send_cmd_cb(
 
 	    /* Do mutual authentication */
 	    handle->cc_handle.auth_info.req_flags |= GSS_C_MUTUAL_FLAG;
-	    
-	    /* Do limited delegation */
-	    handle->cc_handle.auth_info.req_flags |= 
-		GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG|GSS_C_DELEG_FLAG;
 
+	    if(handle->cc_handle.auth_info.encrypt)
+	    {
+		handle->cc_handle.auth_info.req_flags |= GSS_C_CONF_FLAG;
+	    }
+	    
 	    /* use a target_name based on either a supplied subject
 	     * string or the remote hostname
 	     */
@@ -2752,11 +2817,6 @@ globus_l_ftp_control_send_cmd_cb(
 	    
 	    token_ptr=GSS_C_NO_BUFFER;
 	    
-	    if(handle->cc_handle.auth_info.encrypt)
-	    {
-		handle->cc_handle.auth_info.req_flags |= GSS_C_CONF_FLAG;
-	    }
-
 	    /* initialize security context 
 	     */
 	    maj_stat = gss_init_sec_context(
@@ -3679,12 +3739,7 @@ globus_i_ftp_control_auth_info_init(
 
     if(src == GLOBUS_NULL)
     {
-#ifndef TARGET_ARCH_WIN32
-        bzero((void *) dest,
-              sizeof(globus_ftp_control_auth_info_t));
-#else
-		memset( (void *)dest, 0, sizeof(globus_ftp_control_auth_info_t));
-#endif
+        memset((void *) dest, 0, sizeof(globus_ftp_control_auth_info_t));
     }
     else
     {
