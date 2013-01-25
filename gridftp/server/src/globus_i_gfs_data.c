@@ -4088,12 +4088,17 @@ globus_i_gfs_data_request_command(
                 {
                     globus_list_t *     save_list;
                     save_list = op->session_handle->active_rp_list;
-                    
                     op->session_handle->active_rp_list = globus_l_gfs_path_alias_list_sharing;
-                    /* result = globus_i_gfs_data_check_path(op->session_handle,
-                        chk_dir, NULL, GFS_L_LIST, 0); */
+                    if(getenv("TESTPATH_CHECK_READ"))
+                    {
                     result = globus_i_gfs_data_check_path(op->session_handle,
                         chk_path, NULL, GFS_L_READ | GFS_L_WRITE | GFS_L_DIR, 0);
+                    }
+                    else
+                    {
+                    result = globus_i_gfs_data_check_path(op->session_handle,
+                        chk_path, NULL, GFS_L_LIST, 0);
+                    }
                     op->session_handle->active_rp_list = save_list;
                     if(result != GLOBUS_SUCCESS)
                     {
