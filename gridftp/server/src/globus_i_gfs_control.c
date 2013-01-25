@@ -1747,7 +1747,24 @@ globus_l_gfs_request_command(
         else if(strcmp(cmd_array[1], "SHARING") == 0)
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_SHARING;
-            command_info->pathname = globus_libc_strdup(cmd_array[2]);
+            if(argc == 4 && cmd_array[3])
+            {
+                char *                  tmp_path;
+                result = globus_l_gfs_get_full_path(
+                    instance, cmd_array[3], &tmp_path, GFS_L_LIST);
+                if(tmp_path == NULL)
+                {
+                    goto err;
+                }
+                command_info->pathname = globus_common_create_string(
+                    "%s %s", cmd_array[2], tmp_path);
+                globus_free(tmp_path);
+            }
+            else
+            {
+                command_info->pathname = globus_libc_strdup(cmd_array[2]);
+            }
+                
             if(command_info->pathname == NULL)
             {
                 goto err;
@@ -3126,7 +3143,7 @@ globus_l_gfs_add_commands(
         globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         3,
-        3,
+        4,
         "SITE SHARING <sp> command",
         instance);
     if(result != GLOBUS_SUCCESS)

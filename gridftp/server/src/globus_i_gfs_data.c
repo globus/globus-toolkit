@@ -63,7 +63,6 @@ static globus_bool_t                    gfs_l_data_brain_ready = GLOBUS_FALSE;
 
 static globus_hashtable_t               gfs_l_data_net_allowed_drivers;
 static globus_hashtable_t               gfs_l_data_disk_allowed_drivers;
-static globus_list_t *                  globus_l_gfs_path_alias_list = NULL;
 static globus_list_t *                  globus_l_gfs_path_alias_list_base = NULL;
 static globus_list_t *                  globus_l_gfs_path_alias_list_sharing = NULL;
 static int                              globus_l_gfs_op_info_ctr = 1;
@@ -170,6 +169,7 @@ typedef struct
     char *                              client_scheme;
     gss_cred_id_t                       dcsc_cred;
     
+    globus_list_t *                     active_rp_list;
     globus_list_t *                     rp_list;
     char *                              sharing_file;
     
@@ -674,7 +674,7 @@ globus_i_gfs_data_check_path(
     
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
 
-    if(globus_list_empty(globus_l_gfs_path_alias_list) &&
+    if(globus_list_empty(session_handle->active_rp_list) &&
         globus_list_empty(session_handle->rp_list))
     {
         allowed = GLOBUS_TRUE;
@@ -760,9 +760,9 @@ globus_i_gfs_data_check_path(
         
     if(true_path)
     {
-        if(!globus_list_empty(globus_l_gfs_path_alias_list))
+        if(!globus_list_empty(session_handle->active_rp_list))
         {
-            rp_list = globus_l_gfs_path_alias_list;
+            rp_list = session_handle->active_rp_list;
         }
         else
         {
@@ -878,7 +878,7 @@ globus_i_gfs_data_check_path(
             }
             else
             {
-                if(rp_list == globus_l_gfs_path_alias_list && 
+                if(rp_list == session_handle->active_rp_list && 
                     !globus_list_empty(session_handle->rp_list))
                 {
                     rp_list = session_handle->rp_list;
@@ -2703,18 +2703,21 @@ globus_l_gfs_data_authorize(
         op->session_handle->home_dir = 
             globus_libc_strdup(op->session_handle->true_home);
     }
+    
+    globus_l_gfs_data_update_restricted_paths(
+        op->session_handle, &globus_l_gfs_path_alias_list_base);
+    globus_l_gfs_data_update_restricted_paths(
+        op->session_handle, &globus_l_gfs_path_alias_list_sharing);
+
     if(sharing_attempted)
     {
-        globus_l_gfs_path_alias_list = globus_l_gfs_path_alias_list_sharing;
+        op->session_handle->active_rp_list = globus_l_gfs_path_alias_list_sharing;
     }
     else
     {
-        globus_l_gfs_path_alias_list = globus_l_gfs_path_alias_list_base;
+        op->session_handle->active_rp_list = globus_l_gfs_path_alias_list_base;
     }
-    globus_l_gfs_data_update_restricted_paths(
-        op->session_handle, &globus_l_gfs_path_alias_list);
-    
-
+       
     if(!globus_i_gfs_config_bool("use_home_dirs") || 
         op->session_handle->home_dir == NULL ||
         globus_i_gfs_data_check_path(op->session_handle,
@@ -3933,24 +3936,25 @@ globus_i_gfs_data_request_command(
             break;
 
         case GLOBUS_GFS_CMD_SITE_SHARING:
-            if(!strcasecmp(cmd_info->pathname, "ON"))
+            /* is NULL, not enabled */
+            if(!op->session_handle->sharing_file)
             {
-                /* is NULL, not enabled */
-                if(!op->session_handle->sharing_file)
-                {
-                    result = GlobusGFSErrorGeneric("Sharing not enabled.");
-                }
+                result = GlobusGFSErrorGeneric("Sharing not enabled.");
+            }
+            else if(!strcasecmp(cmd_info->pathname, "ON"))
+            {
                 /* is none, skipping checks */
-                else if(!strcasecmp(op->session_handle->sharing_file, "none"))
+                if(!strcasecmp(op->session_handle->sharing_file, "none"))
                 {
                     result = GLOBUS_SUCCESS;
                 }
                 /* creation disabled, success only if file exists */
-                else if(!globus_i_gfs_config_bool("sharing_file_create"))
+                else if(!globus_i_gfs_config_bool("sharing_file_control"))
                 {
                     if(access(op->session_handle->sharing_file, F_OK) < 0)
                     {
-                        result = GlobusGFSErrorGeneric("Sharing ON command is not enabled.");
+                        result = GlobusGFSErrorGeneric(
+                            "Sharing command is not enabled.");
                     }
                     else
                     {
@@ -3970,7 +3974,7 @@ globus_i_gfs_data_request_command(
                         if(sharingfd < 0)
                         {
                             result = GlobusGFSErrorSystemError(
-                                "Creation of sharing file", errno);
+                                "Enabling sharing", errno);
                         }
                         else
                         {
@@ -3978,11 +3982,126 @@ globus_i_gfs_data_request_command(
                             if(rc < 0)
                             {
                                 result = GlobusGFSErrorSystemError(
-                                    "Creation of sharing file", errno);
+                                    "Enabling sharing", errno);
                             }
                         }
                     }
                 }
+            }
+            else if(!strcasecmp(cmd_info->pathname, "OFF"))
+            {
+                /* is none, skipping checks */
+                if(!strcasecmp(op->session_handle->sharing_file, "none"))
+                {
+                    result = GLOBUS_SUCCESS;
+                }
+                /* control disabled, success only if file doesn't exist */
+                else if(!globus_i_gfs_config_bool("sharing_file_control"))
+                {
+                    if(access(op->session_handle->sharing_file, F_OK) < 0)
+                    {
+                        result = GLOBUS_SUCCESS;
+                    }
+                    else
+                    {
+                        result = GlobusGFSErrorGeneric(
+                            "Sharing command is not enabled.");
+                    }
+                }
+                /* delete the file */
+                else
+                {
+                    result = GLOBUS_SUCCESS;
+                    if(access(op->session_handle->sharing_file, F_OK) == 0)
+                    {
+                        rc = unlink(op->session_handle->sharing_file);
+                        if(rc < 0)
+                        {
+                            result = GlobusGFSErrorSystemError(
+                                "Disabling sharing", errno);
+                        }
+                    }
+                }
+            }
+            else if(!strncasecmp(cmd_info->pathname, "TESTPATH", 8))
+            {
+                char *                  chk_path;
+
+                chk_path = strchr(cmd_info->pathname, '/');
+                if(!chk_path)
+                {
+                    result = GlobusGFSErrorGeneric("Invalid path.");
+                }
+                else
+              {
+                /** first check if sharing can be enabled **/
+                /* is none, skipping checks */
+                if(!strcasecmp(op->session_handle->sharing_file, "none"))
+                {
+                    result = GLOBUS_SUCCESS;
+                }
+                /* creation disabled, success only if file exists */
+                else if(!globus_i_gfs_config_bool("sharing_file_control"))
+                {
+                    if(access(op->session_handle->sharing_file, F_OK) < 0)
+                    {
+                        result = GlobusGFSErrorGeneric(
+                            "Sharing command is not enabled.");
+                    }
+                    else
+                    {
+                        result = GLOBUS_SUCCESS;
+                    }
+                }
+                /* check if file exists or if we can create it */
+                else
+                {
+                    char *              tmp_dir;
+                    char *              tmp_ptr;
+                    
+                    tmp_dir = strdup(op->session_handle->sharing_file);
+                    tmp_ptr = strrchr(tmp_dir, '/');
+                    if(!tmp_ptr || tmp_ptr == tmp_dir)
+                    {
+                        result = GlobusGFSErrorGeneric(
+                            "Invalid sharing configuration.");
+                    }
+                    else 
+                    {
+                        *tmp_ptr = '\0';
+                        if(access(op->session_handle->sharing_file, F_OK) == 0 ||
+                            access(tmp_dir, W_OK) == 0)
+                        {
+                            result = GLOBUS_SUCCESS;
+                        }
+                        else
+                        {
+                            result = GlobusGFSErrorGeneric(
+                                "Attempting to enable sharing will fail.");
+                        }
+                    }
+                    globus_free(tmp_dir);
+                }
+                    
+                /* sharing can be enabled. now check if path will be accessible */
+                if(result == GLOBUS_SUCCESS)
+                {
+                    globus_list_t *     save_list;
+                    save_list = op->session_handle->active_rp_list;
+                    
+                    op->session_handle->active_rp_list = globus_l_gfs_path_alias_list_sharing;
+                    /* result = globus_i_gfs_data_check_path(op->session_handle,
+                        chk_dir, NULL, GFS_L_LIST, 0); */
+                    result = globus_i_gfs_data_check_path(op->session_handle,
+                        chk_path, NULL, GFS_L_READ | GFS_L_WRITE | GFS_L_DIR, 0);
+                    op->session_handle->active_rp_list = save_list;
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        result = GlobusGFSErrorGeneric(
+                            "Path will not be accessible via sharing.");
+                    }
+                }
+              }
             }
             else
             {
@@ -8698,9 +8817,9 @@ globus_i_gfs_data_session_start(
                 globus_libc_strdup(op->session_handle->true_home);
         }
         
-        globus_l_gfs_path_alias_list = globus_l_gfs_path_alias_list_base;
         globus_l_gfs_data_update_restricted_paths(
-            op->session_handle, &globus_l_gfs_path_alias_list);
+            op->session_handle, &globus_l_gfs_path_alias_list_base);
+        op->session_handle->active_rp_list = globus_l_gfs_path_alias_list_base;
         
         if(!globus_i_gfs_config_bool("use_home_dirs") || 
             op->session_handle->home_dir == NULL ||
