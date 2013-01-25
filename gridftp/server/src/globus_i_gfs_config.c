@@ -678,7 +678,20 @@ globus_l_gfs_config_load_config_file(
             switch(option->type)
             {
               case GLOBUS_L_GFS_CONFIG_BOOL:
-                option->int_value = (atoi(value) == 0) ? 0 : 1;
+                if(value[0] == '0' && value[1] == '\0')
+                {
+                    option->int_value = 0;
+                }
+                else if(value[0] == '1' && value[1] == '\0')
+                {
+                    option->int_value = 1;
+                }
+                else
+                {
+                    globus_gfs_log_exit_message("Value for %s must be 0 or 1.\n", 
+                        option_list[i].option_name);
+                    goto error_parse;
+                }                    
                 break;
               case GLOBUS_L_GFS_CONFIG_INT:
                 rc = globus_args_bytestr_to_num(value, &tmp_off);
@@ -966,7 +979,20 @@ globus_l_gfs_config_load_config_env()
         switch(option->type)
         {
           case GLOBUS_L_GFS_CONFIG_BOOL:
-            option->int_value = (atoi(value) == 0) ? 0 : 1;
+            if(value[0] == '0' && value[1] == '\0')
+            {
+                option->int_value = 0;
+            }
+            else if(value[0] == '1' && value[1] == '\0')
+            {
+                option->int_value = 1;
+            }
+            else
+            {
+                globus_gfs_log_exit_message("Value for %s must be 0 or 1.\n", 
+                    option_list[i].option_name);
+                return -1;
+            }                    
             break;
           case GLOBUS_L_GFS_CONFIG_INT:
             rc = globus_args_bytestr_to_num(value, &tmp_off);
