@@ -200,7 +200,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "the permissions on the longest matching path will apply.  The special character '~' will be "
     "replaced by the authenticated user's home directory, or the -home-dir option, if used. "
     "Note that if the home directory is not accessible, ~ will be set to '/'.  "
-    "By default all paths are allowed, and access control is handled by the OS.", 
+    "By default all paths are allowed, and access control is handled by the OS. "
+    "In a striped or split process configuration, this should be set on both the frontend and data nodes.", 
     NULL, NULL,GLOBUS_FALSE, NULL},
  {"rp_follow_symlinks", "rp_follow_symlinks", NULL, "rp-follow-symlinks", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Do not verify that a symlink points to an allowed path before following.  By default, symlinks are "
