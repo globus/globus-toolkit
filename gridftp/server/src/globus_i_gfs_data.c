@@ -3978,6 +3978,16 @@ globus_i_gfs_data_request_command(
                         }
                         else
                         {
+                            struct stat tmp_stat;
+                            char tmp_comment[] = 
+                                "#\n# This file is required in order to enable GridFTP file sharing.\n"
+                                "# If you remove this file, file sharing will no longer work.\n#\n";
+                            rc = fstat(sharingfd, &tmp_stat);
+                            if(rc == 0 && tmp_stat.st_size == 0)
+                            {
+                                rc = write(sharingfd, tmp_comment, strlen(tmp_comment));
+                            }
+                            
                             rc = close(sharingfd);
                             if(rc < 0)
                             {
