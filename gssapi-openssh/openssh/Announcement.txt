@@ -1,0 +1,39 @@
+GSI-OpenSSH 5.4, based on OpenSSH 5.9p1, is now available from:
+
+  http://grid.ncsa.illinois.edu/ssh/download.html
+
+For installation instructions, please see:
+
+  http://grid.ncsa.illinois.edu/ssh/install.html
+
+We appreciate your feedback and help in testing this version.
+Please use Bugzilla to report GSI-OpenSSH bugs:
+
+  http://bugzilla.globus.org/globus/enter_bug.cgi?product=GSI-OpenSSH
+
+Major changes:
+
+  * Update to OpenSSH 5.9p1. [1]
+  * Fix configure script for fresh GT installs.
+  * Drop failing fipshmac command from RPM. [2]
+  * Set bindir correctly to /usr/etc/ssh instead of /usr/bin in RPM. [3]
+  * Use gsiscp instead of scp on server-side to get HPN buffer size
+    enhancements and avoid external dependencies. [4]
+  * Make OpenSSL header check nonfatal in GPT package (again)
+    because it (still) happens a lot on MacOS.
+  * Update GPT dependencies for GT 5.1.2.
+
+Checksums/signatures:
+
+  $ openssl sha1 < gsi_openssh_bundle-5.4-src.tar.gz
+  TBD
+
+  $ gpg gsi_openssh_bundle-5.3-src.tar.gz.asc 
+  TBD
+
+References:
+
+  [1] http://www.openssh.org/txt/release-5.9
+  [2] https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7189
+  [3] https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7195
+  [4] https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7197

@@ -1,0 +1,8 @@
+BuildGT50
+BuildMyProxyCVSGT50
+TestMyProxyCVSGT50
+BuildGT52
+BuildVOMS
+BuildMyProxyCVSGT52
+TestMyProxyCVSGT52
+ValgrindCheck

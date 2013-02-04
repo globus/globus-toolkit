@@ -1,0 +1,6 @@
+#!/bin/sh
+# expect man2html 3.x from <http://www.oac.uci.edu/indiv/ehood/man2html.html>
+# Actually the one from jbasney on Linux works better.
+for manpage in `ls *.[0-9]`; do
+  nroff -man $manpage | man2html -botm 0 -topm 0 > $manpage.html
+done
