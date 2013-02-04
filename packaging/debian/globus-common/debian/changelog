@@ -1,3 +1,9 @@
+globus-common (14.9-3) unstable; urgency=low
+
+  * Bump Toolkit Version to 5.2.4
+
+ -- Globus Toolkit <support@globus.org>  Mon, 4 Feb 2013 11:55:26 -0500
+
 globus-common (14.9-2) unstable; urgency=low
 
   * GT-329: globus-version has rc number in debian packages
