@@ -1399,7 +1399,7 @@ globus_io_tcpattr_init(
     iattr->type = GLOBUS_I_IO_TCP_ATTR;
     iattr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
     iattr->file_flags = 0;
-    iattr->allow_ipv6 = GLOBUS_FALSE;
+    iattr->allow_ipv6 = getenv("GLOBUS_IO_IPV6") ? GLOBUS_TRUE : GLOBUS_FALSE;
     iattr->authentication_mode = GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE;
     iattr->authorization_mode = GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE;
     iattr->channel_mode = GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR;
