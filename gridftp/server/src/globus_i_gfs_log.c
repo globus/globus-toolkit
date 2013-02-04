@@ -1004,7 +1004,8 @@ globus_i_gfs_log_usage_stats(
     char *                              userdn,
     char *                              app,
     char *                              appver,
-    char *                              scheme)
+    char *                              scheme,
+    char *                              dsi)
 {
     time_t                              start_time_time;
     time_t                              end_time_time;
@@ -1175,9 +1176,9 @@ globus_i_gfs_log_usage_stats(
     
                   case GLOBUS_I_GFS_USAGE_DSI:
                     key = "DSI";
-                    tmp = globus_i_gfs_config_string("load_dsi_module");
+                    tmp = dsi;
                     strncpy(dsi_b, tmp, sizeof(dsi_b));
-                    dsi_b[sizeof(dsi_b - 1)] = '\0';
+                    dsi_b[sizeof(dsi_b) - 1] = '\0';
                     if((tmp = strchr(dsi_b, ':')) != NULL)
                     {
                         *tmp = '\0';

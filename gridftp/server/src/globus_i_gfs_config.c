@@ -557,6 +557,7 @@ error:
     return 1;             
 }
 
+#define GLOBUS_L_GFS_LINEBUFLEN 1024
 
 static
 globus_result_t
@@ -564,9 +565,10 @@ globus_l_gfs_config_load_config_file(
     char *                              filename)
 {
     FILE *                              fptr;
-    char                                line[1024];
-    char                                file_option[1024];
-    char                                value[1024];
+    char *                              linebuf;
+    char *                              optionbuf;
+    char *                              valuebuf;
+    int                                 linebuflen = GLOBUS_L_GFS_LINEBUFLEN;
     int                                 i;
     int                                 rc;
     globus_l_gfs_config_option_t *      option;
@@ -585,11 +587,56 @@ globus_l_gfs_config_load_config_file(
         return -2; /* XXX construct real error */
     }
     globus_l_gfs_config_set("loaded_config", 0, globus_libc_strdup(filename));  
+
     line_num = 0;
-    while(fgets(line, sizeof(line), fptr) != NULL)
+    linebuf = globus_malloc(linebuflen);
+    if(!linebuf)
     {
+        goto error_mem;
+    }
+    optionbuf = globus_malloc(linebuflen);
+    if(!optionbuf)
+    {
+        goto error_mem;
+    }
+    valuebuf = globus_malloc(linebuflen);
+    if(!valuebuf)
+    {
+        goto error_mem;
+    }
+    
+    while(fgets(linebuf, linebuflen, fptr) != NULL)
+    {
+        p = linebuf;
+        while(p && linebuf[strlen(linebuf) - 1] != '\n')
+        {
+            char                        part_line[GLOBUS_L_GFS_LINEBUFLEN];
+
+            p = fgets(part_line, GLOBUS_L_GFS_LINEBUFLEN, fptr);
+            if(p != NULL)
+            {
+                linebuflen += GLOBUS_L_GFS_LINEBUFLEN;
+                linebuf = globus_realloc(linebuf, linebuflen);
+                if(!linebuf)
+                {
+                    goto error_mem;
+                }
+                strncat(linebuf, part_line, linebuflen);
+                
+                optionbuf = globus_realloc(optionbuf, linebuflen);
+                if(!optionbuf)
+                {
+                    goto error_mem;
+                }
+                valuebuf = globus_realloc(valuebuf, linebuflen);
+                if(!valuebuf)
+                {
+                    goto error_mem;
+                }
+            }
+        }
         line_num++;
-        p = line;
+        p = linebuf;
         optlen = 0;               
         while(*p && isspace(*p))
         {
@@ -610,18 +657,18 @@ globus_l_gfs_config_load_config_file(
 
         if(*p == '"')
         {
-            rc = sscanf(p, "\"%[^\"]\"", file_option);
+            rc = sscanf(p, "\"%[^\"]\"", optionbuf);
             optlen = 2;
         }
         else
         {
-            rc = sscanf(p, "%s", file_option);
+            rc = sscanf(p, "%s", optionbuf);
         }        
         if(rc != 1)
         {   
             goto error_parse;
         }
-        optlen += strlen(file_option);
+        optlen += strlen(optionbuf);
         p = p + optlen;
                
         optlen = 0;
@@ -631,18 +678,18 @@ globus_l_gfs_config_load_config_file(
         }
         if(*p == '"')
         {
-            rc = sscanf(p, "\"%[^\"]\"", value);
+            rc = sscanf(p, "\"%[^\"]\"", valuebuf);
             optlen = 2;
         }
         else
         {
-            rc = sscanf(p, "%s", value);
+            rc = sscanf(p, "%s", valuebuf);
         }        
         if(rc != 1)
         {   
             goto error_parse;
         }        
-        optlen += strlen(value);
+        optlen += strlen(valuebuf);
         p = p + optlen;        
         while(*p && isspace(*p))
         {
@@ -661,7 +708,7 @@ globus_l_gfs_config_load_config_file(
                 continue;
             }
             if(!option_list[i].configfile_option || 
-                strcmp(file_option, option_list[i].configfile_option))
+                strcmp(optionbuf, option_list[i].configfile_option))
             {
                 continue;
             }
@@ -679,11 +726,11 @@ globus_l_gfs_config_load_config_file(
             switch(option->type)
             {
               case GLOBUS_L_GFS_CONFIG_BOOL:
-                if(value[0] == '0' && value[1] == '\0')
+                if(valuebuf[0] == '0' && valuebuf[1] == '\0')
                 {
                     option->int_value = 0;
                 }
-                else if(value[0] == '1' && value[1] == '\0')
+                else if(valuebuf[0] == '1' && valuebuf[1] == '\0')
                 {
                     option->int_value = 1;
                 }
@@ -695,7 +742,7 @@ globus_l_gfs_config_load_config_file(
                 }                    
                 break;
               case GLOBUS_L_GFS_CONFIG_INT:
-                rc = globus_args_bytestr_to_num(value, &tmp_off);
+                rc = globus_args_bytestr_to_num(valuebuf, &tmp_off);
                 if(rc != 0)
                 {
                     globus_gfs_log_exit_message("Invalid value for %s\n", 
@@ -705,7 +752,7 @@ globus_l_gfs_config_load_config_file(
                 option->int_value = (int) tmp_off;
                 break;
               case GLOBUS_L_GFS_CONFIG_STRING:
-                option->value = globus_libc_strdup(value);
+                option->value = globus_libc_strdup(valuebuf);
                 break;
               default:
                 break;
@@ -723,12 +770,16 @@ globus_l_gfs_config_load_config_file(
         {
             globus_gfs_log_exit_message("Problem parsing config file %s: line %d. "
                 "Unknown option '%s'.\n", 
-                filename, line_num, file_option);
+                filename, line_num, optionbuf);
             goto error_param;
         }
     }
 
     fclose(fptr);
+    
+    globus_free(linebuf);
+    globus_free(valuebuf);
+    globus_free(optionbuf);
     
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
@@ -738,6 +789,8 @@ error_parse:
     globus_gfs_log_exit_message("Problem parsing config file %s: line %d.\n", 
         filename, line_num);
 error_param:
+error_mem:
+
     GlobusGFSDebugExitWithError();
     return -1;
 
@@ -749,9 +802,10 @@ globus_l_gfs_config_load_envs_from_file(
     char *                              filename)
 {
     FILE *                              fptr;
-    char                                line[4096];
-    char                                env_option[1024];
-    char                                value[1024];
+    char *                              linebuf;
+    char *                              optionbuf;
+    char *                              valuebuf;
+    int                                 linebuflen = GLOBUS_L_GFS_LINEBUFLEN;
     int                                 rc;
     int                                 line_num;
     int                                 optlen;
@@ -764,10 +818,55 @@ globus_l_gfs_config_load_envs_from_file(
     }
 
     line_num = 0;
-    while(fgets(line, sizeof(line), fptr) != NULL)
+
+    linebuf = malloc(linebuflen);
+    if(!linebuf)
     {
+        goto error_mem;
+    }
+    optionbuf = malloc(linebuflen);
+    if(!optionbuf)
+    {
+        goto error_mem;
+    }
+    valuebuf = malloc(linebuflen);
+    if(!valuebuf)
+    {
+        goto error_mem;
+    }
+
+    while(fgets(linebuf, linebuflen, fptr) != NULL)
+    {
+        p = linebuf;
+        while(p && linebuf[strlen(linebuf) - 1] != '\n')
+        {
+            char                        part_line[GLOBUS_L_GFS_LINEBUFLEN];
+
+            p = fgets(part_line, GLOBUS_L_GFS_LINEBUFLEN, fptr);
+            if(p != NULL)
+            {
+                linebuflen += GLOBUS_L_GFS_LINEBUFLEN;
+                linebuf = realloc(linebuf, linebuflen);
+                if(!linebuf)
+                {
+                    goto error_mem;
+                }
+                strncat(linebuf, part_line, linebuflen);
+                
+                optionbuf = realloc(optionbuf, linebuflen);
+                if(!optionbuf)
+                {
+                    goto error_mem;
+                }
+                valuebuf = realloc(valuebuf, linebuflen);
+                if(!valuebuf)
+                {
+                    goto error_mem;
+                }
+            }
+        }
         line_num++;
-        p = line;
+        p = linebuf;
         optlen = 0;               
         while(*p && isspace(*p))
         {
@@ -775,12 +874,12 @@ globus_l_gfs_config_load_envs_from_file(
         }
         
         /* parse threads option to apply it before common activates */
-        if(*p == 't' && (rc = sscanf(p, "%s", env_option)) == 1 && 
+        if(*p == 't' && (rc = sscanf(p, "%s", optionbuf)) == 1 && 
             globus_l_gfs_num_threads == -1)
         {
-            if(!strcmp(env_option, "threads"))
+            if(!strcmp(optionbuf, "threads"))
             {
-                p = p + strlen(env_option);;
+                p = p + strlen(optionbuf);
                        
                 while(*p && isspace(*p))
                 {
@@ -788,19 +887,18 @@ globus_l_gfs_config_load_envs_from_file(
                 }
                 if(*p == '"')
                 {
-                    rc = sscanf(p, "\"%[^\"]\"", value);
+                    rc = sscanf(p, "\"%[^\"]\"", valuebuf);
                 }
                 else
                 {
-                    rc = sscanf(p, "%s", value);
+                    rc = sscanf(p, "%s", valuebuf);
                 }  
                 if(rc == 1)
                 {
-                    globus_l_gfs_num_threads = atoi(value);
+                    globus_l_gfs_num_threads = atoi(valuebuf);
                     if(globus_l_gfs_num_threads > 0)
                     {
-                        setenv("GLOBUS_CALLBACK_POLLING_THREADS", 
-                            strdup(value), 1);
+                        setenv("GLOBUS_CALLBACK_POLLING_THREADS", valuebuf, 1);
                         globus_thread_set_model("pthread");
                     }
                 }
@@ -814,12 +912,12 @@ globus_l_gfs_config_load_envs_from_file(
         }
         p++;
         
-        rc = sscanf(p, "%s", env_option);
+        rc = sscanf(p, "%s", optionbuf);
         if(rc != 1)
         {   
             goto error_parse;
         }
-        optlen += strlen(env_option);
+        optlen += strlen(optionbuf);
         p = p + optlen;
                
         optlen = 0;
@@ -829,18 +927,18 @@ globus_l_gfs_config_load_envs_from_file(
         }
         if(*p == '"')
         {
-            rc = sscanf(p, "\"%[^\"]\"", value);
+            rc = sscanf(p, "\"%[^\"]\"", valuebuf);
             optlen = 2;
         }
         else
         {
-            rc = sscanf(p, "%s", value);
+            rc = sscanf(p, "%s", valuebuf);
         }        
         if(rc != 1)
         {   
             goto error_parse;
         }        
-        optlen += strlen(value);
+        optlen += strlen(valuebuf);
         p = p + optlen;        
         while(*p && isspace(*p))
         {
@@ -851,7 +949,7 @@ globus_l_gfs_config_load_envs_from_file(
             goto error_parse;
         }
         
-        rc = setenv(env_option, value, 1);
+        rc = setenv(optionbuf, valuebuf, 1);
         if(rc < 0)
         {
             char                        errstr[PATH_MAX];
@@ -864,13 +962,19 @@ globus_l_gfs_config_load_envs_from_file(
     }
 
     fclose(fptr);
-    
+
+    free(linebuf);
+    free(valuebuf);
+    free(optionbuf);
+   
     return 0;
 
 error_parse:
-    fclose(fptr);
     globus_gfs_log_exit_message("Problem parsing environment from config file %s: line %d.\n", 
         filename, line_num);
+
+error_mem:
+    fclose(fptr);
 
     return -1;
 }

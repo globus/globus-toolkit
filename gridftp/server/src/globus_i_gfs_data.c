@@ -7595,7 +7595,9 @@ globus_l_gfs_data_end_transfer_kickout(
                 op->session_handle->subject,
                 op->session_handle->client_appname,
                 op->session_handle->client_appver,
-                op->session_handle->client_scheme);
+                op->session_handle->client_scheme, 
+                op->session_handle->dsi == globus_l_gfs_dsi_hybrid ?
+                    "remote" : globus_i_gfs_config_string("load_dsi_module"));
         }
     }
 
@@ -8737,25 +8739,6 @@ globus_i_gfs_data_session_start(
     op->callback = cb;
     op->user_arg = user_arg;
     op->info_struct = session_info;
-
-    if(globus_i_gfs_config_bool("hybrid"))
-    {
-        globus_gfs_session_info_t *     session_info_copy;
-        
-        session_info_copy = (globus_gfs_session_info_t *)
-            globus_malloc(sizeof(globus_gfs_session_info_t));
-        session_info_copy->del_cred = session_info->del_cred;
-        session_info_copy->free_cred = GLOBUS_FALSE;
-        session_info_copy->map_user = session_info->map_user;
-        session_info_copy->username = globus_libc_strdup(session_info->username);
-        session_info_copy->password = globus_libc_strdup(session_info->password);
-        session_info_copy->subject = globus_libc_strdup(session_info->subject);
-        session_info_copy->cookie = globus_libc_strdup(session_info->cookie);
-        session_info_copy->host_id = globus_libc_strdup(session_info->host_id);
-        
-        session_handle->session_info_copy = session_info_copy;
-        session_handle->hybrid = GLOBUS_TRUE;
-    }
                 
     result = globus_l_gfs_data_load_stack(
         "default",
@@ -8792,6 +8775,25 @@ globus_i_gfs_data_session_start(
     if(globus_i_gfs_config_int("auth_level") & GLOBUS_L_GFS_AUTH_IDENTIFY)
     {
         globus_l_gfs_data_authorize(op, context, session_info);
+        
+        if(globus_i_gfs_config_bool("hybrid"))
+        {
+            globus_gfs_session_info_t *     session_info_copy;
+            
+            session_info_copy = (globus_gfs_session_info_t *)
+                globus_malloc(sizeof(globus_gfs_session_info_t));
+            session_info_copy->del_cred = session_info->del_cred;
+            session_info_copy->free_cred = GLOBUS_FALSE;
+            session_info_copy->map_user = session_info->map_user;
+            session_info_copy->username = globus_libc_strdup(session_info->username);
+            session_info_copy->password = globus_libc_strdup(session_info->password);
+            session_info_copy->subject = globus_libc_strdup(session_info->subject);
+            session_info_copy->cookie = globus_libc_strdup(session_info->cookie);
+            session_info_copy->host_id = globus_libc_strdup(session_info->host_id);
+            
+            session_handle->session_info_copy = session_info_copy;
+            session_handle->hybrid = GLOBUS_TRUE;
+        }
     }
     else
     {
@@ -8848,6 +8850,25 @@ globus_i_gfs_data_session_start(
             op->session_handle->home_dir = strdup("/");
         }  
 
+        if(globus_i_gfs_config_bool("hybrid"))
+        {
+            globus_gfs_session_info_t *     session_info_copy;
+            
+            session_info_copy = (globus_gfs_session_info_t *)
+                globus_malloc(sizeof(globus_gfs_session_info_t));
+            session_info_copy->del_cred = session_info->del_cred;
+            session_info_copy->free_cred = GLOBUS_FALSE;
+            session_info_copy->map_user = session_info->map_user;
+            session_info_copy->username = globus_libc_strdup(session_info->username);
+            session_info_copy->password = globus_libc_strdup(session_info->password);
+            session_info_copy->subject = globus_libc_strdup(session_info->subject);
+            session_info_copy->cookie = globus_libc_strdup(session_info->cookie);
+            session_info_copy->host_id = globus_libc_strdup(session_info->host_id);
+            
+            session_handle->session_info_copy = session_info_copy;
+            session_handle->hybrid = GLOBUS_TRUE;
+        }
+        
         globus_l_gfs_data_auth_init_cb(
             NULL, GFS_ACL_ACTION_INIT, op, GLOBUS_SUCCESS);
     }
@@ -9848,6 +9869,10 @@ globus_gridftp_server_operation_finished(
             }
             if(result != GLOBUS_SUCCESS)
             {
+            }
+            if(globus_hashtable_empty(&op->session_handle->custom_cmd_table))
+            {
+                finished_info->op_info = NULL;
             }
             if(op->callback != NULL && 
                 !globus_hashtable_empty(
