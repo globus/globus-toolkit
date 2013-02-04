@@ -1,8 +1,0 @@
-#! /bin/sh
-
-callout_name=globus_gridmap_verify_myproxy_callout
-callout_line="globus_mapping lib$callout_name.so $callout_name"
-
-if [ "$1" = purge ]; then
-    sed -e "/$callout_name/d" -i /etc/gsi_authz.conf
-fi

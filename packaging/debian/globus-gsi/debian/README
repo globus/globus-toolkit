@@ -1,7 +1,0 @@
-The Debian Package globus-gsi
------------------------------
-
-This package contains dependencies to install the packages related to
-the GSI component of the Globus Toolkit.
-
- -- Globus Toolkit <support@globus.org>  Thu, 25 Oct 2012 10:39:30 -0400
