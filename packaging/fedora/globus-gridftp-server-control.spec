@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
-Version:	2.7
-Release:	3%{?dist}
+Version:	2.8
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.4/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -115,6 +115,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Feb 04 2013 Globus Toolkit <support@globus.org> - 2.8-1
+- GT-302: Add initial sharing support to the GridFTP server
+- GT-356: Add configuration and a command to make the sharing authorization file easier to manage
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 2.7-3
 - 5.2.3
 

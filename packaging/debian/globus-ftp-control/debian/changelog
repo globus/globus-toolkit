@@ -1,3 +1,10 @@
+globus-ftp-control (4.5-1) unstable; urgency=low
+
+  * GT-334: segfault using ftp control lib
+  * GT-357: Extend globus_ftp_control_authenticate() to allow the caller to set req flags such as delegation.
+
+ -- Globus Toolkit <support@globus.org>  Mon, 04 Feb 2013 10:32:38 -0600
+
 globus-ftp-control (4.4-2) unstable; urgency=low
 
   * GT 5.2.2 final

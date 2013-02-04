@@ -1,3 +1,9 @@
+globus-io (9.4-1) unstable; urgency=low
+
+  * GT-32: Force IPv6 in globus_io with an environment variable
+
+ -- Globus Toolkit <support@globus.org>  Mon, 04 Feb 2013 10:33:36 -0600
+
 globus-io (9.3-2) unstable; urgency=low
 
   * GT 5.2.2 final

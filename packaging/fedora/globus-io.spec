@@ -12,14 +12,14 @@
 
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	9.3
-Release:	5%{?dist}
+Version:	9.4
+Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.4/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -119,6 +119,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Feb 04 2013 Globus Toolkit <support@globus.org> - 9.4-1
+- GT-32: Force IPv6 in globus_io with an environment variable
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 9.3-5
 - 5.2.3
 

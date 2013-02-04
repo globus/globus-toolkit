@@ -12,14 +12,14 @@
 
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	4.4
-Release:	6%{?dist}
+Version:	4.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.4/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -183,6 +183,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Feb 04 2013 Globus Toolkit <support@globus.org> - 4.5-1
+- GT-334: segfault using ftp control lib
+- GT-357: Extend globus_ftp_control_authenticate() to allow the caller to set req flags such as delegation.
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 4.4-6
 - 5.2.3
 

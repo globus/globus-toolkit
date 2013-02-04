@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-io
 _name = globus_io
-version = 9.3
+version = 9.4
 soname = 3
 
 INSTALLDIR = $(CURDIR)/debian/tmp

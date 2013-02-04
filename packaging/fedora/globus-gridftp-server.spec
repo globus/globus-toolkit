@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.16
-Release:	2%{?dist}
+Version:	6.19
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.4/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -180,6 +180,15 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Feb 04 2013 Globus Toolkit <support@globus.org> - 6.19-1
+- GT-302: Add initial sharing support to the GridFTP server
+- GT-335: Update doc to clarify restrict_paths backend usage.
+- GT-348: fix for logging of username after a hybrid mode striped transfer
+- GT-351: fix for errors when surpassing config line limit, remove limits
+- GT-353: avoid accessing new struct member if DSI isn't compatible
+- GT-356: Add configuration and a command to make the sharing authorization file easier to manage
+- GT-358: Invalid values for boolean config options silently sets the option false.
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 6.16-2
 - 5.2.3
 

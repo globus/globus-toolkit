@@ -1,3 +1,10 @@
+globus-gridftp-server-control (2.8-1) unstable; urgency=low
+
+  * GT-302: Add initial sharing support to the GridFTP server
+  * GT-356: Add configuration and a command to make the sharing authorization file easier to manage
+
+ -- Globus Toolkit <support@globus.org>  Mon, 04 Feb 2013 10:33:22 -0600
+
 globus-gridftp-server-control (2.7-2) unstable; urgency=low
 
   * GT 5.2.2 final
