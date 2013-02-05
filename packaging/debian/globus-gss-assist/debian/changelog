@@ -1,3 +1,10 @@
+globus-gss-assist (8.7-1) unstable; urgency=low
+
+  * GT-302: Add initial sharing support to the GridFTP server
+  * GT-356: Add configuration and a command to make the sharing authorization file easier to manage
+
+ -- Globus Toolkit <support@globus.org>  Tue, 05 Feb 2013 08:02:35 -0500
+
 globus-gss-assist (8.6-1) unstable; urgency=low
 
   * GT-255: gridmapdir support doesn't compile on non-POSIX systems
