@@ -177,7 +177,7 @@ globus_l_sge_get_file_timestamp(
         globus_l_sge_logfile_state_t * state);
 
 
-/**** RJP 4.2 change -- replace aobve with this  *****/
+/**** RJP 4.2 change -- replace above with this  *****/
 
 GlobusExtensionDefineModule(globus_seg_sge) =
 {
@@ -226,7 +226,10 @@ globus_l_sge_module_activate(void)
     }
     shutdown_called = GLOBUS_FALSE;
     callback_count = 0;
-
+    if (getenv("SEG_SGE_DEBUG") == NULL)
+    {
+        setenv("SEG_SGE_DEBUG", "SEG_SGE_DEBUG_ERROR", 1);
+    }
     GlobusDebugInit(
 	    SEG_SGE,
 	    SEG_SGE_DEBUG_INFO
@@ -812,6 +815,14 @@ globus_l_sge_find_logfile(
         rc = stat(state->path, &s);
 	if(rc == 0)
 	  {
+            if ((s.st_mode & S_IFREG) == 0)
+            {
+                SEG_SGE_DEBUG(SEG_SGE_DEBUG_ERROR,
+                    ("SEG looks for SGE log file but finds "
+                     "non-regular file at %s\n",
+                    state->path));
+                exit(EXIT_FAILURE);
+            }
             rc = globus_l_sge_get_file_timestamp(state);
 	  } else {
             SEG_SGE_DEBUG(SEG_SGE_DEBUG_TRACE,
