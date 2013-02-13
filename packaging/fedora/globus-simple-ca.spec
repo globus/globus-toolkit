@@ -10,14 +10,14 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	3.2
-Release:	2%{?dist}
+Version:	3.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   globus-common
 Requires:   globus-common-progs
@@ -127,6 +127,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Wed Feb 13 2013 Globus Toolkit <support@globus.org> - 3.3-1
+- GT-362: simple ca loses spaces in dn in signing policy
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 3.2-2
 - 5.2.3
 

@@ -416,8 +416,8 @@ generate_signing_policy()
         fi
         precomment="${line%%${comment}}"
 
-        eval printf "%s" "\"${precomment}\""
-        echo "${comment}"
+        eval lineval="\"${precomment}\""
+        echo "${lineval}${comment}"
     done
 
 
