@@ -63,7 +63,7 @@ mkdir $RPM_BUILD_ROOT
 cd %{transferapi_name}-%{transferapi_version}
 %{python} setup.py install --root $RPM_BUILD_ROOT --install-lib=%{_libdir}/gcmu
 cd ..
-%{python} setup.py install --root $RPM_BUILD_ROOT
+%{python} setup.py install --root $RPM_BUILD_ROOT --prefix=/usr
 %global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 
 test -x /usr/lib/rpm/brp-python-bytecompile && \
@@ -73,10 +73,10 @@ test -x /usr/lib/rpm/brp-python-bytecompile && \
 rm -rf $RPM_BUILD_ROOT
 
 %files
-/usr/bin/gcmu-setup-*
-/usr/lib/python*
-%{_libdir}/gcmu/*
-%config(noreplace) /etc/gcmu.conf
+%{_bindir}/gcmu-setup-*
+/usr/lib*/python*
+/usr/lib*/gcmu/*
+%config(noreplace) %{_sysconfdir}/gcmu.conf
 
 %changelog
 * Mon Feb 18 2013 Globus Toolkit <support@globus.org> 2.0
