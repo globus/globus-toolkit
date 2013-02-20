@@ -520,7 +520,7 @@ fi
                 os.makedirs(store, 0700)
 
             if self.conf.get_myproxy_use_pam_login():
-                init_conf.write("unset MYPROXY_USER\n")
+                init_conf.write("export MYPROXY_USER=root\n")
             init_conf.write("export X509_CERT_DIR=\"%s\"\n" % \
                     self.conf.get_security_trusted_certificate_directory())
             init_conf.write("export X509_USER_CERT=\"%s\"\n" % \
