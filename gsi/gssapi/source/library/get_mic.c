@@ -146,12 +146,39 @@ GSS_CALLCONV gss_get_mic(
     
     mac_sec = context->gss_ssl->s3->write_mac_secret;
     seq = context->gss_ssl->s3->write_sequence;
+
     #if OPENSSL_VERSION_NUMBER < 0x10000000L
     hash = context->gss_ssl->write_hash;
     #else
     hash = context->gss_ssl->write_hash->digest;
+    #ifdef NID_rc4_hmac_md5
+    /* Some versions of OpenSSL use special ciphers which
+    * combine HMAC with the encryption operation:
+    * for these ssl->write_hash is NULL.
+    * If the cipher context is one of these set the
+    * hash manually.
+    */
+    if(hash == NULL)
+         {
+         EVP_CIPHER_CTX *cctx = context->gss_ssl->enc_write_ctx;
+         switch(EVP_CIPHER_CTX_nid(cctx))
+              {
+              case NID_rc4_hmac_md5:          hash = EVP_md5();
+                                              break;
+              case NID_aes_128_cbc_hmac_sha1:
+              case NID_aes_256_cbc_hmac_sha1: hash = EVP_sha1();
+                                              break;
+              }
+         }
     #endif
-
+    #endif
+    if(hash == NULL)
+         {
+         /* Shouldn't happen: some error occurred */
+         GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+         major_status = GSS_S_FAILURE;
+         goto unlock_mutex;
+         }
     md_size = EVP_MD_size(hash);
     message_token->value = (char *) malloc(GSS_SSL_MESSAGE_DIGEST_PADDING 
                                            + md_size);

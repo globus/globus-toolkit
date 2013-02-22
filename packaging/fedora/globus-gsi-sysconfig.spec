@@ -13,7 +13,7 @@
 Name:		globus-gsi-sysconfig
 %global _name %(tr - _ <<< %{name})
 Version:	5.3
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
 Group:		System Environment/Libraries
@@ -48,6 +48,14 @@ BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
+%endif
+
+%if %{?fedora}%{!?fedora:0} == 18
+BuildRequires: tex(sectsty.sty)
+BuildRequires: tex(tocloft.sty)
+BuildRequires: tex(xtab.sty)
+BuildRequires: tex(multirow.sty)
+BuildRequires: tex(fullpage.sty)
 %endif
 
 %package devel
@@ -173,6 +181,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 5.3-5
+- Workaround missing F18 doxygen/latex dependency
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 5.3-4
 - 5.2.3
 

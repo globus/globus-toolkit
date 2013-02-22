@@ -12,14 +12,14 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	10.7
-Release:	5%{?dist}
+Version:	10.8
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -57,6 +57,14 @@ BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
+%endif
+
+%if %{?fedora}%{!?fedora:0} == 18
+BuildRequires: tex(sectsty.sty)
+BuildRequires: tex(tocloft.sty)
+BuildRequires: tex(xtab.sty)
+BuildRequires: tex(multirow.sty)
+BuildRequires: tex(fullpage.sty)
 %endif
 
 %package devel
@@ -190,6 +198,12 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Feb 22 2013 Globus Toolkit <support@globus.org> - 10.8-1
+- GT-363: gss_get_mic/gss_verify_mic fail for some TLS ciphers with OpenSSL 1.0.1
+
+* Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 10.7-6
+- Workaround missing F18 doxygen/latex dependency
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 10.7-5
 - 5.2.3
 

@@ -28,6 +28,8 @@ MYPROXY_USER=myproxy
 MYPROXY_OPTIONS="-s /var/lib/myproxy"
 X509_USER_CERT=/etc/grid-security/myproxy/hostcert.pem
 X509_USER_KEY=/etc/grid-security/myproxy/hostkey.pem
+export X509_USER_CERT
+export X509_USER_KEY
 PIDFILE=/var/run/myproxy/myproxy.pid
 
 # Override defaults here.
@@ -35,9 +37,11 @@ PIDFILE=/var/run/myproxy/myproxy.pid
 
 # Start/Stop the myproxy daemon as user $MYPROXY_USER
 # Is there a better LSB idiom for this?
-if [ "$(id -u)" = 0 -a \
-	"$(getent passwd "$MYPROXY_USER")" != "" ]; then
-    exec su "$MYPROXY_USER" -s /bin/sh -c "$0 ${1+"$@"}"
+if [ "$(id -u)" = 0 ]; then
+    userexist="$(getent passwd "$MYPROXY_USER" | cut -d: -f3)"
+    if [ "$userexist" != "" ] && [ "$userexist" != 0 ]; then
+        exec su "$MYPROXY_USER" -s /bin/sh -c "$0 ${1+"$@"}"
+    fi
 fi
 
 # A few sanity checks 
@@ -50,6 +54,7 @@ fi
 
 start() {
     pidofproc $prog > /dev/null && log_warning_msg "$prog already running" && exit 0
+    cd /
     X509_USER_CERT=$X509_USER_CERT X509_USER_KEY=$X509_USER_KEY start_daemon -p $PIDFILE "$exec" ${MYPROXY_OPTIONS}
     retval="$?"
     if [ "$retval" -eq 0 ]; then

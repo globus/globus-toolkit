@@ -187,6 +187,26 @@ GSS_CALLCONV gss_verify_mic(
     hash = context->gss_ssl->read_hash;
     #else
     hash = context->gss_ssl->read_hash->digest;
+    #ifdef NID_rc4_hmac_md5
+    /* Some versions of OpenSSL use special ciphers which
+     * combine HMAC with the encryption operation:
+     * for these ssl->write_hash is NULL.
+     * If the cipher context is one of these set the
+     * hash manually.
+     */
+     if(hash == NULL)
+          {
+          EVP_CIPHER_CTX *cctx = context->gss_ssl->enc_read_ctx;
+          switch(EVP_CIPHER_CTX_nid(cctx))
+               {
+               case NID_rc4_hmac_md5:          hash = EVP_md5();
+                                               break;
+               case NID_aes_128_cbc_hmac_sha1:
+               case NID_aes_256_cbc_hmac_sha1: hash = EVP_sha1();
+                                               break;
+               }
+          }
+    #endif
     #endif
 
     md_size = EVP_MD_size(hash);

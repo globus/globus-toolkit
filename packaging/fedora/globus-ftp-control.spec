@@ -13,7 +13,7 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
 Version:	4.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
 Group:		System Environment/Libraries
@@ -50,6 +50,14 @@ BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
+%endif
+
+%if %{?fedora}%{!?fedora:0} == 18
+BuildRequires: tex(sectsty.sty)
+BuildRequires: tex(tocloft.sty)
+BuildRequires: tex(xtab.sty)
+BuildRequires: tex(multirow.sty)
+BuildRequires: tex(fullpage.sty)
 %endif
 
 %package devel
@@ -183,6 +191,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 4.5-2
+- Workaround missing F18 doxygen/latex dependency
+
 * Mon Feb 04 2013 Globus Toolkit <support@globus.org> - 4.5-1
 - GT-334: segfault using ftp control lib
 - GT-357: Extend globus_ftp_control_authenticate() to allow the caller to set req flags such as delegation.

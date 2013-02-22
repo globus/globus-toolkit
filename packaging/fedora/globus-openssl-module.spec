@@ -13,7 +13,7 @@
 Name:		globus-openssl-module
 %global _name %(tr - _ <<< %{name})
 Version:	3.2
-Release:	6%{?dist}
+Release:	7%{?dist}
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper
 
 Group:		System Environment/Libraries
@@ -50,6 +50,14 @@ BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
+%endif
+
+%if %{?fedora}%{!?fedora:0} == 18
+BuildRequires: tex(sectsty.sty)
+BuildRequires: tex(tocloft.sty)
+BuildRequires: tex(xtab.sty)
+BuildRequires: tex(multirow.sty)
+BuildRequires: tex(fullpage.sty)
 %endif
 
 %package devel
@@ -179,6 +187,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 3.2-7
+- Workaround missing F18 doxygen/latex dependency
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 3.2-6
 - 5.2.3
 

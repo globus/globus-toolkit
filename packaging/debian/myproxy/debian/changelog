@@ -1,3 +1,9 @@
+myproxy (5.9-2) unstable; urgency=low
+
+  * Fix http://jira.globus.org/browse/GT-355: Myproxy-server init script problems on debian
+
+ -- Globus Toolkit <support@globus.org>  Fri, 18 Jan 2012 18:50:22 -0500
+
 myproxy (5.9-1) unstable; urgency=low
 
   * Fix https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7261

@@ -13,7 +13,7 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
 Version:	13.51
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -75,6 +75,14 @@ BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
+%endif
+
+%if %{?fedora}%{!?fedora:0} == 18
+BuildRequires: tex(sectsty.sty)
+BuildRequires: tex(tocloft.sty)
+BuildRequires: tex(xtab.sty)
+BuildRequires: tex(multirow.sty)
+BuildRequires: tex(fullpage.sty)
 %endif
 
 %package doc
@@ -177,6 +185,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 13.51-3
+- Workaround missing F18 doxygen/latex dependency
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 13.51-2
 - 5.2.3
 

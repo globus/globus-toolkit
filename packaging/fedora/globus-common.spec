@@ -19,7 +19,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	14.9
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -66,6 +66,14 @@ BuildRequires:  texlive-latex
 %else
 BuildRequires:	tetex-latex
 %endif
+%endif
+
+%if %{?fedora}%{!?fedora:0} == 18
+BuildRequires: tex(sectsty.sty)
+BuildRequires: tex(tocloft.sty)
+BuildRequires: tex(xtab.sty)
+BuildRequires: tex(multirow.sty)
+BuildRequires: tex(fullpage.sty)
 %endif
 
 %package progs
@@ -263,6 +271,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 14.9-4
+- Workaround missing F18 doxygen/latex dependency
+
 * Mon Feb 4 2013 Globus Toolkit <support@globus.org> - 14.9-3
 
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 14.9-2
