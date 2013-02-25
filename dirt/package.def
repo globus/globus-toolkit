@@ -139,6 +139,7 @@ globus_gridmap_callout          gsi/gridmap_callout/source      dirt.sh
 globus_gridmap_callout_setup    gsi/gridmap_callout/setup       dirt.sh
 globus_gridmap_callout_error    gsi/gridmap_callout/error       dirt.sh
 globus_gridmap_verify_myproxy_callout   gsi/gridmap_verify_myproxy_callout  dirt.sh
+globus_gridmap_eppn_callout   gsi/gridmap_eppn_callout          dirt.sh
 globus_xio                      xio/src                         dirt.sh
 globus_xio_test                 xio/test                        dirt.sh
 globus_xio_netlogger_driver     xio/drivers/netlog              dirt.sh
