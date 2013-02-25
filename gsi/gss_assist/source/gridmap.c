@@ -102,12 +102,18 @@ globus_i_gss_assist_xdigit_to_value(
 
 static
 globus_result_t
+globus_l_gss_assist_gridmap_initialize(
+    globus_callout_handle_t *           handle);
+    
+static
+globus_result_t
 globus_l_gss_assist_gridmap_lookup(
     gss_ctx_id_t                        context,
     char *                              service,
     char *                              desired_identity,
     char *                              identity_buffer,
-    unsigned int                        identity_buffer_length);
+    unsigned int                        identity_buffer_length,
+    char *                              shared_user_cert);
   
 static
 globus_result_t
@@ -2049,12 +2055,294 @@ globus_gss_assist_map_and_authorize(
 {
     globus_object_t *                   error;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static globus_bool_t                initialized = GLOBUS_FALSE;
-    static globus_callout_handle_t      authz_handle = NULL;
-
+    globus_callout_handle_t             authz_handle;
+    
     static char *                       _function_name_ =
         "globus_gss_assist_map_and_authorize";
     
+    result = globus_l_gss_assist_gridmap_initialize(&authz_handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        return result;
+    }
+    
+    if(authz_handle == NULL)
+    {
+        return globus_l_gss_assist_gridmap_lookup(
+            context,
+            service,
+            desired_identity,
+            identity_buffer,
+            identity_buffer_length,
+            NULL);
+    }
+    else
+    {            
+        result = globus_callout_call_type(authz_handle,
+                                          GLOBUS_GENERIC_MAPPING_TYPE,
+                                          context,
+                                          service,
+                                          desired_identity,
+                                          identity_buffer,
+                                          identity_buffer_length);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            error = globus_error_get(result);
+            
+            if(globus_error_match(
+                   error,
+                   GLOBUS_CALLOUT_MODULE,
+                   GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
+               == GLOBUS_TRUE)
+            {
+                globus_object_free(error);
+                result = globus_l_gss_assist_gridmap_lookup(
+                    context,
+                    service,
+                    desired_identity,
+                    identity_buffer,
+                    identity_buffer_length,
+                    NULL);
+                goto error;
+            }
+            else
+            {
+                result = globus_error_put(error);
+                GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_GSS_ASSIST_CALLOUT_ERROR);
+                goto error;
+            }
+        }
+
+        result = globus_callout_call_type(authz_handle,
+                                          GLOBUS_GENERIC_AUTHZ_TYPE,
+                                          context,
+                                          service);        
+        if(result != GLOBUS_SUCCESS)
+        {
+            error = globus_error_get(result);
+            
+            if(globus_error_match(
+                   error,
+                   GLOBUS_CALLOUT_MODULE,
+                   GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
+               == GLOBUS_FALSE)
+            {
+                result = globus_error_put(error);
+                GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_GSS_ASSIST_CALLOUT_ERROR);
+                goto error;
+            }
+            else
+            {
+                result = GLOBUS_SUCCESS;
+            }
+
+            globus_object_free(error);
+        }
+    }
+    
+
+ error:
+    return result;
+}
+/* globus_gss_assist_map_and_authorize */
+
+
+/**
+ * @brief Authorize a particular credential for shared access.
+ * @ingroup globus_gsi_gss_assist
+ *
+ * @details
+ * The globus_gss_assist_map_and_authorize_sharing() function attempts to
+ * authorize a particular credential for shared access.
+ * the @a desired_identity parameter is non-NULL, the authorization will
+ * succeed only if the credential is authorized for that identity. Otherwise,
+ * any valid authorized local user name will be used. If authorized, the
+ * local user name will be copied to the string pointed to by the
+ * @a identity_buffer parameter, which must be at least as long as the
+ * value passed as the @a identity_buffer_length parameter.
+ *
+ * If authorization callouts are defined in the callout configuration
+ * file, globus_gss_assist_map_and_authorize_sharing() will invoke both the
+ * GLOBUS_GENERIC_MAPPING_TYPE callout and the GLOBUS_GENERIC_AUTHZ_TYPE
+ * callout; otherwise the default gridmap file will be used for mapping
+ * and no service-specific authorization will be done.
+ *
+ * If globus_gss_assist_map_and_authorize_sharing() uses a gridmap file, it
+ * first looks for a file defined by the value of the GRIDMAP environment
+ * variable. If that is not set, it falls back to $HOME/.gridmap.
+ *
+ * @param shared_user_certificate
+ *     Credential of user that owns the resources to be shared in PEM format.
+ *     This should be parsed to find the identity that should be mapped.
+ * @param context
+ *     Security context of the underlying connection.  This should generally
+ *     be ignored.
+ * @param desired_identity
+ *     Optional. If non-NULL, perform an authorization to act as the 
+ *     local user named by this NULL-terminated string.
+ * @param identity_buffer
+ *     A pointer to a string buffer into which will be copied the
+ *     local user name that the peer of the context is authorized to
+ *     act as.
+ * @param identity_buffer_length
+ *     Length of the @a identity_buffer array.
+ *
+ * @return
+ *     On success, globus_gss_assist_map_and_authorize_sharing() returns
+ *     GLOBUS_SUCCESS and copies the authorized local identity to the
+ *     @a identity_buffer parameter. If an error occurs,
+ *     globus_gss_assist_map_and_authorize_sharing() returns a globus_result_t
+ *     that can be resolved to an error object.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_CALLOUT_CONFIG
+ *     Invalid authorization configuration file
+ * @retval GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE     
+ *     Hash table operation failed.
+ * @retval GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR
+ *     The callout itself returned a error.
+ * @retval GLOBUS_CALLOUT_ERROR_WITH_DL
+ *     Dynamic library operation failed.
+ * @retval GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY
+ *     Out of memory
+ * @retval GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR
+ *     A GSSAPI function returned an error
+ * @retval GLOBUS_GSI_GSS_ASSIST_GRIDMAP_LOOKUP_FAILED
+ *     Gridmap lookup failure
+ * @retval GLOBUS_GSI_GSS_ASSIST_BUFFER_TOO_SMALL
+ *     Caller provided insufficient buffer space for local identity
+ */
+globus_result_t
+globus_gss_assist_map_and_authorize_sharing(
+    char *                              shared_user_certificate,
+    gss_ctx_id_t                        context,
+    char *                              desired_identity,
+    char *                              identity_buffer,
+    unsigned int                        identity_buffer_length)
+{
+    globus_object_t *                   error;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_callout_handle_t             authz_handle = NULL;
+
+    static char *                       _function_name_ =
+        "globus_gss_assist_map_and_authorize_sharing";
+    
+    char *                              service = "sharing";
+    
+    result = globus_l_gss_assist_gridmap_initialize(&authz_handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        return result;
+    }
+
+    if(authz_handle == NULL)
+    {
+        return globus_l_gss_assist_gridmap_lookup(
+            context,
+            service,
+            desired_identity,
+            identity_buffer,
+            identity_buffer_length,
+            shared_user_certificate);
+    }
+    else
+    {            
+        result = globus_callout_call_type(authz_handle,
+                                          GLOBUS_GENERIC_MAPPING_TYPE,
+                                          context,
+                                          service,
+                                          desired_identity,
+                                          identity_buffer,
+                                          identity_buffer_length,
+                                          shared_user_certificate);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            error = globus_error_get(result);
+            
+            if(globus_error_match(
+                   error,
+                   GLOBUS_CALLOUT_MODULE,
+                   GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
+               == GLOBUS_TRUE)
+            {
+                globus_object_free(error);
+                result = globus_l_gss_assist_gridmap_lookup(
+                    context,
+                    service,
+                    desired_identity,
+                    identity_buffer,
+                    identity_buffer_length,
+                    shared_user_certificate);
+                goto error;
+            }
+            else
+            {
+                result = globus_error_put(error);
+                GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_GSS_ASSIST_CALLOUT_ERROR);
+                goto error;
+            }
+        }
+
+        result = globus_callout_call_type(authz_handle,
+                                          GLOBUS_GENERIC_AUTHZ_TYPE,
+                                          context,
+                                          service,
+                                          shared_user_certificate);       
+        if(result != GLOBUS_SUCCESS)
+        {
+            error = globus_error_get(result);
+            
+            if(globus_error_match(
+                   error,
+                   GLOBUS_CALLOUT_MODULE,
+                   GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
+               == GLOBUS_FALSE)
+            {
+                result = globus_error_put(error);
+                GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_GSS_ASSIST_CALLOUT_ERROR);
+                goto error;
+            }
+            else
+            {
+                result = GLOBUS_SUCCESS;
+            }
+
+            globus_object_free(error);
+        }
+    }
+    
+
+ error:
+    return result;
+}
+/* globus_gss_assist_map_and_authorize_sharing */
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+static
+globus_result_t
+globus_l_gss_assist_gridmap_initialize(
+    globus_callout_handle_t *           handle)
+{
+    static globus_bool_t                initialized = GLOBUS_FALSE;
+    static globus_callout_handle_t      authz_handle = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_object_t *                   error;
+
+    static char *                       _function_name_ =
+        "globus_l_gss_assist_gridmap_initialize";
+
     globus_mutex_lock(&globus_i_gsi_gss_assist_mutex);
     {
         if(initialized == GLOBUS_FALSE)
@@ -2113,92 +2401,12 @@ globus_gss_assist_map_and_authorize(
         }
     }
     globus_mutex_unlock(&globus_i_gsi_gss_assist_mutex);
-
     
-    if(authz_handle == NULL)
-    {
-        return globus_l_gss_assist_gridmap_lookup(
-            context,
-            service,
-            desired_identity,
-            identity_buffer,
-            identity_buffer_length);
-    }
-    else
-    {            
-        result = globus_callout_call_type(authz_handle,
-                                          GLOBUS_GENERIC_MAPPING_TYPE,
-                                          context,
-                                          service,
-                                          desired_identity,
-                                          identity_buffer,
-                                          identity_buffer_length);
-        
-        if(result != GLOBUS_SUCCESS)
-        {
-            error = globus_error_get(result);
-            
-            if(globus_error_match(
-                   error,
-                   GLOBUS_CALLOUT_MODULE,
-                   GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
-               == GLOBUS_TRUE)
-            {
-                globus_object_free(error);
-                result = globus_l_gss_assist_gridmap_lookup(
-                    context,
-                    service,
-                    desired_identity,
-                    identity_buffer,
-                    identity_buffer_length);
-                goto error;
-            }
-            else
-            {
-                result = globus_error_put(error);
-                GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-                    result,
-                    GLOBUS_GSI_GSS_ASSIST_CALLOUT_ERROR);
-                goto error;
-            }
-        }
-
-        result = globus_callout_call_type(authz_handle,
-                                          GLOBUS_GENERIC_AUTHZ_TYPE,
-                                          context,
-                                          service);        
-        if(result != GLOBUS_SUCCESS)
-        {
-            error = globus_error_get(result);
-            
-            if(globus_error_match(
-                   error,
-                   GLOBUS_CALLOUT_MODULE,
-                   GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
-               == GLOBUS_FALSE)
-            {
-                result = globus_error_put(error);
-                GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-                    result,
-                    GLOBUS_GSI_GSS_ASSIST_CALLOUT_ERROR);
-                goto error;
-            }
-            else
-            {
-                result = GLOBUS_SUCCESS;
-            }
-
-            globus_object_free(error);
-        }
-    }
-    
-
- error:
-    return result;
+    *handle = authz_handle;
+    return GLOBUS_SUCCESS;
 }
-/* globus_gss_assist_map_and_authorize */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 static
 globus_result_t
 globus_l_gss_assist_gridmap_lookup(
@@ -2206,7 +2414,8 @@ globus_l_gss_assist_gridmap_lookup(
     char *                              service,
     char *                              desired_identity,
     char *                              identity_buffer,
-    unsigned int                        identity_buffer_length)
+    unsigned int                        identity_buffer_length,
+    char *                              shared_user_cert)
 {
     gss_name_t                          peer;
     gss_buffer_desc                     peer_name_buffer;
@@ -2216,48 +2425,24 @@ globus_l_gss_assist_gridmap_lookup(
     globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 rc;
     char *                              local_identity;
-    char *                              desired_id = NULL;
     static char *                       _function_name_ =
         "globus_l_gss_assist_gridmap_lookup";
     
-    if(service && strcmp(service, "sharing") == 0)
+    if(shared_user_cert)
     {
-        char *                          ptr;
-        /* if service is "sharing", desired_identity is used to pass the DN
-         * to map.  The format is [user:]DN */
-         
-        if(desired_identity && *desired_identity == '/')
+        char *  subject;
+    
+        result = globus_gsi_cert_utils_read_pem_from_buffer(
+            shared_user_cert, NULL, &subject);
+        if(result != GLOBUS_SUCCESS)
         {
-            peer_name_buffer.value = globus_libc_strdup(desired_identity);
-            peer_name_buffer.length = strlen(desired_identity);
-            desired_id = NULL;
-        }
-        else if(desired_identity && 
-            (ptr = strstr(desired_identity, ":/")) != NULL)
-        {            
-            ptr++;
-            peer_name_buffer.value = globus_libc_strdup(ptr);
-            peer_name_buffer.length = strlen(ptr);
-            
-            desired_id = globus_libc_strdup(desired_identity);
-            desired_id[ptr - desired_identity - 1] = '\0';
-        }
-        else
-        {
-            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_GRIDMAP_LOOKUP_FAILED,
-                (_GASL("Missing or invalid DN to map.\n")));
             goto error;
         }
+        peer_name_buffer.value = subject;
+        peer_name_buffer.length = strlen(subject);
     }
     else
-    {
-        if(desired_identity)
-        {
-            desired_id = globus_libc_strdup(desired_identity);
-        }
-        
+    {        
         major_status = gss_inquire_context(&minor_status,
                                            context,
                                            GLOBUS_NULL,
@@ -2267,7 +2452,6 @@ globus_l_gss_assist_gridmap_lookup(
                                            GLOBUS_NULL,
                                            &initiator,
                                            GLOBUS_NULL);
-    
         if(GSS_ERROR(major_status))
         {
             result =  minor_status;
@@ -2312,8 +2496,8 @@ globus_l_gss_assist_gridmap_lookup(
     
         gss_release_name(&minor_status, &peer);        
     }
-    
-    if(desired_id == NULL)
+
+    if(desired_identity == NULL)
     {
         rc = globus_gss_assist_gridmap(
             peer_name_buffer.value, 
@@ -2345,7 +2529,7 @@ globus_l_gss_assist_gridmap_lookup(
     else
     {
         rc = globus_gss_assist_userok(peer_name_buffer.value,
-                                      desired_id);
+                                      desired_identity);
         if(rc != 0)
         {
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
@@ -2353,30 +2537,26 @@ globus_l_gss_assist_gridmap_lookup(
                 GLOBUS_GSI_GSS_ASSIST_GRIDMAP_LOOKUP_FAILED,
                 (_GASL("Could not map %s to %s\n"),
                  peer_name_buffer.value,
-                 desired_id));
+                 desired_identity));
             goto release_peer_name_buffer;
         }
 
-        if(strlen(desired_id) + 1 > identity_buffer_length)
+        if(strlen(desired_identity) + 1 > identity_buffer_length)
         {
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_BUFFER_TOO_SMALL,
                 (_GASL("Desired identity length: %d Buffer length: %d\n"),
-                 strlen(desired_id), identity_buffer_length));
+                 strlen(desired_identity), identity_buffer_length));
         }
         else
         {
-            strcpy(identity_buffer, desired_id);
+            strcpy(identity_buffer, desired_identity);
         }
     }
 
 release_peer_name_buffer:
     gss_release_buffer(&minor_status, &peer_name_buffer);
-    if(desired_id)
-    {
-        globus_free(desired_id);
-    }
 
  error:
     return result;

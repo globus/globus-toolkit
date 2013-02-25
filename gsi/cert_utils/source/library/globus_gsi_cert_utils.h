@@ -173,6 +173,12 @@ globus_i_gsi_cert_utils_dn_cmp(
     const char *                        dn1,
     const char *                        dn2);
 
+globus_result_t
+globus_gsi_cert_utils_read_pem_from_buffer(
+    char *                              pem_buf,
+    X509 **                             out_cert,
+    char **                             out_subject);
+
 
 /* For backwards compatibility */
 

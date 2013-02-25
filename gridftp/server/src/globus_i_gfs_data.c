@@ -172,6 +172,7 @@ typedef struct
     globus_list_t *                     active_rp_list;
     globus_list_t *                     rp_list;
     char *                              sharing_file;
+    globus_xio_attr_t                   udt_attr;
     
     globus_hashtable_t                  custom_cmd_table;
 } globus_l_gfs_data_session_t;
@@ -407,6 +408,89 @@ static
 void
 globus_l_gfs_data_brain_ready_delay_cb(
     void *                              user_arg);
+
+
+static char                             globus_l_gfs_base64_pad = '=';
+static char *                           globus_l_gfs_base64_n =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static 
+globus_result_t
+globus_l_gfs_base64_decode(
+    const unsigned char  *              inbuf,
+    globus_byte_t *                     outbuf,
+    globus_size_t *                     out_len)
+{
+    int                                 i;
+    int                                 j;
+    int                                 D;
+    char *                              p;
+
+    for(i=0, j=0; inbuf[i] && inbuf[i] != globus_l_gfs_base64_pad; i++)
+    {
+        if((p = strchr(globus_l_gfs_base64_n, inbuf[i])) == NULL)
+        {
+	    goto err;
+        }
+        D = p - globus_l_gfs_base64_n;
+        switch(i&3)
+        {
+            case 0:
+                outbuf[j] = D<<2;
+                break;
+            case 1:
+                outbuf[j++] |= D>>4;
+                outbuf[j] = (D&15)<<4;
+                break;
+            case 2:
+                outbuf[j++] |= D>>2;
+                outbuf[j] = (D&3)<<6;
+                break;
+            case 3:
+                outbuf[j++] |= D;
+                break;
+            default:
+                break;
+        }
+    }
+
+    switch(i&3)
+    {
+        case 1:
+	    goto err;
+ 
+       case 2:
+            if(D&15)
+            {
+	        goto err;
+            }
+            if(strcmp((char *) &inbuf[i], "=="))
+            {
+	        goto err;
+            }
+            break;
+
+        case 3:
+            if(D&3)
+            {
+	        goto err;
+            }
+            if(strcmp((char *) &inbuf[i], "="))
+            {
+	        goto err;
+            }
+            break;
+
+        default:
+            break;
+    }
+    *out_len = j;
+
+    return GLOBUS_SUCCESS;
+
+err:
+    return -1;
+
+}
 
 void
 globus_l_gfs_data_brain_ready(
@@ -1463,6 +1547,58 @@ globus_l_gfs_authorize_cb(
     GlobusGFSDebugExit();
 }
 
+static
+globus_result_t
+globus_l_gfs_data_decode_passed_cred(
+    char *                              encoded_cred,
+    gss_cred_id_t *                     out_cred)
+{
+    OM_uint32                           major_status; 
+    OM_uint32                           minor_status;
+    gss_buffer_desc                     buf; 
+    gss_cred_id_t                       cred;
+    globus_result_t                     res;
+    GlobusGFSName(globus_l_gfs_data_decode_passed_cred);
+    GlobusGFSDebugEnter();
+    
+    buf.value = globus_libc_strdup(encoded_cred);
+    
+    res = globus_l_gfs_base64_decode(
+        encoded_cred, buf.value, &buf.length);
+    if(res != GLOBUS_SUCCESS)
+    {
+        globus_free(buf.value);
+        res = GlobusGFSErrorGeneric(
+            "Invalid base64 input for credential.");
+    }
+    else
+    {                            
+        major_status = gss_import_cred(
+            &minor_status,
+            &cred,
+            GSS_C_NO_OID,
+            0,
+            &buf,
+            0,
+            NULL);
+        globus_free(buf.value);
+        if(major_status != GSS_S_COMPLETE)
+        {
+            res = GlobusGFSErrorWrapFailed(
+                "Credential import", minor_status);
+        }
+        else
+        {            
+            *out_cred = cred;
+        }
+    }
+
+    GlobusGFSDebugExit();
+
+    return res;
+}
+
+
 /*
  *  this is called when writing.  if file exists it is a write
  *  request, if it does not exists it is a create request
@@ -2179,8 +2315,9 @@ globus_l_gfs_data_authorize(
     char *                              chroot_dir = NULL;
     char *                              custom_home_dir;
     char *                              sharing_dn = NULL;
-    char *                              shared_user_dn = NULL;
+    char *                              shared_user_str = NULL;
     globus_bool_t                       sharing_attempted = GLOBUS_FALSE;
+    char *                              desired_user_cert = NULL;
     GlobusGFSName(globus_l_gfs_data_authorize);
     GlobusGFSDebugEnter();
 
@@ -2201,50 +2338,69 @@ globus_l_gfs_data_authorize(
     
     if(session_info->subject != NULL || session_info->del_cred != NULL)
     {
-        if(sharing_dn)
+        if(sharing_dn && !strcmp(sharing_dn, session_info->subject))
         {
-            if((strcmp(sharing_dn, session_info->subject) == 0))
+            if(session_info->username && 
+                strncmp(session_info->username, 
+                    GLOBUS_SHARING_PREFIX, 
+                    strlen(GLOBUS_SHARING_PREFIX)) == 0)
             {
-                if(session_info->username && 
-                    strncmp(session_info->username, 
-                        GLOBUS_SHARING_PREFIX, 
-                        strlen(GLOBUS_SHARING_PREFIX)) == 0)
+                char *                  usr_tmp;
+                char *                  sub_tmp;
+                char *                  ptr;
+                int                     cert_len;
+                                        
+                shared_user_str = 
+                    session_info->username + strlen(GLOBUS_SHARING_PREFIX);
+                
+                if(ptr = strchr(shared_user_str, ':'))
                 {
-                    shared_user_dn = session_info->username + strlen(GLOBUS_SHARING_PREFIX);
+                    *ptr = '\0';
+                    ptr++;
+                    usr_tmp = globus_libc_strdup(shared_user_str);
+                    session_info->map_user = GLOBUS_FALSE;
+                }
+                else
+                {
+                    ptr = shared_user_str;
+                    usr_tmp = globus_libc_strdup(GLOBUS_MAPPING_STRING);
+                    session_info->map_user = GLOBUS_TRUE;
+                }
+                
+                if(strncmp(ptr, "CERT ", 5) == 0)
+                {
+                    ptr += 5;
                     
-                    if(*shared_user_dn == '/')
-                    {                 
-                        globus_free(session_info->subject);
-                        session_info->subject = 
-                            globus_libc_strdup(shared_user_dn);
-                        globus_free(session_info->username);
-                        session_info->username = 
-                            globus_libc_strdup(GLOBUS_MAPPING_STRING);
-                        session_info->map_user = GLOBUS_TRUE;
-                        sharing_attempted = GLOBUS_TRUE;
-                    }
-                    else if(strstr(shared_user_dn, ":/"))
-                    {
-                        char *                  sub_tmp;
-                        sub_tmp = strstr(shared_user_dn, ":/");
-                        *sub_tmp = '\0';
-                        sub_tmp++;
-                        globus_free(session_info->subject);
-                        session_info->subject = globus_libc_strdup(sub_tmp);
-                        sub_tmp = globus_libc_strdup(shared_user_dn);
-                        globus_free(session_info->username);
-                        session_info->username = sub_tmp;
-                        session_info->map_user = GLOBUS_FALSE;
-                        sharing_attempted = GLOBUS_TRUE;
-                    }
-                    else
-                    {
-                        res = GlobusGFSErrorGeneric(
-                            "Invalid user format for " GLOBUS_SHARING_PREFIX ".");
-                        goto pwent_error;
-                    }
-                }   
-            }
+                    desired_user_cert = globus_libc_strdup(ptr);
+    
+                    res = globus_l_gfs_base64_decode(
+                        ptr, desired_user_cert, &cert_len);
+                    desired_user_cert[cert_len] = 0;
+                }
+                else
+                {
+                    res = GlobusGFSErrorGeneric(
+                        "Invalid format for " GLOBUS_SHARING_PREFIX ".");
+                }
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto pwent_error;
+                }
+                
+                res = globus_gsi_cert_utils_read_pem_from_buffer(
+                    desired_user_cert, NULL, &sub_tmp);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto pwent_error;
+                }
+                
+                globus_free(session_info->username);
+                session_info->username = usr_tmp;
+                globus_free(session_info->subject);
+                session_info->subject = sub_tmp;
+                
+                sharing_attempted = GLOBUS_TRUE;
+            }   
         }
 
         if(!sharing_attempted && session_info->username && 
@@ -2265,37 +2421,33 @@ globus_l_gfs_data_authorize(
                 
                 if(session_info->map_user)
                 {
-                    if(sharing_attempted)
-                    {
-                        usr = session_info->subject;
-                    }
-                    else
-                    {
-                        usr = NULL;
-                    }
+                    usr = NULL;
                 }
                 else
                 {
-                    if(sharing_attempted)
-                    {
-                        usr = globus_common_create_string(
-                            "%s:%s", session_info->username, session_info->subject);
-                        free_usr = GLOBUS_TRUE;
-                    }
-                    else
-                    {
-                        usr = session_info->username;
-                    }
+                    usr = session_info->username;
                 }
 
                 *authz_usr = '\0';
-                res = globus_gss_assist_map_and_authorize(
-                    context,
-                    sharing_attempted ? "sharing" : FTP_SERVICE_NAME,
-                    usr,
-                    authz_usr,
-                    USER_NAME_MAX);
                 
+                if(sharing_attempted)
+                {
+                    res = globus_gss_assist_map_and_authorize_sharing(
+                        desired_user_cert,
+                        context,
+                        usr,
+                        authz_usr,
+                        USER_NAME_MAX);
+                }
+                else
+                {
+                    res = globus_gss_assist_map_and_authorize(
+                        context,
+                        FTP_SERVICE_NAME,
+                        usr,
+                        authz_usr,
+                        USER_NAME_MAX);
+                }
                 if(free_usr)
                 {
                     globus_free(usr);
@@ -3598,89 +3750,6 @@ error:
 }
 
 
-
-static char                             globus_l_gfs_base64_pad = '=';
-static char *                           globus_l_gfs_base64_n =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-static 
-globus_result_t
-globus_l_gfs_base64_decode(
-    const unsigned char  *              inbuf,
-    globus_byte_t *                     outbuf,
-    globus_size_t *                     out_len)
-{
-    int                                 i;
-    int                                 j;
-    int                                 D;
-    char *                              p;
-
-    for(i=0, j=0; inbuf[i] && inbuf[i] != globus_l_gfs_base64_pad; i++)
-    {
-        if((p = strchr(globus_l_gfs_base64_n, inbuf[i])) == NULL)
-        {
-	    goto err;
-        }
-        D = p - globus_l_gfs_base64_n;
-        switch(i&3)
-        {
-            case 0:
-                outbuf[j] = D<<2;
-                break;
-            case 1:
-                outbuf[j++] |= D>>4;
-                outbuf[j] = (D&15)<<4;
-                break;
-            case 2:
-                outbuf[j++] |= D>>2;
-                outbuf[j] = (D&3)<<6;
-                break;
-            case 3:
-                outbuf[j++] |= D;
-                break;
-            default:
-                break;
-        }
-    }
-
-    switch(i&3)
-    {
-        case 1:
-	    goto err;
- 
-       case 2:
-            if(D&15)
-            {
-	        goto err;
-            }
-            if(strcmp((char *) &inbuf[i], "=="))
-            {
-	        goto err;
-            }
-            break;
-
-        case 3:
-            if(D&3)
-            {
-	        goto err;
-            }
-            if(strcmp((char *) &inbuf[i], "="))
-            {
-	        goto err;
-            }
-            break;
-
-        default:
-            break;
-    }
-    *out_len = j;
-
-    return GLOBUS_SUCCESS;
-
-err:
-    return -1;
-
-}
-
 static
 globus_result_t
 globus_l_gfs_data_load_stack(
@@ -4169,6 +4238,75 @@ globus_i_gfs_data_request_command(
             call = GLOBUS_FALSE;
             break;
 
+
+        case GLOBUS_GFS_CMD_UPAS:
+            if(*cmd_info->pathname != '0' && *cmd_info->pathname != '1')
+            {
+                result = GlobusGFSErrorGeneric(
+                    "Controller parameter must be 0 or 1.");
+                    
+                globus_gridftp_server_finished_command(op, result, NULL);
+
+            }
+            else
+            {
+                char *                          candidates;
+                globus_xio_driver_list_ent_t *  ent;
+                
+                if(session_handle->net_stack_list == NULL)
+                {
+                    result = globus_l_gfs_data_load_stack(
+                        "udt",
+                        &op->session_handle->net_stack_list,
+                        &gfs_l_data_net_allowed_drivers,
+                        "udt");
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        result = GlobusGFSErrorWrapFailed(
+                            "Setting data channel driver stack", result);
+                    }
+                    
+                    globus_xio_attr_init(&session_handle->udt_attr);
+                }
+                
+                ent = globus_xio_driver_list_find_driver(
+                    session_handle->net_stack_list, "udt");
+
+                result = globus_xio_attr_cntl(
+                    session_handle->udt_attr,
+                    ent->driver,
+                    17 /* GLOBUS_XIO_UDT_GET_LOCAL_CANDIDATES*/,
+                    atoi(cmd_info->pathname),
+                    &candidates);
+                
+                globus_gridftp_server_finished_command(op, result, candidates);
+
+            }
+            
+            call = GLOBUS_FALSE;
+            break;
+
+        case GLOBUS_GFS_CMD_UPRT:
+            {
+                globus_xio_driver_list_ent_t *  ent;
+                
+                
+                ent = globus_xio_driver_list_find_driver(
+                    session_handle->net_stack_list, "udt");
+
+                result = globus_xio_attr_cntl(
+                    session_handle->udt_attr,
+                    ent->driver,
+                    18 /* GLOBUS_XIO_UDT_SET_REMOTE_CANDIDATES*/,
+                    cmd_info->pathname);
+                
+                globus_gridftp_server_finished_command(op, result, NULL);
+
+            }
+            
+            call = GLOBUS_FALSE;
+            break;
+
         case GLOBUS_GFS_CMD_SITE_CLIENTINFO:
             tmp = globus_malloc(strlen(cmd_info->pathname) + 1);
 
@@ -4422,6 +4560,34 @@ globus_l_gfs_data_handle_init(
             "globus_ftp_control_handle_init", result);
         goto error_data;
     }
+
+    if(session_handle->udt_attr)
+    {
+        globus_xio_attr_t               xio_attr;
+
+        result = globus_i_ftp_control_data_get_attr(
+            &handle->data_channel,
+            &xio_attr);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
+                "set stack failed: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+            goto error_control;
+        }
+        
+        result = globus_xio_attr_copy(&xio_attr, session_handle->udt_attr);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
+                "attr copy failed: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+            goto error_control;
+        }
+    }
+
 
     handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
     handle->outstanding_op = NULL;
@@ -9007,6 +9173,9 @@ globus_gridftp_server_finished_command(
       case GLOBUS_GFS_CMD_CKSM:
         op->cksm_response = globus_libc_strdup(command_data);
         op->user_code = 0;
+        break;
+      case GLOBUS_GFS_CMD_UPAS:
+        op->cksm_response = globus_libc_strdup(command_data);
         break;
       case GLOBUS_GFS_CMD_MKD:
       case GLOBUS_GFS_CMD_RMD:

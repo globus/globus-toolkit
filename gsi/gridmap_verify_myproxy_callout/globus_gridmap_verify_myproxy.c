@@ -18,6 +18,7 @@
 #include "globus_gsi_system_config.h"
 #include "gssapi.h"
 #include "globus_gss_assist.h"
+#include "globus_gsi_cert_utils.h"
 #include "globus_gridmap_callout_error.h"
 
 #include <stdlib.h>
@@ -217,6 +218,7 @@ static
 globus_result_t
 ggvm_get_myproxy_userid(
     gss_ctx_id_t                        context,
+    char *                              shared_user_cert,
     char *                              subject,
     char **                             userid)
 {
@@ -226,50 +228,54 @@ ggvm_get_myproxy_userid(
     char *                              ptr;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
-    myproxy_ca_cert_file = globus_libc_getenv("GLOBUS_MYPROXY_CA_CERT");
-    if(!myproxy_ca_cert_file)
-    {
-        GLOBUS_GRIDMAP_CALLOUT_ERROR(
-            result,
-            GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
-            ("GLOBUS_MYPROXY_CA_CERT not set."));
-        goto error;
-    }
 
-    /* extract user cert */
-    result = ggvm_extract_cert_from_chain(context, 0, &user_cert);
-    if(result != GLOBUS_SUCCESS)
+    if(!shared_user_cert)
     {
-        GLOBUS_GRIDMAP_CALLOUT_ERROR(
-            result,
-            GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
-            ("Could not extract user credentials."));
-        goto error;
-    }    
-
-    /* load ca cert for verify */   
-    result = ggvm_load_cert_from_file(myproxy_ca_cert_file, &myproxy_ca_cert);
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GRIDMAP_CALLOUT_ERROR(
-            result,
-            GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
-            ("Unable to load myproxy CA cert."));
-        goto error;
-    }    
-
-    /* verify cert */
-    result = ggvm_verify_cert(user_cert, myproxy_ca_cert);
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GRIDMAP_CALLOUT_ERROR(
-            result,
-            GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
-            ("Cert was not issued by correct CA."));
-        goto error;
-    }    
+        myproxy_ca_cert_file = globus_libc_getenv("GLOBUS_MYPROXY_CA_CERT");
+        if(!myproxy_ca_cert_file)
+        {
+            GLOBUS_GRIDMAP_CALLOUT_ERROR(
+                result,
+                GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
+                ("GLOBUS_MYPROXY_CA_CERT not set."));
+            goto error;
+        }
     
-    /* verify succeeded, parse userid from subject */
+        /* extract user cert */
+        result = ggvm_extract_cert_from_chain(context, 0, &user_cert);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GRIDMAP_CALLOUT_ERROR(
+                result,
+                GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
+                ("Could not extract user credentials."));
+            goto error;
+        }    
+    
+        /* load ca cert for verify */   
+        result = ggvm_load_cert_from_file(myproxy_ca_cert_file, &myproxy_ca_cert);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GRIDMAP_CALLOUT_ERROR(
+                result,
+                GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
+                ("Unable to load myproxy CA cert."));
+            goto error;
+        }    
+    
+        /* verify cert */
+        result = ggvm_verify_cert(user_cert, myproxy_ca_cert);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GRIDMAP_CALLOUT_ERROR(
+                result,
+                GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
+                ("Cert was not issued by correct CA."));
+            goto error;
+        }    
+    }
+    
+    /* verify succeeded or we are sharing, parse userid from subject */
     ptr = strrchr(subject, '/');
     if(ptr && 
         *ptr == '/' && 
@@ -306,6 +312,7 @@ error:
 globus_result_t
 ggvm_get_subject(
     gss_ctx_id_t                        context,
+    char *                              shared_user_cert,
     char **                             subject)
 {
     gss_name_t                          peer;
@@ -315,36 +322,52 @@ ggvm_get_subject(
     int                                 initiator;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
-    major_status = gss_inquire_context(&minor_status,
-                                       context,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       &initiator,
-                                       GLOBUS_NULL);
-
-    if(GSS_ERROR(major_status))
+    if(shared_user_cert)
     {
-        GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
-        goto error;
+        char *  sub;
+    
+        result = globus_gsi_cert_utils_read_pem_from_buffer(
+            shared_user_cert, NULL, &sub);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        *subject = sub;
+        return result;
     }
-
-    major_status = gss_inquire_context(&minor_status,
-                                       context,
-                                       initiator ? GLOBUS_NULL : &peer,
-                                       initiator ? &peer : GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL);
-
-    if(GSS_ERROR(major_status))
+    else
     {
-        GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
-        goto error;
+        major_status = gss_inquire_context(&minor_status,
+                                           context,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           &initiator,
+                                           GLOBUS_NULL);
+    
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
+            goto error;
+        }
+    
+        major_status = gss_inquire_context(&minor_status,
+                                           context,
+                                           initiator ? GLOBUS_NULL : &peer,
+                                           initiator ? &peer : GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL);
+    
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
+            goto error;
+        }
     }
     
     major_status = gss_display_name(&minor_status,
@@ -382,6 +405,7 @@ globus_gridmap_verify_myproxy_callout(
     char *                              subject = NULL;
     unsigned int                        buffer_length;
     globus_result_t                     result = GLOBUS_SUCCESS;
+    char *                              shared_user_cert = NULL;
     int                                 rc;
 
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
@@ -394,7 +418,11 @@ globus_gridmap_verify_myproxy_callout(
     identity_buffer = va_arg(ap, char *);
     buffer_length = va_arg(ap, unsigned int);
 
-    result = ggvm_get_subject(context, &subject);
+    if(strcmp(service, "sharing") == 0)
+    {
+        shared_user_cert = va_arg(ap, char *);
+    }
+    result = ggvm_get_subject(context, shared_user_cert, &subject);
     if(result != GLOBUS_SUCCESS || subject == NULL)
     {
         GLOBUS_GRIDMAP_CALLOUT_ERROR(
@@ -404,7 +432,8 @@ globus_gridmap_verify_myproxy_callout(
         goto error;
     }    
 
-    result = ggvm_get_myproxy_userid(context, subject, &found_identity);
+    result = ggvm_get_myproxy_userid(
+        context, shared_user_cert, subject, &found_identity);
     if(result == GLOBUS_SUCCESS)
     {
         if(desired_identity && strcmp(found_identity, desired_identity) != 0)

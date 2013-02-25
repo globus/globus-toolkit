@@ -29,6 +29,7 @@
 #include "globus_common.h"
 #include "gssapi.h"
 #include "globus_gss_assist.h"
+#include "globus_gsi_cert_utils.h"
 #include "globus_gridmap_callout_error.h"
 #include "version.h"
 #include <stdlib.h>
@@ -99,6 +100,7 @@ globus_gridmap_callout(
     int                                 rc;
     int                                 initiator;
     FILE *                              debug_file;
+    char *                              shared_user_buf;
 
     
     context = va_arg(ap, gss_ctx_id_t);
@@ -120,52 +122,68 @@ globus_gridmap_callout(
     /* check rc */
 
     
-    major_status = gss_inquire_context(&minor_status,
-                                       context,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       &initiator,
-                                       GLOBUS_NULL);
-
-    if(GSS_ERROR(major_status))
+    if(strcmp(service, "sharing") == 0)
     {
-        GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
-        goto error;
-    }
-
-    major_status = gss_inquire_context(&minor_status,
-                                       context,
-                                       initiator ? GLOBUS_NULL : &peer,
-                                       initiator ? &peer : GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL,
-                                       GLOBUS_NULL);
-
-    if(GSS_ERROR(major_status))
-    {
-        GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
-        goto error;
-    }
+        char *  subject;
+        shared_user_buf = va_arg(ap, char *);
     
-    major_status = gss_display_name(&minor_status,
-                                    peer,
-                                    &peer_name_buffer,
-                                    GLOBUS_NULL);
-    
-    if(GSS_ERROR(major_status))
+        result = globus_gsi_cert_utils_read_pem_from_buffer(
+            shared_user_buf, NULL, &subject);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        peer_name_buffer.value = subject;
+        peer_name_buffer.length = strlen(subject);
+    }
+    else
     {
-        GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
+        major_status = gss_inquire_context(&minor_status,
+                                           context,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           &initiator,
+                                           GLOBUS_NULL);
+    
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
+            goto error;
+        }
+    
+        major_status = gss_inquire_context(&minor_status,
+                                           context,
+                                           initiator ? GLOBUS_NULL : &peer,
+                                           initiator ? &peer : GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL);
+    
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
+            goto error;
+        }
+        
+        major_status = gss_display_name(&minor_status,
+                                        peer,
+                                        &peer_name_buffer,
+                                        GLOBUS_NULL);
+        
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
+            gss_release_name(&minor_status, &peer);
+            goto error;
+        }
+    
         gss_release_name(&minor_status, &peer);
-        goto error;
     }
-
-    gss_release_name(&minor_status, &peer);
-
     debug_file = fopen("gridmap_debug.txt","w");
 
     fprintf(debug_file,
