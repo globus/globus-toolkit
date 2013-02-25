@@ -18,7 +18,7 @@
 #include "globus_xio_tcp_driver.h"
 #include "globus_xio_gssapi_ftp.h"
 #include "globus_gridftp_server_control.h"
-#define LINE_LEN 1024
+#define LINE_LEN 65536
 
 void
 test_res(
