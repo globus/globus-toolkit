@@ -1,6 +1,6 @@
 Name:           gcmu
 Version:        2.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Globus Connect Multi-User
 
 %global transferapi_name globusonline-transfer-api-client
@@ -79,5 +79,8 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/gcmu.conf
 
 %changelog
-* Mon Feb 18 2013 Globus Toolkit <support@globus.org> 2.0
+* Tue Feb 26 2013 Globus Toolkit <support@globus.org> 2.0-2
+- Rebuild RHEL-5 based with correct python versions
+
+* Mon Feb 18 2013 Globus Toolkit <support@globus.org> 2.0-1
 - Initial packaging
