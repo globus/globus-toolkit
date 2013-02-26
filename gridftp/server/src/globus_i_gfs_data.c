@@ -172,7 +172,6 @@ typedef struct
     globus_list_t *                     active_rp_list;
     globus_list_t *                     rp_list;
     char *                              sharing_file;
-    globus_xio_attr_t                   udt_attr;
     
     globus_hashtable_t                  custom_cmd_table;
 } globus_l_gfs_data_session_t;
@@ -4238,75 +4237,6 @@ globus_i_gfs_data_request_command(
             call = GLOBUS_FALSE;
             break;
 
-
-        case GLOBUS_GFS_CMD_UPAS:
-            if(*cmd_info->pathname != '0' && *cmd_info->pathname != '1')
-            {
-                result = GlobusGFSErrorGeneric(
-                    "Controller parameter must be 0 or 1.");
-                    
-                globus_gridftp_server_finished_command(op, result, NULL);
-
-            }
-            else
-            {
-                char *                          candidates;
-                globus_xio_driver_list_ent_t *  ent;
-                
-                if(session_handle->net_stack_list == NULL)
-                {
-                    result = globus_l_gfs_data_load_stack(
-                        "udt",
-                        &op->session_handle->net_stack_list,
-                        &gfs_l_data_net_allowed_drivers,
-                        "udt");
-                    if(result != GLOBUS_SUCCESS)
-                    {
-                        result = GlobusGFSErrorWrapFailed(
-                            "Setting data channel driver stack", result);
-                    }
-                    
-                    globus_xio_attr_init(&session_handle->udt_attr);
-                }
-                
-                ent = globus_xio_driver_list_find_driver(
-                    session_handle->net_stack_list, "udt");
-
-                result = globus_xio_attr_cntl(
-                    session_handle->udt_attr,
-                    ent->driver,
-                    17 /* GLOBUS_XIO_UDT_GET_LOCAL_CANDIDATES*/,
-                    atoi(cmd_info->pathname),
-                    &candidates);
-                
-                globus_gridftp_server_finished_command(op, result, candidates);
-
-            }
-            
-            call = GLOBUS_FALSE;
-            break;
-
-        case GLOBUS_GFS_CMD_UPRT:
-            {
-                globus_xio_driver_list_ent_t *  ent;
-                
-                
-                ent = globus_xio_driver_list_find_driver(
-                    session_handle->net_stack_list, "udt");
-
-                result = globus_xio_attr_cntl(
-                    session_handle->udt_attr,
-                    ent->driver,
-                    18 /* GLOBUS_XIO_UDT_SET_REMOTE_CANDIDATES*/,
-                    cmd_info->pathname);
-                
-                globus_gridftp_server_finished_command(op, result, NULL);
-
-            }
-            
-            call = GLOBUS_FALSE;
-            break;
-
         case GLOBUS_GFS_CMD_SITE_CLIENTINFO:
             tmp = globus_malloc(strlen(cmd_info->pathname) + 1);
 
@@ -4560,34 +4490,6 @@ globus_l_gfs_data_handle_init(
             "globus_ftp_control_handle_init", result);
         goto error_data;
     }
-
-    if(session_handle->udt_attr)
-    {
-        globus_xio_attr_t               xio_attr;
-
-        result = globus_i_ftp_control_data_get_attr(
-            &handle->data_channel,
-            &xio_attr);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_WARN,
-                "set stack failed: %s\n",
-                globus_error_print_friendly(globus_error_peek(result)));
-            goto error_control;
-        }
-        
-        result = globus_xio_attr_copy(&xio_attr, session_handle->udt_attr);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_WARN,
-                "attr copy failed: %s\n",
-                globus_error_print_friendly(globus_error_peek(result)));
-            goto error_control;
-        }
-    }
-
 
     handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
     handle->outstanding_op = NULL;
@@ -9173,9 +9075,6 @@ globus_gridftp_server_finished_command(
       case GLOBUS_GFS_CMD_CKSM:
         op->cksm_response = globus_libc_strdup(command_data);
         op->user_code = 0;
-        break;
-      case GLOBUS_GFS_CMD_UPAS:
-        op->cksm_response = globus_libc_strdup(command_data);
         break;
       case GLOBUS_GFS_CMD_MKD:
       case GLOBUS_GFS_CMD_RMD:
