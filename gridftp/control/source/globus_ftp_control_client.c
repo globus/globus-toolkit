@@ -1629,7 +1629,7 @@ globus_ftp_control_authenticate(
     }
     
     /* Do limited delegation */
-    auth_info->req_flags |= 
+    tmp_auth_info.req_flags |= 
         GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG|GSS_C_DELEG_FLAG;
 
     result = globus_ftp_control_authenticate_ex(
