@@ -13,7 +13,7 @@
 Name:		globus-xio-popen-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.3
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Globus Toolkit - Globus XIO Pipe Open Driver
 
 Group:		System Environment/Libraries
@@ -26,7 +26,9 @@ Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-common-devel%{?_isa} >= 3
 BuildRequires:	globus-xio-devel%{?_isa} >= 3
+BuildRequires:  globus-core%{?_isa} >= 8
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO Pipe Open Driver Development Files
@@ -113,6 +115,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 2.3-6
+- Add missing dependencies
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 2.3-5
 - 5.2.3
 
