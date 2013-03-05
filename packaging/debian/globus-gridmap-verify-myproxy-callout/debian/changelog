@@ -1,3 +1,9 @@
+globus-gridmap-verify-myproxy-callout (1.1-1) unstable; urgency=low
+
+  * GT-365: Switch sharing user identification from DN to CERT
+
+ -- Globus Toolkit <support@globus.org>  Tue, 05 Mar 2013 09:34:44 -0500
+
 globus-gridmap-verify-myproxy-callout (1.0-2) unstable; urgency=low
 
   * 5.2.3

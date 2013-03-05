@@ -305,5 +305,8 @@ globus_wsrf_bp_schemas wsrf/c/core/tests/ogsa-bp/schema gpt
 # Python usage tools
 globus_usage_tools usage/python/tools/source gpt
 globus_usage_tools_test usage/python/tools/test gpt
+gridmap_verify_myproxy_callout gsi/gridmap_verify_myproxy_callout gpt
+globus_gridmap_eppn_callout	gsi/gridmap_eppn_callout	gpt
+
 # GCMU
 gcmu    globusonline/gcmu/source tar NULL GCMU_NATIVE_1_3_0
