@@ -13,7 +13,7 @@
 Name:		globus-xio-pipe-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.2
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Globus Toolkit - Globus Pipe Driver
 
 Group:		System Environment/Libraries
@@ -27,6 +27,8 @@ Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-devel%{?_isa} >= 3
+BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-common-devel%{?_isa} >= 14
 
 %package devel
 Summary:	Globus Toolkit - Globus Pipe Driver Development Files
@@ -113,6 +115,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 2.2-6
+- Add missing build dependency
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 2.2-5
 - 5.2.3
 
