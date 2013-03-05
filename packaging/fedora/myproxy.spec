@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.9
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -63,6 +63,7 @@ BuildRequires: tex(xtab.sty)
 BuildRequires: tex(multirow.sty)
 BuildRequires: tex(fullpage.sty)
 %endif
+BuildRequires:      globus-proxy-utils >= 5
 
 Requires:      myproxy-libs = %{version}-%{release}
 Requires:      globus-proxy-utils >= 5
@@ -459,6 +460,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 5.9-4
+- Add build dependency on globus-proxy-utils for %check step
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 5.9-3
 - Workaround missing F18 doxygen/latex dependency
 
