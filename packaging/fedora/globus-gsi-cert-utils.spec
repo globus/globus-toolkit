@@ -12,14 +12,14 @@
 
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
-Version:	8.3
-Release:	7%{?dist}
+Version:	8.4
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -212,6 +212,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 8.4-1
+- GT-365: Switch sharing user identification from DN to CERT
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 8.3-7
 - Workaround missing F18 doxygen/latex dependency
 

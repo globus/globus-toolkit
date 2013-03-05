@@ -1,3 +1,9 @@
+globus-gsi-cert-utils (8.4-1) unstable; urgency=low
+
+  * GT-365: Switch sharing user identification from DN to CERT
+
+ -- Globus Toolkit <support@globus.org>  Tue, 05 Mar 2013 14:20:00 -0500
+
 globus-gsi-cert-utils (8.3-2) unstable; urgency=low
 
   * GT 5.2.2 final
