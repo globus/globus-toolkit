@@ -12,7 +12,7 @@
 
 Name:		globus-gridmap-verify-myproxy-callout
 %global _name %(tr - _ <<< %{name})
-Version:	1.1
+Version:	1.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus gridmap myproxy callout.
 
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 1.2-1
+- GT-341: GPT metadata problem in new myproxy callout package
+
 * Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 1.1-1
 - GT-365: Switch sharing user identification from DN to CERT
 

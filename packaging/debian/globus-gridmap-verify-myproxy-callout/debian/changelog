@@ -1,3 +1,9 @@
+globus-gridmap-verify-myproxy-callout (1.2-1) unstable; urgency=low
+
+  * GT-341: GPT metadata problem in new myproxy callout package
+
+ -- Globus Toolkit <support@globus.org>  Wed, 06 Mar 2013 14:04:17 -0500
+
 globus-gridmap-verify-myproxy-callout (1.1-1) unstable; urgency=low
 
   * GT-365: Switch sharing user identification from DN to CERT
