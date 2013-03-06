@@ -63,8 +63,8 @@ BuildRequires: tex(xtab.sty)
 BuildRequires: tex(multirow.sty)
 BuildRequires: tex(fullpage.sty)
 %endif
-BuildRequires:      globus-proxy-utils%{_isa} >= 5
-BuildRequires:      globus-gsi-cert-utils-progs%{_isa} >= 8
+BuildRequires:      globus-proxy-utils%{?_isa} >= 5
+BuildRequires:      globus-gsi-cert-utils-progs%{?_isa} >= 8
 BuildRequires:      globus-core%{?_isa} >= 8
 BuildRequires:      globus-common-devel%{?_isa} >= 8
 BuildRequires:      globus-xio-devel%{?_isa} >= 3
