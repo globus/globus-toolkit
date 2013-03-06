@@ -13,7 +13,7 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
 Version:	9.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
@@ -34,6 +34,7 @@ BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
 BuildRequires:	globus-xio-devel%{?_isa} >= 3
 BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 10
 BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-gssapi-error%{?_isa} >= 4
 
 %package devel
 Summary:	Globus Toolkit - uniform I/O interface Development Files
@@ -119,6 +120,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 9.4-2
+- missing dependency on globus-gssapi-error
+
 * Mon Feb 04 2013 Globus Toolkit <support@globus.org> - 9.4-1
 - GT-32: Force IPv6 in globus_io with an environment variable
 
