@@ -1,3 +1,9 @@
+globus-ftp-control (4.6-1) unstable; urgency=low
+
+  * GT-366 fix delegation bug introduced in last release.
+
+ -- Globus Toolkit <support@globus.org>  Wed, 06 Mar 2013 07:30:31 -0500
+
 globus-ftp-control (4.5-1) unstable; urgency=low
 
   * GT-334: segfault using ftp control lib
