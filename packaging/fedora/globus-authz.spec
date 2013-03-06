@@ -13,7 +13,7 @@
 Name:		globus-authz
 %global _name %(tr - _ <<< %{name})
 Version:	2.2
-Release:	7%{?dist}
+Release:	8%{?dist}
 Summary:	Globus Toolkit - Globus authz library
 
 Group:		System Environment/Libraries
@@ -35,6 +35,9 @@ BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-authz-callout-error-devel%{?_isa} >= 2
 BuildRequires:	globus-callout-devel%{?_isa} >= 2
 BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -182,6 +185,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 2.2-8
+- add missing build dependencies
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 2.2-7
 - Workaround missing F18 doxygen/latex dependency
 
