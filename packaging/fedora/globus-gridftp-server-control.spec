@@ -13,7 +13,7 @@
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
 Version:	2.8
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
 Group:		System Environment/Libraries
@@ -32,6 +32,7 @@ BuildRequires:	globus-xio-pipe-driver-devel%{?_isa} >= 2
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 BuildRequires:	globus-xio-devel%{?_isa} >= 3
+BuildRequires:	globus-core%{?_isa} >= 8
 
 %package devel
 Summary:	Globus Toolkit - Globus GridFTP Server Library Development Files
@@ -115,6 +116,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Mar 06 2013  Globus Toolkit <support@globus.org> - 2.8-2
+- Add missing build dependency
+
 * Mon Feb 04 2013 Globus Toolkit <support@globus.org> - 2.8-1
 - GT-302: Add initial sharing support to the GridFTP server
 - GT-356: Add configuration and a command to make the sharing authorization file easier to manage
