@@ -39,6 +39,7 @@ BuildRequires:	globus-xio-devel%{?_isa} >= 3
 BuildRequires:	globus-authz-devel%{?_isa} >= 2
 BuildRequires:	globus-gfork-devel%{?_isa} >= 3
 BuildRequires:	globus-ftp-control-devel%{?_isa} >= 4
+BuildRequires:	globus-core%{?_isa} >= 8
 
 %package progs
 Summary:	Globus Toolkit - Globus GridFTP Server Programs
