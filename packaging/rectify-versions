@@ -247,13 +247,14 @@ sub update_rpm($$$)
     if ($cvs_changelog && $gtrelease)
     {
         my ($major, $minor, $micro) = split(/\./, $gtrelease);
-        my $old_tag = "globus_${major}_${minor}_" . ($micro-1);
+        $micro =~ s/rc.*//;
+        my $old_tag = "globus_${major}_${minor}_" . (int($micro)-1);
         my $new_tag = "globus_${major}_${minor}_branch";
 
         my $changelogdir = $specfilename;
         $changelogdir = $pkgmeta->{GPTFILE};
         $changelogdir =~ s|(/pkgdata)?/pkg_data_src.gpt(.in)?||;
-        chomp($changelog = `cvs -q log -N -r$old_tag::$new_tag $changelogdir 2> /dev/null | grep -E '^[A-Z]+-[0-9]+'  | sort -u`);
+        chomp($changelog = `cvs -q log -N -r${old_tag}:: ${changelogdir} 2> /dev/null | grep -E '^[A-Z]+-[0-9]+'  | sort -u`);
 
         if ($changelog eq '')
         {
@@ -702,12 +703,13 @@ sub update_changelog
     if ($cvs_changelog)
     {
         my ($major, $minor, $micro) = split(/\./, $gtrelease);
+        $micro =~ s/rc.*//;
         my $old_tag = "globus_${major}_${minor}_" . ($micro-1);
         my $new_tag = "globus_${major}_${minor}_branch";
         
         my $changelogdir = $pkgmeta->{GPTFILE};
         $changelogdir =~ s|(/pkgdata)?/pkg_data_src.gpt(.in)?||;
-        chomp($changelog = `cvs -q log -N -r$old_tag::$new_tag $changelogdir 2> /dev/null | grep -E '^[A-Z]+-[0-9]+'  | sort -u`);
+        chomp($changelog = `cvs -q log -N -r${old_tag}:: ${changelogdir} 2> /dev/null | grep -E '^[A-Z]+-[0-9]+'  | sort -u`);
 
         if ($changelog eq '')
         {
