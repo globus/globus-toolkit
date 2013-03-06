@@ -64,6 +64,7 @@ BuildRequires: tex(multirow.sty)
 BuildRequires: tex(fullpage.sty)
 %endif
 BuildRequires:      globus-proxy-utils >= 5
+BuildRequires:      globus-gsi-cert-utils-progs >= 8
 
 Requires:      myproxy-libs = %{version}-%{release}
 Requires:      globus-proxy-utils >= 5
