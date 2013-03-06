@@ -13,7 +13,7 @@
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.3
-Release:	7%{?dist}
+Release:	8%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
 Group:		System Environment/Libraries
@@ -37,6 +37,7 @@ BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
 BuildRequires:	globus-xio-devel%{?_isa} >= 3
 BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
 BuildRequires:	globus-xio-doc >= 3
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -193,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 2.3-8
+- missing globus-core build dependency
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 2.3-7
 - Workaround missing F18 doxygen/latex dependency
 
