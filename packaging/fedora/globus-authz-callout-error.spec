@@ -13,7 +13,7 @@
 Name:		globus-authz-callout-error
 %global _name %(tr - _ <<< %{name})
 Version:	2.2
-Release:	7%{?dist}
+Release:	8%{?dist}
 Summary:	Globus Toolkit - Globus authz error library
 
 Group:		System Environment/Libraries
@@ -29,6 +29,7 @@ Requires:	globus-common%{?_isa} >= 14
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -175,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 2.2-8
+- missing build dependency on globus-core
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 2.2-7
 - Workaround missing F18 doxygen/latex dependency
 
