@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.9
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -68,8 +68,8 @@ BuildRequires:      globus-gsi-cert-utils-progs%{_isa} >= 8
 BuildRequires:      globus-core%{?_isa} >= 8
 BuildRequires:      globus-common-devel%{?_isa} >= 8
 BuildRequires:      globus-xio-devel%{?_isa} >= 3
-BuildRequires:      globus-usage-devel%{?_isa} >= 3
-BuildRequires:      globus-gss-assist-devel%{?_isa} >= 8
+BuildRequires:      globus-usage-devel%{?_isa} >= 0
+BuildRequires:      globus-gss-assist-devel%{?_isa} >= 3
 
 Requires:      myproxy-libs = %{version}-%{release}
 Requires:      globus-proxy-utils >= 5
@@ -466,6 +466,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 5.9-5
+- add missing dependencies
+
 * Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 5.9-4
 - Add build dependency on globus-proxy-utils for %check step
 
