@@ -1,3 +1,9 @@
+globus-gridftp-server (6.20-1) unstable; urgency=low
+
+  * GT-365: Switch sharing user identification from DN to CERT
+
+ -- Globus Toolkit <support@globus.org>  Wed, 06 Mar 2013 09:20:46 -0500
+
 globus-gridftp-server (6.19-1) unstable; urgency=low
 
   * GT-302: Add initial sharing support to the GridFTP server

@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.19
+Version:	6.20
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.4/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -180,6 +180,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 6.20-1
+- GT-365: Switch sharing user identification from DN to CERT
+
 * Mon Feb 04 2013 Globus Toolkit <support@globus.org> - 6.19-1
 - GT-302: Add initial sharing support to the GridFTP server
 - GT-335: Update doc to clarify restrict_paths backend usage.
