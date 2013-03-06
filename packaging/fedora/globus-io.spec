@@ -45,6 +45,7 @@ Requires:	globus-gss-assist-devel%{?_isa} >= 8
 Requires:	globus-xio-devel%{?_isa} >= 3
 Requires:	globus-gssapi-gsi-devel%{?_isa} >= 10
 Requires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-gssapi-error-devel%{?_isa} >= 4
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid

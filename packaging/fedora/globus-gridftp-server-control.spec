@@ -26,6 +26,7 @@ Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-xio%{?_isa} >= 3
 Requires:	globus-xio-pipe-driver%{?_isa} >= 2
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
+Requires:	globus-gssapi-error%{?_isa} >= 4
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-pipe-driver-devel%{?_isa} >= 2
@@ -42,6 +43,7 @@ Requires:	globus-xio-pipe-driver-devel%{?_isa} >= 2
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-gssapi-error-devel%{?_isa} >= 4
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
