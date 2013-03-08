@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
 Version:	1.6
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
@@ -40,11 +40,11 @@ Requires:     perl = %{perl_version}
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 %endif
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core >= 8
-BuildRequires:	globus-common-devel >= 14
-BuildRequires:	globus-xio-devel >= 3
-BuildRequires:	globus-scheduler-event-generator-devel >= 4
-BuildRequires:	globus-gram-protocol-devel >= 11
+BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-xio-devel%{?_isa} >= 3
+BuildRequires:	globus-scheduler-event-generator-devel%{?_isa} >= 4
+BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 11
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -281,6 +281,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Mar 08 2013 Globus Toolkit <support@globus.org> - 1.6-3
+- Dependency updates
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 1.6-2
 - Workaround missing F18 doxygen/latex dependency
 
