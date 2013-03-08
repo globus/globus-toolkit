@@ -1,3 +1,9 @@
+globus-gram-job-manager-fork (1.5-3) unstable; urgency=low
+
+  * Add some missing dependencies
+
+ -- Globus Toolkit <support@globus.org>  Fri, 08 Mar 2013 14:36:19 -0500
+
 globus-gram-job-manager-fork (1.5-2) unstable; urgency=low
 
   * Make sure globus-scheduler-event-generator-admin is installed before using it in  postinst
