@@ -1,7 +1,7 @@
 Source: globus-gram-audit
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, globus-core
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
