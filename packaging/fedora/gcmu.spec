@@ -28,7 +28,8 @@ Requires:       gsi-openssh%{?_isa}
 Requires:       gsi-openssh-clients%{?_isa} 
 Requires:       globus-gsi-cert-utils-progs%{?_isa} 
 Requires:       globus-simple-ca
-Requires:       globus-gridmap-verify-myproxy-callout 
+Requires:       globus-gridmap-verify-myproxy-callout%{?_isa}
+Requires:       globus-gridmap-eppn-callout%{?_isa}
 Requires:	%{python}
 
 
