@@ -1,0 +1,31 @@
+<IfModule mod_ssl.c>
+
+    # Serve HTML templates with all static files (images, CSS, etc.) requested directly at http[s]://<hostname>/oauth/templates/
+    Alias /oauth/templates/ /home/globus/myproxy-oauth/myproxyoauth/templates/
+    <Directory /home/globus/myproxy-oauth/myproxyoauth/templates>
+        Options Indexes
+        Order allow,deny
+        Allow from all
+    </Directory>
+
+    # Serve static files requested from MyProxy OAuth application
+    Alias /oauth/static/ /home/globus/myproxy-oauth/myproxyoauth/static/
+    <Directory /home/globus/myproxy-oauth/myproxyoauth/static>
+        Options Indexes
+        Order allow,deny
+        Allow from all
+    </Directory>
+
+    # Serve other files using mod_wsgi
+    WSGIDaemonProcess myproxyoauth user=globus group=globus threads=1
+    WSGIScriptAlias /oauth /home/globus/myproxy-oauth/wsgi.py
+    <Directory /home/globus/myproxy-oauth/myproxyoauth>
+#        WSGIProcessGroup myproxyoauth
+#        WSGIApplicationGroup %{GLOBAL}
+#        WSGIScriptReloading On
+        SSLRequireSSL
+        Order allow,deny
+        Allow from all
+    </Directory>
+
+</IfModule>
