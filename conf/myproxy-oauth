@@ -1,16 +1,16 @@
 <IfModule mod_ssl.c>
 
     # Serve HTML templates with all static files (images, CSS, etc.) requested directly at http[s]://<hostname>/oauth/templates/
-    Alias /oauth/templates/ /home/globus/myproxy-oauth/myproxyoauth/templates/
-    <Directory /home/globus/myproxy-oauth/myproxyoauth/templates>
+    Alias /oauth/templates/ /opt/myproxy-oauth/myproxyoauth/templates/
+    <Directory /opt/myproxy-oauth/myproxyoauth/templates>
         Options Indexes
         Order allow,deny
         Allow from all
     </Directory>
 
     # Serve static files requested from MyProxy OAuth application
-    Alias /oauth/static/ /home/globus/myproxy-oauth/myproxyoauth/static/
-    <Directory /home/globus/myproxy-oauth/myproxyoauth/static>
+    Alias /oauth/static/ /opt/myproxy-oauth/myproxyoauth/static/
+    <Directory /opt/myproxy-oauth/myproxyoauth/static>
         Options Indexes
         Order allow,deny
         Allow from all
@@ -18,8 +18,8 @@
 
     # Serve other files using mod_wsgi
     WSGIDaemonProcess myproxyoauth user=www-data group=www-data threads=1
-    WSGIScriptAlias /oauth /home/globus/myproxy-oauth/wsgi.py
-    <Directory /home/globus/myproxy-oauth/myproxyoauth>
+    WSGIScriptAlias /oauth /opt/myproxy-oauth/wsgi.py
+    <Directory /opt/myproxy-oauth/myproxyoauth>
 #        WSGIProcessGroup myproxyoauth
 #        WSGIApplicationGroup %{GLOBAL}
 #        WSGIScriptReloading On
