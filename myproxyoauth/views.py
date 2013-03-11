@@ -249,8 +249,16 @@ def authorize():
     client = db_session.query(Client).\
             filter(Client.oauth_consumer_key==transaction.oauth_consumer_key).\
             first()
-    cert = myproxy.myproxy_logon(transaction.certreq, transaction.certlifetime,
-            username, passphrase, client.myproxy_server)
+    cert = None
+    try:
+        cert = myproxy.myproxy_logon(transaction.certreq, transaction.certlifetime,
+                username, passphrase, client.myproxy_server)
+    except Exception as e:
+            return render_template('authorize.html',
+                    client_name=client.name,
+                    client_url=client.home_url,
+                    temp_token=oauth_temp_token,
+                    retry_message=str(e))
 
     oauth_verifier = 'myproxy:oa4mp,2012:/verifier/' \
             + ''.join([random.choice('0123456789abcdef') for i in range(32)]) \
