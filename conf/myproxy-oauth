@@ -17,7 +17,7 @@
     </Directory>
 
     # Serve other files using mod_wsgi
-    WSGIDaemonProcess myproxyoauth user=globus group=globus threads=1
+    WSGIDaemonProcess myproxyoauth user=www-data group=www-data threads=1
     WSGIScriptAlias /oauth /home/globus/myproxy-oauth/wsgi.py
     <Directory /home/globus/myproxy-oauth/myproxyoauth>
 #        WSGIProcessGroup myproxyoauth
