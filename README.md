@@ -1,7 +1,8 @@
-myproxyoauth-server
-===================
+myproxy-oauth
+=============
 
-MyProxy OAuth Delegation Service in Python
+MyProxy Delegation Service in Python
+------------------------------------
 
 The MyProxy Delegation Service is a Python implementation of MyProxy OAuth
 protocol, https://docs.google.com/document/pub?id=10SC7oSURc-EgxMQjcCS50gz0u2HzDJAFiG5hEHiSdxA.
@@ -27,9 +28,9 @@ specified in the registration form will become an admin of the service.
 
 Prerequisite packages on Debian-based systems:
 
-python
-python-openssl
-python-flask
-python-sqlalchemy
-libapache2-mod-wsgi
+* python
+* python-openssl
+* python-flask
+* python-sqlalchemy
+* libapache2-mod-wsgi
 
