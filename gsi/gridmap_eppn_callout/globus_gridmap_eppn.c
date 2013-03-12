@@ -162,6 +162,9 @@ ggvm_verify_cert(
     rc = X509_STORE_add_cert(ca_store, ca_cert);
     if(rc != 1)
     {
+        result = globus_error_put(
+                globus_error_construct_openssl_error(
+                    GLOBUS_GRIDMAP_CALLOUT_ERROR_MODULE, NULL));
         GLOBUS_GRIDMAP_CALLOUT_ERROR(
             result,
             GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
@@ -172,6 +175,9 @@ ggvm_verify_cert(
     cert_ctx = X509_STORE_CTX_new();
     if(cert_ctx == NULL)
     {
+        result = globus_error_put(
+                globus_error_construct_openssl_error(
+                    GLOBUS_GRIDMAP_CALLOUT_ERROR_MODULE, NULL));
         GLOBUS_GRIDMAP_CALLOUT_ERROR(
             result,
             GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
@@ -182,6 +188,9 @@ ggvm_verify_cert(
     rc = X509_STORE_CTX_init(cert_ctx, ca_store, cert, NULL);
     if(rc != 1)
     {
+        result = globus_error_put(
+                globus_error_construct_openssl_error(
+                    GLOBUS_GRIDMAP_CALLOUT_ERROR_MODULE, NULL));
         GLOBUS_GRIDMAP_CALLOUT_ERROR(
             result,
             GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
@@ -192,10 +201,12 @@ ggvm_verify_cert(
     rc = X509_verify_cert(cert_ctx);
     if(rc != 1)
     {
+        unsigned long err_num = X509_STORE_CTX_get_error(cert_ctx);
         GLOBUS_GRIDMAP_CALLOUT_ERROR(
             result,
             GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
-            ("verification failed."));
+            ("Couldn't verify credential containing ePPN extension: %s",
+            X509_verify_cert_error_string(err_num)));
         goto err;
     }
 
@@ -531,7 +542,6 @@ globus_gridmap_eppn_callout(
     }
     else
     {
-        result = GLOBUS_SUCCESS;
         /* proceed with gridmap lookup */
         if(desired_identity == NULL)
         {
@@ -559,6 +569,7 @@ globus_gridmap_eppn_callout(
             }
             found_identity = globus_libc_strdup(desired_identity);
         }
+        result = GLOBUS_SUCCESS;
     }
 
     if(found_identity)
