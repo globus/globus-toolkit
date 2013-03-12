@@ -19,6 +19,7 @@ import getopt
 import logging
 import os
 import pkgutil
+import platform
 import re
 import shutil
 import sys
@@ -41,7 +42,7 @@ class SetupService(gcmu.setup.Setup):
     def configure_security(self, force=False):
         fetch_creds = self.conf.get_security_fetch_credentials_from_relay()
 
-        # Do nothing if we don't want to use GO relay creds
+        # Do nothing if we don't want to use GlobusOnline relay creds
         if not fetch_creds:
             return
 
@@ -58,11 +59,11 @@ class SetupService(gcmu.setup.Setup):
         if os.path.exists(cert) and os.path.exists(key):
             fetch_creds = False
 
-        if force:
+        if force and self.conf.get_security_fetch_credentials_from_relay():
             fetch_creds = True
 
         if fetch_creds:
-            self.logger.debug("Fetching credentials from Globus Connect")
+            self.logger.debug("Fetching credentials from Globus")
             setup_key = None
 
             endpoint_name = self.conf.get_endpoint_name()
@@ -105,13 +106,37 @@ class SetupService(gcmu.setup.Setup):
                     cfp.close()
                 os.umask(old_umask)
 
-        self.logger.debug("Installing GO Relay CA into GCMU trusted cert dir")
+        self.logger.debug("Installing GlobusOnline Relay CA into GCMU trusted cert dir")
 
         certdir = self.conf.get_security_trusted_certificate_directory()
         if not os.path.exists(certdir):
             os.makedirs(certdir, 0755)
         gcmu.security.install_ca(certdir)
 
+    def restart(self, service):
+        (name, ver, id) = platform.linux_distribution()
+        args = [
+                os.path.join(
+                    self.conf.root, self.conf.root, "etc", "init.d",
+                    service),
+                "restart"]
+        service_command = None
+        starters = [
+            "/sbin/service",
+            "/usr/sbin/service",
+            "/usr/sbin/invoke-rc.d"
+        ]
+
+        for path in starters:
+            if os.path.exists(path):
+                service_command = path
+                break
+
+        if service_command is not None:
+            args = [service_command, service, "restart"]
+
+        restarter = Popen(args, stdin = None, stdout=PIPE, stderr=PIPE)
+        restarter.communicate()
 
 class SetupGridFtpService(SetupService):
     """
@@ -202,14 +227,12 @@ class SetupGridFtpService(SetupService):
                         % (key))
 
                 gridftp_gcmu_conf.write("$GRIDMAP %s\n" \
-                        % (os.path.join(
-                                "/", "etc", "grid-security",
-                                "gridmap-gcmu")))
+                        % (self.conf.get_security_gridmap_file())
             finally:
                 gridftp_gcmu_conf.close()
 
     def configure_sharing(self, force=False):
-        self.logger.debug("Configuring GO sharing for GridFTP server")
+        self.logger.debug("Configuring GlobusOnline sharing for GridFTP server")
 
         gridftp_d = os.path.join(self.conf.root, "etc", "gridftp.d")
         gcmu_sharing = os.path.join(gridftp_d, "gcmu-sharing")
@@ -225,9 +248,10 @@ class SetupGridFtpService(SetupService):
 
         gridftp_gcmu_conf = file(gcmu_sharing, "w")
         try:
-            gridftp_gcmu_conf.write("sharing_dn\t\"%s\"\n" % \
-                SetupGridFtpService.SHARING_DN)
-            sharing_rp = self.conf.get_gridftp_sharing_restrict_paths()
+            sharing_dn = self.conf.get_gridftp_sharing_dn()
+	    gridftp_gcmu_conf.write("sharing_dn\t\"%s\"\n" % \
+                sharing_dn)
+            sharing_rp = self.conf.get_gridftp_sharing_restrict_port()
             if sharing_rp is not None:
                 gridftp_gcmu_conf.write("sharing_rp %s" % sharing_rp)
             sharing_file = self.conf.get_gridftp_sharing_file()
@@ -236,27 +260,35 @@ class SetupGridFtpService(SetupService):
         finally:
             gridftp_gcmu_conf.close()
 
+    def configure_authorization(self, force=False):
+        method = self.conf.get_security_authorization_method()
+
+        if method == "MyProxyGridmapCallout":
+            return self.configure_gridmap_verify_myproxy_callout(force)
+        elif method == "Gridmap":
+            return self.configure_gridmap(force)
+        elif method == "CILogon":
+            return self.configure_cilogon(force)
+
     def configure_gridmap_verify_myproxy_callout(self, force=False):
         self.logger.debug("Configuring myproxy callout for GridFTP")
 
         gridftp_d = os.path.join(self.conf.root, "etc", "gridftp.d")
-        gcmu_gridmap_myproxy_callout = os.path.join(
-                gridftp_d, "gcmu-gridmap-myproxy-callout")
+        gcmu_authz = os.path.join(
+                gridftp_d, "gcmu-authorization")
 
-        if not self.conf.get_security_use_myproxy_gridmap_callout():
-            if os.path.exists(gcmu_gridmap_myproxy_callout):
-                self.logger.debug("Removing old myproxy callout configuration")
-                os.remove(gcmu_gridmap_myproxy_callout)
-            return
+        if os.path.exists(gcmu_authz):
+            self.logger.debug("Removing old authorization configuration")
+            os.remove(gcmu_authz)
 
         if not os.path.exists(gridftp_d):
             os.makedirs(gridftp_d, 0755)
 
-        gridftp_gcmu_conf = file(gcmu_gridmap_myproxy_callout, "w")
+        gridftp_gcmu_conf = file(gcmu_authz, "w")
         try:
             gridftp_gcmu_conf.write("$GSI_AUTHZ_CONF \"%s\"\n" % (
                 os.path.join(
-                    "/", "etc",
+                    self.conf.root, "etc",
                     "gridmap_verify_myproxy_callout-gsi_authz.conf"
                     )
                 )
@@ -299,9 +331,9 @@ class SetupGridFtpService(SetupService):
                     cadir, myproxy_ca_hash + ".0")
             installed_signing_policy = os.path.join(
                     cadir, myproxy_ca_hash + ".signing_policy")
-            if installed_cert != myproxy_certpath:
+            if not os.path.exists(installed_cert):
                 self.logger.error("MyProxy CA not installed in trusted CA dir")
-            if installed_signing_policy != myproxy_signing_policy:
+            if not os.path.exists(installed_signing_policy):
                 self.logger.error("MyProxy CA signing policy not installed " + \
                     "in trusted CA dir")
             
@@ -311,14 +343,87 @@ class SetupGridFtpService(SetupService):
         finally:
             gridftp_gcmu_conf.close()
 
+    def configure_gridmap(self, force=False):
+        self.logger.debug("Configuring gridmap file for GridFTP")
+
+        gridftp_d = os.path.join(self.conf.root, "etc", "gridftp.d")
+        gcmu_authz = os.path.join(
+                gridftp_d, "gcmu-authorization")
+
+        if os.path.exists(gcmu_authz):
+            self.logger.debug("Removing old authorization configuration")
+            os.remove(gcmu_authz)
+
+        if not os.path.exists(gridftp_d):
+            os.makedirs(gridftp_d, 0755)
+
+        gridftp_gcmu_conf = file(gcmu_authz, "w")
+        try:
+            gridmap = self.conf.get_security_gridmap_file()
+            gridftp_gcmu_conf.write("$GRIDMAP \"%s\"\n" % (gridmap))
+        finally:
+            gridftp_gcmu_conf.close()
+
+    def configure_cilogon(self, force=False):
+        self.logger.debug("Configuring CILogon authorization")
+
+        gridftp_d = os.path.join(self.conf.root, "etc", "gridftp.d")
+        gcmu_authz = os.path.join(
+                gridftp_d, "gcmu-authorization")
+
+        if os.path.exists(gcmu_authz):
+            self.logger.debug("Removing old authorization configuration")
+            os.remove(gcmu_authz)
+
+        if not os.path.exists(gridftp_d):
+            os.makedirs(gridftp_d, 0755)
+
+        gridftp_gcmu_conf = file(gcmu_authz, "w")
+        try:
+            cadir = self.conf.get_security_trusted_certificate_directory()
+            ca = pkgutil.get_data("gcmu", "cilogon-basic.pem")
+            signing_policy = pkgutil.get_data("gcmu",
+                    "cilogon-basic.signing_policy")
+            cahash = gcmu.security.get_certificate_hash_from_data(ca)
+
+            idp = self.conf.get_security_cilogon_identity_provider()
+
+            gcmu.security.install_ca(cadir, ca, signing_policy)
+
+            gridftp_gcmu_conf.write(
+                    "$GLOBUS_MYPROXY_CA_CERT \"%s\"\n" %
+                    (os.path.join(cadir, cahash + ".0")))
+            gridftp_gcmu_conf.write(
+                    "$GLOBUS_MYPROXY_AUTHORIZED_DN " +
+                    "\"/DC=org/DC=cilogon/C=US/O=%s\"\n" % (idp))
+            gridftp_gcmu_conf.write(
+                    "$GSI_AUTHZ_CONF \"%s\"\n" % (
+                            os.path.join(
+                            self.conf.root, "etc",
+                            "gridmap_eppn_callout-gsi_authz.conf")))
+        finally:
+            gridftp_gcmu_conf.close()
+
     def configure(self, force=False):
         server = self.conf.get_gridftp_server()
         if server is not None:
             if gcmu.is_local_service(server):
                 self.configure_security(force=force)
                 self.configure_server(force=force)
-                self.configure_gridmap_verify_myproxy_callout(force=force)
+                self.configure_authorization(force=force)
                 self.configure_sharing(force=force)
+
+    def unconfigure(self):
+        server = self.conf.get_gridftp_server()
+        if server is not None:
+            if gcmu.is_local_service(server):
+                gridftp_d = os.path.join(self.conf.root, "etc", "gridftp.d")
+                for name in os.listdir(gridftp_d):
+                    if name.startswith("gcmu"):
+                        os.remove(os.path.join(gridftp_d, name))
+
+    def restart(self, force=False):
+        SetupService.restart(self, "globus-gridftp-server")
 
 class SetupMyProxyService(SetupService):
     """
@@ -413,7 +518,8 @@ class SetupMyProxyService(SetupService):
 """
 
     def configure_myproxy_mapapp(self, force=False):
-        if not self.conf.get_security_use_myproxy_gridmap_callout():
+        method = self.conf.get_security_authorization_method()
+        if method != "MyProxyGridmapCallout":
             self.logger.debug("Not using MyProxy GridMap Callout, " +
                 "nothing to configure")
             return
@@ -479,13 +585,13 @@ class SetupMyProxyService(SetupService):
             osname = out[0].strip()
             if osname in 'Debian|Ubuntu':
                 myproxy_server_conf = os.path.join(
-                    '/', 'etc', 'default', 'myproxy-server')
+                    self.conf.root, 'etc', 'default', 'myproxy-server')
         finally:
             pass
 
         if myproxy_server_conf is None:
             myproxy_server_conf = os.path.join(
-                        '/', 'etc', 'sysconfig', 'myproxy-server')
+                        self.conf.root, 'etc', 'sysconfig', 'myproxy-server')
         
         myproxy_server_conf_fd = open(myproxy_server_conf, 'r+')
         try:
@@ -550,60 +656,16 @@ fi
         self.write_myproxy_conf()
         self.write_myproxy_init_conf()
 
-def main(args):
-    gcmu_conf = None
-    force = False
-    opts, arg = getopt.getopt(args, "c:gmdfr:h")
-    do_gridftp = False
-    do_myproxy = False
-    root = '/'
-    debug = False
-    for (o, val) in opts:
-        if o == '-c':
-            gcmu_conf = val
-        elif o == '-d':
-            debug = True
-        elif o == '-g':
-            do_gridftp = True
-            do_any = True
-        elif o == '-m':
-            do_myproxy = True
-            do_any = True
-        elif o == '-f':
-            force = True
-        elif o == '-r':
-            root = val
-        elif o == '-h':
-            print "gcmu-setup-services [-c CONF] [-g|-m|-d|-f] [-r ROOT] -h"
-        else:
-            print "Unknown option %s" %(o)
-            sys.exit(1)
+    def unconfigure(self):
+        server = self.conf.get_myproxy_server()
+        if server is not None:
+            if gcmu.is_local_service(server):
+                gcmu_dir = os.path.join(self.conf.root, "etc", "gcmu")
+                for name in os.listdir(gcmu_dir):
+                    if name.startswith("myproxy"):
+                        os.remove(os.path.join(gcmu_dir, name))
 
-    # Default to do all
-    if do_gridftp is False and do_myproxy is False:
-        do_gridftp = True
-        do_myproxy = True
+    def restart(self, force=False):
+        SetupService.restart(self, "myproxy-server")
 
-    conf = gcmu.configfile.ConfigFile(config_file=gcmu_conf, root=root)
-    errorcount = 0
-    api = None
-
-    if do_myproxy:
-        myproxy_setup = SetupMyProxyService(
-                config_obj=conf, debug=debug, api=api)
-        myproxy_setup.configure(force=force)
-        api = myproxy_setup.api
-        errorcount += myproxy_setup.errorcount
-
-    if do_gridftp:
-        gridftp_setup = SetupGridFtpService(
-                config_obj=conf, debug=debug, api=api)
-        gridftp_setup.configure(force=force)
-        errorcount += gridftp_setup.errorcount
-
-    return errorcount
-    
-if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
-
-# vim: set filetype=python:
+# vim: filetype=python:

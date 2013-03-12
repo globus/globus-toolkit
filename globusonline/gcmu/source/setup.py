@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name = 'gcmu',
-    version = '2.0',
+    version = '2.0.1',
     description = 'Globus Connect Multi-User',
     author = 'Globus Toolkit',
     author_email = 'support@globus.org',
@@ -13,5 +13,5 @@ setup(name = 'gcmu',
         'gcmu': [ '*.pem', '*.signing_policy', 'mapapp-template' ]
         },
     data_files = [( '/etc', [ 'gcmu.conf' ])],
-    scripts = ['gcmu-setup-endpoint', 'gcmu-setup-services'],
+    scripts = ['gcmu-setup'],
     )

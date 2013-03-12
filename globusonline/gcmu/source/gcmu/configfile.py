@@ -34,15 +34,24 @@ class ConfigFile(ConfigParser.ConfigParser):
     CERTIFICATE_FILE_OPTION = "CertificateFile"
     KEY_FILE_OPTION = "KeyFile"
     TRUSTED_CERTIFICATE_DIRECTORY_OPTION = "TrustedCertificateDirectory"
-    USE_MYPROXY_GRIDMAP_CALLOUT_OPTION = "UseMyProxyGridmapCallout"
+    AUTHORIZATION_METHOD_OPTION = "AuthorizationMethod"
+    AUTHORIZATION_METHOD_MYPROXY_GRIDMAP_CALLOUT = "MyProxyGridmapCallout"
+    AUTHORIZATION_METHOD_GRIDMAP = "Gridmap"
+    AUTHORIZATION_METHOD_CILOGON = "CILogon"
+    AUTHORIZATION_METHODS = [
+        AUTHORIZATION_METHOD_MYPROXY_GRIDMAP_CALLOUT,
+        AUTHORIZATION_METHOD_GRIDMAP,
+        AUTHORIZATION_METHOD_CILOGON
+    ]
+    CILOGON_IDENTITY_PROVIDER = "CILogonIdentityProvider"
+    GRIDMAP_FILE = "GridmapFile"
     
     SERVER_OPTION = "Server"
-    ENDPOINTS_OPTION = "Endpoints"
     INCOMING_PORT_RANGE_OPTION = "IncomingPortRange"
     OUTGOING_PORT_RANGE_OPTION= "OutgoingPortRange"
     DATA_INTERFACE_OPTION = "DataInterface"
     RESTRICT_PATHS_OPTION = "RestrictPaths"
-    SHARING_ENABLED_OPTION = "SharingEnabled"
+    SHARING_ENABLED_OPTION = "Sharing"
     SHARING_DN = "SharingDN"
     SHARING_RESTRICT_PORT = "SharingRestrictPaths"
     SHARING_FILE = "SharingFile"
@@ -62,10 +71,10 @@ class ConfigFile(ConfigParser.ConfigParser):
             defaults["HOSTNAME"] = gcmu.public_name()
         if "SHORT_HOSTNAME" not in defaults:
             defaults["SHORT_HOSTNAME"] = defaults["HOSTNAME"].split(".")[0]
-        if "GO_USER" not in defaults:
-            defaults["GO_USER"] = ""
-        if "GO_PASSWORD" not in defaults:
-            defaults["GO_PASSWORD"] = ""
+        if "GLOBUSONLINE_USER" not in defaults:
+            defaults["GLOBUSONLINE_USER"] = ""
+        if "GLOBUSONLINE_PASSWORD" not in defaults:
+            defaults["GLOBUSONLINE_PASSWORD"] = ""
 
         ConfigParser.ConfigParser.__init__(self, defaults)
         self.root = root
@@ -94,6 +103,9 @@ class ConfigFile(ConfigParser.ConfigParser):
                 ConfigFile.USER_OPTION)
         if user == '':
             user = None
+        if user is None:
+            user =  os.getenv("GLOBUSONLINE_USER")
+
         return user
 
     def get_go_password(self):
@@ -106,6 +118,8 @@ class ConfigFile(ConfigParser.ConfigParser):
                 ConfigFile.PASSWORD_OPTION)
         if password == '':
             password = None
+        if password is None:
+            password = os.getenv("GLOBUSONLINE_PASSWORD")
         return password
 
     def get_endpoint_name(self):
@@ -118,6 +132,8 @@ class ConfigFile(ConfigParser.ConfigParser):
                 ConfigFile.NAME_OPTION)
         if name == '':
             name = gcmu.public_name()
+        elif "#" in name:
+            name = name[name.find("#")+1:]
         return name
 
     def get_endpoint_public(self):
@@ -201,15 +217,46 @@ class ConfigFile(ConfigParser.ConfigParser):
             cadir = os.path.join(self.root, 'etc', 'gcmu', 'grid-security', 'certificates')
         return os.path.abspath(cadir)
 
-    def get_security_use_myproxy_gridmap_callout(self):
-        use_gridmap_callout = True
+    def get_security_authorization_method(self):
+        authorization_method = ''
         if self.has_option(
                 ConfigFile.SECURITY_SECTION,
-                ConfigFile.USE_MYPROXY_GRIDMAP_CALLOUT_OPTION):
-            use_gridmap_callout = self.getboolean(
+                ConfigFile.AUTHORIZATION_METHOD_OPTION):
+            authorization_method = self.get(
                 ConfigFile.SECURITY_SECTION,
-                ConfigFile.USE_MYPROXY_GRIDMAP_CALLOUT_OPTION)
-        return use_gridmap_callout
+                ConfigFile.AUTHORIZATION_METHOD_OPTION)
+            if authorization_method == '':
+                authorization_method = ConfigFile.AUTHORIZATION_METHODS[0]
+            if authorization_method not in ConfigFile.AUTHORIZATION_METHODS:
+                raise Exception("Unknown Security.AuthorizationMethod %s" \
+                    % (authorization_method))
+        return authorization_method
+
+    def get_security_cilogon_identity_provider(self):
+        cilogon_idp = None
+        if self.has_option(
+                ConfigFile.SECURITY_SECTION,
+                ConfigFile.CILOGON_IDENTITY_PROVIDER):
+            cilogon_idp = self.get(
+                ConfigFile.SECURITY_SECTION,
+                ConfigFile.CILOGON_IDENTITY_PROVIDER)
+            if cilogon_idp == '':
+                cilogon_idp = None
+        return cilogon_idp
+
+    def get_security_gridmap_file(self):
+        gridmap_file = None
+        if self.has_option(
+                ConfigFile.SECURITY_SECTION,
+                ConfigFile.GRIDMAP_FILE):
+            gridmap_file = self.get(
+                ConfigFile.SECURITY_SECTION,
+                ConfigFile.GRIDMAP_FILE)
+            if gridmap_file == '':
+                gridmap_file = os.path.join(
+                    self.root, "etc", "gcmu", "grid-security", "certificates",
+                    "grid-mapfile")
+        return gridmap_file
 
     def get_gridftp_server(self):
         server = None
@@ -247,11 +294,6 @@ class ConfigFile(ConfigParser.ConfigParser):
         if dn == '':
             dn = None
         return dn
-
-    def get_gridftp_endpoints(self):
-        return self.__get_list(
-                ConfigFile.GRIDFTP_SECTION,
-                ConfigFile.ENDPOINTS_OPTION)
 
     def get_gridftp_incoming_port_range(self):
         incoming_port_range = [
@@ -304,7 +346,7 @@ class ConfigFile(ConfigParser.ConfigParser):
         sharing_enabled = False
         if self.has_option(ConfigFile.GRIDFTP_SECTION,
                 ConfigFile.SHARING_ENABLED_OPTION):
-            sharing_enabled = self.get_boolen(
+            sharing_enabled = self.getboolean(
                     ConfigFile.GRIDFTP_SECTION,
                     ConfigFile.SHARING_ENABLED_OPTION)
         return sharing_enabled
@@ -349,7 +391,7 @@ class ConfigFile(ConfigParser.ConfigParser):
         sharing_file_control = False
         if self.has_option(ConfigFile.GRIDFTP_SECTION,
                 ConfigFile.SHARING_FILE_CONTROL):
-            sharing_file_control = self.get_boolen(
+            sharing_file_control = self.getboolean(
                     ConfigFile.GRIDFTP_SECTION,
                     ConfigFile.SHARING_FILE_CONTROL)
         return sharing_file_control
@@ -389,13 +431,8 @@ class ConfigFile(ConfigParser.ConfigParser):
 
         return myproxy_dn
 
-    def get_myproxy_endpoints(self):
-        return self.__get_list(
-                ConfigFile.MYPROXY_SECTION,
-                ConfigFile.ENDPOINTS_OPTION)
-
     def get_myproxy_ca(self):
-        myproxy_ca = False
+        myproxy_ca = True
         if self.has_option(
                     ConfigFile.MYPROXY_SECTION,
                     ConfigFile.CA_OPTION):
@@ -403,7 +440,7 @@ class ConfigFile(ConfigParser.ConfigParser):
                     ConfigFile.MYPROXY_SECTION,
                     ConfigFile.CA_OPTION)
             if myproxy_ca == '':
-                myproxy_ca = False
+                myproxy_ca = True
         return myproxy_ca
 
     def get_myproxy_ca_directory(self):
@@ -438,7 +475,7 @@ class ConfigFile(ConfigParser.ConfigParser):
         return myproxy_ca_passphrase
 
     def get_myproxy_use_pam_login(self):
-        use_pam_login = False
+        use_pam_login = True
         if self.has_option(
                     ConfigFile.MYPROXY_SECTION,
                     ConfigFile.USE_PAM_LOGIN_OPTION):
@@ -446,7 +483,7 @@ class ConfigFile(ConfigParser.ConfigParser):
                     ConfigFile.MYPROXY_SECTION,
                     ConfigFile.USE_PAM_LOGIN_OPTION)
             if use_pam_login == '':
-                use_pam_login = False
+                use_pam_login = True
         return use_pam_login
 
     def get_myproxy_config_file(self):
@@ -465,4 +502,4 @@ class ConfigFile(ConfigParser.ConfigParser):
                 self.root, 'etc', 'gcmu', 'myproxy-server.conf')
 
         return config_file
-# vim: set syntax=python:
+# vim: syntax=python:

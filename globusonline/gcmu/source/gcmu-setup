@@ -19,4 +19,4 @@ if [ "$libdir" != "" ]; then
     PYTHONPATH="$libdir/gcmu${PYTHONPATH:+:$PYTHONPATH}"
     export PYTHONPATH
 fi
-exec python -mgcmu.setup.endpoint "$@"
+exec "@PYTHON@" -mgcmu.setup.command "$@"

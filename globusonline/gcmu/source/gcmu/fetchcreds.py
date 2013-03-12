@@ -190,4 +190,4 @@ if __name__ == '__main__':
     print "cert:\n%s" %(cert)
     print "key:\n%s" %(key)
     sys.exit(0)
-#  vim: set filetype=python:
+#  vim: filetype=python:

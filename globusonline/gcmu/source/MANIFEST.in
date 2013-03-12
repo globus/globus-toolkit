@@ -4,6 +4,6 @@ include gcmu-setup-endpoint
 include gcmu-setup-services
 include gcmu.conf
 include gcmu/*.pem
-include gcmu/go-ca-cert.signing_policy
+include gcmu/*.signing_policy
 include gcmu/mapapp-template
 include pkg_data_src.gpt

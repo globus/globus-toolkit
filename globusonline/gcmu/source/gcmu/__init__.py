@@ -84,4 +84,4 @@ def is_local_service(name):
     if pn is not None and pn.split(".")[0] == name:
         return True
     return False
-# vim: set filetype=python:
+# vim: filetype=python:

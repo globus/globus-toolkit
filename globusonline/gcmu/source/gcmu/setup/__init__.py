@@ -49,7 +49,7 @@ class Setup(object):
         password = self.conf.get_go_password()
 
         if api is None:
-            self.logger.debug("Acquiring GO Access Token")
+            self.logger.debug("Acquiring Globus Online Access Token")
             auth_result = get_access_token(user, password)
 
             api = TransferAPIClient(username=auth_result.username,
@@ -59,5 +59,4 @@ class Setup(object):
         if self.debug:
             pass #self.api.set_http_connection_debug(True)
         self.errorcount = 0
-
-# vim: set filetype=python:
+# vim: filetype=python: nospell:
