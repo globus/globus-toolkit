@@ -78,7 +78,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
-* Web Mar 13 2013 Globus Toolkit <support@globus.org> - 3.1-6
+* Wed Mar 13 2013 Globus Toolkit <support@globus.org> - 3.1-6
 - More dependencies
 
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 3.1-5
