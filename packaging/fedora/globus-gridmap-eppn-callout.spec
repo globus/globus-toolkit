@@ -12,7 +12,7 @@
 
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
-Version:	0.2
+Version:	0.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
@@ -100,5 +100,8 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Mar 12 2013 Globus Toolkit <support@globus.org> - 0.3-1
+- Improve error message handling
+
 * Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 0.2-1
 - Initial version
