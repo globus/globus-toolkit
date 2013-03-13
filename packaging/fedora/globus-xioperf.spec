@@ -13,7 +13,7 @@
 Name:		globus-xioperf
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Globus Toolkit - XIO Performance Tool
 
 Group:		Applications/Internet
@@ -26,6 +26,8 @@ Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-xio-devel%{?_isa} >= 3
 
 %description
@@ -76,6 +78,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Web Mar 13 2013 Globus Toolkit <support@globus.org> - 3.1-6
+- More dependencies
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 3.1-5
 - 5.2.3
 
