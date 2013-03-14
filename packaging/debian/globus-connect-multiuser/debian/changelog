@@ -1,5 +1,11 @@
 globus-connect-multiuser (2.0.2-1) unstable; urgency=low
 
+  * dummy __init__.py
+
+ -- Globus Toolkit <support@globus.org>  Thu, 14 Mar 2013 19:41:00 -0400
+
+globus-connect-multiuser (2.0.2-1) unstable; urgency=low
+
   * Initial release
 
  -- Globus Toolkit <support@globus.org>  Wed, 13 Mar 2013 20:46:16 -0400
