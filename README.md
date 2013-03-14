@@ -12,7 +12,7 @@ The file should be copied to /etc/apache2/conf.d/ on Debian-based systems, or
 to /etc/httpd/conf.d/ on Red Hat-based system.
 
 By default, the service uses SQLite3 database. A path to the database file is set
-in myproxyoauth/myproxy-oauth/database.py. The directory with the database file must be
+in myproxyoauth/database.py. The directory with the database file must be
 readable and writable by the 'www-data' user.
 
 To generate web pages, the service uses templates stored in
