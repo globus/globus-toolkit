@@ -1,6 +1,7 @@
 gsi-openssh (5.5-2) unstable; urgency=low
 
   * run autoconf before configuring to get updated configure macros, etc
+  * add dependency on pkg-config so that -ledit detection works
 
  -- Globus Toolkit <support@globus.org>  Thu, 14 Mar 2013 11:19:39 -0400
 
