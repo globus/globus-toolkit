@@ -2,13 +2,14 @@ Name:           globus-connect-multiuser
 Version:        2.0.2
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
+%global _name %(tr - _ <<< %{name})
 
 %global transferapi_name globusonline-transfer-api-client
 %global transferapi_version 0.10.13
 Group:          System Environment/Libraries
 License:        ASL 2.0
 URL:            http://www.globus.org/
-Source:         %{name}-%{version}.tar.gz
+Source:         %{_name}-%{version}.tar.gz
 Source1:        %{transferapi_name}-%{transferapi_version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
@@ -44,8 +45,8 @@ The %{name} package contains:
 Globus Connect Multi-User
 
 %prep
-%setup 
-%setup -a 1 -D -T
+%setup -q -n %{_name}-%{version}
+%setup -a 1 -D -T -n %{_name}-%{version}
 
 %build
 cd %{transferapi_name}-%{transferapi_version}
