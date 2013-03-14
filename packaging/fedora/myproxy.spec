@@ -326,6 +326,13 @@ mkdir -p $RPM_BUILD_ROOT%{_initddir}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 install  -m 755 myproxy.init $RPM_BUILD_ROOT%{_initddir}/myproxy-server
 install  -m 644 myproxy.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/myproxy-server
+cat >> $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/myproxy-server <<'EOF'
+for myproxy_conf in "%{_sysconfdir}/myproxy.d"/*; do
+    if [ -r "$myproxy_conf" ]; then
+        . "$myproxy_conf"
+    fi
+done
+EOF
 mkdir -p $RPM_BUILD_ROOT%{_var}/lib/myproxy
 
 # Create a directory to hold myproxy owned host certificates.
