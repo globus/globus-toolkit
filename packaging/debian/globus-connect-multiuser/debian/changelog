@@ -1,0 +1,5 @@
+globus-connect-multiuser (2.0.2-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Globus Toolkit <support@globus.org>  Wed, 13 Mar 2013 20:46:16 -0400

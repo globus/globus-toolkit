@@ -1,0 +1,19 @@
+Source: globus-connect-multiuser
+Section: unknown
+Priority: extra
+Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
+Build-Depends: debhelper (>= 7.0.0)
+Standards-Version: 3.9.3
+
+Package: globus-connect-multiuser
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, globus-gridftp-server-progs, globus-gass-copy-progs, globus-gss-assist-progs, myproxy, myproxy-server, gsi-openssh-clients, globus-gsi-cert-utils-progs, globus-simple-ca, libglobus-gridmap-verify-myproxy-callout0, libglobus-gridmap-eppn-callout0, python
+Description: Globus Connect Multi-User Installation Tool
+ The Globus Toolkit is an open source software toolkit used for building Grid
+ systems and applications. It is being developed by the Globus Alliance and
+ many others all over the world. A growing number of projects and companies are
+ using the Globus Toolkit to unlock the potential of grids for their cause.
+ .
+ The globus-connect-multiuser package contains:
+ Globus Connect Multi-User
+
