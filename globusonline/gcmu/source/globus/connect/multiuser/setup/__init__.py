@@ -19,9 +19,8 @@ import sys
 import uuid
 import pkgutil
 
-import gcmu.configfile
-import gcmu.security
-from gcmu.fetchcreds import FetchCreds as GCMUFetchCreds
+from globus.connect.multiuser.configfile import ConfigFile
+import globus.connect.security
 
 from globusonline.transfer.api_client import TransferAPIClient
 from globusonline.transfer.api_client import TransferAPIError
@@ -31,16 +30,21 @@ from urlparse import urlparse
 __path__ = pkgutil.extend_path(__path__, __name__)
 
 class Setup(object):
+    logger = logging.getLogger("globus.connect.multiuser.setup")
+    handler = logging.StreamHandler()
+    logger.addHandler(handler)
+
     def __init__(self, config_file = None, debug = False, config_obj = False, api=None, force=False):
         if config_obj is None:
-            config_obj = gcmu.configfile.ConfigFile(config_file=config_file)
+            config_obj = ConfigFile(config_file=config_file)
 
-        self.logger = logging.getLogger("gcmu")
-        handler = logging.StreamHandler()
+        self.logger = Setup.logger
         if debug:
-            handler.setLevel(logging.DEBUG)
-            self.logger.setLevel(logging.DEBUG)
-        self.logger.addHandler(handler)
+            Setup.handler.setLevel(logging.DEBUG)
+            Setup.logger.setLevel(logging.DEBUG)
+        else:
+            Setup.handler.setLevel(logging.INFO)
+            Setup.logger.setLevel(logging.INFO)
         self.conf = config_obj
         self.debug = debug
         self.force = force

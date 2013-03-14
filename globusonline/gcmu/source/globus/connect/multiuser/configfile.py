@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import copy
-import gcmu
+import globus.connect.multiuser as gcmu
 import os
 import ConfigParser
 
@@ -36,11 +36,9 @@ class ConfigFile(ConfigParser.ConfigParser):
     TRUSTED_CERTIFICATE_DIRECTORY_OPTION = "TrustedCertificateDirectory"
     AUTHORIZATION_METHOD_OPTION = "AuthorizationMethod"
     AUTHORIZATION_METHOD_MYPROXY_GRIDMAP_CALLOUT = "MyProxyGridmapCallout"
-    AUTHORIZATION_METHOD_GRIDMAP = "Gridmap"
     AUTHORIZATION_METHOD_CILOGON = "CILogon"
     AUTHORIZATION_METHODS = [
         AUTHORIZATION_METHOD_MYPROXY_GRIDMAP_CALLOUT,
-        AUTHORIZATION_METHOD_GRIDMAP,
         AUTHORIZATION_METHOD_CILOGON
     ]
     CILOGON_IDENTITY_PROVIDER = "CILogonIdentityProvider"
@@ -65,12 +63,24 @@ class ConfigFile(ConfigParser.ConfigParser):
     USE_PAM_LOGIN_OPTION = "UsePamLogin"
     CONFIG_FILE_OPTION = "ConfigFile"
 
+    DEFAULT_CONFIG_FILE = os.path.join("etc","globus-connect-multiuser.conf")
+    DEFAULT_DIR = os.path.join("var","lib", "globus-connect-multiuser")
+    DEFAULT_SECURITY_DIR = os.path.join(DEFAULT_DIR, "grid-security")
+    DEFAULT_CADIR = os.path.join(DEFAULT_SECURITY_DIR, "certificates")
+    DEFAULT_GRIDMAP = os.path.join(DEFAULT_SECURITY_DIR, "grid-mapfile")
+    DEFAULT_MYPROXY_CADIR = os.path.join(DEFAULT_DIR, "myproxy-ca")
+    DEFAULT_CERT_FILE = os.path.join(DEFAULT_SECURITY_DIR, "hostcert.pem")
+    DEFAULT_KEY_FILE = os.path.join(DEFAULT_SECURITY_DIR, "hostkey.pem")
+    DEFAULT_GRIDMAP_FILE = os.path.join(DEFAULT_SECURITY_DIR, "grid-mapfile")
+
     def __init__(self, root="/", config_file=None):
         defaults = copy.copy(os.environ)
         if "HOSTNAME" not in defaults:
             defaults["HOSTNAME"] = gcmu.public_name()
         if "SHORT_HOSTNAME" not in defaults:
             defaults["SHORT_HOSTNAME"] = defaults["HOSTNAME"].split(".")[0]
+        if "USER" in defaults:
+            del defaults["USER"]
         if "GLOBUSONLINE_USER" not in defaults:
             defaults["GLOBUSONLINE_USER"] = ""
         if "GLOBUSONLINE_PASSWORD" not in defaults:
@@ -79,7 +89,7 @@ class ConfigFile(ConfigParser.ConfigParser):
         ConfigParser.ConfigParser.__init__(self, defaults)
         self.root = root
         if config_file is None:
-            config_file = os.path.join(self.root, "etc", "gcmu.conf")
+            config_file = os.path.join("/", ConfigFile.DEFAULT_CONFIG_FILE)
         self.read(config_file)
 
     def __get_list(self, section, option, maxsplit = 0):
@@ -94,19 +104,17 @@ class ConfigFile(ConfigParser.ConfigParser):
             return [x.strip() for x in optstr.split(',')]
 
     def get_go_username(self):
-        user = None
+        user_name = None
         if self.has_option(
                 ConfigFile.GLOBUSONLINE_SECTION,
                 ConfigFile.USER_OPTION):
-            user = self.get(
+            user_name = self.get(
                 ConfigFile.GLOBUSONLINE_SECTION,
                 ConfigFile.USER_OPTION)
-        if user == '':
-            user = None
-        if user is None:
-            user =  os.getenv("GLOBUSONLINE_USER")
+        if user_name == '':
+            user_name = None
 
-        return user
+        return user_name
 
     def get_go_password(self):
         password = None
@@ -118,8 +126,6 @@ class ConfigFile(ConfigParser.ConfigParser):
                 ConfigFile.PASSWORD_OPTION)
         if password == '':
             password = None
-        if password is None:
-            password = os.getenv("GLOBUSONLINE_PASSWORD")
         return password
 
     def get_endpoint_name(self):
@@ -130,8 +136,10 @@ class ConfigFile(ConfigParser.ConfigParser):
             name = self.get(
                 ConfigFile.ENDPOINT_SECTION,
                 ConfigFile.NAME_OPTION)
-        if name == '':
-            name = gcmu.public_name()
+            if name == '':
+                name = None
+        if name is None:
+            name = gcmu.public_name().split(".")[0]
         elif "#" in name:
             name = name[name.find("#")+1:]
         return name
@@ -179,8 +187,7 @@ class ConfigFile(ConfigParser.ConfigParser):
         if certificate == '':
             certificate = None
         if certificate is None:
-            certificate = os.path.join(
-                self.root, 'etc', 'gcmu', 'grid-security', 'hostcert.pem')
+            certificate = os.path.join(self.root, ConfigFile.DEFAULT_CERT_FILE)
         else:
             certificate = os.path.abspath(certificate)
 
@@ -197,8 +204,7 @@ class ConfigFile(ConfigParser.ConfigParser):
         if key == '':
             key = None
         if key is None:
-            key = os.path.join(self.root, 'etc', 'gcmu', 'grid-security',
-                'hostkey.pem')
+            key = os.path.join(self.root, ConfigFile.DEFAULT_KEY_FILE)
         else:
             key = os.path.abspath(key)
         return key
@@ -214,7 +220,7 @@ class ConfigFile(ConfigParser.ConfigParser):
         if cadir == '':
             cadir = None
         if cadir is None:
-            cadir = os.path.join(self.root, 'etc', 'gcmu', 'grid-security', 'certificates')
+            cadir = os.path.join(self.root, ConfigFile.DEFAULT_CADIR)
         return os.path.abspath(cadir)
 
     def get_security_authorization_method(self):
@@ -225,11 +231,11 @@ class ConfigFile(ConfigParser.ConfigParser):
             authorization_method = self.get(
                 ConfigFile.SECURITY_SECTION,
                 ConfigFile.AUTHORIZATION_METHOD_OPTION)
-            if authorization_method == '':
-                authorization_method = ConfigFile.AUTHORIZATION_METHODS[0]
-            if authorization_method not in ConfigFile.AUTHORIZATION_METHODS:
-                raise Exception("Unknown Security.AuthorizationMethod %s" \
-                    % (authorization_method))
+        if authorization_method == '':
+            authorization_method = ConfigFile.AUTHORIZATION_METHODS[0]
+        if authorization_method not in ConfigFile.AUTHORIZATION_METHODS:
+            raise Exception("Unknown Security.AuthorizationMethod %s" \
+                % (authorization_method))
         return authorization_method
 
     def get_security_cilogon_identity_provider(self):
@@ -253,9 +259,10 @@ class ConfigFile(ConfigParser.ConfigParser):
                 ConfigFile.SECURITY_SECTION,
                 ConfigFile.GRIDMAP_FILE)
             if gridmap_file == '':
-                gridmap_file = os.path.join(
-                    self.root, "etc", "gcmu", "grid-security", "certificates",
-                    "grid-mapfile")
+                gridmap_file = None
+        if gridmap_file is None:
+            gridmap_file = os.path.join(
+                self.root, ConfigFile.DEFAULT_GRIDMAP_FILE)
         return gridmap_file
 
     def get_gridftp_server(self):
@@ -455,25 +462,22 @@ class ConfigFile(ConfigParser.ConfigParser):
             if ca_dir == '':
                 ca_dir = None
         if ca_dir is None:
-            ca_dir = os.path.join(
-                self.root, "var", "lib", "gcmu", "myproxy-ca")
+            ca_dir = os.path.join(self.root, ConfigFile.DEFAULT_MYPROXY_CADIR)
         return os.path.abspath(ca_dir)
 
     def get_myproxy_ca_passphrase(self):
         myproxy_ca_passphrase = None
 
         if self.has_option(
-                    ConfigFile.MYPROXY_SECTION,
-                    ConfigFile.CA_PASSPHRASE_OPTION):
+                ConfigFile.MYPROXY_SECTION, ConfigFile.CA_PASSPHRASE_OPTION):
             myproxy_ca_passphrase = self.get(
-                    ConfigFile.MYPROXY_SECTION,
-                    ConfigFile.CA_PASSPHRASE_OPTION)
-            if myproxy_ca_passphrase == '':
-                myproxy_ca_passphrase = None
+                    ConfigFile.MYPROXY_SECTION, ConfigFile.CA_PASSPHRASE_OPTION)
+        if myproxy_ca_passphrase == '':
+            myproxy_ca_passphrase = None
         if myproxy_ca_passphrase is None:
             myproxy_ca_passphrase = 'globus'
         return myproxy_ca_passphrase
-
+    
     def get_myproxy_use_pam_login(self):
         use_pam_login = True
         if self.has_option(
@@ -499,7 +503,35 @@ class ConfigFile(ConfigParser.ConfigParser):
                 config_file = None
         if config_file is None:
             config_file = os.path.join(
-                self.root, 'etc', 'gcmu', 'myproxy-server.conf')
-
+                self.root, ConfigFile.DEFAULT_DIR, 'myproxy-server.conf')
         return config_file
-# vim: syntax=python:
+
+    def get_myproxy_init_config_file(self):
+        config_file = None
+
+        if self.has_option(
+                    ConfigFile.MYPROXY_SECTION,
+                    ConfigFile.CONFIG_FILE_OPTION):
+            config_file = self.get(
+                    ConfigFile.MYPROXY_SECTION,
+                    ConfigFile.CONFIG_FILE_OPTION)
+            if config_file == '':
+                config_file = None
+        if config_file is None:
+            config_file = os.path.join(
+                self.root, ConfigFile.DEFAULT_DIR, 'myproxy-server.conf')
+        return config_file
+
+    def get_etc_gridftp_d(self):
+        return os.path.join(self.root, "etc", "gridftp.d")
+
+    def get_var_gridftp_d(self):
+        return os.path.join(self.root, ConfigFile.DEFAULT_DIR, 'gridftp.d')
+
+    def get_etc_myproxy_d(self):
+        return os.path.join(self.root, "etc", "myproxy.d")
+
+    def get_var_myproxy_d(self):
+        return os.path.join(self.root, ConfigFile.DEFAULT_DIR, 'myproxy.d')
+
+# vim: syntax=python: nospell:

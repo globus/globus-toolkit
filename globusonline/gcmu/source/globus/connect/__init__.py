@@ -1,5 +1,3 @@
-#! /bin/sh
-
 # Copyright 2012-2013 University of Chicago
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-libdir="@libdir@"
-if [ "$libdir" != "" ]; then
-    PYTHONPATH="$libdir/gcmu${PYTHONPATH:+:$PYTHONPATH}"
-    export PYTHONPATH
-fi
-exec "@PYTHON@" -mgcmu.setup.command "$@"
+import pkgutil
+
+__path__ = pkgutil.extend_path(__path__, __name__)

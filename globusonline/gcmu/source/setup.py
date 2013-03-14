@@ -2,16 +2,24 @@
 
 from distutils.core import setup
 
-setup(name = 'gcmu',
-    version = '2.0.1',
+setup(name = 'globus_connect_multiuser',
+    version = '2.0.2',
     description = 'Globus Connect Multi-User',
     author = 'Globus Toolkit',
     author_email = 'support@globus.org',
     url = 'https://www.globusonline.org/gcmu',
-    packages = ['gcmu', 'gcmu.setup'],
+    packages = [
+            'globus.connect',
+            'globus.connect.multiuser',
+            'globus.connect.multiuser.setup',
+            'globus.connect.security'],
     package_data = {
-        'gcmu': [ '*.pem', '*.signing_policy', 'mapapp-template' ]
+        'globus.connect.security': [
+                '*.pem',
+                '*.signing_policy'],
+        'globus.connect.multiuser': [
+                'mapapp-template' ]
         },
-    data_files = [( '/etc', [ 'gcmu.conf' ])],
-    scripts = ['gcmu-setup'],
+    data_files = [( '/etc', [ 'globus-connect-multiuser.conf' ])],
+    scripts = ['globus-connect-multiuser-setup'],
     )

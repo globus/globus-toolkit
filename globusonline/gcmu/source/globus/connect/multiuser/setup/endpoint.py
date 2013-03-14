@@ -14,28 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Set up an endpoint defined in /etc/gcmu.conf. Prompts for username and password
-to authenticate if they are not in the gcmu configuration file.
-
-Example usage:
-
-    gcmu-setup-endpoint [-c ALTERNATIVE-GCMU-CONFIG]
+Set up an endpoint defined in /etc/globus-connect-multiuser.conf. Prompts for
+username and password to authenticate if they are not in the configuration
+file.
 """
 import sys
 import getopt
 import os
 import uuid
 
-import gcmu
-import gcmu.security
-import gcmu.setup
+import globus.connect.multiuser as gcmu
+import globus.connect.security as security
+from globus.connect.multiuser.setup import Setup
 
 from globusonline.transfer.api_client import TransferAPIClient, TransferAPIError
 from urlparse import urlparse
 
-class SetupEndpoint(gcmu.setup.Setup):
+class SetupEndpoint(Setup):
     def __init__(self, **kwargs):
-        gcmu.setup.Setup.__init__(self, **kwargs)
+        Setup.__init__(self, **kwargs)
         self.errorcount = 0
 
     def configure_endpoint(self, force=False):
@@ -140,7 +137,7 @@ class SetupEndpoint(gcmu.setup.Setup):
                     if subject is None and gcmu.is_local_service(host):
                         certpath = self.conf.get_security_certificate_file()
                         if certpath is not None:
-                            subject = gcmu.security.get_certificate_subject(certpath)
+                            subject = security.get_certificate_subject(certpath)
                     if subject is not None:
                         new_server[u'subject'] = gcmu.to_unicode(subject)
                     new_server[u'update'] = True
@@ -184,7 +181,7 @@ class SetupEndpoint(gcmu.setup.Setup):
                             "cacert.pem")
                     if certpath is not None:
                         try:
-                            myproxy_dn = gcmu.security.get_certificate_subject(certpath)
+                            myproxy_dn = security.get_certificate_subject(certpath)
                         except:
                             self.logger.warning(
                                     "Unable to determine MyProxy service DN.")
@@ -206,8 +203,30 @@ class SetupEndpoint(gcmu.setup.Setup):
                         % (endpoint_name, e.message))
                 self.errorcount += 1
 
+
+    def configure_oauth(self):
+        if self.conf.get_security_authorization_method() == "CILogon":
+            oauth_server = "cilogon.org"
+            endpoint_name = self.conf.get_endpoint_name()
+            try:
+                (status_code, status_reason, data) = self.api.endpoint(
+                        endpoint_name)
+                data[u'myproxy_server'] = None
+                data[u'myproxy_dn'] = None
+                data[u'oauth_server'] = oauth_server
+
+                (status_code, status_reason, data) = \
+                    self.api.endpoint_update(endpoint_name, data)
+            except TransferAPIError, e:
+                self.logger.error(
+                        "Error modifying myproxy of endpoint %s: %s" \
+                        % (endpoint_name, e.message))
+                self.errorcount += 1
+
     def configure(self, force=False):
+        self.logger.info("Configuring Globus Online Endpoint")
         self.configure_endpoint(force=force)
         self.configure_physical_servers(force=force)
         self.configure_myproxy()
+        self.configure_oauth()
 # vim: filetype=python : nospell :

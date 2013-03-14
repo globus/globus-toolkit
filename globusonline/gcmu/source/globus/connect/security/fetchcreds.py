@@ -21,7 +21,7 @@ Globus Connect fetchcreds module
 
 import atexit
 import copy
-import gcmu.security
+import globus.connect.security as security
 import os
 import pkgutil
 import re
@@ -59,8 +59,12 @@ class FetchCreds(object):
         if self.certfile is None:
             old_umask = os.umask(0133)
             self.certfile = tempfile.NamedTemporaryFile()
-            anoncert = pkgutil.get_data('gcmu', 'anoncert.pem')
-            anonkey = pkgutil.get_data('gcmu', 'anonkey.pem')
+            anoncert = pkgutil.get_data(
+                    'globus.connect.security',
+                    'anoncert.pem')
+            anonkey = pkgutil.get_data(
+                    'globus.connect.security',
+                    'anonkey.pem')
             try:
                 self.certfile.write(anoncert)
                 self.certfile.flush()
@@ -88,7 +92,7 @@ class FetchCreds(object):
         if self.cadir is None:
             self.cadir = tempfile.mkdtemp()
 
-            gcmu.security.install_ca(cadir = self.cadir)
+            security.install_ca(cadir = self.cadir)
             atexit.register(self.cleanup_cadir)
 
             if self.debug:

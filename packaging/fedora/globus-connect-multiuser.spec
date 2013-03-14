@@ -1,6 +1,6 @@
-Name:           gcmu
-Version:        2.0
-Release:        2%{?dist}
+Name:           globus-connect-multiuser
+Version:        2.0.2
+Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 
 %global transferapi_name globusonline-transfer-api-client
@@ -31,6 +31,7 @@ Requires:       globus-simple-ca
 Requires:       globus-gridmap-verify-myproxy-callout%{?_isa}
 Requires:       globus-gridmap-eppn-callout%{?_isa}
 Requires:	%{python}
+Obsoletes:      gcmu
 
 
 %description
@@ -40,7 +41,7 @@ many others all over the world. A growing number of projects and companies are
 using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name} package contains:
-Globus Connect Multi-User Installation Tool
+Globus Connect Multi-User
 
 %prep
 %setup 
@@ -62,7 +63,7 @@ python setup.py build
 rm -rf $RPM_BUILD_ROOT
 mkdir $RPM_BUILD_ROOT
 cd %{transferapi_name}-%{transferapi_version}
-%{python} setup.py install --root $RPM_BUILD_ROOT --install-lib=%{_libdir}/gcmu
+%{python} setup.py install --root $RPM_BUILD_ROOT --install-lib=%{_libdir}/%{name}
 cd ..
 %{python} setup.py install --root $RPM_BUILD_ROOT --prefix=/usr
 %global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
@@ -74,14 +75,11 @@ test -x /usr/lib/rpm/brp-python-bytecompile && \
 rm -rf $RPM_BUILD_ROOT
 
 %files
-%{_bindir}/gcmu-setup-*
+%{_bindir}/globus-connect-multiuser-setup
 /usr/lib*/python*
-/usr/lib*/gcmu/*
-%config(noreplace) %{_sysconfdir}/gcmu.conf
+/usr/lib*/globus-connect-multiuser/*
+%config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %changelog
-* Tue Feb 26 2013 Globus Toolkit <support@globus.org> 2.0-2
-- Rebuild RHEL-5 based with correct python versions
-
-* Mon Feb 18 2013 Globus Toolkit <support@globus.org> 2.0-1
-- Initial packaging
+* Wed Mar 13 2013 Globus Toolkit <support@globus.org> 2.0.2-1
+- Initial packaging as globus-connect-multiuser

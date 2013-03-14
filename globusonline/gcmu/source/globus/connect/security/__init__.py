@@ -2,23 +2,21 @@ import os
 import pkgutil
 from subprocess import Popen, PIPE
 
-GCMU_DEFAULT_CADIR = os.path.join(
-                    'etc', 'grid-security', 'gcmu', 'certificates')
+__path__ = pkgutil.extend_path(__path__, __name__)
 
-def install_ca(cadir = None, ca_cert = None, ca_signing_policy = None):
+def install_ca(cadir, ca_cert = None, ca_signing_policy = None):
     """
     Installs the go-ca-cert and signing policy from the GCMU package into
-    the specified cadir. If cadir is not passed in, the default 
-    /etc/grid-security/gcmu/certificates is used
+    the specified cadir. 
     """
     if cadir == None:
-        cadir = GCMU_DEFAULT_CADIR
+        raise Exception("Invalid cadir parameter")
 
     if ca_cert is None:
-        ca_cert = pkgutil.get_data("gcmu", "go-ca-cert.pem")
+        ca_cert = pkgutil.get_data("globus.connect.security", "go-ca-cert.pem")
     if ca_signing_policy is None:
         ca_signing_policy = pkgutil.get_data(
-                "gcmu", "go-ca-cert.signing_policy")
+                "globus.connect.security", "go-ca-cert.signing_policy")
     ca_hash = get_certificate_hash_from_data(ca_cert)
 
     try:
