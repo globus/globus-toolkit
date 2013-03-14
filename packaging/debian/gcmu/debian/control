@@ -8,7 +8,7 @@ Homepage: <insert the upstream URL, if relevant>
 
 Package: gcmu
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, globus-gridftp-server-progs, globus-gass-copy-progs, globus-gss-assist-progs, myproxy, myproxy-server, gsi-openssh-clients, globus-gsi-cert-utils-progs, globus-simple-ca, libglobus-gridmap-verify-myproxy-callout0, python
+Depends: ${shlibs:Depends}, ${misc:Depends}, globus-gridftp-server-progs, globus-gass-copy-progs, globus-gss-assist-progs, myproxy, myproxy-server, gsi-openssh-clients, globus-gsi-cert-utils-progs, globus-simple-ca, libglobus-gridmap-verify-myproxy-callout0, libglobus-gridmap-eppn-callout0, python
 Description: Globus Connect Multi-User Installation Tool
  The Globus Toolkit is an open source software toolkit used for building Grid
  systems and applications. It is being developed by the Globus Alliance and
