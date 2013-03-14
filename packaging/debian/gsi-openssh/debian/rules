@@ -52,7 +52,7 @@ configure: configure-stamp
 
 configure-stamp: sed-stamp
 	dh_testdir
-
+	$(MAKE) -f Makefile.in distprep
 	for f in config.sub config.guess ; do \
 	  if [ -e /usr/share/misc/$$f -a ! -e $$f.dist ] ; then \
 	    mv $$f $$f.dist ; \
