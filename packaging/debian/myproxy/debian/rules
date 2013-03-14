@@ -178,6 +178,7 @@ install: build-stamp
 	# file
 	mkdir -p $(INSTALLDIR)/etc/default
 	cp myproxy.sysconfig debian/myproxy-server.default
+	echo "for myproxy_conf in /etc/myproxy.d/*; do if [ -r $$myproxy_conf ] ; then . $$myproxy_conf; fi done" >> debian/myproxy-server.default
 
 	# Generate package filelists
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_pgm.filelist \

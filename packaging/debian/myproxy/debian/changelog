@@ -1,3 +1,9 @@
+myproxy (5.9-4) unstable; urgency=low
+
+  * add /etc/mproxy.d support
+
+ -- Globus Toolkit <support@globus.org>  Tue, 05 Mar 2013 20:08:44 -0500
+
 myproxy (5.9-3) unstable; urgency=low
 
   * add missing dependencies
