@@ -1,7 +1,7 @@
 Source: gsi-openssh
 Priority: optional
 Maintainer: Globus Support <support@globus.org>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, globus-core (>= 7.7), libldap2-dev, zlib1g-dev, libaudit-dev, libpam-dev, libwrap0-dev, libssl-dev, libglobus-gss-assist-dev, libglobus-usage-dev, globus-common-progs, libedit-dev, 
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, globus-core (>= 7.7), libldap2-dev, zlib1g-dev, libaudit-dev, libpam-dev, libwrap0-dev, libssl-dev, libglobus-gss-assist-dev, libglobus-usage-dev, globus-common-progs, libedit-dev, pkg-config
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
