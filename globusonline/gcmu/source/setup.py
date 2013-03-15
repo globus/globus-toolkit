@@ -3,12 +3,13 @@
 from distutils.core import setup
 
 setup(name = 'globus_connect_multiuser',
-    version = '2.0.4',
+    version = '2.0.5',
     description = 'Globus Connect Multi-User',
     author = 'Globus Toolkit',
     author_email = 'support@globus.org',
     url = 'https://www.globusonline.org/gcmu',
     packages = [
+            'globus',
             'globus.connect',
             'globus.connect.multiuser',
             'globus.connect.multiuser.setup',
