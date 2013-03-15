@@ -61,6 +61,7 @@ class ConfigFile(ConfigParser.ConfigParser):
     CA_DIRECTORY_OPTION = "CaDirectory"
     CA_PASSPHRASE_OPTION = "CaPassphrase"
     USE_PAM_LOGIN_OPTION = "UsePamLogin"
+    CA_SUBJECT_DN_OPTION = "CaSubjectDN"
     CONFIG_FILE_OPTION = "ConfigFile"
 
     DEFAULT_CONFIG_FILE = os.path.join("etc","globus-connect-multiuser.conf")
@@ -478,6 +479,16 @@ class ConfigFile(ConfigParser.ConfigParser):
             myproxy_ca_passphrase = 'globus'
         return myproxy_ca_passphrase
     
+    def get_myproxy_ca_subject_dn(self):
+        myproxy_ca_subject_dn = None
+        if self.has_option(
+                ConfigFile.MYPROXY_SECTION, ConfigFile.CA_SUBJECT_DN_OPTION):
+            myproxy_ca_subject_dn = self.get(
+                    ConfigFile.MYPROXY_SECTION, ConfigFile.CA_SUBJECT_DN_OPTION)
+        if myproxy_ca_subject_dn == '':
+            myproxy_ca_subject_dn = None
+        return myproxy_ca_subject_dn
+
     def get_myproxy_use_pam_login(self):
         use_pam_login = True
         if self.has_option(

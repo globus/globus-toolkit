@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.6-1) unstable; urgency=low
+
+  * fix issues where MyProxyCA DN doesn't match MyProxy DN
+
+ -- Globus Toolkit <support@globus.org>  Thu, 15 Mar 2013 13:50:14 -0400
+
 globus-connect-multiuser (2.0.5-1) unstable; urgency=low
 
   * Fix setup.py

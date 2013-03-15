@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name = 'globus_connect_multiuser',
-    version = '2.0.5',
+    version = '2.0.6',
     description = 'Globus Connect Multi-User',
     author = 'Globus Toolkit',
     author_email = 'support@globus.org',

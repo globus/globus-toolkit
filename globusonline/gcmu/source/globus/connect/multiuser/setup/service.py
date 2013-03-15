@@ -212,7 +212,7 @@ class SetupGridFtpService(SetupService):
         conf_link_name = os.path.join(
                 etc_gridftp_d, "globus-connect-multiuser")
 
-        if os.path.exists(conf_link_name):
+        if os.path.lexists(conf_link_name):
             os.remove(conf_link_name)
 
         if server is None or not gcmu.is_local_service(server):
@@ -270,13 +270,13 @@ class SetupGridFtpService(SetupService):
                 etc_gridftp_d, "globus-connect-multiuser-sharing")
 
         if not gcmu.is_local_service(self.conf.get_gridftp_server()):
-            if os.path.exists(conf_link_name):
+            if os.path.lexists(conf_link_name):
                 os.remove(conf_link_name)
             return
 
         if not self.conf.get_gridftp_sharing_enabled():
             self.logger.debug("Disabling sharing")
-            if os.path.exists(conf_link_name):
+            if os.path.lexists(conf_link_name):
                 os.remove(conf_link_name)
             return
 
@@ -285,20 +285,23 @@ class SetupGridFtpService(SetupService):
         if not os.path.exists(var_gridftp_d):
             os.makedirs(var_gridftp_d, 0755)
 
+        if os.path.lexists(conf_link_name):
+            os.remove(conf_link_name)
+
         conf_file = file(conf_file_name, "w")
         try:
             sharing_dn = self.conf.get_gridftp_sharing_dn()
-	    gridftp_gcmu_conf.write("sharing_dn\t\"%s\"\n" % \
+	    conf_file.write("sharing_dn\t\"%s\"\n" % \
                 sharing_dn)
             sharing_rp = self.conf.get_gridftp_sharing_restrict_port()
             if sharing_rp is not None:
-                gridftp_gcmu_conf.write("sharing_rp %s" % sharing_rp)
+                conf_file.write("sharing_rp %s" % sharing_rp)
             sharing_file = self.conf.get_gridftp_sharing_file()
             if sharing_file is not None:
-                gridftp_gcmu_conf.write("sharing_file %s" % sharing_file)
+                conf_file.write("sharing_file %s" % sharing_file)
             os.symlink(conf_file_name, conf_link_name)
         finally:
-            gridftp_gcmu_conf.close()
+            conf_file.close()
 
     def configure_authorization(self, force=False):
         method = self.conf.get_security_authorization_method()
@@ -312,7 +315,7 @@ class SetupGridFtpService(SetupService):
                 "globus-connect-multiuser-authorization")
         server = self.conf.get_gridftp_server()
 
-        if os.path.exists(conf_link_name):
+        if os.path.lexists(conf_link_name):
             os.remove(conf_link_name)
 
         if server is None or not gcmu.is_local_service(server):
@@ -344,7 +347,17 @@ class SetupGridFtpService(SetupService):
             )
             myproxy_certpath = None
             myproxy_signing_policy = None
-            myproxy_dn = self.conf.get_myproxy_dn()
+            myproxy_ca_dn = self.conf.get_myproxy_ca_subject_dn()
+            myproxy_server = self.conf.get_myproxy_server()
+            if myproxy_ca_dn is None and \
+                    myproxy_server is not None and \
+                    gcmu.is_local_service(myproxy_server):
+                myproxy_ca_dn = security.get_certificate_subject(
+                        self.conf.get_security_certificate_file())
+
+            cadir = self.conf.get_security_trusted_certificate_directory()
+            self.logger.debug("MyProxy CA DN is " + str(myproxy_ca_dn))
+            self.logger.debug("CA dir is " + str(cadir))
 
             if gcmu.is_local_service(self.conf.get_myproxy_server()):
                 myproxy_certpath = os.path.join(
@@ -353,12 +366,14 @@ class SetupGridFtpService(SetupService):
                 myproxy_signing_policy = os.path.join(
                     self.conf.get_myproxy_ca_directory(),
                     "signing-policy")
-            elif myproxy_dn is not None:
+            elif myproxy_ca_dn is not None:
+                self.logger.debug("Looking for MyProxy CA cert in " + cadir)
                 for certfile in os.listdir(cadir):
                     certpath = os.path.join(cadir, certfile)
                     if certfile[-2:] == '.0':
+                        self.logger.debug("Checking to see if " + certfile + " matches MyProxyDN")
                         if security.get_certificate_subject(
-                                certpath) == myproxy_dn:
+                                certpath) == myproxy_ca_dn:
                             myproxy_certpath = certpath
                             (myproxy_signing_policy, _) = \
                                     os.path.splitext(
@@ -366,6 +381,7 @@ class SetupGridFtpService(SetupService):
                             myproxy_signing_policy += \
                                     ".signing_policy"
                             break
+
             if myproxy_certpath is None:
                 raise Exception("ERROR: Unable to determine " +
                     "path to MyProxy CA certificate, set " + \
@@ -466,15 +482,17 @@ class SetupMyProxyService(SetupService):
                 shutil.rmtree(cadir, ignore_errors=True)
 
         if cadir is not None and not os.path.exists(cadir):
+            ca_subject = self.conf.get_myproxy_ca_subject_dn()
+            if ca_subject is None:
+                ca_subject = security.get_certificate_subject(
+                        self.conf.get_security_certificate_file())
             try:
                 args = [ 
                     'grid-ca-create',
                     '-nobuild',
                     '-verbose',
                     '-dir', self.conf.get_myproxy_ca_directory(),
-                    '-subject', security.get_certificate_subject(
-                            self.conf.get_security_certificate_file(),
-                             nameopt="RFC2253"),
+                    '-subject', ca_subject,
                     '-noint']
                 if force:
                     args.append('-force')
@@ -598,7 +616,7 @@ class SetupMyProxyService(SetupService):
         conf_file_name = os.path.join(var_myproxy_d, "globus-connect-multiuser")
         conf_link_name = os.path.join(etc_myproxy_d, "globus-connect-multiuser")
 
-        if os.path.exists(conf_link_name):
+        if os.path.lexists(conf_link_name):
             os.remove(conf_link_name)
 
         conf_file = open(conf_file_name, 'w')
