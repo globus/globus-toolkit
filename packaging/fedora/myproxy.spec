@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.9
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -473,6 +473,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Fri Mar 15 2013 Globus Toolkit <support@globus.org> - 5.9-6
+- Read from /etc/myproxy-server.d when starting the service
+
 * Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 5.9-5
 - add missing dependencies
 
