@@ -76,8 +76,7 @@ class ConfigFile(ConfigParser.ConfigParser):
 
     def __init__(self, root="/", config_file=None):
         defaults = copy.copy(os.environ)
-        if "HOSTNAME" not in defaults:
-            defaults["HOSTNAME"] = gcmu.public_name()
+        defaults["HOSTNAME"] = gcmu.public_name()
         if "SHORT_HOSTNAME" not in defaults:
             defaults["SHORT_HOSTNAME"] = defaults["HOSTNAME"].split(".")[0]
         if "USER" in defaults:
