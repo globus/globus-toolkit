@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.3
+Version:        2.0.4
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -82,6 +82,9 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %changelog
+* Fri Mar 15 2013 Globus Toolkit <support@globus.org> 2.0.4-1
+- fix MANIFEST.in
+
 * Thu Mar 14 2013 Globus Toolkit <support@globus.org> 2.0.3-1
 - dummy __init__.py
 

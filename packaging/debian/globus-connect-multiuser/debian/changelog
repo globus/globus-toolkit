@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.4-1) unstable; urgency=low
+
+  * Fix MANIFEST.in
+
+ -- Globus Toolkit <support@globus.org>  Thu, 15 Mar 2013 09:34:42 -0400
+
 globus-connect-multiuser (2.0.3-1) unstable; urgency=low
 
   * dummy __init__.py
