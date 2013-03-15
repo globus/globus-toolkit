@@ -1,4 +1,4 @@
-recursive-include globus/connect *.py
+recursive-include globus *.py
 include templates/*.in
 include globus-connect-multiuser-setup
 include globus-connect-multiuser.conf
