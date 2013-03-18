@@ -12,14 +12,14 @@
 
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
-Version:	4.4
-Release:	3%{?dist}
+Version:	4.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -195,6 +195,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 4.5-1
+- GT-354: Compatibility with automake 1.13
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 4.4-3
 - Workaround missing F18 doxygen/latex dependency
 

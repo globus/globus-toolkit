@@ -10,7 +10,7 @@ AM_PROG_LIBTOOL
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 
 LAC_THREADS
 

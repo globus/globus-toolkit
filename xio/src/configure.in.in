@@ -57,7 +57,7 @@ LAC_DOXYGEN("../ $XIO_BUILTIN_DOXY_DIRS",
             "*.doc", 
             "${GLOBUS_LOCATION:-/usr}/sbin/globus-vararg-enums-doxygen-filter.pl")
 
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 AC_CHECK_FUNCS(sysconf)
 
 GLOBUS_FINALIZE

@@ -1,3 +1,9 @@
+globus-xio (3.4-1) unstable; urgency=low
+
+  * GT-354: Compatibility with automake 1.13
+
+ -- Globus Toolkit <support@globus.org>  Mon, 18 Mar 2013 09:59:09 -0400
+
 globus-xio (3.3-2) unstable; urgency=low
 
   * GT 5.2.2 final

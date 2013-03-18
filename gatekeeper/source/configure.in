@@ -7,7 +7,7 @@ AC_INIT(Makefile.am)
 GLOBUS_INIT
 
 AM_PROG_LIBTOOL
-AM_CONFIG_HEADER(globus_gatekeeper_config.h)
+AC_CONFIG_HEADERS(globus_gatekeeper_config.h)
 
 dnl config header goes here
 

@@ -1,3 +1,9 @@
+globus-core (8.10-1) unstable; urgency=low
+
+  * GT-354: Compatibility with automake 1.13
+
+ -- Globus Toolkit <support@globus.org>  Mon, 18 Mar 2013 09:56:51 -0400
+
 globus-core (8.9-1) unstable; urgency=low
 
   * GT-251: Bad compile flags for S390 build

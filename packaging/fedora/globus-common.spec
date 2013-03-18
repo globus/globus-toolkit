@@ -18,14 +18,14 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.9
-Release:	4%{?dist}
+Version:	14.10
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.4/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -271,6 +271,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 14.10-1
+- GT-354: Compatibility with automake 1.13
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 14.9-4
 - Workaround missing F18 doxygen/latex dependency
 

@@ -1,3 +1,9 @@
+globus-gsi-cert-utils (8.5-1) unstable; urgency=low
+
+  * GT-354: Compatibility with automake 1.13
+
+ -- Globus Toolkit <support@globus.org>  Mon, 18 Mar 2013 09:59:00 -0400
+
 globus-gsi-cert-utils (8.4-1) unstable; urgency=low
 
   * GT-365: Switch sharing user identification from DN to CERT

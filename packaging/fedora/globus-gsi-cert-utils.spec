@@ -12,7 +12,7 @@
 
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
-Version:	8.4
+Version:	8.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
@@ -212,6 +212,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 8.5-1
+- GT-354: Compatibility with automake 1.13
+
 * Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 8.4-1
 - GT-365: Switch sharing user identification from DN to CERT
 

@@ -12,14 +12,14 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.14
-Release:	2%{?dist}
+Version:	9.15
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:         http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:         http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -125,6 +125,9 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 9.15-1
+- GT-354: Compatibility with automake 1.13
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 9.14-2
 - 5.2.3
 

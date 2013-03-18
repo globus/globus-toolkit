@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.21
+Version:	6.22
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -40,7 +40,7 @@ BuildRequires:	globus-authz-devel%{?_isa} >= 2
 BuildRequires:	globus-gfork-devel%{?_isa} >= 3
 BuildRequires:	globus-ftp-control-devel%{?_isa} >= 4
 BuildRequires:	globus-core%{?_isa} >= 8
-BuildRequires:	globus-gss-assist%{?_isa} >= 8
+BuildRequires:	globus-gss-assist%{?_isa} >= 3
 
 %package progs
 Summary:	Globus Toolkit - Globus GridFTP Server Programs
@@ -182,6 +182,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 6.22-1
+- GT-354: Compatibility with automake 1.13
+
 * Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 6.21-1
 - missing build dependency
 
