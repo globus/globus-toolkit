@@ -1,11 +1,11 @@
 Name:           globus-connect-multiuser
 Version:        2.0.6
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
 
 %global transferapi_name globusonline-transfer-api-client
-%global transferapi_version 0.10.13
+%global transferapi_version 0.10.14
 Group:          System Environment/Libraries
 License:        ASL 2.0
 URL:            http://www.globus.org/
@@ -82,6 +82,9 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %changelog
+* Mon Mar 18 2013 Globus Toolkit <support@globus.org> 2.0.6-2
+- Update transfer api client version
+
 * Fri Mar 15 2013 Globus Toolkit <support@globus.org> 2.0.6-1
 - fix issues where MyProxyCA DN doesn't match MyProxy DN
 
