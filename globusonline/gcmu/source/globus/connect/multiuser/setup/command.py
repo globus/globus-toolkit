@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import getopt
+import socket
 import sys
 
 import globus.connect.multiuser.setup
@@ -85,6 +86,7 @@ services which are set up in the configuration file will be configured."""
             print "Unknown option %s" %(o)
             sys.exit(1)
 
+    socket.setdefaulttimeout(300)
     # Default to do all
     if do_any is False:
         do_gridftp = True

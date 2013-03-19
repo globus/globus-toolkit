@@ -1,5 +1,13 @@
 globus-connect-multiuser (2.0.7-1) unstable; urgency=low
 
+* Fix some configuration file handling
+* Fix nameopt for ca creation for real
+* add socket timeout
+
+ -- Globus Toolkit <support@globus.org>  Tue, 19 Mar 2013 08:07:39 -0400
+
+globus-connect-multiuser (2.0.7-1) unstable; urgency=low
+
   * remove @PYTHON@ from globus-connect-multiuser-setup
   * Fix nameopt for ca creation
 

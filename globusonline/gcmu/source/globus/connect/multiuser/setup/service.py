@@ -254,6 +254,11 @@ class SetupGridFtpService(SetupService):
 
                 conf_file.write("$GRIDMAP %s\n" \
                         % (self.conf.get_security_gridmap_file()))
+ 
+                rp = self.conf.get_gridftp_restrict_paths()
+                if rp is not None:
+                    conf_file.write("restrict_paths %s\n" % rp)
+
                 os.symlink(conf_file_name, conf_link_name)
             finally:
                 conf_file.close()
@@ -293,12 +298,19 @@ class SetupGridFtpService(SetupService):
             sharing_dn = self.conf.get_gridftp_sharing_dn()
 	    conf_file.write("sharing_dn\t\"%s\"\n" % \
                 sharing_dn)
-            sharing_rp = self.conf.get_gridftp_sharing_restrict_port()
+            sharing_rp = self.conf.get_gridftp_sharing_restrict_paths()
             if sharing_rp is not None:
-                conf_file.write("sharing_rp %s" % sharing_rp)
+                conf_file.write("sharing_rp %s\n" % sharing_rp)
             sharing_file = self.conf.get_gridftp_sharing_file()
-            if sharing_file is not None:
-                conf_file.write("sharing_file %s" % sharing_file)
+            if sharing_file == False:
+                conf_file.write("sharing_file none\n")
+            elif sharing_file != True:
+                conf_file.write("sharing_file %s\n" % sharing_file)
+            sharing_file_control = self.conf.get_gridftp_sharing_file_control()
+            if sharing_file_control == False:
+                conf_file.write("sharing_file_control 0\n")
+            elif sharing_file_control == True:
+                conf_file.write("sharing_file_control 1\n")
             os.symlink(conf_file_name, conf_link_name)
         finally:
             conf_file.close()
@@ -353,8 +365,7 @@ class SetupGridFtpService(SetupService):
                     myproxy_server is not None and \
                     gcmu.is_local_service(myproxy_server):
                 myproxy_ca_dn = security.get_certificate_subject(
-                        self.conf.get_security_certificate_file(),
-                        nameopt='RFC2253')
+                        self.conf.get_security_certificate_file())
 
             cadir = self.conf.get_security_trusted_certificate_directory()
             self.logger.debug("MyProxy CA DN is " + str(myproxy_ca_dn))
@@ -486,7 +497,8 @@ class SetupMyProxyService(SetupService):
             ca_subject = self.conf.get_myproxy_ca_subject_dn()
             if ca_subject is None:
                 ca_subject = security.get_certificate_subject(
-                        self.conf.get_security_certificate_file())
+                        self.conf.get_security_certificate_file(),
+                        nameopt='RFC2253')
             try:
                 args = [ 
                     'grid-ca-create',

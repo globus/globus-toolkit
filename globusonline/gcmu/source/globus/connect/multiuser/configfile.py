@@ -51,7 +51,7 @@ class ConfigFile(ConfigParser.ConfigParser):
     RESTRICT_PATHS_OPTION = "RestrictPaths"
     SHARING_ENABLED_OPTION = "Sharing"
     SHARING_DN = "SharingDN"
-    SHARING_RESTRICT_PORT = "SharingRestrictPaths"
+    SHARING_RESTRICT_PATHS = "SharingRestrictPaths"
     SHARING_FILE = "SharingFile"
     SHARING_FILE_CONTROL = "SharingFileControl"
     DEFAULT_SHARING_DN = "/C=US/O=Globus Consortium/OU=Globus Connect User" + \
@@ -342,7 +342,7 @@ class ConfigFile(ConfigParser.ConfigParser):
         restrict_paths = None
         if self.has_option(ConfigFile.GRIDFTP_SECTION,
                     ConfigFile.RESTRICT_PATHS_OPTION):
-            restrict_paths = self.getboolean(
+            restrict_paths = self.get(
                     ConfigFile.GRIDFTP_SECTION,
                     ConfigFile.RESTRICT_PATHS_OPTION)
             if restrict_paths == '':
@@ -372,30 +372,33 @@ class ConfigFile(ConfigParser.ConfigParser):
 
         return sharing_dn
 
-    def get_gridftp_sharing_restrict_port(self):
+    def get_gridftp_sharing_restrict_paths(self):
         sharing_rp = None
         if self.has_option(ConfigFile.GRIDFTP_SECTION,
-                ConfigFile.SHARING_RESTRICT_PORT):
+                ConfigFile.SHARING_RESTRICT_PATHS):
             sharing_rp = self.get(ConfigFile.GRIDFTP_SECTION,
-                ConfigFile.SHARING_RESTRICT_PORT)
+                ConfigFile.SHARING_RESTRICT_PATHS)
             if sharing_rp == '':
                 sharing_rp = None
 
         return sharing_rp
 
     def get_gridftp_sharing_file(self):
-        sharing_file = None
+        sharing_file = False
         if self.has_option(ConfigFile.GRIDFTP_SECTION,
                 ConfigFile.SHARING_FILE):
-            sharing_file = self.get(ConfigFile.GRIDFTP_SECTION,
-                ConfigFile.SHARING_FILE)
-            if sharing_file == '':
-                sharing_file = None
-
+            try:
+                sharing_file = self.getboolean(ConfigFile.GRIDFTP_SECTION,
+                    ConfigFile.SHARING_FILE)
+            except ValueError:
+                sharing_file = self.get(ConfigFile.GRIDFTP_SECTION,
+                    ConfigFile.SHARING_FILE)
+            if sharing_file == '' or sharing_file == None:
+                sharing_file = False
         return sharing_file
 
     def get_gridftp_sharing_file_control(self):
-        sharing_file_control = False
+        sharing_file_control = True
         if self.has_option(ConfigFile.GRIDFTP_SECTION,
                 ConfigFile.SHARING_FILE_CONTROL):
             sharing_file_control = self.getboolean(
