@@ -1392,6 +1392,145 @@ globus_result_t globus_gsi_cred_read_cert_bio(
 }
 /* @} */
 
+
+/**
+ * @name Read Cert and chain from a buffer
+ */
+/* @{ */
+/**
+ * @ingroup globus_gsi_cred_operations
+ * Read a cert from a buffer.  Cert should be in PEM format.  Will also
+ * read additional certificates as chain if present.  Any paramter besides
+ * pem_buf may be NULL.
+ *
+ * @param pem_buf
+ *        The buffer containing the PEM formatted cert and chain.
+ * @param out_handle
+ *        The handle to initialize and set cert on.
+ * @param out_cert
+ *        The X509 certificate. This should be freed with X509_free().
+ * @param out_cert_chain
+ *        The X509 certificate chain. This should be freed with sk_X509_free().
+ * @param out_subject
+ *        The identity name of the cert. This should be freed with OPENSSL_free().
+ * @return
+ *        GLOBUS_SUCCESS or an error object identifier
+ */
+globus_result_t
+globus_gsi_cred_read_cert_buffer(
+    char *                              pem_buf,
+    globus_gsi_cred_handle_t *          out_handle,
+    X509 **                             out_cert,
+    STACK_OF(X509) **                   out_cert_chain,
+    char **                             out_subject)
+{
+    BIO *                               bp = NULL;
+    X509 *                              cert = NULL;
+    STACK_OF(X509) *                    cert_chain = NULL;
+    char *                              subject = NULL;
+    globus_gsi_cred_handle_t            handle = NULL;
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_gsi_cred_read_cert_pem_buffer";
+
+    if(!pem_buf)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            (_GCRSL("NULL buffer: %s"), _function_name_));
+        goto error;
+    }
+
+    bp = BIO_new(BIO_s_mem());
+
+    BIO_write(bp, pem_buf, strlen(pem_buf));
+    
+    result = globus_gsi_cred_handle_init(&handle, NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    
+    result = globus_gsi_cred_read_cert_bio(handle, bp);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    
+    if(out_cert)
+    {
+        result = globus_gsi_cred_get_cert(handle, &cert);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        *out_cert = cert;
+    }
+    
+    if(out_cert_chain)
+    {
+        result = globus_gsi_cred_get_cert_chain(handle, &cert_chain);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        *out_cert_chain = cert_chain;
+    }
+    
+    if(out_subject)
+    {
+        result = globus_gsi_cred_get_identity_name(handle, &subject);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        *out_subject = subject;    
+    }
+    
+    if(out_handle)
+    {
+        *out_handle = handle;
+    }
+    else
+    {
+        globus_gsi_cred_handle_destroy(handle);
+    }
+        
+    BIO_free(bp);
+
+    return GLOBUS_SUCCESS;
+    
+error:
+    if(bp)
+    {
+        BIO_free(bp);
+    }
+    if(cert)
+    {
+        *out_cert = NULL;
+        X509_free(cert);
+    }
+    if(cert_chain)
+    {
+        *out_cert_chain = NULL;
+        sk_X509_free(cert_chain);
+    }
+    if(subject)
+    {
+        *out_subject = NULL;
+        OPENSSL_free(subject);
+    }
+    if(handle)
+    {
+        globus_gsi_cred_handle_destroy(handle);
+    }
+    
+    return result;
+}
+/* @} */
+
+
 /**
  * @name Read Cert & Key in PKCS12 Format
  */

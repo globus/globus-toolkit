@@ -18,7 +18,7 @@
 #include "globus_gsi_system_config.h"
 #include "gssapi.h"
 #include "globus_gss_assist.h"
-#include "globus_gsi_cert_utils.h"
+#include "globus_gsi_credential.h"
 #include "globus_gridmap_callout_error.h"
 
 #include <stdlib.h>
@@ -508,8 +508,8 @@ globus_gridmap_eppn_callout(
     {
         shared_user_buf = va_arg(ap, char *);
         
-        result = globus_gsi_cert_utils_read_pem_from_buffer(
-            shared_user_buf, &shared_user_cert, &subject);
+        result = globus_gsi_cred_read_cert_buffer(
+            shared_user_buf, NULL, &shared_user_cert, NULL, &subject);
     }
     else
     {

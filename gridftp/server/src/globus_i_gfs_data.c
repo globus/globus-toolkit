@@ -15,6 +15,7 @@
  */
 
 #include "globus_i_gridftp_server.h"
+#include "globus_gsi_credential.h"
 /* provides local_extensions */
 #include "extensions.h"
 #include <unistd.h>
@@ -2368,10 +2369,17 @@ globus_l_gfs_data_authorize(
                 
                 if(strncmp(ptr, "CERT ", 5) == 0)
                 {
+                    char *              arg_ptr;
+                    
                     ptr += 5;
                     
                     desired_user_cert = globus_libc_strdup(ptr);
-    
+                    /* ignore paramters after cert for now */
+                    if(arg_ptr = strchr(desired_user_cert, ' ') != NULL)
+                    {
+                        *arg_ptr = '\0';
+                    }
+                    
                     res = globus_l_gfs_base64_decode(
                         ptr, desired_user_cert, &cert_len);
                     desired_user_cert[cert_len] = 0;
@@ -2385,14 +2393,18 @@ globus_l_gfs_data_authorize(
                 {
                     goto pwent_error;
                 }
-                
-                res = globus_gsi_cert_utils_read_pem_from_buffer(
-                    desired_user_cert, NULL, &sub_tmp);
+                res = globus_gsi_cred_read_cert_buffer(
+                    desired_user_cert, NULL, NULL, NULL, &sub_tmp);
                 if(res != GLOBUS_SUCCESS)
                 {
                     goto pwent_error;
                 }
                 
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_INFO,
+                    "DN %s has provided sharing credentials for DN %s.\n",
+                    session_info->subject, sub_tmp);
+
                 globus_free(session_info->username);
                 session_info->username = usr_tmp;
                 globus_free(session_info->subject);
@@ -2891,9 +2903,10 @@ globus_l_gfs_data_authorize(
         GLOBUS_GFS_LOG_EVENT_END,
         "session.authz",
         0,
-        "localuser=%s DN=\"%s\"",
+        "localuser=%s DN=\"%s\"%s",
         op->session_handle->real_username,
-        session_info->subject ? session_info->subject : "");
+        session_info->subject ? session_info->subject : "",
+        sharing_attempted ? " sharing=yes" : "");
 
     rc = globus_i_gfs_acl_init(
         &op->session_handle->acl_handle,

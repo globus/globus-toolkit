@@ -216,6 +216,13 @@ globus_result_t globus_gsi_cred_read_cert_bio(
     globus_gsi_cred_handle_t            handle,
     BIO *                               bio);
 
+globus_result_t globus_gsi_cred_read_cert_buffer(
+    char *                              pem_buf,
+    globus_gsi_cred_handle_t *          out_handle,
+    X509 **                             out_cert,
+    STACK_OF(X509) **                   out_cert_chain,
+    char **                             out_subject);
+
 globus_result_t globus_gsi_cred_read_pkcs12(
     globus_gsi_cred_handle_t            handle,
     char *                              pkcs12_filename);

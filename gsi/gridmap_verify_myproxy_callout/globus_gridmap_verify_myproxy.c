@@ -18,7 +18,7 @@
 #include "globus_gsi_system_config.h"
 #include "gssapi.h"
 #include "globus_gss_assist.h"
-#include "globus_gsi_cert_utils.h"
+#include "globus_gsi_credential.h"
 #include "globus_gridmap_callout_error.h"
 
 #include <stdlib.h>
@@ -312,7 +312,6 @@ error:
 globus_result_t
 ggvm_get_subject(
     gss_ctx_id_t                        context,
-    char *                              shared_user_cert,
     char **                             subject)
 {
     gss_name_t                          peer;
@@ -322,52 +321,36 @@ ggvm_get_subject(
     int                                 initiator;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
-    if(shared_user_cert)
+    major_status = gss_inquire_context(&minor_status,
+                                       context,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       &initiator,
+                                       GLOBUS_NULL);
+
+    if(GSS_ERROR(major_status))
     {
-        char *  sub;
-    
-        result = globus_gsi_cert_utils_read_pem_from_buffer(
-            shared_user_cert, NULL, &sub);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error;
-        }
-        *subject = sub;
-        return result;
+        GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
+        goto error;
     }
-    else
+
+    major_status = gss_inquire_context(&minor_status,
+                                       context,
+                                       initiator ? GLOBUS_NULL : &peer,
+                                       initiator ? &peer : GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL);
+
+    if(GSS_ERROR(major_status))
     {
-        major_status = gss_inquire_context(&minor_status,
-                                           context,
-                                           GLOBUS_NULL,
-                                           GLOBUS_NULL,
-                                           GLOBUS_NULL,
-                                           GLOBUS_NULL,
-                                           GLOBUS_NULL,
-                                           &initiator,
-                                           GLOBUS_NULL);
-    
-        if(GSS_ERROR(major_status))
-        {
-            GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
-            goto error;
-        }
-    
-        major_status = gss_inquire_context(&minor_status,
-                                           context,
-                                           initiator ? GLOBUS_NULL : &peer,
-                                           initiator ? &peer : GLOBUS_NULL,
-                                           GLOBUS_NULL,
-                                           GLOBUS_NULL,
-                                           GLOBUS_NULL,
-                                           GLOBUS_NULL,
-                                           GLOBUS_NULL);
-    
-        if(GSS_ERROR(major_status))
-        {
-            GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
-            goto error;
-        }
+        GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
+        goto error;
     }
     
     major_status = gss_display_name(&minor_status,
@@ -421,8 +404,23 @@ globus_gridmap_verify_myproxy_callout(
     if(strcmp(service, "sharing") == 0)
     {
         shared_user_cert = va_arg(ap, char *);
+    
+        result = globus_gsi_cred_read_cert_buffer(
+            shared_user_cert, NULL, NULL, NULL, &subject);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GRIDMAP_CALLOUT_ERROR(
+                result,
+                GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,
+                ("Could not extract shared user identity."));
+            goto error;
+        }
     }
-    result = ggvm_get_subject(context, shared_user_cert, &subject);
+    else
+    {
+        result = ggvm_get_subject(context, &subject);
+    }
+    
     if(result != GLOBUS_SUCCESS || subject == NULL)
     {
         GLOBUS_GRIDMAP_CALLOUT_ERROR(

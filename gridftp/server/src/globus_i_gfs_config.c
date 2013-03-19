@@ -160,7 +160,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "The default path is '$HOME/.globus_sharing'.  Use 'none' to disable this check and "
     "allow sharing of any non-root account.  This must refer to a file on the filesystem, not a file that "
     "is only accessible via a DSI plugin.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"sharing_file_control", "sharing_file_control", NULL, "sharing-file-control", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+ {"sharing_file_control", "sharing_file_control", NULL, "sharing-file-control", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Set this to true to allow a user to create its sharing file via a special GridFTP client command. "
     "This creation is not subject to any GridFTP path restrictions, but the user must "
     "have filesystem write access to the sharing file.", NULL, NULL,GLOBUS_FALSE, NULL},

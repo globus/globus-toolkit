@@ -27,7 +27,7 @@
 
 #include "globus_i_gss_assist.h"
 #include "globus_gsi_system_config.h"
-#include "globus_gsi_cert_utils.h"
+#include "globus_gsi_credential.h"
 #include "globus_callout.h"
 #include <stdio.h>
 #include <string.h>
@@ -2177,8 +2177,9 @@ globus_gss_assist_map_and_authorize(
  * variable. If that is not set, it falls back to $HOME/.gridmap.
  *
  * @param shared_user_certificate
- *     Credential of user that owns the resources to be shared in PEM format.
- *     This should be parsed to find the identity that should be mapped.
+ *     cert and cert chain of user that owns the resources to be shared,
+ *     in PEM format.
+ *     This will be parsed to find the identity that should be mapped.
  * @param context
  *     Security context of the underlying connection.  This should generally
  *     be ignored.
@@ -2431,9 +2432,9 @@ globus_l_gss_assist_gridmap_lookup(
     if(shared_user_cert)
     {
         char *  subject;
-    
-        result = globus_gsi_cert_utils_read_pem_from_buffer(
-            shared_user_cert, NULL, &subject);
+
+        result = globus_gsi_cred_read_cert_buffer(
+            shared_user_cert, NULL, NULL, NULL, &subject);
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
