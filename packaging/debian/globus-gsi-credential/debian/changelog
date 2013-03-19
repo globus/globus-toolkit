@@ -1,3 +1,9 @@
+globus-gsi-credential (5.4-1) unstable; urgency=low
+
+  * Update sharing to support a full cert chain at logon
+
+ -- Globus Toolkit <support@globus.org>  Tue, 19 Mar 2013 14:53:33 -0500
+
 globus-gsi-credential (5.3-2) unstable; urgency=low
 
   * GT 5.2.2 final

@@ -13,13 +13,13 @@
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
 Version:	0.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/updates/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Mar 19 2013 Globus Toolkit <support@globus.org> - 0.3-2
+- Update sharing to support a full cert chain at logon
+
 * Tue Mar 12 2013 Globus Toolkit <support@globus.org> - 0.3-1
 - Improve error message handling
 

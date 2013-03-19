@@ -13,13 +13,13 @@
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
 Version:	8.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/updates/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -212,6 +212,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Mar 19 2013 Globus Toolkit <support@globus.org> - 8.5-2
+- Update sharing to support a full cert chain at logon
+
 * Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 8.5-1
 - GT-354: Compatibility with automake 1.13
 

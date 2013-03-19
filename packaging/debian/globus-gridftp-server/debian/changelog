@@ -1,3 +1,9 @@
+globus-gridftp-server (6.23-1) unstable; urgency=low
+
+  * Update sharing to support a full cert chain at logon
+
+ -- Globus Toolkit <support@globus.org>  Tue, 19 Mar 2013 14:51:47 -0500
+
 globus-gridftp-server (6.22-1) unstable; urgency=low
 
   * GT-354: Compatibility with automake 1.13

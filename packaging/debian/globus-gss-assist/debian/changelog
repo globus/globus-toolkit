@@ -1,3 +1,9 @@
+globus-gss-assist (8.9-1) unstable; urgency=low
+
+  * Update sharing to support a full cert chain at logon
+
+ -- Globus Toolkit <support@globus.org>  Tue, 19 Mar 2013 14:54:01 -0500
+
 globus-gss-assist (8.8-1) unstable; urgency=low
 
   * GT-365: Switch sharing user identification from DN to CERT
