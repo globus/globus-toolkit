@@ -1,6 +1,6 @@
-globus-connect-multiuser (2.0.7-1) unstable; urgency=low
+globus-connect-multiuser (2.0.8-1) unstable; urgency=low
 
-  * Fix some configuration file handling
+  * fix some configuration file handling
   * Fix nameopt for ca creation for real
   * add socket timeout
 
