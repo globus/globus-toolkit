@@ -15,9 +15,11 @@
 import getopt
 import logging
 import os
-import sys
-import uuid
 import pkgutil
+import ssl
+import sys
+import time
+import uuid
 
 from globus.connect.multiuser.configfile import ConfigFile
 import globus.connect.security
@@ -54,7 +56,15 @@ class Setup(object):
 
         if api is None:
             self.logger.debug("Acquiring Globus Online Access Token")
-            auth_result = get_access_token(user, password)
+            for tries in xrange(1, 10):
+                try:
+                    auth_result = get_access_token(user, password)
+                except ssl.SSLError, e:
+                    if "timed out" not in e.args[0]:
+                        raise(e)
+                    time.sleep(0.5)
+            if auth_result is None:
+                raise(Exception("Unable to obtain token"))
 
             api = TransferAPIClient(username=auth_result.username,
                                     goauth=auth_result.token)

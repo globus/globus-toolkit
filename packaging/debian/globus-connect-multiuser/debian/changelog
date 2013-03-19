@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.10-1) unstable; urgency=low
+
+  * Add retries on getting authentication token
+
+ -- Globus Toolkit <support@globus.org>  Tue, 19 Mar 2013 12:34:43 -0400
+
 globus-connect-multiuser (2.0.9-1) unstable; urgency=low
 
   * fix some more configuration file handling
