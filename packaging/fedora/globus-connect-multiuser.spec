@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.8
+Version:        2.0.9
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -82,7 +82,10 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %changelog
-* Mon Mar 19 2013 Globus Toolkit <support@globus.org> 2.0.8-1
+* Tue Mar 19 2013 Globus Toolkit <support@globus.org> 2.0.9-1
+- Fix some configuration file handling
+
+* Tue Mar 19 2013 Globus Toolkit <support@globus.org> 2.0.8-1
 - Fix some configuration file handling
 - Fix nameopt for ca creation for real
 - add socket timeout

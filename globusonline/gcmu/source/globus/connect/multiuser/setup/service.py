@@ -41,7 +41,7 @@ class SetupService(Setup):
         super(SetupService, self).__init__(**kwargs)
 
     def configure_security(self, force=False):
-        fetch_creds = self.conf.get_security_fetch_credentials_from_relay()
+        fetch_creds = self.conf.get_security_fetch_credential_from_relay()
 
         # Do nothing if we don't want to use GlobusOnline relay creds
         if not fetch_creds:
@@ -60,7 +60,7 @@ class SetupService(Setup):
         if os.path.exists(cert) and os.path.exists(key):
             fetch_creds = False
 
-        if force and self.conf.get_security_fetch_credentials_from_relay():
+        if force and self.conf.get_security_fetch_credential_from_relay():
             fetch_creds = True
 
         if fetch_creds:
@@ -231,12 +231,16 @@ class SetupGridFtpService(SetupService):
                 incoming_range = self.conf.get_gridftp_incoming_port_range()
                 if incoming_range is not None:
                     conf_file.write(
-                        "$GLOBUS_TCP_SOURCE_RANGE %d,%d\n" \
+                        "port_range %d,%d\n" \
                         % (incoming_range[0], incoming_range[1]))
                 outgoing_range = self.conf.get_gridftp_outgoing_port_range()
                 if outgoing_range is not None:
-                    conf_file.write("port_range %d,%d\n" \
+                    conf_file.write("$GLOBUS_TCP_SOURCE_RANGE %d,%d\n" \
                         % (outgoing_range[0], outgoing_range[1]))
+                data_interface = self.conf.get_gridftp_data_interface()
+                if data_interface is not None:
+                    conf_file.write("data_interface %s\n" \
+                        % (data_interface))
                 cadir = \
                     self.conf.get_security_trusted_certificate_directory()
                 if cadir is not None:

@@ -103,6 +103,14 @@ class ConfigFile(ConfigParser.ConfigParser):
         else:
             return [x.strip() for x in optstr.split(',')]
 
+    def get(self, section, option):
+        res_str = ''
+        if self.has_option(section, option):
+            res_str = ConfigParser.ConfigParser.get(self, section, option)
+            if len(res_str) > 1 and res_str[0] == '"' and res_str[-1] == '"':
+                res_str = res_str[1:-1]
+        return res_str
+
     def get_go_username(self):
         user_name = None
         if self.has_option(
@@ -166,15 +174,15 @@ class ConfigFile(ConfigParser.ConfigParser):
             default_dir = '/~/'
         return default_dir
 
-    def get_security_fetch_credentials_from_relay(self):
-        fetch_credentials_from_relay = True
+    def get_security_fetch_credential_from_relay(self):
+        fetch_credential_from_relay = True
         if self.has_option(
                 ConfigFile.SECURITY_SECTION,
                 ConfigFile.FETCH_CREDENTIAL_FROM_RELAY_OPTION):
-            fetch_credentials_from_relay = self.getboolean(
+            fetch_credential_from_relay = self.getboolean(
                 ConfigFile.SECURITY_SECTION,
                 ConfigFile.FETCH_CREDENTIAL_FROM_RELAY_OPTION)
-        return fetch_credentials_from_relay
+        return fetch_credential_from_relay
 
     def get_security_certificate_file(self):
         certificate = None
@@ -328,7 +336,7 @@ class ConfigFile(ConfigParser.ConfigParser):
                     str(incoming_port_range)))
         return outgoing_port_range
 
-    def get_gridftp_data_interface_option(self):
+    def get_gridftp_data_interface(self):
         data_interface = None
         if self.has_option(ConfigFile.GRIDFTP_SECTION,
                 ConfigFile.DATA_INTERFACE_OPTION):
