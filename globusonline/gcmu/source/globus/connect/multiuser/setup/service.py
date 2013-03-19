@@ -353,7 +353,8 @@ class SetupGridFtpService(SetupService):
                     myproxy_server is not None and \
                     gcmu.is_local_service(myproxy_server):
                 myproxy_ca_dn = security.get_certificate_subject(
-                        self.conf.get_security_certificate_file())
+                        self.conf.get_security_certificate_file(),
+                        nameopt='RFC2253')
 
             cadir = self.conf.get_security_trusted_certificate_directory()
             self.logger.debug("MyProxy CA DN is " + str(myproxy_ca_dn))

@@ -1,3 +1,10 @@
+globus-connect-multiuser (2.0.7-1) unstable; urgency=low
+
+  * remove @PYTHON@ from globus-connect-multiuser-setup
+  * Fix nameopt for ca creation
+
+ -- Globus Toolkit <support@globus.org>  Mon, 18 Mar 2013 20:02:59 -0400
+
 globus-connect-multiuser (2.0.6-1) unstable; urgency=low
 
   * fix issues where MyProxyCA DN doesn't match MyProxy DN
