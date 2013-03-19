@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.11-1) unstable; urgency=low
+
+  * Missing break in retry code
+
+ -- Globus Toolkit <support@globus.org>  Tue, 19 Mar 2013 13:11:43 -0400
+
 globus-connect-multiuser (2.0.10-1) unstable; urgency=low
 
   * Add retries on getting authentication token

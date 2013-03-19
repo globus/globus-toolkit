@@ -63,6 +63,8 @@ class Setup(object):
                     if "timed out" not in e.args[0]:
                         raise(e)
                     time.sleep(0.5)
+                if auth_result is not None:
+                    break
             if auth_result is None:
                 raise(Exception("Unable to obtain token"))
 
