@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.11
+Version:        2.0.12
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -20,17 +20,17 @@ BuildArch:      noarch
 %global python  python
 %endif
 
-Requires:       globus-gridftp-server-progs%{?_isa} >= 6
-Requires:       globus-gass-copy-progs%{?_isa} 
-Requires:       globus-gss-assist-progs%{?_isa} 
-Requires:       myproxy%{?_isa} 
-Requires:       myproxy-server%{?_isa} 
-Requires:       gsi-openssh%{?_isa} 
-Requires:       gsi-openssh-clients%{?_isa} 
-Requires:       globus-gsi-cert-utils-progs%{?_isa} 
+Requires:       globus-gridftp-server-progs >= 6
+Requires:       globus-gass-copy-progs
+Requires:       globus-gss-assist-progs
+Requires:       myproxy
+Requires:       myproxy-server
+Requires:       gsi-openssh
+Requires:       gsi-openssh-clients
+Requires:       globus-gsi-cert-utils-progs
 Requires:       globus-simple-ca
-Requires:       globus-gridmap-verify-myproxy-callout%{?_isa}
-Requires:       globus-gridmap-eppn-callout%{?_isa}
+Requires:       globus-gridmap-verify-myproxy-callout
+Requires:       globus-gridmap-eppn-callout
 Requires:	%{python}
 Obsoletes:      gcmu
 
@@ -82,6 +82,11 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %changelog
+* Thu Mar 21 2013 Globus Toolkit <support@globus.org> 2.0.12-1
+- Add detection of ec2 private IP addresses and set DataInterface
+- Better automatic support of NATed servers
+- Don't depend on particular arch for GT components
+
 * Tue Mar 19 2013 Globus Toolkit <support@globus.org> 2.0.11-1
 - Missing break in retry code
 

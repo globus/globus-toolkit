@@ -40,6 +40,16 @@ class SetupService(Setup):
     def __init__(self, **kwargs):
         super(SetupService, self).__init__(**kwargs)
 
+    def is_local_gridftp(self):
+        server = self.conf.get_gridftp_server()
+        return gcmu.is_local_service(server) or \
+            (server is not None and self.conf.get_gridftp_server_behind_nat())
+
+    def is_local_myproxy(self):
+        server = self.conf.get_myproxy_server()
+        return gcmu.is_local_service(server) or \
+            (server is not None and self.conf.get_myproxy_server_behind_nat())
+
     def configure_security(self, force=False):
         fetch_creds = self.conf.get_security_fetch_credential_from_relay()
 
@@ -161,12 +171,12 @@ class SetupGridFtpService(SetupService):
         we will fetch its CA credentials so that we can trust the certificates
         it issues
         """
-        if gcmu.is_local_service(self.conf.get_gridftp_server()):
+        server = self.conf.get_gridftp_server()
+        if self.is_local_gridftp():
             super(SetupGridFtpService, self).configure_security()
 
             myproxy_server = self.conf.get_myproxy_server()
-            if myproxy_server is not None \
-                    and not gcmu.is_local_service(myproxy_server):
+            if myproxy_server is not None and not self.is_local_myproxy():
                 print "Fetching MyProxy CA trust roots"
                 cadir = self.conf.get_security_trusted_certificate_directory()
 
@@ -215,7 +225,7 @@ class SetupGridFtpService(SetupService):
         if os.path.lexists(conf_link_name):
             os.remove(conf_link_name)
 
-        if server is None or not gcmu.is_local_service(server):
+        if not self.is_local_gridftp():
             return
 
         if server is not None:
@@ -238,6 +248,24 @@ class SetupGridFtpService(SetupService):
                     conf_file.write("$GLOBUS_TCP_SOURCE_RANGE %d,%d\n" \
                         % (outgoing_range[0], outgoing_range[1]))
                 data_interface = self.conf.get_gridftp_data_interface()
+
+                if data_interface is None:
+                    if gcmu.is_ec2():
+                        data_interface = gcmu.public_ip()
+                    elif self.conf.get_gridftp_server_behind_nat():
+                        data_interface = self.conf.get_gridftp_server()
+                        if gcmu.is_private_ip(data_interface):
+                            self.logger.warn(
+"""
+******************************************************************************
+WARNING: Your GridFTP server is behind a NAT, but the Server name resolves
+to a private IP address. This probably won't work correctly with Globus Online.
+To remedy, set the DataInterface option in the [GridFTP] section of the
+globus-connect-multiuser.conf file to the public IP address of this GridFTP
+server
+******************************************************************************
+""")
+
                 if data_interface is not None:
                     conf_file.write("data_interface %s\n" \
                         % (data_interface))
@@ -278,15 +306,15 @@ class SetupGridFtpService(SetupService):
         conf_link_name = os.path.join(
                 etc_gridftp_d, "globus-connect-multiuser-sharing")
 
-        if not gcmu.is_local_service(self.conf.get_gridftp_server()):
-            if os.path.lexists(conf_link_name):
-                os.remove(conf_link_name)
+        if os.path.lexists(conf_link_name):
+            os.remove(conf_link_name)
+
+        server = self.conf.get_gridftp_server()
+        if not self.is_local_gridftp():
             return
 
         if not self.conf.get_gridftp_sharing_enabled():
             self.logger.debug("Disabling sharing")
-            if os.path.lexists(conf_link_name):
-                os.remove(conf_link_name)
             return
 
         if not os.path.exists(etc_gridftp_d):
@@ -334,7 +362,7 @@ class SetupGridFtpService(SetupService):
         if os.path.lexists(conf_link_name):
             os.remove(conf_link_name)
 
-        if server is None or not gcmu.is_local_service(server):
+        if not self.is_local_gridftp():
             return
 
         if not os.path.exists(var_gridftp_d):
@@ -367,7 +395,7 @@ class SetupGridFtpService(SetupService):
             myproxy_server = self.conf.get_myproxy_server()
             if myproxy_ca_dn is None and \
                     myproxy_server is not None and \
-                    gcmu.is_local_service(myproxy_server):
+                    self.is_local_myproxy():
                 myproxy_ca_dn = security.get_certificate_subject(
                         self.conf.get_security_certificate_file())
 
@@ -375,7 +403,7 @@ class SetupGridFtpService(SetupService):
             self.logger.debug("MyProxy CA DN is " + str(myproxy_ca_dn))
             self.logger.debug("CA dir is " + str(cadir))
 
-            if gcmu.is_local_service(self.conf.get_myproxy_server()):
+            if self.is_local_myproxy():
                 myproxy_certpath = os.path.join(
                     self.conf.get_myproxy_ca_directory(),
                     "cacert.pem")
@@ -665,7 +693,7 @@ class SetupMyProxyService(SetupService):
         
     def configure(self, force=False):
         server = self.conf.get_myproxy_server()
-        if not(server is not None and gcmu.is_local_service(server)):
+        if not self.is_local_myproxy():
             self.logger.debug("MyProxy is not configured for this host")
             return
 
@@ -682,7 +710,7 @@ class SetupMyProxyService(SetupService):
     def unconfigure(self):
         server = self.conf.get_myproxy_server()
         if server is not None:
-            if gcmu.is_local_service(server):
+            if self.is_local_myproxy():
                 myproxy_dir = self.conf.get_etc_myproxy_d()
 
                 for name in os.listdir(myproxy_dir):
@@ -691,7 +719,7 @@ class SetupMyProxyService(SetupService):
 
     def restart(self, force=False):
         server = self.conf.get_myproxy_server()
-        if server is not None and gcmu.is_local_service(server):
+        if server is not None and self.is_local_myproxy():
             SetupService.restart(self, "myproxy-server")
 
 # vim: filetype=python:

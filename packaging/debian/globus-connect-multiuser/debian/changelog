@@ -1,3 +1,10 @@
+globus-connect-multiuser (2.0.12-1) unstable; urgency=low
+
+  * Add detection of ec2 private IP addresses and set DataInterface
+  * Better automatic support of NATed servers
+
+ -- Globus Toolkit <support@globus.org>  Thu, 21 Mar 2013 10:17:38 -0400
+
 globus-connect-multiuser (2.0.11-1) unstable; urgency=low
 
   * Missing break in retry code

@@ -45,6 +45,7 @@ class ConfigFile(ConfigParser.ConfigParser):
     GRIDMAP_FILE = "GridmapFile"
     
     SERVER_OPTION = "Server"
+    SERVER_BEHIND_NAT_OPTION = "ServerBehindNAT"
     INCOMING_PORT_RANGE_OPTION = "IncomingPortRange"
     OUTGOING_PORT_RANGE_OPTION= "OutgoingPortRange"
     DATA_INTERFACE_OPTION = "DataInterface"
@@ -298,6 +299,16 @@ class ConfigFile(ConfigParser.ConfigParser):
 
         return server
 
+    def get_gridftp_server_behind_nat(self):
+        server_behind_nat = False
+        if self.has_option(
+                ConfigFile.GRIDFTP_SECTION,
+                ConfigFile.SERVER_BEHIND_NAT_OPTION):
+            server_behind_nat = self.getboolean(
+                ConfigFile.GRIDFTP_SECTION,
+                ConfigFile.SERVER_BEHIND_NAT_OPTION)
+        return server_behind_nat
+
     def get_gridftp_dn(self):
         dn = None
         if self.has_option(
@@ -317,7 +328,7 @@ class ConfigFile(ConfigParser.ConfigParser):
                 ConfigFile.INCOMING_PORT_RANGE_OPTION,
                 1)]
         if len(incoming_port_range) == 0:
-            return None
+            return [50000, 51000]
         if len(incoming_port_range) != 2:
             raise Exception("Invalid port range %s" % (
                     str(incoming_port_range)))
@@ -344,6 +355,7 @@ class ConfigFile(ConfigParser.ConfigParser):
                 ConfigFile.DATA_INTERFACE_OPTION)
             if data_interface == '':
                 data_interface = None
+
         return data_interface
 
     def get_gridftp_restrict_paths(self):
@@ -435,6 +447,16 @@ class ConfigFile(ConfigParser.ConfigParser):
                 if name == "localhost":
                     myproxy_server = gcmu.public_hostname()
         return myproxy_server
+
+    def get_myproxy_server_behind_nat(self):
+        server_behind_nat = False
+        if self.has_option(
+                ConfigFile.MYPROXY_SECTION,
+                ConfigFile.SERVER_BEHIND_NAT_OPTION):
+            server_behind_nat = self.getboolean(
+                ConfigFile.MYPROXY_SECTION,
+                ConfigFile.SERVER_BEHIND_NAT_OPTION)
+        return server_behind_nat
 
     def get_myproxy_dn(self):
         myproxy_dn = None

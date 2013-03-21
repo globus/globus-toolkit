@@ -56,6 +56,7 @@ class Setup(object):
 
         if api is None:
             self.logger.debug("Acquiring Globus Online Access Token")
+            auth_result = None
             for tries in xrange(1, 10):
                 try:
                     auth_result = get_access_token(user, password)
