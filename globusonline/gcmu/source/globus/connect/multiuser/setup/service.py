@@ -238,6 +238,24 @@ class SetupGridFtpService(SetupService):
 
             conf_file = file(conf_file_name, "w")
             try:
+                if ":" in server:
+                    port = int(server.split(":")[1])
+                    conf_file.write("port %d\n" % port)
+                    self.logger.warn(
+"""
+******************************************************************************
+WARNING: You configured your GridFTP server with a custom port.  In order
+to override the default GridFTP server port, it may be necessary to edit
+the global GridFTP server configuration file at /etc/gridftp.conf, and
+comment out the "port" argument.
+Change:
+port 2811
+  to
+#port 2811
+
+Restart the globus-gridftp-server service if changes are made.
+******************************************************************************
+""")
                 incoming_range = self.conf.get_gridftp_incoming_port_range()
                 if incoming_range is not None:
                     conf_file.write(
@@ -254,6 +272,8 @@ class SetupGridFtpService(SetupService):
                         data_interface = gcmu.public_ip()
                     elif self.conf.get_gridftp_server_behind_nat():
                         data_interface = self.conf.get_gridftp_server()
+                        if ":" in data_interface:
+                            data_interface = data_interface.split(":")[0]
                         if gcmu.is_private_ip(data_interface):
                             self.logger.warn(
 """
@@ -622,6 +642,13 @@ class SetupMyProxyService(SetupService):
 
         self.myproxy_mapapp_config = "certificate_mapapp " + mapapp + "\n"
 
+    def configure_myproxy_port(self, force=False):
+        self.myproxy_port_config = ""
+        server = self.conf.get_myproxy_server()
+        if ":" in server:
+            port = int(server.split(":")[1])
+            self.myproxy_port_config = "-p %d " % port
+        
     def configure_myproxy_cred_repo(self, force=False):
         self.myproxy_cred_repo_config = """
                 authorized_retrievers      "*"
@@ -672,7 +699,6 @@ class SetupMyProxyService(SetupService):
 
             if not os.path.exists(store):
                 os.makedirs(store, 0700)
-
             if self.conf.get_myproxy_use_pam_login():
                 conf_file.write("export MYPROXY_USER=root\n")
             conf_file.write("export X509_CERT_DIR=\"%s\"\n" % \
@@ -683,8 +709,9 @@ class SetupMyProxyService(SetupService):
                     self.conf.get_security_key_file())
             conf_file.write("export X509_USER_PROXY=\"\"\n")
             conf_file.write("export MYPROXY_OPTIONS=" + \
-                    "\"${MYPROXY_OPTIONS:+$MYPROXY_OPTIONS }-c %s -s %s\"" \
-                    % (
+                    "\"${MYPROXY_OPTIONS:+$MYPROXY_OPTIONS }%s-c %s -s %s\"" \
+                    % ( 
+                        self.myproxy_port_config,
                         self.conf.get_myproxy_config_file(),
                         store))
             os.symlink(conf_file_name, conf_link_name)
@@ -703,7 +730,8 @@ class SetupMyProxyService(SetupService):
         self.configure_myproxy_pam()
         self.configure_myproxy_mapapp()
         self.configure_myproxy_cred_repo()
-
+        self.configure_myproxy_port()
+        
         self.write_myproxy_conf()
         self.write_myproxy_init_conf()
 

@@ -104,7 +104,9 @@ class SetupEndpoint(Setup):
         if server is not None:
             self.logger.debug("Associating GridFTP servers with endpoints")
             if not(server.startswith("gsiftp://") or server.startswith("ftp://")):
-                server = "gsiftp://" + server + ":2811"
+                if ":" not in server:
+                    server = server + ":2811"
+                server = "gsiftp://" + server
             uri = urlparse(server)
 
             endpoint_name = self.conf.get_endpoint_name()
@@ -134,7 +136,8 @@ class SetupEndpoint(Setup):
                     new_server[u'port'] = port
                     new_server[u'is_connected'] = True
                     subject = self.conf.get_gridftp_dn()
-                    if subject is None and gcmu.is_local_service(host):
+                    if subject is None and (gcmu.is_local_service(host) \
+                            or self.conf.get_gridftp_server_behind_nat()):
                         certpath = self.conf.get_security_certificate_file()
                         if certpath is not None:
                             subject = security.get_certificate_subject(certpath)
@@ -175,7 +178,9 @@ class SetupEndpoint(Setup):
                  
             myproxy_dn = self.conf.get_myproxy_dn()
             if myproxy_dn is None:
-                if myproxy_dn is None and gcmu.is_local_service(myproxy_server):
+                if myproxy_dn is None and \
+                        (gcmu.is_local_service(myproxy_server) or \
+                        self.conf.get_myproxy_server_behind_nat()):
                     certpath = os.path.join(
                             self.conf.get_myproxy_ca_directory(),
                             "cacert.pem")

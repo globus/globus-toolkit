@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.13-1) unstable; urgency=low
+
+  * Fix configuring services with non-default port
+
+ -- Globus Toolkit <support@globus.org>  Thu, 21 Mar 2013 4:17:38 -0400
+
 globus-connect-multiuser (2.0.12-1) unstable; urgency=low
 
   * Add detection of ec2 private IP addresses and set DataInterface

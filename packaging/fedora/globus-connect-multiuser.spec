@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.12
+Version:        2.0.13
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -82,6 +82,9 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %changelog
+* Thu Mar 21 2013 Globus Toolkit <support@globus.org> 2.0.13-1
+- Fix configuring services with non-default port
+
 * Thu Mar 21 2013 Globus Toolkit <support@globus.org> 2.0.12-1
 - Add detection of ec2 private IP addresses and set DataInterface
 - Better automatic support of NATed servers
