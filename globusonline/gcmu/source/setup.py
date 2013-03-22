@@ -5,10 +5,22 @@ import os
 
 version = "2.0.14"
 
-versionfile = file(
-        os.path.join("globus","connect","multiuser","setup","version"), "w")
-versionfile.write(version + "\n")
-versionfile.close()
+versionfile_path = os.path.join("globus","connect","multiuser",
+        "setup","version")
+oldversion = None
+if os.path.exists(versionfile_path):
+    oldversionfile = file(versionfile_path, "r")
+    try:
+        oldversion = oldversionfile.read().strip()
+    finally:
+        oldversionfile.close()
+
+if version != oldversion:
+    versionfile = file(versionfile_path, "w")
+    try:
+        versionfile.write(version + "\n")
+    finally:
+        versionfile.close()
 
 setup(name = 'globus_connect_multiuser',
     version = version,
