@@ -1,6 +1,6 @@
 Name:           globus-connect-multiuser
 Version:        2.0.14
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
 
@@ -20,7 +20,7 @@ BuildArch:      noarch
 %global python  python
 %endif
 
-Requires:       globus-gridftp-server-progs >= 6
+Requires:       globus-gridftp-server-progs >= 6.23
 Requires:       globus-gass-copy-progs
 Requires:       globus-gss-assist-progs
 Requires:       myproxy
@@ -29,8 +29,9 @@ Requires:       gsi-openssh
 Requires:       gsi-openssh-clients
 Requires:       globus-gsi-cert-utils-progs
 Requires:       globus-simple-ca
-Requires:       globus-gridmap-verify-myproxy-callout
-Requires:       globus-gridmap-eppn-callout
+Requires:       globus-gridmap-verify-myproxy-callout >= 1.2
+Requires:       globus-gridmap-eppn-callout >= 0.3
+Requires:       globus-gsi-credential >= 5.4
 Requires:	%{python}
 Obsoletes:      gcmu
 
@@ -82,6 +83,9 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %changelog
+* Fri Mar 22 2013 Globus Toolkit <support@globus.org> 2.0.14-2
+- Require some minimum package versions
+
 * Fri Mar 22 2013 Globus Toolkit <support@globus.org> 2.0.14-1
 - Enable the gridftp and myproxy services to run at boot time
 - Add globus-connect-multiuser version number to the gridftp server's usage

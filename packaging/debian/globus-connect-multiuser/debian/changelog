@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.14-2) unstable; urgency=low
+
+  * Require some minimum package versions
+
+ -- Globus Toolkit <support@globus.org>  Fri, 22 Mar 2014 20:11:54 -0400
+
 globus-connect-multiuser (2.0.14-1) unstable; urgency=low
 
   * Enable the gridftp and myproxy services to run at boot time
