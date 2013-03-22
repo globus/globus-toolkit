@@ -126,8 +126,40 @@ class SetupService(Setup):
             if gridmap is not None:
                 gridmap.close()
 
+    def enable(self, service):
+        service_enable = None
+
+        if service_enable is None:
+            systemctl_paths = ["/bin/systemctl", "/usr/bin/systemctl"]
+            for systemctl in systemctl_paths:
+                if os.path.exists(systemctl):
+                    service_enable = [systemctl, "enable", service +".service"]
+                    break
+
+        if service_enable is None:
+            update_rcd_paths = ["/sbin/update-rc.d", "/usr/sbin/update-rc.d"]
+            for update_rcd in update_rcd_paths:
+                if os.path.exists(update_rcd):
+                    service_enable = [update_rcd, service, "enable"]
+                    break
+
+        if service_enable is None:
+            chkconfig_paths = ["/sbin/chkconfig", "/usr/sbin/chkconfig"]
+            for chkconfig in chkconfig_paths:
+                if os.path.exists(chkconfig):
+                    service_enable = [chkconfig, service, "on"]
+                    break
+
+        if service_enable is not None:
+            enabler = Popen(service_enable, stdin=None,
+                    stdout=PIPE, stderr=PIPE)
+            (out, err) = enabler.communicate()
+            if out is not None and out != "" and out != "\n":
+                self.logger.info(out,)
+            if err is not None and err != "" and err != "\n":
+                self.logger.warn(err,)
+
     def restart(self, service):
-        (name, ver, id) = platform.linux_distribution()
         args = [
                 os.path.join(
                     self.conf.root, "etc", "init.d",
@@ -238,6 +270,11 @@ class SetupGridFtpService(SetupService):
 
             conf_file = file(conf_file_name, "w")
             try:
+                version = pkgutil.get_data(
+                    "globus.connect.multiuser.setup",
+                    "version")
+                if version:
+                    conf_file.write("usage_stats_id GCMU-%s" % (version))
                 if ":" in server:
                     port = int(server.split(":")[1])
                     conf_file.write("port %d\n" % port)
@@ -524,6 +561,11 @@ server
     def restart(self, force=False):
         SetupService.restart(self, "globus-gridftp-server")
 
+    def enable(self):
+        server = self.conf.get_gridftp_server()
+        if server is not None and self.is_local_gridftp():
+            SetupService.enable(self, "globus-gridftp-server")
+
 class SetupMyProxyService(SetupService):
     """
     Configure a MyProxy service based on a GCMU configuration. 
@@ -749,5 +791,10 @@ class SetupMyProxyService(SetupService):
         server = self.conf.get_myproxy_server()
         if server is not None and self.is_local_myproxy():
             SetupService.restart(self, "myproxy-server")
+
+    def enable(self):
+        server = self.conf.get_myproxy_server()
+        if server is not None and self.is_local_myproxy():
+            SetupService.enable(self, "myproxy-server")
 
 # vim: filetype=python:

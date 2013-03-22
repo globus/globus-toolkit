@@ -1,3 +1,10 @@
+globus-connect-multiuser (2.0.14-1) unstable; urgency=low
+
+  * Enable the gridftp and myproxy services to run at boot time
+  * Add globus-connect-multiuser version number to the gridftp server's usage stats data
+
+ -- Globus Toolkit <support@globus.org>  Fri, 22 Mar 2014 14:20:13 -0400
+
 globus-connect-multiuser (2.0.13-1) unstable; urgency=low
 
   * Fix configuring services with non-default port

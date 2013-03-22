@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.13
+Version:        2.0.14
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -82,6 +82,11 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %changelog
+* Fri Mar 22 2013 Globus Toolkit <support@globus.org> 2.0.14-1
+- Enable the gridftp and myproxy services to run at boot time
+- Add globus-connect-multiuser version number to the gridftp server's usage
+  stats data
+
 * Thu Mar 21 2013 Globus Toolkit <support@globus.org> 2.0.13-1
 - Fix configuring services with non-default port
 

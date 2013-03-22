@@ -117,6 +117,7 @@ services which are set up in the configuration file will be configured."""
             myproxy_setup = SetupMyProxyService(
                     config_obj=conf, debug=debug, api=api)
             myproxy_setup.configure(force=force)
+            myproxy_setup.enable()
             myproxy_setup.restart()
             api = myproxy_setup.api
             errorcount += myproxy_setup.errorcount
@@ -125,6 +126,7 @@ services which are set up in the configuration file will be configured."""
             gridftp_setup = SetupGridFtpService(
                     config_obj=conf, debug=debug, api=api)
             gridftp_setup.configure(force=force)
+            gridftp_setup.enable()
             gridftp_setup.restart()
             errorcount += gridftp_setup.errorcount
 
