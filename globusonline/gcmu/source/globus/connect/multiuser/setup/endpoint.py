@@ -95,7 +95,7 @@ class SetupEndpoint(Setup):
                 self.logger.error("endpoint failed: %s" % (e.message))
                 self.errorcount += 1
 
-    def configure_physical_servers(self, force=False):
+    def configure_physical_servers(self, reset=False, force=False):
         """
         Add the physical (Grid)FTP server file to the
         endpoints it is associated with in the configuration file. If there 
@@ -145,7 +145,7 @@ class SetupEndpoint(Setup):
                         new_server[u'subject'] = gcmu.to_unicode(subject)
                     new_server[u'update'] = True
 
-                    if force:
+                    if force or reset:
                         servers_filtered = []
                     else:
                         servers_filtered = [x for x in data[u'DATA'] \
@@ -155,6 +155,8 @@ class SetupEndpoint(Setup):
                                     and
                                x[u'uri'] != gcmu.to_unicode(server)]
 
+                    for sf in servers_filtered:
+                        sf[u'update'] = True
                     servers_filtered.append(new_server)
                     data['DATA'] = servers_filtered
 
@@ -228,10 +230,19 @@ class SetupEndpoint(Setup):
                         % (endpoint_name, e.message))
                 self.errorcount += 1
 
-    def configure(self, force=False):
+    def configure(self, reset=False, force=False):
         self.logger.info("Configuring Globus Online Endpoint")
         self.configure_endpoint(force=force)
-        self.configure_physical_servers(force=force)
+        self.configure_physical_servers(reset=reset, force=force)
         self.configure_myproxy()
         self.configure_oauth()
+
+    def remove_endpoint(self):
+        endpoint_name = self.conf.get_endpoint_name()
+        try:
+            self.logger.debug("Removing old endpoint definition")
+            self.api.endpoint_delete(endpoint_name)
+        except:
+            self.errorcount += 1
+            pass
 # vim: filetype=python : nospell :

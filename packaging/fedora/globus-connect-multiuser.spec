@@ -1,6 +1,6 @@
 Name:           globus-connect-multiuser
-Version:        2.0.14
-Release:        2%{?dist}
+Version:        2.0.15
+Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
 
@@ -83,6 +83,9 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %changelog
+* Mon Mar 25 2013 Globus Toolkit <support@globus.org> 2.0.15-1
+- Add options to remove and reset an endpoint
+
 * Fri Mar 22 2013 Globus Toolkit <support@globus.org> 2.0.14-2
 - Require some minimum package versions
 
