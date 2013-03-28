@@ -1,0 +1,5 @@
+myproxy-oauth (0.0-1) unstable; urgency=low
+
+  * Initial packaging
+
+ -- Globus Toolkit <support@globus.org>  Thu, 28 Mar 2013 05:36:05 -0400
