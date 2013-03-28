@@ -29,7 +29,7 @@ specified in the registration form will become an admin of the service.
 Prerequisite packages on Debian-based systems:
 
 * python >= 2.5
-* python-openssl
+* python-crypto >= 2.2
 * python-flask >= 0.7
 * python-sqlalchemy
 * libapache2-mod-wsgi
