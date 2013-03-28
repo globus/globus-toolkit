@@ -3,29 +3,32 @@
     Alias /oauth/templates/ /usr/share/myproxy-oauth/myproxyoauth/templates/
     <Directory /usr/share/myproxy-oauth/myproxyoauth/templates>
         Options Indexes
-        Order allow,deny
-        Allow from all
+	Require all granted
     </Directory>
 
     # Serve static files requested from MyProxy OAuth application
     Alias /oauth/static/ /usr/share/myproxy-oauth/myproxyoauth/static/
     <Directory /usr/share/myproxy-oauth/myproxyoauth/static>
         Options Indexes
-        Order allow,deny
-        Allow from all
+	Require all granted
     </Directory>
 
     # Serve other files using mod_wsgi
     WSGIDaemonProcess myproxyoauth user=myproxyoauth group=myproxyoauth threads=1
-    WSGISocketPrefix /var/run/wsgi
+    WSGISocketPrefix run/wsgi
 
     WSGIProcessGroup myproxyoauth
     WSGIScriptAlias /oauth /usr/share/myproxy-oauth/wsgi.py
+    <Directory /usr/share/myproxy-oauth/>
+#        WSGIApplicationGroup %{GLOBAL}
+#        WSGIScriptReloading On
+        SSLRequireSSL
+	Require all granted
+    </Directory>
     <Directory /usr/share/myproxy-oauth/myproxyoauth>
 #        WSGIApplicationGroup %{GLOBAL}
 #        WSGIScriptReloading On
         SSLRequireSSL
-        Order allow,deny
-        Allow from all
+	Require all granted
     </Directory>
 </IfModule>
