@@ -16,5 +16,6 @@ setup(name = 'myproxy_oauth',
         'myproxyoauth': [ 'templates/*.html', 'static/*.png' ]
     },
     scripts = [ 'wsgi.py' ],
-    data_files = [ ('conf.d', [ 'conf/myproxy-oauth' ])],
+    data_files = [
+            ('apache', [ 'conf/myproxy-oauth', 'conf/myproxy-oauth-2.4' ])],
 )
