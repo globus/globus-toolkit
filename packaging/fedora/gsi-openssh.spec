@@ -34,8 +34,8 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 2
-%global gsi_openssh_ver 5.5
+%global gsi_openssh_rel 1
+%global gsi_openssh_ver 5.6
 
 %ifarch alpha ia64 ppc64 s390x sparc64 x86_64
 %global flavor gcc64
@@ -479,6 +479,9 @@ fi
 %endif
 
 %changelog
+* Tue Apr 02 2013 Globus Toolkit <support@globus.org> - 5.6-1
+- Update to 5.6
+
 * Mon Mar 11 2013 Joseph Bester <bester@mcs.anl.gov> - 5.5-2
 - Update dependencies
 
