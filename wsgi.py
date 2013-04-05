@@ -18,6 +18,7 @@ import os
 import pwd
 import sys
 import socket
+import logging
 import getopt
 
 # EPEL 6 has a version of jinja2 which works with flask, unlike the
@@ -26,12 +27,14 @@ import getopt
 epel_jinja2_egg = "/usr/lib/python2.6/site-packages/Jinja2-2.6-py2.6.egg"
 if os.path.exists(epel_jinja2_egg):
     sys.path.insert(0, epel_jinja2_egg)
+epel5_sqlalchemy05_egg = "/usr/lib/python2.4/site-packages/SQLAlchemy-0.5.8-py2.4.egg"
+if os.path.exists(epel5_sqlalchemy05_egg):
+    sys.path.insert(0, epel5_sqlalchemy05_egg)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 sys.path.insert(0, BASE_DIR)
 
 root = "/oauth"
-from myproxyoauth import application
 
 import ssl
 from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
@@ -73,11 +76,12 @@ class SecureWSGIRequestHandler( WSGIRequestHandler):
         return env
 
 if __name__ == "__main__":
-    opts, args = getopt.getopt(sys.argv[1:],"c:k:u:p:h")
+    opts, args = getopt.getopt(sys.argv[1:],"c:k:u:p:l:h")
     certfile = None
     keyfile = None
     user = None
     port = 443
+    log_level = logging.WARN
     for (opt, param) in opts:
         if opt == '-c':
             certfile = param
@@ -87,6 +91,9 @@ if __name__ == "__main__":
             user = param
         elif opt == '-p':
             port = int(param)
+        elif opt == '-l':
+            log_level_str = param
+            log_level = getattr(logging, log_level_str)
         elif opt == '-h':
             print "Usage %s [-c CERT-FILE] [-k KEYFILE] [-u USER] [-p PORT] | [-h]\n" %(sys.argv[0])
             sys.exit(0)
@@ -102,6 +109,9 @@ if __name__ == "__main__":
     server = SecureWSGIServer(("0.0.0.0", port), SecureWSGIRequestHandler)
     if os.getuid() == 0 and user is not None:
         os.setuid(pwd.getpwnam(user)[2])
+    # import after setuid due to side-effects of import (creating db)
+    from myproxyoauth import application
+    application.logger.setLevel(log_level)
     server.set_app(application)
     server.set_credentials(keypath=keyfile,certpath=certfile)
     server.serve_forever()
