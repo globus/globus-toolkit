@@ -48,11 +48,12 @@ class MyProxyOAuth(object):
             self.logger.debug("route is present")
             exc = None
             try:
-                return self.routes[route](environ, start_response)
-            except Exception, e:
-                headers = [("Content-Type", "text/plain")]
-                response = "500 Internal Server Error"
-                return str(e)
+                try:
+                    return self.routes[route](environ, start_response)
+                except Exception, e:
+                    headers = [("Content-Type", "text/plain")]
+                    response = "500 Internal Server Error"
+                    return str(e)
             finally:
                 if self.teardown_request_func is not None:
                     self.teardown_request_func(exception=e)
@@ -62,11 +63,11 @@ class MyProxyOAuth(object):
             modname = None
             content_type = None
             if route.startswith(template_route):
-                modname = myproxyoauth.templates
+                modname = 'myproxyoauth.templates'
                 dataname = route[len(template_route):]
                 content_type = "text/html"
             else:
-                modname = myproxyoauth.static
+                modname = 'myproxyoauth.static'
                 dataname = route[len(static_route):]
                 content_type = "image/png"
 
