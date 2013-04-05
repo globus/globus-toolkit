@@ -19,13 +19,18 @@ from myproxyoauth.database import init_db
 init_db()
 
 import logging, sys
+import os
 import pkgutil
-logging.basicConfig(filename="/tmp/wsgi.log", level=logging.DEBUG)
+import myproxyoauth.templates
+import myproxyoauth.static
+
+logging.basicConfig(stream=sys.stderr)
 
 __path__ = pkgutil.extend_path(__path__, __name__)
 
 class MyProxyOAuth(object):
     logger = logging.getLogger()
+
     def __init__(self):
         self.routes = dict()
         self.teardown_request_func = None
@@ -34,6 +39,8 @@ class MyProxyOAuth(object):
     def __call__(self, environ, start_response):
         path_info = environ.get("PATH_INFO")
         method = environ.get("REQUEST_METHOD")
+        template_route = "GET:/templates/"
+        static_route = "GET:/static/"
 
         route = method + ":" + path_info
         self.logger.debug("route is " + route)
@@ -43,14 +50,40 @@ class MyProxyOAuth(object):
             try:
                 return self.routes[route](environ, start_response)
             except Exception, e:
-                exc = e
                 headers = [("Content-Type", "text/plain")]
                 response = "500 Internal Server Error"
-                #start_response(headers, response)
-                return [str(e)]
+                return str(e)
             finally:
                 if self.teardown_request_func is not None:
                     self.teardown_request_func(exception=e)
+        elif route.startswith(template_route) or route.startswith(static_route):
+            self.logger.debug("Routing static content")
+            dataname = None
+            modname = None
+            content_type = None
+            if route.startswith(template_route):
+                modname = myproxyoauth.templates
+                dataname = route[len(template_route):]
+                content_type = "text/html"
+            else:
+                modname = myproxyoauth.static
+                dataname = route[len(static_route):]
+                content_type = "image/png"
+
+            try: 
+                if not(dataname.contains("/") or 
+                        dataname.contains(".py") or
+                        dataname == "." or
+                        dataname == ".."):
+                    data = pkgutil.get_data(modname, dataname)
+                    status = "200 Ok"
+                    headers = [("Content-Type", content_type)]
+                    start_response(status, headers)
+                    return data
+            except Exception, e:
+                headers = [("Content-Type", "text/plain")]
+                response = "500 Internal Server Error"
+                return str(e)
         else:
             try:
                 headers = [("Content-Type", "text/plain")]

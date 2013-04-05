@@ -30,8 +30,12 @@ from myproxyoauth import application
 from myproxyoauth.database import db_session, Admin, Client, Transaction
 from urllib import quote
 
+
+def get_template(name):
+    return jinja2.Template(pkgutil.get_data("myproxyoauth.templates", name))
+
 def render_template(name, **kwargs):
-    template = jinja2.Template(pkgutil.get_data("myproxyoauth.templates", name))
+    template = get_template(name)
     return template.render(**kwargs).encode("utf-8")
 
 def url_reconstruct(environ):
@@ -75,10 +79,11 @@ steps:
 
 @application.route('/configure', methods=['GET'])
 def get_configure(environ, start_response):
-    application.logger.debug("get_configure")
-    name = socket.gethostname()
-    if name.find('.') ==  -1:
-        name = socket.gethostbyaddr(name)[0]
+    name = environ.get("HTTP_HOST")
+    if name is None or name == "":
+        name = socket.gethostname()
+        if name.find('.') ==  -1:
+            name = socket.gethostbyaddr(name)[0]
     headers = [("Content-Type", "text/html")]
     body = render_template('configure.html', hostname=name)
     start_response("200 Ok", headers)
@@ -93,16 +98,11 @@ def post_configure(environ, start_response):
     oauth_server = request.getvalue('oauth_server').encode('utf-8')
     myproxy_server = request.getvalue('myproxy_server').encode('utf-8')
     nexus_server = request.getvalue('nexus_server').encode('utf-8')
-    application.logger.debug('Configure: username: %s, oauth_server: %s,'
-            ' myproxy_server: %s, nexus_server: %s' %
-            (username, oauth_server, myproxy_server, nexus_server))
 
     admin = db_session.query(Admin).first()
 
     if admin is not None:
         if admin.username != username:
-            application.logger.warning('Configure: %s is trying to register GO'
-                    ' with this MyProxy Delegation Service' % username)
             message = 'You are not an admin of the MyProxy Delegation Service'
             status = "500 Internal Server Error"
             headers = [
@@ -233,16 +233,12 @@ https://docs.google.com/document/pub?id=10SC7oSURc-EgxMQjcCS50gz0u2HzDJAFiG5hEHi
 
 @application.route('/initiate', methods=['GET'])
 def initiate(environ, start_response):
-    application.logger.debug("begin /initiate")
     request = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
     oauth_signature_method = request.getvalue('oauth_signature_method')
     if oauth_signature_method is None:
         oauth_signature_method='RSA-SHA1'
-    application.logger.debug("oauth_signature_method = " + oauth_signature_method)
     oauth_signature = str(request.getvalue('oauth_signature'))
-    application.logger.debug("oauth_signature = " + oauth_signature)
     oauth_timestamp = int(request.getvalue('oauth_timestamp'))
-    application.logger.debug("oauth_timestamp = " + str(oauth_timestamp))
     oauth_nonce = int(request.getvalue('oauth_nonce'))
     oauth_version = str(request.getvalue('oauth_version'))
     oauth_consumer_key = str(request.getvalue('oauth_consumer_key'))
@@ -252,7 +248,6 @@ def initiate(environ, start_response):
         certlifetime = int(certlifetime)
     else:
         certlifetime = 86400
-    application.logger.debug("oauth params ok")
 
     client = db_session.query(Client).\
             filter(Client.oauth_consumer_key==oauth_consumer_key).first()
@@ -264,20 +259,15 @@ def initiate(environ, start_response):
         start_response(status, headers)
         return "Uregistered client"
 
-    application.logger.debug("trying to import key from " + str(client.oauth_client_pubkey))
     if hasattr(Crypto.PublicKey.RSA, 'importKey'):
-        application.logger.debug("using nice api")
         key = Crypto.PublicKey.RSA.importKey(client.oauth_client_pubkey)
     else:
-        application.logger.debug("using nonnice api")
         import M2Crypto.RSA
         import M2Crypto.BIO
         import struct
         import sys
-        application.logger.debug("imported more modules")
 
         bio = M2Crypto.BIO.MemoryBuffer(str(client.oauth_client_pubkey))
-        application.logger.debug("made a bio from [%s]" % client.oauth_client_pubkey)
 
         k = None
         try:
@@ -291,11 +281,9 @@ def initiate(environ, start_response):
         except Exception, e:
             application.logger.error(str(sys.exc_info()))
             raise(e)
-        application.logger.debug("loaded a pub key")
 
 	key = Crypto.PublicKey.RSA.construct(keytuple)
 
-    application.logger.debug("key is " + str(key))
     method = environ['REQUEST_METHOD']
     url = url_reconstruct(environ)
     o_request = oauth.Request.from_request(method, url)
@@ -347,7 +335,6 @@ def get_authorize(environ, start_response):
 	headers = [ ("Content-Type", "text/plain") ]
 	start_response(status, headers)
 	return 'Invalid temporary token'
-    application.logger.debug("get_authorize validated args")
 
     client = db_session.query(Client).\
 	    filter(Client.oauth_consumer_key==
@@ -358,12 +345,9 @@ def get_authorize(environ, start_response):
 	start_response(status, headers)
 	return 'Unregistered client'
 
-    application.logger.debug("client found")
-
     transaction.temp_token_valid = 0
     db_session.add(transaction)
     db_session.commit()
-    application.logger.debug("rendering template")
     res = render_template('authorize.html',
 	    client_name=client.name,
 	    client_url=client.home_url,
@@ -389,11 +373,9 @@ def post_authorize(environ, start_response):
     cert = None
     try:
         certreq = "-----BEGIN CERTIFICATE REQUEST-----\n" + str(transaction.certreq) + "-----END CERTIFICATE REQUEST-----\n"
-        application.logger.debug("certreq = [%s]" % certreq)
         cert = myproxy.myproxy_logon(certreq,
                 transaction.certlifetime,
                 username, passphrase, client.myproxy_server)
-        application.logger.debug("cert is  " + str(cert))
     except Exception, e:
         application.logger.debug(str(e))
         status = "200 Ok"
@@ -421,7 +403,6 @@ def post_authorize(environ, start_response):
             ("Location", str("%s?oauth_token=%s&oauth_verifier=%s" % \
             (transaction.oauth_callback, oauth_temp_token, oauth_verifier)))]
 
-    application.logger.debug("headers = " + str(headers))
     start_response(status, headers)
     return ""
 
@@ -454,7 +435,6 @@ def token(environ, start_response):
     status = "200 Ok"
     headers = [('Content-Type', 'app/x-www-form-urlencoded')]
     resp = start_response(status, headers)
-    application.logger.debug("Got a token: " + str(oauth_access_token))
     return "oauth_token=%s" % str(oauth_access_token)
 
 @application.route('/getcert', methods=['GET'])
@@ -490,5 +470,4 @@ def getcert(environ, start_response):
     start_response(status, headers)
 
     return 'username=%s\n%s' % (str(transaction.username), str(transaction.certificate))
-
 # vim: syntax=python: nospell:
