@@ -19,12 +19,60 @@ from myproxyoauth.database import init_db
 init_db()
 
 import logging, sys
-logging.basicConfig(stream=sys.stderr)
+import pkgutil
+logging.basicConfig(filename="/tmp/wsgi.log", level=logging.DEBUG)
 
-from flask import Flask
+__path__ = pkgutil.extend_path(__path__, __name__)
 
-application = Flask(__name__)
+class MyProxyOAuth(object):
+    logger = logging.getLogger()
+    def __init__(self):
+        self.routes = dict()
+        self.teardown_request_func = None
+        self.logger = MyProxyOAuth.logger
 
-application.config['DATABASE'] = 'sqlite:///tmp/myproxy-oauth.db'
+    def __call__(self, environ, start_response):
+        path_info = environ.get("PATH_INFO")
+        method = environ.get("REQUEST_METHOD")
+
+        route = method + ":" + path_info
+        self.logger.debug("route is " + route)
+        if route in self.routes:
+            self.logger.debug("route is present")
+            exc = None
+            try:
+                return self.routes[route](environ, start_response)
+            except Exception, e:
+                exc = e
+                headers = [("Content-Type", "text/plain")]
+                response = "500 Internal Server Error"
+                #start_response(headers, response)
+                return [str(e)]
+            finally:
+                if self.teardown_request_func is not None:
+                    self.teardown_request_func(exception=e)
+        else:
+            try:
+                headers = [("Content-Type", "text/plain")]
+                response = "404 Not Found"
+                start_response(response, headers)
+                return [response]
+            finally:
+                if self.teardown_request_func is not None:
+                    self.teardown_request_func()
+
+    def route(self, path, methods=["GET"]):
+        def decorator(func):
+            for m in methods:
+                self.routes[m + ":" + path] = func
+        return decorator
+
+    def teardown_request(self, func):
+        def decorator():
+            self.teardown_request_func = func
+        return decorator
+
+application = MyProxyOAuth()
 
 import myproxyoauth.views
+# vim: filetype=python: nospell:

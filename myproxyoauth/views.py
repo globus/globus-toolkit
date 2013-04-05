@@ -15,32 +15,56 @@
 #
 
 import socket
+import cgi
 import random
 import base64
 import httplib
 import json
 import time
 import oauth2 as oauth
-from Crypto.PublicKey import RSA
+import Crypto.PublicKey.RSA
 import myproxy
-from flask import request, render_template, make_response, redirect
+import jinja2
+import pkgutil
 from myproxyoauth import application
 from myproxyoauth.database import db_session, Admin, Client, Transaction
+from urllib import quote
 
-'''
-@application.errorhandler(404)
-def not_found(error):
-    return 'Error 404 :)'
-'''
+def render_template(name, **kwargs):
+    template = jinja2.Template(pkgutil.get_data("myproxyoauth.templates", name))
+    return template.render(**kwargs).encode("utf-8")
+
+def url_reconstruct(environ):
+    url = environ['wsgi.url_scheme']+'://'
+
+    if environ.get('HTTP_HOST'):
+        url += environ['HTTP_HOST']
+    else:
+        url += environ['SERVER_NAME']
+
+        if environ['wsgi.url_scheme'] == 'https':
+            if environ['SERVER_PORT'] != '443':
+               url += ':' + environ['SERVER_PORT']
+        else:
+            if environ['SERVER_PORT'] != '80':
+               url += ':' + environ['SERVER_PORT']
+
+    url += quote(environ.get('SCRIPT_NAME', ''))
+    url += quote(environ.get('PATH_INFO', ''))
+    if environ.get('QUERY_STRING'):
+        url += '?' + environ['QUERY_STRING']
+    return url
+
 @application.route('/test')
-def test():
-    return make_response('blad :)', 403)
-
+def test(environ, start_response):
+    status = "403 Forbidden"
+    headers = [("Content-Type", "text/plain")]
+    start_response(status, headers)
+    return "bad"
 
 @application.teardown_request
 def shutdown_session(exception=None):
     db_session.remove()
-
 
 """
 Register Globus Online OAuth with the server. The registration consists of two
@@ -49,19 +73,26 @@ steps:
 2. Trigger a Globus Online client registration with the service.
 """
 
-@application.route('/configure', methods=['GET', 'POST'])
-def configure():
-    if request.method == 'GET':
-        name = socket.gethostname()
-        if name.find('.') ==  -1:
-            name = socket.gethostbyaddr(name)[0]
-        return render_template('configure.html', hostname=name)
+@application.route('/configure', methods=['GET'])
+def get_configure(environ, start_response):
+    application.logger.debug("get_configure")
+    name = socket.gethostname()
+    if name.find('.') ==  -1:
+        name = socket.gethostbyaddr(name)[0]
+    headers = [("Content-Type", "text/html")]
+    body = render_template('configure.html', hostname=name)
+    start_response("200 Ok", headers)
+    return body
 
-    username = request.form['username'].encode('utf-8')
-    password = request.form['password'].encode('utf-8')
-    oauth_server = request.form['oauth_server'].encode('utf-8')
-    myproxy_server = request.form['myproxy_server'].encode('utf-8')
-    nexus_server = request.form['nexus_server'].encode('utf-8')
+@application.route('/configure', methods=['POST'])
+def post_configure(environ, start_response):
+    request = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
+
+    username = request.getvalue('username').encode('utf-8')
+    password = request.getvalue('password').encode('utf-8')
+    oauth_server = request.getvalue('oauth_server').encode('utf-8')
+    myproxy_server = request.getvalue('myproxy_server').encode('utf-8')
+    nexus_server = request.getvalue('nexus_server').encode('utf-8')
     application.logger.debug('Configure: username: %s, oauth_server: %s,'
             ' myproxy_server: %s, nexus_server: %s' %
             (username, oauth_server, myproxy_server, nexus_server))
@@ -73,19 +104,23 @@ def configure():
             application.logger.warning('Configure: %s is trying to register GO'
                     ' with this MyProxy Delegation Service' % username)
             message = 'You are not an admin of the MyProxy Delegation Service'
-            resp = make_response(render_template('configure_error.html',
-                    message=message), 500)
-            resp.headers['X-Error-Message'] = message
-            return resp
+            status = "500 Internal Server Error"
+            headers = [
+                    ("X-Error-Message", message),
+                    ("Content-Type", "text/html") ]
+            start_response(status, headers)
+            return render_template('configure_error.html', message=message)
 
     try:
         access_token = get_access_token(username, password, nexus_server)
-    except Exception as e:
+    except Exception, e:
         message='Could not get access token. %s' % str(e)
-        resp = make_response(render_template('configure_error.html',
-                message=message), 500)
-        resp.headers['X-Error-Message'] = message
-        return resp
+        status = "500 Internal Server Error"
+        headers = [
+                ("X-Error-Message", message),
+                ("Content-Type", "text/html") ]
+        start_response(status, headers)
+        return render_template('configure_error.html', message=message)
 
     client_id = 'myproxy:oa4mp,2012:/client/' \
         + ''.join([random.choice('0123456789abcdef') for i in range(32)])
@@ -94,10 +129,12 @@ def configure():
                 nexus_server, access_token, client_id, oauth_server)
     except Exception as e:
         message = str(e)
-        resp = make_response(render_template('configure_error.html',
-                message=message), 500)
-        resp.headers['X-Error-Message'] = message
-        return resp
+        status = "500 Internal Server Error"
+        headers = [
+                ("X-Error-Message", message),
+                ("Content-Type", "text/html") ]
+        start_response(status, headers)
+        return render_template('configure_error.html', message=message)
 
     application.logger.debug('Registered: gateway_name: %s, home_url: %s,'
             ' oauth_consumer_id: %s'
@@ -119,10 +156,15 @@ def configure():
 
     db_session.commit()
 
-    return render_template('configure_ok.html', gateway_name=gateway_name,
+    status = "200 Ok"
+    headers = [
+            ("Content-Type", "text/html") ]
+
+    res = render_template('configure_ok.html', gateway_name=gateway_name,
             home_url=home_url, oauth_consumer_id=oauth_consumer_id,
             public_key=public_key)
-
+    start_response(status, headers)
+    return res
 
 def get_access_token(username, password, server):
     """
@@ -190,39 +232,87 @@ https://docs.google.com/document/pub?id=10SC7oSURc-EgxMQjcCS50gz0u2HzDJAFiG5hEHi
 """
 
 @application.route('/initiate', methods=['GET'])
-def initiate():
-    oauth_signature_method = request.args.get('oauth_signature_method',
-            default='RSA-SHA1', type=str)
-    oauth_signature = request.args.get('oauth_signature', type=str)
-    oauth_timestamp = request.args.get('oauth_timestamp', type=int)
-    oauth_nonce = request.args.get('oauth_nonce', type=int)
-    oauth_version = request.args.get('oauth_version', type=str)
-    oauth_consumer_key = request.args.get('oauth_consumer_key', type=str)
-    oauth_callback = request.args.get('oauth_callback', type=str)
-    certlifetime = request.args.get('certlifetime', default=86400, type=int)
-
+def initiate(environ, start_response):
+    application.logger.debug("begin /initiate")
+    request = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
+    oauth_signature_method = request.getvalue('oauth_signature_method')
+    if oauth_signature_method is None:
+        oauth_signature_method='RSA-SHA1'
+    application.logger.debug("oauth_signature_method = " + oauth_signature_method)
+    oauth_signature = str(request.getvalue('oauth_signature'))
+    application.logger.debug("oauth_signature = " + oauth_signature)
+    oauth_timestamp = int(request.getvalue('oauth_timestamp'))
+    application.logger.debug("oauth_timestamp = " + str(oauth_timestamp))
+    oauth_nonce = int(request.getvalue('oauth_nonce'))
+    oauth_version = str(request.getvalue('oauth_version'))
+    oauth_consumer_key = str(request.getvalue('oauth_consumer_key'))
+    oauth_callback = str(request.getvalue('oauth_callback'))
+    certlifetime = request.getvalue('certlifetime')
+    if certlifetime is not None:
+        certlifetime = int(certlifetime)
+    else:
+        certlifetime = 86400
+    application.logger.debug("oauth params ok")
 
     client = db_session.query(Client).\
             filter(Client.oauth_consumer_key==oauth_consumer_key).first()
     if client is None:
         application.logger.error('Unregistered client requested a temporary token.')
-        return make_response('Uregistered client', 403)
+        status = "403 Not authorized"
+        headers = [
+                ("Content-Type", "text/plain") ]
+        start_response(status, headers)
+        return "Uregistered client"
 
-    key = RSA.importKey(client.oauth_client_pubkey)
+    application.logger.debug("trying to import key from " + str(client.oauth_client_pubkey))
+    if hasattr(Crypto.PublicKey.RSA, 'importKey'):
+        application.logger.debug("using nice api")
+        key = Crypto.PublicKey.RSA.importKey(client.oauth_client_pubkey)
+    else:
+        application.logger.debug("using nonnice api")
+        import M2Crypto.RSA
+        import M2Crypto.BIO
+        import struct
+        import sys
+        application.logger.debug("imported more modules")
 
-    o_request = oauth.Request.from_request(request.method, request.url)
+        bio = M2Crypto.BIO.MemoryBuffer(str(client.oauth_client_pubkey))
+        application.logger.debug("made a bio from [%s]" % client.oauth_client_pubkey)
+
+        k = None
+        try:
+            k = M2Crypto.RSA.load_pub_key_bio(bio)
+	    def decode(n):
+		len = reduce(lambda x,y: long(x*256+y),
+			struct.unpack_from("4B", n, 0))
+		return reduce(lambda x,y: long(x*256+y),
+			struct.unpack_from(str(len)+"B", n, 4))
+	    keytuple = (decode(k.n), decode(k.e))
+        except Exception, e:
+            application.logger.error(str(sys.exc_info()))
+            raise(e)
+        application.logger.debug("loaded a pub key")
+
+	key = Crypto.PublicKey.RSA.construct(keytuple)
+
+    application.logger.debug("key is " + str(key))
+    method = environ['REQUEST_METHOD']
+    url = url_reconstruct(environ)
+    o_request = oauth.Request.from_request(method, url)
     o_consumer = oauth.Consumer(client.oauth_consumer_key, key)
     o_server = oauth.Server()
     o_server.add_signature_method(oauth.SignatureMethod_RSA_SHA1())
     try:
         o_server.verify_request(o_request, o_consumer, None)
-    except oauth.Error as e:
+    except oauth.Error, e:
         application.logger.error(str(e))
-        return make_response(str(e), 403)
+        status = "403 Not authorized"
+        headers = [
+                ("Content-Type", "text/plain") ]
+        start_response(status, headers, exc=e)
+        return str(e)
 
-    certreq = request.args.get('certreq', type=str)
-    certreq = "-----BEGIN CERTIFICATE REQUEST-----\n" + certreq \
-            + "-----END CERTIFICATE REQUEST-----"
+    certreq = str(request.getvalue('certreq'))
 
     oauth_temp_token = 'myproxy:oa4mp,2012:/tempCred/' \
             + ''.join([random.choice('0123456789abcdef') for i in range(32)]) \
@@ -238,37 +328,58 @@ def initiate():
     db_session.add(transaction)
     db_session.commit()
 
-    resp = make_response("oauth_token=%s&oauth_callback_confirmed=true"
-            % oauth_temp_token)
-    resp.headers['Content-Type'] = 'app/x-www-form-urlencoded'
-    return resp
+    status = "200 Ok"
+    headers = [
+	("Content-Type", "app/x-www-form-urlencoded") ]
+    start_response(status, headers)
+
+    return "oauth_token=%s&oauth_callback_confirmed=true" % oauth_temp_token
+
+@application.route('/authorize', methods=['GET'])
+def get_authorize(environ, start_response):
+    request = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
+    oauth_temp_token = str(request.getvalue('oauth_token'))
+    transaction = db_session.query(Transaction).\
+	    filter(Transaction.temp_token==oauth_temp_token).\
+	    filter(Transaction.temp_token_valid==1).first()
+    if transaction is None:
+	status = "403 Not authorized"
+	headers = [ ("Content-Type", "text/plain") ]
+	start_response(status, headers)
+	return 'Invalid temporary token'
+    application.logger.debug("get_authorize validated args")
+
+    client = db_session.query(Client).\
+	    filter(Client.oauth_consumer_key==
+	    transaction.oauth_consumer_key).first()
+    if client is None:
+	status = "403 Not authorized"
+	headers = [ ("Content-Type", "text/plain") ]
+	start_response(status, headers)
+	return 'Unregistered client'
+
+    application.logger.debug("client found")
+
+    transaction.temp_token_valid = 0
+    db_session.add(transaction)
+    db_session.commit()
+    application.logger.debug("rendering template")
+    res = render_template('authorize.html',
+	    client_name=client.name,
+	    client_url=client.home_url,
+	    temp_token=oauth_temp_token)
+    status = "200 Ok"
+    headers = [ ("Content-Type", "text/html")]
+    start_response(status, headers)
+    return res
 
 
-@application.route('/authorize', methods=['GET', 'POST'])
-def authorize():
-    if request.method == 'GET':
-        oauth_temp_token = request.args.get('oauth_token', type=str)
-        transaction = db_session.query(Transaction).\
-                filter(Transaction.temp_token==oauth_temp_token).\
-                filter(Transaction.temp_token_valid==1).first()
-        if transaction is None:
-            return make_response('Invalid temporary token', 403)
-        client = db_session.query(Client).\
-                filter(Client.oauth_consumer_key==
-                transaction.oauth_consumer_key).first()
-        if client is None:
-            return make_response('Unregistered client', 403)
-        transaction.temp_token_valid = 0
-        db_session.add(transaction)
-        db_session.commit()
-        return render_template('authorize.html',
-                client_name=client.name,
-                client_url=client.home_url,
-                temp_token=oauth_temp_token)
-
-    oauth_temp_token = request.form['oauth_token']
-    username = request.form['username']
-    passphrase = request.form['passphrase']
+@application.route('/authorize', methods=['POST'])
+def post_authorize(environ, start_response):
+    request = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
+    oauth_temp_token = str(request.getvalue('oauth_token'))
+    username = str(request.getvalue('username'))
+    passphrase = str(request.getvalue('passphrase'))
 
     transaction = db_session.query(Transaction).\
             filter(Transaction.temp_token==oauth_temp_token).first()
@@ -277,14 +388,23 @@ def authorize():
             first()
     cert = None
     try:
-        cert = myproxy.myproxy_logon(transaction.certreq, transaction.certlifetime,
+        certreq = "-----BEGIN CERTIFICATE REQUEST-----\n" + str(transaction.certreq) + "-----END CERTIFICATE REQUEST-----\n"
+        application.logger.debug("certreq = [%s]" % certreq)
+        cert = myproxy.myproxy_logon(certreq,
+                transaction.certlifetime,
                 username, passphrase, client.myproxy_server)
-    except Exception as e:
-            return render_template('authorize.html',
+        application.logger.debug("cert is  " + str(cert))
+    except Exception, e:
+        application.logger.debug(str(e))
+        status = "200 Ok"
+        headers = [ ("Content-Type", "text/html") ]
+        res = render_template('authorize.html',
                     client_name=client.name,
                     client_url=client.home_url,
                     temp_token=oauth_temp_token,
                     retry_message=str(e))
+        start_response(status, headers, e)
+        return res
 
     oauth_verifier = 'myproxy:oa4mp,2012:/verifier/' \
             + ''.join([random.choice('0123456789abcdef') for i in range(32)]) \
@@ -296,21 +416,30 @@ def authorize():
     db_session.add(transaction)
     db_session.commit()
 
-    resp = redirect("%s?oauth_token=%s&oauth_verifier=%s" % \
-            (transaction.oauth_callback, oauth_temp_token, oauth_verifier))
-    return resp
+    status = "301 Moved Permanently"
+    headers = [
+            ("Location", str("%s?oauth_token=%s&oauth_verifier=%s" % \
+            (transaction.oauth_callback, oauth_temp_token, oauth_verifier)))]
 
+    application.logger.debug("headers = " + str(headers))
+    start_response(status, headers)
+    return ""
 
 @application.route('/token', methods=['GET'])
-def token():
-    oauth_signature_method = request.args.get('oauth_signature_method', default='RSA-SHA1', type=str)
-    oauth_signature = request.args.get('oauth_signature', type=str)
-    oauth_timestamp = request.args.get('oauth_timestamp', type=int)
-    oauth_nonce = request.args.get('oauth_nonce', type=int)
-    oauth_version = request.args.get('oauth_version', type=str)
-    oauth_consumer_key = request.args.get('oauth_consumer_key', type=str)
-    oauth_temp_token = request.args.get('oauth_token', type=str)
-    oauth_verifier = request.args.get('oauth_verifier', type=str)
+def token(environ, start_response):
+    args = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
+    oauth_signature_method = args.getvalue('oauth_signature_method')
+    if oauth_signature_method is None:
+       oauth_signature_method='RSA-SHA1'
+    else:
+       oauth_signature_method=str(oauth_signature_method)
+    oauth_signature = str(args.getvalue('oauth_signature'))
+    oauth_timestamp = int(args.getvalue('oauth_timestamp'))
+    oauth_nonce = int(args.getvalue('oauth_nonce'))
+    oauth_version = str(args.getvalue('oauth_version'))
+    oauth_consumer_key = str(args.getvalue('oauth_consumer_key'))
+    oauth_temp_token = str(args.getvalue('oauth_token'))
+    oauth_verifier = str(args.getvalue('oauth_verifier'))
 
     oauth_access_token = 'myproxy:oa4mp,2012:/accessToken/' \
             + ''.join([random.choice('0123456789abcdef') for i in range(32)]) \
@@ -322,29 +451,44 @@ def token():
     db_session.add(transaction)
     db_session.commit()
 
-    resp = make_response("oauth_token=%s" % oauth_access_token)
-    resp.headers['Content-Type'] = 'app/x-www-form-urlencoded'
-    return resp
-
+    status = "200 Ok"
+    headers = [('Content-Type', 'app/x-www-form-urlencoded')]
+    resp = start_response(status, headers)
+    application.logger.debug("Got a token: " + str(oauth_access_token))
+    return "oauth_token=%s" % str(oauth_access_token)
 
 @application.route('/getcert', methods=['GET'])
-def getcert():
-    oauth_signature_method = request.args.get('oauth_signature_method', default='RSA-SHA1', type=str)
-    oauth_signature = request.args.get('oauth_signature', type=str)
-    oauth_timestamp = request.args.get('oauth_timestamp', type=int)
-    oauth_nonce = request.args.get('oauth_nonce', type=int)
-    oauth_version = request.args.get('oauth_version', type=str)
-    oauth_consumer_key = request.args.get('oauth_consumer_key', type=str)
-    oauth_access_token = request.args.get('oauth_token', type=str)
+def getcert(environ, start_response):
+    args = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
+    oauth_signature_method = args.getvalue('oauth_signature_method')
+    if oauth_signature_method is None:
+       oauth_signature_method = 'RSA-SHA1'
+    else:
+       oauth_signature_method = str(oauth_signature_method)
+    oauth_signature = str(args.getvalue('oauth_signature'))
+    oauth_timestamp = int(args.getvalue('oauth_timestamp'))
+    oauth_nonce = int(args.getvalue('oauth_nonce'))
+    oauth_version = str(args.getvalue('oauth_version'))
+    oauth_consumer_key = str(args.getvalue('oauth_consumer_key'))
+    oauth_access_token = str(args.getvalue('oauth_token'))
 
     transaction = db_session.query(Transaction).\
             filter(Transaction.access_token==oauth_access_token).first()
     if transaction is None:
-        return make_response('Invalid access token', 403)
+        status = "403 Forbidden"
+        headers = [("Content-Type", "text/plain")]
+        start_response(status, headers)
+        return "Invalid access token"
 
     # Clear database
     old_transactions = db_session.query(Transaction).\
             filter(Transaction.timestamp < int(time.time()) - 300).delete()
     db_session.commit()
 
-    return 'username=%s\n%s' % (transaction.username, transaction.certificate)
+    status = "200 Ok"
+    headers = [ ("Content-Type", "app/x-www-form-urlencoded") ]
+    start_response(status, headers)
+
+    return 'username=%s\n%s' % (str(transaction.username), str(transaction.certificate))
+
+# vim: syntax=python: nospell:
