@@ -26,13 +26,27 @@ import Crypto.PublicKey.RSA
 import myproxy
 import jinja2
 import pkgutil
+import os
 from myproxyoauth import application
 from myproxyoauth.database import db_session, Admin, Client, Transaction
 from urllib import quote
 
 
 def get_template(name):
-    return jinja2.Template(pkgutil.get_data("myproxyoauth.templates", name))
+    template_data = None
+    if hasattr(pkgutil, "get_data"):
+        template_data = pkgutil.get_data("myproxyoauth.templates", name)
+    else:
+        import myproxyoauth.templates
+        template_path = os.path.join(
+            os.path.dirname(myproxyoauth.templates.__file__), name)
+        template_file = file(template_path, "r")
+        try:
+            template_data = template_file.read()
+        finally:
+            template_file.close()
+    return jinja2.Template(template_data)
+        
 
 def render_template(name, **kwargs):
     template = get_template(name)
@@ -127,7 +141,7 @@ def post_configure(environ, start_response):
     try:
         (home_url, gateway_name, oauth_consumer_id, public_key) = register_go(
                 nexus_server, access_token, client_id, oauth_server)
-    except Exception as e:
+    except Exception, e:
         message = str(e)
         status = "500 Internal Server Error"
         headers = [
@@ -181,15 +195,22 @@ def get_access_token(username, password, server):
     c.request('GET', '/goauth/token?grant_type=client_credentials',
             headers=headers)
     response = c.getresponse()
+    json_reader = None
+    if hasattr(json, 'loads'):
+        json_reader = json.loads
+    elif hasattr(json, 'JsonReader'):
+        json_reader_obj = json.JsonReader()
+        json_reader = json_reader_obj.read
+
     if response.status == 403:
         try :
-            message = json.loads(response.read()).get('message')
-        except Exception as e:
+            message = json_reader(response.read()).get('message')
+        except Exception, e:
             message = str(e)
         raise Exception('403 Error: %s' % message)
     elif response.status > 299 or response.status < 200:
         raise Exception('%d Error: %s' % (response.status, response.reason))
-    data = json.loads(response.read())
+    data = json_reader(response.read())
     token = data.get('access_token')
     if token is None:
         raise Exception('No access token in response')
@@ -210,15 +231,21 @@ def register_go(server, access_token, client_id, myproxy_server):
     c.request('POST', '/identity_providers/oauth_registration',
             body=body, headers=headers)
     response = c.getresponse()
+    json_reader = None
+    if hasattr(json, 'loads'):
+        json_reader = json.loads
+    elif hasattr(json, 'JsonReader'):
+        json_reader_obj = json.JsonReader()
+        json_reader = json_reader_obj.read
     if response.status == 403:
         try:
-            message = json.loads(response.read()).get('message')
-        except Exception as e:
+            message = json_reader(response.read()).get('message')
+        except Exception, e:
             message = str(e)
         raise Exception('403 Error: %s' % message)
     elif response.status > 299 or response.status < 200:
         raise Exception('%d Error: %s' % (response.status, response.reason))
-    data = json.loads(response.read())
+    data = json_reader(response.read())
     home_url = data.get('home_url')
     gateway_name = data.get('gateway_name')
     oauth_consumer_id = data.get('oauth_consumer_id')
@@ -272,11 +299,16 @@ def initiate(environ, start_response):
         k = None
         try:
             k = M2Crypto.RSA.load_pub_key_bio(bio)
+            def unpack_from(fmt, data, offs):
+                unpack_len = struct.calcsize(fmt)
+
+                return struct.unpack(fmt, data[offs:offs+unpack_len])
+
 	    def decode(n):
 		len = reduce(lambda x,y: long(x*256+y),
-			struct.unpack_from("4B", n, 0))
+			unpack_from("4B", n, 0))
 		return reduce(lambda x,y: long(x*256+y),
-			struct.unpack_from(str(len)+"B", n, 4))
+			unpack_from(str(len)+"B", n, 4))
 	    keytuple = (decode(k.n), decode(k.e))
         except Exception, e:
             application.logger.error(str(sys.exc_info()))
