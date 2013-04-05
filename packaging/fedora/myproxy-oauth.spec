@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.0
+Version:	0.1
 Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
@@ -14,17 +14,28 @@ BuildRequires:	python
 BuildArch:      noarch
 
 Requires(pre): shadow-utils
-Requires:	mod_wsgi
-Requires:	mod_ssl
-Requires:       python-httplib2
 Requires:	pyOpenSSL
-Requires:       python-crypto >= 2.2
-Requires:	python-flask >= 0.7
+%if 0%{?rhel} != 0
+Requires:       python-crypto
+Requires:       m2crypto
+%if %{rhel} < 6
+Requires:	python-sqlalchemy0.5
+Requires:       python-wsgiref
+Requires:       python-json
+Requires:       python-hashlib
+Requires:       python-ssl
+%else
 Requires:	python-sqlalchemy
-Requires:	httpd
-%if 0%{?rhel} == 06
-Requires:       python-jinja2-26
 %endif
+Requires:       python-httplib2
+Requires:       python-sqlite2
+%else
+Requires:       python-crypto >= 2.2
+Requires:	python-sqlalchemy
+Requires:       python-httplib2
+%endif
+Requires:	httpd
+Requires:       python-jinja2
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid

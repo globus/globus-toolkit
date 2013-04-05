@@ -1,3 +1,9 @@
+myproxy-oauth (0.1-1) unstable; urgency=low
+
+  * Updates to work on deb6, ubuntu 10.04
+
+ -- Globus Toolkit <support@globus.org>  Fri, 05 Apr 2013 12:39:59 -0400
+
 myproxy-oauth (0.0-1) unstable; urgency=low
 
   * Initial packaging
