@@ -53,11 +53,10 @@ class SecureWSGIServer(WSGIServer):
 
     def close_request(self, request):
         try:
-            request.unwrap().close()
-        except:
-            print "Exception unwrap/close"
-            request.shutdown(socket.SHUT_RDWR)
-            request.close()
+            request.shutdown(socket.SHUT_RDWR) 
+            request.close() 
+        except Exception, e: 
+            print "Exception closing request" + str(e) 
 
 class SecureWSGIRequestHandler( WSGIRequestHandler):
     """An SSL-aware WSGIRequestHandler, which sets HTTPS environment variables.
