@@ -4,7 +4,7 @@ from distutils.core import setup
 import os
 
 setup(name = 'myproxy_oauth',
-    version = '0.1',
+    version = '0.2',
     description = 'MyProxy OAuth Delegation Service',
     author = 'Globus Toolkit',
     author_email = 'support@globus.org',
