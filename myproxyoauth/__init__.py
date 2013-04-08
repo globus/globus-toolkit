@@ -72,8 +72,8 @@ class MyProxyOAuth(object):
                 content_type = "image/png"
 
             try: 
-                if not(dataname.contains("/") or 
-                        dataname.contains(".py") or
+                if not("/" in dataname or 
+                        ".py" in dataname or
                         dataname == "." or
                         dataname == ".."):
                     data = pkgutil.get_data(modname, dataname)
