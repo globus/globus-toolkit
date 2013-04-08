@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
 Version:	0.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
@@ -34,7 +34,6 @@ Requires:       python-crypto >= 2.2
 Requires:	python-sqlalchemy
 Requires:       python-httplib2
 %endif
-Requires:	httpd
 Requires:       python-jinja2
 
 %description
