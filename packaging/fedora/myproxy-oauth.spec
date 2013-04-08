@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
 Version:	0.1
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
@@ -78,10 +78,10 @@ getent passwd myproxyoauth >/dev/null || \
         -c "MyProxy Oauth Daemon" myproxyoauth
         exit 0
 
-%post
-service httpd condrestart
-%postun
-service httpd condrestart
+#%post
+#service httpd condrestart
+#%postun
+#service httpd condrestart
 
 %clean
 rm -rf $RPM_BUILD_ROOT
