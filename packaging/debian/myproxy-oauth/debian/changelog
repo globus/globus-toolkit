@@ -1,3 +1,9 @@
+myproxy-oauth (0.3-1) unstable; urgency=low
+
+  * Init script
+
+ -- Globus Toolkit <support@globus.org>  Tue, 09 Apr 2013 11:11:31 -0400
+
 myproxy-oauth (0.2-1) unstable; urgency=low
 
   * Updates to work on rhel 5, 6

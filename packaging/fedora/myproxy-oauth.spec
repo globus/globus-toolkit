@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.2
+Version:	0.3
 Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
@@ -70,6 +70,12 @@ cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth \
 %endif
 
 mkdir -p "$RPM_BUILD_ROOT/var/lib/myproxy-oauth"
+mkdir -p "$RPM_BUILD_ROOT%{_sysconfdir}/init.d"
+mkdir -p "$RPM_BUILD_ROOT%{_sysconfdir}/sysconfig"
+install -m 755 $RPM_BUILD_ROOT%{_docdir}/%{name}/init.d/%{name} \
+    $RPM_BUILD_ROOT%{_sysconfdir}/init.d/%{name}
+install $RPM_BUILD_ROOT%{_docdir}/%{name}/sysconfig/%{name} \
+    $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}
 
 %pre
 getent group myproxyoauth >/dev/null || groupadd -r myproxyoauth
@@ -78,10 +84,8 @@ getent passwd myproxyoauth >/dev/null || \
         -c "MyProxy Oauth Daemon" myproxyoauth
         exit 0
 
-#%post
-#service httpd condrestart
-#%postun
-#service httpd condrestart
+%post
+chkconfig --add myproxy-oauth
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -90,9 +94,13 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc %{_docdir}/%{name}/README.txt
 %doc %{_docdir}/%{name}/apache/*
+%doc %{_docdir}/%{name}/sysconfig/*
+%doc %{_docdir}/%{name}/init.d/*
 %config(noreplace) /etc/httpd/conf.d/wsgi-myproxy-oauth.conf
 %dir %attr(0700,myproxyoauth,myproxyoauth) /var/lib/myproxy-oauth
 /usr/share/%{name}
+/etc/sysconfig/%{name}
+/etc/init.d/%{name}
 
 %changelog
 * Wed Mar 27 2013 Globus Toolkit <support@globus.org> - 0.0-1
