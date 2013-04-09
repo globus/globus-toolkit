@@ -157,4 +157,6 @@ if __name__ == "__main__":
             if os.getuid() != os.geteuid():
                 os.setuid(os.getuid())
                 os.path.remove(pidfile)
+else:
+    from myproxyoauth import application
 # vim:filetype=python:nospell:

@@ -12,7 +12,7 @@ if platname is not None:
         confdir="default"
 
 setup(name = 'myproxy_oauth',
-    version = '0.4',
+    version = '0.5',
     description = 'MyProxy OAuth Delegation Service',
     author = 'Globus Toolkit',
     author_email = 'support@globus.org',
