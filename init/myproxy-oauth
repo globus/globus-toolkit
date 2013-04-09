@@ -1,0 +1,190 @@
+#!/bin/sh
+#
+# myproxy-oauth - MyProxy OAuth Delegation Service
+#
+# chkconfig: - 55 25
+# description:  MyProxy OAuth Delegation Service
+#
+### BEGIN INIT INFO
+# Provides: myproxy-oauth
+# Required-Start:  $local_fs $network $syslog
+# Required-Stop:  $local_fs $syslog
+# Should-Start:  $syslog
+# Should-Stop:  $network $syslog
+# Default-Stop:
+# Default-Start:
+# Short-Description: Start the MyProxy OAuth Delegation Service
+# Description: MyProxy OAuth Delegation Service
+### END INIT INFO
+
+# Source function library.
+if [ -f /lib/lsb/init-functions ]; then
+    . /lib/lsb/init-functions
+    lsb_present=1
+fi
+
+exec="/usr/share/myproxy-oauth/wsgi.py"
+prog=$(basename $exec)
+
+# Defaults
+MYPROXYOAUTH_USER=myproxyoauth
+X509_USER_CERT=/usr/share/myproxy-oauth/servicecert.pem
+X509_USER_KEY=/usr/share/myproxy-oauth/servicekey.pem
+PIDFILE=/var/run/myproxy-oauth.pid
+
+lsb_id="${lsb_present:+$(lsb_release)}"
+if [ "$lsb_id" = "Debian" ] || [ "$lsb_id" = "Ubuntu" ]; then
+    defaultfile=/etc/default/myproxy-oauth
+else
+    defaultfile=/etc/sysconfig/myproxy-oauth
+fi
+
+# Override defaults here.
+[ -r "$defaultfile" ] && . "$defaultfile"
+
+# A few sanity checks 
+if [ "$1" != "status" ]; then
+	[ ! -f $X509_USER_KEY ]  && log_failure_msg "$prog: No hostkey file"  && exit 0
+	[ ! -r $X509_USER_KEY ]  && log_failure_msg "$prog: Unable to read hostkey file $X509_USER_KEY"  && exit 0
+	[ ! -f $X509_USER_CERT ] && log_failure_msg "$prog: No hostcert file" && exit 0
+	[ ! -r $X509_USER_CERT ] && log_failure_msg "$prog: Unable to read hostcert file" && exit 0
+fi
+
+if [ "$lsb_present" = "" ]; then
+    pidofproc()
+    {
+        pidfile=""
+        while getopts "p:" i; do
+            if [ "$i" = "p" ]; then
+                pidfile="$OPTARG"
+            fi
+        done
+        shift "$OPTIND"
+        if [ "$pidfile" = "" ]; then
+            pidfile="/var/run/$(basename "$1").pid"
+        fi
+        if [ -f "$pidfile" ]; then
+            read pid <$pidfile
+            if kill -0 "$pid" > /dev/null 2>&1 ; then
+                echo "$pid"
+                return 0
+            else
+                return 1
+            fi
+        else
+            return 3
+        fi
+    }
+    killproc()
+    {
+        pid=""
+        signal=""
+        while getopts "p:" i; do
+            case $i in
+                p) pidfile="$OPTARG";;
+            esac
+        done
+        shift "$OPTIND"
+        signal="${2}"
+        pid="$(pidofproc ${pidfile:+-p "$pidfile"} "$1")"
+        rc=$?
+        if [ $rc = 0 ]; then
+            if [ "$signal" != "" ]; then
+                kill "-$signal" "$pid"
+            else
+                kill -TERM "$pid"
+                if ! kill -0 "$pid" > /dev/null; then
+                    return 0
+                fi
+                sleep 1
+                if ! kill -0 "$pid" > /dev/null; then
+                    return 0
+                fi
+                kill -KILL "$pid"
+                if ! kill -0 "$pid" > /dev/null; then
+                    return 0
+                fi
+                return 4
+            fi
+        fi
+    }
+    start_daemon()
+    {
+        nicelevel=""
+        pidfile=""
+        while getopts "fn:p:" i; do
+            case $i in
+                f) daemon_force_restart=1;;
+                n) nicelevel="$OPTARG";;
+                p) pidfile="$OPTARG";;
+            esac
+        done
+        shift "$OPTIND"
+        if killproc ${pidfile:+-p "$pidfile"} "$1" 0; then
+            if [ "$daemon_force_restart" = "" ]; then
+                return 0
+            fi
+        fi
+        ${nicelevel:+nice -n "$nicelevel"} "$@"
+    }
+fi
+
+start() {
+    pidofproc $prog > /dev/null && log_warning_msg "$prog already running" && exit 0
+    cd /
+    MYPROXYOAUTH_OPTIONS="${MYPROXYOAUTH_USER:+-u $MYPROXYOAUTH_USER} ${X509_USER_CERT:+-c $X509_USER_CERT} ${X509_USER_KEY:+-k $X509_USER_KEY} -f $PIDFILE -b"
+    start_daemon -p $PIDFILE "$exec" ${MYPROXYOAUTH_OPTIONS}
+    retval="$?"
+    if [ "$retval" -eq 0 ]; then
+	log_success_msg "Started $prog"
+    else
+	log_failure_msg "Error starting $prog"
+    fi
+    return $retval
+}
+
+stop() {
+    killproc -p $PIDFILE "$exec"
+    retval=$?
+    if [ "$retval" -eq 0 ]; then
+        log_success_msg "Stopped $prog"
+    else
+        log_success_msg "Error stopping $prog"
+    fi
+    return $retval
+}
+
+restart() {
+    stop
+    start
+}
+
+case "$1" in
+    start|stop|restart)
+        $1
+        ;;
+    force-reload)
+        restart
+        ;;
+    status)
+        pidofproc -p $PIDFILE $prog > /dev/null
+	result="$?"
+	if [ "$result" -eq 0 ]; then
+	    log_success_msg "$prog is running"
+	else
+	    log_failure_msg "$prog is not running"
+	fi
+	exit $result
+        ;;
+    try-restart|condrestart)
+        if pidofproc -p $PIDFILE $prog >/dev/null ; then
+            restart
+        fi
+	;;
+    reload)
+        exit 0
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|reload|try-restart|force-reload}"
+        exit 2
+esac

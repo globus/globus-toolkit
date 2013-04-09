@@ -1,4 +1,5 @@
 include conf/*
+include sysconfig/myproxy-oauth
 recursive-include myproxy *.py
 recursive-include myproxyoauth *.py
 include myproxyoauth/static/*

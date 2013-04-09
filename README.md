@@ -6,8 +6,9 @@ MyProxy Delegation Service in Python
 
 The MyProxy Delegation Service is a Python implementation of MyProxy OAuth
 protocol, https://docs.google.com/document/pub?id=10SC7oSURc-EgxMQjcCS50gz0u2HzDJAFiG5hEHiSdxA.
-The package depends on Flask and SQLAlchemy. The service can be deployed to
-Apache with mod_wsgi. An example configuration file for Apache is in conf/.
+The package depends on SQLAlchemy. The service can be deployed to
+Apache with mod\_wsgi or run as a standalone service using the python wsgiref
+server. An example configuration file for Apache is in conf/.
 The file should be copied to /etc/apache2/conf.d/ on Debian-based systems, or
 to /etc/httpd/conf.d/ on Red Hat-based system.
 
@@ -30,19 +31,23 @@ specified in the registration form will become an admin of the service.
 Prerequisite packages on Debian-based systems:
 
 * python >= 2.5
-* python-crypto >= 2.2
+* python-crypto >= 2.0 and python-m2crypto or python-crypto >= 2.2
 * python-openssl
-* python-flask >= 0.7
 * python-sqlalchemy
-* libapache2-mod-wsgi
+* python-openssl
+* python-jinja2
 * python-httplib2
 
+If you want to use this with apache2 instead of the standalone server, you'll
+also need libapache2-mod-wsgi and the apache2 server with the ssl module
+enabled and the default-ssl site enabled.
+
 Prerequisite packages on RedHat-based systems
-* mod_wsgi
-* mod_ssl
 * python-httplib2
 * pyOpenSSL
 * python-crypto
 * python-flask >= 0.7
 * python-sqlalchemy
-* httpd
+
+If you want to use this with apache2 instead of the standalone service, you'll
+also need httpd, mod\_wsgi, and mod\_ssl

@@ -1,0 +1,9 @@
+# Name of the user to run the myproxy oauth server as. This user must be
+# able to create/write the database in /var/lib/myproxy-oauth
+# MYPROXYOAUTH_USER=myproxyoauth
+# Path to the certificate for the myproxy-oauth server to use
+# X509_USER_CERT=/usr/share/myproxy-oauth/servicecert.pem
+# Path to the private key for the myproxy-oauth server to use
+# X509_USER_KEY=/usr/share/myproxy-oauth/servicekey.pem
+# Path to the process id file for the standalone myproxy-oauth service
+# PIDFILE=/var/run/myproxy-oauth.pid
