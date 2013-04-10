@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.52-1) unstable; urgency=low
+
+  * GT-384: GRAM mishandles long script responses
+
+ -- Globus Toolkit <support@globus.org>  Wed, 10 Apr 2013 11:27:14 -0400
+
 globus-gram-job-manager (13.51-1) unstable; urgency=low
 
   * GT-291: Reduce verbosity of INFO level debug log on GRAM

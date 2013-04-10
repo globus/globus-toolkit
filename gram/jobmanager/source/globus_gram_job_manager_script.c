@@ -32,6 +32,7 @@ typedef struct globus_gram_script_handle_s
     globus_gram_job_manager_scripts_t * scripts;
     globus_xio_handle_t                 handle;
     globus_byte_t                       return_buf[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
+    size_t                              return_buf_offset;
     globus_result_t                     result;
     int                                 pending_ops;
     time_t                              last_use;
@@ -374,6 +375,7 @@ globus_l_gram_job_manager_script_read(
     script_context = user_arg;
     request = script_context->request;
     script_handle = script_context->handle;
+    script_handle->return_buf_offset += nbytes;
 
     globus_gram_job_manager_request_log(
             request,
@@ -387,8 +389,28 @@ globus_l_gram_job_manager_script_read(
             request->job_contact_path,
             result,
             (int) nbytes);
+    if ((script_handle->return_buf_offset == sizeof(script_handle->return_buf))
+        && (memchr(script_handle->return_buf, '\n', script_handle->return_buf_offset) == NULL))
+    {
+        result = GLOBUS_FAILURE;
+        failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
 
-    if (result)
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.script_read.end "
+                "level=ERROR "
+                "gramid=%s "
+                "status=%d "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                (int) -failure_code,
+                "script response doesn't contain newline");
+        eof = GLOBUS_TRUE;
+        script_handle->result = GLOBUS_FAILURE;
+    }
+    else if (result)
     {
         eof = GLOBUS_TRUE;
         if (!globus_xio_error_is_eof(result))
@@ -426,12 +448,13 @@ globus_l_gram_job_manager_script_read(
         script_handle->result = result;
     }
 
-    while((p = memchr(script_handle->return_buf, '\n', nbytes)) != NULL)
+    while((p = memchr(script_handle->return_buf, '\n', script_handle->return_buf_offset)) != NULL)
     {
         char *                          escaped;
-
+        size_t                          newline_offset;
 
         *p = '\0';
+        newline_offset = p - (char *) &script_handle->return_buf[0];
 
         if (request->job_log_level & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
         {
@@ -461,6 +484,7 @@ globus_l_gram_job_manager_script_read(
         {
             /* End of input */
             eof = GLOBUS_TRUE;
+            script_handle->return_buf_offset -= newline_offset + 1;
             break;
         }
 
@@ -493,9 +517,9 @@ globus_l_gram_job_manager_script_read(
         if(strcmp(script_variable, "GRAM_SCRIPT_JOB_ID") == 0)
         {
             const char * gk_jm_id_var = "GATEKEEPER_JM_ID";
-            const char * gk_jm_id  = globus_libc_getenv(gk_jm_id_var);
-            const char * gk_peer   = globus_libc_getenv("GATEKEEPER_PEER");
-            const char * globus_id = globus_libc_getenv("GLOBUS_ID");
+            const char * gk_jm_id  = getenv(gk_jm_id_var);
+            const char * gk_peer   = getenv("GATEKEEPER_PEER");
+            const char * globus_id = getenv("GLOBUS_ID");
             uid_t uid = getuid();
             gid_t gid = getgid();
             const char *user = request->config->logname;
@@ -518,31 +542,57 @@ globus_l_gram_job_manager_script_read(
                 request->config->jobmanager_type);
         }
 
-        nbytes -= (p + 1 - ((char *)&script_handle->return_buf[0]));
-        if(nbytes > 0)
+        if(script_handle->return_buf_offset > newline_offset)
         {
             memmove(&script_handle->return_buf[0],
-                    p + 1, 
-                    nbytes);
+                    &script_handle->return_buf[newline_offset+1],
+                    script_handle->return_buf_offset - newline_offset - 1);
+            script_handle->return_buf_offset -= newline_offset + 1;
         }
         else
         {
             script_handle->return_buf[0] = '\0';
+            script_handle->return_buf_offset = 0;
         }
     }
 
     if(! eof)
     {
-        result = globus_xio_register_read(
-                script_handle->handle,
-                &script_handle->return_buf[nbytes],
-                sizeof(script_handle->return_buf) - nbytes,
-                1,
-                NULL,
-                globus_l_gram_job_manager_script_read,
-                script_context);
+        if (sizeof(script_handle->return_buf) >
+                script_handle->return_buf_offset)
+        {
+		globus_gram_job_manager_request_log(
+			script_context->request,
+			GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+			"event=gram.script_read.info "
+			"level=TRACE "
+			"message=\"registering read\" "
+			"return_buf_offset=%d "
+			"read_len=%d "
+			"\n",
+			(int) script_handle->return_buf_offset,
+			(int) (sizeof(script_handle->return_buf) - script_handle->return_buf_offset),
+			p);
+            result = globus_xio_register_read(
+                    script_handle->handle,
+                    &script_handle->return_buf[script_handle->return_buf_offset],
+                    sizeof(script_handle->return_buf) - script_handle->return_buf_offset,
+                    1,
+                    NULL,
+                    globus_l_gram_job_manager_script_read,
+                    script_context);
+            if(result == GLOBUS_SUCCESS)
+            {
+                /* New callback registered successfully */
+                return;
+            }
+        }
+        else
+        {
+            result = GLOBUS_FAILURE;
+        }
 
-        if(result != GLOBUS_SUCCESS)
+
         {
             char *                      errstr;
             char *                      errstr_escaped;
@@ -574,11 +624,6 @@ globus_l_gram_job_manager_script_read(
             {
                 free(errstr_escaped);
             }
-        }
-        else
-        {
-            /* New callback registered successfully */
-            return;
         }
     }
 
@@ -1315,7 +1360,7 @@ globus_l_gram_job_manager_default_done(
         if(value != NULL && strlen(value) > 0)
         {
             const char *gk_jm_id_var = "GATEKEEPER_JM_ID";
-            const char *gk_jm_id = globus_libc_getenv(gk_jm_id_var);
+            const char *gk_jm_id = getenv(gk_jm_id_var);
             const char *v = value;
             char *buf = malloc(strlen(value) + 1);
             char *b = buf;
@@ -2817,6 +2862,7 @@ globus_gram_job_manager_script_handle_init(
     }
     (*handle)->scripts = scripts;
     (*handle)->return_buf[0] = 0;
+    (*handle)->return_buf_offset = 0;
     (*handle)->result = GLOBUS_SUCCESS;
     (*handle)->manager = manager;
     (*handle)->pending_ops = 0;
