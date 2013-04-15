@@ -240,6 +240,12 @@ globus_gsi_cred_verify_cert_chain(
     globus_gsi_cred_handle_t            cred_handle,
     globus_gsi_callback_data_t          callback_data);
 
+globus_result_t
+globus_gsi_cred_verify_cert_chain_when(
+    globus_gsi_cred_handle_t            cred_handle,
+    globus_gsi_callback_data_t          callback_data,
+    time_t                              check_time);
+
 globus_result_t globus_gsi_cred_verify(
     globus_gsi_cred_handle_t            handle);
 

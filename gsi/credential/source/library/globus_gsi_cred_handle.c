@@ -1908,6 +1908,203 @@ globus_gsi_cred_verify_cert_chain(
 
 /**
  * @ingroup globus_gsi_cred_handle
+ * This function performs path valiadtion on the certificate chain contained in
+ * the credential handle.  Expiration checks are done at the time given.
+ *
+ * @param cred_handle
+ *        The credential handle containing the certificate chain to
+ *        be validated
+ * @param callback_data
+ *        A callback data structure.  If NULL, one will be initialized
+ *        with only the default cert dir set.
+ * @param check_time
+ *        Check if the cert chain was valid at this time.  Set to 0 to
+ *        use a time that the cert is valid, essentially bypassing the
+ *        expiration check.
+ *
+ * @return
+ *        GLOBUS_SUCCESS if no error, otherwise an error object
+ *        identifier is returned
+ */
+globus_result_t
+globus_gsi_cred_verify_cert_chain_when(
+    globus_gsi_cred_handle_t            cred_handle,
+    globus_gsi_callback_data_t          callback_data_in,
+    time_t                              check_time)
+{
+    X509 *                              cert = NULL;
+    char *                              cert_dir = NULL;
+    X509_STORE *                        cert_store = NULL;
+    X509 *                              tmp_cert = NULL;
+    X509_STORE_CTX *                    store_context = NULL;
+    int                                 callback_data_index;
+    globus_gsi_callback_data_t          callback_data;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_cred_verify_cert_chain";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+    
+    
+    if(callback_data_in != NULL)
+    {
+        callback_data = callback_data_in;
+    }
+    else
+    {
+        char *                          certdir = NULL;
+        
+        /* initialize the callback data */
+        result = globus_gsi_callback_data_init(&callback_data);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                result, GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA);
+            goto exit;
+        }    
+        
+        /* set the cert_dir in the callback data */
+        result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&certdir);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                result, GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA);
+            goto exit;
+        }
+        if(certdir)
+        {
+            result = globus_gsi_callback_set_cert_dir(
+                callback_data, 
+                certdir);
+            if(result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                    result, GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA);
+                goto exit;
+            }
+            free(certdir);
+        }
+    }
+    
+    cert_store = X509_STORE_new();
+    if(cert_store == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result, GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA);
+        goto exit;
+    }
+
+    X509_STORE_set_verify_cb_func(cert_store, 
+                                  globus_gsi_callback_create_proxy_callback);
+    X509_STORE_set_depth(cert_store, GLOBUS_GSI_CALLBACK_VERIFY_DEPTH);
+
+    result = globus_gsi_callback_get_cert_dir(callback_data, &cert_dir);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+                GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA);
+        goto exit;
+    }
+
+    tmp_cert = cred_handle->cert;
+    cert = tmp_cert;
+    
+    if (X509_STORE_load_locations(cert_store, NULL, cert_dir))
+    {
+        store_context = X509_STORE_CTX_new();
+        X509_STORE_CTX_init(store_context, cert_store, cert,
+                            cred_handle->cert_chain);
+        X509_STORE_CTX_set_depth(store_context,
+                                 GLOBUS_GSI_CALLBACK_VERIFY_DEPTH);
+
+        /* override the check_issued with our version */
+        store_context->check_issued = globus_gsi_callback_check_issued;
+
+        globus_gsi_callback_get_X509_STORE_callback_data_index(
+            &callback_data_index);
+
+        X509_STORE_CTX_set_ex_data(
+            store_context,
+            callback_data_index, 
+            (void *)callback_data);
+                 
+        /*
+         * If this is not set, OpenSSL-0.9.8 (check_chain_extensions()
+         * called by x509_verify_cert()) treats the cert next to proxy
+         * in the chain to be CA cert and throws invalid CA error
+         */ 
+
+        #if defined(X509_V_FLAG_ALLOW_PROXY_CERTS)
+	X509_STORE_CTX_set_flags(
+                        store_context, X509_V_FLAG_ALLOW_PROXY_CERTS);
+        #endif
+
+        if(check_time == 0)
+        {
+            check_time = cred_handle->goodtill - 1;
+        }
+        if(check_time > 0)
+        {
+            X509_STORE_CTX_set_flags(
+                store_context, X509_V_FLAG_USE_CHECK_TIME);
+            X509_STORE_CTX_set_time(store_context, 0, check_time);
+        }
+        if(!X509_verify_cert(store_context))
+        {
+            globus_result_t             callback_error;
+            globus_result_t             local_result;
+
+            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_VERIFYING_CRED,
+                (_GCRSL("Failed to verify credential")));
+
+            local_result = globus_gsi_callback_get_error(callback_data,
+                                                         &callback_error);
+            if(local_result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                    local_result,
+                    GLOBUS_GSI_CRED_ERROR_VERIFYING_CRED);
+                goto exit;
+            }
+            else
+            {
+                local_result = callback_error;
+            }
+            
+            result = globus_i_gsi_cred_error_join_chains_result(
+                result,
+                local_result);
+
+            goto exit;
+        }
+    }
+    
+ exit:
+
+    if(cert_store)
+    {
+        X509_STORE_free(cert_store);
+    }
+
+    if(store_context)
+    {
+        X509_STORE_CTX_free(store_context);
+    }
+
+    if(cert_dir)
+    {
+        free(cert_dir);
+    }
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
+
+/**
+ * @ingroup globus_gsi_cred_handle
  * This function checks that the certificate is signed by the public key
  * of the issuer cert (the first cert in the chain). Note that this function
  * DOES NOT check the private key or the public of the certificate, as

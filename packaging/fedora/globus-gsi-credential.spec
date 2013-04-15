@@ -12,7 +12,7 @@
 
 Name:		globus-gsi-credential
 %global _name %(tr - _ <<< %{name})
-Version:	5.4
+Version:	5.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Credential Library
 
@@ -192,6 +192,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Apr 15 2013 Globus Toolkit <support@globus.org> - 5.5-1
+- verify sharing cert chain
+
 * Tue Mar 19 2013 Globus Toolkit <support@globus.org> - 5.4-1
 - Update sharing to support a full cert chain at logon
 
