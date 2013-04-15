@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.16-1) unstable; urgency=low
+
+  * Change from SharingFile to SharingStateDir
+
+ -- Globus Toolkit <support@globus.org>  Wed, 10 Apr 2013 17:15:24 -0400
+
 globus-connect-multiuser (2.0.15-1) unstable; urgency=low
 
   * Add options to remove and reset an endpoint

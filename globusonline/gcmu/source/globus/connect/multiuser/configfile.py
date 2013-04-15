@@ -54,6 +54,7 @@ class ConfigFile(ConfigParser.ConfigParser):
     SHARING_DN = "SharingDN"
     SHARING_RESTRICT_PATHS = "SharingRestrictPaths"
     SHARING_FILE = "SharingFile"
+    SHARING_DIR = "SharingStateDir"
     SHARING_FILE_CONTROL = "SharingFileControl"
     DEFAULT_SHARING_DN = "/C=US/O=Globus Consortium/OU=Globus Connect User" + \
         "/CN=__transfer__"
@@ -403,18 +404,20 @@ class ConfigFile(ConfigParser.ConfigParser):
 
         return sharing_rp
 
+    def get_gridftp_sharing_state_dir(self):
+        sharing_dir = None
+        if self.has_option(ConfigFile.GRIDFTP_SECTION,
+                ConfigFile.SHARING_DIR):
+            sharing_dir = self.get(ConfigFile.GRIDFTP_SECTION,
+                ConfigFile.SHARING_DIR)
+        return sharing_dir
+
     def get_gridftp_sharing_file(self):
         sharing_file = False
         if self.has_option(ConfigFile.GRIDFTP_SECTION,
                 ConfigFile.SHARING_FILE):
-            try:
-                sharing_file = self.getboolean(ConfigFile.GRIDFTP_SECTION,
-                    ConfigFile.SHARING_FILE)
-            except ValueError:
-                sharing_file = self.get(ConfigFile.GRIDFTP_SECTION,
-                    ConfigFile.SHARING_FILE)
-            if sharing_file == '' or sharing_file == None:
-                sharing_file = False
+            sharing_file = self.getboolean(ConfigFile.GRIDFTP_SECTION,
+                ConfigFile.SHARING_FILE)
         return sharing_file
 
     def get_gridftp_sharing_file_control(self):

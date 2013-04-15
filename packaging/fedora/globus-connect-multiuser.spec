@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.15
+Version:        2.0.16
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -20,7 +20,7 @@ BuildArch:      noarch
 %global python  python
 %endif
 
-Requires:       globus-gridftp-server-progs >= 6.23
+Requires:       globus-gridftp-server-progs >= 6.24
 Requires:       globus-gass-copy-progs
 Requires:       globus-gss-assist-progs
 Requires:       myproxy
@@ -30,8 +30,8 @@ Requires:       gsi-openssh-clients
 Requires:       globus-gsi-cert-utils-progs
 Requires:       globus-simple-ca
 Requires:       globus-gridmap-verify-myproxy-callout >= 1.2
-Requires:       globus-gridmap-eppn-callout >= 0.3
-Requires:       globus-gsi-credential >= 5.4
+Requires:       globus-gridmap-eppn-callout >= 0.4
+Requires:       globus-gsi-credential >= 5.5
 Requires:	%{python}
 Obsoletes:      gcmu
 
@@ -83,6 +83,9 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %changelog
+* Wed Apr 10 2013 Globus Toolkit <support@globus.org> 2.0.16-1
+- Change from SharingFile to SharingStateDir
+
 * Mon Mar 25 2013 Globus Toolkit <support@globus.org> 2.0.15-1
 - Add options to remove and reset an endpoint
 

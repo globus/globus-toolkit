@@ -390,15 +390,14 @@ server
             sharing_rp = self.conf.get_gridftp_sharing_restrict_paths()
             if sharing_rp is not None:
                 conf_file.write("sharing_rp %s\n" % sharing_rp)
+            sharing_dir = self.conf.get_gridftp_sharing_state_dir()
+            if sharing_dir is not None:
+                conf_file.write("sharing_state_dir %s\n" % sharing_dir)
             sharing_file = self.conf.get_gridftp_sharing_file()
             if sharing_file == False:
                 conf_file.write("sharing_file none\n")
-            elif sharing_file != True:
-                conf_file.write("sharing_file %s\n" % sharing_file)
             sharing_file_control = self.conf.get_gridftp_sharing_file_control()
-            if sharing_file_control == False:
-                conf_file.write("sharing_file_control 0\n")
-            elif sharing_file_control == True:
+            if sharing_file_control == True:
                 conf_file.write("sharing_file_control 1\n")
             os.symlink(conf_file_name, conf_link_name)
         finally:
