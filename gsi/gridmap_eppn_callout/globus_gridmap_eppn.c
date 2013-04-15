@@ -142,7 +142,8 @@ static
 globus_result_t 
 ggvm_verify_cert(
     X509 *                              cert,
-    X509 *                              ca_cert)
+    X509 *                              ca_cert,
+    time_t                              shared_exp)
 {
     X509_STORE *                        ca_store = NULL;
     X509_STORE_CTX *                    cert_ctx = NULL;
@@ -197,7 +198,13 @@ ggvm_verify_cert(
             ("context initialization failed."));
         goto err;
     }
-
+    if(shared_exp > 0)
+    {
+        X509_STORE_CTX_set_flags(
+            cert_ctx, X509_V_FLAG_USE_CHECK_TIME);
+        X509_STORE_CTX_set_time(cert_ctx, 0, shared_exp - 1);
+    }
+    
     rc = X509_verify_cert(cert_ctx);
     if(rc != 1)
     {
@@ -272,7 +279,8 @@ ggvm_get_myproxy_userid(
     gss_ctx_id_t                        context,
     char *                              subject,
     char **                             userid,
-    X509 *                              shared_user_cert)
+    X509 *                              shared_user_cert,
+    time_t                              shared_exp)
 {
     X509 *                              user_cert = NULL;
     X509 *                              myproxy_ca_cert = NULL;
@@ -343,7 +351,7 @@ ggvm_get_myproxy_userid(
     }
 
     /* verify cert */
-    result = ggvm_verify_cert(user_cert, myproxy_ca_cert);
+    result = ggvm_verify_cert(user_cert, myproxy_ca_cert, shared_exp);
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GRIDMAP_CALLOUT_ERROR(
@@ -492,6 +500,7 @@ globus_gridmap_eppn_callout(
     int                                 rc;
     char *                              shared_user_buf = NULL;
     X509 *                              shared_user_cert = NULL;
+    time_t                              shared_exp = 0;
     
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
@@ -506,10 +515,14 @@ globus_gridmap_eppn_callout(
 
     if(strcmp(service, "sharing") == 0)
     {
+        globus_gsi_cred_handle_t    tmp_cred_handle = NULL;
         shared_user_buf = va_arg(ap, char *);
         
         result = globus_gsi_cred_read_cert_buffer(
-            shared_user_buf, NULL, &shared_user_cert, NULL, &subject);
+            shared_user_buf, &tmp_cred_handle, &shared_user_cert, NULL, &subject);
+        
+        globus_gsi_cred_get_goodtill(tmp_cred_handle, &shared_exp);
+        globus_gsi_cred_handle_destroy(tmp_cred_handle);
     }
     else
     {
@@ -526,7 +539,7 @@ globus_gridmap_eppn_callout(
     }
 
     result = ggvm_get_myproxy_userid(
-        context, subject, &found_identity, shared_user_cert);
+        context, subject, &found_identity, shared_user_cert, shared_exp);
     if(result == GLOBUS_SUCCESS)
     {
         if(desired_identity && strcmp(found_identity, desired_identity) != 0)

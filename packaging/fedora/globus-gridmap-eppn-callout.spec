@@ -12,8 +12,8 @@
 
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
-Version:	0.3
-Release:	2%{?dist}
+Version:	0.4
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
 Group:		System Environment/Libraries
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Apr 15 2013 Globus Toolkit <support@globus.org> - 0.4-1
+- verify sharing cert chain
+
 * Tue Mar 19 2013 Globus Toolkit <support@globus.org> - 0.3-2
 - Update sharing to support a full cert chain at logon
 

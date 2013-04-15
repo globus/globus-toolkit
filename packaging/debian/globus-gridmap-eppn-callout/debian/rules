@@ -11,7 +11,7 @@ endif
 
 name = globus-gridmap-eppn-callout
 _name = globus_gridmap_eppn_callout
-version = 0.3
+version = 0.4
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp
