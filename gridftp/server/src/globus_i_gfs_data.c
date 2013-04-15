@@ -172,6 +172,7 @@ typedef struct
     
     globus_list_t *                     active_rp_list;
     globus_list_t *                     rp_list;
+    char *                              sharing_state_dir;
     char *                              sharing_file;
     
     globus_hashtable_t                  custom_cmd_table;
@@ -1140,6 +1141,10 @@ globus_l_gfs_free_session_handle(
     if(session_handle->chroot_path)
     {
         globus_free(session_handle->chroot_path);
+    }
+    if(session_handle->sharing_state_dir)
+    {
+        globus_free(session_handle->sharing_state_dir);
     }
     if(session_handle->sharing_file)
     {
@@ -2349,6 +2354,7 @@ globus_l_gfs_data_authorize(
                 char *                  sub_tmp;
                 char *                  ptr;
                 int                     cert_len;
+                globus_gsi_cred_handle_t tmp_cred_handle;
                                         
                 shared_user_str = 
                     session_info->username + strlen(GLOBUS_SHARING_PREFIX);
@@ -2394,12 +2400,21 @@ globus_l_gfs_data_authorize(
                     goto pwent_error;
                 }
                 res = globus_gsi_cred_read_cert_buffer(
-                    desired_user_cert, NULL, NULL, NULL, &sub_tmp);
+                    desired_user_cert, &tmp_cred_handle, NULL, NULL, &sub_tmp);
                 if(res != GLOBUS_SUCCESS)
                 {
                     goto pwent_error;
                 }
                 
+                res = globus_gsi_cred_verify_cert_chain_when(
+                    tmp_cred_handle, NULL, 0);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto pwent_error;
+                }
+                
+                globus_gsi_cred_handle_destroy(tmp_cred_handle);
+
                 globus_gfs_log_message(
                     GLOBUS_GFS_LOG_INFO,
                     "DN %s has provided sharing credentials for DN %s.\n",
@@ -2575,6 +2590,7 @@ globus_l_gfs_data_authorize(
         if(sharing_dn)
         {
             char *                      sharing_file;
+            char *                      sharing_state;
             
             if(pwent && pwent->pw_dir)
             {
@@ -2586,31 +2602,29 @@ globus_l_gfs_data_authorize(
             }
             op->session_handle->username = session_info->username;
 
-            sharing_file = globus_i_gfs_config_string("sharing_file");
-            if(!sharing_file)
+            sharing_state = globus_i_gfs_config_string("sharing_state_dir");
+            op->session_handle->sharing_state_dir = 
+                globus_l_gfs_data_update_var_path(
+                    op->session_handle, 
+                    sharing_state ? sharing_state : "$HOME/.globus/sharing");
+            if(!op->session_handle->sharing_state_dir)
             {
-                op->session_handle->sharing_file = 
-                    globus_l_gfs_data_update_var_path(
-                        op->session_handle, "$HOME/.globus_sharing");
-                
-                if(!op->session_handle->sharing_file)
-                {
-                    res = GlobusGFSErrorMemory("sharing file");
-                    goto pwent_error;
-                }
+                res = GlobusGFSErrorMemory("sharing state dir");
+                goto pwent_error;
+            }
+            
+            sharing_file = globus_i_gfs_config_string("sharing_file");
+            if(sharing_file && !strcmp(sharing_file, "none"))
+            {
+                op->session_handle->sharing_file = strdup(sharing_file);
             }
             else
-            {                
+            {
                 op->session_handle->sharing_file = 
-                    globus_l_gfs_data_update_var_path(
-                        op->session_handle, sharing_file);
-                
-                if(!op->session_handle->sharing_file)
-                {
-                    res = GlobusGFSErrorMemory("sharing file");
-                    goto pwent_error;
-                }
-            }
+                    globus_common_create_string(
+                        "%s/enabled", op->session_handle->sharing_state_dir);
+            } 
+
             op->session_handle->username = NULL;
             op->session_handle->true_home = NULL;
             
@@ -4050,6 +4064,25 @@ globus_i_gfs_data_request_command(
                     {
                         int                 sharingfd;
                         
+                        /* create state dir if default and doesn't exist */
+                        if(!globus_i_gfs_config_string("sharing_state_dir") && 
+                            access(op->session_handle->sharing_state_dir, F_OK) < 0)
+                        {
+                            char *      tmp_dir;
+                            char *      ptr;
+                            
+                            tmp_dir = strdup(op->session_handle->sharing_state_dir);
+                            ptr = tmp_dir;
+                            
+                            if(ptr = strrchr(ptr, '/'))
+                            {
+                                *ptr = '\0';
+                                mkdir(tmp_dir, 0700);
+                                *ptr = '/';
+                            }
+                            mkdir(tmp_dir, 0700);
+                            free(tmp_dir);
+                        }
                         sharingfd = open(op->session_handle->sharing_file, 
                             O_WRONLY | O_CREAT, S_IRUSR);
                         if(sharingfd < 0)

@@ -590,7 +590,7 @@ globus_l_gfs_new_server_cb(
     char *                              remote_ip;
     char *                              remote_contact;
     char *                              local_contact;
-    char *                              tmp_local_contact;
+    char *                              tmp_local_contact = NULL;
     GlobusGFSName(globus_l_gfs_new_server_cb);
     GlobusGFSDebugEnter();
     
@@ -600,7 +600,7 @@ globus_l_gfs_new_server_cb(
         {
             goto error;
         }
-    
+        
         result = globus_xio_handle_cntl(
             handle,
             globus_l_gfs_tcp_driver,
@@ -608,10 +608,32 @@ globus_l_gfs_new_server_cb(
             &remote_ip);
         if(result != GLOBUS_SUCCESS)
         {
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_INFO,
-                "Couldn't get remote IP address.  Possibly using a non-tcp protocol.\n");
-            remote_ip = strdup("0.0.0.0");
+            char *                      tmp;
+            if(globus_i_gfs_config_bool("ssh") && 
+                (tmp = getenv("SSH_CLIENT")) != NULL)
+            {
+                remote_ip = strdup(tmp);
+                tmp = strchr(remote_ip, ' ');
+                if(tmp)
+                {
+                    *tmp = ':';
+                    tmp = strchr(remote_ip, ' ');
+                    if(tmp)
+                    {
+                        *tmp = '\0';
+                    }
+                }
+                remote_contact = strdup(remote_ip);
+            }
+            else
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_INFO,
+                    "Couldn't get remote IP address.  "
+                    "Possibly using a non-tcp protocol.\n");
+                remote_ip = strdup("0.0.0.0");
+                remote_contact = strdup(remote_ip);
+            }
         }        
         else
         {
@@ -656,25 +678,63 @@ globus_l_gfs_new_server_cb(
             &local_contact);
         if(result != GLOBUS_SUCCESS)
         {
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_INFO,
-                "Couldn't get local contact.  Possibly using a non-tcp protocol.\n");
-            local_contact = strdup("0.0.0.0");
-        }
-
-        if(globus_i_gfs_config_string("contact_string") == NULL)
-        {
-            result = globus_xio_handle_cntl(
-                handle,
-                globus_l_gfs_tcp_driver,
-                GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
-                &tmp_local_contact);
-            if(result != GLOBUS_SUCCESS)
+            char *                      tmp;
+            if(globus_i_gfs_config_bool("ssh") && 
+                (tmp = getenv("SSH_CONNECTION")) != NULL)
+            {
+                local_contact = NULL;
+                tmp = strchr(tmp, ' ');
+                if(tmp)
+                {
+                    tmp++;
+                    tmp = strchr(tmp, ' ');
+                    if(tmp)
+                    {
+                        tmp++;
+                        local_contact = strdup(tmp);
+                    }
+                }
+                if(local_contact && (tmp = strchr(local_contact, ' ')) != NULL)
+                {
+                    *tmp = ':';
+                }
+                else
+                {
+                    local_contact = strdup("0.0.0.0");
+                }
+            }
+            else
             {
                 globus_gfs_log_message(
                     GLOBUS_GFS_LOG_INFO,
-                    "Couldn't get local contact.  Possibly using a non-tcp protocol.\n");
-                tmp_local_contact = strdup("0.0.0.0:0");
+                    "Couldn't get local contact.  "
+                    "Possibly using a non-tcp protocol.\n");
+                local_contact = strdup("0.0.0.0");
+            }
+        }
+        
+        if(globus_i_gfs_config_string("contact_string") == NULL)
+        {
+            /* GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT result */
+            if(result != GLOBUS_SUCCESS)
+            {
+                tmp_local_contact = strdup(local_contact);
+            }
+            else
+            {
+                result = globus_xio_handle_cntl(
+                    handle,
+                    globus_l_gfs_tcp_driver,
+                    GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
+                    &tmp_local_contact);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_INFO,
+                        "Couldn't get local contact.  "
+                        "Possibly using a non-tcp protocol.\n");
+                    tmp_local_contact = strdup(local_contact);
+                }
             }
 
             globus_gfs_config_set_ptr("contact_string", tmp_local_contact);
@@ -685,13 +745,6 @@ globus_l_gfs_new_server_cb(
             globus_l_gfs_tcp_driver,
             GLOBUS_XIO_TCP_SET_NODELAY,
             GLOBUS_TRUE);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_INFO, 
-                "Couldn't enable TCP_NODELAY.  Possibly using a non-tcp protocol.\n");
-            result = GLOBUS_SUCCESS;
-        }
             
         result = globus_xio_handle_cntl(
             handle,
@@ -1844,7 +1897,7 @@ main(
         globus_gfs_log_message(
             GLOBUS_GFS_LOG_INFO,
             "Server started in %s mode.\n",
-            inetd ? "inetd" : "daemon");
+            inetd ? (globus_i_gfs_config_bool("ssh") ? "ssh" : "inetd") : "daemon");
         globus_gfs_log_event(
             GLOBUS_GFS_LOG_INFO,
             GLOBUS_GFS_LOG_EVENT_START,

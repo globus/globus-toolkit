@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.23
+Version:	6.24
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -182,6 +182,11 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Apr 15 2013 Globus Toolkit <support@globus.org> - 6.24-1
+- GT-365 verify sharing cert chain
+- GT-365 update sharing config from sharing-file to state-dir
+- GT-364 SSHFTP fixes
+
 * Tue Mar 19 2013 Globus Toolkit <support@globus.org> - 6.23-1
 - Update sharing to support a full cert chain at logon
 

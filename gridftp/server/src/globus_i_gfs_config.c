@@ -154,16 +154,21 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"sharing_dn", "sharing_dn", NULL, "sharing-dn", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Allow sharing when using the supplied DN.  A client connected with these credentials will "
     "be able to access any user for which sharing is enabled.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"sharing_state_dir", "sharing_state_dir", NULL, "sharing-state-dir", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Full path to a directory that will contain files used by GridFTP to control sharing "
+    "access for individual local accounts. The special variables '$HOME' and '$USER' can "
+    "be used to create a dynamic path that is unique to each local account.  This path"
+    "must be writable by the associated account. "
+    "The default path is '$HOME/.globus/sharing/'.  This must refer to a path on the filesystem, "
+    "not a path that is only accessible via a DSI plugin.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"sharing_file", "sharing_file", NULL, "sharing-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Full path of a file that must exist for a local account to have sharing enabled. "
-    "The special variables '$HOME' and '$USER' can be used to create a dynamic path. "
-    "The default path is '$HOME/.globus_sharing'.  Use 'none' to disable this check and "
-    "allow sharing of any non-root account.  This must refer to a file on the filesystem, not a file that "
-    "is only accessible via a DSI plugin.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "A file named 'enabled' must exist in the sharing state dir in order for a "
+    "local account to be enabled for sharing.  Set this paramter to 'none' to disable this check and "
+    "allow sharing of any non-root account.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"sharing_file_control", "sharing_file_control", NULL, "sharing-file-control", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
-    "Set this to true to allow a user to create its sharing file via a special GridFTP client command. "
-    "This creation is not subject to any GridFTP path restrictions, but the user must "
-    "have filesystem write access to the sharing file.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "Allow a local user account to control its own sharing access via special "
+    "GridFTP client commands.  The user account must have filesystem write access to "
+    "the sharing state dir.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"sharing_rp", "sharing_rp", NULL, "sharing-rp", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Sharing specific path restrictions.  This completely replaces the normal path "
     "restrictions (-rp) when an account is being shared by a sharing-dn login."

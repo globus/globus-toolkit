@@ -1,3 +1,11 @@
+globus-gridftp-server (6.24-1) unstable; urgency=low
+
+  * GT-365: verify sharing cert chain
+  * GT-365: update sharing config from sharing-file to state-dir 
+  * GT-364: SSHFTP fixes sharing cert chain
+
+ -- Globus Toolkit <support@globus.org>  Mon, 15 Apr 2013 07:38:54 -0500
+
 globus-gridftp-server (6.23-1) unstable; urgency=low
 
   * Update sharing to support a full cert chain at logon
