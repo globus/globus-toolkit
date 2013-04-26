@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.16
+Version:        2.0.17
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -83,6 +83,9 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %changelog
+* Fri Apr 26 2013 Globus Toolkit <support@globus.org> 2.0.17-1
+- Remove outdated sharing options SharingFile and SharingFileControl
+
 * Wed Apr 10 2013 Globus Toolkit <support@globus.org> 2.0.16-1
 - Change from SharingFile to SharingStateDir
 

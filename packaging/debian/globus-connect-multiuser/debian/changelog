@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.17-1) unstable; urgency=low
+
+  * Remove outdated sharing options SharingFile and SharingFileControl
+
+ -- Globus Toolkit <support@globus.org>  Fri, 26 Apr 2013 13:25:01 -0400
+
 globus-connect-multiuser (2.0.16-1) unstable; urgency=low
 
   * Change from SharingFile to SharingStateDir
