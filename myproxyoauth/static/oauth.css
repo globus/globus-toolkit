@@ -1,9 +1,3 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-    "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-    <title>MyProxy Delegation Service</title>
-<style>
 * {
     margin: 0;
     padding: 0;
@@ -100,54 +94,3 @@ input[type="submit"] {
     padding: 4px 10px 5px;
     vertical-align: middle;
 }
-</style>
-</head>
-<body>
-<div id="header">
-    <a id="logo" href="http://globusonline.org/"></a>
-    <div id="title">MyProxy Delegation Service</div>
-</div>
-<div id="sep"></div>
-<div id="main">
-    <div id="topic"><h1>Client Registration</h1></div>
-    <div id="message">
-    Welcome to the MyProxy Delegation Service Client Registration Page.
-    This page allows you to register Globus Online with the MyProxy Delegation
-    Service.
-    </div>
-    <form action="/oauth/configure" method="post"">
-        <table>
-            <tr>
-                <th>Globus Online Username</th>
-                <td><input type="text" size="25" name="username"/></td>
-            </tr>
-            <tr>
-                <th>Globus Online Password</th>
-                <td><input type="password" size="25" name="password"/></td>
-            </tr>
-            <tr>
-                <th>This MyProxy Delegation Server<br><tt>{hostname|IP}[:port][/path]</tt></th>
-                <td><input type="text" size="40" name="oauth_server"
-                value="{{ hostname }}"/></td>
-            </tr>
-            <tr>
-                <th>MyProxy Server<br><tt>{hostname|IP}[:port]</tt></th>
-                <td><input type="text" size="40" name="myproxy_server"/></td>
-            </tr>
-            <tr>
-                <th>Globus Online Nexus Server</th>
-                <td><input type="text" size="40" name="nexus_server"
-                    value="nexus.api.globusonline.org"/></td>
-            </tr>
-            <tr>
-                <th>Verify Nexus Server Certificate</th>
-                <td><input type="checkbox" name="verify"/></td>
-            </tr>
-            <tr>
-                <td></td><td><input type="submit" value="Register"/></td>
-            </tr>
-        </table>
-    </form>
-</div>
-</body>
-</html>

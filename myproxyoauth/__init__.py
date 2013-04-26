@@ -69,7 +69,12 @@ class MyProxyOAuth(object):
             else:
                 modname = 'myproxyoauth.static'
                 dataname = route[len(static_route):]
-                content_type = "image/png"
+                if dataname.endswith(".png"):
+                    content_type = "image/png"
+                elif dataname.endswith(".css"):
+                    content_type = "text/css"
+                else:
+                    content_type = "application/octet-string"
 
             try: 
                 if not("/" in dataname or 

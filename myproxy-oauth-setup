@@ -1,0 +1,179 @@
+#
+# Copyright 2010-2011 University of Chicago
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+import base64
+import getpass
+import httplib
+import json
+import os
+import random
+import socket
+import sys
+from myproxyoauth.database import db_session, Admin, Client, Transaction
+
+"""
+Register Globus Online as an OAuth client with this MyProxy OAuth Delegation
+service. The registration consists of two steps:
+1. Get an access token from Globus Online.
+2. Trigger Globus Online client registration with this service.
+"""
+def configure():
+    default_user = getpass.getuser()
+    print "Globus Online Username [%s]: " % (default_user),
+    username = sys.stdin.readline().strip()
+    if username == '':
+        username = default_user
+    password = getpass.getpass("Globus Online Password: ")
+    default_hostname = socket.gethostname()
+
+    print "OAuth Server [%s]: " % (default_hostname),
+    oauth_server = sys.stdin.readline().strip()
+    if oauth_server == '':
+        oauth_server = default_hostname
+
+    print "MyProxy Server [%s]: " % (default_hostname),
+    myproxy_server = sys.stdin.readline().strip()
+    if myproxy_server == '':
+        myproxy_server = default_hostname
+
+    default_nexus = "nexus.api.globusonline.org"
+    print "Nexus API Server [%s]: " % (default_nexus),
+    nexus_server = sys.stdin.readline().strip()
+    if nexus_server == '':
+        nexus_server = default_nexus
+
+    admin = db_session.query(Admin).first()
+
+    if admin is not None:
+        if admin.username != username:
+            message = 'You are not an admin of the MyProxy Delegation Service'
+            print >>sys.stderr, message
+            sys.exit(1)
+
+    try:
+        access_token = get_access_token(username, password, nexus_server)
+    except Exception, e:
+        message='Could not get access token. %s' % str(e)
+        print >>sys.stderr, message
+        sys.exit(1)
+
+    client_id = 'myproxy:oa4mp,2012:/client/' \
+        + ''.join([random.choice('0123456789abcdef') for i in range(32)])
+    try:
+        (home_url, gateway_name, oauth_consumer_id, public_key) = register_go(
+                nexus_server, access_token, client_id, oauth_server)
+    except Exception, e:
+        message = str(e)
+        print >>sys.stderr, message
+        sys.exit(1)
+
+    print "Registered: gateway_name: %s, home_url: %s," \
+          " oauth_consumer_id: %s" \
+          % (gateway_name, home_url, oauth_consumer_id)
+
+    if admin is None:
+        db_session.add(Admin(username))
+
+    client = db_session.query(Client).\
+            filter(Client.oauth_consumer_key==oauth_consumer_id).first()
+    if client is None:
+        client = Client()
+    client.oauth_consumer_key=oauth_consumer_id
+    client.oauth_client_pubkey=public_key
+    client.name=gateway_name
+    client.home_url=home_url
+    client.myproxy_server=myproxy_server
+    db_session.add(client)
+
+    db_session.commit()
+
+def get_access_token(username, password, server):
+    """
+    Get an access token from Globus Online Nexus.
+    Returns: an access token
+    """
+
+    basic_auth = base64.b64encode('%s:%s' % (username, password))
+    headers = { 'Content-type': 'app/json; charset=UTF-8',
+            'Hostname': server,
+            'Accept': 'app/json; charset=UTF-8',
+            'Authorization': 'Basic %s' % basic_auth }
+    c = httplib.HTTPSConnection(server, 443)
+    c.request('GET', '/goauth/token?grant_type=client_credentials',
+            headers=headers)
+    response = c.getresponse()
+    json_reader = None
+    if hasattr(json, 'loads'):
+        json_reader = json.loads
+    elif hasattr(json, 'JsonReader'):
+        json_reader_obj = json.JsonReader()
+        json_reader = json_reader_obj.read
+
+    if response.status == 403:
+        try :
+            message = json_reader(response.read()).get('message')
+        except Exception, e:
+            message = str(e)
+        raise Exception('403 Error: %s' % message)
+    elif response.status > 299 or response.status < 200:
+        raise Exception('%d Error: %s' % (response.status, response.reason))
+    data = json_reader(response.read())
+    token = data.get('access_token')
+    if token is None:
+        raise Exception('No access token in response')
+    return token
+
+
+def register_go(server, access_token, client_id, myproxy_server):
+    """
+    Trigger the nexus_server to register with the oauth_server.
+    Returns: home_url, gateway_name, public_key, oauth_consumer_id
+    """
+
+    headers = { 'Content-type': 'app/json',
+            'X-Globus-Goauthtoken': access_token}
+    body = '{"oauth_consumer_id": "%s", "oauth_server": "%s"}' \
+            % (client_id, myproxy_server)
+    c = httplib.HTTPSConnection(server, 443)
+    c.request('POST', '/identity_providers/oauth_registration',
+            body=body, headers=headers)
+    response = c.getresponse()
+    json_reader = None
+    if hasattr(json, 'loads'):
+        json_reader = json.loads
+    elif hasattr(json, 'JsonReader'):
+        json_reader_obj = json.JsonReader()
+        json_reader = json_reader_obj.read
+    if response.status == 403:
+        try:
+            message = json_reader(response.read()).get('message')
+        except Exception, e:
+            message = str(e)
+        raise Exception('403 Error: %s' % message)
+    elif response.status > 299 or response.status < 200:
+        raise Exception('%d Error: %s' % (response.status, response.reason))
+    data = json_reader(response.read())
+    home_url = data.get('home_url')
+    gateway_name = data.get('gateway_name')
+    oauth_consumer_id = data.get('oauth_consumer_id')
+    public_key = data.get('public_key')
+    return (home_url, gateway_name, oauth_consumer_id, public_key)
+
+
+if __name__ == '__main__':
+    configure()
+
+# vim: syntax=python: nospell:

@@ -7,5 +7,6 @@ include myproxyoauth/static/*
 include myproxyoauth/templates/*
 recursive-include oauth2 *
 include *.py
+include myproxy-oauth-setup
 include README.md
 include MANIFEST.in
