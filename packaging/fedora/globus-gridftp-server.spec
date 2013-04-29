@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.24
+Version:	6.25
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -41,6 +41,7 @@ BuildRequires:	globus-gfork-devel%{?_isa} >= 3
 BuildRequires:	globus-ftp-control-devel%{?_isa} >= 4
 BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	globus-gss-assist%{?_isa} >= 3
+BuildRequires:  globus-common-progs%{?_isa} >= 14
 
 %package progs
 Summary:	Globus Toolkit - Globus GridFTP Server Programs
@@ -182,6 +183,10 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Apr 26 2013 Globus Toolkit <support@globus.org> - 6.25-1
+- GT-365 control sharing by individual share ids
+- GT-365 always restrict state dir when sharing
+
 * Mon Apr 15 2013 Globus Toolkit <support@globus.org> - 6.24-1
 - GT-365 verify sharing cert chain
 - GT-365 update sharing config from sharing-file to state-dir

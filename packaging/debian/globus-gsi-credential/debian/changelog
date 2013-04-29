@@ -1,3 +1,9 @@
+globus-gsi-credential (5.6-1) unstable; urgency=low
+
+  * fix leak in verify_when
+
+ -- Globus Toolkit <support@globus.org>  Fri, 26 Apr 2013 14:30:51 -0500
+
 globus-gsi-credential (5.5-1) unstable; urgency=low
 
   * verify sharing cert chain

@@ -1938,10 +1938,10 @@ globus_gsi_cred_verify_cert_chain_when(
     X509 *                              tmp_cert = NULL;
     X509_STORE_CTX *                    store_context = NULL;
     int                                 callback_data_index;
-    globus_gsi_callback_data_t          callback_data;
+    globus_gsi_callback_data_t          callback_data = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
-        "globus_gsi_cred_verify_cert_chain";
+        "globus_gsi_cred_verify_cert_chain_when";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
@@ -1976,13 +1976,13 @@ globus_gsi_cred_verify_cert_chain_when(
             result = globus_gsi_callback_set_cert_dir(
                 callback_data, 
                 certdir);
+            free(certdir);
             if(result != GLOBUS_SUCCESS)
             {
                 GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                     result, GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA);
                 goto exit;
             }
-            free(certdir);
         }
     }
     
@@ -2084,6 +2084,11 @@ globus_gsi_cred_verify_cert_chain_when(
     
  exit:
 
+    if(callback_data && !callback_data_in)
+    {
+        globus_gsi_callback_data_destroy(callback_data);
+    }
+    
     if(cert_store)
     {
         X509_STORE_free(cert_store);

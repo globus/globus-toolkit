@@ -1,3 +1,10 @@
+globus-gridftp-server (6.25-1) unstable; urgency=low
+
+  * GT-365: control sharing by individual share ids
+  * GT-365: always restrict state dir when sharing
+ 
+ -- Globus Toolkit <support@globus.org>  Fri, 26 Apr 2013 13:34:22 -0500
+
 globus-gridftp-server (6.24-1) unstable; urgency=low
 
   * GT-365: verify sharing cert chain

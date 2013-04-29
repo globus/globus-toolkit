@@ -161,11 +161,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "must be writable by the associated account. "
     "The default path is '$HOME/.globus/sharing/'.  This must refer to a path on the filesystem, "
     "not a path that is only accessible via a DSI plugin.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"sharing_file", "sharing_file", NULL, "sharing-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "A file named 'enabled' must exist in the sharing state dir in order for a "
-    "local account to be enabled for sharing.  Set this paramter to 'none' to disable this check and "
-    "allow sharing of any non-root account.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"sharing_file_control", "sharing_file_control", NULL, "sharing-file-control", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
+ {"sharing_control", "sharing_control", NULL, "sharing-control", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Allow a local user account to control its own sharing access via special "
     "GridFTP client commands.  The user account must have filesystem write access to "
     "the sharing state dir.", NULL, NULL,GLOBUS_FALSE, NULL},
