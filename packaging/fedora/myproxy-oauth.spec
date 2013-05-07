@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.5
+Version:	0.6
 Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
@@ -15,10 +15,13 @@ BuildArch:      noarch
 
 Requires(pre): shadow-utils
 Requires:	pyOpenSSL
+Requires:       mod_ssl
+Requires:       mod_wsgi
 %if 0%{?rhel} != 0
 Requires:       python-crypto
 Requires:       m2crypto
 %if %{rhel} < 6
+BuildRequires:	python-sqlalchemy0.5
 Requires:	python-sqlalchemy0.5
 Requires:       python-wsgiref
 Requires:       python-json
@@ -60,6 +63,20 @@ python setup.py install \
     --root $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/%{_docdir}/%{name}
 cp README.md $RPM_BUILD_ROOT%{_docdir}/%{name}/README.txt
+mkdir -p $RPM_BUILD_ROOT/%{_sbindir}
+%if 0%{?rhel} == 05
+pythonpath="/usr/share/%{name}:$(ls -1d /usr/lib/python2.4/site-packages/SQLAlchemy-0.5*)"
+%else
+pythonpath="/usr/share/%{name}"
+%endif
+cat > $RPM_BUILD_ROOT%{_sbindir}/myproxy-oauth-setup <<EOF 
+#! /bin/sh
+if [ "\$(id -u)" = 0 ]; then
+    exec /bin/su -m myproxyoauth \$0 -- "\$@"
+fi
+exec /usr/bin/env PYTHONPATH="$pythonpath" python /usr/share/%{name}/myproxy-oauth-setup "\$@"
+EOF
+chmod a+x $RPM_BUILD_ROOT%{_sbindir}/myproxy-oauth-setup
 mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
 %if 0%{?fedora} >= 18
 cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth-2.4 \
@@ -70,12 +87,6 @@ cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth \
 %endif
 
 mkdir -p "$RPM_BUILD_ROOT/var/lib/myproxy-oauth"
-mkdir -p "$RPM_BUILD_ROOT%{_sysconfdir}/init.d"
-mkdir -p "$RPM_BUILD_ROOT%{_sysconfdir}/sysconfig"
-install -m 755 $RPM_BUILD_ROOT%{_docdir}/%{name}/init.d/%{name} \
-    $RPM_BUILD_ROOT%{_sysconfdir}/init.d/%{name}
-install $RPM_BUILD_ROOT%{_docdir}/%{name}/sysconfig/%{name} \
-    $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}
 
 %pre
 getent group myproxyoauth >/dev/null || groupadd -r myproxyoauth
@@ -84,9 +95,6 @@ getent passwd myproxyoauth >/dev/null || \
         -c "MyProxy Oauth Daemon" myproxyoauth
         exit 0
 
-%post
-chkconfig --add myproxy-oauth
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -94,13 +102,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc %{_docdir}/%{name}/README.txt
 %doc %{_docdir}/%{name}/apache/*
-%doc %{_docdir}/%{name}/sysconfig/*
-%doc %{_docdir}/%{name}/init.d/*
 %config(noreplace) /etc/httpd/conf.d/wsgi-myproxy-oauth.conf
 %dir %attr(0700,myproxyoauth,myproxyoauth) /var/lib/myproxy-oauth
 /usr/share/%{name}
-/etc/sysconfig/%{name}
-/etc/init.d/%{name}
+%{_sbindir}/myproxy-oauth-setup
 
 %changelog
 * Wed Mar 27 2013 Globus Toolkit <support@globus.org> - 0.0-1
