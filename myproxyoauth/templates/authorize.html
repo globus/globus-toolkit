@@ -3,8 +3,9 @@
 <html>
 <head>
     <title>MyProxy Delegation Service</title>
-    <link rel="stylesheet" type="text/css" href="static/oauth.css" >
-    <link rel="stylesheet" type="text/css" href="static/site.css" >
+    {% for css in stylesheets %}
+    <link rel="stylesheet" type="text/css" href="{{css}}" >
+    {% endfor %}
 </head>
 <body>
 <div id="header">

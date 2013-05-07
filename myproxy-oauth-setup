@@ -1,3 +1,4 @@
+#! /usr/bin/python
 #
 # Copyright 2010-2011 University of Chicago
 #
@@ -16,12 +17,14 @@
 
 import base64
 import getpass
+import getopt
 import httplib
 import json
 import os
 import random
 import socket
 import sys
+
 from myproxyoauth.database import db_session, Admin, Client, Transaction
 
 """
@@ -30,30 +33,36 @@ service. The registration consists of two steps:
 1. Get an access token from Globus Online.
 2. Trigger Globus Online client registration with this service.
 """
-def configure():
-    default_user = getpass.getuser()
-    print "Globus Online Username [%s]: " % (default_user),
-    username = sys.stdin.readline().strip()
-    if username == '':
-        username = default_user
-    password = getpass.getpass("Globus Online Password: ")
+def configure(username=None, pwstdin=False, oauth_server=None, myproxy_server=None, nexus_server=None):
+
+    if username is None:
+        default_user = getpass.getuser()
+        print "Globus Online Username [%s]: " % (default_user),
+        username = sys.stdin.readline().strip()
+        if username == '':
+            username = default_user
+    if pwstdin:
+        print "Globus Online Password: ",
+        password = sys.stdin.readline().strip()
+    else:
+        password = getpass.getpass("Globus Online Password: ")
+
     default_hostname = socket.gethostname()
 
-    print "OAuth Server [%s]: " % (default_hostname),
-    oauth_server = sys.stdin.readline().strip()
-    if oauth_server == '':
-        oauth_server = default_hostname
+    if oauth_server is None:
+        print "OAuth Server [%s]: " % (default_hostname),
+        oauth_server = sys.stdin.readline().strip()
+        if oauth_server == '':
+            oauth_server = default_hostname
 
-    print "MyProxy Server [%s]: " % (default_hostname),
-    myproxy_server = sys.stdin.readline().strip()
-    if myproxy_server == '':
-        myproxy_server = default_hostname
+    if myproxy_server is None:
+        print "MyProxy Server [%s]: " % (default_hostname),
+        myproxy_server = sys.stdin.readline().strip()
+        if myproxy_server == '':
+            myproxy_server = default_hostname
 
-    default_nexus = "nexus.api.globusonline.org"
-    print "Nexus API Server [%s]: " % (default_nexus),
-    nexus_server = sys.stdin.readline().strip()
-    if nexus_server == '':
-        nexus_server = default_nexus
+    if nexus_server is None:
+        nexus_server = "nexus.api.globusonline.org"
 
     admin = db_session.query(Admin).first()
 
@@ -173,7 +182,48 @@ def register_go(server, access_token, client_id, myproxy_server):
     return (home_url, gateway_name, oauth_consumer_id, public_key)
 
 
+def usage(outstream=sys.stdout):
+    print >>outstream, """myproxy-oauth-setup [-h]
+myproxy-oauth-setup {-s | --stdin} {-u USER | --user=USER}
+                    {-o SERVER| --oauth-server=SERVER}
+                    {-m SERVER| --myproxy-server=SERVER}
+                    {-n SERVER| --nexus-api-server=SERVER}"""
+
 if __name__ == '__main__':
-    configure()
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hsu:o:m:n:",
+                ["help", "stdin", "user=", "oauth-server=", "myproxy-server=",
+                 "nexus-api-server="])
+    except getopt.GetoptError, e:
+        print >>sys.stderr, "Invalid option " + e.opt
+        usage(outstream=sys.stderr)
+        sys.exit(1)
+
+    pwstdin = False
+    user = None
+    oauth_server = None
+    myproxy_server = None
+    nexus_server = None
+
+    for (o, val) in opts:
+        if o in ['-h', '--help']:
+            usage()
+            sys.exit(0)
+        elif o in ['-s', '--stdin']:
+            pwstdin = True
+        elif o in ['-u',  '--user']:
+            user = val
+        elif o in ['-o', '--oauth-server']:
+            oauth_server = val
+        elif o in ['-m', '--myproxy-server']:
+            myproxy_server = val
+        elif o in ['-n', '--nexus-api-server']:
+            nexus_server = val
+        else:
+            print >>sys.stderr, "Unknown option %s" %(o)
+            sys.exit(1)
+
+    configure(username=user, pwstdin=pwstdin, oauth_server=oauth_server,
+                myproxy_server=myproxy_server, nexus_server=nexus_server)
 
 # vim: syntax=python: nospell:

@@ -37,9 +37,8 @@ def get_template(name):
     if hasattr(pkgutil, "get_data"):
         template_data = pkgutil.get_data("myproxyoauth.templates", name)
     else:
-        import myproxyoauth.templates
         template_path = os.path.join(
-            os.path.dirname(myproxyoauth.templates.__file__), name)
+            os.path.dirname(__file__), 'templates', name)
         template_file = file(template_path, "r")
         try:
             template_data = template_file.read()
@@ -83,175 +82,6 @@ def test(environ, start_response):
 @application.teardown_request
 def shutdown_session(exception=None):
     db_session.remove()
-
-"""
-Register Globus Online OAuth with the server. The registration consists of two
-steps:
-1. Get an OAuth access token from Globus Online.
-2. Trigger a Globus Online client registration with the service.
-"""
-
-@application.route('/configure', methods=['GET'])
-def get_configure(environ, start_response):
-    name = environ.get("HTTP_HOST")
-    if name is None or name == "":
-        name = socket.gethostname()
-        if name.find('.') ==  -1:
-            name = socket.gethostbyaddr(name)[0]
-    headers = [("Content-Type", "text/html")]
-    body = render_template('configure.html', hostname=name)
-    start_response("200 Ok", headers)
-    return body
-
-@application.route('/configure', methods=['POST'])
-def post_configure(environ, start_response):
-    request = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
-
-    username = request.getvalue('username').encode('utf-8')
-    password = request.getvalue('password').encode('utf-8')
-    oauth_server = request.getvalue('oauth_server').encode('utf-8')
-    myproxy_server = request.getvalue('myproxy_server').encode('utf-8')
-    nexus_server = request.getvalue('nexus_server').encode('utf-8')
-
-    admin = db_session.query(Admin).first()
-
-    if admin is not None:
-        if admin.username != username:
-            message = 'You are not an admin of the MyProxy Delegation Service'
-            status = "500 Internal Server Error"
-            headers = [
-                    ("X-Error-Message", message),
-                    ("Content-Type", "text/html") ]
-            start_response(status, headers)
-            return render_template('configure_error.html', message=message)
-
-    try:
-        access_token = get_access_token(username, password, nexus_server)
-    except Exception, e:
-        message='Could not get access token. %s' % str(e)
-        status = "500 Internal Server Error"
-        headers = [
-                ("X-Error-Message", message),
-                ("Content-Type", "text/html") ]
-        start_response(status, headers)
-        return render_template('configure_error.html', message=message)
-
-    client_id = 'myproxy:oa4mp,2012:/client/' \
-        + ''.join([random.choice('0123456789abcdef') for i in range(32)])
-    try:
-        (home_url, gateway_name, oauth_consumer_id, public_key) = register_go(
-                nexus_server, access_token, client_id, oauth_server)
-    except Exception, e:
-        message = str(e)
-        status = "500 Internal Server Error"
-        headers = [
-                ("X-Error-Message", message),
-                ("Content-Type", "text/html") ]
-        start_response(status, headers)
-        return render_template('configure_error.html', message=message)
-
-    application.logger.debug('Registered: gateway_name: %s, home_url: %s,'
-            ' oauth_consumer_id: %s'
-            % (gateway_name, home_url, oauth_consumer_id))
-
-    if admin is None:
-        db_session.add(Admin(username))
-
-    client = db_session.query(Client).\
-            filter(Client.oauth_consumer_key==oauth_consumer_id).first()
-    if client is None:
-        client = Client()
-    client.oauth_consumer_key=oauth_consumer_id
-    client.oauth_client_pubkey=public_key
-    client.name=gateway_name
-    client.home_url=home_url
-    client.myproxy_server=myproxy_server
-    db_session.add(client)
-
-    db_session.commit()
-
-    status = "200 Ok"
-    headers = [
-            ("Content-Type", "text/html") ]
-
-    res = render_template('configure_ok.html', gateway_name=gateway_name,
-            home_url=home_url, oauth_consumer_id=oauth_consumer_id,
-            public_key=public_key)
-    start_response(status, headers)
-    return res
-
-def get_access_token(username, password, server):
-    """
-    Get an access token from Globus Online Nexus.
-    Returns: an access token
-    """
-
-    basic_auth = base64.b64encode('%s:%s' % (username, password))
-    headers = { 'Content-type': 'app/json; charset=UTF-8',
-            'Hostname': server,
-            'Accept': 'app/json; charset=UTF-8',
-            'Authorization': 'Basic %s' % basic_auth }
-    c = httplib.HTTPSConnection(server, 443)
-    c.request('GET', '/goauth/token?grant_type=client_credentials',
-            headers=headers)
-    response = c.getresponse()
-    json_reader = None
-    if hasattr(json, 'loads'):
-        json_reader = json.loads
-    elif hasattr(json, 'JsonReader'):
-        json_reader_obj = json.JsonReader()
-        json_reader = json_reader_obj.read
-
-    if response.status == 403:
-        try :
-            message = json_reader(response.read()).get('message')
-        except Exception, e:
-            message = str(e)
-        raise Exception('403 Error: %s' % message)
-    elif response.status > 299 or response.status < 200:
-        raise Exception('%d Error: %s' % (response.status, response.reason))
-    data = json_reader(response.read())
-    token = data.get('access_token')
-    if token is None:
-        raise Exception('No access token in response')
-    return token
-
-
-def register_go(server, access_token, client_id, myproxy_server):
-    """
-    Trigger the nexus_server to register with the oauth_server.
-    Returns: home_url, gateway_name, public_key, oauth_consumer_id
-    """
-
-    headers = { 'Content-type': 'app/json',
-            'X-Globus-Goauthtoken': access_token}
-    body = '{"oauth_consumer_id": "%s", "oauth_server": "%s"}' \
-            % (client_id, myproxy_server)
-    c = httplib.HTTPSConnection(server, 443)
-    c.request('POST', '/identity_providers/oauth_registration',
-            body=body, headers=headers)
-    response = c.getresponse()
-    json_reader = None
-    if hasattr(json, 'loads'):
-        json_reader = json.loads
-    elif hasattr(json, 'JsonReader'):
-        json_reader_obj = json.JsonReader()
-        json_reader = json_reader_obj.read
-    if response.status == 403:
-        try:
-            message = json_reader(response.read()).get('message')
-        except Exception, e:
-            message = str(e)
-        raise Exception('403 Error: %s' % message)
-    elif response.status > 299 or response.status < 200:
-        raise Exception('%d Error: %s' % (response.status, response.reason))
-    data = json_reader(response.read())
-    home_url = data.get('home_url')
-    gateway_name = data.get('gateway_name')
-    oauth_consumer_id = data.get('oauth_consumer_id')
-    public_key = data.get('public_key')
-    return (home_url, gateway_name, oauth_consumer_id, public_key)
-
 
 """
 Implementation of OAuth for MyProxy Protocol,
@@ -380,10 +210,16 @@ def get_authorize(environ, start_response):
     transaction.temp_token_valid = 0
     db_session.add(transaction)
     db_session.commit()
+    styles = ['static/oauth.css']
+    css_path = os.path.join(
+        os.path.dirname(__file__), 'static', 'site.css')
+    if os.path.exists(css_path):
+        styles.append("static/site.css")
     res = render_template('authorize.html',
 	    client_name=client.name,
 	    client_url=client.home_url,
-	    temp_token=oauth_temp_token)
+	    temp_token=oauth_temp_token,
+            stylesheets=styles)
     status = "200 Ok"
     headers = [ ("Content-Type", "text/html")]
     start_response(status, headers)
@@ -412,11 +248,17 @@ def post_authorize(environ, start_response):
         application.logger.debug(str(e))
         status = "200 Ok"
         headers = [ ("Content-Type", "text/html") ]
+        styles = ['static/oauth.css']
+        css_path = os.path.join(
+            os.path.dirname(__file__), 'static', 'site.css')
+        if os.path.exists(css_path):
+            styles.append("static/site.css")
         res = render_template('authorize.html',
                     client_name=client.name,
                     client_url=client.home_url,
                     temp_token=oauth_temp_token,
-                    retry_message=str(e))
+                    retry_message=str(e),
+                    stylesheets=styles)
         start_response(status, headers, e)
         return res
 
