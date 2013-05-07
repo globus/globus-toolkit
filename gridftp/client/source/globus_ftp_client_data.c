@@ -688,7 +688,8 @@ globus_l_ftp_client_data_callback(
      * with an offset of 0 when an error occurs or during restart,
      * which will clobber what we've already seen
      */
-    if(target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM && length != 0)
+    if(target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM && 
+        target->type == GLOBUS_FTP_CONTROL_TYPE_ASCII && length != 0)
     {
 	(void) globus_ftp_client_restart_marker_set_ascii_offset(
 	    &client_handle->restart_marker,
@@ -1039,7 +1040,8 @@ globus_l_ftp_client_read_all_callback(
      * with an offset of 0 when an error occurs or during restart,
      * which will clobber what we've already seen
      */
-    if(target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM && bytes_read != 0)
+    if(target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM && 
+        target->type == GLOBUS_FTP_CONTROL_TYPE_ASCII && bytes_read != 0)
     {
 	client_handle->restart_marker.stream.offset = bytes_read;
 	client_handle->restart_marker.stream.ascii_offset = 
