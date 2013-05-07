@@ -38,7 +38,11 @@ chmod 755 $ROOT_DIR
 mkdir $ROOT_DIR/tmp 2>/dev/null
 chmod 1777 $ROOT_DIR/tmp
 mkdir $ROOT_DIR/dev 2>/dev/null
+if [ -x /dev/MAKEDEV ]; then
 /dev/MAKEDEV -d $ROOT_DIR/dev -x zero null random urandom
+elif [ -x /sbin/MAKEDEV ]; then
+/sbin/MAKEDEV -d $ROOT_DIR/dev -x zero null random urandom
+fi
 
 if [ ! -e /dev/null ]; then
     echo "Could not create /dev devices."

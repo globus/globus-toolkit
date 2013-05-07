@@ -3059,92 +3059,6 @@ globus_l_gfs_data_authorize(
                 session_info->username));
             goto pwent_error;
         }
-        
-        if(sharing_dn)
-        {
-            char *                      sharing_state;
-            
-            if(pwent && pwent->pw_dir)
-            {
-                op->session_handle->true_home = pwent->pw_dir;
-            }
-            else
-            {
-                op->session_handle->true_home = "/";
-            }
-            op->session_handle->username = session_info->username;
-
-            sharing_state = globus_i_gfs_config_string("sharing_state_dir");
-            op->session_handle->sharing_state_dir = 
-                globus_l_gfs_data_update_var_path(
-                    op->session_handle, 
-                    sharing_state ? sharing_state : "$HOME/.globus/sharing");
-
-            op->session_handle->username = NULL;
-            op->session_handle->true_home = NULL;
-
-            if(!op->session_handle->sharing_state_dir)
-            {
-                res = GlobusGFSErrorMemory("sharing state dir");
-                goto pwent_error;
-            }
-                        
-            if(sharing_attempted)
-            {
-                char *                  share_path = NULL;
-                
-                share_file = globus_common_create_string(
-                    "%s/share-%s",
-                    op->session_handle->sharing_state_dir,
-                    op->session_handle->sharing_id);
-
-                rc = access(share_file, F_OK);
-
-                if(rc != 0)
-                {
-                    GlobusGFSErrorGenericStr(res,
-                        ("Sharing not enabled for user '%s' from share id '%s'.",
-                        session_info->username, op->session_handle->sharing_id));
-                    globus_free(share_file);
-                    goto pwent_error;
-                }
-                
-                res = globus_l_gfs_data_read_share_file(share_file, &share_path);
-                if(res == GLOBUS_SUCCESS && share_path && share_path[0] == '/')
-                {
-                    op->session_handle->chroot_path = share_path;
-                }
-                else
-                {
-                    globus_gfs_log_message(
-                        GLOBUS_GFS_LOG_ERR,
-                        "Sharing error.  Invalid share_path or problem parsing share file %s.\n",
-                        share_file);
-                    GlobusGFSErrorGenericStr(res,
-                        ("Sharing error for user '%s' from share id '%s'.",
-                        session_info->username, op->session_handle->sharing_id));
-                    goto pwent_error;
-                }
- 
-                globus_free(share_file);
-                share_file = NULL;
-               
-                globus_gfs_log_message(
-                    GLOBUS_GFS_LOG_INFO,
-                    "Access allowed for sharing of user '%s' from share id '%s'.  "
-                    "Sharee '%s' is restricted to '%s'.\n",
-                    session_info->username, 
-                    op->session_handle->sharing_id, 
-                    op->session_handle->sharing_sharee, 
-                    op->session_handle->chroot_path);
-                
-                if(op->session_handle->chroot_path[1] == '\0')
-                {
-                    globus_free(op->session_handle->chroot_path);
-                    op->session_handle->chroot_path = NULL;
-                }
-            }
-        }
     }
     /* if anonymous use and we are allowing it */
     else if(globus_i_gfs_config_bool("allow_anonymous") &&
@@ -3325,16 +3239,6 @@ globus_l_gfs_data_authorize(
             }
         }
         
-        if((chroot_dir = globus_i_gfs_config_string("chroot_path")) != NULL)
-        {
-            rc = chroot(chroot_dir);
-            if(rc != 0)
-            {
-                res = GlobusGFSErrorGeneric(
-                    "Unable to chroot.");
-                    goto uid_error;
-            }
-        }
 
         if(pwent->pw_uid == 0 && !globus_i_gfs_config_bool("allow_root"))
         {
@@ -3343,6 +3247,17 @@ globus_l_gfs_data_authorize(
             goto uid_error;
         }
 
+        if((chroot_dir = globus_i_gfs_config_string("chroot_path")) != NULL)
+        {
+            chdir(chroot_dir);
+            rc = chroot(chroot_dir);
+            if(rc != 0)
+            {
+                res = GlobusGFSErrorGeneric(
+                    "Unable to chroot.");
+                    goto uid_error;
+            }
+        }
         rc = setuid(pwent->pw_uid);
         if(rc != 0)
         {
@@ -3384,36 +3299,118 @@ globus_l_gfs_data_authorize(
             globus_libc_strdup(op->session_handle->true_home);
     }
     
-    if(sharing_attempted)
+    if(sharing_dn)
     {
-        char *                          tmp_restrict;
-        globus_list_t *                 tmp_list;
-
-        /* add state dir to sharing rp list */
-        if(!globus_list_empty(globus_l_gfs_path_alias_list_sharing))
+        char *                      sharing_state;
+        
+        if(pwent && pwent->pw_dir)
         {
-            tmp_restrict = globus_common_create_string(
-                "%c%s", 'N', op->session_handle->sharing_state_dir);
+            op->session_handle->true_home = pwent->pw_dir;
         }
         else
         {
-            tmp_restrict = globus_common_create_string(
-                "RW/,N%s,N~/.*", op->session_handle->sharing_state_dir);
-        }    
-                
-        res = globus_l_gfs_data_parse_restricted_paths(
-            NULL, tmp_restrict, &tmp_list, 0);
-        while(!globus_list_empty(tmp_list))
-        {
-            globus_list_insert(
-                &globus_l_gfs_path_alias_list_sharing, 
-                globus_list_remove(&tmp_list, tmp_list));
+            op->session_handle->true_home = "/";
         }
-        globus_free(tmp_restrict);
-        
-        if(res != GLOBUS_SUCCESS)
+        op->session_handle->username = session_info->username;
+
+        sharing_state = globus_i_gfs_config_string("sharing_state_dir");
+        op->session_handle->sharing_state_dir = 
+            globus_l_gfs_data_update_var_path(
+                op->session_handle, 
+                sharing_state ? sharing_state : "$HOME/.globus/sharing");
+
+        op->session_handle->username = NULL;
+        op->session_handle->true_home = NULL;
+
+        if(!op->session_handle->sharing_state_dir)
         {
+            res = GlobusGFSErrorMemory("sharing state dir");
             goto pwent_error;
+        }
+        
+        if(sharing_attempted)
+        {
+            char *                      share_path = NULL;
+            char *                      tmp_restrict;
+            globus_list_t *             tmp_list;
+    
+            share_file = globus_common_create_string(
+                "%s/share-%s",
+                op->session_handle->sharing_state_dir,
+                op->session_handle->sharing_id);
+
+            rc = access(share_file, F_OK);
+
+            if(rc != 0)
+            {
+                GlobusGFSErrorGenericStr(res,
+                    ("Sharing not enabled for user '%s' from share id '%s'.",
+                    session_info->username, op->session_handle->sharing_id));
+                goto pwent_error;
+            }
+            
+            res = globus_l_gfs_data_read_share_file(share_file, &share_path);
+            if(res == GLOBUS_SUCCESS && share_path && share_path[0] == '/')
+            {
+                op->session_handle->chroot_path = share_path;
+            }
+            else
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_ERR,
+                    "Sharing error.  Invalid share_path or problem parsing share file %s.\n",
+                    share_file);
+                GlobusGFSErrorGenericStr(res,
+                    ("Sharing error for user '%s' from share id '%s'.",
+                    session_info->username, op->session_handle->sharing_id));
+                goto pwent_error;
+            }
+
+            globus_free(share_file);
+            share_file = NULL;
+           
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_INFO,
+                "Access allowed for sharing of user '%s' from share id '%s'.  "
+                "Sharee '%s' is restricted to '%s'.\n",
+                session_info->username, 
+                op->session_handle->sharing_id, 
+                op->session_handle->sharing_sharee, 
+                op->session_handle->chroot_path);
+            
+            if(op->session_handle->chroot_path[1] == '\0')
+            {
+                globus_free(op->session_handle->chroot_path);
+                op->session_handle->chroot_path = NULL;
+            }
+
+
+            /* add state dir to sharing rp list */
+            if(!globus_list_empty(globus_l_gfs_path_alias_list_sharing))
+            {
+                tmp_restrict = globus_common_create_string(
+                    "%c%s", 'N', op->session_handle->sharing_state_dir);
+            }
+            else
+            {
+                tmp_restrict = globus_common_create_string(
+                    "RW/,N%s,N~/.*", op->session_handle->sharing_state_dir);
+            }    
+                    
+            res = globus_l_gfs_data_parse_restricted_paths(
+                NULL, tmp_restrict, &tmp_list, 0);
+            while(!globus_list_empty(tmp_list))
+            {
+                globus_list_insert(
+                    &globus_l_gfs_path_alias_list_sharing, 
+                    globus_list_remove(&tmp_list, tmp_list));
+            }
+            globus_free(tmp_restrict);
+            
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto pwent_error;
+            }
         }
     }
     
