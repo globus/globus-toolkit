@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.18
+Version:        2.0.19
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -163,6 +163,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Wed May 08 2013 Globus Toolkit <support@globus.org> 2.0.19-1
+- Update to 2.0.19
+
 * Fri Apr 26 2013 Globus Toolkit <support@globus.org> 2.0.17-1
 - Remove outdated sharing options SharingFile and SharingFileControl
 

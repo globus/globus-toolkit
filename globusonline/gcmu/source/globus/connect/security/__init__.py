@@ -4,10 +4,77 @@ from subprocess import Popen, PIPE
 
 __path__ = pkgutil.extend_path(__path__, __name__)
 
-def install_ca(cadir, ca_cert=None, ca_signing_policy=None):
+def install_signing_policy(signing_policy, cadir, ca_hash):
     """
-    Installs the go-ca-cert and signing policy from the GCMU package into
-    the specified cadir. 
+    Installs a signing policy file with the given hash to the trusted ca
+    directory.
+    """
+    if signing_policy is None:
+        raise Exception("Invalid signing_policy parameter")
+
+    if cadir is None:
+        raise Exception("Invalid cadir parameter")
+
+    if os.path.exists(signing_policy):
+        ca_signing_policy_file = file(signing_policy, "r")
+        try:
+            signing_policy = ca_signing_policy_file.read()
+        finally:
+            ca_signing_policy_file.close()
+
+    try:
+        old_umask = os.umask(0133)
+
+        go_ca_signing_file = open(
+                os.path.join(cadir, ca_hash+".signing_policy"), "w")
+        try:
+            go_ca_signing_file.write(signing_policy)
+        finally:
+            go_ca_signing_file.close()
+    finally:
+        os.umask(old_umask)
+
+def install_ca_cert(cert, cadir, ca_hash=None):
+    """
+    Installs a ca certificate file into the trusted ca
+    directory. If ca_hash is not none, then it is used, otherwise,
+    we determine it from the cert itself. The cert can be either a 
+    path to a file name or the certificate data
+    """
+    if cert is None:
+        raise Exception("Invalid cert parameter")
+    if cadir is None:
+        raise Exception("Invalid cadir parameter")
+
+    if os.path.exists(cert):
+        ca_cert_file = file(ca_cert, "r")
+        try:
+            cert = ca_cert_file.read()
+        finally:
+            ca_cert_file.close()
+
+    if ca_hash is not None:
+        ca_hash = get_certificate_hash_from_data(cert)
+
+    try:
+        old_umask = os.umask(0133)
+
+        go_ca_certfile = open(os.path.join(cadir, ca_hash+'.0'), "w")
+        try:
+            go_ca_certfile.write(cert)
+        finally:
+            go_ca_certfile.close()
+    finally:
+        os.umask(old_umask)
+
+def install_ca(cadir, ca_cert=None, ca_signing_policy=None, ca_hash=None):
+    """
+    Installs a CA certificate and signging policy into cadir.
+    The ca_cert and ca_signing_policy parameters can be either paths to
+    the files containing the data or the data itself.  If the ca_hash is not
+    specified, it is determined from the certificate data.  If the certificate
+    and policy aren't specified, the default go-ca-cert is from the package is
+    used.
     """
     if cadir == None:
         raise Exception("Invalid cadir parameter")
@@ -31,25 +98,11 @@ def install_ca(cadir, ca_cert=None, ca_signing_policy=None):
         ca_signing_policy = pkgutil.get_data(
                 "globus.connect.security", "go-ca-cert.signing_policy")
 
-    ca_hash = get_certificate_hash_from_data(ca_cert)
+    if ca_hash is None:
+        ca_hash = get_certificate_hash_from_data(ca_cert)
 
-    try:
-        old_umask = os.umask(0133)
-
-        go_ca_certfile = open(os.path.join(cadir, ca_hash+'.0'), "w")
-        try:
-            go_ca_certfile.write(ca_cert)
-        finally:
-            go_ca_certfile.close()
-
-        go_ca_signing_file = open(
-                os.path.join(cadir, ca_hash+".signing_policy"), "w")
-        try:
-            go_ca_signing_file.write(ca_signing_policy)
-        finally:
-            go_ca_signing_file.close()
-    finally:
-        os.umask(old_umask)
+    install_ca_cert(ca_cert, cadir, ca_hash)
+    install_signing_policy(ca_signing_policy, cadir, ca_hash)
 
 def get_certificate_subject(cert_file_path, nameopt=''):
     """
@@ -99,3 +152,12 @@ def get_certificate_hash_from_data(cert_data):
     hashval = out.strip()
 
     return hashval
+
+def openssl_version():
+    args = ['openssl', 'version']
+    proc = Popen(args, stdin=None, stdout=PIPE, stderr=None)
+    (out,err) = proc.communicate()
+    version = out.split()[1]
+    return int(version.split(".")[0])
+    
+

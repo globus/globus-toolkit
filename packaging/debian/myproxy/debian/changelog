@@ -1,3 +1,9 @@
+myproxy (5.9-6) unstable; urgency=low
+
+  * add dependencies
+
+ -- Globus Toolkit <support@globus.org>  Wed, 08 May 2013 10:43:10 -0400
+
 myproxy (5.9-5) unstable; urgency=low
 
   * typo

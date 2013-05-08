@@ -1,0 +1,13 @@
+# Format:
+#------------------------------------------------------------------------
+#  token type  | def.authority |                value              
+#--------------|---------------|-----------------------------------------
+# EACL entry #1|
+
+access_id_CA      X509      '/C=US/O=Globus Consortium/OU=Globus Online/CN=Transfer CA 2 Alpha'
+
+pos_rights        globus    CA:sign
+
+cond_subjects     globus   '"/C=US/O=Globus Consortium/OU=Globus Online/CN=Transfer Intermediate CA 2"'
+
+# end of EACL

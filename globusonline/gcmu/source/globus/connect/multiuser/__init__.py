@@ -237,6 +237,11 @@ class GCMU(object):
         self.api = api
         self.service = None
 
+        default_dir = os.path.join(self.conf.root, self.conf.DEFAULT_DIR)
+        if not os.path.exists(default_dir):
+            self.logger.debug("Creating directory: " + default_dir)
+            os.makedirs(default_dir, 0755)
+
         self.cilogon_crl_cron_path = os.path.join(self.conf.root,
                 "etc/cron.hourly",
                 "globus-connect-multiuser-crls")
@@ -366,6 +371,25 @@ class GCMU(object):
                 certdir,
                 relay_cert,
                 relay_signing_policy)
+        # Install New Globus Online CA and intermediate CA signing policy
+        go_transfer_ca_2_cert = pkgutil.get_data(
+                "globus.connect.security",
+                "go_transfer_ca_2.pem")
+        go_transfer_ca_2_signing_policy = pkgutil.get_data(
+                "globus.connect.security",
+                "go_transfer_ca_2.signing_policy")
+        globus.connect.security.install_ca(
+                certdir,
+                go_transfer_ca_2_cert,
+                go_transfer_ca_2_signing_policy)
+        intermediate_hashes = ['14396025', 'c7ab88a4']
+        go_transfer_ca_2_int_signing_policy = pkgutil.get_data(
+                "globus.connect.security",
+                "go_transfer_ca_2_int.signing_policy")
+        globus.connect.security.install_signing_policy(
+                go_transfer_ca_2_int_signing_policy,
+                certdir,
+                intermediate_hashes[globus.connect.security.openssl_version()])
 
         # Install MyProxy CA
         myproxy_server = self.conf.get_myproxy_server()

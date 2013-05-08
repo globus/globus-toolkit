@@ -57,7 +57,7 @@ Description: MyProxy Library Documentation
 Package: myproxy
 Section: net
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libmyproxy5
+Depends: ${shlibs:Depends}, ${misc:Depends}, libmyproxy5, libglobus-gss-assist3, libglobus-usage0
 Description: MyProxy Client Programs
  MyProxy is open source software for managing X.509 Public Key Infrastructure
  (PKI) security credentials (certificates and private keys). MyProxy
