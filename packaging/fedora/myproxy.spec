@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.9
-Release:	7%{?dist}
+Release:	8%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -36,11 +36,12 @@ BuildRequires:  graphviz
 BuildRequires:  voms-devel >= 1.9.12.1
 %endif
 BuildRequires:  cyrus-sasl-devel
+%if 0%{?suse_version} != 0
+BuildRequires:  openldap2-devel
+%else
 %if "%{?rhel}" != "4"
 BuildRequires:  openldap-devel >= 2.3
 %endif
-%if 0%{?suse_version} != 0
-BuildRequires:  openldap2-devel
 %endif
 BuildRequires:  grid-packaging-tools  >= 3.4
 BuildRequires:  doxygen
