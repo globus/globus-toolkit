@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.9
-Release:	6%{?dist}
+Release:	7%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -38,6 +38,9 @@ BuildRequires:  voms-devel >= 1.9.12.1
 BuildRequires:  cyrus-sasl-devel
 %if "%{?rhel}" != "4"
 BuildRequires:  openldap-devel >= 2.3
+%endif
+%if 0%{?suse_version} != 0
+BuildRequires:  openldap2-devel
 %endif
 BuildRequires:  grid-packaging-tools  >= 3.4
 BuildRequires:  doxygen
@@ -473,6 +476,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Wed May 08 2013 Globus Toolkit <support@globus.org> - 5.9-7
+- dependency: openldap2-devel for suse
+
 * Fri Mar 15 2013 Globus Toolkit <support@globus.org> - 5.9-6
 - Read from /etc/myproxy-server.d when starting the service
 
