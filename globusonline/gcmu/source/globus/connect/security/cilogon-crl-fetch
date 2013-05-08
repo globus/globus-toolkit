@@ -1,0 +1,6 @@
+#! /bin/sh
+
+crl="$(curl -Ls http://crl.cilogon.org/cilogon-basic.crl)"
+if [ "$crl" != "" ]; then
+    echo "$crl" > "%(certdir)s/%(cilogon_hash)s.r0"
+fi

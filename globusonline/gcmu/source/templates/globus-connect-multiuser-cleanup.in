@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-libdir=""
+libdir="@libdir@"
 if [ "$libdir" != "" ]; then
     PYTHONPATH="$libdir/globus-connect-multiuser${PYTHONPATH:+:$PYTHONPATH}"
     export PYTHONPATH
 fi
-exec "@PYTHON@" -mglobus.connect.multiuser.setup "$@"
+exec "@PYTHON@" -mglobus.connect.multiuser.cleanup "$@"

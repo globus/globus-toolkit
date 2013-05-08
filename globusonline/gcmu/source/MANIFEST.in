@@ -1,8 +1,10 @@
 recursive-include globus *.py
+include man/man8/*.8
 include templates/*.in
-include globus-connect-multiuser-setup
+include globus-connect-multiuser-*setup
+include globus-connect-multiuser-*cleanup
 include globus-connect-multiuser.conf
 include globus/connect/security/*.pem
 include globus/connect/security/*.signing_policy
 include globus/connect/multiuser/mapapp-template
-include globus/connect/multiuser/setup/version
+include globus/connect/multiuser/version

@@ -4,7 +4,7 @@ from subprocess import Popen, PIPE
 
 __path__ = pkgutil.extend_path(__path__, __name__)
 
-def install_ca(cadir, ca_cert = None, ca_signing_policy = None):
+def install_ca(cadir, ca_cert=None, ca_signing_policy=None):
     """
     Installs the go-ca-cert and signing policy from the GCMU package into
     the specified cadir. 
@@ -12,11 +12,25 @@ def install_ca(cadir, ca_cert = None, ca_signing_policy = None):
     if cadir == None:
         raise Exception("Invalid cadir parameter")
 
+    if ca_cert is not None and os.path.exists(ca_cert):
+        ca_cert_file = file(ca_cert, "r")
+        try:
+            ca_cert = ca_cert_file.read()
+        finally:
+            ca_cert_file.close()
+    if ca_signing_policy is not None and os.path.exists(ca_signing_policy):
+        ca_signing_policy_file = file(ca_signing_policy, "r")
+        try:
+            ca_signing_policy = ca_signing_policy_file.read()
+        finally:
+            ca_signing_policy_file.close()
+
     if ca_cert is None:
         ca_cert = pkgutil.get_data("globus.connect.security", "go-ca-cert.pem")
     if ca_signing_policy is None:
         ca_signing_policy = pkgutil.get_data(
                 "globus.connect.security", "go-ca-cert.signing_policy")
+
     ca_hash = get_certificate_hash_from_data(ca_cert)
 
     try:
@@ -81,7 +95,7 @@ def get_certificate_hash_from_data(cert_data):
     if returncode != 0:
         raise Exception("Error " + str(returncode) +
             " getting certificate subject from " +
-            cert_file_path + "\n" + err)
+            cert_data + "\n" + err)
     hashval = out.strip()
 
     return hashval

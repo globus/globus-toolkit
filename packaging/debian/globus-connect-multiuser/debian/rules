@@ -58,9 +58,21 @@ build-stamp: patch-template
 install-stamp: build-stamp
 	python setup.py install --install-layout=deb --root=$(INSTALLDIR) --no-compile
 	cd transferapiclient; python setup.py install --install-layout=deb --install-lib=$(libdir)/globus-connect-multiuser --root=$(INSTALLDIR) --no-compile
-	find debian/tmp -type f | while read filename; do \
+	find debian/tmp -type f -name 'globus-connect-multiuser-setup*' -o -name 'globus-connect-multiuser-cleanup*'| while read filename; do \
 		echo "$$filename" |sed -e s"|debian/tmp/||"; \
 	done > debian/globus-connect-multiuser.install
+	find debian/tmp -type f -name 'globus-connect-multiuser-io-*' | while read filename; do \
+		echo "$$filename" |sed -e s"|debian/tmp/||"; \
+	done > debian/globus-connect-multiuser-io.install
+	find debian/tmp -type f -name 'globus-connect-multiuser-id-*' | while read filename; do \
+		echo "$$filename" |sed -e s"|debian/tmp/||"; \
+	done > debian/globus-connect-multiuser-id.install
+	find debian/tmp -type f -name 'globus-connect-multiuser-web-*' | while read filename; do \
+		echo "$$filename" |sed -e s"|debian/tmp/||"; \
+	done > debian/globus-connect-multiuser-web.install
+	find debian/tmp -type f -a -not -name 'globus-connect-multiuser-*up*' | while read filename; do \
+		echo "$$filename" |sed -e s"|debian/tmp/||"; \
+	done > debian/globus-connect-multiuser-common.install
 	dh_install
 
 install: install-stamp

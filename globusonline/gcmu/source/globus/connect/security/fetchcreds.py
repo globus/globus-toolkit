@@ -51,7 +51,7 @@ class FetchCreds(object):
         self.certfile = None
         self.keyfile = None
         self.debug = False
-        self.pipe_env = copy.copy(os.environ)
+        self.pipe_env = copy.deepcopy(os.environ)
 
         self.data = {}
 

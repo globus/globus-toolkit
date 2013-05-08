@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.17
+Version:        2.0.18
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -20,21 +20,9 @@ BuildArch:      noarch
 %global python  python
 %endif
 
-Requires:       globus-gridftp-server-progs >= 6.24
-Requires:       globus-gass-copy-progs
-Requires:       globus-gss-assist-progs
-Requires:       myproxy
-Requires:       myproxy-server
-Requires:       gsi-openssh
-Requires:       gsi-openssh-clients
-Requires:       globus-gsi-cert-utils-progs
-Requires:       globus-simple-ca
-Requires:       globus-gridmap-verify-myproxy-callout >= 1.2
-Requires:       globus-gridmap-eppn-callout >= 0.4
-Requires:       globus-gsi-credential >= 5.5
-Requires:	%{python}
-Obsoletes:      gcmu
-
+Requires:       globus-connect-multiuser-io
+Requires:       globus-connect-multiuser-id
+Requires:       globus-connect-multiuser-web
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -44,6 +32,77 @@ using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name} package contains:
 Globus Connect Multi-User
+
+%package common
+Requires:	%{python}
+Obsoletes:      gcmu
+Summary:        Globus Connect Multi-User Common files
+Group:          System Environment/Libraries
+%description common
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The %{name}-common package contains:
+Globus Connect Multi-User Common Files
+
+%package id
+Requires:       myproxy
+Requires:       myproxy-server
+Requires:       gsi-openssh
+Requires:       gsi-openssh-clients
+Requires:       globus-gsi-cert-utils-progs
+Requires:       globus-simple-ca
+Requires:       globus-connect-multiuser-common = %{version}
+Summary:        Globus Connect Multi-User ID for MyProxy configuration
+Group:          System Environment/Libraries
+%description id
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The %{name}-id package contains:
+Globus Connect Multi-User ID
+
+%package io
+Requires:       myproxy
+Requires:       gsi-openssh
+Requires:       gsi-openssh-clients
+Requires:       globus-gsi-cert-utils-progs
+Requires:       globus-gridftp-server-progs >= 6.24
+Requires:       globus-gass-copy-progs
+Requires:       globus-gss-assist-progs
+Requires:       globus-gridmap-verify-myproxy-callout >= 1.2
+Requires:       globus-gridmap-eppn-callout >= 0.4
+Requires:       globus-gsi-credential >= 5.5
+Requires:       globus-connect-multiuser-common = %{version}
+Summary:        Globus Connect Multi-User I/O for GridFTP configuration
+Group:          System Environment/Libraries
+%description io
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The %{name}-io package contains:
+Globus Connect Multi-User I/O
+
+%package web
+Requires:       myproxy
+Requires:       myproxy-oauth
+Requires:       globus-connect-multiuser-common = %{version}
+Summary:        Globus Connect Multi-User Web for MyProxy OAuth configuration
+Group:          System Environment/Libraries
+%description web
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The %{name}-web package contains:
+Globus Connect Multi-User Web
 
 %prep
 %setup -q -n %{_name}-%{version}
@@ -77,10 +136,31 @@ test -x /usr/lib/rpm/brp-python-bytecompile && \
 rm -rf $RPM_BUILD_ROOT
 
 %files
+%defattr(-,root,root,-)
 %{_bindir}/globus-connect-multiuser-setup
-/usr/lib*/python*
+%{_bindir}/globus-connect-multiuser-cleanup
+%{_mandir}/man8/globus-connect-multiuser-setup*
+%{_mandir}/man8/globus-connect-multiuser-cleanup*
+%files common
+%defattr(-,root,root,-)
 /usr/lib*/globus-connect-multiuser/*
+/usr/lib*/python*
 %config(noreplace) %{_sysconfdir}/%{name}.conf
+%files id
+%defattr(-,root,root,-)
+%{_bindir}/globus-connect-multiuser-id-setup
+%{_bindir}/globus-connect-multiuser-id-cleanup
+%{_mandir}/man8/globus-connect-multiuser-id-*
+%files io
+%defattr(-,root,root,-)
+%{_bindir}/globus-connect-multiuser-io-setup
+%{_bindir}/globus-connect-multiuser-io-cleanup
+%{_mandir}/man8/globus-connect-multiuser-io-*
+%files web
+%defattr(-,root,root,-)
+%{_bindir}/globus-connect-multiuser-web-setup
+%{_bindir}/globus-connect-multiuser-web-cleanup
+%{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
 * Fri Apr 26 2013 Globus Toolkit <support@globus.org> 2.0.17-1

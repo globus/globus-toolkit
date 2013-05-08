@@ -23,17 +23,38 @@ class ConfigFile(ConfigParser.ConfigParser):
     SECURITY_SECTION = "Security"
     GRIDFTP_SECTION = "GridFTP"
     MYPROXY_SECTION = "MyProxy"
+    OAUTH_SECTION = "OAuth"
 
+    # [GlobusOnline]
     USER_OPTION = "User"
     PASSWORD_OPTION = "Password"
-    DATA_DIRECTORY_OPTION = "DataDirectory"
+    GLOBUS_ONLINE_INSTANCE_OPTION = "Instance"
+    GLOBUS_ONLINE_INSTANCE_PRODUCTION = "Production"
+    GLOBUS_ONLINE_INSTANCE_TEST = "Test"
+    GLOBUS_ONLINE_INSTANCES = [
+            GLOBUS_ONLINE_INSTANCE_PRODUCTION,
+            GLOBUS_ONLINE_INSTANCE_TEST ]
+
+    # [Endpoint]
     NAME_OPTION = "Name"
     PUBLIC_OPTION = "Public"
     DEFAULT_DIRECTORY_OPTION = "DefaultDirectory"
+
+    # [Security]
     FETCH_CREDENTIAL_FROM_RELAY_OPTION = "FetchCredentialFromRelay"
     CERTIFICATE_FILE_OPTION = "CertificateFile"
     KEY_FILE_OPTION = "KeyFile"
     TRUSTED_CERTIFICATE_DIRECTORY_OPTION = "TrustedCertificateDirectory"
+    IDENTITY_METHOD_OPTION = "IdentityMethod"
+    IDENTITY_METHOD_MYPROXY = "MyProxy"
+    IDENTITY_METHOD_OAUTH = "OAuth"
+    IDENTITY_METHOD_CILOGON = "CILogon"
+    IDENTITY_METHODS = [
+        IDENTITY_METHOD_MYPROXY,
+        IDENTITY_METHOD_OAUTH,
+        IDENTITY_METHOD_CILOGON
+    ]
+
     AUTHORIZATION_METHOD_OPTION = "AuthorizationMethod"
     AUTHORIZATION_METHOD_MYPROXY_GRIDMAP_CALLOUT = "MyProxyGridmapCallout"
     AUTHORIZATION_METHOD_CILOGON = "CILogon"
@@ -42,28 +63,40 @@ class ConfigFile(ConfigParser.ConfigParser):
         AUTHORIZATION_METHOD_CILOGON
     ]
     CILOGON_IDENTITY_PROVIDER = "CILogonIdentityProvider"
-    GRIDMAP_FILE = "GridmapFile"
     
-    SERVER_OPTION = "Server"
-    SERVER_BEHIND_NAT_OPTION = "ServerBehindNAT"
+    # [GridFTP]
+    SERVER_OPTION = "Server"                        # Also [MyProxy and OAuth]
+    SERVER_BEHIND_NAT_OPTION = "ServerBehindNAT"    # Also [MyProxy and OAuth]
     INCOMING_PORT_RANGE_OPTION = "IncomingPortRange"
     OUTGOING_PORT_RANGE_OPTION= "OutgoingPortRange"
     DATA_INTERFACE_OPTION = "DataInterface"
     RESTRICT_PATHS_OPTION = "RestrictPaths"
-    SHARING_ENABLED_OPTION = "Sharing"
+    SHARING_OPTION = "Sharing"
     SHARING_DN = "SharingDN"
     SHARING_RESTRICT_PATHS = "SharingRestrictPaths"
     SHARING_DIR = "SharingStateDir"
     SHARING_CONTROL = "SharingControl"
     DEFAULT_SHARING_DN = "/C=US/O=Globus Consortium/OU=Globus Connect User" + \
         "/CN=__transfer__"
+
+    # [MyProxy]
+    # SERVER_OPTION as above
+    # SERVER_BEHIND_NAT_OPTION as above
     DN_OPTION = "DN"
     CA_OPTION = "CA"
     CA_DIRECTORY_OPTION = "CaDirectory"
     CA_PASSPHRASE_OPTION = "CaPassphrase"
-    USE_PAM_LOGIN_OPTION = "UsePamLogin"
     CA_SUBJECT_DN_OPTION = "CaSubjectDN"
+    USE_PAM_LOGIN_OPTION = "UsePamLogin"
     CONFIG_FILE_OPTION = "ConfigFile"
+
+    # [OAuth]
+    # SERVER_OPTION as above
+    # SERVER_BEHIND_NAT_OPTION as above
+    STYLESHEET_OPTION = "Stylesheet"
+    LOGO_OPTION = "Logo"
+    SSL_SERVER_CERT = "SSLServerCert"
+    SSL_SERVER_KEY = "SSLServerKey"
 
     DEFAULT_CONFIG_FILE = os.path.join("etc","globus-connect-multiuser.conf")
     DEFAULT_DIR = os.path.join("var","lib", "globus-connect-multiuser")
@@ -76,7 +109,7 @@ class ConfigFile(ConfigParser.ConfigParser):
     DEFAULT_GRIDMAP_FILE = os.path.join(DEFAULT_SECURITY_DIR, "grid-mapfile")
 
     def __init__(self, root="/", config_file=None):
-        defaults = copy.copy(os.environ)
+        defaults = copy.deepcopy(os.environ)
         defaults["HOSTNAME"] = gcmu.public_name()
         if "SHORT_HOSTNAME" not in defaults:
             defaults["SHORT_HOSTNAME"] = defaults["HOSTNAME"].split(".")[0]
@@ -136,6 +169,21 @@ class ConfigFile(ConfigParser.ConfigParser):
         if password == '':
             password = None
         return password
+
+    def get_go_instance(self):
+        instance = None
+        if self.has_option(
+                ConfigFile.GLOBUSONLINE_SECTION,
+                ConfigFile.GLOBUS_ONLINE_INSTANCE_OPTION):
+            instance = self.get(
+                ConfigFile.GLOBUSONLINE_SECTION,
+                ConfigFile.GLOBUS_ONLINE_INSTANCE_OPTION)
+        if instance == '' or instance is None:
+            instance = ConfigFile.GLOBUS_ONLINE_INSTANCES[0]
+        elif instance not in ConfigFile.GLOBUS_ONLINE_INSTANCES:
+            raise Exception("Invalid GlobusOnline Instance value %s" 
+                    % (instance))
+        return instance
 
     def get_endpoint_name(self):
         name = None
@@ -232,6 +280,21 @@ class ConfigFile(ConfigParser.ConfigParser):
             cadir = os.path.join(self.root, ConfigFile.DEFAULT_CADIR)
         return os.path.abspath(cadir)
 
+    def get_security_identity_method(self):
+        identity_method = ''
+        if self.has_option(
+                ConfigFile.SECURITY_SECTION,
+                ConfigFile.IDENTITY_METHOD_OPTION):
+            identity_method = self.get(
+                ConfigFile.SECURITY_SECTION,
+                ConfigFile.IDENTITY_METHOD_OPTION)
+        if identity_method == '':
+            identity_method = ConfigFile.IDENTITY_METHODS[0]
+        if identity_method not in ConfigFile.IDENTITY_METHODS:
+            raise Exception("Unknown Security.IdentityMethod %s" \
+                % (identity_method))
+        return identity_method
+
     def get_security_authorization_method(self):
         authorization_method = ''
         if self.has_option(
@@ -258,21 +321,6 @@ class ConfigFile(ConfigParser.ConfigParser):
             if cilogon_idp == '':
                 cilogon_idp = None
         return cilogon_idp
-
-    def get_security_gridmap_file(self):
-        gridmap_file = None
-        if self.has_option(
-                ConfigFile.SECURITY_SECTION,
-                ConfigFile.GRIDMAP_FILE):
-            gridmap_file = self.get(
-                ConfigFile.SECURITY_SECTION,
-                ConfigFile.GRIDMAP_FILE)
-            if gridmap_file == '':
-                gridmap_file = None
-        if gridmap_file is None:
-            gridmap_file = os.path.join(
-                self.root, ConfigFile.DEFAULT_GRIDMAP_FILE)
-        return gridmap_file
 
     def get_gridftp_server(self):
         server = None
@@ -369,13 +417,13 @@ class ConfigFile(ConfigParser.ConfigParser):
                 restrict_paths = None
         return restrict_paths
 
-    def get_gridftp_sharing_enabled(self):
+    def get_gridftp_sharing(self):
         sharing_enabled = False
         if self.has_option(ConfigFile.GRIDFTP_SECTION,
-                ConfigFile.SHARING_ENABLED_OPTION):
+                ConfigFile.SHARING_OPTION):
             sharing_enabled = self.getboolean(
                     ConfigFile.GRIDFTP_SECTION,
-                    ConfigFile.SHARING_ENABLED_OPTION)
+                    ConfigFile.SHARING_OPTION)
         return sharing_enabled
 
 
@@ -403,13 +451,14 @@ class ConfigFile(ConfigParser.ConfigParser):
 
         return sharing_rp
 
-    def get_gridftp_sharing_state_dir(self):
-        sharing_dir = None
+    def get_gridftp_sharing_file_control(self):
+        sharing_file_control = True
         if self.has_option(ConfigFile.GRIDFTP_SECTION,
-                ConfigFile.SHARING_DIR):
-            sharing_dir = self.get(ConfigFile.GRIDFTP_SECTION,
-                ConfigFile.SHARING_DIR)
-        return sharing_dir
+                ConfigFile.SHARING_FILE_CONTROL):
+            sharing_file_control = self.getboolean(
+                    ConfigFile.GRIDFTP_SECTION,
+                    ConfigFile.SHARING_FILE_CONTROL)
+        return sharing_file_control
 
     def get_gridftp_sharing_control(self):
         sharing_control = True
@@ -558,6 +607,80 @@ class ConfigFile(ConfigParser.ConfigParser):
             config_file = os.path.join(
                 self.root, ConfigFile.DEFAULT_DIR, 'myproxy-server.conf')
         return config_file
+
+    def get_oauth_server(self):
+        oauth_server = None
+        if self.has_option(ConfigFile.OAUTH_SECTION,
+                ConfigFile.SERVER_OPTION):
+            oauth_server = self.get(ConfigFile.OAUTH_SECTION,
+                    ConfigFile.SERVER_OPTION)
+            if oauth_server == '':
+                oauth_server = None
+            else:
+                if oauth_server == "localhost":
+                    oauth_server = gcmu.public_hostname()
+        elif self.get_security_identity_method() == \
+                ConfigFile.IDENTITY_METHOD_CILOGON:
+            oauth_server = "cilogon.org"
+        return oauth_server
+
+    def get_oauth_server_behind_nat(self):
+        server_behind_nat = False
+        if self.has_option(
+                ConfigFile.OAUTH_SECTION,
+                ConfigFile.SERVER_BEHIND_NAT_OPTION):
+            server_behind_nat = self.getboolean(
+                ConfigFile.OAUTH_SECTION,
+                ConfigFile.SERVER_BEHIND_NAT_OPTION)
+        return server_behind_nat
+
+    def get_oauth_stylesheet(self):
+        oauth_stylesheet = None
+        if self.has_option(
+                ConfigFile.OAUTH_SECTION,
+                ConfigFile.STYLESHEET_OPTION):
+            oauth_stylesheet = self.get(
+                ConfigFile.OAUTH_SECTION,
+                ConfigFile.STYLESHEET_OPTION)
+            if oauth_stylesheet == '':
+                oauth_stylesheet = None
+        return oauth_stylesheet
+
+    def get_oauth_logo(self):
+        oauth_logo = None
+        if self.has_option(
+                ConfigFile.OAUTH_SECTION,
+                ConfigFile.LOGO_OPTION):
+            oauth_logo = self.get(
+                ConfigFile.OAUTH_SECTION,
+                ConfigFile.LOGO_OPTION)
+            if oauth_logo == '':
+                oauth_logo = None
+        return oauth_logo
+
+    def get_oauth_ssl_server_cert(self):
+        oauth_ssl_cert = None
+        if self.has_option(
+                ConfigFile.OAUTH_SECTION,
+                ConfigFile.SSL_SERVER_CERT):
+            oauth_ssl_cert = self.get(
+                ConfigFile.OAUTH_SECTION,
+                ConfigFile.SSL_SERVER_CERT)
+            if oauth_ssl_cert == '':
+                oauth_ssl_cert = None
+        return oauth_ssl_cert
+
+    def get_oauth_ssl_server_key(self):
+        oauth_ssl_key = None
+        if self.has_option(
+                ConfigFile.OAUTH_SECTION,
+                ConfigFile.SSL_SERVER_KEY):
+            oauth_ssl_key = self.get(
+                ConfigFile.OAUTH_SECTION,
+                ConfigFile.SSL_SERVER_KEY)
+            if oauth_ssl_key == '':
+                oauth_ssl_key = None
+        return oauth_ssl_key
 
     def get_etc_gridftp_d(self):
         return os.path.join(self.root, "etc", "gridftp.d")
