@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.19-2) unstable; urgency=low
+
+  * move mkdir into postinst
+
+ -- Globus Toolkit <support@globus.org>  Wed, 08 May 2013 11:41:41 -0400
+
 globus-connect-multiuser (2.0.19-1) unstable; urgency=low
 
   * Update to 2.0.19
