@@ -1,0 +1,79 @@
+.TH globus-connect-multiuser-id-setup 8
+
+.SH NAME
+globus-connect-multiuser-id-setup - Configure a MyProxy server for use with Globus Online
+
+.SH SYNOPSIS
+.HP
+globus-connect-multiuser-id-setup [-h|--help]
+.HP
+globus-connect-multiuser-id-setup
+.br
+{-c FILENAME|--config-file=FILENAME}
+.br
+{-v|--verbose}
+.br
+{-r PATH|--root=PATH}
+.br
+
+.SH DESCRIPTION
+.P
+The
+.B globus-connect-multiuser-id-setup
+command generates MyProxy service
+configuration based on the globus-connect-multiuser configuration file, and
+starts the MyProxy server. Depending on features enabled in the configuration
+file, this process will include fetching a service credential from the Globus
+Connect CA, writing MyProxy configuration files in the /etc/myproxy.d/
+directory, restarting the MyProxy server, and enabling the MyProxy server to
+start at boot.
+.P
+If the 
+.B "-r PATH"
+or
+.B "--root=PATH"
+command-line option is used,
+.B globus-connect-multiuser-id-setup
+will write its MyProxy configuration and certificates in a subdirectory rooted
+at
+.I PATH
+instead of /. This means, for example, that
+.B globus-connect-multiuser-id-setup
+writes MyProxy configuration files in
+.IR "PATH/etc/gridftp.d" .
+.P
+The following options are available:
+.HP
+.B "-h, --help"
+.br
+Display help information
+.HP
+.B "-c FILENAME, --config-file=FILENAME"
+.br
+Use configuration file
+.I FILENAME
+instead of
+.I /etc/globus-connect-multiuser.conf
+.HP
+.B "-v, --verbose"
+.br
+Print more information about tasks
+.HP
+.B "-r PATH, --root=PATH"
+.br
+Add
+.I PATH
+as the directory prefix for the configuration files that
+globus-connect-multiuser-id-setup writes
+
+.SH ENVIRONMENT
+.HP
+.B GLOBUSONLINE_USER
+.br
+Default GlobusOnline user name
+.B GLOBUSONLINE_PASSWORD
+.br
+Default GlobusOnline password
+
+.SH "SEE ALSO"
+globus-connect-multiuser-id-cleanup(8)

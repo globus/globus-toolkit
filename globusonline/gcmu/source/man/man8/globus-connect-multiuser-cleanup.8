@@ -1,0 +1,94 @@
+.TH globus-connect-multiuser-cleanup 8
+.SH NAME
+.P
+globus-connect-multiuser-cleanup - Remove GridFTP, MyProxy, and OAuth configuration and remove it from a Globus Online endpoint
+
+.SH SYNOPSIS
+.HP
+globus-connect-multiuser-cleanup [-h|--help]
+.HP
+globus-connect-multiuser-cleanup
+.br
+{-c FILENAME|--config-file=FILENAME}
+.br
+{-v|--verbose}
+.br
+{-r PATH|--root=PATH}
+.br
+{-d|--delete-endpoint}
+
+.SH DESCRIPTION
+.P
+The
+.B globus-connect-multiuser-cleanup
+command deletes the GridFTP, MyProxy and OAuth service configurations
+previously created by running
+.B globus-connect-multiuser-setup
+and removes the GridFTP server from a Globus Online endpoint. It deletes
+configuration files, stops, and disables the services.
+.P
+If the
+.B -d
+or
+.B --delete-endpoint
+command-line option is used,
+.B globus-connect-multiuser-io-cleanup
+removes the endpoint named in the configuration file as well as cleaning up
+.BR "globus-connect-multiuser-setup" "-generated"
+configuration files.
+.P
+If the
+.B "-r PATH"
+or
+.B "--root=PATH"
+command-line option is used,
+.B globus-connect-multiuser-cleanup
+will write its GridFTP configuration and certificates in a subdirectory rooted
+at
+.I PATH
+instead of /. This means, for example, that
+.B globus-connect-multiuser-cleanup
+deletes GridFTP configuration files in
+.IR "PATH/etc/gridftp.d" .
+.P
+The following options are available:
+.HP
+.B "-h, --help"
+.br
+Display help information
+.HP
+.B "-c FILENAME, --config-file=FILENAME"
+.br
+Use configuration file
+.I FILENAME
+instead of
+.I "/etc/globus-connect-multiuser.conf"
+.HP
+.B "-v, --verbose"
+.br
+Print more information about tasks
+.HP
+.B "-r PATH, --root=PATH"
+.br
+Add
+.I PATH
+as the directory prefix for the configuration files that
+.B globus-connect-multiuser-io-cleanup
+writes.
+.HP
+.B "-d, --delete-endpoint"
+.br
+Delete the Globus Online endpoint
+
+.SH ENVIRONMENT
+.HP
+.B GLOBUSONLINE_USER
+.br
+Default GlobusOnline user name
+.HP
+.B GLOBUSONLINE_PASSWORD
+.br
+Default GlobusOnline password
+
+.SH SEE ALSO
+.BR "globus-connect-multiuser-setup(8)" ", " "globus-connect-multiuser-io-cleanup(8)" ", " "globus-connect-multiuser-id-cleanup(8)" ", " "globus-connect-multiuser-web-cleanup(8)"
