@@ -1,3 +1,9 @@
+globus-gridftp-server (6.26-1) unstable; urgency=low
+  * GT-388: perform sharing access check inside the chroot
+  * fix chroot setup script for different MAKEDEV location
+
+ -- Globus Toolkit <support@globus.org>  Wed, 08 May 2013 11:38:55 -0400
+
 globus-gridftp-server (6.25-1) unstable; urgency=low
 
   * GT-365: control sharing by individual share ids
