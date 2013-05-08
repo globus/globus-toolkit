@@ -78,7 +78,7 @@ if [ -d patches ]; then
    echo "Step: Patching..."
    for PATCH in `ls patches 2>/dev/null`; do
        echo "Applying $PATCH"
-       cat patches/$PATCH | patch -p0
+       cat patches/$PATCH | patch -d source-trees -p0
        if [ $? -ne 0 ]; then
            echo There was trouble applying patches/$PATCH
            exit 16
