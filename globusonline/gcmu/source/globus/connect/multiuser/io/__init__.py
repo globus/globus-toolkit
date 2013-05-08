@@ -409,6 +409,12 @@ server
                 os.remove(os.path.join(self.etc_gridftp_d, name))
         endpoint_name = self.conf.get_endpoint_name()
         server = self.conf.get_gridftp_server()
+        port = 2811
+        if "://" in server:
+            server = server.split("://",1)[1]
+        if ":" in server:
+            (server, port) = server.split(":",1)[0]
+
         if kwargs.get("delete"):
             self.api.endpoint_delete(endpoint_name)
         else:
@@ -451,12 +457,11 @@ server
         hostname = None
 
         if "://" in server:
-            (scheme, rest) = server.split("://", 1)
-            if ":" in rest:
-                (hostname, port_s) = rest.split(":", 1)
-                port = int(port_s)
-            else:
-                hostname = server
+            (scheme, server) = server.split("://", 1)
+
+        if ":" in server:
+            (hostname, port_s) = server.split(":", 1)
+            port = int(port_s)
         else:
             hostname = server
 
