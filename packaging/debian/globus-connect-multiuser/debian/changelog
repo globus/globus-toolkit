@@ -1,5 +1,11 @@
 globus-connect-multiuser (2.0.20-1) unstable; urgency=low
 
+  * Update to 2.0.21. Remove some config options.
+
+ -- Globus Toolkit <support@globus.org>  Thu, 09 May 2013 10:02:14 -0400
+
+globus-connect-multiuser (2.0.20-1) unstable; urgency=low
+
   * Update to 2.0.20
 
  -- Globus Toolkit <support@globus.org>  Wed, 08 May 2013 14:08:01 -0400

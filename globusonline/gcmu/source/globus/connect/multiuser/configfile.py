@@ -84,7 +84,7 @@ class ConfigFile(ConfigParser.ConfigParser):
     # SERVER_BEHIND_NAT_OPTION as above
     DN_OPTION = "DN"
     CA_OPTION = "CA"
-    CA_DIRECTORY_OPTION = "CaDirectory"
+    CA_DIRECTORY_OPTION = "CADirectory"
     CA_PASSPHRASE_OPTION = "CaPassphrase"
     CA_SUBJECT_DN_OPTION = "CaSubjectDN"
     USE_PAM_LOGIN_OPTION = "UsePamLogin"
@@ -296,19 +296,11 @@ class ConfigFile(ConfigParser.ConfigParser):
         return identity_method
 
     def get_security_authorization_method(self):
-        authorization_method = ''
-        if self.has_option(
-                ConfigFile.SECURITY_SECTION,
-                ConfigFile.AUTHORIZATION_METHOD_OPTION):
-            authorization_method = self.get(
-                ConfigFile.SECURITY_SECTION,
-                ConfigFile.AUTHORIZATION_METHOD_OPTION)
-        if authorization_method == '':
-            authorization_method = ConfigFile.AUTHORIZATION_METHODS[0]
-        if authorization_method not in ConfigFile.AUTHORIZATION_METHODS:
-            raise Exception("Unknown Security.AuthorizationMethod %s" \
-                % (authorization_method))
-        return authorization_method
+        if self.get_security_identity_method() == \
+                ConfigFile.IDENTITY_METHOD_CILOGON:
+            return ConfigFile.AUTHORIZATION_METHOD_CILOGON
+        else:
+            return ConfigFile.AUTHORIZATION_METHOD_MYPROXY_GRIDMAP_CALLOUT
 
     def get_security_cilogon_identity_provider(self):
         cilogon_idp = None
