@@ -37,6 +37,12 @@
 
 #define GLOBUS_I_CALLOUT_HASH_SIZE 64
 
+#ifdef WIN32
+#define MY_LIB_EXT ".dll"
+#else
+#define MY_LIB_EXT ".so"
+#endif
+
 static void
 globus_l_callout_library_table_element_free(
     void *                              element);
@@ -647,6 +653,7 @@ globus_callout_call_type(
     char *                              dlerror;
     char *                              flavor_start;
     char *                              file;
+    char                                library[1024];
     static char *                       _function_name_ =
         "globus_callout_handle_call_type";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
@@ -707,9 +714,17 @@ globus_callout_call_type(
              */
             
             *dlhandle = lt_dlopenext(current_datum->file);
+            if(*dlhandle == NULL)
+            {
+                /* older libtools dont search the extensions correctly */
+                snprintf(library, 1024, "%s" MY_LIB_EXT, current_datum->file);
+                library[1023] = 0;
+                *dlhandle = lt_dlopenext(library);
+            }
             
             if(*dlhandle == NULL)
             {
+                /* try again with flavor string removed */
                 flavor_start = strrchr(current_datum->file, '_');
                 if (flavor_start) {
                     file = strdup(current_datum->file);
@@ -720,18 +735,25 @@ globus_callout_call_type(
                         }
                     file[flavor_start - current_datum->file] = '\0';
                     *dlhandle = lt_dlopenext(file);
+                    if(*dlhandle == NULL)
+                    {
+                        /* older libtools dont search the extensions correctly */
+                        snprintf(library, 1024, "%s" MY_LIB_EXT, file);
+                        library[1023] = 0;
+                        *dlhandle = lt_dlopenext(library);
+                    }
                     free(file);
                 }
             }
-
             if(*dlhandle == NULL)
             {
                 GLOBUS_CALLOUT_ERROR_RESULT(
                     result,
                     GLOBUS_CALLOUT_ERROR_WITH_DL,
                     ("couldn't dlopen %s: %s\n",
-                     current_datum->file,
-                     (dlerror = lt_dlerror()) ? dlerror : "(null)"));
+                     library,
+                     (dlerror = lt_dlerror()) ? dlerror : 
+                        "unknown error, possibly file not found."));
                 goto exit;
             }
         }
