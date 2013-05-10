@@ -1,4 +1,4 @@
-globus-connect-multiuser (2.0.20-1) unstable; urgency=low
+globus-connect-multiuser (2.0.21-1) unstable; urgency=low
 
   * Update to 2.0.21. Remove some config options.
 
