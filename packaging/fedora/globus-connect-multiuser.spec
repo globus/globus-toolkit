@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.21
+Version:        2.0.22
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -163,6 +163,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Mon May 13 2013 Globus Toolkit <support@globus.org> 2.0.22-1
+- Update to 2.0.22. Fix path to version file.
+
 * Thu May 09 2013 Globus Toolkit <support@globus.org> 2.0.21-1
 - Update to 2.0.21. Remove some config options.
 

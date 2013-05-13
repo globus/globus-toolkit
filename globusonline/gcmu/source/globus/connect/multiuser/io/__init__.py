@@ -125,7 +125,7 @@ class IO(gcmu.GCMU):
         conf_file = file(conf_file_name, "w")
         try:
             version = pkgutil.get_data(
-                "globus.connect.multiuser.setup",
+                "globus.connect.multiuser",
                 "version")
             if version:
                 conf_file.write("usage_stats_id GCMU-%s" % (version))
