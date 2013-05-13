@@ -108,6 +108,7 @@ def configure(username=None, pwstdin=False, oauth_server=None, myproxy_server=No
     db_session.add(client)
 
     db_session.commit()
+    selinux_permissions()
 
 def get_access_token(username, password, server):
     """
@@ -189,6 +190,41 @@ myproxy-oauth-setup {-s | --stdin} {-u USER | --user=USER}
                     {-m SERVER| --myproxy-server=SERVER}
                     {-n SERVER| --nexus-api-server=SERVER}"""
 
+def selinux_permissions():
+    semanage = which("semanage")
+    restorecon = which("restorecon")
+    if semanage is not None:
+        args = [semanage, 'fcontext', '-a', '-t', 'httpd_sys_rw_content_t',
+                '/var/lib/myproxy-oauth/myproxy-oauth.db']
+        semanage_proc = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
+        (out, err) = semanage_proc.communicate()
+        if out is not None:
+            print out
+        if err is not None:
+            print >>sys.stderr, err
+
+    if restorecon is not None:
+        args = [restorecon, '/var/lib/myproxy-oauth/myproxy-oauth.db']
+        restorecon_proc = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
+        (out, err) = restorecon_proc.communicate()
+        if out is not None:
+            print out
+        if err is not None:
+            print >>sys.stderr, err
+
+def which(name):
+    exe_path = None
+    path_to_check = os.environ['PATH'].split(os.pathsep)
+    for sbin in  ["/usr/sbin", "/sbin"]:
+        if sbin not in path_to_check:
+            path_to_check.append(sbin)
+
+    for path in path_to_check:
+        exe_path = os.path.join(path, name)
+        if os.path.isfile(exe_path) and os.access(exe_path, os.X_OK):
+            return exe_path
+    return None
+
 if __name__ == '__main__':
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hsu:o:m:n:",
@@ -225,5 +261,4 @@ if __name__ == '__main__':
 
     configure(username=user, pwstdin=pwstdin, oauth_server=oauth_server,
                 myproxy_server=myproxy_server, nexus_server=nexus_server)
-
 # vim: syntax=python: nospell:
