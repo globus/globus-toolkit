@@ -1,3 +1,9 @@
+myproxy-oauth (0.7-1) unstable; urgency=low
+
+  * SELinux label db file
+
+ -- Globus Toolkit <support@globus.org>  Tue, 07 May 2013 11:17:04  -0400
+
 myproxy-oauth (0.6-1) unstable; urgency=low
 
   * offline setup

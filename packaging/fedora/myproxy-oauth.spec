@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.6
+Version:	0.7
 Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
