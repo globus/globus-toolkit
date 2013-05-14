@@ -1,4 +1,4 @@
-globus-connect-multiuser (2.0.22-2) unstable; urgency=low
+globus-connect-multiuser (2.0.23-2) unstable; urgency=low
 
   * Update to 2.0.23. Fixes to sharing-related config
 
