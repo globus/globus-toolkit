@@ -418,6 +418,18 @@ class ConfigFile(ConfigParser.ConfigParser):
                     ConfigFile.SHARING_OPTION)
         return sharing_enabled
 
+    def get_gridftp_sharing_state_dir(self):
+        sharing_state_dir = None
+        if self.has_option(ConfigFile.GRIDFTP_SECTION,
+                ConfigFile.SHARING_DIR):
+            sharing_state_dir = self.get(
+                ConfigFile.GRIDFTP_SECTION,
+                ConfigFile.SHARING_DIR)
+            if sharing_state_dir == '' :
+                sharing_state_dir = None
+        if sharing_state_dir is None:
+            sharing_state_dir = "$HOME/.globus/sharing"
+        return sharing_state_dir
 
     def get_gridftp_sharing_dn(self):
         sharing_dn = None

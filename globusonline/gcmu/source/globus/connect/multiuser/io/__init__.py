@@ -226,9 +226,9 @@ server
             sharing_dir = self.conf.get_gridftp_sharing_state_dir()
             if sharing_dir is not None:
                 conf_file.write("sharing_state_dir %s\n" % sharing_dir)
-            sharing_file = self.conf.get_gridftp_sharing_file()
-            if self.conf.get_gridftp_sharing_file_control():
-                conf_file.write("sharing_file_control 1\n")
+            sharing_control = self.conf.get_gridftp_sharing_control()
+            if sharing_control == False:
+                conf_file.write("sharing_control 0\n")
             os.symlink(conf_file_name, conf_link_name)
         finally:
             conf_file.close()

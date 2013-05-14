@@ -1,5 +1,11 @@
 globus-connect-multiuser (2.0.22-2) unstable; urgency=low
 
+  * Update to 2.0.23. Fixes to sharing-related config
+
+ -- Globus Toolkit <support@globus.org>  Mon, 14 May 2013 14:56:21 -0400
+
+globus-connect-multiuser (2.0.22-2) unstable; urgency=low
+
   * Add globus-connect-multiuser.prerm
 
  -- Globus Toolkit <support@globus.org>  Mon, 13 May 2013 08:19:44 -0400
