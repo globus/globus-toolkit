@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.25
+Version:        2.0.26
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -163,6 +163,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Thu May 15 2013 Globus Toolkit <support@globus.org> 2.0.26-1
+- Update to 2.0.26. Fix scoping problem, don't create sharing dir if None
+
 * Thu May 15 2013 Globus Toolkit <support@globus.org> 2.0.25-1
 - Update to 2.0.25. Avoid trying to configure non-local services
 

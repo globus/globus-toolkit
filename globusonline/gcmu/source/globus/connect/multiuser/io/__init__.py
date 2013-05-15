@@ -472,6 +472,8 @@ server
         myproxy_server = None
         myproxy_dn = None
         oauth_server = self.conf.get_oauth_server()
+        if ":" in oauth_server:
+            raise Exception("[OAuth] Server value must be a public host name only")
         if oauth_server is None:
             myproxy_server = self.conf.get_myproxy_server()
             myproxy_dn = self.conf.get_myproxy_dn()

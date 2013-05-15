@@ -468,7 +468,7 @@ class GCMU(object):
                         'certdir': certdir,
                         'cilogon_hash': cilogon_hash
                     })
-                    os.chmod(cilogon_crl_cron_path, 0755)
+                    os.chmod(self.cilogon_crl_cron_path, 0755)
                 finally:
                     cilogon_crl_cron_file.close()
         self.logger.debug("EXIT: GCMU.configure_trust_roots()")
