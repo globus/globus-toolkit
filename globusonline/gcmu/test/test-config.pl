@@ -52,7 +52,7 @@ sub cleanup
         unlink($f);
     }
     File::Path::rmtree("/var/lib/globus-connect-multiuser");
-    unlink("/var/lib/myproxy-oauth/myproxy-oauth.db")
+    unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
     return $rc;
 }
 
