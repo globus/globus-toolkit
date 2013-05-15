@@ -14,11 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Activate and deactivate the client library
 
 use strict;
 use File::Path;
-use Test;
+use Test::More;
 
 my @tests;
 my @todo;
@@ -53,6 +52,7 @@ sub cleanup
         unlink($f);
     }
     File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    unlink("/var/lib/myproxy-oauth/myproxy-oauth.db")
     return $rc;
 }
 
@@ -79,7 +79,7 @@ sub run_test
 
     $rc |= cleanup(@_);
 
-    ok($rc == 0);
+    ok($rc == 0, $testarray->[0]);
 }
 
 # Test Case #1:
@@ -98,7 +98,7 @@ push(@tests, ["io-cilogon.conf", "io"]);
 # i/o server using cilogon & sharing
 push(@tests, ["io-cilogon-sharing.conf", 'io']);
 
-plan tests => scalar(@tests);
+plan tests=>scalar(@tests);
 foreach (@tests)
 {
     run_test($_);
