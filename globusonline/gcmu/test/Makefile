@@ -12,6 +12,8 @@ dist:
 	tar -c -f - $(DIST_STAGING) | gzip -9c > $(DIST_FILE)
 	rm -rf $(DIST_STAGING)
 
+distname:
+	@echo $(DIST_FILE)
 distclean:
 	rm *.xml
 
