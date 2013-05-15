@@ -6,5 +6,6 @@ include globus-connect-multiuser-*cleanup
 include globus-connect-multiuser.conf
 include globus/connect/security/*.pem
 include globus/connect/security/*.signing_policy
+include globus/connect/security/cilogon-crl-fetch
 include globus/connect/multiuser/mapapp-template
 include globus/connect/multiuser/version
