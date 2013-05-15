@@ -12,14 +12,14 @@
 
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	5.0
-Release:	10%{?dist}
+Version:	5.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	openssl%{?_isa}
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Wed May 15 2013 Globus Toolkit <support@globus.org> - 5.1-1
+- GT-272: Increase default proxy key size
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 5.0-10
 - 5.2.3
 

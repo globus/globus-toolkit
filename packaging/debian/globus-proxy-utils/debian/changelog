@@ -1,3 +1,9 @@
+globus-proxy-utils (5.1-1) unstable; urgency=low
+
+  * GT-272: Increase default proxy key size
+
+ -- Globus Toolkit <support@globus.org>  Wed, 15 May 2013 09:47:55 -0400
+
 globus-proxy-utils (5.0-2) unstable; urgency=low
 
   * Update for 5.2.0 release
