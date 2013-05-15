@@ -18,7 +18,7 @@
 
 use strict;
 use File::Path;
-use Test;
+use Test::Simple;
 
 my @tests;
 my @todo;
@@ -79,7 +79,7 @@ sub run_test
 
     $rc |= cleanup(@_);
 
-    ok($rc == 0);
+    ok($rc == 0, $rc);
 }
 
 # Test Case #1:
