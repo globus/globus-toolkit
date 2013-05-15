@@ -47,11 +47,15 @@ class IO(gcmu.GCMU):
         if not os.path.exists(self.var_gridftp_d):
             os.makedirs(self.var_gridftp_d, 0755)
 
+    def is_local(self):
+        return self.is_local_gridftp()
+
     def setup(self, **kwargs):
         self.logger.debug("ENTER: IO.setup()")
 
-        if not self.is_local_gridftp():
+        if not self.is_local():
             self.logger.debug("No GridFTP server to configure on this node")
+            return
 
         self.configure_credential(**kwargs)
         self.configure_server(**kwargs)

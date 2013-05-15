@@ -54,11 +54,15 @@ class Web(gcmu.GCMU):
             self.dist_type = "rpm"
             self.http_conf_dir = '/etc/httpd/conf.d'
 
+    def is_local(self):
+        return self.is_local_oauth()
+
     def setup(self, **kwargs):
         self.logger.debug("ENTER: Web.setup()")
 
-        if not self.is_local_oauth():
+        if not self.is_local():
             self.logger.debug("No OAuth server to configure on this node")
+            return
 
         self.copy_auth_conf(**kwargs)
         self.register_oauth_server(**kwargs)
@@ -115,6 +119,8 @@ class Web(gcmu.GCMU):
         oauth_server = self.conf.get_oauth_server()
         user = self.api.username
         myproxy_server = self.conf.get_myproxy_server()
+        if myproxy_server is None:
+            raise Exception("Attempting to register OAuth with no MyProxy server defined")
         args = ["/usr/sbin/myproxy-oauth-setup", "-s", "-u",
                 user, "-m", myproxy_server, "-o", oauth_server]
         if self.conf.get_go_instance() == "Test":

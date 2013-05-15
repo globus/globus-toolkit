@@ -47,6 +47,9 @@ class ID(gcmu.GCMU):
         self.myproxy_mapapp_config = None
         self.service = "myproxy-server"
 
+    def is_local(self):
+        return self.is_local_myproxy()
+
     def setup(self, **kwargs):
         self.logger.debug("ENTER: ID.setup()")
 
