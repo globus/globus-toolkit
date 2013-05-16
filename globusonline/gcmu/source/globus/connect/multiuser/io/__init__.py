@@ -519,7 +519,7 @@ server
                 data[u'public'] = endpoint_public
 
             if kwargs.get("reset"):
-                servers = [new_gridftp_server]
+                servers_filtered = [new_gridftp_server]
             else:
                 servers_filtered = [x for x in data[u'DATA'] \
                     if x[u'hostname'] != None and
@@ -527,7 +527,7 @@ server
                             u'relay-disconnected.globusonline.org' and \
                        x[u'uri'] != gcmu.to_unicode(server)]
                 servers_filtered.append(new_gridftp_server)
-
+            data[u'DATA'] = servers_filtered
             data[u'myproxy_server'] = myproxy_server
             data[u'myproxy_dn'] = myproxy_dn
             data[u'oauth_server'] = oauth_server

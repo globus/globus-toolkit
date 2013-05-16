@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.30
+Version:        2.0.31
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -164,6 +164,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Thu May 16 2013 Globus Toolkit <support@globus.org> 2.0.31-1
+- Fix -s option to reset endpoint gridftp server
+
 * Thu May 16 2013 Globus Toolkit <support@globus.org> 2.0.30-1
 - Ignore myproxy CA cleanup if cacert.pem doesn't exist
 
