@@ -1,11 +1,11 @@
 Name:           globus-connect-multiuser
 Version:        2.0.27
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
 
 %global transferapi_name globusonline-transfer-api-client
-%global transferapi_version 0.10.14
+%global transferapi_version 0.10.15
 Group:          System Environment/Libraries
 License:        ASL 2.0
 URL:            http://www.globus.org/
@@ -164,6 +164,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Thu May 16 2013 Globus Toolkit <support@globus.org> 2.0.27-2
+- use new transfer api client
+
 * Thu May 16 2013 Globus Toolkit <support@globus.org> 2.0.27-1
 - Add conditional enable of mod_wsgi
 
