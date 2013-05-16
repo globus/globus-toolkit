@@ -1,6 +1,10 @@
 #! /bin/sh
 
-crl="$(curl -Ls http://crl.cilogon.org/cilogon-basic.crl)"
-if [ "$crl" != "" ]; then
-    echo "$crl" > "%(certdir)s/%(cilogon_hash)s.r0"
+crl_file="%(certdir)s/%(cilogon_hash)s.r0"
+new_crl_file="${crl_file}.new"
+curl -Ls "%(cilogon_url)s" -o "${new_crl_file}"
+if [ -s "${new_crl_file}" ]; then
+    mv "${new_crl_file}" "${crl_file}"
+else
+    rm -f "${new_crl_file}"
 fi

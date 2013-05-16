@@ -1,6 +1,6 @@
 Name:           globus-connect-multiuser
-Version:        2.0.27
-Release:        2%{?dist}
+Version:        2.0.28
+Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
 
@@ -164,6 +164,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Thu May 16 2013 Globus Toolkit <support@globus.org> 2.0.28-1
+- Update to 2.0.28
+- KOA-2583: Add CILogon Silver CA to set of trusted CAs in GCMU
+- KOA-2584: Add Globus Online Transfer CA 2 Alpha only if sharing is enabled on GCMU
+
 * Thu May 16 2013 Globus Toolkit <support@globus.org> 2.0.27-2
 - use new transfer api client
 

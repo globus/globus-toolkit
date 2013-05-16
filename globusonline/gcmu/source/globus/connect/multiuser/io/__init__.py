@@ -411,6 +411,9 @@ server
             if name.startswith("globus-connect-multiuser") \
                         or name.startswith("gcmu"):
                 os.remove(os.path.join(self.etc_gridftp_d, name))
+        self.cleanup_trust_roots()
+        self.stop()
+        self.disable()
         endpoint_name = self.conf.get_endpoint_name()
         server = self.conf.get_gridftp_server()
         port = 2811

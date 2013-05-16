@@ -236,15 +236,12 @@ class GCMU(object):
         self.force = force
         self.api = api
         self.service = None
+        self.cilogon_cas = ['cilogon-basic', 'cilogon-silver']
 
         default_dir = os.path.join(self.conf.root, self.conf.DEFAULT_DIR)
         if not os.path.exists(default_dir):
             self.logger.debug("Creating directory: " + default_dir)
             os.makedirs(default_dir, 0755)
-
-        self.cilogon_crl_cron_path = os.path.join(self.conf.root,
-                "etc/cron.hourly",
-                "globus-connect-multiuser-crls")
 
         self.errorcount = 0
 
@@ -372,24 +369,26 @@ class GCMU(object):
                 relay_cert,
                 relay_signing_policy)
         # Install New Globus Online CA and intermediate CA signing policy
-        go_transfer_ca_2_cert = pkgutil.get_data(
-                "globus.connect.security",
-                "go_transfer_ca_2.pem")
-        go_transfer_ca_2_signing_policy = pkgutil.get_data(
-                "globus.connect.security",
-                "go_transfer_ca_2.signing_policy")
-        globus.connect.security.install_ca(
-                certdir,
-                go_transfer_ca_2_cert,
-                go_transfer_ca_2_signing_policy)
-        intermediate_hashes = ['14396025', 'c7ab88a4']
-        go_transfer_ca_2_int_signing_policy = pkgutil.get_data(
-                "globus.connect.security",
-                "go_transfer_ca_2_int.signing_policy")
-        globus.connect.security.install_signing_policy(
-                go_transfer_ca_2_int_signing_policy,
-                certdir,
-                intermediate_hashes[globus.connect.security.openssl_version()])
+        # if sharing is enabled
+        if self.conf.get_gridftp_sharing():
+            go_transfer_ca_2_cert = pkgutil.get_data(
+                    "globus.connect.security",
+                    "go_transfer_ca_2.pem")
+            go_transfer_ca_2_signing_policy = pkgutil.get_data(
+                    "globus.connect.security",
+                    "go_transfer_ca_2.signing_policy")
+            globus.connect.security.install_ca(
+                    certdir,
+                    go_transfer_ca_2_cert,
+                    go_transfer_ca_2_signing_policy)
+            intermediate_hashes = ['14396025', 'c7ab88a4']
+            go_transfer_ca_2_int_signing_policy = pkgutil.get_data(
+                    "globus.connect.security",
+                    "go_transfer_ca_2_int.signing_policy")
+            globus.connect.security.install_signing_policy(
+                    go_transfer_ca_2_int_signing_policy,
+                    certdir,
+                    intermediate_hashes[globus.connect.security.openssl_version()])
 
         # Install MyProxy CA
         myproxy_server = self.conf.get_myproxy_server()
@@ -440,38 +439,156 @@ class GCMU(object):
                 self.logger.debug("myproxy bootstrap returned " + str(myproxy_bootstrap.returncode))
 
 
-        # Install CILogon CA
+        # Install CILogon CAs
         if self.conf.get_security_identity_method() == "CILogon":
-            cilogon_cert = pkgutil.get_data(
-                    "globus.connect.security",
-                    "cilogon-basic.pem")
-            cilogon_signing_policy = pkgutil.get_data(
-                    "globus.connect.security",
-                    "cilogon-basic.signing_policy")
-            globus.connect.security.install_ca(
-                certdir,
-                cilogon_cert,
-                cilogon_signing_policy)
+            for cilogon_ca in self.cilogon_cas:
+                cilogon_cert = pkgutil.get_data(
+                        "globus.connect.security",
+                        cilogon_ca + ".pem")
+                cilogon_signing_policy = pkgutil.get_data(
+                        "globus.connect.security",
+                        cilogon_ca + ".signing_policy")
 
-            # Install CILogon CRL Cron job
-            cilogon_hash = globus.connect.security.\
-                    get_certificate_hash_from_data(cilogon_cert)
+                globus.connect.security.install_ca(
+                    certdir,
+                    cilogon_cert,
+                    cilogon_signing_policy)
 
-            cilogon_crl_script = pkgutil.get_data(
-                    "globus.connect.security",
-                    "cilogon-crl-fetch")
+                # Install CILogon update CRL cron job
+                cilogon_hash = globus.connect.security.\
+                        get_certificate_hash_from_data(cilogon_cert)
 
-            if not os.path.exists(self.cilogon_crl_cron_path):
-                cilogon_crl_cron_file = file(self.cilogon_crl_cron_path, "w")
+                cilogon_crl_script = pkgutil.get_data(
+                        "globus.connect.security",
+                        "cilogon-crl-fetch")
+
+                cilogon_crl_cron_path = os.path.join(self.conf.root,
+                        "etc/cron.hourly",
+                        "globus-connect-multiuser-" + cilogon_ca + "-crl")
+
+                cilogon_crl_cron_file = file(cilogon_crl_cron_path, "w")
                 try:
                     cilogon_crl_cron_file.write(cilogon_crl_script % {
                         'certdir': certdir,
+                        'cilogon_url': 'http://crl.cilogon.org/' + \
+                            cilogon_ca + '.crl',
                         'cilogon_hash': cilogon_hash
                     })
-                    os.chmod(self.cilogon_crl_cron_path, 0755)
+                    os.chmod(cilogon_crl_cron_path, 0755)
                 finally:
                     cilogon_crl_cron_file.close()
         self.logger.debug("EXIT: GCMU.configure_trust_roots()")
+
+    def cleanup_trust_roots(self, **kwargs):
+        """
+        Clean up the certificate trust roots for services. The different
+        certificates that may be cleaned up are:
+        - Globus Connect Relay CA
+        - MyProxy CA
+        - CILogon CA
+
+        Also, if the CILogon CA is in the trust roots, remove the CRL
+        fetch cronjobs
+        """
+        self.logger.debug("ENTER: GCMU.cleanup_trust_roots()")
+        certdir = self.conf.get_security_trusted_certificate_directory()
+        if not os.path.exists(certdir):
+            return
+
+        hashes = []
+        # Remove Globus Connect Relay CA
+        relay_cert = pkgutil.get_data(
+                "globus.connect.security",
+                "go-ca-cert.pem")
+
+        hashes.append(globus.connect.security.get_certificate_hash_from_data(
+                relay_cert))
+
+        # Install New Globus Online CA and intermediate CA signing policy
+        # if sharing is enabled
+        if self.conf.get_gridftp_sharing():
+            go_transfer_ca_2_cert = pkgutil.get_data(
+                    "globus.connect.security",
+                    "go_transfer_ca_2.pem")
+            hashes.append(
+                    globus.connect.security.get_certificate_hash_from_data(
+                            go_transfer_ca_2_cert))
+            intermediate_hashes = ['14396025', 'c7ab88a4']
+            hashes.append(
+                    intermediate_hashes[globus.connect.security.openssl_version()])
+
+        # Install MyProxy CA
+        myproxy_server = self.conf.get_myproxy_server()
+        if myproxy_server is not None and self.is_local_myproxy():
+            # Local myproxy server, just copy the files into location
+            if self.conf.get_myproxy_ca():
+                myproxy_ca_dir = self.conf.get_myproxy_ca_directory()
+                myproxy_ca_cert = os.path.join(myproxy_ca_dir, "cacert.pem")
+                hashes.append(
+                        globus.connect.security.get_certificate_hash(
+                                myproxy_ca_cert))
+        elif myproxy_server is not None:
+            # Ugly hack to get what we might have downloaded during install
+            # time
+            temppath = tempfile.mkdtemp()
+            pipe_env['X509_CERT_DIR'] = temppath
+            pipe_env['X509_USER_CERT'] = ""
+            pipe_env['X509_USER_KEY'] = ""
+            pipe_env['X509_USER_PROXY'] = ""
+            if self.conf.get_myproxy_dn() is not None:
+                pipe_env['MYPROXY_SERVER_DN'] = self.conf.get_myproxy_dn()
+            else:
+                pipe_env['MYPROXY_SERVER_DN'] = \
+                        self.get_myproxy_dn_from_server()
+            args = [ 'myproxy-get-trustroots', '-b', '-s',
+                    self.conf.get_myproxy_server() ]
+            myproxy_bootstrap = Popen(args, stdout=PIPE, stderr=PIPE, 
+                env=pipe_env)
+            (out, err) = myproxy_bootstrap.communicate()
+            if out is not None:
+                self.logger.debug(out)
+            if err is not None:
+                self.logger.warn(err)
+            if myproxy_bootstrap.returncode != 0:
+                self.logger.debug("myproxy bootstrap returned " +
+                        str(myproxy_bootstrap.returncode))
+            for entry in os.listdir(temppath):
+                if entry.endswith(".0"):
+                    hashes.append(entry.split(".",1)[0])
+            shutil.rmtree(temppath, ignore_errors=True)
+
+        # CILogon CAs
+        if self.conf.get_security_identity_method() == "CILogon":
+            for cilogon_ca in self.cilogon_cas:
+                cilogon_cert = pkgutil.get_data(
+                        "globus.connect.security",
+                        cilogon_ca + ".pem")
+                hashes.append(
+                        globus.connect.security.get_certificate_hash_from_data(
+                                cilogon_cert))
+        for ca_hash in hashes:
+            ca_file = os.path.join(certdir, ca_hash+".0")
+            signing_policy_file = os.path.join(
+                    certdir,
+                    ca_hash+".signing_policy")
+            crl_file =  os.path.join(
+                    certdir,
+                    ca_hash+".r0")
+            if os.path.exists(ca_file):
+                os.remove(ca_file)
+            if os.path.exists(signing_policy_file):
+                os.remove(signing_policy_file)
+            if os.path.exists(crl_file):
+                os.remove(crl_file)
+
+        # CRL Fetch cronjobs
+        crondir = os.path.join(self.conf.root, "etc/cron.hourly")
+        for cronjob in os.listdir(crondir):
+            if cronjob.startswith("globus-connect-multiuser"):
+                cronfile = os.path.join(crondir, cronjob)
+                if os.path.exists(cronfile):
+                    os.remove(cronfile)
+        self.logger.debug("EXIT: GCMU.cleanup_trust_roots()")
 
     def get_myproxy_dn_from_server(self):
         self.logger.debug("ENTER: get_myproxy_dn_from_server()")

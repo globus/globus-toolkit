@@ -82,6 +82,7 @@ class ID(gcmu.GCMU):
         for name in os.listdir(myproxy_dir):
             if name.startswith("globus-connect-multiuser"):
                 os.remove(os.path.join(myproxy_dir, name))
+        self.cleanup_trust_roots()
         self.logger.debug("EXIT: IO:cleanup()")
 
 
