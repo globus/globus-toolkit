@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.30-1) unstable; urgency=low
+
+  * Ignore myproxy CA cleanup if cacert.pem doesn't exist
+
+ -- Globus Toolkit <support@globus.org>  Thu, 16 May 2013 16:50:39 -0400
+
 globus-connect-multiuser (2.0.29-1) unstable; urgency=low
 
   * Ignore MyProxy CA if using cilogon during cleanup

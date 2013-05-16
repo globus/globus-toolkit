@@ -533,9 +533,12 @@ class GCMU(object):
                 if self.conf.get_myproxy_ca():
                     myproxy_ca_dir = self.conf.get_myproxy_ca_directory()
                     myproxy_ca_cert = os.path.join(myproxy_ca_dir, "cacert.pem")
-                    hashes.append(
-                            globus.connect.security.get_certificate_hash(
-                                    myproxy_ca_cert))
+                    try:
+                        hashes.append(
+                                globus.connect.security.get_certificate_hash(
+                                        myproxy_ca_cert))
+                    except:
+                        pass
             elif myproxy_server is not None:
                 # Ugly hack to get what we might have downloaded during install
                 # time
