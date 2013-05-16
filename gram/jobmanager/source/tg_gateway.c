@@ -54,14 +54,14 @@ globus_i_gram_get_tg_gateway_user(
     xmlXPathContextPtr                  xpath_ctx;
     xmlXPathObjectPtr                   xresult;
     int                                 rc;
-    ASN1_OBJECT *                       asn1_desired_object;
+    ASN1_OBJECT *                       asn1_desired_object = NULL;
     int                                 cert_count;
     int                                 found_index;
     int                                 chain_index;
     X509                               *cert;
     X509_EXTENSION *                    extension;
     ASN1_OCTET_STRING                  *asn1_oct_string;
-    STACK_OF(X509)                     *chain;
+    STACK_OF(X509)                     *chain = NULL;
 
     *gateway_user = NULL;
 
@@ -95,7 +95,6 @@ globus_i_gram_get_tg_gateway_user(
             free(msg);
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
 
-            ASN1_OBJECT_free(asn1_desired_object);
             goto no_extension_in_cred_chain;
         }
 
@@ -113,7 +112,6 @@ globus_i_gram_get_tg_gateway_user(
                     rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
                     globus_gram_protocol_error_7_hack_replace_message(
                         "Unable to extract SAML assertion extension from certificate chain");
-                    ASN1_OBJECT_free(asn1_desired_object);
                     goto no_extension_in_cred_chain;
                 }
                 asn1_oct_string = X509_EXTENSION_get_data(extension);
@@ -122,7 +120,6 @@ globus_i_gram_get_tg_gateway_user(
                     rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
                     globus_gram_protocol_error_7_hack_replace_message(
                         "Unable to extract SAML assertion extension from certificate chain");
-                    ASN1_OBJECT_free(asn1_desired_object);
                     goto no_extension_in_cred_chain;
                 }
                 p = asn1_oct_string->data;
@@ -133,14 +130,12 @@ globus_i_gram_get_tg_gateway_user(
                     rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
                     globus_gram_protocol_error_7_hack_replace_message(
                         "Unable to convert SAML assertion text from DER to UTF8");
-                    ASN1_OBJECT_free(asn1_desired_object);
                     goto no_extension_in_cred_chain;
                 }
                 assertion_string = malloc(asn1_str->length + 1);
                 if (assertion_string == NULL)
                 {
                     rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-                    ASN1_OBJECT_free(asn1_desired_object);
                     goto no_extension_in_cred_chain;
                 }
                 memcpy(assertion_string, asn1_str->data, asn1_str->length);
@@ -311,6 +306,14 @@ empty_data_set:
 inquire_failed:
 no_extension_in_cred_chain:
 no_context:
+    if (asn1_desired_object != NULL)
+    {
+        ASN1_OBJECT_free(asn1_desired_object);
+    }
+    if (chain != NULL)
+    {
+        sk_X509_free(chain);
+    }
     return rc;
 #else
     *gateway_user = NULL;

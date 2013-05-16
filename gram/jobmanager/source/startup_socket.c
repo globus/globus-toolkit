@@ -1999,6 +1999,14 @@ request_load_failed:
                     &cred);
             cred = GSS_C_NO_CREDENTIAL;
         }
+        if (peername != NULL)
+        {
+            free(peername);
+        }
+        if (peer_cred_handle != NULL)
+        {
+            globus_gsi_cred_handle_destroy(peer_cred_handle);
+        }
 ackfailed:
 failed_import_cred:
         if (http_body_fd != -1)
@@ -2262,8 +2270,8 @@ globus_l_decode_gatekeeper_env(
     const char * endp = p + len;
     const char * cert_pem;
     X509 * cert;
-    BIO * b;
-    STACK_OF(X509) * chain;
+    BIO * b = NULL;
+    STACK_OF(X509) * chain = NULL;
 
     chain = sk_X509_new_null();
 
@@ -2301,11 +2309,14 @@ globus_l_decode_gatekeeper_env(
             cert = PEM_read_bio_X509(b, NULL, 0, NULL);
 
             globus_gsi_cred_set_cert(*cred_handle, cert);
+            X509_free(cert);
+            cert = NULL;
         }
         p += strlen(p) + 1;
     }
     globus_gsi_cred_set_cert_chain(*cred_handle, chain);
     sk_X509_pop_free(chain, X509_free);
+    BIO_free(b);
 
     return GLOBUS_SUCCESS;
 }

@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.52
+Version:	13.53
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -185,6 +185,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu May 16 2013 Globus Toolkit <support@globus.org> - 13.53-1
+- GT-311: globus job manager is leaking memory
+
 * Wed Apr 10 2013 Globus Toolkit <support@globus.org> - 13.52-1
 - GT-384: GRAM mishandles long script responses
 

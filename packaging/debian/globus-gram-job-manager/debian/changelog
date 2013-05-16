@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.53-1) unstable; urgency=low
+
+  * GT-311: globus job manager is leaking memory
+
+ -- Globus Toolkit <support@globus.org>  Thu, 16 May 2013 11:02:30 -0400
+
 globus-gram-job-manager (13.52-1) unstable; urgency=low
 
   * GT-384: GRAM mishandles long script responses
