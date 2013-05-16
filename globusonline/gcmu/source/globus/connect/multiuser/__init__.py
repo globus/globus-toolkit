@@ -517,46 +517,6 @@ class GCMU(object):
             hashes.append(
                     intermediate_hashes[globus.connect.security.openssl_version()])
 
-        # Install MyProxy CA
-        myproxy_server = self.conf.get_myproxy_server()
-        if myproxy_server is not None and self.is_local_myproxy():
-            # Local myproxy server, just copy the files into location
-            if self.conf.get_myproxy_ca():
-                myproxy_ca_dir = self.conf.get_myproxy_ca_directory()
-                myproxy_ca_cert = os.path.join(myproxy_ca_dir, "cacert.pem")
-                hashes.append(
-                        globus.connect.security.get_certificate_hash(
-                                myproxy_ca_cert))
-        elif myproxy_server is not None:
-            # Ugly hack to get what we might have downloaded during install
-            # time
-            temppath = tempfile.mkdtemp()
-            pipe_env['X509_CERT_DIR'] = temppath
-            pipe_env['X509_USER_CERT'] = ""
-            pipe_env['X509_USER_KEY'] = ""
-            pipe_env['X509_USER_PROXY'] = ""
-            if self.conf.get_myproxy_dn() is not None:
-                pipe_env['MYPROXY_SERVER_DN'] = self.conf.get_myproxy_dn()
-            else:
-                pipe_env['MYPROXY_SERVER_DN'] = \
-                        self.get_myproxy_dn_from_server()
-            args = [ 'myproxy-get-trustroots', '-b', '-s',
-                    self.conf.get_myproxy_server() ]
-            myproxy_bootstrap = Popen(args, stdout=PIPE, stderr=PIPE, 
-                env=pipe_env)
-            (out, err) = myproxy_bootstrap.communicate()
-            if out is not None:
-                self.logger.debug(out)
-            if err is not None:
-                self.logger.warn(err)
-            if myproxy_bootstrap.returncode != 0:
-                self.logger.debug("myproxy bootstrap returned " +
-                        str(myproxy_bootstrap.returncode))
-            for entry in os.listdir(temppath):
-                if entry.endswith(".0"):
-                    hashes.append(entry.split(".",1)[0])
-            shutil.rmtree(temppath, ignore_errors=True)
-
         # CILogon CAs
         if self.conf.get_security_identity_method() == "CILogon":
             for cilogon_ca in self.cilogon_cas:
@@ -566,6 +526,46 @@ class GCMU(object):
                 hashes.append(
                         globus.connect.security.get_certificate_hash_from_data(
                                 cilogon_cert))
+        else: # MyProxy CA
+            myproxy_server = self.conf.get_myproxy_server()
+            if myproxy_server is not None and self.is_local_myproxy():
+                # Local myproxy server, just copy the files into location
+                if self.conf.get_myproxy_ca():
+                    myproxy_ca_dir = self.conf.get_myproxy_ca_directory()
+                    myproxy_ca_cert = os.path.join(myproxy_ca_dir, "cacert.pem")
+                    hashes.append(
+                            globus.connect.security.get_certificate_hash(
+                                    myproxy_ca_cert))
+            elif myproxy_server is not None:
+                # Ugly hack to get what we might have downloaded during install
+                # time
+                temppath = tempfile.mkdtemp()
+                pipe_env['X509_CERT_DIR'] = temppath
+                pipe_env['X509_USER_CERT'] = ""
+                pipe_env['X509_USER_KEY'] = ""
+                pipe_env['X509_USER_PROXY'] = ""
+                if self.conf.get_myproxy_dn() is not None:
+                    pipe_env['MYPROXY_SERVER_DN'] = self.conf.get_myproxy_dn()
+                else:
+                    pipe_env['MYPROXY_SERVER_DN'] = \
+                            self.get_myproxy_dn_from_server()
+                args = [ 'myproxy-get-trustroots', '-b', '-s',
+                        self.conf.get_myproxy_server() ]
+                myproxy_bootstrap = Popen(args, stdout=PIPE, stderr=PIPE, 
+                    env=pipe_env)
+                (out, err) = myproxy_bootstrap.communicate()
+                if out is not None:
+                    self.logger.debug(out)
+                if err is not None:
+                    self.logger.warn(err)
+                if myproxy_bootstrap.returncode != 0:
+                    self.logger.debug("myproxy bootstrap returned " +
+                            str(myproxy_bootstrap.returncode))
+                for entry in os.listdir(temppath):
+                    if entry.endswith(".0"):
+                        hashes.append(entry.split(".",1)[0])
+                shutil.rmtree(temppath, ignore_errors=True)
+
         for ca_hash in hashes:
             ca_file = os.path.join(certdir, ca_hash+".0")
             signing_policy_file = os.path.join(
