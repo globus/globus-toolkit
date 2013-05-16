@@ -41,6 +41,8 @@ class Web(gcmu.GCMU):
         self.password = kwargs.get("password")
         self.enabled_mod_ssl = \
             "/var/lib/globus-connect-multiuser/enabled_mod_ssl"
+        self.enabled_mod_wsgi = \
+            "/var/lib/globus-connect-multiuser/enabled_mod_wsgi"
         self.enabled_default_ssl_site = \
             "/var/lib/globus-connect-multiuser/enabled_default_ssl_site"
         (distname, distver, distid) = platform.dist()
@@ -67,6 +69,7 @@ class Web(gcmu.GCMU):
         self.copy_auth_conf(**kwargs)
         self.register_oauth_server(**kwargs)
         self.enable_mod_ssl(**kwargs)
+        self.enable_mod_wsgi(**kwargs)
         self.enable_default_ssl_site(**kwargs)
         self.configure_trust_roots(**kwargs)
         self.restart(**kwargs)
@@ -79,8 +82,8 @@ class Web(gcmu.GCMU):
         self.disable_default_ssl_site(**kwargs)
         self.remove_auth_conf(**kwargs)
         self.disable_mod_ssl(**kwargs)
+        self.disable_mod_wsgi(**kwargs)
         self.restart(**kwargs)
-
 
     def copy_auth_conf(self, **kwargs):
         self.logger.debug("ENTER: Web.copy_auth_conf()")
@@ -150,6 +153,21 @@ class Web(gcmu.GCMU):
                 touched.close()
         self.logger.debug("EXIT: Web.enable_mod_ssl()")
 
+    def enable_mod_wsgi(self, **kwargs):
+        self.logger.debug("ENTER: Web.enable_mod_wsgi()")
+        if self.dist_type == 'deb':
+            if not os.path.exists("/etc/apache2/mods-available/mod_wsgi.load"):
+                enabler = Popen(["/usr/sbin/a2enmod","wsgi"],
+                        stdin=None, stdout=PIPE, stderr=PIPE)
+                (out, err) = enabler.communicate()
+                if out != "":
+                    self.logger.info(out)
+                if err != "":
+                    self.logger.warn(err)
+                touched = file(self.enabled_mod_wsgi, "w")
+                touched.close()
+        self.logger.debug("EXIT: Web.enable_mod_wsgi()")
+
     def disable_mod_ssl(self, **kwargs):
         self.logger.debug("EXIT: Web.disable_mod_ssl()")
         if self.dist_type == 'deb':
@@ -163,6 +181,20 @@ class Web(gcmu.GCMU):
                     self.logger.warn(err)
                 os.remove(self.enabled_mod_ssl)
         self.logger.debug("EXIT: Web.disable_mod_ssl()")
+
+    def disable_mod_wsgi(self, **kwargs):
+        self.logger.debug("EXIT: Web.disable_mod_wsgi()")
+        if self.dist_type == 'deb':
+            if os.path.exists(self.enabled_mod_wsgi):
+                disabler = Popen(["/usr/sbin/a2dismod","wsgi"],
+                        stdin=None, stdout=PIPE, stderr=PIPE)
+                (out, err) = disabler.communicate()
+                if out != "":
+                    self.logger.info(out)
+                if err != "":
+                    self.logger.warn(err)
+                os.remove(self.enabled_mod_wsgi)
+        self.logger.debug("EXIT: Web.disable_mod_wsgi()")
 
     def enable_default_ssl_site(self, **kwargs):
         if self.dist_type == 'deb':

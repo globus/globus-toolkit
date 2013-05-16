@@ -1,26 +1,32 @@
+globus-connect-multiuser (2.0.27-1) unstable; urgency=low
+
+  * Update to 2.0.27. Conditional enable of mod_wsgi
+
+ -- Globus Toolkit <support@globus.org>  Thu, 16 May 2013 09:10:27 -0400
+
 globus-connect-multiuser (2.0.26-1) unstable; urgency=low
 
   * Update to 2.0.26. Fix scoping problem, don't create sharing dir if None
 
- -- Globus Toolkit <support@globus.org>  Tue, 15 May 2013 16:35:48 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 15 May 2013 16:35:48 -0400
 
 globus-connect-multiuser (2.0.25-2) unstable; urgency=low
 
   * Update to 2.0.25. Avoid trying to configure non-local services
 
- -- Globus Toolkit <support@globus.org>  Tue, 15 May 2013 13:51:21 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 15 May 2013 13:51:21 -0400
 
 globus-connect-multiuser (2.0.24-2) unstable; urgency=low
 
   * Update to 2.0.24. Fixes to MANIFEST.in
 
- -- Globus Toolkit <support@globus.org>  Tue, 15 May 2013 11:55:59 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 15 May 2013 11:55:59 -0400
 
 globus-connect-multiuser (2.0.23-2) unstable; urgency=low
 
   * Update to 2.0.23. Fixes to sharing-related config
 
- -- Globus Toolkit <support@globus.org>  Mon, 14 May 2013 14:56:21 -0400
+ -- Globus Toolkit <support@globus.org>  Mon, 13 May 2013 14:56:21 -0400
 
 globus-connect-multiuser (2.0.22-2) unstable; urgency=low
 

@@ -1,6 +1,6 @@
 Name:           globus-connect-multiuser
-Version:        2.0.26
-Release:        2%{?dist}
+Version:        2.0.27
+Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
 
@@ -164,13 +164,16 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
-* Thu May 15 2013 Globus Toolkit <support@globus.org> 2.0.26-2
+* Thu May 16 2013 Globus Toolkit <support@globus.org> 2.0.27-1
+- Add conditional enable of mod_wsgi
+
+* Wed May 15 2013 Globus Toolkit <support@globus.org> 2.0.26-2
 - Require same version of other subpackages
 
-* Thu May 15 2013 Globus Toolkit <support@globus.org> 2.0.26-1
+* Wed May 15 2013 Globus Toolkit <support@globus.org> 2.0.26-1
 - Update to 2.0.26. Fix scoping problem, don't create sharing dir if None
 
-* Thu May 15 2013 Globus Toolkit <support@globus.org> 2.0.25-1
+* Wed May 15 2013 Globus Toolkit <support@globus.org> 2.0.25-1
 - Update to 2.0.25. Avoid trying to configure non-local services
 
 * Wed May 15 2013 Globus Toolkit <support@globus.org> 2.0.24-1

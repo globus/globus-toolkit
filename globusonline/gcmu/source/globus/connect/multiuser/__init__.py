@@ -513,8 +513,8 @@ class GCMU(object):
             systemctl_paths = ["/bin/systemctl", "/usr/bin/systemctl"]
             for systemctl in systemctl_paths:
                 if os.path.exists(systemctl):
-                    service_disable = [systemctl, "disable", self.service +
-                            ".service"]
+                    service_disable = [systemctl, "--quiet", "disable",
+                            self.service + ".service"]
                     break
 
         if service_disable is None:
@@ -547,8 +547,8 @@ class GCMU(object):
             systemctl_paths = ["/bin/systemctl", "/usr/bin/systemctl"]
             for systemctl in systemctl_paths:
                 if os.path.exists(systemctl):
-                    service_enable = [systemctl, "enable", self.service +
-                            ".service"]
+                    service_enable = [systemctl, "--quiet", "enable",
+                            self.service + ".service"]
                     break
 
         if service_enable is None:
