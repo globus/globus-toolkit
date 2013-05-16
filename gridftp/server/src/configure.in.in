@@ -93,6 +93,17 @@ conf_bindir="`eval_path $bindir`"
 conf_libdir="`eval_path $libdir`"
 conf_sysconfdir="`eval_path $sysconfdir`"
 conf_localstatedir="`eval_path $localstatedir`"
+
+case "$conf_libdir" in
+    /usr/lib|/usr/lib64)
+        libdir_line=""
+        ;;
+    *)
+        libdir_line="env += LD_LIBRARY_PATH=${conf_libdir}"
+        ;;
+esac
+
+AC_SUBST(libdir_line)
 AC_SUBST(conf_sbindir)
 AC_SUBST(conf_bindir)
 AC_SUBST(conf_libdir) 

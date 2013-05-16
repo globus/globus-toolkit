@@ -4,8 +4,8 @@ service gridftp
     instances = 100
     log_level = 0
     env = GLOBUS_LOCATION=@prefix@
-    env += LD_LIBRARY_PATH=@conf_libdir@
     env += PATH=@conf_sbindir@:@conf_bindir@
+    @libdir_line@
 #   might need additional envs for security
 
     server = @conf_sbindir@/globus-gridftp-server

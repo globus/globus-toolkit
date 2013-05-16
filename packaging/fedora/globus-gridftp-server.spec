@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.26
+Version:	6.27
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/updates/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -183,6 +183,12 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Thu May 16 2013 Globus Toolkit <support@globus.org> - 6.27-1
+- Allow variables in -sharing-rp
+- fix 32/64 rpm conflicts
+- create -sharing-state-dir when default
+- correctly handle a share root containing "
+
 * Wed May 08 2013 Globus Toolkit <support@globus.org> - 6.26-1
 - GT-388: perform sharing access check inside the chroot
 - fix chroot setup script for different MAKEDEV location

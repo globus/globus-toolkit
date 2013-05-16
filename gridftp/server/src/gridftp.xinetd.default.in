@@ -5,7 +5,7 @@ socket_type             = stream
 wait                    = no
 user                    = root
 env                     += GLOBUS_LOCATION=@prefix@
-env                     += LD_LIBRARY_PATH=@conf_libdir@
+@libdir_line@
 server                  = @conf_sbindir@/globus-gridftp-server
 server_args             = -i
 log_on_success          += DURATION

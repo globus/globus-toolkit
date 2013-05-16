@@ -1932,8 +1932,14 @@ globus_l_gfs_data_brain_ready_delay_cb(
 
     memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
 
-    op->session_handle->username = globus_libc_strdup(session_info->username);
-    op->session_handle->subject = globus_libc_strdup(session_info->subject);
+    if(!op->session_handle->username)
+    {
+        op->session_handle->username = globus_libc_strdup(session_info->username);
+    }
+    if(!op->session_handle->subject)
+    {
+        op->session_handle->subject = globus_libc_strdup(session_info->subject);
+    }
 
     if(globus_xio_contact_parse(
         &parsed_contact, session_info->host_id) == GLOBUS_SUCCESS)
@@ -2283,6 +2289,19 @@ globus_l_gfs_data_update_var_path(
         globus_free(path);
         path = new_path;
     }
+    if((var = strstr(path, "~")) != NULL)
+    {
+        char *                          tmp_home; 
+        
+        tmp_home = session_handle->home_dir ? 
+            session_handle->home_dir : session_handle->true_home;
+        *var = '\0';
+        var += 1;
+        new_path = globus_common_create_string(
+            "%s%s%s", path, tmp_home, var);
+        globus_free(path);
+        path = new_path;
+    }
         
     return path;
 }    
@@ -2296,7 +2315,7 @@ globus_l_gfs_data_update_restricted_paths(
     globus_list_t *                     list;
     globus_l_gfs_alias_ent_t *          alias_ent;
     globus_bool_t                       resort = GLOBUS_FALSE;
-    char *                              tmp_ptr;
+    char *                              var_path;
     GlobusGFSName(globus_l_gfs_data_update_restricted_paths);
     GlobusGFSDebugEnter();
     
@@ -2309,42 +2328,27 @@ globus_l_gfs_data_update_restricted_paths(
         {            
             alias_ent = globus_list_first(list);
             
-            if(alias_ent->alias[0] == '~')
+            if(alias_ent->alias[0] == '~' || strchr(alias_ent->alias, '$'))
             {
-                if(alias_ent->alias[1] != '\0')
-                {
-                    tmp_ptr = alias_ent->alias;
-                    alias_ent->alias = globus_common_create_string(
-                        "%s%s", session_handle->home_dir, tmp_ptr + 1);
-                    globus_free(tmp_ptr);
-                }
-                else
-                {
-                    globus_free(alias_ent->alias);
-                    alias_ent->alias = 
-                        globus_libc_strdup(session_handle->home_dir);
-                }
+                var_path = globus_l_gfs_data_update_var_path(
+                    session_handle, alias_ent->alias);
+                    
+                globus_free(alias_ent->alias);
+                alias_ent->alias = var_path;               
                 alias_ent->alias_len = strlen(alias_ent->alias);
                     
                 resort = GLOBUS_TRUE;
             }
 
-            if(alias_ent->realpath && alias_ent->realpath[0] == '~')
+            if(alias_ent->realpath && 
+                (alias_ent->realpath[0] == '~' || strchr(alias_ent->realpath, '$')))
             {
-                if(alias_ent->realpath[1] != '\0')
-                {
-                    tmp_ptr = alias_ent->realpath;
-                    alias_ent->realpath = globus_common_create_string(
-                        "%s%s", session_handle->home_dir, tmp_ptr + 1);
-                    globus_free(tmp_ptr);
-                }
-                else
-                {
-                    globus_free(alias_ent->realpath);
-                    alias_ent->realpath = 
-                        globus_libc_strdup(session_handle->home_dir);
-                }
-                alias_ent->realpath_len = strlen(alias_ent->realpath);
+                var_path = globus_l_gfs_data_update_var_path(
+                    session_handle, alias_ent->realpath);
+                    
+                globus_free(alias_ent->realpath);
+                alias_ent->realpath = var_path;               
+                alias_ent->realpath_len = strlen(alias_ent->realpath);                    
             }
         }
         
@@ -2355,6 +2359,8 @@ globus_l_gfs_data_update_restricted_paths(
         }
     }
 }
+
+#define GFS_RP_LEAD_CHARS "/~$*[?"
 
 static
 globus_result_t
@@ -2449,6 +2455,7 @@ globus_l_gfs_data_parse_restricted_paths(
                     
                 case '/':
                 case '~':
+                case '$':
                 case '*':
                 case '?':
                 case '[':
@@ -2463,7 +2470,7 @@ globus_l_gfs_data_parse_restricted_paths(
                     done = GLOBUS_TRUE;
                     GlobusGFSErrorGenericStr(result,
                         ("Path restriction entries must be full paths, "
-                        "prefixed only with R, W, or RW. "
+                        "prefixed only with R, W, or N."
                         "The entry '%s' is invalid.\n", ent_str));
                     return result;
                     break;
@@ -2499,9 +2506,9 @@ globus_l_gfs_data_parse_restricted_paths(
             ent->realpath_len = 0;
         }
         globus_free(ent_str);
-        
-        if((*ent->alias != '/' && *ent->alias != '~') ||
-            (ent->realpath && *ent->realpath != '/' && *ent->realpath != '~'))
+
+        if(strchr(GFS_RP_LEAD_CHARS, *ent->alias) == NULL ||
+            (ent->realpath && strchr(GFS_RP_LEAD_CHARS, *ent->alias) == NULL))
         {                
             globus_free(ent->alias);
             if(ent->realpath)
@@ -2720,6 +2727,7 @@ globus_l_gfs_data_read_share_file(
         if(!strcmp(optionbuf, "share_path"))
         {
             *share_path = strdup(valuebuf);
+            globus_url_string_hex_decode(*share_path);
         }
     }
 
@@ -3272,6 +3280,8 @@ globus_l_gfs_data_authorize(
         op->session_handle->gid_count * sizeof(gid_t));
     getgroups(op->session_handle->gid_count, op->session_handle->gid_array);
 
+    op->session_handle->username = globus_libc_strdup(session_info->username);
+
     if(pwent && pwent->pw_dir)
     {
         op->session_handle->true_home = globus_libc_strdup(pwent->pw_dir);
@@ -3285,8 +3295,6 @@ globus_l_gfs_data_authorize(
     if(custom_home_dir)
     {
         char *                          var_dir;
-        op->session_handle->username = 
-            globus_libc_strdup(session_info->username);
 
         var_dir = globus_l_gfs_data_update_var_path(
             op->session_handle, custom_home_dir);
@@ -3303,24 +3311,12 @@ globus_l_gfs_data_authorize(
     {
         char *                      sharing_state;
         
-        if(pwent && pwent->pw_dir)
-        {
-            op->session_handle->true_home = pwent->pw_dir;
-        }
-        else
-        {
-            op->session_handle->true_home = "/";
-        }
-        op->session_handle->username = session_info->username;
-
         sharing_state = globus_i_gfs_config_string("sharing_state_dir");
         op->session_handle->sharing_state_dir = 
             globus_l_gfs_data_update_var_path(
                 op->session_handle, 
                 sharing_state ? sharing_state : "$HOME/.globus/sharing");
 
-        op->session_handle->username = NULL;
-        op->session_handle->true_home = NULL;
 
         if(!op->session_handle->sharing_state_dir)
         {
@@ -3389,7 +3385,7 @@ globus_l_gfs_data_authorize(
             if(!globus_list_empty(globus_l_gfs_path_alias_list_sharing))
             {
                 tmp_restrict = globus_common_create_string(
-                    "%c%s", 'N', op->session_handle->sharing_state_dir);
+                    "N%s,N~/.*", op->session_handle->sharing_state_dir);
             }
             else
             {
@@ -4488,7 +4484,7 @@ globus_i_gfs_data_request_command(
                         int                 sharingfd;
                         
                         /* create state dir if default and doesn't exist */
-                        if(!globus_i_gfs_config_string("sharing_state_dir") && 
+                        if(strstr(op->session_handle->sharing_state_dir, "/.globus/sharing") && 
                             access(op->session_handle->sharing_state_dir, F_OK) < 0)
                         {
                             char *      tmp_dir;
@@ -4516,12 +4512,14 @@ globus_i_gfs_data_request_command(
                         {
                             struct stat tmp_stat;
                             char * tmp_content;
+                            char * tmp_enc;
+                            
+                            tmp_enc = globus_url_string_hex_encode(share_path, "\"");
                             
                             tmp_content = globus_common_create_string( 
                                 "#\n# This file is required in order to enable GridFTP file sharing.\n"
                                 "# If you remove this file, file sharing will no longer work.\n#\n\n"
-                                "share_path \"%s\"\n", share_path);
-                                
+                                "share_path \"%s\"\n", tmp_enc);
                             rc = fstat(sharingfd, &tmp_stat);
                             if(rc == 0 && tmp_stat.st_size == 0)
                             {
@@ -4533,6 +4531,7 @@ globus_i_gfs_data_request_command(
                                 result = GlobusGFSErrorSystemError(
                                     "Enabling sharing", errno);
                             }
+                            globus_free(tmp_enc);
                             globus_free(tmp_content);
                         }
                     }
@@ -4666,7 +4665,7 @@ share_delete_error:
                 else
                 {
                     /* create state dir if default and doesn't exist */
-                    if(!globus_i_gfs_config_string("sharing_state_dir") && 
+                    if(strstr(op->session_handle->sharing_state_dir, "/.globus/sharing") && 
                         access(op->session_handle->sharing_state_dir, F_OK) < 0)
                     {
                         char *      tmp_dir;
@@ -9412,6 +9411,9 @@ globus_i_gfs_data_session_start(
             op->session_handle->gid_count * sizeof(gid_t));
         getgroups(op->session_handle->gid_count, op->session_handle->gid_array);
 
+        op->session_handle->username = 
+            globus_libc_strdup(session_info->username);
+
         pwent = getpwuid(op->session_handle->uid);
         if(pwent && pwent->pw_dir)
         {
@@ -9426,8 +9428,6 @@ globus_i_gfs_data_session_start(
         if(custom_home_dir)
         {
             char *                          var_dir;
-            op->session_handle->username = 
-                globus_libc_strdup(session_info->username);
     
             var_dir = globus_l_gfs_data_update_var_path(
                 op->session_handle, custom_home_dir);
