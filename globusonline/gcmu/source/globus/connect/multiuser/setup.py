@@ -105,14 +105,20 @@ if __name__ == "__main__":
             print >>sys.stderr, "Unknown option %s" %(o)
             sys.exit(1)
 
-    socket.setdefaulttimeout(300)
+    try:
+        socket.setdefaulttimeout(300)
 
-    conf = ConfigFile(config_file=conf_filename, root=root)
-    api = get_api(conf)
-    id = ID(config_obj=conf, api=api, debug=debug)
-    web = Web(config_obj=conf, api=api, password=api.password, debug=debug)
-    io = IO(config_obj=conf, api=api, debug=debug)
-    id.setup()
-    web.setup()
-    io.setup(reset=reset)
+        conf = ConfigFile(config_file=conf_filename, root=root)
+        api = get_api(conf)
+        id = ID(config_obj=conf, api=api, debug=debug)
+        web = Web(config_obj=conf, api=api, password=api.password, debug=debug)
+        io = IO(config_obj=conf, api=api, debug=debug)
+        id.setup()
+        web.setup()
+        io.setup(reset=reset)
+        sys.exit(io.errorcount + id.errorcount + web.errorcount)
+    except KeyboardInterrupt, e:
+        print "Aborting..."
+        sys.exit(1)
+
 # vim: filetype=python:

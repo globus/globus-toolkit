@@ -92,11 +92,15 @@ if __name__ == "__main__":
             print >>sys.stderr, "Unknown option %s" %(o)
             sys.exit(1)
 
-    socket.setdefaulttimeout(300)
+    try:
+        socket.setdefaulttimeout(300)
 
-    conf = ConfigFile(config_file=conf_filename, root=root)
-    api = get_api(conf)
-    web = Web(config_obj=conf, api=api, debug=debug)
-    web.cleanup()
+        conf = ConfigFile(config_file=conf_filename, root=root)
+        api = get_api(conf)
+        web = Web(config_obj=conf, api=api, debug=debug)
+        web.cleanup()
+    except KeyboardInterrupt, e:
+        print "Aborting..."
+        sys.exit(1)
 
 # vim: filetype=python:

@@ -105,6 +105,7 @@ if __name__ == "__main__":
         api = get_api(conf)
         web = Web(config_obj=conf, api=api, password=api.password, debug=debug)
         web.setup()
+        sys.exit(web.errorcount)
     except KeyboardInterrupt, e:
         print "Aborting..."
         sys.exit(1)

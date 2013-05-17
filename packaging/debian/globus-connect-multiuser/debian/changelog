@@ -1,3 +1,10 @@
+globus-connect-multiuser (2.0.35-1) unstable; urgency=low
+
+  * non-zero exit when setup or cleanup fails
+  * trap keyboard interrupts and exit more quietly
+
+ -- Globus Toolkit <support@globus.org>  Fri, 17 May 2013 14:14:23 -0400
+
 globus-connect-multiuser (2.0.34-1) unstable; urgency=low
 
   * Fix replacing server uri on the same host without -s

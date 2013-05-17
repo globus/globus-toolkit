@@ -115,9 +115,14 @@ if __name__ == "__main__":
             print >>sys.stderr, "Unknown option %s" %(o)
             sys.exit(1)
 
-    conf = ConfigFile(config_file=conf_filename, root=root)
-    api = get_api(conf)
-    io = IO(config_obj=conf, api=api, debug=debug)
-    io.setup(reset=reset)
+    try:
+        conf = ConfigFile(config_file=conf_filename, root=root)
+        api = get_api(conf)
+        io = IO(config_obj=conf, api=api, debug=debug)
+        io.setup(reset=reset)
+        sys.exit(io.errorcount)
+    except KeyboardInterrupt, e:
+        print "Aborting.."
+        sys.exit(1);
 
 # vim: filetype=python:
