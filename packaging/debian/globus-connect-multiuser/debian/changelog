@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.32-1) unstable; urgency=low
+
+  * Update to 2.0.32. Assume non-resolvable name is local
+
+ -- Globus Toolkit <support@globus.org>  Fri, 17 May 2013 10:23:19 -0400
+
 globus-connect-multiuser (2.0.31-1) unstable; urgency=low
 
   * Fix -s option to reset endpoint gridftp server

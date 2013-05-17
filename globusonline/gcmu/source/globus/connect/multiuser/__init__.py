@@ -115,7 +115,10 @@ def is_private_ip(name):
     if re.match("^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$", name):
         addr = name
     else:
-        addr = socket.gethostbyname(name)
+        try:
+            addr = socket.gethostbyname(name)
+        except Exception, e:
+            return True
     octets = [int(x) for x in addr.split(".")]
     return (octets[0] == 10 or \
             (octets[0] == 172 and octets[1] >= 16 and octets[1] <= 31) or \
