@@ -55,6 +55,7 @@ $|=1;
 @tests = qw(
     test-config.pl
     test-reset.pl
+    double-server-config.pl
 );
 
 my $test_result = $harness->runtests(@tests);
