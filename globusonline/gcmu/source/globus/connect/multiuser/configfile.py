@@ -76,8 +76,7 @@ class ConfigFile(ConfigParser.ConfigParser):
     SHARING_RESTRICT_PATHS = "SharingRestrictPaths"
     SHARING_DIR = "SharingStateDir"
     SHARING_CONTROL = "SharingControl"
-    DEFAULT_SHARING_DN = "/C=US/O=Globus Consortium/OU=Globus Connect User" + \
-        "/CN=__transfer__"
+    DEFAULT_SHARING_DN = "/C=US/O=Globus Consortium/OU=Globus Online/OU=Transfer User/CN=__transfer__"
 
     # [MyProxy]
     # SERVER_OPTION as above

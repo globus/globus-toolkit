@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.32
+Version:        2.0.33
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -164,6 +164,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Fri May 17 2013 Globus Toolkit <support@globus.org> 2.0.33-1
+- Update to 2.0.33. New sharing DN
+
 * Fri May 17 2013 Globus Toolkit <support@globus.org> 2.0.32-1
 - Update to 2.0.32. Assume non-resolvable name is local
 
