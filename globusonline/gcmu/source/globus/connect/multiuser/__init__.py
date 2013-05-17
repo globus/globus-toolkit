@@ -546,6 +546,7 @@ class GCMU(object):
                 # Ugly hack to get what we might have downloaded during install
                 # time
                 temppath = tempfile.mkdtemp()
+                pipe_env = copy.deepcopy(os.environ)
                 pipe_env['X509_CERT_DIR'] = temppath
                 pipe_env['X509_USER_CERT'] = ""
                 pipe_env['X509_USER_KEY'] = ""

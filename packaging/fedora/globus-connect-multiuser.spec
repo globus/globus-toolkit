@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.33
+Version:        2.0.34
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -164,6 +164,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Fri May 17 2013 Globus Toolkit <support@globus.org> 2.0.34-1
+- Fix replacing server uri on the same host without -s
+- Fix runtime error when removing a server from an endpoint
+
 * Fri May 17 2013 Globus Toolkit <support@globus.org> 2.0.33-1
 - Update to 2.0.33. New sharing DN
 

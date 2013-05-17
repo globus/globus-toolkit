@@ -416,11 +416,19 @@ server
         self.disable()
         endpoint_name = self.conf.get_endpoint_name()
         server = self.conf.get_gridftp_server()
+        scheme = "gsiftp"
         port = 2811
+        hostname = None
+
         if "://" in server:
-            server = server.split("://",1)[1]
+            (scheme, server) = server.split("://", 1)
+
         if ":" in server:
-            (server, port) = server.split(":",1)[0]
+            (hostname, port_s) = server.split(":", 1)
+            port = int(port_s)
+        else:
+            hostname = server
+        server = scheme + "://" + hostname + ":" + str(port)
 
         if kwargs.get("delete"):
             self.api.endpoint_delete(endpoint_name)
@@ -429,6 +437,8 @@ server
                 self.api.endpoint(endpoint_name)
             servers_filtered = [x for x in data[u'DATA'] \
                 if x[u'hostname'] != None and
+                   x[u'hostname'] != \
+                       u'relay-disconnected.globusonline.org' and \
                    x[u'uri'] != gcmu.to_unicode(server)]
             data[u'DATA'] = servers_filtered
             self.api.endpoint_update(endpoint_name, data)
@@ -471,6 +481,7 @@ server
             port = int(port_s)
         else:
             hostname = server
+        server = scheme + "://" + hostname + ":" + str(port)
 
         myproxy_server = None
         myproxy_dn = None
