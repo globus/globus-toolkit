@@ -35,8 +35,7 @@ my $password = $ENV{GLOBUSONLINE_PASSWORD};
 my $ua = LWP::UserAgent->new();
 my $access_token = get_access_token($user, $password);
 my $random = int(1000000*rand());
-my $endpoint = "RESET$random";
-my $server = "RESET$random";
+my $endpoint = "MULTI$random";
 my $base_url = "https://transfer.api.globusonline.org/v0.10";
 my $config_file = "multi-node-test.conf";
 my $test_mode;
@@ -61,7 +60,7 @@ else
 
 # Test Step #1:
 # Create endpoint
-ok(gcmu_setup($endpoint, $server) == 0, "$test_mode:create_endpoint");
+ok(gcmu_setup($endpoint) == 0, "$test_mode:create_endpoint");
 
 # Test Step #2:
 # Get number of servers on endpoint, assert == 1
@@ -102,7 +101,7 @@ sub count_servers($$$)
     my $json;
     my $servers;
 
-    # List endpoint RESET%(RANDOM)s
+    # List endpoint $endpoint
     $req = HTTP::Request->new(GET =>
             "$base_url/endpoint/$user\%23$endpoint");
     $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
@@ -143,16 +142,14 @@ sub cleanup
     return $rc;
 }
 
-sub gcmu_setup($$;@)
+sub gcmu_setup($;@)
 {
     my $endpoint = shift;
-    my $server = shift;
     my @other_options = @_;
     my @cmd;
     my $rc;
     
-    $ENV{RANDOM_ENDPOINT} = $endpoint;
-    $ENV{RANDOM_SERVER} = $server;
+    $ENV{ENDPOINT} = $endpoint;
 
     # Create $endpoint
     @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, @other_options);
