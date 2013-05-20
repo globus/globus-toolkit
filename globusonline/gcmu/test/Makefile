@@ -1,10 +1,12 @@
-VERSION = 0.2
+VERSION = 0.3
 DIST_STAGING = globus_connect_multiuser_test-$(VERSION)
 DIST_FILE = $(DIST_STAGING).tar.gz
 
 test:
 	env GLOBUSONLINE_USER=gcmutest GLOBUSONLINE_PASSWORD=Automatic-GCMU-Test-Cases TERM=vt100 perl TESTS-junit.pl || true
 
+multinode-test:
+	env GLOBUSONLINE_USER=gcmutest GLOBUSONLINE_PASSWORD=Automatic-GCMU-Test-Cases TERM=vt100 perl TESTS-multinode-junit.pl || true
 dist:
 	rm -rf $(DIST_STAGING)
 	mkdir $(DIST_STAGING)
