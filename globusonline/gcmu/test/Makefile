@@ -6,7 +6,7 @@ test:
 	env GLOBUSONLINE_USER=gcmutest GLOBUSONLINE_PASSWORD=Automatic-GCMU-Test-Cases TERM=vt100 perl TESTS-junit.pl || true
 
 multinode-test:
-	env GLOBUSONLINE_USER=gcmutest GLOBUSONLINE_PASSWORD=Automatic-GCMU-Test-Cases TERM=vt100 perl TESTS-multinode-junit.pl || true
+	env SHARING=false GLOBUSONLINE_USER=gcmutest GLOBUSONLINE_PASSWORD=Automatic-GCMU-Test-Cases TERM=vt100 perl TESTS-multinode-junit.pl || true
 dist:
 	rm -rf $(DIST_STAGING)
 	mkdir $(DIST_STAGING)
