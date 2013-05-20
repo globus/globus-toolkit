@@ -486,8 +486,6 @@ server
         myproxy_server = None
         myproxy_dn = None
         oauth_server = self.conf.get_oauth_server()
-        if ":" in oauth_server:
-            raise Exception("[OAuth] Server value must be a public host name only")
         if oauth_server is None:
             myproxy_server = self.conf.get_myproxy_server()
             myproxy_dn = self.conf.get_myproxy_dn()
@@ -497,6 +495,8 @@ server
         if myproxy_dn is not None:
             myproxy_dn = gcmu.to_unicode(myproxy_dn)
         if oauth_server is not None:
+            if ":" in oauth_server:
+                raise Exception("[OAuth] Server value must be a public host name only")
             oauth_server = gcmu.to_unicode(oauth_server)
 
         new_gridftp_server = {
