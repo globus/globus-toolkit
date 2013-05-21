@@ -1,6 +1,6 @@
 Name:           globus-connect-multiuser
 Version:        2.0.36
-Release:        1%{?dist}
+Release:        3%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
 
@@ -72,12 +72,12 @@ Requires:       myproxy
 Requires:       gsi-openssh
 Requires:       gsi-openssh-clients
 Requires:       globus-gsi-cert-utils-progs
-Requires:       globus-gridftp-server-progs >= 6.24
+Requires:       globus-gridftp-server-progs >= 6.27
 Requires:       globus-gass-copy-progs
 Requires:       globus-gss-assist-progs
 Requires:       globus-gridmap-verify-myproxy-callout >= 1.2
 Requires:       globus-gridmap-eppn-callout >= 0.4
-Requires:       globus-gsi-credential >= 5.5
+Requires:       globus-gsi-credential >= 5.6
 Requires:       globus-connect-multiuser-common = %{version}
 Summary:        Globus Connect Multi-User I/O for GridFTP configuration
 Group:          System Environment/Libraries
@@ -164,6 +164,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Mon May 20 2013 Globus Toolkit <support@globus.org> 2.0.36-3
+- update dep versions
+
 * Mon May 20 2013 Globus Toolkit <support@globus.org> 2.0.36-1
 - fix for io-setup when oath = None
 

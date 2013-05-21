@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.36-3) unstable; urgency=low
+
+  * update dep versions
+
+ -- Globus Toolkit <support@globus.org>  Mon, 20 May 2013 11:05:12 -0400
+
 globus-connect-multiuser (2.0.36-2) unstable; urgency=low
 
   * Depend on python-support for byte-compiling python modules
