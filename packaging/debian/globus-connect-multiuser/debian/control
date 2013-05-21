@@ -19,7 +19,7 @@ Description: Globus Connect Multi-User Installation Tool
 
 Package: globus-connect-multiuser-common
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, python
+Depends: ${shlibs:Depends}, ${misc:Depends}, python, python-support
 Description: Globus Connect Multi-User Installation Tool
  The Globus Toolkit is an open source software toolkit used for building Grid
  systems and applications. It is being developed by the Globus Alliance and
