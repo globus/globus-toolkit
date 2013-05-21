@@ -56,6 +56,9 @@ $|=1;
     test-config.pl
     test-reset.pl
     double-server-config.pl
+    test-id.pl
+    test-id-generic.pl
+    test-web.pl
 );
 
 my $test_result = $harness->runtests(@tests);
