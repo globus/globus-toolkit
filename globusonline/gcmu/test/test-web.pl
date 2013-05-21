@@ -26,7 +26,7 @@ use File::Temp;
 use Test::More;
 use LWP;
 
-plan tests => 6;
+plan tests => 7;
 
 # Prepare
 my $config_file = "test-web.conf";
