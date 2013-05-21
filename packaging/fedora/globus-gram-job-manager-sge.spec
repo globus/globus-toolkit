@@ -15,8 +15,8 @@
 
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
-Version:	1.6
-Release:	3%{?dist}
+Version:	1.7
+Release:	1%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
@@ -281,6 +281,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue May 21 2013 Globus Toolkit <support@globus.org> - 1.7-1
+- solves an issue where globus gets confused at midnight about running jobs
+
 * Fri Mar 08 2013 Globus Toolkit <support@globus.org> - 1.6-3
 - Dependency updates
 

@@ -1195,7 +1195,13 @@ globus_l_sge_parse_events(
 	}
 
 	/* Batch accounting: resources consumed by the job  */
-	if (strstr(fields[1], "acct") == fields[1])
+	/* 
+	 * UGE reporting file notes that an "extra" acct record is sent to the reporting file at
+	 * midnight for long running jobs. These will be uniquely identified with 
+	 * exit_status (fields[14]) = -1 and should be skipped.  rjporter 05/2013
+	 *
+	 */
+	if ((strstr(fields[1], "acct") == fields[1]) && !(strstr(fields[14], "-1") == fields[14]))
 	{
             char * job_id;
 	    int failed;

@@ -1,3 +1,9 @@
+globus-gram-job-manager-sge (1.7-1) unstable; urgency=low
+
+  * solves an issue where globus gets confused at midnight about running jobs
+
+ -- Globus Toolkit <support@globus.org>  Tue, 21 May 2013 09:16:15 -0400
+
 globus-gram-job-manager-sge (1.6-1) unstable; urgency=low
 
   * GT-359: SGE SEG hangs when log_path points to directory
