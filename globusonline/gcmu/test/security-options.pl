@@ -22,7 +22,7 @@ use File::Path;
 use File::Temp;
 use File::Copy;
 use Test::More;
-use URI::Encode;
+use URI::Escape;
 use POSIX;
 
 require "transferapi.pl";
