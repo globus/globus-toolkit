@@ -1,6 +1,6 @@
 Name:           globus-connect-multiuser
-Version:        2.0.36
-Release:        3%{?dist}
+Version:        2.0.37
+Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
 
@@ -164,6 +164,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Fri May 24 2013 Globus Toolkit <support@globus.org> 2.0.37-1
+- KOA-2607: GCMU fetches wrong format CRL file
+
 * Mon May 20 2013 Globus Toolkit <support@globus.org> 2.0.36-3
 - update dep versions
 

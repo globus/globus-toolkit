@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.37-1) unstable; urgency=low
+
+  * KOA-2607: GCMU fetches wrong format CRL file
+
+ -- Globus Toolkit <support@globus.org>  Fri, 24 May 2013 13:41:26 -0400
+
 globus-connect-multiuser (2.0.36-3) unstable; urgency=low
 
   * update dep versions

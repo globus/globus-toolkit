@@ -474,7 +474,7 @@ class GCMU(object):
                     cilogon_crl_cron_file.write(cilogon_crl_script % {
                         'certdir': certdir,
                         'cilogon_url': 'http://crl.cilogon.org/' + \
-                            cilogon_ca + '.crl',
+                            cilogon_ca + '.r0',
                         'cilogon_hash': cilogon_hash
                     })
                     os.chmod(cilogon_crl_cron_path, 0755)
