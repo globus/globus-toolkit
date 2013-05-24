@@ -22,6 +22,7 @@ use File::Path;
 use File::Temp;
 use File::Copy;
 use Test::More;
+use URI::Encode;
 use POSIX;
 
 require "transferapi.pl";
@@ -203,9 +204,7 @@ sub endpoint_uses_cilogon($)
     my $endpoint = shift;
     my $json = get_endpoint($endpoint);
 
-    use Data::Dumper;
-    print Dumper($json);
-    return undef;
+    return $json->{oauth_server} eq 'cilogon.org';
 }
 
 sub cleanup($)
@@ -253,7 +252,7 @@ my $host_key = "$host_credentials_dir/hostkey.pem";
 my $fh;
 open($fh, "-|", "grid-ca-create", "-dir", $simple_ca_dir, "-noint");
 while (<$fh>) {
-    print $_;
+    print uri_escape($_);
 }
 open(my $tmpfh, ">$simple_ca_dir/passwd");
 print $tmpfh "globus\n";

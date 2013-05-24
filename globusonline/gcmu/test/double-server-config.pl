@@ -33,7 +33,7 @@ my $random = int(1000000*rand());
 my $endpoint = "DOUBLE$random";
 my $server = "DOUBLE$random";
 my $base_url = "https://transfer.api.globusonline.org/v0.10";
-my $config_file = "test-reset.conf";
+my $config_file = "reset-endpoint.conf";
 
 # Test Step #1:
 # Create endpoint
@@ -70,7 +70,7 @@ sub cleanup
 
     $cmd[0] = "globus-connect-multiuser-cleanup";
     $cmd[1] = "-c";
-    $cmd[1] = $config_file;
+    $cmd[2] = $config_file;
     $rc = system(@cmd);
 
     # Just to make sure that doesn't fail
