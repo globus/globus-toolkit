@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+END {$?=0}
+
 # This test runs gcmu setup twice on the same config file. It should end
 # with the same config after the second run as after the first one
 

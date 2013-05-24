@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+END {$?=0}
+
 use strict;
 use File::Path;
 use File::Temp;
@@ -24,25 +26,6 @@ plan tests => 4;
 
 # Prepare
 my $config_file = "test-io.conf";
-
-# Test Step #1:
-# Setup ID server
-ok(setup_server() == 0, "setup_server");
-
-# Test Step #2:
-# Is GridFTP server running?
-ok(is_gridftp_running() == 0, "is_gridftp_running");
-
-# Test Step #3:
-# Clean up the services
-ok(cleanup() == 0, "cleanup");
-
-# Test Step #4:
-# Is GridFTP server running?
-ok(is_gridftp_running() == 1, "is_gridftp_not_running");
-
-# Remove everything in GCMU dir
-force_cleanup();
 
 sub setup_server()
 {
@@ -84,3 +67,22 @@ sub force_cleanup()
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
     return 0;
 }
+
+# Test Step #1:
+# Setup ID server
+ok(setup_server() == 0, "setup_server");
+
+# Test Step #2:
+# Is GridFTP server running?
+ok(is_gridftp_running() == 0, "is_gridftp_running");
+
+# Test Step #3:
+# Clean up the services
+ok(cleanup() == 0, "cleanup");
+
+# Test Step #4:
+# Is GridFTP server running?
+ok(is_gridftp_running() == 1, "is_gridftp_not_running");
+
+# Remove everything in GCMU dir
+force_cleanup();

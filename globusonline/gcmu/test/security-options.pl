@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+END {$?=0}
+
 use strict;
 use File::Path;
 use File::Temp;
@@ -248,7 +250,11 @@ my $host_cert_request = "$host_credentials_dir/hostcert_request.pem";
 my $host_cert = "$host_credentials_dir/hostcert.pem";
 my $host_key = "$host_credentials_dir/hostkey.pem";
 
-system("grid-ca-create", "-dir", $simple_ca_dir, "-noint");
+my $fh;
+open($fh, "-|", "grid-ca-create", "-dir", $simple_ca_dir, "-noint");
+while (<$fh>) {
+    print $_;
+}
 open(my $tmpfh, ">$simple_ca_dir/passwd");
 print $tmpfh "globus\n";
 close($tmpfh);

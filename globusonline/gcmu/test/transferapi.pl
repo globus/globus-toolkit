@@ -20,6 +20,8 @@ BEGIN
         $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = "0";
 }
 
+END {$?=0}
+
 use strict;
 use Test::More;
 use LWP;

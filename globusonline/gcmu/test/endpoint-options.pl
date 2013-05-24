@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+END {$?=0}
+
 use strict;
 use File::Path;
 use File::Temp;
