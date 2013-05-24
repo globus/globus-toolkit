@@ -72,7 +72,7 @@ sub setup_web_server()
 
 sub setup_io_server()
 {
-    my @cmd = ("globus-connect-multiuser-io-setup", "-c" $config_file);
+    my @cmd = ("globus-connect-multiuser-io-setup", "-c", $config_file);
 
     return system(@cmd);
 }
