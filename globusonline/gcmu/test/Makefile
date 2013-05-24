@@ -5,12 +5,10 @@ DIST_FILE = $(DIST_STAGING).tar.gz
 test:
 	env GLOBUSONLINE_USER=gcmutest GLOBUSONLINE_PASSWORD=Automatic-GCMU-Test-Cases TERM=vt100 perl TESTS-junit.pl || true
 
-multinode-test:
-	env SHARING=false GLOBUSONLINE_USER=gcmutest GLOBUSONLINE_PASSWORD=Automatic-GCMU-Test-Cases TERM=vt100 perl TESTS-multinode-junit.pl || true
 dist:
 	rm -rf $(DIST_STAGING)
 	mkdir $(DIST_STAGING)
-	cp Makefile *.conf *.pl $(DIST_STAGING)
+	cp Makefile *.conf *.pl *.css *.png $(DIST_STAGING)
 	tar -c -f - $(DIST_STAGING) | gzip -9c > $(DIST_FILE)
 	rm -rf $(DIST_STAGING)
 

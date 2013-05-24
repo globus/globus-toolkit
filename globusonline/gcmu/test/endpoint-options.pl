@@ -1,0 +1,147 @@
+#! /usr/bin/perl
+#
+# Copyright 1999-2013 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+use strict;
+use File::Path;
+use File::Temp;
+use Test::More;
+
+require "transferapi.pl";
+
+plan tests => 12;
+
+# Prepare
+my $config_file = "endpoint-options.conf";
+my $random = int(1000000*rand());
+my $endpoint_name = "ENDPOINT_OPTIONS_$random";
+
+# Test Step #1:
+# Setup server with (Public=True, DefaultDirectory="/tmp")
+ok(setup_server($endpoint_name, 1, "/tmp") == 0, "setup_server_public_tmp");
+
+# Test Step #2:
+# Check that endpoint's Public attribute is True
+ok(is_endpoint_public($endpoint_name) == 1, "is_endpoint_public");
+
+# Test Step #3:
+# Check that endpoint's DefaultDirectory attribute is /tmp
+ok(is_default_dir($endpoint_name, "/tmp") == 0, "is_default_dir_tmp");
+
+# Test Step #4
+# Set up server with (Public=False, DefaultDirectory="/tmp")
+ok(setup_server($endpoint_name, 0, "/tmp") == 0, "setup_server_non_public_tmp");
+
+# Test Step #5:
+# Check that endpoint's Public attribute is False
+ok(is_endpoint_public($endpoint_name) == 0, "is_endpoint_non_public");
+
+# Test Step #6:
+# Check that endpoint's DefaultDirectory attribute is /tmp
+ok(is_default_dir($endpoint_name, "/tmp") == 0, "is_default_dir_still_tmp");
+
+# Test Step #7
+# Set up server with (Public=False, DefaultDirectory="/home")
+ok(setup_server($endpoint_name, 0, "/home") == 0, "setup_server_non_public_home");
+
+# Test Step #8:
+# Check that endpoint's Public attribute is False
+ok(is_endpoint_public($endpoint_name) == 0, "is_endpoint_still_non_public");
+
+# Test Step #9:
+# Check that endpoint's DefaultDirectory attribute is /home
+ok(is_default_dir($endpoint_name, "/home") == 0, "is_default_dir_home");
+
+# Test Step #10:
+# Set up server with (Public=True, DefaultDirectory="/tmp")
+# Change both at once
+ok(setup_server($endpoint_name, 1, "/tmp") == 0, "setup_server_public_tmp");
+
+# Test Step #11:
+# Check that endpoint's Public attribute is True
+ok(is_endpoint_public($endpoint_name) == 1, "is_endpoint_public_again");
+
+# Test Step #12:
+# Check that endpoint's DefaultDirectory attribute is "/tmp"
+ok(is_default_dir($endpoint_name, "/tmp") == 0, "is_default_dir_back_to_tmp");
+
+# Clean up the services
+cleanup($endpoint_name);
+
+# Remove everything in GCMU dir
+force_cleanup();
+
+sub setup_server($$$)
+{
+    my ($endpoint_name, $endpoint_public, $default_dir) = @_;
+    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file);
+
+    $ENV{ENDPOINT_NAME} = $endpoint_name;
+    $ENV{ENDPOINT_PUBLIC} = $endpoint_public;
+    $ENV{ENDPOINT_DIR} = $default_dir;
+
+    return system(@cmd);
+}
+
+sub is_endpoint_public($)
+{
+    my $endpoint = shift;
+    my $json;
+
+    $json = get_endpoint($endpoint);
+
+    return $json->{public};
+}
+
+sub is_default_dir($$)
+{
+    my ($endpoint, $dir) = @_;
+    my $json;
+
+    $json = get_endpoint($endpoint);
+
+    return $json->{default_directory} ne $dir;
+}
+
+sub cleanup($)
+{
+    my $endpoint_name = shift;
+    my @cmd;
+    my $rc;
+
+    $ENV{ENDPOINT_NAME} = $endpoint_name;
+    $ENV{ENDPOINT_PUBLIC} = "False";
+    $ENV{ENDPOINT_DIR} = "/~/";
+
+    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file);
+    $rc = system(@cmd);
+}
+
+sub force_cleanup()
+{
+    # Just to make sure that doesn't fail
+    foreach my $f (</etc/gridftp.d/globus-connect*>)
+    {
+        unlink($f);
+    }
+    foreach my $f (</etc/myproxy.d/globus-connect*>)
+    {
+        unlink($f);
+    }
+    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
+    return 0;
+}

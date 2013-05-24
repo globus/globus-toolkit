@@ -26,7 +26,7 @@ use File::Temp;
 use Test::More;
 use LWP;
 
-plan tests => 7;
+plan tests => 4;
 
 # Prepare
 my $config_file = "test-web.conf";
@@ -34,42 +34,26 @@ my $ua = LWP::UserAgent->new();
 
 # Test Step #1:
 # Setup ID server
-ok(setup_id_server() == 0, "setup_id_server");
+ok(setup_server() == 0, "setup_server");
 
 # Test Step #2:
-# Setup Web server
-ok(setup_web_server() == 0, "setup_web_server");
-
-# Test Step #3:
 # Contact OAuth server
 ok(contact_oauth_server($ua) == 0, "contact_oauth_server");
 
+# Test Step #3:
+# Clean up the server
+ok(cleanup() == 0, "web_cleanup");
+
 # Test Step #4:
-# Clean up the web server
-ok(web_cleanup() == 0, "web_cleanup");
-
-# Test Step #5:
-# Clean up the ID server
-ok(id_cleanup() == 0, "id_cleanup");
-
-# Test Step #6:
 # Contact OAuth server
 ok(contact_oauth_server($ua) != 0, "contact_disabled_oauth_server");
 
-# Test Step #7:
 # Remove everything in GCMU dir
-ok(force_cleanup() == 0, "force_cleanup");
+force_cleanup();
 
-sub setup_id_server()
+sub setup_server()
 {
-    my @cmd = ("globus-connect-multiuser-id-setup", "-c", $config_file);
-
-    return system(@cmd);
-}
-
-sub setup_web_server()
-{
-    my @cmd = ("globus-connect-multiuser-web-setup", "-c", $config_file);
+    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file);
 
     return system(@cmd);
 }
@@ -85,23 +69,12 @@ sub contact_oauth_server($)
     return $res->code() == 403;
 }
 
-sub id_cleanup()
+sub cleanup()
 {
     my @cmd;
     my $rc;
 
-    $cmd[0] = "globus-connect-multiuser-id-cleanup";
-    $cmd[1] = "-c";
-    $cmd[1] = $config_file;
-    $rc = system(@cmd);
-}
-
-sub web_cleanup()
-{
-    my @cmd;
-    my $rc;
-
-    $cmd[0] = "globus-connect-multiuser-web-cleanup";
+    $cmd[0] = "globus-connect-multiuser-cleanup";
     $cmd[1] = "-c";
     $cmd[1] = $config_file;
     $rc = system(@cmd);

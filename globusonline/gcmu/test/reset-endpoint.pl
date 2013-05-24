@@ -15,29 +15,18 @@
 # limitations under the License.
 #
 
-BEGIN
-{
-    $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = "0";
-}
-
 use strict;
 use File::Path;
-use LWP;
-use URI::Escape;
 use Test::More;
 
 plan tests => 7;
 
 # Prepare
-my $user = $ENV{GLOBUSONLINE_USER};
-my $password = $ENV{GLOBUSONLINE_PASSWORD};
-my $ua = LWP::UserAgent->new();
-my $access_token = get_access_token($user, $password);
 my $random = int(1000000*rand());
 my $endpoint = "RESET$random";
 my $server = "RESET$random";
 my $base_url = "https://transfer.api.globusonline.org/v0.10";
-my $config_file = "test-reset.conf";
+my $config_file = "reset-endpoint.conf";
 
 # Test Step #1:
 # Create endpoint
@@ -45,7 +34,7 @@ ok(gcmu_setup($endpoint, $server) == 0, "create_endpoint");
 
 # Test Step #2:
 # Get number of servers on endpoint, assert == 1
-ok(count_servers($user, $endpoint, $access_token) == 1, "count_servers1");
+ok(count_servers($endpoint) == 1, "count_servers1");
 
 # Test Step #3:
 # Update endpoint with new server
@@ -54,7 +43,7 @@ ok(gcmu_setup($endpoint, $server) == 0, "update_endpoint1");
 
 # Test Step #4:
 # Get number of servers on endpoint, assert == 2
-ok(count_servers($user, $endpoint, $access_token) == 2, "count_servers2");
+ok(count_servers($endpoint) == 2, "count_servers2");
 
 # Test Step #5:
 # Update endpoint with -s option
@@ -62,57 +51,17 @@ ok(gcmu_setup($endpoint, $server, '-s') == 0, "update_endpoint2");
 
 # Test Step #6:
 # Get number of servers on endpoint, assert == 1
-ok(count_servers($user, $endpoint, $access_token) == 1, "count_servers3");
+ok(count_servers($endpoint) == 1, "count_servers3");
 
 # Test Step #7:
 # Clean up gcmu
 ok(cleanup() == 0, "cleanup");
 
-sub get_access_token($$)
+sub count_servers($)
 {
-    my $user = uri_escape($_[0]);
-    my $password = uri_escape($_[1]);
-    my $json;
-    my $url;
-    my $req;
-    my $res;
-    my $access_token;
-    my $random = int(1000000*rand());
-    
-    # Get access token
-    $url = "https://$user:$password\@nexus.api.globusonline.org/goauth/token?grant_type=client_credentials";
-    $req = HTTP::Request->new(GET => $url);
-    $res = $ua->request($req);
-    $json = $res->content();
-    $json =~ s/": /" => /g;
-    $json = eval $json;
-    return $json->{'access_token'};
-}
+    my $endpoint = shift;
+    my $json = get_endpoint($endpoint);
 
-sub count_servers($$$)
-{
-    my $user = uri_escape($_[0]);
-    my $endpoint = $_[1];
-    my $access_token = $_[2];
-    my $req;
-    my $res;
-    my $json;
-    my $servers;
-
-    # List endpoint RESET%(RANDOM)s
-    $req = HTTP::Request->new(GET =>
-            "$base_url/endpoint/$user\%23$endpoint");
-    $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
-    $res = $ua->request($req);
-    $json = $res->content();
-    $json =~ s/": /" => /g;
-    $json =~ s/false/0/g;
-    $json =~ s/true/1/g;
-    $json =~ s/null/undef/g;
-    $json = eval $json;
-    if (!$json) {
-        return $@;
-    }
     return scalar(map($_->{hostname}, @{$json->{DATA}}));
 }
 

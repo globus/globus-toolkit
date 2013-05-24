@@ -53,12 +53,20 @@ BEGIN {
 
 $|=1;
 @tests = qw(
-    test-config.pl
-    test-reset.pl
+    command-line-options.pl
+    id-setup-and-cleanup.pl
+    id-setup-and-cleanup-generic.pl
+    web-setup-and-cleanup.pl
+    web-setup-and-cleanup-generic.pl
+    io-setup-and-cleanup.pl
+    io-setup-and-cleanup-generic.pl
+    endpoint-options.pl
+    security-options.pl
+    gridftp-options.pl
+    myproxy-options.pl
+    oauth-options.pl
+    reset-endpoint.pl
     double-server-config.pl
-    test-id.pl
-    test-id-generic.pl
-    test-web.pl
 );
 
 my $test_result = $harness->runtests(@tests);

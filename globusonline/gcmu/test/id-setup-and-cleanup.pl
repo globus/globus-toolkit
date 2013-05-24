@@ -25,7 +25,7 @@ use File::Path;
 use File::Temp;
 use Test::More;
 
-plan tests => 6;
+plan tests => 5;
 
 # Prepare
 my $config_file = "test-id.conf";
@@ -51,9 +51,8 @@ ok(cleanup() == 0, "cleanup");
 # Check that myproxy-server is not running
 ok(is_myproxy_server_running() == 0, "is_myproxy_server_not_running");
 
-# Test Step #6:
 # Remove everything in GCMU dir
-ok(force_cleanup() == 0, "force_cleanup");
+force_cleanup();
 
 sub setup_id_server()
 {
