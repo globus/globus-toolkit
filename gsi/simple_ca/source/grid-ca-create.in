@@ -691,10 +691,10 @@ readCommandLine () {
             echo "ERROR: the -dir option expects a directory."
             exit 1;
          fi
-         if expr "${tmp_ca_dir}" : "/" > /dev/null; then
-            GRID_CA_DIR="${tmp_ca_dir}"
+         if test "${tmp_ca_dir##/*}" = ""; then
+             GRID_CA_DIR="${tmp_ca_dir}"
          else
-            GRID_CA_DIR="$PWD/$tmp_ca_dir"
+             GRID_CA_DIR="$PWD/${tmp_ca_dir}"
          fi
          
          shift ; shift

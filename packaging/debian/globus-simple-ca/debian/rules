@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-simple-ca
 _name = globus_simple_ca
-version = 3.3
+version = 3.4
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages

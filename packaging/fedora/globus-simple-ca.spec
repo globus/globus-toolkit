@@ -10,7 +10,7 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	3.3
+Version:	3.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
@@ -127,6 +127,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Fri May 24 2013 Globus Toolkit <support@globus.org> - 3.4-1
+- Fix test for absolute path on some versions of expr
+
 * Wed Feb 13 2013 Globus Toolkit <support@globus.org> - 3.3-1
 - GT-362: simple ca loses spaces in dn in signing policy
 
