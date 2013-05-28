@@ -249,11 +249,7 @@ my $host_cert_request = "$host_credentials_dir/hostcert_request.pem";
 my $host_cert = "$host_credentials_dir/hostcert.pem";
 my $host_key = "$host_credentials_dir/hostkey.pem";
 
-my $fh;
-open($fh, "-|", "grid-ca-create", "-dir", $simple_ca_dir, "-noint");
-while (<$fh>) {
-    print uri_escape($_);
-}
+system("grid-ca-create -dir \"$simple_ca_dir\" -noint > /dev/null 2>&1");
 open(my $tmpfh, ">$simple_ca_dir/passwd");
 print $tmpfh "globus\n";
 close($tmpfh);
