@@ -266,8 +266,8 @@ if ($hostname !~ /\./)
 {
     $hostname = (POSIX::uname())[1];
 }
-system("grid-cert-request", "-host", $hostname,
-        "-dir", $host_credentials_dir, "-ca", $simple_ca_hash);
+
+system("grid-cert-request -host \"$hostname\" -dir \"$host_credentials_dir\" -ca $simple_ca_hash > /dev/null 2>&1");
 
 system("grid-ca-sign", "-dir", $simple_ca_dir,
         "-in", $host_cert_request,
