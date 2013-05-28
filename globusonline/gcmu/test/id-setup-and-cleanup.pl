@@ -27,40 +27,13 @@ use File::Path;
 use File::Temp;
 use Test::More;
 
-plan tests => 5;
-
-# Prepare
 my $config_file = "test-id.conf";
-
-# Test Step #1:
-# Setup ID server
-ok(setup_id_server() == 0, "setup_id_server");
-
-# Test Step #2:
-# Check that myproxy-server process is running
-ok(is_myproxy_server_running() == 1, "is_myproxy_server_running");
-
-# Test Step #3:
-# Fetch trust roots from myproxy server and verify that the GCMU CA cert is
-# present
-ok(fetch_and_compare_trust_roots() == 0, "fetch_and_compare_trust_roots");
-
-# Test Step #4:
-# Clean up the ID server
-ok(cleanup() == 0, "cleanup");
-
-# Test Step #5:
-# Check that myproxy-server is not running
-ok(is_myproxy_server_running() == 0, "is_myproxy_server_not_running");
-
-# Remove everything in GCMU dir
-force_cleanup();
 
 sub setup_id_server()
 {
     my @cmd = ("globus-connect-multiuser-id-setup", "-c", $config_file);
 
-    return system(@cmd);
+    return system(@cmd) == 0;
 }
 
 sub is_myproxy_server_running()
@@ -121,12 +94,11 @@ sub fetch_and_compare_trust_roots()
 sub cleanup()
 {
     my @cmd;
-    my $rc;
 
     $cmd[0] = "globus-connect-multiuser-id-cleanup";
     $cmd[1] = "-c";
-    $cmd[1] = $config_file;
-    $rc = system(@cmd);
+    $cmd[2] = $config_file;
+    return system(@cmd)==0;
 }
 
 sub force_cleanup()
@@ -144,3 +116,30 @@ sub force_cleanup()
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
     return 0;
 }
+
+# Prepare
+plan tests => 5;
+
+# Test Step #1:
+# Setup ID server
+ok(setup_id_server(), "setup_id_server");
+
+# Test Step #2:
+# Check that myproxy-server process is running
+ok(is_myproxy_server_running(), "is_myproxy_server_running");
+
+# Test Step #3:
+# Fetch trust roots from myproxy server and verify that the GCMU CA cert is
+# present
+ok(fetch_and_compare_trust_roots() == 0, "fetch_and_compare_trust_roots");
+
+# Test Step #4:
+# Clean up the ID server
+ok(cleanup(), "cleanup");
+
+# Test Step #5:
+# Check that myproxy-server is not running
+ok(!is_myproxy_server_running(), "is_myproxy_server_not_running");
+
+# Remove everything in GCMU dir
+force_cleanup();

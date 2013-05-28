@@ -707,24 +707,6 @@ my @tests=(
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-s",
-        COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-setup",
-                "-c", "command-line-options.conf",
-                "-s"
-            ],
-        RESULT => 1
-    },
-    {
-        NAME => "globus-connect-multiuser-web-setup-slong",
-        COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-setup",
-                "-c", "command-line-options.conf",
-                "--reset-endpoint"
-            ],
-        RESULT => 1
-    },
-    {
         NAME => "globus-connect-multiuser-web-setup-h",
         COMMAND_LINE =>
             [ "globus-connect-multiuser-web-setup",
@@ -813,24 +795,6 @@ my @tests=(
             [ "globus-connect-multiuser-web-cleanup",
                 "-c", "command-line-options.conf",
                 "--root=$tempdir"
-            ],
-        RESULT => 1
-    },
-    {
-        NAME => "globus-connect-multiuser-web-cleanup-d",
-        COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-cleanup",
-                "-c", "command-line-options.conf",
-                "-d"
-            ],
-        RESULT => 1
-    },
-    {
-        NAME => "globus-connect-multiuser-web-cleanup-dlong",
-        COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-cleanup",
-                "-c", "command-line-options.conf",
-                "--delete-endpoint"
             ],
         RESULT => 1
     },

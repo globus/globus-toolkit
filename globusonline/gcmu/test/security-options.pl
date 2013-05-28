@@ -38,6 +38,7 @@ sub setup_server($%)
         KeyFile => "",
         TrustedCertificateDirectory => "",
         IdentityMethod => "OAuth",
+        OAuthServer => "\%(HOSTNAME)s",
         CILogonIdentityProvider => "",
         @_
     );
@@ -50,6 +51,7 @@ sub setup_server($%)
     $ENV{TRUSTED_CERTIFICATE_DIRECTORY} = $args{TrustedCertificateDirectory};
     $ENV{IDENTITY_METHOD} = $args{IdentityMethod};
     $ENV{CILOGON_IDENTITY_PROVIDER} = $args{CILogonIdentityProvider};
+    $ENV{OAUTH_SERVER} = $args{OAuthServer};
 
     return system(@cmd) == 0;
 }
@@ -82,15 +84,20 @@ sub myproxy_environment_vars(@)
     {
         return undef;
     }
-    $cmd = "(. $conffile && printf \"\%s\n\"" . join("", map(" $_=\$$_", @vars)) .")|";
+    $cmd = "(. $conffile && printf \"\%s\\n\""
+         . join("", map(" $_=\$$_", @vars))
+         .")|";
     if (!open($fh, $cmd))
     {
         return undef;
     }
     while (<$fh>)
     {
-        /([^=]*)=\"([^"]*)\"/;
-        $res->{$1} = $2;
+        chomp;
+        if (/([^=]*)=(.*)/)
+        {
+            $res->{$1} = $2;
+        }
     }
     close($fh);
     return $res;
@@ -150,15 +157,8 @@ sub gridftp_environment_vars()
                 $res->{$1} = $2;
             }
         }
+        close($fh);
     }
-    while (<$fh>)
-    {
-        if (/([^=]*)=\"([^"]*)\"/)
-        {
-            $res->{$1} = $2;
-        }
-    }
-    close($fh);
     return $res;
 }
 
@@ -217,7 +217,7 @@ sub cleanup($)
     $ENV{ENDPOINT_PUBLIC} = "False";
     $ENV{ENDPOINT_DIR} = "/~/";
 
-    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file);
+    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
     return system(@cmd) == 0;
 }
 
@@ -320,7 +320,8 @@ force_cleanup();
 
 # Create a server using normal credentials, but using MyProxy authentication
 # instead of OAuth
-ok(setup_server($endpoint_name, IdentityMethod => "MyProxy"),
+ok(setup_server($endpoint_name, IdentityMethod => "MyProxy",
+    OAuthServer => ""),
         "setup_with_myproxy_as_idp");
 
 # Verify that endpoint has myproxy in its json
@@ -333,7 +334,7 @@ force_cleanup();
 
 # Create a server using normal credentials, but using CILogon with University
 # of Chicago as IDP
-ok(setup_server($endpoint_name, IdentityMethod => "CILogon", CILogonIdentityProvider => "University of Chicago"), "setup_using_cilogon");
+ok(setup_server($endpoint_name, IdentityMethod => "CILogon", CILogonIdentityProvider => "University of Chicago", OAuthServer => ""), "setup_using_cilogon");
 
 # Verify that GridFTP is configured with eppn callout and University of Chicago
 # as IDP

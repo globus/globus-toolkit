@@ -45,7 +45,8 @@ sub cleanup
 
     $cmd[0] = "globus-connect-multiuser-cleanup";
     $cmd[1] = "-c";
-    $cmd[1] = $config_file;
+    $cmd[2] = $config_file;
+    $cmd[3] = "-d";
     $rc = system(@cmd);
 
     # Just to make sure that doesn't fail
@@ -108,4 +109,3 @@ ok(count_servers($endpoint) == 1, "count_servers3");
 # Test Step #7:
 # Clean up gcmu
 ok(cleanup() == 0, "cleanup");
-

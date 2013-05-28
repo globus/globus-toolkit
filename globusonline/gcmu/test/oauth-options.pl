@@ -62,7 +62,7 @@ sub endpoint_oauth_match($$)
 sub stylesheet_match($)
 {
     my $css = shift;
-    my $installed_css = "/var/lib/myproxy-oauth/myproxyoauth/static/site.css";
+    my $installed_css = "/usr/share/myproxy-oauth/myproxyoauth/static/site.css";
 
     if (!-r $installed_css)
     {
@@ -74,7 +74,7 @@ sub stylesheet_match($)
 sub logo_match($)
 {
     my $logo = shift;
-    my $installed_logo = "/var/lib/myproxy-oauth/myproxyoauth/static/site.png";
+    my $installed_logo = "/usr/share/myproxy-oauth/myproxyoauth/static/oauth-options.png";
 
     if (!-r $installed_logo)
     {
@@ -89,7 +89,7 @@ sub cleanup($)
     my @cmd;
     my $rc;
 
-    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file);
+    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
     return system(@cmd) == 0;
 }
 

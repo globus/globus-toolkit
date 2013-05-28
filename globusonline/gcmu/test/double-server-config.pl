@@ -28,34 +28,8 @@ require "transferapi.pl";
 
 plan tests => 5;
 
-# Prepare
-my $random = int(1000000*rand());
-my $endpoint = "DOUBLE$random";
-my $server = "DOUBLE$random";
-my $base_url = "https://transfer.api.globusonline.org/v0.10";
 my $config_file = "reset-endpoint.conf";
-
-# Test Step #1:
-# Create endpoint
-ok(gcmu_setup($endpoint, $server) == 0, "create_endpoint");
-
-# Test Step #2:
-# Get number of servers on endpoint, assert == 1
-ok(count_servers($endpoint) == 1, "count_servers1");
-
-# Test Step #3:
-# Update endpoint with the same server
-ok(gcmu_setup($endpoint, $server) == 0, "update_endpoint1");
-
-# Test Step #4:
-# Get number of servers on endpoint, assert == 1
-ok(count_servers($endpoint) == 1, "count_servers2");
-
-# Test Step #5:
-# Clean up gcmu
-ok(cleanup() == 0, "cleanup");
-
-sub count_servers($$$)
+sub count_servers($)
 {
     my $endpoint = shift;
     my $json = get_endpoint($endpoint);
@@ -71,6 +45,7 @@ sub cleanup
     $cmd[0] = "globus-connect-multiuser-cleanup";
     $cmd[1] = "-c";
     $cmd[2] = $config_file;
+    $cmd[3] = "-d";
     $rc = system(@cmd);
 
     # Just to make sure that doesn't fail
@@ -84,7 +59,7 @@ sub cleanup
     }
     File::Path::rmtree("/var/lib/globus-connect-multiuser");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
-    return $rc;
+    return $rc==0;
 }
 
 sub gcmu_setup($$;@)
@@ -93,12 +68,37 @@ sub gcmu_setup($$;@)
     my $server = shift;
     my @other_options = @_;
     my @cmd;
-    my $rc;
     
     $ENV{RANDOM_ENDPOINT} = $endpoint;
     $ENV{RANDOM_SERVER} = $server;
 
     # Create $endpoint
     @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, @other_options);
-    return system(@cmd);
+    return system(@cmd) == 0;
 }
+
+# Prepare
+my $random = int(1000000*rand());
+my $endpoint = "DOUBLE$random";
+my $server = "DOUBLE$random";
+my $base_url = "https://transfer.api.globusonline.org/v0.10";
+
+# Test Step #1:
+# Create endpoint
+ok(gcmu_setup($endpoint, $server), "create_endpoint");
+
+# Test Step #2:
+# Get number of servers on endpoint, assert == 1
+ok(count_servers($endpoint) == 1, "count_servers1");
+
+# Test Step #3:
+# Update endpoint with the same server
+ok(gcmu_setup($endpoint, $server), "update_endpoint1");
+
+# Test Step #4:
+# Get number of servers on endpoint, assert == 1
+ok(count_servers($endpoint) == 1, "count_servers2");
+
+# Test Step #5:
+# Clean up gcmu
+ok(cleanup(), "cleanup");

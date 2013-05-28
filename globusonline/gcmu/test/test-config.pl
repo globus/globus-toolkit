@@ -41,7 +41,7 @@ sub cleanup
     }
     $cmd[0] = $testprog;
     $cmd[1] = "-c";
-    $cmd[1] = $testarray->[0];
+    $cmd[2] = $testarray->[0];
     $rc = system(@cmd);
 
     # Just to make sure that doesn't fail

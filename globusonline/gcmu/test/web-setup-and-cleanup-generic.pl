@@ -28,30 +28,7 @@ use File::Temp;
 use Test::More;
 use LWP;
 
-plan tests => 4;
-
-# Prepare
 my $config_file = "test-web.conf";
-my $ua = LWP::UserAgent->new();
-
-# Test Step #1:
-# Setup ID server
-ok(setup_server() == 0, "setup_server");
-
-# Test Step #2:
-# Contact OAuth server
-ok(contact_oauth_server($ua) == 0, "contact_oauth_server");
-
-# Test Step #3:
-# Clean up the server
-ok(cleanup() == 0, "web_cleanup");
-
-# Test Step #4:
-# Contact OAuth server
-ok(contact_oauth_server($ua) != 0, "contact_disabled_oauth_server");
-
-# Remove everything in GCMU dir
-force_cleanup();
 
 sub setup_server()
 {
@@ -78,7 +55,7 @@ sub cleanup()
 
     $cmd[0] = "globus-connect-multiuser-cleanup";
     $cmd[1] = "-c";
-    $cmd[1] = $config_file;
+    $cmd[2] = $config_file;
     $rc = system(@cmd);
 }
 
@@ -97,3 +74,23 @@ sub force_cleanup()
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
     return 0;
 }
+
+# Prepare
+plan tests => 3;
+
+my $ua = LWP::UserAgent->new();
+
+# Test Step #1:
+# Setup ID server
+ok(setup_server() == 0, "setup_server");
+
+# Test Step #2:
+# Contact OAuth server
+ok(contact_oauth_server($ua), "contact_oauth_server");
+
+# Test Step #3:
+# Clean up the server
+ok(cleanup() == 0, "web_cleanup");
+
+# Remove everything in GCMU dir
+force_cleanup();

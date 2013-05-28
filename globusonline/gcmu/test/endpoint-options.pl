@@ -24,67 +24,7 @@ use Test::More;
 
 require "transferapi.pl";
 
-plan tests => 12;
-
-# Prepare
 my $config_file = "endpoint-options.conf";
-my $random = int(1000000*rand());
-my $endpoint_name = "ENDPOINT_OPTIONS_$random";
-
-# Test Step #1:
-# Setup server with (Public=True, DefaultDirectory="/tmp")
-ok(setup_server($endpoint_name, 1, "/tmp") == 0, "setup_server_public_tmp");
-
-# Test Step #2:
-# Check that endpoint's Public attribute is True
-ok(is_endpoint_public($endpoint_name) == 1, "is_endpoint_public");
-
-# Test Step #3:
-# Check that endpoint's DefaultDirectory attribute is /tmp
-ok(is_default_dir($endpoint_name, "/tmp") == 0, "is_default_dir_tmp");
-
-# Test Step #4
-# Set up server with (Public=False, DefaultDirectory="/tmp")
-ok(setup_server($endpoint_name, 0, "/tmp") == 0, "setup_server_non_public_tmp");
-
-# Test Step #5:
-# Check that endpoint's Public attribute is False
-ok(is_endpoint_public($endpoint_name) == 0, "is_endpoint_non_public");
-
-# Test Step #6:
-# Check that endpoint's DefaultDirectory attribute is /tmp
-ok(is_default_dir($endpoint_name, "/tmp") == 0, "is_default_dir_still_tmp");
-
-# Test Step #7
-# Set up server with (Public=False, DefaultDirectory="/home")
-ok(setup_server($endpoint_name, 0, "/home") == 0, "setup_server_non_public_home");
-
-# Test Step #8:
-# Check that endpoint's Public attribute is False
-ok(is_endpoint_public($endpoint_name) == 0, "is_endpoint_still_non_public");
-
-# Test Step #9:
-# Check that endpoint's DefaultDirectory attribute is /home
-ok(is_default_dir($endpoint_name, "/home") == 0, "is_default_dir_home");
-
-# Test Step #10:
-# Set up server with (Public=True, DefaultDirectory="/tmp")
-# Change both at once
-ok(setup_server($endpoint_name, 1, "/tmp") == 0, "setup_server_public_tmp");
-
-# Test Step #11:
-# Check that endpoint's Public attribute is True
-ok(is_endpoint_public($endpoint_name) == 1, "is_endpoint_public_again");
-
-# Test Step #12:
-# Check that endpoint's DefaultDirectory attribute is "/tmp"
-ok(is_default_dir($endpoint_name, "/tmp") == 0, "is_default_dir_back_to_tmp");
-
-# Clean up the services
-cleanup($endpoint_name);
-
-# Remove everything in GCMU dir
-force_cleanup();
 
 sub setup_server($$$)
 {
@@ -95,7 +35,7 @@ sub setup_server($$$)
     $ENV{ENDPOINT_PUBLIC} = $endpoint_public;
     $ENV{ENDPOINT_DIR} = $default_dir;
 
-    return system(@cmd);
+    return system(@cmd)==0;
 }
 
 sub is_endpoint_public($)
@@ -115,21 +55,20 @@ sub is_default_dir($$)
 
     $json = get_endpoint($endpoint);
 
-    return $json->{default_directory} ne $dir;
+    return $json->{default_directory} eq $dir;
 }
 
 sub cleanup($)
 {
     my $endpoint_name = shift;
     my @cmd;
-    my $rc;
 
     $ENV{ENDPOINT_NAME} = $endpoint_name;
     $ENV{ENDPOINT_PUBLIC} = "False";
     $ENV{ENDPOINT_DIR} = "/~/";
 
-    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file);
-    $rc = system(@cmd);
+    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
+    system(@cmd) == 0;
 }
 
 sub force_cleanup()
@@ -145,5 +84,64 @@ sub force_cleanup()
     }
     File::Path::rmtree("/var/lib/globus-connect-multiuser");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
-    return 0;
 }
+
+# Prepare
+plan tests => 12;
+my $random = int(1000000*rand());
+my $endpoint_name = "ENDPOINT_OPTIONS_$random";
+
+# Test Step #1:
+# Setup server with (Public=True, DefaultDirectory="/tmp")
+ok(setup_server($endpoint_name, 1, "/tmp"), "setup_server_public_tmp");
+
+# Test Step #2:
+# Check that endpoint's Public attribute is True
+ok(is_endpoint_public($endpoint_name), "is_endpoint_public");
+
+# Test Step #3:
+# Check that endpoint's DefaultDirectory attribute is /tmp
+ok(is_default_dir($endpoint_name, "/tmp"), "is_default_dir_tmp");
+
+# Test Step #4
+# Set up server with (Public=False, DefaultDirectory="/tmp")
+ok(setup_server($endpoint_name, 0, "/tmp"), "setup_server_non_public_tmp");
+
+# Test Step #5:
+# Check that endpoint's Public attribute is False
+ok(!is_endpoint_public($endpoint_name), "is_endpoint_non_public");
+
+# Test Step #6:
+# Check that endpoint's DefaultDirectory attribute is /tmp
+ok(is_default_dir($endpoint_name, "/tmp"), "is_default_dir_still_tmp");
+
+# Test Step #7
+# Set up server with (Public=False, DefaultDirectory="/home")
+ok(setup_server($endpoint_name, 0, "/home"), "setup_server_non_public_home");
+
+# Test Step #8:
+# Check that endpoint's Public attribute is False
+ok(!is_endpoint_public($endpoint_name), "is_endpoint_still_non_public");
+
+# Test Step #9:
+# Check that endpoint's DefaultDirectory attribute is /home
+ok(is_default_dir($endpoint_name, "/home"), "is_default_dir_home");
+
+# Test Step #10:
+# Set up server with (Public=True, DefaultDirectory="/tmp")
+# Change both at once
+ok(setup_server($endpoint_name, 1, "/tmp"), "setup_server_public_tmp");
+
+# Test Step #11:
+# Check that endpoint's Public attribute is True
+ok(is_endpoint_public($endpoint_name), "is_endpoint_public_again");
+
+# Test Step #12:
+# Check that endpoint's DefaultDirectory attribute is "/tmp"
+ok(is_default_dir($endpoint_name, "/tmp"), "is_default_dir_back_to_tmp");
+
+# Clean up the services
+cleanup($endpoint_name);
+
+# Remove everything in GCMU dir
+force_cleanup();

@@ -134,7 +134,7 @@ sub cleanup($)
     my @cmd;
     my $rc;
 
-    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file);
+    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
     return system(@cmd) == 0;
 }
 
@@ -153,7 +153,7 @@ sub force_cleanup()
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
 }
 
-plan tests => 12;
+plan tests => 10;
 
 # Prepare
 my $hostname = $ENV{PUBLIC_HOSTNAME};
@@ -170,18 +170,10 @@ my $endpoint_name = "MYPROXY_OPTIONS_$random";
 
 # Try to create endpoint with different server name than hostname and
 # server_behind_nat is false
-ok(setup_server(
+ok(!setup_server(
         $endpoint_name,
         MyProxyServer => "myproxy-$random.globus.org"),
         "create_with_different_hostname");
-
-# Verify that endpoint has different server name
-ok(endpoint_myproxy_match($endpoint_name, "myproxy-$random.globus.org"),
-        "different_hostname_match");
-
-# Clean up endpoint
-ok(cleanup($endpoint_name), "cleanup_first");
-force_cleanup();
 
 # Create endpoint with different server name than hostname and
 # server_behind_nat is true

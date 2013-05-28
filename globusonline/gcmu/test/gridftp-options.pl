@@ -111,13 +111,21 @@ sub gridftp_setup_match($$)
 
 }
 
+sub endpoint_exists($)
+{
+    my $endpoint_name = shift;
+    my $json = get_endpoint($endpoint_name);
+
+    return $json->{DATA_TYPE} ne 'error';
+}
+
 sub cleanup($)
 {
     my $endpoint_name = shift;
     my @cmd;
     my $rc;
 
-    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file);
+    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
     return system(@cmd) == 0;
 }
 
@@ -161,8 +169,8 @@ ok(setup_server($endpoint_name,
         GridFTPServerBehindNAT => "False"), "create_with_different_hostname");
 
 # Verify that endpoint has different server name
-ok(endpoint_server_match($endpoint_name, "gridftp-$random.globus.org"),
-        "different_hostname_match");
+ok(!endpoint_exists($endpoint_name),
+        "didnt_create_endpoint");
 
 # Clean up endpoint
 ok(cleanup($endpoint_name), "cleanup_first");

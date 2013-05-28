@@ -28,51 +28,22 @@ use File::Temp;
 use Test::More;
 use LWP;
 
-plan tests => 6;
-
 # Prepare
 my $config_file = "test-web.conf";
 my $ua = LWP::UserAgent->new();
-
-# Test Step #1:
-# Setup ID server
-ok(setup_id_server() == 0, "setup_id_server");
-
-# Test Step #2:
-# Setup Web server
-ok(setup_web_server() == 0, "setup_web_server");
-
-# Test Step #3:
-# Contact OAuth server
-ok(contact_oauth_server($ua) == 0, "contact_oauth_server");
-
-# Test Step #4:
-# Clean up the web server
-ok(web_cleanup() == 0, "web_cleanup");
-
-# Test Step #5:
-# Clean up the ID server
-ok(id_cleanup() == 0, "id_cleanup");
-
-# Test Step #6:
-# Contact OAuth server
-ok(contact_oauth_server($ua) != 0, "contact_disabled_oauth_server");
-
-# Remove everything in GCMU dir
-force_cleanup();
 
 sub setup_id_server()
 {
     my @cmd = ("globus-connect-multiuser-id-setup", "-c", $config_file);
 
-    return system(@cmd);
+    return system(@cmd) == 0;
 }
 
 sub setup_web_server()
 {
     my @cmd = ("globus-connect-multiuser-web-setup", "-c", $config_file);
 
-    return system(@cmd);
+    return system(@cmd) == 0;
 }
 
 sub contact_oauth_server($)
@@ -89,23 +60,22 @@ sub contact_oauth_server($)
 sub id_cleanup()
 {
     my @cmd;
-    my $rc;
 
     $cmd[0] = "globus-connect-multiuser-id-cleanup";
     $cmd[1] = "-c";
-    $cmd[1] = $config_file;
-    $rc = system(@cmd);
+    $cmd[2] = $config_file;
+
+    return system(@cmd) == 0;
 }
 
 sub web_cleanup()
 {
     my @cmd;
-    my $rc;
 
     $cmd[0] = "globus-connect-multiuser-web-cleanup";
     $cmd[1] = "-c";
-    $cmd[1] = $config_file;
-    $rc = system(@cmd);
+    $cmd[2] = $config_file;
+    return system(@cmd) == 0;
 }
 
 sub force_cleanup()
@@ -121,5 +91,30 @@ sub force_cleanup()
     }
     File::Path::rmtree("/var/lib/globus-connect-multiuser");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
-    return 0;
 }
+
+plan tests => 5;
+
+# Test Step #1:
+# Setup ID server
+ok(setup_id_server(), "setup_id_server");
+
+# Test Step #2:
+# Setup Web server
+ok(setup_web_server(), "setup_web_server");
+
+# Test Step #3:
+# Contact OAuth server
+ok(contact_oauth_server($ua), "contact_oauth_server");
+
+# Test Step #4:
+# Clean up the web server
+ok(web_cleanup(), "web_cleanup");
+
+# Test Step #5:
+# Clean up the ID server
+ok(id_cleanup(), "id_cleanup");
+
+# Remove everything in GCMU dir
+force_cleanup();
+

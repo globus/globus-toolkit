@@ -22,23 +22,20 @@ use File::Path;
 use File::Temp;
 use Test::More;
 
-plan tests => 4;
-
-# Prepare
 my $config_file = "test-io.conf";
 
 sub setup_server()
 {
     my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file);
 
-    return system(@cmd);
+    return system(@cmd) == 0;
 }
 
 sub is_gridftp_running()
 {
     my @cmd = ("/etc/init.d/globus-gridftp-server", "status");
 
-    return system(@cmd);
+    return system(@cmd) == 0;
 }
 
 sub cleanup()
@@ -48,8 +45,8 @@ sub cleanup()
 
     $cmd[0] = "globus-connect-multiuser-cleanup";
     $cmd[1] = "-c";
-    $cmd[1] = $config_file;
-    $rc = system(@cmd);
+    $cmd[2] = $config_file;
+    return system(@cmd) == 0;
 }
 
 sub force_cleanup()
@@ -65,24 +62,26 @@ sub force_cleanup()
     }
     File::Path::rmtree("/var/lib/globus-connect-multiuser");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
-    return 0;
 }
+
+# Prepare
+plan tests => 4;
 
 # Test Step #1:
 # Setup ID server
-ok(setup_server() == 0, "setup_server");
+ok(setup_server(), "setup_server");
 
 # Test Step #2:
 # Is GridFTP server running?
-ok(is_gridftp_running() == 0, "is_gridftp_running");
+ok(is_gridftp_running(), "is_gridftp_running");
 
 # Test Step #3:
 # Clean up the services
-ok(cleanup() == 0, "cleanup");
+ok(cleanup(), "cleanup");
 
 # Test Step #4:
 # Is GridFTP server running?
-ok(is_gridftp_running() == 1, "is_gridftp_not_running");
+ok(!is_gridftp_running(), "is_gridftp_not_running");
 
 # Remove everything in GCMU dir
 force_cleanup();
