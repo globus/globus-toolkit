@@ -21,7 +21,7 @@ use strict;
 use File::Path;
 use Test::More;
 
-require "transferapi.pl"
+require "transferapi.pl";
 
 # Prepare
 my $random = int(1000000*rand());
