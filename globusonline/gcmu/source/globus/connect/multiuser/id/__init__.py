@@ -74,14 +74,19 @@ class ID(gcmu.GCMU):
     def cleanup(self, **kwargs):
         self.logger.debug("ENTER: IO:cleanup()")
         server = self.conf.get_myproxy_server()
+        if server is None:
+            self.logger.debug("No MyProxy server defined")
+            return
+
         self.disable()
         self.stop()
 
         myproxy_dir = self.conf.get_etc_myproxy_d()
 
-        for name in os.listdir(myproxy_dir):
-            if name.startswith("globus-connect-multiuser"):
-                os.remove(os.path.join(myproxy_dir, name))
+        if os.path.exists(myproxy_dir):
+            for name in os.listdir(myproxy_dir):
+                if name.startswith("globus-connect-multiuser"):
+                    os.remove(os.path.join(myproxy_dir, name))
         self.cleanup_trust_roots()
         self.logger.debug("EXIT: IO:cleanup()")
 
