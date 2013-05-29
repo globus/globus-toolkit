@@ -121,6 +121,7 @@ if __name__ == "__main__":
         web = Web(config_obj=conf, api=api, debug=debug)
         web.cleanup()
         io.cleanup(delete=delete)
+        id.cleanup()
     except KeyboardInterrupt, e:
         print "Aborting..."
         sys.exit(1)
