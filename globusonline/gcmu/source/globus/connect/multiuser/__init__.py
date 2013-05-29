@@ -212,7 +212,8 @@ def get_api(conf):
             username=auth_result.username,
             goauth=auth_result.token,
             base_url=base_url,
-            server_ca_file=api_ca)
+            server_ca_file=api_ca,
+            max_attempts=5)
     api.password = password
     return api
 
