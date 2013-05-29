@@ -59,6 +59,7 @@ import socket
 import ssl
 import sys
 import time
+import traceback
 
 from globusonline.transfer.api_client.goauth import get_access_token, GOCredentialsError
 from globusonline.transfer.api_client import TransferAPIClient
@@ -113,6 +114,12 @@ if __name__ == "__main__":
     except KeyboardInterrupt, e:
         print "Aborting.."
         sys.exit(1);
+    except Exception, e:
+        if debug:
+            traceback.print_exc(file=sys.stderr)
+        else:
+            print str(e)
+        sys.exit(1)
 
 
 # vim: filetype=python:

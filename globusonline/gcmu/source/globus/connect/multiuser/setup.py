@@ -61,6 +61,7 @@ globus-connect-multiuser-setup {-c FILENAME|--config-file=FILENAME}
 import getopt
 import socket
 import sys
+import traceback
 
 from globus.connect.multiuser.configfile import ConfigFile
 from globus.connect.multiuser import get_api
@@ -123,6 +124,12 @@ if __name__ == "__main__":
         sys.exit(io.errorcount + id.errorcount + web.errorcount)
     except KeyboardInterrupt, e:
         print "Aborting..."
+        sys.exit(1)
+    except Exception, e:
+        if debug:
+            traceback.print_exc(file=sys.stderr)
+        else:
+            print str(e)
         sys.exit(1)
 
 # vim: filetype=python:

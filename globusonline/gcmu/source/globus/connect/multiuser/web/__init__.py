@@ -78,6 +78,9 @@ class Web(gcmu.GCMU):
         self.logger.debug("EXIT: Web.setup()")
 
     def cleanup(self, **kwargs):
+        if not self.is_local():
+            self.logger.debug("web cleanup: no OAuth server configured")
+            return
         self.disable_default_ssl_site(**kwargs)
         self.disable_default_ssl_site(**kwargs)
         self.remove_auth_conf(**kwargs)
@@ -129,11 +132,11 @@ class Web(gcmu.GCMU):
         if self.conf.get_go_instance() == "Test":
             args.append("-n")
             args.append("graph.api.test.globuscs.info")
-        self.logger.info("executing " + " ".join(args))
+        self.logger.debug("executing " + " ".join(args))
         setup = Popen(args, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         (out, err) = setup.communicate(self.password)
         if out != "":
-            self.logger.info(out)
+            self.logger.debug(out)
         if err != "":
             self.logger.warn(err)
         self.logger.debug("EXIT: Web.register_oauth_server()")

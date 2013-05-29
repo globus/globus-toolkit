@@ -661,7 +661,7 @@ class GCMU(object):
                     stdout=PIPE, stderr=PIPE)
             (out, err) = disabler.communicate()
             if out is not None and out != "" and out != "\n":
-                self.logger.info(out,)
+                self.logger.debug(out,)
             if err is not None and err != "" and err != "\n":
                 self.logger.warn(err,)
 
@@ -695,7 +695,7 @@ class GCMU(object):
                     stdout=PIPE, stderr=PIPE)
             (out, err) = enabler.communicate()
             if out is not None and out != "" and out != "\n":
-                self.logger.info(out,)
+                self.logger.debug(out,)
             if err is not None and err != "" and err != "\n":
                 self.logger.warn(err,)
 

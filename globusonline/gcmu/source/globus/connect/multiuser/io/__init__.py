@@ -577,8 +577,6 @@ server
                             myproxy_server=myproxy_server,
                             myproxy_dn=myproxy_dn,
                             oauth_server=oauth_server)
-                    (status_code, status_reason, data) = \
-                        self.api.endpoint(endpoint_name)
                 except TransferAPIError, e:
                     self.logger.error("endpoint create failed: %s" % \
                         (e.message))
