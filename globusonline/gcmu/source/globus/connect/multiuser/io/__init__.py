@@ -519,11 +519,11 @@ server
                 self.api.endpoint(endpoint_name)
             old_default_dir = data.get("default_directory")
             changed = False
-            if old_default_dir is not None and \
+            if old_default_dir is None or \
                     old_default_dir != endpoint_default_dir:
                 self.logger.debug("Changing default_directory on endpoint " \
                     "from [%(old)s] to [%(new)s]" % {
-                            'old': old_default_dir,
+                            'old': str(old_default_dir),
                             'new': endpoint_default_dir
                     })
                 data[u'default_directory'] = \
@@ -556,6 +556,7 @@ server
                     (status_code, status_reason, data) = \
                         self.api.endpoint_create(
                             endpoint_name,
+                            default_directory = endpoint_default_dir,
                             public = endpoint_public,
                             is_globus_connect = False,
                             hostname=new_gridftp_server[u'hostname'],
