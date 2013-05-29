@@ -434,7 +434,11 @@ server
         server = scheme + "://" + hostname + ":" + str(port)
 
         if kwargs.get("delete"):
-            self.api.endpoint_delete(endpoint_name)
+            try:
+                self.api.endpoint_delete(endpoint_name)
+            except TransferAPIError, e:
+                if e.status_code != 404:
+                    raise e
         else:
             (status_code, status_reason, data) = \
                 self.api.endpoint(endpoint_name)
