@@ -123,7 +123,12 @@ class ConfigFile(ConfigParser.ConfigParser):
         self.root = root
         if config_file is None:
             config_file = os.path.join("/", ConfigFile.DEFAULT_CONFIG_FILE)
-        self.read(config_file)
+        config_fp = open(config_file, "r")
+        try:
+            if self.readfp(config_fp) == []:
+                raise ParsingError()
+        finally:
+            config_fp.close()
 
     def __get_list(self, section, option, maxsplit = 0):
         if not self.has_option(section, option):
