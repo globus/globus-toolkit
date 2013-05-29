@@ -218,9 +218,10 @@ def get_api(conf):
     def wrap_function_with_retries(fun):
         def wrapper(*args, **kwargs):
             last_exception = None
+            res = None
             for tries in xrange(0, 10):
                 try:
-                    fun(*args, **kwargs)
+                    res = fun(*args, **kwargs)
                     last_exception = None
                     break
                 except ssl.SSLError, e:
@@ -231,6 +232,7 @@ def get_api(conf):
 
             if last_exception is not None:
                 raise last_exception
+            return res
         return wrapper
 
     api.endpoint_create = wrap_function_with_retries(api.endpoint_create)

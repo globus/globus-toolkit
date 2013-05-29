@@ -1,5 +1,12 @@
 globus-connect-multiuser (2.0.39-1) unstable; urgency=low
 
+  * Update to 2.0.40
+  * Fix retry wrapper return value
+
+ -- Globus Toolkit <support@globus.org>  Wed, 29 May 2013 13:17:11 -0400
+
+globus-connect-multiuser (2.0.39-1) unstable; urgency=low
+
   * Update to 2.0.39
   * Different approach to KOA-2601: occasional endpoint create/update timeouts
 
