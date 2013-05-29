@@ -191,7 +191,7 @@ def get_api(conf):
         
     socket.setdefaulttimeout(300)
 
-    for tries in xrange(1,10):
+    for tries in xrange(0,10):
         try:
             auth_result = get_access_token(
                     username=username,
@@ -212,9 +212,31 @@ def get_api(conf):
             username=auth_result.username,
             goauth=auth_result.token,
             base_url=base_url,
-            server_ca_file=api_ca,
-            max_attempts=5)
+            server_ca_file=api_ca)
     api.password = password
+
+    def wrap_function_with_retries(fun):
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for tries in xrange(0, 10):
+                try:
+                    fun(*args, **kwargs)
+                    last_exception = None
+                    break
+                except ssl.SSLError, e:
+                    if "timed out" in e.args[0]:
+                        raise e
+                    last_exception = e
+                    time.sleep(tries * 0.5)
+
+            if last_exception is not None:
+                raise last_exception
+        return wrapper
+
+    api.endpoint_create = wrap_function_with_retries(api.endpoint_create)
+    api.endpoint_update = wrap_function_with_retries(api.endpoint_update)
+    api.endpoint_delete = wrap_function_with_retries(api.endpoint_delete)
+
     return api
 
 class GCMU(object):
