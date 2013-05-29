@@ -487,10 +487,18 @@ server
             hostname = server
         server = scheme + "://" + hostname + ":" + str(port)
 
+        oauth_server = None
         myproxy_server = None
         myproxy_dn = None
-        oauth_server = self.conf.get_oauth_server()
-        if oauth_server is None:
+        if self.conf.get_security_identity_method() == \
+                self.conf.IDENTITY_METHOD_OAUTH:
+            oauth_server = self.conf.get_oauth_server()
+            if oauth_server is None:
+                raise Exception("Configured to use OAuth, but no OAuth server defined")
+        elif self.conf.get_security_identity_method() == \
+                self.conf.IDENTITY_METHOD_CILOGON:
+            oauth_server = "cilogon.org"
+        else:
             myproxy_server = self.conf.get_myproxy_server()
             myproxy_dn = self.conf.get_myproxy_dn()
 
