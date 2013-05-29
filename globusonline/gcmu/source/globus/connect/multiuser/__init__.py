@@ -202,7 +202,7 @@ def get_api(conf):
         except ssl.SSLError, e:
             if "timed out" not in e.args[0]:
                 raise e
-            time.sleep(0.5)
+            time.sleep(30)
         except GOCredentialsError, e:
             print "Globus Online Username: ",
             username = sys.stdin.readline().strip()
@@ -228,7 +228,7 @@ def get_api(conf):
                     if "timed out" in e.args[0]:
                         raise e
                     last_exception = e
-                    time.sleep(tries * 0.5)
+                    time.sleep(30)
 
             if last_exception is not None:
                 raise last_exception
