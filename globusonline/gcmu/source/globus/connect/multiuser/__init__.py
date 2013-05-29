@@ -238,6 +238,7 @@ def get_api(conf):
     api.endpoint_create = wrap_function_with_retries(api.endpoint_create)
     api.endpoint_update = wrap_function_with_retries(api.endpoint_update)
     api.endpoint_delete = wrap_function_with_retries(api.endpoint_delete)
+    api.endpoint_delete = wrap_function_with_retries(api.endpoint)
 
     return api
 
