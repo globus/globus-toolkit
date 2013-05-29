@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.37
+Version:        2.0.38
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -164,6 +164,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Wed May 29 2013 Globus Toolkit <support@globus.org> 2.0.38-1
+- Update to 2.0.38
+- KOA-2602: globus-connect-multiuser-cleanup doesn't clean up myproxy server
+- KOA-2603: globus-connect-multiuser-* commands don't error when -c
+            CONFIGFILE doesn't exist
+- KOA-2604: globus-connect-multiuser-cleanup exits with exception if the
+            endpoint doesn't exist
+- KOA-2605: GCMU endpoint default dir doesn't seem to be set correctly in GO
+- KOA-2608: gcmu scripts are very chatty
+- KOA-2601: occasional endpoint create/update timeouts
+- KOA-2613: globus-connect-multiuser-id-cleanup tries to clean up myproxy
+            even if it's not configured
+
 * Fri May 24 2013 Globus Toolkit <support@globus.org> 2.0.37-1
 - KOA-2607: GCMU fetches wrong format CRL file
 

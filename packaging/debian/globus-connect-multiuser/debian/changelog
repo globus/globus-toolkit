@@ -1,3 +1,16 @@
+globus-connect-multiuser (2.0.38-1) unstable; urgency=low
+
+  * Update to 2.0.38
+  * KOA-2602: globus-connect-multiuser-cleanup doesn't clean up myproxy server
+  * KOA-2603: globus-connect-multiuser-* commands don't error when -c CONFIGFILE doesn't exist
+  * KOA-2604: globus-connect-multiuser-cleanup exits with exception if the endpoint doesn't exist
+  * KOA-2605: GCMU endpoint default dir doesn't seem to be set correctly in GO
+  * KOA-2608: gcmu scripts are very chatty
+  * KOA-2601: occasional endpoint create/update timeouts
+  * KOA-2613: globus-connect-multiuser-id-cleanup tries to clean up myproxy even if it's not configured
+
+ -- Globus Toolkit <support@globus.org>  Wed, 29 May 2013 09:35:29 -0400
+
 globus-connect-multiuser (2.0.37-1) unstable; urgency=low
 
   * KOA-2607: GCMU fetches wrong format CRL file
