@@ -86,6 +86,10 @@ if __name__ == "__main__":
         usage(short=True, outstream=sys.stderr)
         sys.exit(1)
     
+    if len(arg) > 0:
+        print >>sys.stderr, "Unexpected argument(s) " + " ".join(arg)
+        sys.exit(1)
+
     for (o, val) in opts:
         if o in ['-h', '--help']:
             usage()
