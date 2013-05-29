@@ -407,6 +407,9 @@ server
         self.logger.debug("EXIT: IO.configure_cilogon()")
 
     def cleanup(self, **kwargs):
+        if not self.is_local():
+            return
+        
         for name in os.listdir(self.etc_gridftp_d):
             if name.startswith("globus-connect-multiuser") \
                         or name.startswith("gcmu"):
