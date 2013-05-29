@@ -441,7 +441,11 @@ server
                        u'relay-disconnected.globusonline.org' and \
                    x[u'uri'] != gcmu.to_unicode(server)]
             data[u'DATA'] = servers_filtered
-            self.api.endpoint_update(endpoint_name, data)
+            try:
+                self.api.endpoint_update(endpoint_name, data)
+            except TransferAPIError, e:
+                if e.status_code != 404:
+                    raise e
 
     def bind_to_endpoint(self, **kwargs):
         """
