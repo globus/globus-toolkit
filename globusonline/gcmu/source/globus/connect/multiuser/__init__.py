@@ -251,7 +251,7 @@ def get_api(conf):
                     time.sleep(30)
                 except ClientError, e:
                     if e.status_code == 409: # Conflict -- already created
-                        return endpoint_fun(args[0])
+                        return endpoint_fun(kwargs['endpoint_name'])
                     last_exception = e
 
             if last_exception is not None:
