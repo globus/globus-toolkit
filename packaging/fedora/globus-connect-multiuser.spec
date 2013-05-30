@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.47
+Version:        2.0.48
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -164,6 +164,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Thu May 30 2013 Globus Toolkit <support@globus.org> 2.0.48-1
+- Update to 2.0.48
+- Fix args to endpoint_create()
+
 * Thu May 30 2013 Globus Toolkit <support@globus.org> 2.0.47-1
 - Update to 2.0.47
 - Fix args to api.endpoint() in create wrapper

@@ -251,7 +251,7 @@ def get_api(conf):
                     time.sleep(30)
                 except ClientError, e:
                     if e.status_code == 409: # Conflict -- already created
-                        return endpoint_fun(kwargs['endpoint_name'])
+                        return endpoint_fun(args[0])
                     last_exception = e
 
             if last_exception is not None:
@@ -348,7 +348,7 @@ class GCMU(object):
                 # create dummy endpoint to get a setup_key
                 dummy_endpoint_name = "gcmu-temp-" + str(uuid.uuid4())
                 (status_code, status_reason, data) = self.api.endpoint_create(
-                    endpoint_name = dummy_endpoint_name,
+                    dummy_endpoint_name,
                     public = False, is_globus_connect = True)
                 setup_key = data['globus_connect_setup_key']
                 self.api.endpoint_delete(dummy_endpoint_name)
