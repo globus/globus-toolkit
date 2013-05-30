@@ -31,7 +31,7 @@ import uuid
 import globus.connect.security
 import globusonline.transfer.api_client
 import globusonline.transfer.api_client.verified_https
-from globusonline.transfer.api_client import TransferAPIClient
+from globusonline.transfer.api_client import TransferAPIClient, ClientError
 from globusonline.transfer.api_client.goauth import get_access_token, GOCredentialsError
 import globusonline.transfer.api_client.goauth
 
@@ -235,10 +235,35 @@ def get_api(conf):
             return res
         return wrapper
 
-    api.endpoint_create = wrap_function_with_retries(api.endpoint_create)
+    def wrap_endpoint_create(create_fun, endpoint_fun):
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            res = None
+            for tries in xrange(0, 10):
+                try:
+                    res = create_fun(*args, **kwargs)
+                    last_exception = None
+                    break
+                except ssl.SSLError, e:
+                    if "timed out" not in e.args[0]:
+                        raise e
+                    last_exception = e
+                    time.sleep(30)
+                except ClientError, e:
+                    if e.status_code == 409: # Conflict -- already created
+                        return endpoint_fun(args[0])
+                    last_exception = e
+
+            if last_exception is not None:
+                raise last_exception
+            return res
+        return wrapper
+
     api.endpoint_update = wrap_function_with_retries(api.endpoint_update)
     api.endpoint_delete = wrap_function_with_retries(api.endpoint_delete)
     api.endpoint = wrap_function_with_retries(api.endpoint)
+    api.endpoint_create = wrap_endpoint_create(
+            api.endpoint_create, api.endpoint)
 
     return api
 

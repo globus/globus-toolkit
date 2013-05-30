@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.45
+Version:        2.0.46
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -164,8 +164,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Thu May 30 2013 Globus Toolkit <support@globus.org> 2.0.46-1
+- Update to 2.0.46
+- Check for existing endpoint if endpoint_create times out and then
+  we get a 409 Conflict response
+
 * Thu May 30 2013 Globus Toolkit <support@globus.org> 2.0.45-1
-- Update to 2.0.44
+- Update to 2.0.45
 - Fix logic inversion
 - Filter nonprintable strings from output
 

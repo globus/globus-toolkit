@@ -1,6 +1,13 @@
+globus-connect-multiuser (2.0.46-1) unstable; urgency=low
+
+  * Update to 2.0.46
+  * Check for existing endpoint if endpoint_create times out and then we get a 409 Conflict response
+
+ -- Globus Toolkit <support@globus.org>  Thu, 30 May 2013 12:34:55 -0400
+
 globus-connect-multiuser (2.0.45-1) unstable; urgency=low
 
-  * Update to 2.0.44
+  * Update to 2.0.45
   * Fix logic inversion
   * Filter nonprintable strings from output
 
