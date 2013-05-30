@@ -225,7 +225,7 @@ def get_api(conf):
                     last_exception = None
                     break
                 except ssl.SSLError, e:
-                    if "timed out" in e.args[0]:
+                    if "timed out" not in e.args[0]:
                         raise e
                     last_exception = e
                     time.sleep(30)

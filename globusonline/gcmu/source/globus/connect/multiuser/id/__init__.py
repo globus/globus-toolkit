@@ -21,6 +21,7 @@ import copy
 import logging
 import os
 import pkgutil
+import string
 import shutil
 import sys
 
@@ -119,6 +120,8 @@ class ID(gcmu.GCMU):
                     args.append('-force')
                 ca_create = Popen(args, stdout = PIPE, stderr = PIPE)
                 (out, err) = ca_create.communicate()
+                out = "".join(s for s in out if s in string.printable)
+                err = "".join(s for s in err if s in string.printable)
                 self.logger.debug("ca create output: " + out)
                 self.logger.debug("ca create stderr: " + err)
             finally:

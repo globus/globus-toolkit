@@ -1,3 +1,11 @@
+globus-connect-multiuser (2.0.45-1) unstable; urgency=low
+
+  * Update to 2.0.44
+  * Fix logic inversion
+  * Filter nonprintable strings from output
+
+ -- Globus Toolkit <support@globus.org>  Thu, 30 May 2013 08:50:56 -0400
+
 globus-connect-multiuser (2.0.44-1) unstable; urgency=low
 
   * Update to 2.0.44
