@@ -36,7 +36,7 @@ my $config_file = "test-id.conf";
 
 sub setup_id_server()
 {
-    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file);
+    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v");
 
     return system(@cmd) == 0;
 }
@@ -98,13 +98,8 @@ sub fetch_and_compare_trust_roots()
 
 sub cleanup()
 {
-    my @cmd;
-    my $rc;
-
-    $cmd[0] = "globus-connect-multiuser-cleanup";
-    $cmd[1] = "-c";
-    $cmd[2] = $config_file;
-    $cmd[3] = "-d";
+    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d",
+            "-v");
 
     return system(@cmd)==0;
 }

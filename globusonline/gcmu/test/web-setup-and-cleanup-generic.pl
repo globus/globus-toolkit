@@ -32,9 +32,9 @@ my $config_file = "test-web.conf";
 
 sub setup_server()
 {
-    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file);
+    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v");
 
-    return system(@cmd);
+    return system(@cmd) == 0;
 }
 
 sub contact_oauth_server($)
@@ -50,13 +50,9 @@ sub contact_oauth_server($)
 
 sub cleanup()
 {
-    my @cmd;
-    my $rc;
+    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-v");
 
-    $cmd[0] = "globus-connect-multiuser-cleanup";
-    $cmd[1] = "-c";
-    $cmd[2] = $config_file;
-    $rc = system(@cmd);
+    return system(@cmd) == 0;
 }
 
 sub force_cleanup()
@@ -82,7 +78,7 @@ my $ua = LWP::UserAgent->new();
 
 # Test Step #1:
 # Setup ID server
-ok(setup_server() == 0, "setup_server");
+ok(setup_server(), "setup_server");
 
 # Test Step #2:
 # Contact OAuth server
@@ -90,7 +86,7 @@ ok(contact_oauth_server($ua), "contact_oauth_server");
 
 # Test Step #3:
 # Clean up the server
-ok(cleanup() == 0, "web_cleanup");
+ok(cleanup(), "web_cleanup");
 
 # Remove everything in GCMU dir
 force_cleanup();

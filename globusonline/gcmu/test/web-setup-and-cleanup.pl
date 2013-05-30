@@ -34,14 +34,14 @@ my $ua = LWP::UserAgent->new();
 
 sub setup_id_server()
 {
-    my @cmd = ("globus-connect-multiuser-id-setup", "-c", $config_file);
+    my @cmd = ("globus-connect-multiuser-id-setup", "-c", $config_file, "-v");
 
     return system(@cmd) == 0;
 }
 
 sub setup_web_server()
 {
-    my @cmd = ("globus-connect-multiuser-web-setup", "-c", $config_file);
+    my @cmd = ("globus-connect-multiuser-web-setup", "-c", $config_file, "-v");
 
     return system(@cmd) == 0;
 }
@@ -59,22 +59,14 @@ sub contact_oauth_server($)
 
 sub id_cleanup()
 {
-    my @cmd;
-
-    $cmd[0] = "globus-connect-multiuser-id-cleanup";
-    $cmd[1] = "-c";
-    $cmd[2] = $config_file;
+    my @cmd = ("globus-connect-multiuser-id-cleanup", "-c", $config_file, "-v");
 
     return system(@cmd) == 0;
 }
 
 sub web_cleanup()
 {
-    my @cmd;
-
-    $cmd[0] = "globus-connect-multiuser-web-cleanup";
-    $cmd[1] = "-c";
-    $cmd[2] = $config_file;
+    my @cmd = ("globus-connect-multiuser-web-cleanup","-c", $config_file, "-v");
     return system(@cmd) == 0;
 }
 

@@ -40,13 +40,10 @@ sub count_servers($)
 
 sub cleanup
 {
-    my @cmd;
+    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d",
+            "-v");
     my $rc;
 
-    $cmd[0] = "globus-connect-multiuser-cleanup";
-    $cmd[1] = "-c";
-    $cmd[2] = $config_file;
-    $cmd[3] = "-d";
     $rc = system(@cmd);
 
     # Just to make sure that doesn't fail
@@ -75,7 +72,8 @@ sub gcmu_setup($$;@)
     $ENV{RANDOM_SERVER} = $server;
 
     # Create $endpoint
-    @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, @other_options);
+    @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v",
+            @other_options);
     return system(@cmd);
 }
 

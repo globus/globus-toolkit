@@ -26,7 +26,7 @@ my $config_file = "test-io.conf";
 
 sub setup_server()
 {
-    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file);
+    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v");
 
     return system(@cmd) == 0;
 }
@@ -40,12 +40,8 @@ sub is_gridftp_running()
 
 sub cleanup()
 {
-    my @cmd;
-    my $rc;
+    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-v");
 
-    $cmd[0] = "globus-connect-multiuser-cleanup";
-    $cmd[1] = "-c";
-    $cmd[2] = $config_file;
     return system(@cmd) == 0;
 }
 
