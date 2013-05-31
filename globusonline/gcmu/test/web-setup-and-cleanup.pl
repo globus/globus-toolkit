@@ -52,7 +52,7 @@ sub contact_oauth_server($)
     my $req;
     my $res;
 
-    $req = HTTP::Request->new(GET => "https://localhost/oauth/authorize");
+    $req = HTTP::Request->new(GET => "https://127.0.0.1/oauth/authorize");
     $res = $ua->request($req);
     return $res->code() == 403;
 }
