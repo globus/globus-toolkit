@@ -205,7 +205,7 @@ status_lsb()
         4)
             if [ -n "$lsb_ok" -a ! -f "${pidfile}" ]; then
                 echo "$gridftpd is not running"
-                rc=0
+                rc=3
             fi
             ;;
         *)

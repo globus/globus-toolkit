@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.27
+Version:	6.28
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/updates/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -183,6 +183,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Fri May 31 2013 Globus Toolkit <support@globus.org> - 6.28-1
+- GT-407: globus-gridftp-server status returns 0 when not running on ubuntu
+
 * Thu May 16 2013 Globus Toolkit <support@globus.org> - 6.27-1
 - Allow variables in -sharing-rp
 - fix 32/64 rpm conflicts

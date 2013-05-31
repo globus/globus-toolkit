@@ -1,3 +1,9 @@
+globus-gridftp-server (6.28-1) unstable; urgency=low
+
+  * GT-407: globus-gridftp-server status returns 0 when not running on ubuntu
+
+ -- Globus Toolkit <support@globus.org>  Fri, 31 May 2013 09:53:26 -0400
+
 globus-gridftp-server (6.27-1) unstable; urgency=low
 
   * Allow variables in -sharing-rp
