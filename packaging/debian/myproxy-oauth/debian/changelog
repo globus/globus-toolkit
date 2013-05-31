@@ -1,3 +1,9 @@
+myproxy-oauth (0.8-1) unstable; urgency=low
+
+  * enable mod_wsgi for epel5 distros
+
+ -- Globus Toolkit <support@globus.org>  Fri, 31 May 2013 14:00:50 -0400
+
 myproxy-oauth (0.7-1) unstable; urgency=low
 
   * SELinux label db file

@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.7
+Version:	0.8
 Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
@@ -82,8 +82,13 @@ mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
 cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth-2.4 \
    $RPM_BUILD_ROOT/etc/httpd/conf.d/wsgi-myproxy-oauth.conf 
 %else
+%if 0%{?rhel} == 05
+cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth-epel5 \
+   $RPM_BUILD_ROOT/etc/httpd/conf.d/wsgi-myproxy-oauth.conf 
+%else
 cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth \
    $RPM_BUILD_ROOT/etc/httpd/conf.d/wsgi-myproxy-oauth.conf 
+%endif
 %endif
 
 mkdir -p "$RPM_BUILD_ROOT/var/lib/myproxy-oauth"
