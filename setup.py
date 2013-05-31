@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name = 'myproxy_oauth',
-    version = '0.7',
+    version = '0.8',
     description = 'MyProxy OAuth Delegation Service',
     author = 'Globus Toolkit',
     author_email = 'support@globus.org',
@@ -18,5 +18,8 @@ setup(name = 'myproxy_oauth',
     },
     scripts = [ 'wsgi.py', 'myproxy-oauth-setup' ],
     data_files = [
-            ('apache', [ 'conf/myproxy-oauth', 'conf/myproxy-oauth-2.4' ])]
+            ('apache', [
+                    'conf/myproxy-oauth',
+                    'conf/myproxy-oauth-2.4',
+                    'conf/myproxy-oauth-epel5' ])]
 )
