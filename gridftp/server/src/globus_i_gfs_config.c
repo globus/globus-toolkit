@@ -351,6 +351,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Time in seconds before canceling an attempted ipc connection.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"always_send_markers", "always_send_markers", NULL, "always-send-markers", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     NULL, NULL, NULL,GLOBUS_FALSE, NULL}, /* always send perf and restart markers, even in mode S */
+ {"allow_udt", "allow_udt", NULL, "allow-udt", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Enable protcol support for UDT with NAT traversal if the udt driver is available.  Requires threads.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"port_range", "port_range", NULL, "port-range", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Port range to use for incoming connections. The format is \"startport,endport\". "
     "This, along with -data-interface, can be used to enable operation behind "

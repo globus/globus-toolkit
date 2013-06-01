@@ -67,6 +67,7 @@ static globus_hashtable_t               gfs_l_data_disk_allowed_drivers;
 static globus_list_t *                  globus_l_gfs_path_alias_list_base = NULL;
 static globus_list_t *                  globus_l_gfs_path_alias_list_sharing = NULL;
 static int                              globus_l_gfs_op_info_ctr = 1;
+static globus_xio_driver_t              globus_l_gfs_udt_driver_preload = NULL;
 
 typedef enum
 {
@@ -169,6 +170,10 @@ typedef struct
     char *                              client_appver;
     char *                              client_scheme;
     gss_cred_id_t                       dcsc_cred;
+    
+    globus_bool_t                       upas;
+    globus_ftp_control_handle_t         udt_data_channel;
+    globus_bool_t                       udt_data_channel_inuse;
     
     globus_list_t *                     active_rp_list;
     globus_list_t *                     rp_list;
@@ -1176,6 +1181,12 @@ globus_l_gfs_free_session_handle(
         OM_uint32   min_rc;
         gss_release_cred(
             &min_rc, &session_handle->dcsc_cred);
+    }
+    if(session_handle->udt_data_channel_inuse)
+    {
+        globus_ftp_control_handle_destroy(
+            &session_handle->udt_data_channel);
+        session_handle->udt_data_channel_inuse = GLOBUS_FALSE;
     }
     if(session_handle->session_info_copy)
     {
@@ -3690,6 +3701,18 @@ globus_i_gfs_data_init()
         globus_l_gfs_path_alias_list_sharing = globus_l_gfs_path_alias_list_base;
     }
 
+    if(globus_i_gfs_config_bool("allow_udt"))
+    {
+        result = globus_xio_driver_load("udt", &globus_l_gfs_udt_driver_preload);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_result(
+                GLOBUS_GFS_LOG_INFO, 
+                "Unable to load UDT driver", result);
+            globus_gfs_config_set_bool("allow_udt", GLOBUS_FALSE);
+        }
+    }
+
     GlobusGFSDebugExit();
 }
 
@@ -4105,7 +4128,8 @@ globus_l_gfs_data_load_stack(
     char *                              driver_string_in,
     globus_list_t **                    driver_list_out,
     globus_hashtable_t *                allowed_drivers,
-    char *                              default_stack)
+    char *                              default_stack,
+    globus_bool_t                       subst_io_drivers)
 {
     char *                              parsed_driver_string;
     char *                              driver_string;
@@ -4145,6 +4169,33 @@ globus_l_gfs_data_load_stack(
                 allowed_drivers);
             
             globus_free(parsed_driver_string);
+            
+            if(subst_io_drivers)
+            {
+                globus_xio_driver_list_ent_t *      ent;
+
+                ent = globus_xio_driver_list_find_driver(*driver_list_out, "tcp");
+                if(ent)
+                {
+                    if(ent->loaded)
+                    {
+                        globus_xio_driver_unload(ent->driver);
+                        ent->loaded = GLOBUS_FALSE;
+                    }
+                    ent->driver = globus_io_compat_get_tcp_driver();
+                }
+
+                ent = globus_xio_driver_list_find_driver(*driver_list_out, "gsi");
+                if(ent)
+                {
+                    if(ent->loaded)
+                    {
+                        globus_xio_driver_unload(ent->driver);
+                        ent->loaded = GLOBUS_FALSE;
+                    }
+                    ent->driver = globus_io_compat_get_gsi_driver();
+                }
+            }
         }
     }
     
@@ -4311,7 +4362,8 @@ globus_i_gfs_data_request_command(
                     cmd_info->pathname,
                     &op->session_handle->net_stack_list,
                     &gfs_l_data_net_allowed_drivers,
-                    globus_i_gfs_config_string("dc_default"));
+                    globus_i_gfs_config_string("dc_default"),
+                    GLOBUS_TRUE);
                 if(result != GLOBUS_SUCCESS)
                 {
                     result = GlobusGFSErrorWrapFailed(
@@ -4332,11 +4384,12 @@ globus_i_gfs_data_request_command(
             if(session_handle->dsi->descriptor & 
                 GLOBUS_GFS_DSI_DESCRIPTOR_SENDER)
             {
-                result = globus_l_gfs_data_load_stack(
+                 result = globus_l_gfs_data_load_stack(
                     cmd_info->pathname,
                     &op->session_handle->disk_stack_list,
                     &gfs_l_data_disk_allowed_drivers,
-                    globus_i_gfs_config_string("fs_default"));
+                    globus_i_gfs_config_string("fs_default"),
+                    GLOBUS_FALSE);
                 if(result != GLOBUS_SUCCESS)
                 {
                     result = GlobusGFSErrorWrapFailed(
@@ -4771,6 +4824,132 @@ share_test_error:
             call = GLOBUS_FALSE;
             break;
 
+
+        case GLOBUS_GFS_CMD_UPAS:
+            if(*cmd_info->pathname != '0' && *cmd_info->pathname != '1')
+            {
+                result = GlobusGFSErrorGeneric(
+                    "Controller parameter must be 0 or 1.");
+                    
+                globus_gridftp_server_finished_command(op, result, NULL);
+
+            }
+            else
+            {
+                char *                          candidates = NULL;
+                char *                          stunserver;
+                globus_xio_driver_list_ent_t *  ent;
+                globus_xio_attr_t               xio_attr;
+                                
+                if(session_handle->net_stack_list == NULL)
+                {
+                    result = globus_l_gfs_data_load_stack(
+                        op->session_handle->subject ? "udt,gsi" : "udt",
+                        &op->session_handle->net_stack_list,
+                        globus_i_gfs_config_bool("allow_udt") ? 
+                            NULL : &gfs_l_data_net_allowed_drivers,
+                        NULL,
+                        GLOBUS_TRUE);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        result = GlobusGFSErrorWrapFailed(
+                            "Setting data channel driver stack", result);
+                    }
+                }
+                
+                ent = globus_xio_driver_list_find_driver(
+                    session_handle->net_stack_list, "udt");
+                
+                if(ent)
+                {
+                    if(session_handle->udt_data_channel_inuse)
+                    {
+                        globus_ftp_control_handle_destroy(
+                            &session_handle->udt_data_channel);
+                        session_handle->udt_data_channel_inuse = GLOBUS_FALSE;
+                    }
+                    
+                    result = globus_ftp_control_handle_init(
+                        &session_handle->udt_data_channel);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        result = GlobusGFSErrorWrapFailed(
+                            "globus_ftp_control_handle_init", result);
+                        goto error_upas;
+                    }
+                    session_handle->udt_data_channel_inuse = GLOBUS_TRUE;
+                    
+                    result = globus_i_ftp_control_data_get_attr(
+                        &session_handle->udt_data_channel,
+                        &xio_attr);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        goto error_upas;
+                    }
+
+                    stunserver = strchr(cmd_info->pathname, ' ');
+                    if(stunserver)
+                    {
+                        stunserver++;
+                    }
+                    result = globus_xio_attr_cntl(
+                        xio_attr,
+                        ent->driver,
+                        17 /* GLOBUS_XIO_UDT_GET_LOCAL_CANDIDATES*/,
+                        *cmd_info->pathname == '1' ? 1 : 0,
+                        stunserver,
+                        &candidates);
+                }
+                else
+                {
+                    result = GlobusGFSErrorWrapFailed(
+                        "Setting data channel driver stack", result);
+                }
+error_upas:
+                globus_gridftp_server_finished_command(op, result, candidates);
+            }
+            
+            call = GLOBUS_FALSE;
+            break;
+
+        case GLOBUS_GFS_CMD_UPRT:
+            {
+                globus_xio_driver_list_ent_t *  ent;
+                globus_xio_attr_t               xio_attr;
+                
+                ent = globus_xio_driver_list_find_driver(
+                    session_handle->net_stack_list, "udt");
+                if(ent)
+                {
+                    result = globus_i_ftp_control_data_get_attr(
+                        &session_handle->udt_data_channel,
+                        &xio_attr);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        goto error_uprt;
+                    }
+    
+                    result = globus_xio_attr_cntl(
+                        xio_attr,
+                        ent->driver,
+                        18 /* GLOBUS_XIO_UDT_SET_REMOTE_CANDIDATES */,
+                        cmd_info->pathname);
+                    
+                    session_handle->upas = GLOBUS_TRUE;
+                }
+                else
+                {
+                    result = GlobusGFSErrorWrapFailed(
+                        "Setting data channel driver stack", result);
+                }                    
+error_uprt:
+                globus_gridftp_server_finished_command(op, result, NULL);
+
+            }
+            
+            call = GLOBUS_FALSE;
+            break;
+
         case GLOBUS_GFS_CMD_SITE_CLIENTINFO:
             tmp = globus_malloc(strlen(cmd_info->pathname) + 1);
 
@@ -5017,12 +5196,21 @@ globus_l_gfs_data_handle_init(
     }
     memcpy(&handle->info, data_info, sizeof(globus_gfs_data_info_t));
 
-    result = globus_ftp_control_handle_init(&handle->data_channel);
-    if(result != GLOBUS_SUCCESS)
+    if(session_handle->udt_data_channel_inuse)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_ftp_control_handle_init", result);
-        goto error_data;
+        memcpy(&handle->data_channel, &session_handle->udt_data_channel, 
+            sizeof(globus_ftp_control_handle_t));
+        session_handle->udt_data_channel_inuse = GLOBUS_FALSE;
+    }
+    else
+    {        
+        result = globus_ftp_control_handle_init(&handle->data_channel);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_ftp_control_handle_init", result);
+            goto error_data;
+        }
     }
 
     handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
@@ -5080,6 +5268,11 @@ globus_l_gfs_data_handle_init(
         }
     }
 
+    if(session_handle->upas)
+    {
+        handle->info.nstreams = 1;
+    }
+    
     if(handle->info.mode == 'S')
     {
         handle->info.nstreams = 1;
@@ -5232,9 +5425,33 @@ globus_l_gfs_data_handle_init(
                 globus_error_print_friendly(globus_error_peek(result)));
             goto error_control;
         }
-
+        
+        if(handle->info.dcau == 'N')
+        {
+            globus_xio_driver_list_ent_t *      ent;
+            
+            ent = globus_xio_driver_list_find_driver(net_stack_list, "gsi");
+            if(ent)
+            {
+                globus_list_remove(&net_stack_list, globus_list_search(net_stack_list, ent));
+                if(ent->loaded)
+                {
+                    globus_xio_driver_unload(ent->driver);
+                }
+                if(ent->driver_name)
+                {
+                    globus_free(ent->driver_name);
+                }
+                if(ent->opts)
+                {
+                    globus_free(ent->opts);
+                }
+                globus_free(ent);
+            }
+        }
+        
         globus_xio_stack_init(&stack, NULL);
-
+        
         result = globus_xio_driver_list_to_stack_attr(
             net_stack_list, stack, xio_attr);
         if(result != GLOBUS_SUCCESS)
@@ -6064,6 +6281,7 @@ globus_i_gfs_data_request_passive(
                 "globus_ftp_control_local_pasv", result);
             goto error_control;
         }
+        
 
         /* XXX This needs to be smarter.  The address should be the same one
          * the user is connected to on the control channel (at least when
@@ -9346,7 +9564,8 @@ globus_i_gfs_data_session_start(
         "default",
         &op->session_handle->net_stack_list,
         &gfs_l_data_net_allowed_drivers,
-        globus_i_gfs_config_string("dc_default"));
+        globus_i_gfs_config_string("dc_default"),
+        GLOBUS_TRUE);
     if(result != GLOBUS_SUCCESS)
     {
         char *                          msg;
@@ -9362,7 +9581,8 @@ globus_i_gfs_data_session_start(
         "default",
         &op->session_handle->disk_stack_list,
         &gfs_l_data_disk_allowed_drivers,
-        globus_i_gfs_config_string("fs_default"));
+        globus_i_gfs_config_string("fs_default"),
+        GLOBUS_FALSE);
     if(result != GLOBUS_SUCCESS)
     {
         char *                          msg;
@@ -9610,6 +9830,9 @@ globus_gridftp_server_finished_command(
       case GLOBUS_GFS_CMD_CKSM:
         op->cksm_response = globus_libc_strdup(command_data);
         op->user_code = 0;
+        break;
+      case GLOBUS_GFS_CMD_UPAS:
+        op->cksm_response = globus_libc_strdup(command_data);
         break;
       case GLOBUS_GFS_CMD_MKD:
       case GLOBUS_GFS_CMD_RMD:

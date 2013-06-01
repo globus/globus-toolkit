@@ -126,6 +126,8 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_SITE_RESTRICT = 3072,
     GLOBUS_GFS_CMD_SITE_CHROOT,
     GLOBUS_GFS_CMD_SITE_SHARING,
+    GLOBUS_GFS_CMD_UPAS,
+    GLOBUS_GFS_CMD_UPRT,
     
     GLOBUS_GFS_MIN_CUSTOM_CMD = 4096
 } globus_gfs_command_type_t;

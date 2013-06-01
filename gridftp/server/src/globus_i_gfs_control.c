@@ -1013,6 +1013,12 @@ globus_l_gfs_data_command_cb(
                 request->instance->server_handle, NULL);
             globus_gsc_959_finished_command(op, "250 OK.\r\n");
             break;
+          case GLOBUS_GFS_CMD_UPAS:
+                msg = globus_common_create_string(
+                    "200 %s\r\n", reply->info.command.checksum);
+                globus_gsc_959_finished_command(op, msg);
+
+            break;
           case GLOBUS_GFS_CMD_RNFR:
             request->instance->rnfr_pathname = info->pathname;
             info->pathname = NULL;
@@ -1761,6 +1767,20 @@ globus_l_gfs_request_command(
                 goto err;
             }
             type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
+        }
+        else if(strcmp(cmd_array[1], "UPAS") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_UPAS;
+            command_info->pathname = globus_libc_strdup(cmd_array[2]);
+    
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER_STATE;
+        }
+        else if(strcmp(cmd_array[1], "UPRT") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_UPRT;
+            command_info->pathname = globus_libc_strdup(cmd_array[2]);
+    
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER_STATE;
         }
 
         else
@@ -3140,6 +3160,43 @@ globus_l_gfs_add_commands(
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
+    }
+
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE UPAS",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE UPAS <0|1> [<sp> stunserver:stunport]",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE UPRT",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE UPRT <sp> <SITE UPAS response>",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    
+    if(globus_i_gfs_config_bool("allow_udt"))
+    {
+        result = globus_gridftp_server_control_add_feature(
+            control_handle, "UPAS");
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
     }
 
     GlobusGFSDebugExit();
