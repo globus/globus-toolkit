@@ -17,6 +17,11 @@
 
 #include "udt.h"
 
+extern "C"
+{
+#include "ice.h"
+}
+
 #define XIO_UDT_BOOL_UNDEF  (GLOBUS_FALSE - 10)
 
 #define GlobusXIOUdtError(_r) globus_error_put(GlobusXIOUdtErrorObj(_r))
@@ -88,6 +93,13 @@ typedef struct xio_l_udt_ref_attr_s
     globus_bool_t                       reuseaddr;
     int                                 port;
     int                                 fd;
+    int                                 ice_controlling;
+    globus_bool_t                       ice;
+    struct icedata                      ice_data;
+    globus_sockaddr_t                   ice_local_addr;
+    globus_socklen_t                    ice_local_addr_len;
+    globus_sockaddr_t                   ice_remote_addr;
+    globus_socklen_t                    ice_remote_addr_len;
 } xio_l_udt_ref_attr_t;
 
 static
@@ -132,8 +144,9 @@ globus_l_xio_udt_ref_activate(void)
         goto error_xio_system_activate;
     }
     GlobusXIORegisterDriver(udt);
-    GlobusXIOUDTRefDebugExit();
-
+    
+    memset(&globus_l_xio_udt_ref_attr_default, 0, sizeof(xio_l_udt_ref_attr_t));
+    
     globus_l_xio_udt_ref_attr_default.fd = -1;
     globus_l_xio_udt_ref_attr_default.mss = -1;
     globus_l_xio_udt_ref_attr_default.sndsyn = XIO_UDT_BOOL_UNDEF;
@@ -149,6 +162,7 @@ globus_l_xio_udt_ref_activate(void)
     globus_l_xio_udt_ref_attr_default.reuseaddr = XIO_UDT_BOOL_UNDEF;
     globus_l_xio_udt_ref_attr_default.port = 0;
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 
 error_xio_system_activate:
@@ -190,6 +204,8 @@ globus_l_xio_udt_ref_attr_copy(
 {
     xio_l_udt_ref_attr_t *              src_attr;
     xio_l_udt_ref_attr_t *              dst_attr;
+    GlobusXIOName(globus_l_xio_udt_ref_attr_copy);
+    GlobusXIOUDTRefDebugEnter();
 
     src_attr = (xio_l_udt_ref_attr_t *) src;
     dst_attr = (xio_l_udt_ref_attr_t *) globus_calloc(1,
@@ -200,6 +216,7 @@ globus_l_xio_udt_ref_attr_copy(
 
     *dst = dst_attr;
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -209,14 +226,21 @@ globus_l_xio_udt_ref_attr_init(
     void **                             out_attr)
 {
     xio_l_udt_ref_attr_t *              attr;
+    GlobusXIOName(globus_l_xio_udt_ref_attr_init);
+    GlobusXIOUDTRefDebugEnter();
 
     globus_l_xio_udt_ref_attr_copy(
         (void **)&attr, (void *)&globus_l_xio_udt_ref_attr_default);
 
     *out_attr = attr;
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 }
+/* stun.stunprotocol.org */
+#define DEFAULTSTUNSERVER "107.23.150.92"
+#define DEFAULTSTUNPORT 3478
+
 
 static
 globus_result_t
@@ -226,11 +250,111 @@ globus_l_xio_udt_ref_attr_cntl(
     va_list                             ap)
 {
     xio_l_udt_ref_attr_t *              attr;
+    char **                             out_string;
+    globus_result_t                     result;
+    int                                 rc;
 
+    GlobusXIOName(globus_l_xio_udt_ref_attr_cntl);
+    GlobusXIOUDTRefDebugEnter();
+    
     attr = (xio_l_udt_ref_attr_t *) driver_specific_handle;
 
     switch(cmd)
     {
+        case GLOBUS_XIO_UDT_GET_LOCAL_CANDIDATES:
+          {
+            char *                      stunserver;
+            char *                      stunhost;
+            int                         stunport;
+            
+            attr->ice_controlling = va_arg(ap, int);
+            stunserver = va_arg(ap, char *);
+            out_string = va_arg(ap, char **);
+            
+            ice_lib_init();
+            
+            if(stunserver)
+            {
+                char *                  ptr;
+                
+                stunhost = strdup(stunserver);
+                ptr = strchr(stunserver, ':');
+                if(ptr)
+                {
+                    *ptr = 0;
+                    ptr++;
+                    stunport = atoi(ptr);
+                }
+            }
+            else
+            {
+                stunhost = strdup(DEFAULTSTUNSERVER);
+                stunport = DEFAULTSTUNPORT;
+            }
+                    
+            rc = ice_init(
+                &attr->ice_data, 
+                (const char *)DEFAULTSTUNSERVER,
+                (unsigned int)DEFAULTSTUNPORT,
+                attr->ice_controlling);
+            if(rc != ICE_SUCCESS)
+            {
+                result = GlobusXIOUdtError("ICE init failed.");
+                goto error;
+            }
+            globus_free(stunhost);
+            
+            *out_string = (char *) globus_calloc(1, LOCAL_DATA_SIZE);
+            
+            rc = ice_get_local_data(
+                &attr->ice_data,
+                *out_string,
+                LOCAL_DATA_SIZE);
+            if(rc != ICE_SUCCESS)
+            {
+                globus_free(*out_string);
+                *out_string = NULL;
+                
+                result = GlobusXIOUdtError("ICE failed getting local data.");
+                goto error;
+            }
+          }
+            break;
+
+        case GLOBUS_XIO_UDT_SET_REMOTE_CANDIDATES:
+            {
+                char *                  ice_args;
+                char **                 ice_argv;
+                int                     ice_argc;
+                int                     status;
+                socklen_t               local_addrlen;
+                socklen_t               remote_addrlen;
+                                       
+                ice_args = va_arg(ap, char *);
+                
+                ice_argv = ice_parse_args(ice_args, &ice_argc);
+    
+                status = ice_negotiate(&attr->ice_data, ice_argc, ice_argv);
+                if(status != ICE_SUCCESS)
+                {
+                    result = GlobusXIOUdtError("ICE negotiation failed.");
+                    goto error;
+                }
+    
+                local_addrlen = sizeof(attr->ice_local_addr);
+                remote_addrlen = sizeof(attr->ice_remote_addr);
+                status = ice_get_negotiated_addrs(&attr->ice_data,
+                    (struct sockaddr *)&attr->ice_local_addr, &local_addrlen,
+                    (struct sockaddr *)&attr->ice_remote_addr, &remote_addrlen);
+                if(status != ICE_SUCCESS)
+                {
+                    result = GlobusXIOUdtError("ICE failed getting negotiated addrs.");
+                    goto error;
+                }
+                attr->ice = GLOBUS_TRUE;
+            }
+            break;
+            
         case GLOBUS_XIO_UDT_MSS:
             attr->mss = va_arg(ap, int);
             break;
@@ -294,7 +418,13 @@ globus_l_xio_udt_ref_attr_cntl(
             break;
     }
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
+
+error:
+    GlobusXIOUDTRefDebugExitWithError();
+    return result;
+
 }
 
 
@@ -321,12 +451,15 @@ globus_result_t
 globus_l_xio_udt_ref_attr_destroy(
     void *                              driver_attr)
 {
+    GlobusXIOName(globus_l_xio_udt_ref_attr_destroy);
+    GlobusXIOUDTRefDebugEnter();
     /* this is fine for now (no pointers in it) */
     if(driver_attr)
     {
         globus_free(driver_attr);
     }
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -337,6 +470,10 @@ globus_l_xio_udt_ref_cntl(
     int                                 cmd,
     va_list                             ap)
 {
+    GlobusXIOName(globus_l_xio_udt_ref_cntl);
+    GlobusXIOUDTRefDebugEnter();
+
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -348,14 +485,16 @@ globus_l_xio_udt_ref_bind(
     struct sockaddr *                   addr,
     int                                 addr_len,
     int                                 min_port,
-    int                                 max_port)
+    int                                 max_port,
+    xio_l_udt_ref_attr_t *              attr)
 {
     int                                 port = 0;
     int                                 rc;
     globus_bool_t                       done;
     globus_sockaddr_t                   myaddr;
     globus_result_t                     result;
-    GlobusXIOName(globus_l_xio_udp_bind);
+    GlobusXIOName(globus_l_xio_udt_ref_bind);
+    GlobusXIOUDTRefDebugEnter();
 
     if(min_port == -1)
     {
@@ -367,34 +506,61 @@ globus_l_xio_udt_ref_bind(
         port = min_port;
     }
 
-    done = GLOBUS_FALSE;
-    do
+    if(attr->ice)
     {
-        GlobusLibcSockaddrCopy(myaddr, *addr, addr_len);
-        GlobusLibcSockaddrSetPort(myaddr, port);
-
+        int udp_sock;
+        attr->ice = 0;
+        udp_sock = socket(attr->ice_local_addr.ss_family, SOCK_DGRAM, 0);
+        if(udp_sock < 0)
+        {
+           result = GlobusXIOUdtError("udp bind failed");
+        }
+        ice_destroy(&attr->ice_data);
         rc = UDT::bind(
             fd,
-            (struct sockaddr *) &myaddr,
-            (unsigned int)GlobusLibcSockaddrLen(&myaddr));
+            (struct sockaddr *) &attr->ice_local_addr,
+            (unsigned int)GlobusLibcSockaddrLen(&attr->ice_local_addr));
         if(rc < 0)
         {
-            if(++port > max_port)
-            {
-                result = GlobusXIOUdtError(
-                    UDT::getlasterror().getErrorMessage());
-                goto error_bind;
-            }
+            result = GlobusXIOUdtError(
+                UDT::getlasterror().getErrorMessage());
+            goto error_bind;
         }
-        else
+        GlobusLibcSockaddrCopy(addr, attr->ice_local_addr, addr_len);
+    }
+    else
+    {
+        done = GLOBUS_FALSE;
+        do
         {
-            done = GLOBUS_TRUE;
-        }
-    } while(!done);
+            GlobusLibcSockaddrCopy(myaddr, *addr, addr_len);
+            GlobusLibcSockaddrSetPort(myaddr, port);
+    
+            rc = UDT::bind(
+                fd,
+                (struct sockaddr *) &myaddr,
+                (unsigned int)GlobusLibcSockaddrLen(&myaddr));
+            if(rc < 0)
+            {
+                if(++port > max_port)
+                {
+                    result = GlobusXIOUdtError(
+                        UDT::getlasterror().getErrorMessage());
+                    goto error_bind;
+                }
+            }
+            else
+            {
+                done = GLOBUS_TRUE;
+            }
+        } while(!done);
+    }
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 
 error_bind:
+    GlobusXIOUDTRefDebugExitWithError();
     return result;
 }
 
@@ -416,6 +582,7 @@ globus_l_xio_udt_ref_server_init(
     xio_l_udt_ref_server_handle_t *     server_handle;
     xio_l_udt_ref_attr_t *              attr;
     GlobusXIOName(globus_l_xio_udt_ref_server_init);
+    GlobusXIOUDTRefDebugEnter();
 
     attr = (xio_l_udt_ref_attr_t *) 
         (driver_attr ? driver_attr : &globus_l_xio_udt_ref_attr_default);
@@ -452,7 +619,7 @@ globus_l_xio_udt_ref_server_init(
 
     result = globus_l_xio_udt_ref_bind(
         server_handle->listener, 
-        (struct sockaddr *)&my_addr, sizeof(my_addr), min, max);
+        (struct sockaddr *)&my_addr, sizeof(my_addr), min, max, attr);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_bind;
@@ -473,12 +640,14 @@ globus_l_xio_udt_ref_server_init(
     globus_xio_contact_destroy(&my_contact_info);
     globus_free(tmp_cs);
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 error_listen:
 error_bind:
     UDT::close(server_handle->listener);
 error_socket:
     globus_free(server_handle);
+    GlobusXIOUDTRefDebugExitWithError();
     return result;
 }
 
@@ -488,10 +657,13 @@ globus_l_xio_udt_ref_server_destroy(
     void *                              driver_server)
 {
     xio_l_udt_ref_server_handle_t *     server_handle;
+    GlobusXIOName(globus_l_xio_udt_ref_server_destroy);
+    GlobusXIOUDTRefDebugEnter();
 
     server_handle = (xio_l_udt_ref_server_handle_t *) driver_server;
     UDT::close(server_handle->listener);
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -502,6 +674,10 @@ globus_l_xio_udt_ref_server_cntl(
     int                                 cmd,
     va_list                             ap)
 {
+    GlobusXIOName(globus_l_xio_udt_ref_server_cntl);
+    GlobusXIOUDTRefDebugEnter();
+
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -512,6 +688,10 @@ globus_l_xio_udt_ref_link_cntl(
     int                                 cmd,
     va_list                             ap)
 {
+    GlobusXIOName(globus_l_xio_udt_ref_link_cntl);
+    GlobusXIOUDTRefDebugEnter();
+
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -520,6 +700,10 @@ globus_result_t
 globus_l_xio_udt_ref_link_destroy(
     void *                              driver_link)
 {
+    GlobusXIOName(globus_l_xio_udt_ref_link_destroy);
+    GlobusXIOUDTRefDebugEnter();
+
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -530,6 +714,8 @@ globus_l_xio_udt_attr_to_socket(
     int                                 sock)
 {
     int                                 rc;
+    GlobusXIOName(globus_l_xio_udt_attr_to_socket);
+    GlobusXIOUDTRefDebugEnter();
 
     if(attr->mss != -1)
     {
@@ -667,10 +853,12 @@ globus_l_xio_udt_attr_to_socket(
         }
     }
 
+    GlobusXIOUDTRefDebugExit();
     return;
 
 error:
 
+    GlobusXIOUDTRefDebugExitWithError();
     return;
 }
 
@@ -685,6 +873,7 @@ globus_l_xio_udt_ref_accept(
     xio_l_udt_ref_handle_t *            handle;
     xio_l_udt_ref_server_handle_t *     server;
     GlobusXIOName(globus_l_xio_udt_ref_accept);
+    GlobusXIOUDTRefDebugEnter();
 
     server = (xio_l_udt_ref_server_handle_t *) driver_server;
 
@@ -700,9 +889,11 @@ globus_l_xio_udt_ref_accept(
     }
     *out_link = handle;
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 error_accept:
     globus_free(handle);
+    GlobusXIOUDTRefDebugExitWithError();
     return result;
 }
 
@@ -724,7 +915,11 @@ globus_l_xio_udt_ref_open(
     globus_addrinfo_t                   addrinfo_hints;
     globus_result_t                     result;
     xio_l_udt_ref_handle_t *            handle;
+    struct sockaddr *                   addr;
+    size_t                              addrlen;
+
     GlobusXIOName(globus_l_xio_udt_ref_open);
+    GlobusXIOUDTRefDebugEnter();
 
     attr = (xio_l_udt_ref_attr_t *) 
         (driver_attr ? driver_attr : &globus_l_xio_udt_ref_attr_default);
@@ -739,19 +934,29 @@ globus_l_xio_udt_ref_open(
         addrinfo_hints.ai_family = PF_INET;
         addrinfo_hints.ai_socktype = SOCK_DGRAM;
         addrinfo_hints.ai_protocol = 0;
-        result = globus_libc_getaddrinfo(
-            contact_info->host, contact_info->port, &addrinfo_hints, &addrinfo);
-        if(result != GLOBUS_SUCCESS)
+        
+        if(!attr->ice)
         {
-            result = GlobusXIOUdtError("getaddrinfo failed");
-            goto error_getaddr;
+            result = globus_libc_getaddrinfo(
+                contact_info->host, contact_info->port, &addrinfo_hints, &addrinfo);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusXIOUdtError("getaddrinfo failed");
+                goto error_getaddr;
+            }
+            if(addrinfo == NULL)
+            {
+                result = GlobusXIOUdtError("no address found for contact");
+                goto error_getaddr;
+            }
+            addr = addrinfo->ai_addr;
+            addrlen = addrinfo->ai_addrlen;
         }
-        if(addrinfo == NULL)
+        else
         {
-            result = GlobusXIOUdtError("no address found for contact");
-            goto error_getaddr;
+            addr = (struct sockaddr *) &attr->ice_remote_addr;
+            addrlen = GlobusLibcSockaddrLen(&attr->ice_remote_addr);
         }
-
         handle->sock = UDT::socket(AF_INET, SOCK_STREAM, 0);
         if(handle->sock <= 0)
         {
@@ -786,7 +991,7 @@ globus_l_xio_udt_ref_open(
                 handle->sock,
                 (struct sockaddr *)&my_addr,
                 sizeof(my_addr),
-                min, max);
+                min, max, attr);
             if(result != GLOBUS_SUCCESS)
             {
                 goto error_socket;
@@ -796,10 +1001,9 @@ globus_l_xio_udt_ref_open(
         {
             /* UDT::setFD(handle->sock, attr->fd); */
         }
-        if(UDT::connect(
-            handle->sock, addrinfo->ai_addr, addrinfo->ai_addrlen))
+        if(UDT::connect(handle->sock, addr, addrlen))
         {
-            result = GlobusXIOUdtError("UDT::connect failed");
+            result = GlobusXIOUdtError(UDT::getlasterror().getErrorMessage());
             goto error_connect;
         }
         *driver_handle = handle;
@@ -809,6 +1013,7 @@ globus_l_xio_udt_ref_open(
         *driver_handle = driver_link;
     }
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 error_connect:
     UDT::close(handle->sock);
@@ -816,6 +1021,7 @@ error_socket:
 error_getaddr:
     globus_free(handle);
 
+    GlobusXIOUDTRefDebugExitWithError();
     return result;
 }
 
@@ -831,6 +1037,7 @@ globus_l_xio_udt_ref_read(
     xio_l_udt_ref_handle_t *            handle;
     int                                 rc;
     GlobusXIOName(globus_l_xio_udt_ref_read);
+    GlobusXIOUDTRefDebugEnter();
 
     handle = (xio_l_udt_ref_handle_t *) driver_specific_handle;
 
@@ -850,9 +1057,11 @@ globus_l_xio_udt_ref_read(
     }
     *nbytes = (globus_size_t) rc;
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 error:
     *nbytes = 0;
+    GlobusXIOUDTRefDebugExitWithError();
     return result;
 }
 
@@ -867,6 +1076,7 @@ globus_l_xio_udt_ref_write(
     globus_result_t                     result;
     xio_l_udt_ref_handle_t *            handle;
     GlobusXIOName(globus_l_xio_udt_ref_write);
+    GlobusXIOUDTRefDebugEnter();
 
     handle = (xio_l_udt_ref_handle_t *) driver_specific_handle;
 
@@ -878,8 +1088,10 @@ globus_l_xio_udt_ref_write(
         goto error;
     }
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 error:
+    GlobusXIOUDTRefDebugExitWithError();
     return result;
 }
 
@@ -891,12 +1103,14 @@ globus_l_xio_udt_ref_close(
 {
     xio_l_udt_ref_handle_t *            handle;
     GlobusXIOName(globus_l_xio_udt_ref_close);
+    GlobusXIOUDTRefDebugEnter();
 
     handle = (xio_l_udt_ref_handle_t *) driver_specific_handle;
 
     UDT::close(handle->sock);
     globus_free(handle);
 
+    GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -908,8 +1122,8 @@ globus_l_xio_udt_ref_init(
     globus_xio_driver_t                 driver;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_udt_ref_init);
-
     GlobusXIOUDTRefDebugEnter();
+
     result = globus_xio_driver_init(&driver, "udt", NULL);
     if(result != GLOBUS_SUCCESS)
     {
@@ -962,7 +1176,13 @@ void
 globus_l_xio_udt_ref_destroy(
     globus_xio_driver_t                 driver)
 {
+    GlobusXIOName(globus_l_xio_udt_ref_destroy);
+    GlobusXIOUDTRefDebugEnter();
+
     globus_xio_driver_destroy(driver);
+
+    GlobusXIOUDTRefDebugExit();
+    return;    
 }
 
 
