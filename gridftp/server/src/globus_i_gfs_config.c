@@ -276,7 +276,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "           transfers across source/dest of a third party transfer. (client supplied)\n"
     , NULL, NULL,GLOBUS_FALSE, NULL},
  {"usage_stats_id", "usage_stats_id", NULL, "usage-stats-id", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Identifying tag to include in usage statistics data.", NULL, NULL, GLOBUS_FALSE, NULL},
+    "Identifying tag to include in usage statistics data.  If this is set and usage-stats-target is unset, "
+    "CONFID will be added to the default usage stats data.", NULL, NULL, GLOBUS_FALSE, NULL},
 {NULL, "Single and Striped Remote Data Node Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"remote_nodes", "remote_nodes", NULL, "remote-nodes", "r", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Comma separated list of remote node contact strings.", NULL, NULL,GLOBUS_FALSE, NULL},

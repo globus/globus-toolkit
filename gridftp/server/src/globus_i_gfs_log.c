@@ -219,8 +219,14 @@ globus_l_gfs_log_usage_stats_init()
             globus_malloc(sizeof(globus_l_gfs_log_usage_ent_t));
 
         usage_ent->target = target_str;
-        usage_ent->taglist = globus_libc_strdup(GLOBUS_GFS_DEFAULT_TAGLIST);
-
+        if(globus_i_gfs_config_string("usage_stats_id"))
+        {
+            usage_ent->taglist = globus_libc_strdup(GLOBUS_GFS_DEFAULT_TAGLIST "C");
+        }
+        else
+        {
+            usage_ent->taglist = globus_libc_strdup(GLOBUS_GFS_DEFAULT_TAGLIST);
+        }
         globus_list_insert(&globus_l_gfs_log_usage_handle_list, usage_ent);
     }
 
