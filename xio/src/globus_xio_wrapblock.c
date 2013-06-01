@@ -26,6 +26,7 @@ typedef struct xio_l_wrapblock_handle_s
 typedef struct xio_l_wrapblock_wrapper_s
 {
     globus_xio_contact_t                ci;
+    globus_i_xio_driver_t *             driver;
     struct xio_l_wrapblock_driver_s *   wrapblock_driver;
     xio_l_wrapblock_handle_t *          wrapblock_handle;
     void *                              attr;
@@ -53,6 +54,10 @@ xio_l_wrapblock_wrapper_destroy(
     if(wrapper->iovec != NULL)
     {
         globus_free(wrapper->iovec);
+    }
+    if(wrapper->attr && wrapper->driver && wrapper->driver->attr_destroy_func)
+    {
+        wrapper->driver->attr_destroy_func(wrapper->attr);
     }
     globus_free(wrapper);
 }
@@ -174,8 +179,13 @@ globus_l_xio_wrapblock_open(
             globus_calloc(1, sizeof(xio_l_wrapblock_wrapper_t));
         wrapper->wrapblock_handle = wrapblock_handle;
         wrapper->link = driver_link;
-        wrapper->attr = driver_attr;
         wrapper->op = op;
+        wrapper->driver = driver;
+
+        if(driver_attr != NULL && driver->attr_copy_func != NULL)
+        {
+            driver->attr_copy_func(&wrapper->attr, driver_attr);
+        }
         /* gotta copy contact info the hard way */
         globus_xio_contact_copy(&wrapper->ci, contact_info);
 
@@ -434,7 +444,7 @@ globus_xio_wrapblock_init(
     wrapblock_driver->read_func = read_func;
     wrapblock_driver->write_func = write_func;
     wrapblock_driver->accept_func = accept_func;
-
+    
     driver->wrap_data = wrapblock_driver;
 
     return GLOBUS_SUCCESS;
