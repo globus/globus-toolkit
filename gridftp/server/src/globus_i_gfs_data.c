@@ -2818,21 +2818,18 @@ globus_l_gfs_data_authorize(
                                         
                 shared_user_str = 
                     session_info->username + strlen(GLOBUS_SHARING_PREFIX);
+                ptr = shared_user_str;
                 
-                if(ptr = strchr(shared_user_str, ':'))
-                {
-                    *ptr = '\0';
-                    ptr++;
-                    usr_tmp = globus_libc_strdup(shared_user_str);
+                if(usr_tmp = globus_i_gfs_kv_getval(ptr, "USER"))
+                {   
                     session_info->map_user = GLOBUS_FALSE;
                 }
                 else
                 {
-                    ptr = shared_user_str;
                     usr_tmp = globus_libc_strdup(GLOBUS_MAPPING_STRING);
                     session_info->map_user = GLOBUS_TRUE;
                 }
-                
+
                 if(crt_tmp = globus_i_gfs_kv_getval(ptr, "CERT"))
                 {   
                     desired_user_cert = malloc(strlen(crt_tmp + 1));
