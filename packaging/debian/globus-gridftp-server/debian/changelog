@@ -1,3 +1,10 @@
+globus-gridftp-server (6.29-1) unstable; urgency=low
+
+  * GT-337: add UDT NAT traversal protocol
+  * GT-400: send confid when configured with default target
+
+ -- Globus Toolkit <support@globus.org>  Sat, 01 Jun 2013 05:52:02 -0500
+
 globus-gridftp-server (6.28-1) unstable; urgency=low
 
   * GT-407: globus-gridftp-server status returns 0 when not running on ubuntu

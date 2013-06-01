@@ -12,14 +12,14 @@
 
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	3.4
+Version:	3.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/updates/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -183,6 +183,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Sat Jun 01 2013 Globus Toolkit <support@globus.org> - 3.5-1
+- Fix wrapblock drivers losing attrs
+
 * Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 3.4-1
 - GT-354: Compatibility with automake 1.13
 
