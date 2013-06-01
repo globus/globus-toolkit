@@ -143,6 +143,7 @@ globus_gridmap_eppn_callout   gsi/gridmap_eppn_callout          dirt.sh
 globus_xio                      xio/src                         dirt.sh
 globus_xio_test                 xio/test                        dirt.sh
 globus_xio_netlogger_driver     xio/drivers/netlog              dirt.sh
+globus_xio_udt_ref_driver       xio/drivers/udt_ref             dirt.sh
 globus_gridftp_server_control   gridftp/server-lib/src          dirt.sh
 globus_gridftp_server_test      gridftp/server-lib/test         dirt.sh
 globus_gridftp_server           gridftp/server/src              dirt.sh
