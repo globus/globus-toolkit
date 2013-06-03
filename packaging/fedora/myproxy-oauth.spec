@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
 Version:	0.8
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
@@ -38,6 +38,9 @@ Requires:	python-sqlalchemy
 Requires:       python-httplib2
 %endif
 Requires:       python-jinja2
+%if 0%{?rhel} == 05
+Conflicts:      mod_python
+%endif
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
