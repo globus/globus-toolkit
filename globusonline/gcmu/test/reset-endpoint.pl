@@ -27,7 +27,6 @@ require "transferapi.pl";
 my $random = int(1000000*rand());
 my $endpoint = "RESET$random";
 my $server = "RESET$random";
-my $base_url = "https://transfer.api.globusonline.org/v0.10";
 my $config_file = "reset-endpoint.conf";
 
 sub count_servers($)

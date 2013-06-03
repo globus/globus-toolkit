@@ -28,11 +28,25 @@ use LWP;
 use URI::Escape;
 
 # Prepare
-my $base_url = "https://transfer.api.globusonline.org/v0.10";
+my $token_host;
+my $base_url;
+my $instance = $ENV{GLOBUSONLINE_INSTANCE} || "Production";
 my $user = $ENV{GLOBUSONLINE_USER};
 my $password = $ENV{GLOBUSONLINE_PASSWORD};
 my $ua = LWP::UserAgent->new();
-my $access_token = get_access_token($user, $password);
+my $access_token;
+if ($instance eq 'Test')
+{
+    $token_host = "graph.api.test.globuscs.info";
+    $base_url = "https://transfer.test.api.globusonline.org/v0.10";
+}
+else
+{
+    $token_host = "nexus.api.globusonline.org";
+    $base_url = "https://transfer.api.globusonline.org/v0.10";
+}
+
+$access_token = get_access_token($user, $password);
 
 sub get_access_token()
 {
@@ -40,11 +54,9 @@ sub get_access_token()
     my $url;
     my $req;
     my $res;
-    my $access_token;
-    my $random = int(1000000*rand());
     
     # Get access token
-    $url = "https://$user:$password\@nexus.api.globusonline.org/goauth/token?grant_type=client_credentials";
+    $url = "https://$user:$password\@$token_host/goauth/token?grant_type=client_credentials";
     $req = HTTP::Request->new(GET => $url);
     $res = $ua->request($req);
     $json = $res->content();

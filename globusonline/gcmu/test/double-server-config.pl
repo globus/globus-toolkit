@@ -78,7 +78,6 @@ sub gcmu_setup($$;@)
 my $random = int(1000000*rand());
 my $endpoint = "DOUBLE$random";
 my $server = "DOUBLE$random";
-my $base_url = "https://transfer.api.globusonline.org/v0.10";
 
 # Test Step #1:
 # Create endpoint

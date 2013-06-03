@@ -84,7 +84,6 @@ plan tests => 3;
 
 my $random = int(1000000*rand());
 my $endpoint = "MULTI$random";
-my $base_url = "https://transfer.api.globusonline.org/v0.10";
 my $test_mode;
 my $hostname = (POSIX::uname())[1];
 
