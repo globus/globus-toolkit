@@ -183,6 +183,8 @@ class ConfigFile(ConfigParser.ConfigParser):
                 ConfigFile.GLOBUSONLINE_SECTION,
                 ConfigFile.GLOBUS_ONLINE_INSTANCE_OPTION)
         if instance == '' or instance is None:
+            instance = os.environ.get("GLOBUSONLINE_INSTANCE")
+        if instance == '' or instance is None:
             instance = ConfigFile.GLOBUS_ONLINE_INSTANCES[0]
         elif instance not in ConfigFile.GLOBUS_ONLINE_INSTANCES:
             raise Exception("Invalid GlobusOnline Instance value %s" 
