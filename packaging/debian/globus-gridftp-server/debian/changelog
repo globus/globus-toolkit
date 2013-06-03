@@ -1,4 +1,4 @@
-globus-gridftp-server (6.29-1) unstable; urgency=low
+globus-gridftp-server (6.30-1) unstable; urgency=low
 
   * GT-408: service globus-gridftp-server status returns incorrect status on SL5
 
