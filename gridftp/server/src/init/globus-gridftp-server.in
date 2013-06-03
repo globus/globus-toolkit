@@ -188,6 +188,11 @@ status_lsb()
 {
     pid="$(pidofproc ${lsb_ok:+-p "$pidfile"} "$gridftpd")"
     rc=$?
+    if [ -z "$lsb_ok" -a $pid -eq $$ ]; then
+        # SL5 lsb pidofproc returns this process's pid, which is
+        # obviously not correct.
+        rc=4
+    fi
     case $rc in
         0)
             echo "GridFTP Server Running (pid=$pid)"

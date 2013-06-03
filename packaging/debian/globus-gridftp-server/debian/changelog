@@ -1,5 +1,11 @@
 globus-gridftp-server (6.29-1) unstable; urgency=low
 
+  * GT-408: service globus-gridftp-server status returns incorrect status on SL5
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 June 2013 10:48:07 -0400
+
+globus-gridftp-server (6.29-1) unstable; urgency=low
+
   * GT-337: add UDT NAT traversal protocol
   * GT-400: send confid when configured with default target
 

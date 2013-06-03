@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.29
+Version:	6.30
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -183,6 +183,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Jun 03 2013 Globus Toolkit <support@globus.org> - 6.30-1
+- GT-408: service globus-gridftp-server status returns incorrect status on SL5
+
 * Sat Jun 01 2013 Globus Toolkit <support@globus.org> - 6.29-1
 - GT-337: add UDT NAT traversal protocol
 - GT-400: send confid when configured with default target
