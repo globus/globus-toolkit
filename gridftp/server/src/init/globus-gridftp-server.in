@@ -188,7 +188,7 @@ status_lsb()
 {
     pid="$(pidofproc ${lsb_ok:+-p "$pidfile"} "$gridftpd")"
     rc=$?
-    if [ -z "$lsb_ok" -a $pid -eq $$ ]; then
+    if [ -z "$lsb_ok" ] && [ -n "$pid" ] && [ "$pid" -eq $$ ]; then
         # SL5 lsb pidofproc returns this process's pid, which is
         # obviously not correct.
         rc=4
