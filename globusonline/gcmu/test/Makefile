@@ -6,7 +6,6 @@ test:
 	env GLOBUSONLINE_USER=gcmutest \
             GLOBUSONLINE_PASSWORD=Automatic-GCMU-Test-Cases \
             TERM=vt100 \
-            GLOBUSONLINE_INSTANCE=Test \
             perl TESTS-junit.pl || true
 
 dist:
