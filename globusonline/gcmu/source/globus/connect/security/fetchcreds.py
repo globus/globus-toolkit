@@ -112,7 +112,6 @@ class FetchCreds(object):
             match = re.match("^[0-9a-zA-Z.-]+$", self.server)
             if not match:
                 raise Exception("Invalid Server '%s'" % self.server)
-            print "Contacting %s:%s" % (self.server, self.port)
             # Race condition: if another process uses ps to see the code, it
             # could conceivably race to relay.globusonline.org to get 
             # the cert/key. Not a dangerous situation, though, because then

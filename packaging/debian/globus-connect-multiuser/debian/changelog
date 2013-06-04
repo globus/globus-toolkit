@@ -1,3 +1,10 @@
+globus-connect-multiuser (2.0.50-1) unstable; urgency=low
+
+  * Update to 2.0.50
+  * Quiet some of the output from external commands when they succeed
+
+ -- Globus Toolkit <support@globus.org>  Tue, 04 June 2013 13:55:51 -0400
+
 globus-connect-multiuser (2.0.49-1) unstable; urgency=low
 
   * Update to 2.0.49

@@ -216,7 +216,7 @@ server
             if os.path.exists(conf_file_name):
                 self.logger.debug("Removing old sharing configuration file")
                 os.remove(conf_file_name)
-            self.logger.info("GridFTP Sharing Disabled")
+            self.logger.debug("GridFTP Sharing Disabled")
             return
 
         conf_file = file(conf_file_name, "w")

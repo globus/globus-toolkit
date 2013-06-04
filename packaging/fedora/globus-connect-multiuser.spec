@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.49
+Version:        2.0.50
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -164,6 +164,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Tue Jun 04 2013 Globus Toolkit <support@globus.org> 2.0.50-1
+- Update to 2.0.50
+- Quiet some of the output from external commands when they succeed
+
 * Mon Jun 03 2013 Globus Toolkit <support@globus.org> 2.0.49-1
 - Update to 2.0.49
 - Allow override of GO instance to use to via environment

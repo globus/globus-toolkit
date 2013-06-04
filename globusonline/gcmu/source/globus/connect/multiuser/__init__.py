@@ -713,7 +713,10 @@ class GCMU(object):
             if out is not None and out != "" and out != "\n":
                 self.logger.debug(out,)
             if err is not None and err != "" and err != "\n":
-                self.logger.warn(err,)
+                if disabler.returncode != 0:
+                    self.logger.warn(err,)
+                else:
+                    self.logger.debug(err,)
 
     def enable(self, **kwargs):
         service_enable = None
@@ -747,7 +750,10 @@ class GCMU(object):
             if out is not None and out != "" and out != "\n":
                 self.logger.debug(out,)
             if err is not None and err != "" and err != "\n":
-                self.logger.warn(err,)
+                if enabler.returncode != 0:
+                    self.logger.warn(err,)
+                else:
+                    self.logger.debug(err,)
 
     def stop(self, **kwargs):
         (name, ver, id) = platform.linux_distribution()

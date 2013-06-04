@@ -92,13 +92,13 @@ class Web(gcmu.GCMU):
         self.logger.debug("ENTER: Web.copy_auth_conf()")
         css = self.conf.get_oauth_stylesheet()
         if css is not None:
-            self.logger.info("copying " + css + " to " + 
+            self.logger.debug("copying " + css + " to " + 
                     '/usr/share/myproxy-oauth/myproxyoauth/static/site.css')
             shutil.copy(css,
                     '/usr/share/myproxy-oauth/myproxyoauth/static/site.css')
         logo = self.conf.get_oauth_logo()
         if logo is not None:
-            self.logger.info("copying " + logo + " to " + 
+            self.logger.debug("copying " + logo + " to " + 
                     '/usr/share/myproxy-oauth/myproxyoauth/static/')
             shutil.copy(logo,
                     '/usr/share/myproxy-oauth/myproxyoauth/static/')
@@ -108,7 +108,7 @@ class Web(gcmu.GCMU):
         self.logger.debug("ENTER: Web.remove_auth_conf()")
         site_css = '/usr/share/myproxy-oauth/myproxyoauth/static/site.css'
         if os.path.exists(site_css):
-            self.logger.info("removing site css from " + site_css)
+            self.logger.debug("removing site css from " + site_css)
             os.remove(site_css)
         site_logo = self.conf.get_oauth_logo()
         if site_logo is not None:
@@ -116,7 +116,7 @@ class Web(gcmu.GCMU):
                 '/usr/share/myproxy-oauth/myproxyoauth/static',
                 os.path.basename(site_logo))
             if os.path.exists(installed_site_logo):
-                self.logger.info("removing site logo from " + site_logo)
+                self.logger.debug("removing site logo from " + site_logo)
                 os.remove(installed_site_logo)
         self.logger.debug("EXIT: Web.remove_auth_conf()")
         
@@ -149,7 +149,7 @@ class Web(gcmu.GCMU):
                         stdin=None, stdout=PIPE, stderr=PIPE)
                 (out, err) = enabler.communicate()
                 if out != "":
-                    self.logger.info(out)
+                    self.logger.debug(out)
                 if err != "":
                     self.logger.warn(err)
                 touched = file(self.enabled_mod_ssl, "w")
@@ -164,7 +164,7 @@ class Web(gcmu.GCMU):
                         stdin=None, stdout=PIPE, stderr=PIPE)
                 (out, err) = enabler.communicate()
                 if out != "":
-                    self.logger.info(out)
+                    self.logger.debug(out)
                 if err != "":
                     self.logger.warn(err)
                 touched = file(self.enabled_mod_wsgi, "w")
@@ -179,7 +179,7 @@ class Web(gcmu.GCMU):
                         stdin=None, stdout=PIPE, stderr=PIPE)
                 (out, err) = disabler.communicate()
                 if out != "":
-                    self.logger.info(out)
+                    self.logger.debug(out)
                 if err != "":
                     self.logger.warn(err)
                 os.remove(self.enabled_mod_ssl)
@@ -193,7 +193,7 @@ class Web(gcmu.GCMU):
                         stdin=None, stdout=PIPE, stderr=PIPE)
                 (out, err) = disabler.communicate()
                 if out != "":
-                    self.logger.info(out)
+                    self.logger.debug(out)
                 if err != "":
                     self.logger.warn(err)
                 os.remove(self.enabled_mod_wsgi)
