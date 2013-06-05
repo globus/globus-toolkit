@@ -1,3 +1,12 @@
+globus-gridftp-server-control (2.9-1) unstable; urgency=low
+
+  * GT-396: fix mlst on filenames that end in a newline
+  * GT-412: add -version-tag to set an identifier in the server version string
+  * fix minor memory leaks
+  * fix mlsx symlink target not urlencoding properly
+
+ -- Globus Toolkit <support@globus.org>  Wed, 05 Jun 2013 01:52:26 -0500
+
 globus-gridftp-server-control (2.8-1) unstable; urgency=low
 
   * GT-302: Add initial sharing support to the GridFTP server

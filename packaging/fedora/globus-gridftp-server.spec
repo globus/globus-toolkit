@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.31
+Version:	6.32
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -183,6 +183,12 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Jun 05 2013 Globus Toolkit <support@globus.org> - 6.32-1
+- GT-396: fix mlst on filenames that end in a newline
+- GT-412: add -version-tag to set an identifier in the server version string
+- fix minor memory leaks
+- fix mlsx symlink target not urlencoding properly
+
 * Tue Jun 04 2013 Globus Toolkit <support@globus.org> - 6.31-1
 - GT-407 regression
 

@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
-Version:	2.8
-Release:	2%{?dist}
+Version:	2.9
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.4/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -118,6 +118,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Jun 05 2013 Globus Toolkit <support@globus.org> - 2.9-1
+- GT-396: fix mlst on filenames that end in a newline
+- GT-412: add -version-tag to set an identifier in the server version string
+- fix minor memory leaks
+- fix mlsx symlink target not urlencoding properly
+
 * Wed Mar 06 2013  Globus Toolkit <support@globus.org> - 2.8-2
 - Add missing build dependency
 
