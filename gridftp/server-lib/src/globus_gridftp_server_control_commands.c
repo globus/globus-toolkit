@@ -770,7 +770,7 @@ globus_l_gsc_cmd_stat_cb(
     uid_t                                   uid,
     void *                                  user_arg)
 {
-    int                                     code;
+    int                                     code = 500;
     char *                                  msg;
     char *                                  tmp_ptr;
     char *                                  preline;
@@ -808,8 +808,8 @@ globus_l_gsc_cmd_stat_cb(
             code = 213;
             tmp_ptr = globus_i_gsc_list_single_line(stat_info);
             msg =  globus_common_create_string(
-                _FSMSL("status of %s\n%s\n"),
-                op->path, tmp_ptr);
+                _FSMSL("%d-status of %s\r\n %s\r\n%d End.\r\n"),
+                code, op->path, tmp_ptr, code);
             globus_free(tmp_ptr);
         }
         else if(user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD)
@@ -851,8 +851,8 @@ globus_l_gsc_cmd_stat_cb(
             tmp_ptr = globus_i_gsc_mlsx_line_single(
                 op->server_handle->opts.mlsx_fact_str, uid, stat_info, NULL, GLOBUS_TRUE);
             msg =  globus_common_create_string(
-                _FSMSL("status of %s\n%s\n"),
-                op->path, tmp_ptr);
+                _FSMSL("%d-status of %s\r\n %s\r\n%d End.\r\n"),
+                code, op->path, tmp_ptr, code);
             globus_free(tmp_ptr);
         }
         preline = " ";
@@ -861,16 +861,16 @@ globus_l_gsc_cmd_stat_cb(
     if(response_msg != NULL)
     {
         tmp_ptr = msg;
-        msg = globus_common_create_string("%s : %s", msg, response_msg);
+        msg = globus_common_create_string("%s : %s", tmp_ptr, response_msg);
         free(tmp_ptr);
     }
-    if(user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD && (code == 150 || code == 250))
+    if(code >= 500)
     {
-        tmp_ptr = globus_libc_strdup(msg);
+        tmp_ptr = globus_gsc_string_to_959(code, msg, preline);
     }
     else
     {
-        tmp_ptr = globus_gsc_string_to_959(code, msg, preline);
+        tmp_ptr = msg;
     }
     if(partial)
     {
@@ -887,8 +887,12 @@ globus_l_gsc_cmd_stat_cb(
         }
         globus_gsc_959_finished_command(op, tmp_ptr);
     }
-    globus_free(tmp_ptr);
+    if(code >= 500)
+    {
+        globus_free(tmp_ptr);
+    }
     globus_free(msg);
+
 }
 
 static void

@@ -1785,7 +1785,7 @@ globus_l_gsc_server_ref_check(
             server_handle, GLOBUS_L_GSC_STATE_STOPPED);
         globus_xio_attr_init(&close_attr);
         globus_xio_attr_cntl(
-            close_attr, NULL, GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL);
+            close_attr, NULL, GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL, GLOBUS_TRUE);
         res = globus_xio_register_close(
             server_handle->xio_handle,
             close_attr,
@@ -3718,6 +3718,7 @@ globus_l_gsc_mlsx_urlencode(
     if(enc_count)
     {
         enc_count = 0;
+        in_ptr = (char *) in_string;
         while(in_ptr < in_string + len)
         {
             if(NEEDS_ENCODING(*in_ptr))

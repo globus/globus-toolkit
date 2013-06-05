@@ -370,6 +370,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "When this is set, the message set in the 'banner' or 'banner_file' option "
     "will be appended to the default banner message rather than replacing it.", 
     NULL, NULL,GLOBUS_FALSE, NULL},
+ {"version_tag", "version_tag", NULL, "version-tag", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Add an identifying string to the existing toolkit version.  This is displayed in the default "
+    "banner message, the SITE VERSION command, and usage stats.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"login_msg", "login_msg", NULL, "login-msg", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Message to display to the client after authentication.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"login_msg_file", "login_msg_file", NULL, "login-msg-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
@@ -2133,6 +2136,7 @@ globus_l_gfs_config_misc()
     globus_result_t                     result;
     char                                ipaddr[256];
     char *                              default_banner;
+    char *                              toolkit_version;
     GlobusGFSName(globus_l_gfs_config_misc);
     GlobusGFSDebugEnter();
 
@@ -2269,6 +2273,16 @@ globus_l_gfs_config_misc()
         globus_free(hostname);
     }            
 
+    if(value = globus_i_gfs_config_string("version_tag"))
+    {
+        toolkit_version = 
+            globus_common_create_string("%s %s", toolkit_id, value);
+    }
+    else
+    {
+        toolkit_version = globus_libc_strdup(toolkit_id);
+    }
+        
     default_banner = globus_common_create_string(
         "%s GridFTP Server %d.%d (%s, %d-%d) [%s] ready.",
         globus_i_gfs_config_string("fqdn"),
@@ -2277,7 +2291,7 @@ globus_l_gfs_config_misc()
         build_flavor,
         local_version.timestamp,
         local_version.branch_id,
-        toolkit_id);
+        toolkit_version);
         
     data = NULL;
     if(globus_i_gfs_config_bool("banner_terse"))
@@ -2318,9 +2332,10 @@ globus_l_gfs_config_misc()
             build_flavor,
             local_version.timestamp,
             local_version.branch_id,
-            toolkit_id);
+            toolkit_version);
     globus_l_gfs_config_set("version_string", 0, data);
-            
+    globus_free(toolkit_version);
+
     if((value = globus_i_gfs_config_string("login_msg_file")) != GLOBUS_NULL)
     {
         rc = globus_l_config_loadfile(value, &data);

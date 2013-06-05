@@ -529,6 +529,14 @@ globus_l_gfs_channel_close_cb(
     {
         globus_free(instance->username);
     }
+    if(instance->scks_alg)
+    {
+        globus_free(instance->scks_alg);
+    }
+    if(instance->scks_val)
+    {
+        globus_free(instance->scks_val);
+    }
     globus_free(instance->local_contact);
     globus_free(instance->remote_contact);
     globus_free(instance);
@@ -1488,10 +1496,20 @@ globus_l_gfs_request_command(
     }
     else if(strcmp(cmd_array[0], "SCKS") == 0)
     {
+        if(instance->scks_alg)
+        {
+            globus_free(instance->scks_alg);
+        }
+        if(instance->scks_val)
+        {
+            globus_free(instance->scks_val);
+        }
         instance->scks_alg = globus_libc_strdup(cmd_array[1]);
         instance->scks_val = globus_libc_strdup(cmd_array[2]);
 
-        globus_gsc_959_finished_command(op, "200 OK\r\n");
+        globus_gsc_959_finished_command(op, "200 OK.\r\n");
+        globus_l_gfs_request_info_destroy(request);
+        globus_free(command_info);
         done = GLOBUS_TRUE;
 
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
@@ -1593,6 +1611,8 @@ globus_l_gfs_request_command(
             snprintf(version_string, sizeof(version_string),
                 "200 %s\r\n", globus_i_gfs_config_string("version_string"));
             globus_gsc_959_finished_command(op, version_string);
+            globus_l_gfs_request_info_destroy(request);
+            globus_free(command_info);
             done = GLOBUS_TRUE;
         }
         else if(strcmp(cmd_array[1], "SETNETSTACK") == 0)
@@ -1810,7 +1830,9 @@ globus_l_gfs_request_command(
     GlobusGFSDebugExit();
     return;
 
-err:   
+err:
+    globus_l_gfs_request_info_destroy(request);
+    globus_free(command_info);
 error_init:
 
     globus_l_gfs_control_log(instance->server_handle, msg_for_log,
