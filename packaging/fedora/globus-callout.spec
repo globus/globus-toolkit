@@ -12,14 +12,14 @@
 
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
-Version:	2.3
+Version:	2.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/updates/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -182,6 +182,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Jun 06 2013 Globus Toolkit <support@globus.org> - 2.4-1
+- GT-412: allow chaining of callouts and passing of env vars in the callout config
+
 * Thu May 09 2013 Globus Toolkit <support@globus.org> - 2.3-1
 - GT-390: globus_callout loader fails load plugins on systems with broken libtool-ltdl
 

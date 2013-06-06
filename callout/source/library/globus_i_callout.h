@@ -228,6 +228,9 @@ typedef struct globus_i_callout_data_s
     char *                              file;
     char *                              symbol;
     struct globus_i_callout_data_s *    next;
+    char **                             env_args;
+    int                                 num_env_args;
+    globus_bool_t                       mandatory;
 } globus_i_callout_data_t;
 
 #endif

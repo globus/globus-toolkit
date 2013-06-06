@@ -1,3 +1,9 @@
+globus-callout (2.4-1) unstable; urgency=low
+
+  * GT-412: allow chaining of callouts and passing of env vars in the callout config
+
+ -- Globus Toolkit <support@globus.org>  Thu, 06 Jun 2013 00:22:19 -0500
+
 globus-callout (2.3-1) unstable; urgency=low
 
   * GT-390: globus_callout loader fails load plugins on systems with broken libtool-ltdl

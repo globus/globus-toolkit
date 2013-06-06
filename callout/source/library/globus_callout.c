@@ -36,6 +36,7 @@
 #include "version.h"
 
 #define GLOBUS_I_CALLOUT_HASH_SIZE 64
+#define GLOBUS_I_CALLOUT_LINEBUF 4096
 
 #ifdef WIN32
 #define MY_LIB_EXT ".dll"
@@ -314,10 +315,13 @@ globus_callout_read_config(
     char *                              filename)
 {
     FILE *                              conf_file;
-    char                                buffer[512];
+    char                                buffer[GLOBUS_I_CALLOUT_LINEBUF];
     char                                type[128];
     char                                library[256];
     char                                symbol[128];
+    char *                              env_argstr;
+    char **                             env_args;
+    int                                 numpairs = 0;
     char *                              flavor_start;
     char *                              pound;
     int                                 index;
@@ -343,10 +347,18 @@ globus_callout_read_config(
         goto error_exit;
     }
     
-    while(fgets(buffer,512,conf_file))
+    while(fgets(buffer,GLOBUS_I_CALLOUT_LINEBUF,conf_file))
     {
-        /* strip any comments */
+        if(!strchr(buffer, '\n'))
+        {
+            GLOBUS_CALLOUT_ERROR_RESULT(
+                result,
+                GLOBUS_CALLOUT_ERROR_PARSING_CONF_FILE,
+                ("malformed line, line too long or missing newline"));
+            goto error_exit;
+        }
 
+        /* strip any comments */
         pound = strchr(buffer, '#');
 
         if(pound != NULL)
@@ -379,8 +391,110 @@ globus_callout_read_config(
             goto error_exit;
         }
         
-        /* push values into hash */
+        /* check for ENV vars to set */
+        env_argstr = strstr(buffer, "ENV:");
+        if(env_argstr && strchr(env_argstr, '='))
+        {
+            int                         i;
+            char *                      ptr;
+            char *                      start;
+            
+            numpairs = 0;
+            ptr = strchr(env_argstr, '=');
+            while(ptr)
+            {
+                numpairs++;
+                ptr++;
+                if(*ptr == '"')
+                {
+                    ptr = strchr(ptr + 1, '"');
+                    if(!ptr)
+                    {
+                        GLOBUS_CALLOUT_ERROR_RESULT(
+                            result,
+                            GLOBUS_CALLOUT_ERROR_PARSING_CONF_FILE,
+                            ("malformed line, unmatched quote: %s", buffer));
+                        goto error_exit;
+                    }
+                }
+                ptr = strchr(ptr + 1, '=');
+            }
+            
+            if(numpairs > 0)
+            {
+                env_args = globus_calloc(numpairs*2+1, sizeof(char *));
+                
+                start = env_argstr + 4;
+                
+                i = 0;
+                while(start)
+                {                    
+                    /* skip initial space */
+                    while(isspace(*start))
+                    {
+                        start++;
+                    }
+                    
+                    /* find var name */
+                    ptr = strchr(start, '=');
+                    *ptr = '\0';
+                    
+                    if(strcspn(start, " \"=") != strlen(start))
+                    {
+                        GLOBUS_CALLOUT_ERROR_RESULT(
+                            result,
+                            GLOBUS_CALLOUT_ERROR_PARSING_CONF_FILE,
+                            ("malformed line, invalid character in ENV var: %s", start));
+                        goto error_exit;
+                    }
 
+                    env_args[i] = globus_libc_strdup(start);
+                    
+                    /* find value in quotes or before a space or end of line */
+                    start = ++ptr;
+                    
+                    if(*start == '"')
+                    {
+                        start++;
+                        ptr = strchr(start, '"');
+                        *ptr = '\0';
+                    }
+                    else
+                    {
+                        ptr = strchr(start, ' ');
+                        if(!ptr)
+                        {
+                            ptr = strchr(start, '\n');
+                        }
+                        *ptr = '\0';                        
+                    }
+                    env_args[i+1] = globus_libc_strdup(start);
+
+                    ptr++;
+                    while(*ptr && isspace(*ptr))
+                    {
+                        ptr++;
+                    }
+                    if(*ptr && strchr(ptr, '='))
+                    {
+                        start = ptr;
+                    }
+                    else
+                    {
+                        start = NULL;
+                    }
+                    
+                    i += 2; 
+                }
+                env_args[i] = NULL;
+            }
+        }
+        else
+        {
+            env_args = NULL;
+        }
+        
+        /* push values into hash */
         datum = malloc(sizeof(globus_i_callout_data_t));
 
         if(datum == NULL)
@@ -426,13 +540,25 @@ globus_callout_read_config(
             goto error_exit;
         }
         
-        datum->type = strdup(type);
+        if(*type == '|')
+        {
+            datum->mandatory = GLOBUS_FALSE;
+            datum->type = strdup(type + 1);
+        }
+        else
+        {
+            datum->mandatory = GLOBUS_TRUE;
+            datum->type = strdup(type);
+        }
 
         if(datum->type == NULL)
         {
             GLOBUS_CALLOUT_MALLOC_ERROR(result);
             goto error_exit;
         }
+
+        datum->env_args = env_args;
+        datum->num_env_args = numpairs;
 
         if((rc = globus_hashtable_insert(&handle->symbol_htable,
                                          datum->type,
@@ -654,6 +780,10 @@ globus_callout_call_type(
     char *                              flavor_start;
     char *                              file;
     char                                library[1024];
+    char **                             save_env;
+    int                                 i;
+    globus_i_callout_data_t *           tmp_datum;
+    int                                 mandatory_callouts_remaining = 0;
     static char *                       _function_name_ =
         "globus_callout_handle_call_type";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
@@ -668,7 +798,17 @@ globus_callout_call_type(
             ("unknown type: %s\n", type));
         goto exit;
     }
-
+    
+    tmp_datum = current_datum;
+    while(tmp_datum)
+    {
+        if(tmp_datum->mandatory)
+        {
+            mandatory_callouts_remaining++;
+        }
+        tmp_datum = tmp_datum->next;
+    }
+    
     do
     {
 #ifdef BUILD_STATIC_ONLY
@@ -772,19 +912,87 @@ globus_callout_call_type(
             goto exit;
         }
 
+        if(current_datum->env_args)
+        {            
+            save_env = globus_calloc(
+                current_datum->num_env_args*2+1, sizeof(char *));
+
+            i = 0;
+            while(current_datum->env_args[i] != NULL && 
+                current_datum->env_args[i+1] != NULL)
+            {
+                save_env[i] = current_datum->env_args[i];
+                save_env[i+1] = 
+                    globus_libc_strdup(getenv(current_datum->env_args[i]));
+                setenv(current_datum->env_args[i], current_datum->env_args[i+1], 1);
+                i += 2;
+            }
+            save_env[i] = NULL;
+        }
+
         va_start(ap,type);
     
         result = ((globus_callout_function_t) function)(ap);
         
         va_end(ap);
+
+        if(current_datum->env_args)
+        {
+            i = 0;            
+            while(save_env[i] != NULL)
+            {
+                if(save_env[i+1] == NULL)
+                {
+                    unsetenv(save_env[i]);
+                }
+                else
+                {
+                    setenv(save_env[i], save_env[i+1], 1);
+                    globus_free(save_env[i+1]);
+                }
+                                
+                i += 2;
+            }
+            globus_free(save_env);
+        }
+
+        if(result == GLOBUS_SUCCESS)
+        {
+            if(current_datum->mandatory)
+            {
+                mandatory_callouts_remaining--;
+            }
+            
+            if(!mandatory_callouts_remaining)
+            {
+                goto exit;
+            }
+        }
         
         if(result != GLOBUS_SUCCESS)
         {
-            GLOBUS_CALLOUT_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR);
-            goto exit;
+            if(current_datum->mandatory)
+            {
+                GLOBUS_CALLOUT_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR);
+                goto exit;
+            }
+            else if(current_datum->next == NULL)
+            {
+                /* chain error with stored error */
+                GLOBUS_CALLOUT_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR);
+                goto exit;
+            }
+            else
+            {
+                /* store error */
+                result = GLOBUS_SUCCESS;
+            }
         }
+
         current_datum = current_datum->next;
 #endif
     }
@@ -821,6 +1029,17 @@ globus_l_callout_data_free(
         if(data->symbol != NULL)
         {
             free(data->symbol);
+        }
+        
+        if(data->env_args != NULL)
+        {
+            int i = 0;
+            while(data->env_args[i] != NULL)
+            {
+                free(data->env_args[i]);
+                i++;
+            }
+            free(data->env_args);
         }
         
         free(data);
