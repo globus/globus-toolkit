@@ -1,3 +1,10 @@
+globus-connect-multiuser (2.0.51-1) unstable; urgency=low
+
+  - Use new chaining support in globus-callout to enable both CILogon CAs
+  - Set a version_tag for GridFTP
+
+ -- Globus Toolkit <support@globus.org>  Thu, 06 Jun 2013 00:22:19 -0500
+
 globus-connect-multiuser (2.0.50-1) unstable; urgency=low
 
   * Update to 2.0.50

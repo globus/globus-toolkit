@@ -43,7 +43,7 @@ Description: Globus Connect Multi-User Installation Tool
 
 Package: globus-connect-multiuser-io
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, myproxy, gsi-openssh, gsi-openssh-clients, globus-gsi-cert-utils-progs, globus-gridftp-server-progs (>= 6.27), globus-gss-assist-progs, libglobus-gridmap-verify-myproxy-callout0 (>= 1.2), libglobus-gridmap-eppn-callout0 (>= 0.4), libglobus-gsi-credential1 (>= 5.6), globus-connect-multiuser-common (= ${binary:Version})
+Depends: ${shlibs:Depends}, ${misc:Depends}, myproxy, gsi-openssh, gsi-openssh-clients, globus-gsi-cert-utils-progs, globus-gridftp-server-progs (>= 6.32), globus-gss-assist-progs, globus-callout (>= 2.4), libglobus-gridmap-verify-myproxy-callout0 (>= 1.2), libglobus-gridmap-eppn-callout0 (>= 0.4), libglobus-gsi-credential1 (>= 5.6), globus-connect-multiuser-common (= ${binary:Version})
 Description: Globus Connect Multi-User Installation Tool
  The Globus Toolkit is an open source software toolkit used for building Grid
  systems and applications. It is being developed by the Globus Alliance and

@@ -690,6 +690,9 @@ class ConfigFile(ConfigParser.ConfigParser):
                 oauth_ssl_key = None
         return oauth_ssl_key
 
+    def get_authz_config_file(self):
+        return os.path.join(self.root, ConfigFile.DEFAULT_DIR, 'gsi-authz.conf')
+
     def get_etc_gridftp_d(self):
         return os.path.join(self.root, "etc", "gridftp.d")
 

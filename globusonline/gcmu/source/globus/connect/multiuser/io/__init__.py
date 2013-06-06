@@ -132,6 +132,7 @@ class IO(gcmu.GCMU):
                 "globus.connect.multiuser",
                 "version")
             if version:
+                conf_file.write("version_tag GCMU-%s" % (version))
                 conf_file.write("usage_stats_id GCMU-%s" % (version))
             if ":" in server:
                 port = int(server.split(":")[1])
@@ -377,7 +378,17 @@ server
 
         conf_file = file(conf_file_name, "w")
         try:
+            conf_file.write(
+                    "$GSI_AUTHZ_CONF \"%s\"\n" % self.conf.get_authz_config_file())
+            os.symlink(conf_file_name, conf_link_name)
+        finally:
+            conf_file.close()
+            
+        conf_file = file(self.conf.get_authz_config_file(), "w")
+        try:
             cadir = self.conf.get_security_trusted_certificate_directory()
+            idp = self.conf.get_security_cilogon_identity_provider()
+
             ca = pkgutil.get_data(
                     "globus.connect.security",
                     "cilogon-basic.pem")
@@ -385,25 +396,40 @@ server
                     "globus.connect.security",
                     "cilogon-basic.signing_policy")
             cahash = security.get_certificate_hash_from_data(ca)
-
-            idp = self.conf.get_security_cilogon_identity_provider()
-
             security.install_ca(cadir, ca, signing_policy)
-
+            # read from installed conf instead?
+            # the | prefix makes it optional, only one callout must succeed
+            conf_file.write("|globus_mapping libglobus_gridmap_eppn_callout " +
+                    "globus_gridmap_eppn_callout ")
             conf_file.write(
-                    "$GLOBUS_MYPROXY_CA_CERT \"%s\"\n" %
+                    "GLOBUS_MYPROXY_CA_CERT=%s " %
                     (os.path.join(cadir, cahash + ".0")))
             conf_file.write(
-                    "$GLOBUS_MYPROXY_AUTHORIZED_DN " +
+                    "GLOBUS_MYPROXY_AUTHORIZED_DN=" +
                     "\"/DC=org/DC=cilogon/C=US/O=%s\"\n" % (idp))
+                    
+            ca = pkgutil.get_data(
+                    "globus.connect.security",
+                    "cilogon-silver.pem")
+            signing_policy = pkgutil.get_data(
+                    "globus.connect.security",
+                    "cilogon-silver.signing_policy")
+            cahash = security.get_certificate_hash_from_data(ca)
+            security.install_ca(cadir, ca, signing_policy)
+            # read from installed conf instead?
+            # the | prefix makes it optional, only one callout must succeed
+            conf_file.write("|globus_mapping libglobus_gridmap_eppn_callout " +
+                    "globus_gridmap_eppn_callout ")
             conf_file.write(
-                    "$GSI_AUTHZ_CONF \"%s\"\n" % (
-                            os.path.join(
-                            self.conf.root, "etc",
-                            "gridmap_eppn_callout-gsi_authz.conf")))
-            os.symlink(conf_file_name, conf_link_name)
+                    "GLOBUS_MYPROXY_CA_CERT=%s " %
+                    (os.path.join(cadir, cahash + ".0")))
+            conf_file.write(
+                    "GLOBUS_MYPROXY_AUTHORIZED_DN=" +
+                    "\"/DC=org/DC=cilogon/C=US/O=%s\"\n" % (idp))
+
         finally:
             conf_file.close()
+
         self.logger.debug("EXIT: IO.configure_cilogon()")
 
     def cleanup(self, **kwargs):
