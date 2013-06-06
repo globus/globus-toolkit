@@ -36,7 +36,7 @@ sub rank(\%)
 
     for (my $i = 0; $i < scalar(keys(%barrier_response)); $i++)
     {
-        if ($barrier_response[$i]->{job_id} == $job_id)
+        if ($barrier_response{$i}->{job_id} == $job_id)
         {
             return $i;
         }
