@@ -1,3 +1,9 @@
+myproxy-oauth (0.9-1) unstable; urgency=low
+
+  * Fix missing import of subprocess when SElinux is used
+
+ -- Globus Toolkit <support@globus.org>  Thu, 06 June 2013 09:32:22 -0400
+
 myproxy-oauth (0.8-1) unstable; urgency=low
 
   * enable mod_wsgi for epel5 distros
