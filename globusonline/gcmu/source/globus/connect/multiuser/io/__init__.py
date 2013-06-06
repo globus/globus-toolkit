@@ -400,7 +400,7 @@ server
             # read from installed conf instead?
             # the | prefix makes it optional, only one callout must succeed
             conf_file.write("|globus_mapping libglobus_gridmap_eppn_callout " +
-                    "globus_gridmap_eppn_callout ")
+                    "globus_gridmap_eppn_callout ENV:")
             conf_file.write(
                     "GLOBUS_MYPROXY_CA_CERT=%s " %
                     (os.path.join(cadir, cahash + ".0")))
@@ -419,7 +419,7 @@ server
             # read from installed conf instead?
             # the | prefix makes it optional, only one callout must succeed
             conf_file.write("|globus_mapping libglobus_gridmap_eppn_callout " +
-                    "globus_gridmap_eppn_callout ")
+                    "globus_gridmap_eppn_callout ENV:")
             conf_file.write(
                     "GLOBUS_MYPROXY_CA_CERT=%s " %
                     (os.path.join(cadir, cahash + ".0")))
