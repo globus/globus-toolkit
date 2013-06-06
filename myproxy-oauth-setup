@@ -23,6 +23,7 @@ import json
 import os
 import random
 import socket
+from subprocess import Popen, PIPE
 import sys
 
 from myproxyoauth.database import db_session, Admin, Client, Transaction
