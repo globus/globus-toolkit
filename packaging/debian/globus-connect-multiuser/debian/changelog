@@ -1,4 +1,4 @@
-globus-connect-multiuser (2.0.50-2) unstable; urgency=low
+globus-connect-multiuser (2.0.52-2) unstable; urgency=low
 
   * Fix dependency problem with callout
 
