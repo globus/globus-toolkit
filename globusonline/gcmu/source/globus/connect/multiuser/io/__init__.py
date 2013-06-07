@@ -534,6 +534,8 @@ server
         else:
             myproxy_server = self.conf.get_myproxy_server()
             myproxy_dn = self.conf.get_myproxy_dn()
+            if myproxy_dn is None:
+                myproxy_dn = self.get_myproxy_dn_from_server()
 
         if myproxy_server is not None:
             myproxy_server = gcmu.to_unicode(myproxy_server)

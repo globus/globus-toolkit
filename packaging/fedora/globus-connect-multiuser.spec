@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.53
+Version:        2.0.54
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -165,6 +165,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Fri Jun 07 2013 Globus Toolkit <support@globus.org> 2.0.54-1
+- KOA-2632: gcmu doesn't set myproxy_dn unless it is in config file
+
 * Thu Jun 06 2013 Globus Toolkit <support@globus.org> 2.0.53-1
 - set default umask
 

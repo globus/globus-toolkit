@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.54-1) unstable; urgency=low
+
+  * KOA-2632: gcmu doesn't set myproxy_dn unless it is in config file
+
+ -- Globus Toolkit <support@globus.org>  Fri, 07 June 2013 15:05:16 -0400
+
 globus-connect-multiuser (2.0.53-1) unstable; urgency=low
 
   * Set default umask
