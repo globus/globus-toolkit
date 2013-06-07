@@ -52,6 +52,7 @@ globus-connect-multiuser-web-setup {-c FILENAME|--config-file=FILENAME}
 
 import getopt
 import getpass
+import os
 import socket
 import ssl
 import sys
@@ -104,6 +105,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     try:
+        os.umask(022)
         socket.setdefaulttimeout(300)
 
         conf = ConfigFile(config_file=conf_filename, root=root)

@@ -60,6 +60,7 @@ globus-connect-multiuser-setup {-c FILENAME|--config-file=FILENAME}
                                {-s|--reset-endpoint}"""
 import getopt
 import socket
+import os
 import sys
 import traceback
 
@@ -111,6 +112,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     try:
+        os.umask(022)
         socket.setdefaulttimeout(300)
 
         conf = ConfigFile(config_file=conf_filename, root=root)

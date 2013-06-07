@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.52
+Version:        2.0.53
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -165,6 +165,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Thu Jun 06 2013 Globus Toolkit <support@globus.org> 2.0.53-1
+- set default umask
+
 * Thu Jun 06 2013 Globus Toolkit <support@globus.org> 2.0.52-1
 - CILogon fix
 

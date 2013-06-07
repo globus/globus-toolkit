@@ -51,6 +51,7 @@ globus-connect-multiuser-id-cleanup {-c FILENAME|--config-file=FILENAME}
 
 import getopt
 import getpass
+import os
 import socket
 import sys
 import time
@@ -101,6 +102,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     try:
+        os.umask(022)
         conf = ConfigFile(config_file=conf_filename, root=root)
         api = get_api(conf)
         id = ID(config_obj=conf, api=api, debug=debug)

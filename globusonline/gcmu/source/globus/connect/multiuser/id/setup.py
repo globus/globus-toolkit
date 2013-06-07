@@ -55,6 +55,7 @@ globus-connect-multiuser-id-setup {-c FILENAME|--config-file=FILENAME}
 
 import getopt
 import getpass
+import os
 import socket
 import ssl
 import sys
@@ -106,6 +107,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     try:
+        os.umask(022)
         conf = ConfigFile(config_file=conf_filename, root=root)
         api = get_api(conf)
         id = ID(config_obj=conf, api=api, debug=debug)

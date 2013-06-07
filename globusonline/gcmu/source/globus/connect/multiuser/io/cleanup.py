@@ -61,6 +61,7 @@ globus-connect-multiuser-io-cleanup {-c FILENAME|--config-file=FILENAME}
 
 import getopt
 import getpass
+import os
 import socket
 import ssl
 import sys
@@ -114,6 +115,7 @@ if __name__ == "__main__":
                 print >>sys.stderr, "Unknown option %s" %(o)
                 sys.exit(1)
 
+        os.umask(022)
         conf = ConfigFile(config_file=conf_filename, root=root)
         api = get_api(conf)
         io = IO(config_obj=conf, api=api, debug=debug)
