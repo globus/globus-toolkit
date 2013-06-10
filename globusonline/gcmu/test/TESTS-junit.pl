@@ -67,6 +67,7 @@ $|=1;
     oauth-options.pl
     reset-endpoint.pl
     double-server-config.pl
+    activation-test.pl
 );
 
 my $test_result = $harness->runtests(@tests);

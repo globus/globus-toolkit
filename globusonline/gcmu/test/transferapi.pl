@@ -23,6 +23,7 @@ BEGIN
 END {$?=0}
 
 use strict;
+use JSON;
 use Test::More;
 use LWP;
 use URI::Escape;
@@ -35,6 +36,8 @@ my $user = $ENV{GLOBUSONLINE_USER};
 my $password = $ENV{GLOBUSONLINE_PASSWORD};
 my $ua = LWP::UserAgent->new();
 my $access_token;
+my $json_parser = JSON->new();
+
 if ($instance eq 'Test')
 {
     $token_host = "graph.api.test.globuscs.info";
@@ -59,9 +62,7 @@ sub get_access_token()
     $url = "https://$user:$password\@$token_host/goauth/token?grant_type=client_credentials";
     $req = HTTP::Request->new(GET => $url);
     $res = $ua->request($req);
-    $json = $res->content();
-    $json =~ s/": /" => /g;
-    $json = eval $json;
+    $json = $json_parser->decode($res->content());
     return $json->{'access_token'};
 }
 
@@ -79,12 +80,91 @@ sub get_endpoint($)
             "$base_url/endpoint/$escaped_user\%23$endpoint");
     $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
     $res = $ua->request($req);
-    $json = $res->content();
-    $json =~ s/": /" => /g;
-    $json =~ s/false/0/g;
-    $json =~ s/true/1/g;
-    $json =~ s/null/undef/g;
-    $json = eval $json;
+    $json = $json_parser->decode($res->content());
+
+    return $json;
+}
+
+sub autoactivate($)
+{
+    my $endpoint = shift;
+    my $escaped_user = uri_escape($user);
+    my $req;
+    my $res;
+    my $json;
+
+    $req = HTTP::Request->new(POST =>
+            "$base_url/endpoint/$escaped_user\%23$endpoint/autoactivate");
+    $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
+    $res = $ua->request($req);
+    $json = $json_parser->decode($res->content());
+
+    return $json;
+}
+
+sub activate($$$)
+{
+    my $endpoint = shift;
+    my $username = shift;
+    my $password = shift;
+    my $escaped_user = uri_escape($user);
+    my $req;
+    my $res;
+    my $activation_requirements;
+    my $activation_data;
+    my $json;
+
+    $json = autoactivate($endpoint);
+    $activation_data = [];
+    for (my $i = 0; $i < scalar(@{$json->{DATA}}); $i++)
+    {
+        if ($json->{DATA}->[$i]->{type} eq 'myproxy')
+        {
+            push(@{$activation_data}, $json->{DATA}->[$i]);
+        }
+    }
+    for (my $i = 0; $i < scalar(@{$activation_data}); $i++)
+    {
+        if ($activation_data->[$i]->{name} eq 'username')
+        {
+            $activation_data->[$i]->{value} = $username;
+        }
+        elsif ($activation_data->[$i]->{name} eq 'passphrase')
+        {
+            $activation_data->[$i]->{value} = $password;
+        }
+    }
+    $activation_requirements = {
+        DATA_TYPE => "activation_requirements",
+        length => scalar(@{$activation_data}),
+        DATA => $activation_data };
+
+    $json = $json_parser->encode($activation_requirements);
+
+    $req = HTTP::Request->new(POST =>
+            "$base_url/endpoint/$escaped_user\%23$endpoint/activate");
+    $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
+    $req->header("Content-Length" => length($json));
+    $req->content($json);
+    $res = $ua->request($req);
+    $json = $json_parser->decode($res->content());
+
+    return $json;
+}
+
+sub deactivate($)
+{
+    my $endpoint = shift;
+    my $escaped_user = uri_escape($user);
+    my $req;
+    my $res;
+    my $json;
+
+    $req = HTTP::Request->new(POST =>
+            "$base_url/endpoint/$escaped_user\%23$endpoint/deactivate");
+    $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
+    $res = $ua->request($req);
+    $json = $json_parser->decode($res->content());
 
     return $json;
 }
