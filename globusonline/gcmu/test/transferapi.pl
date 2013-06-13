@@ -244,18 +244,21 @@ sub transfer($$$$)
     my $json;
     my $task_id;
     my $done = undef;
+    my $deadline;
 
     $req = HTTP::Request->new(GET => "$base_url/submission_id");
     $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
     $res = $ua->request($req);
 
     $submission_id = $json_parser->decode($res->content())->{value};
+    $deadline = POSIX::strftime("%Y-%m-%d %H:%M:%S%z", gmtime(time() + 300));
     $input = {
         DATA_TYPE => "transfer",
         submission_id => $submission_id,
         sync_level => JSON::null,
         source_endpoint => $source_endpoint,
         destination_endpoint => $destination_endpoint,
+        deadline => $deadline,
         notify_on_succeeded => JSON::false,
         notify_on_failed => JSON::false,
         notify_on_inactive => JSON::false,

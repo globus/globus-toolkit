@@ -104,7 +104,7 @@ sub barrier($\%)
 
     $json = $json_parser->decode($res->content());
 
-    $barrier_print->("Barrier output: $json");
+    $barrier_print->("Barrier output: ". $res->content());
 
     return $json;
 }
