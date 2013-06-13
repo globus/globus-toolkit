@@ -24,11 +24,17 @@ my $barrier_url = $ENV{BARRIER_URL};
 my $job_id = $ENV{JOB_ID};
 my $ua = LWP::UserAgent->new();
 my $barrier_prefix = "";
+my $barrier_print = sub (@_) { print @_};
 my $json_parser = JSON->new();
 
 sub set_barrier_prefix($)
 {
     $barrier_prefix = $_[0];
+}
+
+sub set_barrier_print($)
+{
+    $barrier_print = $_[0];
 }
 
 sub rank(\@)
@@ -61,7 +67,10 @@ sub barrier($\%)
 
     $json = $json_parser->encode($data);
 
+    $barrier_print->("Barrier input: $json");
+
     $url = "$barrier_url/barrier/$barrier_prefix$barrier_name/$job_id";
+    $barrier_print->("Barrier url: $url");
     $req = HTTP::Request->new(POST => $url);
     $req->content_type("application/json");
     $req->content($json);
@@ -94,6 +103,8 @@ sub barrier($\%)
     }
 
     $json = $json_parser->decode($res->content());
+
+    $barrier_print->("Barrier output: $json");
 
     return $json;
 }

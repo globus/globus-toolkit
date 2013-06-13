@@ -148,6 +148,7 @@ if ($ENV{PUBLIC_HOSTNAME}) {
 plan tests => 18;
 
 set_barrier_prefix("multi-node-cluster-scenario-1-");
+set_barrier_print(\&diag);
 
 my $res = barrier(1, hostname=>$hostname);
 
