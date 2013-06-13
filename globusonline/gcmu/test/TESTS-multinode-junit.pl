@@ -24,7 +24,7 @@ $ENV{PATH} .= ":.";
 
 my $harness;
 BEGIN {
-    my $xmlfile = "gcmu-test.xml";
+    my $xmlfile = "gcmu-multinode-test.xml";
     eval "use TAP::Harness::JUnit";
     if ($@)
     {
@@ -53,7 +53,7 @@ BEGIN {
 
 $|=1;
 @tests = qw(
-    multi-node-test.pl
+    multi-node-cluster-scenario-1.pl
 );
 
 my $test_result = $harness->runtests(@tests);

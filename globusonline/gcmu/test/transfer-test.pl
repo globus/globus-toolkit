@@ -28,7 +28,7 @@ use TempUser;
 
 require "transferapi.pl";
 
-my $config_file = "activation-test.conf";
+my $config_file = "transfer-test.conf";
 
 sub cleanup
 {
@@ -78,6 +78,31 @@ sub activate_endpoint($$$)
         $json->{code} =~ '^AlreadyActivated\.*';
 }
 
+sub transfer_file($$)
+{
+    my $endpoint = shift;
+    my $user = shift;
+    my ($uid, $gid, $home) = ((getpwnam($user))[2,3,7]);
+    my $fh;
+    my $random_data = "";
+    my $copied = "";
+    my $res;
+
+    open($fh, ">$home/$endpoint.in");
+    $random_data .= chr rand 255 for 1..100;
+    $fh->print($random_data);
+    $fh->close();
+    chown $uid, $gid, "$home/$endpoint.in";
+
+    $res = transfer($endpoint, "$endpoint.in", $endpoint, "$endpoint.out");
+
+    open($fh, "<$home/$endpoint.out");
+    read($fh, $copied, length($random_data));
+    unlink("$home/$endpoint.in", "$home/$endpoint.out");
+
+    return $copied eq $random_data;
+}
+
 sub deactivate_endpoint($)
 {
     my $endpoint = shift;
@@ -89,14 +114,14 @@ sub deactivate_endpoint($)
 
 # Prepare
 my $random = int(1000000*rand());
-my $endpoint = "ACTIVATE$random";
+my $endpoint = "TRANSFER$random";
 my ($random_user, $random_pass) = TempUser->create_user();
 if (!$random_user)
 {
     exit(1);
 }
 
-plan tests => 7;
+plan tests => 9;
 
 # Test Step #1:
 # Create endpoint with MyProxy authentication
@@ -108,23 +133,30 @@ ok(activate_endpoint($endpoint, $random_user, $random_pass),
         "activate_with_myproxy");
 
 # Test Step #3:
+# Transfer file to myself
+ok(transfer_file($endpoint, $random_user), "transfer_file_myproxy");
+
+# Test Step #4:
 # Deactivate endpoint
 ok(deactivate_endpoint($endpoint), "deactivate_endpoint");
 
-# Test Step #4:
+# Test Step #5:
 # Update Endpoint with OAuth
 ok(gcmu_setup($endpoint, "OAuth"), "create_endpoint_oauth");
 
-# Test Step #5:
+# Test Step #6:
 # Activate endpoint using OAuth
 ok(activate_endpoint($endpoint, $random_user, $random_pass),
         "activate_with_oauth");
 
-# Test Step #6:
+# Test Step #7:
+# Transfer file to myself
+ok(transfer_file($endpoint, $random_user), "transfer_file_oauth");
+
+# Test Step #8:
 # Deactivate endpoint
 ok(deactivate_endpoint($endpoint), "deactivate_endpoint");
 
-
-# Test Step #7:
+# Test Step #9:
 # Clean up
 ok(cleanup, "cleanup");

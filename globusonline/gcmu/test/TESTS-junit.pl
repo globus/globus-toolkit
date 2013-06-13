@@ -68,6 +68,7 @@ $|=1;
     reset-endpoint.pl
     double-server-config.pl
     activation-test.pl
+    transfer-test.pl
 );
 
 my $test_result = $harness->runtests(@tests);
