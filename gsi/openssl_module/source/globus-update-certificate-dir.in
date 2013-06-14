@@ -96,6 +96,7 @@ if (scalar(keys %hashmaps) == 0)
 }
 
 print "Linking files";
+my $errors = "";
 foreach $file (@files)
 {
     my $new_file = $file;
@@ -112,11 +113,12 @@ foreach $file (@files)
             }
             if (!symlink($file, $new_file))
             {
-                print "FATAL: symlink($file, $new_file) failed: $!\n";
-                exit(1);
+                $errors .= "symlink($file, $new_file) failed: $!\n";
             }
             print ".";
         }
     }
 }
+print STDERR $errors if $errors ne "";
 print "\nDone\n";
+exit(1) if $errors ne "";
