@@ -490,7 +490,13 @@ class GCMU(object):
             if err is not None:
                 self.logger.warn(err)
             if myproxy_bootstrap.returncode != 0:
-                self.logger.debug("myproxy bootstrap returned " + str(myproxy_bootstrap.returncode))
+                self.logger.debug("myproxy bootstrap returned " +
+                        str(myproxy_bootstrap.returncode))
+
+            # Correct OpenSSL 0.9.x/1.x hash mismatch
+            update_cmd = ['globus-update-certificate-dir', '-d', certdir]
+            update = Popen(update_cmd, stdout=None, stderr=None)
+            update.communicate()
 
 
         # Install CILogon CAs
@@ -638,6 +644,12 @@ class GCMU(object):
                 os.remove(signing_policy_file)
             if os.path.exists(crl_file):
                 os.remove(crl_file)
+
+        # Clean dangling links
+        for name in os.listdir(certdir):
+            link_path = os.path.join(certdir,name)
+            if os.path.islink(link_path) and not os.path.exists(link_path):
+                os.remove(link_path)
 
         # CRL Fetch cronjobs
         crondir = os.path.join(self.conf.root, "etc/cron.hourly")

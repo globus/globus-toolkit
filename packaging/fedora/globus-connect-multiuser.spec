@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.54
+Version:        2.0.55
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -36,6 +36,7 @@ Globus Connect Multi-User
 
 %package common
 Requires:	%{python}
+Requires:       globus-openssl-module
 Obsoletes:      gcmu
 Summary:        Globus Connect Multi-User Common files
 Group:          System Environment/Libraries
@@ -165,6 +166,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Fri Jun 14 2013 Globus Toolkit <support@globus.org> 2.0.55-1
+- GCMU doesn't handle hashes from remote myproxy with different openssl version
+
 * Fri Jun 07 2013 Globus Toolkit <support@globus.org> 2.0.54-1
 - KOA-2632: gcmu doesn't set myproxy_dn unless it is in config file
 

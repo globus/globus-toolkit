@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.55-1) unstable; urgency=low
+
+  * GCMU doesn't handle hashes from remote myproxy with different openssl version
+
+ -- Globus Toolkit <support@globus.org>  Fri, 14 June 2013 10:36:04 -0400
+
 globus-connect-multiuser (2.0.54-1) unstable; urgency=low
 
   * KOA-2632: gcmu doesn't set myproxy_dn unless it is in config file
