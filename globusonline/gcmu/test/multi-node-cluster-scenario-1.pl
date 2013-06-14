@@ -145,7 +145,7 @@ if ($ENV{PUBLIC_HOSTNAME}) {
 } else {
     $hostname = (POSIX::uname())[1];
 }
-plan tests => 18;
+plan tests => 20;
 
 set_barrier_prefix("multi-node-cluster-scenario-1-");
 set_barrier_print(\&diag);
@@ -265,9 +265,21 @@ foreach my $method ("OAuth", "MyProxy")
 
     $res = barrier(5, rank=>$rank);
 
-    # Test Step #9:
-    # Clean up gcmu
-    ok(cleanup(), "cleanup_$method");
+    SKIP: {
+        skip "I/O node only", 1 if $rank == 0;
+        # Test Step #9:
+        # Clean up gcmu
+        ok(cleanup(), "cleanup_$method");
+    }
+
+    $res = barrier(6, rank=>$rank);
+
+    SKIP: {
+        skip "Web/ID node only", 1 if $rank != 0;
+        # Test Step #10:
+        # Clean up gcmu
+        ok(cleanup(), "cleanup_$method");
+    }
 }
 
 # vim: filetype=perl :
