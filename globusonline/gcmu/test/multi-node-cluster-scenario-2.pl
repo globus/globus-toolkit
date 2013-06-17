@@ -82,16 +82,20 @@ sub cleanup()
     return $rc == 0;
 }
 
-sub gcmu_setup($)
+sub gcmu_setup($;%)
 {
     my $endpoint = shift;
+    my %args = (
+        command => 'globus-connect-multiuser-setup',
+        @_
+    );
     my @cmd;
     my $rc;
     
     $ENV{ENDPOINT_NAME} = $endpoint;
 
     # Create $endpoint
-    @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v");
+    @cmd = ($args{command}, "-c", $config_file, "-v");
 
     return diagsystem(@cmd)==0;
 }
@@ -229,7 +233,8 @@ foreach my $method ("OAuth", "MyProxy")
     # Activate ID node's endpoint and then auto-activate the rest
     SKIP: {
         skip "ID node operation only", 1 unless ($rank == 0);
-        ok(activate_endpoint($endpoint), "activate_id_endpoint")
+        ok(activate_endpoint($endpoint, $test_user, $test_pass),
+                "activate_id_endpoint")
     }
     $res = barrier(5, rank=>$rank);
     die "Barrier error" if $res eq 'Error';
@@ -238,7 +243,7 @@ foreach my $method ("OAuth", "MyProxy")
     # Autoactivate all other nodes
     SKIP: {
         skip "Non-ID node operation only", 1 unless $rank != 0;
-        ok(autoactivate_endpoint($endpoint, "autoactivate_endpoints");
+        ok(autoactivate_endpoint($endpoint), "autoactivate_endpoints");
     }
 
     # barrier to wait for I/O nodes to configure and activate
