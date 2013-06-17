@@ -190,7 +190,7 @@ foreach my $method ("OAuth", "MyProxy")
     SKIP: {
         skip "ID node operations only", 1 unless ($rank == 0);
 
-        ok(gcmu_setup($endpoint, command=>'globus-connect-id-setup'),
+        ok(gcmu_setup($endpoint, command=>'globus-connect-multiuser-id-setup'),
                 "setup_id_$method");
     }
 
@@ -215,7 +215,7 @@ foreach my $method ("OAuth", "MyProxy")
     SKIP: {
         skip "Web node operations only", 1 unless ($rank == 1);
 
-        ok(gcmu_setup($endpoint, command => 'globus-connect-web-setup'),
+        ok(gcmu_setup($endpoint, command => 'globus-connect-multiuser-web-setup'),
             "setup_web_$method");
     }
     $res = barrier(3, rank=>$rank);
@@ -223,7 +223,7 @@ foreach my $method ("OAuth", "MyProxy")
 
     # Test Step #3:
     # Set up I/O nodes everywhere
-    ok(gcmu_setup($endpoint, command => "globus-connect-io-setup"),
+    ok(gcmu_setup($endpoint, command => "globus-connect-multiuser-io-setup"),
             "setup_io_$method");
 
     $res = barrier(4, rank=>$rank);
