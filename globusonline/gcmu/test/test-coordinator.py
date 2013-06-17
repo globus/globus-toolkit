@@ -7,6 +7,7 @@ import os
 import json
 import signal
 import sys
+import time
 
 class BarrierServer(BaseHTTPServer.HTTPServer):
     def __init__(self, barrier_size, server_address, bind_and_activate=True):
