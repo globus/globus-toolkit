@@ -151,7 +151,7 @@ set_barrier_prefix("multi-node-cluster-scenario-1-");
 set_barrier_print(\&diag);
 
 my $res = barrier(1, hostname=>$hostname);
-die "Barrier error" if $res eq 'Error';
+die "Barrier error" if $res eq 'ERROR';
 
 # Determine our rank in the list of machines from the first barrier
 my $rank = rank(@{$res});
@@ -196,12 +196,12 @@ foreach my $method ("OAuth", "MyProxy")
     if ($rank == 0)
     {
         $res = barrier(2, rank=>$rank, user=>$test_user);
-        die "Barrier error" if $res eq 'Error';
+        die "Barrier error" if $res eq 'ERROR';
     }
     else
     {
         $res = barrier(2, rank=>$rank);
-        die "Barrier error" if $res eq 'Error';
+        die "Barrier error" if $res eq 'ERROR';
         if (!$test_pass)
         {
             $test_user = (map { $_->{user} } grep {$_->{rank} == 0} @{$res})[0];
@@ -222,7 +222,7 @@ foreach my $method ("OAuth", "MyProxy")
 
     # barrier to wait for I/O nodes to configure and activate
     $res = barrier(3, rank=>$rank, endpoint=>$endpoint);
-    die "Barrier error" if $res eq 'Error';
+    die "Barrier error" if $res eq 'ERROR';
 
     my $source_endpoint = $endpoint;
     my $dest_endpoint = $res->[($rank+1) % $size]->{endpoint};
@@ -262,14 +262,14 @@ foreach my $method ("OAuth", "MyProxy")
 
     # barrier to wait for transfer tests to complete before cleaning up
     $res = barrier(4, rank=>$rank);
-    die "Barrier error" if $res eq 'Error';
+    die "Barrier error" if $res eq 'ERROR';
 
     # Test Step #8:
     # Deactivate endpoints
     ok(deactivate_endpoint($endpoint), "deactivate_endpoint_$method");
 
     $res = barrier(5, rank=>$rank);
-    die "Barrier error" if $res eq 'Error';
+    die "Barrier error" if $res eq 'ERROR';
 
     SKIP: {
         skip "I/O node only", 1 if $rank == 0;
@@ -279,7 +279,7 @@ foreach my $method ("OAuth", "MyProxy")
     }
 
     $res = barrier(6, rank=>$rank);
-    die "Barrier error" if $res eq 'Error';
+    die "Barrier error" if $res eq 'ERROR';
 
     SKIP: {
         skip "Web/ID node only", 1 if $rank != 0;
