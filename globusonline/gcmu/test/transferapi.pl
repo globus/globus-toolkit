@@ -245,6 +245,7 @@ sub transfer($$$$)
     my $task_id;
     my $done = undef;
     my $deadline;
+    my $giveup;
 
     $req = HTTP::Request->new(GET => "$base_url/submission_id");
     $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
@@ -281,6 +282,8 @@ sub transfer($$$$)
     $json = $json_parser->decode($ua->request($req)->content);
     $task_id = $json->{task_id};
 
+    $giveup = time() + 301;
+
     do
     {
         $req = HTTP::Request->new(GET => "$base_url/task/$task_id");
@@ -291,6 +294,10 @@ sub transfer($$$$)
         if (!$done)
         {
             sleep(30);
+            if (time() > $giveup)
+            {
+                return { status => "FAILED" };
+            }
         }
     } while(!$done);
 
