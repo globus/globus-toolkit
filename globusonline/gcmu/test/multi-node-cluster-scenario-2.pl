@@ -149,9 +149,9 @@ if ($ENV{PUBLIC_HOSTNAME}) {
 } else {
     $hostname = (POSIX::uname())[1];
 }
-plan tests => 20;
+plan tests => 22;
 
-set_barrier_prefix("multi-node-cluster-scenario-1-");
+set_barrier_prefix("multi-node-cluster-scenario-2-");
 set_barrier_print(\&diag);
 
 my $res = barrier(1, hostname=>$hostname);
