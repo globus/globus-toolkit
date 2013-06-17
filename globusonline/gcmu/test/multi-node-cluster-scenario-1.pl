@@ -176,7 +176,7 @@ foreach my $method ("OAuth", "MyProxy")
     my $endpoint;
 
     ($short_hostname = $hostname) =~ s/\..*//;
-    $endpoint = "MULTI-$short_hostname-$random";
+    $endpoint = "MULTI1-$short_hostname-$random";
 
     $ENV{SECURITY_IDENTITY_METHOD} = $method;
     set_barrier_prefix("multi-node-cluster-scenario-1-$method-");
@@ -244,7 +244,7 @@ foreach my $method ("OAuth", "MyProxy")
         print $fh $random_data;
         $fh->close();
 
-        chown $uid, $gid, $infile;
+        chown $uid, $gid, "$homedir/$infile";
         diag("Transferring $infile from $source_endpoint to $dest_endpoint");
         ok(transfer_between_endpoints($source_endpoint, $infile,
                 $dest_endpoint, $infile),
