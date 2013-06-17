@@ -54,6 +54,7 @@ BEGIN {
 $|=1;
 @tests = qw(
     multi-node-cluster-scenario-1.pl
+    multi-node-cluster-scenario-2.pl
 );
 
 my $test_result = $harness->runtests(@tests);

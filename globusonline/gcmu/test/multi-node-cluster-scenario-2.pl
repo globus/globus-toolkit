@@ -158,7 +158,7 @@ my $rank = rank(@{$res});
 my $size = scalar(@{$res});
 
 $ENV{ID_NODE} = $res->[0]->{hostname};
-$ENV{WEB_NODE} = $res->[0]->{hostname};
+$ENV{WEB_NODE} = $res->[1]->{hostname};
 $ENV{IO_NODE} = $hostname;
 
 my ($test_user, $test_pass);
@@ -179,20 +179,18 @@ foreach my $method ("OAuth", "MyProxy")
     $endpoint = "MULTI-$short_hostname-$random";
 
     $ENV{SECURITY_IDENTITY_METHOD} = $method;
-    set_barrier_prefix("multi-node-cluster-scenario-1-$method-");
+    set_barrier_prefix("multi-node-cluster-scenario-2-$method-");
 
-    # Test step #1-2:
-    # Create ID, I/O and Web server on node 0
-    # Activate endpoint living on ID node
+    # Test step #1:
+    # Create ID server on node 0
     SKIP: {
-        skip "Web/ID node operations only", 2 unless ($rank == 0);
+        skip "ID node operations only", 1 unless ($rank == 0);
 
-        ok(gcmu_setup($endpoint), "setup_id_web_io_$method");
-        ok(activate_endpoint($endpoint, $test_user, $test_pass),
-            "activate_endpoint_$method");
+        ok(gcmu_setup($endpoint, command=>'globus-connect-id-setup'),
+                "setup_id_$method");
     }
 
-    # barrier to wait for id/web node to configure
+    # barrier to wait for id node to configure
     if ($rank == 0)
     {
         $res = barrier(2, rank=>$rank, user=>$test_user);
@@ -208,26 +206,49 @@ foreach my $method ("OAuth", "MyProxy")
             ($test_user, $test_pass) = TempUser::create_user($test_user);
         }
     }
-
-    # Test step #3-4:
-    # Create I/O servers on other nodes
-    # Autoactivate other nodes (should work because they use the same ID/Web
-    # server)
+    # Test step #2:
+    # Create Web server on node 1
     SKIP: {
-        skip "I/O node only", 2 unless ($rank > 0);
+        skip "Web node operations only", 1 unless ($rank == 1);
 
-        ok(gcmu_setup($endpoint), "setup_io_$method");
-        ok(autoactivate_endpoint($endpoint), "autoactivate_io_$method");
+        ok(gcmu_setup($endpoint, command => 'globus-connect-web-setup'),
+            "setup_web_$method");
+    }
+    $res = barrier(3, rank=>$rank);
+    die "Barrier error" if $res eq 'Error';
+
+    # Test Step #3:
+    # Set up I/O nodes everywhere
+    ok(gcmu_setup($endpoint, command => "globus-connect-io-setup"),
+            "setup_io_$method");
+
+    $res = barrier(4, rank=>$rank);
+    die "Barrier error" if $res eq 'Error';
+
+    # Test Step #4:
+    # Activate ID node's endpoint and then auto-activate the rest
+    SKIP: {
+        skip "ID node operation only", 1 unless ($rank == 0);
+        ok(activate_endpoint($endpoint), "activate_id_endpoint")
+    }
+    $res = barrier(5, rank=>$rank);
+    die "Barrier error" if $res eq 'Error';
+
+    # Test Step #5:
+    # Autoactivate all other nodes
+    SKIP: {
+        skip "Non-ID node operation only", 1 unless $rank != 0;
+        ok(autoactivate_endpoint($endpoint, "autoactivate_endpoints");
     }
 
     # barrier to wait for I/O nodes to configure and activate
-    $res = barrier(3, rank=>$rank, endpoint=>$endpoint);
+    $res = barrier(6, rank=>$rank, endpoint=>$endpoint);
     die "Barrier error" if $res eq 'Error';
 
     my $source_endpoint = $endpoint;
     my $dest_endpoint = $res->[($rank+1) % $size]->{endpoint};
 
-    # Test Step #5-7:
+    # Test Step #6-8:
     # Transfer file between local and remote endpoints and vice versa, compare
     SKIP: {
         skip "Not enough nodes for transfer", 3 unless $size >= 2;
@@ -261,29 +282,29 @@ foreach my $method ("OAuth", "MyProxy")
     }
 
     # barrier to wait for transfer tests to complete before cleaning up
-    $res = barrier(4, rank=>$rank);
+    $res = barrier(7, rank=>$rank);
     die "Barrier error" if $res eq 'Error';
 
-    # Test Step #8:
+    # Test Step #9:
     # Deactivate endpoints
     ok(deactivate_endpoint($endpoint), "deactivate_endpoint_$method");
 
-    $res = barrier(5, rank=>$rank);
+    $res = barrier(8, rank=>$rank);
     die "Barrier error" if $res eq 'Error';
 
     SKIP: {
-        skip "I/O node only", 1 if $rank == 0;
-        # Test Step #9:
+        skip "Non-ID node only", 1 if $rank == 0;
+        # Test Step #10:
         # Clean up gcmu
         ok(cleanup(), "cleanup_$method");
     }
 
-    $res = barrier(6, rank=>$rank);
+    $res = barrier(9, rank=>$rank);
     die "Barrier error" if $res eq 'Error';
 
     SKIP: {
-        skip "Web/ID node only", 1 if $rank != 0;
-        # Test Step #10:
+        skip "ID node only", 1 if $rank != 0;
+        # Test Step #11:
         # Clean up gcmu
         ok(cleanup(), "cleanup_$method");
     }

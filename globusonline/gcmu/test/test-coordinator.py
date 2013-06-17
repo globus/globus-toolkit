@@ -12,11 +12,14 @@ class BarrierServer(BaseHTTPServer.HTTPServer):
     def __init__(self, barrier_size, server_address, bind_and_activate=True):
         self.barrier_size = barrier_size
         self.barrier_data = {}
+        self.barrier_start = {}
+        self.first_barrier = False
         BaseHTTPServer.HTTPServer.__init__(self, server_address, BarrierRequest, bind_and_activate)
 
     def barrier(self, barrier_name, job_id, objects):
         if barrier_name not in self.barrier_data:
             self.barrier_data[barrier_name] = {}
+            self.barrier_start[barrier_name] = time.time()
 
         if len(self.barrier_data[barrier_name]) >= self.barrier_size:
             return (409, "Conflict")
@@ -28,13 +31,17 @@ class BarrierServer(BaseHTTPServer.HTTPServer):
 
     def get_barrier_data(self, barrier_name):
         barrier_data = self.barrier_data.get(barrier_name)
-        if barrier_data is None:
+        if barrier_data is None or ((not self.first_barrier) and \
+                time.time() > self.barrier_start[barrier_name] + 600):
             return (404, "Not Found", None)
         if len(barrier_data) != self.barrier_size:
             return (503, "Service Unavailable", None)
         barrier_block = []
         for k in barrier_data:
             barrier_block.append(barrier_data[k])
+        # Clear first barrier flag once it has synchronized successfully
+        if self.first_barrier:
+            self.first_barrier = False
         return (200, "Ok", barrier_block)
 
 class BarrierRequest(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -116,3 +123,4 @@ if __name__ == "__main__":
     server_address = ('', 5325)
     httpd = BarrierServer(int(sys.argv[1]), server_address)
     httpd.serve_forever()
+# vim: filetype=python:

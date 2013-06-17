@@ -251,7 +251,7 @@ sub transfer($$$$)
     $res = $ua->request($req);
 
     $submission_id = $json_parser->decode($res->content())->{value};
-    $deadline = POSIX::strftime("%Y-%m-%d %H:%M:%S%z", gmtime(time() + 300));
+    $deadline = POSIX::strftime("%Y-%m-%d %H:%M:%S", gmtime(time() + 300));
     $input = {
         DATA_TYPE => "transfer",
         submission_id => $submission_id,
