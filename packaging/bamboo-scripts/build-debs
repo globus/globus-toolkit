@@ -169,16 +169,32 @@ metapackages="globus-gridftp
     globus-resource-management-sdk
     globus-gsi"
 
+cat > packages.xsl <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    version="1.0">
+<xsl:output method="text" encoding="UTF-8" indent="no"/>
+
+<xsl:template match="text()"/>
+<xsl:template match="a">
+    <xsl:if test="contains(@href, '.tar.gz') and
+            substring-after(@href, '.tar.gz') = ''">
+        <xsl:value-of select="@href"/>
+        <xsl:text>&#10;</xsl:text>
+    </xsl:if>
+</xsl:template>
+</xsl:stylesheet>
+EOF
+
 if [ "$quick" -eq 1 ]; then
-	mv package-output.old package-output
+   mv package-output.old package-output
 else
-	./make-packages.pl -skipbundle -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -flavor=${flavor} -ab
-	cd gpt/packaging_tools
-	sh ./bootstrap
-	rm gpt*.tar.gz || true
-	./configure
-	make dist
-	cp gpt*.tar.gz ../../package-output
+    mkdir -p package-output
+    for pkg in $(curl -Ls http://builds.globus.org/repo/packages | xsltproc --html packages.xsl -); do
+        if [ ! -f package-output/$pkg ]; then
+            curl -Ls -o package-output/$pkg http://builds.globus.org/repo/packages/$pkg
+        fi
+    done
 fi
 cd $topdir
 
@@ -206,16 +222,14 @@ for i in grid-packaging-tools $packages; do
     fi
     striplevel=1
     debout="$(awk -F: '/^Package: / { gsub("[ \t\r]", "", $2); print $2 }' "$debiandir/$debname/debian/control")"
+    pkgversion="$(sed -ne "s,.*(,," -e "s,).*,," -e "s,-.*,," -e p -e q < "$debiandir/$debname/debian/changelog")"
     if [ "$i" = grid-packaging-tools ]; then
-        tarball="$(basename $topdir/../package-output/gpt-[0-9]*.tar.gz)"
-	pkgversion="$(expr "$tarball" : ".*-\([0-9\.]*\).*.tar.gz")"
+        tarball="$(basename $topdir/../package-output/gpt-$pkgversion.tar.gz)"
     elif [ "$i" = gsi_openssh ]; then
-	tarball="$(basename $topdir/../package-output/gsi_openssh-*-src.tar.gz)"
-	pkgversion="$(expr "$tarball" : ".*-\([0-9\.]*\)-src.tar.gz")"
+	tarball="$(basename $topdir/../package-output/gsi_openssh-$pkgversion-src.tar.gz)"
 	striplevel=2
     else
-        tarball="$(basename $topdir/../package-output/$i-[0-9]*.tar.gz)"
-	pkgversion="$(expr "$tarball" : ".*-\([0-9\.]*\).*.tar.gz")"
+        tarball="$(basename $topdir/../package-output/$i-$pkgversion.tar.gz)"
     fi
     if test -d "$debiandir/$debname"; then
 	cp -R $debiandir/$debname $debname
