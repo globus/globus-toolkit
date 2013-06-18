@@ -77,9 +77,11 @@
  *
  * Gridftp driver specific attrs and cntls.
  *
- * @see globus_xio_attr_cntl()
- * @see globus_xio_handle_cntl()
- * @see globus_xio_data_descriptor_cntl()
+ * @see globus_xio_attr_cntl ()
+ *
+ * @see globus_xio_handle_cntl ()
+ *
+ * @see globus_xio_data_descriptor_cntl ()
  */
 /**
  * @defgroup gridftp_driver_types Types
@@ -254,7 +256,7 @@ typedef enum
      * Get the ESTO algorithm string. 
      * @ingroup gridftp_driver_cntls
      *
-     * @param eret_alg_str_out
+     * @param esto_alg_str_out
      *      The ESTO algorithm string will be stored here. It is the 
      * responsibility of the user to free the memory allocated for this string.
      */
@@ -428,7 +430,7 @@ typedef enum
      * Set protection level on the data channel.
      * @ingroup gridftp_driver_cntls
      *
-     * @param data_protection
+     * @param protection
      *      Specifies the protection level.
      *
      * @see globus_l_xio_gridftp_protection_t
@@ -440,7 +442,7 @@ typedef enum
      * Get the data channel protection level on the attr.
      * @ingroup gridftp_driver_cntls
      *
-     * @param data_protection_out
+     * @param protection_out
      *      The data channel protection level will be stored here.
      *
      * @see globus_l_xio_gridftp_dcau_mode_t
@@ -452,7 +454,7 @@ typedef enum
      * Set protection level on the control channel.
      * @ingroup gridftp_driver_cntls
      *
-     * @param control_protection
+     * @param protection
      *      Specifies the protection level.
      *
      * @see globus_l_xio_gridftp_protection_t
@@ -464,7 +466,7 @@ typedef enum
      * Get the control channel protection level on the attr.
      * @ingroup gridftp_driver_cntls
      *
-     * @param control_protection_out
+     * @param protection_out
      *      The control channel protection level will be stored here.
      *
      * @see globus_l_xio_gridftp_protection_t
