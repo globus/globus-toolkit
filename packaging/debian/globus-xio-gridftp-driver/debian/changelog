@@ -1,3 +1,9 @@
+globus-xio-gridftp-driver (1.2-1) unstable; urgency=low
+
+  * add GLOBUS_LICENSE
+
+ -- Globus Toolkit <support@globus.org>  Wed, 19 Jun 2013 07:03:29 -0400
+
 globus-xio-gridftp-driver (1.1-1) unstable; urgency=low
 
   * GT-417: globus-xio-gridftp-driver package fails in doxygen
