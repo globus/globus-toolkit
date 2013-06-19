@@ -1,3 +1,9 @@
+globus-gridmap-verify-myproxy-callout (1.3-1) unstable; urgency=low
+
+  * Add GLOBUS_OPENSSL in configure
+
+ -- Globus Toolkit <support@globus.org>  Wed, 19 Jun 2013 07:20:59 -0400
+
 globus-gridmap-verify-myproxy-callout (1.2-1) unstable; urgency=low
 
   * GT-341: GPT metadata problem in new myproxy callout package
