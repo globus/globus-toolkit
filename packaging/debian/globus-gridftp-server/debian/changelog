@@ -1,3 +1,9 @@
+globus-gridftp-server (6.33-1) unstable; urgency=low
+
+  * Add GLOBUS_OPENSSL in configure
+
+ -- Globus Toolkit <support@globus.org>  Wed, 19 Jun 2013 09:06:51 -0400
+
 globus-gridftp-server (6.32-1) unstable; urgency=low
 
   * GT-396: fix mlst on filenames that end in a newline

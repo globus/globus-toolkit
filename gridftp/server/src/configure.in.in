@@ -13,6 +13,8 @@ dnl config header goes here
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
+GLOBUS_OPENSSL
+
 dnl Build hooks for all 'builtin' modules
 echo -n "Checking for builtin modules... "
 GLOBUS_LOCATION=$GLOBUS_LOCATION
