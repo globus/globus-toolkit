@@ -1,3 +1,9 @@
+globus-core (8.12-1) unstable; urgency=low
+
+  * GT-403: More porting issues (aarch64 and x32)
+
+ -- Globus Toolkit <support@globus.org>  Thu, 20 Jun 2013 13:50:48 -0400
+
 globus-core (8.11-1) unstable; urgency=low
 
   * GT-402: gpt-bootstrap should call automake with --force-missing

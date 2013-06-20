@@ -342,9 +342,17 @@ case ${host}--$1 in
                     lac_CXXFLAGS="$lac_CXXFLAGS -m64"
                     lac_LDFLAGS="$lac_LDFLAGS -m64"
                 else
-                    lac_CFLAGS="$lac_CFLAGS -m32"
-                    lac_CXXFLAGS="$lac_CXXFLAGS -m32"
-                    lac_LDFLAGS="$lac_LDFLAGS -m32"
+                    if (echo '#ifdef __ILP32__'; \
+                        echo 'isx32'; \
+                        echo '#endif') | gcc -E -x c - | grep -q isx32 ; then
+                        lac_CFLAGS="$lac_CFLAGS -mx32"
+                        lac_CXXFLAGS="$lac_CXXFLAGS -mx32"
+                        lac_LDFLAGS="$lac_LDFLAGS -mx32"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -m32"
+                        lac_CXXFLAGS="$lac_CXXFLAGS -m32"
+                        lac_LDFLAGS="$lac_LDFLAGS -m32"
+                    fi
                 fi
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
                 AC_PATH_PROGS(lac_cv_CXX, $CXX c++ g++)
@@ -468,6 +476,28 @@ case ${host}--$1 in
             fi
             
             AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        fi
+        CC="$lac_cv_CC"
+        ;;
+    aarch64-*-linux* )
+        if test "$lac_cv_build_64bit" = "no"; then
+            AC_MSG_ERROR(32 bits not supported on this platform)
+            exit 1
+        fi
+        
+        if test "$GLOBUS_CC" = "mpicc"; then
+            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
+        else
+            if test "$GLOBUS_CC" != "gcc"; then
+                AC_MSG_ERROR(vendorcc not supported on this platform)
+            fi
+            AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX c++ g++)
             AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
             AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi

@@ -13,7 +13,7 @@ case $guess_libdir:${host}:${libdir} in
 
         libdir_choice="
 case \`uname -m\` in
-    ppc64|s390x|sparc64|x86_64)
+    aarch64|ppc64|s390x|sparc64|x86_64)
         libdir=\"$libdir64\"
         ;;
     *)
@@ -22,7 +22,7 @@ case \`uname -m\` in
 esac
 "
         perl_libdir_choice="
-    if (\`uname -m\` =~ /^(ppc64|s390x|sparc64|x86_64)\$/) {
+    if (\`uname -m\` =~ /^(aarch64|ppc64|s390x|sparc64|x86_64)\$/) {
         \$libdir = \"$libdir64\";
     } else {
         \$libdir = \"$libdir32\";
@@ -35,7 +35,7 @@ esac
 
         libdir_choice="
 case \`uname -m\` in
-    ppc64|s390x|sparc64|x86_64)
+    aarch64|ppc64|s390x|sparc64|x86_64)
         libdir=\"$libdir64\"
         ;;
     *)
@@ -44,7 +44,7 @@ case \`uname -m\` in
 esac
 "
         perl_libdir_choice="
-    if (\`uname -m\` =~ /^(ppc64|s390x|sparc64|x86_64)\$/) {
+    if (\`uname -m\` =~ /^(aarch64|ppc64|s390x|sparc64|x86_64)\$/) {
         \$libdir = \"$libdir64\";
     } else {
         \$libdir = \"$libdir32\";
