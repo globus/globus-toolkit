@@ -18,7 +18,7 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.10
+Version:	8.11
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Thu Jun 20 2013 Globus Toolkit <support@globus.org> - 8.11-1
+- GT-402: gpt-bootstrap should call automake with --force-missing
+
 * Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 8.10-1
 - GT-354: Compatibility with automake 1.13
 

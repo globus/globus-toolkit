@@ -53,15 +53,15 @@ done
 IFS="$OLDIFS"
 
 echo "running libtoolize --copy --force"
-$libtoolize --copy  --force|| \
-  $libtoolize --copy --force  || error
+$libtoolize --copy --force || \
+  $libtoolize --copy --force || error
 
 echo "Running gpt-to-pkgconfig"
 $GPT_LOCATION/sbin/gpt-to-pkgconfig pkgdata/pkg_data_src.gpt.in || error
 
-echo "running automake --copy -add-missing --foreign"
-automake --copy --add-missing --foreign || \
-  automake --copy --add-missing --foreign  || error
+echo "running automake --copy -add-missing --force-missing --foreign"
+automake --copy --add-missing --force-missing --foreign || \
+  automake --copy --add-missing --force-missing --foreign || error
 
 echo "running gpt_create_automake_rules --excludes=doxygen"
 $GPT_LOCATION/sbin/gpt_create_automake_rules --excludes=doxygen || error

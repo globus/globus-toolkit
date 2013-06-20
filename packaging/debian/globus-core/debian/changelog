@@ -1,3 +1,9 @@
+globus-core (8.11-1) unstable; urgency=low
+
+  * GT-402: gpt-bootstrap should call automake with --force-missing
+
+ -- Globus Toolkit <support@globus.org>  Thu, 20 Jun 2013 11:03:39 -0400
+
 globus-core (8.10-1) unstable; urgency=low
 
   * GT-354: Compatibility with automake 1.13

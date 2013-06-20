@@ -90,9 +90,9 @@ echo "running $libtoolize --copy --force"
 $libtoolize --copy --force || \
   $libtoolize --copy --force || error
 
-echo "running automake --copy -add-missing --foreign"
-automake --copy --add-missing --foreign || \
-  automake --copy --add-missing --foreign  || error
+echo "running automake --copy -add-missing --force-missing --foreign"
+automake --copy --add-missing --force-missing --foreign || \
+  automake --copy --add-missing --force-missing --foreign || error
 
 
 echo "running gpt_create_automake_rules"

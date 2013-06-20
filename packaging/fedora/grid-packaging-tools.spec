@@ -1,5 +1,5 @@
 Name:		grid-packaging-tools
-Version:	3.6.4
+Version:	3.6.5
 Release:	1%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 
@@ -86,6 +86,9 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
+* Thu Jun 20 2013 Globus Toolkit <support@globus.org> - 3.6.5-1
+- GT-402: gpt-bootstrap should call automake with --force-missing
+
 * Thu Jun 20 2013 Globus Toolkit <support@globus.org> - 3.6.4-1
 - GT-342: Warning from GPT with newer perl version
 

@@ -1,3 +1,9 @@
+grid-packaging-tools (3.6.5-1) unstable; urgency=low
+
+  * GT-402: gpt-bootstrap should call automake with --force-missing
+
+ -- Globus Toolkit <support@globus.org>  Thu, 20 June 2013 10:54:03 -0400
+
 grid-packaging-tools (3.6.4-1) unstable; urgency=low
 
   * GT-342: Warning from GPT with newer perl version
