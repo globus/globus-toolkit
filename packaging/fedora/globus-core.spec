@@ -18,7 +18,7 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.13
+Version:	8.14
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Thu Jun 20 2013 Globus Toolkit <support@globus.org> - 8.14-1
+- GT-343: Add additional latex build requirements for newer fedora releases
+
 * Thu Jun 20 2013 Globus Toolkit <support@globus.org> - 8.13-1
 - GT-404: 5 times latex sometimes not enough
 

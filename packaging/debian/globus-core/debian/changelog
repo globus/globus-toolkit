@@ -1,3 +1,9 @@
+globus-core (8.14-1) unstable; urgency=low
+
+  * GT-343: Add additional latex build requirements for newer fedora releases
+
+ -- Globus Toolkit <support@globus.org>  Thu, 20 Jun 2013 14:29:17 -0400
+
 globus-core (8.13-1) unstable; urgency=low
 
   * GT-404: 5 times latex sometimes not enough
