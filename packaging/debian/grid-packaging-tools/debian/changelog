@@ -1,4 +1,4 @@
-grid-packaging-tools (3.6.3-2) unstable; urgency=low
+grid-packaging-tools (3.6.4-1) unstable; urgency=low
 
   * GT-342: Warning from GPT with newer perl version
 
