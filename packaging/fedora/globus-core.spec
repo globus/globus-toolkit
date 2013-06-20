@@ -18,7 +18,7 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.12
+Version:	8.13
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Thu Jun 20 2013 Globus Toolkit <support@globus.org> - 8.13-1
+- GT-404: 5 times latex sometimes not enough
+
 * Thu Jun 20 2013 Globus Toolkit <support@globus.org> - 8.12-1
 - GT-403: More porting issues (aarch64 and x32)
 

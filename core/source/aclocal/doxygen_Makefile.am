@@ -13,7 +13,7 @@ all-local: @DOXYFILE@
 		    fi ; \
 		fi ; \
 		if test -d doc/latex; then \
-		    (cd doc/latex ; for f in *.tex ; do sed 's/\\doxyref{p\.}/\\doxyref{}{p\.}/g' $$f > $$f.new ; mv $$f.new $$f ; done ; make) ; \
+		    (cd doc/latex ; for f in *.tex ; do sed 's/\\doxyref{p\.}/\\doxyref{}{p\.}/g' $$f > $$f.new ; mv $$f.new $$f ; done ; sed 's/\(latex_count\)=[0-9] /\1=10 /' Makefile > Makefile.new ; mv Makefile.new Makefile ; make) ; \
 		fi \
 	fi
 
