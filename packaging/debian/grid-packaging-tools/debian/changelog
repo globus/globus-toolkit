@@ -1,5 +1,11 @@
 grid-packaging-tools (3.6.3-2) unstable; urgency=low
 
+  * GT-342: Warning from GPT with newer perl version
+
+ -- Globus Toolkit <support@globus.org>  Thu, 20 June 2013 07:32:11 -0400
+
+grid-packaging-tools (3.6.3-2) unstable; urgency=low
+
   * 5.2.3
 
  -- Globus Toolkit <support@globus.org>  Mon, 26 Nov 2012 11:25:47 -0500

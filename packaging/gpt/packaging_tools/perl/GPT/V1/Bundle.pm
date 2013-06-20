@@ -1188,7 +1188,7 @@ sub find_package
                                          flavor  => $p->{'Flavor'},
                                          pkgtype => $p->{'Type'} );
 
-  if( defined(@$installed_pkgs) )
+  if( @$installed_pkgs )
   {
     for my $c (@$installed_pkgs)
     {

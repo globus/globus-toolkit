@@ -1,6 +1,6 @@
 Name:		grid-packaging-tools
-Version:	3.6.3
-Release:	2%{?dist}
+Version:	3.6.4
+Release:	1%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 
 Group:		Development/Tools
@@ -86,6 +86,9 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
+* Thu Jun 20 2013 Globus Toolkit <support@globus.org> - 3.6.4-1
+- GT-342: Warning from GPT with newer perl version
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 3.6.3-2
 - 5.2.3
 
