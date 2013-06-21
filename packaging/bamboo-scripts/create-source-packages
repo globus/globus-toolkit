@@ -58,16 +58,17 @@ EOF
 repo_packages="$(curl -Ls http://builds.globus.org/repo/packages | xsltproc --html packages.xsl -)"
 
 for package in $cvs_packages; do
-    if ! echo "$repo_packages" | grep -q "${package}.tar.gz" ; then
+    package_tarname="$(echo "$repo_packages" | grep "${package}\(-src\)\{0,1\}.tar.gz")"
+    if [ "$package_tarname" != "" ]; then
         package_no_version="${package%%-*}"
         if [ "$package_no_version" = "gpt" ]; then
-            cp $package "$WORKSPACE/package-output/"
+            cp ${package_tarname}.tar.gz "$WORKSPACE/package-output/"
         else
             ./make-packages.pl --packages="$package_no_version" \
                                -skipbundle -no-updates -nogpt
-            cp "package-output/${package}" "$WORKSPACE/package-output/"
+            cp "package-output/${package_tarname}.tar.gz" \
+                    "$WORKSPACE/package-output/"
         fi
-
     else
         curl -Ls -o "$WORKSPACE/package-output/$package.tar.gz" "http://builds.globus.org/repo/packages/$package.tar.gz"
     fi
