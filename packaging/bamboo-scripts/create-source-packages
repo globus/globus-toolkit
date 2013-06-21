@@ -58,10 +58,12 @@ repo_packages="$(curl -Ls http://builds.globus.org/repo/packages | xsltproc --ht
 
 for package in $cvs_packages; do
     if ! echo "$repo_packages" | grep -q "${package}.tar.gz" ; then
-        if [ "${package##*-}" = "gpt" ]; then
+        package_no_version="${package%%-*}"
+        if [ "$package_no_version" = "gpt" ]; then
             cp $package "$WORKSPACE/package-output/"
         else
-            ./make-packages.pl --packages="${package##*-}" -skipbundle -no-updates
+            ./make-packages.pl --packages="$package_no_version" \
+                               -skipbundle -no-updates -nogpt
             cp "package-output/${package}" "$WORKSPACE/package-output/"
         fi
 
