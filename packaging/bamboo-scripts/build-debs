@@ -129,7 +129,7 @@ if [ "$cvsroot" != "" ]; then
 else
     anonflag="-a"
 fi
-packages="$(cat packages-list.txt)"
+packages="$(cat packages-list.txt | sed -e 's/-.*//')"
 
 metapackages="globus-gridftp
     globus-data-management-client
@@ -145,7 +145,7 @@ cd $topdir
 
 if [ "$chroot" != "" ]; then
     HOME="$orighome"
-    schroot -c "$chroot" -d "$packagingdir" -p -- bash $0 $chroot_args 
+    schroot -c "$chroot" -d "$packagingdir" -p -- bash -xe $0 $chroot_args 
     HOME="$topdir"
     if [ -d "${topdir}-${chroot}" ]; then
         if [ -d "${topdir}-${chroot}.old" ]; then
@@ -159,8 +159,8 @@ if [ "$chroot" != "" ]; then
     cd "${topdir}"
 fi
 
-for i in grid-packaging-tools $packages; do
-    debname="$(echo "$i" | sed -e 's/-.*//' -e 's/_/-/g')"
+for i in grid_packaging_tools $packages; do
+    debname="$(echo "$i" | tr _ -)"
     if [ ! -d "$debiandir/$debname" ]; then
         echo "Skipping $debname---no debian metadata"
         continue
