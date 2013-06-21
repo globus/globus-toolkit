@@ -160,7 +160,7 @@ if [ "$chroot" != "" ]; then
 fi
 
 for i in grid-packaging-tools $packages; do
-    debname="$(echo "$i" | tr _ -)"
+    debname="$(echo "$i" | sed -e 's/-.*//' -e 's/_/-/g')"
     if [ ! -d "$debiandir/$debname" ]; then
         echo "Skipping $debname---no debian metadata"
         continue
