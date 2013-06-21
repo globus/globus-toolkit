@@ -33,7 +33,7 @@ packages_to_build="myproxy,gsi_openssh"
 
 # this has side-effect of checkout out all source trees
 packages="$(./make-packages.pl ${tag:+-t $tag} -a -lp -deps -deporder --order-include-runtime-deps -bundles=$bundles -packages="$packages_to_build" ${tag:+-t "$tag"} | \
-    awk "/at version/ { print \$1 \"-\" \$4 }" | grep -v gsi_openssh_setup)"
+    awk "/at version/ { print \$1 \"-\" \$4 }" | grep -Ev "gsi_openssh_setup|authz_null_callout")"
 cvs_packages="gpt-$(cat gpt/gpt_version)
 $packages"
 echo "$packages" > packages-list.txt
