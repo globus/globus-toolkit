@@ -1,8 +1,9 @@
 #! /bin/sh
 
 rm -rf "$WORKSPACE/package-output"
-rm -rf packaging
 mkdir "$WORKSPACE/package-output"
+
+cd "$WORKSPACE/packaging"
 
 args=$(getopt t: $*)
 set -- ${args}
@@ -20,9 +21,6 @@ for i; do
            ;;
     esac
 done
-
-cvs -d :pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages co ${tag:+-r $tag} packaging
-cd packaging
 
 # Remove everything prior to building
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|^gsi_openssh' || true) )"
