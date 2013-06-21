@@ -59,13 +59,21 @@ repo_packages="$(curl -Ls http://builds.globus.org/repo/packages | xsltproc --ht
 
 for package in $cvs_packages; do
     package_tarname="$(echo "$repo_packages" | grep "${package}\(-src\)\{0,1\}.tar.gz")"
-    if [ "$package_tarname" != "" ]; then
+    if [ "$package_tarname" = "" ]; then
         package_no_version="${package%%-*}"
         if [ "$package_no_version" = "gpt" ]; then
             cp ${package_tarname} "$WORKSPACE/package-output/"
         else
             ./make-packages.pl --packages="$package_no_version" \
                                -skipbundle -no-updates -nogpt
+            if [ -f package-output/${package}.tar.gz ]; then
+                package_tarname="${package}.tar.gz" 
+            elif [ -f package-output/${package}-src.tar.gz ]; then
+                package_tarname="${package}-src.tar.gz" 
+            else
+                echo "Can't find $package"
+                false
+            fi
             cp "package-output/${package_tarname}" \
                     "$WORKSPACE/package-output/"
         fi
