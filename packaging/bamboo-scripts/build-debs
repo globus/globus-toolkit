@@ -168,7 +168,7 @@ for i in grid_packaging_tools $packages; do
     striplevel=1
     debout="$(awk -F: '/^Package: / { gsub("[ \t\r]", "", $2); print $2 }' "$debiandir/$debname/debian/control")"
     pkgversion="$(sed -ne "s,.*(,," -e "s,).*,," -e "s,-.*,," -e p -e q < "$debiandir/$debname/debian/changelog")"
-    if [ "$i" = grid-packaging-tools ]; then
+    if [ "$i" = grid_packaging_tools ]; then
         tarball="$(basename $topdir/../package-output/gpt-$pkgversion.tar.gz)"
     elif [ "$i" = gsi_openssh ]; then
 	tarball="$(basename $topdir/../package-output/gsi_openssh-$pkgversion-src.tar.gz)"
