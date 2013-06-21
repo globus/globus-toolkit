@@ -62,11 +62,11 @@ for package in $cvs_packages; do
     if [ "$package_tarname" != "" ]; then
         package_no_version="${package%%-*}"
         if [ "$package_no_version" = "gpt" ]; then
-            cp ${package_tarname}.tar.gz "$WORKSPACE/package-output/"
+            cp ${package_tarname} "$WORKSPACE/package-output/"
         else
             ./make-packages.pl --packages="$package_no_version" \
                                -skipbundle -no-updates -nogpt
-            cp "package-output/${package_tarname}.tar.gz" \
+            cp "package-output/${package_tarname}" \
                     "$WORKSPACE/package-output/"
         fi
     else
