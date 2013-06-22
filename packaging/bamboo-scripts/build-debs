@@ -171,7 +171,14 @@ for i in grid_packaging_tools $packages; do
     if [ "$i" = grid_packaging_tools ]; then
         tarball="$(basename $topdir/../package-output/gpt-$pkgversion.tar.gz)"
     elif [ "$i" = gsi_openssh ]; then
-	tarball="$(basename $topdir/../package-output/gsi_openssh-$pkgversion-src.tar.gz)"
+	tarball_path="$topdir/../package-output/gsi_openssh-$pkgversion-src.tar.gz"
+	tarball="$(basename $tarball_path)"
+        if [ ! -f "$tarball_path" ]; then
+            bundle_tarball="gsi_openssh_bundle-${pkgversion}-src.tar.gz"
+            bundle_url="https://sourceforge.net/projects/cilogon/files/gsissh/$bundle_tarball/download"
+            curl -Ls "$bundle_url" | tar -C $topdir/../package-output \
+                -zxf - $tarball
+        fi
 	striplevel=2
     else
         tarball="$(basename $topdir/../package-output/$i-$pkgversion.tar.gz)"
