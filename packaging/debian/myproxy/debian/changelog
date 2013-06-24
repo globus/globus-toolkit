@@ -1,3 +1,9 @@
+myproxy (5.9-7) unstable; urgency=low
+
+  * explicit -lssl
+
+ -- Globus Toolkit <support@globus.org>  Mon, 24 June 2013 11:09:12 -0400
+
 myproxy (5.9-6) unstable; urgency=low
 
   * add dependencies
