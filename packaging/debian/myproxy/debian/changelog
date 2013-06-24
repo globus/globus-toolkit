@@ -1,3 +1,9 @@
+myproxy (5.9-8) unstable; urgency=low
+
+  * explicit "-lbsd -lpam -ldl -lssl -lcrypto"
+
+ -- Globus Toolkit <support@globus.org>  Mon, 24 June 2013 12:13:46 -0400
+
 myproxy (5.9-7) unstable; urgency=low
 
   * explicit -lssl

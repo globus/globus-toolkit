@@ -82,8 +82,7 @@ build: build-stamp
 build-stamp: configure-stamp
 	dh_testdir
 
-	$(MAKE) LIBS=-lssl
-
+	$(MAKE) LIBS="-lbsd -lpam -ldl -lssl -lcrypto"
 	touch $@
 
 unpatch: unsed
