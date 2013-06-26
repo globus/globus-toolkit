@@ -13,13 +13,13 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
 Version:	8.6
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -34,13 +34,13 @@ Requires:	globus-gass-transfer%{?_isa} >= 7
 Requires:	globus-ftp-control%{?_isa} >= 4
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-ftp-client-devel%{?_isa} >= 7
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
-BuildRequires:	globus-io-devel%{?_isa} >= 8
-BuildRequires:	globus-gass-transfer-devel%{?_isa} >= 7
-BuildRequires:	globus-ftp-control-devel%{?_isa} >= 4
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-ftp-client-devel >= 7
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-gssapi-gsi-devel >= 9
+BuildRequires:	globus-io-devel >= 8
+BuildRequires:	globus-gass-transfer-devel >= 7
+BuildRequires:	globus-ftp-control-devel >= 4
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -210,6 +210,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 8.6-4
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 8.6-3
 - Workaround missing F18 doxygen/latex dependency
 

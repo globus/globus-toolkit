@@ -13,13 +13,13 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
 Version:	8.9
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/updates/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -32,12 +32,12 @@ Requires:	globus-callout%{?_isa} >= 2
 Requires:	globus-gssapi-gsi%{?_isa} >= 9
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
-BuildRequires:	globus-gsi-sysconfig-devel%{?_isa} >= 5
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-callout-devel%{?_isa} >= 2
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-gsi-cert-utils-devel >= 8
+BuildRequires:	globus-gsi-sysconfig-devel >= 5
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-callout-devel >= 2
+BuildRequires:	globus-gssapi-gsi-devel >= 9
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -212,6 +212,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 8.9-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Tue Mar 19 2013 Globus Toolkit <support@globus.org> - 8.9-1
 - Update sharing to support a full cert chain at logon
 

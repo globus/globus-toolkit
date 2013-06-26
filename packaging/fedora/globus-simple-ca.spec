@@ -11,7 +11,7 @@
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
 Version:	3.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -127,6 +127,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.4-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Fri May 24 2013 Globus Toolkit <support@globus.org> - 3.4-1
 - Fix test for absolute path on some versions of expr
 

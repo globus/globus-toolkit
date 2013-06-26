@@ -13,7 +13,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
 Version:	6.33
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -32,16 +32,16 @@ Requires:	globus-ftp-control%{?_isa} >= 4
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-gridftp-server-control-devel%{?_isa} >= 2
-BuildRequires:	globus-usage-devel%{?_isa} >= 3
-BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
-BuildRequires:	globus-xio-devel%{?_isa} >= 3
-BuildRequires:	globus-authz-devel%{?_isa} >= 2
-BuildRequires:	globus-gfork-devel%{?_isa} >= 3
-BuildRequires:	globus-ftp-control-devel%{?_isa} >= 4
-BuildRequires:	globus-core%{?_isa} >= 8
-BuildRequires:	globus-gss-assist%{?_isa} >= 3
-BuildRequires:  globus-common-progs%{?_isa} >= 14
+BuildRequires:	globus-gridftp-server-control-devel >= 2
+BuildRequires:	globus-usage-devel >= 3
+BuildRequires:	globus-xio-gsi-driver-devel >= 2
+BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-authz-devel >= 2
+BuildRequires:	globus-gfork-devel >= 3
+BuildRequires:	globus-ftp-control-devel >= 4
+BuildRequires:	globus-core >= 8
+BuildRequires:	globus-gss-assist >= 3
+BuildRequires:  globus-common-progs >= 14
 
 %package progs
 Summary:	Globus Toolkit - Globus GridFTP Server Programs
@@ -183,6 +183,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 6.33-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Jun 19 2013 Globus Toolkit <support@globus.org> - 6.33-1
 - Add GLOBUS_OPENSSL in configure
 

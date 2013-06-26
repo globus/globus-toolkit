@@ -13,7 +13,7 @@
 Name:		globus-openssl-module
 %global _name %(tr - _ <<< %{name})
 Version:	3.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper
 
 Group:		System Environment/Libraries
@@ -31,11 +31,11 @@ Requires:	globus-gsi-openssl-error%{?_isa} >= 2
 Requires:	openssl%{?_isa}
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 4
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
-BuildRequires:	openssl-devel%{?_isa}
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-gsi-openssl-error-devel >= 2
+BuildRequires:	openssl-devel
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -187,6 +187,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.3-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Fri Jun 14 2013 Globus Toolkit <support@globus.org> - 3.3-1
 - Be more tolerant if a symlink fails
 

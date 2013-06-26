@@ -13,22 +13,22 @@
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
 Version:	0.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/updates/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
 BuildRequires:	grid-packaging-tools >= 3.6
-BuildRequires:	globus-core%{?_isa} >= 8
-BuildRequires:	globus-gsi-sysconfig-devel%{?_isa} >= 1
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
-BuildRequires:	globus-gridmap-callout-error-devel%{?_isa}
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 4
+BuildRequires:	globus-core >= 8
+BuildRequires:	globus-gsi-sysconfig-devel >= 1
+BuildRequires:	globus-gss-assist-devel >= 3
+BuildRequires:	globus-gridmap-callout-error-devel
+BuildRequires:	globus-gssapi-gsi-devel >= 4
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 0.4-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Mon Apr 15 2013 Globus Toolkit <support@globus.org> - 0.4-1
 - verify sharing cert chain
 

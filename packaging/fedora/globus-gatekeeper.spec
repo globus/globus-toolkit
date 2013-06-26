@@ -13,7 +13,7 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
 Version:	9.15
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
@@ -41,9 +41,9 @@ BuildRequires:       lsb
 BuildRequires:       insserv
 %endif
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-gss-assist-devel >= 8
+BuildRequires:	globus-gssapi-gsi-devel >= 9
+BuildRequires:	globus-core >= 8
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -125,6 +125,9 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 9.15-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 9.15-1
 - GT-354: Compatibility with automake 1.13
 

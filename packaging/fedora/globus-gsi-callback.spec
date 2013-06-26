@@ -13,7 +13,7 @@
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
 Version:	4.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
 Group:		System Environment/Libraries
@@ -32,14 +32,14 @@ Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-gsi-sysconfig%{?_isa} >= 5
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	openssl-devel%{?_isa}
-BuildRequires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 4
-BuildRequires:	globus-openssl-module-devel%{?_isa} >= 3
-BuildRequires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
-BuildRequires:	globus-core%{?_isa} >= 8
-BuildRequires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-gsi-sysconfig-devel%{?_isa} >= 5
+BuildRequires:	openssl-devel
+BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
+BuildRequires:	globus-openssl-module-devel >= 3
+BuildRequires:	globus-gsi-openssl-error-devel >= 2
+BuildRequires:	globus-core >= 8
+BuildRequires:	globus-gsi-cert-utils-devel >= 8
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-gsi-sysconfig-devel >= 5
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -195,6 +195,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 4.5-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 4.5-1
 - GT-354: Compatibility with automake 1.13
 

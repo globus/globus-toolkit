@@ -13,7 +13,7 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
 Version:	4.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
 Group:		System Environment/Libraries
@@ -31,11 +31,11 @@ Requires:	globus-io%{?_isa} >= 8
 Requires:	globus-gssapi-gsi%{?_isa} >= 9
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
-BuildRequires:	globus-io-devel%{?_isa} >= 8
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-gss-assist-devel >= 8
+BuildRequires:	globus-io-devel >= 8
+BuildRequires:	globus-gssapi-gsi-devel >= 9
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -191,6 +191,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 4.6-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 4.6-1
 - GT-366 fix delegation bug introduced in last release.
 

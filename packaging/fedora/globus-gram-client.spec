@@ -13,13 +13,13 @@
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
 Version:	12.4
-Release:	7%{?dist}
+Release:	8%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -32,11 +32,11 @@ Requires:	globus-rsl%{?_isa} >= 9
 Requires:	globus-io%{?_isa} >= 9
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 11
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-rsl-devel%{?_isa} >= 9
-BuildRequires:	globus-io-devel%{?_isa} >= 9
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-gram-protocol-devel >= 11
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-rsl-devel >= 9
+BuildRequires:	globus-io-devel >= 9
+BuildRequires:	globus-core >= 8
 BuildRequires:	globus-gram-protocol-doc >= 11
 BuildRequires:	globus-common-doc >= 14
 BuildRequires:	doxygen
@@ -183,6 +183,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 12.4-8
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 12.4-7
 - Workaround missing F18 doxygen/latex dependency
 

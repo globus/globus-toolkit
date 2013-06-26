@@ -13,13 +13,13 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
 Version:	9.4
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.4/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -29,12 +29,12 @@ Requires:	globus-xio%{?_isa} >= 3
 Requires:	globus-gssapi-gsi%{?_isa} >= 10
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
-BuildRequires:	globus-xio-devel%{?_isa} >= 3
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 10
-BuildRequires:	globus-core%{?_isa} >= 8
-BuildRequires:	globus-gssapi-error%{?_isa} >= 4
+BuildRequires:	globus-xio-gsi-driver-devel >= 2
+BuildRequires:	globus-gss-assist-devel >= 8
+BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-gssapi-gsi-devel >= 10
+BuildRequires:	globus-core >= 8
+BuildRequires:	globus-gssapi-error >= 4
 
 %package devel
 Summary:	Globus Toolkit - uniform I/O interface Development Files
@@ -121,6 +121,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 9.4-3
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 9.4-2
 - missing dependency on globus-gssapi-error
 

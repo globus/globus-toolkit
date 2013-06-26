@@ -13,7 +13,7 @@
 Name:		globus-xio-gridftp-driver
 %global _name %(tr - _ <<< %{name})
 Version:	1.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
 
 Group:		System Environment/Libraries
@@ -29,11 +29,11 @@ Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:	globus-ftp-client%{?_isa} >= 7
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-xio-devel%{?_isa} >= 3
-BuildRequires:	globus-ftp-client-devel%{?_isa} >= 7
-BuildRequires:	globus-xio-gsi-driver%{?_isa} >= 2
+BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-ftp-client-devel >= 7
+BuildRequires:	globus-xio-gsi-driver >= 2
 BuildRequires:	globus-xio-doc >= 3
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -189,6 +189,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 1.2-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Jun 19 2013 Globus Toolkit <support@globus.org> - 1.2-1
 - add GLOBUS_LICENSE
 

@@ -13,7 +13,7 @@
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
 Version:	2.9
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
 Group:		System Environment/Libraries
@@ -29,11 +29,11 @@ Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:	globus-gssapi-error%{?_isa} >= 4
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-xio-pipe-driver-devel%{?_isa} >= 2
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
-BuildRequires:	globus-xio-devel%{?_isa} >= 3
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-xio-pipe-driver-devel >= 2
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-xio-gsi-driver-devel >= 2
+BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-core >= 8
 
 %package devel
 Summary:	Globus Toolkit - Globus GridFTP Server Library Development Files
@@ -118,6 +118,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.9-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Jun 05 2013 Globus Toolkit <support@globus.org> - 2.9-1
 - GT-396: fix mlst on filenames that end in a newline
 - GT-412: add -version-tag to set an identifier in the server version string

@@ -13,22 +13,22 @@
 Name:		globus-gsi-proxy-ssl
 %global _name %(tr - _ <<< %{name})
 Version:	4.1
-Release:	11%{?dist}
+Release:	12%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
-BuildRequires:  openssl-devel%{?_isa}
+BuildRequires:  openssl-devel
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
@@ -174,6 +174,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 4.1-12
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 4.1-11
 - Workaround missing F18 doxygen/latex dependency
 

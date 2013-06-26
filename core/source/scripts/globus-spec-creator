@@ -299,10 +299,10 @@ if (!$libs) {
 	    unless $key eq 'trusted-ca-setup';
     }
     print "BuildRequires:\tgrid-packaging-tools >= 3.4\n";
-    print "BuildRequires:\tglobus-core%{?_isa} >= 8\n";
+    print "BuildRequires:\tglobus-core >= 8\n";
     while (($key, $value) = each(%{$srcdeps{'compile'}})) {
 	if ($key ne "globus-core") {
-	    print "BuildRequires:\t$key-devel%{?_isa}" .
+	    print "BuildRequires:\t$key-devel" .
 		($value > 0 ? " >= $value\n" : "\n");
 	}
     }
@@ -329,10 +329,10 @@ else {
 	    unless $key eq 'trusted-ca-setup';
     }
     print "BuildRequires:\tgrid-packaging-tools >= 3.4\n";
-    print "BuildRequires:\tglobus-core%{?_isa} >= 8\n";
+    print "BuildRequires:\tglobus-core >= 8\n";
     while (($key, $value) = each(%{$srcdeps{'compile'}})) {
 	if ($key ne "globus-core") {
-	    print "BuildRequires:\t$key-devel%{?_isa}" .
+	    print "BuildRequires:\t$key-devel" .
 		($value > 0 ? " >= $value\n" : "\n");
 	}
     }
@@ -651,6 +651,11 @@ if ($docpkg) {
     print "cat \$GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \\\n";
     print "  | sed -e 's!/man/.*!&\*!' -e 's!^!%doc %{_prefix}!' > package-doc.filelist\n";
 }
+
+print "
+%clean
+rm -rf %{buildroot}
+";
 
 print "
 %post -p /sbin/ldconfig

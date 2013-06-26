@@ -16,13 +16,13 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	1.5
-Release:	8%{?dist}
+Release:	9%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gram-job-manager-scripts >= 4
@@ -40,11 +40,11 @@ Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 Requires:       %{name}-setup
 Obsoletes:      globus-gram-job-manager-setup-fork < 4.3
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core%{?_isa} >= 8
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-xio-devel%{?_isa} >= 3
-BuildRequires:	globus-scheduler-event-generator-devel%{?_isa} >= 4
-BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 11
+BuildRequires:	globus-core >= 8
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-scheduler-event-generator-devel >= 4
+BuildRequires:	globus-gram-protocol-devel >= 11
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -285,6 +285,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 1.5-9
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Fri Mar 08 2013 Globus Toolkit <support@globus.org> - 1.5-8
 - Fixes to dependencies
 

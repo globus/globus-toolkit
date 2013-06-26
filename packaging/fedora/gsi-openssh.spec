@@ -154,10 +154,10 @@ BuildRequires: krb5-devel
 %endif
 
 %if %{gsi}
-BuildRequires: globus-gss-assist-devel%{?_isa} >= 8
-BuildRequires: globus-usage-devel%{?_isa} >= 3
-BuildRequires: globus-common-progs%{?_isa} >= 14
-BuildRequires: globus-core%{?_isa} >= 8
+BuildRequires: globus-gss-assist-devel >= 8
+BuildRequires: globus-usage-devel >= 3
+BuildRequires: globus-common-progs >= 14
+BuildRequires: globus-core >= 8
 BuildRequires: grid-packaging-tools >= 3.4
 %endif
 

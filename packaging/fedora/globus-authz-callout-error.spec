@@ -13,13 +13,13 @@
 Name:		globus-authz-callout-error
 %global _name %(tr - _ <<< %{name})
 Version:	2.2
-Release:	8%{?dist}
+Release:	9%{?dist}
 Summary:	Globus Toolkit - Globus authz error library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -28,8 +28,8 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-common%{?_isa} >= 14
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -176,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.2-9
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 2.2-8
 - missing build dependency on globus-core
 

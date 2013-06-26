@@ -9,13 +9,13 @@
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
 Version:	1.4
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-condor < 4.5
 Requires:	globus-gram-job-manager-scripts >= 3.4
@@ -133,6 +133,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/globus-condor.conf
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 1.4-4
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 1.4-3
 - Workaround missing F18 doxygen/latex dependency
 

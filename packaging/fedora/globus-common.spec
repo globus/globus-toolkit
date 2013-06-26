@@ -19,7 +19,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	14.10
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -46,7 +46,7 @@ Provides:       globus-common-setup%{?_isa}
 Obsoletes:      globus-libtool%{?_isa} < 2
 Obsoletes:      globus-common-setup%{?_isa} < 3
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if 0%{?suse_version} == 0
@@ -271,6 +271,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 14.10-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 14.10-1
 - GT-354: Compatibility with automake 1.13
 

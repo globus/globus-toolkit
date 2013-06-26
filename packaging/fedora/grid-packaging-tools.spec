@@ -1,5 +1,5 @@
 Name:		grid-packaging-tools
-Version:	3.6.5
+Version:	.
 Release:	1%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 
@@ -8,7 +8,7 @@ License:	NCSA
 URL:		http://www.gridpackagingtools.com/
 #		Maintenance of GPT has been taken over by the Globus Alliance.
 #		Use the latest source tarball from their repository.
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/gpt-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/gpt-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:	libtool
 BuildRequires:	perl
@@ -86,6 +86,9 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - .-1
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Thu Jun 20 2013 Globus Toolkit <support@globus.org> - 3.6.5-1
 - GT-402: gpt-bootstrap should call automake with --force-missing
 

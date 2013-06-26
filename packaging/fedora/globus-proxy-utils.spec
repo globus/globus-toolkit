@@ -13,7 +13,7 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
 Version:	5.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
@@ -36,18 +36,18 @@ Requires:	globus-gsi-sysconfig%{?_isa} >= 5
 
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 4
-BuildRequires:	globus-gsi-credential-devel%{?_isa} >= 5
-BuildRequires:	globus-gsi-callback-devel%{?_isa} >= 4
-BuildRequires:	globus-openssl-module-devel%{?_isa} >= 3
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
-BuildRequires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
-BuildRequires:	openssl-devel%{?_isa}
-BuildRequires:	globus-gsi-proxy-core-devel%{?_isa} >= 6
-BuildRequires:	globus-core%{?_isa} >= 8
-BuildRequires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-gsi-sysconfig-devel%{?_isa} >= 5
+BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
+BuildRequires:	globus-gsi-credential-devel >= 5
+BuildRequires:	globus-gsi-callback-devel >= 4
+BuildRequires:	globus-openssl-module-devel >= 3
+BuildRequires:	globus-gss-assist-devel >= 8
+BuildRequires:	globus-gsi-openssl-error-devel >= 2
+BuildRequires:	openssl-devel
+BuildRequires:	globus-gsi-proxy-core-devel >= 6
+BuildRequires:	globus-core >= 8
+BuildRequires:	globus-gsi-cert-utils-devel >= 8
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-gsi-sysconfig-devel >= 5
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 5.1-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed May 15 2013 Globus Toolkit <support@globus.org> - 5.1-1
 - GT-272: Increase default proxy key size
 

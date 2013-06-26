@@ -16,13 +16,13 @@
 Name:		globus-gram-protocol
 %global _name %(tr - _ <<< %{name})
 Version:	11.3
-Release:	7%{?dist}
+Release:	8%{?dist}
 Summary:	Globus Toolkit - GRAM Protocol Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -41,9 +41,9 @@ Requires:     perl = %{perl_version}
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 %endif
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-io-devel%{?_isa} >= 8
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-io-devel >= 8
+BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-doc >= 14
 BuildRequires:	doxygen
 BuildRequires:	graphviz
@@ -198,6 +198,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 11.3-8
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 11.3-7
 - Workaround missing F18 doxygen/latex dependency
 

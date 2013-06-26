@@ -13,21 +13,21 @@
 Name:		globus-usage
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	9%{?dist}
+Release:	10%{?dist}
 Summary:	Globus Toolkit - Usage Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-xio-devel%{?_isa} >= 3
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-core >= 8
 
 %package devel
 Summary:	Globus Toolkit - Usage Library Development Files
@@ -109,6 +109,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.1-10
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Mon Nov 26 2012 Globus Toolkit <support@globus.org> - 3.1-9
 - 5.2.3
 

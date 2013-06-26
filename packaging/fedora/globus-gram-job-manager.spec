@@ -13,7 +13,7 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
 Version:	13.53
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -44,21 +44,21 @@ Requires:	globus-gatekeeper >= 9
 Requires:	psmisc
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-scheduler-event-generator-devel%{?_isa} >= 4
-BuildRequires:	globus-xio-popen-driver-devel%{?_isa} >= 2
-BuildRequires:	globus-xio-devel%{?_isa} >= 3
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
-BuildRequires:	globus-core%{?_isa} >= 8
-BuildRequires:	globus-gsi-sysconfig-devel%{?_isa} >= 5
-BuildRequires:	globus-callout-devel%{?_isa} >= 2
-BuildRequires:	globus-gram-job-manager-callout-error-devel%{?_isa} >= 2
-BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 11
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-usage-devel%{?_isa} >= 3
-BuildRequires:	globus-rsl-devel%{?_isa} >= 9
-BuildRequires:	globus-gass-cache-devel%{?_isa} >= 8
-BuildRequires:	libxml2-devel%{?_isa} >= 2.6.11
-BuildRequires:	globus-gass-transfer-devel%{?_isa} >= 7
+BuildRequires:	globus-scheduler-event-generator-devel >= 4
+BuildRequires:	globus-xio-popen-driver-devel >= 2
+BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-gss-assist-devel >= 8
+BuildRequires:	globus-core >= 8
+BuildRequires:	globus-gsi-sysconfig-devel >= 5
+BuildRequires:	globus-callout-devel >= 2
+BuildRequires:	globus-gram-job-manager-callout-error-devel >= 2
+BuildRequires:	globus-gram-protocol-devel >= 11
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-usage-devel >= 3
+BuildRequires:	globus-rsl-devel >= 9
+BuildRequires:	globus-gass-cache-devel >= 8
+BuildRequires:	libxml2-devel >= 2.6.11
+BuildRequires:	globus-gass-transfer-devel >= 7
 BuildRequires:	globus-gram-protocol-doc >= 11
 BuildRequires:	globus-common-doc >= 14
 BuildRequires:	doxygen
@@ -185,6 +185,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 13.53-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Thu May 16 2013 Globus Toolkit <support@globus.org> - 13.53-1
 - GT-311: globus job manager is leaking memory
 

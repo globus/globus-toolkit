@@ -13,13 +13,13 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
 Version:	4.7
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -31,16 +31,16 @@ Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 11
+BuildRequires:	globus-gram-protocol-devel >= 11
 %if 0%{?suse_version} == 0
 %if 0%{?rhel} > 4 || 0%{?rhel} == 0
-BuildRequires:	libtool-ltdl-devel%{?_isa}
+BuildRequires:	libtool-ltdl-devel
 %endif
 %endif
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
-BuildRequires:	globus-xio-devel%{?_isa} >= 3
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-xio-gsi-driver-devel >= 2
+BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -244,6 +244,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 4.7-4
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 4.7-3
 - Workaround missing F18 doxygen/latex dependency
 

@@ -13,7 +13,7 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
 Version:	7.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
@@ -30,10 +30,10 @@ Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-ftp-control%{?_isa} >= 4
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-xio-popen-driver-devel%{?_isa} >= 2
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-ftp-control-devel%{?_isa} >= 4
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-xio-popen-driver-devel >= 2
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-ftp-control-devel >= 4
+BuildRequires:	globus-core >= 8
 BuildRequires:	globus-ftp-control-doc >= 4
 BuildRequires:	doxygen
 BuildRequires:	graphviz
@@ -187,6 +187,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 7.5-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Thu May 09 2013 Globus Toolkit <support@globus.org> - 7.5-1
 - Fix performance issue, don't need to check binary data buffers for newlines
 

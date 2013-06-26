@@ -13,7 +13,7 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
 Version:	2.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries
@@ -30,11 +30,11 @@ Requires:	globus-common%{?_isa} >= 14
 BuildRequires:	grid-packaging-tools >= 3.4
 %if 0%{?suse_version} == 0
 %if 0%{?rhel} == 0 || 0%{?rhel} > 4
-BuildRequires:	libtool-ltdl-devel%{?_isa} >= 1
+BuildRequires:	libtool-ltdl-devel >= 1
 %endif
 %endif
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -182,6 +182,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.4-2
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Thu Jun 06 2013 Globus Toolkit <support@globus.org> - 2.4-1
 - GT-412: allow chaining of callouts and passing of env vars in the callout config
 

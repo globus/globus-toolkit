@@ -13,22 +13,22 @@
 Name:		globus-gfork
 %global _name %(tr - _ <<< %{name})
 Version:	3.2
-Release:	6%{?dist}
+Release:	7%{?dist}
 Summary:	Globus Toolkit - GFork
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core%{?_isa} >= 8
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-xio-devel%{?_isa} >= 3
+BuildRequires:	globus-core >= 8
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-xio-devel >= 3
 
 %package progs
 Summary:	Globus Toolkit - GFork Programs
@@ -142,6 +142,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.2-7
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 3.2-6
 - Add missing build dependency
 

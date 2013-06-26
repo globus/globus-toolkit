@@ -13,13 +13,13 @@
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.3
-Release:	8%{?dist}
+Release:	9%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -32,12 +32,12 @@ Requires:	globus-gssapi-gsi%{?_isa} >= 9
 Requires:	globus-common%{?_isa} >= 14
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-gssapi-error-devel%{?_isa} >= 4
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
-BuildRequires:	globus-xio-devel%{?_isa} >= 3
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+BuildRequires:	globus-gssapi-error-devel >= 4
+BuildRequires:	globus-gss-assist-devel >= 8
+BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-gssapi-gsi-devel >= 9
 BuildRequires:	globus-xio-doc >= 3
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -194,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.3-9
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 2.3-8
 - missing globus-core build dependency
 

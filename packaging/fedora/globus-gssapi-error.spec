@@ -13,13 +13,13 @@
 Name:		globus-gssapi-error
 %global _name %(tr - _ <<< %{name})
 Version:	4.1
-Release:	11%{?dist}
+Release:	12%{?dist}
 Summary:	Globus Toolkit - GSSAPI Error Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -30,9 +30,9 @@ Requires:	globus-gss-assist%{?_isa} >= 8
 
 Requires:	globus-common
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-common-devel%{?_isa} >= 14
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
-BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-gss-assist-devel >= 8
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -179,6 +179,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 4.1-12
+- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 4.1-11
 - Workaround missing F18 doxygen/latex dependency
 

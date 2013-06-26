@@ -67,13 +67,13 @@ BuildRequires: tex(xtab.sty)
 BuildRequires: tex(multirow.sty)
 BuildRequires: tex(fullpage.sty)
 %endif
-BuildRequires:      globus-proxy-utils%{?_isa} >= 5
-BuildRequires:      globus-gsi-cert-utils-progs%{?_isa} >= 8
-BuildRequires:      globus-core%{?_isa} >= 8
-BuildRequires:      globus-common-devel%{?_isa} >= 8
-BuildRequires:      globus-xio-devel%{?_isa} >= 3
-BuildRequires:      globus-usage-devel%{?_isa} >= 0
-BuildRequires:      globus-gss-assist-devel%{?_isa} >= 3
+BuildRequires:      globus-proxy-utils >= 5
+BuildRequires:      globus-gsi-cert-utils-progs >= 8
+BuildRequires:      globus-core >= 8
+BuildRequires:      globus-common-devel >= 8
+BuildRequires:      globus-xio-devel >= 3
+BuildRequires:      globus-usage-devel >= 0
+BuildRequires:      globus-gss-assist-devel >= 3
 
 Requires:      myproxy-libs = %{version}-%{release}
 Requires:      globus-proxy-utils >= 5
