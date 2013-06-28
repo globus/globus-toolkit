@@ -1,6 +1,6 @@
 Name:		grid-packaging-tools
-Version:	.
-Release:	1%{?dist}
+Version:	3.6.5
+Release:	2%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 
 Group:		Development/Tools
@@ -86,7 +86,7 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
-* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - .-1
+* Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.6.5-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 
 * Thu Jun 20 2013 Globus Toolkit <support@globus.org> - 3.6.5-1
