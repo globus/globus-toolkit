@@ -858,7 +858,7 @@ globus_l_gfs_file_stat(
             globus_free(dir_entry);
             
             /* send updates every GFS_STAT_TIME, checked every GFS_STAT_CHECK */
-            if(i >= stat_limit_check)
+            if(i >= stat_limit_check && j < total_stat_count)
             {
                 time_t                  tmp_time;
                 globus_bool_t           send_stats = GLOBUS_FALSE;

@@ -247,7 +247,7 @@ typedef struct globus_l_gfs_data_operation_s
     globus_bool_t                       begin_called;
     globus_off_t                        list_buffer_offset;
     globus_mutex_t                      stat_lock;
-
+    int                                 total_stat_count;
     /* sort of a state cheat.  for case where:
         start_abort
             -- connecting to abort_closing
@@ -7476,7 +7476,9 @@ globus_gridftp_server_finished_stat_partial(
 
     globus_mutex_lock(&op->stat_lock);
     if(result == GLOBUS_SUCCESS)
-    {        
+    {   
+	op->total_stat_count += stat_count;
+     
         stat_info = (globus_gfs_stat_info_t *) op->info_struct;
         
         stat_copy = (globus_gfs_stat_t *)
@@ -7626,10 +7628,12 @@ globus_gridftp_server_finished_stat(
 
     globus_mutex_lock(&op->stat_lock);
     if(result == GLOBUS_SUCCESS)
-    {        
+    {   
+	op->total_stat_count += stat_count;
+     
         stat_info = (globus_gfs_stat_info_t *) op->info_struct;
         
-        if(!stat_info->file_only && stat_count == 1 && stat_array && 
+        if(!stat_info->file_only && op->total_stat_count == 1 && stat_array && 
             !S_ISDIR(stat_array[0].mode))
         {
             result = GlobusGFSErrorGeneric("Path is not a directory.");
