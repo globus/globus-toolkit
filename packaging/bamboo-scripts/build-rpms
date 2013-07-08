@@ -244,7 +244,7 @@ metapackages="globus-gridftp
     globus-resource-management-sdk
     globus-gsi"
 
-cp $packagingdir/package-output/* $topdir/SOURCES
+cp $packagingdir/package-output/* $packagingdir/epstopdf-2.9.5gw $topdir/SOURCES
 
 for i in grid_packaging_tools $packages; do
     rpmname="$(echo "$i" | tr _ -)"
