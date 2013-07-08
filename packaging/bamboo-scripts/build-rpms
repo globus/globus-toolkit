@@ -245,7 +245,6 @@ metapackages="globus-gridftp
     globus-gsi"
 
 cp $packagingdir/package-output/* $topdir/SOURCES
-cp $packagingdir/gpt-*.tar.gz $topdir/SOURCES
 
 for i in grid_packaging_tools $packages; do
     rpmname="$(echo "$i" | tr _ -)"
