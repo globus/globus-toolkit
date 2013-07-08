@@ -259,7 +259,7 @@ for i in grid_packaging_tools $packages; do
     if [ "$i" = "globus-connect-multiuser" ] && [ "$osname" = sles ]; then
         continue
     fi
-    rpmbuild -bs --nodeps "$fedoradir/$i.spec";
+    rpmbuild -bs --nodeps "$fedoradir/$rpmname.spec";
 done
 
 for i in grid-packaging-tools $packages ; do
