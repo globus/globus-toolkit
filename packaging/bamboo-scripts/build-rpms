@@ -251,14 +251,21 @@ for i in grid_packaging_tools $packages; do
     if [ ! -f "$fedoradir/$rpmname.spec" ]; then
         echo "Skipping $rpmname---no spec file"
         continue
-    fi
-
-    if [ "$i" = "myproxy" ] && [ "$osname" = sles ]; then
+    elif [ "$i" = "myproxy" ] && [ "$osname" = sles ]; then
         continue
-    fi
-    if [ "$i" = "globus-connect-multiuser" ] && [ "$osname" = sles ]; then
+    elif [ "$i" = "globus-connect-multiuser" ] && [ "$osname" = sles ]; then
         continue
+    elif [ "$i" = gsi_openssh ]; then
+        pkgversion="$(awk '/%global[ \t]*gsi_openssh_ver[ \t]*/ {print $3}' <  $fedoradir/gsi-openssh.spec)"
+	tarball="$topdir/SOURCES/gsi_openssh-$pkgversion-src.tar.gz"
+        if [ ! -f "$tarball" ]; then
+            bundle_tarball="gsi_openssh_bundle-${pkgversion}-src.tar.gz"
+            bundle_url="https://sourceforge.net/projects/cilogon/files/gsissh/$bundle_tarball/download"
+            curl -Ls "$bundle_url" | tar -C $topdir/SOURCES \
+                -zxf - $tarball
+        fi
     fi
+    
     rpmbuild -bs --nodeps "$fedoradir/$rpmname.spec";
 done
 
