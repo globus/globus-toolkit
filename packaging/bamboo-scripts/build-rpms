@@ -262,7 +262,7 @@ for i in grid_packaging_tools $packages; do
             bundle_tarball="gsi_openssh_bundle-${pkgversion}-src.tar.gz"
             bundle_url="https://sourceforge.net/projects/cilogon/files/gsissh/$bundle_tarball/download"
             curl -Ls "$bundle_url" | tar -C $topdir/SOURCES \
-                -zxf - $tarball
+                -zxf - "$(basename "$tarball")"
         fi
     fi
     
