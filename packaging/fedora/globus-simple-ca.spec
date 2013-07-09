@@ -11,7 +11,7 @@
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
 Version:	3.4
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -124,9 +124,12 @@ fi
 %dir %{_datadir}/globus/packages
 %dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
-%dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 3.4-3
+- license is not a dir
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.4-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 
