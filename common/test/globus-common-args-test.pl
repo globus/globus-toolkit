@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -30,16 +30,27 @@ use strict;
 use Test::More;
 use File::Compare;
 
-my $test_prog = './globus_common_args_test';
+my $test_prog = "globus_common_args_test";
 
 my @tests;
 my @todo;
+my $valgrind="";
+
+
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-$test_prog.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 
 sub basic_func
 {
    my ($errors,$rc) = ("",0);
    
-   $rc = system("$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr");
+   $rc = system("$valgrind $test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr");
 
    if($rc != 0)
    {

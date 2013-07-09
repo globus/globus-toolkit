@@ -51,6 +51,8 @@ BEGIN {
     }
 }
 
+$ENV{PATH} = ".:" . $ENV{PATH};
+
 @tests = qw( globus-common-args-test.pl
 	     globus-common-error-test.pl
              globus-common-mem-test.pl

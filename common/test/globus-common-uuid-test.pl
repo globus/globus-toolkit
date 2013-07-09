@@ -16,6 +16,15 @@
 # limitations under the License.
 # 
 
+my $valgrind="";
 
-system("./globus_common_uuid_test");
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-globus-common-uuid-test.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
+system("$valgrind globus_common_uuid_test");
 
