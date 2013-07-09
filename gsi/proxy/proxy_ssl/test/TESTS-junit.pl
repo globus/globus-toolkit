@@ -35,6 +35,7 @@ BEGIN {
                                 xmlfile => $xmlfile,
                                 merge => 1});
     }
+    $ENV{PATH} = ".:" . $ENV{PATH};
 }
 
 @tests = qw(test_pci.pl);

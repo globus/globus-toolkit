@@ -18,6 +18,15 @@ my $test_prog = 'test_pci';
 
 my @tests;
 my @todo;
+my $valgrind = "";
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-$test_prog.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 
 sub basic_func
 {
@@ -27,7 +36,7 @@ sub basic_func
    my $options = shift;
    my $testname = shift;
 
-   my $rc1 = system("./$test_prog $options -out $test_prog.norm$test_index.der 1>$test_prog.log1.stdout") / 256;
+   my $rc1 = system("$valgrind $test_prog $options -out $test_prog.norm$test_index.der 1>$test_prog.log1.stdout") / 256;
    my $rc2 = system("./$test_prog -in $test_prog.norm$test_index.der -out $test_prog.log$test_index.der 1> $test_prog.log2.stdout") / 256;
 
    ok($rc1 == 0 && $rc2 == 0 &&

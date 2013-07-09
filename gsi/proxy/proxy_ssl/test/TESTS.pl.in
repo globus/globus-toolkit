@@ -2,6 +2,10 @@
 
 @GLOBUS_PERL_INITIALIZER@
 
+BEGIN
+{
+    $ENV{PATH} = ".:" . $ENV{PATH};
+}
 require 5.005;
 
 use warnings;
