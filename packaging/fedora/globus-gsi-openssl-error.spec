@@ -13,7 +13,7 @@
 Name:		globus-gsi-openssl-error
 %global _name %(tr - _ <<< %{name})
 Version:	2.1
-Release:	12%{?dist}
+Release:	13%{?dist}
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling
 
 Group:		System Environment/Libraries
@@ -26,7 +26,13 @@ Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+Requires:	openssl
+Requires:	openssl-libs%{?_isa}
+%endif
+%if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
 Requires:	openssl%{?_isa}
+%endif
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel >= 14
@@ -177,6 +183,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 2.1-13
+- openssl-libs for newer fedora
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.1-12
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

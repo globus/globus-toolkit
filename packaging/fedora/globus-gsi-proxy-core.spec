@@ -13,7 +13,7 @@
 Name:		globus-gsi-proxy-core
 %global _name %(tr - _ <<< %{name})
 Version:	6.2
-Release:	8%{?dist}
+Release:	9%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
 
 Group:		System Environment/Libraries
@@ -32,7 +32,13 @@ Requires:	globus-gsi-openssl-error%{?_isa} >= 2
 Requires:	globus-gsi-cert-utils%{?_isa} >= 8
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-gsi-sysconfig%{?_isa} >= 5
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+Requires:	openssl
+Requires:	openssl-libs%{?_isa}
+%endif
+%if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
 Requires:	openssl%{?_isa}
+%endif
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
@@ -194,6 +200,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 6.2-9
+- openssl-libs for newer fedora
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 6.2-8
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

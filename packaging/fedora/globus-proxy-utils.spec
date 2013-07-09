@@ -13,7 +13,7 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
 Version:	5.1
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
@@ -22,7 +22,13 @@ URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+Requires:	openssl
+Requires:	openssl-libs%{?_isa}
+%endif
+%if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
 Requires:	openssl%{?_isa}
+%endif
 Requires:	globus-gsi-proxy-ssl%{?_isa} >= 4
 Requires:	globus-gsi-credential%{?_isa} >= 5
 Requires:	globus-gsi-callback%{?_isa} >= 4
@@ -100,6 +106,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 5.1-3
+- openssl-libs for newer fedora
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 5.1-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

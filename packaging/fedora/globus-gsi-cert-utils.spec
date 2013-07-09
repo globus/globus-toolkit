@@ -13,7 +13,7 @@
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
 Version:	8.5
-Release:	3%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
 Group:		System Environment/Libraries
@@ -25,7 +25,13 @@ Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{ve
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+Requires:	openssl
+Requires:	openssl-libs%{?_isa}
+%endif
+%if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
 Requires:	openssl%{?_isa}
+%endif
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-openssl-module%{?_isa} >= 3
 Requires:	globus-gsi-openssl-error%{?_isa} >= 2
@@ -212,6 +218,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 8.5-4
+- openssl-libs dep for newer fedora
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 8.5-3
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

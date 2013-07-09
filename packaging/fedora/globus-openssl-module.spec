@@ -13,7 +13,7 @@
 Name:		globus-openssl-module
 %global _name %(tr - _ <<< %{name})
 Version:	3.3
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper
 
 Group:		System Environment/Libraries
@@ -32,7 +32,7 @@ Requires:	globus-gsi-openssl-error%{?_isa} >= 2
 Requires:	openssl
 Requires:	openssl-libs%{?_isa}
 %endif
-%if %{?fedora}%{!?fedora:0} < 19 || %{?rhel}%{!?rhel:0} < 7
+%if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
 Requires:	openssl%{?_isa}
 %endif
 
@@ -193,7 +193,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 3.3-3
+* Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 3.3-4
 - openssl-libs for newer packages
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.3-2

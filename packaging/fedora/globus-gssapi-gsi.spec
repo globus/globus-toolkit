@@ -13,7 +13,7 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
 Version:	10.8
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
@@ -32,7 +32,13 @@ Requires:	globus-gsi-openssl-error%{?_isa} >= 2
 Requires:	globus-gsi-proxy-core%{?_isa} >= 6
 Requires:	globus-gsi-cert-utils%{?_isa} >= 8
 Requires:	globus-common%{?_isa} >= 14
-Requires:	openssl%{?_isa} 
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+Requires:	openssl
+Requires:	openssl-libs%{?_isa}
+%endif
+%if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
+Requires:	openssl%{?_isa}
+%endif
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gsi-credential-devel >= 5
@@ -198,6 +204,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 10.8-3
+- openssl-libs for newer fedora
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 10.8-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 
