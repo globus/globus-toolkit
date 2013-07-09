@@ -95,11 +95,11 @@ lsb_release="$(lsb_release -rs)"
 case ${lsb_id}:${lsb_release} in
     CentOS:*)
         osname="${osname:-centos}"
-        osver="${osver:-${lsb_id%%.*}}"
+        osver="${osver:-${lsb_release%%.*}}"
         ;;
     Fedora:*)
         osname="${osname:-fedora}"
-        osver="${osver:-$lsb_id}"
+        osver="${osver:-$lsb_release}"
         ;;
     "SUSE LINUX":*)
         osname="${osname:-sles}"
@@ -107,11 +107,11 @@ case ${lsb_id}:${lsb_release} in
         ;;
     Scientific*:*)
         osname="${osname:-sl}"
-        osver=${osver:-$lsb_id}
+        osver=${osver:-$lsb_release}
         ;;
     RedHat*:*)
         osname="${osname:-redhat}"
-        osver="${osver:-$lsb_id}"
+        osver="${osver:-$lsb_release}"
         ;;
 esac
 
