@@ -29,6 +29,7 @@ Requires:	globus-gsi-proxy-ssl%{?_isa} >= 4
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-gsi-openssl-error%{?_isa} >= 2
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+Requires:	openssl
 Requires:	openssl-libs%{?_isa}
 %endif
 %if %{?fedora}%{!?fedora:0} < 19 || %{?rhel}%{!?rhel:0} < 7
