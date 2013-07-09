@@ -315,22 +315,23 @@ if [ -n "$pkgs_to_rm" ]; then
 fi
 if [ "$target32" != "" ]; then
 for i in grid-packaging-tools $packages; do
-    if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
+    rpmname="$(echo "$i" | tr _ -)"
+    if test -f $topdir/SRPMS/$rpmname-[0-9]*.rpm; then
         rpmbuild --target $target32 \
-                 --rebuild $topdir/SRPMS/$i-[0-9]*src.rpm
+                 --rebuild $topdir/SRPMS/$rpmname-[0-9]*src.rpm
         rpmsdir=$topdir/RPMS
 
-        rpms="$(find $rpmsdir -name "$i-[0-9]*rpm" -o \
-                             -name "$i-progs-[0-9]*rpm" -o \
-                             -name "$i-libs-[0-9]*rpm" -o \
-                             -name "$i-admin-[0-9]*rpm" -o \
-                             -name "$i-server-[0-9]*rpm" -o \
-                             -name "$i-devel-[0-9]*rpm" -o \
-                             -name "$i-doc-[0-9]*rpm" -o \
-                             -name "$i-setup-poll-[0-9]*rpm" )"
+        rpms="$(find $rpmsdir -name "$rpmname-[0-9]*rpm" -o \
+                             -name "$rpmname-progs-[0-9]*rpm" -o \
+                             -name "$rpmname-libs-[0-9]*rpm" -o \
+                             -name "$rpmname-admin-[0-9]*rpm" -o \
+                             -name "$rpmname-server-[0-9]*rpm" -o \
+                             -name "$rpmname-devel-[0-9]*rpm" -o \
+                             -name "$rpmname-doc-[0-9]*rpm" -o \
+                             -name "$rpmname-setup-poll-[0-9]*rpm" )"
         
         # Don't install LRM RPMs on build machine necessarily
-        if ! echo "$i" | grep -qE 'condor|lsf|pbs|sge|gram-audit'; then
+        if ! echo "$rpmname" | grep -qE 'condor|lsf|pbs|sge|gram-audit'; then
             sudo rpm -hUv --replacepkgs $rpms || true
         fi
     fi
