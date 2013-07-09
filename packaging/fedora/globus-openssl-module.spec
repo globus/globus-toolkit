@@ -13,7 +13,7 @@
 Name:		globus-openssl-module
 %global _name %(tr - _ <<< %{name})
 Version:	3.3
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper
 
 Group:		System Environment/Libraries
@@ -28,7 +28,12 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-gsi-proxy-ssl%{?_isa} >= 4
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-gsi-openssl-error%{?_isa} >= 2
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+Requires:	openssl-libs%{?_isa}
+%endif
+%if %{?fedora}%{!?fedora:0} < 19 || %{?rhel}%{!?rhel:0} < 7
 Requires:	openssl%{?_isa}
+%endif
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
@@ -187,6 +192,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 3.3-3
+- openssl-libs for newer packages
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.3-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 
