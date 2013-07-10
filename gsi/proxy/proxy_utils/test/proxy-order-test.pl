@@ -7,7 +7,23 @@ use Test::More;
 use IO::Handle;
 
 use File::Temp;
-use Globus::Core::Paths;
+my $bindir;
+eval "use Globus::Core::Paths";
+if ($@)
+{
+    if ($ENV{GLOBUS_LOCATION})
+    {
+        $bindir = "$ENV{GLOBUS_LOCATION}/bin";
+    }
+    else
+    {
+        $bindir = "/usr/bin";
+    }
+}
+else
+{
+    $bindir = $Globus::Core::Paths::bindir
+}
 
 my $valgrind="";
 
@@ -25,7 +41,7 @@ $proxy_fh->autoflush(1);
 umask($old_umask);
 
 $ENV{X509_USER_PROXY} = $proxy_file;
-system("$valgrind $Globus::Core::Paths::bindir/grid-proxy-init > /dev/null");
+system("$valgrind $bindir/grid-proxy-init > /dev/null");
 open($proxy_fh, "+<$proxy_file");
 
 my $data = '';
@@ -84,7 +100,7 @@ sub test_proxy_order
         print $proxy_fh $elements{$element};
     }
 
-    ok(system("$valgrind $Globus::Core::Paths::$bindir/grid-proxy-info > /dev/null 2>&1") == 0, "proxy order $order");
+    ok(system("$valgrind $bindir/grid-proxy-info > /dev/null 2>&1") == 0, "proxy order $order");
 }
 
 my @permutations = qw(

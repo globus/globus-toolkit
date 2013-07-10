@@ -3,7 +3,23 @@
 use strict;
 use Test::More;
 use File::Temp;
-use Globus::Core::Paths;
+my $bindir;
+eval "use Globus::Core::Paths";
+if ($@)
+{
+    if ($ENV{GLOBUS_LOCATION})
+    {
+        $bindir = "$ENV{GLOBUS_LOCATION}/bin";
+    }
+    else
+    {
+        $bindir = "/usr/bin";
+    }
+}
+else
+{
+    $bindir = $Globus::Core::Paths::bindir;
+}
 
 my ($proxy_fh, $proxy_file) = mkstemp( "/tmp/proxytest.XXXXXXXX" );
 my $valgrind="";
@@ -30,11 +46,11 @@ sub test_proxy
     my $proxy_created = 1;
     my $type_determined = 1;
 
-    $proxy_created = system("$valgrind $Globus::Core::Paths::bindir/grid-proxy-init $proxy_format $proxy_type > /dev/null");
+    $proxy_created = system("$valgrind $bindir/grid-proxy-init $proxy_format $proxy_type > /dev/null");
 
     if ($proxy_created == 0)
     {
-        chomp($result = `$valgrind $Globus::Core::Paths::bindir/grid-proxy-info -type`);
+        chomp($result = `$valgrind $bindir/grid-proxy-info -type`);
         $type_determined = $?;
     }
 
