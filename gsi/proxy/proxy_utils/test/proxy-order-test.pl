@@ -9,13 +9,23 @@ use IO::Handle;
 use File::Temp;
 use Globus::Core::Paths;
 
+my $valgrind="";
+
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-proxy-order-test-\%p.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 my $old_umask = umask(077);
 my ($proxy_fh, $proxy_file) = mkstemp( "/tmp/proxytest.XXXXXXXX" );
 $proxy_fh->autoflush(1);
 umask($old_umask);
 
 $ENV{X509_USER_PROXY} = $proxy_file;
-system("$Globus::Core::Paths::bindir/grid-proxy-init > /dev/null");
+system("$valgrind $Globus::Core::Paths::bindir/grid-proxy-init > /dev/null");
 open($proxy_fh, "+<$proxy_file");
 
 my $data = '';
@@ -74,7 +84,7 @@ sub test_proxy_order
         print $proxy_fh $elements{$element};
     }
 
-    ok(system("$Globus::Core::Paths::$bindir/grid-proxy-info > /dev/null 2>&1") == 0, "proxy order $order");
+    ok(system("$valgrind $Globus::Core::Paths::$bindir/grid-proxy-info > /dev/null 2>&1") == 0, "proxy order $order");
 }
 
 my @permutations = qw(

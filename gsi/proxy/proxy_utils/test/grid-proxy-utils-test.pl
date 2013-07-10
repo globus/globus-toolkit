@@ -6,6 +6,16 @@ use File::Temp;
 use Globus::Core::Paths;
 
 my ($proxy_fh, $proxy_file) = mkstemp( "/tmp/proxytest.XXXXXXXX" );
+my $valgrind="";
+
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-proxy-utils-test-\%p.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 
 $ENV{X509_USER_PROXY}=$proxy_file;
 
@@ -20,11 +30,11 @@ sub test_proxy
     my $proxy_created = 1;
     my $type_determined = 1;
 
-    $proxy_created = system("$Globus::Core::Paths::bindir/grid-proxy-init $proxy_format $proxy_type > /dev/null");
+    $proxy_created = system("$valgrind $Globus::Core::Paths::bindir/grid-proxy-init $proxy_format $proxy_type > /dev/null");
 
     if ($proxy_created == 0)
     {
-        chomp($result = `$Globus::Core::Paths::bindir/grid-proxy-info -type`);
+        chomp($result = `$valgrind $Globus::Core::Paths::bindir/grid-proxy-info -type`);
         $type_determined = $?;
     }
 
