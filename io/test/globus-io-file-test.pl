@@ -31,14 +31,23 @@ use File::Compare;
 
 my $test_prog = 'globus_io_file_test';
 my @tests;
+my $valgrind="";
 
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-$test_prog.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 
 sub basic_func
 {
     my ($errors,$rc) = ("",0);
     my $ok=0;
     
-    $rc = system("./$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
+    $rc = system("$valgrind ./$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
 
     if($rc != 0)
     {

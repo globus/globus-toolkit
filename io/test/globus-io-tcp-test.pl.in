@@ -31,6 +31,16 @@ my @tests;
 my $test = 'globus-io-tcp-test';
 my $server_prog = './globus_io_tcp_test_server';
 my $client_prog = './globus_io_tcp_test_client';
+my $valgrind="";
+
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-$test-\%p.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 
 my $identity = `$Globus::Core::Paths::bindir/grid-proxy-info -identity`;
 
@@ -87,7 +97,7 @@ sub basic_func
        $ENV{X509_USER_PROXY} = "/bogus";
    }
    
-   my $command = "$server_prog $server_args |";
+   my $command = "$valgrind $server_prog $server_args |";
    #print "Running server: $command\n";
    $server_pid = open(SERVER, $command);
 
@@ -101,7 +111,7 @@ sub basic_func
    chomp($port);
    $port =~ s/listening on port //;
 
-   $command = "$client_prog -h localhost -p $port $client_args |";
+   $command = "$valgrind $client_prog -h localhost -p $port $client_args |";
    $client_pid = open(CLIENT, $command);
 
    if($client_pid == -1)

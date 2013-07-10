@@ -30,6 +30,16 @@ use Globus::Core::Paths;
 my @tests;
 
 my $test_prog = 'globus_io_authorization_test';
+my $valgrind="";
+
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-$test_prog.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 
 sub basic_func
 {
@@ -39,7 +49,7 @@ sub basic_func
    my $expect_failure = shift;
    my $test_name = shift;
    
-   chomp($result = `./$test_prog $args`);
+   chomp($result = `$valgrind ./$test_prog $args`);
    $rc = $?;
 
    ok((($rc == 0) && !$expect_failure) ||
