@@ -59,6 +59,11 @@ sub run_test
         $command = "valgrind $command";
     }
 
+    if ($ENV{VALGRIND_OPTIONS})
+    {
+        $ENV{VALGRIND_OPTS} .= " " . $ENV{VALGRIND_OPTIONS};
+    }
+
     $rc = system($command);
     if($rc != 0)
     {

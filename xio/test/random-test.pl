@@ -19,7 +19,7 @@
 
 use strict;
 use POSIX;
-use Test;
+use Test::More;
 
  require "test-common.pl";
 

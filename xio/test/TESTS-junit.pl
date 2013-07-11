@@ -50,6 +50,7 @@ BEGIN {
                                 merge => 1});
     }
     #$Test::Harness::verbose = 1;
+    $ENV{PATH} = ".:" . $ENV{PATH};
 
 }
 

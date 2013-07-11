@@ -18,7 +18,7 @@
 
 
 use strict;
-use Test;
+use Test::More;
 
  require "test-common.pl";
 

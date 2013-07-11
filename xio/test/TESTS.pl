@@ -16,5 +16,6 @@
 # limitations under the License.
 # 
 
+$ENV{PATH} = ".:" . $ENV{PATH};
 
 exit (0 != system('./run-all-tests.pl'));
