@@ -59,9 +59,10 @@ sub run_test
         $command = "valgrind $command";
     }
 
+    # Allow override from jenkins tasks
     if ($ENV{VALGRIND_OPTIONS})
     {
-        $ENV{VALGRIND_OPTS} .= " " . $ENV{VALGRIND_OPTIONS};
+        $ENV{VALGRIND_OPTS} = "--log-file=$output_dir/$test_str.valgrind --leak-check=full --leak-resolution=med " . $ENV{VALGRIND_OPTIONS};
     }
 
     $rc = system($command);
