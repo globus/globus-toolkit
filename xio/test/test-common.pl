@@ -51,18 +51,24 @@ sub run_test
     {
         $command = "ef $command";
     }
+    elsif ($ENV{VALGRIND})
+    {
+        # Allow override from jenkins tasks
+
+        $command = "valgrind $command";
+        $ENV{VALGRIND_OPTS} = "--log-file=$output_dir/$test_str.valgrind --leak-check=full --leak-resolution=med ";
+
+        if ($ENV{VALGRIND_OPTIONS})
+        {
+            $ENV{VALGRIND_OPTS} .= $ENV{VALGRIND_OPTIONS};
+        }
+    }
     elsif(defined($ENV{"XIO_TEST_VALGRIND"}))
     {
         $ENV{"VALGRIND_OPTS"} = "-q --error-limit=no --num-callers=10 " .
             "--profile=no --leak-check=yes --leak-resolution=med " .
             "--freelist-vol=10000000 --logfile=$output_dir/$test_str.valgrind";
         $command = "valgrind $command";
-    }
-
-    # Allow override from jenkins tasks
-    if ($ENV{VALGRIND_OPTIONS})
-    {
-        $ENV{VALGRIND_OPTS} = "--log-file=$output_dir/$test_str.valgrind --leak-check=full --leak-resolution=med " . $ENV{VALGRIND_OPTIONS};
     }
 
     $rc = system($command);
