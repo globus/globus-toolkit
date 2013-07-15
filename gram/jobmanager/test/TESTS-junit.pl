@@ -12,7 +12,14 @@ BEGIN {
 
     if (exists $ENV{CONTACT_LRM})
     {
-        $xmlfile = "globus-gram-job-manager-test-$ENV{CONTACT_LRM}.xml",
+        if ($ENV{GRAM_POLL})
+        {
+            $xmlfile = "globus-gram-job-manager-test-$ENV{CONTACT_LRM}-poll.xml";
+        }
+        else
+        {
+            $xmlfile = "globus-gram-job-manager-test-$ENV{CONTACT_LRM}-seg.xml";
+        }
     }
     else
     {
@@ -129,6 +136,14 @@ if(exists($ENV{CONTACT_STRING}))
 }
 else
 {
+    if ($ENV{CONTACT_LRM})
+    {
+        push(@startargs, "-jmtype", $ENV{CONTACT_LRM});
+    }
+    if (!$ENV{GRAM_POLL})
+    {
+        push(@startargs, "-seg");
+    }
     local(*PG);
     open(PG, "-|", $personal_gatekeeper, '-start', @startargs);
     $contact = <PG>;
