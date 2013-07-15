@@ -103,7 +103,7 @@ if(exists($ENV{CONTACT_STRING}))
 else
 {
 
-    $contact = `$personal_gatekeeper -start -log never`;
+    $contact = `$personal_gatekeeper -start -log never -disable-usagestats`;
     if($? != 0)
     {
 	print STDERR "Could not start gatekeeper\n";
