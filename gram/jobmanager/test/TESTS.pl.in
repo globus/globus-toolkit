@@ -18,7 +18,7 @@ my $personal_gatekeeper = $Globus::Core::Paths::bindir
 $|=1;
 
 my $contact;
-my @startargs = qw(-log never -disable-usagestats);
+my @startargs = qw(-disable-usagestats);
 
 my $testdir = $0;
 if ($testdir =~ m|/|)
