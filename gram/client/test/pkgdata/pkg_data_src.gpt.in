@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_client_test">
-    <Aging_Version Major="7" Minor="3" Age="0"/>
+    <Aging_Version Major="7" Minor="4" Age="0"/>
     <Description>Test programs for the GRAM Client Library</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -55,6 +55,11 @@
             <Dependency Name="globus_gass_cache_program" Package="pgm">
                 <Version>
                     <Simple_Version Major="5"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gram_client_tools" Package="pgm">
+                <Version>
+                    <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
