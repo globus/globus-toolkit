@@ -1,3 +1,9 @@
+globus-gram-job-manager-fork (1.5-4) unstable; urgency=low
+
+  * *-setup-seg depends on globus-scheduler-event-generator-progs
+
+ -- Globus Toolkit <support@globus.org>  Tue, 16 July 2013 08:48:45 -0400
+
 globus-gram-job-manager-fork (1.5-3) unstable; urgency=low
 
   * Add some missing dependencies
