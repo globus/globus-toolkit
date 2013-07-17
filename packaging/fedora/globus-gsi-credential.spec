@@ -12,8 +12,8 @@
 
 Name:		globus-gsi-credential
 %global _name %(tr - _ <<< %{name})
-Version:	5.6
-Release:	2%{?dist}
+Version:	5.7
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Credential Library
 
 Group:		System Environment/Libraries
@@ -192,6 +192,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jul 17 2013 Globus Toolkit <support@globus.org> - 5.7-1
+- GT-437: grid-proxy-init broken for PKCS12 files with CA certificates
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 5.6-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

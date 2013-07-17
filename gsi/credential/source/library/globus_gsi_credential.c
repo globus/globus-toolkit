@@ -1719,7 +1719,8 @@ globus_result_t globus_gsi_cred_read_pkcs12(
         goto exit;
     }
 
-    for(i = 0 ; i < sk_X509_num(pkcs12_certs); i++)
+    j = sk_X509_num(pkcs12_certs); 
+    for(i = 0 ; i < j; i++)
     {
         handle->cert = sk_X509_pop(pkcs12_certs);
 

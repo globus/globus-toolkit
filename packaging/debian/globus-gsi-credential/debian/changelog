@@ -1,3 +1,9 @@
+globus-gsi-credential (5.7-1) unstable; urgency=low
+
+  * GT-437: grid-proxy-init broken for PKCS12 files with CA certificates
+
+ -- Globus Toolkit <support@globus.org>  Wed, 17 Jul 2013 08:44:44 -0400
+
 globus-gsi-credential (5.6-1) unstable; urgency=low
 
   * fix leak in verify_when
