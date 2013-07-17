@@ -811,7 +811,7 @@ if [ -n "$pkgs_to_rm" ]; then
 fi
 
 # Dump it in a place where PublishBinaries can find it
-rm -rf "$archivedir"
+rm -rf "$archivedir/RPMS" "$archivedir/SRPMS"
 mkdir -p "$archivedir" "$archivedir/RPMS" "$archivedir/SRPMS"
 
 cp -R "${reporoot}/${osname}/${osver}/SRPMS"/* "${archivedir}/SRPMS"
