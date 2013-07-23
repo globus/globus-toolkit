@@ -1,3 +1,10 @@
+globus-connect-multiuser (2.0.56-1) unstable; urgency=low
+
+  * KOA-2698: GCMU Setup Throws TypeError when checking for timeouts
+  * KOA-2701: GCMU defaults to MyProxy, not OAuth
+
+ -- Globus Toolkit <support@globus.org>  Tue, 23 July 2013 10:44:00 -0400
+
 globus-connect-multiuser (2.0.55-1) unstable; urgency=low
 
   * GCMU doesn't handle hashes from remote myproxy with different openssl version

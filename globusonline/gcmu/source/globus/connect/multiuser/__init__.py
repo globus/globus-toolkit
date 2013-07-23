@@ -200,7 +200,7 @@ def get_api(conf):
             if auth_result is not None:
                 break
         except ssl.SSLError, e:
-            if "timed out" not in e.args[0]:
+            if "timed out" not in str(e):
                 raise e
             time.sleep(30)
         except GOCredentialsError, e:
@@ -225,7 +225,7 @@ def get_api(conf):
                     last_exception = None
                     break
                 except ssl.SSLError, e:
-                    if "timed out" not in e.args[0]:
+                    if "timed out" not in str(e):
                         raise e
                     last_exception = e
                     time.sleep(30)
@@ -245,7 +245,7 @@ def get_api(conf):
                     last_exception = None
                     break
                 except ssl.SSLError, e:
-                    if "timed out" not in e.args[0]:
+                    if "timed out" not in str(e):
                         raise e
                     last_exception = e
                     time.sleep(30)
