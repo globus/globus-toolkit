@@ -1,4 +1,10 @@
-globus-data-management-server (0.0.0) unstable; urgency=low
+globus-data-management-server (0.0.0-2) unstable; urgency=low
+
+  * Fix library package dependencies
+
+ -- Globus Toolkit <support@globus.org>  Tue, 30 July 2013 15:12:31 -0400
+
+globus-data-management-server (0.0.0-1) unstable; urgency=low
 
   * New for Globus Toolkit 5.2.3
 
