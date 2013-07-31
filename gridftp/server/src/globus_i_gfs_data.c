@@ -10928,8 +10928,6 @@ globus_gridftp_server_operation_event(
     GlobusGFSName(globus_gridftp_server_operation_event);
     GlobusGFSDebugEnter();
 
-    globus_l_gfs_data_alive(op->session_handle);
-
     event_info->id = op->id;
 
     /* XXX gotta do a onesot here ?? */
