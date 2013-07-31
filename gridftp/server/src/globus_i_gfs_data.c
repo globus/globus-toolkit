@@ -614,7 +614,7 @@ globus_l_gfs_data_watchdog_check(
     }
     else if(session_handle->watch)
     {
-        if(time(NULL) < 
+        if(time(NULL) > 
             session_handle->last_active + globus_l_gfs_watchdog_limit)
         {
             globus_gfs_log_message(GLOBUS_GFS_LOG_ERR,

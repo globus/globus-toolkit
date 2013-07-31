@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.34
+Version:	6.35
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -183,6 +183,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Jul 31 2013 Globus Toolkit <support@globus.org> - 6.35-1
+- GT-428: improve handling of hanging server processes
+
 * Wed Jul 31 2013 Globus Toolkit <support@globus.org> - 6.34-1
 - GT-428: improve handling of hanging server processes
 

@@ -617,7 +617,12 @@ globus_gfs_log_message(
         globus_logging_vwrite(globus_l_gfs_log_handle, type, format, ap);
         va_end(ap);
     }
-
+    
+    if(type == GLOBUS_GFS_LOG_ERR && globus_l_gfs_log_handle)
+    {
+        globus_logging_flush(globus_l_gfs_log_handle);
+    }
+        
     GlobusGFSDebugExit();
 }
 
