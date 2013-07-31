@@ -651,7 +651,7 @@ globus_l_gfs_data_reset_watchdog(
             if(session_handle->watch_handle == NULL)
             {
                 globus_reltime_t                timer;
-                GlobusTimeReltimeSet(timer, globus_l_gfs_watchdog_limit, 0);
+                GlobusTimeReltimeSet(timer, globus_l_gfs_watchdog_limit / 4, 0);
                 globus_callback_register_periodic(
                     &session_handle->watch_handle,
                     &timer,
