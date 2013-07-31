@@ -73,7 +73,7 @@ typedef struct globus_l_gfs_auth_info_s
 static globus_bool_t                    globus_l_gfs_control_active = GLOBUS_FALSE;
 static globus_list_t *                  globus_l_gfs_server_handle_list;
 static globus_mutex_t                   globus_l_gfs_control_mutex;
-static globus_bool_t                    globus_l_gfs_control_got_done_cb = GLOBUS_FALSE;
+static globus_bool_t                    globus_l_gfs_control_should_be_gone = GLOBUS_FALSE;
 
 char *
 globus_i_gsc_string_to_959(
@@ -223,7 +223,8 @@ globus_i_gfs_control_stop()
     globus_mutex_lock(&globus_l_gfs_control_mutex);
     {
         globus_l_gfs_control_active = GLOBUS_FALSE;
-
+        globus_l_gfs_control_should_be_gone = GLOBUS_TRUE;
+        
         for(list = globus_l_gfs_server_handle_list;
             !globus_list_empty(list);
             list = globus_list_rest(list))
@@ -559,7 +560,7 @@ globus_l_gfs_done_cb(
 
     globus_mutex_lock(&globus_l_gfs_control_mutex);
     {
-        globus_l_gfs_control_got_done_cb = GLOBUS_TRUE;
+        globus_l_gfs_control_should_be_gone = GLOBUS_TRUE;
         
         globus_list_remove(&globus_l_gfs_server_handle_list,
             globus_list_search(globus_l_gfs_server_handle_list, instance));
@@ -3242,6 +3243,7 @@ globus_i_gfs_control_end_421(
 
     globus_mutex_lock(&globus_l_gfs_control_mutex);
     {
+        globus_l_gfs_control_should_be_gone = GLOBUS_TRUE;
         kill_count = globus_list_size(globus_l_gfs_server_handle_list);
 
         for(i = 0, list = globus_l_gfs_server_handle_list;
@@ -3269,7 +3271,7 @@ globus_l_gfs_control_watchdog_exit(
     void *                              arg)
 {
     globus_gfs_log_message(
-        GLOBUS_GFS_LOG_INFO, "Terminating hung process.\n");
+        GLOBUS_GFS_LOG_ERR, "Forcefully terminating process. No exit after control stop.\n");
 
     exit(1);
 }
@@ -3286,7 +3288,7 @@ globus_l_gfs_control_watchdog_check(
 
     globus_mutex_lock(&globus_l_gfs_control_mutex);
     {
-        if(globus_l_gfs_control_got_done_cb)
+        if(globus_l_gfs_control_should_be_gone)
         {
             can_kill = GLOBUS_TRUE;
         }
@@ -3310,7 +3312,7 @@ globus_l_gfs_control_watchdog_check(
     {
         globus_reltime_t                    timer;
         
-        GlobusTimeReltimeSet(timer, 120, 0);
+        GlobusTimeReltimeSet(timer, 60, 0);
         globus_callback_register_oneshot(
             NULL,
             &timer,
@@ -3579,7 +3581,7 @@ globus_i_gfs_control_start(
     if(globus_i_gfs_config_bool("inetd"))
     {
         globus_reltime_t                timer;
-        GlobusTimeReltimeSet(timer, 600, 0);
+        GlobusTimeReltimeSet(timer, 300, 0);
         globus_callback_register_periodic(
             NULL,
             &timer,

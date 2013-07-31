@@ -12,8 +12,8 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.33
-Release:	2%{?dist}
+Version:	6.34
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -183,6 +183,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Jul 31 2013 Globus Toolkit <support@globus.org> - 6.34-1
+- GT-428: improve handling of hanging server processes
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 6.33-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

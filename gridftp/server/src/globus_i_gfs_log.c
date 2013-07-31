@@ -854,7 +854,7 @@ globus_i_gfs_log_create_transfer_event_msg(
         "streams=%d "
         "stripes=%d "
         "remoteIP=%s "
-        "type=%s ",
+        "type=%s",
         username,
         fname,
         (long) tcp_bs,
