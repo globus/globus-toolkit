@@ -309,6 +309,8 @@ if [ "$in_chroot" -eq 0 ]; then
     for x in "${topdir}"/*.changes; do
         reprepro -b . include unstable "$x"
         cp "$x" changes/
+    done
+    for x in "${topdir}"/*  "${topdir}-${chroot}"/*${chroot}*deb; do
         cp "$x" "${artifactdir}"
     done
 
