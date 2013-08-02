@@ -310,7 +310,7 @@ if [ "$in_chroot" -eq 0 ]; then
         reprepro -b . include unstable "$x"
         cp "$x" changes/
     done
-    for x in "${topdir}"/*.*  "${topdir}-${chroot}"/*${chroot}*${chroot}.deb; do
+    for x in "${topdir}"/*.*  "${topdir}-${chroot}"/*${chroot}.deb; do
         cp "$x" "${artifactdir}"
     done
     rm "${artifactdir}/"*.log
@@ -320,7 +320,6 @@ if [ "$in_chroot" -eq 0 ]; then
         # _all.deb packages having different tarballs
         for x in "${topdir}-${chroot}"/*${chroot}*deb; do
            reprepro -b . includedeb unstable "$x"
-            cp "$x" "${artifactdir}"
         done
     fi
 
