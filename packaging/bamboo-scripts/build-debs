@@ -310,9 +310,10 @@ if [ "$in_chroot" -eq 0 ]; then
         reprepro -b . include unstable "$x"
         cp "$x" changes/
     done
-    for x in "${topdir}"/*  "${topdir}-${chroot}"/*${chroot}*deb; do
+    for x in "${topdir}"/*.*  "${topdir}-${chroot}"/*${chroot}*${chroot}.deb; do
         cp "$x" "${artifactdir}"
     done
+    rm "${artifactdir}/"*.log
 
     if [ "$chroot" != "" ]; then
         # include only chroot-specific packages to avoid conflicts with
