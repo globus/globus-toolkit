@@ -8,7 +8,7 @@ Homepage: http://www.globus.org/
 
 Package: globus-data-management-client
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, globus-common-progs, globus-gsi-cert-utils-progs, globus-ftp-client, globus-gass-copy-progs, globus-proxy-utils
+Depends: ${shlibs:Depends}, ${misc:Depends}, globus-common-progs, globus-gsi-cert-utils-progs, libglobus-ftp-client2, globus-gass-copy-progs, globus-proxy-utils
 Description: Globus Data Management Client Metapackage
  This package contains dependencies to install all of the tools related to
  running client software to access Globus data management services.

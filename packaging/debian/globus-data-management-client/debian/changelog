@@ -1,3 +1,9 @@
+globus-data-management-client (0.0.0-2) unstable; urgency=low
+
+  * Fix library dependencies
+
+ -- Globus Toolkit <support@globus.org>  Sat, 03 August 2013 08:49:07 -0400
+
 globus-data-management-client (0.0.0) unstable; urgency=low
 
   * New for Globus Toolkit 5.2.3
