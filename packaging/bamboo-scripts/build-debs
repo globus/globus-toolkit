@@ -313,7 +313,7 @@ if [ "$in_chroot" -eq 0 ]; then
     for x in "${topdir}"/*.*  "${topdir}-${chroot}"/*${chroot}.deb; do
         cp "$x" "${artifactdir}"
     done
-    rm "${artifactdir}/"*.log
+    rm -f "${artifactdir}/"*.log
 
     if [ "$chroot" != "" ]; then
         # include only chroot-specific packages to avoid conflicts with
