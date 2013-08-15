@@ -190,6 +190,10 @@ server
             if rp is not None:
                 conf_file.write("restrict_paths %s\n" % rp)
 
+            if self.conf.get_gridftp_udt():
+               conf_file.write("allow_udt 1\n")
+               conf_file.write("threads 1\n")
+
             os.symlink(conf_file_name, conf_link_name)
         finally:
             conf_file.close()

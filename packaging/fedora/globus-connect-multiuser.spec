@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.56
+Version:        2.0.57
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -166,6 +166,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Thu Aug 15 2013 Globus Toolkit <support@globus.org> 2.0.57-1
+- GT-433: Add option to enable UDT
+
 * Tue Jul 23 2013 Globus Toolkit <support@globus.org> 2.0.56-1
 - KOA-2698: GCMU Setup Throws TypeError when checking for timeouts
 - KOA-2701: GCMU defaults to MyProxy, not OAuth

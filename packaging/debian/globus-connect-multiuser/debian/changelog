@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.57-1) unstable; urgency=low
+
+  * GT-433: Add option to enable UDT
+
+ -- Globus Toolkit <support@globus.org>  Thu, 15 Aug 2013 06:33:00 -0400
+
 globus-connect-multiuser (2.0.56-1) unstable; urgency=low
 
   * KOA-2698: GCMU Setup Throws TypeError when checking for timeouts

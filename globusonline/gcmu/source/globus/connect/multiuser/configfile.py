@@ -77,6 +77,7 @@ class ConfigFile(ConfigParser.ConfigParser):
     SHARING_DIR = "SharingStateDir"
     SHARING_CONTROL = "SharingControl"
     DEFAULT_SHARING_DN = "/C=US/O=Globus Consortium/OU=Globus Online/OU=Transfer User/CN=__transfer__"
+    UDT_OPTION = "AllowUDT"
 
     # [MyProxy]
     # SERVER_OPTION as above
@@ -476,6 +477,15 @@ class ConfigFile(ConfigParser.ConfigParser):
                     ConfigFile.GRIDFTP_SECTION,
                     ConfigFile.SHARING_CONTROL)
         return sharing_control
+
+    def get_gridftp_udt(self):
+        udt_enabled = False
+        if self.has_option(ConfigFile.GRIDFTP_SECTION,
+                ConfigFile.UDT_OPTION):
+            udt_enabled = self.getboolean(
+                    ConfigFile.GRIDFTP_SECTION,
+                    ConfigFile.UDT_OPTION)
+        return udt_enabled
 
     def get_myproxy_server(self):
         myproxy_server = None
