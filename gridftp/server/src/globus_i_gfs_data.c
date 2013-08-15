@@ -2559,7 +2559,7 @@ globus_l_gfs_data_parse_restricted_paths(
                 case '[':
                     if(ent->access == 0)
                     {
-                       ent->access |= GFS_L_READ;
+                       ent->access |= GFS_L_READ | GFS_L_WRITE;
                     }
                     done = GLOBUS_TRUE;
                     break;

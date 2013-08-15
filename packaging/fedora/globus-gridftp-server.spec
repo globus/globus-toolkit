@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.35
+Version:	6.36
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -183,6 +183,10 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Thu Aug 15 2013 Globus Toolkit <support@globus.org> - 6.36-1
+- GT-368: Fix log message concatination when writing to syslog
+- GT-420: revert to documented behavior for restricted paths
+
 * Wed Jul 31 2013 Globus Toolkit <support@globus.org> - 6.35-1
 - GT-428: improve handling of hanging server processes
 

@@ -1,3 +1,10 @@
+globus-gridftp-server (6.36-1) unstable; urgency=low
+
+  * GT-368: Fix log message concatination when writing to syslog
+  * GT-420: revert to documented behavior for restricted paths
+
+ -- Globus Toolkit <support@globus.org>  Thu, 15 Aug 2013 07:52:27 -0500
+
 globus-gridftp-server (6.35-1) unstable; urgency=low
 
   * GT-428: improve handling of hanging server processes

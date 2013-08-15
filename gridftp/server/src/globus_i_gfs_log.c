@@ -385,6 +385,8 @@ globus_i_gfs_log_open()
     else if(strcmp(module, "syslog") == 0)
     {
         log_mod = &globus_logging_syslog_module;
+        log_mask |= GLOBUS_LOGGING_INLINE;
+        GlobusTimeReltimeSet(flush_interval, 0, 0);
     }
     else if(strcmp(module, "stdio_ng") == 0)
     {
@@ -399,6 +401,8 @@ globus_i_gfs_log_open()
         globus_l_gfs_log_events = GLOBUS_TRUE;
         log_mask |= GLOBUS_GFS_LOG_INFO | 
             GLOBUS_GFS_LOG_WARN | GLOBUS_GFS_LOG_ERR;
+        log_mask |= GLOBUS_LOGGING_INLINE;
+        GlobusTimeReltimeSet(flush_interval, 0, 0);            
     }
     else
     {
