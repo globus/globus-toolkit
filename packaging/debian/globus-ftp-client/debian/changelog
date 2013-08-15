@@ -1,3 +1,9 @@
+globus-ftp-client (7.6-1) unstable; urgency=low
+
+  * GT-425: add environment variable to force IPV6 compatibility
+
+ -- Globus Toolkit <support@globus.org>  Thu, 15 Aug 2013 06:13:59 -0500
+
 globus-ftp-client (7.5-1) unstable; urgency=low
 
   * Fix performance issue, don't need to check binary data buffers for newlines

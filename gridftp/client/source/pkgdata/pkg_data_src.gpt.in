@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_ftp_client">
-    <Aging_Version Major="7" Minor="5" Age="5"/>
+    <Aging_Version Major="7" Minor="6" Age="5"/>
     <Description>GridFTP Client Library</Description>
     <Functional_Group>FileAccess</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>

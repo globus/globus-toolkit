@@ -12,8 +12,8 @@
 
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	7.5
-Release:	2%{?dist}
+Version:	7.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
@@ -187,6 +187,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Aug 15 2013 Globus Toolkit <support@globus.org> - 7.6-1
+- GT-425: add environment variable to force IPV6 compatibility
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 7.5-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

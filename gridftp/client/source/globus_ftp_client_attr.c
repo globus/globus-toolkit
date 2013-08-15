@@ -1188,7 +1188,8 @@ globus_ftp_client_operationattr_init(
     i_attr->read_all_intermediate_callback= GLOBUS_NULL;
     i_attr->read_all_intermediate_callback_arg
 					= GLOBUS_NULL;
-    i_attr->allow_ipv6                  = GLOBUS_FALSE;
+    i_attr->allow_ipv6                  = getenv("GLOBUS_FTP_CLIENT_IPV6") ? 
+                                            GLOBUS_TRUE : GLOBUS_FALSE;
     i_attr->resume_third_party		= GLOBUS_FALSE;
     i_attr->force_striped		= GLOBUS_FALSE;
     i_attr->allocated_size		= 0;
