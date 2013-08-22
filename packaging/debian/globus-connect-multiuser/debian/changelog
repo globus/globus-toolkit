@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.58-1) unstable; urgency=low
+
+  * Disable OAuth by default, use MyProxy, instead of having OAuth enabled but not used.
+
+ -- Globus Toolkit <support@globus.org>  Thu, 22 August 2013 09:28:32 -0400
+
 globus-connect-multiuser (2.0.57-1) unstable; urgency=low
 
   * GT-433: Add option to enable UDT

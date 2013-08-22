@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.57
+Version:        2.0.58
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -166,6 +166,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Thu Aug 22 2013 Globus Toolkit <support@globus.org> 2.0.58-1
+- Disable OAuth by default, use MyProxy, instead of having OAuth enabled but
+  not used.
+
 * Thu Aug 15 2013 Globus Toolkit <support@globus.org> 2.0.57-1
 - GT-433: Add option to enable UDT
 
