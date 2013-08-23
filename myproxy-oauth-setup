@@ -195,8 +195,17 @@ def selinux_permissions():
     semanage = which("semanage")
     restorecon = which("restorecon")
     if semanage is not None:
+        # Allow httpd to write to the myproxy-oauth sqlite3 database
         args = [semanage, 'fcontext', '-a', '-t', 'httpd_sys_rw_content_t',
                 '/var/lib/myproxy-oauth/myproxy-oauth.db']
+        semanage_proc = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
+        (out, err) = semanage_proc.communicate()
+        if out is not None:
+            print out
+        if err is not None:
+            print >>sys.stderr, err
+        # Allow httpd to connect to myproxy service
+        args = [semanage, 'boolean', '-m', '-1', 'httpd_can_network_connect']
         semanage_proc = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
         (out, err) = semanage_proc.communicate()
         if out is not None:

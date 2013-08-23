@@ -35,7 +35,6 @@ Prerequisite packages on Debian-based systems:
 * python-openssl
 * python-sqlalchemy
 * python-openssl
-* python-jinja2
 * python-httplib2
 
 If you want to use this with apache2 instead of the standalone server, you'll

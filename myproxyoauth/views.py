@@ -24,7 +24,6 @@ import time
 import oauth2 as oauth
 import Crypto.PublicKey.RSA
 import myproxy
-import jinja2
 import pkgutil
 import os
 from myproxyoauth import application
@@ -44,12 +43,15 @@ def get_template(name):
             template_data = template_file.read()
         finally:
             template_file.close()
-    return jinja2.Template(template_data)
+    return template_data
         
 
 def render_template(name, **kwargs):
     template = get_template(name)
-    return template.render(**kwargs).encode("utf-8")
+    for template_token in kwargs:
+        template = template.replace(
+            "{{ " + template_token + " }}", kwargs[template_token])
+    return str(template)
 
 def url_reconstruct(environ):
     url = environ['wsgi.url_scheme']+'://'
@@ -219,7 +221,9 @@ def get_authorize(environ, start_response):
 	    client_name=client.name,
 	    client_url=client.home_url,
 	    temp_token=oauth_temp_token,
-            stylesheets=styles)
+	    retry_message="",
+            stylesheets="\n".join(
+                [("<link rel='stylesheet' type='text/css' href='%s' >" % x) for x in styles]))
     status = "200 Ok"
     headers = [ ("Content-Type", "text/html")]
     start_response(status, headers)
@@ -258,7 +262,8 @@ def post_authorize(environ, start_response):
                     client_url=client.home_url,
                     temp_token=oauth_temp_token,
                     retry_message=str(e),
-                    stylesheets=styles)
+                    stylesheets="\n".join(
+                        [("<link rel='stylesheet' type='text/css' href='%s' >" % x) for x in styles]))
         start_response(status, headers, e)
         return res
 

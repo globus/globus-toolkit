@@ -22,12 +22,6 @@ import socket
 import logging
 import getopt
 
-# EPEL 6 has a version of jinja2 which works with flask, unlike the
-# one in the core rhel/centos/etc repo. This forces that one into
-# the path before the normal one
-epel_jinja2_egg = "/usr/lib/python2.6/site-packages/Jinja2-2.6-py2.6.egg"
-if os.path.exists(epel_jinja2_egg):
-    sys.path.insert(0, epel_jinja2_egg)
 epel5_sqlalchemy05_egg = "/usr/lib/python2.4/site-packages/SQLAlchemy-0.5.8-py2.4.egg"
 if os.path.exists(epel5_sqlalchemy05_egg):
     sys.path.insert(0, epel5_sqlalchemy05_egg)
