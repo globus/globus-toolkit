@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.9
+Version:	0.10
 Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
@@ -37,7 +37,6 @@ Requires:       python-crypto >= 2.2
 Requires:	python-sqlalchemy
 Requires:       python-httplib2
 %endif
-Requires:       python-jinja2
 %if 0%{?rhel} == 05
 Conflicts:      mod_python
 %endif
@@ -68,7 +67,7 @@ mkdir -p $RPM_BUILD_ROOT/%{_docdir}/%{name}
 cp README.md $RPM_BUILD_ROOT%{_docdir}/%{name}/README.txt
 mkdir -p $RPM_BUILD_ROOT/%{_sbindir}
 %if 0%{?rhel} == 05
-pythonpath="/usr/share/%{name}:$(ls -1d /usr/lib/python2.4/site-packages/SQLAlchemy-0.5*)"
+pythonpath="/usr/share/%{name}:"$(ls -1d /usr/lib/python2.4/site-packages/SQLAlchemy-0.5*)
 %else
 pythonpath="/usr/share/%{name}"
 %endif
@@ -116,5 +115,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Fri Aug 23 2013 Globus Toolkit <support@globus.org> - 0.10-1
+- Remove dependency on jinja2
+
 * Wed Mar 27 2013 Globus Toolkit <support@globus.org> - 0.0-1
 - Initial packaging

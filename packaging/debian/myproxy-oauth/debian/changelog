@@ -1,3 +1,9 @@
+myproxy-oauth (0.10-1) unstable; urgency=low
+
+  * Removed dependency on jinja2
+
+ -- Globus Toolkit <support@globus.org>  Fri, 23 August 2013 12:31:29 -0400
+
 myproxy-oauth (0.9-1) unstable; urgency=low
 
   * Fix missing import of subprocess when SElinux is used
