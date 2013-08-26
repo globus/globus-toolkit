@@ -97,6 +97,7 @@ read_passphrase_stdin(char			*buffer,
 {
     int		i;
 
+    setvbuf(stdin, (char *)NULL, _IONBF, 0);
     if (!(fgets(buffer, buffer_len, stdin))) {
 	verror_put_string("Error reading passphrase");
 	return -1;
