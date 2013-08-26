@@ -547,6 +547,9 @@ generate_certificate( X509_REQ                 *request,
   }
   fclose(issuer_cert_file);
 
+  myproxy_debug("certificate_issuer_cert: %s",
+                server_context->certificate_issuer_cert );
+
   X509_set_issuer_name(cert, X509_get_subject_name(issuer_cert));
 
   X509V3_set_ctx(ctxp, issuer_cert, cert, NULL, NULL, 0);
@@ -720,7 +723,8 @@ generate_certificate( X509_REQ                 *request,
     ssl_error_to_verror();
     goto error;
   } else {
-    myproxy_debug("CAkey: %s", server_context->certificate_issuer_key );
+    myproxy_debug("certificate_issuer_key: %s",
+                  server_context->certificate_issuer_key );
   }
 
   if (!X509_check_private_key(issuer_cert,cakey)) {
