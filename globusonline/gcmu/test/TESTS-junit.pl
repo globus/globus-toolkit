@@ -69,6 +69,7 @@ $|=1;
     double-server-config.pl
     activation-test.pl
     transfer-test.pl
+    sharing.pl
 );
 
 my $test_result = $harness->runtests(@tests);
