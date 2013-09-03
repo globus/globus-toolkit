@@ -21,7 +21,9 @@ use strict;
 use File::Path;
 use Test::More;
 
-require "transferapi.pl";
+use GlobusTransferAPIClient;
+
+my $api = GlobusTransferAPIClient->new();
 
 # Prepare
 my $random = int(1000000*rand());
@@ -32,7 +34,7 @@ my $config_file = "reset-endpoint.conf";
 sub count_servers($)
 {
     my $endpoint = shift;
-    my $json = get_endpoint($endpoint);
+    my $json = $api->get_endpoint($endpoint);
 
     return scalar(map($_->{hostname}, @{$json->{DATA}}));
 }

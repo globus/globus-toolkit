@@ -25,7 +25,9 @@ use Test::More;
 use URI::Escape;
 use POSIX;
 
-require "transferapi.pl";
+use GlobusTransferAPIClient;
+
+my $api = GlobusTransferAPIClient->new();
 
 my $config_file = "security-options.conf";
 
@@ -194,7 +196,7 @@ sub verify_gridftp_trusted_ca_dir($)
 sub endpoint_uses_myproxy_server($)
 {
     my $endpoint = shift;
-    my $json = get_endpoint($endpoint);
+    my $json = $api->get_endpoint($endpoint);
 
     return defined($json->{myproxy_server});
 }
@@ -202,7 +204,7 @@ sub endpoint_uses_myproxy_server($)
 sub endpoint_uses_cilogon($)
 {
     my $endpoint = shift;
-    my $json = get_endpoint($endpoint);
+    my $json = $api->get_endpoint($endpoint);
 
     return $json->{oauth_server} eq 'cilogon.org';
 }

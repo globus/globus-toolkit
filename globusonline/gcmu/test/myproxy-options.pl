@@ -24,7 +24,9 @@ use File::Copy;
 use Test::More;
 use POSIX;
 
-require "transferapi.pl";
+use GlobusTransferAPIClient;
+
+my $api = GlobusTransferAPIClient->new();
 
 my $config_file = "myproxy-options.conf";
 
@@ -52,7 +54,7 @@ sub setup_server($%)
 sub endpoint_myproxy_match($$)
 {
     my ($endpoint_name, $myproxy_server) = @_;
-    my $json = get_endpoint($endpoint_name);
+    my $json = $api->get_endpoint($endpoint_name);
 
     return ((exists($json->{myproxy_server})) and
             ($json->{myproxy_server} eq $myproxy_server));

@@ -28,6 +28,7 @@ my @users;
 
 sub create_user(;$$)
 {
+    my $class = shift;
     my $random_user="";
     my $random_pass="";
     my $salt = "";

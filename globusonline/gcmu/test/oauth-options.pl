@@ -25,7 +25,9 @@ use File::Compare;
 use Test::More;
 use POSIX;
 
-require "transferapi.pl";
+use GlobusTransferAPIClient;
+
+my $api = GlobusTransferAPIClient->new();
 
 my $config_file = "oauth-options.conf";
 
@@ -53,7 +55,7 @@ sub setup_server($%)
 sub endpoint_oauth_match($$)
 {
     my ($endpoint_name, $oauth_server) = @_;
-    my $json = get_endpoint($endpoint_name);
+    my $json = $api->get_endpoint($endpoint_name);
 
     return ((exists($json->{oauth_server})) and
             ($json->{oauth_server} eq $oauth_server));

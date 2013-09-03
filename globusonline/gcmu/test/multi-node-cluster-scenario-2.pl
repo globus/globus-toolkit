@@ -37,7 +37,9 @@ use Test::More;
 use TempUser;
 
 require "barrier.pl";
-require "transferapi.pl";
+use GlobusTransferAPIClient;
+
+my $api = GlobusTransferAPIClient->new();
 
 my $config_file = "multi-node-cluster-scenario.conf";
 
@@ -62,10 +64,7 @@ sub cleanup()
     my @cmd;
     my $rc;
 
-    $cmd[0] = "globus-connect-multiuser-cleanup";
-    $cmd[1] = "-c";
-    $cmd[2] = $config_file;
-    $cmd[3] = "-d";
+    @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
     $rc = diagsystem(@cmd);
 
     # Just to make sure that doesn't fail
@@ -105,7 +104,7 @@ sub activate_endpoint($$$)
     my ($endpoint, $user, $pass) = @_;
     my $json;
 
-    $json = activate($endpoint, $user, $pass);
+    $json = $api->activate($endpoint, $user, $pass);
 
     return $json->{code} =~ '^Activated\.*' ||
         $json->{code} =~ '^AutoActivated\.*' ||
@@ -117,7 +116,7 @@ sub autoactivate_endpoint($)
     my ($endpoint) = @_;
     my $json;
 
-    $json = autoactivate($endpoint);
+    $json = $api->autoactivate($endpoint);
 
     return $json->{code} =~ '^Activated\.*' ||
         $json->{code} =~ '^AutoActivated\.*' ||
@@ -129,14 +128,14 @@ sub deactivate_endpoint($)
     my $endpoint = shift;
     my $json;
 
-    $json = deactivate($endpoint);
+    $json = $api->deactivate($endpoint);
 
     return $json->{code} =~ '^Deactivated';
 }
 
 sub transfer_between_endpoints($$$$)
 {
-    my $json = transfer(@_);
+    my $json = $api->transfer(@_);
     return $json->{status} eq 'SUCCEEDED';
 }
 

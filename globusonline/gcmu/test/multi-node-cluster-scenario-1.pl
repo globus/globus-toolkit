@@ -18,10 +18,6 @@
 # Scenario #1:
 # Multiple File Servers and a Shared Identity Provider in a Cluster
 
-BEGIN
-{
-    $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = "0";
-}
 
 END {$?=0}
 
@@ -30,14 +26,15 @@ use File::Path 'rmtree';
 use File::Compare 'compare';
 use IPC::Open3;
 use POSIX;
-use LWP;
 use URI::Escape;
 use Test::More;
 
 use TempUser;
+use GlobusTransferAPIClient;
 
 require "barrier.pl";
-require "transferapi.pl";
+
+my $api = GlobusTransferAPIClient->new();
 
 my $config_file = "multi-node-cluster-scenario.conf";
 
@@ -101,7 +98,7 @@ sub activate_endpoint($$$)
     my ($endpoint, $user, $pass) = @_;
     my $json;
 
-    $json = activate($endpoint, $user, $pass);
+    $json = $api->activate($endpoint, $user, $pass);
 
     return $json->{code} =~ '^Activated\.*' ||
         $json->{code} =~ '^AutoActivated\.*' ||
@@ -113,7 +110,7 @@ sub autoactivate_endpoint($)
     my ($endpoint) = @_;
     my $json;
 
-    $json = autoactivate($endpoint);
+    $json = $api->autoactivate($endpoint);
 
     return $json->{code} =~ '^Activated\.*' ||
         $json->{code} =~ '^AutoActivated\.*' ||
@@ -125,14 +122,14 @@ sub deactivate_endpoint($)
     my $endpoint = shift;
     my $json;
 
-    $json = deactivate($endpoint);
+    $json = $api->deactivate($endpoint);
 
     return $json->{code} =~ '^Deactivated';
 }
 
 sub transfer_between_endpoints($$$$)
 {
-    my $json = transfer(@_);
+    my $json = $api->transfer(@_);
     return $json->{status} eq 'SUCCEEDED';
 }
 

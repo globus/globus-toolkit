@@ -21,8 +21,9 @@ use strict;
 use File::Path;
 use File::Temp;
 use Test::More;
+use GlobusTransferAPIClient;
 
-require "transferapi.pl";
+my $api = GlobusTransferAPIClient->new();
 
 my $config_file = "endpoint-options.conf";
 
@@ -43,7 +44,7 @@ sub is_endpoint_public($)
     my $endpoint = shift;
     my $json;
 
-    $json = get_endpoint($endpoint);
+    $json = $api->get_endpoint($endpoint);
 
     return $json->{public};
 }
@@ -53,7 +54,7 @@ sub is_default_dir($$)
     my ($endpoint, $dir) = @_;
     my $json;
 
-    $json = get_endpoint($endpoint);
+    $json = $api->get_endpoint($endpoint);
 
     return $json->{default_directory} eq $dir;
 }
@@ -145,3 +146,5 @@ cleanup($endpoint_name);
 
 # Remove everything in GCMU dir
 force_cleanup();
+
+# vim: filetype=perl:

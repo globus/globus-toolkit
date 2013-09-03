@@ -25,8 +25,9 @@ use File::Path;
 use Test::More;
 
 use TempUser;
+use GlobusTransferAPIClient;
 
-require "transferapi.pl";
+my $api = GlobusTransferAPIClient->new();
 
 my $config_file = "activation-test.conf";
 
@@ -71,7 +72,7 @@ sub activate_endpoint($$$)
     my $endpoint = shift;
     my $username = shift;
     my $password = shift;
-    my $json = activate($endpoint, $username, $password);
+    my $json = $api->activate($endpoint, $username, $password);
 
     return $json->{code} =~ '^Activated\.*' ||
         $json->{code} =~ '^AutoActivated\.*' ||
@@ -81,7 +82,7 @@ sub activate_endpoint($$$)
 sub deactivate_endpoint($)
 {
     my $endpoint = shift;
-    my $json = deactivate($endpoint);
+    my $json = $api->deactivate($endpoint);
 
     return $json->{code} eq 'Deactivated' ||
             $json->{code} eq 'NotActivated';
@@ -90,7 +91,7 @@ sub deactivate_endpoint($)
 # Prepare
 my $random = int(1000000*rand());
 my $endpoint = "ACTIVATE$random";
-my ($random_user, $random_pass) = TempUser->create_user();
+my ($random_user, $random_pass) = TempUser::create_user();
 if (!$random_user)
 {
     exit(1);

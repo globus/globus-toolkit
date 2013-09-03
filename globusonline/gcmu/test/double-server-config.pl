@@ -23,16 +23,17 @@ END {$?=0}
 use strict;
 use File::Path;
 use Test::More;
-
-require "transferapi.pl";
+use GlobusTransferAPIClient;
 
 plan tests => 5;
 
 my $config_file = "reset-endpoint.conf";
+my $transfer_api_client = GlobusTransferAPIClient->new();
+
 sub count_servers($)
 {
     my $endpoint = shift;
-    my $json = get_endpoint($endpoint);
+    my $json = $transfer_api_client->get_endpoint($endpoint);
 
     return scalar(map($_->{hostname}, @{$json->{DATA}}));
 }

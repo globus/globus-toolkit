@@ -23,8 +23,9 @@ use File::Temp;
 use File::Copy;
 use Test::More;
 use POSIX;
+use GlobusTransferAPIClient;
 
-require "transferapi.pl";
+my $api = GlobusTransferAPIClient->new();
 
 my $config_file = "gridftp-options.conf";
 
@@ -62,7 +63,7 @@ sub setup_server($%)
 sub endpoint_server_match($$)
 {
     my ($endpoint_name, $server_name) = @_;
-    my $json = get_endpoint($endpoint_name);
+    my $json = $api->get_endpoint($endpoint_name);
 
     foreach my $gridftp_server (@{$json->{DATA}})
     {
@@ -114,7 +115,7 @@ sub gridftp_setup_match($$)
 sub endpoint_exists($)
 {
     my $endpoint_name = shift;
-    my $json = get_endpoint($endpoint_name);
+    my $json = $api->get_endpoint($endpoint_name);
 
     return $json->{DATA_TYPE} ne 'error';
 }

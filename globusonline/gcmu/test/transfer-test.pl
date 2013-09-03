@@ -26,8 +26,9 @@ use Test::More;
 
 use TempUser;
 
-require "transferapi.pl";
+use GlobusTransferAPIClient;
 
+my $api = GlobusTransferAPIClient->new();
 my $config_file = "transfer-test.conf";
 
 sub cleanup
@@ -71,7 +72,7 @@ sub activate_endpoint($$$)
     my $endpoint = shift;
     my $username = shift;
     my $password = shift;
-    my $json = activate($endpoint, $username, $password);
+    my $json = $api->activate($endpoint, $username, $password);
 
     return $json->{code} =~ '^Activated\.*' ||
         $json->{code} =~ '^AutoActivated\.*' ||
@@ -94,7 +95,8 @@ sub transfer_file($$)
     $fh->close();
     chown $uid, $gid, "$home/$endpoint.in";
 
-    $res = transfer($endpoint, "$endpoint.in", $endpoint, "$endpoint.out");
+    $res = $api->transfer($endpoint, "$endpoint.in",
+            $endpoint, "$endpoint.out");
 
     open($fh, "<$home/$endpoint.out");
     read($fh, $copied, length($random_data));
@@ -106,7 +108,7 @@ sub transfer_file($$)
 sub deactivate_endpoint($)
 {
     my $endpoint = shift;
-    my $json = deactivate($endpoint);
+    my $json = $api->deactivate($endpoint);
 
     return $json->{code} eq 'Deactivated' ||
             $json->{code} eq 'NotActivated';
@@ -115,7 +117,7 @@ sub deactivate_endpoint($)
 # Prepare
 my $random = int(1000000*rand());
 my $endpoint = "TRANSFER$random";
-my ($random_user, $random_pass) = TempUser->create_user();
+my ($random_user, $random_pass) = TempUser::create_user();
 if (!$random_user)
 {
     exit(1);
@@ -160,3 +162,5 @@ ok(deactivate_endpoint($endpoint), "deactivate_endpoint");
 # Test Step #9:
 # Clean up
 ok(cleanup, "cleanup");
+
+# vim: filetype=perl:

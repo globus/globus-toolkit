@@ -15,20 +15,13 @@
 # limitations under the License.
 #
 
-BEGIN
-{
-        $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = "0";
-}
-
-END {$?=0}
-
 use strict;
 use HTML::Form;
 use JSON;
-use Test::More;
 use LWP;
 use POSIX;
 use URI::Escape;
+use POSIX;
 
 # Prepare
 my $token_host;
@@ -36,9 +29,8 @@ my $base_url;
 my $instance = $ENV{GLOBUSONLINE_INSTANCE} || "Production";
 my $go_user = $ENV{GLOBUSONLINE_USER};
 my $go_password = $ENV{GLOBUSONLINE_PASSWORD};
-my $ua = LWP::UserAgent->new();
+my $ua = LWP::UserAgent->new(ssl_opts => { verify_hostname => 0 });
 $ua->cookie_jar( {} );
-
 
 my $access_token;
 my $json_parser = JSON->new();
@@ -55,6 +47,19 @@ else
 }
 
 $access_token = get_access_token($go_user, $go_password);
+
+sub qualified_endpoint_name($)
+{
+    my $endpoint = shift;
+
+    if ($endpoint =~ /#/) {
+        return uri_escape($endpoint);
+    } elsif ($endpoint =~ /\%23/) {
+        return $endpoint;
+    } else {
+        return uri_escape("$go_user#$endpoint");
+    }
+}
 
 sub get_access_token($$)
 {
@@ -74,16 +79,15 @@ sub get_access_token($$)
 
 sub get_endpoint($)
 {
-    my $endpoint = shift;
+    my $endpoint = qualified_endpoint_name(shift);
     my $req;
     my $res;
     my $json;
     my $servers;
-    my $escaped_user = uri_escape($go_user);
 
     # List $endpoint
     $req = HTTP::Request->new(GET =>
-            "$base_url/endpoint/$escaped_user\%23$endpoint");
+            "$base_url/endpoint/$endpoint");
     $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
     $res = $ua->request($req);
     $json = $json_parser->decode($res->content());
@@ -93,14 +97,13 @@ sub get_endpoint($)
 
 sub autoactivate($)
 {
-    my $endpoint = shift;
-    my $escaped_user = uri_escape($go_user);
+    my $endpoint = qualified_endpoint_name(shift);
     my $req;
     my $res;
     my $json;
 
     $req = HTTP::Request->new(POST =>
-            "$base_url/endpoint/$escaped_user\%23$endpoint/autoactivate");
+            "$base_url/endpoint/$endpoint/autoactivate");
     $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
     $res = $ua->request($req);
     $json = $json_parser->decode($res->content());
@@ -110,10 +113,9 @@ sub autoactivate($)
 
 sub activate($$$)
 {
-    my $endpoint = shift;
+    my $endpoint = qualified_endpoint_name(shift);
     my $username = shift;
     my $password = shift;
-    my $escaped_user = uri_escape($go_user);
     my $req;
     my $res;
     my $activation_requirements;
@@ -152,7 +154,7 @@ sub activate($$$)
         $json = $json_parser->encode($activation_requirements);
 
         $req = HTTP::Request->new(POST =>
-                "$base_url/endpoint/$escaped_user\%23$endpoint/activate");
+                "$base_url/endpoint/$endpoint/activate");
         $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
         $req->header("Content-Length" => length($json));
         $req->content($json);
@@ -217,14 +219,13 @@ sub activate($$$)
 
 sub deactivate($)
 {
-    my $endpoint = shift;
-    my $escaped_user = uri_escape($go_user);
+    my $endpoint = qualified_endpoint_name(shift);
     my $req;
     my $res;
     my $json;
 
     $req = HTTP::Request->new(POST =>
-            "$base_url/endpoint/$escaped_user\%23$endpoint/deactivate");
+            "$base_url/endpoint/$endpoint/deactivate");
     $req->header('Authorization' => 'Globus-Goauthtoken ' . $access_token);
     $res = $ua->request($req);
     $json = $json_parser->decode($res->content());
@@ -303,6 +304,51 @@ sub transfer($$$$)
     } while(!$done);
 
     return $json;
+}
+
+sub shared_endpoint_create($$$)
+{
+    my $doc = {
+        name => shift,
+        host_endpoint => shift;
+        host_path => shift;
+    };
+    my ($json, $req, $res);
+
+    $json = $json_parser->encode($doc);
+
+    $req = HTTP::Request->new(POST => "$base_url/shared_endpoint_create");
+    $req->header(Authorization => 'Globus-Goauthtoken ' . $access_token);
+    $req->header('Content-Type' => 'application/json');
+    $req->header('Content-Length' => length($json);
+    $req->content($json);
+
+    $res = $ua->request($req);
+    return $json_parser->decode($res->content);
+}
+
+sub endpoint_access_add($;%)
+{
+    my $endpoint = qualified_endpoint_name(shift);
+    my %doc = (
+        id => time(),
+        principal_type => 'user',
+        path => '/',
+        principal => $go_user,
+        permissions => 'r',
+        @_
+    );
+    my ($json, $req, $res);
+
+    $json = $json_parser->encode(\%doc);
+
+    $req = HTTP::Request->new(POST => "$base_url/endpoint/$endpoint/access")
+    $req->header(Authorization => 'Globus-Goauthtoken ' . $access_token);
+    $req->header('Content-Type' => 'application/json');
+    $req->header('Content-Length' => length($json);
+
+    $res = $ua->request($req);
+    return $json_parser_decode($res->content);
 }
 
 1;
