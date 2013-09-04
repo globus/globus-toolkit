@@ -108,8 +108,10 @@ def initiate(environ, start_response):
     else:
         certlifetime = 86400
 
-    client = db_session.query(Client).\
-            filter(Client.oauth_consumer_key==oauth_consumer_key).first()
+    clients = db_session.get_client(Client(oauth_consumer_key=oauth_consumer_key))
+    client = None
+    if len(clients) > 0:
+        client = clients[0]
     if client is None:
         application.logger.error('Unregistered client requested a temporary token.')
         status = "403 Not authorized"
@@ -177,7 +179,7 @@ def initiate(environ, start_response):
     transaction.oauth_consumer_key = oauth_consumer_key
     transaction.certlifetime = certlifetime
     transaction.timestamp = int(time.time())
-    db_session.add(transaction)
+    db_session.add_transaction(transaction)
     db_session.commit()
 
     status = "200 Ok"
@@ -191,26 +193,26 @@ def initiate(environ, start_response):
 def get_authorize(environ, start_response):
     request = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
     oauth_temp_token = str(request.getvalue('oauth_token'))
-    transaction = db_session.query(Transaction).\
-	    filter(Transaction.temp_token==oauth_temp_token).\
-	    filter(Transaction.temp_token_valid==1).first()
-    if transaction is None:
+    transactions = db_session.get_transaction(
+            Transaction(temp_token=oauth_temp_token, temp_token_valid=1))
+    if len(transactions) == 0:
 	status = "403 Not authorized"
 	headers = [ ("Content-Type", "text/plain") ]
 	start_response(status, headers)
 	return 'Invalid temporary token'
 
-    client = db_session.query(Client).\
-	    filter(Client.oauth_consumer_key==
-	    transaction.oauth_consumer_key).first()
-    if client is None:
+    transaction = transactions[0]
+
+    clients = db_session.get_client(Client(oauth_consumer_key=transaction.oauth_consumer_key))
+    if len(clients) == 0:
 	status = "403 Not authorized"
 	headers = [ ("Content-Type", "text/plain") ]
 	start_response(status, headers)
 	return 'Unregistered client'
+    client = clients[0]
 
     transaction.temp_token_valid = 0
-    db_session.add(transaction)
+    db_session.update_transaction(transaction)
     db_session.commit()
     styles = ['static/oauth.css']
     css_path = os.path.join(
@@ -237,11 +239,15 @@ def post_authorize(environ, start_response):
     username = str(request.getvalue('username'))
     passphrase = str(request.getvalue('passphrase'))
 
-    transaction = db_session.query(Transaction).\
-            filter(Transaction.temp_token==oauth_temp_token).first()
-    client = db_session.query(Client).\
-            filter(Client.oauth_consumer_key==transaction.oauth_consumer_key).\
-            first()
+    transactions = db_session.get_transaction(Transaction(temp_token=oauth_temp_token))
+    transaction = None
+    if len(transactions) > 0:
+        transaction = transactions[0]
+
+    clients = db_session.get_client(Client(oauth_consumer_key=transaction.oauth_consumer_key))
+    client = None
+    if len(clients) > 0:
+        client = clients[0]
     cert = None
     try:
         certreq = "-----BEGIN CERTIFICATE REQUEST-----\n" + str(transaction.certreq) + "-----END CERTIFICATE REQUEST-----\n"
@@ -274,7 +280,7 @@ def post_authorize(environ, start_response):
     transaction.oauth_verifier = oauth_verifier
     transaction.certificate = cert
     transaction.username = username
-    db_session.add(transaction)
+    db_session.update_transaction(transaction)
     db_session.commit()
 
     status = "301 Moved Permanently"
@@ -305,10 +311,12 @@ def token(environ, start_response):
             + ''.join([random.choice('0123456789abcdef') for i in range(32)]) \
             + '/' + str(int(time.time()))
 
-    transaction = db_session.query(Transaction).\
-            filter(Transaction.temp_token==oauth_temp_token).first()
+    transactions = db_session.get_transaction(Transaction(temp_token=oauth_temp_token))
+    transaction = None
+    if len(transactions) > 0:
+        transaction = transactions[0]
     transaction.access_token = oauth_access_token
-    db_session.add(transaction)
+    db_session.update_transaction(transaction)
     db_session.commit()
 
     status = "200 Ok"
@@ -331,8 +339,11 @@ def getcert(environ, start_response):
     oauth_consumer_key = str(args.getvalue('oauth_consumer_key'))
     oauth_access_token = str(args.getvalue('oauth_token'))
 
-    transaction = db_session.query(Transaction).\
-            filter(Transaction.access_token==oauth_access_token).first()
+    transactions = db_session.get_transaction(
+            Transaction(access_token=oauth_access_token))
+    transaction = None
+    if len(transactions) > 0:
+        transaction = transactions[0]
     if transaction is None:
         status = "403 Forbidden"
         headers = [("Content-Type", "text/plain")]
@@ -340,8 +351,8 @@ def getcert(environ, start_response):
         return "Invalid access token"
 
     # Clear database
-    old_transactions = db_session.query(Transaction).\
-            filter(Transaction.timestamp < int(time.time()) - 300).delete()
+    old_transactions = [(t) for t in db_session.get_transaction() if t.timestamp < int(time.time())]
+    db_session.delete_transactions(old_transactions)
     db_session.commit()
 
     status = "200 Ok"

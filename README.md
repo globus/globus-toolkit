@@ -6,7 +6,7 @@ MyProxy Delegation Service in Python
 
 The MyProxy Delegation Service is a Python implementation of MyProxy OAuth
 protocol, https://docs.google.com/document/pub?id=10SC7oSURc-EgxMQjcCS50gz0u2HzDJAFiG5hEHiSdxA.
-The package depends on SQLAlchemy. The service can be deployed to
+The service can be deployed to
 Apache with mod\_wsgi or run as a standalone service using the python wsgiref
 server. An example configuration file for Apache is in conf/.
 The file should be copied to /etc/apache2/conf.d/ on Debian-based systems, or
@@ -33,7 +33,6 @@ Prerequisite packages on Debian-based systems:
 * python >= 2.5
 * python-crypto >= 2.0 and python-m2crypto or python-crypto >= 2.2
 * python-openssl
-* python-sqlalchemy
 * python-openssl
 * python-httplib2
 
@@ -45,8 +44,6 @@ Prerequisite packages on RedHat-based systems
 * python-httplib2
 * pyOpenSSL
 * python-crypto
-* python-flask >= 0.7
-* python-sqlalchemy
 
 If you want to use this with apache2 instead of the standalone service, you'll
 also need httpd, mod\_wsgi, and mod\_ssl

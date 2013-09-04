@@ -26,7 +26,7 @@ import socket
 from subprocess import Popen, PIPE
 import sys
 
-from myproxyoauth.database import db_session, Admin, Client, Transaction
+from myproxyoauth.database import db_session, Admin, Client
 
 """
 Register Globus Online as an OAuth client with this MyProxy OAuth Delegation
@@ -65,7 +65,10 @@ def configure(username=None, pwstdin=False, oauth_server=None, myproxy_server=No
     if nexus_server is None:
         nexus_server = "nexus.api.globusonline.org"
 
-    admin = db_session.query(Admin).first()
+    admins = db_session.get_admin()
+    admin = None
+    if len(admins) > 0:
+        admin = admins[0]
 
     if admin is not None:
         if admin.username != username:
@@ -95,18 +98,17 @@ def configure(username=None, pwstdin=False, oauth_server=None, myproxy_server=No
           % (gateway_name, home_url, oauth_consumer_id)
 
     if admin is None:
-        db_session.add(Admin(username))
+        db_session.add_admin(Admin(username))
 
-    client = db_session.query(Client).\
-            filter(Client.oauth_consumer_key==oauth_consumer_id).first()
-    if client is None:
-        client = Client()
+    db_session.delete_clients(
+        [Client(oauth_consumer_key=oauth_consumer_id)])
+    client = Client()
     client.oauth_consumer_key=oauth_consumer_id
     client.oauth_client_pubkey=public_key
     client.name=gateway_name
     client.home_url=home_url
     client.myproxy_server=myproxy_server
-    db_session.add(client)
+    db_session.add_client(client)
 
     db_session.commit()
     selinux_permissions()

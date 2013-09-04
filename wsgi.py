@@ -22,13 +22,6 @@ import socket
 import logging
 import getopt
 
-epel5_sqlalchemy05_egg = "/usr/lib/python2.4/site-packages/SQLAlchemy-0.5.8-py2.4.egg"
-if os.path.exists(epel5_sqlalchemy05_egg):
-    sys.path.insert(0, epel5_sqlalchemy05_egg)
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-
-sys.path.insert(0, BASE_DIR)
-
 root = "/oauth"
 
 import ssl
