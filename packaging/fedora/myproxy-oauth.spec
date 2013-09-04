@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
 Version:	0.11
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
@@ -62,11 +62,7 @@ python setup.py install \
 mkdir -p $RPM_BUILD_ROOT/%{_docdir}/%{name}
 cp README.md $RPM_BUILD_ROOT%{_docdir}/%{name}/README.txt
 mkdir -p $RPM_BUILD_ROOT/%{_sbindir}
-%if 0%{?rhel} == 05
-pythonpath="/usr/share/%{name}:"$(ls -1d /usr/lib/python2.4/site-packages/SQLAlchemy-0.5*)
-%else
 pythonpath="/usr/share/%{name}"
-%endif
 cat > $RPM_BUILD_ROOT%{_sbindir}/myproxy-oauth-setup <<EOF 
 #! /bin/sh
 if [ "\$(id -u)" = 0 ]; then
