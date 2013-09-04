@@ -14,7 +14,10 @@
 # limitations under the License.
 #
 
-import sqlite3
+try:
+    import sqlite3
+except:
+    from pysqlite2 import dbapi2 as sqlite3
 
 class Admin(object):
     def __init__(self, username=None):
