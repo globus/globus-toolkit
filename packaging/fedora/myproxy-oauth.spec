@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
 Version:	0.11
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
@@ -21,20 +21,16 @@ Requires:       mod_wsgi
 Requires:       python-crypto
 Requires:       m2crypto
 %if %{rhel} < 6
-BuildRequires:	python-sqlalchemy0.5
-Requires:	python-sqlalchemy0.5
 Requires:       python-wsgiref
 Requires:       python-json
 Requires:       python-hashlib
 Requires:       python-ssl
 %else
-Requires:	python-sqlalchemy
 %endif
 Requires:       python-httplib2
 Requires:       python-sqlite2
 %else
 Requires:       python-crypto >= 2.2
-Requires:	python-sqlalchemy
 Requires:       python-httplib2
 %endif
 %if 0%{?rhel} == 05
