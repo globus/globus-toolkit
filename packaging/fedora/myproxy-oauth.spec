@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.10
+Version:	0.11
 Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
@@ -115,6 +115,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Wed Sep 04 2013 Globus Toolkit <support@globus.org> - 0.11-1
+- Remove dependency on sql alchemy
+
 * Fri Aug 23 2013 Globus Toolkit <support@globus.org> - 0.10-1
 - Remove dependency on jinja2
 
