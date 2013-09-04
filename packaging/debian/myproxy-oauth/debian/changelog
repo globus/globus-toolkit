@@ -1,3 +1,9 @@
+myproxy-oauth (0.13-1) unstable; urgency=low
+
+  * Fix regression on python path setting
+
+ -- Globus Toolkit <support@globus.org>  Wed, 04 September 2013 15:51:46 -0400
+
 myproxy-oauth (0.12-1) unstable; urgency=low
 
   * Fall back to pysqlite2 when sqlite3 is not available
