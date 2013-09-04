@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.11
-Release:	3%{?dist}
+Version:	0.12
+Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
@@ -107,6 +107,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Wed Sep 04 2013 Globus Toolkit <support@globus.org> - 0.11-1
+- Fall back to pysqlite2 when sqlite3 is not available
+
 * Wed Sep 04 2013 Globus Toolkit <support@globus.org> - 0.11-1
 - Remove dependency on sql alchemy
 
