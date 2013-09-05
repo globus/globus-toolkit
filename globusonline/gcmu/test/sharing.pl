@@ -93,8 +93,8 @@ sub create_and_share_dir($$$$$$)
     my $res;
     my ($uid, $gid, $home) = ((getpwnam($local_user))[2,3,7]);
 
-    File::Path::make_path("$home/$path",
-            {mode => 0700, owner=>$local_user, group=>$local_user});
+    File::Path::mkpath( ["$home/$path"], 0, 0700 );
+    chown $uid, $gid, "$home/$path";
 
     $res = $api->endpoint_access_add($name, path=>"/~/$path",
             principal=>$go_user, permissions=>$perms);
