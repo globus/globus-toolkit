@@ -22,6 +22,180 @@ import math
 import time
 import re
 
+class GridFTPServerHistogram(object):
+    def __init__(self):
+        self.aggregation = {}
+
+    def add_packet(self, packet, cursor):
+        send_time = list(packet.send_time)
+        send_time[4] = send_time[5] = 0
+        agg_time = tuple(send_time)
+
+        server_id = packet.get_server_id(cursor)
+
+        transfer_size = packet.transfer_size()
+        if transfer_size is None:
+            transfer_size = 0
+        log10_transfer_size_bytes = 0
+        if transfer_size > 1:
+            log10_transfer_size_bytes = int(math.log(transfer_size, 10))
+
+        transfer_rate = packet.transfer_rate()
+        log10_transfer_rate_bps = 0
+        if transfer_rate is not None:
+            transfer_rate_bps = 8.0 * transfer_rate
+            if transfer_rate_bps > 0:
+                log10_transfer_rate_bps = int(
+                    math.log(transfer_rate_bps, 10.0))
+            if log10_transfer_rate_bps < 0:
+                log10_transfer_rate_bps = 0
+
+        agg_key = (agg_time, server_id, log10_transfer_size_bytes, log10_transfer_rate_bps)
+        if agg_key not in self.aggregation:
+            self.aggregation[agg_key] = [0,0]
+        self.aggregation[agg_key][0] += 1
+        self.aggregation[agg_key][1] += transfer_size
+
+    def upload(self, dbclass, cursor):
+        summary = self.aggregation
+        try:
+            cursor.executemany(
+                """INSERT INTO gftp_server_histogram_aggregations(
+                        aggregation_time,
+                        aggregation_time_range,
+                        server_id,
+                        log10_transfer_size_bytes,
+                        log10_transfer_rate_bps,
+                        transfer_count, byte_count)
+                   VALUES(%s,'hourly',%s,%s,%s,%s,%s)""",
+                [(dbclass.Timestamp(*k[0]), k[1], k[2], k[3],
+                        summary[k][0], summary[k][1])
+                        for k in summary.keys()])
+        except:
+            print "Error uploading server_histogram aggregation data"
+        self.aggregation = {}
+
+class GridFTPServerXferType(object):
+    def __init__(self):
+        self.aggregation = {}
+
+    def add_packet(self, packet, cursor):
+        send_time = list(packet.send_time)
+        send_time[4] = send_time[5] = 0
+        agg_time = tuple(send_time)
+
+        server_id = packet.get_server_id(cursor)
+        trans_type = packet.get_xfer_type_id(cursor)
+
+        transfer_size = packet.transfer_size()
+        if transfer_size is None:
+            transfer_size = 0
+        agg_key = (agg_time, server_id, trans_type)
+
+        if agg_key not in self.aggregation:
+            self.aggregation[agg_key] = [0,0]
+        self.aggregation[agg_key][0] += 1
+        self.aggregation[agg_key][1] += transfer_size
+
+    def upload(self, dbclass, cursor):
+        summary = self.aggregation
+        try:
+            cursor.executemany(
+                """INSERT INTO gftp_server_xfer_type_aggregations(
+                        aggregation_time,
+                        aggregation_time_range,
+                        server_id,
+                        trans_type,
+                        transfer_count, byte_count)
+                   VALUES(%s,'hourly',%s,%s,%s,%s)""",
+                [(dbclass.Timestamp(*k[0]), k[1], k[2],
+                        summary[k][0], summary[k][1])
+                        for k in summary.keys()])
+        except:
+            print "Error uploading server_xfer_type aggregation data"
+        self.aggregation = {}
+
+class GridFTPServerStream(object):
+    def __init__(self):
+        self.aggregation = {}
+
+    def add_packet(self, packet, cursor):
+        send_time = list(packet.send_time)
+        send_time[4] = send_time[5] = 0
+        agg_time = tuple(send_time)
+
+        server_id = packet.get_server_id(cursor)
+        num_streams = packet.data.get("STREAMS")
+        if num_streams is None:
+            num_streams = 1
+        transfer_size = packet.transfer_size()
+        if transfer_size is None:
+            transfer_size = 0
+        agg_key = (agg_time, server_id, num_streams)
+
+        if agg_key not in self.aggregation:
+            self.aggregation[agg_key] = [0,0]
+        self.aggregation[agg_key][0] += 1
+        self.aggregation[agg_key][1] += transfer_size
+
+    def upload(self, dbclass, cursor):
+        summary = self.aggregation
+        try:
+            cursor.executemany(
+                """INSERT INTO gftp_server_stream_aggregations(
+                        aggregation_time,
+                        aggregation_time_range,
+                        server_id,
+                        num_streams,
+                        transfer_count, byte_count)
+                   VALUES(%s,'hourly',%s,%s,%s,%s)""",
+                [(dbclass.Timestamp(*k[0]), k[1], k[2],
+                        summary[k][0], summary[k][1])
+                        for k in summary.keys()])
+        except:
+            print "Error uploading server_streams aggregation data"
+        self.aggregation = {}
+
+class GridFTPClientServer(object):
+    def __init__(self):
+        self.aggregation = {}
+
+    def add_packet(self, packet, cursor):
+        send_time = list(packet.send_time)
+        send_time[4] = send_time[5] = 0
+        agg_time = tuple(send_time)
+
+        server_id = packet.get_server_id(cursor)
+        client_id = packet.get_client_id(cursor)
+        transfer_size = packet.transfer_size()
+        if transfer_size is None:
+            transfer_size = 0
+        agg_key = (agg_time, server_id, client_id)
+
+        if agg_key not in self.aggregation:
+            self.aggregation[agg_key] = [0,0]
+        self.aggregation[agg_key][0] += 1
+        self.aggregation[agg_key][1] += transfer_size
+
+    def upload(self, dbclass, cursor):
+        summary = self.aggregation
+        try:
+            cursor.executemany(
+                """INSERT INTO gftp_client_server_aggregations(
+                        aggregation_time,
+                        aggregation_time_range,
+                        server_id,
+                        client_id,
+                        transfer_count, byte_count)
+                   VALUES(%s,'hourly',%s,%s,%s,%s)""",
+                [(dbclass.Timestamp(*k[0]), k[1], k[2],
+                        summary[k][0], summary[k][1])
+                        for k in summary.keys()])
+        except:
+            print "Error uploading client_server aggregation data"
+        self.aggregation = {}
+
+
 class GridFTPPacket(CUsagePacket):
     """
     GridFTP Usage Packet handler
@@ -44,7 +218,11 @@ class GridFTPPacket(CUsagePacket):
     __gftp_transfer_rate_sizes = {}
     __db_class = None
 
-    data_aggregation = {}
+    # Data Summary Tables
+    server_histogram_overview = GridFTPServerHistogram()
+    server_xfer_type_overview = GridFTPServerXferType()
+    server_stream_overview = GridFTPServerStream()
+    client_server_overview = GridFTPClientServer()
 
     def __init__(self, address, packet):
         CUsagePacket.__init__(self, address, packet)
@@ -108,33 +286,10 @@ class GridFTPPacket(CUsagePacket):
 
         for pack in packets:
             if pack is not None:
-                send_time = list(pack.send_time)
-                send_time[4] = send_time[5] = 0
-                agg_time = tuple(send_time)
-
-                server_id = pack.get_server_id(cursor)
-                transfer_size = pack.transfer_size()
-                log10_transfer_size_bytes = None
-                if transfer_size > 0:
-                    log10_transfer_size_bytes = int(
-                        math.log(transfer_size, 10))
-                transfer_rate = pack.transfer_rate()
-                log2_transfer_rate_kbps = None
-                if transfer_rate is not None:
-                    transfer_rate_kbps = 8.0*transfer_rate/1000.0
-                    if transfer_rate_kbps > 2.0:
-                        log2_transfer_rate_kbps = int(
-                            math.log(8.0*transfer_rate/1000.0, 2.0))
-                    else:
-                        log2_transfer_rate_kbps = 0
-
-                agg_key = (agg_time, server_id, log10_transfer_size_bytes, log2_transfer_rate_kbps)
-                if agg_key not in GridFTPPacket.data_aggregation:
-                    GridFTPPacket.data_aggregation[agg_key] = [0, 0]
-
-                GridFTPPacket.data_aggregation[agg_key][0] += 1
-                if transfer_size is not None:
-                    GridFTPPacket.data_aggregation[agg_key][1] += transfer_size
+                GridFTPPacket.server_histogram_overview.add_packet(pack, cursor)
+                GridFTPPacket.server_xfer_type_overview.add_packet(pack, cursor)
+                GridFTPPacket.server_stream_overview.add_packet(pack, cursor)
+                GridFTPPacket.client_server_overview.add_packet(pack, cursor)
 
         return CUsagePacket.upload_many(dbclass, cursor, packets)
 
@@ -144,22 +299,10 @@ class GridFTPPacket(CUsagePacket):
         Upload aggregate GridFTPPacket usage packet data to the database.
         """
 
-        try:
-            cursor.executemany(
-                """INSERT INTO gftp_aggregations_hourly(
-                        aggregation_time,
-                        server_id,
-                        log10_transfer_size_bytes,
-                        log2_transfer_rate_kbps,
-                        transfer_count, byte_count)
-                   VALUES(%s,%s,%s,%s,%s,%s)""",
-                [(dbclass.Timestamp(*agg_key[0]), agg_key[1], agg_key[2], 
-                    agg_key[3], GridFTPPacket.data_aggregation[agg_key][0],
-                    GridFTPPacket.data_aggregation[agg_key][1])
-                    for agg_key in GridFTPPacket.data_aggregation.keys()])
-        except:
-            print "Error uploading aggregation data"
-        GridFTPPacket.data_aggregation = {}
+        GridFTPPacket.server_histogram_overview.upload(dbclass, cursor)
+        GridFTPPacket.server_xfer_type_overview.upload(dbclass, cursor)
+        GridFTPPacket.server_stream_overview.upload(dbclass, cursor)
+        GridFTPPacket.client_server_overview.upload(dbclass, cursor)
         
     def values(self, dbclass):
         """

@@ -129,6 +129,8 @@
 <prompt>Shall the new role be allowed to create more roles? (y/n) </prompt> <userinput>n</userinput>
 <prompt>% </prompt><command>createdb -O usagestats usagestats</command>
 <prompt>% </prompt><command>psql -h localhost --password -U usagestats usagestats &lt; /usr/share/globus-usage-tools/usage-tables.sql</command></screen>
+<prompt>% </prompt><command>psql -h localhost --password -U usagestats usagestats &lt; /usr/share/globus-usage-tools/usage-aggregation-tables.sql</command></screen>
+<prompt>% </prompt><command>psql -h localhost --password -U usagestats usagestats &lt; /usr/share/globus-usage-tools/usage-views.sql</command></screen>
         </para>
     </section>
 

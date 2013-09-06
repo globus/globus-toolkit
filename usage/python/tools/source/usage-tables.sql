@@ -2,7 +2,7 @@ CREATE TABLE  unknown_packets(
     id BIGSERIAL,
     componentcode SMALLINT NOT NULL,
     versioncode SMALLINT NOT NULL,
-    contents BYTEA NOT NULL,  
+    contents BYTEA NOT NULL,
     PRIMARY KEY (id)
 );
 
@@ -179,7 +179,7 @@ CREATE TABLE gftp_versions(
    distro_string varchar(64),
    UNIQUE(major, minor, flavor, dirt_timestamp, dirt_branch, distro_string),
    PRIMARY KEY (id)
-); 
+);
 
 CREATE TABLE gftp_server(
     id BIGSERIAL,
@@ -236,14 +236,14 @@ CREATE TABLE gftp_xfer_type(
     PRIMARY KEY(id));
 
 COPY gftp_xfer_type(command) FROM STDIN;
-'STOR'
-'RETR'
-'ESTO'
-'ERET'
-'LIST'
-'NLST'
-'MLST'
-'MLSD'
+STOR
+RETR
+ESTO
+ERET
+LIST
+NLST
+MLST
+MLSD
 \.
 
 
@@ -369,7 +369,7 @@ CREATE TABLE gram5_versions (
     UNIQUE(major, minor, flavor, dirt_timestamp, dirt_branch, distro_string)
 );
 
--- This table contains a mapping of unique LRM names to an integer key. 
+-- This table contains a mapping of unique LRM names to an integer key.
 -- This table is referenced by the gram5_job_managers table to associate the
 -- configured LRM with a particular service deployment.
 CREATE TABLE gram5_lrms (
@@ -618,7 +618,7 @@ CREATE TABLE gram5_jobs(
     client_id INTEGER REFERENCES gram5_client(id),
     -- executable name
     executable_id INTEGER REFERENCES gram5_executable(id),
-    -- bitwise-or of 2^(each gram5_rsl_attributes value present) 
+    -- bitwise-or of 2^(each gram5_rsl_attributes value present)
     rsl_bitfield NUMERIC(64) NOT NULL,
     -- GRAM5 Job Type
     jobtype INTEGER NOT NULL references gram5_job_types(id),
@@ -867,55 +867,51 @@ CREATE TABLE myproxy_packets(
     PRIMARY KEY (id)
 );
 
--- Note that multiple aggregations may be present with the same
--- aggregation_time if some are delivered to the usage collector
--- across multiple hours. For the queries I think we'll be doing, this
--- should be ok, as we'll be grouping by aggregation_time and server_id
-CREATE TABLE gftp_aggregations_hourly(
-    aggregation_time                    TIMESTAMP,
-    server_id                           INT         REFERENCES gftp_server(id),
 
-    log10_transfer_size_bytes           INT,
-    log2_transfer_rate_kbps             INT,
+CREATE TABLE usage_community(
+    community_name                      TEXT,
+    dns_pattern                         TEXT,
+    UNIQUE(community_name, dns_pattern));
 
-    transfer_count                      BIGINT,
-    byte_count                          BIGINT
-);
-CREATE INDEX gftp_aggregations_hourly_index
-    ON gftp_aggregations_hourly(aggregation_time);
-CREATE INDEX gftp_aggregations_hourly_server_index
-    ON gftp_aggregations_hourly(aggregation_time, server_id);
+COPY usage_community(community_name, dns_pattern) FROM STDIN;
+LHC	%.cern.ch
+LHC	%cms%
+LHC	%atl%
+LHC	%lhc%
+LHC	%lcg%
+LHC	%hep%
+LHC	%qmul%
+LHC	%particle%
+LHC	%physik%
+LHC	%gridka%
+OSG	%osg%
+XSEDE	%.teragrid.org
+XSEDE	%.xsede.org
+LIGO	%ligo%
+LIGO	%ldr%
+DES	des%
+D0	d0%
+EDU	%.edu
+ESA	%.esa.int
+ESA	%terradue%
+ESA	%unina%
+ESA	%sissa%
+ESA	%inaf%
+ESA	%fatebenefratelli%
+DOE	%.gov
+DOE	%.lbl.gov
+DOE	%.anl.gov
+DOE	%.pnl.gov
+DOE	%.lanl.gov
+DOE	%.ornl.gov
+DOE	%.bnl.gov
+DOE	%.fnal.gov
+DOE	%.pnnl.gov
+DOE	%.pppl.gov
+DOE	%.inl.gov
+DOE	%.slac.stanford.edu
+DOE	%.doe.gov
+DOE	%.snl.gov
+DOE	%.jlab.org
+\.
 
-
-CREATE TABLE gftp_aggregations_daily(
-    aggregation_time                    DATE,
-    server_id                           INTEGER     REFERENCES gftp_server(id),
-    log10_transfer_size_bytes           INT,
-    log2_transfer_rate_kbps             INT,
-
-    transfer_count                      BIGINT,
-    byte_count                          BIGINT);
-CREATE INDEX gftp_aggregations_daily_index
-    ON gftp_aggregations_daily(aggregation_time);
-CREATE INDEX gftp_aggregations_daily_server_index
-    ON gftp_aggregations_daily(aggregation_time, server_id);
-
-CREATE TABLE gram5_aggregations_hourly(
-    aggregation_time                    TIMESTAMP,
-    job_manager_instance_id             INT         REFERENCES gram5_job_manager_instances(id),
-    failure_code INTEGER,
-    job_count                           BIGINT);
-
-CREATE INDEX gram5_aggregations_hourly_index
-    ON gram5_aggregations_hourly(aggregation_time);
-CREATE INDEX gram5_aggregations_hourly_server_index
-    ON gram5_aggregations_hourly(aggregation_time, job_manager_instance_id);
-
-CREATE TABLE gram5_aggregations_daily(
-    aggregation_time                    DATE,
-    job_manager_id                      INTEGER     REFERENCES gram5_job_managers(id),
-    failure_code                        INTEGER,
-    job_count                           BIGINT);
-
-CREATE INDEX gram5_aggregations_daily_index
-    ON gram5_aggregations_daily(aggregation_time);
