@@ -74,11 +74,14 @@ sub test_rsl
     $skiplist =~ m/\S*\(\*\s*(.*)\s*\*\)\S*/;
     $skiplist = $1;
 
-    foreach my $s (split(/\s+/, $skiplist))
+    if ($skiplist)
     {
-        if ($s =~ m/LRM_SKIP:(.*)/)
+        foreach my $s (split(/\s+/, $skiplist))
         {
-            push(@lrm_skip_list, $1);
+            if ($s =~ m/LRM_SKIP:(.*)/)
+            {
+                push(@lrm_skip_list, $1);
+            }
         }
     }
 
