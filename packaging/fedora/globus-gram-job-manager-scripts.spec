@@ -8,8 +8,8 @@
 
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	4.2
-Release:	8%{?dist}
+Version:	5.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
 Group:		Applications/Internet
@@ -109,6 +109,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
 
 %changelog
+* Fri Sep 06 2013 Globus Toolkit <support@globus.org> - 5.0-1
+- Add new features for slurm lrm implementation
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 4.2-8
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 
