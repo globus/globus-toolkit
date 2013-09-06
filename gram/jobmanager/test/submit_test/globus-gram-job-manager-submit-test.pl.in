@@ -2,6 +2,8 @@
 
 @GLOBUS_PERL_INITIALIZER@
 
+END {exit(0)}
+
 use Globus::GRAM::Error;
 use Globus::Core::Paths;
 use IO::File;

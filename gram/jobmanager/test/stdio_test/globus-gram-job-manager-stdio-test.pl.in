@@ -1,6 +1,7 @@
 #! /usr/bin/perl
 
 @GLOBUS_PERL_INITIALIZER@
+END {exit(0);}
 
 use Globus::Core::Paths;
 use IO::File;
