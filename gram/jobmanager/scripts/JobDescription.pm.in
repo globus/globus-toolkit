@@ -14,6 +14,7 @@ use Globus::Core::Paths;
 =head1 NAME
 
 Globus::GRAM::JobDescription - GRAM Job Description
+Globus::GRAM::DefaultHandlingJobDescription - GRAM Job Description with relative path handling
 
 =head1 SYNOPSIS
 
@@ -432,10 +433,145 @@ sub fix_library_path_environment
     }
 }
 
+=back
+
+=cut
+
+package Globus::GRAM::DefaultHandlingJobDescription;
+
+our @ISA = qw(Globus::GRAM::JobDescription);
+
+sub directory
+{
+    my $self = shift;
+    my $dir = $self->SUPER::directory();
+    if ($dir =~ m|^[^/]|)
+    {
+        $dir = "$ENV{HOME}/$dir";
+    }
+    return $dir;
+}
+
+sub executable
+{
+    my $self = shift;
+    my $exe = $self->SUPER::executable();
+    if (ref($exe) || $exe =~ m|://|) {
+        return $exe;
+    }
+    if ($exe =~ m|^[^/]|)
+    {
+        $exe = $self->directory() . "/$exe";
+    }
+    return $exe;
+}
+
+sub stdin
+{
+    my $self = shift;
+    my $stdin = $self->SUPER::stdin();
+    if (ref $stdin || $stdin =~ m|://|) {
+        return $stdin;
+    }
+    if ($stdin =~ m|^[^/]|)
+    {
+        $stdin = $self->directory() . "/$stdin";
+    }
+    return $stdin;
+}
+
+sub stdout
+{
+    my $self = shift;
+    my @stdout = $self->SUPER::stdout();
+
+    if (scalar(@stdout) > 1 || ref($stdout[0])) {
+        return @stdout;
+    }
+    my $stdout = $stdout[0];
+    if (ref $stdout || $stdout =~ m|://|) {
+        return $stdout;
+    }
+    if ($stdout =~ m|^[^/]|)
+    {
+        $stdout = $self->directory() . "/$stdout";
+    }
+    return $stdout;
+}
+
+sub stderr
+{
+    my $self = shift;
+    my @stderr = $self->SUPER::stderr();
+    if (scalar(@stderr) > 1 || ref($stderr[0])) {
+        return @stderr;
+    }
+    my $stderr = $stderr[0];
+    if (ref $stderr || $stderr =~ m|://|) {
+        return $stderr;
+    }
+    if ($stderr =~ m|^[^/]|)
+    {
+        $stderr = $self->directory() . "/$stderr";
+    }
+    return $stderr;
+}
+
+sub max_cpu_time
+{
+    my $self = shift;
+    my $max_cpu_time = $self->SUPER::max_cpu_time();
+    if (! $max_cpu_time)
+    {
+        $max_cpu_time = $self->max_time();
+    }
+    $max_cpu_time = 0 if (! $max_cpu_time);
+    return $max_cpu_time;
+}
+
+sub max_wall_time
+{
+    my $self = shift;
+    my $max_wall_time = $self->SUPER::max_wall_time();
+    if (! $max_wall_time)
+    {
+        $max_wall_time = $self->max_time();
+    }
+    
+    $max_wall_time = 0 if (! $max_wall_time);
+
+    return $max_wall_time;
+}
+
+sub get($$)
+{
+    my $self = shift;
+    my $name = shift;
+
+    $name =~ s/_//g;
+    $name = lc($name);
+
+    if ($name eq 'directory') {
+        return $self->directory();
+    } elsif ($name eq 'executable') {
+        return $self->executable(); 
+    } elsif ($name eq 'stdin') {
+        return $self->stdin();
+    } elsif ($name eq 'stdout') {
+        return $self->stdout();
+    } elsif ($name eq 'stderr') {
+        return $self->stderr();
+    } elsif ($name eq 'max_cpu_time') {
+        return $self->max_cpu_time();
+    } elsif ($name eq 'max_wall_time') {
+        return $self->max_wall_time();
+    } else {
+        return $self->SUPER::get($name);
+    }
+}
+
 1;
 
 __END__
 
-=back
-
-=cut
+# vim: filetype=perl :

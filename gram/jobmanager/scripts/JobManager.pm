@@ -11,11 +11,13 @@ use Globus::GRAM::Error;
 use Globus::GRAM::JobState;
 use Globus::GRAM::JobSignal;
 use Globus::Core::Paths;
+use Globus::GRAM::JobDescription;
 
 use POSIX;
 use Errno;
 use File::Path;
 use File::Copy;
+use strict;
 
 package Globus::GRAM::JobManager;
 
@@ -121,7 +123,7 @@ sub getenv
     my @result;
     my @environment = $description->environment();
 
-    @result = grep { $_->[0] eq $varname } @environment;
+    @result = grep { (ref($_) eq 'ARRAY') && ($_->[0] eq $varname) } @environment;
 
     if (exists($result[0]))
     {
@@ -1286,6 +1288,26 @@ sub setup_softenv
     return 0;
 }
 
+# Transforms a string so that shell metacharacters are escaped and
+# suitable for use in double quotes
+sub shell_escape($)
+{
+    my $self = shift;
+    my $string = shift;
+
+    $string =~ s/\\/\\\\/g;
+    $string =~ s/\$/\\\$/g;
+    $string =~ s/"/\\\"/g;
+    $string =~ s/`/\\\`/g;
+
+    return $string;
+}
+
+sub job_description_class
+{
+    return 'Globus::GRAM::JobDescription';
+}
+
 1;
 
 =back
@@ -1337,3 +1359,4 @@ I<stage_out> method.
 =back
 
 =cut
+# vim: filetype=perl :

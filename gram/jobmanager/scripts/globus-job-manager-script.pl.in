@@ -109,7 +109,8 @@ if ($command eq 'interactive')
             {
                 &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
             }
-            $job_description = new Globus::GRAM::JobDescription($jd);
+            my $job_description_class = $manager_class->job_description_class();
+            $job_description = new $job_description_class($jd);
             $manager = new $manager_class($job_description) or
                 &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
             &run_command($icmd, $manager);
@@ -131,7 +132,8 @@ else
         $error_string = $@;
         warn $error_string;
     }
-    my $job_description = new Globus::GRAM::JobDescription($argument_file);
+    my $job_description_class = $manager_class->job_description_class();
+    $job_description = new $job_description_class($argument_file);
         
     if ($error_string)
     {
