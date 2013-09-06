@@ -1,0 +1,18 @@
+# Root of the slurm installation
+slurm_path="@SLURM_PATH@"
+# path the srun tool to run parallel jobs in a slurm cluster
+srun="@SRUN@"
+# path to the ibrun tool to run parallel jobs on the TACC slurm cluster
+sbatch="@SBATCH@"
+# path to the salloc tool to create a slurm job allocation
+salloc="@SALLOC@"
+# path to the scancel tool to cancel a slurm job
+scancel="@SCANCEL@"
+# path to the scontrol tool to view the status of a slurm job
+scontrol="@SCONTROL@"
+
+# Path to the openmpi implementation if available
+openmpi_path="@OPENMPI_PATH@"
+
+# Path to the mpich2 implementation if available
+mpich2_path="@OPENMPI_PATH@"
