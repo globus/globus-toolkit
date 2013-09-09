@@ -51,6 +51,7 @@ globus_gram_job_manager_fork	gram/jobmanager/lrms/fork/source	gpt
 globus_gram_job_manager_fork_test	gram/jobmanager/lrms/fork/test	gpt
 globus_gram_job_manager_condor	gram/jobmanager/lrms/condor/source	gpt
 globus_gram_job_manager_pbs	gram/jobmanager/lrms/pbs/source	gpt
+globus_gram_job_manager_slurm	gram/jobmanager/lrms/slurm/source	gpt
 globus_gram_job_manager_sge	gram/jobmanager/lrms/sge/source	gpt
 globus_gram_job_manager_lsf	gram/jobmanager/lrms/lsf/source	gpt
 globus_gram_audit        gram/jobmanager/auditing/source	gpt

@@ -1,0 +1,5 @@
+globus-gram-job-manager-slurm (1.0-1) unstable; urgency=low
+
+  * Initial packaging
+
+ -- Globus Toolkit <support@globus.org>  Mon, 09 September 2013 12:42:12 -0400

@@ -9,3 +9,4 @@ gram5-condor: globus_gram_job_manager_condor
 gram5-lsf: globus_gram_job_manager_lsf
 gram5-pbs: globus_gram_job_manager_pbs
 gram5-sge: globus_gram_job_manager_sge
+gram5-slurm: globus_gram_job_manager_slurm

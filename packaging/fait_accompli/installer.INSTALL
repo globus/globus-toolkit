@@ -60,6 +60,8 @@ PBS:
 make gram5-pbs
 SGE:
 make gram5-sge
+SLURM:
+make gram5-slurm
 
 
 3. Installing only a subset of GT@version@

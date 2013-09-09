@@ -418,6 +418,9 @@ BUNDLE globus-xio-extra-drivers
 BUNDLE gram5-pbs
         globus_gram_job_manager_pbs
                 
+BUNDLE gram5-slurm
+        globus_gram_job_manager_slurm
+                
 BUNDLE gram5-condor
         globus_gram_job_manager_condor
 
