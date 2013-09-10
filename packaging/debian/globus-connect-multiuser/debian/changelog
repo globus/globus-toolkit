@@ -1,5 +1,11 @@
 globus-connect-multiuser (2.0.58-1) unstable; urgency=low
 
+  * GT-439: globus-connect-multiuser-setup has no output on successful setup
+
+ -- Globus Toolkit <support@globus.org>  Tue, 10 September 2013 10:12:29 -0400
+
+globus-connect-multiuser (2.0.58-1) unstable; urgency=low
+
   * Disable OAuth by default, use MyProxy, instead of having OAuth enabled but not used.
 
  -- Globus Toolkit <support@globus.org>  Thu, 22 August 2013 09:28:32 -0400

@@ -65,6 +65,13 @@ class IO(gcmu.GCMU):
         self.restart(**kwargs)
         self.enable(**kwargs)
         self.bind_to_endpoint(**kwargs)
+        print "Configured GridFTP server to run on " \
+            + self.conf.get_gridftp_server()
+        print "Server DN: " + security.get_certificate_subject(
+                self.conf.get_security_certificate_file())
+        print "Using Authentication Method " + \
+            self.conf.get_security_identity_method()
+        print "Configured Endpoint " + self.conf.get_endpoint_name()
         self.logger.debug("EXIT: IO.setup()")
 
     def configure_credential(self, **kwargs):

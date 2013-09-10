@@ -55,6 +55,8 @@ class ID(gcmu.GCMU):
         self.logger.debug("ENTER: ID.setup()")
 
         if not self.is_local_myproxy():
+            print "Using MyProxy server on " \
+                + str(self.conf.get_myproxy_server())
             self.logger.debug("No MyProxy configured for this host")
             return
 
@@ -70,6 +72,14 @@ class ID(gcmu.GCMU):
         self.write_myproxy_init_conf()
         self.enable()
         self.restart()
+        cadir = self.conf.get_myproxy_ca_directory()
+        cert_path = os.path.join(cadir, "cacert.pem")
+
+        print "Configured MyProxy server on " \
+            + self.conf.get_myproxy_server() + ":7512"
+        print "CA DN: " + security.get_certificate_subject(cert_path)
+        print "Service DN: " + self.get_myproxy_dn_from_server()
+
         self.logger.debug("EXIT: ID.setup()")
         
     def cleanup(self, **kwargs):

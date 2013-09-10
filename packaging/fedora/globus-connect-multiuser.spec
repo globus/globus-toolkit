@@ -1,5 +1,5 @@
 Name:           globus-connect-multiuser
-Version:        2.0.58
+Version:        2.0.59
 Release:        1%{?dist}
 Summary:        Globus Connect Multi-User
 %global _name %(tr - _ <<< %{name})
@@ -166,6 +166,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/globus-connect-multiuser-web-*
 
 %changelog
+* Tue Sep 10 2013 Globus Toolkit <support@globus.org> 2.0.59-1
+- GT-439: globus-connect-multiuser-setup has no output on successful setup
+
 * Thu Aug 22 2013 Globus Toolkit <support@globus.org> 2.0.58-1
 - Disable OAuth by default, use MyProxy, instead of having OAuth enabled but
   not used.

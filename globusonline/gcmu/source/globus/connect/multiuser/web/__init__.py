@@ -63,6 +63,9 @@ class Web(gcmu.GCMU):
         self.logger.debug("ENTER: Web.setup()")
 
         if not self.is_local():
+            if self.conf.get_security_identity_method() == self.conf.IDENTITY_METHOD_OAUTH:
+                print "Using remote OAuth server " \
+                    + self.conf.get_oauth_server()
             self.logger.debug("No OAuth server to configure on this node")
             return
 
@@ -74,6 +77,7 @@ class Web(gcmu.GCMU):
         self.configure_trust_roots(**kwargs)
         self.restart(**kwargs)
         self.enable(**kwargs)
+        print "Configured OAuth server " + self.conf.get_oauth_server()
 
         self.logger.debug("EXIT: Web.setup()")
 
