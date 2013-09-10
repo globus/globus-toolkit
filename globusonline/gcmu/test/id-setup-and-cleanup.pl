@@ -52,8 +52,8 @@ sub is_myproxy_server_running()
     close($in);
     waitpid($pid, 0);
     my $rc = $? >> 8;
-    print STDERR $out;
-    print STDERR $err;
+    print STDERR join("", <$out>);
+    print STDERR join("", <$err>);
     return $rc == 0;
 }
 
