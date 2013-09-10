@@ -76,7 +76,7 @@ sub gcmu_setup($$)
     $pid = open3($in, $out, $err, @cmd);
     close($in);
     waitpid($pid, 0);
-    $rc = $? >> 8;
+    my $rc = $? >> 8;
     print STDERR join("", <$out>);
     print STDERR join("", <$err>);
     return $rc == 0;
