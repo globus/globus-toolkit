@@ -1,3 +1,0 @@
--globus-toolkit-version @GLOBUS_TOOLKIT_VERSION@
--log-pattern @LOGDIR@/gram_$(LOGNAME).log
--audit-directory @AUDITDIR@
