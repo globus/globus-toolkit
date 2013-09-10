@@ -20,6 +20,7 @@ END {$?=0}
 use strict;
 use File::Path;
 use File::Temp;
+use IPC::Open3;
 use Test::More;
 use GlobusTransferAPIClient;
 
@@ -36,7 +37,14 @@ sub setup_server($$$)
     $ENV{ENDPOINT_PUBLIC} = $endpoint_public;
     $ENV{ENDPOINT_DIR} = $default_dir;
 
-    return system(@cmd)==0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub is_endpoint_public($)
@@ -69,7 +77,14 @@ sub cleanup($)
     $ENV{ENDPOINT_DIR} = "/~/";
 
     push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
-    system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub force_cleanup()

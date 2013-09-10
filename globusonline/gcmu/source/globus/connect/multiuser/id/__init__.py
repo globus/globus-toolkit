@@ -78,7 +78,9 @@ class ID(gcmu.GCMU):
         print "Configured MyProxy server on " \
             + self.conf.get_myproxy_server() + ":7512"
         print "CA DN: " + security.get_certificate_subject(cert_path)
-        print "Service DN: " + self.get_myproxy_dn_from_server()
+        myproxy_dn = self.get_myproxy_dn_from_server()
+        if myproxy_dn is not None:
+            print "Service DN: " + myproxy_dn
 
         self.logger.debug("EXIT: ID.setup()")
         

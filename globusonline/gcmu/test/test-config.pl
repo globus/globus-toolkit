@@ -19,6 +19,7 @@ END {$?=0}
 
 use strict;
 use File::Path;
+use IPC::Open3;
 use Test::More;
 
 my @tests;
@@ -29,7 +30,6 @@ sub cleanup
     my $testarray = $_[0];
     my $testprog;
     my @cmd;
-    my $rc;
     if (scalar(@{$testarray}) == 2)
     {
         $testprog = $testarray->[1];
@@ -42,7 +42,13 @@ sub cleanup
     $cmd[0] = $testprog;
     $cmd[1] = "-c";
     $cmd[2] = $testarray->[0];
-    $rc = system(@cmd);
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
 
     # Just to make sure that doesn't fail
     foreach my $f (</etc/gridftp.d/globus-connect*>)
@@ -63,7 +69,6 @@ sub run_test
     my $testarray = $_[0];
     my $testprog;
     my @cmd;
-    my $rc;
     
     if (scalar(@{$testarray}) == 2)
     {
@@ -77,7 +82,13 @@ sub run_test
     $cmd[0] = $testprog;
     $cmd[1] = "-c";
     $cmd[2] = $testarray->[0];
-    $rc = system(@cmd);
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
 
     $rc |= cleanup(@_);
 

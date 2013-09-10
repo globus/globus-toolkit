@@ -21,6 +21,7 @@ use strict;
 use File::Path;
 use File::Temp;
 use File::Copy;
+use IPC::Open3;
 use Test::More;
 use POSIX;
 
@@ -48,7 +49,15 @@ sub setup_server($%)
     $ENV{MYPROXY_CA_DIR} = $args{MyProxyCADir};
     $ENV{MYPROXY_CONFIG_FILE} = $args{MyProxyConfigFile};
 
-    return system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+
+    return $rc == 0;
 }
 
 sub endpoint_myproxy_match($$)
@@ -133,11 +142,16 @@ sub myproxy_config_file_path_match($)
 sub cleanup($)
 {
     my $endpoint_name = shift;
-    my @cmd;
-    my $rc;
+    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
 
-    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
-    return system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub force_cleanup()

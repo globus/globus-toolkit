@@ -19,6 +19,7 @@ END {$?=0}
 
 use strict;
 use File::Path;
+use IPC::Open3;
 use Test::More;
 
 use GlobusTransferAPIClient;
@@ -43,9 +44,13 @@ sub cleanup
 {
     my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d",
             "-v");
-    my $rc;
-
-    $rc = system(@cmd);
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
 
     # Just to make sure that doesn't fail
     foreach my $f (</etc/gridftp.d/globus-connect*>)
@@ -75,7 +80,14 @@ sub gcmu_setup($$;@)
     # Create $endpoint
     @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v",
             @other_options);
-    return system(@cmd);
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc;
 }
 
 plan tests => 7;

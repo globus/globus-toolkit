@@ -22,6 +22,7 @@ use File::Path;
 use File::Temp;
 use File::Copy;
 use File::Compare;
+use IPC::Open3;
 use Test::More;
 use POSIX;
 
@@ -49,7 +50,14 @@ sub setup_server($%)
     $ENV{OAUTH_STYLESHEET} = $args{OAuthStylesheet};
     $ENV{OAUTH_LOGO} = $args{OAuthLogo};
 
-    return system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub endpoint_oauth_match($$)
@@ -88,11 +96,15 @@ sub logo_match($)
 sub cleanup($)
 {
     my $endpoint_name = shift;
-    my @cmd;
-    my $rc;
-
-    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
-    return system(@cmd) == 0;
+    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub force_cleanup()

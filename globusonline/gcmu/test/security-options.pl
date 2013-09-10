@@ -21,6 +21,7 @@ use strict;
 use File::Path;
 use File::Temp;
 use File::Copy;
+use IPC::Open3;
 use Test::More;
 use URI::Escape;
 use POSIX;
@@ -55,7 +56,14 @@ sub setup_server($%)
     $ENV{CILOGON_IDENTITY_PROVIDER} = $args{CILogonIdentityProvider};
     $ENV{OAUTH_SERVER} = $args{OAuthServer};
 
-    return system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub myproxy_config_file()
@@ -212,15 +220,20 @@ sub endpoint_uses_cilogon($)
 sub cleanup($)
 {
     my $endpoint_name = shift;
-    my @cmd;
-    my $rc;
+    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
 
     $ENV{ENDPOINT_NAME} = $endpoint_name;
     $ENV{ENDPOINT_PUBLIC} = "False";
     $ENV{ENDPOINT_DIR} = "/~/";
 
-    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
-    return system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub force_cleanup()

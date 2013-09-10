@@ -20,6 +20,7 @@ END {$?=0}
 use strict;
 use File::Path;
 use File::Temp;
+use IPC::Open3;
 use Test::More;
 
 my $tempdir = mkdtemp("/tmp/XXXXXXX");
@@ -848,6 +849,13 @@ foreach my $test (@tests)
     my @test_commandline = @{$test->{COMMAND_LINE}};
     my $test_expectation = $test->{RESULT};
 
-    ok((system(@test_commandline) == 0) == $test_expectation, $test_name);
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @test_commandline);
+    close($in);
+    waitpid($pid, 0);
+    $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    ok(($rc == 0) == $test_expectation, $test_name);
 }
 exit(0);

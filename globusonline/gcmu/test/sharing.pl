@@ -19,6 +19,7 @@ END {$?=0}
 
 use strict;
 use File::Path;
+use IPC::Open3;
 use Test::More;
 
 use TempUser;
@@ -36,9 +37,13 @@ sub cleanup
 {
     my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d",
             "-v");
-    my $rc;
-
-    $rc = system(@cmd);
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
 
     # Just to make sure that doesn't fail
     foreach my $f (</etc/gridftp.d/globus-connect*>)
@@ -58,14 +63,21 @@ sub gcmu_setup($$)
 {
     my $endpoint = shift;
     my $identity_method = shift;
-    my @cmd;
+    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v");
     
     $ENV{ENDPOINT_NAME} = $endpoint;
     $ENV{SECURITY_IDENTITY_METHOD} = $identity_method;
 
     # Create $endpoint
-    @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v");
-    return system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+
+    return $rc == 0;
 }
 
 sub shared_endpoint_create($$;$$)

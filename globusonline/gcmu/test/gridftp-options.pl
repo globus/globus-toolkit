@@ -21,6 +21,7 @@ use strict;
 use File::Path;
 use File::Temp;
 use File::Copy;
+use IPC::Open3;
 use Test::More;
 use POSIX;
 use GlobusTransferAPIClient;
@@ -57,7 +58,14 @@ sub setup_server($%)
     $ENV{SHARING_RESTRICT_PATHS_VALUE} = $args{SharingRestrictPaths};
     $ENV{SHARING_STATE_DIR_VALUE} = $args{SharingStateDir};
 
-    return system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub endpoint_server_match($$)
@@ -124,10 +132,16 @@ sub cleanup($)
 {
     my $endpoint_name = shift;
     my @cmd;
-    my $rc;
 
     push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
-    return system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub force_cleanup()

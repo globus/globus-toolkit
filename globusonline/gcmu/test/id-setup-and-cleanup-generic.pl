@@ -30,6 +30,7 @@ END {$?=0}
 use strict;
 use File::Path;
 use File::Temp;
+use IPC::Open3;
 use Test::More;
 
 my $config_file = "test-id.conf";
@@ -38,13 +39,27 @@ sub setup_id_server()
 {
     my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v");
 
-    return system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub is_myproxy_server_running()
 {
     my @cmd = ("/etc/init.d/myproxy-server", "status");
-    return system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub fetch_and_compare_trust_roots()
@@ -101,7 +116,14 @@ sub cleanup()
     my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d",
             "-v");
 
-    return system(@cmd)==0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub force_cleanup()

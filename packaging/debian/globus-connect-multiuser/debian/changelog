@@ -1,3 +1,9 @@
+globus-connect-multiuser (2.0.60-1) unstable; urgency=low
+
+  * KOA-2743: CILogin Reference in globus-connect-multiuser.conf is incorrect
+
+ -- Globus Toolkit <support@globus.org>  Tue, 10 September 2013 13:13:15 -0400
+
 globus-connect-multiuser (2.0.59-1) unstable; urgency=low
 
   * GT-439: globus-connect-multiuser-setup has no output on successful setup

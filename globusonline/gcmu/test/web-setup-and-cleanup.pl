@@ -25,6 +25,7 @@ END {$?=0}
 use strict;
 use File::Path;
 use File::Temp;
+use IPC::Open3;
 use Test::More;
 use LWP;
 
@@ -35,15 +36,29 @@ my $ua = LWP::UserAgent->new();
 sub setup_id_server()
 {
     my @cmd = ("globus-connect-multiuser-id-setup", "-c", $config_file, "-v");
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
 
-    return system(@cmd) == 0;
+    return $rc == 0;
 }
 
 sub setup_web_server()
 {
     my @cmd = ("globus-connect-multiuser-web-setup", "-c", $config_file, "-v");
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
 
-    return system(@cmd) == 0;
+    return $rc == 0;
 }
 
 sub contact_oauth_server($)
@@ -60,14 +75,28 @@ sub contact_oauth_server($)
 sub id_cleanup()
 {
     my @cmd = ("globus-connect-multiuser-id-cleanup", "-c", $config_file, "-v");
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
 
-    return system(@cmd) == 0;
+    return $rc == 0;
 }
 
 sub web_cleanup()
 {
     my @cmd = ("globus-connect-multiuser-web-cleanup","-c", $config_file, "-v");
-    return system(@cmd) == 0;
+    my ($pid, $in, $out, $err);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    waitpid($pid, 0);
+    my $rc = $? >> 8;
+    print STDERR $out;
+    print STDERR $err;
+    return $rc == 0;
 }
 
 sub force_cleanup()
