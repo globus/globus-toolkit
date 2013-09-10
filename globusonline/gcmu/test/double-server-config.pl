@@ -50,8 +50,8 @@ sub cleanup
     close($in);
     waitpid($pid, 0);
     $rc = $? >> 8;
-    print STDERR $out;
-    print STDERR $err;
+    print STDERR join("", <$out>);
+    print STDERR join("", <$err>);
 
     # Just to make sure that doesn't fail
     foreach my $f (</etc/gridftp.d/globus-connect*>)
@@ -84,8 +84,8 @@ sub gcmu_setup($$;@)
     close($in);
     waitpid($pid, 0);
     my $rc = $? >> 8;
-    print STDERR $out;
-    print STDERR $err;
+    print STDERR join("", <$out>);
+    print STDERR join("", <$err>);
     return $rc == 0;
 }
 

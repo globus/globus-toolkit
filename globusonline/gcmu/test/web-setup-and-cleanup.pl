@@ -41,8 +41,8 @@ sub setup_id_server()
     close($in);
     waitpid($pid, 0);
     my $rc = $? >> 8;
-    print STDERR $out;
-    print STDERR $err;
+    print STDERR join("", <$out>);
+    print STDERR join("", <$err>);
 
     return $rc == 0;
 }
@@ -55,8 +55,8 @@ sub setup_web_server()
     close($in);
     waitpid($pid, 0);
     my $rc = $? >> 8;
-    print STDERR $out;
-    print STDERR $err;
+    print STDERR join("", <$out>);
+    print STDERR join("", <$err>);
 
     return $rc == 0;
 }
@@ -80,8 +80,8 @@ sub id_cleanup()
     close($in);
     waitpid($pid, 0);
     my $rc = $? >> 8;
-    print STDERR $out;
-    print STDERR $err;
+    print STDERR join("", <$out>);
+    print STDERR join("", <$err>);
 
     return $rc == 0;
 }
@@ -94,8 +94,8 @@ sub web_cleanup()
     close($in);
     waitpid($pid, 0);
     my $rc = $? >> 8;
-    print STDERR $out;
-    print STDERR $err;
+    print STDERR join("", <$out>);
+    print STDERR join("", <$err>);
     return $rc == 0;
 }
 

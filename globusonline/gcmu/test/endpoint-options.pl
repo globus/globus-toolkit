@@ -42,8 +42,8 @@ sub setup_server($$$)
     close($in);
     waitpid($pid, 0);
     my $rc = $? >> 8;
-    print STDERR $out;
-    print STDERR $err;
+    print STDERR join("", <$out>);
+    print STDERR join("", <$err>);
     return $rc == 0;
 }
 
@@ -82,8 +82,8 @@ sub cleanup($)
     close($in);
     waitpid($pid, 0);
     my $rc = $? >> 8;
-    print STDERR $out;
-    print STDERR $err;
+    print STDERR join("", <$out>);
+    print STDERR join("", <$err>);
     return $rc == 0;
 }
 

@@ -853,9 +853,9 @@ foreach my $test (@tests)
     $pid = open3($in, $out, $err, @test_commandline);
     close($in);
     waitpid($pid, 0);
-    $rc = $? >> 8;
-    print STDERR $out;
-    print STDERR $err;
+    my $rc = $? >> 8;
+    print STDERR join("", <$out>);
+    print STDERR join("", <$err>);
     ok(($rc == 0) == $test_expectation, $test_name);
 }
 exit(0);
