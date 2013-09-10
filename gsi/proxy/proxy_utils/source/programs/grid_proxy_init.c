@@ -1087,6 +1087,7 @@ globus_i_gsi_proxy_utils_pwstdin_callback(
 {
     int                                 i;
 
+    setvbuf(stdin, (char *)NULL, _IONBF, 0);
     if (!(fgets(buf, num, stdin))) {
         fprintf(stderr, "Failed to read pass-phrase from stdin\n");
         return -1;

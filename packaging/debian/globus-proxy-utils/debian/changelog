@@ -1,3 +1,9 @@
+globus-proxy-utils (5.2-1) unstable; urgency=low
+
+  * GT-387: grid-proxy-init -pwstdin reads too many characters
+
+ -- Globus Toolkit <support@globus.org>  Tue, 10 Sep 2013 09:37:41 -0400
+
 globus-proxy-utils (5.1-1) unstable; urgency=low
 
   * GT-272: Increase default proxy key size

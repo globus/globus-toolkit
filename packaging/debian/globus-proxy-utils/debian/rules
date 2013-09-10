@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-proxy-utils
 _name = globus_proxy_utils
-version = 5.1
+version = 5.2
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages

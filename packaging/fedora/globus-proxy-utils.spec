@@ -12,8 +12,8 @@
 
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	5.1
-Release:	3%{?dist}
+Version:	5.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
@@ -106,6 +106,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Tue Sep 10 2013 Globus Toolkit <support@globus.org> - 5.2-1
+- GT-387: grid-proxy-init -pwstdin reads too many characters
+
 * Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 5.1-3
 - openssl-libs for newer fedora
 
