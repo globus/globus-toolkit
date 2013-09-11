@@ -30,6 +30,22 @@ END
     File::Path::rmtree($tempdir);
 }
 
+sub diagsystem(@)
+{
+    my @cmd = @_;
+    my ($pid, $in, $out, $err);
+    my ($outdata, $errdata);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    local($/);
+    $outdata = <$out>;
+    $errdata = <$err>;
+    diag("$cmd[0] stdout: $outdata") if ($outdata);
+    diag("$cmd[0] stderr: $errdata") if ($errdata);
+    waitpid($pid, 0);
+    return $?;
+}
+
 my @tests=(
     {
         NAME => "globus-connect-multiuser-setup-c",
@@ -848,14 +864,7 @@ foreach my $test (@tests)
     my $test_name = $test->{NAME};
     my @test_commandline = @{$test->{COMMAND_LINE}};
     my $test_expectation = $test->{RESULT};
-
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @test_commandline);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@test_commandline);
     ok(($rc == 0) == $test_expectation, $test_name);
 }
 exit(0);

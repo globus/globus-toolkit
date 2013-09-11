@@ -30,30 +30,33 @@ use Test::More;
 
 my $config_file = "test-id.conf";
 
+sub diagsystem(@)
+{
+    my @cmd = @_;
+    my ($pid, $in, $out, $err);
+    my ($outdata, $errdata);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    local($/);
+    $outdata = <$out>;
+    $errdata = <$err>;
+    diag("$cmd[0] stdout: $outdata") if ($outdata);
+    diag("$cmd[0] stderr: $errdata") if ($errdata);
+    waitpid($pid, 0);
+    return $?;
+}
+
 sub setup_id_server()
 {
     my @cmd = ("globus-connect-multiuser-id-setup", "-c", $config_file, "-v");
-
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
 
 sub is_myproxy_server_running()
 {
     my @cmd = ("/etc/init.d/myproxy-server", "status");
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
 
@@ -154,3 +157,4 @@ ok(!is_myproxy_server_running(), "is_myproxy_server_not_running");
 
 # Remove everything in GCMU dir
 force_cleanup();
+# vim: filetype=perl:

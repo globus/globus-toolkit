@@ -25,16 +25,26 @@ use Test::More;
 
 my $config_file = "test-io.conf";
 
+sub diagsystem(@)
+{
+    my @cmd = @_;
+    my ($pid, $in, $out, $err);
+    my ($outdata, $errdata);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    local($/);
+    $outdata = <$out>;
+    $errdata = <$err>;
+    diag("$cmd[0] stdout: $outdata") if ($outdata);
+    diag("$cmd[0] stderr: $errdata") if ($errdata);
+    waitpid($pid, 0);
+    return $?;
+}
+
 sub setup_id_server()
 {
     my @cmd = ("globus-connect-multiuser-id-setup", "-c", $config_file, "-v");
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
 
     return $rc == 0;
 }
@@ -42,13 +52,7 @@ sub setup_id_server()
 sub setup_web_server()
 {
     my @cmd = ("globus-connect-multiuser-web-setup", "-c", $config_file, "-v");
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
 
     return $rc == 0;
 }
@@ -56,13 +60,7 @@ sub setup_web_server()
 sub setup_io_server()
 {
     my @cmd = ("globus-connect-multiuser-io-setup", "-c", $config_file, "-v");
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
 
     return $rc == 0;
 }
@@ -70,13 +68,7 @@ sub setup_io_server()
 sub is_gridftp_running()
 {
     my @cmd = ("/etc/init.d/globus-gridftp-server", "status");
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
 
     return $rc == 0;
 }
@@ -84,26 +76,14 @@ sub is_gridftp_running()
 sub id_cleanup()
 {
     my @cmd = ("globus-connect-multiuser-id-cleanup", "-c", $config_file, "-v");
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
 
 sub web_cleanup()
 {
     my @cmd = ("globus-connect-multiuser-web-cleanup", "-c", $config_file,"-v");
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
 
@@ -111,13 +91,7 @@ sub io_cleanup()
 {
     my @cmd = ("globus-connect-multiuser-io-cleanup", "-c", $config_file,
             "-d", "-v");
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
 
@@ -173,3 +147,4 @@ ok(!is_gridftp_running(), "is_gridftp_not_running");
 
 # Remove everything in GCMU dir
 force_cleanup();
+# vim: filetype=perl:

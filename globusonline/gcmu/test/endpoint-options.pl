@@ -28,6 +28,22 @@ my $api = GlobusTransferAPIClient->new();
 
 my $config_file = "endpoint-options.conf";
 
+sub diagsystem(@)
+{
+    my @cmd = @_;
+    my ($pid, $in, $out, $err);
+    my ($outdata, $errdata);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    local($/);
+    $outdata = <$out>;
+    $errdata = <$err>;
+    diag("$cmd[0] stdout: $outdata") if ($outdata);
+    diag("$cmd[0] stderr: $errdata") if ($errdata);
+    waitpid($pid, 0);
+    return $?;
+}
+
 sub setup_server($$$)
 {
     my ($endpoint_name, $endpoint_public, $default_dir) = @_;
@@ -37,13 +53,7 @@ sub setup_server($$$)
     $ENV{ENDPOINT_PUBLIC} = $endpoint_public;
     $ENV{ENDPOINT_DIR} = $default_dir;
 
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
 
@@ -70,20 +80,13 @@ sub is_default_dir($$)
 sub cleanup($)
 {
     my $endpoint_name = shift;
-    my @cmd;
+    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
 
     $ENV{ENDPOINT_NAME} = $endpoint_name;
     $ENV{ENDPOINT_PUBLIC} = "False";
     $ENV{ENDPOINT_DIR} = "/~/";
 
-    push(@cmd, "globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
 

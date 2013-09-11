@@ -31,6 +31,22 @@ plan tests => 5;
 my $config_file = "reset-endpoint.conf";
 my $transfer_api_client = GlobusTransferAPIClient->new();
 
+sub diagsystem(@)
+{
+    my @cmd = @_;
+    my ($pid, $in, $out, $err);
+    my ($outdata, $errdata);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    local($/);
+    $outdata = <$out>;
+    $errdata = <$err>;
+    diag("$cmd[0] stdout: $outdata") if ($outdata);
+    diag("$cmd[0] stderr: $errdata") if ($errdata);
+    waitpid($pid, 0);
+    return $?;
+}
+
 sub count_servers($)
 {
     my $endpoint = shift;
@@ -43,15 +59,7 @@ sub cleanup
 {
     my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d",
             "-v");
-    my $rc;
-
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
 
     # Just to make sure that doesn't fail
     foreach my $f (</etc/gridftp.d/globus-connect*>)
@@ -71,21 +79,12 @@ sub gcmu_setup($$;@)
 {
     my $endpoint = shift;
     my $server = shift;
-    my @other_options = @_;
-    my @cmd;
+    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v", @_);
     
     $ENV{RANDOM_ENDPOINT} = $endpoint;
     $ENV{RANDOM_SERVER} = $server;
 
-    # Create $endpoint
-    @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v", @other_options);
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
 

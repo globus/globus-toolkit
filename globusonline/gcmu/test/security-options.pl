@@ -32,6 +32,22 @@ my $api = GlobusTransferAPIClient->new();
 
 my $config_file = "security-options.conf";
 
+sub diagsystem(@)
+{
+    my @cmd = @_;
+    my ($pid, $in, $out, $err);
+    my ($outdata, $errdata);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    local($/);
+    $outdata = <$out>;
+    $errdata = <$err>;
+    diag("$cmd[0] stdout: $outdata") if ($outdata);
+    diag("$cmd[0] stderr: $errdata") if ($errdata);
+    waitpid($pid, 0);
+    return $?;
+}
+
 sub setup_server($%)
 {
     my %args = (
@@ -56,13 +72,8 @@ sub setup_server($%)
     $ENV{CILOGON_IDENTITY_PROVIDER} = $args{CILogonIdentityProvider};
     $ENV{OAUTH_SERVER} = $args{OAuthServer};
 
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
+
     return $rc == 0;
 }
 
@@ -226,13 +237,8 @@ sub cleanup($)
     $ENV{ENDPOINT_PUBLIC} = "False";
     $ENV{ENDPOINT_DIR} = "/~/";
 
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
+
     return $rc == 0;
 }
 

@@ -31,6 +31,22 @@ my $api = GlobusTransferAPIClient->new();
 
 my $config_file = "myproxy-options.conf";
 
+sub diagsystem(@)
+{
+    my @cmd = @_;
+    my ($pid, $in, $out, $err);
+    my ($outdata, $errdata);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    local($/);
+    $outdata = <$out>;
+    $errdata = <$err>;
+    diag("$cmd[0] stdout: $outdata") if ($outdata);
+    diag("$cmd[0] stderr: $errdata") if ($errdata);
+    waitpid($pid, 0);
+    return $?;
+}
+
 sub setup_server($%)
 {
     my %args = (
@@ -49,13 +65,7 @@ sub setup_server($%)
     $ENV{MYPROXY_CA_DIR} = $args{MyProxyCADir};
     $ENV{MYPROXY_CONFIG_FILE} = $args{MyProxyConfigFile};
 
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my $rc = diagsystem(@cmd);
 
     return $rc == 0;
 }
@@ -143,14 +153,8 @@ sub cleanup($)
 {
     my $endpoint_name = shift;
     my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
+    my $rc = diagsystem(@cmd);
 
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
     return $rc == 0;
 }
 

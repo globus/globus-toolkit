@@ -25,11 +25,26 @@ use Test::More;
 my @tests;
 my @todo;
 
+sub diagsystem(@)
+{
+    my @cmd = @_;
+    my ($pid, $in, $out, $err);
+    my ($outdata, $errdata);
+    $pid = open3($in, $out, $err, @cmd);
+    close($in);
+    local($/);
+    $outdata = <$out>;
+    $errdata = <$err>;
+    diag("$cmd[0] stdout: $outdata") if ($outdata);
+    diag("$cmd[0] stderr: $errdata") if ($errdata);
+    waitpid($pid, 0);
+    return $?;
+}
+
 sub cleanup
 {
     my $testarray = $_[0];
     my $testprog;
-    my @cmd;
     if (scalar(@{$testarray}) == 2)
     {
         $testprog = $testarray->[1];
@@ -39,16 +54,8 @@ sub cleanup
     {
         $testprog = "globus-connect-multiuser-cleanup";
     }
-    $cmd[0] = $testprog;
-    $cmd[1] = "-c";
-    $cmd[2] = $testarray->[0];
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my @cmd = ($testprog, "-c", $testarray->[0]);
+    my $rc = diagsystem(@cmd);
 
     # Just to make sure that doesn't fail
     foreach my $f (</etc/gridftp.d/globus-connect*>)
@@ -68,8 +75,6 @@ sub run_test
 {
     my $testarray = $_[0];
     my $testprog;
-    my @cmd;
-    
     if (scalar(@{$testarray}) == 2)
     {
         $testprog = $testarray->[1];
@@ -79,16 +84,8 @@ sub run_test
     {
         $testprog = "globus-connect-multiuser-setup";
     }
-    $cmd[0] = $testprog;
-    $cmd[1] = "-c";
-    $cmd[2] = $testarray->[0];
-    my ($pid, $in, $out, $err);
-    $pid = open3($in, $out, $err, @cmd);
-    close($in);
-    waitpid($pid, 0);
-    my $rc = $? >> 8;
-    print STDERR join("", <$out>);
-    print STDERR join("", <$err>);
+    my @cmd = ($testprog, "-c", $testarray->[0]);
+    my $rc = diagsystem(@cmd);
 
     $rc |= cleanup(@_);
 
@@ -116,3 +113,4 @@ foreach (@tests)
 {
     run_test($_);
 }
+# vim: filetype=perl:
