@@ -1175,7 +1175,7 @@ globus_i_gsi_callback_check_revoked(
 
                 CRYPTO_w_lock(CRYPTO_LOCK_X509_STORE);
                 idx=sk_X509_OBJECT_find(x509_context->ctx->objs, &x509_object);
-                if (idx >= 0) sk_X509_OBJECT_delete(x509_context->ctx->objs, idx);
+                if (idx >= 0) X509_OBJECT_free_contents(sk_X509_OBJECT_delete(x509_context->ctx->objs, idx));
                 X509_OBJECT_free_contents(&x509_object);
                 contents_freed = 1;
                 CRYPTO_w_unlock(CRYPTO_LOCK_X509_STORE);
@@ -1202,7 +1202,7 @@ globus_i_gsi_callback_check_revoked(
                     hash = X509_issuer_name_hash(x509_context->current_cert);
 
                     crl_path = globus_common_create_string(
-                            "%s/%lu.r0", cert_dir, hash);
+                            "%s/%lx.r0", cert_dir, hash);
 
                     free(cert_dir);
                     cert_dir = NULL;
@@ -1239,6 +1239,7 @@ globus_i_gsi_callback_check_revoked(
                     fclose(crl_fp);
 
                     X509_STORE_add_crl(x509_context->ctx, new_crl);
+                    X509_CRL_free(new_crl);
                 }
 
                 crl_was_expired = GLOBUS_TRUE;

@@ -1,3 +1,9 @@
+globus-gsi-callback (4.6-1) unstable; urgency=low
+
+  * GT-426: memory leaks in globus-gsi-callback package
+
+ -- Globus Toolkit <support@globus.org>  Fri, 13 September 2013 12:22:08 -0400
+
 globus-gsi-callback (4.5-1) unstable; urgency=low
 
   * GT-354: Compatibility with automake 1.13
