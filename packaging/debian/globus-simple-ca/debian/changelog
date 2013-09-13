@@ -1,3 +1,9 @@
+globus-simple-ca (3.4-2) unstable; urgency=low
+
+  * Don't die in postinst if domain name is not qualified
+
+ -- Globus Toolkit <support@globus.org>  Fri, 13 September 2013 09:48:23 -0400
+
 globus-simple-ca (3.4-1) unstable; urgency=low
 
   * Fix test for absolute path on some versions of expr

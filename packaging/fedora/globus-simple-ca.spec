@@ -11,7 +11,7 @@
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
 Version:	3.4
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -110,7 +110,7 @@ if [ ! -f ${simplecadir}/cacert.pem ] ; then
     if [ ! -f /etc/grid-security/hostcert.pem ] && \
        [ ! -f /etc/grid-security/hostcert_request.pem ] && \
        [ ! -f /etc/grid-security/hostkey.pem ]; then
-        grid-cert-request -host `hostname -f`
+        grid-cert-request -cn `hostname -f` -host `hostname -f`
         su -s /bin/sh simpleca -c "umask 007; grid-ca-sign \
                 -in /etc/grid-security/hostcert_request.pem \
                 -out ${simplecadir}/hostcert.pem"
@@ -127,6 +127,9 @@ fi
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Fri sep 13 2013 Globus Toolkit <support@globus.org> - 3.4-4
+- Don't die in postinst if domain name is not qualified
+
 * Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 3.4-3
 - license is not a dir
 

@@ -25,7 +25,7 @@ case "$1" in
             if [ ! -f /etc/grid-security/hostcert.pem ] && \
                [ ! -f /etc/grid-security/hostcert_request.pem ] && \
                [ ! -f /etc/grid-security/hostkey.pem ]; then
-                grid-cert-request -host `hostname -f`
+                grid-cert-request -cn `hostname -f` -host `hostname -f`
                 su -s /bin/sh simpleca -c "umask 007; grid-ca-sign \
                         -in /etc/grid-security/hostcert_request.pem \
                         -out ${simplecadir}/hostcert.pem"
