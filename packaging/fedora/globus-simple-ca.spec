@@ -127,7 +127,7 @@ fi
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
-* Fri sep 13 2013 Globus Toolkit <support@globus.org> - 3.4-4
+* Fri Sep 13 2013 Globus Toolkit <support@globus.org> - 3.4-4
 - Don't die in postinst if domain name is not qualified
 
 * Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 3.4-3
