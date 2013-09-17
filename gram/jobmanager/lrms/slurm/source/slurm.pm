@@ -59,8 +59,21 @@ our (
     $softenv_dir,
     $softenv_load);
 
+
 BEGIN
 {
+    sub find_program($)
+    {
+        my $program = shift;
+        foreach my $path (split(/:/, "$ENV{PATH}:/sbin:/bin:/usr/sbin:/usr/bin"))
+        {
+            if (-x "$path/$program")
+            {
+                return "$path/$program";
+            }
+        }
+        return 'no';
+    }
     my $config = new Globus::Core::Config(
             '${sysconfdir}/globus/globus-slurm.conf');
 
@@ -74,42 +87,64 @@ BEGIN
         $scancel = 'no';
         $salloc = 'no';
         $supported_job_types = "single|multiple";
-        return;
-    }
-    $mpirun = $config->get_attribute('mpirun') || 'no';
-    if ($mpirun ne 'no' && ! -x $mpirun)
-    {
-        $mpirun = 'no';
-    }
-    # TACC utility for parallel jobs
-    $ibrun = $config->get_attribute('ibrun') || 'no';
-
-    if ($mpirun eq 'no' && $ibrun eq 'no')
-    {
-        $supported_job_types = "single|multiple";
     }
     else
     {
-        $supported_job_types = "mpi|single|multiple";
-    }
+        $mpirun = $config->get_attribute('mpirun') || 'no';
+        if ($mpirun ne 'no' && ! -x $mpirun)
+        {
+            $mpirun = 'no';
+        }
+        # TACC utility for parallel jobs
+        $ibrun = $config->get_attribute('ibrun') || 'no';
 
-    $srun = $config->get_attribute('srun') || 'no';
-    $sbatch = $config->get_attribute('sbatch') || 'no';
-    $scancel = $config->get_attribute('scancel') || 'no';
-    $scontrol = $config->get_attribute('scontrol') || 'no';
-    $salloc = $config->get_attribute('salloc') || 'no';
-    $slurm_path= $config->get_attribute('slurm_path') || 'no';
-    $mpi_types= $config->get_attribute('mpi_types') || 'no';
-    if ($mpi_types ne 'no')
-    {
-        chomp($mpi_types);
-        $mpi_types =~ s/\s+/|/g;
+        if ($mpirun eq 'no' && $ibrun eq 'no')
+        {
+            $supported_job_types = "single|multiple";
+        }
+        else
+        {
+            $supported_job_types = "mpi|single|multiple";
+        }
+
+        $srun = $config->get_attribute('srun') || 'no';
+        $sbatch = $config->get_attribute('sbatch') || 'no';
+        $scancel = $config->get_attribute('scancel') || 'no';
+        $scontrol = $config->get_attribute('scontrol') || 'no';
+        $salloc = $config->get_attribute('salloc') || 'no';
+        $slurm_path= $config->get_attribute('slurm_path') || 'no';
+        $mpi_types= $config->get_attribute('mpi_types') || 'no';
+        if ($mpi_types ne 'no')
+        {
+            chomp($mpi_types);
+            $mpi_types =~ s/\s+/|/g;
+        }
+        $openmpi_path= $config->get_attribute('openmpi_path') || 'no';
+        $mpich2_path= $config->get_attribute('mpich2_path') || 'no';
+        $softenv_dir = $config->get_attribute('softenv_dir') || '';
+        $soft_msc       = "$softenv_dir/bin/soft-msc";
+        $softenv_load   = "$softenv_dir/etc/softenv-load.sh";
     }
-    $openmpi_path= $config->get_attribute('openmpi_path') || 'no';
-    $mpich2_path= $config->get_attribute('mpich2_path') || 'no';
-    $softenv_dir = $config->get_attribute('softenv_dir') || '';
-    $soft_msc       = "$softenv_dir/bin/soft-msc";
-    $softenv_load   = "$softenv_dir/etc/softenv-load.sh";
+    if ($srun eq 'no')
+    {
+        $srun = find_program('srun');
+    }
+    if ($sbatch eq 'no')
+    {
+        $sbatch = find_program('sbatch');
+    }
+    if ($scancel eq 'no')
+    {
+        $scancel = find_program('scancel');
+    }
+    if ($scontrol eq 'no')
+    {
+        $scontrol = find_program('scontrol');
+    }
+    if ($salloc eq 'no')
+    {
+        $salloc = find_program('salloc');
+    }
 }
 
 sub job_description_class

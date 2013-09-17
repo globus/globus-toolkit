@@ -8,14 +8,14 @@
 
 Name:		globus-gram-job-manager-slurm
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
+Version:	1.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - SLURM Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/stable/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:       globus-gram-job-manager-scripts >= 5
@@ -175,5 +175,8 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Sep 17 2013 Globus Toolkit <support@globus.org> - 1.1-1
+- Search for commands in path if not in config
+
 * Mon Sep 09 2013 Globus Toolkit <support@globus.org> - 1.0-1
 - Initial packaging of SLURM LRM
