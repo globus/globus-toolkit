@@ -1,5 +1,4 @@
-(* LRM_SKIP:pbs *)
-(* LRM_SKIP:slurm *)
+(* LRM_SKIP:pbs,slurm *)
 &(executable=/bin/echo)
  (arguments=hello world)
  (count=2)
