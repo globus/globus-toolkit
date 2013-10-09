@@ -48,11 +48,11 @@ sub cleanup
     if (scalar(@{$testarray}) == 2)
     {
         $testprog = $testarray->[1];
-        $testprog = "globus-connect-multiuser-".$testarray->[1]."-cleanup";
+        $testprog = "globus-connect-server-".$testarray->[1]."-cleanup";
     }
     else
     {
-        $testprog = "globus-connect-multiuser-cleanup";
+        $testprog = "globus-connect-server-cleanup";
     }
     my @cmd = ($testprog, "-c", $testarray->[0]);
     my $rc = diagsystem(@cmd);
@@ -66,7 +66,7 @@ sub cleanup
     {
         unlink($f);
     }
-    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    File::Path::rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
     return $rc;
 }
@@ -78,11 +78,11 @@ sub run_test
     if (scalar(@{$testarray}) == 2)
     {
         $testprog = $testarray->[1];
-        $testprog = "globus-connect-multiuser-".$testarray->[1]."-setup";
+        $testprog = "globus-connect-server-".$testarray->[1]."-setup";
     }
     else
     {
-        $testprog = "globus-connect-multiuser-setup";
+        $testprog = "globus-connect-server-setup";
     }
     my @cmd = ($testprog, "-c", $testarray->[0]);
     my $rc = diagsystem(@cmd);

@@ -1,0 +1,28 @@
+#! /bin/sh
+
+#DEBHELPER#
+
+# If we're upgrading from a system using the beta package name
+# "globus-connect-multiuser", move things over to the new names
+if [ -d /var/lib/globus-connect-multiuser ] && \
+   [ ! -d /var/lib/globus-connect-server ]; then
+    mv /var/lib/globus-connect-multiuser \
+       /var/lib/globus-connect-server 
+
+    for oldlink in /etc/gridftp.d/globus-connect-multiuser* \
+                   /etc/myproxy.d/globus-connect-multiuser*; do
+        if [ -L "$oldlink" ]; then
+            newlink="$(echo "$oldlink" | sed -e s/multiuser/server/)"
+            oldfile="$(readlink "$oldlink" | sed -e s/multiuser/server/)"
+            newfile="$(echo "$oldfile" | sed -e s/multiuser/server/g)"
+            sed -e "s/multiuser/server/g" < "$oldfile" > "$newfile"
+            rm -f "$oldfile" "$oldlink"
+            ln -s "$newfile" "$newlink"
+        fi
+    done
+    for oldfile in $(find /var/lib/globus-connect-server -type f); do
+        if grep -q "multiuser" "$oldfile"; then
+            sed -i.bak -e s/multiuser/server/g "$oldfile"
+        fi
+    done
+fi

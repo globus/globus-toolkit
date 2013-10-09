@@ -58,7 +58,7 @@ sub setup_server($%)
         OAuthLogo => "",
         @_
     );
-    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file);
+    my @cmd = ("globus-connect-server-setup", "-c", $config_file);
 
     $ENV{ENDPOINT_NAME} = $args{EndpointName};
     $ENV{OAUTH_SERVER} = $args{OAuthServer};
@@ -107,7 +107,7 @@ sub logo_match($)
 sub cleanup($)
 {
     my $endpoint_name = shift;
-    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
+    my @cmd = ("globus-connect-server-cleanup", "-c", $config_file, "-d");
     my $rc = diagsystem(@cmd);
 
     return $rc == 0;
@@ -124,7 +124,7 @@ sub force_cleanup()
     {
         unlink($f);
     }
-    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    File::Path::rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
 }
 

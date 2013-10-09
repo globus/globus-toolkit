@@ -44,7 +44,7 @@ clean: unpatch-template
 	dh clean
 	python setup.py clean -a
 	cd transferapiclient; python setup.py clean -a; 
-	rm -rf debian/globus-connect-multiuser.install
+	rm -rf debian/globus-connect-server.install
 	rm -f build-stamp
 
 build: build-stamp
@@ -57,22 +57,22 @@ build-stamp: patch-template
 
 install-stamp: build-stamp
 	python setup.py install --install-layout=deb --root=$(INSTALLDIR) --no-compile
-	cd transferapiclient; python setup.py install --install-layout=deb --install-lib=$(libdir)/globus-connect-multiuser --root=$(INSTALLDIR) --no-compile
-	find debian/tmp -type f -name 'globus-connect-multiuser-setup*' -o -name 'globus-connect-multiuser-cleanup*'| while read filename; do \
+	cd transferapiclient; python setup.py install --install-layout=deb --install-lib=$(libdir)/globus-connect-server --root=$(INSTALLDIR) --no-compile
+	find debian/tmp -type f -name 'globus-connect-server-setup*' -o -name 'globus-connect-server-cleanup*'| while read filename; do \
 		echo "$$filename" |sed -e s"|debian/tmp/||"; \
-	done > debian/globus-connect-multiuser.install
-	find debian/tmp -type f -name 'globus-connect-multiuser-io-*' | while read filename; do \
+	done > debian/globus-connect-server.install
+	find debian/tmp -type f -name 'globus-connect-server-io-*' | while read filename; do \
 		echo "$$filename" |sed -e s"|debian/tmp/||"; \
-	done > debian/globus-connect-multiuser-io.install
-	find debian/tmp -type f -name 'globus-connect-multiuser-id-*' | while read filename; do \
+	done > debian/globus-connect-server-io.install
+	find debian/tmp -type f -name 'globus-connect-server-id-*' | while read filename; do \
 		echo "$$filename" |sed -e s"|debian/tmp/||"; \
-	done > debian/globus-connect-multiuser-id.install
-	find debian/tmp -type f -name 'globus-connect-multiuser-web-*' | while read filename; do \
+	done > debian/globus-connect-server-id.install
+	find debian/tmp -type f -name 'globus-connect-server-web-*' | while read filename; do \
 		echo "$$filename" |sed -e s"|debian/tmp/||"; \
-	done > debian/globus-connect-multiuser-web.install
-	find debian/tmp -type f -a -not -name 'globus-connect-multiuser-*up*' | while read filename; do \
+	done > debian/globus-connect-server-web.install
+	find debian/tmp -type f -a -not -name 'globus-connect-server-*up*' | while read filename; do \
 		echo "$$filename" |sed -e s"|debian/tmp/||"; \
-	done > debian/globus-connect-multiuser-common.install
+	done > debian/globus-connect-server-common.install
 	dh_install
 
 install: install-stamp

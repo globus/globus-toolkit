@@ -48,809 +48,809 @@ sub diagsystem(@)
 
 my @tests=(
     {
-        NAME => "globus-connect-multiuser-setup-c",
+        NAME => "globus-connect-server-setup-c",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-setup",
+            [ "globus-connect-server-setup",
                 "-c", "command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-setup-clong",
+        NAME => "globus-connect-server-setup-clong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-setup",
+            [ "globus-connect-server-setup",
                 "--config-file=command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-setup-v",
+        NAME => "globus-connect-server-setup-v",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-setup",
+            [ "globus-connect-server-setup",
                 "-c", "command-line-options.conf",
                 "-v"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-setup-vlong",
+        NAME => "globus-connect-server-setup-vlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-setup",
+            [ "globus-connect-server-setup",
                 "-c", "command-line-options.conf",
                 "--verbose"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-setup-r",
+        NAME => "globus-connect-server-setup-r",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-setup",
+            [ "globus-connect-server-setup",
                 "-c", "command-line-options.conf",
                 "-r", $tempdir
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-setup-rlong",
+        NAME => "globus-connect-server-setup-rlong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-setup",
+            [ "globus-connect-server-setup",
                 "-c", "command-line-options.conf",
                 "--root=$tempdir"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-setup-s",
+        NAME => "globus-connect-server-setup-s",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-setup",
+            [ "globus-connect-server-setup",
                 "-c", "command-line-options.conf",
                 "-s"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-setup-slong",
+        NAME => "globus-connect-server-setup-slong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-setup",
+            [ "globus-connect-server-setup",
                 "-c", "command-line-options.conf",
                 "--reset-endpoint"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-setup-h",
+        NAME => "globus-connect-server-setup-h",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-setup",
+            [ "globus-connect-server-setup",
                 "-h"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-setup-hlong",
+        NAME => "globus-connect-server-setup-hlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-setup",
+            [ "globus-connect-server-setup",
                 "--help"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-setup-cbad",
+        NAME => "globus-connect-server-setup-cbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-setup",
+            "globus-connect-server-setup",
             "-c", "command-line-options-nonexistant.conf"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-setup-rbad",
+        NAME => "globus-connect-server-setup-rbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-setup",
+            "globus-connect-server-setup",
             "-r", "/etc/group"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-setup-extrabad",
+        NAME => "globus-connect-server-setup-extrabad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-setup",
+            "globus-connect-server-setup",
             "bogus-additional-arg"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-c",
+        NAME => "globus-connect-server-cleanup-c",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-cleanup",
+            [ "globus-connect-server-cleanup",
                 "-c", "command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-clong",
+        NAME => "globus-connect-server-cleanup-clong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-cleanup",
+            [ "globus-connect-server-cleanup",
                 "--config-file=command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-v",
+        NAME => "globus-connect-server-cleanup-v",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-cleanup",
+            [ "globus-connect-server-cleanup",
                 "-c", "command-line-options.conf",
                 "-v"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-vlong",
+        NAME => "globus-connect-server-cleanup-vlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-cleanup",
+            [ "globus-connect-server-cleanup",
                 "-c", "command-line-options.conf",
                 "--verbose"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-r",
+        NAME => "globus-connect-server-cleanup-r",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-cleanup",
+            [ "globus-connect-server-cleanup",
                 "-c", "command-line-options.conf",
                 "-r", $tempdir
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-rlong",
+        NAME => "globus-connect-server-cleanup-rlong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-cleanup",
+            [ "globus-connect-server-cleanup",
                 "-c", "command-line-options.conf",
                 "--root=$tempdir"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-d",
+        NAME => "globus-connect-server-cleanup-d",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-cleanup",
+            [ "globus-connect-server-cleanup",
                 "-c", "command-line-options.conf",
                 "-d"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-dlong",
+        NAME => "globus-connect-server-cleanup-dlong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-cleanup",
+            [ "globus-connect-server-cleanup",
                 "-c", "command-line-options.conf",
                 "--delete-endpoint"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-h",
+        NAME => "globus-connect-server-cleanup-h",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-cleanup",
+            [ "globus-connect-server-cleanup",
                 "-h"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-hlong",
+        NAME => "globus-connect-server-cleanup-hlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-cleanup",
+            [ "globus-connect-server-cleanup",
                 "--help"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-cbad",
+        NAME => "globus-connect-server-cleanup-cbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-cleanup",
+            "globus-connect-server-cleanup",
             "-c", "command-line-options-nonexistant.conf"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-rbad",
+        NAME => "globus-connect-server-cleanup-rbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-cleanup",
+            "globus-connect-server-cleanup",
             "-r", "/etc/group"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-cleanup-extrabad",
+        NAME => "globus-connect-server-cleanup-extrabad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-cleanup",
+            "globus-connect-server-cleanup",
             "bogus-additional-arg"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-id-setup-c",
+        NAME => "globus-connect-server-id-setup-c",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-id-setup",
+            [ "globus-connect-server-id-setup",
                 "-c", "command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-setup-clong",
+        NAME => "globus-connect-server-id-setup-clong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-id-setup",
+            [ "globus-connect-server-id-setup",
                 "--config-file=command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-setup-v",
+        NAME => "globus-connect-server-id-setup-v",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-id-setup",
+            [ "globus-connect-server-id-setup",
                 "-c", "command-line-options.conf",
                 "-v"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-setup-vlong",
+        NAME => "globus-connect-server-id-setup-vlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-id-setup",
+            [ "globus-connect-server-id-setup",
                 "-c", "command-line-options.conf",
                 "--verbose"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-setup-r",
+        NAME => "globus-connect-server-id-setup-r",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-id-setup",
+            [ "globus-connect-server-id-setup",
                 "-c", "command-line-options.conf",
                 "-r", $tempdir
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-setup-rlong",
+        NAME => "globus-connect-server-id-setup-rlong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-id-setup",
+            [ "globus-connect-server-id-setup",
                 "-c", "command-line-options.conf",
                 "--root=$tempdir"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-setup-h",
+        NAME => "globus-connect-server-id-setup-h",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-id-setup",
+            [ "globus-connect-server-id-setup",
                 "-h"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-setup-hlong",
+        NAME => "globus-connect-server-id-setup-hlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-id-setup",
+            [ "globus-connect-server-id-setup",
                 "--help"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-setup-cbad",
+        NAME => "globus-connect-server-id-setup-cbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-id-setup",
+            "globus-connect-server-id-setup",
             "-c", "command-line-options-nonexistant.conf"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-id-setup-rbad",
+        NAME => "globus-connect-server-id-setup-rbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-id-setup",
+            "globus-connect-server-id-setup",
             "-r", "/etc/group"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-id-setup-extrabad",
+        NAME => "globus-connect-server-id-setup-extrabad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-id-setup",
+            "globus-connect-server-id-setup",
             "bogus-additional-arg"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-id-cleanup-c",
+        NAME => "globus-connect-server-id-cleanup-c",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-id-cleanup",
+            [ "globus-connect-server-id-cleanup",
                 "-c", "command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-cleanup-clong",
+        NAME => "globus-connect-server-id-cleanup-clong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-id-cleanup",
+            [ "globus-connect-server-id-cleanup",
                 "--config-file=command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-cleanup-v",
+        NAME => "globus-connect-server-id-cleanup-v",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-id-cleanup",
+            [ "globus-connect-server-id-cleanup",
                 "-c", "command-line-options.conf",
                 "-v"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-cleanup-vlong",
+        NAME => "globus-connect-server-id-cleanup-vlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-id-cleanup",
+            [ "globus-connect-server-id-cleanup",
                 "-c", "command-line-options.conf",
                 "--verbose"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-cleanup-r",
+        NAME => "globus-connect-server-id-cleanup-r",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-id-cleanup",
+            [ "globus-connect-server-id-cleanup",
                 "-c", "command-line-options.conf",
                 "-r", $tempdir
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-cleanup-rlong",
+        NAME => "globus-connect-server-id-cleanup-rlong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-id-cleanup",
+            [ "globus-connect-server-id-cleanup",
                 "-c", "command-line-options.conf",
                 "--root=$tempdir"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-cleanup-h",
+        NAME => "globus-connect-server-id-cleanup-h",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-id-cleanup",
+            [ "globus-connect-server-id-cleanup",
                 "-h"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-cleanup-hlong",
+        NAME => "globus-connect-server-id-cleanup-hlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-id-cleanup",
+            [ "globus-connect-server-id-cleanup",
                 "--help"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-id-cleanup-cbad",
+        NAME => "globus-connect-server-id-cleanup-cbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-id-cleanup",
+            "globus-connect-server-id-cleanup",
             "-c", "command-line-options-nonexistant.conf"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-id-cleanup-rbad",
+        NAME => "globus-connect-server-id-cleanup-rbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-id-cleanup",
+            "globus-connect-server-id-cleanup",
             "-r", "/etc/group"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-id-cleanup-extrabad",
+        NAME => "globus-connect-server-id-cleanup-extrabad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-id-cleanup",
+            "globus-connect-server-id-cleanup",
             "bogus-additional-arg"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-c",
+        NAME => "globus-connect-server-io-setup-c",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-setup",
+            [ "globus-connect-server-io-setup",
                 "-c", "command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-clong",
+        NAME => "globus-connect-server-io-setup-clong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-setup",
+            [ "globus-connect-server-io-setup",
                 "--config-file=command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-v",
+        NAME => "globus-connect-server-io-setup-v",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-io-setup",
+            [ "globus-connect-server-io-setup",
                 "-c", "command-line-options.conf",
                 "-v"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-vlong",
+        NAME => "globus-connect-server-io-setup-vlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-io-setup",
+            [ "globus-connect-server-io-setup",
                 "-c", "command-line-options.conf",
                 "--verbose"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-r",
+        NAME => "globus-connect-server-io-setup-r",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-setup",
+            [ "globus-connect-server-io-setup",
                 "-c", "command-line-options.conf",
                 "-r", $tempdir
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-rlong",
+        NAME => "globus-connect-server-io-setup-rlong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-setup",
+            [ "globus-connect-server-io-setup",
                 "-c", "command-line-options.conf",
                 "--root=$tempdir"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-s",
+        NAME => "globus-connect-server-io-setup-s",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-setup",
+            [ "globus-connect-server-io-setup",
                 "-c", "command-line-options.conf",
                 "-s"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-slong",
+        NAME => "globus-connect-server-io-setup-slong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-setup",
+            [ "globus-connect-server-io-setup",
                 "-c", "command-line-options.conf",
                 "--reset-endpoint"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-h",
+        NAME => "globus-connect-server-io-setup-h",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-io-setup",
+            [ "globus-connect-server-io-setup",
                 "-h"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-hlong",
+        NAME => "globus-connect-server-io-setup-hlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-io-setup",
+            [ "globus-connect-server-io-setup",
                 "--help"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-cbad",
+        NAME => "globus-connect-server-io-setup-cbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-io-setup",
+            "globus-connect-server-io-setup",
             "-c", "command-line-options-nonexistant.conf"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-rbad",
+        NAME => "globus-connect-server-io-setup-rbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-io-setup",
+            "globus-connect-server-io-setup",
             "-r", "/etc/group"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-io-setup-extrabad",
+        NAME => "globus-connect-server-io-setup-extrabad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-io-setup",
+            "globus-connect-server-io-setup",
             "bogus-additional-arg"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-c",
+        NAME => "globus-connect-server-io-cleanup-c",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-cleanup",
+            [ "globus-connect-server-io-cleanup",
                 "-c", "command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-clong",
+        NAME => "globus-connect-server-io-cleanup-clong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-cleanup",
+            [ "globus-connect-server-io-cleanup",
                 "--config-file=command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-v",
+        NAME => "globus-connect-server-io-cleanup-v",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-io-cleanup",
+            [ "globus-connect-server-io-cleanup",
                 "-c", "command-line-options.conf",
                 "-v"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-vlong",
+        NAME => "globus-connect-server-io-cleanup-vlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-io-cleanup",
+            [ "globus-connect-server-io-cleanup",
                 "-c", "command-line-options.conf",
                 "--verbose"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-r",
+        NAME => "globus-connect-server-io-cleanup-r",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-cleanup",
+            [ "globus-connect-server-io-cleanup",
                 "-c", "command-line-options.conf",
                 "-r", $tempdir
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-rlong",
+        NAME => "globus-connect-server-io-cleanup-rlong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-cleanup",
+            [ "globus-connect-server-io-cleanup",
                 "-c", "command-line-options.conf",
                 "--root=$tempdir"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-d",
+        NAME => "globus-connect-server-io-cleanup-d",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-cleanup",
+            [ "globus-connect-server-io-cleanup",
                 "-c", "command-line-options.conf",
                 "-d"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-dlong",
+        NAME => "globus-connect-server-io-cleanup-dlong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-io-cleanup",
+            [ "globus-connect-server-io-cleanup",
                 "-c", "command-line-options.conf",
                 "--delete-endpoint"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-h",
+        NAME => "globus-connect-server-io-cleanup-h",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-io-cleanup",
+            [ "globus-connect-server-io-cleanup",
                 "-h"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-hlong",
+        NAME => "globus-connect-server-io-cleanup-hlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-io-cleanup",
+            [ "globus-connect-server-io-cleanup",
                 "--help"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-cbad",
+        NAME => "globus-connect-server-io-cleanup-cbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-io-cleanup",
+            "globus-connect-server-io-cleanup",
             "-c", "command-line-options-nonexistant.conf"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-rbad",
+        NAME => "globus-connect-server-io-cleanup-rbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-io-cleanup",
+            "globus-connect-server-io-cleanup",
             "-r", "/etc/group"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-io-cleanup-extrabad",
+        NAME => "globus-connect-server-io-cleanup-extrabad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-io-cleanup",
+            "globus-connect-server-io-cleanup",
             "bogus-additional-arg"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-c",
+        NAME => "globus-connect-server-web-setup-c",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-setup",
+            [ "globus-connect-server-web-setup",
                 "-c", "command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-clong",
+        NAME => "globus-connect-server-web-setup-clong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-setup",
+            [ "globus-connect-server-web-setup",
                 "--config-file=command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-v",
+        NAME => "globus-connect-server-web-setup-v",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-web-setup",
+            [ "globus-connect-server-web-setup",
                 "-c", "command-line-options.conf",
                 "-v"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-vlong",
+        NAME => "globus-connect-server-web-setup-vlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-web-setup",
+            [ "globus-connect-server-web-setup",
                 "-c", "command-line-options.conf",
                 "--verbose"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-r",
+        NAME => "globus-connect-server-web-setup-r",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-setup",
+            [ "globus-connect-server-web-setup",
                 "-c", "command-line-options.conf",
                 "-r", $tempdir
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-rlong",
+        NAME => "globus-connect-server-web-setup-rlong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-setup",
+            [ "globus-connect-server-web-setup",
                 "-c", "command-line-options.conf",
                 "--root=$tempdir"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-h",
+        NAME => "globus-connect-server-web-setup-h",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-web-setup",
+            [ "globus-connect-server-web-setup",
                 "-h"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-hlong",
+        NAME => "globus-connect-server-web-setup-hlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-web-setup",
+            [ "globus-connect-server-web-setup",
                 "--help"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-cbad",
+        NAME => "globus-connect-server-web-setup-cbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-web-setup",
+            "globus-connect-server-web-setup",
             "-c", "command-line-options-nonexistant.conf"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-rbad",
+        NAME => "globus-connect-server-web-setup-rbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-web-setup",
+            "globus-connect-server-web-setup",
             "-r", "/etc/group"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-web-setup-extrabad",
+        NAME => "globus-connect-server-web-setup-extrabad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-web-setup",
+            "globus-connect-server-web-setup",
             "bogus-additional-arg"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-web-cleanup-c",
+        NAME => "globus-connect-server-web-cleanup-c",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-cleanup",
+            [ "globus-connect-server-web-cleanup",
                 "-c", "command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-cleanup-clong",
+        NAME => "globus-connect-server-web-cleanup-clong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-cleanup",
+            [ "globus-connect-server-web-cleanup",
                 "--config-file=command-line-options.conf"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-cleanup-v",
+        NAME => "globus-connect-server-web-cleanup-v",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-web-cleanup",
+            [ "globus-connect-server-web-cleanup",
                 "-c", "command-line-options.conf",
                 "-v"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-cleanup-vlong",
+        NAME => "globus-connect-server-web-cleanup-vlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-web-cleanup",
+            [ "globus-connect-server-web-cleanup",
                 "-c", "command-line-options.conf",
                 "--verbose"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-cleanup-r",
+        NAME => "globus-connect-server-web-cleanup-r",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-cleanup",
+            [ "globus-connect-server-web-cleanup",
                 "-c", "command-line-options.conf",
                 "-r", $tempdir
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-cleanup-rlong",
+        NAME => "globus-connect-server-web-cleanup-rlong",
         COMMAND_LINE => 
-            [ "globus-connect-multiuser-web-cleanup",
+            [ "globus-connect-server-web-cleanup",
                 "-c", "command-line-options.conf",
                 "--root=$tempdir"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-cleanup-h",
+        NAME => "globus-connect-server-web-cleanup-h",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-web-cleanup",
+            [ "globus-connect-server-web-cleanup",
                 "-h"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-cleanup-hlong",
+        NAME => "globus-connect-server-web-cleanup-hlong",
         COMMAND_LINE =>
-            [ "globus-connect-multiuser-web-cleanup",
+            [ "globus-connect-server-web-cleanup",
                 "--help"
             ],
         RESULT => 1
     },
     {
-        NAME => "globus-connect-multiuser-web-cleanup-cbad",
+        NAME => "globus-connect-server-web-cleanup-cbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-web-cleanup",
+            "globus-connect-server-web-cleanup",
             "-c", "command-line-options-nonexistant.conf"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-web-cleanup-rbad",
+        NAME => "globus-connect-server-web-cleanup-rbad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-web-cleanup",
+            "globus-connect-server-web-cleanup",
             "-r", "/etc/group"
         ],
         RESULT => 0
     },
     {
-        NAME => "globus-connect-multiuser-web-cleanup-extrabad",
+        NAME => "globus-connect-server-web-cleanup-extrabad",
         COMMAND_LINE => [
-            "globus-connect-multiuser-web-cleanup",
+            "globus-connect-server-web-cleanup",
             "bogus-additional-arg"
         ],
         RESULT => 0

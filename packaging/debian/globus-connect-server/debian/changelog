@@ -1,3 +1,9 @@
+globus-connect-server (2.0.61-1) unstable; urgency=low
+
+  * Rename to globus-connect-server
+
+ -- Globus Toolkit <support@globus.org>  Tue, 08 October 2013 15:32:22 -0400
+
 globus-connect-multiuser (2.0.60-1) unstable; urgency=low
 
   * KOA-2743: CILogin Reference in globus-connect-multiuser.conf is incorrect

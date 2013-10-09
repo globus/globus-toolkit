@@ -43,7 +43,7 @@ sub diagsystem(@)
 
 sub setup_id_server()
 {
-    my @cmd = ("globus-connect-multiuser-id-setup", "-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-id-setup", "-c", $config_file, "-v");
     my $rc = diagsystem(@cmd);
 
     return $rc == 0;
@@ -51,7 +51,7 @@ sub setup_id_server()
 
 sub setup_web_server()
 {
-    my @cmd = ("globus-connect-multiuser-web-setup", "-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-web-setup", "-c", $config_file, "-v");
     my $rc = diagsystem(@cmd);
 
     return $rc == 0;
@@ -59,7 +59,7 @@ sub setup_web_server()
 
 sub setup_io_server()
 {
-    my @cmd = ("globus-connect-multiuser-io-setup", "-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-io-setup", "-c", $config_file, "-v");
     my $rc = diagsystem(@cmd);
 
     return $rc == 0;
@@ -75,21 +75,21 @@ sub is_gridftp_running()
 
 sub id_cleanup()
 {
-    my @cmd = ("globus-connect-multiuser-id-cleanup", "-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-id-cleanup", "-c", $config_file, "-v");
     my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
 
 sub web_cleanup()
 {
-    my @cmd = ("globus-connect-multiuser-web-cleanup", "-c", $config_file,"-v");
+    my @cmd = ("globus-connect-server-web-cleanup", "-c", $config_file,"-v");
     my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
 
 sub io_cleanup()
 {
-    my @cmd = ("globus-connect-multiuser-io-cleanup", "-c", $config_file,
+    my @cmd = ("globus-connect-server-io-cleanup", "-c", $config_file,
             "-d", "-v");
     my $rc = diagsystem(@cmd);
     return $rc == 0;
@@ -106,7 +106,7 @@ sub force_cleanup()
     {
         unlink($f);
     }
-    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    File::Path::rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
 }
 

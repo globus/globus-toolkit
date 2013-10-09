@@ -61,7 +61,7 @@ sub setup_server($%)
         CILogonIdentityProvider => "",
         @_
     );
-    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file);
+    my @cmd = ("globus-connect-server-setup", "-c", $config_file);
 
     $ENV{ENDPOINT_NAME} = $args{Name};
     $ENV{FETCH_CREDENTIAL_FROM_RELAY} = $args{FetchCredentialFromRelay};
@@ -163,7 +163,7 @@ sub gridftp_environment_vars()
     my $fh;
     my $res = {};
 
-    foreach $conffile (</etc/gridftp.d/globus-connect-multiuser*>)
+    foreach $conffile (</etc/gridftp.d/globus-connect-server*>)
     {
         open($fh, "<$conffile") || next;
 
@@ -231,7 +231,7 @@ sub endpoint_uses_cilogon($)
 sub cleanup($)
 {
     my $endpoint_name = shift;
-    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
+    my @cmd = ("globus-connect-server-cleanup", "-c", $config_file, "-d");
 
     $ENV{ENDPOINT_NAME} = $endpoint_name;
     $ENV{ENDPOINT_PUBLIC} = "False";
@@ -253,7 +253,7 @@ sub force_cleanup()
     {
         unlink($f);
     }
-    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    File::Path::rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
 }
 

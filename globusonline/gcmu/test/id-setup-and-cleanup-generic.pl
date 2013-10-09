@@ -17,8 +17,8 @@
 
 # test-id-generic.pl
 # This performs the same test steps as test-id.pl, but uses the generic
-# globus-connect-multiuser-{setup,cleanup} commands instead of the
-# globus-connect-multiuser-id-{setup.cleanup} commands
+# globus-connect-server-{setup,cleanup} commands instead of the
+# globus-connect-server-id-{setup.cleanup} commands
 
 BEGIN
 {
@@ -53,7 +53,7 @@ sub diagsystem(@)
 
 sub setup_id_server()
 {
-    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-setup", "-c", $config_file, "-v");
     my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
@@ -94,7 +94,7 @@ sub fetch_and_compare_trust_roots()
     $rc |= system("myproxy-get-trustroots -b -s localhost");
 
     @cmd = ("openssl", "x509", "-hash", "-in",
-        "/var/lib/globus-connect-multiuser/myproxy-ca/cacert.pem");
+        "/var/lib/globus-connect-server/myproxy-ca/cacert.pem");
     if (! open($fh, "-|", @cmd))
     {
         $rc |= 2;
@@ -116,7 +116,7 @@ sub fetch_and_compare_trust_roots()
 
 sub cleanup()
 {
-    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d",
+    my @cmd = ("globus-connect-server-cleanup", "-c", $config_file, "-d",
             "-v");
 
     my $rc = diagsystem(@cmd);
@@ -134,7 +134,7 @@ sub force_cleanup()
     {
         unlink($f);
     }
-    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    File::Path::rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
     return 0;
 }
