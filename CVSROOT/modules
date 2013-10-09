@@ -148,3 +148,6 @@ globus &globus_packaging &packaging/source-trees/xio/src &packaging/source-trees
 
 globusonline/globus-connect-multiuser globusonline/gcmu
 globusonline/globus-connect-multiuser/source globusonline/gcmu/source
+globusonline/globus-connect-server globusonline/gcmu
+globusonline/globus-connect-server/test globusonline/gcmu/test
+globusonline/globus-connect-server/source globusonline/gcmu/source
