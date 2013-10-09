@@ -51,7 +51,7 @@ sub diagsystem(@)
 
 sub cleanup
 {
-    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d",
+    my @cmd = ("globus-connect-server-cleanup", "-c", $config_file, "-d",
             "-v");
     my $rc = diagsystem(@cmd);
 
@@ -64,7 +64,7 @@ sub cleanup
     {
         unlink($f);
     }
-    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    File::Path::rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
     return $rc==0;
 }
@@ -73,7 +73,7 @@ sub gcmu_setup($$)
 {
     my $endpoint = shift;
     my $identity_method = shift;
-    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-setup", "-c", $config_file, "-v");
     
     $ENV{ENDPOINT_NAME} = $endpoint;
     $ENV{SECURITY_IDENTITY_METHOD} = $identity_method;

@@ -13,26 +13,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Configure a MyProxy server for use with Globus Online
+"""Configure a MyProxy OAuth server to work with Globus Online
 
-globus-connect-multiuser-id-setup [-h|--help]
-globus-connect-multiuser-id-setup {-c FILENAME|--config-file=FILENAME}
-                                  {-v|--verbose}
-                                  {-r PATH|--root=PATH}
+globus-connect-server-web-setup [-h|--help]
+globus-connect-server-web-setup {-c FILENAME|--config-file=FILENAME}
+                                   {-v|--verbose}
+                                   {-r PATH|--root=PATH}
 
-The globus-connect-multiuser-id-setup command generates MyProxy service
-configuration based on the globus-connect-multiuser configuration file, and
-starts the MyProxy server. Depending on features enabled in the configuration
-file, this process will include fetching a service credential from the Globus
-Connect CA, writing MyProxy configuration files in the /etc/myproxy.d/
-directory, restarting the MyProxy server, and enabling the MyProxy server to
-start at boot.
+The globus-connect-server-web-setup command generates a web configuration to
+run the MyProxy OAuth service in an apache web server based on the
+globus-connect-server configuration file, restarts the web server, and
+registers the GlobusOnline as a client to the MyProxy server.
 
 If the -r PATH or --root=PATH command-line option is used,
-globus-connect-multiuser-id-setup will write its MyProxy configuration and
-certificates in a subdirectory rooted at PATH instead of /. This means, for
-example, that globus-connect-multiuser-id-setup writes MyProxy configuration
-files in PATH/etc/gridftp.d.
+globus-connect-server-web-setup will write its web configuration in a
+subdirectory rooted at PATH instead of /. This means, for example, that
+globus-connect-server-web-setup writes apache configuration files in
+PATH/etc/apache2 or PATH/etc/httpd/.
 
 The following options are available:
 
@@ -40,17 +37,17 @@ The following options are available:
                                 Display help information
 -c FILENAME, --config-file=FILENAME
                                 Use configuration file FILENAME instead of
-                                /etc/globus-connect-multiuser.conf
--v, --verbose	                Print more information about tasks
--r PATH, --root=PATH	        Add PATH as the directory prefix for the
+                                /etc/globus-connect-server.conf
+-v, --verbose                   Print more information about tasks
+-r PATH, --root=PATH            Add PATH as the directory prefix for the
                                 configuration files that
-                                globus-connect-multiuser-id-setup writes
+                                globus-connect-server-web-setup writes
 """
 
-short_usage = """globus-connect-multiuser-id-setup [-h|--help]
-globus-connect-multiuser-id-setup {-c FILENAME|--config-file=FILENAME}
-                                  {-v|--verbose}
-                                  {-r PATH|--root=PATH}
+short_usage = """globus-connect-server-web-setup [-h|--help]
+globus-connect-server-web-setup {-c FILENAME|--config-file=FILENAME}
+                                   {-v|--verbose}
+                                   {-r PATH|--root=PATH}
 """
 
 import getopt
@@ -62,11 +59,11 @@ import sys
 import time
 import traceback
 
-from globusonline.transfer.api_client.goauth import get_access_token, GOCredentialsError
+from globusonline.transfer.api_client.goauth import get_access_token
 from globusonline.transfer.api_client import TransferAPIClient
-from globus.connect.multiuser import get_api
-from globus.connect.multiuser.id import ID
-from globus.connect.multiuser.configfile import ConfigFile
+from globus.connect.server import get_api
+from globus.connect.server.web import Web
+from globus.connect.server.configfile import ConfigFile
 
 def usage(short=False, outstream=sys.stdout):
     if short:
@@ -79,6 +76,7 @@ if __name__ == "__main__":
     api = None
     force = False
     debug = False
+    reset = False
     root = "/"
     try:
         opts, arg = getopt.getopt(sys.argv[1:], "hc:vr:",
@@ -108,20 +106,21 @@ if __name__ == "__main__":
 
     try:
         os.umask(022)
+        socket.setdefaulttimeout(300)
+
         conf = ConfigFile(config_file=conf_filename, root=root)
         api = get_api(conf)
-        id = ID(config_obj=conf, api=api, debug=debug)
-        id.setup()
-        sys.exit(id.errorcount)
+        web = Web(config_obj=conf, api=api, password=api.password, debug=debug)
+        web.setup()
+        sys.exit(web.errorcount)
     except KeyboardInterrupt, e:
-        print "Aborting.."
-        sys.exit(1);
+        print "Aborting..."
+        sys.exit(1)
     except Exception, e:
         if debug:
             traceback.print_exc(file=sys.stderr)
         else:
             print str(e)
         sys.exit(1)
-
 
 # vim: filetype=python:

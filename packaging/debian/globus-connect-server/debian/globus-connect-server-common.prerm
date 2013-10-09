@@ -1,0 +1,3 @@
+#! /bin/sh
+#DEBHELPER#
+rm -rf /usr/share/globus-connect-server/globusonline/transfer/

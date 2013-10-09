@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import copy
-import globus.connect.multiuser as gcmu
+import globus.connect.server as gcmu
 import os
 import ConfigParser
 
@@ -98,8 +98,8 @@ class ConfigFile(ConfigParser.ConfigParser):
     SSL_SERVER_CERT = "SSLServerCert"
     SSL_SERVER_KEY = "SSLServerKey"
 
-    DEFAULT_CONFIG_FILE = os.path.join("etc","globus-connect-multiuser.conf")
-    DEFAULT_DIR = os.path.join("var","lib", "globus-connect-multiuser")
+    DEFAULT_CONFIG_FILE = os.path.join("etc","globus-connect-server.conf")
+    DEFAULT_DIR = os.path.join("var","lib", "globus-connect-server")
     DEFAULT_SECURITY_DIR = os.path.join(DEFAULT_DIR, "grid-security")
     DEFAULT_CADIR = os.path.join(DEFAULT_SECURITY_DIR, "certificates")
     DEFAULT_GRIDMAP = os.path.join(DEFAULT_SECURITY_DIR, "grid-mapfile")

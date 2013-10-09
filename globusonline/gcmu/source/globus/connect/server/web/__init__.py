@@ -26,7 +26,7 @@ import sys
 import uuid
 
 import globus.connect.security as security
-import globus.connect.multiuser as gcmu
+import globus.connect.server as gcmu
 
 from subprocess import Popen, PIPE
 from globusonline.transfer.api_client import TransferAPIClient
@@ -40,11 +40,11 @@ class Web(gcmu.GCMU):
         super(Web, self).__init__(**kwargs)
         self.password = kwargs.get("password")
         self.enabled_mod_ssl = \
-            "/var/lib/globus-connect-multiuser/enabled_mod_ssl"
+            "/var/lib/globus-connect-server/enabled_mod_ssl"
         self.enabled_mod_wsgi = \
-            "/var/lib/globus-connect-multiuser/enabled_mod_wsgi"
+            "/var/lib/globus-connect-server/enabled_mod_wsgi"
         self.enabled_default_ssl_site = \
-            "/var/lib/globus-connect-multiuser/enabled_default_ssl_site"
+            "/var/lib/globus-connect-server/enabled_default_ssl_site"
         (distname, distver, distid) = platform.dist()
 
         if distname in [ 'Ubuntu', 'debian' ]:

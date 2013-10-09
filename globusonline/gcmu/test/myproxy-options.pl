@@ -57,7 +57,7 @@ sub setup_server($%)
         MyProxyConfigFile => "",
         @_
     );
-    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file);
+    my @cmd = ("globus-connect-server-setup", "-c", $config_file);
 
     $ENV{ENDPOINT_NAME} = $args{EndpointName};
     $ENV{MYPROXY_SERVER} = $args{MyProxyServer};
@@ -82,7 +82,7 @@ sub endpoint_myproxy_match($$)
 sub myproxy_setup_match($$)
 {
     my ($var, $val) = @_;
-    my $config_file = "/var/lib/globus-connect-multiuser/myproxy-server.conf";
+    my $config_file = "/var/lib/globus-connect-server/myproxy-server.conf";
     my $fh;
 
     open ($fh, "<$config_file") || return undef;
@@ -152,7 +152,7 @@ sub myproxy_config_file_path_match($)
 sub cleanup($)
 {
     my $endpoint_name = shift;
-    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
+    my @cmd = ("globus-connect-server-cleanup", "-c", $config_file, "-d");
     my $rc = diagsystem(@cmd);
 
     return $rc == 0;
@@ -169,7 +169,7 @@ sub force_cleanup()
     {
         unlink($f);
     }
-    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    File::Path::rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
 }
 

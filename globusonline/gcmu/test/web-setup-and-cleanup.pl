@@ -51,7 +51,7 @@ sub diagsystem(@)
 
 sub setup_id_server()
 {
-    my @cmd = ("globus-connect-multiuser-id-setup", "-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-id-setup", "-c", $config_file, "-v");
     my $rc = diagsystem(@cmd);
 
     return $rc == 0;
@@ -59,7 +59,7 @@ sub setup_id_server()
 
 sub setup_web_server()
 {
-    my @cmd = ("globus-connect-multiuser-web-setup", "-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-web-setup", "-c", $config_file, "-v");
     my $rc = diagsystem(@cmd);
 
     return $rc == 0;
@@ -78,7 +78,7 @@ sub contact_oauth_server($)
 
 sub id_cleanup()
 {
-    my @cmd = ("globus-connect-multiuser-id-cleanup", "-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-id-cleanup", "-c", $config_file, "-v");
     my $rc = diagsystem(@cmd);
 
     return $rc == 0;
@@ -86,7 +86,7 @@ sub id_cleanup()
 
 sub web_cleanup()
 {
-    my @cmd = ("globus-connect-multiuser-web-cleanup","-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-web-cleanup","-c", $config_file, "-v");
     my $rc = diagsystem(@cmd);
 
     return $rc == 0;
@@ -103,7 +103,7 @@ sub force_cleanup()
     {
         unlink($f);
     }
-    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    File::Path::rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
 }
 

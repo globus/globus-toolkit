@@ -15,14 +15,14 @@
 # limitations under the License.
 """Configure a GridFTP server and registers it as a Globus Online endpoint
 
-globus-connect-multiuser-io-setup [-h|--help]
-globus-connect-multiuser-io-setup {-c FILENAME|--config-file=FILENAME}
+globus-connect-server-io-setup [-h|--help]
+globus-connect-server-io-setup {-c FILENAME|--config-file=FILENAME}
                                   {-v|--verbose}
                                   {-r PATH|--root=PATH}
                                   {-s|--reset-endpoint}
 
-The globus-connect-multiuser-io-setup command generates GridFTP service
-configuration based on the globus-connect-multiuser configuration file, starts
+The globus-connect-server-io-setup command generates GridFTP service
+configuration based on the globus-connect-server configuration file, starts
 the GridFTP server, and registers it as a Globus Online endpoint. Depending on
 features enabled in the configuration file, this process will include fetching
 a service credential from the Globus Connect CA, writing GridFTP configuration
@@ -32,15 +32,15 @@ GridFTP server to start at boot, and creating or modifying an endpoint to point
 to this server.
 
 If the -s or --reset-endpoint command-line option is used,
-globus-connect-multiuser-io-setup removes all other GridFTP servers associated
+globus-connect-server-io-setup removes all other GridFTP servers associated
 with the endpoint before adding this server, if the endpoint already exists.
-Otherwise, globus-connect-multiuser-io-setup adds this server to the list of
+Otherwise, globus-connect-server-io-setup adds this server to the list of
 servers associated with the endpoint.
 
 If the -r PATH or --root=PATH command-line option is used,
-globus-connect-multiuser-io-setup will write its GridFTP configuration and
+globus-connect-server-io-setup will write its GridFTP configuration and
 certificates in a subdirectory rooted at PATH instead of /. This means, for
-example, that globus-connect-multiuser-io-setup writes GridFTP configuration
+example, that globus-connect-server-io-setup writes GridFTP configuration
 files in PATH/etc/gridftp.d.
 
 The following options are available:
@@ -49,17 +49,17 @@ The following options are available:
                                 Display help information
 -c FILENAME, --config-file=FILENAME
                                 Use configuration file FILENAME instead of
-                                /etc/globus-connect-multiuser.conf
+                                /etc/globus-connect-server.conf
 -v, --verbose                   Print more information about tasks
 -r PATH, --root=PATH            Add PATH as the directory prefix for the
                                 configuration files that
-                                globus-connect-multiuser-io-setup writes
+                                globus-connect-server-io-setup writes
 -s, --reset-endpoint            Remove all other GridFTP servers from this
                                 endpoint before adding this one
 """
 
-short_usage = """globus-connect-multiuser-io-setup [-h|--help]
-globus-connect-multiuser-io-setup {-c FILENAME|--config-file=FILENAME}
+short_usage = """globus-connect-server-io-setup [-h|--help]
+globus-connect-server-io-setup {-c FILENAME|--config-file=FILENAME}
                                   {-v|--verbose}
                                   {-r PATH|--root=PATH}
                                   {-s|--reset-endpoint}
@@ -74,11 +74,11 @@ import sys
 import time
 import traceback
 
-from globus.connect.multiuser import get_api
+from globus.connect.server import get_api
 from globusonline.transfer.api_client.goauth import get_access_token, GOCredentialsError
 from globusonline.transfer.api_client import TransferAPIClient
-from globus.connect.multiuser.io import IO
-from globus.connect.multiuser.configfile import ConfigFile
+from globus.connect.server.io import IO
+from globus.connect.server.configfile import ConfigFile
 
 def usage(short=False, outstream=sys.stdout):
     if short:

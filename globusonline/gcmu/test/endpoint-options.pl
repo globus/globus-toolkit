@@ -47,7 +47,7 @@ sub diagsystem(@)
 sub setup_server($$$)
 {
     my ($endpoint_name, $endpoint_public, $default_dir) = @_;
-    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file);
+    my @cmd = ("globus-connect-server-setup", "-c", $config_file);
 
     $ENV{ENDPOINT_NAME} = $endpoint_name;
     $ENV{ENDPOINT_PUBLIC} = $endpoint_public;
@@ -80,7 +80,7 @@ sub is_default_dir($$)
 sub cleanup($)
 {
     my $endpoint_name = shift;
-    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
+    my @cmd = ("globus-connect-server-cleanup", "-c", $config_file, "-d");
 
     $ENV{ENDPOINT_NAME} = $endpoint_name;
     $ENV{ENDPOINT_PUBLIC} = "False";
@@ -101,7 +101,7 @@ sub force_cleanup()
     {
         unlink($f);
     }
-    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    File::Path::rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
 }
 

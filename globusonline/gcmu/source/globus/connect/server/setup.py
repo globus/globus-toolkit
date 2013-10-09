@@ -15,12 +15,12 @@
 
 """Configure a MyProxy, OAuth, and GridFTP server and create a Globus Online endpoint
 
-globus-connect-multiuser-setup [-h|--help]
-globus-connect-multiuser-setup {-c FILENAME|--config-file=FILENAME} {-v|--verbose} {-r PATH|--root=PATH} {-s|--reset-endpoint}
+globus-connect-server-setup [-h|--help]
+globus-connect-server-setup {-c FILENAME|--config-file=FILENAME} {-v|--verbose} {-r PATH|--root=PATH} {-s|--reset-endpoint}
 
-The globus-connect-multiuser-setup command combines the functionality of
-globus-connect-multiuser-io-setup, globus-connect-multiuser-id-setup, and
-globus-connect-multiuser-web-setup to configure a system to act as a GridFTP
+The globus-connect-server-setup command combines the functionality of
+globus-connect-server-io-setup, globus-connect-server-id-setup, and
+globus-connect-server-web-setup to configure a system to act as a GridFTP
 server, MyProxy ID server, and OAuth server.It also registers the GridFTP
 server as a Globus Online endpoint. Depending on features enabled in the
 configuration file, this process will include fetching a service credential
@@ -30,31 +30,31 @@ trust roots, restarting the GridFTP server, enabling the GridFTP server to
 start at boot, and creating or modifying an endpoint to point to this server.
 
 If the -s or --reset-endpoint command-line option is used,
-globus-connect-multiuser--setup removes all other GridFTP servers associated
+globus-connect-server--setup removes all other GridFTP servers associated
 with the endpoint before adding this server, if the endpoint already exists.
-Otherwise, globus-connect-multiuser-setup adds this server to the list of
+Otherwise, globus-connect-server-setup adds this server to the list of
 servers associated with the endpoint.
 
 If the -r PATH or --root=PATH command-line option is used,
-globus-connect-multiuser-setup will write its GridFTP and MyProxy configuration
+globus-connect-server-setup will write its GridFTP and MyProxy configuration
 files and certificates in a subdirectory rooted at PATH instead of /. This
-means, for example, that globus-connect-multiuser-setup writes GridFTP
+means, for example, that globus-connect-server-setup writes GridFTP
 configuration files in PATH/etc/gridftp.d.
 
 The following options are available:
 
 -h, --help                          Display help information
 -c FILENAME, --config-file=FILENAME Use configuration file FILENAME instead of
-                                    /etc/globus-connect-multiuser.conf
+                                    /etc/globus-connect-server.conf
 -v, --verbose                       Print more information about tasks
 -r PATH, --root=PATH                Add PATH as the directory prefix for the
                                     configuration files that
-                                    globus-connect-multiuser-io-setup writes
+                                    globus-connect-server-io-setup writes
 -s, --reset-endpoint                Remove all other GridFTP servers from this
                                     endpoint before adding this one"""
 
-short_usage = """globus-connect-multiuser-setup [-h|--help]
-globus-connect-multiuser-setup {-c FILENAME|--config-file=FILENAME}
+short_usage = """globus-connect-server-setup [-h|--help]
+globus-connect-server-setup {-c FILENAME|--config-file=FILENAME}
                                {-v|--verbose}
                                {-r PATH|--root=PATH}
                                {-s|--reset-endpoint}"""
@@ -64,11 +64,11 @@ import os
 import sys
 import traceback
 
-from globus.connect.multiuser.configfile import ConfigFile
-from globus.connect.multiuser import get_api
-from globus.connect.multiuser.id import ID
-from globus.connect.multiuser.io import IO
-from globus.connect.multiuser.web import Web
+from globus.connect.server.configfile import ConfigFile
+from globus.connect.server import get_api
+from globus.connect.server.id import ID
+from globus.connect.server.io import IO
+from globus.connect.server.web import Web
 
 def usage(short=False, outstream=sys.stdout): 
     if short: 

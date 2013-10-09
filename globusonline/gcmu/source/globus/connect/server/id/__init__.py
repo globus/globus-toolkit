@@ -28,7 +28,7 @@ import sys
 __path__ = pkgutil.extend_path(__path__, __name__)
 
 import globus.connect.security as security
-import globus.connect.multiuser as gcmu
+import globus.connect.server as gcmu
 
 from globusonline.transfer.api_client import TransferAPIClient
 from globusonline.transfer.api_client import TransferAPIError
@@ -98,7 +98,7 @@ class ID(gcmu.GCMU):
 
         if os.path.exists(myproxy_dir):
             for name in os.listdir(myproxy_dir):
-                if name.startswith("globus-connect-multiuser"):
+                if name.startswith("globus-connect-server"):
                     os.remove(os.path.join(myproxy_dir, name))
         self.cleanup_trust_roots()
         self.logger.debug("EXIT: IO:cleanup()")
@@ -200,7 +200,7 @@ class ID(gcmu.GCMU):
                 os.path.join(cadir, "cacert.pem"))
 
         mapapp_template = pkgutil.get_data(
-                "globus.connect.multiuser", "mapapp-template")
+                "globus.connect.server", "mapapp-template")
 
         old_umask = os.umask(022)
         mapapp_file = file(mapapp, "w")
@@ -256,8 +256,8 @@ class ID(gcmu.GCMU):
         if not os.path.exists(etc_myproxy_d):
             os.makedirs(etc_myproxy_d, 0755)
 
-        conf_file_name = os.path.join(var_myproxy_d, "globus-connect-multiuser")
-        conf_link_name = os.path.join(etc_myproxy_d, "globus-connect-multiuser")
+        conf_file_name = os.path.join(var_myproxy_d, "globus-connect-server")
+        conf_link_name = os.path.join(etc_myproxy_d, "globus-connect-server")
 
         if os.path.lexists(conf_link_name):
             os.remove(conf_link_name)

@@ -48,7 +48,7 @@ sub diagsystem(@)
 
 sub setup_id_server()
 {
-    my @cmd = ("globus-connect-multiuser-id-setup", "-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-id-setup", "-c", $config_file, "-v");
     my $rc = diagsystem(@cmd);
     return $rc == 0;
 }
@@ -89,7 +89,7 @@ sub fetch_and_compare_trust_roots()
     $rc |= system("myproxy-get-trustroots -b -s localhost");
 
     @cmd = ("openssl", "x509", "-hash", "-in",
-        "/var/lib/globus-connect-multiuser/myproxy-ca/cacert.pem");
+        "/var/lib/globus-connect-server/myproxy-ca/cacert.pem");
     if (! open($fh, "-|", @cmd))
     {
         $rc |= 2;
@@ -111,7 +111,7 @@ sub fetch_and_compare_trust_roots()
 
 sub cleanup()
 {
-    my @cmd = ("globus-connect-multiuser-id-cleanup", "-c", $config_file, "-v");
+    my @cmd = ("globus-connect-server-id-cleanup", "-c", $config_file, "-v");
     return system(@cmd)==0;
 }
 
@@ -126,7 +126,7 @@ sub force_cleanup()
     {
         unlink($f);
     }
-    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    File::Path::rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
     return 0;
 }

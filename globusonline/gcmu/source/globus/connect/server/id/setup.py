@@ -13,22 +13,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Remove Globus Online-related MyProxy server configuration
+"""Configure a MyProxy server for use with Globus Online
 
-globus-connect-multiuser-id-cleanup [-h|--help]
-globus-connect-multiuser-id-cleanup {-c FILENAME|--config-file=FILENAME}
-                                    {-v|--verbose}
-                                    {-r PATH|--root=PATH}
+globus-connect-server-id-setup [-h|--help]
+globus-connect-server-id-setup {-c FILENAME|--config-file=FILENAME}
+                                  {-v|--verbose}
+                                  {-r PATH|--root=PATH}
 
-The globus-connect-multiuser-id-cleanup command deletes MyProxy service
-configuration previously created by running globus-connect-multiuser-id-setup.
-It deletes configuration files, stops, and disables the MyProxy server.
+The globus-connect-server-id-setup command generates MyProxy service
+configuration based on the globus-connect-server configuration file, and
+starts the MyProxy server. Depending on features enabled in the configuration
+file, this process will include fetching a service credential from the Globus
+Connect CA, writing MyProxy configuration files in the /etc/myproxy.d/
+directory, restarting the MyProxy server, and enabling the MyProxy server to
+start at boot.
 
 If the -r PATH or --root=PATH command-line option is used,
-globus-connect-multiuser-id-cleanup will delete MyProxy configuration and
-certificates from a subdirectory rooted at PATH instead of /. This means, for
-example, that globus-connect-multiuser-id-cleanup deletes MyProxy configuration
-files in PATH/etc/myproxy.d.
+globus-connect-server-id-setup will write its MyProxy configuration and
+certificates in a subdirectory rooted at PATH instead of /. This means, for
+example, that globus-connect-server-id-setup writes MyProxy configuration
+files in PATH/etc/gridftp.d.
 
 The following options are available:
 
@@ -36,32 +40,33 @@ The following options are available:
                                 Display help information
 -c FILENAME, --config-file=FILENAME
                                 Use configuration file FILENAME instead of
-                                /etc/globus-connect-multiuser.conf
--v, --verbose                   Print more information about tasks
--r PATH, --root=PATH            Add PATH as the directory prefix for the
+                                /etc/globus-connect-server.conf
+-v, --verbose	                Print more information about tasks
+-r PATH, --root=PATH	        Add PATH as the directory prefix for the
                                 configuration files that
-                                globus-connect-multiuser-id-cleanup writes
+                                globus-connect-server-id-setup writes
 """
 
-short_usage = """globus-connect-multiuser-id-cleanup [-h|--help]
-globus-connect-multiuser-id-cleanup {-c FILENAME|--config-file=FILENAME}
-                                    {-v|--verbose}
-                                    {-r PATH|--root=PATH}
+short_usage = """globus-connect-server-id-setup [-h|--help]
+globus-connect-server-id-setup {-c FILENAME|--config-file=FILENAME}
+                                  {-v|--verbose}
+                                  {-r PATH|--root=PATH}
 """
 
 import getopt
 import getpass
 import os
 import socket
+import ssl
 import sys
 import time
 import traceback
 
 from globusonline.transfer.api_client.goauth import get_access_token, GOCredentialsError
 from globusonline.transfer.api_client import TransferAPIClient
-from globus.connect.multiuser import get_api
-from globus.connect.multiuser.id import ID
-from globus.connect.multiuser.configfile import ConfigFile
+from globus.connect.server import get_api
+from globus.connect.server.id import ID
+from globus.connect.server.configfile import ConfigFile
 
 def usage(short=False, outstream=sys.stdout):
     if short:
@@ -106,10 +111,11 @@ if __name__ == "__main__":
         conf = ConfigFile(config_file=conf_filename, root=root)
         api = get_api(conf)
         id = ID(config_obj=conf, api=api, debug=debug)
-        id.cleanup()
+        id.setup()
+        sys.exit(id.errorcount)
     except KeyboardInterrupt, e:
-        print "Aborting..."
-        sys.exit(1)
+        print "Aborting.."
+        sys.exit(1);
     except Exception, e:
         if debug:
             traceback.print_exc(file=sys.stderr)

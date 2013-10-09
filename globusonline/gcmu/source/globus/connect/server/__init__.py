@@ -268,7 +268,7 @@ def get_api(conf):
     return api
 
 class GCMU(object):
-    logger = logging.getLogger("globus.connect.multiuser.GCMU")
+    logger = logging.getLogger("globus.connect.server.GCMU")
     handler = logging.StreamHandler()
     logger.addHandler(handler)
 
@@ -524,7 +524,7 @@ class GCMU(object):
 
                 cilogon_crl_cron_path = os.path.join(self.conf.root,
                         "etc/cron.hourly",
-                        "globus-connect-multiuser-" + cilogon_ca + "-crl")
+                        "globus-connect-server-" + cilogon_ca + "-crl")
 
                 cilogon_crl_cron_file = file(cilogon_crl_cron_path, "w")
                 try:
@@ -654,7 +654,7 @@ class GCMU(object):
         # CRL Fetch cronjobs
         crondir = os.path.join(self.conf.root, "etc/cron.hourly")
         for cronjob in os.listdir(crondir):
-            if cronjob.startswith("globus-connect-multiuser"):
+            if cronjob.startswith("globus-connect-server"):
                 cronfile = os.path.join(crondir, cronjob)
                 if os.path.exists(cronfile):
                     os.remove(cronfile)

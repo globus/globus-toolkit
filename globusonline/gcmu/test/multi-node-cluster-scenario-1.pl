@@ -59,7 +59,7 @@ sub cleanup()
     my @cmd;
     my $rc;
 
-    $cmd[0] = "globus-connect-multiuser-cleanup";
+    $cmd[0] = "globus-connect-server-cleanup";
     $cmd[1] = "-c";
     $cmd[2] = $config_file;
     $cmd[3] = "-d";
@@ -74,7 +74,7 @@ sub cleanup()
     {
         unlink($f);
     }
-    rmtree("/var/lib/globus-connect-multiuser");
+    rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
     return $rc == 0;
 }
@@ -88,7 +88,7 @@ sub gcmu_setup($)
     $ENV{ENDPOINT_NAME} = $endpoint;
 
     # Create $endpoint
-    @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v");
+    @cmd = ("globus-connect-server-setup", "-c", $config_file, "-v");
 
     return diagsystem(@cmd)==0;
 }

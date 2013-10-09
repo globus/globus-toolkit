@@ -13,50 +13,49 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Remove a GridFTP server configuration and remove it from a Globus Online endpoint
+"""Remove GridFTP, MyProxy, and OAuth configuration and remove it from a Globus
+Online endpoint
 
-globus-connect-multiuser-io-cleanup [-h|--help]
-globus-connect-multiuser-io-cleanup {-c FILENAME|--config-file=FILENAME}
-                                    {-v|--verbose}
-                                    {-r PATH|--root=PATH}
-                                    {-d|--delete-endpoint}
+globus-connect-server-cleanup [-h|--help]
+globus-connect-server-cleanup {-c FILENAME|--config-file=FILENAME}
+                                 {-v|--verbose}
+                                 {-r PATH|--root=PATH}
+                                 {-d|--delete-endpoint}
 
-The globus-connect-multiuser-io-cleanup command deletes GridFTP service
-configuration previously created by running globus-connect-multiuser-io-setup
-and removes it from a Globus Online endpoint. It deletes configuration files,
-stops, and disables the GridFTP server. It also removes the server from an
-endpoint, optionally deleting the endpoint.
+The globus-connect-server-cleanup command deletes the GridFTP, MyProxy and
+OAuth service configurations previously created by running
+globus-connect-server-setup and removes the GridFTP server from a Globus
+Online endpoint. It deletes configuration files, stops, and disables the
+services.
 
 If the -d or --delete-endpoint command-line option is used,
-globus-connect-multiuser-io-cleanup removes the endpoint named in the
+globus-connect-server-io-cleanup removes the endpoint named in the
 configuration file as well as cleaning up
-globus-connect-multiuser-io-setup-generated configuration files.
+globus-connect-server-setup-generated configuration files.
 
 If the -r PATH or --root=PATH command-line option is used,
-globus-connect-multiuser-io-cleanup will write its GridFTP configuration and
+globus-connect-server-cleanup will write its GridFTP configuration and
 certificates in a subdirectory rooted at PATH instead of /. This means, for
-example, that globus-connect-multiuser-io-cleanup deletes GridFTP configuration
+example, that globus-connect-server-cleanup deletes GridFTP configuration
 files in PATH/etc/gridftp.d.
 
 The following options are available:
 
--h, --help
-                                Display help information
--c FILENAME, --config-file=FILENAME
-                                Use configuration file FILENAME instead of
-                                /etc/globus-connect-multiuser.conf
--v, --verbose                   Print more information about tasks
--r PATH, --root=PATH            Add PATH as the directory prefix for the
-                                configuration files that
-                                globus-connect-multiuser-io-cleanup writes
--d, --delete-endpoint           Delete the Globus Online endpoint
+-h, --help                          Display help information
+-c FILENAME, --config-file=FILENAME Use configuration file FILENAME instead of
+                                    /etc/globus-connect-server.conf
+-v, --verbose                       Print more information about tasks
+-r PATH, --root=PATH                Add PATH as the directory prefix for the
+                                    configuration files that
+                                    globus-connect-server-io-cleanup writes
+-d, --delete-endpoint               Delete the Globus Online endpoint
 """
 
-short_usage = """globus-connect-multiuser-io-cleanup [-h|--help]
-globus-connect-multiuser-io-cleanup {-c FILENAME|--config-file=FILENAME}
-                                    {-v|--verbose}
-                                    {-r PATH|--root=PATH}
-                                    {-d|--delete-endpoint}
+short_usage = """globus-connect-server-cleanup [-h|--help]
+globus-connect-server-cleanup {-c FILENAME|--config-file=FILENAME}
+                                 {-v|--verbose}
+                                 {-r PATH|--root=PATH}
+                                 {-d|--delete-endpoint}
 """
 
 import getopt
@@ -68,10 +67,12 @@ import sys
 import time
 import traceback
 
-from globus.connect.multiuser import get_api
+from globus.connect.server import get_api
 from globusonline.transfer.api_client import TransferAPIClient
-from globus.connect.multiuser.io import IO
-from globus.connect.multiuser.configfile import ConfigFile
+from globus.connect.server.io import IO
+from globus.connect.server.id import ID
+from globus.connect.server.web import Web
+from globus.connect.server.configfile import ConfigFile
 
 def usage(short=False, outstream=sys.stdout):
     if short:
@@ -94,11 +95,11 @@ if __name__ == "__main__":
             print >>sys.stderr, "Invalid option " + e.opt
             usage(short=True, outstream=sys.stderr)
             sys.exit(1)
-
+        
         if len(arg) > 0:
             print >>sys.stderr, "Unexpected argument(s) " + " ".join(arg)
             sys.exit(1)
-        
+
         for (o, val) in opts:
             if o in ['-h', '--help']:
                 usage()
@@ -119,7 +120,11 @@ if __name__ == "__main__":
         conf = ConfigFile(config_file=conf_filename, root=root)
         api = get_api(conf)
         io = IO(config_obj=conf, api=api, debug=debug)
+        id = ID(config_obj=conf, api=api, debug=debug)
+        web = Web(config_obj=conf, api=api, debug=debug)
+        web.cleanup()
         io.cleanup(delete=delete)
+        id.cleanup()
     except KeyboardInterrupt, e:
         print "Aborting..."
         sys.exit(1)

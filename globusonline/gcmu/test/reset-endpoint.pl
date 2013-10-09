@@ -58,7 +58,7 @@ sub count_servers($)
 
 sub cleanup
 {
-    my @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d",
+    my @cmd = ("globus-connect-server-cleanup", "-c", $config_file, "-d",
             "-v");
     my $rc = diagsystem(@cmd);
 
@@ -71,7 +71,7 @@ sub cleanup
     {
         unlink($f);
     }
-    File::Path::rmtree("/var/lib/globus-connect-multiuser");
+    File::Path::rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
     return $rc;
 }
@@ -80,7 +80,7 @@ sub gcmu_setup($$;@)
 {
     my $endpoint = shift;
     my $server = shift;
-    my @cmd = ("globus-connect-multiuser-setup", "-c", $config_file, "-v", @_);
+    my @cmd = ("globus-connect-server-setup", "-c", $config_file, "-v", @_);
     
     $ENV{RANDOM_ENDPOINT} = $endpoint;
     $ENV{RANDOM_SERVER} = $server;

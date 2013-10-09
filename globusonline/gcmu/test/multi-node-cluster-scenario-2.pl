@@ -64,7 +64,7 @@ sub cleanup()
     my @cmd;
     my $rc;
 
-    @cmd = ("globus-connect-multiuser-cleanup", "-c", $config_file, "-d");
+    @cmd = ("globus-connect-server-cleanup", "-c", $config_file, "-d");
     $rc = diagsystem(@cmd);
 
     # Just to make sure that doesn't fail
@@ -76,7 +76,7 @@ sub cleanup()
     {
         unlink($f);
     }
-    rmtree("/var/lib/globus-connect-multiuser");
+    rmtree("/var/lib/globus-connect-server");
     unlink("/var/lib/myproxy-oauth/myproxy-oauth.db");
     return $rc == 0;
 }
@@ -85,7 +85,7 @@ sub gcmu_setup($;%)
 {
     my $endpoint = shift;
     my %args = (
-        command => 'globus-connect-multiuser-setup',
+        command => 'globus-connect-server-setup',
         @_
     );
     my @cmd;
@@ -189,7 +189,7 @@ foreach my $method ("OAuth", "MyProxy")
     SKIP: {
         skip "ID node operations only", 1 unless ($rank == 0);
 
-        ok(gcmu_setup($endpoint, command=>'globus-connect-multiuser-id-setup'),
+        ok(gcmu_setup($endpoint, command=>'globus-connect-server-id-setup'),
                 "setup_id_$method");
     }
 
@@ -214,7 +214,7 @@ foreach my $method ("OAuth", "MyProxy")
     SKIP: {
         skip "Web node operations only", 1 unless ($rank == 1);
 
-        ok(gcmu_setup($endpoint, command => 'globus-connect-multiuser-web-setup'),
+        ok(gcmu_setup($endpoint, command => 'globus-connect-server-web-setup'),
             "setup_web_$method");
     }
     $res = barrier(3, rank=>$rank);
@@ -222,7 +222,7 @@ foreach my $method ("OAuth", "MyProxy")
 
     # Test Step #3:
     # Set up I/O nodes everywhere
-    ok(gcmu_setup($endpoint, command => "globus-connect-multiuser-io-setup"),
+    ok(gcmu_setup($endpoint, command => "globus-connect-server-io-setup"),
             "setup_io_$method");
 
     $res = barrier(4, rank=>$rank);

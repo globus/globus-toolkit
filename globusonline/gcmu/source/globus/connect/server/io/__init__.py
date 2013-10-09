@@ -26,7 +26,7 @@ import sys
 import uuid
 
 import globus.connect.security as security
-import globus.connect.multiuser as gcmu
+import globus.connect.server as gcmu
 
 from globusonline.transfer.api_client import TransferAPIClient
 from globusonline.transfer.api_client import TransferAPIError
@@ -87,12 +87,12 @@ class IO(gcmu.GCMU):
 
         cred_config_file = os.path.join(
                 self.var_gridftp_d,
-                "globus-connect-multiuser-credential")
+                "globus-connect-server-credential")
         cred_config = open(cred_config_file, "w")
 
         link_name = os.path.join(
                 self.etc_gridftp_d,
-                "globus-connect-multiuser-credential")
+                "globus-connect-server-credential")
 
         if os.path.lexists(link_name):
             os.remove(link_name)
@@ -124,9 +124,9 @@ class IO(gcmu.GCMU):
         self.logger.debug("ENTER: configure_server()")
         server = self.conf.get_gridftp_server()
         conf_file_name = os.path.join(
-                self.var_gridftp_d, "globus-connect-multiuser")
+                self.var_gridftp_d, "globus-connect-server")
         conf_link_name = os.path.join(
-                self.etc_gridftp_d, "globus-connect-multiuser")
+                self.etc_gridftp_d, "globus-connect-server")
 
         if os.path.lexists(conf_link_name):
             os.remove(conf_link_name)
@@ -136,11 +136,11 @@ class IO(gcmu.GCMU):
         conf_file = file(conf_file_name, "w")
         try:
             version = pkgutil.get_data(
-                "globus.connect.multiuser",
+                "globus.connect.server",
                 "version")
             if version:
-                conf_file.write("version_tag GCMU-%s" % (version))
-                conf_file.write("usage_stats_id GCMU-%s" % (version))
+                conf_file.write("version_tag GCS-%s" % (version))
+                conf_file.write("usage_stats_id GCS-%s" % (version))
             if ":" in server:
                 port = int(server.split(":")[1])
                 conf_file.write("port %d\n" % port)
@@ -184,7 +184,7 @@ Restart the globus-gridftp-server service if changes are made.
 WARNING: Your GridFTP server is behind a NAT, but the Server name resolves
 to a private IP address. This probably won't work correctly with Globus Online.
 To remedy, set the DataInterface option in the [GridFTP] section of the
-globus-connect-multiuser.conf file to the public IP address of this GridFTP
+globus-connect-server.conf file to the public IP address of this GridFTP
 server
 ******************************************************************************
 """)
@@ -216,9 +216,9 @@ server
         self.logger.debug("ENTER: IO.configure_sharing()")
 
         conf_file_name = os.path.join(
-                self.var_gridftp_d, "globus-connect-multiuser-sharing")
+                self.var_gridftp_d, "globus-connect-server-sharing")
         conf_link_name = os.path.join(
-                self.etc_gridftp_d, "globus-connect-multiuser-sharing")
+                self.etc_gridftp_d, "globus-connect-server-sharing")
 
         if os.path.lexists(conf_link_name):
             self.logger.debug("Removing old sharing configuration link")
@@ -262,9 +262,9 @@ server
         cadir = self.conf.get_security_trusted_certificate_directory()
 
         conf_file_name = os.path.join(
-                self.var_gridftp_d, "globus-connect-multiuser-trust-roots")
+                self.var_gridftp_d, "globus-connect-server-trust-roots")
         conf_link_name = os.path.join(
-                self.etc_gridftp_d, "globus-connect-multiuser-trust-roots")
+                self.etc_gridftp_d, "globus-connect-server-trust-roots")
 
         if os.path.lexists(conf_link_name):
             self.logger.debug("Removing old trust roots configuration link")
@@ -284,10 +284,10 @@ server
 
         conf_file_name = os.path.join(
                 self.var_gridftp_d,
-                "globus-connect-multiuser-authorization")
+                "globus-connect-server-authorization")
         conf_link_name = os.path.join(
                 self.etc_gridftp_d,
-                "globus-connect-multiuser-authorization")
+                "globus-connect-server-authorization")
         server = self.conf.get_gridftp_server()
 
         if os.path.lexists(conf_link_name):
@@ -448,7 +448,8 @@ server
             return
         
         for name in os.listdir(self.etc_gridftp_d):
-            if name.startswith("globus-connect-multiuser") \
+            if name.startswith("globus-connect-server") \
+                        or name.startswith("globus-connect-multiuser") \
                         or name.startswith("gcmu"):
                 os.remove(os.path.join(self.etc_gridftp_d, name))
         self.cleanup_trust_roots()
