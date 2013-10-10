@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager_lsf">
-    <Aging_Version Major="1" Minor="1" Age="0"/>
-    <Description>Grid Engine Job Manager Support</Description>
+    <Aging_Version Major="1" Minor="2" Age="0"/>
+    <Description>LSF Job Manager Support</Description>
     <Functional_Group>GRAM</Functional_Group>
     <Version_Stability Release="Alpha"/>
     <src_pkg>
