@@ -4,7 +4,7 @@ include $(top_srcdir)/globus_automake_pre
 #
 
 doxygen_installdox = @lac_doxygen_installdox@
-all-local: @DOXYFILE@
+doc-stamp: @DOXYFILE@
 	@if test ! -z "@DOXYGEN@"; then \
 		@DOXYGEN@  @DOXYFILE@;  \
 		if test -n "$(doxygen_installdox)"; then \
@@ -16,8 +16,11 @@ all-local: @DOXYFILE@
 		    (cd doc/latex ; for f in *.tex ; do sed 's/\\doxyref{p\.}/\\doxyref{}{p\.}/g' $$f > $$f.new ; mv $$f.new $$f ; done ; sed 's/\(latex_count\)=[0-9] /\1=10 /' Makefile > Makefile.new ; mv Makefile.new Makefile ; make) ; \
 		fi \
 	fi
+	touch $@
 
-install-data-local:
+all-local: doc-stamp
+
+install-data-local: doc-stamp
 	@if test ! -z "@DOXYGEN@"; then                     \
 		for dir in `find ./doc/{html,man} -type d -print|sed "s,./doc/,,"`; do \
 			if test -z "`echo $${dir}|sed -n '/^man/ p'`"; then \
@@ -43,12 +46,13 @@ install-data-local:
 		fi \
 	fi
 
-clean-data-local:
+clean-local:
 	@if test ! -z "@DOXYGEN@"; then \
 		rm -rf ./doc*;          \
 	fi
+	rm -f doc-stamp
 
-filelist:
+filelist: doc-stamp
 	@if test ! -z "@DOXYGEN@"; then \
                 filelistdir="`echo $(FILELIST_FILE) | sed -e 's!/[^/]*$$!!'`"; \
 		find ./doc/{man,html} -type f -print | \
@@ -62,7 +66,7 @@ filelist:
 		fi \
 	fi
 
-dist-hook: all-local
+dist-hook: doc-stamp
 	@if test ! -z "@DOXYGEN@"; then \
 		if test -d doc; then \
 		    cp -r doc $(distdir)/doc ; \
