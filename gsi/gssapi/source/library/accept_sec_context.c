@@ -79,7 +79,7 @@ GSS_CALLCONV gss_accept_sec_context(
     STACK_OF(X509) *                    cert_chain = NULL;
     globus_gsi_cert_utils_cert_type_t   cert_type;
     int                                 readlen;
-    X509 *                              peer_cert;
+    X509 *                              peer_cert = NULL;
     const EVP_MD *                      peer_digest;
 
     static char *                       _function_name_ =
@@ -627,6 +627,10 @@ GSS_CALLCONV gss_accept_sec_context(
             (unsigned int) context->ret_flags));
 
  exit:
+    if (peer_cert != NULL)
+    {
+        X509_free(peer_cert);
+    }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
