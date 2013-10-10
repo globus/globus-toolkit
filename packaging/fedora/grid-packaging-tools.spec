@@ -1,6 +1,6 @@
 Name:		grid-packaging-tools
-Version:	3.6.5
-Release:	2%{?dist}
+Version:	3.6.6
+Release:	1%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 
 Group:		Development/Tools
@@ -86,6 +86,9 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
+* Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 3.6.6-1
+- GT-448: Flavor dependent file in globus_core/noflavor_data package
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.6.5-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

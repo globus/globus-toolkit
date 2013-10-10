@@ -80,6 +80,9 @@ filelist-@DIR@DATA:
             *-*.pc) \
               echo "$$p" >> "$${filelistdir}/$(GLOBUS_FLAVOR_NAME)_dev.filelist"; \
               ;; \
+            *-flavor_*.gpt) \
+              echo "$$p" >> "$${filelistdir}/$(GLOBUS_FLAVOR_NAME)_dev.filelist"; \
+              ;; \
             *-*.pm) \
               echo "$$p" >> "$${filelistdir}/$(GLOBUS_FLAVOR_NAME)_rtl.filelist"; \
               ;; \

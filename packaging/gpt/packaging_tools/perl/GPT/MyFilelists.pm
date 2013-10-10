@@ -68,6 +68,12 @@ sub rtl_files {
   push @$result, @$list;
   $me->{'filelist'}->reset();
 
+  $me->{'filelist'}->flavored_files() if defined $me->{'mangling'};
+  $me->{'filelist'}->extract_libtool_libs();
+  $list = $me->{'filelist'}->get_list();
+  push @$result, @$list;
+  $me->{'filelist'}->reset();
+
   $me->{'filelist'}->extract_perl_modules();
   $list = $me->{'filelist'}->get_list();
   push @$result, @$list;
@@ -85,8 +91,7 @@ sub dev_files {
   push @$result, @$list;
   $me->{'filelist'}->reset();
 
-  $me->{'filelist'}->flavored_files() if defined $me->{'mangling'};
-  $me->{'filelist'}->extract_libtool_libs();
+  $me->{'filelist'}->extract_flavor_defs();
   $list = $me->{'filelist'}->get_list();
   push @$result, @$list;
   $me->{'filelist'}->reset();

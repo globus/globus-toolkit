@@ -762,9 +762,10 @@ sub _rtl_files {
   $filessort->extract_libtool_libs();
   $list = $filessort->get_list();
   push @$result, @$list;
-#  for my $f(@$result) {
-#    print "rtl: $f\n"
-#  }
+  $filessort->reset();
+  $filessort->extract_perl_modules();
+  $list = $filessort->get_list();
+  push @$result, @$list;
   $filessort->reset();
   return $result;
 }
@@ -777,8 +778,15 @@ sub _dev_files {
   my $list = $filessort->get_list();
   push @$result, @$list;
   $filessort->reset();
-  $filessort->flavored_headers() if defined $mangling;
-  $filessort->noflavor_headers() if ! defined $mangling;
+  $filessort->flavored_headers();
+  $list = $filessort->get_list();
+  push @$result, @$list;
+  $filessort->reset();
+  $filessort->noflavor_headers();
+  $list = $filessort->get_list();
+  push @$result, @$list;
+  $filessort->reset();
+  $filessort->extract_flavor_defs();
   $filessort->add_package_metadata_files('dev');
   $list = $filessort->get_list();
   push @$result, @$list;
@@ -794,7 +802,7 @@ sub _doc_files {
   return [];
 }
 
-# Autolod methods go after =cut, and are processed by the autosplit program.
+# Autoload methods go after =cut, and are processed by the autosplit program.
 
 1;
 
