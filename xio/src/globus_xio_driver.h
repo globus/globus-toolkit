@@ -1379,7 +1379,7 @@ typedef struct globus_xio_string_cntl_table_s
  *  all at runtime with no object module references.  For example, a TCP driver
  *  can be loaded with the string: tcp, and the options can be set with:
  *
- *  port=50668#keepalive=yes#nodelay=N
+ *  port=50668\#keepalive=yes\#nodelay=N
  *
  *  this would set the port to 50668, keepalive to true and nodelay to false.
  *  The particular string definition is defined by the tcp driver by properly 

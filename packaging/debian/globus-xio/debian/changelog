@@ -1,3 +1,9 @@
+globus-xio (3.6-1) unstable; urgency=low
+
+  * GT-445: Doxygen fixes
+
+ -- Globus Toolkit <support@globus.org>  Thu, 10 Oct 2013 13:27:45 -0400
+
 globus-xio (3.5-1) unstable; urgency=low
 
   * Fix wrapblock drivers losing attrs

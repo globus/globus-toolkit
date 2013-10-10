@@ -12,8 +12,8 @@
 
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
-Version:	8.5
-Release:	5%{?dist}
+Version:	8.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
 Group:		System Environment/Libraries
@@ -218,6 +218,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 8.6-1
+- GT-445: Doxygen fixes
+
 * Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 8.5-4
 - openssl-libs dep for newer fedora
 

@@ -12,8 +12,8 @@
 
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	3.5
-Release:	2%{?dist}
+Version:	3.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
@@ -183,6 +183,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 3.6-1
+- GT-445: Doxygen fixes
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.5-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

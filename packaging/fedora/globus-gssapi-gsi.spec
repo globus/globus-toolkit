@@ -12,7 +12,7 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	10.9
+Version:	10.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -204,6 +204,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 10.10-1
+- GT-445: Doxygen fixes
+
 * Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 10.9-1
 - GT-454: memory leak in gss_accept_sec_context
 

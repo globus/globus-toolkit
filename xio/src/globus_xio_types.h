@@ -189,6 +189,7 @@ typedef enum
      * @param config_string
      *      The driver specific parameter string.
      */
+    /* char *                           config_string */
     GLOBUS_XIO_SET_STRING_OPTIONS
     
 } globus_xio_handle_cmd_t;

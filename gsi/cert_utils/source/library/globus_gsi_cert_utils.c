@@ -888,7 +888,7 @@ globus_gsi_cert_utils_get_eec(
  *
  * @param cert_chain
  *    Certificate chain to inspect.
- * @param eec
+ * @param identity_cert
  *    Pointer to be set to the certificate value from within the cert chain.
  *    Must freed by the caller.
  */

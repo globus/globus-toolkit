@@ -1,3 +1,9 @@
+globus-gssapi-gsi (10.10-1) unstable; urgency=low
+
+  * GT-445: Doxygen fixes
+
+ -- Globus Toolkit <support@globus.org>  Thu, 10 Oct 2013 13:27:38 -0400
+
 globus-gssapi-gsi (10.9-1) unstable; urgency=low
 
   * GT-454: memory leak in gss_accept_sec_context

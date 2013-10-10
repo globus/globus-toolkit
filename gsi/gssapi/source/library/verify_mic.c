@@ -333,7 +333,7 @@ exit:
  *
  * @param minor_status
  * @param context_handle
- * @param massage_buffer
+ * @param message_buffer
  * @param token_buffer
  * @param qop_state
  * 

@@ -276,6 +276,7 @@ typedef struct gss_channel_bindings_struct
  * Set if you want to allow CA certs without a signing policy to verify.
  */
 #define GSS_C_GLOBUS_ALLOW_MISSING_SIGNING_POLICY 65536
+/* @} */
 
 /**
  * @ingroup globus_gsi_gss_requested_context_flags
