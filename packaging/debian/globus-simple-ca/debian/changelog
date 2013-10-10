@@ -1,3 +1,9 @@
+globus-simple-ca (3.5-1) unstable; urgency=low
+
+  * GT-405: Non-portable use of echo in shell script
+
+ -- Globus Toolkit <support@globus.org>  Thu, 10 Oct 2013 13:14:57 -0400
+
 globus-simple-ca (3.4-2) unstable; urgency=low
 
   * Don't die in postinst if domain name is not qualified

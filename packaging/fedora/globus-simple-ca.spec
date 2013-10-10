@@ -10,8 +10,8 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	3.4
-Release:	4%{?dist}
+Version:	3.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -127,6 +127,9 @@ fi
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 3.5-1
+- GT-405: Non-portable use of echo in shell script
+
 * Fri Sep 13 2013 Globus Toolkit <support@globus.org> - 3.4-4
 - Don't die in postinst if domain name is not qualified
 

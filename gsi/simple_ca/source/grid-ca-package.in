@@ -511,7 +511,7 @@ EOF
     cd "${OLDPWD}"
     rm -rf "${_pkgdir}"
     echo "done"
-    echo "\t${_binary_gpt_package}"
+    printf "\t${_binary_gpt_package}\n"
 }
 
 create_rpm_tarball=1
