@@ -18,7 +18,7 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.15
+Version:	8.16
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 8.16-1
+- GT-446: Documentation built twice
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 8.15-1
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

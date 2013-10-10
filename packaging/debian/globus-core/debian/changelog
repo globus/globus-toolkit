@@ -1,3 +1,9 @@
+globus-core (8.16-1) unstable; urgency=low
+
+  * GT-446: Documentation built twice
+
+ -- Globus Toolkit <support@globus.org>  Thu, 10 Oct 2013 13:30:58 -0400
+
 globus-core (8.15-1) unstable; urgency=low
 
   * GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
