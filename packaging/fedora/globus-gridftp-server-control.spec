@@ -12,8 +12,8 @@
 
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
-Version:	2.9
-Release:	2%{?dist}
+Version:	2.10
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
 Group:		System Environment/Libraries
@@ -118,6 +118,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Tue Oct 15 2013 Globus Toolkit <support@globus.org> - 2.10-1
+- GT-472: GridFTP server fails to detect client disconnection with piplining
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.9-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_gridftp_server_control">
-    <Aging_Version Major="2" Minor="9" Age="2"/>
+    <Aging_Version Major="2" Minor="10" Age="2"/>
     <Description>Globus GridFTP Server Library</Description>
     <Functional_Group>GridFTP</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>

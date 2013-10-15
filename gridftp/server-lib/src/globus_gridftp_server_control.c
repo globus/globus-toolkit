@@ -29,7 +29,7 @@
 #define MAXPATHLEN 4096
 #endif
 
-#define DEFAULT_MAX_Q_LEN               10
+#define DEFAULT_MAX_Q_LEN               1000
 #define GSU_MAX_USERNAME_LENGTH         256
 #define GSU_MAX_PW_LENGTH               GSU_MAX_USERNAME_LENGTH*6
 #define GSC_MAX_COMMAND_NAME_LEN        4
@@ -275,6 +275,8 @@ static globus_xio_driver_t              globus_l_gsc_gssapi_ftp_driver;
 static globus_xio_driver_t              globus_l_gsc_telnet_driver;
 static globus_hashtable_t               globus_l_gsc_pwent_cache;
 static globus_hashtable_t               globus_l_gsc_grent_cache;
+static int                              globus_l_gsc_max_read_q = 
+                                            DEFAULT_MAX_Q_LEN;
 
 GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER_CONTROL);
 GlobusXIODeclareModule(gssapi_ftp);
@@ -283,6 +285,7 @@ static int
 globus_l_gsc_activate()
 {
     int                                 rc = 0;
+    char *                              e;
     globus_result_t                     res;
         
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
@@ -318,7 +321,16 @@ globus_l_gsc_activate()
     {
         return GLOBUS_FAILURE;
     }
-
+    
+    if((e = getenv("GFS_MAX_READ_QUEUE")) != NULL)
+    {
+        globus_l_gsc_max_read_q = atoi(e);
+        if(globus_l_gsc_max_read_q != 0 && globus_l_gsc_max_read_q < 2)
+        {
+            globus_l_gsc_max_read_q = DEFAULT_MAX_Q_LEN;
+        }
+    }
+        
     GlobusLTestSuiteMsg();
     GlobusDebugInit(GLOBUS_GRIDFTP_SERVER_CONTROL,
         ERROR WARNING TRACE INTERNAL_TRACE COMMANDS VERBOSE STATE);
@@ -760,7 +772,11 @@ globus_l_gsc_read_cb(
                     }
                     else
                     {
-                        server_handle->q_backup = GLOBUS_TRUE;
+                        /* server_handle->q_backup = GLOBUS_TRUE; */
+                        res = globus_l_gsc_final_reply(
+                            server_handle,
+                            _FSMSL("500 Pipeline queue full.\r\n"));
+                        goto err;
                     }
                 }
                 else
@@ -2578,7 +2594,7 @@ globus_gridftp_server_control_init(
 
     globus_mutex_init(&server_handle->mutex, NULL);
 
-    server_handle->max_q_len = DEFAULT_MAX_Q_LEN;
+    server_handle->max_q_len = globus_l_gsc_max_read_q;
     server_handle->state = GLOBUS_L_GSC_STATE_NONE;
     server_handle->reply_outstanding = GLOBUS_FALSE;
     server_handle->pre_auth_banner = 
