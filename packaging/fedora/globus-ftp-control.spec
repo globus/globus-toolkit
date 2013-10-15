@@ -12,8 +12,8 @@
 
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	4.6
-Release:	2%{?dist}
+Version:	4.7
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
 Group:		System Environment/Libraries
@@ -191,6 +191,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Oct 15 2013 Globus Toolkit <support@globus.org> - 4.7-1
+- GT-428: Improve handling of hanging GridFTP server processes - prevent missing force_close callback
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 4.6-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

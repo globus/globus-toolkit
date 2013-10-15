@@ -1,3 +1,9 @@
+globus-ftp-control (4.7-1) unstable; urgency=low
+
+  * GT-428: Improve handling of hanging GridFTP server processes - prevent missing force_close callback
+
+ -- Globus Toolkit <support@globus.org>  Tue, 15 Oct 2013 00:45:54 -0500
+
 globus-ftp-control (4.6-1) unstable; urgency=low
 
   * GT-366 fix delegation bug introduced in last release.

@@ -7591,7 +7591,7 @@ globus_ftp_control_data_force_close(
     globus_mutex_lock(&dc_handle->mutex);
     {
         /* already closed, or closing */
-        if(dc_handle->state == GLOBUS_FTP_DATA_STATE_NONE)
+        if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING || dc_handle->state == GLOBUS_FTP_DATA_STATE_NONE)
         {
             err = globus_error_construct_string(
                       GLOBUS_FTP_CONTROL_MODULE,
