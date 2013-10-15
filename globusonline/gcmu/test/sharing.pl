@@ -111,7 +111,7 @@ sub create_and_share_dir($$$$$$)
     File::Path::mkpath( ["$home/$path"], 0, 0700 );
     chown $uid, $gid, "$home/$path";
 
-    $res = $api->endpoint_access_add($name, path=>"/~/$path",
+    $res = $api->endpoint_access_add($name, path=>"/$path",
             principal=>$go_user, permissions=>$perms);
 
     return $res->{code} eq 'Created';
