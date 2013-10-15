@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.36
+Version:	6.37
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -183,6 +183,11 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Oct 15 2013 Globus Toolkit <support@globus.org> - 6.37-1
+- GT-374: Can't share files in a path structure with symlinks
+- GT-428: Improve handling of hanging GridFTP server processes
+- GT-469: MFMT/UTIME update access time but shouldn't
+
 * Thu Aug 15 2013 Globus Toolkit <support@globus.org> - 6.36-1
 - GT-368: Fix log message concatination when writing to syslog
 - GT-420: revert to documented behavior for restricted paths

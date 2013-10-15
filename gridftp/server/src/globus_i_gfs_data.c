@@ -2094,7 +2094,7 @@ globus_l_gfs_data_brain_ready_delay_cb(
                 &finished_info,
                 op->user_arg);
         }
-        globus_l_gfs_data_reset_watchdog(op->session_handle, "IDLE");
+        globus_l_gfs_data_reset_watchdog(op->session_handle, NULL);
         
         globus_mutex_lock(&op->session_handle->mutex);
         {
@@ -7080,7 +7080,6 @@ globus_i_gfs_data_request_send(
     GlobusGFSDebugEnter();
 
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
-    globus_l_gfs_data_reset_watchdog(session_handle, "SEND");
 
     /* YOU ARE ENTRERING THE UGLY HACK ZONE */
     globus_mutex_lock(&session_handle->mutex);
@@ -7100,6 +7099,15 @@ globus_i_gfs_data_request_send(
     }
     globus_mutex_unlock(&session_handle->mutex);
     /* YOU ARE leaving THE UGLY HACK ZONE */
+
+    if(data_handle->is_mine)
+    {
+        globus_l_gfs_data_reset_watchdog(session_handle, "SEND");
+    }
+    else
+    {
+        globus_l_gfs_data_reset_watchdog(session_handle, NULL);
+    }
 
     result = globus_l_gfs_data_operation_init(&op, session_handle);
     if(result != GLOBUS_SUCCESS)
@@ -8729,7 +8737,7 @@ globus_l_gfs_data_end_transfer_kickout(
             op->ipc_handle,
             &reply);
     }
-    globus_l_gfs_data_reset_watchdog(op->session_handle, "IDLE");
+    globus_l_gfs_data_reset_watchdog(op->session_handle, NULL);
     
     /* remove the refrence for this callback.  It is posible the before
         aquireing this lock the completing state occured and we are
@@ -10065,7 +10073,7 @@ globus_l_gfs_finished_command_kickout(
     }
     else
     {
-        globus_l_gfs_data_reset_watchdog(op->session_handle, "IDLE");
+        globus_l_gfs_data_reset_watchdog(op->session_handle, NULL);
     }
 
     globus_mutex_lock(&op->session_handle->mutex);
@@ -10869,7 +10877,7 @@ globus_l_gfs_operation_finished_kickout(
                 bounce->finished_info);
         }
     }
-    globus_l_gfs_data_reset_watchdog(op->session_handle, "IDLE");
+    globus_l_gfs_data_reset_watchdog(op->session_handle, NULL);
 
     globus_mutex_lock(&op->session_handle->mutex);
     {

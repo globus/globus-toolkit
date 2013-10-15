@@ -1,3 +1,11 @@
+globus-gridftp-server (6.37-1) unstable; urgency=low
+
+  * GT-374: Can't share files in a path structure with symlinks
+  * GT-428: Improve handling of hanging GridFTP server processes
+  * GT-469: MFMT/UTIME update access time but shouldn't
+
+ -- Globus Toolkit <support@globus.org>  Tue, 15 Oct 2013 08:56:52 -0500
+
 globus-gridftp-server (6.36-1) unstable; urgency=low
 
   * GT-368: Fix log message concatination when writing to syslog
