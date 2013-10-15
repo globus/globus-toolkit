@@ -1014,7 +1014,7 @@ globus_l_io_bounce_authz_cb(
                     globus_error_get(result),
                     ihandle->io_handle));
         }
-        else if(globus_xio_error_is_canceled(result))
+        else if(globus_xio_error_is_canceled(result) && !globus_xio_error_match(result, GLOBUS_XIO_ERROR_TIMEOUT))
         {
             result = globus_error_put(
                 globus_io_error_construct_io_cancelled(

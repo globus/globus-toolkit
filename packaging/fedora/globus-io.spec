@@ -12,8 +12,8 @@
 
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	9.4
-Release:	3%{?dist}
+Version:	9.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
@@ -121,6 +121,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Tue Oct 15 2013 Globus Toolkit <support@globus.org> - 9.5-1
+- GT-470: Globus IO reports timeout error as cancellation
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 9.4-3
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

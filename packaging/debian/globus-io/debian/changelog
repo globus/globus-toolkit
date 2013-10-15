@@ -1,3 +1,9 @@
+globus-io (9.5-1) unstable; urgency=low
+
+  * GT-470: Globus IO reports timeout error as cancellation
+
+ -- Globus Toolkit <support@globus.org>  Tue, 15 Oct 2013 00:24:30 -0500
+
 globus-io (9.4-2) unstable; urgency=low
 
   * missing dependency on globus-gssapi-error
