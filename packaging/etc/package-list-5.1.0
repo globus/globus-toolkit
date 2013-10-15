@@ -87,7 +87,7 @@ globus_xio_rate_driver	xio/drivers/rate/source	gpt
 globus_xio_skeleton_driver      xio/drivers/skeleton/source	gpt
 globus_xio_token_bucket_driver	xio/drivers/token_bucket/source	gpt
 globus_xio_udt_ref_driver	xio/drivers/udt_ref	gpt
-#udt                     xio/external_libs/udt/udt4 tar
+udt                             xio/external_libs/udt/udt4 NULL
 
 # Example Callouts
 globus_gridftp_server_acl_example     gridftp/server/acl/example	gpt
