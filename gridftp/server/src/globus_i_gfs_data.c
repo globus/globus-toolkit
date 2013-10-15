@@ -2476,6 +2476,82 @@ globus_l_gfs_data_update_restricted_paths(
     }
 }
 
+static
+void
+globus_l_gfs_data_update_restricted_paths_symlinks(
+    globus_l_gfs_data_session_t *   session_handle,
+    globus_list_t **                rp_list)
+{
+    globus_list_t *                     list;
+    globus_list_t *                     new_list = NULL;
+    globus_l_gfs_alias_ent_t *          alias_ent;
+    globus_bool_t                       resort = GLOBUS_FALSE;
+    char *                              var_path;
+    GlobusGFSName(globus_l_gfs_data_update_restricted_paths);
+    GlobusGFSDebugEnter();
+    
+    if(!globus_i_gfs_config_bool("rp_follow_symlinks") && session_handle &&
+        session_handle->dsi->realpath_func)
+    {
+        if(!globus_list_empty(*rp_list))
+        {   
+            for(list = *rp_list;
+                !globus_list_empty(list);
+                list = globus_list_rest(list))
+            {        
+                char *                  real_path = NULL;
+                globus_bool_t           result;
+                
+                alias_ent = globus_list_first(list);
+                
+                result = session_handle->dsi->realpath_func(
+                    alias_ent->alias, &real_path, session_handle->session_arg);
+                
+                if(result == GLOBUS_SUCCESS && real_path)
+                {
+                    if(strcmp(real_path, alias_ent->alias) != 0)
+                    {
+                        globus_l_gfs_alias_ent_t *      new_ent;
+                        
+                        new_ent = (globus_l_gfs_alias_ent_t *)
+                            globus_calloc(1, sizeof(globus_l_gfs_alias_ent_t));
+                        new_ent->access = alias_ent->access;
+                        new_ent->alias = real_path;
+                        new_ent->alias_len = strlen(real_path);
+                        if(alias_ent->realpath)
+                        {
+                            new_ent->realpath = strdup(alias_ent->realpath);
+                            new_ent->realpath_len = alias_ent->realpath_len;
+                        }
+                        
+                        globus_list_insert(&new_list, new_ent);
+                        
+                        resort = GLOBUS_TRUE;
+                    }
+                    else
+                    {
+                        globus_free(real_path);
+                        real_path = NULL;
+                    }
+                }    
+            }
+            
+            if(resort)
+            {
+                while(!globus_list_empty(new_list))
+                {
+                    globus_list_insert(
+                        rp_list, 
+                        globus_list_remove(&new_list, new_list));
+                }
+
+                *rp_list = globus_list_sort_destructive(
+                    *rp_list, globus_list_cmp_alias_ent, NULL);
+            }
+        }
+    }
+}
+
 #define GFS_RP_LEAD_CHARS "/~$*[?"
 
 static
@@ -4909,8 +4985,9 @@ share_test_error:
                 result = globus_l_gfs_data_parse_restricted_paths(
                     session_handle, cmd_info->pathname, &session_handle->rp_list, 1);
             }
-            /* globus_l_gfs_data_update_restricted_paths(
-                op->session_handle, &session_handle->rp_list); */
+            
+            globus_l_gfs_data_update_restricted_paths_symlinks(
+                session_handle, &session_handle->rp_list);
                 
 
             globus_gridftp_server_finished_command(op, result, NULL);
@@ -10917,6 +10994,16 @@ globus_gridftp_server_operation_finished(
                 finished_info->op_info->custom_command_table = 
                     op->session_handle->custom_cmd_table;
             }
+            
+            globus_l_gfs_data_update_restricted_paths_symlinks(
+                op->session_handle, &globus_l_gfs_path_alias_list_base);
+            if(globus_l_gfs_path_alias_list_sharing != 
+                globus_l_gfs_path_alias_list_base)
+            {
+                globus_l_gfs_data_update_restricted_paths_symlinks(
+                    op->session_handle, &globus_l_gfs_path_alias_list_sharing);
+            }
+
             break;
 
         case GLOBUS_GFS_OP_PASSIVE:
