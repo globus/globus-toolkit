@@ -1252,7 +1252,7 @@ error:
 static
 globus_result_t
 globus_l_gfs_file_utime(
-    globus_gfs_operation_t   op,
+    globus_gfs_operation_t              op,
     const char *                        pathname,
     time_t                              modtime)
 {
@@ -1262,8 +1262,8 @@ globus_l_gfs_file_utime(
     GlobusGFSName(globus_l_gfs_file_utime);
     GlobusGFSFileDebugEnter();
 
-    ubuf.actime = modtime;
     ubuf.modtime = modtime;
+    ubuf.actime = time(NULL);
     
     rc = utime(pathname, &ubuf);
     if(rc != 0)
