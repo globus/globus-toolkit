@@ -312,6 +312,7 @@ typedef struct globus_l_gfs_data_operation_s
             -- kicks out transfer end since in finished
     */
     globus_bool_t                       finished_delayed;
+    globus_bool_t                       connect_failed;
 } globus_l_gfs_data_operation_t;
 
 typedef struct
@@ -404,6 +405,23 @@ globus_l_gfs_data_list_stat_cb(
 static
 void
 globus_l_gfs_data_end_read_kickout(
+    void *                              user_arg);
+
+static
+void
+globus_l_gfs_data_fc_kickout(
+    void *                              user_arg);
+
+static
+void
+globus_l_gfs_data_abort_fc_cb(
+    void *                              callback_arg,
+    globus_ftp_control_handle_t *       ftp_handle,
+    globus_object_t *                   error);
+
+static
+void
+globus_l_gfs_data_abort_kickout(
     void *                              user_arg);
 
 static
@@ -5593,6 +5611,34 @@ error_alloc:
 
 static
 void
+globus_l_gfs_data_fc_kickout(
+    void *                              user_arg)
+{
+    globus_l_gfs_data_operation_t *     op;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_data_fc_kickout);
+    GlobusGFSDebugEnter();
+
+    op = (globus_l_gfs_data_operation_t *) user_arg;
+
+    GlobusGFSDebugInfo("globus_ftp_control_data_force_close");
+    result = globus_ftp_control_data_force_close(
+        &op->data_handle->data_channel,
+        globus_l_gfs_data_abort_fc_cb,
+        op);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GlobusGFSDebugInfo("force_close failed");
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gfs_data_abort_kickout,
+            op);
+    }
+}
+
+static
+void
 globus_l_gfs_data_abort_kickout(
     void *                              user_arg)
 {
@@ -7932,6 +7978,7 @@ globus_l_gfs_data_begin_cb(
                     /* something wrong, start the abort process */
                     op->cached_res =
                         globus_error_put(globus_object_copy(error));
+                    op->connect_failed = GLOBUS_TRUE;
                     goto err_lock;
                 }
                 if(!op->stripe_connections_pending)
@@ -9369,15 +9416,25 @@ globus_l_gfs_data_start_abort(
                 globus_assert(op->data_handle->state ==
                     GLOBUS_L_GFS_DATA_HANDLE_INUSE);
                 op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
-
-                GlobusGFSDebugInfo("globus_ftp_control_data_force_close");
-                result = globus_ftp_control_data_force_close(
-                    &op->data_handle->data_channel,
-                    globus_l_gfs_data_abort_fc_cb,
-                    op);
-                if(result != GLOBUS_SUCCESS)
+                if(!op->connect_failed)
                 {
-                    GlobusGFSDebugInfo("force_close failed");
+                    GlobusGFSDebugInfo("globus_ftp_control_data_force_close");
+                    result = globus_ftp_control_data_force_close(
+                        &op->data_handle->data_channel,
+                        globus_l_gfs_data_abort_fc_cb,
+                        op);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        GlobusGFSDebugInfo("force_close failed");
+                        globus_callback_register_oneshot(
+                            NULL,
+                            NULL,
+                            globus_l_gfs_data_abort_kickout,
+                            op);
+                    }
+                }
+                else
+                {
                     globus_callback_register_oneshot(
                         NULL,
                         NULL,
@@ -9390,7 +9447,7 @@ globus_l_gfs_data_start_abort(
                 globus_callback_register_oneshot(
                     NULL,
                     NULL,
-                    globus_l_gfs_data_abort_kickout,
+                    globus_l_gfs_data_fc_kickout,
                     op);
             }
             op->state = GLOBUS_L_GFS_DATA_ABORT_CLOSING;
