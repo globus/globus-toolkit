@@ -265,7 +265,7 @@ globus_l_xio_udt_ref_attr_cntl(
           {
             char *                      stunserver;
             char *                      stunhost;
-            int                         stunport;
+            unsigned int                stunport;
             
             attr->ice_controlling = va_arg(ap, int);
             stunserver = va_arg(ap, char *);
@@ -278,12 +278,16 @@ globus_l_xio_udt_ref_attr_cntl(
                 char *                  ptr;
                 
                 stunhost = strdup(stunserver);
-                ptr = strchr(stunserver, ':');
+                ptr = strchr(stunhost, ':');
                 if(ptr)
                 {
                     *ptr = 0;
                     ptr++;
                     stunport = atoi(ptr);
+                }
+                else
+                {
+                    stunport = DEFAULTSTUNPORT;
                 }
             }
             else
@@ -294,8 +298,8 @@ globus_l_xio_udt_ref_attr_cntl(
                     
             rc = ice_init(
                 &attr->ice_data, 
-                (const char *)DEFAULTSTUNSERVER,
-                (unsigned int)DEFAULTSTUNPORT,
+                (const char *) stunhost,
+                stunport,
                 attr->ice_controlling);
             if(rc != ICE_SUCCESS)
             {
@@ -335,6 +339,12 @@ globus_l_xio_udt_ref_attr_cntl(
                 ice_argv = ice_parse_args(ice_args, &ice_argc);
     
                 status = ice_negotiate(&attr->ice_data, ice_argc, ice_argv);
+                if(status != ICE_SUCCESS)
+                {
+                    /* possibly due to first-time-on-network delays, 
+                     * crude retry */
+                    status = ice_negotiate(&attr->ice_data, ice_argc, ice_argv);
+                }
                 if(status != ICE_SUCCESS)
                 {
                     result = GlobusXIOUdtError("ICE negotiation failed.");
@@ -526,7 +536,7 @@ globus_l_xio_udt_ref_bind(
                 UDT::getlasterror().getErrorMessage());
             goto error_bind;
         }
-        GlobusLibcSockaddrCopy(addr, attr->ice_local_addr, addr_len);
+        GlobusLibcSockaddrCopy(*addr, attr->ice_local_addr, addr_len);
     }
     else
     {
