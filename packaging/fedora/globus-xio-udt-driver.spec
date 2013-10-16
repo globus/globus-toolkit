@@ -12,8 +12,8 @@
 
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
-Version:	0.4
-Release:	3%{?dist}
+Version:	0.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
 Group:		System Environment/Libraries
@@ -23,13 +23,13 @@ Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{ve
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
-Requires:	globus-xio%{?_isa} >= 3
+Requires:	globus-xio%{?_isa} >= 0
 Requires:       libudt >= 4
 Requires:       glib2%{?_isa} >= 2.22.5
 Requires:       libnice >= 0.0.9
 
 BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-xio-devel >= 0
 BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:  udt-devel >= 4
@@ -40,7 +40,7 @@ BuildRequires:  libnice-devel >= 0.0.9
 Summary:	Globus Toolkit - Globus XIO UDT Driver Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-xio-devel%{?_isa} >= 0
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -121,6 +121,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Oct 16 2013 Globus Toolkit <support@globus.org> - 0.5-1
+- fix new package issues
+
 * Wed May 24 2013 Globus Toolkit <support@globus.org> - 0.4-1
 - New package
 
