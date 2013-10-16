@@ -207,7 +207,7 @@ if ((!$random_user) || (!$random_user2))
     exit(1);
 }
 
-plan tests => 19;
+plan tests => 21;
 
 # Test Step #1:
 # Create endpoint with MyProxy authentication
@@ -285,25 +285,38 @@ ok(transfer_file($shared_endpoint, $random_user, api=>$friend_api,
 
 # Test Step #15:
 # Try to allow access to a path outside of the sharing restricted paths
-ok(!create_and_share_dir($shared_endpoint, $random_user, "gcmutest",
+# GO currently does not check access so this should always succeed
+ok(create_and_share_dir($shared_endpoint, $random_user, "gcmutest",
         "NONE", "r", $owner_api),
         "shared_endpoint_access_add_restricted");
 
 # Test Step #16:
+# Try to transfer file into N dir using friend credentials (should fail)
+ok(!transfer_file($shared_endpoint, $random_user, api=>$friend_api,
+        source_dir => "RO", dest_dir => "NONE"),
+        "transfer_via_shared_endpoint_friend_ro_to_n");
+
+# Test Step #17:
+# Try to transfer file from N to rw dir using friend credentials (should fail)
+ok(!transfer_file($shared_endpoint, $random_user, api=>$friend_api,
+        source_dir => "NONE", dest_dir => "RW"),
+        "transfer_via_shared_endpoint_friend_n_to_rw");
+
+# Test Step #18:
 # Deactivate friend's access to shared endpoint
 ok(deactivate_endpoint($shared_endpoint, $friend_api),
         "deactivate_shared_endpoint_friend");
 
-# Test Step #17:
+# Test Step #19:
 # Deactivate access to shared endpoint
 ok(deactivate_endpoint($shared_endpoint),
         "deactivate_shared_endpoint_owner");
 
-# Test Step #18:
+# Test Step #20:
 # Deactivate access to endpoint
 ok(deactivate_endpoint($endpoint), "deactivate_endpoint_owner");
 
-# Test Step #19:
+# Test Step #21:
 # Clean up
 ok(cleanup, "cleanup");
 
