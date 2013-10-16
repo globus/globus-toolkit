@@ -1,6 +1,6 @@
 Name: udt
 Version: 4.11
-Release: 1
+Release: 2
 Summary: UDP-based Data Transfer
 Vendor:  UDT Team
 
@@ -10,6 +10,7 @@ URL:     http://udt.sourceforge.net/
 Source:  http://sourceforge.net/projects/udt/files/udt/%{version}/udt.sdk.%{version}.tar.gz
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRequires: gcc-c++
 
 %description
 UDT is a reliable UDP based application level 
