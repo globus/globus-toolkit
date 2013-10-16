@@ -24,7 +24,7 @@ AC_ARG_ENABLE(static-deps,
     [build_prereq="yes"],
     [build_prereq="no"])
 
-if [ "$build_prereq" = "yes" ]; then
+if test "$build_prereq" = "yes" ; then
 
 export GLOBUS_FLAVOR=$GLOBUS_FLAVOR_NAME
 cd prereq
@@ -36,12 +36,14 @@ cd ..
 fi
 
 export PKG_CONFIG_PATH="$PWD/prereq/inst/lib/pkgconfig:$PKG_CONFIG_PATH"
+if test -z "$GPT_IGNORE_DEPS"; then
 PKG_PROG_PKG_CONFIG
 PKG_CONFIG="$PKG_CONFIG --static"
 PKG_CHECK_MODULES([NICE], [nice >= 0.0.9])
 PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.22.5 gthread-2.0 gio-2.0 gobject-2.0])
 UDT_LIBS="-L$PWD/prereq/inst/lib -ludt"
 UDT_CFLAGS="-I$PWD/prereq/inst/include"
+fi
 AC_SUBST(NICE_LIBS)
 AC_SUBST(NICE_CFLAGS)
 AC_SUBST(GLIB_LIBS)

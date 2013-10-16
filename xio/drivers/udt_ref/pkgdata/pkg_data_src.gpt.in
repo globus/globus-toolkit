@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 
-<gpt_package_metadata Name="globus_xio_udt_ref_driver" Format_Version="0.01">
+<gpt_package_metadata Name="globus_xio_udt_driver" Format_Version="0.01">
 
     <Aging_Version Major="0" Minor="4" Age="0"/>
-    <Description> Globus XIO Wrap Blocking Driver</Description>
+    <Description> Globus XIO UDT Driver</Description>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 
     <src_pkg>

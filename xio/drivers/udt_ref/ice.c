@@ -95,7 +95,6 @@ int ice_init(struct icedata *ice_data,
              const char *stun_host, unsigned int stun_port,
              int controlling) {
     gboolean ok;
-    NiceAddress localaddr;
 
     if (!lib_initialized)
         return ICE_FAILURE;
@@ -205,8 +204,7 @@ int ice_get_local_data(struct icedata *ice_data, char *out, size_t outsize) {
     gchar *local_password = NULL;
     char *p = out;
     int written;
-    unsigned int j;
-    GSList *cand, *item;
+    GSList *cand = NULL, *item;
     NiceCandidate *c;
 
     ok = nice_agent_get_local_credentials(ice_data->agent, 1,
@@ -415,7 +413,6 @@ static void *thread_mainloop(void *data) {
 
 static void cb_candidate_gathering_done(NiceAgent *agent, guint stream_id,
                                         gpointer data) {
-    int rval;
     struct icedata *ice_data = (struct icedata *)data;
 
     g_debug("SIGNAL: candidate gathering done");
@@ -448,8 +445,7 @@ static void cb_component_state_changed(NiceAgent *agent, guint stream_id,
 static void cb_new_selected_pair(NiceAgent *agent, guint stream_id,
                                  guint component_id, gchar *lfoundation,
                                  gchar *rfoundation, gpointer data) {
-    gboolean ok;
-    GSList *lcands, *rcands, *item;
+    GSList *lcands, *rcands;
     NiceCandidate *local, *remote;
     struct icedata *ice_data = (struct icedata *)data;
 
@@ -517,7 +513,7 @@ static int snprint_cand(char *out, size_t outlen,
 
 static NiceCandidate *parse_candidate(char *scand, guint stream_id) {
     char foundation[33], ipaddr[46], type[7];
-    int cnt, port, result = ICE_FAILURE;
+    int cnt, port;
     unsigned int prio;
     gboolean ok;
     NiceCandidate *rval = NULL, *out = NULL;
@@ -580,8 +576,8 @@ static int nice_p_address_safe_copy(NiceAddress *naddr, struct sockaddr *saddr,
     }
 
     if (*addrlen < requiredlen) {
-        g_message("sockaddr is too small to fit address: %u < %u",
-                  addrlen, requiredlen);
+        g_message("sockaddr is too small to fit address: %lu < %lu",
+                  (unsigned long) *addrlen, (unsigned long) requiredlen);
         return ICE_FAILURE;
     }
 
