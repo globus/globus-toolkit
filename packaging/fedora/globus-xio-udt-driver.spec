@@ -13,7 +13,7 @@
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
 Version:	0.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
 Group:		System Environment/Libraries
@@ -32,7 +32,7 @@ BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
-BuildRequires:  libudt-devel >= 4
+BuildRequires:  udt-devel >= 4
 BuildRequires:  glib2-devel >= 2.22.5
 BuildRequires:  libnice-devel >= 0.0.9
 
