@@ -411,7 +411,7 @@ BUNDLE globus-gridftp
 
 BUNDLE globus-xio-extra-drivers
         globus_xio_skeleton_driver
-        globus_xio_udt_ref_driver
+        globus_xio_udt_driver
         globus_xio_netlogger_driver
         globus_xio_gridftp_multicast
 

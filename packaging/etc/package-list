@@ -91,7 +91,7 @@ globus_xio_popen_driver	xio/drivers/popen/source	gpt
 globus_xio_pipe_driver	xio/drivers/pipe/source		gpt
 globus_xio_gsi_driver	xio/drivers/gsi	gpt
 udt                     xio/external_libs/udt/udt4 tar
-globus_xio_udt_ref_driver	xio/drivers/udt_ref	gpt
+globus_xio_udt_driver	xio/drivers/udt_ref	gpt
 globus_xio_skeleton_driver      xio/drivers/skeleton/source	gpt
 globus_xio_blockz_driver        xio/drivers/blockz	gpt
 globus_xio_netlogger_driver     xio/drivers/netlog  gpt
