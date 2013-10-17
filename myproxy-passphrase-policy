@@ -5,7 +5,6 @@ chomp($passphrase = <STDIN>);
 
 use Crypt::Cracklib; # if missing, install with:
                      #   perl -MCPAN -e 'install Crypt::Cracklib'
-$Crypt::Cracklib::DICT = '/usr/lib/cracklib_dict';
 
 if ($passphrase eq "") {
     exit(0);	# allow empty passphrase for other auth methods
