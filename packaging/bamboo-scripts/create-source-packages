@@ -66,8 +66,8 @@ for package in $cvs_packages; do
         if [ "$package_no_version" = "gpt" ]; then
             cp ${package_tarname} "$WORKSPACE/package-output/"
         else
-            ./make-packages.pl --packages="$package_no_version" \
-                               -skipbundle -no-updates -nogpt
+            GPT_LOCATION="$(pwd)/$(cat gpt/gpt_version)" ./make-packages.pl --packages="$package_no_version" \
+                               -skipbundle -no-updates -nogpt -flavor=gcc64dbg
             if [ -f package-output/${package}.tar.gz ]; then
                 package_tarname="${package}.tar.gz" 
             elif [ -f package-output/${package}-src.tar.gz ]; then
