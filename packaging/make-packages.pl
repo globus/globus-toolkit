@@ -664,6 +664,7 @@ sub populate_package_list
 # --------------------------------------------------------------------
 {
     my $build_default;
+    my $old_dir = getcwd();
 
     chdir "$top_dir/etc/";
 
@@ -685,6 +686,7 @@ sub populate_package_list
 
         $package_list{$pkg} = [ "gt", $subdir, $custom, $pnb, $pkgtag ];
     }
+    chdir $old_dir;
 }
 
 # --------------------------------------------------------------------
@@ -692,6 +694,7 @@ sub populate_bundle_list
 # --------------------------------------------------------------------
 {
     my $bundle;
+    my $old_dir = getcwd();
 
     chdir "$top_dir/etc/";
     open(BUN, "bundles");
@@ -730,6 +733,7 @@ sub populate_bundle_list
             }
         }
     }
+    chdir $old_dir;
 }
 
 # The goal is to let the user specify both bundles and packages.
