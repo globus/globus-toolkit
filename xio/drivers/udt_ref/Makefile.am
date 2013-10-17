@@ -18,7 +18,9 @@ libglobus_xio_udt_driver_la_SOURCES = \
 libglobus_xio_udt_driver_la_LDFLAGS = \
         @GPT_LDFLAGS@ -module -rpath $(libdir)
 
-EXTRA_DIST = version.h.in
+doc_DATA = GLOBUS_LICENSE
+
+EXTRA_DIST = version.h.in $(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
