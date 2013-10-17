@@ -58,7 +58,7 @@ EOF
 repo_packages="$(curl -Ls http://builds.globus.org/repo/packages | xsltproc --html packages.xsl -)"
 
 for package in $cvs_packages; do
-    package_tarname="$(echo "$repo_packages" | grep "${package}\(-src\)\{0,1\}.tar.gz")"
+    package_tarname="$(echo "$repo_packages" | grep "${package}\(-src\)\{0,1\}.tar.gz" || true)"
     if [ "$package_tarname" = "" ]; then
         package_no_version="${package%%-*}"
         if [ "$package_no_version" = "gpt" ]; then
@@ -81,3 +81,5 @@ for package in $cvs_packages; do
         curl -Ls -o "$WORKSPACE/package-output/$package.tar.gz" "http://builds.globus.org/repo/packages/$package.tar.gz"
     fi
 done
+
+# vim: filetype=zsh
