@@ -70,6 +70,7 @@ $|=1;
     activation-test.pl
     transfer-test.pl
     sharing.pl
+    transfer-test-udt.pl
 );
 
 my $test_result = $harness->runtests(@tests);
