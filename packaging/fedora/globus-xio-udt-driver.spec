@@ -12,8 +12,8 @@
 
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
-Version:	0.5
-Release:	3%{?dist}
+Version:	0.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
 Group:		System Environment/Libraries
@@ -27,6 +27,7 @@ Requires:	globus-xio%{?_isa} >= 0
 Requires:       udt%{?_isa} >= 4
 Requires:       glib2%{?_isa} >= 2.32
 Requires:       libnice%{?_isa} >= 0.1
+Requires:       libffi
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-devel >= 0
@@ -121,9 +122,12 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Oct 16 2013 Globus Toolkit <support@globus.org> - 0.6-1
+- more new package fixes
+
 * Wed Oct 16 2013 Globus Toolkit <support@globus.org> - 0.5-1
 - fix new package issues
 
-* Wed May 24 2013 Globus Toolkit <support@globus.org> - 0.4-1
+* Wed May 22 2013 Globus Toolkit <support@globus.org> - 0.4-1
 - New package
 

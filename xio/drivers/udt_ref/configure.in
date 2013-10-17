@@ -14,9 +14,6 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
 LAC_DOXYGEN("../", "", "$GLOBUS_LOCATION/sbin/globus-vararg-enums-doxygen-filter.pl")
 
-
-GLOBUS_FINALIZE
-
 build_prereq="no"
 AC_ARG_ENABLE(static-deps,
     AC_HELP_STRING([--enable-static-deps], 
@@ -25,31 +22,40 @@ AC_ARG_ENABLE(static-deps,
     [build_prereq="no"])
 
 if test "$build_prereq" = "yes" ; then
-
-export GLOBUS_FLAVOR=$GLOBUS_FLAVOR_NAME
-cd prereq
-if test ! -f done; then
-    sh ./build.sh
+    export GLOBUS_FLAVOR=$GLOBUS_FLAVOR_NAME
+    cd prereq
+    if test ! -f done; then
+        sh ./build.sh
+    fi
+    cd ..
+    
 fi
-cd ..
 
-fi
-
-export PKG_CONFIG_PATH="$PWD/prereq/inst/lib/pkgconfig:$PKG_CONFIG_PATH"
 if test -z "$GPT_IGNORE_DEPS"; then
-PKG_PROG_PKG_CONFIG
-PKG_CONFIG="$PKG_CONFIG --static"
-PKG_CHECK_MODULES([NICE], [nice >= 0.0.9])
-PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.22.5 gthread-2.0 gio-2.0 gobject-2.0])
-UDT_LIBS="-L$PWD/prereq/inst/lib -ludt"
-UDT_CFLAGS="-I$PWD/prereq/inst/include"
+    if test "$build_prereq" = "yes" ; then
+        export PKG_CONFIG_PATH="$PWD/prereq/inst/lib/pkgconfig:$PKG_CONFIG_PATH"
+        PKG_PROG_PKG_CONFIG
+        PKG_CONFIG="$PKG_CONFIG --static"
+        UDT_LIBS="-L$PWD/prereq/inst/lib -ludt"
+        UDT_CFLAGS="-I$PWD/prereq/inst/include"
+    else
+        PKG_PROG_PKG_CONFIG
+        UDT_LIBS="-ludt"
+        UDT_CFLAGS=""
+    fi
+   
+    PKG_CHECK_MODULES([NICE], [nice >= 0.1])
+    PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.32 gthread-2.0 gio-2.0 gobject-2.0])
 fi
+
 AC_SUBST(NICE_LIBS)
 AC_SUBST(NICE_CFLAGS)
 AC_SUBST(GLIB_LIBS)
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(UDT_LIBS)
 AC_SUBST(UDT_CFLAGS)
+
+GLOBUS_FINALIZE
 
 AC_OUTPUT(
 	Makefile

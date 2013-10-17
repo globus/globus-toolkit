@@ -1171,6 +1171,10 @@ globus_l_xio_udt_ref_init(
         globus_l_xio_udt_ref_read,
         globus_l_xio_udt_ref_write,
         globus_l_xio_udt_ref_accept);
+    globus_xio_driver_string_cntl_set_table(
+        driver,
+        udt_ref_l_string_opts_table);
+
     *out_driver = driver;
     GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
