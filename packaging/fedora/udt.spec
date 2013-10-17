@@ -1,6 +1,6 @@
 Name: udt
 Version: 4.11
-Release: 2g1
+Release: 2g2
 Summary: UDP-based Data Transfer
 Vendor:  UDT Team
 
@@ -31,7 +31,7 @@ Group: Development/Libraries
 
 # Note: hand-written Makefile, not multi-process safe.
 %ifarch x86_64
-arch=AMD64 make -e
+env arch=AMD64 make -e
 %else
 env C++="g++ -m32" make -e
 %endif
