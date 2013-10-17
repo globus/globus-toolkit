@@ -55,6 +55,8 @@ cat > packages.xsl <<EOF
 </xsl:stylesheet>
 EOF
 
+# Create a core in source_output/tmp_core
+./make-packages.pl --no-updates -t globus_5_2_branch globus_core -skippackage --skipbundle --flavor=gcc64dbg
 repo_packages="$(curl -Ls http://builds.globus.org/repo/packages | xsltproc --html packages.xsl -)"
 
 for package in $cvs_packages; do
