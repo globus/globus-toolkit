@@ -1,7 +1,7 @@
 Source: globus-xio-udt-driver
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-common-dev, libglobus-xio-dev, libnice-dev, libglib2.0-dev (>= 2.22.5), libudt-dev, globus-core (>= 7.7), libffi-dev
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-common-dev, libglobus-xio-dev, libnice-dev, libglib2.0-dev (>= 2.32), libudt-dev, globus-core (>= 7.7), libffi-dev
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
@@ -12,7 +12,7 @@ Homepage: http://www.globus.org/
 Package: libglobus-xio-udt-driver0
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libglib2.0 (>= 2.22.5), libnice10
+Depends: ${shlibs:Depends}, ${misc:Depends}, libglib2.0 (>= 2.32), libnice10
 Description: Globus Toolkit - Globus XIO UDT Driver
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

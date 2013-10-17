@@ -1,3 +1,9 @@
+globus-xio-udt-driver (0.6-2) unstable; urgency=low
+
+  * more new package fixes
+
+ -- Globus Toolkit <support@globus.org>  Wed, 16 Oct 2013 21:33:32 -0500
+
 globus-xio-udt-driver (0.6-1) unstable; urgency=low
 
   * more new package fixes

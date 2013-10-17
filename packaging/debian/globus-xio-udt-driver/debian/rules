@@ -137,9 +137,10 @@ install: build-stamp
 	  sed -e "s!^libdir=.*!libdir=\'$(_libdir)\'!" \
 	      -e "s!^dependency_libs=.*!dependency_libs=\'\'!" -i $$lib ; \
 	done
-
+   
 	# Generate package filelists
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_rtl.filelist \
+            $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_doc.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)$(soname).install
 	grep '\.la$$' $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! >> debian/lib$(name)$(soname).install
