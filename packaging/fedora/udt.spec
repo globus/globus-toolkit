@@ -33,7 +33,7 @@ Group: Development/Libraries
 %ifarch x86_64
 arch=AMD64 make -e
 %else
-C++="g++ -m32" make -e
+env C++="g++ -m32" make -e
 %endif
 
 %install
