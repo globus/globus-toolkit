@@ -1,6 +1,6 @@
 Name: udt
 Version: 4.11
-Release: 2
+Release: 2g
 Summary: UDP-based Data Transfer
 Vendor:  UDT Team
 
@@ -33,7 +33,7 @@ Group: Development/Libraries
 %ifarch x86_64
 make -e arch=AMD64
 %else
-make
+make -e C++="g++ -m32"
 %endif
 
 %install
