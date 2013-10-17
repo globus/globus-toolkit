@@ -26,7 +26,7 @@ Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-xio%{?_isa} >= 0
 Requires:       udt%{?_isa} >= 4
 Requires:       glib2%{?_isa} >= 2.32
-Requires:       libnice%{?_isa} >= 0.1
+Requires:       libnice%{?_isa} >= 0.0.12
 Requires:       libffi
 
 BuildRequires:	grid-packaging-tools >= 3.4
@@ -35,7 +35,7 @@ BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:  udt-devel >= 4
 BuildRequires:  glib2-devel >= 2.32
-BuildRequires:  libnice-devel >= 0.1
+BuildRequires:  libnice-devel >= 0.0.12
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO UDT Driver Development Files
