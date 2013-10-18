@@ -1,8 +1,8 @@
-grid-packaging-tools (3.6.6-1) unstable; urgency=low
+grid-packaging-tools (3.6.7-1) unstable; urgency=low
 
   * GT-448: Flavor dependent file in globus_core/noflavor_data package
 
- -- Globus Toolkit <support@globus.org>  Thu, 10 October 2013 13:54:47 -0400
+ -- Globus Toolkit <support@globus.org>  Fri, 18 October 2013 08:04:18 -0400
 
 grid-packaging-tools (3.6.5-1) unstable; urgency=low
 

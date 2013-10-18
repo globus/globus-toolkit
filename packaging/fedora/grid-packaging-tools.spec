@@ -1,5 +1,5 @@
 Name:		grid-packaging-tools
-Version:	3.6.6
+Version:	3.6.7
 Release:	1%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 
@@ -86,7 +86,7 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
-* Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 3.6.6-1
+* Fri Oct 18 2013 Globus Toolkit <support@globus.org> - 3.6.7-1
 - GT-448: Flavor dependent file in globus_core/noflavor_data package
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.6.5-2
