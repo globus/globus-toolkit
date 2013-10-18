@@ -201,6 +201,18 @@ sub extract_perl_modules {
   $self->{'list'} = \@newlist;
 }
 
+sub extract_flavor_defs {
+  my $self = shift;
+  my $list = $self->{'list'};
+  my @newlist;
+  for (@{$list}) {
+    if ($_->{'name'} =~ m!^flavor_! and $_->{'dir'} =~ m!flavors!) {
+      push @newlist, $_;
+    }
+  }
+  $self->{'list'} = \@newlist;
+}
+
 sub extract_libtool_libs {
   my $self = shift;
   my $list = $self->{'list'};
@@ -230,7 +242,7 @@ sub extract_data {
   my $list = $self->{'list'};
   my @newlist;
   for (@{$list}) {
-    if ($_->{'dir'} !~ m!(?:/|^)(?:share/doc|man|s?bin|libexec|test|include|lib(64)?|perl5?|setup|share/globus/packages)(?:/|$)!) {
+    if ($_->{'dir'} !~ m!(?:/|^)(?:share/doc|man|s?bin|libexec|test|include|lib(64)?|perl5?|setup|share/globus/packages|share/globus/flavors)(?:/|$)!) {
       push @newlist, $_;
     }
   }
