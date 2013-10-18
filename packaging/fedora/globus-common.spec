@@ -19,7 +19,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	14.10
-Release:	3%{?dist}
+Release:	3g%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
