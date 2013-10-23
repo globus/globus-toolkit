@@ -1,3 +1,9 @@
+globus-common (14.10-2) unstable; urgency=low
+
+  * Bump globus-version to 5.2.5
+
+ -- Globus Toolkit <support@globus.org>  Wed, 23 October 2013 09:02:11 -0400
+
 globus-common (14.10-1) unstable; urgency=low
 
   * GT-354: Compatibility with automake 1.13

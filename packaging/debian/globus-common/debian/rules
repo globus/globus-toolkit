@@ -15,7 +15,7 @@ name = globus-common
 _name = globus_common
 version = 14.10
 soname = 0
-toolkit_version = 5.2.5rc0
+toolkit_version = 5.2.5
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
