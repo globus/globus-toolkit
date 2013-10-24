@@ -1,3 +1,23 @@
 #! /bin/sh
 mkdir -p /var/lib/globus-connect-server
 #DEBHELPER#
+
+
+mv_conffile() {
+    local OLDCONFFILE="$1"
+    local NEWCONFFILE="$2"
+
+    [ -e "$OLDCONFFILE" ] || return 0
+
+    echo "Preserving user changes to $NEWCONFFILE ..."
+    mv -f "$NEWCONFFILE" "$NEWCONFFILE".dpkg-new
+    mv -f "$OLDCONFFILE" "$NEWCONFFILE"
+}
+
+case "$1" in
+configure)
+    if dpkg --compare-versions "$2" le "3.0.0"; then
+        mv_conffile "/etc/globus-connect-multiuser.conf" \
+                    "/etc/globus-connect-server.conf"
+    fi
+esac
