@@ -1,5 +1,5 @@
 Name:           globus-connect-server
-Version:        2.0.61
+Version:        3.0.0
 Release:        1%{?dist}
 Summary:        Globus Connect Server
 %global _name %(tr - _ <<< %{name})
@@ -209,6 +209,9 @@ if [ -f %{_sysconfdir}/globus-connect-multiuser.conf ]; then
 fi
 
 %changelog
+* Thu Oct 24 2013 Globus Toolkit <support@globus.org> 3.0.0-1
+- Bump to new version
+
 * Mon Oct 07 2013 Globus Toolkit <support@globus.org> 2.0.61-1
 - Rename from globus-connect-multiuser to globus-connect-server
 

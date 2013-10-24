@@ -1,3 +1,9 @@
+globus-connect-server (3.0.0-1) unstable; urgency=low
+
+  * Bump to new version
+
+ -- Globus Toolkit <support@globus.org>  Thu, 24 October 2013 13:48:45 -0400
+
 globus-connect-server (2.0.61-1) unstable; urgency=low
 
   * Rename to globus-connect-server
