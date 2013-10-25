@@ -7,7 +7,7 @@ Standards-Version: 3.9.3
 
 Package: myproxy-oauth
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, python (>= 2.5), python-crypto (>=2.2) | python-m2crypto, python-crypto (>= 2.0), python-openssl, python-httplib2, libapache2-mod-wsgi
+Depends: ${shlibs:Depends}, ${misc:Depends}, python (>= 2.5), python-crypto (>=2.2) | python-m2crypto, python-crypto (>= 2.0), python-openssl, python-httplib2, libapache2-mod-wsgi, apache2
 Description: myproxy-oauth
  The Globus Toolkit is an open source software toolkit used for building Grid
  systems and applications. It is being developed by the Globus Alliance and
