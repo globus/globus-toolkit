@@ -12,8 +12,8 @@
 
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
-Version:	0.4
-Release:	2%{?dist}
+Version:	0.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
 Group:		System Environment/Libraries
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Oct 25 2013 Globus Toolkit <support@globus.org> - 0.5-1
+- Missing configure dependency on OpenSSL
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 0.4-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 
