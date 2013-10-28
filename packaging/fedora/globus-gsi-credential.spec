@@ -12,7 +12,7 @@
 
 Name:		globus-gsi-credential
 %global _name %(tr - _ <<< %{name})
-Version:	5.7
+Version:	6.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Credential Library
 
@@ -192,6 +192,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 6.0-1
+- Update Major version for globus_gsi_cred_read_cert_buffer and globus_gsi_cred_verify_cert_chain_when
+
 * Wed Jul 17 2013 Globus Toolkit <support@globus.org> - 5.7-1
 - GT-437: grid-proxy-init broken for PKCS12 files with CA certificates
 

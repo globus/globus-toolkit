@@ -1,3 +1,9 @@
+globus-gsi-credential (6.0-1) unstable; urgency=low
+
+  * Update Major version for globus_gsi_cred_read_cert_buffer and globus_gsi_cred_verify_cert_chain_when
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Oct 2013 12:25:56 -0400
+
 globus-gsi-credential (5.7-1) unstable; urgency=low
 
   * GT-437: grid-proxy-init broken for PKCS12 files with CA certificates
