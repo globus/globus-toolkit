@@ -1,3 +1,9 @@
+globus-gram-job-manager-slurm (1.2-1) unstable; urgency=low
+
+  * update description
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Oct 2013 14:19:24 -0400
+
 globus-gram-job-manager-slurm (1.1-1) unstable; urgency=low
 
   * Search for commands in path if not in config

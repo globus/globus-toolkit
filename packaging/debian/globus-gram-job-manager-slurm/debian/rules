@@ -11,7 +11,7 @@ endif
 
 name = globus-gram-job-manager-slurm
 _name = globus_gram_job_manager_slurm
-version = 1.1
+version = 1.2
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages

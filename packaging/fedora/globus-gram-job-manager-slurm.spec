@@ -8,7 +8,7 @@
 
 Name:		globus-gram-job-manager-slurm
 %global _name %(tr - _ <<< %{name})
-Version:	1.1
+Version:	1.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - SLURM Job Manager
 
@@ -175,6 +175,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 1.2-1
+- update description
+
 * Tue Sep 17 2013 Globus Toolkit <support@globus.org> - 1.1-1
 - Search for commands in path if not in config
 
