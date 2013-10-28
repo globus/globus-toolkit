@@ -1,3 +1,9 @@
+globus-xio-gsi-driver (2.4-1) unstable; urgency=low
+
+  * Remove reference to TCP as the underlying protocol.
+
+ --  <mlink@mldev.mcs.anl.gov>  Mon, 28 Oct 2013 16:09:41 -0500
+
 globus-xio-gsi-driver (2.1-1) unstable; urgency=low
 
   * Remove obsolete get-orig-source rules
