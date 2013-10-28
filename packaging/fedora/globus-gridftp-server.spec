@@ -12,8 +12,8 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.37
-Release:	2%{?dist}
+Version:	6.38
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -187,6 +187,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 6.38-1
+- Update dependencies for new credential/assist functions
+
 * Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 6.37-2
 - Update dependencies for new credential/assist functions
 

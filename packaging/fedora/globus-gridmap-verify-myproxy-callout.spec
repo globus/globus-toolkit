@@ -12,8 +12,8 @@
 
 Name:		globus-gridmap-verify-myproxy-callout
 %global _name %(tr - _ <<< %{name})
-Version:	1.3
-Release:	2%{?dist}
+Version:	1.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus gridmap myproxy callout.
 
 Group:		System Environment/Libraries
@@ -29,6 +29,7 @@ BuildRequires:	globus-gsi-sysconfig-devel >= 1
 BuildRequires:	globus-gss-assist-devel >= 3
 BuildRequires:	globus-gridmap-callout-error-devel
 BuildRequires:	globus-gssapi-gsi-devel >= 4
+BuildRequires:	globus-gsi-credential-devel >= 6
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -100,6 +101,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 1.5-1
+- Update dependencies for new credential/assist functions
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 1.3-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

@@ -1,7 +1,7 @@
 Source: globus-gridmap-verify-myproxy-callout
 Priority: optional
 Maintainer: Globus Toolkit <support@globus.org>
-Build-Depends: debhelper (>= 5), autotools-dev, grid-packaging-tools, libglobus-common-dev, globus-core (>= 8), libglobus-gsi-sysconfig-dev (>= 1), libglobus-gssapi-gsi-dev (>= 4), libglobus-gss-assist-dev (>= 3), libglobus-gridmap-callout-error-dev
+Build-Depends: debhelper (>= 5), autotools-dev, grid-packaging-tools, libglobus-common-dev, globus-core (>= 8), libglobus-gsi-sysconfig-dev (>= 1), libglobus-gssapi-gsi-dev (>= 4), libglobus-gss-assist-dev (>= 3), libglobus-gridmap-callout-error-dev, libglobus-gsi-credential-dev (>= 6)
 Standards-Version: 3.8.4
 Section: net
 Homepage: http://www.globus.org/

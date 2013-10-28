@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_gridmap_callout" Format_Version="0.01">
 
-    <Aging_Version Major="0" Minor="4" Age="0"/>
+    <Aging_Version Major="0" Minor="5" Age="0"/>
     <Description> Globus GRAM Gridmap Callout</Description>
     <Functional_Group>Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>

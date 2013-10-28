@@ -12,8 +12,8 @@
 
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
-Version:	0.5
-Release:	2%{?dist}
+Version:	0.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
 Group:		System Environment/Libraries
@@ -101,6 +101,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 0.6-1
+- Update dependencies for new credential functions
+
 * Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 0.5-2
 - Update dependencies for new credential functions
 
