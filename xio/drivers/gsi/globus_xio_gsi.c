@@ -1532,7 +1532,7 @@ globus_l_xio_gsi_open_cb(
     {
         result = GlobusXIOErrorWrapFailedWithMessage(result,
             "The GSI XIO driver failed to establish a connection%s",
-            " via the underlying protocol (TCP).");
+            " via the underlying protocol.");
         goto error_destroy_handle;
     }
     
