@@ -1,3 +1,9 @@
+globus-gridmap-eppn-callout (0.5-2) unstable; urgency=low
+
+  * Update dependencies for new credential functions
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Oct 2013 14:08:42 -0400
+
 globus-gridmap-eppn-callout (0.5-1) unstable; urgency=low
 
   * Missing configure dependency on OpenSSL

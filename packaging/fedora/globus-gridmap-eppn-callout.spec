@@ -13,7 +13,7 @@
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
 Version:	0.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
 Group:		System Environment/Libraries
@@ -29,6 +29,7 @@ BuildRequires:	globus-gsi-sysconfig-devel >= 1
 BuildRequires:	globus-gss-assist-devel >= 3
 BuildRequires:	globus-gridmap-callout-error-devel
 BuildRequires:	globus-gssapi-gsi-devel >= 4
+BuildRequires:	globus-gsi-credential-devel >= 6
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -100,6 +101,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 0.5-2
+- Update dependencies for new credential functions
+
 * Fri Oct 25 2013 Globus Toolkit <support@globus.org> - 0.5-1
 - Missing configure dependency on OpenSSL
 
