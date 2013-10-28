@@ -1,3 +1,9 @@
+globus-gss-assist (9.0-1) unstable; urgency=low
+
+  * Update Major version for globus_gss_assist_map_and_authorize_sharing
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Oct 2013 13:25:13 -0400
+
 globus-gss-assist (8.9-1) unstable; urgency=low
 
   * Update sharing to support a full cert chain at logon

@@ -366,6 +366,13 @@ globus_gss_assist_map_and_authorize(
     char *                              identity_buffer,
     unsigned int                        identity_buffer_length);
 
+globus_result_t
+globus_gss_assist_map_and_authorize_sharing(
+    char *                              shared_user_certificate,
+    gss_ctx_id_t                        context,
+    char *                              desired_identity,
+    char *                              identity_buffer,
+    unsigned int                        identity_buffer_length);
 
 
 /**

@@ -12,8 +12,8 @@
 
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	8.9
-Release:	2%{?dist}
+Version:	9.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
@@ -37,6 +37,7 @@ BuildRequires:	globus-gsi-sysconfig-devel >= 5
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-callout-devel >= 2
 BuildRequires:	globus-gssapi-gsi-devel >= 9
+BuildRequires:	globus-gsi-credential-devel >= 6
 BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
@@ -73,6 +74,7 @@ Summary:	Globus Toolkit - GSSAPI Assist library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
+Requires:	globus-gsi-credential-devel%{?_isa} >= 6
 Requires:	globus-gsi-sysconfig-devel%{?_isa} >= 5
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-callout-devel%{?_isa} >= 2
@@ -212,6 +214,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 9.0-1
+- Update Major version for globus_gss_assist_map_and_authorize_sharing
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 8.9-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 
