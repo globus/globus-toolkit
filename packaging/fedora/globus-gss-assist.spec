@@ -13,7 +13,7 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
 Version:	9.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
@@ -30,6 +30,7 @@ Requires:	globus-gsi-cert-utils%{?_isa} >= 8
 Requires:	globus-gsi-sysconfig%{?_isa} >= 5
 Requires:	globus-callout%{?_isa} >= 2
 Requires:	globus-gssapi-gsi%{?_isa} >= 9
+Requires:	globus-gsi-credential%{?_isa} >= 6
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
