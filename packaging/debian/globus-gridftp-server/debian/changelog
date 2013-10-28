@@ -1,3 +1,9 @@
+globus-gridftp-server (6.37-2) unstable; urgency=low
+
+  * Update dependencies for new credential/assist functions
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Oct 2013 13:58:20 -0400
+
 globus-gridftp-server (6.37-1) unstable; urgency=low
 
   * GT-374: Can't share files in a path structure with symlinks

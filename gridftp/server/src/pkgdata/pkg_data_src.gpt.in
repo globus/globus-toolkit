@@ -54,7 +54,12 @@
             </Dependency>
             <Dependency Name="globus_gss_assist">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="9"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_credential">
+                <Version>
+                    <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -101,7 +106,12 @@
             </Dependency>
             <Dependency Name="globus_gss_assist">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="9"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_credential">
+                <Version>
+                    <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -148,7 +158,12 @@
             </Dependency>
             <Dependency Name="globus_gss_assist">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="9"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_credential">
+                <Version>
+                    <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

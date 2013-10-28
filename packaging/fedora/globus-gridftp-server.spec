@@ -13,7 +13,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
 Version:	6.37
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -30,6 +30,7 @@ Requires:	globus-authz%{?_isa} >= 2
 Requires:	globus-gfork%{?_isa} >= 3
 Requires:	globus-ftp-control%{?_isa} >= 4
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
+Requires:	globus-gsi-credential%{?_isa} >= 6
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gridftp-server-control-devel >= 2
@@ -40,8 +41,9 @@ BuildRequires:	globus-authz-devel >= 2
 BuildRequires:	globus-gfork-devel >= 3
 BuildRequires:	globus-ftp-control-devel >= 4
 BuildRequires:	globus-core >= 8
-BuildRequires:	globus-gss-assist >= 3
+BuildRequires:	globus-gss-assist-devel >= 9
 BuildRequires:  globus-common-progs >= 14
+BuildRequires:	globus-gsi-credential-devel >= 6
 
 %package progs
 Summary:	Globus Toolkit - Globus GridFTP Server Programs
@@ -60,6 +62,8 @@ Requires:	globus-xio-devel%{?_isa} >= 3
 Requires:	globus-authz-devel%{?_isa} >= 2
 Requires:	globus-gfork-devel%{?_isa} >= 3
 Requires:	globus-ftp-control-devel%{?_isa} >= 4
+Requires:	globus-gss-assist%{?_isa} >= 9
+Requires:	globus-gsi-credential%{?_isa} >= 6
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -183,6 +187,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 6.37-2
+- Update dependencies for new credential/assist functions
+
 * Tue Oct 15 2013 Globus Toolkit <support@globus.org> - 6.37-1
 - GT-374: Can't share files in a path structure with symlinks
 - GT-428: Improve handling of hanging GridFTP server processes
