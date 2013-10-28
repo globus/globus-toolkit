@@ -1,3 +1,9 @@
+globus-gss-assist (9.0-2) unstable; urgency=low
+
+  * Fix dependency
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 October 2013 16:02:46 -0400
+
 globus-gss-assist (9.0-1) unstable; urgency=low
 
   * Update Major version for globus_gss_assist_map_and_authorize_sharing
