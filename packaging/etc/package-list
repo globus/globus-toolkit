@@ -291,8 +291,8 @@ globus_wsrf_mds_gkrellm_schema              ws-mds/gkrellm/schema	tar
 
 myproxy		myproxy	gpt null MYPROXY_5_9
 
-gsi_openssh	gssapi-openssh/openssh	make_gpt_dist null OPENSSH_GSI_GPT_5_5
-gsi_openssh_setup  gssapi-openssh/setup	make_gpt_dist null OPENSSH_GSI_GPT_5_5
+gsi_openssh	gssapi-openssh/openssh	make_gpt_dist null OPENSSH_GSI_GPT_5_6
+gsi_openssh_setup  gssapi-openssh/setup	make_gpt_dist null OPENSSH_GSI_GPT_5_6
 
 gridshib_schema gridshib/gt/common/schema tar null HEAD
 gridshib_common	gridshib/gt/common/java/source tar null HEAD

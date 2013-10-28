@@ -30,8 +30,8 @@ globus_gsi_sysconfig	gsi/sysconfig/source	gpt
 globus_gsi_callback	gsi/callback/source	gpt
 globus_gridftp_server_control	gridftp/server-lib/src	gpt
 globus_callout	callout/source	gpt
-gsi_openssh	gssapi-openssh/openssh	NULL	OPENSSH_GSI_GPT_5_5
-gsi_openssh_setup	gssapi-openssh/setup	gpt	OPENSSH_GSI_GPT_5_5
+gsi_openssh	gssapi-openssh/openssh	NULL	OPENSSH_GSI_GPT_5_6
+gsi_openssh_setup	gssapi-openssh/setup	gpt	OPENSSH_GSI_GPT_5_6
 globus_gridftp_server	gridftp/server/src	gpt
 globus_user_env user_env/source gpt
 globus_rsl	gram/rsl/source	gpt
@@ -98,4 +98,4 @@ globus_gridmap_eppn_callout	gsi/gridmap_eppn_callout	gpt
 globus_gridmap_callout	gsi/gridmap_callout/source	gpt
 
 # GCMU
-gcmu    globusonline/gcmu/source tar GCMU_NATIVE_1_3_0
+#gcmu    globusonline/gcmu/source tar GCMU_NATIVE_1_3_0
