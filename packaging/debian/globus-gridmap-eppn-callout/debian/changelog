@@ -1,3 +1,9 @@
+globus-gridmap-eppn-callout (0.6-2) unstable; urgency=low
+
+  * dep typo
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 October 2013 20:14:04 -0400
+
 globus-gridmap-eppn-callout (0.6-1) unstable; urgency=low
 
   * Update dependencies for new credential functions
