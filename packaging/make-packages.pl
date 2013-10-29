@@ -1113,6 +1113,9 @@ sub cvs_checkout_subdir
     {
         $cvsopts = "-D $tag";
     }
+    elsif ( $tag =~ m/OPENSSH|MYPROXY/ )  {
+        $cvsroot = ':pserver:anonymous@cilogon.cvs.sourceforge.net:/cvsroot/cilogon';
+    }
 
     if ( $pkgtag )
     {
