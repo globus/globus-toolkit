@@ -1,3 +1,9 @@
+globus-xio-udt-driver (0.6-3) unstable; urgency=low
+
+  * attempt to fix libglib2.0-0 dependency
+
+ -- Globus Toolkit <support@globus.org>  Tue, 29 October 2013 09:35:27 -0400
+
 globus-xio-udt-driver (0.6-2) unstable; urgency=low
 
   * more new package fixes
