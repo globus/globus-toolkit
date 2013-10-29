@@ -1,3 +1,9 @@
+globus-xio-gsi-driver (2.4-1) unstable; urgency=low
+
+  * Remove reference to TCP as the underlying protocol.
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Oct 2013 20:18:07 -0400
+
 globus-xio-gsi-driver (2.3-2) unstable; urgency=low
 
   * GT 5.2.2 final

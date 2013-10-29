@@ -12,8 +12,8 @@
 
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.3
-Release:	9%{?dist}
+Version:	2.4
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
 Group:		System Environment/Libraries
@@ -194,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 2.4-1
+- Remove reference to TCP as the underlying protocol.
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.3-9
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 
