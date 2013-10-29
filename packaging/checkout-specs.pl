@@ -52,6 +52,9 @@ while ( <PKG> )
 foreach $t (keys %tagmap) {
     if ($t eq 'HEAD') {
         system("cvs", '-d', $cvsroot, 'co', @{$tagmap{$t}});
+    } elsif ($t =~ m/^OPENSSH|^MYPROXY/) {
+        my $cilogon_cvs_root = ':pserver:anonymous@cilogon.cvs.sourceforge.net:/cvsroot/cilogon';
+        system('cvs', '-d', $cilogon_cvs_root, 'co', '-r', $t, @{$tagmap{$t}});
     } else {
         system("cvs", '-d', $cvsroot, 'co', '-r', $t, @{$tagmap{$t}});
     }
