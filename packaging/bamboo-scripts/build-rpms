@@ -814,14 +814,18 @@ if [ -n "$pkgs_to_rm" ]; then
     sudo $pkgtool $noninteractivearg remove $pkgs_to_rm  < /dev/null || true
 fi
 
+rm -rf "$archivedir/RPMS" "$archivedir/SRPMS" "$archivedir/YaST"
+mkdir -p "$archivedir/RPMS" "$archivedir/SRPMS" "$archivedir/YaST"
 # Dump it in a place where PublishBinaries can find it
-rm -rf "$archivedir/RPMS" "$archivedir/SRPMS"
-mkdir -p "$archivedir" "$archivedir/RPMS" "$archivedir/SRPMS"
+if [ "$(lsb_release -is)" != "SUSE LINUX" ]; then
 
-cp -R "${reporoot}/${osname}/${osver}/SRPMS"/* "${archivedir}/SRPMS"
-if [ -d "${reporoot}/${osname}/${osver}/i386" ]; then
-    cp -R "${reporoot}/${osname}/${osver}/i386" "${archivedir}/RPMS/i386"
-fi
-if [ -d "${reporoot}/${osname}/${osver}/x86_64" ]; then
-    cp -R "${reporoot}/${osname}/${osver}/x86_64" "${archivedir}/RPMS/x86_64"
+    cp -R "${reporoot}/${osname}/${osver}/SRPMS"/* "${archivedir}/SRPMS"
+    if [ -d "${reporoot}/${osname}/${osver}/i386" ]; then
+        cp -R "${reporoot}/${osname}/${osver}/i386" "${archivedir}/RPMS/i386"
+    fi
+    if [ -d "${reporoot}/${osname}/${osver}/x86_64" ]; then
+        cp -R "${reporoot}/${osname}/${osver}/x86_64" "${archivedir}/RPMS/x86_64"
+    fi
+else
+    cp -R "${reporoot}"/* "${archivedir}/YaST"
 fi
