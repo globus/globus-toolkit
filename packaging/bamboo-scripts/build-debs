@@ -192,7 +192,7 @@ for i in grid_packaging_tools $packages; do
         cd "$debname";
        fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
 	cd -
-        thisinstall="$(get_package_filenames "$topdir" $debout | grep -Ev 'condor|lsf|pbs|sge|-fork' || true)"
+        thisinstall="$(get_package_filenames "$topdir" $debout | grep -Ev 'condor|lsf|pbs|slurm|sge|-fork' || true)"
         if [ "$thisinstall" != "" ]; then
             sudo dpkg -i $thisinstall || true
         fi

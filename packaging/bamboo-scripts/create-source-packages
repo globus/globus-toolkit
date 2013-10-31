@@ -28,7 +28,7 @@ if [ -n "$pkgs_to_rm" ]; then
     sudo rpm -e --allmatches $pkgs_to_rm
 fi
 
-bundles="globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-gsi,globus-resource-management-server,globus-resource-management-sdk,globus-resource-management-client,gram5-condor,gram5-lsf,gram5-pbs,gram5-sge,globus-simple-ca"
+bundles="globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-gsi,globus-resource-management-server,globus-resource-management-sdk,globus-resource-management-client,gram5-condor,gram5-lsf,gram5-pbs,gram5-slurm,gram5-sge,globus-simple-ca"
 packages_to_build="myproxy,gsi_openssh"
 
 # this has side-effect of checkout out all source trees

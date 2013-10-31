@@ -168,7 +168,7 @@ sudo aptitude -y -o Acquire::PDiffs=false update
 sudo mkdir -p /etc/grid-security/certificates
 
 # Install the binaries that we will test
-sudo aptitude -y install $(curl -Ls "${artifact_url}/all-packages/all-packages" | sed -e /globus-repository/d -e "s/_.*//" | grep -Ev 'globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge' | sort -u)
+sudo aptitude -y install $(curl -Ls "${artifact_url}/all-packages/all-packages" | sed -e /globus-repository/d -e "s/_.*//" | grep -Ev 'globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge|globus-gram-job-manager-slurm' | sort -u)
 
 SIMPLE_CA_DIR="$topdir/bamboo-simple-ca"
 

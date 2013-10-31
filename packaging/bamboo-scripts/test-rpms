@@ -172,7 +172,7 @@ for flavor in $flavors; do
     clean_all
 
     # Install the binary RPMs that we will test
-    install_packages $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -Ev 'Globus.*config|globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge') || true
+    install_packages $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -Ev 'Globus.*config|globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-slurm|globus-gram-job-manager-sge') || true
 
 
     # Check to see if there's a simpleCA available in $SIMPLE_CA_DIR
