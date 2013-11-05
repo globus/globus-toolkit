@@ -72,4 +72,4 @@ AC_OUTPUT(
     doxygen/Doxyfile-internal
     version.h
     extensions.h
-dnl NOTE: do not put anything below this line!
+    builtins/file/Makefile builtins/http/Makefile builtins/mode_e/Makefile builtins/ordering/Makefile builtins/queue/Makefile builtins/tcp/Makefile builtins/telnet/Makefile builtins/udp/Makefile)
