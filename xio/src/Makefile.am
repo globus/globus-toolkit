@@ -59,7 +59,7 @@ EXTRA_DIST = \
 	globus_i_xio_win32_socket.c \
 	version.h.in \
 	extensions.h.in \
-	configure.in.in \
+	configure.in \
 	$(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post

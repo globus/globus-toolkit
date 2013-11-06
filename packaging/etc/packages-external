@@ -1,0 +1,9 @@
+# This file contains a list of external packages to include in the toolkit.
+# For each package:
+# Column 1 is the package name
+# Column 2 is the path where the source of the package is unpacked
+# Column 3 is the package tarball name
+# Column 4 is the command to fetch the external package, copy its tarball into
+#        package-output/${column3} and unpack it into ${column2}
+gsi_openssh_setup	gssapi-openssh/setup	gsi_openssh_setup-5.6-src.tar.gz    mkdir -p gssapi-openssh/setup gssapi-openssh/tmp; curl -Ls http://sourceforge.net/projects/cilogon/files/gsissh/gsi_openssh_bundle-5.6-src.tar.gz/download | tar -C gssapi-openssh/tmp -xf -; cp gssapi-openssh/tmp/gsi_openssh_setup-5.6-src.tar.gz package-output; tar --strip 1 -C gssapi-openssh/setup -zxf package-output/gsi_openssh_setup-5.6-src.tar.gz; rm -rf gssapi-openssh/tmp
+gsi_openssh_setup	gssapi-openssh/openssh	gsi_openssh-5.6-src.tar.gz    mkdir -p gssapi-openssh/openssh gssapi-openssh/tmp; curl -Ls http://sourceforge.net/projects/cilogon/files/gsissh/gsi_openssh_bundle-5.6-src.tar.gz/download | tar -C gssapi-openssh/tmp -xf -; cp gssapi-openssh/tmp/gsi_openssh-5.6-src.tar.gz package-output; tar --strip 1 -C gssapi-openssh/setup -zxf package-output/gsi_openssh-5.6-src.tar.gz; rm -rf gssapi-openssh/tmp

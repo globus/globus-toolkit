@@ -7,6 +7,7 @@
 #  Finally, install the resulting bundles.
 
 use strict;
+use warnings;
 use Getopt::Long;
 use Config;
 use Cwd;
@@ -15,9 +16,13 @@ use Pod::Usage;
 @INC = ("$ENV{GPT_LOCATION}/lib/perl", @INC);
 
 # Where do things go?
-chomp(my $top_dir = `dirname $0`);
-$top_dir = cwd() . "/$top_dir";
-my $cvs_prefix = $top_dir . "/source-trees/";
+(my $top_dir = $0) =~ s|/[^/]*$||;
+if ($top_dir eq '.') {
+    $top_dir = cwd();
+} elsif ($top_dir !~ m|^/|) {
+    $top_dir = cwd() . "/$top_dir";
+}
+my $cvs_prefix = "$top_dir/../";
 my $log_dir = $top_dir . "/log-output";
 my $pkglog = $log_dir . "/package-logs";
 my $bundlelog = $log_dir . "/bundle-logs";
@@ -31,11 +36,6 @@ $ENV{CONFIG_SITE} = "$top_dir/fait_accompli/config.site" if not exists $ENV{CONF
 # What do I need to clean up from old buids?
 my @cleanup_dirs = ('log-output', '$bundle_ouput/BUILD');
 
-# tree_name => [ cvs directory, module, checkout-dir tag ]
-my %cvs_archives = (
-     'gt' => [ "/home/globdev/CVS/globus-packages", "all", $cvs_prefix, "HEAD" ],
-      );
-
 my %virtual_packages = ("trusted_ca_setup" => 1,
                         "globus_gram_job_manager_service_setup" => 1,
                         "mmjfs_service_setup" => 1,
@@ -43,9 +43,9 @@ my %virtual_packages = ("trusted_ca_setup" => 1,
                         "simple_ca_setup" => 1,
                         "netlogger_c" => 1);
 
-# package_name => [ tree, subdir, build_type, 
-#                   (patch-n-build file, if exists), (per-package tag) ]
+# package_name => subdir
 my %package_list;
+my %external_package_list;
 
 # bundle_name => [ flavor, flags, @package_array ]
 my %bundle_list;
@@ -69,51 +69,51 @@ my %package_version_hash;
 my %package_require_hash;
 
 # Which of the CVS trees should I operate on?
-my @cvs_build_list;
 my %cvs_build_hash;
 
 # What flavor shall things be built as?
 my $flavor = "default";
 my $thread = "pthr";
 
-my ($install, $installer, $anonymous, $force,
-    $noupdates, $help, $man, $verbose, $skippackage,
-    $skipbundle, $faster, $paranoia, $version, $uncool, $avoid_bootstrap,
-    $binary, $deporder, $inplace, $restart_package, $doxygen,
-    $deps, $graph, $listpack, $listbun, $cvsuser,
-    $gpt, $core, $enable_64bit, $order_include_runtime_deps ) =
-   (0, 0, 0, 0,
-    0, 0, 0, 0, 0, 
-    0, 0, 1, "1.0", 0, 0,
-    0, 0, "no", 0, 0,
-    0, 0, 0, 0, "",
-    1, 1, "", 0);
+my $install=0;
+my $installer=0;
+my $force=0;
+my $help=0;
+my $man=0;
+my $verbose=0;
+my $skippackage=0;
+my $skipbundle=0;
+my $faster=1;
+my $version="1.0";
+my $avoid_bootstrap=0;
+my $binary=0;
+my $restart_package=0;
+my $doxygen=0;
+my $deps=0;
+my $graph=0;
+my $listpack=0;
+my $listbun=0;
+my $gpt=1;
+my $core=1;
+my $enable_64bit="";
+my $order_include_runtime_deps=0;
 
 my @user_bundles;
 my @user_packages;
 
 GetOptions( 'i|install=s' => \$install,
             'installer=s' => \$installer,
-            'a|anonymous!' => \$anonymous,
             'force' => \$force,
-            'n|no-updates!' => \$noupdates,
             'faster!' => \$faster,
             'ab|avoid-bootstrap!' => \$avoid_bootstrap,
             'flavor=s' => \$flavor,
-            'dir|gt2-dir|gt4-dir|gt-dir=s' => \$cvs_archives{gt}[2],
-            't|gt2-tag|gt4-tag|gt-tag=s' => \$cvs_archives{gt}[3],
             'v|verbose!' => \$verbose,
             'skippackage!' => \$skippackage,
             'skipbundle!' => \$skipbundle,
             'binary!' => \$binary,
             'bundles=s' => \@user_bundles,
             'p|packages=s' => \@user_packages,
-            'trees=s' => \@cvs_build_list,
-            'paranoia!' => \$paranoia,
             'version=s' => \$version,
-            'uncool!' => \$uncool,
-            'inplace:s' => \$inplace,
-            'deporder!' => \$deporder,
             'restart=s' => \$restart_package,
             'doxygen!' => \$doxygen,
             'gpt!' => \$gpt,
@@ -122,7 +122,6 @@ GetOptions( 'i|install=s' => \$install,
             'graph!' => \$graph,
             'lp|list-packages!' => \$listpack,
             'lb|list-bundles!' => \$listbun,
-            'cvs-user=s' => \$cvsuser,
             'help|?' => \$help,
             'man' => \$man,
             'order-include-runtime-deps' => \$order_include_runtime_deps,
@@ -148,30 +147,10 @@ if ($flavor eq 'default')
 }
 
 # Allow comma separated packages or multiple instances.
-@user_packages = split(/,/,join(',',@user_packages));
-@user_bundles = split(/,/,join(',',@user_bundles));
-@cvs_build_list = split(/,/,join(',',@cvs_build_list));
+@user_packages = map {split /,/} @user_packages;
+@user_bundles = map {split /,/} @user_bundles;
 
-if($inplace eq "no")
-{
-    $inplace = 0;
-}
-else
-{
-    if($inplace)
-    {
-        if(substr($inplace, 0, 1) ne '/')
-        {
-            $inplace = cwd() . "/$inplace";
-        }
-
-        $cvs_archives{gt}[2] = $inplace;
-    }
-    
-    $inplace = 1;
-}
-
-if($inplace && !$install)
+if(!$install)
 {
     $install = cwd() . "/INSTALL";
 }
@@ -180,9 +159,8 @@ if ( $flavor =~ /64/ ) {
     $enable_64bit = "--enable-64bit";
 }
 
-# globus_common and globus_java_ws_core want 
-# GLOBUS_VERSION set when built to set globus-version
-# and the Version RP respectively
+# globus_common wants GLOBUS_VERSION set to create the
+# globus-version script
 if ( $install )
 {
     my $gt_ver = `cat $top_dir/fait_accompli/version`;
@@ -192,25 +170,12 @@ if ( $install )
 
 
 # main ()
-
 cleanup();
 mkdir $log_dir;
 setup_environment();
 generate_build_list();
 
 exit if ( $listpack or $listbun );
-
-if ( not $noupdates )
-{
-    if ( $deps  )
-    {
-        cvs_checkout_subdir("gt");
-    } else {
-        get_sources();
-    }
-} else {
-    print "Not checking out sources with -no-updates set.\n";
-}
 
 build_prerequisites();
 
@@ -219,12 +184,6 @@ if ( not $skippackage )
     package_sources();
 } else {
     print "Not packaging sources with -skippackage set.\n";
-}
-
-if ( $inplace )
-{
-    print "Exiting after installation for inplace builds.\n";
-    exit;
 }
 
 if ( not $skipbundle )
@@ -252,20 +211,10 @@ if ( $binary )
 exit 0;
 
 # --------------------------------------------------------------------
-sub generate_build_list()
+sub generate_build_list
 # --------------------------------------------------------------------
 {
     print "Generating package build list ...\n";
-
-    if ( not @cvs_build_list )
-    {
-        @cvs_build_list = ("gt");
-    }
-
-    foreach my $tree (@cvs_build_list)
-    {
-        $cvs_build_hash{$tree} = 1;
-    }
 
     # Figure out what bundles and packages exist.
     populate_bundle_list();
@@ -295,8 +244,6 @@ sub generate_build_list()
         # a new bundle that contains everything that was
         # pulled in via --deps, so that GPT may sort them
         # for us.  Otherwise we install in the wrong order.
-        push @{$bundle_list{"custom-deps"}}, $flavor;
-        push @{$bundle_list{"custom-deps"}}, "";  # No flags
         for my $pk (keys %package_build_hash)
         {
            push @{$bundle_list{"custom-deps"}}, $pk;
@@ -305,13 +252,8 @@ sub generate_build_list()
         @bundle_build_list = ( "custom-deps" );
     }
 
-    if($deporder || $inplace)
-    {
-        my @plist = keys %package_build_hash;
-        @package_build_list = dep_sort_packages(\@plist);
-    } else {
-        @package_build_list = keys %package_build_hash;
-    }
+    my @plist = keys %package_build_hash;
+    @package_build_list = dep_sort_packages(\@plist);
 
     if($restart_package)
     {
@@ -384,16 +326,11 @@ sub create_makefile_installer
     # as we go so they can be built.
     foreach my $bun ( @user_bundles )
     {
-         open(PAC, ">$top_dir/pacman_cache/$bun.pacman");
-
          my ($flavor, $flag, @packs) = @{$bundle_list{$bun}};
          my $suffix = "";
          my @sdkbundle;
 
          print INS "$bun: ";
-         print PAC "packageName('$bun')\n";
-         print PAC "url('Globus', 'http://www.globus.org/toolkit')\n";
-
          # We have the dependency sorted list of packages in our build list.
          # We will go through it in order, printing out those packages which
          # appear in the current bundle.  This gives us a dep-sorted bundle
@@ -402,11 +339,9 @@ sub create_makefile_installer
               if ( grep /^$pack$/, @packs )
               {
                   print INS "$pack$suffix ";
-                  print PAC "package('$pack$suffix');\n";
               }
          }
          print INS "\n";
-         close PAC;
     }
          
     foreach my $pack ( @package_build_list )
@@ -422,10 +357,6 @@ sub create_makefile_installer
               $packname = "globus_system_openssl";
          }
 
-         open(PAC, ">$top_dir/pacman_cache/$pack.pacman");
-         print PAC "packageName($pack)\n";
-         print PAC "version('$package_version_hash{$pack}{version}');\n";
-
          my $extras="";
 
          # This package gets run in a sudo environment that doesn't
@@ -436,7 +367,7 @@ sub create_makefile_installer
          }
 
          print INS "${packname}-only: gpt\n";
-         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack} . " \${FLAVOR}\n";
 
          print INS "$packname: gpt ${packname}-runtime ${packname}-compile\n";
          print INS "${packname}-runtime: ";
@@ -445,7 +376,6 @@ sub create_makefile_installer
               if ( $package_runtime_hash{$pack}{$deppack} )
               {
                    print INS " $deppack" unless ( $pack eq $deppack );
-                   print PAC "package('$deppack');\n" unless ( $pack eq $deppack );
               }
          }
          print INS "\n";
@@ -456,32 +386,23 @@ sub create_makefile_installer
               if ( $package_dep_hash{$pack}{$deppack} )
               {
                    print INS " ${deppack}-compile" unless ( $pack eq $deppack );
-                   print PAC "package('$deppack');\n" unless ( $pack eq $deppack );
               }
          }
 
-         # Barf.  netlogger_c is provided as an external package, so it's in virtual_packages
-         # But globus_xio_netlogger_driver expresses a real GPT dep on it, so we need to
-         # re-add it here so make -j2 builds won't try to build the driver before netlogger_c
+         # Barf.  netlogger_c is provided as an external package, so it's in
+         # virtual_packages. But globus_xio_netlogger_driver expresses a real
+         # GPT dep on it, so we need to re-add it here so make -j2 builds won't
+         # try to build the driver before netlogger_c
          if ( $pack=~/globus_xio_netlogger_driver/ )
          {
               print INS " netlogger_c";
-              print PAC "package('netlogger_c');\n";
          }
 
          print INS "\n";
-         print PAC "cd ('\$GLOBUS_LOCATION')\n";
-         print PAC "downloadUntarzip('GLOBUS/${pack}-$package_version_hash{$pack}{version}.tar.gz')\n";
-         print PAC "cd ()\n";
-         close PAC;
 
-         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack} . " \${FLAVOR}\n";
 
-         my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
-                                         $package_list{$pack}[1],
-                                         $package_list{$pack}[2]);
-
-         package_source_bootstrap($pack, $subdir, $tree);
+         package_source_bootstrap($pack, $package_list{$pack});
     }
 
     close(INS) if $installer;
@@ -496,33 +417,13 @@ sub import_package_dependencies
 
     for my $pack ( keys %package_hash )
     {
-        cvs_checkout_package($pack) unless $noupdates;
+        my $subdir = $package_list{$pack};
+        my $metadatafile = (grep {-e "$_"} (
+            "$subdir/pkgdata/pkg_data_src.gpt.in",
+            "$subdir/pkg_data_src.gpt",
+            "$subdir/pkgdata/pkg_data_src.gpt"))[0];
 
-        # For a patch-n-build, also need to get patch tarball
-        if ( $package_list{$pack}[2] eq "pnb" )
-        {
-            print "PNB detected for $pack.\n";
-            my $cvs_dir = $package_list{$pack}[0];
-            my $tarfile = $package_list{$pack}[3];
-            my $pkgtag = $package_list{$pack}[4];
-
-            if ( ! -e "$cvs_dir/tarfiles/$tarfile" )
-            {
-                print "checking out $cvs_dir/tarfiles/$tarfile\n";
-                cvs_checkout_subdir( $cvs_dir, "tarfiles/$tarfile",
-                                     $pkgtag ) unless $noupdates;
-            }
-        }
-
-        my $metadatafile = package_subdir($pack) . "/pkgdata/pkg_data_src.gpt.in";
-        if ( ! -e $metadatafile )
-        {
-            $metadatafile = package_subdir($pack) . "/pkg_data_src.gpt";
-        }
-        if ( ! -e $metadatafile )
-        {
-            $metadatafile = package_subdir($pack) . "/pkgdata/pkg_data_src.gpt";
-        }
+        die "Unable to find metadata for $pack" unless $metadatafile;
 
         require Grid::GPT::V1::Package;
         my $pkg = new Grid::GPT::V1::Package;
@@ -538,11 +439,11 @@ sub import_package_dependencies
 
         for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'pkgname-list'}})
         {
-             print GRAPH "$pack -> $dep;\n" if $graph;
+            print GRAPH "$pack -> $dep;\n" if $graph;
             next if $graph and ($dep =~ /setup/ or $dep =~ /rips/);
 
             # if we don't have $dep in our hash, add it and iterate
-            if ( ($package_build_hash{$dep} ne 1) and 
+            if ((!$package_build_hash{$dep}) and 
                  ( ! exists $virtual_packages{$dep} ) )
             {
                 $package_build_hash{$dep} = 1;
@@ -560,7 +461,7 @@ sub import_package_dependencies
 }
 
 # --------------------------------------------------------------------
-sub setup_environment()
+sub setup_environment
 # --------------------------------------------------------------------
 {
     # Make STDOUT and STDERR flush after every write.
@@ -572,55 +473,37 @@ sub setup_environment()
 
     print "Setting up build environment.\n";
 
-    if ( $install )
-    {
+    if ( $install ) {
         $ENV{GLOBUS_LOCATION} = $install;
     } else {
         $ENV{GLOBUS_LOCATION} = "$source_output/tmp_core";
     }
 
-    if ( $doxygen )
-    {
+    if ( $doxygen ) {
         $doxygen = "CONFIGOPTS_GPTMACRO=--enable-doxygen";
     } else {
         $doxygen = "";
     }
 
-    if ( $verbose )
-    {
+    if ( $verbose ) {
         $verbose = "-verbose";
     } else {
         $verbose = "";
     }
 
-    if ( $force )
-    {
+    if ( $force ) {
         $force = "-force";
     } else {
         $force = "";
     }
 
-
     report_environment();
 }
 
 # --------------------------------------------------------------------
-sub report_environment()
+sub report_environment
 # --------------------------------------------------------------------
 {
-    if ( -e "$top_dir/CVS/Tag" )
-    {
-        open(TAG, "$top_dir/CVS/Tag");
-        my $mptag = <TAG>;
-        chomp $mptag;
-        print "You are using $0 from: " . substr($mptag,1) . "\n";
-    } else {
-        print "You are using $0 from HEAD.\n";
-    }
-
-    print "Using JAVA_HOME = ", $ENV{'JAVA_HOME'}, "\n";
-    system("type ant");
-
     if ( $install )
     {
         print "Installing to $install\n";
@@ -631,7 +514,7 @@ sub report_environment()
     
             
 # --------------------------------------------------------------------
-sub cleanup()
+sub cleanup
 # --------------------------------------------------------------------
 {
     # Need to make this depend on which steps you're going to do
@@ -663,30 +546,35 @@ sub cleanup()
 sub populate_package_list
 # --------------------------------------------------------------------
 {
-    my $build_default;
-    my $old_dir = getcwd();
+    open(my $pkg_fh, "$top_dir/etc/packages");
 
-    chdir "$top_dir/etc/";
-
-    $build_default = "gpt";
-
-    open(PKG, "package-list");
-
-    while ( <PKG> )
+    while ( <$pkg_fh> )
     {
-        my ($pkg, $subdir, $custom, $pnb, $pkgtag) = split(' ', $_);
-        chomp $pkgtag;
+        s/#.*//;
+        s/\s*$//;
+        next if $_ eq '';
 
-        next if substr($pkg, 0, 1) eq "#";
+        my ($pkg, $subdir) = split;
 
-        if ( $custom eq "" )
-        {
-            $custom = $build_default;
-        }
-
-        $package_list{$pkg} = [ "gt", $subdir, $custom, $pnb, $pkgtag ];
+        $package_list{$pkg} = "$cvs_prefix/$subdir";
     }
-    chdir $old_dir;
+    close ($pkg_fh);
+
+    open (my $pkg_external_fh, "$top_dir/etc/packages-external");
+    while ( <$pkg_external_fh> )
+    {
+        s/#.*//;
+        s/\s*$//;
+        next if $_ eq '';
+
+        my ($pkg, $subdir, $tarball, $commands) = split(' ', $_, 4);
+
+        $package_list{$pkg} = "$cvs_prefix/$subdir";
+        %{$external_package_list{$pkg}} = (
+                tarball => $tarball,
+                commands => $commands );
+    }
+    close ($pkg_external_fh);
 }
 
 # --------------------------------------------------------------------
@@ -694,46 +582,27 @@ sub populate_bundle_list
 # --------------------------------------------------------------------
 {
     my $bundle;
-    my $old_dir = getcwd();
+    open(my $bunfh, "$top_dir/etc/bundles");
 
-    chdir "$top_dir/etc/";
-    open(BUN, "bundles");
-
-    while ( <BUN> )
+    while ( <$bunfh> )
     {
-        my ($pkg, $bun, $threaded, $flags) = split(' ', $_);
-        next if ( $pkg eq "" or $pkg eq "#" );
+        s/#.*//;
+        s/\s*$//;
+        next if $_ eq '';
+
+        my ($pkg, $bun) = split;
     
-        chomp $flags;
-
-        if ( $pkg eq "BUNDLE" )
-        {
+        if ( $pkg eq "BUNDLE" ) {
             $bundle = $bun;
-
-            # Process threading and gpt-build flags (like -static)
-            if ( $threaded eq "THREADED" )
-            {
-                push @{$bundle_list{$bundle}}, $flavor . $thread;
-            } else {
-                push @{$bundle_list{$bundle}}, $flavor;
-            }
-
-            if ( defined $flags )
-            {
-                push @{$bundle_list{$bundle}}, $flags;
-            } else {
-                push @{$bundle_list{$bundle}}, "";
-            }
+            @{$bundle_list{$bundle}} = ();
         } else {
-            if ( $bundle eq undef )
-            {
+            if ( ! $bundle) {
                 print "Ignoring $pkg, no bundle set yet.\n";
             } else {
                 push @{$bundle_list{$bundle}}, $pkg;
             }
         }
     }
-    chdir $old_dir;
 }
 
 # The goal is to let the user specify both bundles and packages.
@@ -751,8 +620,6 @@ sub populate_bundle_build_list()
     {
         my $bundle = "user_def";
 
-        push @{$bundle_list{$bundle}}, $flavor;
-        push @{$bundle_list{$bundle}}, "";
         push @{$bundle_list{$bundle}}, @user_packages;
         push @bundle_build_list, $bundle;
     } 
@@ -781,14 +648,12 @@ sub populate_bundle_build_list()
 }
 
 # --------------------------------------------------------------------
-sub populate_package_build_hash()
+sub populate_package_build_hash
 # --------------------------------------------------------------------
 {
-    my @temp_build_list;
-
     # make the decision of whether to build all source packages or no.
     # bundle_build_list = array of bundle names.
-    # $bundle_list{'bundle name'} = flavor, array of packages.
+    # $bundle_list{'bundle name'} = array of packages.
     # So, for each bundle to build, run through the array of packages
     # and add it to the list of packages to be built.
     if ( @bundle_build_list ) 
@@ -799,28 +664,16 @@ sub populate_package_build_hash()
 
             foreach my $pkg_array (@array)
             {
-                # TODO: There must be a better way to skip flavors.
-                # I don't like the magic number "2" below.  It comes
-                # from having "flavor, flags" in the array ahead of
-                # @package_list.  However, if I change it, this is
-                # kludgy.
-                my @tmp_array = @{$pkg_array};
-                foreach my $pkg (@tmp_array[2..$#tmp_array]) {
-                    push @temp_build_list, $pkg;
-                }
+                %package_build_hash = map { $_ => 1 } @{$pkg_array};
             }
         }
     } else {
-        @temp_build_list = keys %package_list;
+        %package_build_hash = map { $_ => 1 } keys %package_list;
     }
-
-    # Eliminate duplicates in the temporary build list
-    # A "Perl Idiom".
-    %package_build_hash = map { $_ => 1 } @temp_build_list;
 }
 
 # --------------------------------------------------------------------
-sub build_prerequisites()
+sub build_prerequisites
 # --------------------------------------------------------------------
 {
     install_gpt() if $gpt;
@@ -838,7 +691,7 @@ sub paranoia
     my ($errno, $errmsg) = ($?, $!);
     my ($death_knell) = @_;
 
-    if ($? ne 0 and $paranoia)
+    if ($? ne 0)
     {
         die "ERROR: $death_knell";
     }
@@ -985,47 +838,22 @@ sub install_globus_core()
 # --------------------------------------------------------------------
 {
     system("mkdir -p $pkglog");
-    my $dir = $cvs_archives{gt}[2];
-    my $coresrcdir = $dir . "/core/source";
+    my $coresrcdir = "$cvs_prefix/core/source";
 
-    if ( $inplace ) {
-        my $_cwd = cwd();
-        if ( -d "$coresrcdir" ) {
-  	    chdir $dir . "/core/source";
-            if ( !$avoid_bootstrap || ! -e 'configure') {
-               log_system("./bootstrap", "$pkglog/globus_core");
-               paranoia("Bootstrap of globus_core in CVS failed.");
-            }
-            log_system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor", "$pkglog/globus_core");
-            paranoia("gpt-build of globus_core from CVS failed.");
-        } else {
-            print "Your checkout doesn't have core/source in it, so I will not\n";
-            print "try to build globus_core for you.\n"
+    my $_cwd = cwd();
+    if ( -d "$coresrcdir" ) {
+        chdir "$coresrcdir";
+        if ( !$avoid_bootstrap || ! -e 'configure') {
+           log_system("./bootstrap", "$pkglog/globus_core");
+           paranoia("Bootstrap of globus_core in CVS failed.");
         }
-        chdir $_cwd;
+        log_system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor", "$pkglog/globus_core");
+        paranoia("gpt-build of globus_core from CVS failed.");
     } else {
-        print "$ENV{PWD}";
-        log_system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $verbose $flavor", "$pkglog/globus_core");
-        paranoia("gpt-build of globus_core from GPT failed.");
+        print "Your checkout doesn't have core/source in it, so I will not\n";
+        print "try to build globus_core for you.\n"
     }
-}
-
-# --------------------------------------------------------------------
-sub cvs_subdir
-# --------------------------------------------------------------------
-{
-    my ( $tree ) = @_;
-
-    return $cvs_archives{$tree}[2];
-}
-
-# --------------------------------------------------------------------
-sub cvs_tag
-# --------------------------------------------------------------------
-{
-    my ( $tree ) = @_;
-
-    return $cvs_archives{$tree}[3];
+    chdir $_cwd;
 }
 
 # --------------------------------------------------------------------
@@ -1042,200 +870,13 @@ sub package_subdir
 # --------------------------------------------------------------------
 {
     my ( $package ) = @_;
-    my ( $package_subdir ) = cvs_subdir( package_tree($package) ) . "/" . $package_list{$package}[1];
+    my ( $package_subdir ) = $package_list{$package};
 
     if ( $package_subdir eq '/')
     {
         die "ERROR: No known source directory for package \"$package\".\n";
     }
     return $package_subdir;
-}
-
-
-# --------------------------------------------------------------------
-sub get_sources()
-# --------------------------------------------------------------------
-{
-    foreach my $tree ( @cvs_build_list )
-    {
-        print "Checking out cvs tree $tree.\n";
-        cvs_checkout_generic( $tree );
-    }
-}
-
-# --------------------------------------------------------------------
-sub set_cvsroot
-# --------------------------------------------------------------------
-{
-    my ($cvsroot) = @_;
-
-    if ( $anonymous )
-    {
-        $cvsroot = ":pserver:anonymous\@cvs.globus.org:" . $cvsroot;
-    } elsif ( defined $ENV{'CVSROOT'} )
-    {
-        $cvsroot = $ENV{'CVSROOT'};
-    } else {
-        if ( not -d "$cvsroot" )
-        {
-            $cvsroot = "cvs.globus.org:$cvsroot";
-            $cvsroot = $cvsuser . "@" . $cvsroot if ( $cvsuser );
-            $ENV{CVS_RSH} = "ssh" unless defined $ENV{'CVS_RSH'};
-        }
-        # else cvsroot is fine as-is.
-    }
-
-    return $cvsroot
-}
-
-# --------------------------------------------------------------------
-sub cvs_checkout_subdir
-# --------------------------------------------------------------------
-{
-    my ( $tree, $dir, $pkgtag ) = @_;
-    my $cvs_logs = $log_dir . "/cvs-logs";
-    my ($cvsroot, $module, $cvs_dir, $tag) = @{$cvs_archives{$tree}};
-    my $cvsopts = "-r $tag";
-    my $locallog;
-
-    mkdir $cvs_logs if not -d $cvs_logs;
-    mkdir $cvs_prefix if not -d $cvs_prefix;
-    mkdir $cvs_dir if not -d $cvs_dir;
-    chdir $cvs_dir;
-
-    $cvsroot = set_cvsroot($cvsroot);
-
-    if ( $tag eq "HEAD" )
-    {
-        $cvsopts = "";
-    }
-    elsif ( $tag =~ m/\d{4}-\d{2}-\d{2}/)
-    {
-        $cvsopts = "-D $tag";
-    }
-    elsif ( $pkgtag =~ m/OPENSSH|MYPROXY/ )  {
-        $cvsroot = ':pserver:anonymous@cilogon.cvs.sourceforge.net:/cvsroot/cilogon';
-    }
-
-    if ( $pkgtag )
-    {
-        $cvsopts = "-r $pkgtag";
-    }
-
-    $locallog = $dir;
-    $locallog =~ tr|/|_|;
-
-    if ( ! -d "$dir" ) 
-    { 
-        log_system("cvs -d $cvsroot co $cvsopts -P $dir",
-                   "$cvs_logs/" . $locallog . ".log");
-    } else { 
-        log_system("cvs -d $cvsroot update -dP $dir", 
-                   "$cvs_logs/" . $locallog . ".log");
-    }
-}
-
-# --------------------------------------------------------------------
-sub cvs_checkout_package
-# --------------------------------------------------------------------
-{
-    my ( $package ) = @_;
-    my $tree = package_tree($package);
-    my $subdir = $package_list{$package}[1];
-    my $pkgtag = $package_list{$package}[4];
-
-    if (! defined($tree)) {
-        print "ERROR: There was a dependency on package $package which I know nothing about.\n";
-        die "Try a cvs update of packaging.\n";
-    }
-
-    print "Checking out $subdir from $tree.\n";
-    cvs_checkout_subdir($tree, $subdir, $pkgtag);
-}
-
-# --------------------------------------------------------------------
-sub cvs_checkout_generic ()
-# --------------------------------------------------------------------
-{
-    my ( $tree ) = @_;
-    my ($cvsroot, $module, $dir, $tag) = @{$cvs_archives{$tree}};
-    my $cvs_logs = $log_dir . "/cvs-logs";
-    my $cvsopts = "-r $tag";
-
-    system("mkdir -p $cvs_logs") unless -d $cvs_logs;
-
-    chdir $cvs_prefix;
-    $cvsroot = set_cvsroot($cvsroot);
-
-    if ( $tag =~ m/OPENSSH|MYPROXY/ )  {
-        $cvsroot = ':pserver:anonymous@cilogon.cvs.sourceforge.net:/cvsroot/cilogon';
-    }
-
-
-    if ( -d "$dir" ) {
-        if ( $noupdates )
-        {
-            print "Skipping CVS update of $cvsroot\n";
-            print "INFO: This means that I'm not checking the CVS tag for you, either.\n";
-        } else
-        {
-            my @update_list;
-            print "Updating CVS checkout of $cvsroot\n";
-            chdir $dir;
-
-            for my $f ( <*> )
-            {
-                if (! -d "$f")
-                {
-                    print "Skipping non-directory $f\n";
-                    next;
-                }
-
-                chdir $f;
-                if ( -d "CVS" )
-                {
-                    print "Queueing $f on update command.\n";
-                    push @update_list, $f;
-                }
-                chdir '..';
-            }
-            print "Logging to ${cvs_logs}/" . $tree . ".log\n";
-
-            log_system("cvs -d $cvsroot -z3 up -dP @update_list", "${cvs_logs}/" . $tree . ".log");
-            paranoia "Trouble with cvs up on tree $tree."; 
-        }
-    } else 
-    {
-        print "Making fresh CVS checkout of \n";
-        print "$cvsroot, module $module, tag $tag\n";
-        print "Logging to $cvs_logs/" . $tree . ".log\n";
-        system("mkdir -p $dir");
-        paranoia("Can't make $dir: $!.\n");
-        chdir $dir || die "Can't cd to $dir: $!\n";
-
-        #CVS doesn't think of HEAD as a branch tag, so
-        #don't use -r if you're checking out HEAD.
-        if ( $tag eq "HEAD" )
-        {
-            $cvsopts = "";
-        }
-        elsif ( $tag =~ m/\d{4}-\d{2}-\d{2}/)
-        {
-            $cvsopts = "-D $tag";
-        }
-    
-        log_system("cvs -d $cvsroot co -P $cvsopts $module",
-                   "$cvs_logs/" . $tree . ".log");
-    
-        if ( $? ne 0 )
-        {
-            chdir "..";
-            rmdir $dir;
-            die "ERROR: There was an error checking out $cvsroot with module $module, tag $tag.\n";
-        }
-    
-        print "\n";
-    }
 }
 
 sub topol_sort
@@ -1339,7 +980,7 @@ sub dep_sort_packages
 }
 
 # --------------------------------------------------------------------
-sub package_sources()
+sub package_sources
 # --------------------------------------------------------------------
 {
     my $build_default;
@@ -1348,14 +989,12 @@ sub package_sources()
     mkdir $source_output;
     mkdir $package_output;
 
-    system("cp epstopdf-2.9.5gw $package_output");
+    log_system("cp ${top_dir}/epstopdf-2.9.5gw $package_output", "make-packages.log");
 
     for my $package ( @package_build_list )
     {
-        my ($tree, $subdir, $custom) = ($package_list{$package}[0],
-                                        $package_list{$package}[1], 
-                                        $package_list{$package}[2]);
-        chdir cvs_subdir($tree);
+        my ($subdir) = $package_list{$package};
+        chdir $subdir;
 
         if ( $faster )
         {
@@ -1368,51 +1007,17 @@ sub package_sources()
             }
         }
 
-        if ( $inplace )
+        if( $package eq "globus_core" )
         {
-            if( $package eq "globus_core" )
-            {
-                # skip core in inplace build for now
-                print "Installing globus_core\n";
-                install_globus_core();
-                next;
-            }
-
-            if( $custom eq "gpt" ){
-                inplace_build($package, $subdir, $tree);
-            } elsif ( $custom eq "pnb" ){
-                my $packagefile = package_source_pnb($package, $subdir, $tree);
-                
-                die "ERROR: Failed to build and install tarball for $package\n" if(!defined($packagefile));
-
-                print "Installing user requested package $package to $install using flavor $flavor.\n";
-                system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose $packagefile $flavor");
-                paranoia("Building of $package failed.\n");
-            } elsif ( $custom eq "tar" ){
-                my $packagefile = package_source_tar($package, $subdir);
-
-                die "ERROR: Failed to build and install tarball for $package\n" if(!defined($packagefile));
-
-                print "Installing user requested package $package to $install using flavor $flavor.\n";
-                system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose $packagefile $flavor");
-                paranoia("Building of $package failed.\n");
-            }
-
+            # skip core in inplace build for now
+            print "Installing globus_core\n";
+            install_globus_core();
             next;
         }
 
-        if ( $custom eq "gpt" ){
-            package_source_gpt($package, $subdir, $tree);
-        } elsif ( $custom eq "pnb" ){
-            package_source_pnb($package, $subdir, $tree);
-        } elsif ( $custom eq "tar" ) { 
-            package_source_tar($package, $subdir);
-        } elsif ( $custom eq "make_gpt_dist" ) {
-            package_source_make_gpt_dist($package, $subdir);
-        } else {
-            print "You probably listed --trees, and need a package not from your list:\n";
-            die "ERROR: Unknown custom packaging type '$custom' for $package.\n";
-        }
+        inplace_build($package, $subdir);
+        package_source_gpt($package, $subdir) unless $skippackage;
+        next;
     }
     
     print "\n";
@@ -1422,7 +1027,7 @@ sub package_sources()
 sub inplace_build()
 # --------------------------------------------------------------------
 {
-    my ($package, $subdir, $tree) = @_;
+    my ($package, $subdir) = @_;
 
     print "Inplace build: $package.\n";
 
@@ -1448,82 +1053,32 @@ sub inplace_build()
 }
 
 # --------------------------------------------------------------------
-sub patch_package
+sub package_source_bootstrap
 # --------------------------------------------------------------------
 {
-    my ($package) = @_;
+    my ($package, $subdir) = @_;
+    my $oldcwd = getcwd();
 
-    my $tree = $package_list{$package}[0];
-    my $subdir = $package_list{$package}[1];
-    my $tarname = $package_list{$package}[3];
-
-    chdir $subdir;
-
-    my $tarfile = cvs_subdir($tree) . "/tarfiles/" . $tarname;
-    my $tarbase = $tarname;
-    $tarbase =~ s!\.tar\.gz!!;
-    my $patchfile = "${tarbase}-patch";
-    my $version = gpt_get_version("pkg_data_src.gpt");
-    # Some patches will fail to apply a second time
-    # So clean up the old patched tar directory if
-    # it exists from a previous build.
-    if ( -d "$tarbase" )
-    {
-        log_system("rm -fr $tarbase", "$pkglog/$package");
-        paranoia("$tarbase exists, but could not be deleted.\n");
-    }
-   
-    log_system("gzip -dc $tarfile | tar xf -",
-               "$pkglog/$package");
-    paranoia "Untarring $package failed.  See $pkglog/$package.";
-    chdir $tarbase;
-    if ( -f "../patches/$patchfile" )
-    {
-       log_system("patch -N -s -p1 -i ../patches/$patchfile",
-                  "$pkglog/$package");
-       paranoia "patch failed.  See $pkglog/$package.";
-    } else {
-       print "Not patching PNB $package.\n";
-    }       
-}
-
-# --------------------------------------------------------------------
-sub package_source_bootstrap()
-# --------------------------------------------------------------------
-{
-    my ($package, $subdir, $tree) = @_;
-    my $custom = $package_list{$package}[2];
-
-    chdir cvs_subdir($tree);
-    chdir $subdir;
-
+    chdir "$cvs_prefix/$subdir";
     print "Bootstrapping $package.\n";
     system("mkdir -p $pkglog");
 
-    if ( $custom eq "gpt" ){
-       if ( !$avoid_bootstrap || ! -e 'configure') {
-           log_system("./bootstrap", "$pkglog/$package");
-           paranoia("bootstrap failed for package $package");
-       }
-    } elsif ( $custom eq "pnb" ){
-       patch_package($package);
-    } elsif ( $custom eq "tar" ) {
-       log_system("ln -s pkg_data_src.gpt pkgdata/pkg_data_src.gpt.in", "$pkglog/$package");
-       log_system("ln -s pkgdata/filelist filelist", "$pkglog/$package");
-    } elsif ( $custom eq "make_gpt_dist" ) {
-       log_system("make -f Makefile.in distprep", "$pkglog/$package");
+    if ( !$avoid_bootstrap || ! -e 'configure') {
+       log_system("./bootstrap", "$pkglog/$package");
+       paranoia("bootstrap failed for package $package");
     }
+    chdir $oldcwd;
 }
 
 # --------------------------------------------------------------------
-sub package_source_gpt()
+sub package_source_gpt
 # --------------------------------------------------------------------
 {
-    my ($package, $subdir, $tree) = @_;
+    my ($package, $subdir) = @_;
     
     if ( ! -d $subdir )
     {
-        die "$subdir does not exist, for package $package in tree $tree\n";
+        die "$subdir does not exist, for package $package\n";
     } else {
         #This causes GPT not to worry about whether dependencies
         #have been installed while doing configure/make dist.
@@ -1545,175 +1100,20 @@ sub package_source_gpt()
            paranoia("make distclean failed for $package");
         }
 
-        #TODO: make function out of "NB" part of PNB, call it here.
-        if ( $package eq "globus_wuftpd_gridftp_server" or $package eq "gsincftp") 
-        {
-            print "\tSpecial love for wuftpd_gridftp_server and gsincftp\n";
-            my $version = gpt_get_version("pkg_data_src.gpt");
-
-            my $tarfile = "$package-$version";
-
-            #Strip leading dirs off of $subdir
-            my ($otherdirs, $tardir) = $subdir =~ m!(.+/)([^/]+)$!;
-
-            if ( -e Makefile )
-            {
-                log_system("make distcean", "$pkglog/$package");
-                paranoia "make distclean failed for $package";
-            }
-
-            chdir "..";
-            
-            # The dir we are tarring is probably called "source" in CVS.
-            # mv it to package name.
-            log_system("mv $tardir $package-$version",
-                       "$pkglog/$package");
-            paranoia "system() call failed.  See $pkglog/$package.";
-            log_system("tar chf $package_output/$tarfile.tar $package-$version",
-                       "$pkglog/$package");
-            paranoia "system() call failed.  See $pkglog/$package.";
-            log_system("gzip -f $package_output/$tarfile.tar",
-                       "$pkglog/$package");
-            paranoia "system() call failed.  See $pkglog/$package.";
-
-            # Move it back so future builds find it.
-            log_system("mv $package-$version $tardir",
-                       "$pkglog/$package");
-            paranoia "system() call failed.  See $pkglog/$package.";
-        } else {
-            log_system("./configure --with-flavor=$flavor $enable_64bit",
-                       "$pkglog/$package");
-            paranoia "configure failed.  See $pkglog/$package.";
-            log_system("make dist", "$pkglog/$package");
-            paranoia "make dist failed.  See $pkglog/$package.";
-            my $version = gpt_get_version("pkgdata/pkg_data_src.gpt");
-            log_system("cp ${package}-${version}.tar.gz $package_output", "$pkglog/$package");
-            paranoia "cp of ${package}-*.tar.gz failed: $!  See $pkglog/$package.";
-            $ENV{'GPT_IGNORE_DEPS'}="";
-        }
+        log_system("./configure --with-flavor=$flavor $enable_64bit",
+                   "$pkglog/$package");
+        paranoia "configure failed.  See $pkglog/$package.";
+        log_system("make dist", "$pkglog/$package");
+        paranoia "make dist failed.  See $pkglog/$package.";
+        my $version = gpt_get_version("pkgdata/pkg_data_src.gpt");
+        log_system("cp ${package}-${version}.tar.gz $package_output", "$pkglog/$package");
+        paranoia "cp of ${package}-*.tar.gz failed: $!  See $pkglog/$package.";
+        delete $ENV{'GPT_IGNORE_DEPS'};
     }
 }
 
 # --------------------------------------------------------------------
-sub package_source_pnb()
-# --------------------------------------------------------------------
-{
-    my ($package, $subdir, $tree) = @_;
-    my $taropts = 'chf';
-
-    print "Following PNB packaging for $package.\n";
-    #print "\tUsing tarfile: $tarfile.\n";
-
-    chdir $subdir;
-    my $version = gpt_get_version("pkg_data_src.gpt");
-    patch_package($package);
-
-    # Strip off leading directory component
-    my ($otherdirs, $tardir) = $subdir =~ m!(.+/)([^/]+)$!;
-
-    chdir "../..";
-
-    # The dir we are tarring is probably called "source" in CVS.
-    # mv it to package name so tarball looks correct.
-    log_system("mv $tardir $package-$version",
-               "$pkglog/$package");
-    paranoia "a system() failed.  See $pkglog/$package.";
-    if ($package eq 'globus_database_sqliteodbc')
-    {
-	# This package includes a symlink source -> . which trips up some
-	# versions of tar
-	$taropts = 'cf';
-    }
-    log_system("tar $taropts $package_output/${package}-${version}.tar $package-$version",
-               "$pkglog/$package");
-    paranoia "a system() failed.  See $pkglog/$package.";
-    log_system("gzip -f $package_output/${package}-${version}.tar",
-               "$pkglog/$package");
-    paranoia "a system() failed.  See $pkglog/$package.";
-
-    # Move it back so future builds find it.
-    log_system("mv $package-$version $tardir",
-               "$pkglog/$package");
-    paranoia "a system() failed.  See $pkglog/$package.";
-    return "$package_output/${package}-${version}.tar.gz";
-}
-
-# --------------------------------------------------------------------
-sub package_source_tar()
-# --------------------------------------------------------------------
-{
-    my ($package, $subdir) = @_;
-
-    my $package_name="${package}-src";
-    my $destdir = "$source_output/$package_name";
-    
-    if ( ! -d $subdir )
-    {
-        print "$subdir does not exist for package $package.\n";
-        return undef;
-    } else {
-        print "Creating source directory for $package\n";
-        log_system("rm -fr $destdir", "$pkglog/$package");
-
-        mkdir $destdir;
-        log_system("cp -Rp $subdir/* $destdir", "$pkglog/$package");
-        paranoia "Failed to copy $subdir to $destdir for $package.";
-        log_system("touch $destdir/INSTALL", "$pkglog/$package");
-        paranoia "touch $destdir/INSTALL failed";
-
-        if ( -e "$destdir/pkgdata/pkg_data_src.gpt" and not $uncool)
-        {
-            log_system("cp $destdir/pkgdata/pkg_data_src.gpt $destdir/pkgdata/pkg_data_src.gpt.in",
-                       "$pkglog/$package");
-            paranoia "Metadata copy failed for $package.";
-            if (!( -e "$destdir/filelist" ))
-            {
-              if ( -e "$destdir/pkgdata/filelist" )
-              {
-                    log_system("cp $destdir/pkgdata/filelist $destdir", "$pkglog/$package");
-                  paranoia "Filelist copy failed for $package.";
-              } else {
-                  print "\tNo filelist found for $package.\n";
-              }
-            }
-        } else {
-            log_system("mkdir -p $destdir/pkgdata/", "$pkglog/$package");
-            paranoia "mkdir failed during $package.";
-            log_system("cp $top_dir/package-list/$package/pkg_data_src.gpt  $destdir/pkgdata/pkg_data_src.gpt.in",
-                   "$pkglog/$package");
-            paranoia "Metadata copy failed for $package.";
-            log_system("cp $top_dir/package-list/$package/filelist  $destdir/",
-                   "$pkglog/$package");
-            paranoia "Filelist copy failed for $package.";
-            print "\tUsed pkgdata from package-list, not cool.\n";
-        }
-    
-        #Introspect metadata to find version number.
-        my $version = gpt_get_version("$destdir/pkgdata/pkg_data_src.gpt.in");
-
-        my $tarfile = "$package-$version";
-        
-        chdir $source_output;
-        log_system("tar cvhzf $package_output/$tarfile.tar.gz $package_name",
-                   "$pkglog/$package");
-        paranoia "tar failed for $package.";
-        return "$package_output/$tarfile.tar.gz";
-    }
-}
-
-# --------------------------------------------------------------------
-sub package_source_make_gpt_dist()
-# --------------------------------------------------------------------
-{
-    my ($package, $subdir) = @_;
-
-    chdir "$subdir";
-    log_system("./make_gpt_dist", "$pkglog/$package");
-    log_system("mv ${package}*.tar.gz $package_output", "$pkglog/$package");
-}
-
-# --------------------------------------------------------------------
-sub bundle_sources()
+sub bundle_sources
 # --------------------------------------------------------------------
 {
     my $bundlename;
@@ -1818,31 +1218,22 @@ Options:
     --skippackage           Don't create source packages
     --skipbundle            Don't create source bundles
     --install=<dir>         Install into <dir>
-    --anonymous             Use anonymous cvs checkouts
-    --cvsuser=<user>        Use "user" as account on CVS server
-    --no-updates            Don't update CVS checkouts
     --nogpt                 Don't build gpt
     --nocore                Don't build core
     --force                 Force
     --faster                Don't repackage if packages exist already
     --flavor=<flv>          Set flavor base.  Default gcc32dbg
-    --gt-tag (-t)           Set GT tag.  Default HEAD
     --gt-dir (-d)           Set GT CVS directory.
     --verbose               Be verbose.  Also sends logs to screen.
     --bundles="b1,b2,..."   Create bundles b1,b2,...
     --packages="p1,p2,..."  Create packages p1,p2,...
     --deps                    Automatically include dependencies
     --trees="t1,t2,..."     Work on trees t1,t2,... Default "gt"
-    --noparanoia            Don't exit at first error.
-    --inplace[=<dir>]       Build inplace. <dir> overrides the cvs directory
-                            for all trees. (ie, a dir you did a 'cvs co all' in)
     --list-packages (-lp)   Print a list of packages suitable for a Makefile.
                             Also bootstraps those package dirs in CVS
     --avoid-bootstrap (-ab) Avoid bootstrapping packages
     --deps                  Read in GPT metadata and add packages that
                             the listed bundles/packages require
-    --deporder              Build the packages in dependency order.
-                            Implied by --inplace.
     --help                  Print usage message
     --man                   Print verbose usage page
 
@@ -1864,23 +1255,6 @@ Don't create source bundles.
 Attempt to install packages and bundles into dir.  Short
 version is "-i=".
 
-=item B<--anonymous>
-
-Use anonymous cvs checkouts.  Otherwise it defaults to using
-CVS_RSH=ssh.  Short version is "-a"
-
-=item B<--cvsuser=user>
-
-Use "user@" as the prefix in the remote CVSROOT.  Useful if
-your local account name is different than the CVS account name.
-
-=item B<--no-updates>
-
-Don't update CVS checkouts.  This is useful if you have local
-modifications.  Note, however, that make-packages won't
-check that your CVS tags match the requested CVS tags.
-Short version is "-n"
- 
 =item B<--nogpt>
 
 Don't build GPT.  You must have the correct version of GPT
@@ -1902,10 +1276,6 @@ Set flavor base.  Default gcc32dbg.  You might want to
 switch it to vendorcc.  Threading type is currently always
 "pthr" if necessary.
 
-=item B<--gt-tag=TAG>
-
-Set GT tag.  Default HEAD.  Short version is "-t=".
-
 =item B<--verbose>
 
 Echoes all log output to screen.  Otherwise logs are just
@@ -1921,23 +1291,11 @@ etc/*/bundles
 Create packages p1,p2,....  Packages are defined under
 etc/*/package-list
 
-=item B<--inplace=dir>
-
-Build inside of a CVS checkout.  Will not create
-any GPT packages or bundles as output.
-
 =item B<--deps>
 
 Automatically pull in dependencies.  Useful if you
 want to build one package or bundle, and only want to
 build the packages that it requires.
-
-=item B<--deporder>
-
-Read in the GPT meatadata of packages, then perform
-a topological sort before building them.  Implied
-by --inplace builds, not necessary for builds of
-dependency complete bundles.
 
 =item B<--list-packages>
 
@@ -1945,10 +1303,6 @@ Print out a list of Makefile targets, and bootstrap
 the CVS subdirectories so they are ready to build.
 Used by the fait_accompli/installer.sh script
 to create the Makefile-based installer.
-
-=item B<--noparanoia>
-
-Don't exit at first error.  Strongly discouraged.
 
 =back
 
