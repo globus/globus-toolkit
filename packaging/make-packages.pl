@@ -75,7 +75,7 @@ my %cvs_build_hash;
 my $flavor = "default";
 my $thread = "pthr";
 
-my $install=0;
+my $install=undef;
 my $installer=0;
 my $force=0;
 my $help=0;
@@ -132,6 +132,9 @@ if ( $help or $man ) {
     pod2usage(1) if $man;
 }
 
+if ($install && $install !~ m|^/|) {
+    $install = getcwd() . "/$install";
+}
 if ($flavor eq 'default')
 {
     my $archname = $Config{'archname'};
@@ -658,15 +661,8 @@ sub populate_package_build_hash
     # and add it to the list of packages to be built.
     if ( @bundle_build_list ) 
     {
-        for my $iter (@bundle_build_list)
-        {
-            my @array = $bundle_list{$iter};
-
-            foreach my $pkg_array (@array)
-            {
-                %package_build_hash = map { $_ => 1 } @{$pkg_array};
-            }
-        }
+        my @bundle_pkgs = map {@{$bundle_list{$_}}} @bundle_build_list;
+        %package_build_hash = map { $_ => 1} @bundle_pkgs;
     } else {
         %package_build_hash = map { $_ => 1 } keys %package_list;
     }
@@ -999,7 +995,7 @@ sub package_sources
         if ( $faster )
         {
             my ($glob) = glob("$package_output/${package}-*");
-            if ( -f $glob )
+            if ( $glob && -f $glob )
             {
                 my $file = `basename $glob`;
                 print "On $package, --faster set.  Using existing $file";
