@@ -1,7 +1,13 @@
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
-@mainpage GRAM Job Manager Reference Manual
-@anchor globus_gram_job_manager_main
+ * @mainpage GRAM Job Manager
+ * @copydoc globus_gram_job_manager
+ */
+#endif
 
+/**
+@defgroup globus_gram_job_manager GRAM Job Manager
+@details
 The GRAM Job Manager program starts and monitors jobs on behalf of a 
 GRAM client application. The job manager is typically started by the
 Gatekeeper program. It interfaces with a local scheduler to start

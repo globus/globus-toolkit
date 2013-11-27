@@ -1,0 +1,114 @@
+# 
+# Copyright 1999-2010 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# 
+
+#
+# source this file to properly set up your environment for globus applications
+# this requires that GLOBUS_LOCATION be set.
+# GLOBUS_PATH will be set by this script to save the current location,
+# should you decide to change GLOBUS_LOCATION to a different location and
+# re source this script, the old GLOBUS_PATH information will be removed from
+# your environment before applying the new GLOBUS_LOCATION
+#
+
+if test -n "${GLOBUS_LOCATION}" ; then
+    prefix="${GLOBUS_LOCATION}"
+else
+    prefix="@prefix@"
+fi
+
+exec_prefix="@exec_prefix@"
+sbindir="@sbindir@"
+bindir="@bindir@"
+libdir="@libdir@"
+includedir="@includedir@"
+datarootdir="@datarootdir@"
+datadir="@datadir@"
+libexecdir="@libexecdir@"
+sysconfdir="@sysconfdir@"
+sharedstatedir="@sharedstatedir@"
+localstatedir="@localstatedir@"
+perlmoduledir="@perlmoduledir@"
+
+if [ -z "${GLOBUS_LOCATION}" ]; then
+    GLOBUS_LOCATION="$prefix"
+fi
+
+if [ -n "${GLOBUS_PATH}" ]; then
+    PATH=`echo "${PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    LD_LIBRARY_PATH=`echo "${LD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    DYLD_LIBRARY_PATH=`echo "${DYLD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    LIBPATH=`echo "${LIBPATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    SHLIB_PATH=`echo "${SHLIB_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    if [ -n "${MANPATH}" ]; then
+        MANPATH=`echo "${MANPATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    fi
+    if [ -n "${PERL5LIB}" ]; then
+        PERL5LIB=`echo "${PERL5LIB}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    fi
+fi
+
+PATH=`echo "${PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+DYLD_LIBRARY_PATH=`echo "${DYLD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+LIBPATH=`echo "${LIBPATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+SHLIB_PATH=`echo "${SHLIB_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+if [ -n "${MANPATH}" ]; then
+    MANPATH=`echo "${MANPATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+fi
+if [ -n "${PERL5LIB}" ]; then
+    PERL5LIB=`echo "${PERL5LIB}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+fi
+
+
+GLOBUS_PATH=${GLOBUS_LOCATION}
+PATH="${bindir}:${sbindir}:${PATH}";
+
+if [ -n "${MANPATH}" ]; then
+    MANPATH="${datadir}/man:${MANPATH}"
+fi
+
+DELIM=
+if [ -n "${LD_LIBRARY_PATH}" ]; then
+    DELIM=:
+fi
+LD_LIBRARY_PATH="${libdir}${DELIM}${LD_LIBRARY_PATH}"
+
+DELIM=
+if [ -n "${DYLD_LIBRARY_PATH}" ]; then
+    DELIM=:
+fi
+DYLD_LIBRARY_PATH="${libdir}${DELIM}${DYLD_LIBRARY_PATH}"
+
+if [ -z "${LIBPATH}" ]; then
+    LIBPATH="/usr/lib:/lib"
+fi
+LIBPATH="${libdir}:${LIBPATH}"
+
+DELIM=
+if [ -n "${SHLIB_PATH}" ]; then
+    DELIM=:
+fi
+SHLIB_PATH="${libdir}${DELIM}${SHLIB_PATH}"
+
+export GLOBUS_PATH PATH MANPATH LD_LIBRARY_PATH DYLD_LIBRARY_PATH LIBPATH SHLIB_PATH
+
+if [ -d "${perlmoduledir}" ]; then
+    DELIM=""
+    if [ "X${PERL5LIB}" != "X" ]; then
+        DELIM=:
+    fi
+    PERL5LIB="${perlmoduledir}${DELIM}${PERL5LIB}"
+    export PERL5LIB
+fi

@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+abs_top_srcdir=@abs_top_srcdir@
+abs_top_builddir=@abs_top_builddir@
+
+Name: globus-gsi-callback
+Description: Globus Toolkit - Globus GSI Callback Library
+Version: @VERSION@
+Requires.private: @PACKAGE_DEPS@
+Libs: -L@abs_top_builddir@/library -lglobus_gsi_callback
+Libs.private: @PACKAGE_DEP_LIBS@
+Cflags: -I${abs_top_srcdir}/library

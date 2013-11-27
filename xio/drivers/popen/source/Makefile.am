@@ -1,26 +1,18 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = \
-	pkgdata 
+pkgconfigdir = $(libdir)/pkgconfig
 
-include_HEADERS = \
-    globus_xio_popen_driver.h
-
-INCLUDES = $(GPT_INCLUDES)
-
+include_HEADERS = globus_xio_popen_driver.h
 lib_LTLIBRARIES = libglobus_xio_popen_driver.la
-
-libglobus_xio_popen_driver_la_LIBADD = \
-	@GPT_LIB_LINKS@
-libglobus_xio_popen_driver_la_SOURCES = \
-	globus_xio_popen_driver.c
-libglobus_xio_popen_driver_la_LDFLAGS = \
-	@GPT_LDFLAGS@ -module -rpath @libdir@
-
 doc_DATA = GLOBUS_LICENSE
+pkgconfig_DATA = globus-xio-popen-driver.pc
 
-EXTRA_DIST = version.h.in $(doc_DATA)
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
+libglobus_xio_popen_driver_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_xio_popen_driver_la_SOURCES = globus_xio_popen_driver.c
+libglobus_xio_popen_driver_la_LDFLAGS = \
+        -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+        -no-undefined \
+	-module -rpath $(libdir)
 
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)

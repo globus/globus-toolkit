@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_FTP_CLIENT_PERF_PLUGIN_H
-#define GLOBUS_INCLUDE_FTP_CLIENT_PERF_PLUGIN_H
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+#ifndef GLOBUS_FTP_CLIENT_PERF_PLUGIN_H
+#define GLOBUS_FTP_CLIENT_PERF_PLUGIN_H
+
 /**
  * @file globus_ftp_client_perf_plugin.h GridFTP Performance Marker Plugin Implementation
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- * $Author$
  */
-#endif
 
 /**
  * @defgroup globus_ftp_client_perf_plugin Performance Marker Plugin
@@ -45,17 +39,9 @@
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_plugin.h"
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 /** Module descriptor
  * @ingroup globus_ftp_client_perf_plugin
@@ -236,6 +222,8 @@ globus_ftp_client_perf_plugin_get_user_specific(
     globus_ftp_client_plugin_t *                    plugin,
     void **                                         user_specific);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_INCLUDE_FTP_CLIENT_PERF_PLUGIN_H */
+#endif /* GLOBUS_FTP_CLIENT_PERF_PLUGIN_H */

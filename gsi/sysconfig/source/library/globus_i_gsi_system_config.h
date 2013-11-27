@@ -20,10 +20,6 @@
  * @internal
  * Globus GSI Credential System Configuration Files
  * @author Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 
 #ifndef GLOBUS_I_GSI_SYSTEM_CONFIG_H

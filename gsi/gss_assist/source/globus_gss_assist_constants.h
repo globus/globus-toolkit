@@ -17,36 +17,24 @@
 #ifndef GLOBUS_GSI_GSS_ASSIST_CONSTANTS_H
 #define GLOBUS_GSI_GSS_ASSIST_CONSTANTS_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gss_assist_constants.h
  * Globus GSI GSS Assist Library
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
+#ifdef __cplusplus
+extern "C" {
 #endif
-
-EXTERN_C_BEGIN
 
 /**
- * @defgroup globus_gsi_gss_assist_constants GSI GSS Assist Constants
+ * @defgroup globus_gss_assist_constants GSI GSS Assist Constants
+ * @brief Constant Definitions
+ * @ingroup globus_gss_assist
  */
 
 /** GSI GSS Assist Error codes
- * @ingroup globus_gsi_gss_assist_constants
+ * @ingroup globus_gss_assist_constants
  */
 typedef enum
 {
@@ -91,6 +79,8 @@ typedef enum
     GLOBUS_GSI_GSS_ASSIST_ERROR_LAST = 19
 } globus_gsi_gss_assist_error_t;
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

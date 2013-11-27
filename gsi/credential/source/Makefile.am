@@ -1,17 +1,13 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS= \
-	library \
-	pkgdata \
-	doxygen
+SUBDIRS = library
+
+pkgconfigdir = $(libdir)/pkgconfig
 
 doc_DATA = GLOBUS_LICENSE
+pkgconfig_DATA = globus-gsi-credential.pc
 
 EXTRA_DIST= \
         version.h \
         dirt.sh \
 	GLOBUS_LICENSE
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top

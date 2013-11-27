@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/** @file globus_i_gsi_authz.h
+ * GSI Authorization Internal Functions and Macros
+ */
 #include "globus_common.h"
 #include "globus_module.h"
 #include "globus_callback.h"

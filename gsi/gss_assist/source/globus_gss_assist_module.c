@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_assist.c
+ * @file gss_assist/source/globus_gss_assist_module.c GSS Assist Module Descriptor
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_gss_assist.h"
 #include "globus_gsi_system_config.h"
@@ -32,7 +26,6 @@
 #include <stdlib.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
 static int globus_l_gsi_gss_assist_activate(void);
 static int globus_l_gsi_gss_assist_deactivate(void);
 
@@ -130,4 +123,3 @@ globus_l_gsi_gss_assist_deactivate(void)
 /* globus_l_gsi_gss_assist_deactivate() */
 
 #endif
-

@@ -14,19 +14,8 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_handle_table.c
+/** @file globus_handle_table.c A reference-counting handle table structure */
 
-Description:
-    This module implements a reference-counting handle table structure.
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
 #include "config.h"
 #include "globus_handle_table.h"
 #include "globus_libc.h"

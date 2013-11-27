@@ -253,7 +253,7 @@ globus_l_gsi_callback_openssl_dup(
 /**
  * Retrieve or create the index for our callback data structure in the
  * X509_STORE.
- * @ingroup globus_gsi_callback
+ * @ingroup globus_gsi_callback_functions
  *
  * @param index
  *        Will contain the index upon return
@@ -305,7 +305,7 @@ globus_gsi_callback_get_X509_STORE_callback_data_index(
 /**
  * Retrieve or create the index for our callback data structure in the
  * SSL structure.
- * @ingroup globus_gsi_callback
+ * @ingroup globus_gsi_callback_functions
  *
  * @param index
  *        Will contain the index upon return
@@ -354,7 +354,7 @@ globus_gsi_callback_get_SSL_callback_data_index(
  */
 /* @{ */
 /**
- * @ingroup globus_gsi_callback
+ * @ingroup globus_gsi_callback_functions
  * This function wraps the OpenSSL certificate verification callback for the
  * purpose of a replacing the standard issuer check with one that deals with
  * proxy certificates. Should be used with SSL_CTX_set_cert_verify_callback()
@@ -413,7 +413,7 @@ globus_gsi_callback_X509_verify_cert(
  */
 /* @{ */
 /**
- * @ingroup globus_gsi_callback
+ * @ingroup globus_gsi_callback_functions
  * This function provides a path validation callback for validation outside of
  * a SSL session. It should be used in X509_STORE_set_verify_cb_func().
  *
@@ -490,7 +490,7 @@ int globus_gsi_callback_create_proxy_callback(
  */
 /* @{ */
 /**
- * @ingroup globus_gsi_callback
+ * @ingroup globus_gsi_callback_functions
  * This function provides a path validation callback for the validation part of
  * establishing a SSL session. It handles proxy certificates, X509 Extensions
  * and CRL checking. It should be used in SSL_CTX_set_verify().
@@ -577,7 +577,7 @@ int globus_gsi_callback_handshake_callback(
  */
 /* @{ */
 /**
- * @ingroup globus_gsi_callback
+ * @ingroup globus_gsi_callback_functions
  * This function wraps the OpenSSL X509_check_issued() call and catches the
  * error caused by the fact that a proxy certificate issuer may not have to
  * have the correct KeyUsage fields set.

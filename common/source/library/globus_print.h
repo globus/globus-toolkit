@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-#if !defined(GLOBUS_INCLUDE_GLOBUS_PRINT_H)
-#define GLOBUS_INCLUDE_GLOBUS_PRINT_H 1
+/** @file globus_print.h Error Message Printing */
+
+#if !defined(GLOBUS_PRINT_H)
+#define GLOBUS_PRINT_H 1
 
 #include "globus_common_include.h"
 #include "globus_module.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  */
@@ -57,8 +61,9 @@ globus_panic(
     const char *                        message,
     ...);
     
-EXTERN_C_END
 
+#ifdef __cplusplus
+}
 #endif
 
-
+#endif /* GLOBUS_PRINT_H */

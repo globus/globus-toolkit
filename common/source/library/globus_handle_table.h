@@ -14,26 +14,16 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_handle_table.h
+/** @file globus_handle_table.h Reference Counting Handle Table */
 
-Description:
-    This header defines a reference-counting handle table structure.
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
-#ifndef GLOBUS_INCLUDE_HANDLE_TABLE_H
-#define GLOBUS_INCLUDE_HANDLE_TABLE_H
+#ifndef GLOBUS_HANDLE_TABLE_H
+#define GLOBUS_HANDLE_TABLE_H
 
 #include "globus_common_include.h"
 
-
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct globus_l_handle_table_s * globus_handle_table_t;
 
@@ -161,6 +151,8 @@ globus_handle_table_lookup(
     globus_handle_table_t *             handle_table,
     globus_handle_t                     handle);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_INCLUDE_HANDLE_TABLE_H */
+#endif /* GLOBUS_HANDLE_TABLE_H */

@@ -1,0 +1,9 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: globus-gass-cache-program
+Description: Globus Toolkit - Tools to manipulate local and remote GASS caches.
+Version: @VERSION@
+Requires.private: @PACKAGE_DEPS@

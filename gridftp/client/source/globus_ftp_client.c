@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_ftp_client.c
- *
- * $RCSfile$
- * $Revision$
- * $Date$
+ * @file globus_ftp_client.c GridFTP Client
  */
-#endif
 
 #include "globus_i_ftp_client.h"
 #include "version.h"
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 static int globus_l_ftp_client_activate(void);
 static int globus_l_ftp_client_deactivate(void);
@@ -863,7 +855,3 @@ globus_i_ftp_client_count_digits(globus_off_t num)
     return digits;
 }
 /* globus_i_ftp_client_count_digits() */
-
-
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-

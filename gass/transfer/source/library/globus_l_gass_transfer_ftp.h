@@ -14,34 +14,18 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_l_gass_transfer_ftp.h
- 
-Description:
-    This header defines the prototypes for the local functions in the
-    ftp protocol module source file
- 
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
-#ifndef GLOBUS_GASS_INCLUDE_GLOBUS_L_GASS_TRANSFER_FTP_H
-#define GLOBUS_GASS_INCLUDE_GLOBUS_L_GASS_TRANSFER_FTP_H
+/**
+ * @file globus_l_gass_transfer_ftp.h
+ *
+ *  This header defines the prototypes for the local functions in the
+ *  ftp protocol module source file
+ */
+#ifndef GLOBUS_L_GASS_TRANSFER_FTP_H
+#define GLOBUS_L_GASS_TRANSFER_FTP_H
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 /******************************************************************************
 			  Module Specific Constants
@@ -585,6 +569,8 @@ globus_l_gass_transfer_ftp_listener_close(
     globus_gass_transfer_ftp_listener_proto_t * proto);
 #endif
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_GASS_INCLUDE_GLOBUS_L_GASS_TRANSFER_FTP_H */
+#endif /* GLOBUS_L_GASS_TRANSFER_FTP_H */

@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file display_name.c
+ * @file gssapi/source/library/display_name.c
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -35,9 +27,9 @@ static char *rcsid = "$Id$";
 #define GSS_I_ANON_NAME "<anonymous>"
 
 /**
- * @name Display Name
+ * @brief Display Name
  * @ingroup globus_gsi_gssapi
- *
+ * @details
  * Produces a single line version of the internal x509 name
  *
  * @param minor_status 
@@ -170,4 +162,3 @@ gss_display_name(
     return major_status;
 } 
 /* gss_display_name */
-/* @} */

@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
 #ifndef GLOBUS_I_GSS_ASSIST_H
 #define GLOBUS_I_GSS_ASSIST_H
 
 /**
- * @file globus_i_gss_assist.h
- * Globus GSI GSS Assist Library
+ * @file globus_i_gss_assist.h Globus GSI GSS Assist Library
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 
 #include "globus_gss_assist.h"
 #include "globus_common.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* DEBUG MACROS */
 
@@ -168,8 +163,8 @@ globus_i_gsi_gss_assist_error_chain_result(
     const char *                        short_desc,
     const char *                        long_desc);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_I_GSS_ASSIST_H */
-
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

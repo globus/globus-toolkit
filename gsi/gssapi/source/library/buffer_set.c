@@ -14,40 +14,31 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file buffer_ste.c
+ * @file gssapi/source/library/buffer_set.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
-
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
+
 #include <string.h>
 
 /* Only build if we have the extended GSSAPI */
 #ifdef _HAVE_GSI_EXTENDED_GSSAPI
-
 /**
- * @defgroup globus_gsi_gssapi_buffer_set Functions for manipulating a buffer set
- *
+ * @defgroup globus_gsi_gssapi_buffer_set Buffer Set Utilities
+ * @ingroup globus_gsi_gssapi_extensions
+ * @brief Buffer Set Utilities
+ * @details
+ * Functions in this group provide utilities for creating, modifying,
+ * and freeing a buffer set.
  */
 
 /**
- * @name Create Empty Buffer Set
+ * @brief Create a empty buffer set.
  * @ingroup globus_gsi_gssapi_buffer_set
- */
-/* @{ */
-/**
- * Create a empty buffer set.
- *
+ * @details
  * This function allocates and initializes a empty buffer set. The
  * memory allocated in this function should be freed by a call to
  * gss_release_buffer_set.
@@ -109,16 +100,11 @@ GSS_CALLCONV gss_create_empty_buffer_set(
     return GSS_S_COMPLETE;
 } 
 /* gss_create_empty_buffer_set */
-/* @} */
 
 /**
- * @name Add Buffer
+ * @brief Add a buffer to a buffer set
  * @ingroup globus_gsi_gssapi_buffer_set
- */
-/* @{ */
-/**
- * Add a buffer to a buffer set.
- *
+ * @details
  * This function allocates a new gss_buffer_t, intializes it with the
  * values in the member_buffer parameter.
  *
@@ -211,17 +197,11 @@ GSS_CALLCONV gss_add_buffer_set_member(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
-
 
 /**
- * @name Free Buffer Set
+ * @brief Free a Buffer Set
  * @ingroup globus_gsi_gssapi_buffer_set
- */
-/* @{ */
-/**
- * Free all memory associated with a buffer set.
- *
+ * @details
  * This function will free all memory associated with a buffer
  * set. Note that it will also free all memory associated with the
  * buffers int the buffer set.
@@ -292,6 +272,5 @@ GSS_CALLCONV gss_release_buffer_set(
 
 } 
 /* gss_release_buffer_set */
-/* @} */
 
 #endif /* _HAVE_GSI_EXTENDED_GSSAPI */

@@ -14,39 +14,23 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_gass_server_ez.h
- 
-Description:
-    Simple wrappers around globus_gass_server API for server functionality.
-    Implements the following:
-        Write access to local files, with optional line buffering
-	Write access to stdout and stderr
-	Shutdown callback, so client can stop the server
- 
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
-#ifndef _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_SIMPLE_SERVER_H_
-#define _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_SIMPLE_SERVER_H_
+/** @file globus_gass_server_ez.h GASS Server Convenience API
+ * @details
+ *  Simple wrappers around globus_gass_transfer API for server functionality.
+ *  Implements the following:
+ *  -   Write access to local files, with optional line buffering
+ *  - Write access to stdout and stderr
+ *  - Shutdown callback, so client can stop the server
+ */
 
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+#ifndef GLOBUS_GASS_SERVER_EZ_H
+#define GLOBUS_GASS_SERVER_EZ_H 1
 
 #include "globus_gass_transfer.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_GASS_SERVER_EZ_LINE_BUFFER              1UL 
 #define GLOBUS_GASS_SERVER_EZ_TILDE_EXPAND             2UL
@@ -65,12 +49,6 @@ EXTERN_C_BEGIN
 #endif
 
 typedef void (*globus_gass_server_ez_client_shutdown_t) (void);
-/*
-typedef globus_object_t globus_gass_transfer_listener_t;
-typedef globus_object_t globus_gass_transfer_listenerattr_t;
-typedef globus_object_t globus_gass_transfer_requestattr_t;
-*/
-
 
 int
 globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
@@ -92,6 +70,8 @@ extern globus_module_descriptor_t globus_i_gass_server_ez_module;
 
 #define GLOBUS_GASS_SERVER_EZ_MODULE (&globus_i_gass_server_ez_module)
 
-EXTERN_C_END
-
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_GASS_SERVER_EZ_H */

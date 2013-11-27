@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_ftp_client_plugin.c Plugin Implementation
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_ftp_client.h"
 
@@ -272,19 +266,19 @@ globus_ftp_client_plugin_restart_machine_list(
  *
  * @param handle
  *        The handle which is associated with the list.
- * @param source_url
+ * @param url
  *        The destination URL of the transfer. This may be different than
  *        the original list's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original list's attribute set.
  * @param when
  *        Absolute time for when to restart the list. The current
  *        control and data connections will be stopped
  *        immediately. If this completes before <b>when</b>, then the
- *    restart will be delayed until that time. Otherwise, it will
+ *        restart will be delayed until that time. Otherwise, it will
  *        be immediately restarted.
  */
 globus_result_t

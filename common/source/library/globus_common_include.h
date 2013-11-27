@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/** @file globus_common_include.h Include System Headers */
 /**
  *  Defines the macros and typedefs common to all globus_common
  *  components.
@@ -22,7 +23,8 @@
 #define GLOBUS_COMMON_INCLUDE_H 1
 
 #include "globus_config.h"
-#if defined(WIN32) && !defined(__CYGWIN__)
+
+#if defined(_WIN32) && !defined(__CYGWIN__)
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
@@ -45,157 +47,53 @@ extern const char * _globus_func_name;
 #endif
 
 /*
- * include system files if we have them
+ * Include system files if we have them
  */
-#ifdef HAVE_STDINT_H
-#   include <stdint.h>
-#endif
-#ifdef HAVE_SYS_TYPES_H
-#   include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_STAT_H
-#   include <sys/stat.h>
-#endif
-#ifdef HAVE_IO_H
-#   include <io.h>
-#endif
-#ifdef HAVE_SYS_SIGNAL_H
-#   include <sys/signal.h>
-#endif
-#ifdef HAVE_SIGNAL_H
-#include <signal.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#   include <unistd.h>
-#endif
-#ifdef HAVE_PWD_H
-#   include <pwd.h>
-#endif
-#ifdef HAVE_NETDB_H
-#   include <netdb.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#   include <netinet/in.h>
-#endif
-#ifdef HAVE_SYS_PARAM_H
-#   include <sys/param.h>
-#endif
-#if HAVE_FCNTL_H
-#   include <fcntl.h>
-#endif
-#ifdef HAVE_STRING_H
-#  include <string.h>
-#endif
-#if HAVE_CTYPE_H
-#   include <ctype.h>
-#endif
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/param.h>
+#include <fcntl.h>
 
-#ifdef HAVE_SYS_SOCKET_H
-#   include <sys/socket.h>
-#endif
-
-#if defined(TARGET_ARCH_WIN32)
+#if defined(_WIN32)
+#   include <windows.h>
 #   include <winsock2.h>
 #   include <process.h>
 #   include <io.h>
 #   include <sys/timeb.h>
 #   include <signal.h>
 #   include <malloc.h>
-#endif
-
-/*
- *  all windows specific includes  
- */
-#include <stdarg.h>
-
-#if defined(TIME_WITH_SYS_TIME) && !defined(HAVE_SOCKAPI_H)
-#    include <sys/time.h>
-#    include <time.h>
+#define setenv(var,val,ovw) (((ovw)||!getenv(var))?(putenv(globus_common_create_string("%s=%s",(var),(val)))):0
+#define unsetenv(var) (putenv(globus_common_create_string("%s=",(var))))
 #else
-#    if HAVE_SYS_TIME_H
-#        include <sys/time.h>
-#    else
-#        include <time.h>
-#    endif
-#endif
-
-#if HAVE_SOCKAPI_H
-/* Net+OS 6.x's sockapi.h has a redefinition of timezone and timeval unless
- * B42 is defined
- */
-#define B42 1
-#include <sockapi.h>
-#include <tcpip/socket.h>
-
-/*
- * Net+OS does not implement any address families besides TCP/IP
- */
-#define sockaddr sockaddr_in
-#define sa_family sin_family
-#define sockaddr_storage sockaddr_in
-
-/* Also, the headers define some macros we don't want to use generally */
-#undef boolean
-#undef critical
-#undef skip
-#undef local
-
-#endif
-
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#ifdef HAVE_FCNTL_H
-#   include <fcntl.h>
-#endif
-
-#if HAVE_DIR
-#  if defined(HAVE_DIRENT_H)
-#   include <dirent.h>
-#   define NAMLEN(dirent) strlen((dirent)->d_name)
-#  else
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-#   define HAVE_DIRENT_NAMELEN 1
-#   if defined(HAVE_SYS_NDIR_H)
-#       include <sys/ndir.h>
-#   endif
-#   if defined(HAVE_SYS_DIR_H)
-#       include <sys/dir.h>
-#   endif
-#   if defined(HAVE_NDIR_H)
-#       include <ndir.h>
-#   endif
-#  endif
-#else
-typedef void * DIR;
-#endif
-
-#if defined(HAVE_SYS_UIO_H)
+#   include <pwd.h>
+#   include <netdb.h>
+#   include <netinet/in.h>
+#   include <sys/socket.h>
 #   include <sys/uio.h>
 #endif
 
-#ifndef HAVE_INET_PTON
-#define HAVE_INET_PTON 1
-#define GLOBUS_IMPLEMENT_INET_PTON 1
-extern int inet_pton(int af, const char *src, void *dst);
-#endif /* !HAVE_INET_PTON */
 
-#ifndef HAVE_INET_ADDR
-#define HAVE_INET_ADDR 1
-#define GLOBUS_IMPLEMENT_INET_ADDR 1
-extern uint32_t inet_addr(const char * cp);
-#endif /* !HAVE_INET_ADDR */
+#include <sys/time.h>
+#include <time.h>
 
-
+#include <stdint.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <limits.h>
 #include <assert.h>
+#include <signal.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdarg.h>
 
-/* Net+OS 6.x */
-#ifdef HAVE_TX_API_H
-#include <tx_api.h>
-#endif
+#include <dirent.h>
+#include <fcntl.h>
+
+#ifdef _WIN32
+extern int inet_pton(int af, const char *src, void *dst);
+#endif /* _WIN32 */
 
 /******************************************************************************
 				 Define macros
@@ -253,45 +151,30 @@ extern uint32_t inet_addr(const char * cp);
 #endif
 #endif
 
-#if !defined(TARGET_ARCH_WIN32)
-    typedef size_t                                      globus_size_t;
-    typedef ssize_t                                     globus_ssize_t;
-#else
-    typedef unsigned long                               globus_size_t;
-    typedef long                                        globus_ssize_t;
-#endif
+typedef size_t                                      globus_size_t;
+typedef ssize_t                                     globus_ssize_t;
 
-#ifdef HAVE_SOCKLEN_T
-    typedef socklen_t                                   globus_socklen_t;
-#else
-    typedef int                                         globus_socklen_t;
-#endif
+typedef socklen_t                                   globus_socklen_t;
 
-#if !defined(HAVE_STRUCT_IOVEC)
+#if defined(_WIN32)
 /* The ordering of the fields must match those in WSABUF */
-    struct  iovec  
-    {
-        unsigned long      iov_len;  /* Length in bytes.  */
-        char *             iov_base;  /* Starting address.  */
-    };
+struct  iovec  
+{
+    unsigned long      iov_len;  /* Length in bytes.  */
+    char *             iov_base;  /* Starting address.  */
+};
 #endif 
 
 /* POSIX error code remapping */
-#ifdef TARGET_ARCH_WIN32
+#ifdef _WIN32
 	#define EWOULDBLOCK EAGAIN
 	#define ETIMEDOUT WSAETIMEDOUT
 	#define EINPROGRESS WSAEINPROGRESS
 #endif
 
-#if defined(HAVE_INTTYPES_H) && !defined(TARGET_ARCH_CYGWIN)
-#    include <inttypes.h>
-#elif defined(HAVE_SYS_INTTYPES_H)
-#    include <sys/inttypes.h>
-#endif
+#include <inttypes.h>
 
-#if defined(TARGET_ARCH_WIN32)
-#    define HAVE_UINT32_T 1
-#    define uint32_t ULONG32
+#if defined(_WIN32)
 #    define vsnprintf _vsnprintf
 #endif
 
@@ -300,11 +183,30 @@ extern uint32_t inet_addr(const char * cp);
 #endif
 
 typedef unsigned char	                                globus_byte_t;
+/**
+ * @brief Boolean type
+ * @ingroup globus_common
+ * @details
+ * Set values to either the constant GLOBUS_TRUE and GLOBUS_FALSE
+ */
 typedef int		                                globus_bool_t;
+/**
+ * @ingroup globus_common
+ * Weak pointer to a Globus Error object, or the special value GLOBUS_SUCCESS
+ */
 typedef uint32_t                                        globus_result_t;
-typedef GLOBUS_OFF_T                                    globus_off_t;
+typedef int64_t                                         globus_off_t;
+#define GLOBUS_OFF_T_FORMAT                             PRId64
 
+/**
+ * @brief True value for globus_bool_t
+ * @ingroup globus_common
+ */
 #define GLOBUS_TRUE    1
+/**
+ * @brief False value for globus_bool_t
+ * @ingroup globus_common
+ */
 #define GLOBUS_FALSE   0
 #define GLOBUS_NULL    0
 #define GLOBUS_SUCCESS 0

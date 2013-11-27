@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef DOXYGEN
+/**
+ * @file globus_i_gram_protocol.h GRAM Protocol Internals
+ * @brief GRAM Protocol Internals
+ */
 
 #include "globus_common.h"
 #include "globus_gram_protocol.h"
 #include "globus_io.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Strings used in protocol framing, packing, unframing, and unpacking */
 
@@ -163,6 +168,6 @@ extern int                              globus_i_gram_protocol_max_concurrency;
 extern globus_gram_protocol_handle_t	globus_i_gram_protocol_handle;
 extern globus_thread_key_t              globus_i_gram_protocol_error_key;
 
-EXTERN_C_END
-
-#endif /* DOXYGEN */
+#ifdef __cplusplus
+}
+#endif

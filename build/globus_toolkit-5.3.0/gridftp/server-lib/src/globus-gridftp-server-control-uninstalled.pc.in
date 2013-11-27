@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+abs_top_srcdir=@abs_top_srcdir@
+abs_top_builddir=@abs_top_builddir@
+
+Name: globus-gridftp-server-control
+Description: Globus Toolkit - Globus GridFTP Server Library
+Version: @VERSION@
+Requires.private: @PACKAGE_DEPS@
+Libs: -L${abs_top_builddir} -lglobus_gridftp_server_control
+Cflags: -I${abs_top_srcdir}

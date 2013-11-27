@@ -14,32 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file init_delegation.c
+ * @file gssapi/source/library/init_delegation.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 
 /* Only build if we have the extended GSSAPI */
 #ifdef _HAVE_GSI_EXTENDED_GSSAPI
-
 /**
- * @name Accept Delegation
- */
-/*@{*/
-/**
- * Accept a delegated credential.
- *
+ * @brief Accept a delegated credential
+ * @ingroup globus_gsi_gssapi_extensions_delegation
+ * @details
  * This functions drives the accepting side of the credential
  * delegation process. It is expected to be called in tandem with the
  * gss_init_delegation function.
@@ -433,6 +421,4 @@ GSS_CALLCONV gss_accept_delegation(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
-
 #endif /* _HAVE_GSI_EXTENDED_GSSAPI */

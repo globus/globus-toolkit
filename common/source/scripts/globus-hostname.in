@@ -22,19 +22,61 @@
 # in all cases.  It also servers to return just the
 # domainname
 
+PROGRAM_NAME="$(basename $0)"
+PROGRAM_VERSION="@VERSION@"
+PACKAGE="@PACKAGE@"
+VERSION="@VERSION@"
+DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
+DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 
-@GLOBUS_SCRIPT_INITIALIZER@
+prefix="@prefix@"
+set_paths()
+{
+    exec_prefix="@exec_prefix@"
+    sbindir="@sbindir@"
+    bindir="@bindir@"
+    libdir="@libdir@"
+    includedir="@includedir@"
+    datarootdir="@datarootdir@"
+    datadir="@datadir@"
+    libexecdir="@libexecdir@"
+    sysconfdir="@sysconfdir@"
+    sharedstatedir="@sharedstatedir@"
+    localstatedir="@localstatedir@"
+}
 
-. ${libexecdir}/globus-script-initializer
+set_paths
 
-PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
-PROGRAM_VERSION=`echo '$Revision$' | ${GLOBUS_SH_CUT-cut} -d' ' -f2`
+mydir="$(dirname $0)"
+if ! expr "$mydir" : "^/" > /dev/null 2>&1 ; then
+    mydir="$(pwd)/$mydir"
+fi
+
+# If $0 has been moved, look in its new directory's parent as prefix
+if [ "$bindir" != "$mydir" ]; then
+    prefix="$(dirname $mydir)"
+    set_paths
+
+    if [ ! -r "${libexecdir}/globus-script-initializer" ] && \
+        [ -n "$GLOBUS_LOCATION" ]; then
+        prefix="$GLOBUS_LOCATION"
+        set_paths
+    fi
+fi
+
+
+if test -r "${libexecdir}/globus-script-initializer"; then
+    . "${libexecdir}/globus-script-initializer"
+else
+    echo "Cannot locate globus-script-initializer" 1>&2
+    exit 1
+fi
 
 short_usage="${PROGRAM_NAME} [-help] [-version]"
 
 long_usage()
 {
-   ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
+   cat 1>&2 <<EOF
 
 ${short_usage}
 
@@ -55,7 +97,7 @@ EOF
       ;;
     esac
 
-${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
+cat 1>&2 <<EOF
     Setting the environment variable GLOBUS_HOSTNAME will cause
     ${PROGRAM_NAME} to return a value based on this variable.
     This is useful for specifying the use of certain network interfaces when
@@ -82,20 +124,20 @@ if [ -z "${GLOBUS_HOSTNAME}" ] ; then
 
   # if failed to set, use the system's hostname command
   if [ -z "${_fullname}" ] ; then
-    _fullname=`${GLOBUS_SH_HOSTNAME-hostname}`
+    _fullname=`hostname`
   fi
 
-  _basename="`echo ${_fullname} | ${GLOBUS_SH_CUT-cut} -d. -f1`"
+  _basename="`echo ${_fullname} | cut -d. -f1`"
  
   if [ "X$_fullname" = "X$_basename" -a ! -z "$GLOBUS_LOCALDOMAIN" ] ; then
     # Its not fully qualified
     _fullname="${_basename}.${GLOBUS_LOCALDOMAIN}"
   fi
 
-  GLOBUS_HOSTNAME="`echo ${_fullname} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z'`"
+  GLOBUS_HOSTNAME="`echo ${_fullname} | tr 'A-Z' 'a-z'`"
 fi
 
-GLOBUS_DOMAINNAME="`echo $GLOBUS_HOSTNAME | ${GLOBUS_SH_CUT-cut} -s -d '.' -f '2-'`"
+GLOBUS_DOMAINNAME="`echo $GLOBUS_HOSTNAME | cut -s -d '.' -f '2-'`"
 
 case "${PROGRAM_NAME}" in
 

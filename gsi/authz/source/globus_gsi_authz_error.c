@@ -14,17 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_authz_error.c
- * Globus GSI Authz Library
+ * @file globus_gsi_authz_error.c Globus GSI Authz Library
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_gsi_authz_constants.h"
 

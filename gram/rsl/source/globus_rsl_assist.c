@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-/**
- * @mainpage RSL Helper Functions
- *
- * @ref globus_rsl_assist
- */
 
 /**
  * @defgroup globus_rsl_assist RSL Helper Functions
+ * @ingroup globus_rsl
  *
  * @details
  *   The rsl_assist library provide a set of functions to canonicalize
@@ -31,14 +27,9 @@
 /*
  * @file globus_rsl_assist.c RSL Help Functions
  *
- * CVS Information:
- *   $Source$
- *   $Date$
- *   $Revision$
- *   $Author$
- *
  * @ref globus_rsl_assist
  */
+
 #include "globus_common.h"
 #include "globus_rsl_assist.h"
 

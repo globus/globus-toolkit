@@ -18,6 +18,54 @@
 #include "globus_gsi_system_config.h"
 #include "version.h"
 #include "dirent.h"
+#ifndef TARGET_ARCH_WIN32
+#include <grp.h>
+#endif
+
+#ifdef TARGET_ARCH_WIN32
+#define S_ISLNK(x) 0
+#define lstat(x,y) stat(x,y)
+#define mkdir(x,y) mkdir(x)
+#define chown(x,y,z) -1
+#define symlink(x,y) -1
+#define readlink(x,y,z) 0
+#define realpath(x,y) strcpy(y,x)
+#define scandir(a,b,c,d) 0
+#define alphasort(x,y) 0
+#define setenv(x,y,z) SetEnvironmentVariable(x,y)
+#endif
+
+#ifdef TARGET_ARCH_WIN32
+
+#define lstat(x,y) stat(x,y)
+#define S_ISLNK(x) 0
+
+#define getuid() 1
+#define getpwuid(x) 0
+#define initgroups(x,y) -1
+#define getgroups(x,y) -1
+#define setgroups(x,y) 0
+#define setgid(x) 0
+#define setuid(x) 0
+#define sync() 0
+#define fork() -1
+#define setsid() -1
+#define chroot(x) -1
+#define globus_libc_getpwnam_r(a,b,c,d,e) -1
+#define globus_libc_getpwuid_r(a,b,c,d,e) -1
+#endif
+
+#ifdef TARGET_ARCH_WIN32
+
+#define getpwnam(x) 0
+
+#define getgrgid(x) 0
+#define getgrnam(x) 0
+
+#define lstat(x,y) stat(x,y)
+#define S_ISLNK(x) 0
+
+#endif
 
 #define GLOBUS_GFS_HELP_ROWS            60
 #define GLOBUS_GFS_HELP_COLS            45
@@ -25,6 +73,12 @@
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
+#endif
+
+#ifdef TARGET_ARCH_WIN32
+#define GFS_THREAD_MODEL "windows"
+#else
+#define GFS_THREAD_MODEL "pthread"
 #endif
 
 typedef enum
@@ -906,7 +960,7 @@ globus_l_gfs_config_load_envs_from_file(
                     if(globus_l_gfs_num_threads > 0)
                     {
                         setenv("GLOBUS_CALLBACK_POLLING_THREADS", valuebuf, 1);
-                        globus_thread_set_model("pthread");
+                        globus_thread_set_model(GFS_THREAD_MODEL);
                     }
                 }
             }
@@ -956,7 +1010,7 @@ globus_l_gfs_config_load_envs_from_file(
             goto error_parse;
         }
         
-        rc = setenv(optionbuf, valuebuf, 1);
+        rc = globus_libc_setenv(optionbuf, valuebuf, 1);
         if(rc < 0)
         {
             char                        errstr[PATH_MAX];
@@ -2151,6 +2205,10 @@ globus_l_gfs_config_misc()
     globus_l_gfs_config_adjust_path("pidfile", 1);
     globus_l_gfs_config_adjust_path("ipc_credential", 1);
 
+#ifdef WIN32
+    globus_l_gfs_config_set("fork", GLOBUS_FALSE, NULL);
+#endif    
+
     if(globus_i_gfs_config_bool("detach") && 
         !globus_i_gfs_config_bool("daemon"))
     {
@@ -2341,7 +2399,8 @@ globus_l_gfs_config_misc()
         rc = globus_l_config_loadfile(value, &data);
         globus_l_gfs_config_set("login_msg", 0, data);                
     }
-    
+
+
     if((value = globus_i_gfs_config_string("port_range")) != GLOBUS_NULL)
     {
         globus_libc_setenv("GLOBUS_TCP_PORT_RANGE", value, 1);
@@ -2719,7 +2778,7 @@ globus_i_gfs_config_init_envs(
             {
                 setenv("GLOBUS_CALLBACK_POLLING_THREADS", 
                     strdup(tmp_argv[arg_num + 1]), 1);
-                globus_thread_set_model("pthread");
+                globus_thread_set_model(GFS_THREAD_MODEL);
             }
         }
 

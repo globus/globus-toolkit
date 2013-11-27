@@ -64,6 +64,9 @@ static
 int
 globus_l_xio_popen_deactivate(void);
 
+#ifdef popen
+#undef popen
+#endif
 GlobusXIODefineModule(popen) =
 {
     "globus_xio_popen",

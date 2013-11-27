@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+GLOBUS_FLAVOR_NAME=@GLOBUS_FLAVOR_NAME@
+flavorincludedir=@flavorincludedir@
+
+Name: globus-xio-udt-driver
+Description: Globus Toolkit - Globus XIO UDT Driver
+Version: 0.6
+Requires.private: @GPT_PKGCONFIG_DEPENDENCIES@ globus-xio
+Libs: -L${libdir}
+Libs.private: @GPT_EXTERNAL_LIBS@
+Cflags: @GPT_PKG_CFLAGS@ -I${includedir} -I${flavorincludedir} @GPT_EXTERNAL_INCLUDES@

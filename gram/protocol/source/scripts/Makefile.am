@@ -1,5 +1,3 @@
-include $(top_srcdir)/globus_automake_pre
-
 # Extra directories into which we install files
 globusperldir=$(perlmoduledir)/Globus/GRAM
 perldocdir=$(docdir)/perl/Globus/GRAM
@@ -21,8 +19,8 @@ SUFFIXES = .pm .html .3
 
 $(globusperl_DATA): ../globus-gram-protocol-constants.sh
 	$(RM) $(globusperl_DATA)
-	@PERL@ $(srcdir)/create_protocol_constants.pl -perl \
-		../globus-gram-protocol-constants.sh
+	$(PERL) $< -perl \
+		$(srcdir)/../globus-gram-protocol-constants.sh
 .pm.html:
 	pod2html --noindex $*.pm | \
 	    sed -e 's,</HEAD>,<LINK REL="stylesheet" HREF="../../../../doxygen/globus.css"></HEAD>,' > $*.html
@@ -49,5 +47,3 @@ filelist-man:
 	done
 
 MAINTAINERCLEANFILES = $(perldoc_DATA) $(noinst_DATA)
-
-include $(top_srcdir)/globus_automake_post

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/** @file globus_object_cache.h Object Cache */
 
 #ifndef GLOBUS_OBJECT_CACHE_H
 #define GLOBUS_OBJECT_CACHE_H
@@ -25,7 +26,9 @@
 
 #include "globus_object.h"
  
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**********************************************************************
  * Object Cache API Types
@@ -77,10 +80,8 @@ globus_object_cache_list (globus_object_cache_t * cache);
  * returns NULL if cache is NULL */
 
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_OBJECT_CACHE_H */
-
-
-
-

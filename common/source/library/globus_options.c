@@ -382,7 +382,7 @@ globus_options_env_process(
         {
             if(table->table[i].env != NULL)
             {
-                tmp_str = globus_libc_getenv(table->table[i].env);
+                tmp_str = getenv(table->table[i].env);
                 /* TODO: parse into mulitple args */
                 if(tmp_str != NULL)
                 {

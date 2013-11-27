@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: globus-xio-gridftp-driver
+Description: Globus Toolkit - Globus XIO GridFTP Driver
+Version: @VERSION@
+Requires.private: @PACKAGE_DEPS@
+Cflags: -I${includedir}

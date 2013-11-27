@@ -21,6 +21,51 @@
 #define MAXPATHLEN 4096
 #endif
 
+#ifdef TARGET_ARCH_WIN32
+#define S_ISLNK(x) 0
+#define lstat(x,y) stat(x,y)
+#define mkdir(x,y) mkdir(x)
+#define chown(x,y,z) -1
+#define symlink(x,y) -1
+#define readlink(x,y,z) 0
+#define realpath(x,y) strcpy(y,x)
+#define scandir(a,b,c,d) 0
+#define alphasort(x,y) 0
+#endif
+
+#ifdef TARGET_ARCH_WIN32
+
+#define lstat(x,y) stat(x,y)
+#define S_ISLNK(x) 0
+
+#define getuid() 1
+#define getpwuid(x) 0
+#define initgroups(x,y) -1
+#define getgroups(x,y) -1
+#define setgroups(x,y) 0
+#define setgid(x) 0
+#define setuid(x) 0
+#define sync() 0
+#define fork() -1
+#define setsid() -1
+#define chroot(x) -1
+#define globus_libc_getpwnam_r(a,b,c,d,e) -1
+#define globus_libc_getpwuid_r(a,b,c,d,e) -1
+#endif
+
+#ifdef TARGET_ARCH_WIN32
+
+#define getpwnam(x) 0
+
+#define getgrgid(x) 0
+#define getgrnam(x) 0
+
+#define lstat(x,y) stat(x,y)
+#define S_ISLNK(x) 0
+
+#endif
+
+
 struct passwd *
 globus_l_gfs_getpwuid(
     uid_t                               uid);
@@ -304,6 +349,7 @@ globus_l_gfs_get_full_path(
     int                                     cwd_len;
     int                                     sc;
     char *                                  slash = "/";
+    char *                                  tmp_path;
     GlobusGFSName(globus_l_gfs_get_full_path);
     GlobusGFSDebugEnter();
 
@@ -314,6 +360,18 @@ globus_l_gfs_get_full_path(
         goto done;
     }
     
+#ifdef WIN32
+    tmp_path = in_path;
+    while(*tmp_path)
+    {
+        if(*tmp_path == '\\')
+        {
+            *tmp_path = '/';
+        }
+        tmp_path++;
+    }
+#endif
+ 
     if(*in_path == '/')
     {
         strncpy(path, in_path, sizeof(path));
@@ -403,8 +461,8 @@ globus_l_gfs_get_full_path(
     char *                                  out_ptr;
     char *                                  out_path;
     char *                                  in_ptr;
-    
-    out_path = globus_malloc(strlen(path) + 1);
+
+    out_path = globus_malloc(strlen(path) + 4);
     out_path[0] = '/';
     out_path[1] = '\0';
     out_ptr = out_path;
@@ -463,6 +521,21 @@ globus_l_gfs_get_full_path(
         out_ptr += len;
         *out_ptr = '\0';
     }
+#ifdef WIN32
+    if(isalpha(out_path[1]) && out_path[2] == '/')
+    {
+        out_path[0] = out_path[1];
+        out_path[1] = ':';
+    }
+    else if(isalpha(out_path[1]) && out_path[2] == '\0')
+    {
+        out_path[0] = out_path[1];
+        out_path[1] = ':';
+        out_path[2] = '/';
+        out_path[3] = '\0';
+    }
+#endif
+
     strcpy(path, out_path);
     globus_free(out_path);
     
@@ -474,7 +547,25 @@ globus_l_gfs_get_full_path(
     {
         goto done;
     }
-    
+#ifdef WIN32
+    /* path could have a wrong formatted chroot */
+    if(*ret_path)
+    {
+        char *  out_path = *ret_path;
+        if(isalpha(out_path[1]) && out_path[2] == '/')
+        {
+            out_path[0] = out_path[1];
+            out_path[1] = ':';
+        }
+        else if(isalpha(out_path[1]) && out_path[2] == '\0')
+        {
+            out_path[0] = out_path[1];
+            out_path[1] = ':';
+            out_path[2] = '/';
+            out_path[3] = '\0';
+        }
+    }
+#endif
     if(*ret_path == NULL)
     {
         *ret_path = globus_libc_strdup(path);
@@ -631,6 +722,14 @@ globus_l_gfs_auth_session_cb(
         if(reply->info.session.home_dir != NULL && 
             globus_i_gfs_config_bool("use_home_dirs"))
         {
+#ifdef WIN32            
+            if(isalpha(reply->info.session.home_dir[0]) && 
+                reply->info.session.home_dir[1] == ':')
+            {
+                reply->info.session.home_dir[1] = reply->info.session.home_dir[0];
+                reply->info.session.home_dir[0] = '/';
+            } 
+#endif            
             globus_gridftp_server_control_set_cwd(
                 auth_info->instance->server_handle,
                 reply->info.session.home_dir);
@@ -1544,13 +1643,13 @@ globus_l_gfs_request_command(
              * value.  We have to do contortions here as there is no standard
              * inverse of the 'gmtime' function. */
             tz = getenv("TZ");
-            setenv("TZ", "UTC", 1);
+            globus_libc_setenv("TZ", "UTC", 1);
             tzset();
             command_info->utime_time = mktime(&modtime);
             if (tz)
-                setenv("TZ", tz, 1);
+                globus_libc_setenv("TZ", tz, 1);
             else
-                unsetenv("TZ");
+                globus_libc_unsetenv("TZ");
             tzset();
             if (command_info->utime_time < 0)
             {
@@ -1687,13 +1786,17 @@ globus_l_gfs_request_command(
                  * value.  We have to do contortions here as there is no standard
                  * inverse of the 'gmtime' function. */
                 tz = getenv("TZ");
-                setenv("TZ", "UTC", 1);
+                globus_libc_setenv("TZ", "UTC", 1);
                 tzset();
                 command_info->utime_time = mktime(&modtime);
-                if (tz)
-                    setenv("TZ", tz, 1);
+                if(tz)
+                {
+                    globus_libc_setenv("TZ", tz, 1);
+                }
                 else
-                    unsetenv("TZ");
+                {
+                    globus_libc_unsetenv("TZ");
+                }
                 tzset();
                 if (command_info->utime_time < 0)
                 {

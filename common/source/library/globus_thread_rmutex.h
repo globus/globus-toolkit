@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_RMUTEX_INCLUDE
-#define GLOBUS_RMUTEX_INCLUDE
+/** @file globus_thread_rmutex.h Recursive Mutex */
+
+#ifndef GLOBUS_THREAD_RMUTEX_H
+#define GLOBUS_THREAD_RMUTEX_H
 
 #include "globus_common_include.h"
 #include "globus_thread.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief Recursive Mutex
@@ -60,6 +64,8 @@ int
 globus_rmutex_destroy(
     globus_rmutex_t *                   rmutex);
 
-EXTERN_C_END
 
+#ifdef __cplusplus
+}
 #endif
+#endif /* GLOBUS_THREAD_RMUTEX_H */

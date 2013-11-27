@@ -293,7 +293,7 @@ ggvm_get_myproxy_userid(
     char *                              at;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
-    myproxy_ca_cert_file = globus_libc_getenv("GLOBUS_MYPROXY_CA_CERT");
+    myproxy_ca_cert_file = getenv("GLOBUS_MYPROXY_CA_CERT");
     if(!myproxy_ca_cert_file)
     {
         GLOBUS_GRIDMAP_CALLOUT_ERROR(
@@ -303,7 +303,7 @@ ggvm_get_myproxy_userid(
         goto error;
     }
 
-    myproxy_authorized_dn = globus_libc_getenv("GLOBUS_MYPROXY_AUTHORIZED_DN");
+    myproxy_authorized_dn = getenv("GLOBUS_MYPROXY_AUTHORIZED_DN");
     if(!myproxy_authorized_dn)
     {
         GLOBUS_GRIDMAP_CALLOUT_ERROR(

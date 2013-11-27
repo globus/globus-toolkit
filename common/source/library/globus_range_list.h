@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_COMMON_RANGE_LIST_H
-#define GLOBUS_COMMON_RANGE_LIST_H
+/** @file globus_range_list.h Byte Range List */
+
+#ifndef GLOBUS_RANGE_LIST_H
+#define GLOBUS_RANGE_LIST_H
 
 #include "globus_common_include.h"
 /********************************************************************
@@ -24,7 +26,10 @@
  *
  *
  ********************************************************************/
-EXTERN_C_BEGIN
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_RANGE_LIST_MAX -1
 
@@ -96,7 +101,8 @@ globus_range_list_remove_at(
     globus_off_t *                      offset,
     globus_off_t *                      length);
 
+#ifdef __cplusplus
+}
+#endif
 
-EXTERN_C_END
-
-#endif /* GLOBUS_LIST_H */
+#endif /* GLOBUS_RANGE_LIST_H */

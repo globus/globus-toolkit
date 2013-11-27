@@ -17,35 +17,28 @@
 #ifndef _GLOBUS_CALLOUT_H_
 #define _GLOBUS_CALLOUT_H_
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_callout.c
+ * @file globus_callout.h
  * Globus Callout Infrastructure
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
 
 #include "globus_common.h"
 #include "globus_callout_constants.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
  * @mainpage Globus Callout API
+ * @copydoc globus_callout
+ */
+#endif
+/**
+ * @defgroup globus_callout Globus Callout API
  *
  * This API is intended to ease integration of configurable callouts into the
  * Globus Toolkit and to provide a platform independent way of dealing with
@@ -72,16 +65,13 @@ EXTERN_C_BEGIN
  *   of callouts of the same abstract type.
  *
  * Any program that uses Globus Callout functions must include
- * "globus_callout.h".  
+ * the globus_callout.h header
  *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
  */
 
 /** 
  * @defgroup globus_callout_activation Activation
+ * @ingroup globus_callout
  *
  * Globus Callout API uses standard Globus module activation and
  * deactivation.  Before any Globus Callout API functions are called, the
@@ -137,6 +127,7 @@ typedef globus_result_t (*globus_callout_function_t)(
 
 /**
  * @defgroup globus_callout_handle Callout Handle Operations
+ * @ingroup globus_callout
  *
  * Initialize and Destory a Globus Callout Handle structure.
  *
@@ -153,6 +144,7 @@ globus_callout_handle_destroy(
 
 /**
  * @defgroup globus_callout_config Callout Configuration
+ * @ingroup globus_callout
  *
  * Functions for registering callouts.
  *
@@ -174,6 +166,7 @@ globus_callout_register(
 
 /**
  * @defgroup globus_callout_call Callout Invocation
+ * @ingroup globus_callout
  *
  * Functions for invoking callouts.
  *
@@ -187,6 +180,8 @@ globus_callout_call_type(
     ...);
 
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

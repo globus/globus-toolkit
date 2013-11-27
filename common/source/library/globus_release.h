@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-#include "globus_config.h"
+/** @file globus_release.h Relase Information */
 
 #ifndef GLOBUS_RELEASE_H
 #define GLOBUS_RELEASE_H
-
 
 /* I have made these routines as macros                    */
 /* since you have to include the header file, anyways.     */
@@ -35,21 +34,4 @@
 #else
 #define  globus_release_string()   ""
 #endif
-
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
- 
-
-
 #endif /* GLOBUS_DEBUG_H */
-
-
-

@@ -17,32 +17,19 @@
 #ifndef GLOBUS_CALLOUT_CONSTANTS_H
 #define GLOBUS_CALLOUT_CONSTANTS_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_callout_constants.h
  * Globus Callout Infrastructure
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
+#ifdef __cplusplus
+extern "C" {
 #endif
-
-EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_callout_constants Globus Callout Constants
+ * @ingroup globus_callout
  */
 
 /**
@@ -71,6 +58,8 @@ typedef enum
     GLOBUS_CALLOUT_ERROR_LAST = 8
 } globus_callout_error_t;
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_CALLOUT_CONSTANTS_H */

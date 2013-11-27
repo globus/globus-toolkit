@@ -14,35 +14,18 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_gass_transfer_keyvalue.h
- 
-Description:
-    This header implements a keyvalue list
- 
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
-#ifndef GLOBUS_GASS_INCLUDE_GLOBUS_GASS_TRANSFER_KEYVALUE_H
-#define GLOBUS_GASS_INCLUDE_GLOBUS_GASS_TRANSFER_KEYVALUE_H
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+/**
+ * @file globus_i_gass_transfer_keyvalue.h
+ *
+ */
+#ifndef GLOBUS_GASS_TRANSFER_KEYVALUE_H
+#define GLOBUS_GASS_TRANSFER_KEYVALUE_H
 
 #include "globus_list.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct
 {
@@ -71,6 +54,8 @@ void
 globus_i_gass_transfer_keyvalue_destroy(
     globus_list_t **				list);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_GASS_INCLUDE_GLOBUS_GASS_TRANSFER_KEYVALUE_H */

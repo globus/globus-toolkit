@@ -644,7 +644,7 @@ globus_l_sge_read_callback(
     }
 
 
-    if( (eof_hit == GLOBUS_TRUE) )
+    if (eof_hit == GLOBUS_TRUE)
       {
 
         /* Here we hand log-rotation possibility - by resetting file_number

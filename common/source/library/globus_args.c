@@ -25,6 +25,9 @@
 #include "globus_thread.h"
 #include "globus_common.h"
 
+#include <unistd.h>
+#include <fcntl.h>
+
 #define globus_l_args_malloc(type,n)  (type *) globus_malloc(n * sizeof(type))
 
 

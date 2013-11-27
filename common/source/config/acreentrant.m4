@@ -16,7 +16,6 @@ AC_CHECK_FUNCS(gethostbyaddr_r, [
 	AC_MSG_CHECKING(number of arguments to gethostbyaddr_r)
 	globus_gethostbyaddr_args=no
 	AC_TRY_COMPILE([
-#            include "globus_config.h"
 #            include <sys/types.h>
 #            include <netdb.h>],
         [
@@ -31,7 +30,6 @@ AC_CHECK_FUNCS(gethostbyaddr_r, [
 	], AC_DEFINE(GLOBUS_HAVE_GETHOSTBYADDR_R_5) globus_gethostbyaddr_args=5)
         if test $globus_gethostbyaddr_args = no; then
             AC_TRY_COMPILE([
-#               include "globus_config.h"
 #	        include <sys/types.h>
 #               include <netdb.h>],
             [
@@ -51,7 +49,6 @@ AC_CHECK_FUNCS(gethostbyaddr_r, [
 
         if test $globus_gethostbyaddr_args = no; then
 	   AC_TRY_COMPILE([
-#              include "globus_config.h"
 #              include <sys/types.h>
 #              include <netdb.h>],
            [
@@ -81,7 +78,6 @@ AC_CHECK_FUNCS(gethostbyname_r, [
          AC_MSG_CHECKING(number of arguments to gethostbyname_r)
 	 globus_gethostbyname_args=no
 	 AC_TRY_COMPILE([
-#            include "globus_config.h"
 #            include <sys/types.h>
 #            include <netdb.h>],
 	 [
@@ -95,7 +91,6 @@ AC_CHECK_FUNCS(gethostbyname_r, [
 	 ], AC_DEFINE(GLOBUS_HAVE_GETHOSTBYNAME_R_5) globus_gethostbyname_args=5)
 	 if test $globus_gethostbyname_args = no; then
 	     AC_TRY_COMPILE([
-#                include "globus_config.h"
 #                include <sys/types.h>
 #                include <netdb.h>],
              [
@@ -109,7 +104,6 @@ AC_CHECK_FUNCS(gethostbyname_r, [
 	 fi
 	 if test $globus_gethostbyname_args = no; then
 	    AC_TRY_COMPILE([
-#               include "globus_config.h"
 #               include <sys/types.h>
 #               include <netdb.h>
             ],
@@ -140,7 +134,6 @@ AC_CHECK_FUNCS(ctime_r,
         globus_ctime_args=no
         AC_TRY_COMPILE(
         [
-#               include "globus_config.h"
 #               include <time.h>
         ],
         [
@@ -151,7 +144,6 @@ AC_CHECK_FUNCS(ctime_r,
         if test $globus_ctime_args = no; then
             AC_TRY_COMPILE(
             [
-#                   include "globus_config.h"
 #                   include <time.h>
             ],
             [
@@ -167,7 +159,6 @@ AC_MSG_CHECKING(if struct passwd contains pw_age)
 globus_pw_age=no;
 AC_TRY_COMPILE(
     [
-#       include "globus_config.h"
 #       include <pwd.h>
     ],
     [
@@ -181,7 +172,6 @@ AC_MSG_CHECKING(if struct passwd contains pw_comment)
 globus_pw_comment=no;
 AC_TRY_COMPILE(
     [
-#       include "globus_config.h"
 #       include <pwd.h>
     ],
     [
@@ -200,7 +190,6 @@ AC_CHECK_FUNCS(getpwnam_r,
 
         AC_TRY_COMPILE(
         [
-#           include "globus_config.h"
 #           include <sys/types.h>
 #           include <pwd.h>
         ],
@@ -219,7 +208,6 @@ AC_CHECK_FUNCS(getpwnam_r,
         if test $globus_getpwnam_args = no; then
             AC_TRY_COMPILE(
             [
-#               include "globus_config.h"
 #           	include <sys/types.h>
 #           	include <pwd.h>
             ],
@@ -246,7 +234,6 @@ AC_CHECK_FUNCS(getpwuid_r,
 
         AC_TRY_COMPILE(
         [
-#           include "globus_config.h"
 #           include <sys/types.h>
 #           include <pwd.h>
         ],
@@ -265,7 +252,6 @@ AC_CHECK_FUNCS(getpwuid_r,
         if test $globus_getpwuid_args = no; then
             AC_TRY_COMPILE(
             [
-#               include "globus_config.h"
 #           	include <sys/types.h>
 #           	include <pwd.h>
             ],
@@ -289,23 +275,7 @@ AC_CHECK_FUNCS(readdir_r,
         globus_readdir_args=no;
         AC_TRY_COMPILE(
         [
-#include "globus_config.h"
-#if defined(HAVE_DIRENT_H)
-#   include <dirent.h>
-#   define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-#   if defined(HAVE_SYS_NDIR_H)
-#       include <sys/ndir.h>
-#   endif
-#   if defined(HAVE_SYS_DIR_H)
-#       include <sys/dir.h>
-#   endif
-#   if defined(HAVE_NDIR_H)
-#       include <ndir.h>
-#   endif
-#endif
+#include <dirent.h>
         ],
         [
 	    struct dirent dir, *dirp;
@@ -319,23 +289,7 @@ AC_CHECK_FUNCS(readdir_r,
         if test $globus_readdir_args = no; then
             AC_TRY_COMPILE(
             [
-#include "globus_config.h"
-#if defined(HAVE_DIRENT_H)
-#   include <dirent.h>
-#   define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-#   if defined(HAVE_SYS_NDIR_H)
-#       include <sys/ndir.h>
-#   endif
-#   if defined(HAVE_SYS_DIR_H)
-#       include <sys/dir.h>
-#   endif
-#   if defined(HAVE_NDIR_H)
-#       include <ndir.h>
-#   endif
-#endif
+#include <dirent.h>
             ],
             [
 	    	struct dirent dir, *dirp;
@@ -350,23 +304,7 @@ AC_CHECK_FUNCS(readdir_r,
 AC_MSG_CHECKING(if struct dirent contains d_off)
 AC_TRY_COMPILE(
     [
-#include "globus_config.h"
-#if defined(HAVE_DIRENT_H)
-#   include <dirent.h>
-#   define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-#   if defined(HAVE_SYS_NDIR_H)
-#       include <sys/ndir.h>
-#   endif
-#   if defined(HAVE_SYS_DIR_H)
-#       include <sys/dir.h>
-#   endif
-#   if defined(HAVE_NDIR_H)
-#       include <ndir.h>
-#   endif
-#endif
+#include <dirent.h>
     ],
     [
         struct dirent dir;
@@ -378,23 +316,7 @@ AC_TRY_COMPILE(
 AC_MSG_CHECKING(if struct dirent contains d_offset)
 AC_TRY_COMPILE(
     [
-#include "globus_config.h"
-#if defined(HAVE_DIRENT_H)
-#   include <dirent.h>
-#   define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-#   if defined(HAVE_SYS_NDIR_H)
-#       include <sys/ndir.h>
-#   endif
-#   if defined(HAVE_SYS_DIR_H)
-#       include <sys/dir.h>
-#   endif
-#   if defined(HAVE_NDIR_H)
-#       include <ndir.h>
-#   endif
-#endif
+#include <dirent.h>
     ],
     [
 struct dirent dir;
@@ -406,23 +328,7 @@ struct dirent dir;
 AC_MSG_CHECKING(if struct dirent contains d_type)
 AC_TRY_COMPILE(
     [
-#include "globus_config.h"
-#if defined(HAVE_DIRENT_H)
-#   include <dirent.h>
-#   define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-#   if defined(HAVE_SYS_NDIR_H)
-#       include <sys/ndir.h>
-#   endif
-#   if defined(HAVE_SYS_DIR_H)
-#       include <sys/dir.h>
-#   endif
-#   if defined(HAVE_NDIR_H)
-#       include <ndir.h>
-#   endif
-#endif
+#include <dirent.h>
     ],
     [
 struct dirent dir;
@@ -434,23 +340,7 @@ struct dirent dir;
 AC_MSG_CHECKING(if struct dirent contains d_reclen)
 AC_TRY_COMPILE(
     [
-#include "globus_config.h"
-#if defined(HAVE_DIRENT_H)
-#   include <dirent.h>
-#   define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-#   if defined(HAVE_SYS_NDIR_H)
-#       include <sys/ndir.h>
-#   endif
-#   if defined(HAVE_SYS_DIR_H)
-#       include <sys/dir.h>
-#   endif
-#   if defined(HAVE_NDIR_H)
-#       include <ndir.h>
-#   endif
-#endif
+#include <dirent.h>
     ],
     [
 struct dirent dir;

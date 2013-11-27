@@ -14,24 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_callout.c
  * Globus Callout Infrastructure
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 
 #include "globus_common.h"
 #include "globus_callout_constants.h"
 #include "globus_i_callout.h"
 
-#ifndef BUILD_STATIC_ONLY
 #include <ltdl.h>
-#endif
 
 #include "version.h"
 
@@ -121,12 +114,10 @@ globus_l_callout_activate(void)
         goto exit;
     }
 
-#ifndef BUILD_STATIC_ONLY
     if((result = lt_dlinit()) != 0)
     {
         goto exit;
     }
-#endif
 
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
 
@@ -158,14 +149,10 @@ globus_l_callout_deactivate(void)
         fclose(globus_i_callout_debug_fstream);
     }
 
-#ifndef BUILD_STATIC_ONLY
     result = lt_dlexit();
-#endif
 
     return result;
 }
-
-#endif
 
 /**
  * @name Initialize Handle
@@ -776,7 +763,7 @@ globus_callout_call_type(
     globus_result_t                     result = GLOBUS_SUCCESS;
     va_list                             ap;
     int                                 rc;
-    char *                              dlerror;
+    const char *                        dlerror;
     char *                              flavor_start;
     char *                              file;
     char                                library[1024];
@@ -924,7 +911,7 @@ globus_callout_call_type(
                 save_env[i] = current_datum->env_args[i];
                 save_env[i+1] = 
                     globus_libc_strdup(getenv(current_datum->env_args[i]));
-                setenv(current_datum->env_args[i], current_datum->env_args[i+1], 1);
+                globus_libc_setenv(current_datum->env_args[i], current_datum->env_args[i+1], 1);
                 i += 2;
             }
             save_env[i] = NULL;
@@ -947,7 +934,7 @@ globus_callout_call_type(
                 }
                 else
                 {
-                    setenv(save_env[i], save_env[i+1], 1);
+                    globus_libc_setenv(save_env[i], save_env[i+1], 1);
                     globus_free(save_env[i+1]);
                 }
                                 
@@ -1054,15 +1041,12 @@ static void
 globus_l_callout_library_table_element_free(
     void *                              element)
 {
-#ifndef BUILD_STATIC_ONLY
     lt_dlhandle *                       dlhandle;
-#endif
     globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_l_callout_library_table_element_free";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
-#ifndef BUILD_STATIC_ONLY
     dlhandle = (lt_dlhandle *) element;
 
     if(dlhandle != NULL)
@@ -1080,7 +1064,6 @@ globus_l_callout_library_table_element_free(
 
         free(dlhandle);
     }
-#endif
     
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
     return;

@@ -1,32 +1,29 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = pkgdata 
-
-## globussysconf = [ DATA ]
+pkgconfigdir = $(libdir)/pkgconfig
 globussysconfdir = ${sysconfdir}/globus
-globussysconf_DATA = globus-slurm.conf
-
-## gridservices = [ DATA ]
 gridservicesdir = ${sysconfdir}/grid-services/available
-gridservices_DATA = jobmanager-slurm-poll
-
-## gramperlmodule = [ DATA ]
 gramperlmoduledir = ${perlmoduledir}/Globus/GRAM/JobManager
-gramperlmodule_DATA = slurm.pm
-
-## validation = [ DATA ]
 validationdir = $(datadir)/globus/globus_gram_job_manager
-validation_DATA = slurm.rvf
 
+globussysconf_DATA = globus-slurm.conf
+gridservices_DATA = jobmanager-slurm-poll
+gramperlmodule_DATA = slurm.pm
+validation_DATA = slurm.rvf
 doc_DATA = LICENSE GLOBUS_LICENSE LICENSE.BSD
+pkgconfig_DATA = globus-gram-job-manager-slurm.pc
 
 AT=@
 jobmanager-slurm-poll: jobmanager-slurm.in
 	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
 	    -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
 
-EXTRA_DIST = globus-slurm.conf.in slurm.pm $(doc_DATA) $(validation_DATA) \
+EXTRA_DIST = \
+        dirt.sh \
+        globus-slurm.conf.in \
+        slurm.pm \
+        $(doc_DATA) \
+        $(validation_DATA) \
         jobmanager-slurm.in
 
 CLEANFILES = jobmanager-slurm-poll
@@ -35,6 +32,3 @@ install-data-hook:
 	cd $(DESTDIR)$(gridservicesdir)/..; \
 	[ -L "jobmanager-slurm" ] || \
 	ln -s available/jobmanager-slurm-poll jobmanager-slurm
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top

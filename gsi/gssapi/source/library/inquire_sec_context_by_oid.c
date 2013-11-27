@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file inquire_sec_context_by_oid.c
+ * @file gssapi/source/library/inquire_sec_context_by_oid.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -37,9 +31,9 @@ static char *rcsid = "$Id$";
 extern const gss_OID_desc * const gss_ext_x509_cert_chain_oid;
 
 /**
- * @name Inquire Sec Context by OID
+ * @brief Inquire Sec Context by OID
+ * @ingroup globus_gsi_gssapi_extensions
  */
-/* @{ */
 OM_uint32
 GSS_CALLCONV gss_inquire_sec_context_by_oid(
     OM_uint32 *                         minor_status,
@@ -324,6 +318,5 @@ exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 #endif /* _HAVE_GSI_EXTENDED_GSSAPI */

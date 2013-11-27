@@ -1,18 +1,8 @@
-include $(top_srcdir)/globus_automake_pre
-
-Sources= \
-    globus_xio_mode_e_driver.c
-
-include_HEADERS = \
-    globus_xio_mode_e_driver.h    
-
+include_HEADERS = globus_xio_mode_e_driver.h    
 noinst_LTLIBRARIES = libglobus_xio_mode_e_driver.la 
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/builtins/udp \
--I$(top_srcdir)/builtins/tcp $(GPT_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/builtins/udp \
+              -I$(top_srcdir)/builtins/tcp $(PACKAGE_DEP_CFLAGS)
+AM_LDFLAGS = $(PACKAGE_DEP_LIBS)
 
-libglobus_xio_mode_e_driver_la_SOURCES = $(Sources)
-libglobus_xio_mode_e_driver_la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_xio_mode_e_driver_la_LIBADD = $(GPT_LIB_LINKS)
-
-include $(top_srcdir)/globus_automake_post
+libglobus_xio_mode_e_driver_la_SOURCES = globus_xio_mode_e_driver.c

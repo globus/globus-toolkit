@@ -113,7 +113,7 @@ Machine-independent definitions.
 **********************************************************************/
 
 extern int errno;		/* These are needed for all systems. */
-#if !defined(TARGET_ARCH_LINUX) && !defined(TARGET_ARCH_BSD) && !defined(TARGET_ARCH_CYGWIN)
+#if !defined(TARGET_ARCH_LINUX) && !defined(TARGET_ARCH_BSD) && !defined(TARGET_ARCH_CYGWIN) && !defined(TARGET_ARCH_WIN32)
 extern char *sys_errlist[];
 #endif
 

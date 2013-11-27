@@ -14,22 +14,10 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_i_thread.h
+/** @file globus_i_thread.h Internal Macros for Globus threads library */
 
-Description:
-   Internal Macros for Globus threads library.
-
-CVS Information:
-   $Source$
-   $Date$
-   $Revision$
-   $State$
-   $Author$
-******************************************************************************/
-
-#if !defined(GLOBUS_INCLUDE_GLOBUS_I_THREAD)
-#define GLOBUS_INCLUDE_GLOBUS_I_THREAD 1
+#if !defined(GLOBUS_I_THREAD_H)
+#define GLOBUS_I_THREAD_H 1
 
 /******************************************************************************
 			     Include header files
@@ -63,7 +51,9 @@ CVS Information:
     } \
 }    
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * globus_i_thread_report_bad_rc()
@@ -87,8 +77,6 @@ globus_i_thread_report_bad_rc(int rc,
 
 int globus_i_thread_ignore_sigpipe(void);
 
-
-
 #define MAX_ERR_SIZE			80
 #define GLOBUS_I_THREAD_GRAN 		256
 #define GLOBUS_I_THREAD_USER_THREAD 	0
@@ -97,9 +85,9 @@ int globus_i_thread_ignore_sigpipe(void);
 #define GLOBUS_THREAD_DEFAULT_STACK_SIZE 0
 #endif
 
-
-EXTERN_C_END
-
+#ifdef __cplusplus
+}
 #endif
 
+#endif /* GLOBUS_INCLUDE_GLOBUS_I_THREAD */
 

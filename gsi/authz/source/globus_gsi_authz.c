@@ -21,15 +21,8 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_authz_callout_error.h"
 
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_authz.c
- * Globus Authorization API
- *
- * $RCSfile$
- * $Revision$
- * $Date$
+ * @file globus_gsi_authz.c Globus Authorization API
  */
 static int globus_l_gsi_authz_activate(void);
 static int globus_l_gsi_authz_deactivate(void);
@@ -38,7 +31,7 @@ int globus_i_gsi_authz_debug_level = 0;
 FILE * globus_i_gsi_authz_debug_fstream = NULL;
 
 /**
- * Module descriptor static initializer.
+ * Module descriptor static initializer
  */
 globus_module_descriptor_t globus_i_gsi_authz_module =
 {
@@ -50,6 +43,7 @@ globus_module_descriptor_t globus_i_gsi_authz_module =
     &local_version
 };
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /*
  * These variables are used to keep state across requests.
  */
@@ -282,12 +276,14 @@ static void callback_wrapper(
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
- * @name Initialize Handle
- */
-/* @{ */
-/**
- * Initializes a handle
+ * @brief Initialize an authorization handle
  * @ingroup globus_gsi_authz
+ * @details
+ * Initialize an authorization handle by calling the AUTHZ_HANDLE_INIT 
+ * function named in the authorization configuration file. The parameters
+ * to this function are passed to the authorization callout. Once the
+ * initialization is complete, the callback function is called, with
+ * the result and the callback_arg passed to it.
  *
  * @param handle
  *        Pointer to the handle that is to be initialized
@@ -299,9 +295,9 @@ static void callback_wrapper(
  *        Callback function to call when authz handle init completes
  * @param callback_arg
  *        Argument to callback function
- * @return
- *        GLOBUS_SUCCESS if successful
- *        A Globus error object on failure:
+ * @retval The globus_gsi_authz_handle_init() function returns
+ *        GLOBUS_SUCCESS if successful, or a Globus error object on failure
+ * @see globus_gsi_authz_handle_destroy()
  */
 globus_result_t
 globus_gsi_authz_handle_init(
@@ -399,19 +395,20 @@ globus_gsi_authz_handle_init(
     return result;
 }
 /* globus_gsi_authz_handle_init */
-/* @} */
 
 
 /**
- * @name Authorization decision made here
- */
-/*@{*/
-/**
- * Authorization decision made here
+ * @brief Start the authorization decision-making process
  * @ingroup globus_gsi_authz
+ * @details
+ * Processes an authorization decision by calling the
+ * GLOBUS_GSI_AUTHORIZE_ASYNC function named in the authorization configuration
+ * file. The parameters to this function are passed to the authorization
+ * callout. Once the authorization decision is made, the callback function will
+ * be called, with the result and the callback_arg passed to it.
  *
  * @param handle
- *        Pointer to the handle that is to be initialized
+ *        Pointer to an authorization handle
  * @param action
  *        Action to authorize
  * @param object
@@ -422,8 +419,7 @@ globus_gsi_authz_handle_init(
  *        Argument to callback function
  *
  * @return
- *        GLOBUS_SUCCESS if successful
- *        A Globus error object on failure:
+ *        GLOBUS_SUCCESS if successful, or a Globus error object on failure.
  */
 globus_result_t
 globus_gsi_authorize(
@@ -512,8 +508,18 @@ globus_gsi_authorize(
     GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;  
     return result;
 }
-/*@}*/
 
+/**
+ * @brief Cancel Authorization
+ * @ingroup globus_gsi_authz
+ * @details
+ * Cancel an authorization decision by calling the
+ * GLOBUS_GSI_AUTHORIZE_CANCEL function named in the authorization
+ * configuration file. 
+ * 
+ * @param handle
+ *      The authorization handle to cancel
+ */
 globus_result_t
 globus_gsi_cancel_authz(
     globus_gsi_authz_handle_t           handle)
@@ -541,13 +547,13 @@ globus_gsi_cancel_authz(
 
 
 /**
- * @name Destroy Handle
- */
-/*@{*/
-/**
- * Destroy a Globus GSI authz handle
+ * @brief Destroy an authz handle
  * @ingroup globus_gsi_authz
- *
+ * @details
+ * Initialize an authorization handle by calling the AUTHZ_HANDLE_DESTROY
+ * function named in the authorization configuration file. Once the
+ * initialization is complete, the callback function is called, with
+ * the result and the callback_arg passed to it.
  * @param handle
  *        The handle that is to be destroyed
  * @param callback
@@ -634,16 +640,11 @@ globus_gsi_authz_handle_destroy(
     return result;
 }
 /*globus_gsi_authz_handle_destroy*/
-/*@}*/
 
 /**
- * @name Query for authorization identity
- */
-/*@{*/
-/**
- * Query for authorization identity
+ * @a Query for authorization identity
  * @ingroup globus_gsi_authz
- *
+ * @details
  * @param handle
  *        The handle that is to be used for the identity check.
  * @param identity_ptr
@@ -754,4 +755,3 @@ globus_gsi_authz_get_authorization_identity(
     return result;
 }
 /* globus_gsi_authz_get_authorization_identity() */
-/*@}*/

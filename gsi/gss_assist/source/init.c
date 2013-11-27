@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file init.c
+ * @file gss_assist/source/init.c
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_gss_assist.h"
 #include "gssapi.h"
@@ -31,11 +25,7 @@
 extern gss_OID gss_nt_service_name;
 
 /**
- * @name Init Security Context
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_context
  * Initialize a gssapi security connection. Used by the client.  
  * The context_handle is returned, and there is one for each
  * connection.  This routine will take cake of the looping
@@ -286,14 +276,10 @@ globus_gss_assist_init_sec_context(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
+/* globus_gss_assist_init_sec_context() */
 
 /**
- * @name Init Security Context Async
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_context
  * This is a asynchronous version of the
  * globus_gss_assist_init_sec_context() function. Instead of looping
  * itself it passes in and out the read and written buffers and
@@ -519,4 +505,4 @@ globus_gss_assist_init_sec_context_async(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
+/* globus_gss_assist_init_sec_context_async() */

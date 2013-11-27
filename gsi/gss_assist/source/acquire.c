@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file acquire.c
+ * @file gss_assist/source/acquire.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_gss_assist.h"
 #include "gssapi.h"
@@ -50,11 +44,7 @@ static char * oid_names[] = {
   NULL};
 
 /**
- * @name Acquire Credential
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_credential
  * Called once at the start of the process, to 
  * obtain the credentials the process is running under. 
  * The 
@@ -83,14 +73,10 @@ globus_gss_assist_acquire_cred(
         cred_usage, output_cred_handle,
         NULL, NULL));
 }
-/* @} */
+/* globus_gss_assist_acquire_cred() */
 
 /**
- * @name Acquire Credential Extension
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_credential
  * Called once at the start of the process, to 
  * obtain the credentials the process is running under. 
  * All the parameters of the gss_acquire_cred,
@@ -101,7 +87,7 @@ globus_gss_assist_acquire_cred(
  *         GSS_S_COMPLETE on sucess
  *         Other GSS return codes 
  *
- * @see globus_gsi_gss_acquire_cred
+ * @see globus_gss_acquire_cred
  */
 OM_uint32
 globus_gss_assist_acquire_cred_ext(
@@ -195,4 +181,4 @@ globus_gss_assist_acquire_cred_ext(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return (major_status);
 }
-/* @} */
+/* globus_gss_assist_acquire_cred_ext() */

@@ -14,27 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file export_sec_context.c
+ * @file gss_assist/source/export_sec_context.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
-#include "globus_i_gss_assist.h"
 #include "gssapi.h"
+#include "globus_i_gss_assist.h"
+
 #include <stdio.h>
 
-/* @name Export Security Context
- * @ingroup globus_gsi_gss_assist
- */
-/* @{ */
 /**
  * Export the security context from a file
+ * @ingroup globus_gss_assist_context
  *
  * @param minor_status 
  *        GSSAPI return code.  This is a Globus Error code (or GLOBUS_SUCCESS)
@@ -178,4 +170,4 @@ globus_gss_assist_export_sec_context(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
+/* globus_gss_assist_export_sec_context() */

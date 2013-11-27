@@ -17,25 +17,21 @@
 #ifndef _GLOBUS_GSI_GSSAPI_CONSTANTS_H_
 #define _GLOBUS_GSI_GSSAPI_CONSTANTS_H_
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_gssapi_constants.h
+ * @file globus_gsi_gss_constants.h
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 extern char *                globus_l_gsi_gssapi_error_strings[];
 
 /**
- * @defgroup globus_gsi_gssapi_constants GSI GSS-API Constants
+ * @defgroup globus_gsi_gssapi_constants Constants
+ * @brief Implementation-specific Constants
+ * @ingroup globus_gsi_gssapi
  */
 
 /**
- * @name Error Codes
+ * @brief Error Codes
  * @ingroup globus_gsi_gssapi_constants
  */
 typedef enum
@@ -92,21 +88,18 @@ typedef enum
 
 
 /**
- * @name Cred Export/Import Type
+ * @brief Cred Export/Import Type
  * @ingroup globus_gsi_gssapi_constants
  */
-/* @{ */
 typedef enum {
     GSS_IMPEXP_OPAQUE_FORM = 0,
     GSS_IMPEXP_MECH_SPECIFIC = 1
 } gss_impexp_cred_type_t;
-/* @} */
 
 /**
- * @name Connection State Type
+ * @brief Connection State Type
  * @ingroup globus_gsi_gssapi_constants
  */
-/* @{ */
 typedef enum {
     GSS_CON_ST_HANDSHAKE = 0,
     GSS_CON_ST_FLAGS,
@@ -114,13 +107,11 @@ typedef enum {
     GSS_CON_ST_CERT,
     GSS_CON_ST_DONE
 } gss_con_st_t;
-/* @} */
 
 /**
- * @name Delegation State Type
+ * @brief Delegation State Type
  * @ingroup globus_gsi_gssapi_constants
  */
-/* @{ */
 typedef enum
 {
     GSS_DELEGATION_START,
@@ -128,43 +119,36 @@ typedef enum
     GSS_DELEGATION_COMPLETE_CRED,
     GSS_DELEGATION_SIGN_CERT
 } gss_delegation_state_t;
-/* @} */
 
 /**
- * @name Compare Name Type
+ * @brief Compare Name Type
  * @ingroup globus_gsi_gssapi_constants
  */
-/* @{ */
 typedef enum
 {
     GSS_NAMES_NOT_EQUAL = 0,
     GSS_NAMES_EQUAL = 1
 } gss_names_equal_t;
-/* @} */
 
 /**
- * @name Context Established State Type
+ * @brief Context Established State Type
  * @ingroup globus_gsi_gssapi_constants
  */
-/* @{ */
 typedef enum
 {
     GSS_CTX_FULLY_ESTABLISHED = 1,
     GSS_CTX_TOKEN_EXPECTED_FROM_PEER = 0
 } gss_ctx_state_t;
-/* @} */
 
 /**
- * @name Confidentiality State Type
+ * @brief Confidentiality State Type
  * @ingroup globus_gsi_gssapi_constants
  */
-/* @{ */
 typedef enum
 {
     GSS_CONFIDENTIALITY = 1,
     GSS_INTEGRITY_ONLY = 0
 } gss_conf_state_t;
-/* @} */
 
 #define GSS_SSL_MESSAGE_DIGEST_PADDING  12
 #define GSS_SSL3_WRITE_SEQUENCE_SIZE    8

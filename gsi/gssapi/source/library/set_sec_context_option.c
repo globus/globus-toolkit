@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file inquire_cred.h
+ * @file gssapi/source/library/set_sec_context_option.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -32,8 +26,6 @@
 
 /* Only build if we have the extended GSSAPI */
 #ifdef  _HAVE_GSI_EXTENDED_GSSAPI
-
-static char *rcsid = "$Id$";
 
 static const gss_OID_desc GSS_DISALLOW_ENCRYPTION_OID =
    {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x03\x01"}; 
@@ -51,12 +43,9 @@ const gss_OID_desc * const GSS_APPLICATION_WILL_HANDLE_EXTENSIONS =
    &GSS_APPLICATION_WILL_HANDLE_EXTENSIONS_OID;
 
 /**
- * @name Set Sec Context Option
- * @ingroup globu_gsi_gssapi_extensions
- */
-/* @{ */
-/**
- *
+ * @brief Set Security Context Option
+ * @ingroup globus_gsi_gssapi_extensions
+ * @details
  * GSSAPI routine to initiate the sending of a security context
  * See: <draft-ietf-cat-gssv2-cbind-04.txt>
  *
@@ -244,6 +233,5 @@ GSS_CALLCONV gss_set_sec_context_option(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 #endif /* _HAVE_GSI_EXTENDED_GSSAPI */

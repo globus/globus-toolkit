@@ -20,9 +20,57 @@
 #include "globus_i_gridftp_server.h"
 #include "version.h"
 #include "globus_i_gfs_ipc.h"
-#include <grp.h>
 
+#ifndef TARGET_ARCH_WIN32
+#include <grp.h>
 #include <sys/wait.h>
+#endif
+
+#ifdef TARGET_ARCH_WIN32
+#define S_ISLNK(x) 0
+#define lstat(x,y) stat(x,y)
+#define mkdir(x,y) mkdir(x)
+#define chown(x,y,z) -1
+#define symlink(x,y) -1
+#define readlink(x,y,z) 0
+#define realpath(x,y) strcpy(y,x)
+#define scandir(a,b,c,d) 0
+#define alphasort(x,y) 0
+#endif
+
+#ifdef TARGET_ARCH_WIN32
+
+#define lstat(x,y) stat(x,y)
+#define S_ISLNK(x) 0
+
+#define getuid() 1
+#define getpwuid(x) 0
+#define initgroups(x,y) -1
+#define getgroups(x,y) -1
+#define setgroups(x,y) 0
+#define setgid(x) 0
+#define setuid(x) 0
+#define sync() 0
+#define fork() -1
+#define setsid() -1
+#define chroot(x) -1
+#define globus_libc_getpwnam_r(a,b,c,d,e) -1
+#define globus_libc_getpwuid_r(a,b,c,d,e) -1
+#endif
+
+#ifdef TARGET_ARCH_WIN32
+
+#define getpwnam(x) 0
+
+#define getgrgid(x) 0
+#define getgrnam(x) 0
+
+#define lstat(x,y) stat(x,y)
+#define S_ISLNK(x) 0
+
+#endif
+
+
 #include <signal.h>
 
 static globus_cond_t                    globus_l_gfs_cond;
@@ -241,7 +289,7 @@ globus_l_gfs_sigchld(
     int                                 child_rc;
     GlobusGFSName(globus_l_gfs_sigchld);
     GlobusGFSDebugEnter();
-
+#ifndef TARGET_ARCH_WIN32
     while(globus_gfs_config_get_int("open_connections_count") > 0 &&
         (child_pid = waitpid(-1, &child_status, WNOHANG)) > 0)
     {
@@ -287,7 +335,7 @@ globus_l_gfs_sigchld(
         }
         globus_mutex_unlock(&globus_l_gfs_mutex);   
     }
-
+#endif
     GlobusGFSDebugExit();
 }
 
@@ -772,7 +820,7 @@ globus_l_gfs_new_server_cb(
                 remote_contact,
                 local_contact, 
                 globus_l_gfs_server_closed,
-                NULL);
+                system_handle);
         }
         if(result != GLOBUS_SUCCESS)
         {
@@ -1029,6 +1077,7 @@ globus_l_gfs_convert_inetd_handle(void)
     globus_result_t                     result;
     globus_xio_stack_t                  stack;
     globus_xio_handle_t                 handle;
+    globus_xio_system_socket_t          stdin_socket = STDIN_FILENO;
     GlobusGFSName(globus_l_gfs_convert_inetd_handle);
     GlobusGFSDebugEnter();
     
@@ -1037,12 +1086,36 @@ globus_l_gfs_convert_inetd_handle(void)
     {
         goto error;
     }
+
+#ifdef WIN32
+{
+    WSAPROTOCOL_INFO sock_info;
+    DWORD dwRead;
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
     
+    if (!ReadFile
+         (hStdin, &(sock_info), sizeof(WSAPROTOCOL_INFO), &dwRead, NULL)
+         || dwRead != sizeof(WSAPROTOCOL_INFO)) {
+            printf("Error reading socket\n");
+         goto error_stack;
+     }
+
+     if ((stdin_socket = WSASocket(FROM_PROTOCOL_INFO,
+                              FROM_PROTOCOL_INFO,
+                              FROM_PROTOCOL_INFO,
+                              &(sock_info), 0, WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
+          printf("Error in creating socket :%d\n",
+                          WSAGetLastError());
+          goto error_stack;
+     }
+}
+#endif
+
     result = globus_xio_attr_cntl(
         globus_l_gfs_xio_attr,
         globus_l_gfs_tcp_driver,
         GLOBUS_XIO_TCP_SET_HANDLE,
-        (globus_xio_system_socket_t)STDIN_FILENO);
+        (globus_xio_system_socket_t) stdin_socket);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_stack;
@@ -1220,6 +1293,7 @@ globus_l_gfs_be_daemon()
     GlobusGFSName(globus_l_gfs_be_daemon);
     GlobusGFSDebugEnter();
 
+#ifndef TARGET_ARCH_WIN32
     result = globus_callback_register_signal_handler(
         SIGCHLD,
         GLOBUS_TRUE,
@@ -1250,6 +1324,8 @@ globus_l_gfs_be_daemon()
         }
     }
 #endif
+
+#endif /* !WIN32 */
 
     result = globus_l_gfs_prepare_stack(&stack);
     if(result != GLOBUS_SUCCESS)
@@ -1839,7 +1915,9 @@ main(
                     freopen("/dev/null", "w+", stderr);
                 }
             }
+            #ifndef WIN32
             freopen("/dev/null", "w+", stderr);
+            #endif
         }
 
         if(config)
@@ -1973,6 +2051,12 @@ globus_l_gfs_server_closed(
     GlobusGFSName(globus_l_gfs_server_closed);
     GlobusGFSDebugEnter();
 
+#ifdef WIN32
+    if(user_arg)
+    {
+        closesocket(user_arg);
+    }
+#endif
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         globus_i_gfs_connection_closed();

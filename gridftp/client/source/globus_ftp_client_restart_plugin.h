@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_FTP_CLIENT_RESTART_PLUGIN_H
-#define GLOBUS_INCLUDE_FTP_CLIENT_RESTART_PLUGIN_H
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+#ifndef GLOBUS_FTP_CLIENT_RESTART_PLUGIN_H
+#define GLOBUS_FTP_CLIENT_RESTART_PLUGIN_H
+
 /**
- * @file
+ * @file globus_ftp_client_restart_plugin.h
  */
-#endif
 
 /**
  * @defgroup globus_ftp_client_restart_plugin Restart Plugin
@@ -44,19 +43,20 @@
  * retries, and the deadline after which no further retries will be attempted.
  * These are set by initializing a restart plugin instance with the function
  * globus_ftp_client_restart_plugin_init().
- *
- * <h2>Example Usage</h2>
- *
+ */
+/**
  * The following example illustrates a typical use of the restart plugin.
  * In this case, we configure a plugin instance to restart the operation
  * for up to an hour, using an exponential back-off between retries.
  *
- * \include globus_ftp_client_restart_plugin.example
+ * @example globus_ftp_client_restart_plugin.example
  */
 
 #include "globus_ftp_client.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /** Module descriptor
  * @ingroup globus_ftp_client_restart_plugin
@@ -81,6 +81,8 @@ globus_ftp_client_restart_plugin_set_stall_timeout(
     globus_ftp_client_plugin_t *        plugin,
     int                                 to_secs);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_INCLUDE_FTP_CLIENT_RESTART_PLUGIN_H */
+#endif /* GLOBUS_FTP_CLIENT_RESTART_PLUGIN_H */

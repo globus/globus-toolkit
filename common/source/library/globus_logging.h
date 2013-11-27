@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
+/** @file globus_logging.h Debug Logging */
+
 #ifndef GLOBUS_LOGGING_H
 #define GLOBUS_LOGGING_H 1
 
 #include "globus_common_include.h"
 #include "globus_time.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_LOGGING_INLINE           0x08000000
 
@@ -96,4 +102,8 @@ extern globus_logging_module_t          globus_logging_syslog_module;
 extern globus_logging_module_t          globus_logging_stdio_ng_module;
 extern globus_logging_module_t          globus_logging_syslog_ng_module;
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_LOGGING_H */

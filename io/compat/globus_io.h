@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_GLOBUS_IO_H
-#define GLOBUS_INCLUDE_GLOBUS_IO_H
+/** @file globus_io.h Globus I/O emulation */
+#ifndef GLOBUS_GLOBUS_IO_H
+#define GLOBUS_GLOBUS_IO_H
 
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
@@ -24,7 +25,9 @@
 
 #define GLOBUS_IO_OVER_XIO 1
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_IO_MODULE (&globus_l_io_module)
 
@@ -838,8 +841,10 @@ globus_io_attr_set_stack(
     globus_io_attr_t *                  attr,
     globus_xio_stack_t                  stack);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #include "globus_io_error_hierarchy.h"
 
-#endif
+#endif /* GLOBUS_IO_H */

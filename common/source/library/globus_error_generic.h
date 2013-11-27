@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_GENERIC_ERROR_H
-#define GLOBUS_INCLUDE_GENERIC_ERROR_H
+/** @file globus_error_generic.h Globus Error API */
+
+#ifndef GLOBUS_ERROR_GENERIC_H
+#define GLOBUS_ERROR_GENERIC_H
 
 #include "globus_common_include.h"
 #include "globus_object.h"
@@ -23,6 +25,7 @@
 
 /**
  * @defgroup globus_error_api Globus Error API
+ * @ingroup globus_common
  *
  * Intended use:
  *
@@ -63,15 +66,12 @@
  *
  * Any program that uses Globus Generic Error functions must include
  * "globus_common.h". 
- *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
  */
 
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @defgroup globus_generic_error_object Error Construction
@@ -139,8 +139,6 @@ globus_error_initialize_error(
  * Generic Error object.
  */
 
-#ifndef DOXYGEN
-
 globus_module_descriptor_t *
 globus_error_get_source(
     globus_object_t *                   error);
@@ -188,8 +186,6 @@ globus_error_set_long_desc(
     const char *                        long_desc_format,
     ...);
 
-#endif
-
 /**
  * @defgroup globus_generic_error_utility Error Handling Helpers
  * @ingroup globus_generic_error_api
@@ -199,8 +195,6 @@ globus_error_set_long_desc(
  * This section defines utility functions for dealing with Globus
  * Generic Error objects.
  */
-
-#ifndef DOXYGEN
 
 globus_bool_t
 globus_error_match(
@@ -269,7 +263,8 @@ globus_object_t *
 globus_error_multiple_remove_chain(
     globus_object_t *                   multiple_error);
     
+#ifdef __cplusplus
+}
 #endif
 
-EXTERN_C_END
-#endif /* GLOBUS_INCLUDE_GENERIC_ERROR_H */
+#endif /* GLOBUS_ERROR_GENERIC_H */

@@ -18,8 +18,8 @@ static
 globus_version_t local_version =
 {
 
-    @GPT_MAJOR_VERSION@,
-    @GPT_MINOR_VERSION@,
+    @MAJOR_VERSION@,
+    @MINOR_VERSION@,
     @DIRT_TIMESTAMP@,
     @DIRT_BRANCH_ID@
 };

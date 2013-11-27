@@ -1,27 +1,15 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+AUTOMAKE_OPTIONS = foreign
 
 doc_DATA = GLOBUS_LICENSE
-
-SUBDIRS = \
-	pkgdata \
-	doxygen
-
-include_HEADERS = \
-    globus_xio_gridftp_driver.h
-
-INCLUDES = $(GPT_INCLUDES)
-
+include_HEADERS = globus_xio_gridftp_driver.h
 lib_LTLIBRARIES = libglobus_xio_gridftp_driver.la
 
-libglobus_xio_gridftp_driver_la_LIBADD = \
-	@GPT_LIB_LINKS@
-libglobus_xio_gridftp_driver_la_SOURCES = \
-	globus_xio_gridftp_driver.c
+libglobus_xio_gridftp_driver_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
+libglobus_xio_gridftp_driver_la_LIBADD = $(PACKAGE_DEP_LIBS)
 libglobus_xio_gridftp_driver_la_LDFLAGS = \
-	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
+        -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+        -no-undefined
+	-module -rpath $(libdir)
+libglobus_xio_gridftp_driver_la_SOURCES = globus_xio_gridftp_driver.c
 
-EXTRA_DIST = version.h.in $(doc_DATA)
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)

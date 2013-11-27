@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_credential.h
  * Globus GSI Credential Library
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
+*/
 
 #ifndef GLOBUS_INCLUDE_GLOBUS_GSI_CREDENTIAL_H
 #define GLOBUS_INCLUDE_GLOBUS_GSI_CREDENTIAL_H
@@ -42,10 +36,19 @@
 #include "globus_error_generic.h"
 #include "globus_error_openssl.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
  * @mainpage Globus GSI Credential
+ * @copydoc globus_gsi_credential
+ */
+#endif
+
+/**
+ * @defgroup globus_gsi_credential Globus GSI Credential
  *
  * The Globus GSI Credential library. This library contains functions that
  * provide support for handling X.509 based PKI credentials
@@ -59,6 +62,7 @@ EXTERN_C_BEGIN
 
 /** 
  * @defgroup globus_gsi_credential_activation Activation
+ * @ingroup globus_gsi_credential
  *
  * Globus GSI Credential uses standard Globus module activation and
  * deactivation.  Before any Globus GSI Credential functions are called, the
@@ -100,6 +104,7 @@ globus_module_descriptor_t              globus_i_gsi_credential_module;
 		    s) 
 /**
  * @defgroup globus_gsi_cred_handle Credential Handle Management
+ * @ingroup globus_gsi_credential
  *
  * Create/Destroy/Modify a GSI Credential Handle.
  *
@@ -113,6 +118,7 @@ globus_module_descriptor_t              globus_i_gsi_credential_module;
 
 /**
  * @defgroup globus_gsi_cred_handle_attrs Credential Handle Attributes
+ * @ingroup globus_gsi_credential
  *
  * Create/Destroy/Modify GSI Credential Handle Attributes.
  *
@@ -127,6 +133,7 @@ globus_module_descriptor_t              globus_i_gsi_credential_module;
 
 /**
  * @defgroup globus_gsi_cred_operations Credential Operations
+ * @ingroup globus_gsi_credential
  *
  * Read/Write a GSI Credential Handle.
  *
@@ -346,6 +353,8 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     globus_gsi_cred_type_t *            search_order[]);/*{PROXY,USER,HOST}*/
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_GSI_CREDENTIAL_H */

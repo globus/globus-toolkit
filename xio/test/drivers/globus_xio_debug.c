@@ -44,15 +44,7 @@ debug_driver_log(
 {
     va_list                             ap;
 
-#   ifdef HAVE_STDARG_H
-    {
-        va_start(ap, fmt);
-    }
-#   else
-    {
-        va_start(ap);
-    }
-#   endif
+    va_start(ap, fmt);
 
     fprintf(stderr, "DEBUG DRIVER: ");
     vfprintf(stderr, fmt, ap);

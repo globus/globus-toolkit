@@ -14,29 +14,13 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_common_paths.c
-
-Description:
-
-    Install and deploy path discovery functions
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
+/** @file globus_common_paths.c Install and deploy path discovery functions */
 
 #include "config.h"
 #include "globus_common.h"
 #include "globus_l_common_paths.h"
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
 /******************************************************************************
                            ERROR object declaration
@@ -109,7 +93,7 @@ globus_l_common_env_path( char** bufp, char* name )
     char *   p;
 
     *bufp = GLOBUS_NULL;
-    p = globus_libc_getenv(name);
+    p = getenv(name);
     if (!p || strlen(p)==0)
     {
 	globus_libc_sprintf(errmsg,_GCSL("Environment variable %s is not set"), name);

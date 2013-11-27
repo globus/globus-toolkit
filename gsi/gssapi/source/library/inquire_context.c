@@ -14,30 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file delete_sec_context.c
+ * @file gssapi/source/library/inquire_context.c
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi.h"
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 
 /**
- * @name Inquire Context
+ * @brief Inquire Context
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * 
+ * @details
  * @param minor_status
  * @param context_handle_P
  * @param src_name_P
@@ -204,15 +193,11 @@ exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Context Time
+ * @brief Context Time
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * 
+ * @details
  * @param minor_status
  * @param context_handle
  * @param time_rec
@@ -250,4 +235,3 @@ GSS_CALLCONV gss_context_time(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */

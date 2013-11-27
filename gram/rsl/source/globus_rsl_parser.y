@@ -16,6 +16,13 @@
  */
 
 #include "globus_common.h"
+#include "globus_rsl.h"
+
+struct globus_parse_state_s;
+#include "globus_rsl_parser.h"
+#include "globus_rsl_scanner.h"
+
+#include "globus_i_rsl_parser.h"
 #include <stdio.h>
 #include <memory.h>
 #include <string.h>
@@ -23,37 +30,30 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "globus_rsl.h"
 
 extern globus_mutex_t globus_i_rsl_mutex;
+int globus_rslget_column  (yyscan_t yyscanner);
 
-typedef struct globus_parse_state_s
-{
-    char                      * myinput;
-    char                      * myinputptr;
-    char                      * myinputlim;
-    globus_rsl_t              * rsl_spec;
-    globus_rsl_parse_error_t  * error_structure;
-} globus_parse_state_t;
 
-globus_parse_state_t parse_state;
-
-int globus_parse_error_flag = 0;
     
 #define GLOBUS_RSL_MIN(x,y) ((x) < (y) ? (x) : (y))
 
 void
-yyerror(char *str);
-
+yyerror(YYLTYPE *loc, yyscan_t scanner, globus_parse_state_t *parse_state, char * yymsg);
 /* Provide our own function for reading input.  The default YY_INPUT
  * is overridden in globus_rsl_parser.l
  * from page 157 of Nutshell lex & yacc
  */
-static int my_yyinput();
-
 %}
 
 %pure_parser
+%error-verbose
+%locations
+%locations
+%parse-param { void * scanner }
+%parse-param { globus_parse_state_t * parse_state }
+%lex-param { void * scanner }
+%debug
 
 %start start
 
@@ -89,7 +89,7 @@ static int my_yyinput();
 %%
 
 start:
-  specification 	{ parse_state.rsl_spec = $<RSL>1; }
+  specification 	{ parse_state->rsl_spec = $<RSL>1; }
 
 
 specification:
@@ -205,40 +205,27 @@ literal_string: RSL_STRING
 
 %%
 
-#include "globus_rsl_parser.lex.c"
-
 void
-yyerror(char *str)
+yyerror(YYLTYPE * loc, yyscan_t scanner, globus_parse_state_t * parse_state, char * yymsg)
 {
-    parse_state.error_structure =
+    parse_state->error_structure =
        (globus_rsl_parse_error_t *) malloc(sizeof(globus_rsl_parse_error_t));
-    parse_state.rsl_spec = (globus_rsl_t *) NULL;
-    parse_state.error_structure->code = 1;
-    parse_state.error_structure->line = 42;
-    parse_state.error_structure->position = 3;
-    sprintf(parse_state.error_structure->message,"%s: %s",
-            str,
-            yytext);
+    parse_state->rsl_spec = (globus_rsl_t *) NULL;
+    parse_state->error_structure->code = 1;
+    globus_rslget_lineno(scanner),
+    globus_rslget_column(scanner),
+    sprintf(parse_state->error_structure->message,"%s: %s",
+            globus_rslget_text(scanner),
+            yymsg);
 }
-
-int
-yywrap()
-{
-    return(1);
-}
-
-/**
- * @defgroup globus_rsl_parse RSL Parsing
- */
 
 /**
  * @brief Parse an RSL string
  * @ingroup globus_rsl_parse
- *
  * @details
- *     The globus_rsl_parse() function parses the string pointed to by
- *     the @a buf parameter into an RSL syntax tree. The caller is responsible
- *     for freeing that tree by calling globus_rsl_free_recursive().
+ * The globus_rsl_parse() function parses the string pointed to by
+ * the @a buf parameter into an RSL syntax tree. The caller is responsible
+ * for freeing that tree by calling globus_rsl_free_recursive().
  *
  * @param buf
  *     A NULL-terminated string that contains an RSL relation or boolean
@@ -252,13 +239,15 @@ yywrap()
 globus_rsl_t *globus_rsl_parse(char *buf)
 {
     globus_rsl_t *                      rsl = NULL;
+    yyscan_t                            scanner;
+    globus_parse_state_t                parse_state = {0};
+
 
     if (!buf)
     {
         goto null_buf;
     }
 
-    globus_mutex_lock(&globus_i_rsl_mutex);
     if (parse_state.error_structure)
     {
         parse_state.error_structure->code = 0;
@@ -267,15 +256,12 @@ globus_rsl_t *globus_rsl_parse(char *buf)
     parse_state.myinputptr = buf;
     parse_state.myinputlim = buf + strlen(buf);
 
-    /* George clever kludge to make yyparse() */
-    /* work more than once ... otherwise yyparse always */
-    /* rejects string (even valid strings) on calls after the first */
-    if (yyin)
-        yyrestart(yyin);
+    globus_rsllex_init(&scanner);
+    globus_rslset_extra(&parse_state, scanner);
 
-    yyparse();
+    yyparse(scanner, &parse_state);
 
-    if (globus_parse_error_flag)
+    if (parse_state.globus_parse_error_flag)
     {
         goto parse_error;
     }
@@ -283,27 +269,27 @@ globus_rsl_t *globus_rsl_parse(char *buf)
     {
         rsl = parse_state.rsl_spec;
     }
+    globus_rsllex_destroy(scanner);
 parse_error:
-    globus_mutex_unlock(&globus_i_rsl_mutex);
 null_buf:
     return rsl;
 } /* globus_rsl_parse() */
 
-/*
- * from page 157 Nutshell lex & yacc
- */
-static int my_yyinput(char *buf, int max_size)
+extern
+int
+globus_i_rsl_yyinput(globus_parse_state_t *parse_state, char *buf, yy_size_t *num_read, int max_size)
 {
 
     int n = GLOBUS_RSL_MIN(max_size,
-                          (parse_state.myinputlim - parse_state.myinputptr));
+                          (parse_state->myinputlim - parse_state->myinputptr));
 
     if (n > 0)
     {
-        memcpy(buf, parse_state.myinputptr, n);
-        parse_state.myinputptr += n;
+        memcpy(buf, parse_state->myinputptr, n);
+        parse_state->myinputptr += n;
+        *num_read = n;
     } /* endif */
 
     return n;
-
-} /* end my_yyinput() */
+}
+/* globus_i_rsl_yyinput() */

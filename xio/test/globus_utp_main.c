@@ -31,7 +31,9 @@ Public functions for the Unnamed Timing Package (UTP).
 #endif
 #endif
 
+#ifndef _WIN32
 #include <pwd.h>
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -144,9 +146,9 @@ int globus_utp_init(unsigned numTimers, int mode)
 {
 	unsigned i;
 	int sharingMode = mode & GLOBUS_UTP_MODE_SHARING_FIELD;
-	struct passwd *passwdEntry;
 	char hostnameBuff[MAXHOSTNAMELEN];
 	time_t theTime;
+        const char *username;
 	char theTimeStr[27];
 
 	if (sharingMode == GLOBUS_UTP_MODE_PRIVATE)
@@ -190,13 +192,25 @@ int globus_utp_init(unsigned numTimers, int mode)
 				/* Set attributes for "user", "hostname",
 				   and "timestamp". */
 
-	passwdEntry = getpwuid(getuid());
-	if (!passwdEntry) {
-	    /* globus_utp_warn("globus_utp_init: getpwuid() failed; system error is "
-		         "\"%s\"", sys_errlist[errno]); */
+#       ifdef _WIN32
+        {
+            username = getenv("USERNAME");
+            if (username == NULL)
+            {
+                username = "globus";
+            }
+        }
+#       else
+        {
+            struct passwd *passwdEntry;
+            passwdEntry = getpwuid(getuid());
+            if (!passwdEntry) {
 		return 1;
-	}
-	globus_utp_set_attribute("%s", "user", passwdEntry->pw_name);
+            }
+            username = passwdEntry->pw_name;
+        }
+	globus_utp_set_attribute("%s", "user", username);
+#endif
 
 	if (globus_libc_gethostname(hostnameBuff, MAXHOSTNAMELEN)) {
 	    /* globus_utp_warn("globus_utp_init: gethostname() failed; system error is "

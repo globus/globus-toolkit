@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file oid_functions.c
+ * @file gssapi/source/library/oid_functions.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi.h"
 #include "gssapi_openssl.h"
@@ -115,12 +107,9 @@ static gss_OID_desc gss_nt_x509_oid =
 gss_OID_desc * gss_nt_x509 = &gss_nt_x509_oid;
 
 /**
- * @name Add OID Set Member
+ * @brief Add OID Set Member
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * 
+ * @details
  * Adds an Object Identifier to an Object Identifier set. 
  * This routine is intended for use in conjunction with 
  * GSS_Create_empty_OID_set() when constructing a set
@@ -133,9 +122,7 @@ gss_OID_desc * gss_nt_x509 = &gss_nt_x509_oid;
  * @return
  *         GSS_S_COMPLETE indicates successful completion 
  *         GSS_S_FAILURE indicates that the operation failed 
- *
  */
-
 OM_uint32
 GSS_CALLCONV gss_add_oid_set_member(
     OM_uint32 *                         minor_status,
@@ -197,14 +184,10 @@ free_set_exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Create Empty OID Set
+ * @brief Create Empty OID Set
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
  *
  * Creates an object identifier set containing no object identifiers,
  * to which members may be subsequently added 
@@ -259,14 +242,13 @@ GSS_CALLCONV gss_create_empty_oid_set(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
+/* gss_create_empty_oid_set() */
 
 
 /**
- * @name Indicate Mechs
+ * @brief Indicate Mechs
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Passes back the mech set of available mechs.
  * We only have one for now. 
  *
@@ -334,15 +316,11 @@ GSS_CALLCONV gss_indicate_mechs(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Release OID Set
+ * @brief Release OID Set
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- *
+ * @details
  * Release the OID set. 
  *
  * @param minor_status
@@ -379,14 +357,11 @@ GSS_CALLCONV gss_release_oid_set(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Test OID Set Member
+ * @brief Test OID Set Member
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Interrogates an Object Identifier set to determine whether a
  * specified Object Identifier is a member. This routine is
  * intended to be used with OID sets returned by
@@ -455,4 +430,4 @@ GSS_CALLCONV gss_test_oid_set_member(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
+/* gss_test_oid_set_member() */

@@ -14,22 +14,10 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_i_gass_cache.h
-
-Description:
-
-  Internal header file for globus_gass_cache.
-  
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-    
-******************************************************************************/
-
+/** @file globus_i_gass_cache.h
+ *
+ * Internal header file for globus_gass_cache.
+ */
 #include "globus_symboltable.h"
 
 /* defines the environment variable to be used as default cache dir.         */
@@ -49,10 +37,15 @@ CVS Information:
 #define GLOBUS_L_GASS_CACHE_LOG_DIR		"log"
 
 /* Files are created with 777 and the access restriction is left to umask    */
+#ifdef _WIN32
+#define GLOBUS_L_GASS_CACHE_MODE_RWX	(_S_IRWXU)
+#define GLOBUS_L_GASS_CACHE_MODE_RW	(_S_IRUSR|_S_IWUSR)
+#else
 #define GLOBUS_L_GASS_CACHE_MODE_RWX	\
 	(S_IRWXU|S_IRWXG|S_IRWXO)
 #define GLOBUS_L_GASS_CACHE_MODE_RW	\
 	(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+#endif
 #define GLOBUS_L_GASS_CACHE_DIR_MODE		GLOBUS_L_GASS_CACHE_MODE_RWX
 #define GLOBUS_L_GASS_CACHE_DATAFILE_MODE	GLOBUS_L_GASS_CACHE_MODE_RWX
 #define GLOBUS_L_GASS_CACHE_UNIQFILE_MODE	GLOBUS_L_GASS_CACHE_MODE_RWX

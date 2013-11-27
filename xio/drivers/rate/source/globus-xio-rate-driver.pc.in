@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: globus-xio-rate-driver
+Description: Globus Toolkit - Globus XIO Rate Limiting Driver
+Version: @VERSION@
+Requires.private: @PACKAGE_DEPS@
+Cflags: -I${includedir}

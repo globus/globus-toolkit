@@ -1,0 +1,27 @@
+/**
+ * @mainpage Globus Toolkit API Documentation @VERSION@
+ *
+ * @section Common Runtime Libraries
+ * - @ref globus_common
+ * - @ref globus_callout
+ * - @ref globus_xio
+ *
+ * @section gsic_section GSI C
+ * - @ref globus_gsi_gssapi
+ * - @ref globus_gss_assist
+ * - @ref globus_gsi_authz
+ * - @ref globus_gsi_authz_callout_error
+ * - @ref globus_gsi_callback
+ * - @ref globus_gsi_cert_utils
+ * - @ref globus_gsi_credential
+ * - @ref globus_gssapi_error_api
+ * - @ref globus_openssl_error_api
+ * - @ref globus_openssl_module
+ * - @ref globus_gsi_proxy
+ * - @ref globus_gsi_proxy_ssl_api
+ * - @ref globus_gsi_sysconfig
+ *
+ * @section gram_section GRAM
+ * - @ref globus_gram_protocol
+ * - @ref globus_scheduler_event_generator_api
+ */

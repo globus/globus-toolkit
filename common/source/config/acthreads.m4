@@ -39,10 +39,10 @@ AC_DEFUN([LAC_THREADS_PTHREADS],
         CFLAGS="$CFLAGS -pthread" 
         AC_TRY_LINK([#include <pthread.h>], 
             [void *p = pthread_create;], 
-            [myapp_cv_gcc_pthread=yes], 
+            [pthread_cflags="-pthread"
+             myapp_cv_gcc_pthread=yes], 
             [myapp_cv_gcc_pthread=no] 
         ) 
-        pthread_cflags="$CFLAGS"
         CFLAGS="$ac_save_CFLAGS"
         ])
 
@@ -53,7 +53,14 @@ AC_DEFUN([LAC_THREADS_PTHREADS],
         AC_SEARCH_LIBS([pthread_create], [pthread], [have_pthreads=yes]))
     AC_CHECK_HEADERS([sched.h],
         AC_SEARCH_LIBS([sched_yield], [pthread posix4], [have_sched_yield=yes]))
-    pthread_libs="$LIBS"
+    if test X"$ac_cv_search_pthread_create" != Xno && \
+        test X"$ac_cv_search_pthread_create" != X"none required"; then
+        pthread_libs="${pthread_libs} $ac_cv_search_pthread_create" 
+    fi
+    if test X"$ac_cv_search_sched_yield" != Xno && \
+        test X"$ac_cv_search_sched_yield" != X"none required"; then
+        pthread_libs="${pthread_libs} $ac_cv_search_sched_yield" 
+    fi
     LIBS="$save_LIBS"
 
     if test "$have_pthreads" = "no"; then
@@ -65,13 +72,7 @@ AC_DEFUN([LAC_THREADS_PTHREADS],
             pthread_cflags="$pthread_cflags -D_REENTRANT"
           ;;
           *solaris2* )
-            pthread_cflags="$pthread_cflags -D_REENTRANT"
-          ;;
-          *86-*-linux* | *darwin* )
-            :
-          ;;
-          * )
-            :
+            pthread_cflags="$pthread_cflags -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
           ;;
         esac
         build_pthreads=yes

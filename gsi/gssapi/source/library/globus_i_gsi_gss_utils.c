@@ -14,17 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_i_gsi_gss_utils.c
+ * @file gssapi/source/library/globus_i_gsi_gss_utils.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-
-static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -47,9 +40,9 @@ static char *rcsid = "$Id$";
 extern int                              globus_i_gsi_gssapi_debug_level;
 extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @anchor globus_i_gsi_gss_utils
- * @mainpage Globus GSI GSS-API
+ * @defgroup globus_i_gsi_gss_utils Globus GSSAPI Internals
  *
  * The globus_i_gsi_gss_utils code is used by the other 
  * gss api code to perform internal functions such as
@@ -57,11 +50,9 @@ extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
  */
 
 /**
- * @name Copy GSS API Name
+ * @brief Copy GSS API Name
  * @ingroup globus_i_gsi_gss_utils
- */
-/* @{ */
-/**
+ * @details
  * Copy a gss_name_t structure, including the group information
  * and the name's OID.
  *
@@ -207,15 +198,11 @@ globus_i_gsi_gss_copy_name_to_name(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;    
     return major_status;
 }
-/* @} */
 
 /**
- * @name Init Security Context
+ * @brief Initialize a Security Context
  * @ingroup globus_i_gsi_gss_utils
- */
-/* @{ */
-/**
- * Initialize a security context structure.
+ * @details
  *
  * Called by the GSSAPI functions @ref gss_init_sec_context 
  * and @ref gss_accept_sec_context to 
@@ -702,15 +689,11 @@ globus_i_gsi_gss_create_and_fill_context(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Put Token
- * @group globus_i_gsi_gss_utils
- */
-/* @{ */
-/**
- * 
+ * @brief Put Token
+ * @ingroup globus_i_gsi_gss_utils
+ * @details
  * Called by init_sec_context and accept_sec_context.
  * An input token is placed in the SSL read BIO
  * 
@@ -799,14 +782,11 @@ globus_i_gsi_gss_put_token(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Get Token
- * @group globus_i_gsi_gss_utils
- */
-/* @{ */
-/**
+ * @brief Get Token
+ * @ingroup globus_i_gsi_gss_utils
+ * @details
  * Get the token from the context handle
  *
  * @param minor_status
@@ -904,14 +884,11 @@ exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Handshake
+ * @brief Handshake
  * @ingroup globus_i_gsi_gss_utils
- */
-/* @{ */
-/**
+ * @details
  * Do the SSL handshake
  *
  * Called by init_sec_context and accept_sec_context.
@@ -1086,16 +1063,11 @@ globus_i_gsi_gss_handshake(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Retrieve Peer
+ * @brief Retrieve Peer
  * @ingroup globus_i_gsi_gss_utils
- */
-/* @{ */
-/**
- * Retrieve Peer
- *
+ * @details
  * Called after the handshake has completed sucessfully,
  * and gets the subject name, so it can be returned to the
  * call of the GSSAPI init_sec_context or accept_sec_context. 
@@ -1225,15 +1197,10 @@ globus_i_gsi_gss_retrieve_peer(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Create Anonymous Cred
+ * @brief Create Anonymous Cred
  * @ingroup globus_i_gsi_gss_utils
- */
-/* @{ */
-/**
- * Create Anonymous Cred
  *
  * @param minor_status
  * @param output_cred_handle
@@ -1461,16 +1428,11 @@ globus_i_gsi_gss_cred_read(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Create Cred
+ * @brief Create Cred
  * @ingroup globus_i_gsi_gss_utils
- */
-/* @{ */
-/**
- * Create Cred
- * 
+ * @details
  * Called by acquire_cred and accept_sec_context for a delegate.
  * Setup the credential including the SSL_CTX
  *
@@ -1642,7 +1604,6 @@ globus_i_gsi_gss_create_cred(
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     return major_status;
 }
-/* @} */
 
 
 #if LINK_WITH_INTERNAL_OPENSSL_API
@@ -2039,15 +2000,12 @@ globus_i_gsi_gss_SSL_read_bio(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 #endif /* LINK_WITH_INTERNAL_OPENSSL_API */
 
 /**
- * @name Init SSL Context
+ * @brief Init SSL Context
  * @ingroup globus_i_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Initialize the SSL Context for use in the SSL authentication mechanism.
  * The ssl context held by the cred handle is used to generate SSL objects
  * for the SSL handshake.  Initializing the SSL context consists of
@@ -2330,7 +2288,6 @@ globus_i_gsi_gssapi_init_ssl_context(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 OM_uint32
 globus_i_gsi_gss_get_context_goodtill(
@@ -2390,14 +2347,11 @@ globus_i_gsi_gss_get_context_goodtill(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Verify Extensions Callback
+ * @brief Verify Extensions Callback
  * @ingroup globus_i_gsi_gss_utils
- */
-/* @{ */
-/**
+ * @details
  * Verify Extensions Callback 
  *
  * @param callback_data
@@ -2456,7 +2410,6 @@ int globus_i_gsi_gss_verify_extensions_callback(
     GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
     return return_val;
 }
-/* @} */
 
 OM_uint32
 globus_i_gsi_gssapi_get_hostname(

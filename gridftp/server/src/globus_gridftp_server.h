@@ -31,6 +31,16 @@
 #include "globus_common.h"
 #include "globus_gridftp_server_control.h"
 
+#ifdef TARGET_ARCH_WIN32
+#ifdef interface
+#undef interface
+#endif
+#endif
+
+#ifndef TARGET_ARCH_WIN32
+#include <grp.h>
+#endif
+
 #define GLOBUS_MAPPING_STRING ":globus-mapping:"
 
 #define _GSSL(s) globus_common_i18n_get_string_by_key(\

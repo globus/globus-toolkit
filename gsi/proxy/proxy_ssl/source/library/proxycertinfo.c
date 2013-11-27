@@ -34,10 +34,6 @@
 #include "proxycertinfo.h"
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
-/**
- * @name ASN1_METHOD
- */
-/*@{*/
 /** 
  * Define the functions required for 
  * manipulating a PROXYCERTINFO and its ASN1 form. 
@@ -62,14 +58,9 @@ ASN1_METHOD * PROXYCERTINFO_asn1_meth()
     return (&proxycertinfo_asn1_meth);
 }
 /* PROXYCERTINFO_asn1_meth() */
-/*@}*/
 #endif
 
 
-/**
- * @name New
- */
-/*@{*/
 /**
  * Create a new PROXYCERTINFO.
  * @ingroup proxycertinfo
@@ -93,13 +84,8 @@ PROXYCERTINFO * PROXYCERTINFO_new()
     M_ASN1_New_Error(ASN1_F_PROXYCERTINFO_NEW);
 }
 /* PROXYCERTINFO_new() */
-/* @} */
 
 
-/**
- * @name Free.
- */
-/* @{ */
 /**
  * Free a PROXYCERTINFO.
  * @ingroup proxycertinfo
@@ -116,13 +102,8 @@ void PROXYCERTINFO_free(
     OPENSSL_free(cert_info);
 }
 /* PROXYCERTINFO_free */
-/* @} */
 
 
-/**
- * @name Duplicate
- */
-/* @{ */
 /**
  * Makes a copy of a PROXYCERTINFO.
  * @ingroup proxycertinfo
@@ -141,12 +122,7 @@ PROXYCERTINFO * PROXYCERTINFO_dup(
                                        (char *)cert_info));
 }
 /* PROXYCERINFO_dup() */
-/* @} */
 
-/**
- * @name Compare
- */
-/* @{ */
 /** 
  * @ingroup proxycertinfo
  * 
@@ -172,13 +148,8 @@ int PROXYCERTINFO_cmp(
     return 0;
 }
 /* PROXYCERTINFO_cmp() */
-/* @} */
 
 
-/**
- * @name Print to a BIO stream
- */
-/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -205,13 +176,8 @@ int PROXYCERTINFO_print(
     return 1;
 }
 /* PROXYCERTINFO_print() */
-/* @} */
 
 
-/**
- * @name Print To Stream
- */
-/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -239,12 +205,7 @@ int PROXYCERTINFO_print_fp(
     return (ret);
 }   
 /* PROXYCERTINFO_print_fp() */
-/* @} */
 
-/**
- * @name Set the Policy Field
- */
-/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -278,12 +239,7 @@ int PROXYCERTINFO_set_policy(
     return 1;
 }
 /* PROXYCERTINFO_set_policy() */
-/* @} */
 
-/**
- * @name Get the Policy Field 
- */
-/* @{ */
 /**
  * @ingroup proxycertinfo
  * 
@@ -303,13 +259,8 @@ PROXYPOLICY * PROXYCERTINFO_get_policy(
     return NULL;
 }
 /* PROXYCERTINFO_get_policy() */
-/* @} */
 
 
-/**
- * @name Set the Path Length Field 
- */
-/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -356,13 +307,8 @@ int PROXYCERTINFO_set_path_length(
     return 0;
 }
 /* PROXYCERTINFO_set_path_length() */
-/* @} */
 
 
-/**
- * @name Get Path Length Field
- */
-/* @{ */
 /**
  * @ingroup proxycertinfo
  * 
@@ -387,13 +333,8 @@ long PROXYCERTINFO_get_path_length(
     }
 }
 /* PROXYCERTINFO_get_path_length() */
-/* @} */
 
     
-/**
- * @name Convert PROXYCERTINFO to DER encoded form
- */
-/* @{ */
 /**
  * @ingroup proxycertinfo
  * 
@@ -427,12 +368,7 @@ int i2d_PROXYCERTINFO(
     M_ASN1_I2D_finish();
 }
 /* i2d_PROXYCERTINFO() */
-/* @} */
 
-/**
- * @name Convert a PROXYCERTINFO to internal form
- */
-/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -471,7 +407,6 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
                       ASN1_F_D2I_PROXYCERTINFO);
 }
 /* d2i_PROXYCERTINFO() */
-/* @} */
 
 X509V3_EXT_METHOD * PROXYCERTINFO_x509v3_ext_meth()
 {
@@ -493,10 +428,6 @@ X509V3_EXT_METHOD * PROXYCERTINFO_x509v3_ext_meth()
     return (&proxycertinfo_x509v3_ext_meth);
 }
 
-/**
- * @name Convert old PROXYCERTINFO to DER encoded form
- */
-/* @{ */
 /**
  * @ingroup proxycertinfo
  * 
@@ -530,12 +461,7 @@ int i2d_PROXYCERTINFO_OLD(
     M_ASN1_I2D_finish();
 }
 /* i2d_PROXYCERTINFO_OLD() */
-/* @} */
 
-/**
- * @name Convert a old PROXYCERTINFO to internal form
- */
-/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -570,7 +496,6 @@ PROXYCERTINFO * d2i_PROXYCERTINFO_OLD(
                       ASN1_F_D2I_PROXYCERTINFO);
 }
 /* d2i_PROXYCERTINFO() */
-/* @} */
 
 X509V3_EXT_METHOD * PROXYCERTINFO_OLD_x509v3_ext_meth()
 {

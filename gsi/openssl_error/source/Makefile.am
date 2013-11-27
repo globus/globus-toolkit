@@ -1,23 +1,13 @@
+AUTOMAKE_OPTIONS = foreign
 
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+pkgconfdir = $(libdir)/pkgconfig
 
-SUBDIRS= \
-	library \
-	pkgdata \
-	doxygen
+SUBDIRS = library
 
 doc_DATA = GLOBUS_LICENSE
+pkgconf_DATA = globus-gsi-openssl-error.pc
 
 EXTRA_DIST= \
         version.h \
 	dirt.sh \
 	$(doc_DATA)
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
-
-
-
-
-

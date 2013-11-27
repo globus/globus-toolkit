@@ -20,6 +20,10 @@
 #include "globus_xio_test_transport.h"
 #include "globus_i_xio_test_drivers.h"
 
+#ifdef _WIN32
+#define sleep _sleep 
+#endif
+
 #define MAX_DELAY 100000
 
 #define XIOTestCreateOpWraper(ow, _in_dh, _in_op, res, nb)              \

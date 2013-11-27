@@ -42,18 +42,6 @@ typedef struct globus_l_xio_win32_socket_s * globus_xio_system_socket_handle_t;
 typedef SOCKET globus_xio_system_socket_t;
 typedef HANDLE globus_xio_system_file_t;
 
-#elif defined(TARGET_ARCH_NETOS)
-#define GLOBUS_XIO_SYSTEM_INVALID_FILE  -1
-#define GLOBUS_XIO_SYSTEM_INVALID_SOCKET  -1
-
-/* these are handles to this interface */
-typedef struct globus_l_xio_system_s * globus_xio_system_file_handle_t;
-typedef struct globus_l_xio_system_s * globus_xio_system_socket_handle_t;
-
-/* these are the native descriptor types */
-typedef SOCKET globus_xio_system_socket_t;
-typedef int globus_xio_system_file_t;
-
 #else
 
 #define GLOBUS_XIO_SYSTEM_INVALID_FILE  -1

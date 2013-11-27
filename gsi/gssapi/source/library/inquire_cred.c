@@ -14,30 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file inquire_cred.h
+ * @file gssapi/source/library/inquire_cred.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi.h"
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 
 /**
- * @name Inquire Cred
+ * @brief Inquire Cred
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * Get information about the current credential
+ * @details
  *
  * We will also allow the return of the proxy file name,
  * if the minor_status is set to a value of 57056 0xdee0
@@ -163,4 +152,3 @@ GSS_CALLCONV gss_inquire_cred(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */

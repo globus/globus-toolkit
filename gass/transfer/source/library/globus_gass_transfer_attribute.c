@@ -161,7 +161,7 @@ globus_object_type_static_initializer(
 globus_object_t *
 globus_gass_transfer_requestattr_initialize(
     globus_object_t *				obj,
-    char *					proxy_url,
+    char *				        proxy_url,
     globus_size_t				block_size,
     globus_gass_transfer_file_mode_t		file_mode,
     globus_bool_t				connection_reuse)
@@ -223,7 +223,7 @@ globus_gass_transfer_requestattr_initialize(
 int
 globus_gass_transfer_requestattr_init(
     globus_gass_transfer_requestattr_t *	attr,
-    char *					url_scheme)
+    char *				        url_scheme)
 {
     globus_gass_transfer_proto_descriptor_t *	protocol;
 

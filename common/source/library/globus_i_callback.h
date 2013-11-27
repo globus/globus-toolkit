@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_GLOBUS_I_CALLBACK
-#define GLOBUS_INCLUDE_GLOBUS_I_CALLBACK
+#ifndef GLOBUS_I_CALLBACK_H
+#define GLOBUS_I_CALLBACK_H
 
 #include "globus_error.h"
 #include "globus_error_generic.h"
@@ -156,4 +156,4 @@ extern globus_module_descriptor_t globus_i_callback_module_threaded;
         }                                                                   \
     } while(0)
     
-#endif
+#endif /* GLOBUS_I_CALLBACK_H */

@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file export_cred.c
+ * @file gssapi/source/library/export_cred.c
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "globus_gsi_gss_constants.h"
 #include "globus_gsi_system_config.h"
@@ -37,18 +29,16 @@ static char *rcsid = "$Id$";
 #ifdef  _HAVE_GSI_EXTENDED_GSSAPI
 
 /**
- * @name Export Cred
- * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @brief Export a GSSAPI credential
+ * @ingroup globus_gsi_gssapi_extensions
+ * @details
  * Saves the credential so it can be checkpointed and 
  * imported by gss_import_cred
  *
  * @param minor_status
  * @param cred_handle
  * @param desired_mech
- *        Should either be @ref gss_mech_globus_gssapi_openssl or
+ *        Should either be gss_mech_globus_gssapi_openssl or
  *        NULL (in which case gss_mech_globus_gssapi_openssl is
  *        assumed).
  * @param option_req
@@ -231,6 +221,4 @@ GSS_CALLCONV gss_export_cred(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
-
 #endif /*  _HAVE_GSI_EXTENDED_GSSAPI */

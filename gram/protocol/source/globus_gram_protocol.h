@@ -18,8 +18,19 @@
 #define GLOBUS_GRAM_PROTOCOL_H
 
 /**
+ * @file globus_gram_protocol.h GRAM Protocol API
+ */
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
+/**
  * @mainpage Globus GRAM Protocol
- *
+ * @copydoc globus_gram_protocol
+ */
+#endif
+
+/**
+ * @defgroup globus_gram_protocol GRAM Protocol
+ * @brief GRAM Protocol
+ * @details
  * The Globus GRAM Protocol Library implements the GRAM protocol. It is used
  * by the GRAM Client and GRAM Job Manager. It provides the constants used
  * by in the sending and receiving of GRAM messages. It also provides
@@ -33,21 +44,12 @@
  * - @ref globus_gram_protocol "GRAM Protocol Message Format"
  */
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
-
 #include "globus_io.h"
 #include "globus_gram_protocol_constants.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum { GLOBUS_GRAM_PROTOCOL_VERSION = 2 };
 enum { GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE = 64000 };
@@ -432,7 +434,9 @@ globus_gram_protocol_error_10_hack_replace_message(const char * message);
 #define GLOBUS_GRAM_PROTOCOL_DEFAULT_DRYRUN                 "no"
 #define GLOBUS_GRAM_PROTOCOL_DEFAULT_START_TIME             "none"
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

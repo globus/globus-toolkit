@@ -1,10 +1,12 @@
-include $(top_srcdir)/globus_automake_pre
-
+sysconf_DATA = \
+        globus-user-env.sh \
+        globus-user-env.csh
 libexec_SCRIPTS = \
 	globus-args-parser-header \
 	globus-sh-tools.sh \
 	globus-sh-tools-vars.sh \
-        globus-script-initializer
+        globus-script-initializer \
+        globus-vararg-enums-doxygen-filter.pl
 
 bin_SCRIPTS = \
 	globus-hostname \
@@ -12,8 +14,6 @@ bin_SCRIPTS = \
 	globus-makefile-header
 
 globuscore_perlmoduledir = $(perlmoduledir)/Globus/Core
-## globuscore_perlmodule = [ DATA ]
-
 globuscore_perlmodule_DATA = Config.pm Paths.pm
 
 EXTRA_DIST = \
@@ -22,10 +22,5 @@ EXTRA_DIST = \
 	globus-sh-tools-vars.sh.in \
 	globus-hostname.in \
 	globus-makefile-header.in \
+        globus-vararg-enums-doxygen-filter.pl \
         Config.pm Paths.pm.in globus-script-initializer.in
-
-install-exec-hook:
-	for script in $(libexec_SCRIPTS); do \
-	    chmod 644 $(DESTDIR)$(libexecdir)/$$script; \
-	done
-include $(top_srcdir)/globus_automake_post

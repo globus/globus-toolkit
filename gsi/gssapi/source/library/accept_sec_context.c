@@ -14,31 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file accept_sec_context.h
+ * @file gssapi/source/library/accept_sec_context.c
  * Globus GSI GSS-API gss_accept_sec_context
  * @author Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char * rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 #include <string.h>
 
 /**
- * @name GSS Accept Security Context
+ * @brief GSS Accept Security Context
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * 
+ * @details
  * @param minor_status
  * @param context_handle_P
  * @param acceptor_cred_handle
@@ -635,4 +624,3 @@ GSS_CALLCONV gss_accept_sec_context(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */

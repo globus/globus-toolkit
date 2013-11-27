@@ -1,34 +1,54 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS= \
-	pkgdata \
-	doxygen
+pkgconfigdir = $(libdir)/pkgconfig
 
-Sources = \
+doc_DATA = GLOBUS_LICENSE
+include_HEADERS = globus_gsi_authz.h
+lib_LTLIBRARIES = libglobus_authz.la
+pkgconfig_DATA = globus-authz.pc
+
+libglobus_authz_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
+libglobus_authz_la_LDFLAGS = \
+        -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION)
+libglobus_authz_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_authz_la_SOURCES = \
 	globus_gsi_authz.c \
 	globus_gsi_authz_error.c \
 	globus_gsi_authz.h \
 	globus_gsi_authz_constants.h \
 	globus_i_gsi_authz.h
 
-doc_DATA = GLOBUS_LICENSE
+EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
 
-EXTRA_DIST = version.h.in $(doc_DATA)
+DOC_STAMPS =
+if ENABLE_DOXYGEN
+DOC_STAMPS += doc-stamp
 
-include_HEADERS= \
-	globus_gsi_authz.h
+doc-stamp: Doxyfile $(libglobus_authz_la_SOURCES)
+	$(DOXYGEN)
+	touch $@
 
+clean-local:
+	rm -rf doc doc-stamp
+endif
 
-INCLUDES = $(GPT_INCLUDES) 
+all-local: $(DOC_STAMPS)
 
-lib_LTLIBRARIES = libglobus_authz.la
+install-data-local: $(DOC_STAMPS)
+	if test -d doc/man/man3; then \
+		install -d -m 755 $(DESTDIR)$(mandir)/man3; \
+	        $(INSTALL) -m 644 doc/man/man3/globus*.3 $(DESTDIR)$(mandir)/man3 ; \
+        fi
+	if test -d doc/html; then \
+		for dir in `(cd doc; find html -type d)`; do \
+			install -d -m 755 $(DESTDIR)$(docdir)/$$dir; \
+		done ; \
+		for f in `(cd doc; find html -type f)`; do \
+			$(INSTALL) -m 644 doc/$$f $(DESTDIR)$(docdir)/$$f ; \
+		done ; \
+	fi
 
-libglobus_authz_la_SOURCES = $(Sources)
-
-libglobus_authz_la_LDFLAGS = $(GPT_LDFLAGS)
-
-libglobus_authz_la_LIBADD = $(GPT_LIB_LINKS)
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+dist-hook: $(DOC_STAMPS)
+	if test -d doc; then \
+		cp -R doc $(distdir)/doc ; \
+	fi ;

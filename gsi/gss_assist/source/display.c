@@ -14,40 +14,33 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file display.c
+ * @file gss_assist/source/display.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
-#include "globus_i_gss_assist.h"
-#include <stdio.h>
 #include "gssapi.h"
+#include "globus_i_gss_assist.h"
+
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
 /**
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_display
  * Concatenate the four message strings, realloc if needed.
  *
- *
  * @param str  
- *        char * to string or null (realloacted if needed)
+ *        char * to string or NULL (reallocated if needed)
  * @param pre
- *        char * to first string or null
+ *        char * to first string or NULL
  * @param msg
- *        char * (may not be null terminated) to first string or null
+ *        char * (may not be null terminated) to first string or NULL
  * @param msglen
  *        length of msg
  * @param post
- *        char * to last string or null
+ *        char * to last string or NULL
  *
  * @return
  *        char * to reallocated string.  NULL on error
@@ -107,11 +100,7 @@ globus_gss_assist_strcatr(
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
- * @name Display Status
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_display
  * Display the messages for the major and minor status
  * on the file pointed at by fp.
  * Takes care of the overloaded major_status if there
@@ -156,14 +145,10 @@ globus_gss_assist_display_status(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return ret;
 }
-/* @} */
+/* globus_gss_assist_display_status() */
 
 /**
- * @name Display Status String
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_display
  * Display the messages for the major and minor status
  * and return a string with the messages.
  * Takes care of the overloaded major_status if there
@@ -315,10 +300,13 @@ globus_gss_assist_display_status_str(
         }
         else
         {
-#ifdef HAVE_STRERROR
-            {
-                reason2 = strerror(-token_status);
-            }
+#if _POSIX_THREAD_SAFE_FUNCTIONS
+            char errbuf[80] = {0};
+
+            strerror_r(-token_status, errbuf, sizeof(errbuf));
+            reason2 = errbuf;
+#else
+            reason2 = strerror(-token_status);
 #endif
             if (reason2 == NULL)
             {
@@ -344,4 +332,4 @@ globus_gss_assist_display_status_str(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return 0;
 }
-/* @} */
+/* globus_gss_assist_display_status_str() */

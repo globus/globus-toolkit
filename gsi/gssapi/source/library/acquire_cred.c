@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file acquire_cred.h
- * Globus GSI GSS-API gss_acquire_cred
+ * @file gssapi/source/library/acquire_cred.c Acquire Credential
  * @author Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi.h"
 #include "gssapi_openssl.h"
@@ -36,11 +27,9 @@ static char *rcsid = "$Id$";
 #include <sys/stat.h>
 
 /**
- * @name Acquire Cred
- * @group globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @brief Acquire Credential
+ * @ingroup globus_gsi_gssapi
+ * @details
  * GSSAPI routine to acquire the local credential.  
  * See the latest IETF draft/RFC on the GSS C bindings.
  *
@@ -59,10 +48,10 @@ static char *rcsid = "$Id$";
  *        Name of principle whose credentials should be acquired
  *        This parameter maps to the desired subject of the cert
  *        to be acquired as the credential.  Possible values are:
- *        For a service cert:  <service name>@<fqdn>
- *        For a host cert:     <fqdn>
- *        For a proxy cert:    <subject name>
- *        For a user cert:     <subject name>
+ *        - For a service cert:  <em>service name</em>\@<em>fqdn</em>
+ *        - For a host cert:     <em>fqdn</em>
+ *        - For a proxy cert:    <em>subject name</em>
+ *        - For a user cert:     <em>subject name</em>
  *        This parameter can be NULL, in which case the cert is chosen
  *        using a default search order of: host, proxy, user, service
  * @param time_req
@@ -195,4 +184,3 @@ GSS_CALLCONV gss_acquire_cred(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */

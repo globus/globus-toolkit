@@ -17,48 +17,37 @@
 #ifndef _GLOBUS_GSI_CALLBACK_H_
 #define _GLOBUS_GSI_CALLBACK_H_
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_callback.h
  * @author Sam Lang
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
-EXTERN_C_BEGIN
 
 #include "globus_common.h"
 #include "globus_gsi_cert_utils.h"
 #include "openssl/x509.h"
 
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
  * @mainpage Globus GSI Callback
+ * @copydoc globus_gsi_callback
+ */
+#endif
+/**
+ * @defgroup globus_gsi_callback Globus GSI Callback
  *
  * The Globus GSI Callback library. This library contains functions that extend
  * OpenSSL path validation.
  *
  * - @ref globus_gsi_callback_activation
- * - @ref globus_gsi_callback
+ * - @ref globus_gsi_callback_functions
  * - @ref globus_gsi_callback_data
  */
 
 
 /** 
  * @defgroup globus_gsi_callback_activation Activation
+ * @ingroup globus_gsi_callback
  *
  * Globus GSI Callback uses standard Globus module activation and
  * deactivation.  Before any Globus GSI Callback functions are called, the
@@ -86,6 +75,10 @@ EXTERN_C_BEGIN
  *
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Module descriptor
  * @ingroup globus_gsi_callback_activation
@@ -99,7 +92,8 @@ globus_module_descriptor_t              globus_i_gsi_callback_module;
 #define _CLS(s) globus_common_i18n_get_string(GLOBUS_GSI_CALLBACK_MODULE,\
 		s)
 /**
- * @defgroup globus_gsi_callback Callback Functions
+ * @defgroup globus_gsi_callback_functions Callback Functions
+ * @ingroup globus_gsi_callback
  * 
  * Functions that plug into various plug points in the OpenSSL path validation
  * mechanism. These functions add CRL checking, X509 Extension handling and
@@ -108,6 +102,7 @@ globus_module_descriptor_t              globus_i_gsi_callback_module;
 
 /**
  * @defgroup globus_gsi_callback_data Callback Data Functions
+ * @ingroup globus_gsi_callback
  *
  * Functions that deal with the data structure that contains state associated
  * with the path validation callback. 
@@ -294,6 +289,8 @@ globus_gsi_callback_set_allow_missing_signing_policy(
     
 #endif /* DOXYGEN */
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _GLOBUS_GSI_CALLBACK_H_ */

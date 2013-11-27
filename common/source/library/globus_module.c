@@ -14,19 +14,7 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-Description:
-
-  XXX - fill this in
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
+/** @file globus_module.c Module Activation and Deactivation */
 
 /******************************************************************************
 			     Include header files

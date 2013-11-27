@@ -15,13 +15,12 @@
  */
 
 /**
- * @file globus_ftp_control_server.c
- *
- * FTP Server-side Control Connection Management.
+ * @file globus_ftp_control_server.c FTP Server-side Control Connection Management
  */
 
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
+#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -145,8 +144,9 @@ const char * globus_i_ftp_server_334_reply=
 "334 Using authentication type GSSAPI; ADAT must follow.\r\n";
 
 /**
- * Initialize a globus ftp server handle
- *
+ * @brief Initialize a GridFTP server handle
+ * @ingroup globus_ftp_control_server
+ * @details
  * This function will set up (i.e. intialize all mutexes and
  * variables) a globus ftp server handle. It will also enter the
  * handle in a list used by the module activation/deactivation functions. 
@@ -157,7 +157,6 @@ const char * globus_i_ftp_server_334_reply=
  *        - GLOBUS_SUCCESS
  *        - invalid handle
  */
-
 globus_result_t 
 globus_ftp_control_server_handle_init(
     globus_ftp_control_server_t *           handle)
@@ -187,10 +186,12 @@ globus_ftp_control_server_handle_init(
 
     return GLOBUS_SUCCESS;
 }
+/* globus_ftp_control_server_handle_init() */
 
 /**
- * Destroy a globus ftp server handle
- *
+ * @brief Destroy a GridFTP server handle
+ * @ingroup globus_ftp_control_server
+ * @details
  * This function will free up all dynamicly allocated  memory
  * associated with a given  globus ftp server handle. It will also
  * remove the handle from a list used by the module activation/deactivation
@@ -247,12 +248,13 @@ globus_ftp_control_server_handle_destroy(
 }
 
 /**
- *  Start listening on a given port for FTP client connections.
- *
- *  This function starts the listening on *port for connections
- *  from ftp clients.  When a connection request is made callback is
- *  called and passed callback_arg.  Upon return from this function
- *  the server_handle structure is initialized.
+ * @brief Listen on for FTP Client Connections
+ * @ingroup globus_ftp_control_server
+ * @details
+ * This function starts the listening on *port for connections
+ * from ftp clients.  When a connection request is made callback is
+ * called and passed callback_arg.  Upon return from this function
+ * the server_handle structure is initialized.
  *
  *  @param server_handle
  *         A pointer to a initialized server handle.
@@ -444,15 +446,16 @@ globus_l_ftp_control_listen_cb(
 
 
 /**
- *  Initialize a command structure.
- *
- *  This function initializes a command structure based on a null
- *  terminated string representing one line of input from the
- *  client. The command structure is used as a convience to determine 
- *  what command the client issued.  This function parses a command
- *  string sent by a client and populates the command argument
- *  appropriately. In the GSSAPI case it will also decode and unwrap
- *  the command before parsing it.  
+ * @brief Initialize a GridFTP command
+ * @ingroup globus_ftp_control_server
+ * @details
+ * This function initializes a command structure based on a null
+ * terminated string representing one line of input from the
+ * client. The command structure is used as a convience to determine 
+ * what command the client issued.  This function parses a command
+ * string sent by a client and populates the command argument
+ * appropriately. In the GSSAPI case it will also decode and unwrap
+ * the command before parsing it.  
  *
  * @param command
  *        A pointer to the command structure to be initialized
@@ -461,9 +464,7 @@ globus_l_ftp_control_listen_cb(
  *        command.
  * @param auth_info
  *        Authentication information needed for unwrapping a command
- *
  */
-
 globus_result_t
 globus_ftp_control_command_init(
     globus_ftp_control_command_t *              command,
@@ -560,16 +561,15 @@ globus_ftp_control_command_init(
 }
 
 /**
- *  Destroy a command structure.
- *
- *  This function frees up the memory allocated to the command
- *  argument.
+ * @brief Destroy a GridFTP command
+ * @ingroup globus_ftp_control_server
+ * @details
+ * This function frees up the memory allocated to the command
+ * argument.
  * 
  * @param command
  *        The command structure whose associated memory is to be freed
- *         
  */
-
 globus_result_t
 globus_ftp_control_command_destroy(
     globus_ftp_control_command_t *           command)
@@ -626,16 +626,18 @@ globus_ftp_control_command_destroy(
     }
     return GLOBUS_SUCCESS;
 }
+/* globus_ftp_control_command_destroy() */
 
 /**
- *  Creates a copy of a command structure.
+ * @brief Copy of GridFTP command
+ * @ingroup globus_ftp_control_server
+ * @details
+ * This function should be called when the user needs to make a 
+ * copy of a command structure.
  *
- *  This function should be called when the user needs to make a 
- *  copy of a command structure.
- *
- *  @param dest
+ * @param dest
  *         The area of memory that the command structure is copied to.
- *  @param src
+ * @param src
  *         The command structure to be copied.
  */
 globus_result_t
@@ -780,22 +782,22 @@ globus_ftp_control_command_copy(
 }
 
 /**
- *  Stop the GSIFTP server from listening for client connections.
+ * @brief Stop listening for GridFTP client connections
+ * @ingroup globus_ftp_control_server
+ * @details
+ * This function stops listening on the given listener object
+ * for client connections.  All existing client connections are 
+ * left open.
  *
- *  This function stops listening on the given listener object
- *  for client connections.  All existing client connections are 
- *  left open.
- *
- *  @param listener 
- *         the globus_ftp_control_server_t object that should
- *         no longer listen for connections.
- *  @param callback
- *         The user callback that will be called when the server
- *         structure is no longer listening.
- *  @param callback_arg
- *         The user argument that is passed into callback.
+ * @param listener 
+ *        the globus_ftp_control_server_t object that should
+ *        no longer listen for connections.
+ * @param callback
+ *        The user callback that will be called when the server
+ *        structure is no longer listening.
+ * @param callback_arg
+ *        The user argument that is passed into callback.
  */
-
 globus_result_t
 globus_ftp_control_server_stop(
     globus_ftp_control_server_t *               listener,
@@ -926,30 +928,31 @@ globus_l_ftp_control_stop_server_cb(
 
 
 /**
- *  Accept a client connection request.
+ * @brief Accept a Client Connection
+ * @ingroup globus_ftp_control_server
+ * @details
+ * This function is called to accept a connection request from
+ * a client.
  *
- *  This function is called to accept a connection request from
- *  a client.
- *
- *  When the listen callback is called (see
- *  globus_ftp_control_server_listen) a client has requested a
- *  connection.  This function must be called to accept that user
- *  connection request.  Once the connection is established or if
- *  a error occurs, the callback function is called.
+ * When the listen callback is called (see
+ * globus_ftp_control_server_listen) a client has requested a
+ * connection.  This function must be called to accept that user
+ * connection request.  Once the connection is established or if
+ * a error occurs, the callback function is called.
  * 
- *  @param listener
- *         The server object that received the connection request. 
- *  @param handle
- *         The control connection object.  This structure will be populated
- *         and passed to the callback when the client is authorized.  This
- *         structure represents the control connection between the server
- *         and client.  It will be used to read commands from the client
- *         and send responses to the client.]
- *  @param callback
- *         The function called when the client connection has been
- *         accepted.
- *  @param callback_arg
- *         The user argument passed to the callback.
+ * @param listener
+ *        The server object that received the connection request. 
+ * @param handle
+ *        The control connection object.  This structure will be populated
+ *        and passed to the callback when the client is authorized.  This
+ *        structure represents the control connection between the server
+ *        and client.  It will be used to read commands from the client
+ *        and send responses to the client.]
+ * @param callback
+ *        The function called when the client connection has been
+ *        accepted.
+ * @param callback_arg
+ *        The user argument passed to the callback.
  *
  * @note This functions assumes the the server and control handles
  *       have been initialized prior to calling this function.
@@ -1147,30 +1150,31 @@ globus_l_ftp_control_accept_cb(
 }
 
 /**
- *  Authenticate a client connection.
+ * @brief Authenticate a GridFTP Client Connection
+ * @ingroup globus_ftp_control_server
+ * @details
+ * This function is called to authenticate a connection from
+ * a client.
  *
- *  This function is called to authenticate a connection from
- *  a client.
- *
- *  After a client connection has been accepted (using the
- *  globus_ftp_control_server_accept call), this function should be called
- *  to authenticate the client. The caller of this function may specify
- *  certain authentication requirements using the auth_requirements parameter.
+ * After a client connection has been accepted (using the
+ * globus_ftp_control_server_accept call), this function should be called
+ * to authenticate the client. The caller of this function may specify
+ * certain authentication requirements using the auth_requirements parameter.
  * 
- *  @param handle
+ * @param handle
  *         The control connection object.  This structure will be populated
  *         and passed to the callback when the client is authorized.  This
  *         structure represents the control connection between the server
  *         and client.  It will be used to read commands from the client
  *         and send responses to the client.]
- *  @param auth_requirements
+ * @param auth_requirements
  *         This structure represents the authentication requirements that
  *         the user has for a given connection.  For example GSIFTP
  *         user name, password, and account.
- *  @param callback
+ * @param callback
  *         The function called when the client authentication has been
  *         accepted or rejected.
- *  @param callback_arg
+ * @param callback_arg
  *         The user argument passed to the callback.
  *
  * @note It is up to the user of this function to send the reply to
@@ -2275,11 +2279,12 @@ error_auth_destroy:
 }
 
 /**
- *  Begin reading GSIFTP commands on a given control connection.
- *
- *  This function begins reading control commands on a 
- *  globus_ftp_control_handle_t.  When a command is read
- *  the callback function is called.
+ * @brief Read GridFTP commands
+ * @ingroup globus_ftp_control_server
+ * @details
+ * This function begins reading control commands on a 
+ * globus_ftp_control_handle_t.  When a command is read
+ * the callback function is called.
  *
  *  @param handle
  *         The control connection handle that commands will be read
@@ -2574,11 +2579,12 @@ error_auth_destroy:
 
 
 /**
- *  Send a response to the GSIFTP client
- *
- *  This function sends a GSIFTP formatted response to the client.  
- *  When a command callback is received the user calls this function 
- *  to respond to the clients request.
+ * @brief Send a GridFTP response
+ * @ingroup globus_ftp_control_server
+ * @details
+ * This function sends a GSIFTP formatted response to the client.  
+ * When a command callback is received the user calls this function 
+ * to respond to the clients request.
  *
  *  @param handle
  *         The control connection to send the response across.
@@ -2621,11 +2627,7 @@ globus_ftp_control_send_response(
     }
 
     
-#ifdef HAVE_STDARG_H
     va_start(ap, callback_arg);
-#else
-    va_start(ap);
-#endif
     
     arglength=globus_libc_vfprintf(globus_i_ftp_control_devnull,
                                    respspec,
@@ -2658,11 +2660,7 @@ globus_ftp_control_send_response(
         goto return_error;
     }
 
-#ifdef HAVE_STDARG_H
     va_start(ap, callback_arg);
-#else
-    va_start(ap);
-#endif
 
     if(globus_libc_vsprintf((char *) buf, respspec,ap) < arglength)
     {

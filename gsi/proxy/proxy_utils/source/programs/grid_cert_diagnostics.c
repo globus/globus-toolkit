@@ -19,9 +19,8 @@
 #include "globus_gsi_credential.h"
 #include "globus_gss_assist.h"
 #include "openssl/bn.h"
+#ifndef _WIN32
 #include <regex.h>
-#ifdef WIN32
-#include "openssl/applink.c"
 #endif
 
 char *
@@ -113,8 +112,11 @@ int main(int argc, char * argv[])
                    "Print this help message\n"
                    "   -c CERT                    "
                    "Check the validity of the certificate located in the file CERT, or standard input, if CERT is '-'\n"
+#ifndef TARGET_ARCH_WIN32
                    "   -n                         "
-                   "Enable NTP check for time synchronization\n", argv[0]);
+                   "Enable NTP check for time synchronization\n"
+#endif
+                   , argv[0]);
             exit(1);
         }
     }
@@ -267,6 +269,7 @@ int main(int argc, char * argv[])
         goto out;
     }
 
+#   ifndef TARGET_ARCH_WIN32
     if (do_ntp_check)
     {
         printf("\nChecking clock synchronization\n"
@@ -336,6 +339,7 @@ int main(int argc, char * argv[])
             }
         }
     }
+#   endif
 
     if (personal)
     {

@@ -14,22 +14,7 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_tilde_expand.c
- 
-Description:
-    Contain only the function globus_tilde_expand which can be use to expand
-    ~ or ~user.
-
- 
-CVS Information:
- 
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
+/** @file globus_tilde_expand.c Expand ~ or ~user in path strings */
  
 /******************************************************************************
                              Include header files

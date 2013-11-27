@@ -14,34 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef _GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H_
-#define _GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H_
+#ifndef GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H
+#define GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_system_config_constants.h
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
+#ifdef __cplusplus
+extern "C" {
 #endif
-
-EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_gsi_sysconfig_datatypes Datatypes
+ * @ingroup globus_gsi_sysconfig
  */
 
 /**
@@ -131,6 +120,8 @@ typedef enum
 }
 globus_gsi_proxy_file_type_t;
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* _GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H_ */
+#endif /* GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H */

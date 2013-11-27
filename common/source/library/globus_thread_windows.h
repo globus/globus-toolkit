@@ -14,25 +14,10 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_thread_windows.h
+/** globus_thread_windows.h Globus Windows Threads Bindings */
 
-Description:
-
-  Bindings for the Globus threads package, to be used when Globus has been
-  configured to use Windows.
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
-
-#if !defined GLOBUS_INCLUDE_GLOBUS_THREAD
-#define GLOBUS_INCLUDE_GLOBUS_THREAD
+#if !defined GLOBUS_THREAD_WINDOWS_H
+#define GLOBUS_THREAD_WINDOWS_H
 
 #include "globus_common_include.h"
 #include "globus_module.h"
@@ -90,20 +75,9 @@ typedef struct _globus_cond_t
 
 /* typedef DWORD globus_abstime_t; */
 
-/* API extern's */
-/*
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
- */
-
-EXTERN_C_BEGIN
 
 /* API calls */
 extern int	globus_thread_create(globus_thread_t *thread,
@@ -168,8 +142,10 @@ extern int globus_i_thread_pre_activate();
 
 extern globus_module_descriptor_t globus_i_thread_module;
 
-EXTERN_C_END
-
 #define GLOBUS_THREAD_MODULE (&globus_i_thread_module)
 
-#endif /* GLOBUS_INCLUDE_GLOBUS_THREAD */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GLOBUS_THREAD_WINDOWS_H */

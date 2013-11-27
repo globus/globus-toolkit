@@ -1914,7 +1914,7 @@ globus_gsi_cred_verify_cert_chain(
  * @param cred_handle
  *        The credential handle containing the certificate chain to
  *        be validated
- * @param callback_data
+ * @param callback_data_in
  *        A callback data structure.  If NULL, one will be initialized
  *        with only the default cert dir set.
  * @param check_time

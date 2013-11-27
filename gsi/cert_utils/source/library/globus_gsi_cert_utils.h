@@ -14,38 +14,32 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_cert_utils.h
  * Globus GSI Cert Utils Library
  * @author Sam Lang
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #ifndef GLOBUS_GSI_CERT_UTILS_H
 #define GLOBUS_GSI_CERT_UTILS_H
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
-EXTERN_C_BEGIN
 
 #include "globus_common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
  * @mainpage Globus GSI Certificate Handling Utilities
+ * @copydoc globus_gsi_cert_utils
+ */
+#endif
+
+/**
+ * @defgroup globus_gsi_cert_utils Globus GSI Certificate Handling Utilities
  *
  * The Globus GSI Certificate Handling Utilities library. This library contains
  * helper functions for dealing with certificates.
@@ -57,14 +51,15 @@ EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_gsi_cert_utils_activation Activation
+ * @ingroup globus_gsi_cert_utils
  *
  * Globus GSI Cert Utils uses standard Globus module activation and
  * deactivation.  Before any Globus GSI Cert Utils functions are called, the
  * following function must be called:
  *
- * @code
- *      globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE)
- * @endcode
+   @code
+        globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE)
+   @endcode
  *
  *
  * This function returns GLOBUS_SUCCESS if Globus GSI Credential was
@@ -75,9 +70,9 @@ EXTERN_C_BEGIN
  *
  * To deactivate Globus GSI Cert Utils, the following function must be called:
  *
- * @code
- *    globus_module_deactivate(GLOBUS_GSI_CERT_UTILS_MODULE)
- * @endcode
+   @code
+      globus_module_deactivate(GLOBUS_GSI_CERT_UTILS_MODULE)
+   @endcode
  *
  * This function should be called once for each time Globus GSI Cert Utils
  * was activated. 
@@ -96,12 +91,6 @@ globus_module_descriptor_t              globus_i_gsi_cert_utils_module;
 
 #define _CUSL(s) globus_common_i18n_get_string(GLOBUS_GSI_CERT_UTILS_MODULE,\
 		s)
-/**
- * @defgroup globus_gsi_cert_utils Cert Utils Functions
- *
- * A generic set of utility functions for manipulating 
- * OpenSSL objects, such as X509 certificates.
- */
 
 #ifndef DOXYGEN
 
@@ -189,6 +178,8 @@ globus_i_gsi_cert_utils_dn_cmp(
 
 #endif /* DOXYGEN */
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_GSI_CERT_UTILS_H */

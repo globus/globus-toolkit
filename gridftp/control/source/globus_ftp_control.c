@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-#ifdef GLOBUS_SEPARATE_DOCS
 /**
- * @file globus_ftp_control.c
- *
- * FTP Control API Activation/Deactivation and Global State
- *
+ * @file globus_ftp_control.c Globus FTP Control API
  */
-#endif
 
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"

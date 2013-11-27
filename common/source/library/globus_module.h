@@ -14,25 +14,10 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_module.h
+/** @file globus_module.h Reference Counting Module Activation and Deactivation */
 
-Description:
-
-  XXX - fill this in
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
-
-#if !defined(GLOBUS_INCLUDE_GLOBUS_MODULE)
-#ifndef SWIG
-#define GLOBUS_INCLUDE_GLOBUS_MODULE 1
+#if !defined(GLOBUS_MODULE_H)
+#define GLOBUS_MODULE_H 1
 
 /******************************************************************************
 			     Include header files
@@ -44,11 +29,9 @@ typedef struct globus_module_descriptor_s globus_module_descriptor_t;
 #include "globus_error_generic.h"
 #include <stdio.h>
   
-EXTERN_C_BEGIN
-
-/* endif SWIG */
+#ifdef __cplusplus
+extern "C" {
 #endif
-
 
 /******************************************************************************
 			       Type definitions
@@ -202,8 +185,9 @@ globus_module_get_args(
     int **                              argc,
     char ****                           argv);
 
-#ifndef SWIG
-EXTERN_C_END
+
+#ifdef __cplusplus
+}
 #endif
 
-#endif /* GLOBUS_INCLUDE_GLOBUS_MODULE */
+#endif /* GLOBUS_MODULE_H */

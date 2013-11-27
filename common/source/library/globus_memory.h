@@ -14,22 +14,10 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_memory.h
+/** @file globus_memory.h Memory Pool */
 
-Description:
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
-
-#if !defined(GLOBUS_INCLUDE_GLOBUS_MEMORY_H)
-#define GLOBUS_INCLUDE_GLOBUS_MEMORY_H 
+#if !defined(GLOBUS_MEMORY_H)
+#define GLOBUS_MEMORY_H 
 
 /******************************************************************************
 			     Include header files
@@ -37,7 +25,10 @@ CVS Information:
 #include "globus_common_include.h"
 #include "globus_thread.h"
 
-EXTERN_C_BEGIN
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /******************************************************************************
 			       Type definitions
@@ -98,6 +89,9 @@ globus_bool_t
 globus_memory_destroy(
     globus_memory_t *                           mem_info);
 
-EXTERN_C_END
 
-#endif /* GLOBUS_INCLUDE_GLOBUS_MEMORY_H */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GLOBUS_MEMORY_H */

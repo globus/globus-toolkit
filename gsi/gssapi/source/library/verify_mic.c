@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gss_verify_mic
+ * @file gssapi/source/library/verify_mic.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -49,11 +41,9 @@ static unsigned char ssl3_pad_1[48]={
 #include <time.h>
 
 /**
- * @name Verify MIC
+ * @brief Verify MIC
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Check a MIC of the data
  *
  * @param minor_status
@@ -320,14 +310,11 @@ exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 } 
-/* @} */
 
 /**
- * @name Verify
+ * @brief Verify
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Obsolete variant of gss_verify for V1 compatability 
  * Check a MIC of the date
  *
@@ -370,4 +357,4 @@ GSS_CALLCONV gss_verify(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
+/* gss_verify() */

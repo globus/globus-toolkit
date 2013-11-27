@@ -19,25 +19,21 @@
  *
  * Globus threads package which can work with either pthreads or without
  * threads, depending on runtime configuration
- *
- * CVS Information:
- * $Source$
- * $Date$
- * $Revision$
- * $State$
- * $Author$
  */
 
-#if !defined(GLOBUS_INCLUDE_GLOBUS_THREAD_H)
-#define GLOBUS_INCLUDE_GLOBUS_THREAD_H 1
+#if !defined(GLOBUS_THREAD_H)
+#define GLOBUS_THREAD_H 1
 
 /* Include header files */
-#include "globus_config.h"
 #include "globus_module.h"
 #include "globus_time.h"
 
-#if HAVE_PTHREAD
+#include <unistd.h>
 
+#if _POSIX_THREADS
+#if !defined(HAVE_PTHREAD)
+#define HAVE_PTHREAD 1
+#endif
 #if defined __GNUC__ && defined __EXCEPTIONS
 #undef __EXCEPTIONS
 #include <pthread.h>
@@ -45,11 +41,11 @@
 #else
 #include <pthread.h>
 #endif
+#endif /* _POSIX_THREADS */
 
-#endif
-
-#if HAVE_WINDOWS_THREADS
+#if defined(_WIN32)
 #include "windows.h"
+#define HAVE_WINDOWS_THREADS 1
 #endif
 
 EXTERN_C_BEGIN
@@ -505,6 +501,8 @@ typedef struct
 }
 globus_thread_impl_t;
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_INCLUDE_GLOBUS_THREAD_H  */
+#endif /* GLOBUS_THREAD_H  */

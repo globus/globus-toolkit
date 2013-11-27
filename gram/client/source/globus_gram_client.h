@@ -14,46 +14,34 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gram_client.h
- *
+ * @file globus_gram_client.h GRAM Client API
+ * @details
  * This header file contains the exported client interface of 
  * the Resource Allocation Management System.
- *
- * CVS Information:
- *  $Source$
- *  $Date$
- *  $Revision$
- *  $Author$
  */
-#endif
 
-#ifndef GLOBUS_I_GRAM_CLIENT_INCLUDE
-#define GLOBUS_I_GRAM_CLIENT_INCLUDE
+#ifndef GLOBUS_GRAM_CLIENT_H
+#define GLOBUS_GRAM_CLIENT_H
 
 /* Include header files */
 #include "globus_common.h"
 #include "globus_io.h"
 #include "globus_gram_protocol_constants.h"
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
- 
-EXTERN_C_BEGIN
 
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
+/**
+ * @mainpage GRAM Client API
+ * @copydoc globus_gram_client
+ */
+#endif
 
 /** 
- * @mainpage Resource Management Client API
- * @anchor globus_gram_client_main
- *
+ * @defgroup globus_gram_client GRAM Client API
  * The resource management API provides function for requesting
  * that a job be started or terminated, as well as for requesting
  * information about the status of a job.
@@ -66,6 +54,7 @@ EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_gram_client_callback Job state callbacks
+ * @ingroup globus_gram_client
  */
 
 /**
@@ -234,6 +223,7 @@ typedef void (* globus_gram_client_nonblocking_func_t)(
 
 /**
  * @defgroup globus_gram_client_job_functions GRAM Job Functions
+ * @ingroup globus_gram_client
  */
 
 /******************************************************************************
@@ -407,9 +397,6 @@ int
 globus_gram_client_job_contact_free(
     char *                              job_contact);
 
-/**
- * @defgroup globus_gram_client Other GRAM Client Functions
- */
 const char *
 globus_gram_client_error_string(
     int                                 error_code);
@@ -450,6 +437,7 @@ globus_gram_client_debug(void);
 
 /**
  * @defgroup globus_gram_client_attr GRAM Client Attribute Functions
+ * @ingroup globus_gram_client
  */
 int
 globus_gram_client_attr_init(
@@ -486,5 +474,8 @@ globus_gram_client_job_info_destroy(
 
 extern globus_module_descriptor_t       globus_gram_client_module;
 
-EXTERN_C_END
-#endif /* GLOBUS_I_GRAM_CLIENT_INCLUDE */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GLOBUS_GRAM_CLIENT_H */

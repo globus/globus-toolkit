@@ -18,47 +18,57 @@
 #define HEADER_PROXYCERTINFO_H
 
 /**
- * @anchor globus_gsi_proxy_ssl_api
+ * @file proxycertinfo.h
+ * 
+ * @author Sam Meder
+ * @author Sam Lang
+ */
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
+/**
  * @mainpage Globus GSI Proxy SSL API
+ * @copydoc globus_gsi_proxy_ssl_api
+ */
+#endif
+
+/**
+ * @defgroup globus_gsi_proxy_ssl_api Globus GSI Proxy SSL API
  *
  * The globus_gsi_proxy_ssl library provides the ability
  * to create a PROXYCERTINFO extension for inclusion in
  * an X509 certificate.  The current specification for the
- * extension is described in the Internet Draft 
- * Document: draft-ietf-pkix-proxy-08.txt
+ * extension is described in
+ * <a href="http://www.ietf.org/rfc/rfc3820.txt">RFC 3820</a>.
  * 
  * The library conforms to the ASN1 implementation in
  * the OPENSSL library (0.9.6, formerly SSLeay), and provides
  * an interface to convert from a DER encoded PROXYCERTINFO
  * to its internal structure and vice-versa.
+ *
+ * @section proxycertinfo_section ProxyCertInfo
+ * @copydoc proxycertinfo
+ * For more information, see the documentation in 
+ * @link proxycertinfo ProxyCertInfo @endlink
+ * @section proxypolicy_section ProxyPolicy
+ * @copydoc proxypolicy
+ * For more information, see the documentation in 
+ * @link proxypolicy ProxyPolicy @endlink
  */
 
 #include "proxypolicy.h"
-
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
-
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
-EXTERN_C_BEGIN
 
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup proxycertinfo ProxyCertInfo
- * 
- * @author Sam Meder
- * @author Sam Lang
+ * @ingroup globus_gsi_proxy_ssl_api
  * 
  * The proxycertinfo.h file defines a method of
  * maintaining information about proxy certificates.
@@ -71,7 +81,7 @@ EXTERN_C_BEGIN
 #define PROXYCERTINFO_OLD_SN            "OLD_PROXYCERTINFO"
 #define PROXYCERTINFO_OLD_LN                "Proxy Certificate Info Extension (old OID)"
 
-/**
+/*
  * Used for error checking
  */
 #define ASN1_F_PROXYCERTINFO_NEW                         430
@@ -186,7 +196,8 @@ STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(
     PROXYCERTINFO *                     ext,
     STACK_OF(CONF_VALUE) *              extlist);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* HEADER_PROXYCERTINFO_H */
-

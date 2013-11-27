@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_ftp_client_restart_marker_plugin.c GridFTP Restart Marker Plugin Implementation
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- * $Author$
  */
 
 #include "globus_ftp_client_restart_marker_plugin.h"
@@ -569,8 +563,6 @@ restart_marker_plugin_destroy_cb(
     globus_ftp_client_restart_marker_plugin_destroy(plugin);
     globus_free(plugin);
 }
-
-#endif  /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
  * Initialize a restart marker plugin

@@ -16,7 +16,7 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_i_error_errno.c
+ * @file globus_i_error_openssl.c
  * Globus Generic Error
  *
  * $RCSfile$
@@ -28,7 +28,7 @@
 
 #include "globus_common.h"
 #include "globus_i_error_openssl.h"
-#include <string.h>
+#include <stdlib.h>
 
 
 /**
@@ -194,7 +194,7 @@ const globus_object_type_t GLOBUS_ERROR_TYPE_OPENSSL_DEFINITION
  *         A newly allocated openssl error handle
  */
 globus_openssl_error_handle_t
-globus_i_openssl_error_handle_init()
+globus_i_openssl_error_handle_init(void)
 {
     globus_openssl_error_handle_t       new_handle;
     static char *                       _function_name_ =
@@ -202,11 +202,7 @@ globus_i_openssl_error_handle_init()
     
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
-    new_handle = malloc(sizeof(globus_i_openssl_error_handle_t));
-
-    assert(new_handle);
-    
-    memset(new_handle, (int)NULL, sizeof(globus_i_openssl_error_handle_t));
+    new_handle = calloc(1, sizeof(globus_i_openssl_error_handle_t));
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
 
@@ -241,7 +237,7 @@ globus_i_openssl_error_handle_destroy(
            (handle->flags & ERR_TXT_STRING))
                
         {
-            free(handle->data);
+            free((void*) handle->data);
         }
         
         free(handle);

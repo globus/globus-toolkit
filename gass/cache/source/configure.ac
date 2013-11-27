@@ -1,0 +1,31 @@
+AC_INIT([globus_gass_cache],[8.1])
+AM_INIT_AUTOMAKE
+AM_PROG_LIBTOOL
+
+MAJOR_VERSION=${PACKAGE_VERSION%%.*}
+MINOR_VERSION=${PACKAGE_VERSION##*.}
+AGE_VERSION=3
+
+AC_SUBST(MAJOR_VERSION)
+AC_SUBST(MINOR_VERSION)
+AC_SUBST(AGE_VERSION)
+
+m4_include([dirt.sh])
+AC_SUBST(DIRT_TIMESTAMP)
+AC_SUBST(DIRT_BRANCH_ID)
+
+PACKAGE_DEPS="globus-common >= 14 openssl >= 0.9.8"
+AC_SUBST(PACKAGE_DEPS)
+
+PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+
+AC_PATH_PROGS([DOXYGEN], doxygen)
+
+AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
+AC_CONFIG_FILES(
+        globus-gass-cache-uninstalled.pc
+        globus-gass-cache.pc
+        Makefile
+        Doxyfile
+	version.h)
+AC_OUTPUT

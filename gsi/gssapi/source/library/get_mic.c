@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file get_mic.c
+ * @file gssapi/source/library/get_mic.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char * rcsid = "$Id$";
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -45,12 +37,10 @@ static unsigned char ssl3_pad_1[48]={
 #include "gssapi.h"
 #include "globus_i_gsi_gss_utils.h"
 #include "gssapi_openssl.h"
+
 /**
- * @name Get MIC
+ * @brief Get MIC
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
  * Calculates a cryptographic MIC (message integrity check)
  * over an application message, and returns that MIC in the token.
  * The token and message can then be passed to the peer application
@@ -243,14 +233,11 @@ GSS_CALLCONV gss_get_mic(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Sign
+ * @brief Sign
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Deprecated.  Does the same thing as gss_get_mic for V1 compatability.
  *
  * @param minor_status
@@ -284,4 +271,3 @@ GSS_CALLCONV gss_sign(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */

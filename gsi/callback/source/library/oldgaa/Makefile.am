@@ -1,6 +1,11 @@
-include $(top_srcdir)/globus_automake_pre
+lib_LTLIBRARIES = libglobus_oldgaa.la
 
-Sources= \
+libglobus_oldgaa_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I../..
+libglobus_oldgaa_la_LDFLAGS = \
+	-version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+	-no-undefined
+libglobus_oldgaa_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_oldgaa_la_SOURCES = \
 	oldgaa_alloc.c \
 	oldgaa_api.c \
 	oldgaa_gl_internal_err.c \
@@ -16,18 +21,6 @@ Sources= \
 	rfc1779.c \
 	rfc1779.h
 
+
 EXTRA_DIST= \
         config.h.in
-
-lib_LTLIBRARIES = libglobus_oldgaa.la
-
-INCLUDES = $(GPT_INCLUDES) -I.
-
-#AM_CFLAGS = -DDEBUG
-
-libglobus_oldgaa_la_SOURCES = $(Sources)
-
-libglobus_oldgaa_la_LIBADD = $(GPT_LIB_LINKS)
-libglobus_oldgaa_la_LDFLAGS = $(GPT_LDFLAGS)
-
-include $(top_srcdir)/globus_automake_post

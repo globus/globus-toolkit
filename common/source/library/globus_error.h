@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/** @file globus_error.h Globus Error Handling */
 
 #ifndef GLOBUS_ERROR_H
 #define GLOBUS_ERROR_H
@@ -22,32 +23,17 @@
 #include "globus_object.h"
 #include "globus_module.h"
 
-#if defined(HAVE_INTTYPES_H) && !defined(TARGET_ARCH_CYGWIN)
 #include <inttypes.h>  
-#endif
 
-#if defined(UINT_LEAST32_MAX)
 typedef uint_least32_t globus_uint_t;
-#elif SIZEOF_LONG == 4
-typedef unsigned long globus_uint_t;
-#elif SIZEOF_SHORT == 4
-typedef unsigned short globus_uint_t;
-#else
-typedef unsigned int globus_uint_t;
-#endif
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
- 
-EXTERN_C_BEGIN
 
+/**
+ * @defgroup globus_error Globus Error Handling
+ */
 /**********************************************************************
  * Error API Types
  *   globus_result_t          --   used as error object handle
@@ -156,11 +142,8 @@ extern globus_module_descriptor_t globus_i_error_module;
 
 #define GLOBUS_ERROR_MODULE (&globus_i_error_module)
 
-
-
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_ERROR_H */
-
-
-

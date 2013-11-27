@@ -14,16 +14,7 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_common.c
-
-Description:
-
-  Routines common to all of Globus
-
-CVS Information:
-
-******************************************************************************/
+/** @file globus_thread_common.c Thread Model-Indepent Functions */
 
 /******************************************************************************
 			     Include header files

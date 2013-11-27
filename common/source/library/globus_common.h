@@ -15,20 +15,9 @@
  * limitations under the License.
  */
 
-/******-*- C -*-**************************************************************
-globus_common.h.in
-
-Description:
-  Headers common to all of Globus
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
+/**
+ * @file globus_common.h Headers common to all of Globus
+ */
 
 #if !defined(GLOBUS_INCLUDE_GLOBUS_COMMON_H)
 #define GLOBUS_INCLUDE_GLOBUS_COMMON_H 1
@@ -43,15 +32,17 @@ CVS Information:
 #    endif
 #endif
 
-EXTERN_C_BEGIN
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
+/**
+ * @mainpage Globus Common Libary
+ * @copydoc globus_common
+ */
+#endif
 
-/******************************************************************************
-			       Type definitions
-******************************************************************************/
-
-/******************************************************************************
-		      Include globus_common header files
-******************************************************************************/
+/**
+ * @defgroup globus_common Globus Common API
+ * @brief Common Data Structures and Functions
+ */
 #include "globus_common_include.h"
 #include "globus_module.h"
 #include "globus_url.h"
@@ -88,31 +79,12 @@ EXTERN_C_BEGIN
 #include "globus_options.h"
 #include "globus_states.h"
 
-# if !defined(alloca)
-/* AIX requires this to be the first thing in the file.  */
-#ifdef __GNUC__
-# define alloca __builtin_alloca
-#else
-# if HAVE_ALLOCA_H
-#  include <alloca.h>
-# else
-#  ifdef _AIX
-#pragma alloca
-#  else
-#   ifndef alloca /* predefined by HP cc +Olibcalls */
-#     ifndef _CRAYT3E
-char *alloca ();
-#     endif
-#   endif
-#  endif
-# endif
-#endif
-#endif
+EXTERN_C_BEGIN
 
 /* most network-related functions (getpeername, getsockname,...) have
    an int* as argument, except AIX which uses size_t*. This will
    masquerade the difference. */
-#if defined(TARGET_ARCH_AIX)
+#if defined(__HOS_AIX__)
 #define globus_netlen_t size_t
 #else
 #define globus_netlen_t int

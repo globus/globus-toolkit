@@ -844,6 +844,9 @@ globus_i_gram_send_session_stats(
                   case GLOBUS_L_GRAM_USAGE_VERSION:
                     keystr[0] = *ptr;
                     key = keystr;
+#ifndef GLOBUS_FLAVOR_NAME
+#define GLOBUS_FLAVOR_NAME "unknown"
+#endif
                     snprintf(valstr, sizeof(valstr), "%d.%d (%s, %lu-%d) [%s]",
                             local_version.major,
                             local_version.minor,

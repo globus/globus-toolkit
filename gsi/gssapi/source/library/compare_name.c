@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file compare_name.c
+ * @file gssapi/source/library/compare_name.c
  * Globus GSI GSS-API gss_compare_name
  * @author Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -174,11 +166,9 @@ gss_l_get_oid_type(
     gss_OID                             oid);
 
 /**
- * @name Compare Name
+ * @brief Compare Name
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Compare two names. GSSAPI names in this implementation
  * are pointers to x509 names. 
  *
@@ -387,7 +377,6 @@ GSS_CALLCONV gss_compare_name(
 
 } 
 /* gss_compare_name */
-/* @} */
 
 static
 OM_uint32

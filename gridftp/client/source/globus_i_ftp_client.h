@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_i_ftp_client.h
- * Globus FTP Client Library
- *
- * $RCSfile$
- * $Revision$
- * $Date$
+ * @file globus_i_ftp_client.h Globus FTP Client Library Internals
  */
 
-#ifndef GLOBUS_L_INCLUDE_FTP_CLIENT_H
-#define GLOBUS_L_INCLUDE_FTP_CLIENT_H
+#ifndef GLOBUS_I_FTP_CLIENT_H
+#define GLOBUS_I_FTP_CLIENT_H
 
 #include "globus_common.h"
 #include "globus_ftp_client.h"
@@ -37,18 +31,9 @@
 
 #define GLOBUS_L_FTP_CLIENT_CLIENTINFO_APPNAME "libglobus_ftp_client"
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
-
 
 #ifdef DEBUG_LOCKS
 #define globus_i_ftp_client_handle_lock(handle) \
@@ -1401,8 +1386,8 @@ globus_i_ftp_client_wrap_ftp_error(
 
 #endif
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_L_INCLUDE_FTP_CLIENT_H */
-
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+#endif /* GLOBUS_I_FTP_CLIENT_H */

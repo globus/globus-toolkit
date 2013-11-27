@@ -1,25 +1,24 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+ACLOCAL_AMFLAGS = -I .
+AUTOMAKE_OPTIONS = foreign
+SUBDIRS = rvf scripts seg
 
-SUBDIRS= pkgdata doxygen rvf scripts seg
-
-# Extra directories we install files into
 validationdir = $(datadir)/globus/$(PACKAGE)
-
-## globusconfig = [ DATA ]
 globusconfigdir = ${sysconfdir}/globus
-globusconfig_DATA = globus-gram-job-manager.conf
-
 logrotatedir = ${sysconfdir}/logrotate.d
 
-# Where targets are installed
+globusconfig_DATA = globus-gram-job-manager.conf
 noinst_LTLIBRARIES = libglobus_gram_job_manager.la
-sbin_PROGRAMS = globus-job-manager globus-gram-streamer globus-job-manager-lock-test
-
+sbin_PROGRAMS = \
+        globus-job-manager \
+        globus-gram-streamer \
+        globus-job-manager-lock-test
 bin_SCRIPTS = globus-personal-gatekeeper
 validation_DATA = globus-gram-job-manager.rvf
+man_MANS = globus-personal-gatekeeper.1 rsl.5 globus-job-manager.8
+doc_DATA = GLOBUS_LICENSE
 
-# Mapping of source files to libraries and executables
+libglobus_gram_job_manager_la_LIBADD = \
+	$(PACKAGE_DEP_LIBS)
 libglobus_gram_job_manager_la_SOURCES = \
 	globus_gram_job_manager.h \
         globus_gram_job_manager_config.c \
@@ -46,38 +45,31 @@ globus_job_manager_SOURCES = main.c
 globus_job_manager_lock_test_SOURCES = lock_test.c
 
 # Compiler flags
-INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/rvf $(XML_CPPFLAGS)
-
-globus_job_manager_LDFLAGS = $(GPT_LDFLAGS)
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) \
+              -I$(top_srcdir) \
+              -I$(top_builddir) \
+              -I$(srcdir)/rvf \
+              $(XML_CPPFLAGS)
 globus_job_manager_LDADD = \
 	./libglobus_gram_job_manager.la \
 	./rvf/libglobus_rvf.la \
-	$(GPT_PGM_LINKS) $(XML_LIBS)
+	$(PACKAGE_DEP_LIBS) $(XML_LIBS)
 
-globus_gram_streamer_LDFLAGS = $(GPT_LDFLAGS)
+globus_gram_streamer_SOURCES = globus_gram_streamer.c
 globus_gram_streamer_LDADD = \
 	./libglobus_gram_job_manager.la \
 	./rvf/libglobus_rvf.la \
-	$(GPT_PGM_LINKS) $(XML_LIBS)
+	$(PACKAGE_DEP_LIBS) $(XML_LIBS)
 
-## man1dir = [ DOC ]
-man1_MANS = globus-personal-gatekeeper.1
 
-## man3dir = [ DOC ]
-man8_MANS = globus-job-manager.8
-
-## man8dir = [ DOC ]
-man5_MANS = rsl.5
-
-MANUAL_SOURCE = globus-personal-gatekeeper-manual.xml \
-                globus-job-manager-manual.xml \
-                manual.xml \
+MANUAL_SOURCE = globus-personal-gatekeeper.xml \
+                globus-job-manager.xml \
                 rsl.xml
 
-doc_DATA = GLOBUS_LICENSE
 
 # Files which we want to put in the source package
-EXTRA_DIST = globus-personal-gatekeeper.in \
+EXTRA_DIST = dirt.sh \
+             globus-personal-gatekeeper.in \
 	     $(validation_DATA) \
 	     version.h.in \
 	     configuration.dox \
@@ -87,9 +79,7 @@ EXTRA_DIST = globus-personal-gatekeeper.in \
 	     globus_job_manager_rsl_validation.dox \
 	     job_execution_environment.dox \
              $(MANUAL_SOURCE) \
-             $(man1_MANS) \
-             $(man5_MANS) \
-             $(man8_MANS) \
+             $(man_MANS) \
 	     $(doc_DATA) \
 	     main.dox \
 	     dirt.sh \
@@ -117,12 +107,16 @@ CLEANFILES = \
     globus-personal-gatekeeper \
     globus_gram_job_manager_rsl.dox
 
-if GENERATE_MANPAGES
-export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
+if BUILD_MANPAGES
+SUFFIXES = .xml .1 .5 .8
 
-$(man1_MANS) $(man5_MANS) $(man8_MANS): $(MANUAL_SOURCE)
-	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd manual.xml > /dev/null
-	$(XSLTPROC) --xinclude http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl manual.xml
+.xml.1:
+	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
+	$(XSLTPROC) --nonet $(MAN_XSL) $<
+.xml.5:
+	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
+	$(XSLTPROC) --nonet $(MAN_XSL) $<
+.xml.8:
+	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
+	$(XSLTPROC) --nonet $(MAN_XSL) $<
 endif
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top

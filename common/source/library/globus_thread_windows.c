@@ -14,24 +14,10 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_thread_windows.c
-
-Description:
-
-  Bindings for the Globus threads package, to be used when Globus has been
-  configured to use Windows.
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
+/** @file globus_thread_windows.c Windows Threads Bindings */
 
 #include "globus_common_include.h"
+#include <windows.h>
 #include "globus_thread_common.h"
 #include "globus_i_thread.h"
 #include "globus_libc.h"

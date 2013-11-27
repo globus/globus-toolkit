@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gram_job_manager_rsl.c Job Manager RSL Manipulations
  */
@@ -23,6 +22,11 @@
 
 #include <string.h>
 
+/**
+ * @defgroup globus_gram_job_manager_rsl Job Manager RSL Utilities
+ * @ingroup globus_gram_job_manager
+ */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /* Module Specific Prototypes */
 static
 int
@@ -33,8 +37,9 @@ globus_l_gram_job_manager_rsl_match(
 #endif
 
 /**
- * Merge two sets of RSL relations.
- *
+ * @brief Merge two sets of RSL relations
+ * @ingroup globus_gram_job_manager_rsl
+ * @details
  * Create a new RSL consisting of the merging of the base_rsl and override_rsl.
  * The result after completion is one RSL containing all of the relations
  * from the base_rsl and the override_rsl with any conflicting definitions
@@ -81,8 +86,10 @@ globus_gram_job_manager_rsl_merge(
 /* globus_l_gram_job_manager_rsl_merge() */
 
 /**
+ * @brief Attribute exists in an RSL 
+ * @ingroup globus_gram_job_manager_rsl
+ * @details
  * Check to see if an RSL attribute exists in the given RSL.
- *
  * @param rsl
  *     RSL parse tree to search
  * @param attribute
@@ -313,8 +320,9 @@ nonboolean:
 /* globus_gram_job_manager_rsl_add_relation() */
 
 /**
- * Create and insert a stdout or stderr attribute with the specified value.
- *
+ * @brief Add an output attribute to an RSL
+ * @ingroup globus_gram_job_manager_rsl
+ * @details
  * This function modifies the @a rsl parameter, adding a new relation of the
  * form:
  * @a attribute = ( @a value )
@@ -436,8 +444,9 @@ attr_copy_failed:
 /* globus_gram_rsl_add_output() */
 
 /**
- * Add a stage out value to the RSL
- *
+ * @brief Add a stage out value to the RSL
+ * @ingroup globus_gram_job_manager_rsl
+ * @details
  * Creates a new entry in the RSL's filestreamout value list for the
  * given (@a source, @a destination) pair. If the RSL does not contain
  * filestageout, it is added; otherwise, the new pair is prepended to the
@@ -638,8 +647,9 @@ bad_relation:
 /* globus_gram_rsl_add_stream_out() */
 
 /**
- * Add an environment variable to the job RSL.
- *
+ * @brief Add an environment variable to the job RSL
+ * @ingroup globus_gram_job_manager_rsl
+ * @details
  * This function adds a single environment variable to the job RSL. If
  * there is no environment relation in the RSL, then one is added. Both
  * the variable name and value are copied into the RSL, so the original
@@ -751,8 +761,10 @@ globus_gram_job_manager_rsl_env_add(
 /* globus_gram_job_manager_rsl_env_add() */
 
 /**
+ * @brief Remove an RSL attribute
+ * @ingroup globus_gram_job_manager_rsl
+ * @details
  * Remove an RSL attribute from and RSL tree.
- *
  * @param rsl
  *        The RSL parse tree to modify
  * @param attribute

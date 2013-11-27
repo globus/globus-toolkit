@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_UUID_INCLUDE
-#define GLOBUS_UUID_INCLUDE
+#ifndef GLOBUS_UUID_H
+#define GLOBUS_UUID_H
 
 #include "globus_common_include.h"
 #include "globus_libc.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_UUID_TEXTLEN 36
 
@@ -77,4 +82,8 @@ globus_uuid_fields(
     globus_uuid_t *                     uuid,
     globus_uuid_fields_t *              uuid_fields);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_UUID_H */

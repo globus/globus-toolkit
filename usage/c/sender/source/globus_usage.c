@@ -234,7 +234,7 @@ globus_usage_stats_handle_init(
                 "Out of memory"));
     }
 
-    new_handle->optout = globus_libc_getenv("GLOBUS_USAGE_OPTOUT");
+    new_handle->optout = getenv("GLOBUS_USAGE_OPTOUT");
     if(new_handle->optout)
     {
         *handle = new_handle;
@@ -314,7 +314,7 @@ globus_usage_stats_handle_init(
     {
         globus_l_usage_stats_split_targets(targets, &new_handle->targets);
     }
-    else if((targets_env = globus_libc_getenv("GLOBUS_USAGE_TARGETS")) 
+    else if((targets_env = getenv("GLOBUS_USAGE_TARGETS")) 
             != NULL)
     {
         globus_l_usage_stats_split_targets(
@@ -552,7 +552,7 @@ globus_usage_stats_send_array(
             val_len = strlen(value);
             length = strlen(key) + val_len;
 
-            if(index(value, ' '))
+            if(strchr(value, ' '))
             {
                 if((PACKET_SIZE - handle->data_length) < (length + 5))
                 {
@@ -699,7 +699,7 @@ globus_usage_stats_vsend(
             val_len = strlen(value);
             length = strlen(key) + val_len;
 
-            if(index(value, ' '))
+            if(strchr(value, ' '))
             {
                 if((PACKET_SIZE - handle->data_length) < (length + 5))
                 {

@@ -1461,15 +1461,7 @@ globus_xio_driver_attr_cntl(
         goto err;
     }
 
-#   ifdef HAVE_STDARG_H
-    {
-        va_start(ap, cmd);
-    }
-#   else
-    {
-        va_start(ap);
-    }
-#   endif
+    va_start(ap, cmd);
 
     prev_ndx = op->entry[op->ndx - 1].prev_ndx;
 
@@ -1512,15 +1504,7 @@ globus_xio_driver_data_descriptor_cntl(
         goto err;
     }
 
-#   ifdef HAVE_STDARG_H
-    {
-        va_start(ap, cmd);
-    }
-#   else
-    {
-        va_start(ap);
-    }
-#   endif
+    va_start(ap, cmd);
 
     res = globus_i_xio_driver_dd_cntl(
         op, driver, GLOBUS_XIO_OPERATION_TYPE_DD, cmd, ap);
@@ -1740,15 +1724,7 @@ globus_xio_driver_handle_cntl(
         res = GlobusXIOErrorParameter("op");
         goto err;
     }
-#   ifdef HAVE_STDARG_H
-    {
-        va_start(ap, cmd);
-    }
-#   else
-    {
-        va_start(ap);
-    }
-#   endif
+    va_start(ap, cmd);
 
     if(driver == GLOBUS_XIO_QUERY)
     {
@@ -2284,15 +2260,7 @@ globus_xio_operation_attr_cntl(
         goto error_param;
     }
 
-#   ifdef HAVE_STDARG_H
-    {
-        va_start(ap, cmd);
-    }
-#   else
-    {
-        va_start(ap);
-    }
-#   endif
+    va_start(ap, cmd);
 
     switch(cmd)
     {

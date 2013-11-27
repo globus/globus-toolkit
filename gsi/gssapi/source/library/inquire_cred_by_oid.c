@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file inquire_cred_by_oid.c
+ * @file gssapi/source/library/inquire_cred_by_oid.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -32,15 +26,10 @@
 /* Only build if we have the extended GSSAPI */
 #ifdef _HAVE_GSI_EXTENDED_GSSAPI
 
-static char *rcsid = "$Id$";
-
 /**
- * @name Inquire Cred By OID
+ * @brief Inquire Cred By OID
  * @ingroup globus_gsi_gssapi_extensions
- */
-/* @{ */
-/**
- * 
+ * @details 
  * NOTE: Checks both the cert in the credential and 
  * the certs in the cert chain for a valid extension
  * that matches the desired OID.  The first one found
@@ -239,6 +228,5 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
     
 #endif /* _HAVE_GSI_EXTENDED_GSSAPI */

@@ -14,21 +14,7 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_memory.c
-
-Description:
-
-  A general polling infrastructure
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
+/** @file globus_memory.c Memory Pool Implementation */
 
 /******************************************************************************
 			     Include header files

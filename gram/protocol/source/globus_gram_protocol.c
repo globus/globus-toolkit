@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
+/**
+ * @file globus_gram_protocol.c GRAM Protocol
+ */
 #include "globus_i_gram_protocol.h"
 #include "version.h"
 
 /**
  * @defgroup globus_gram_protocol_functions Functions
+ * @ingroup globus_gram_protocol
+ * @brief GRAM Functions
  */
 gss_cred_id_t				globus_i_gram_protocol_credential;
 globus_mutex_t				globus_i_gram_protocol_mutex;

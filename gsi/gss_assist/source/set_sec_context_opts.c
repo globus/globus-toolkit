@@ -14,30 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file display.c
+ * @file gss_assist/source/set_sec_context_opts.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_gss_assist.h"
 #include "gssapi.h"
+
 #include <stdlib.h>
 
 extern
 const gss_OID_desc * const gss_proxycertinfo_extension;
 
 /**
- * @name Will Handle Restrictions
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_context
  * Sets the context to handle restrictions
  *
  * @param minor_status
@@ -75,4 +66,4 @@ globus_gss_assist_will_handle_restrictions(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return maj_stat;
 }
-/* @} */
+/* globus_gss_assist_will_handle_restrictions() */

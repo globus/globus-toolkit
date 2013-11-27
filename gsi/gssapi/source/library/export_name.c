@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file export_name.c
+ * @file gssapi/source/library/export_name.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -33,11 +25,9 @@ static char *rcsid = "$Id$";
 #include <string.h>
 
 /**
- * @name Export Name
+ * @brief Export Name
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Produces a mechanism-independent exported name object.
  * See section 3.2 of RFC 2743.
  */
@@ -120,4 +110,3 @@ GSS_CALLCONV gss_export_name(
     return major_status;
 }
 /* gss_export_name */
-/* @} */

@@ -17,9 +17,14 @@
 #ifndef GLOBUS_INCLUDE_GLOBUS_GSI_PROXY_H
 #define GLOBUS_INCLUDE_GLOBUS_GSI_PROXY_H
 
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
- * @anchor globus_gsi_proxy_api   
  * @mainpage Globus GSI Proxy API
+ * @copydoc globus_gsi_proxy
+ */
+#endif
+/**
+ * @defgroup globus_gsi_proxy Globus GSI Proxy API
  *
  * The globus_gsi_proxy library is motivated by the desire to provide
  * a abstraction layer for the proxy creation and delegation
@@ -50,17 +55,6 @@
  */
 
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
-EXTERN_C_BEGIN
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #include "globus_gsi_credential.h"
@@ -70,8 +64,13 @@ EXTERN_C_BEGIN
 #include "proxycertinfo.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup globus_gsi_proxy_activation Activation
+ * @ingroup globus_gsi_proxy
  *
  * Globus GSI Proxy uses standard Globus module activation and
  * deactivation. Before any Globus GSI Proxy functions are called, the
@@ -149,6 +148,7 @@ globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
 
 /**
  * @defgroup globus_gsi_proxy_handle Handle Management
+ * @ingroup globus_gsi_proxy
  *
  * Create/Destroy/Modify a GSI Proxy Handle.
  *
@@ -314,6 +314,7 @@ globus_gsi_proxy_handle_get_key_gen_callback(
 
 /**
  * @defgroup globus_gsi_proxy_handle_attrs Handle Attributes
+ * @ingroup globus_gsi_proxy
  *
  * Handle attributes are used to control additional features of the
  * GSI Proxy handle. These features are operation independent.
@@ -343,6 +344,7 @@ globus_gsi_proxy_handle_attrs_copy(
 
 /**
  * @defgroup globus_gsi_proxy_operations Proxy Operations
+ * @ingroup globus_gsi_proxy
  *
  * Initiate a proxy operation.
  *
@@ -441,6 +443,8 @@ globus_gsi_proxy_handle_attrs_set_key_gen_callback(
 
 #endif
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_GSI_PROXY_H */

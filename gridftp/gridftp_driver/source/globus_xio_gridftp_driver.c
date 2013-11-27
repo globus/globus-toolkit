@@ -2260,7 +2260,7 @@ globus_l_xio_gridftp_attr_cntl(
             break;
         case GLOBUS_XIO_GRIDFTP_GET_MODE:
         {
-            globus_ftp_control_type_t ftp_mode;
+            globus_ftp_control_mode_t ftp_mode;
             int * mode_out;
             mode_out = va_arg(ap, int*);
             result = globus_ftp_client_operationattr_get_mode(

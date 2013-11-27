@@ -14,34 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file import_cred.c
+ * @file gssapi/source/library/import_cred.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
+
 #include <string.h>
 
 /* Only build if we have the extended GSSAPI */
 #ifdef  _HAVE_GSI_EXTENDED_GSSAPI
 
-static char *rcsid = "$Id$";
-
 /**
- * @name Import Cred
+ * @brief Import a credential
  * @ingroup globus_gsi_gssapi_extensions
- */
-/* @{ */
-/**
- * Import a credential that was exported by gss_export_cred().
- *
+ * @details
  * This function will import credentials exported by
  * gss_export_cred(). It is intended to allow a multiple use
  * application to checkpoint delegated credentials.  
@@ -268,6 +257,5 @@ GSS_CALLCONV gss_import_cred(
     }
     return major_status;
 }
-/* @} */
 
 #endif /* _HAVE_GSI_EXTENDED_GSSAPI */

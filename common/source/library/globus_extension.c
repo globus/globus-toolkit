@@ -21,19 +21,17 @@
 #include "globus_thread_rmutex.h"
 #include "globus_libc.h"
 
-#ifndef BUILD_STATIC_ONLY
 #include "ltdl.h"
-#endif /* !BUILD_STATIC_ONLY */
-
-#include "globus_common.h"
-/* provides local_version and build_flavor */
-#include "version.h"
 
 #ifdef WIN32
 #define MY_LIB_EXT ".dll"
 #else
 #define MY_LIB_EXT ".so"
 #endif
+
+#include "globus_common.h"
+/* provides local_version and build_flavor */
+#include "version.h"
 
 #if USE_SYMBOL_LABELS
 extern int WARNING_USING_MIXED_THREAD_MODELS;

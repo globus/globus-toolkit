@@ -14,24 +14,10 @@
  * limitations under the License.
  */
 
-/*
- * globus_thread_pthreads.h
- *
- *
- */
+/** @file globus_thread_pthreads.h POSIX Threads Bindings for Globus */
 
-#if !defined GLOBUS_INCLUDE_GLOBUS_THREAD
-#define GLOBUS_INCLUDE_GLOBUS_THREAD 1
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+#if !defined GLOBUS_THREAD_PTHREADS_H
+#define GLOBUS_THREAD_PTHREADS_H 1
 
 #include "globus_time.h"
 #include "globus_module.h"
@@ -46,7 +32,9 @@
 #include <pthread.h>
 #endif
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct
 {
@@ -265,11 +253,13 @@ extern globus_module_descriptor_t       globus_i_thread_module;
 
 #define GLOBUS_THREAD_MODULE (&globus_i_thread_module)
 
-EXTERN_C_END
-
 globus_bool_t
 globus_thread_preemptive_threads(void);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* _POSIX_THREADS */
 
-#endif /* GLOBUS_INCLUDE_GLOBUS_THREAD */
+#endif /* GLOBUS_THREAD_PTHREADS_H */

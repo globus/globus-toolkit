@@ -1,13 +1,12 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+AUTOMAKE_OPTIONS = foreign
+ACLOCAL_AMFLAGS = -I config -I .
+
+pkgconfdir = ${libdir}/pkgconfig
 
 SUBDIRS= \
 	library \
 	programs \
 	scripts \
-	pkgdata \
-	config \
-	doxygen \
         manpages
 
 libexec_SCRIPTS= \
@@ -15,10 +14,10 @@ libexec_SCRIPTS= \
 
 doc_DATA = GLOBUS_LICENSE
 
+pkgconf_DATA = globus-common.pc
+
 EXTRA_DIST = \
-	version.h.in\
+	dirt.sh \
+	version.h.in \
 	globus_common.txt \
 	$(doc_DATA)
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top

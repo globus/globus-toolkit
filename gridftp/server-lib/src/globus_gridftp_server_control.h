@@ -22,6 +22,34 @@
 #include "globus_gss_assist.h"
 #include "globus_xio_system.h"
 
+#ifndef TARGET_ARCH_WIN32
+#include <grp.h>
+
+#else
+typedef int gid_t;
+
+struct passwd
+{
+    char *pw_name;
+    char *pw_passwd;
+    int   pw_uid;
+    int   pw_gid;
+    char *pw_comment;
+    char *pw_gecos;
+    char *pw_dir;
+    char *pw_shell;
+};
+
+struct group 
+{
+    char  *gr_name;
+    char  *gr_passwd;
+    gid_t gr_gid;
+    char  **gr_mem;
+};
+
+#endif /* WIN32 */
+
 typedef struct globus_i_gsc_server_handle_s * globus_gridftp_server_control_t;
 typedef struct globus_i_gsc_attr_s *    globus_gridftp_server_control_attr_t;
 typedef struct globus_i_gsc_op_s *      globus_gridftp_server_control_op_t;

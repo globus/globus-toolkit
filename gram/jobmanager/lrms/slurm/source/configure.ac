@@ -1,20 +1,17 @@
-AC_REVISION($Revision$)
-AC_INIT(Makefile.am)
+AC_INIT([globus_gram_job_manager_slurm],[1.2])
+AM_INIT_AUTOMAKE
 
-GLOBUS_INIT
+MAJOR_VERSION=${PACKAGE_VERSION%%.*}
+MINOR_VERSION=${PACKAGE_VERSION##*.}
+AGE_VERSION=0
 
-AM_PROG_LIBTOOL
+AC_SUBST(MAJOR_VERSION)
+AC_SUBST(MINOR_VERSION)
+AC_SUBST(AGE_VERSION)
 
-dnl config header goes here
-
-dnl Initialize the automake rules the last argument
-AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
-
-GLOBUS_FINALIZE
-
-dnl Don't create a pkg-config file for program-only packages
-pkgconffile=""
-
+m4_include([dirt.sh])
+AC_SUBST(DIRT_TIMESTAMP)
+AC_SUBST(DIRT_BRANCH_ID)
 
 AC_ARG_WITH(slurm-path,
     AC_HELP_STRING(
@@ -192,12 +189,12 @@ else
     touch "$mpi_type_rvf" 
 fi
 AC_SUBST_FILE(mpi_type_rvf)
-
-AC_OUTPUT(
-	Makefile
+AC_CONFIG_FILES(
+        globus-gram-job-manager-slurm-uninstalled.pc
+        globus-gram-job-manager-slurm.pc
+        Makefile
         jobmanager-slurm
         globus-slurm.conf
-	slurm.rvf
-	pkgdata/Makefile
-	pkgdata/pkg_data_src.gpt
-)
+	slurm.rvf)
+
+AC_OUTPUT

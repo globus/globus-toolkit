@@ -14,30 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file tokens_f.c
+ * @file gss_assist/source/tokens_f.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
-
-/**
- * @defgroup globus_gsi_gss_assist_tokens Security Token Transport
- * Token routines using fread and fwrite
- *
- * Additional code has been added to detect tokens which 
- * are sent without a length field. These can currently be
- * only SSL tokens. This does require some knowledge of the 
- * underlying GSSAPI, by the application, but is within the 
- * guidelines of the GSSAPI specifications. 
- *
- * The get routine will automaticly attempt this test,
- * while a new send routine will check a flag. The old send
- * routine will work as before, sending a 4-byte length.
  */
 
 #include "globus_i_gss_assist.h"
@@ -46,11 +25,9 @@
 #include <stdlib.h>
 
 /**
- * @name Token Get File Descriptor
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist_tokens
+ * @brief Token Get File Descriptor
+ * @ingroup globus_gss_assist_tokens
+ * @details
  * Use a open file discriptor to get a token.  This function
  * provides parameter types that allow it to be passed to
  * @ref globus_gss_assist_init_sec_context and 
@@ -240,15 +217,13 @@ globus_gss_assist_token_get_fd(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return return_value;
 }
-/* @} */
+/* globus_gss_assist_token_get_fd() */
 
 /**
- * @name Token Send File Descriptor
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist_tokens
- * Write a token to the open file descriptor.  WIll write it with a 4 byte
+ * @brief Token Send File Descriptor
+ * @ingroup globus_gss_assist_tokens
+ * @details
+ * Write a token to the open file descriptor.  Will write it with a 4 byte
  * length.  This function provides parameter types that allow 
  * it to be passed to
  * @ref globus_gss_assist_init_sec_context and 
@@ -286,14 +261,12 @@ globus_gss_assist_token_send_fd(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return return_value;
 }
-/* @} */
+/* globus_gss_assist_token_send_fd */
 
 /**
- * @name Token Send File Descriptor Without Length
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist_tokens
+ * @brief Token Send File Descriptor Without Length
+ * @ingroup globus_gss_assist_tokens
+ * @details
  * Write a token to the open file descripter. 
  * Will write it without a length. so as to 
  */
@@ -317,14 +290,12 @@ globus_gss_assist_token_send_fd_without_length(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return return_value;
 }
-/* @} */
+/* globus_gss_assist_token_send_fd_without_length() */
 
 /**
- * @name Token Send File Descriptor Flag EX
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist_tokens
+ * @brief Token Send File Descriptor Flag EX
+ * @ingroup globus_gss_assist_tokens
+ * @details
  * Write a token to the open file descripter. 
  * will look at the flag to determine if the length field need
  * to be written.
@@ -406,4 +377,4 @@ globus_gss_assist_token_send_fd_ex(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return return_value;
 }
-/* @} */
+/* globus_gss_assist_token_send_fd_ex() */

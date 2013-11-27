@@ -15,16 +15,16 @@
  */
 
 /**
- * @file globus_ftp_control_client.c
- *
- * Client-side FTP Control API.
+ * @file globus_ftp_control_client.c Client-side FTP Control API
  */
 
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
 #include "globus_error_gssapi.h"
+#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
+
 #ifndef TARGET_ARCH_WIN32
 #include <netinet/in.h>
 #endif
@@ -112,8 +112,9 @@ globus_l_ftp_control_queue_element_init(
     globus_ftp_control_handle_t *               handle);
 
 /**
- * Initialize a globus ftp handle
- *
+ * @brief Initialize a globus ftp handle
+ * @ingroup globus_ftp_control_client
+ * @details
  * This function will set up (i.e. intialize all mutexes and
  * variables) a globus ftp handle. It will also enter the handle in a
  * list used by the module activation/deactivation functions. 
@@ -124,7 +125,6 @@ globus_l_ftp_control_queue_element_init(
  *        - GLOBUS_SUCCESS
  *        - error object
  */
-
 globus_result_t 
 globus_ftp_control_handle_init(
     globus_ftp_control_handle_t *          handle)
@@ -209,10 +209,12 @@ globus_ftp_control_handle_init(
 
     return GLOBUS_SUCCESS;
 }
+/* globus_ftp_control_handle_init() */
 
 /**
- * Destroy a globus ftp handle
- *
+ * @brief Destroy a globus ftp handle
+ * @ingroup globus_ftp_control_client
+ * @details
  * This function will free up all dynamicly allocated  memory
  * associated with a given  globus ftp handle. It will also remove the
  * handle from a list used by the module activation/deactivation
@@ -226,7 +228,6 @@ globus_ftp_control_handle_init(
  *        - invalid handle
  *        - handle is still in connected state
  */
-
 globus_result_t 
 globus_ftp_control_handle_destroy(
     globus_ftp_control_handle_t *         handle)
@@ -292,7 +293,9 @@ globus_ftp_control_handle_destroy(
 
     return GLOBUS_SUCCESS;
 }
+/* globus_ftp_control_handle_destroy() */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 globus_result_t
 globus_i_ftp_control_client_set_netlogger(
     globus_ftp_control_handle_t *               handle,
@@ -386,11 +389,13 @@ globus_i_ftp_control_client_get_attr(
 
     return result;
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 
 /**
- * Create a new control connection to an FTP server.
- *
+ * @brief Create a new control connection to an FTP server
+ * @ingroup globus_ftp_control_client
+ * @details
  * This function is used to initiate an FTP control connection. It
  * creates the socket to the FTP server. When the connection is made 
  * to the server, and the server's identification string is received,
@@ -431,7 +436,6 @@ globus_i_ftp_control_client_get_attr(
  *
  * @note The server may send other responses.
  */
-
 globus_result_t
 globus_ftp_control_connect(
     globus_ftp_control_handle_t *               handle,
@@ -567,9 +571,9 @@ error_exit:
     
     return rc;
 }
+/* globus_ftp_control_connect() */
 
-#ifdef GLOBUS_INTERNAL_DOC
-
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * Internal callback for the globus_io_tcp_register_connect function.    
  * 
@@ -594,9 +598,6 @@ error_exit:
  *      called with an appropriate error object and the function
  *      returns. 
  */
-
-#endif
-
 static void 
 globus_l_ftp_control_connect_cb(
     void *                                    arg, 
@@ -702,9 +703,10 @@ return_error:
         (stderr, "globus_l_ftp_control_connect_cb() exiting with error\n"));
     return;
 }
+#endif
 
-#ifdef GLOBUS_INTERNAL_DOC
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * Internal callback for the globus_io_tcp_register_read function.    
  * 
@@ -739,9 +741,6 @@ return_error:
  *      called with an appropriate error object and the function
  *      returns. 
  */
-
-#endif
-
 static void 
 globus_l_ftp_control_read_cb(
     void *                                    arg, 
@@ -1020,9 +1019,11 @@ return_error:
         (stderr, "globus_l_ftp_control_read_cb() exiting with error\n"));
     return;
 }
+#endif
 
 
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /* search backward in @buff looking for "\r\n".  If found, return
    index of just past it.  Otherwise, return 0.
 */
@@ -1042,7 +1043,6 @@ globus_l_ftp_control_get_current_line_start(
     }
     return 0;
 }
-
 
 /* @buff response buffer
    @len length of response buffer
@@ -1092,9 +1092,6 @@ globus_l_ftp_control_check_final_line_fast(
     return 0;
 }
 
-
-#ifdef GLOBUS_INTERNAL_DOC
-
 /**
  * Internal helper function which checks a buffer for a complete ftp
  * reply. 
@@ -1117,9 +1114,6 @@ globus_l_ftp_control_check_final_line_fast(
  *          the reply
  *
  */
-
-#endif
-
 int 
 globus_l_ftp_control_end_of_reply(
     globus_ftp_cc_handle_t *            cc_handle,
@@ -1369,9 +1363,6 @@ globus_l_ftp_control_end_of_reply(
     return found;
 }
 
-
-#ifdef GLOBUS_INTERNAL_DOC
-
 /**
  * Internal helper function which creates and initializes a response
  * structure 
@@ -1388,11 +1379,8 @@ globus_l_ftp_control_end_of_reply(
  *        - GLOBUS_SUCCESS
  *
  */
-
-#endif
-
-
-static globus_result_t 
+static
+globus_result_t 
 globus_l_ftp_control_response_init(
     globus_ftp_control_response_t *               response)
 {
@@ -1416,11 +1404,13 @@ globus_l_ftp_control_response_init(
     }
     return GLOBUS_SUCCESS;
 }
+/* globus_l_ftp_control_response_init() */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
- * Helper function which frees the memory associated with a response
- * structure.  
- * 
+ * @brief Free the memory associated with a response
+ * @ingroup globus_ftp_control_client
+ * @details
  * This is a helper function which frees the memory associated with a 
  * response structure. 
  *
@@ -1432,8 +1422,6 @@ globus_l_ftp_control_response_init(
  *        - GLOBUS_SUCCESS
  *
  */
-
-
 globus_result_t 
 globus_ftp_control_response_destroy(
     globus_ftp_control_response_t *               response)
@@ -1453,8 +1441,9 @@ globus_ftp_control_response_destroy(
 }
 
 /**
- * Helper function which copies one response structure to another
- * 
+ * @brief Copy a response structure
+ * @ingroup globus_ftp_control_client
+ * @details
  * This is a helper function which copies one response structure to
  * another. 
  *
@@ -1468,8 +1457,6 @@ globus_ftp_control_response_destroy(
  *        - GLOBUS_SUCCESS
  *
  */
-
-
 globus_result_t 
 globus_ftp_control_response_copy(
     globus_ftp_control_response_t *       src,
@@ -1522,8 +1509,9 @@ globus_ftp_control_response_copy(
 
 
 /**
- * Authenticate the user to the FTP server.
- *
+ * @brief Authenticate the user to the FTP server
+ * @ingroup globus_ftp_control_client
+ * @details
  * This will perform the authentication handshake with the FTP
  * server. depending on which parameters are non-NULL, the
  * authentication may involve GSSAPI credentials, a username, a
@@ -1598,8 +1586,6 @@ globus_ftp_control_response_copy(
  * set explicitly.  It is the caller's responsibility to ensure that req_flags
  * only contains valid flags.
  */
-
-
 globus_result_t
 globus_ftp_control_authenticate(
     globus_ftp_control_handle_t *               handle,
@@ -1646,7 +1632,12 @@ globus_ftp_control_authenticate(
 error:
     return result;
 }
+/* globus_ftp_control_authenticate() */
 
+/**
+ * @ingroup globus_ftp_control_client
+ * @copydoc globus_ftp_control_authenticate
+ */
 globus_result_t
 globus_ftp_control_authenticate_ex(
     globus_ftp_control_handle_t *               handle,
@@ -1795,11 +1786,12 @@ error:
         
     return result;
 }
+/* globus_ftp_control_authenticate_ex() */
 
 /**
- * Send an FTP protocol command to the FTP server and register a
- * response handler.
- *
+ * @brief Send an FTP protocol command
+ * @ingroup globus_ftp_control_client
+ * @details
  * This function is used to send an FTP command, and register a handler
  * to receive the FTP reply (or replies, if an intermediate one is sent).
  * When the control channel is gss authenticated, the message and the reply
@@ -1836,7 +1828,6 @@ error:
  *        Any defined in RFC 959, 2228, 2389, draft-ietf-ftpext-mlst-10,
  *        or the @ref extensions_intro "protocol extensions" document.
  */
-
 globus_result_t
 globus_ftp_control_send_command(
     globus_ftp_control_handle_t *               handle,
@@ -1870,11 +1861,7 @@ globus_ftp_control_send_command(
 	goto error; 
     }
 
-#ifdef HAVE_STDARG_H
     va_start(ap, callback_arg);
-#else
-    va_start(ap);
-#endif
     
     arglength=globus_libc_vfprintf(globus_i_ftp_control_devnull,
                                    cmdspec,
@@ -1906,11 +1893,7 @@ globus_ftp_control_send_command(
         goto error;
     }
 
-#ifdef HAVE_STDARG_H
     va_start(ap, callback_arg);
-#else
-    va_start(ap);
-#endif
     
     if(globus_libc_vsprintf((char *) buf, cmdspec,ap) < arglength)
     {
@@ -2057,9 +2040,9 @@ error:
         
     return result;
 }
+/* globus_ftp_control_send_command() */
 
-#ifdef GLOBUS_INTERNAL_DOC
-
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * Internal callback for the globus_io_tcp_register_write function.    
  * 
@@ -2088,16 +2071,15 @@ error:
  *      called with an appropriate error object and the function
  *      returns. 
  */
-
-#endif
-
-static void 
+static
+void 
 globus_l_ftp_control_write_cb(
     void *                                    arg, 
     globus_io_handle_t *                      handle,
     globus_result_t                           result,
     globus_byte_t *                           buf, 
-    globus_size_t                             nbytes){
+    globus_size_t                             nbytes)
+{
 
     globus_ftp_cc_handle_t *                  cc_handle;
     globus_ftp_control_handle_t *             c_handle;
@@ -2227,12 +2209,13 @@ return_error:
         
     return;
 }
-
-
+/* globus_l_ftp_control_write_cb() */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
- * Send an ABORT to the FTP server and register a response handler.
- *
+ * @brief Send a GridFTP ABORT
+ * @ingroup globus_ftp_control_client
+ * @details
  * This function is used to send the ABORT message to the FTP server.
  * The ABORT message is sent out-of-band, and terminates any current
  * data transfer in progress.
@@ -2271,7 +2254,6 @@ return_error:
  *
  * @note The server may send other responses.
  */
-
 globus_result_t
 globus_ftp_control_abort(
     globus_ftp_control_handle_t *               handle,
@@ -2510,10 +2492,12 @@ return_error:
         
     return result;
 }
+/* globus_ftp_control_abort() */
 
 /**
- * Send a QUIT message to the FTP server and register a response handler.
- *
+ * @brief Send a GridFTP QUIT
+ * @ingroup globus_ftp_control_client
+ * @details
  * This function is used to close the control channel to the FTP server.
  * There should be no transfer commands in progress when this is called.
  * Once the final response callback passed to this function is invoked,
@@ -2552,7 +2536,6 @@ return_error:
  *
  * @note The server may send other responses.
  */
-
 globus_result_t
 globus_ftp_control_quit(
     globus_ftp_control_handle_t *               handle,
@@ -2628,9 +2611,9 @@ return_error:
         
     return result;
 }
+/* globus_ftp_control_quit() */
 
-#ifdef GLOBUS_INTERNAL_DOC
-
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * Internal callback for the globus_ftp_control_send_cmd function.    
  * 
@@ -2659,14 +2642,12 @@ return_error:
  *      called with an appropriate error object or ftp response and
  *      the function returns. 
  */
-
-#endif
-
 static gss_OID_desc gss_nt_host_ip_oid =
     { 10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02" };
 static gss_OID_desc * GLOBUS_GSS_C_NT_HOST_IP = &gss_nt_host_ip_oid;
 
-static void 
+static
+void 
 globus_l_ftp_control_send_cmd_cb(
     void *                                      callback_arg,
     globus_ftp_control_handle_t *               handle,
@@ -3440,8 +3421,6 @@ return_error:
     
 }
 
-#ifdef GLOBUS_INTERNAL_DOC
-
 /**
  * Internal callback for the globus_ftp_control_data[_force]_close
  * function.      
@@ -3465,10 +3444,8 @@ return_error:
  *      called with an appropriate error object or ftp response and
  *      the function returns. 
  */
-
-#endif
-
-static void 
+static
+void 
 globus_l_ftp_control_data_close_cb(
     void *                                      arg,
     globus_ftp_control_handle_t *               handle,
@@ -3507,9 +3484,7 @@ globus_l_ftp_control_data_close_cb(
         (stderr, "globus_l_ftp_control_data_close_cb() exiting\n"));
     return;
 }
-
-
-#ifdef GLOBUS_INTERNAL_DOC
+/* globus_l_ftp_control_data_close_cb() */
 
 /**
  * Internal callback for the globus_io_register_close function.    
@@ -3533,10 +3508,8 @@ globus_l_ftp_control_data_close_cb(
  *      called with an appropriate error object or ftp response and
  *      the function returns. 
  */
-
-#endif
-
-static void 
+static
+void 
 globus_l_ftp_control_close_cb(
     void *                                    arg, 
     globus_io_handle_t *                      handle,
@@ -3573,8 +3546,13 @@ globus_l_ftp_control_close_cb(
         
     return;
 }
+/* globus_l_ftp_control_close_cb() */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
+ * @brief Force a control connection to close
+ * @ingroup globus_ftp_control_client
+ * @details
  * Force a close of the control connection without waiting for
  * outstanding commands to complete and without sending QUIT.
  *
@@ -3608,7 +3586,6 @@ globus_l_ftp_control_close_cb(
  *        - GLOBUS_NULL
  *
  */
-
 globus_result_t
 globus_ftp_control_force_close(
     globus_ftp_control_handle_t *               handle,
@@ -3695,10 +3672,10 @@ return_error:
         
     return rc;
 }
+/* globus_ftp_control_force_close() */
 
 
-#ifdef GLOBUS_INTERNAL_DOC
-
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * Internal helper function which creates and initializes a
  * authentication information structure 
@@ -3717,9 +3694,6 @@ return_error:
  *        - GLOBUS_SUCCESS
  *
  */
-
-#endif
-
 globus_result_t 
 globus_i_ftp_control_auth_info_init(
     globus_ftp_control_auth_info_t *        dest,
@@ -3794,11 +3768,13 @@ globus_i_ftp_control_auth_info_init(
     
     return GLOBUS_SUCCESS;
 }
+/* globus_i_ftp_control_auth_info_init() */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
- * Helper function which initializes a authentication information
- * structure.  
- * 
+ * @brief Initialize authentication information
+ * @ingroup globus_ftp_control_client
+ * @details
  * This is helper function initializes a authentication information
  * structure with the values contained in the second to fifth arguments,
  * which may be GLOBUS_NULL. No memory is allocated in this function. 
@@ -3822,10 +3798,7 @@ globus_i_ftp_control_auth_info_init(
  * @return 
  *        - Error object 
  *        - GLOBUS_SUCCESS
- *
  */
-
-
 globus_result_t 
 globus_ftp_control_auth_info_init(
     globus_ftp_control_auth_info_t *       auth_info,
@@ -3872,11 +3845,12 @@ globus_ftp_control_auth_info_init(
 
     return GLOBUS_SUCCESS;
 }
+/* globus_ftp_control_auth_info_init() */
 
 /**
- * Helper function which compares two authentication information
- * structures.  
- * 
+ * @brief Compare authentication information
+ * @ingroup globus_ftp_control_client
+ * @details
  * This is helper function compares two authentication information
  * structures and return zero if the two structures are deemed equal
  * and a non-zero value otherwise.
@@ -3890,8 +3864,6 @@ globus_ftp_control_auth_info_init(
  *        - !0 if the structures differ or an error occured
  *
  */
-
-
 int
 globus_ftp_control_auth_info_compare(
     globus_ftp_control_auth_info_t *       auth_info_1,
@@ -3989,9 +3961,9 @@ globus_ftp_control_auth_info_compare(
 
     return 0;
 }
+/* globus_ftp_control_auth_info_compare() */
 
-#ifdef GLOBUS_INTERNAL_DOC
-
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * Internal helper function which frees the memory associated with a
  * auth_info_t structure.
@@ -4009,9 +3981,6 @@ globus_ftp_control_auth_info_compare(
  *        - GLOBUS_SUCCESS
  *
  */
-
-#endif
-
 globus_result_t 
 globus_i_ftp_control_auth_info_destroy(
     globus_ftp_control_auth_info_t *            auth_info)
@@ -4118,14 +4087,13 @@ globus_i_ftp_control_auth_info_destroy(
 
     return GLOBUS_SUCCESS;
 }
+/* globus_i_ftp_control_auth_info_destroy() */
 
 
 static char *radixN =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static char pad = '=';
-
-#ifdef GLOBUS_INTERNAL_DOC
 
 /**
  * Internal helper function which base64 encodes a given input
@@ -4149,9 +4117,6 @@ static char pad = '=';
  *        - GLOBUS_SUCCESS
  *
  */
-
-#endif
-
 globus_result_t
 globus_i_ftp_control_radix_encode(
     unsigned char *                        inbuf,
@@ -4198,8 +4163,7 @@ globus_i_ftp_control_radix_encode(
     
     return GLOBUS_SUCCESS;
 }
-
-#ifdef GLOBUS_INTERNAL_DOC
+/* globus_i_ftp_control_radix_encode() */
 
 /**
  * Internal helper function which base64 decodes a given input
@@ -4222,9 +4186,6 @@ globus_i_ftp_control_radix_encode(
  *        - GLOBUS_SUCCESS
  *
  */
-
-#endif
-
 globus_result_t
 globus_i_ftp_control_radix_decode(
     unsigned char *                        inbuf,
@@ -4320,8 +4281,7 @@ globus_i_ftp_control_radix_decode(
 
     return GLOBUS_SUCCESS;
 }
-
-#ifdef GLOBUS_INTERNAL_DOC
+/* globus_i_ftp_control_radix_decode() */
 
 /**
  * Internal helper function which gss wraps, base 64 encodes and puts
@@ -4343,10 +4303,6 @@ globus_i_ftp_control_radix_decode(
  *        - GLOBUS_SUCCESS
  *
  */
-
-#endif
-
-
 globus_result_t
 globus_i_ftp_control_encode_command(
     globus_ftp_cc_handle_t *               cc_handle,
@@ -4434,8 +4390,7 @@ globus_i_ftp_control_encode_command(
     
     return GLOBUS_SUCCESS;
 }
-
-#ifdef GLOBUS_INTERNAL_DOC
+/* globus_i_ftp_control_encode_command() */
 
 /**
  * Internal helper function which sets up a list for keeping track of
@@ -4452,10 +4407,6 @@ globus_i_ftp_control_encode_command(
  *        - GLOBUS_SUCCESS
  *
  */
-
-#endif
-
-
 globus_result_t
 globus_i_ftp_control_client_activate(void)
 {
@@ -4502,8 +4453,6 @@ return_error:
     return result;
 }
 
-#ifdef GLOBUS_INTERNAL_DOC
-
 /**
  *
  * Internal helper function which deactivates any control connections
@@ -4518,9 +4467,6 @@ return_error:
  *        - GLOBUS_SUCCESS
  *
  */
-
-#endif
-
 globus_result_t
 globus_i_ftp_control_client_deactivate(void)
 {
@@ -4628,7 +4574,8 @@ globus_i_ftp_control_client_deactivate(void)
         
     return GLOBUS_SUCCESS;
 }
-
+/* globus_i_ftp_control_client_deactivate() */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 globus_result_t
 globus_ftp_control_client_get_connection_info(
@@ -4669,6 +4616,10 @@ globus_ftp_control_client_get_connection_info(
     return result;
 }
 
+/**
+ * @brief Not documented yet
+ * @ingroup globus_ftp_control_client
+ */
 globus_result_t
 globus_ftp_control_client_get_connection_info_ex(
     globus_ftp_control_handle_t *         handle,
@@ -4706,6 +4657,7 @@ globus_ftp_control_client_get_connection_info_ex(
     return result;
 }
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 void 
 globus_i_ftp_control_write_next(
     globus_ftp_control_handle_t *             handle)
@@ -4782,7 +4734,8 @@ globus_i_ftp_control_write_next(
     return;
 }
 
-static void 
+static
+void 
 globus_l_ftp_control_read_next(
     globus_ftp_control_handle_t *             handle)
 {
@@ -4843,7 +4796,8 @@ globus_l_ftp_control_read_next(
 
 }
 
-static globus_result_t
+static
+globus_result_t
 globus_l_ftp_control_queue_element_init(
     globus_ftp_control_rw_queue_element_t *     element,
     globus_ftp_control_response_callback_t      callback,
@@ -4952,7 +4906,12 @@ globus_i_ftp_control_call_close_cb(
         globus_mutex_unlock(&globus_l_ftp_cc_handle_list_mutex);
     }
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
+/**
+ * @brief Not documented yet
+ * @ingroup globus_ftp_control_client
+ */
 globus_result_t
 globus_ftp_control_ipv6_allow(
     globus_ftp_control_handle_t *               handle,

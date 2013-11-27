@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file
- *
- * $RCSfile$
- * $Revision$
- * $Date$
+ * @file globus_ftp_client_exists.c
  */
-#endif
 
 #include "globus_i_ftp_client.h"
 

@@ -231,7 +231,7 @@ ggvm_get_myproxy_userid(
 
     if(!shared_user_cert)
     {
-        myproxy_ca_cert_file = globus_libc_getenv("GLOBUS_MYPROXY_CA_CERT");
+        myproxy_ca_cert_file = getenv("GLOBUS_MYPROXY_CA_CERT");
         if(!myproxy_ca_cert_file)
         {
             GLOBUS_GRIDMAP_CALLOUT_ERROR(

@@ -17,34 +17,31 @@
 #ifndef GLOBUS_XIO_GSI_DRIVER_INCLUDE
 #define GLOBUS_XIO_GSI_DRIVER_INCLUDE
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_xio_gsi.h
  * @author Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
-EXTERN_C_BEGIN
 
 #include "gssapi.h"
 #include "globus_common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
+/**
+ * @mainpage Globus XIO GSI Driver
+ * @copydoc gsi_driver
+ */
+#endif
+
 /**
  * @defgroup gsi_driver Globus XIO GSI Driver
+ * @brief XIO GSI Driver
+ * @details
  * The GSI driver.
  */
 
@@ -660,6 +657,8 @@ typedef void (* globus_xio_gsi_delegation_accept_callback_t)(
     OM_uint32                           time_rec,
     void *				user_arg);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

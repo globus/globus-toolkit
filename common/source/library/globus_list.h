@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_COMMON_LIST_H
-#define GLOBUS_COMMON_LIST_H
+/** @file globus_list.h Linked List */
+#ifndef GLOBUS_LIST_H
+#define GLOBUS_LIST_H
 
 #include "globus_common_include.h"
-/********************************************************************
- *
- * This file defines the list_t type
- *
- *
- ********************************************************************/
 
-
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct globus_list 
 {
@@ -128,8 +124,8 @@ globus_list_from_string(
     int                                 delim,
     const char *                        ignored);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_LIST_H */
-
-

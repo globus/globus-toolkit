@@ -524,7 +524,7 @@ gfork_l_opts_bind(
 
     gfork_h = (gfork_i_options_t *) arg;
 
-    gfork_h->interface = strdup(opt[0]);
+    gfork_h->interfajce = strdup(opt[0]);
 
     *out_parms_used = 1;
     return GLOBUS_SUCCESS;

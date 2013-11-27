@@ -1,20 +1,9 @@
+AUTOMAKE_OPTIONS = foreign
+SUBDIRS = library
 
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
-
-SUBDIRS= \
-	library \
-	doxygen \
-	pkgdata
+pkgconfigdir = $(libdir)/pkgconfig
 
 doc_DATA = GLOBUS_LICENSE
+pkgconfig_DATA = globus-gass-transfer.pc
 
-EXTRA_DIST = version.h.in $(doc_DATA)
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
-
-
-
-
-
+EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)

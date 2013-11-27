@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_gass_server_ez.c
- 
-Description:
-    Simple File Server Library Implementation using GASS Server API
- 
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
+/** @file globus_gass_server_ez.c
+ *
+ *  Simple File Server Library Implementation using GASS Transfer API
+ */
 
 /******************************************************************************
                              Include header files
@@ -36,14 +27,7 @@ CVS Information:
 #include "globus_gass_transfer.h"
 
 #include <stdio.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <errno.h>
-#include <sys/types.h>
-#ifndef TARGET_ARCH_WIN32
-#include <unistd.h>
-#endif
-#include <ctype.h>
 #include "version.h"
 
 /******************************************************************************
@@ -56,20 +40,10 @@ typedef struct globus_l_gass_server_ez_s
     globus_gass_server_ez_client_shutdown_t callback;
     unsigned long options;
     globus_gass_transfer_requestattr_t * reqattr;
+    globus_bool_t free_reqattr;
+    globus_mutex_t lock; /* only acquire this in a server_ez_enter block */
+    globus_bool_t closing;
 } globus_l_gass_server_ez_t;
-
-/* Data type associated with each put request handled by the server_ez
- * library
- */
-typedef struct globus_gass_server_ez_request_s
-{
-    int fd;
-    globus_byte_t *line_buffer;
-    unsigned long line_buffer_used;
-    unsigned long line_buffer_length;
-    globus_bool_t linebuffer;
-    unsigned short port;
-} globus_gass_server_ez_request_t;
 
 /******************************************************************************
                           Module specific variables
@@ -78,6 +52,8 @@ typedef struct globus_gass_server_ez_request_s
 static globus_hashtable_t globus_l_gass_server_ez_listeners;
 
 static globus_mutex_t globus_l_gass_server_ez_mutex;
+static globus_cond_t globus_l_gass_server_ez_cond;
+static globus_bool_t globus_l_gass_server_ez_activated = GLOBUS_FALSE;
 
 /******************************************************************************
                           Module definition
@@ -93,8 +69,8 @@ globus_module_descriptor_t globus_i_gass_server_ez_module =
     "globus_gass_server_ez",
     globus_l_gass_server_ez_activate,
     globus_l_gass_server_ez_deactivate,
-    GLOBUS_NULL,
-    GLOBUS_NULL,
+    NULL,
+    NULL,
     &local_version
 };
 
@@ -102,52 +78,53 @@ globus_module_descriptor_t globus_i_gass_server_ez_module =
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
-/* callbacks called by globus_gass_server library when a request arrives */
-static void globus_l_gass_server_ez_put_callback(void *arg,
-				    globus_gass_transfer_request_t request,
-    				    globus_byte_t *     bytes,
-    				    globus_size_t       len,
-				    globus_bool_t       last_data);
+/* callbacks called by globus_gass_transfer library when a request arrives */
+static
+void
+globus_l_gass_server_ez_put_callback(
+    void                               *arg,
+    globus_gass_transfer_request_t      request,
+    globus_byte_t                      *bytes,
+    globus_size_t                       len,
+    globus_bool_t                       last_data);
 
-static void globus_l_gass_server_ez_get_callback(
- 				    void *arg,
-				    globus_gass_transfer_request_t request,
-				    globus_byte_t *     bytes,
-				    globus_size_t       len,
-				    globus_bool_t       last_data);
+static
+void
+globus_l_gass_server_ez_get_callback(
+    void                               *arg,
+    globus_gass_transfer_request_t      request,
+    globus_byte_t                      *bytes,
+    globus_size_t                       len,
+    globus_bool_t                       last_data);
 
-/* callbacks to handle completed send or receive of part of the request's data */
+/* callbacks to handle completed send or receive of part of the request's data
+ */
 
-static void globus_gass_server_ez_put_memory_done(void * arg,
-						  globus_gass_transfer_request_t request,
-						  globus_byte_t buffer[],
-						  globus_size_t buffer_length,
-						  int receive_length);
-static void
+static
+void
 globus_l_gass_server_ez_listen_callback(
-                                void * user_arg,
-                                globus_gass_transfer_listener_t listener);
+    void                               *user_arg,
+    globus_gass_transfer_listener_t     listener);
 
-static void
+static
+void
 globus_l_gass_server_ez_close_callback(
-                                void * user_arg,
-                                globus_gass_transfer_listener_t listener);
+    void                               *user_arg,
+    globus_gass_transfer_listener_t     listener);
 
-static void
+static
+void
 globus_l_gass_server_ez_register_accept_callback(
-                                        void * user_arg,
-                                        globus_gass_transfer_request_t request
-                                        );
+    void                               *user_arg,
+    globus_gass_transfer_request_t      request);
 
 /* utility routines */
-static int globus_l_gass_server_ez_tilde_expand(unsigned long options,
-						char *inpath,
-						char **outpath);
-
-static int
-globus_l_gass_server_ez_write(int fd,
-                    globus_byte_t *buffer,
-                    size_t length);
+static
+int
+globus_l_gass_server_ez_tilde_expand(
+    unsigned long                       options,
+    char                               *inpath,
+    char                              **outpath);
 
 #define globus_l_gass_server_ez_enter() globus_mutex_lock(&globus_l_gass_server_ez_mutex)
 #define globus_l_gass_server_ez_exit()	globus_mutex_unlock(&globus_l_gass_server_ez_mutex)
@@ -164,55 +141,48 @@ Parameters:
 Returns: 
 ******************************************************************************/
 int
-globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
-			   globus_gass_transfer_listenerattr_t * attr,
-			   char * scheme,
-			   globus_gass_transfer_requestattr_t * reqattr,
-			   unsigned long options,
-			   globus_gass_server_ez_client_shutdown_t callback)
+globus_gass_server_ez_init(
+    globus_gass_transfer_listener_t    *listener,
+    globus_gass_transfer_listenerattr_t
+                                       *attr,
+    char                               *scheme,
+    globus_gass_transfer_requestattr_t
+                                       *reqattr,
+    unsigned long                       options,
+    globus_gass_server_ez_client_shutdown_t
+                                        callback)
 {
-    int rc;
-    globus_l_gass_server_ez_t *server;
-    globus_bool_t free_scheme=GLOBUS_FALSE;
+    int                                 rc;
+    globus_l_gass_server_ez_t          *server = NULL;
+    const char                         *default_scheme = "https";
+    globus_bool_t                       free_reqattr = GLOBUS_FALSE;
 
-
-    if(scheme==GLOBUS_NULL)
+    if (scheme==NULL)
     {
-	scheme=globus_malloc(6);  /* https/0 is the default */
-	if(scheme == GLOBUS_NULL)
-        {
-            rc = GLOBUS_GASS_TRANSFER_ERROR_MALLOC_FAILED;
-            goto error_exit;
-        }
-        free_scheme=GLOBUS_TRUE;
-	globus_libc_lock();
-        sprintf(scheme, "https");
-        globus_libc_unlock();
+        scheme = (char *) default_scheme;
     }
 
-    if(reqattr==GLOBUS_NULL)
+    if (reqattr==NULL)
     {
-	reqattr=(globus_gass_transfer_requestattr_t *)globus_malloc(sizeof(globus_gass_transfer_requestattr_t));
+	reqattr = malloc(sizeof(globus_gass_transfer_requestattr_t));
+        free_reqattr = GLOBUS_TRUE;
 
         globus_gass_transfer_requestattr_init(reqattr,
     					      scheme);
-        globus_gass_transfer_secure_requestattr_set_authorization(reqattr,
-							   GLOBUS_GASS_TRANSFER_AUTHORIZE_SELF,
-							   scheme);
+        globus_gass_transfer_secure_requestattr_set_authorization(
+                reqattr,
+                GLOBUS_GASS_TRANSFER_AUTHORIZE_SELF,
+                scheme);
     }
-    rc=globus_gass_transfer_create_listener(listener,
-					    attr,
-					    scheme);
+    rc = globus_gass_transfer_create_listener(listener, attr, scheme);
 
-
-    if(rc!=GLOBUS_SUCCESS)
+    if (rc!=GLOBUS_SUCCESS)
     {
 	goto error_exit;
     }
 
-    server=(globus_l_gass_server_ez_t *)globus_malloc(
-					sizeof (globus_l_gass_server_ez_t));
-    if(server==GLOBUS_NULL)
+    server = malloc( sizeof (globus_l_gass_server_ez_t));
+    if (server==NULL)
     {
         rc = GLOBUS_GASS_TRANSFER_ERROR_MALLOC_FAILED;
 	goto error_exit;
@@ -221,20 +191,40 @@ globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
     server->options=options;
     server->listener=*listener;
     server->reqattr=reqattr;
+    server->free_reqattr = free_reqattr;
     server->callback=callback;
+    globus_mutex_init(&server->lock, NULL);
+    server->closing = GLOBUS_FALSE;
 
+    globus_l_gass_server_ez_enter();
+    if (!globus_l_gass_server_ez_activated)
+    {
+        rc = GLOBUS_FAILURE;
+        goto error_exit;
+    }
     globus_hashtable_insert(&globus_l_gass_server_ez_listeners,
 			    (void *)*listener,
 			    server);
 
-    rc=globus_gass_transfer_register_listen(*listener,
-				globus_l_gass_server_ez_listen_callback,
-					(void *)reqattr);
-/* insert error handling here*/
+    rc = globus_gass_transfer_register_listen(
+            *listener,
+            globus_l_gass_server_ez_listen_callback,
+            reqattr);
 
-    error_exit:
-
-    if (free_scheme) globus_free(scheme);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_hashtable_remove(
+                &globus_l_gass_server_ez_listeners,
+                (void*) *listener);
+error_exit:
+        globus_mutex_destroy(&server->lock);
+        free(server);
+        if (free_reqattr)
+        {
+            globus_gass_transfer_requestattr_destroy(reqattr);
+        }
+    }
+    globus_l_gass_server_ez_exit();
 
     return rc;
 } /* globus_gass_server_ez_init() */
@@ -252,159 +242,72 @@ int
 globus_gass_server_ez_shutdown(globus_gass_transfer_listener_t listener)
 {
     int rc;
-    void * user_arg = GLOBUS_NULL;
+    globus_bool_t skip_close = GLOBUS_FALSE;
+    globus_l_gass_server_ez_t *s;
 
+    globus_l_gass_server_ez_enter();
+    if (globus_l_gass_server_ez_activated)
+    {
+        s = globus_hashtable_lookup(&globus_l_gass_server_ez_listeners, (void*)listener);
+        if (s)
+        {
+            globus_mutex_lock(&s->lock);
+            if (s->closing)
+            {
+                skip_close = GLOBUS_TRUE;
+                rc = GLOBUS_SUCCESS;
+            }
+            else
+            {
+                s->closing = GLOBUS_TRUE;
+            }
+            globus_mutex_unlock(&s->lock);
+        }
+    }
+    globus_l_gass_server_ez_exit();
 
-    rc=globus_gass_transfer_close_listener(listener,
-                           		globus_l_gass_server_ez_close_callback,
-				 	user_arg); 
+    if (! skip_close)
+    {
+        rc = globus_gass_transfer_close_listener(
+                listener,
+                globus_l_gass_server_ez_close_callback,
+                NULL); 
+    }
 
     return rc;
 } /* globus_gass_server_ez_shutdown() */
 
-
-/******************************************************************************
-Function: globus_l_gass_server_ez_put_memory_done()
-
-Description: 
-
-Parameters: 
-
-Returns: 
-******************************************************************************/
-static void
-globus_gass_server_ez_put_memory_done(void * arg,
-                                       globus_gass_transfer_request_t request,
-                                       globus_byte_t buffer[],
-                                       globus_size_t receive_length,
-				       globus_bool_t last_data)
+static
+void
+globus_l_gass_server_ez_destroy(void *arg)
 {
-    globus_gass_server_ez_request_t *r=GLOBUS_NULL;
-    globus_size_t max_length;
-    unsigned long lastnl, x;
-    int status;
-    const int buffer_length=1024;
-    
-    /* This callback handles line-buffered put requests. 
-     */    
-
-    r = (globus_gass_server_ez_request_t *)arg;
-
-    status=globus_gass_transfer_request_get_status(request);
-    lastnl = 0UL;
-
-
-    /* find last \n in the buffer, since we are line-buffering */
-    max_length=receive_length;
-    for(x = max_length; x > 0UL; x--)
+    globus_l_gass_server_ez_t *server = arg;
+    if (server)
     {
-	if(buffer[x-1] == '\n')
-	{
-	    lastnl = x;
-	    break;
-	}
+        globus_mutex_lock(&server->lock);
+        if (server->free_reqattr)
+        {
+            globus_gass_transfer_requestattr_destroy(server->reqattr);
+        }
+        globus_mutex_unlock(&server->lock);
+        globus_mutex_destroy(&server->lock);
+        free(server);
     }
-    
-    if(status == GLOBUS_GASS_TRANSFER_REQUEST_PENDING && !last_data)
-    {
-	/* data arrived, and more will be available, so write up until
-	 * the last \n we've received and save the rest
-	 */
-	if(r->line_buffer != GLOBUS_NULL &&
-	   lastnl != 0UL &&
-	    r->line_buffer_used != 0UL)
-	{
-	    globus_l_gass_server_ez_write(r->fd,
-				r->line_buffer,
-				r->line_buffer_used);
-	    r->line_buffer_used = 0UL;
-	}
-	
-	if(lastnl != 0UL)
-	{
-	    globus_l_gass_server_ez_write(r->fd,
-				buffer,
-				lastnl);
-	}
-	else
-	{
-	    lastnl = 0;
-	}
-	if(r->line_buffer_used + receive_length - lastnl >
-	   r->line_buffer_length)
-	{
-	    r->line_buffer = (globus_byte_t *)
-		realloc(r->line_buffer,
-			r->line_buffer_used + receive_length - lastnl);
-	    r->line_buffer_length = r->line_buffer_used + receive_length - lastnl;
-	    memcpy(r->line_buffer + r->line_buffer_used,
-		   buffer + lastnl,
-		   receive_length - lastnl);
-	    r->line_buffer_used += receive_length - lastnl;
-	}
-	else
-	{
-	    memcpy(r->line_buffer + r->line_buffer_used,
-		   buffer + lastnl,
-		   receive_length - lastnl);
-	    r->line_buffer_used += receive_length - lastnl;
-	}
-	
-	globus_gass_transfer_receive_bytes(request,
-				  	   buffer,
-					   buffer_length,
-					   1UL,
-					   globus_gass_server_ez_put_memory_done,
-					   arg);
-					
-    }
-    else
-    {
-	
-	if(r->line_buffer != GLOBUS_NULL &&
-	   r->line_buffer_used != 0UL)
-	{
-	    globus_l_gass_server_ez_write(r->fd,
-				r->line_buffer,
-				r->line_buffer_used);
-	}
-	if(receive_length != 0UL)
-	{
-	    globus_l_gass_server_ez_write(r->fd,
-				buffer,
-				receive_length);
-	}
-
-	    
-	if(r->fd!=fileno(stdout) && r->fd!=fileno(stderr))
-	{
-  	    globus_libc_close(r->fd);
-	}
-
-	if(buffer != GLOBUS_NULL)
-	{
-	    globus_free(buffer);
-	}  
-
-	globus_gass_transfer_request_destroy(request);
-		
-
-	if(r->linebuffer)
-	{
-	    globus_free(r->line_buffer);
-	} 
-	globus_free(r);
-    }
-} /* globus_l_gass_server_ez_put_memory_done() */
+}
 
 static void
 globus_l_gass_server_ez_close_callback(
 				void * user_arg,
 				globus_gass_transfer_listener_t listener)
 {
-    /* should be cleaning up things related to the listener here
-     * get rid of server struct stuff (hashtable) etc.
-    */ 
+    globus_l_gass_server_ez_t *server;
+    globus_l_gass_server_ez_enter();
+    server = globus_hashtable_remove(
+                &globus_l_gass_server_ez_listeners,
+                (void*) listener);
+    globus_l_gass_server_ez_destroy(server);
+    globus_cond_signal(&globus_l_gass_server_ez_cond);
+    globus_l_gass_server_ez_exit();
 }
 
 static void
@@ -442,29 +345,44 @@ globus_l_gass_server_ez_register_accept_callback(
 {
     int rc;
     char * subjectname;
-    char * path=GLOBUS_NULL;
+    char * path=NULL;
+    FILE *fp;
     char * url;
     globus_url_t parsed_url;
     globus_l_gass_server_ez_t * s;
-    globus_gass_server_ez_request_t *r;
     struct stat	statstruct;
     globus_byte_t * buf;
     int amt;
-    int flags=0;
+    const char *flags;
+#if HAVE_FTELLO
+#define length_type off_t
+#else
+#define length_type long
+#define ftello ftell
+#endif
+    length_type length;
 
     
     subjectname=globus_gass_transfer_request_get_subject(request);
 
+    globus_l_gass_server_ez_enter();
     /* lookup our options */
-    s=(globus_l_gass_server_ez_t *)globus_hashtable_lookup(
-                                &globus_l_gass_server_ez_listeners,
-                                listener);
+    s = globus_hashtable_lookup(&globus_l_gass_server_ez_listeners, listener);
+    if (s == NULL)
+    {
+        globus_gass_transfer_deny(request, 400, "Bad Request");
+        globus_gass_transfer_request_destroy(request);
+        globus_l_gass_server_ez_exit();
+        return;
+    }
+    globus_mutex_lock(&s->lock);
+    globus_l_gass_server_ez_exit();
 
     /* Check for valid URL */
     url=globus_gass_transfer_request_get_url(request);
     rc = globus_url_parse(url, &parsed_url);
     if(rc != GLOBUS_SUCCESS ||
-       parsed_url.url_path == GLOBUS_NULL || strlen(parsed_url.url_path) == 0U)
+       parsed_url.url_path == NULL || strlen(parsed_url.url_path) == 0U)
     {
         globus_gass_transfer_deny(request, 404, "File Not Found");
         globus_gass_transfer_request_destroy(request);
@@ -476,12 +394,12 @@ globus_l_gass_server_ez_register_accept_callback(
     if(globus_gass_transfer_request_get_type(request) ==
        GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND)
     {
-        flags = O_CREAT | O_WRONLY | O_APPEND;
+        flags = "ab";
     }
     else if(globus_gass_transfer_request_get_type(request) ==
             GLOBUS_GASS_TRANSFER_REQUEST_TYPE_PUT)
     {
-        flags = O_CREAT | O_WRONLY | O_TRUNC;
+        flags = "wb";
     }
     switch(globus_gass_transfer_request_get_type(request))
         {
@@ -507,7 +425,7 @@ globus_l_gass_server_ez_register_accept_callback(
     	    if(strcmp(path, "/dev/stdout") == 0 &&
               (s->options & GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE))
             {
-        	rc = fileno(stdout);
+        	fp = stdout;
 		goto authorize;
     	    }
     	    else if(strcmp(path, "/dev/stdout") == 0)
@@ -517,7 +435,7 @@ globus_l_gass_server_ez_register_accept_callback(
     	    else if(strcmp(path, "/dev/stderr") == 0 &&
                    (s->options & GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE))
     	    {
-        	rc = fileno(stderr);
+                fp = stderr;
 		goto authorize;
     	    }
     	    else if(strcmp(path, "/dev/stderr") == 0)
@@ -527,21 +445,16 @@ globus_l_gass_server_ez_register_accept_callback(
     	    else if(strcmp(path, "/dev/globus_gass_client_shutdown") == 0)
     	    {
         	if(s->options & GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE &&
-           	   s->callback != GLOBUS_NULL)
+           	   s->callback != NULL)
         	{
             	    s->callback();
         	}
 
 		goto deny;
     	    }
-#ifdef TARGET_ARCH_WIN32
-			// The call to open() in Windows defaults to text mode, so
-			// we to override it.
-			flags |= O_BINARY;
-#endif
-            rc = globus_libc_open(path, flags, 0600);
+            fp = fopen(path, flags);
 
-            if(rc < 0)
+            if(fp == NULL)
             {
                 goto deny;
             }
@@ -550,34 +463,18 @@ globus_l_gass_server_ez_register_accept_callback(
             globus_gass_transfer_authorize(request, 0);
 	    if(s->options & GLOBUS_GASS_SERVER_EZ_LINE_BUFFER)
 	    {
-	        r=(globus_gass_server_ez_request_t *)globus_malloc(
-				sizeof(globus_gass_server_ez_request_t));
-		r->fd=rc;
-		r->line_buffer=globus_malloc(80);
-                r->line_buffer_used= 0UL;
-        	r->line_buffer_length = 80UL;
-        	r->linebuffer = GLOBUS_TRUE;
-
-		globus_gass_transfer_receive_bytes(request,
-						globus_malloc(1024),
-						1024,
-						1,
-						globus_gass_server_ez_put_memory_done,
-						r);
-	    }
-	    else
-	    {
-                globus_gass_transfer_receive_bytes(request,
-                                               globus_malloc(1024),
+                setvbuf(fp, NULL, _IOLBF, 0);
+            }
+            globus_gass_transfer_receive_bytes(request,
+                                               malloc(1024),
                                                1024,
                                                1,
                                                globus_l_gass_server_ez_put_callback,
-                                               (void *) rc);
-	    }
+                                               (void *) fp);
             break;
 
           case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_GET:
-            flags = O_RDONLY;
+            flags = "rb";
 
 			/* Expand ~ and ~user prefix if enaabled in options */
             rc = globus_l_gass_server_ez_tilde_expand(s->options,
@@ -591,13 +488,26 @@ globus_l_gass_server_ez_register_accept_callback(
 	   
 	    if(stat(path, &statstruct)==0)
 	    {
-#ifdef TARGET_ARCH_WIN32
-				// The call to open() in Windows defaults to text mode, 
-				// so we to override it.
-				flags |= O_BINARY;
-#endif
-                rc = globus_libc_open(path, flags, 0600);
-		fstat(rc, &statstruct);
+                fp = fopen(path, flags);
+                rc = fseek(fp, 0, SEEK_END);
+                if (rc < 0)
+                {
+                    length = GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN;
+                }
+                else
+                {
+                    length = ftello(fp);
+                    rc = fseek(fp, 0, SEEK_SET);
+                    if (rc < 0)
+                    {
+                        fclose(fp);
+                    }
+                    if (length == -1 || length > ((length_type) ((size_t) -1)))
+                    {
+                        length = GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN;
+                    }
+                    goto deny;
+                }
 	    }
 	    else
 	    {
@@ -606,23 +516,22 @@ globus_l_gass_server_ez_register_accept_callback(
 		goto reregister;
 	    }
 
-            buf = globus_malloc(1024);
-            amt = read(rc, buf, 1024);
-            if(amt == -1)
+            buf = malloc(1024);
+            amt = fread(buf, 1, 1024, fp);
+            if(amt == 0 && ferror(fp))
             {
-                globus_free(buf);
-                close(rc);
+                free(buf);
+                fclose(fp);
                 goto deny;
             }
-            globus_gass_transfer_authorize(request,
-                                           statstruct.st_size);
+            globus_gass_transfer_authorize(request, (size_t) length);
 
             globus_gass_transfer_send_bytes(request,
                                             buf,
                                             amt,
                                             GLOBUS_FALSE,
                                             globus_l_gass_server_ez_get_callback,
-                                            (void *) rc);
+                                            (void *) fp);
 	  break;
 	default:
 	deny:
@@ -640,7 +549,8 @@ globus_l_gass_server_ez_register_accept_callback(
 				globus_l_gass_server_ez_listen_callback,
 				s->reqattr);
 
-    if (path != GLOBUS_NULL) globus_free(path);
+    if (path != NULL) free(path);
+    globus_mutex_unlock(&s->lock);
 
 } /*globus_l_gass_server_ez_register_accept_callback*/
 
@@ -662,13 +572,13 @@ globus_l_gass_server_ez_get_callback(
     globus_size_t       len,
     globus_bool_t       last_data)
 {
-    int fd;
+    FILE *fp;
     globus_size_t amt;
 
-    fd=(int) arg;
+    fp = arg;
     if(!last_data)
     {
-	amt = globus_libc_read(fd, bytes, len);
+	amt = fread(bytes, 1, len, fp);
         if(amt == 0)
         {
             globus_gass_transfer_send_bytes(request,
@@ -690,11 +600,11 @@ globus_l_gass_server_ez_get_callback(
         return;
     }
 
-    if((fd!=fileno(stdout))&&(fd!=fileno(stderr)))
+    if (fp != stdout || fp != stderr)
     {
-        close(fd);
+        fclose(fp);
     }
-    globus_free(bytes);
+    free(bytes);
     globus_gass_transfer_request_destroy(request);
 
 } /* globus_l_gass_server_ez_get_callback() */
@@ -716,11 +626,11 @@ globus_l_gass_server_ez_put_callback(
 				    globus_size_t       len,
 				    globus_bool_t       last_data)
 {
-    int fd;
+    FILE *fp;
 
-    fd = (int) arg;
+    fp = arg;
 
-    globus_libc_write(fd, bytes, len);
+    fwrite(bytes, len, 1, fp);
     if(!last_data)
     {
         globus_gass_transfer_receive_bytes(request,
@@ -732,11 +642,11 @@ globus_l_gass_server_ez_put_callback(
     return ;
     }
 
-    if((fd!=fileno(stdout)) && (fd!=fileno(stderr)))
+    if ((fp!=stdout) && (fp!=stderr))
     {
-        close(fd);
+        fclose(fp);
     }
-    globus_free(bytes);
+    free(bytes);
     globus_gass_transfer_request_destroy(request);
     return ;
 
@@ -756,13 +666,12 @@ globus_l_gass_server_ez_tilde_expand(unsigned long options,
 			     char *inpath,
 			     char **outpath)
 {
-#ifndef TARGET_ARCH_WIN32   
     /*
      * If this is a relative path, the strip off the leading /./
      */
-    if(strlen(inpath) >= 2U)
+    if(strlen(inpath) >= 2)
     {
-	if (inpath[1] == '.' && inpath[2] == '/')
+	if (inpath[0] == '/' && inpath[1] == '.' && inpath[2] == '/')
 	{
 	    inpath += 3;
 	    goto notilde;
@@ -770,66 +679,21 @@ globus_l_gass_server_ez_tilde_expand(unsigned long options,
     }
 
     /* here call the new function globus_tilde_expand()*/
-    return globus_tilde_expand(options,
-				   GLOBUS_TRUE, /* url form /~[user][/etc]*/
-				   inpath,
-				   outpath);
-#endif /* TARGET_ARCH_WIN32*/
+    if (globus_tilde_expand(options, GLOBUS_TRUE, inpath, outpath)
+            == GLOBUS_SUCCESS)
+    {
+        return GLOBUS_SUCCESS;
+    }
 
 notilde:
-    *outpath = globus_malloc(strlen(inpath)+1);
+    *outpath = malloc(strlen(inpath)+1);
+    if (*outpath == NULL)
+    {
+        return GLOBUS_FAILURE;
+    }
     strcpy(*outpath, inpath);
     return GLOBUS_SUCCESS;
 } /* globus_l_gass_server_ez_tilde_expand() */
-
-/******************************************************************************
-Function: globus_l_gass_server_ez_write()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-int
-globus_l_gass_server_ez_write(int fd,
-                    globus_byte_t *buffer,
-                    size_t length)
-{
-#ifndef TARGET_ARCH_WIN32
-    ssize_t rc;
-#else
-	int rc;
-#endif
-    size_t written;
-
-    written = 0;
-
-    while(written < length)
-    {
-        rc = globus_libc_write(fd,
-                               buffer + written,
-                               length - written);
-        if(rc < 0)
-        {
-            switch(errno)
-            {
-            case EAGAIN:
-            case EINTR:
-                break;
-            default:
-                return (int) rc;
-            }
-        }
-        else
-        {
-            written += rc;
-        }
-    }
-
-    return (int) written;
-} /* globus_l_gass_server_ez_write() */
-
 
 /******************************************************************************
 Function: globus_l_gass_server_ez_activate()
@@ -857,8 +721,9 @@ globus_l_gass_server_ez_activate(void)
 	return rc;
     }
 
-    globus_mutex_init(&globus_l_gass_server_ez_mutex,
-		      GLOBUS_NULL);
+    globus_mutex_init(&globus_l_gass_server_ez_mutex, NULL);
+    globus_cond_init(&globus_l_gass_server_ez_cond, NULL);
+    globus_l_gass_server_ez_activated = GLOBUS_TRUE;
 
     globus_hashtable_init(&globus_l_gass_server_ez_listeners,
                           16,
@@ -881,12 +746,48 @@ static int
 globus_l_gass_server_ez_deactivate(void)
 {
     int rc;
-
+    globus_l_gass_server_ez_t *s;
     
-    globus_mutex_destroy(&globus_l_gass_server_ez_mutex);
+    globus_mutex_lock(&globus_l_gass_server_ez_mutex);
+    globus_l_gass_server_ez_activated = GLOBUS_FALSE;
+    for (s = globus_hashtable_first(&globus_l_gass_server_ez_listeners);
+         s != NULL;
+         s = globus_hashtable_next(&globus_l_gass_server_ez_listeners))
+    {
+        globus_bool_t skip_closing = GLOBUS_TRUE;
 
+        globus_mutex_lock(&s->lock);
+        if (!s->closing)
+        {
+            s->closing = GLOBUS_TRUE;
+            skip_closing = GLOBUS_FALSE;
+        }
+        globus_mutex_unlock(&s->lock);
+
+        if (!skip_closing)
+        {
+            globus_gass_transfer_close_listener(
+                    s->listener,
+                    globus_l_gass_server_ez_close_callback,
+                    NULL);
+        }
+    }
+    while (globus_hashtable_size(&globus_l_gass_server_ez_listeners) > 0)
+    {
+        globus_cond_wait(
+                &globus_l_gass_server_ez_cond,
+                &globus_l_gass_server_ez_mutex);
+    }
+    globus_mutex_unlock(&globus_l_gass_server_ez_mutex);
+    
     rc = globus_module_deactivate(GLOBUS_GASS_TRANSFER_MODULE);
-    globus_hashtable_destroy(&globus_l_gass_server_ez_listeners);
+
+    globus_mutex_lock(&globus_l_gass_server_ez_mutex);
+    globus_hashtable_destroy_all(
+            &globus_l_gass_server_ez_listeners,
+            globus_l_gass_server_ez_destroy);
+    globus_mutex_unlock(&globus_l_gass_server_ez_mutex);
+    globus_mutex_destroy(&globus_l_gass_server_ez_mutex);
 
     rc|=globus_module_deactivate(GLOBUS_COMMON_MODULE);
 

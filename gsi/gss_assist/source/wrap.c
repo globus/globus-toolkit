@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file wrap.c
+ * @file gss_assist/source/wrap.c Wrap GSSAPI buffers
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_gss_assist.h"
 #include "gssapi.h"
 
+#include <stdio.h>
+
 /**
- * @name Wrap
- */
-/* @{ */
-/**
+ * @brief Wrap
  * @ingroup globus_gsi_gss_assist
  *
  * @param minor_status
@@ -168,4 +161,4 @@ globus_gss_assist_wrap_send(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
+/* globus_gss_assist_wrap_send() */

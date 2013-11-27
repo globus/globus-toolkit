@@ -16,16 +16,27 @@
 # limitations under the License.
 # 
 
-@GLOBUS_SCRIPT_INITIALIZER@
+prefix="${prefix-@prefix@}"
+exec_prefix="${exec_prefix-@exec_prefix@}"
+sbindir="${sbindir-@sbindir@}"
+bindir="${bindir-@bindir@}"
+libdir="${libdir-@libdir@}"
+includedir="${includedir-@includedir@}"
+datarootdir="${datarootdir-@datarootdir@}"
+datadir="${datadir-@datadir@}"
+libexecdir="${libexecdir-@libexecdir@}"
+sysconfdir="${sysconfdir-@sysconfdir@}"
+sharedstatedir="${sharedstatedir-@sharedstatedir@}"
+localstatedir="${localstatedir-@localstatedir@}"
 
 if test -z "$GLOBUS_SH_VARIABLES_SET" ; then
     
-    . ${libexecdir}/globus-sh-tools-vars.sh
+    if test -r "${libexecdir}/globus-sh-tools-vars.sh"; then
+        . "${libexecdir}/globus-sh-tools-vars.sh"
+    fi
     
     # export all commands:
-
-    for _var in `set|${GLOBUS_SH_GREP-grep} "^GLOBUS_SH"| \
-        ${GLOBUS_SH_SED-sed} -n '/^GLOBUS_SH/s/=.*$//p' `
+    for _var in `set| sed -n '/^GLOBUS_SH/s/=.*$//p' `
     do
         export ${_var}
     done

@@ -14,22 +14,8 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_thread_pthreads.c
+/** @file globus_thread_pthreads.c POSIX Threads Bindings */
 
-Description:
-
-  Bindings for the Globus threads package, to be used when Globus has been
-  configured to use POSIX threads.
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
 #include "config.h"
 #include "globus_common.h"
 #include "globus_thread.h"

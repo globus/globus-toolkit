@@ -72,7 +72,7 @@ gfork_gather_envs()
 
     for(i = 0; gfork_l_keep_envs[i] != NULL; i++)
     {
-        env_s = globus_libc_getenv(gfork_l_keep_envs[i]);
+        env_s = getenv(gfork_l_keep_envs[i]);
         if(env_s != NULL)
         {
             globus_hashtable_insert(

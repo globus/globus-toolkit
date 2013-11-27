@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file duplicate_name.c
+ * @file gssapi/source/library/duplicate_name.c
  * @author Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -35,11 +27,9 @@ static char *rcsid = "$Id$";
 #include <ctype.h>
 
 /**
- * @name Duplicate Name
+ * @brief Duplicate Name
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Copy a GSS name.
  *
  * @param minor_status

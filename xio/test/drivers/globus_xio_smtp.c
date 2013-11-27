@@ -20,7 +20,6 @@
 #include "globus_error_string.h"
 #include "globus_xio_smtp.h"
 
-
 #define ErrorWriteOnly()                                                    \
     globus_error_put(                                                       \
         globus_error_construct_string(                                      \
@@ -495,17 +494,29 @@ int
 globus_l_xio_smtp_activate(void)
 {
     int                                 rc;
-    struct passwd *                     pw_ent;
+    const char *                        username;
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
 
-    pw_ent = getpwuid(getuid());
+#   ifndef _WIN32
+    {
+        struct passwd *                     pw_ent;
+        pw_ent = getpwuid(getuid());
+        username = pw_ent->pw_name;
+    }
+#   else
+    {
+        username = getenv("USERNAME");
+        if (username == NULL)
+        {
+            username = "globus";
+        }
+    }
+#   endif
     globus_libc_gethostname(globus_l_hostname, MAXHOSTNAMELEN);
 
-    globus_l_return_address = globus_malloc(strlen(globus_l_hostname) + 2 + 
-                                strlen(pw_ent->pw_name));
-    sprintf(globus_l_return_address, "%s@%s",
-        pw_ent->pw_name, globus_l_hostname);
+    globus_l_return_address = globus_common_create_string("%s@%s",
+        username, globus_l_hostname);
     
     if(rc == GLOBUS_SUCCESS)
     {

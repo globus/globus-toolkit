@@ -14,28 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_COMMON_PRIORITY_Q_H
-#define GLOBUS_COMMON_PRIORITY_Q_H
+/** @file globus_priority_q.h Priority Queue */
 
-/********************************************************************
- *
- *  This file defines the a priority queue for globus
- *  It is implemented using a binary heap (minheap) and does NOT have
- *  a fifo fallback for like priorities.  If you need fifo fallback,
- *  you should use a compound priority with the primary priority being
- *  the 'real' priority and the secondary being a serial number.
- *
- ********************************************************************/
+#ifndef GLOBUS_PRIORITY_Q_H
+#define GLOBUS_PRIORITY_Q_H
 
 #include "globus_common_include.h"
 #include "globus_memory.h"
 
-
-EXTERN_C_BEGIN
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @defgroup globus_priority_q Priority Queue
+ * @ingroup globus_common
  *
  * @details
  * This module defines a priority queue for globus.
@@ -157,6 +150,9 @@ void *
 globus_priority_q_first_priority(
     globus_priority_q_t *               priority_q);
 
-EXTERN_C_END
 
-#endif /* GLOBUS_COMMON_PRIORITY_Q_H */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GLOBUS_PRIORITY_Q_H */

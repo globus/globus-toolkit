@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_XIO_GRIDFTP_DRIVER_INCLUDE
-#define GLOBUS_XIO_GRIDFTP_DRIVER_INCLUDE
+#ifndef GLOBUS_XIO_GRIDFTP_DRIVER_H
+#define GLOBUS_XIO_GRIDFTP_DRIVER_H
 
 /**
- * @file
- * Header file for XIO GRIDFTP Client Driver
+ * @file globus_xio_gridftp_driver.h XIO GRIDFTP Client Driver
  */
 
 #include "globus_xio_system.h"
@@ -509,4 +508,4 @@ typedef enum globus_l_xio_gridftp_protection_e
 } globus_l_xio_gridftp_protection_t;
 
 
-#endif
+#endif /* GLOBUS_XIO_GRIDFTP_DRIVER_H */

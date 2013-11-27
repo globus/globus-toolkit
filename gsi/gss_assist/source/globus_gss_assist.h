@@ -17,43 +17,56 @@
 #ifndef _GLOBUS_GSS_ASSIST_H
 #define _GLOBUS_GSS_ASSIST_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gss_assist.h
  * GSS Assist Header
- *
- * $RCSfile$
- * $Revision$
- * $Date $
  */
-#endif
  
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
-EXTERN_C_BEGIN
-
 #include "gssapi.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
- * @defgroup globus_gsi_gss_assist_activation Activation
+ * @mainpage Globus GSS Assist
+ * @copydoc globus_gss_assist
+ */
+#endif
+
+/**
+ * @defgroup globus_gss_assist Globus GSS Assist
+ * @brief Convenience Functions for GSSAPI
+ * @details
+ * The GSS Assist code provides convenience functions
+ * for using the Globus GSS-API.
  *
+ * This API includes
+ * - @ref globus_gss_assist_activation
+ * - @ref globus_gss_assist_credential
+ * - @ref globus_gss_assist_context
+ * - @ref globus_gss_assist_gridmap
+ * - @ref globus_gss_assist_tokens
+ * - @ref globus_gss_assist_display
+ * - @ref globus_gss_assist_constants
+ */
+
+/**
+ * @defgroup globus_gss_assist_activation Activation
+ * @brief Module Activation
+ * @ingroup globus_gss_assist
+ * @details
  * Globus GSI GSS Assist uses standard Globus module activation and
  * deactivation.  Before any Globus GSS Assist functions are called,
  * the following function must be called:
  *
  * @code
- *      globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
- * @endcode
+       globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+   @endcode
  *
  * This function returns GLOBUS_SUCCESS if Globus GSI GSS Assist was
  * successfully initialized, and you are therefore allowed to
@@ -64,8 +77,8 @@ EXTERN_C_BEGIN
  * To deactivate Globus GSS Assist, the following function must be called:
  * 
  * @code
- *    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE)
- * @endcode
+     globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE)
+  @endcode
  *
  * This function should be called once for each time Globus GSI GSS Assist
  * was activated.
@@ -73,7 +86,7 @@ EXTERN_C_BEGIN
 
 /**
  * Module descriptor
- * @ingroup globus_gsi_gss_assist_activation
+ * @ingroup globus_gss_assist_activation
  * @hideinitializer
  */
 #define GLOBUS_GSI_GSS_ASSIST_MODULE  (&globus_i_gsi_gss_assist_module)
@@ -81,11 +94,6 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t              globus_i_gsi_gss_assist_module;
 
-/**
- * @defgroup globus_gsi_gss_assist Utility Functions
- *
- * Utility functions for GSSAPI
- */
 #define _GASL(s) globus_common_i18n_get_string( \
 		    GLOBUS_GSI_GSS_ASSIST_MODULE, \
 		    s)
@@ -113,16 +121,14 @@ typedef struct globus_gss_assist_ex_st
 	int    flags;
 } globus_gss_assist_ex;
 
-/* 
- * Get and send gss tokens using verious methods
- * These are used by the gss_assist_init_sec_context
- * gss_assist_accept_sec_context, gss_assist_get_unwrap
- * and gss_assist_wrap_send
- * Arg depends on the method being used,
- * FILE * for a fd.
- * You may provide your own versions as well. 
- * The _ex versions accept a globus_gss_assist_ex structure
- * which has in addition the arg, some flags. 
+/**
+ * @defgroup globus_gss_assist_tokens Token Transport
+ * @ingroup globus_gss_assist
+ * @brief Send and Receive Security Tokens
+ * @details
+ * The functions in this section are used to send and receive
+ * GSSAPI tokens using verious methods.
+ * These are used by the @ref globus_gss_assist_context functions.
  */
 extern int
 globus_gss_assist_token_get_fd(
@@ -148,8 +154,13 @@ globus_gss_assist_token_send_fd_without_length(
     void *                              buf, 
     size_t                              size);
 
-/* 
- * globus_gss_assist_acquire_cred, assist with the gss_acquire_cred
+/**
+ * @defgroup globus_gss_assist_credential Credential Management
+ * @brief Acquire Credential
+ * @ingroup globus_gss_assist
+ * @details
+ * The functions in this section are used to acquire security
+ * credentials.
  */
 extern OM_uint32
 globus_gss_assist_acquire_cred(
@@ -171,10 +182,16 @@ globus_gss_assist_acquire_cred_ext(
     gss_OID_set *,           /* actual_mechs */
     OM_uint32 *              /* time_rec */);
 
-/*
- * gss_assist_accept_sec_context - takes care of looping
- * over multiple tokens using the get and send tokens
- * routines
+/**
+ * @defgroup globus_gss_assist_context Security Context Management
+ * @brief Security Context Creation and Use
+ * @ingroup globus_gss_assist
+ * @details
+ * The functions in this section are used to create security contexts
+ * and send and receive messages sent over them. They use the functions
+ * provided by @ref globus_gss_assist_tokens or user-supplied functions
+ * to communicate security tokens over the context, looping over continue
+ * results from the GSSAPI as needed.
  */
 extern OM_uint32
 globus_gss_assist_accept_sec_context(
@@ -245,8 +262,13 @@ globus_gss_assist_init_sec_context_async(
     void **			        output_bufferp,
     size_t *			        output_buffer_lenp);
 
-/*
- * globus_gss_assist_display_status - used gss_display_status 
+/**
+ * @defgroup globus_gss_assist_display GSSAPI Result Status Strings
+ * @brief Display Error Status from a GSSAPI Result
+ * @ingroup globus_gss_assist
+ * @details
+ * The functions in this section convert a GSSAPI result code into
+ * a message.
  */
 extern OM_uint32
 globus_gss_assist_display_status(
@@ -331,11 +353,14 @@ globus_gss_assist_authorization_host_name(
     char *                              hostname,
     gss_name_t *                        authorization_hostname);
 
-/*
- * globus_gss_assist_gridmap - used to map a 
- * src_name to a local userid
- * This is not really part of authentication, 
- * but rather authorization. 
+/**
+ * @defgroup globus_gss_assist_gridmap Gridmap Authorization
+ * @brief Gridmap Authorization and Local User Mapping
+ * @ingroup globus_gss_assist
+ * @details
+ * Functions in this group are used to authorize a GSSAPI credential to
+ * perform some action on the local machine. In addition to checking whether
+ * a credential is authorized, it can also be mapped to a local user name.
  */  
 extern int
 globus_gss_assist_gridmap(
@@ -377,7 +402,7 @@ globus_gss_assist_map_and_authorize_sharing(
 
 /**
  * @brief Free array of distinguished names
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_gridmap
  * @hideinitializer
  *
  * @details
@@ -401,6 +426,8 @@ globus_gss_assist_map_and_authorize_sharing(
 }
 
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _GLOBUS_GSS_ASSIST_H */

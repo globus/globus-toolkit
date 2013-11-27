@@ -1,0 +1,42 @@
+AC_INIT([globus_rsl],[9.1])
+AM_INIT_AUTOMAKE
+AM_MAINTAINER_MODE
+AM_PROG_LIBTOOL
+
+MAJOR_VERSION=${PACKAGE_VERSION%%.*}
+MINOR_VERSION=${PACKAGE_VERSION##*.}
+AGE_VERSION=7
+
+AC_SUBST(MAJOR_VERSION)
+AC_SUBST(MINOR_VERSION)
+AC_SUBST(AGE_VERSION)
+
+m4_include([dirt.sh])
+AC_SUBST(DIRT_TIMESTAMP)
+AC_SUBST(DIRT_BRANCH_ID)
+
+PACKAGE_DEPS="globus-common >= 14"
+
+AC_SUBST(PACKAGE_DEPS)
+
+PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+
+AC_PATH_PROGS([DOXYGEN], doxygen)
+
+AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
+
+AC_PROG_LEX
+if test "x$LEX" != xflex; then
+    LEX="$SHELL $missing_dir/missing flex"
+    AC_SUBST([LEX_OUTPUT_ROOT], [lex.yy])
+    AC_SUBST([LEXLIB], [''])
+fi
+AC_PROG_YACC
+
+AC_CONFIG_FILES(
+        globus-rsl-uninstalled.pc
+        globus-rsl.pc
+        Makefile
+        Doxyfile
+	version.h)
+AC_OUTPUT

@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: globus-gssapi-error
+Description: Globus Toolkit - GSSAPI Error Library
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lglobus_gssapi_error
+Libs.private: @PACKAGE_DEP_LIBS@
+Cflags: -I${includedir}
+Cflags.private: @PACKAGE_DEP_CFLAGS@

@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-#include "globus_common.h"
-
-#ifdef TARGET_ARCH_WIN32
+#include "config.h"
+#ifdef _WIN32
+#include <winsock2.h>
+#include <inttypes.h>
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
 #endif
 
-#ifdef GLOBUS_IMPLEMENT_INET_PTON
+#ifndef HAVE_INET_PTON
 int
 inet_pton(
     int                                 af,
@@ -50,4 +51,4 @@ inet_pton(
         return 0;
     }
 }
-#endif /* GLOBUS_IMPLMENENT_INET_PTON */
+#endif

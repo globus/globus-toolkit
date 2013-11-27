@@ -1,26 +1,17 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
-
-SUBDIRS= \
-	pkgdata 
-
-Sources = globus_gridmap_eppn.c
+AUTOMAKE_OPTIONS = foreign
 	
 doc_DATA = GLOBUS_LICENSE
-
-EXTRA_DIST = version.h.in $(doc_DATA)
-
-INCLUDES = $(GPT_INCLUDES) 
-
 sysconf_DATA = gridmap_eppn_callout-gsi_authz.conf
-
 lib_LTLIBRARIES = libglobus_gridmap_eppn_callout.la
 
-libglobus_gridmap_eppn_callout_la_SOURCES = $(Sources)
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) 
 
-libglobus_gridmap_eppn_callout_la_LDFLAGS = $(GPT_LDFLAGS) -module
+libglobus_gridmap_eppn_callout_la_LDFLAGS = \
+        -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+        -no-undefined \
+        -module \
+        -rpath $(libdir)
+libglobus_gridmap_eppn_callout_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_gridmap_eppn_callout_la_SOURCES = globus_gridmap_eppn.c
 
-libglobus_gridmap_eppn_callout_la_LIBADD = $(GPT_LIB_LINKS)
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)

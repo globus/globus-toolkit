@@ -1,19 +1,3 @@
-include $(top_srcdir)/globus_automake_pre
-
-SUBDIRS = 
-
-Sources = \
-	globus_xio_test_drivers.c \
-	globus_xio_null_pass.c \
-	globus_xio_bounce.c \
-	globus_xio_test_transport.c \
-	globus_xio_op.c \
-	globus_xio_debug.c \
-	globus_xio_verify.c \
-	globus_xio_smtp.c \
-	globus_xio_null.c \
-	globus_xio_stack_driver.c
-
 include_HEADERS = \
 	globus_xio_stack_driver.h \
 	globus_xio_null_pass.h \
@@ -28,15 +12,20 @@ include_HEADERS = \
 noinst_HEADERS = \
         globus_i_xio_test_drivers.h
 
-INCLUDES = -I$(top_srcdir) $(GPT_INCLUDES)
-
 lib_LTLIBRARIES = libglobus_xio_test_drivers.la
 
-libglobus_xio_test_drivers_la_LIBADD = \
-	@GPT_LIB_LINKS@
-libglobus_xio_test_drivers_la_SOURCES = \
-	$(Sources)
-libglobus_xio_test_drivers_la_LDFLAGS = \
-	@GPT_LDFLAGS@ -module -rpath ${libdir}
+AM_CPPFLAGS = -I$(top_builddir) $(PACKAGE_DEP_CFLAGS)
 
-include $(top_srcdir)/globus_automake_post
+libglobus_xio_test_drivers_la_SOURCES = \
+	globus_xio_test_drivers.c \
+	globus_xio_null_pass.c \
+	globus_xio_bounce.c \
+	globus_xio_test_transport.c \
+	globus_xio_op.c \
+	globus_xio_debug.c \
+	globus_xio_verify.c \
+	globus_xio_smtp.c \
+	globus_xio_null.c \
+	globus_xio_stack_driver.c
+libglobus_xio_test_drivers_la_LDFLAGS = \
+	$(PACKAGE_DEP_LIBS) -no-undefined -module -rpath ${libdir}

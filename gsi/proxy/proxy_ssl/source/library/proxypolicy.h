@@ -19,10 +19,14 @@
 #define HEADER_PROXYPOLICY_H
 
 /**
- * @defgroup proxypolicy ProxyPolicy
+ * @file proxypolicy.h
  *
  * @author Sam Meder
  * @author Sam Lang
+ */
+/**
+ * @defgroup proxypolicy ProxyPolicy
+ * @ingroup globus_gsi_proxy_ssl_api
  *
  * The proxypolicy set of data structures
  * and functions provides an interface to generating
@@ -30,25 +34,17 @@
  * a field in the PROXYCERTINFO structure,
  * and ultimately gets written to a DER encoded string.
  *
- * @see Further Information about proxy policies
+ * Further Information about proxy policies
  * is available in the <a href="http://www.ietf.org/rfc/rfc3820.txt">X.509 Proxy Certificate Profile</a> document.
  */
-
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
-EXTERN_C_BEGIN
 
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <string.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define ANY_LANGUAGE_OID         "1.3.6.1.5.5.7.21.0"
 #define ANY_LANGUAGE_SN          "ANY_LANGUAGE"
@@ -155,6 +151,8 @@ STACK_OF(CONF_VALUE) * i2v_PROXYPOLICY(
     PROXYPOLICY *                       ext,
     STACK_OF(CONF_VALUE) *              extlist);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* HEADER_PROXYPOLICY_H */

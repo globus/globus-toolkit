@@ -1,0 +1,9 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: globus-proxy-utils
+Description: Globus Toolkit - Globus GSI Proxy Utility Programs
+Version: @VERSION@
+Requires.private: @PACKAGE_DEPS@

@@ -15,8 +15,10 @@
  */
 
 
-#ifndef GLOBUS_COMMON_HASHTABLE_H
-#define GLOBUS_COMMON_HASHTABLE_H
+/** @file globus_hashtable.h Lightweight Chaining Hashtable */
+
+#ifndef GLOBUS_HASHTABLE_H
+#define GLOBUS_HASHTABLE_H
 
 /********************************************************************
  *
@@ -28,7 +30,9 @@
 #include "globus_common_include.h"
 #include "globus_list.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Hash function.  User result must be modulo limit
@@ -250,6 +254,8 @@ globus_hashtable_ulong_keyeq(
     void *                              integer1,
     void *                              integer2);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_COMMON_HASHTABLE_H */
+#endif /* GLOBUS_HASHTABLE_H */

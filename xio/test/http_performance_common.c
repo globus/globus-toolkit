@@ -22,9 +22,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/utsname.h>
+#endif
 #include <string.h>
 #include "http_performance_common.h"
 
@@ -954,21 +956,54 @@ prep_timers(
     int			      buf_size)
 {
     int                       sizes;
-    struct utsname            name;
+    const char *              sysname;
+    const char *              release;
+    const char *              version;
+    const char *              machine;
+#   ifdef _WIN32
+    {
+        static char computer_name[MAX_COMPUTERNAME_LENGTH + 1];
+        static char win_release[10];
+        DWORD computer_name_len = MAX_COMPUTERNAME_LENGTH + 1;
+        DWORD dwVersion = 0; 
+        DWORD dwMajorVersion = 0;
+        DWORD dwMinorVersion = 0; 
+        DWORD dwBuild = 0;
+        sysname = "Windows";
+
+        dwVersion = GetVersion();
+        // Get the Windows version.
+        dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
+        dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
+        sprintf(win_release, "%d.%d", (int)dwMinorVersion, (int)dwMinorVersion);
+        release = version = win_release;
+
+        GetComputerName(computer_name, &computer_name_len);
+        machine = computer_name;
+    }
+#   else
+    {
+        struct utsname            name;
+        uname(&name);
+        sysname = name.sysname;
+        release = name.release;
+        version = name.version;
+        machine = name.machine;
+    }
+#   endif
 
     globus_module_activate(GLOBUS_UTP_MODULE);
 
-    uname(&name);
 
     sizes = num_sizes(perf);
     globus_utp_init(sizes, GLOBUS_UTP_MODE_SHARED);
 
     globus_utp_set_attribute("num-iterations","","%d",iterations);
     globus_utp_set_attribute("num-sizes","","%d",sizes);
-    globus_utp_set_attribute("sysname","","%s",name.sysname);
-    globus_utp_set_attribute("release","","%s",name.release);
-    globus_utp_set_attribute("version","","%s",name.version);
-    globus_utp_set_attribute("machine","","%s",name.machine);
+    globus_utp_set_attribute("sysname","","%s",sysname);
+    globus_utp_set_attribute("release","","%s",release);
+    globus_utp_set_attribute("version","","%s",version);
+    globus_utp_set_attribute("machine","","%s",machine);
     globus_utp_set_attribute("buffer-size","","%d",buf_size);
 }
 

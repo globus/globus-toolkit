@@ -14,13 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_FTP_CLIENT_H
-#define GLOBUS_INCLUDE_FTP_CLIENT_H
+#ifndef GLOBUS_FTP_CLIENT_H
+#define GLOBUS_FTP_CLIENT_H
 
 /**
- * @anchor globus_ftp_client_api
- * @mainpage Globus FTP Client API
- *
+ * @file globus_ftp_client.h
+ */
+
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
+/**
+ * @mainpage Globus GridFTP Client API
+ * @copydoc globus_ftp_client_api
+ */
+#endif
+
+/**
+ * @defgroup globus_ftp_client_api Globus FTP Client API
+ * @details
  * The Globus FTP Client library provides a convenient way of accessing
  * files on remote FTP servers. In addition to supporting the basic FTP
  * protocol, the FTP Client library supports several security and
@@ -36,69 +46,59 @@
  * to run it on a different grid.
  *
  * All applications which use the Globus FTP Client API must include the
- * header file "globus_ftp_client.h" and activate the
- * @link globus_ftp_client_activation GLOBUS_FTP_CLIENT_MODULE @endlink.
+ * header file globus_ftp_client.h and activate the
+ * GLOBUS_FTP_CLIENT_MODULE
  *
  * To use the Globus FTP Client API, one must create an
  * @link globus_ftp_client_handle FTP Client handle @endlink. This
  * structure contains context information about FTP operations which are
  * being executed, a cache of FTP control and data connections, and
  * information about plugins which are being used. The specifics of the
- * connection caching and plugins are found in the "@ref
- * globus_ftp_client_handleattr" section of this manual.
+ * connection caching and plugins are found in the 
+ * @ref globus_ftp_client_handleattr section of this manual.
  *
  * Once the handle is created, one may begin transferring files or doing
- * other FTP operations by calling the functions in the "@ref
- * globus_ftp_client_operations" section of this manual. In addition to
+ * other FTP operations by calling the functions in the
+ * @ref globus_ftp_client_operations section of this manual. In addition to
  * whole-file transfers, the API supports partial file transfers, restarting
  * transfers from a known point, and various FTP directory management
  * commands.  All FTP operations may have a set of attributes, defined
- * in the "@ref globus_ftp_client_operationattr" section, associated with
+ * in the @ref globus_ftp_client_operationattr section, associated with
  * them to tune various FTP parameters. The data structures and functions
- * needed to restart a file transfer are described in the "@ref
- * globus_ftp_client_restart_marker" section of this manual. For operations
+ * needed to restart a file transfer are described in the 
+ * @ref globus_ftp_client_restart_marker section of this manual. For operations
  * which require the user to send to or receive data from an FTP server
- * the must call the functions in the "@ref globus_ftp_client_data" section
+ * the must call the functions in the @ref globus_ftp_client_data section
  * of the manual.
- *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
  */
+
 #include "globus_ftp_control.h"
 #include "globus_priority_q.h"
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
+extern "C" {
 #endif
 
-EXTERN_C_BEGIN
 /**
  * @defgroup globus_ftp_client_activation Activation
- *
+ * @ingroup globus_ftp_client_api
+ * @details
  * The Globus FTP Client library uses the standard module activation
  * and deactivation API to initialize its state. Before any FTP
  * functions are called, the module must be activated
  *
  * @code
- *    globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
- * @endcode
+      globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
+   @endcode
  *
  * This function returns GLOBUS_SUCCESS if the FTP library was
  * successfully initialized. This may be called multiple times.
  *
  * To deactivate the FTP library, the following must be called
  *
- * @code
- *    globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE);
- * @endcode
+   @code
+      globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE);
+   @endcode
  */
 
 /** Module descriptor
@@ -346,7 +346,7 @@ typedef struct
     globus_i_ftp_client_handleattr_t * globus_ftp_client_handleattr_t;
 /**
  * @defgroup globus_ftp_client_restart_marker Restart Markers
- *
+ * @ingroup globus_ftp_client_api
  * FTP Restart Markers
  *
  * The Globus FTP Client library provides the ability to start a
@@ -411,7 +411,7 @@ globus_ftp_client_restart_marker_from_string(
 
 /**
  * @defgroup globus_ftp_client_handle Handle Management
- *
+ * @ingroup globus_ftp_client_api
  * Create/Destroy/Modify an FTP Client Handle.
  *
  * Within the Globus FTP Client Library, all FTP operations require a
@@ -478,7 +478,7 @@ globus_ftp_client_handle_remove_plugin(
 
 /**
  * @defgroup globus_ftp_client_handleattr Handle Attributes
- *
+ * @ingroup globus_ftp_client_api
  * Handle attributes are used to control additional features of the
  * FTP Client handle. These features are operation independent.
  *
@@ -601,7 +601,7 @@ globus_ftp_client_handleattr_add_plugin(
 
 /**
  * @defgroup globus_ftp_client_operations FTP Operations
- *
+ * @ingroup globus_ftp_client_api
  * Initiate an FTP operation.
  *
  * This module contains the API functions for a user to request a
@@ -882,7 +882,7 @@ globus_ftp_client_exists(
 
 /**
  * @defgroup globus_ftp_client_operationattr FTP Operation Attributes
- *
+ * @ingroup globus_ftp_client_api
  * Operation attributes are used to control the security and
  * performance of an FTP operation. These features are often dependent
  * on the capabilities of the FTP server which you are going to access.
@@ -1152,7 +1152,7 @@ globus_ftp_client_operationattr_get_rfc1738_url(
 
 /**
  * @defgroup globus_ftp_client_data Reading and Writing Data
- *
+ * @ingroup globus_ftp_client_api
  * Certain FTP client operations require the user to supply buffers
  * for reading or writing data to an FTP server. These operations are
  * globus_ftp_client_get(), globus_ftp_client_partial_get(),
@@ -1299,4 +1299,4 @@ extern const globus_object_type_t GLOBUS_ERROR_TYPE_FTP_DEFINITION;
 #endif
 EXTERN_C_END
 
-#endif /* GLOBUS_INCLUDE_FTP_CLIENT_H */
+#endif /* GLOBUS_FTP_CLIENT_H */

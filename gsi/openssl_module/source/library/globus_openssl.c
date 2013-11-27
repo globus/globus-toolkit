@@ -18,10 +18,6 @@
 /**
  * @file globus_openssl.c
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 
 #include "globus_openssl.h"

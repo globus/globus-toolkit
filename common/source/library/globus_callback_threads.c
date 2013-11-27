@@ -148,7 +148,7 @@ typedef struct
     void *                              user_arg;
     globus_callback_space_t             space;
     
-#ifndef TARGET_ARCH_WIN32
+#ifndef _WIN32
     struct sigaction                    old_action;
 #endif
     globus_bool_t                       persist;

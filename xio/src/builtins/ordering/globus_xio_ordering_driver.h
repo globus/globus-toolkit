@@ -14,23 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_XIO_ORDERING_DRIVER_INCLUDE
-#define GLOBUS_XIO_ORDERING_DRIVER_INCLUDE
+#ifndef GLOBUS_XIO_ORDERING_DRIVER_H
+#define GLOBUS_XIO_ORDERING_DRIVER_H
 
 /**
- * @file
- * Header file for XIO ORDERING Driver
+ * @file globus_xio_ordering_driver.h XIO ORDERING Driver
  */
 
 #include "globus_common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /**
- * @defgroup ordering_driver Globus XIO ORDERING Driver
+ * @defgroup globus_xio_ordering_driver Globus XIO ORDERING Driver
+ * @ingroup globus_xio
  */
 
 /**
- * @defgroup ordering_driver_instance Opening/Closing
- * @ingroup ordering_driver
+ * @defgroup globus_xio_ordering_driver_instance Opening/Closing
+ * @ingroup globus_xio_ordering_driver
  * Ordering driver is a transform driver and thus has to be used on top of a 
  * transport driver. An XIO handle with the ordering driver can be created with 
  * either @ref globus_xio_handle_create() or 
@@ -41,8 +44,8 @@
  */
 
 /**
- * @defgroup ordering_driver_io Reading/Writing
- * @ingroup ordering_driver
+ * @defgroup globus_xio_ordering_driver_io Reading/Writing
+ * @ingroup globus_xio_ordering_driver
  * Ordering driver does not allow multiple @ref globus_xio_register_read() 
  * to be outstanding. This limitation is there to enforce that the users get 
  * the read callback in order. There is a known issue in enforcing the order
@@ -59,8 +62,8 @@
  */
 
 /**
- * @defgroup ordering_driver_envs Env Variables
- * @ingroup ordering_driver
+ * @defgroup globus_xio_ordering_driver_envs Env Variables
+ * @ingroup globus_xio_ordering_driver
  *
  * The ordering driver uses the following environment variable
  * - GLOBUS_XIO_ORDERING_DEBUG Available if using a debug build.  See
@@ -68,8 +71,8 @@
  */
 
 /**
- * @defgroup ordering_driver_cntls Attributes and Cntls
- * @ingroup ordering_driver
+ * @defgroup globus_xio_ordering_driver_cntls Attributes and Cntls
+ * @ingroup globus_xio_ordering_driver
  *
  * Ordering driver specific attrs and cntls.
  *
@@ -77,12 +80,12 @@
  * @see globus_xio_handle_cntl()
  */
 /**
- * @defgroup ordering_driver_types Types
- * @ingroup ordering_driver
+ * @defgroup globus_xio_ordering_driver_types Types
+ * @ingroup globus_xio_ordering_driver
  */
 /**
- * @defgroup ordering_driver_errors Error Types
- * @ingroup ordering_driver
+ * @defgroup globus_xio_ordering_driver_errors Error Types
+ * @ingroup globus_xio_ordering_driver
  *
  * The errors reported by ORDERING driver include
  * GLOBUS_XIO_ERROR_COMMAND, GLOBUS_XIO_ERROR_MEMORY, GLOBUS_XIO_ERROR_STATE,
@@ -101,7 +104,7 @@
 
 /**
  * ORDERING driver specific error types
- * @ingroup ordering_driver_errors
+ * @ingroup globus_xio_ordering_driver_errors
  */
 typedef enum
 {
@@ -119,14 +122,14 @@ typedef enum
 
 /**
  * ORDERING driver specific cntls
- * @ingroup ordering_driver_cntls
+ * @ingroup globus_xio_ordering_driver_cntls
  */
 typedef enum
 {
     /** GlobusVarArgEnum(handle)
      * Set offset for the next IO operation. This is not allowed when there is
      * an outstanding IO operation. This operation clears all the buffered data.
-     * @ingroup ordering_driver_cntls
+     * @ingroup globus_xio_ordering_driver_cntls
      *
      * @param offset
      *      Specifies the offset to use in the next IO operation.
@@ -137,7 +140,7 @@ typedef enum
     /** GlobusVarArgEnum(attr)
      * Set the maximum number of reads that ordering driver can have outstanding
      * on driver(s) below.
-     * @ingroup ordering_driver_cntls
+     * @ingroup globus_xio_ordering_driver_cntls
      *
      * @param max_read_count
      *      Specifies the maximum number of parallel reads (default is 1).
@@ -147,7 +150,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the maximum number of parallel reads set on the attr.
-     * @ingroup ordering_driver_cntls
+     * @ingroup globus_xio_ordering_driver_cntls
      *
      * @param max_read_count_out
      *      The maximum number of parallel reads allowed will be stored here.
@@ -162,7 +165,7 @@ typedef enum
      * to user) and buffering (do not care about offsets - just buffer the data
      * read abd deliver it when requested). This attribute control can be used
      * to enable buffering.
-     * @ingroup ordering_driver_cntls
+     * @ingroup globus_xio_ordering_driver_cntls
      *
      * @param buffering
      *	    GLOBUS_TRUE to enable buffering, GLOBUS_FALSE (default) to disable 
@@ -173,7 +176,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the buffering flag on the attr.
-     * @ingroup ordering_driver_cntls
+     * @ingroup globus_xio_ordering_driver_cntls
      *
      * @param buffering_out
      *      Buffering flag will be stored in here.
@@ -184,7 +187,7 @@ typedef enum
     /** GlobusVarArgEnum(attr)
      * Set the size of the buffer that ordering driver creates to use for 
      * reading data from the driver below it.
-     * @ingroup ordering_driver_cntls
+     * @ingroup globus_xio_ordering_driver_cntls
      *
      * @param buf_size
      *      Specifies the buffer size for internal reads (default is 100 KB).
@@ -194,7 +197,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the size of the buffer used for the internal reads.
-     * @ingroup ordering_driver_cntls
+     * @ingroup globus_xio_ordering_driver_cntls
      *
      * @param buf_size_out
      *      The buffer size will be stored in here.
@@ -205,7 +208,7 @@ typedef enum
     /** GlobusVarArgEnum(attr)
      * Set the maximum number of buffers that this driver can create for
      * reading data from the driver below it.
-     * @ingroup ordering_driver_cntls
+     * @ingroup globus_xio_ordering_driver_cntls
      *
      * @param max_buf_count
      *      Specifies the max buffer count for internal reads (default is 100).
@@ -215,7 +218,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the maximum buffer count set on the attr.
-     * @ingroup ordering_driver_cntls
+     * @ingroup globus_xio_ordering_driver_cntls
      *
      * @param max_buf_count_out
      *      The maximun buffer count will be stored in here.
@@ -225,5 +228,8 @@ typedef enum
 
 } globus_xio_ordering_cmd_t;	
 
-
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_XIO_ORDERING_DRIVER_H */
