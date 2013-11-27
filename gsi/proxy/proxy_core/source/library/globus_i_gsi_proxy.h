@@ -14,35 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_i_gsi_proxy.h
- * Globus GSI Proxy Library
+ * @file globus_i_gsi_proxy.h Globus GSI Proxy Library Internals
  * @author Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date $
  */
 
 #include "globus_gsi_proxy.h"
 #include "proxycertinfo.h"
 #include "globus_common.h"
 
-#ifndef GLOBUS_I_INCLUDE_GSI_PROXY_H
-#define GLOBUS_I_INCLUDE_GSI_PROXY_H
+#ifndef GLOBUS_I_GSI_PROXY_H
+#define GLOBUS_I_GSI_PROXY_H
 
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+#ifndef __cplusplus
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 /* DEBUG MACROS */
 
@@ -317,8 +303,8 @@ globus_i_gsi_proxy_error_chain_result(
     const char *                        short_desc,
     const char *                        long_desc);
 
-EXTERN_C_END
+#ifndef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_I_INCLUDE_GSI_PROXY_H */
-
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+#endif /* GLOBUS_I_GSI_PROXY_H */

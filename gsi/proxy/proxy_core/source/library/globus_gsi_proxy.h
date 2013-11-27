@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_GLOBUS_GSI_PROXY_H
-#define GLOBUS_INCLUDE_GLOBUS_GSI_PROXY_H
+/** @file globus_gsi_proxy.h Globus GSI Proxy API */
+
+#ifndef GLOBUS_GLOBUS_GSI_PROXY_H
+#define GLOBUS_GLOBUS_GSI_PROXY_H
 
 #ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
@@ -41,17 +43,20 @@
  * <TR><TD></TD>                               <TD>set desired cert info extension
  *                                                 in the handle by using the handle
  *                                                 set functions.</TD></TR> 
- * <TR><TD></TD>                               <TD>globus_gsi_proxy_create_req</TD></TR>
- * <TR><TD>globus_gsi_proxy_inquire_req</TD>   <TD></TD></TR>
+ * <TR><TD></TD>                               <TD>#globus_gsi_proxy_create_req</TD></TR>
+ * <TR><TD>#globus_gsi_proxy_inquire_req</TD>   <TD></TD></TR>
  * <TR><TD>modify cert info extension by using
  *         handle set/get/clear functions.</TD><TD></TD></TR>
- * <TR><TD>globus_gsi_proxy_sign_req</TD>      <TD></TD></TR>
- * <TR><TD></TD>                               <TD>globus_gsi_proxy_assemble_cred</TD></TR>
+ * <TR><TD>#globus_gsi_proxy_sign_req</TD>      <TD></TD></TR>
+ * <TR><TD></TD>                               <TD>#globus_gsi_proxy_assemble_cred</TD></TR>
  *</TABLE>
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
+ *
+ * The API documentation is divided into the following sections
+ * - @ref globus_gsi_proxy_activation
+ * - @ref globus_gsi_proxy_handle
+ * - @ref globus_gsi_proxy_handle_attrs
+ * - @ref globus_gsi_proxy_operations
+ * - @ref globus_gsi_proxy_constants
  */
 
 
@@ -77,8 +82,8 @@ extern "C" {
  * following function must be called:
  *
  * @code
- *      globus_module_activate(GLOBUS_GSI_PROXY_MODULE)
- * @endcode
+   globus_module_activate(GLOBUS_GSI_PROXY_MODULE)
+   @endcode
  *
  *
  * This function returns GLOBUS_SUCCESS if Globus GSI Proxy was
@@ -89,9 +94,9 @@ extern "C" {
  *
  * To deactivate Globus GSI Proxy, the following function must be called:
  *
- * @code
- *    globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE)
- * @endcode
+   @code
+   globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE)
+   @endcode
  *
  * This function should be called once for each time Globus GSI Proxy
  * was activated. 
@@ -447,4 +452,4 @@ globus_gsi_proxy_handle_attrs_set_key_gen_callback(
 }
 #endif
 
-#endif /* GLOBUS_INCLUDE_GLOBUS_GSI_PROXY_H */
+#endif /* GLOBUS_GLOBUS_GSI_PROXY_H */

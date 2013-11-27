@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_proxy_handle.c
- * @file Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date$
+ * @author Sam Meder, Sam Lang
  */
 
 #define GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(_LENGTH_) \
@@ -34,16 +29,13 @@
         __LINE__, \
         "Could not allocate enough memory: %d bytes", \
         _LENGTH_))
-#endif
 
 #include "globus_i_gsi_proxy.h"
 
 /**
- * @name Initialize and Destroy
- */
-/*@{*/
-/**
+ * @brief Initialize Handle
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Initialize a GSI Proxy handle.
  *
  * Initialize a proxy handle which can be used in subsequent
@@ -204,15 +196,12 @@ globus_gsi_proxy_handle_destroy(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_destroy */
-/*@}*/
 
 
 /**
- * @name Get/Set Request
- */
-/*@{*/
-/**
+ * @brief Get Request
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Get the certificate request from a GSI Proxy handle.
  *
  * @param handle
@@ -273,6 +262,7 @@ globus_gsi_proxy_handle_get_req(
 /* globus_gsi_proxy_handle_get_req */
 
 /**
+ * @brief Set Request
  * Set the certificate request in a GSI Proxy handle.
  *
  * @param handle
@@ -329,15 +319,12 @@ globus_gsi_proxy_handle_set_req(
     return result;
 }
 /* globus_gsi_proxy_handle_set_req */
-/*@}*/
 
 
 /**
- * @name Get/Set Private Key
- */
-/*@{*/
-/**
+ * @brief Get/Set Private Key
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Get the private key from a GSI Proxy handle.
  *
  * @param handle
@@ -557,14 +544,11 @@ globus_gsi_proxy_handle_set_private_key(
     return result;
 }
 /* globus_gsi_proxy_handle_set_private_key */
-/*@}*/
 
 /**
- * @name Get/Set Proxy Type
- */
-/*@{*/
-/**
+ * @brief Get Proxy Type
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Determine the type of proxy that will be generated when using this handle. 
  *
  * @param handle
@@ -606,6 +590,9 @@ globus_gsi_proxy_handle_get_type(
 /* globus_gsi_proxy_handle_get_type */
 
 /**
+ * @brief Get Proxy Type
+ * @ingroup globus_gsi_proxy_handle
+ * @details
  * Set the type of proxy that will be generated when using this handle. Note
  * that this will have no effect when generating a proxy from a proxy. In that
  * case the generated proxy will inherit the type of the parent.
@@ -670,14 +657,11 @@ globus_gsi_proxy_handle_set_type(
     return result;
 }
 /* globus_gsi_proxy_handle_set_type */
-/*@}*/
 
 /**
- * @name Get/Set Policy
- */
-/*@{*/
-/**
+ * @brief Set Policy
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Set the policy to be used in the GSI Proxy handle.
  *
  * This function sets the policy to be used in the proxy cert
@@ -766,6 +750,9 @@ globus_gsi_proxy_handle_set_policy(
 /* globus_gsi_proxy_handle_set_policy */
 
 /**
+ * @brief Get Policy
+ * @ingroup globus_gsi_proxy_handle
+ * @details
  * Get the policy from the GSI Proxy handle.
  *
  * This function gets the policy that is being used in the 
@@ -823,21 +810,18 @@ globus_gsi_proxy_handle_get_policy(
     return result;
 }
 /* globus_gsi_proxy_handle_get_policy */
-/*@}*/
 
 /**
- * @name Get/Set X509 Extensions
+ * @brief Add X.509 Extensions
  * @ingroup globus_gsi_proxy_handle
- */
-/*@{*/
-/**
+ * @details
  * Add an X509 extension to the GSI Proxy handle to be added to certificate
  *
  * This function adds a X509 extension to the proxy certificate.
  *
  * @param handle
  *        The handle for the proxy to which the extension should be added.
- * @param extension
+ * @param ext
  *        The extension to be added.
  *
  * @return
@@ -900,13 +884,16 @@ globus_gsi_proxy_handle_add_extension(
 /* globus_gsi_proxy_handle_add_extension */
 
 /**
+ * @brief Set X.509 Extensions
+ * @ingroup globus_gsi_proxy_handle
+ * @details
  * Set the X509 extensions from a GSI Proxy handle
  *
  * This function sets the X509 extensions for a proxy certificate.
  *
  * @param handle
  *        The handle for the proxy from which the extension should be set.
- * @param extensions
+ * @param exts
  *        The extensions to be set. Can be NULL to clear extensions.
  *
  * @return
@@ -969,6 +956,9 @@ globus_gsi_proxy_handle_set_extensions(
 /* globus_gsi_proxy_handle_set_extensions */
 
 /**
+ * @brief Get X.509 Extensions
+ * @ingroup globus_gsi_proxy_handle
+ * @details
  * Get the X509 extensions from a GSI Proxy handle
  *
  * This function returns the X509 extensions from the proxy certificate.
@@ -976,7 +966,7 @@ globus_gsi_proxy_handle_set_extensions(
  * @param handle
  *        The handle for the proxy from which the extensions should be
  *        retrieved.
- * @param extensions
+ * @param exts
  *        The variable to hold the extensions. The caller is responsible
  *        for freeing the extensions with sk_X509_EXTENSION_free()
  *        when they are done with them.
@@ -1034,14 +1024,11 @@ globus_gsi_proxy_handle_get_extensions(
 }
 
 /* globus_gsi_proxy_handle_get_extensions */
-/*@}*/
 
 /**
- * @name Get/Set Path Length
- */
-/*@{*/
-/**
+ * @brief Set Path Length
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Set the path length to be used in the GSI Proxy handle.
  *
  * This function sets the path length to be used in the proxy
@@ -1097,6 +1084,9 @@ globus_gsi_proxy_handle_set_pathlen(
 /* globus_gsi_proxy_handle_set_pathlen */
 
 /**
+ * @brief Get Path Length
+ * @ingroup globus_gsi_proxy_handle
+ * @details
  * Get the path length from the GSI Proxy handle.
  *
  * This function gets the path length that is being used in the 
@@ -1140,15 +1130,11 @@ globus_gsi_proxy_handle_get_pathlen(
     return result;
 }
 /* globus_gsi_proxy_handle_get_pathlen */
-/*@}*/
-
 
 /**
- * @name Get/Set Time Valid
- */
-/* @{ */
-/**
+ * @brief Get Time Valid
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Get the validity time of the proxy
  *
  * @param handle
@@ -1189,6 +1175,9 @@ globus_gsi_proxy_handle_get_time_valid(
 /* globus_gsi_proxy_handle_get_time_valid */
 
 /**
+ * @brief Set Time Valid
+ * @ingroup globus_gsi_proxy_handle
+ * @details
  * Set the validity time of the proxy
  *
  * @param handle
@@ -1228,14 +1217,11 @@ globus_gsi_proxy_handle_set_time_valid(
     return result;
 }
 /* globus_gsi_proxy_handle_set_time_valid */
-/*@}*/
 
 /**
- * @name Clear Cert Info
- */
-/*@{*/
-/**
+ * @brief Clear Cert Info
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Clear the proxy cert info extension stored in the GSI Proxy handle.
  *
  * This function clears proxy cert info extension related setting in
@@ -1285,14 +1271,11 @@ globus_gsi_proxy_handle_clear_cert_info(
     return result;
 }
 /* globus_gsi_proxy_handle_clear_cert_info */
-/*@}*/
 
 /**
- * @name Get/Set Cert Info
- */
-/*@{*/
-/**
+ * @brief Get Cert Info
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Get the proxy cert info extension stored in the GSI Proxy handle.
  *
  * This function retrieves the proxy cert info extension from the GSI Proxy
@@ -1363,6 +1346,9 @@ globus_gsi_proxy_handle_get_proxy_cert_info(
 /* globus_gsi_proxy_handle_get_proxy_cert_info */
 
 /**
+ * @brief Set Cert Info
+ * @ingroup globus_gsi_proxy_handle
+ * @details
  * Set the proxy cert info extension stored in the GSI Proxy handle.
  *
  * This function sets the proxy cert info extension in the GSI Proxy handle.
@@ -1421,14 +1407,11 @@ globus_gsi_proxy_handle_set_proxy_cert_info(
     return result;
 }
 /* globus_gsi_proxy_handle_set_proxy_cert_info */
-/*@}*/
 
 /**
- * @name Get Signing Algorithm
- */
-/* @{ */
-/**
+ * @brief Get Signing Algorithm
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Get the signing algorithm used to sign the proxy cert request
  *
  * @param handle
@@ -1465,14 +1448,11 @@ globus_gsi_proxy_handle_get_signing_algorithm(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Get Key Bits
- */
-/* @{ */
-/**
+ * @brief Get Key Bits
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Get the key bits used for the pub/private key pair of the proxy
  *
  * @param handle
@@ -1508,14 +1488,11 @@ globus_gsi_proxy_handle_get_keybits(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Get Init Prime
- */
-/* @{ */
-/**
+ * @brief Get Init Prime
  * @ingroup globus_gsi_proxy_handle 
+ * @details
  * Get the init prime of the proxy handle
  *
  * @param handle
@@ -1551,15 +1528,12 @@ globus_gsi_proxy_handle_get_init_prime(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 
 /**
- * @name Get Clock Skew
- */
-/* @{ */
-/**
+ * @brief Get Clock Skew
  * @ingroup globus_gsi_proxy_handle  
+ * @details
  * Get the clock skew of the proxy handle
  *
  * @param handle
@@ -1596,14 +1570,11 @@ globus_gsi_proxy_handle_get_clock_skew_allowable(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Get Callback for Creating Keys
- */
-/* @{ */
-/**
+ * @brief Get Callback for Creating Keys
  * @ingroup globus_gsi_proxy_handle 
+ * @details
  * Get the callback for creating the public/private key pair
  *
  * @param handle
@@ -1638,15 +1609,12 @@ globus_gsi_proxy_handle_get_key_gen_callback(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 } 
-/* @} */        
 
 
 /**
- * @name Get/Set Proxy Common Name
- */
-/*@{*/
-/**
+ * @brief Get/Set Proxy Common Name
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Get the proxy common name stored in the GSI Proxy handle.
  *
  * This function retrieves the proxy common name from the GSI Proxy
@@ -1768,15 +1736,12 @@ globus_gsi_proxy_handle_set_common_name(
     return result;
 }
 /* globus_gsi_proxy_handle_set_common_name */
-/*@}*/
 
 
 /**
- * @name Set/Check Proxy Is Limited
- */
-/* @{ */
-/**
+ * @brief Set/Check Proxy Is Limited
  * @ingroup globus_gsi_proxy_handle
+ * @details
  * Set the limited proxy flag on the proxy handle
  *
  * @param handle
@@ -1884,4 +1849,3 @@ globus_gsi_proxy_is_limited(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return GLOBUS_SUCCESS;
 }
-/* @} */

@@ -14,25 +14,19 @@
  * limitations under the License.
  */
 
-
 #ifndef GLOBUS_GSI_PROXY_CONSTANTS_H
 #define GLOBUS_GSI_PROXY_CONSTANTS_H
+/** @file globus_gsi_proxy_constants.h GSI Proxy Constants */
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
+#ifdef __cplusplus
+extern "C" {
 #endif
-
-EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_gsi_proxy_constants Proxy Constants
+ * @ingroup globus_gsi_proxy
  */
+
 /**
  * Proxy Error codes
  * @ingroup globus_gsi_proxy_constants
@@ -79,6 +73,8 @@ typedef enum
     GLOBUS_GSI_PROXY_ERROR_LAST = 18
 } globus_gsi_proxy_error_t;
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif
