@@ -1,9 +1,0 @@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
-
-Name: globus-gram-job-manager-pbs
-Description: Globus Toolkit - PBS Job Manager Support
-Version: @VERSION@
-Requires.private: @PACKAGE_DEPS@

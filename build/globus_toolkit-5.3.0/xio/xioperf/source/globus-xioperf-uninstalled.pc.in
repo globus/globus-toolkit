@@ -1,9 +1,0 @@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
-
-Name: globus-xioperf
-Description: Globus Toolkit - XIO Performance Tool
-Version: @VERSION@
-Requires.private: @PACKAGE_DEPS@

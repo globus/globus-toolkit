@@ -1,9 +1,0 @@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
-
-Name: globus-authz-null-callout
-Description: Globus Toolkit - Globus authz callouts that do nothing
-Version: @VERSION@
-Requires.private: @PACKAGE_DEPS@

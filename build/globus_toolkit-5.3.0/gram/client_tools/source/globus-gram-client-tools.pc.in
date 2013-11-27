@@ -1,9 +1,0 @@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
-
-Name: globus-gram-client-tools
-Description: Globus Toolkit - Job Management Tools (globusrun)
-Version: @VERSION@
-Requires.private: @PACKAGE_DEPS@

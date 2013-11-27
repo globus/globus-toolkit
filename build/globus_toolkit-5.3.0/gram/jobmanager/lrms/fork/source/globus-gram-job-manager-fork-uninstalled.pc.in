@@ -1,9 +1,0 @@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
-
-Name: globus-gram-job-manager-fork
-Description: Globus Toolkit - Fork Job Manager Support
-Version: @VERSION@
-Requires.private: @PACKAGE_DEPS@

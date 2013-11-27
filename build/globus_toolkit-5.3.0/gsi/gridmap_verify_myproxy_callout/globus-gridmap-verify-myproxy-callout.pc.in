@@ -1,9 +1,0 @@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
-
-Name: globus-gridmap-verify-myproxy-callout
-Description: Globus Toolkit - Globus gridmap myproxy callout
-Version: @VERSION@
-Requires.private: @PACKAGE_DEPS@
