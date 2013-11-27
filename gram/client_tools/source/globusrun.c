@@ -666,7 +666,7 @@ main(int argc, char* argv[])
                 }
                 else
                 {
-                    globusrun_l_args_error_fmt("out of memory","");
+                    globusrun_l_args_error_fmt("out of memory: %s",request_file);
                 }
             }
             else
