@@ -1,27 +1,27 @@
-dnl
-
-AC_REVISION($Revision$)
-AC_INIT(Makefile.am)
-
-GLOBUS_INIT
-
+AC_INIT([globus_xio_rate_driver],[0.3])
+AM_INIT_AUTOMAKE
 AM_PROG_LIBTOOL
 
-dnl config header goes here
+MAJOR_VERSION=${PACKAGE_VERSION%%.*}
+MINOR_VERSION=${PACKAGE_VERSION##*.}
+AGE_VERSION=0
 
-dnl Initialize the automake rules the last argument
-AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+AC_SUBST(MAJOR_VERSION)
+AC_SUBST(MINOR_VERSION)
+AC_SUBST(AGE_VERSION)
 
-LAC_DOXYGEN("../")
+m4_include([dirt.sh])
+AC_SUBST(DIRT_TIMESTAMP)
+AC_SUBST(DIRT_BRANCH_ID)
 
-GLOBUS_FINALIZE
+PACKAGE_DEPS="globus-xio >= 0"
+AC_SUBST(PACKAGE_DEPS)
 
-AC_OUTPUT(
-	Makefile
-	pkgdata/Makefile
-        doxygen/Makefile
-        doxygen/Doxyfile 
-        doxygen/Doxyfile-internal
-	pkgdata/pkg_data_src.gpt
-        version.h
-)
+PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+
+AC_CONFIG_FILES(
+        globus-xio-rate-driver-uninstalled.pc
+        globus-xio-rate-driver.pc
+        Makefile
+	version.h)
+AC_OUTPUT
