@@ -303,7 +303,7 @@ globus_i_gsi_proxy_error_chain_result(
     const char *                        short_desc,
     const char *                        long_desc);
 
-#ifndef __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
