@@ -17,9 +17,9 @@ EXTRA_DIST = $(globusperl_DATA) $(perldoc_DATA) $(noinst_DATA) \
 
 SUFFIXES = .pm .html .3
 
-$(globusperl_DATA): ../globus-gram-protocol-constants.sh
+$(globusperl_DATA): create_protocol_constants.pl ../globus-gram-protocol-constants.sh
 	$(RM) $(globusperl_DATA)
-	$(PERL) $< -perl \
+	-$(PERL) $< -perl \
 		$(srcdir)/../globus-gram-protocol-constants.sh
 .pm.html:
 	pod2html --noindex $*.pm | \
