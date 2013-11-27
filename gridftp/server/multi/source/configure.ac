@@ -15,7 +15,7 @@ m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
-PACKAGE_DEPS="globus_xio >= 0 globus_ftp_client >= 2 globus_xio_gsi_driver >= 0"
+PACKAGE_DEPS="globus-xio >= 0 globus-ftp-client >= 2 globus-xio-gsi-driver >= 0"
 AC_SUBST(PACKAGE_DEPS)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
