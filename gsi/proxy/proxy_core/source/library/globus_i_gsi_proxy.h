@@ -26,7 +26,7 @@
 #ifndef GLOBUS_I_GSI_PROXY_H
 #define GLOBUS_I_GSI_PROXY_H
 
-#ifndef __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
