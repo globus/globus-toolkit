@@ -1,6 +1,7 @@
 AC_INIT([globus_toolkit], [5.3.0], [support@globus.org])
 AM_INIT_AUTOMAKE(foreign)
 AM_PROG_LIBTOOL
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
 dnl Leading newline allows this multi-line value be AC_SUBST into the
 dnl Makefile with a dummy first macro created by the automatic var = @var@
@@ -22,9 +23,9 @@ $1-deps = m4_foreach(p, m4_split(m4_normalize($3)), p[-stamp ])
 $1: $1-all
 $1-all: $1-stamp
 $1-stamp: [\$(]$1[-deps)]
-	-export PKG_CONFIG_PATH=\$(PKG_CONFIG_PATH) ; ( (cd \$($1-all_SUBDIR) && \$(MAKE) \$(AM_MAKEFLAGS) all) && touch \$[]@) || exit 1
+	@export PKG_CONFIG_PATH=\$(PKG_CONFIG_PATH) ; ( (cd \$($1-all_SUBDIR) && \$(MAKE) \$(AM_MAKEFLAGS) all) && touch \$[]@) || exit 1
 $1-only:
-	-export PKG_CONFIG_PATH=\$(PKG_CONFIG_PATH) ; cd \$($1-all_SUBDIR) && \$(MAKE) \$(AM_MAKEFLAGS) all
+	@export PKG_CONFIG_PATH=\$(PKG_CONFIG_PATH) ; cd \$($1-all_SUBDIR) && \$(MAKE) \$(AM_MAKEFLAGS) all
 m4_pushdef([AC_INIT],[$]1-[$]2)dnl
 m4_define([pkgver], m4_esyscmd(grep AC[_]INIT [$2][/configure.ac]))dnl
 $1-dist-tarball = m4_normalize(pkgver)[.tar.gz]
@@ -169,7 +170,7 @@ GT_PACKAGE([globus_authz_null_callout],
         [gsi/authz_null_callout/source],
         [globus_authz], [gsi])
 GT_PACKAGE([globus_gram_job_manager_slurm],
-        [gram/jobmanager/lrms/slurm/source], [gram5-slurm])
+        [gram/jobmanager/lrms/slurm/source], [], [gram5-slurm])
 dnl GT_PACKAGE([globus_xio_udt_driver],[xio/drivers/udt_ref])
 GT_PACKAGE([globus_gridmap_callout_error],
         [gsi/gridmap_callout/error], [globus_common globus_gssapi_error],
@@ -200,7 +201,7 @@ GT_PACKAGE([globus_gridmap_eppn_callout], [gsi/gridmap_eppn_callout],
     [gsi])
 GT_PACKAGE([globus_usage_tools], [usage/python/tools/source], [], [usage])
 GT_PACKAGE([globus_gram_job_manager_condor],
-    [gram/jobmanager/lrms/condor/source], [gram5-condor])
+    [gram/jobmanager/lrms/condor/source], [], [gram5-condor])
 GT_PACKAGE([globus_proxy_utils],[gsi/proxy/proxy_utils/source],
     [ globus_common globus_openssl_module globus_gsi_openssl_error
       globus_gsi_cert_utils globus_gsi_sysconfig globus_gsi_proxy_ssl
@@ -240,7 +241,9 @@ bundle: m4_expand([GT_BUNDLES_]bundle[_MACRO])])"
 GT_BUNDLES="m4_normalize(GT_BUNDLES_MACRO)"
 AC_PATH_PROGS([DOXYGEN], [doxygen])
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
-AC_SUBST(TARGETS)
+TARGETS_FILE=makefile.targets
+echo "$TARGETS" > "$TARGETS_FILE"
+AC_SUBST_FILE(TARGETS_FILE)
 AC_SUBST(SUBDIRS)
 AC_SUBST(DIST_SUBDIRS)
 AC_SUBST(GT_TARGETS_ALL)
