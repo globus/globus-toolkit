@@ -6093,7 +6093,7 @@ globus_gass_cache_cleanup_tag_all(
  * @param cache_handle
  *     Handle to the opened cache directory to use.
  * @param url
- *     The incoming URL to mangle (\0 terminated)
+ *     The incoming URL to mangle (NULL-terminated)
  * @param mangled_url
  *     Pointer to the output string; a buffer for the
  *     real string is malloc()ed for the application.  If mangled is
@@ -6137,7 +6137,7 @@ globus_gass_cache_mangle_url( const globus_gass_cache_t  cache_handle,
  * @param cache_handle
  *     Handle to the opened cache directory to use.
  * @param tag
- *     The incoming tag to mangle (\0 terminated)
+ *     The incoming tag to mangle (NULL-terminated)
  * @param mangled_tag
  *     Pointer to the output string; a buffer for the
  *     real string is malloc()ed for the application.  If mangled is

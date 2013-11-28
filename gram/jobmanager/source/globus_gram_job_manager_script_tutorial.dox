@@ -211,7 +211,7 @@ which require different startup commands. Here, we will quote and escape
 the strings in the argument list so that the values of the arguments
 will be identical to those in the initial job request string. For this
 Bourne-shell syntax script, we will double-quote each argument, and
-escaping the backslash (\), dollar-sign ($), double-quote ("), and
+escaping the backslash (\), dollar-sign ($), double-quote (&quot;), and
 single-quote (') characters. We will use this new string later in the script.
 
 @code

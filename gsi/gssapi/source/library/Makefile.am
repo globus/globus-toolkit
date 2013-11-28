@@ -2,7 +2,7 @@ include_HEADERS = gssapi.h
 lib_LTLIBRARIES = libglobus_gssapi_gsi.la
 
 if USE_SYMBOL_LABELS
-LABELFLAGS = -Wl,--version-script,gssapi.sym
+LABELFLAGS = -Wl,--version-script,$(srcdir)/gssapi.sym
 endif
 
 libglobus_gssapi_gsi_la_SOURCES = \

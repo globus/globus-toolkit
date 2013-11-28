@@ -7,7 +7,7 @@
 EXTERN_C_BEGIN
 #endif
 
-/** @ingroup seg_api
+/** @ingroup globus_scheduler_event_generator_api
  * Error types used by the SEG.
  */
 typedef enum
@@ -122,7 +122,7 @@ extern globus_module_descriptor_t globus_i_scheduler_event_generator_module;
     (&globus_i_scheduler_event_generator_module)
 
 /**
- * @defgroup seg_api Scheduler Implementation API
+ * @defgroup globus_scheduler_event_generator_api Scheduler Implementation API
  * 
  * Scheduler-specific SEG module implementations use this API to issue events
  * to the Job State Monitor. Events occur whenever a job is placed in the 

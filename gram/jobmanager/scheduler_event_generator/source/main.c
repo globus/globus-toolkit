@@ -33,7 +33,7 @@ globus_l_directory_write_event_handler(
     const globus_scheduler_event_t *    event);
 
 /**
- * @mainpage Globus Scheduler Event Generator
+ * @page globus_scheduler_event_generator Globus Scheduler Event Generator
  *
  * The Scheduler Event Generator (SEG) is a program which uses
  * scheduler-specific monitoring modules to generate job state
@@ -71,8 +71,8 @@ globus_l_directory_write_event_handler(
  * an error writing to stdout or reading stdin, it terminates. The scheduler
  * specific code uses the SEG API to emit events to the JSM.
  *
- * Scheduler implementations use the @ref seg_api "SEG API" to send messages
- * to the JSM.
+ * Scheduler implementations use the @ref globus_scheduler_event_generator_api
+ * to send messages to the JSM.
  */
 static
 void
