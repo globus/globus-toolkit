@@ -9,6 +9,5 @@ Name: globus-gssapi-gsi
 Description: Globus Toolkit - GSSAPI library
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L@abs_top_builddir@/library -lglobus_gssapi_gsi
-Libs.private: @PACKAGE_DEP_LIBS@
+Libs: -L${abs_top_builddir}/library -lglobus_gssapi_gsi
 Cflags: -I${abs_top_srcdir}/library

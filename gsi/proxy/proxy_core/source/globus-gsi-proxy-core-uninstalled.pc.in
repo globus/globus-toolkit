@@ -10,5 +10,4 @@ Description: Globus Toolkit - Globus GSI Proxy Core Library
 Version: @PACKAGE_VERSION@
 Requires: @PACKAGE_DEPS@
 Libs: -L${abs_top_builddir}/library -lglobus_gsi_proxy_core
-Libs.private: @PACKAGE_DEP_LIBS@
 Cflags: -I${abs_top_srcdir}/library
