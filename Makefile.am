@@ -7,7 +7,7 @@ $(GT_TARGETS_CLEAN):
 		export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) clean ; \
 	fi
 	@rm -f $($@_stamp)
-$(GT_TARGETS_INSTALL): $($_stamp)
+$(GT_TARGETS_INSTALL):
 	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) install
 $(GT_TARGETS_DISTCLEAN):
 	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) distclean
@@ -31,8 +31,6 @@ doc-clean:
 	@rm -rf doc doc-stamp
 DOC_PHONY += doc doc-clean
 endif
-
-install-exec-hook: $(GT_TARGETS_INSTALL)
 
 install-data-local: $(DOC_STAMPS)
 	@if test -d doc/man/man3; then \

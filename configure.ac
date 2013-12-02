@@ -1,4 +1,5 @@
 AC_INIT([globus_toolkit], [5.3.0], [support@globus.org])
+export GLOBUS_VERSION=$VERSION
 AM_INIT_AUTOMAKE(foreign)
 AM_PROG_LIBTOOL
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
@@ -22,6 +23,7 @@ $1-dist_SUBDIR = $2
 $1-deps = m4_foreach(p, m4_split(m4_normalize($3)), p[-stamp ]) 
 $1: $1-all
 $1-all: $1-stamp
+$1-install: $1-stamp m4_foreach(p, m4_split(m4_normalize($3)), p[-install ]) 
 $1-stamp: [\$(]$1[-deps)]
 	@export PKG_CONFIG_PATH=\$(PKG_CONFIG_PATH) ; ( (cd \$($1-all_SUBDIR) && \$(MAKE) \$(AM_MAKEFLAGS) all) && touch \$[]@) || exit 1
 $1-only:
