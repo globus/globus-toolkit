@@ -30,6 +30,8 @@
 #include <sys/socket.h>
 #endif
 
+#include <stdint.h>
+
 /** @brief Standard size of memory object
  * @ingroup globus_common
  * The globus_size_t is the size of a memory object. It is identical to
