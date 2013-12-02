@@ -3,15 +3,12 @@ ACLOCAL_AMFLAGS = -I config -I .
 
 pkgconfdir = ${libdir}/pkgconfig
 
-SUBDIRS= \
+SUBDIRS = \
 	library \
 	programs \
 	scripts \
         manpages \
         test
-
-libexec_SCRIPTS= \
-	config.guess
 
 doc_DATA = GLOBUS_LICENSE
 

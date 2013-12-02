@@ -178,7 +178,7 @@ globus_eval_path(const char * pathstring, char **bufp)
     tmp = strdup(pathstring);
     while (tmp != NULL && strchr(tmp, '$') != 0)
     {
-        char * end;
+        char * end = NULL;
         if ((newtmp = strstr(tmp, "${")) != NULL)
         {
             *newtmp = 0;
@@ -197,7 +197,7 @@ globus_eval_path(const char * pathstring, char **bufp)
         {
             if (strcmp(newtmp, globus_l_common_path_lookup_table[i].name) == 0)
             {
-                newtmp = malloc(strlen(tmp) + strlen(globus_l_common_path_lookup_table[i].path) + strlen(end+1) + 1);
+                newtmp = malloc(strlen(tmp) + strlen(globus_l_common_path_lookup_table[i].path) + (end ? strlen(end+1):0) + 1);
                 if (newtmp == NULL)
                 {
                     free(tmp);
@@ -206,7 +206,7 @@ globus_eval_path(const char * pathstring, char **bufp)
                 else
                 {
                     sprintf(newtmp, "%s%s%s",
-                        tmp, globus_l_common_path_lookup_table[i].path, end+1);
+                        tmp, globus_l_common_path_lookup_table[i].path, end?end+1:"");
                     free(tmp);
                     tmp = newtmp;
                 }

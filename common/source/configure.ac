@@ -115,7 +115,7 @@ AC_ARG_WITH([backward-compatibility-hack],
         [--with-backward-compatibility-hack],
         [Enable binary-backward compatibility with GT 5.0.x by adding symbol
          aliases for different library versions]),
-    [case "$GLOBUS_HOST" in
+    [case "$host" in
     *-*-linux* | *-*-gnu* | *-*-k*bsd*-gnu)
         if test "$withval" = yes; then
             AC_MSG_NOTICE([Using backward-compatibility symbol labels])
@@ -124,7 +124,7 @@ AC_ARG_WITH([backward-compatibility-hack],
         ;;
     *)
         if test "$withval" = yes; then
-            AC_MSG_NOTICE([Ignoring --with-backward-compatibility-hack on unsuppored operating system/linker])
+            AC_MSG_NOTICE([Ignoring --with-backward-compatibility-hack on unsupported operating system/linker])
         fi
     esac],
         [use_symbol_labels="no"])
