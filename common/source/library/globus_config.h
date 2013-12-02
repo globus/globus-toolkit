@@ -19,6 +19,12 @@
 #define GLOBUS_CONFIG_H 1
 #define BUILD_DEBUG 1
 
+#ifdef __STDC__
+#ifndef HAVE_STDARG_H
+#define HAVE_STDARG_H
+#endif
+#endif
+
 #ifdef _WIN32
 #define TARGET_ARCH_WIN32 1
 #define WINVER 0x0502
