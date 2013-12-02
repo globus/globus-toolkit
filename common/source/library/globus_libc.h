@@ -78,9 +78,14 @@ extern int globus_libc_unlock(void);
 #define globus_libc_vfprintf vfprintf
 #define globus_libc_vsprintf vsprintf
 
-GLOBUS_DEPRECATED(extern int globus_libc_snprintf(char *s, size_t n, const char *format, ...));
-GLOBUS_DEPRECATED(extern int globus_libc_vsnprintf(char *s, size_t n, const char *format,
-    va_list ap));
+#if __STDC_VERSION__ >= 199901L
+#define globus_libc_snprintf snprintf
+#define globus_libc_vsnprintf vsnprintf
+#else
+extern int globus_libc_snprintf(char *s, size_t n, const char *format, ...);
+extern int globus_libc_vsnprintf(char *s, size_t n, const char *format,
+    va_list ap);
+#endif
 
 /*
  * File I/O routines
@@ -129,18 +134,6 @@ globus_libc_readdir_r(
     DIR *                           dirp,
     struct dirent **                result);
 #endif
-
-/*
- * these are only on windows for now
- */
-int
-globus_libc_system_memory(
-    globus_off_t *                  mem);
-
-int
-globus_libc_free_memory(
-    globus_off_t *                  mem);
-
 #endif /* _WIN32 */
 
 /*
@@ -156,23 +149,7 @@ globus_libc_free_memory(
 #define globus_libc_calloc	calloc
 #define globus_libc_free	free
 #define globus_libc_alloca	alloca
-
-globus_byte_t *
-globus_libc_memrchr(
-    globus_byte_t *                         s,
-    globus_byte_t                           c,
-    globus_size_t                           n);
-
-globus_byte_t *
-globus_libc_memmem(
-    globus_byte_t *                         haystack,
-    globus_size_t                           h_len,
-    globus_byte_t *                         needle,
-    globus_size_t                           n_len);
-
-/* Never a macro because globus_off_t must match largefile definition */
-/* Don't use this, as it returns the incorrect type (should be an off_t) */
-GLOBUS_DEPRECATED(extern int globus_libc_lseek(int fd, globus_off_t offset, int whence));
+#define globus_libc_lseek lseek
 
 /* Miscellaneous libc functions (formerly md_unix.c) */
 int globus_libc_gethostname(char *name, int len);
@@ -201,18 +178,15 @@ GLOBUS_DEPRECATED(struct hostent *globus_libc_gethostbyaddr_r(char *addr,
 					    int buflen,
 					    int *h_errnop));
 
-/* Use ctime_r(clock, buf) instead */
-GLOBUS_DEPRECATED(char *globus_libc_ctime_r(time_t *clock, char *buf, int buflen));
-
-struct tm *
-globus_libc_localtime_r(
-    const time_t *timep, 
-    struct tm *result);
-
-struct tm *
-globus_libc_gmtime_r(
-    const time_t *timep, 
-    struct tm *result);
+#ifdef _POSIX_THREAD_SAFE_FUCTIONS
+#define globus_libc_ctime_r(clock, buf, buflen) ctime_r(clock, buf)
+#define globus_libc_localtime_r(timer, result) localtime_r(timer, result)
+#define globus_libc_gmtime_r(timer, result) gmtime_r(timer, result)
+#else
+char *globus_libc_ctime_r(/*should be const */time_t *clock, char *buf, int buflen);
+struct tm * globus_libc_localtime_r(const time_t *timep, struct tm *result);
+struct tm * globus_libc_gmtime_r(const time_t *timep, struct tm *result);
+#endif
 
 #if !defined(_WIN32)
 #define globus_libc_getpwnam_r getpwnam_r

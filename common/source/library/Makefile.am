@@ -1,4 +1,76 @@
-Sources= \
+include_HEADERS = \
+        globus_config.h \
+        globus_types.h \
+        globus_release.h \
+        globus_module.h \
+        globus_url.h \
+        globus_states.h \
+        globus_list.h \
+        globus_hashtable.h \
+        globus_fifo.h \
+        globus_symboltable.h \
+        globus_logging.h    \
+        globus_object.h \
+        globus_object_hierarchy.h \
+        globus_error.h \
+        globus_error_hierarchy.h \
+        globus_error_string.h \
+        globus_error_generic.h \
+        globus_error_errno.h \
+        globus_time.h \
+        globus_thread_pool.h \
+        globus_handle_table.h \
+        globus_callback.h \
+        globus_options.h \
+        globus_memory.h \
+        globus_print.h \
+        globus_priority_q.h \
+        globus_range_list.h \
+        globus_tilde_expand.h \
+        globus_libc.h \
+        globus_debug.h \
+        globus_args.h \
+        globus_strptime.h \
+        globus_thread_common.h \
+        globus_thread_rw_mutex.h \
+        globus_thread_rmutex.h \
+        globus_extension.h \
+        globus_common.h \
+        globus_common_include.h \
+        globus_thread.h \
+        globus_uuid.h
+
+
+pthreads_sources = globus_thread_pthreads.c
+windowsthreads_sources = globus_thread_windows.h globus_thread_windows.c
+
+thread_libs = 
+if BUILD_PTHREADS
+thread_libs += libglobus_thread_pthread.la
+endif
+if BUILD_WINDOWS_THREADS
+thread_libs += libglobus_thread_windows.la
+endif
+
+lib_LTLIBRARIES = libglobus_common.la $(thread_libs) libglobus_memory_debug.la
+
+AM_CPPFLAGS = \
+    -DGLOBUS_PREFIX=\"${prefix}\" \
+    -DGLOBUS_LIBDIR=\"${libdir}\" \
+    -I $(builddir) \
+    $(PACKAGE_DEP_CFLAGS)
+
+libglobus_memory_debug_la_LIBADD = $(PACKAGE_DEP_LIBS) -lglobus_common $(LIBS)
+libglobus_memory_debug_la_CPPFLAGS = \
+        $(AM_CPPFLAGS) \
+        -DGLOBUS_MEMORY_DEBUG_LEAKS
+libglobus_memory_debug_la_SOURCES = \
+        globus_memory.c
+libglobus_memory_debug_la_LDFLAGS = \
+        -version-info ${MAJOR_VERSION}:${MINOR_VERSION}:${AGE_VERSION} \
+        -no-undefined 
+libglobus_common_la_LIBADD = $(LT_LIBOBJS) $(PACKAGE_DEP_LIBS) $(LIBS)
+libglobus_common_la_SOURCES = \
         globus_args.c \
         globus_args.h \
         globus_callback.c \
@@ -84,75 +156,11 @@ Sources= \
         globus_common_include.h \
         globus_uuid.c \
         globus_uuid.h \
-        inet_pton.c \
         globus_thread_none.c
 
-include_HEADERS = \
-        globus_config.h \
-        globus_release.h \
-        globus_module.h \
-        globus_url.h \
-        globus_states.h \
-        globus_list.h \
-        globus_hashtable.h \
-        globus_fifo.h \
-        globus_symboltable.h \
-        globus_logging.h    \
-        globus_object.h \
-        globus_object_hierarchy.h \
-        globus_error.h \
-        globus_error_hierarchy.h \
-        globus_error_string.h \
-        globus_error_generic.h \
-        globus_error_errno.h \
-        globus_time.h \
-        globus_thread_pool.h \
-        globus_handle_table.h \
-        globus_callback.h \
-        globus_options.h \
-        globus_memory.h \
-        globus_print.h \
-        globus_priority_q.h \
-        globus_range_list.h \
-        globus_tilde_expand.h \
-        globus_libc.h \
-        globus_debug.h \
-        globus_args.h \
-        globus_strptime.h \
-        globus_thread_common.h \
-        globus_thread_rw_mutex.h \
-        globus_thread_rmutex.h \
-        globus_extension.h \
-        globus_common.h \
-        globus_common_include.h \
-        globus_thread.h \
-        globus_uuid.h
-
-
-pthreads_sources = globus_thread_pthreads.h globus_thread_pthreads.c
-windowsthreads_sources = globus_thread_windows.h globus_thread_windows.c
-
-thread_libs = 
-if BUILD_PTHREADS
-thread_libs += libglobus_thread_pthread.la
-endif
-if BUILD_WINDOWS_THREADS
-thread_libs += libglobus_thread_windows.la
-endif
-
-lib_LTLIBRARIES = libglobus_common.la $(thread_libs)
-
-AM_CPPFLAGS = \
-    -DGLOBUS_PREFIX=\"${prefix}\" \
-    -DGLOBUS_LIBDIR=\"${libdir}\" \
-    -I $(builddir) \
-    $(PACKAGE_DEP_CFLAGS)
-
-libglobus_common_la_LIBADD = $(PACKAGE_DEP_LIBS) $(LIBS)
-libglobus_common_la_SOURCES = $(Sources)
 libglobus_common_la_LDFLAGS = \
         -version-info ${MAJOR_VERSION}:${MINOR_VERSION}:${AGE_VERSION} \
-        -no-undefined
+        -no-undefined 
 
 if USE_SYMBOL_LABELS
 libglobus_common_la_LIBADD += -lpthread
@@ -161,7 +169,7 @@ endif
 
 if BUILD_PTHREADS
 libglobus_thread_pthread_la_LIBADD = libglobus_common.la $(PTHREAD_LIBS)
-libglobus_thread_pthread_la_SOURCES = globus_thread_pthreads.c globus_thread_pthreads.h
+libglobus_thread_pthread_la_SOURCES = globus_thread_pthreads.c
 libglobus_thread_pthread_la_LDFLAGS = $(PACKAGE_DEP_LDFLAGS) -module -no-undefined
 endif
 

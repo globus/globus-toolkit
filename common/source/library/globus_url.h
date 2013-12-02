@@ -28,13 +28,7 @@
  * The Globus URL functions provide a simple mechanism for parsing
  * a URL string into a data structure, and for determining the scheme
  * of an URL string.
- *
- * These functions are part of the Globus common library. The GLOBUS_COMMON
- * module must be activated in order to use them.
  */
-
-#include "globus_common_include.h"
-
 
 #ifdef __cplusplus
 extern "C" {

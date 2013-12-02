@@ -127,6 +127,7 @@ globus_l_libtool_mutex_unlock(void)
     globus_rmutex_unlock(&globus_l_libtool_mutex);
 }
 
+#if HAVE_LT_DLMUTEX_REGISTER
 static
 void
 globus_l_libtool_set_error(
@@ -141,6 +142,7 @@ globus_l_libtool_get_error(void)
 {
     return (char *) globus_thread_getspecific(globus_l_libtool_key);
 }
+#endif
 #endif /* !defined(BUILD_STATIC_ONLY) */
 
 /**

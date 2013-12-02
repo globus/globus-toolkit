@@ -17,29 +17,76 @@
 # 
 
 use strict;
-use Test::Harness;
-require 5.005;
+use Getopt::Long
+require 5.8.0;
 use vars qw(@tests);
 
+my $dir = undef;
+
+sub test_exec
+{
+    my ($harness, $test_file) = @_;
+    if ($test_file =~ /.pl$/) {
+        if ($dir) {
+            return "$dir/$test_file";
+        } else {
+            return undef;
+        }
+    } else {
+        my @cmd;
+        my $valgrind="";
+        if (exists $ENV{VALGRIND})
+        {
+            push(@cmd, 'valgrind');
+            push(@cmd, "--log-file=VALGRIND-$test_file.log");
+            if (exists $ENV{VALGRIND_OPTIONS})
+            {
+                for my $opt (split(/\s+/, $ENV{VALGRIND_OPTIONS})) {
+                    if ($opt ne '') {
+                        push(@cmd, $opt);
+                    }
+                }
+            }
+        }
+        push(@cmd, "$test_file");
+        return \@cmd;
+    }
+}
+
+my $harness_class = "TAP::Harness";
+
+if (!GetOptions("harness=s" => \$harness_class,
+                "dir=s" => \$dir))
+{
+    print STDERR "Usage: $0 [-harness CLASSNAME] [-dir TESTDIR]\n";
+    exit(1);
+}
+            
+eval "use $harness_class";
+
+my $harness_args = {'exec' => \&test_exec, 'merge' => 1};
+$harness_args->{'lib'} = [ $dir ] if ($dir);
+my $harness = $harness_class->new($harness_args);
+
 $ENV{PATH} = ".:" . $ENV{PATH};
+$ENV{PATH} = "${dir}:" . $ENV{PATH} if ($dir);
 
-@tests = qw( globus-common-args-test.pl
-	     globus-common-error-test.pl
-             globus-common-mem-test.pl
-	     globus-common-module-test.pl
-	     globus-common-poll-test.pl
-             globus-common-thread-test.pl
-	     globus-common-timedwait-test.pl
-	     globus-common-url-test.pl
-	     globus-common-error-stg-test.pl
-	     globus-common-hash-test.pl
-	     globus-common-fifo-test.pl
-	     globus-common-strptime-test.pl
-	     globus-common-handle-table-test.pl
-	     globus-common-libcsetenv-test.pl
-	     globus-common-list-test.pl
-             globus-common-uuid-test.pl
-             globus-common-largefile-test.pl
-	     );
+@tests = qw(
+        fifo_test
+        globus_args_scan_test
+        globus_error_construct_string_test
+        globus_libc_setenv_test
+        globus_url_test
+        hash_test
+        list_test
+        memory_test
+        module_test
+        off_t_test
+        poll_test
+        strptime_test
+        thread_test
+        timedwait_test
+        uuid_test
+);
 
-runtests(@tests);
+$harness->runtests(@tests);

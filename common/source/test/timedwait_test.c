@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+/** @file timedwait_test.c globus_cond_timedwait() tests */
 #include "globus_common.h"
+#include "globus_test_tap.h"
 
 static globus_mutex_t mutex;
 static globus_cond_t cond;
@@ -25,25 +27,6 @@ void
 wait_func(int timeout,
 	  globus_bool_t * signalled,
 	  globus_bool_t * timedout);
-
-/* Test definitions:
- * time when signal function should be called,
- * timeout for globus_cond_timed_wait()
- */
-
-/* test1: signal before timeout */
-int test1[] = {1, 5 };
-
-/* test2: timeout before signal */
-int test2[] = {5, 1 };
-
-/*
- * test3: timeout before signal, 
- *        timeout finished before cond_wait called
- */
-int test3[] = {5, -1 };
-
-int *tests[] = { test1, test2, test3, NULL};
 
 static
 void
@@ -56,90 +39,85 @@ wakeup_func(
     globus_mutex_unlock(&mutex);
 }
 
-int main()
+/**
+ * @brief Tests for globus_cond_timedwait
+ */
+int
+timedwait_test(void)
 {
     int			i;
     int			successful_tests=0;
     globus_reltime_t    delay_time;
+    /* Test definitions:
+     * time when signal function should be called,
+     * timeout for globus_cond_timedwait()
+     */
+    struct test
+    {
+        int signal_time;
+        int timeout_time;
+        const char *name;
+    };
+    struct test tests[] = 
+    {
+        /**
+         * @test
+         * Call globus_cond_signal() before globus_cond_timedwait() timeout
+         */
+        { 1, 5, "signal_before_timeout" },
+        /**
+         * @test
+         * Call globus_cond_signal() after globus_cond_timedwait() timeout
+         */
+        { 5, 1, "timeout_before_signal" },
+        /**
+         * @test
+         * Call globus_cond_signal() before calling globus_cond_timedwait()
+         */
+        { 5, -1, "timeout_before_cond_wait_called" }
+    };
+
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
 
     globus_mutex_init(&mutex, GLOBUS_NULL);
     globus_cond_init(&cond, GLOBUS_NULL);
 
-    globus_libc_printf("Testing globus_cond_timedwait()\n\n");
+    printf("1..3\n");
 
-    for(i = 0; tests[i] != GLOBUS_NULL; i++)
+    for (i = 0; i < 3; i++)
     {
 	globus_bool_t signalled = GLOBUS_FALSE;
 	globus_bool_t timedout = GLOBUS_FALSE;
-	globus_bool_t ok;
 
-	globus_libc_printf("Test %d: Signal at %d, timeout at %d\n",
+	fprintf(stderr, "Test %d: Signal at %d, timeout at %d\n",
 	                   i+1,
-	                   tests[i][0],
-	                   tests[i][1]);
+	                   tests[i].signal_time,
+	                   tests[i].timeout_time);
 
 	done = GLOBUS_FALSE;
 
-        GlobusTimeReltimeSet(delay_time, tests[i][0], 0);	
+        GlobusTimeReltimeSet(delay_time, tests[i].signal_time, 0);	
 	globus_callback_register_oneshot(GLOBUS_NULL,
 	                                 &delay_time,
 					 wakeup_func,
 					 GLOBUS_NULL);
-	wait_func(tests[i][1],
+	wait_func(tests[i].timeout_time,
 		  &signalled,
 		  &timedout);
-	ok = GLOBUS_TRUE;
-	if(((tests[i][0] < tests[i][1]) && signalled) ||
-	   ((tests[i][0] > tests[i][1]) && !signalled))
-	{
-	    globus_libc_printf("Test %d: Signalled state as expected\n",
-			       i+1);
-	}
-	else
-	{
-	    globus_libc_printf("Test %d: Signalled state not as expected\n",
-			       i+1);
-	    ok = GLOBUS_FALSE;
-	}
-	if(((tests[i][0] < tests[i][1]) && !timedout) ||
-	   ((tests[i][0] > tests[i][1]) && timedout))
-	{
-	    globus_libc_printf("Test %d: Timedout state as expected\n",
-			       i+1);
-	}
-	else
-	{
-	    globus_libc_printf("Test %d: Timedout state not as expected\n",
-			       i+1);
-	    ok = GLOBUS_FALSE;
-	}
-	globus_libc_printf("Test %d: %s\n",
-	                   i+1,
-	                   ok ? "SUCCESS" : "FAILED");
-	if(ok)
-	{
-	    successful_tests++;
-	}
+	ok((((tests[i].signal_time < tests[i].timeout_time) && signalled) ||
+	   ((tests[i].signal_time > tests[i].timeout_time) && !signalled)), 
+           tests[i].name);
     }
 
-    if(successful_tests == i)
-    {
-        globus_libc_printf("--------------------------------\n"
-	                   "ALL TESTS COMPLETED SUCCESSFULLY\n"
-	                   "--------------------------------\n");
-    }
-    else
-    {
-        globus_libc_printf("-----------------------\n"
-	                   "%d OF %d TESTS SUCCESSFUL\n"
-	                   "-----------------------\n",
-	                   successful_tests, i);
-    }
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
-    return (successful_tests == i) ? 0 : 1;
+    return TEST_EXIT_CODE;
+}
+
+int main(int argc, char *argv[])
+{
+    return timedwait_test();
 }
 
 static

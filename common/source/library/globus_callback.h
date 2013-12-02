@@ -35,7 +35,8 @@
 extern "C" {
 #endif
 
-extern globus_module_descriptor_t       globus_i_callback_module;
+extern
+globus_module_descriptor_t       globus_i_callback_module;
 
 /**
  * @brief Module descriptor

@@ -15,9 +15,6 @@
  */
 
 #include "globus_common.h"
-#ifdef WIN32
-#include "globus_logging.h"
-#endif
 
 int 
 main(

@@ -27,7 +27,7 @@ AC_CHECK_FUNCS(gethostbyaddr_r, [
             int rc;
 
             rc = gethostbyaddr_r(address, length, type, &h, &hdata);
-	], AC_DEFINE(GLOBUS_HAVE_GETHOSTBYADDR_R_5) globus_gethostbyaddr_args=5)
+	], AC_DEFINE([GLOBUS_HAVE_GETHOSTBYADDR_R_5],[1],[Define to 1 if gethostbyaddr_r(address, length, type, hostent) exists]) globus_gethostbyaddr_args=5)
         if test $globus_gethostbyaddr_args = no; then
             AC_TRY_COMPILE([
 #	        include <sys/types.h>
@@ -44,7 +44,7 @@ AC_CHECK_FUNCS(gethostbyaddr_r, [
 
                 hp = gethostbyaddr_r(address, length, type, &h,
                                      buffer, buflen, &h_errnop);
-            ], AC_DEFINE(GLOBUS_HAVE_GETHOSTBYADDR_R_7) globus_gethostbyaddr_args=7)
+            ], AC_DEFINE([GLOBUS_HAVE_GETHOSTBYADDR_R_7],[1],[Define to 1 if gethostbyaddr_r(address, length, type, hostentp, buffer, buflen, herrnop) exists.]) globus_gethostbyaddr_args=7)
         fi
 
         if test $globus_gethostbyaddr_args = no; then
@@ -122,10 +122,6 @@ AC_CHECK_FUNCS(gethostbyname_r, [
 	 break;])
 
 
-AC_CHECK_FUNCS(ctime)
-AC_CHECK_FUNCS(localtime)
-AC_CHECK_FUNCS(gmtime)
-
 AC_CHECK_FUNCS(localtime_r)
 AC_CHECK_FUNCS(gmtime_r)
 AC_CHECK_FUNCS(ctime_r, 
@@ -140,7 +136,7 @@ AC_CHECK_FUNCS(ctime_r,
             time_t clock;
             char buf[26];
             ctime_r(&clock, buf);
-        ], AC_DEFINE(GLOBUS_HAVE_CTIME_R_2) globus_ctime_args=2)
+        ], AC_DEFINE([GLOBUS_HAVE_CTIME_R_2], [1], [Define to 1 if your system provides ctime_r(clock, buf)]) globus_ctime_args=2)
         if test $globus_ctime_args = no; then
             AC_TRY_COMPILE(
             [
@@ -150,7 +146,7 @@ AC_CHECK_FUNCS(ctime_r,
                 time_t clock;
                 char buf[26];
                 ctime_r(&clock, buf, 26);
-            ], AC_DEFINE(GLOBUS_HAVE_CTIME_R_3) globus_ctime_args=3)
+            ], AC_DEFINE([GLOBUS_HAVE_CTIME_R_3], [1], [Define to 1 if your system provides ctime_r(clock, buf, bufsize)]) globus_ctime_args=3)
         fi
         AC_MSG_RESULT($globus_ctime_args)
     ])
@@ -165,7 +161,7 @@ AC_TRY_COMPILE(
         struct passwd pwd;
         char *x;
         x = pwd.pw_age;
-    ], AC_DEFINE(GLOBUS_HAVE_PW_AGE) globus_pw_age=yes)
+    ], AC_DEFINE([GLOBUS_HAVE_PW_AGE],[1],[Define to 1 if struct passwd contains the pw_age field]) globus_pw_age=yes)
 AC_MSG_RESULT($globus_pw_age)
 
 AC_MSG_CHECKING(if struct passwd contains pw_comment)

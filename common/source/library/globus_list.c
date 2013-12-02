@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-/********************************************************************
- *
- * This file implements the list_t type
- *
- ********************************************************************/
+/** @file globus_list.c Linked List Implementation */
+
 #include "globus_common_include.h"
 #include "globus_list.h"
 #include "globus_memory.h"
@@ -47,9 +44,6 @@
 #endif
 
 static globus_bool_t                            globus_l_list_active = GLOBUS_FALSE;
-/******************************************************************************
-                          Function Definitions
-******************************************************************************/
 /*
  * needs to be called by thread
  */
@@ -80,6 +74,19 @@ globus_list_int_less (
     return (low_datum) < (high_datum);
 }
 
+/**
+ * @brief Retrieve head datum
+ * @ingroup globus_list
+ * @details
+ * The accessor globus_list_first() returns the datum at the head of the list;
+ * this datum is the one provided to the globus_list_cons() call that
+ * constructed the head of the list.
+ *
+ * It is an error to call this routine on the empty list.
+ * @param head
+ *     List to retrieve from
+ * @return The list datum.
+ */
 void *
 globus_list_first(
     globus_list_t * head)
@@ -88,6 +95,18 @@ globus_list_first(
     return (void *) head->datum;
 }
 
+/**
+ * @brief Get the remainder of the list
+ * @ingroup globus_list
+ * @details
+ * The accessor globus_list_rest() returns the remainder of the list elements,
+ * containing all data except the datum returned by globus_list_first().
+ *
+ * It is an error to call this routine on the empty list.
+ * @param head
+ *     Head of the list
+ * @return Remainder of the list
+ */
 globus_list_t *
 globus_list_rest(
     globus_list_t * head)
@@ -104,6 +123,13 @@ globus_list_rest_ref(
     return (globus_list_t **) &(head->next);
 }
 
+/**
+ * @brief List empty predicate
+ * @ingroup globus_list
+ * @details
+ * The predicate globus_list_empty returns non-zero if list==NULL, otherwise
+ * returns 0.
+ */
 int 
 globus_list_empty(
     globus_list_t * head)
@@ -111,6 +137,16 @@ globus_list_empty(
     return head == GLOBUS_NULL;
 }
 
+/**
+ * @brief Get the number of elements in a list
+ * @ingroup globus_list
+ * @details
+ * The routine globus_list_size() computes and returns the total number of data
+ * contained in the list. An empty list has zero elements.
+ * @param head
+ *     Head of the list
+ * @return Number of data items in the list
+ */
 int 
 globus_list_size(
     globus_list_t *head)
@@ -151,6 +187,20 @@ globus_list_concat(
 }
 
 /* return the old datum value */
+/**
+ * @brief Replace first datum
+ * @ingroup globus_list
+ * @details
+ * The mutator globus_list_replace_first() returns the datum at the head of the
+ * list and modifies the list to contain the provided datum instead.
+ *
+ * It is an error to call this routine on the empty list (NULL).
+ * @param head
+ *     List to modify
+ * @param datum
+ *     New datum
+ * @return The old value of the first datum in the list.
+ */
 void *
 globus_list_replace_first(
     globus_list_t * head, 
@@ -163,6 +213,20 @@ globus_list_replace_first(
     return old_datum;
 }
 
+/**
+ * @brief Search a list for a datum
+ * @ingroup globus_list
+ * @details
+ * The routine globus_list_search() traverses the elements in list until a
+ * sub-list is found with datum as the first element. If such a sub-list is
+ * found, it is returned, otherwise the empty list  is returned.
+ * @param head
+ *     Head of the list to search
+ * @param datum
+ *     Datum to search for in the list
+ * @return The first list node found which contains the datum, or NULL if not
+ * found.
+ */
 globus_list_t *
 globus_list_search (
     globus_list_t *head, 
@@ -190,11 +254,28 @@ globus_list_search (
     return GLOBUS_NULL;
 }
 
+/**
+ * @brief Search a list with a predicate
+ * @ingroup globus_list
+ * @details
+ * The routine globus_list_search_pred() traverses the elements in list until a
+ * sub-list is found with datum as the first element such that predicate
+ * (datum, pred_args) evaluates TRUE. If such a sub-list is found, it is
+ * returned, otherwise the empty list is returned.
+ *
+ * It is an error to provide a predicate value of NULL.
+ * @param head
+ *     List to search
+ * @param predicate
+ *     Predicate function
+ * @param pred_args
+ *     Parameter to pass to the predicate function
+ */
 globus_list_t *
 globus_list_search_pred(
     globus_list_t *head, 
-	globus_list_pred_t predicate,
-	void *pred_args)
+    globus_list_pred_t predicate,
+    void *pred_args)
 {
   if (globus_list_empty (head)) {
     /* end of list chain */
@@ -239,11 +320,27 @@ s_globus_list_min_with_register(
     }
 }
 
+/**
+ * @brief Find the minimum value of a list
+ * @ingroup globus_list
+ * @details
+ * The globus_list_min() routine traverses the list and returns the first
+ * minimum valued datum, as determined by the order defined by the given
+ * relation.
+ * @param head
+ *     List to search
+ * @param relation
+ *     Relation predicate
+ * @param relation_args
+ *     Argument passed to the relation
+ * @return This routine returns a list node whose first node is the minimum
+ * of the values in the original list to search, or NULL of the list was empty.
+ */
 globus_list_t *
 globus_list_min(
     globus_list_t *head,
-	globus_list_relation_t relation,
-	void *relation_args)
+    globus_list_relation_t relation,
+    void *relation_args)
 {
     if (globus_list_empty (head)) 
     {
@@ -361,6 +458,23 @@ globus_list_sort_destructive (
 			     relation_args);
 }
 
+/**
+ * @brief Sort a list
+ * @ingroup globus_list
+ * @details
+ * The globus_list_sort() routine returns a new copy of the list where the
+ * elements have been reordered to satisfy the provided relation, or returns
+ * NULL if the list cannot be created. This sort is currently implemented as a
+ * fast merge sort.
+ * @param head
+ *     List to sort
+ * @param relation
+ *     Predicate relation to use for the sort
+ * @param relation_args
+ *     Parameter to relation
+ * @return This routine returns a new list whose data items are the same as the
+ * old list. The list must be freed with globus_list_free().
+ */
 globus_list_t *
 globus_list_sort (globus_list_t *head,
 		  globus_list_relation_t relation,
@@ -371,6 +485,22 @@ globus_list_sort (globus_list_t *head,
 				       relation_args);
 }
 
+/**
+ * @brief Insert an item in a list
+ * @ingroup globus_list
+ * @details
+ * The constructor globus_list_insert() mutates the list reference headp in
+ * place to contain a newly allocated list node holding datum and using the
+ * original value named by the list reference as the remainder of the list.
+ * 
+ * All list nodes constructed by globus_list_cons should eventually be
+ * destroyed using globus_list_remove or globus_list_free.
+ * @param headp
+ *     List reference to insert into.
+ * @param datum
+ *     Datum to add to the list.
+ * @return This routine returns zero on success, or non-zero on failure.
+ */
 int 
 globus_list_insert (
     globus_list_t * volatile *              headp, 
@@ -399,20 +529,51 @@ globus_list_insert (
     return 0;
 }
 
+/**
+ * @brief List constructor
+ * @ingroup globus_list
+ * @details
+ * The constructor globus_list_cons() returns a freshly allocated list node
+ * initialized to contain datum and to refer to rest as the remainder of the
+ * new list, or returns NULL if a new node could not be allocated.
+ *
+ * All list nodes constructed by globus_list_cons() should eventually be
+ * destroyed using globus_list_remove() or globus_list_free().
+ * @param datum
+ *     Item to add to the list
+ * @param rest
+ *     List to set as the remainder of the new list.
+ * @return List node.
+ */
 globus_list_t *
-globus_list_cons (void * datum, globus_list_t * list)
+globus_list_cons (void * datum, globus_list_t * rest)
 {
     int err;
 
-    err = globus_list_insert (&list, datum);
+    err = globus_list_insert (&rest, datum);
     if(err) 
     {
         return NULL;
     }
 
-    return list;
+    return rest;
 }
 
+/**
+ * @brief Copy constructor
+ * @ingroup globus_list
+ * @details
+ * The globus_list_copy() constructor creates a newly allocated list containing
+ * the same data as the source list.
+ *
+ * All list nodes constructed by globus_list_copy should eventually be
+ * destroyed using globus_list_remove() or globus_list_free().
+ *
+ * @param head
+ *     List to copy
+ * 
+ * @return Copy of the list
+ */
 globus_list_t *
 globus_list_copy (globus_list_t *head)
 {
@@ -443,6 +604,21 @@ globus_list_copy (globus_list_t *head)
     }
 }
 
+/**
+ * @brief Remove a datum from a list
+ * @ingroup globus_list
+ * @details
+ * The globus_list_remove() routine searches a list provided by reference,
+ * mutating the list in place to remove the specified entry and deallocate its
+ * resources. If the entry is found, it is removed and its datum is returned;
+ * if the entry is not found no effects are done and NULL is returned.
+ * @param headp
+ *     Reference to the head of the list
+ * @param entry
+ *     List entry to remove from the list
+ * @return Either the datum which is removed from the list, or NULL if it
+ * isn't present.
+ */
 void *
 globus_list_remove(
     globus_list_t * volatile *              headp, 
@@ -495,6 +671,15 @@ globus_list_remove(
     return GLOBUS_NULL;
 }
 
+/**
+ * @brief Free a list
+ * @ingroup globus_list
+ * @details
+ * The globus_list_free() routine deallocates an entire list, abandoning its
+ * data.
+ * @param head
+ *     Head of the list to free
+ */
 void
 globus_list_free (globus_list_t *head)
 {

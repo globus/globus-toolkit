@@ -22,14 +22,21 @@
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "globus_common_include.h"
+#include "globus_types.h"
+#include "globus_module.h"
 #include "globus_thread.h"
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/**
+ * @defgroup globus_memory Memory Pool
+ * @ingroup globus_common
+ * @details
+ * The globus_memory abstraction implements a memory management pool for
+ * groups of same-sized data items.
+ */
 /******************************************************************************
 			       Type definitions
 ******************************************************************************/
@@ -40,23 +47,6 @@ typedef struct globus_memory_s *                globus_memory_t;
 globus_bool_t
 globus_i_memory_pre_activate();
 
-/**
- *  Initialize the globus memory management structure.
- *
- *  Before using any functions associate with a memory structure
- *  this function must be called.
- *
- *  @param mem_info
- *          The memory management datatype
- *
- *  @param node_size
- *          The size of the memory to allocated with each pop.
- *
- *  @param node_count
- *          The initial number of nodes allocated with the memory
- *          management structure.  If it is exceded more will be 
- *          allocated.
- */
 globus_bool_t
 globus_memory_init(
     globus_memory_t *             mem_info,

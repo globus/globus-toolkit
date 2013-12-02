@@ -44,11 +44,13 @@
 #endif /* _POSIX_THREADS */
 
 #if defined(_WIN32)
-#include "windows.h"
+#include <windows.h>
 #define HAVE_WINDOWS_THREADS 1
 #endif
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* 
  * Default supported thread models (on some systems). Others can conceivably

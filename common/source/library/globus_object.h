@@ -19,7 +19,7 @@
 #define GLOBUS_OBJECT_H
 
 
-#include "globus_common_include.h"
+#include "globus_types.h"
 
 #ifdef __cplusplus
 extern "C" {

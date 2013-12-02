@@ -22,19 +22,15 @@
 #include "config.h"
 #include "globus_common.h"
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
-
-#ifdef HAVE_CTYPE_H
 #include <ctype.h>
-#endif
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
 
 #include <stddef.h> /* For offsetof() */
+#include <strings.h> /* For strncasecmp() */
 
 /* HPUX 10.20 headers do not define this */
 #if defined(TARGET_ARCH_HPUX)
@@ -68,14 +64,6 @@ globus_l_libc_copy_hostent_data_to_buffer(
     struct hostent *                    h,
     char *                              buffer,
     size_t                              buflen);
-
-#if !defined(TARGET_ARCH_WIN32)
-static void
-globus_l_libc_copy_pwd_data_to_buffer(
-    struct passwd *                     pwd,
-    char *                              buffer,
-    size_t                              buflen);
-#endif
 
 /******************************************************************************
 Function: globus_libc_lock()
@@ -141,6 +129,7 @@ globus_libc_strncasecmp(
 #   if HAVE_STRNCASECMP
     {
         rc = strncasecmp(s1, s2, n);
+        goto exit;
     }
 #   else
     {
@@ -244,7 +233,6 @@ globus_l_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
     }
 }
 
-#if !HAVE_SNPRINTF
 /******************************************************************************
 Function: globus_libc_snprintf()
 
@@ -278,36 +266,7 @@ globus_libc_snprintf(char *s, size_t n, const char *format, ...)
     errno=save_errno;
     return rc;
 } /* globus_libc_snprintf() */
-#endif /* !HAVE_SNPRINTF */
 
-#if !HAVE_VSNPRINTF
-/******************************************************************************
-Function: globus_libc_vsnprintf()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_vsnprintf
-int
-globus_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
-{
-    int rc;
-    int save_errno;
-
-    globus_libc_lock();
-
-    rc = globus_l_libc_vsnprintf(s, n, format, ap);
-    save_errno=errno;
-
-    globus_libc_unlock();
-
-    errno=save_errno;
-    return rc;
-} /* globus_libc_vsnprintf() */
-#endif
 
 /*
  * Print a globus_off_t to a string. The format for the off_t depends
@@ -703,19 +662,7 @@ globus_libc_usleep(long usec)
     timeout.tv_sec = usec/1000000;
     timeout.tv_usec = usec%1000000;
 
-#   if !defined(HAVE_THREAD_SAFE_SELECT)
-    {
-	    globus_libc_lock();
-    }
-#   endif
-
     select(0, NULL, NULL, NULL, &timeout);
-
-#   if !defined(HAVE_THREAD_SAFE_SELECT)
-    {
-	     globus_libc_unlock();
-    }
-#   endif
 
     return GLOBUS_SUCCESS;
 } /* globus_libc_usleep() */
@@ -1015,6 +962,7 @@ globus_libc_gethostbyaddr_r(char *addr,
     return hp;
 } /* globus_libc_gethostbyaddr_r() */
 
+#undef globus_libc_ctime_r
 /******************************************************************************
 Function: globus_libc_ctime_r()
 
@@ -1061,6 +1009,7 @@ globus_libc_ctime_r(time_t *clock,
     return tmp_buf;
 } /* globus_libc_ctime_r() */
 
+#undef globus_libc_localtime_r
 /******************************************************************************
 Function: globus_libc_localtime_r()
 
@@ -1099,6 +1048,7 @@ globus_libc_localtime_r(
     return tmp_tm;
 } /* globus_libc_localtime_r() */
 
+#undef globus_libc_gmtime_r
 /******************************************************************************
 Function: globus_libc_gmtime_r()
 
@@ -1310,144 +1260,6 @@ globus_libc_system_error_string(int the_error)
 {
     return strerror(the_error);
 } /* globus_libc_system_error_string() */
-
-
-/*
- *  these functions are not defined on win32
- */
-#if !defined(TARGET_ARCH_WIN32)
-/******************************************************************************
-Function: globus_l_libc_copy_pwd_data_to_buffer()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-static void
-globus_l_libc_copy_pwd_data_to_buffer(struct passwd *pwd,
-				      char *buffer,
-				      size_t buflen)
-{
-    size_t offset = 0;
-
-    /* all platforms do not make use of all the fields in the passwd
-       struct, so check whether null or not before we copy */
-
-    /* pw_name */
-    if (pwd->pw_name)
-    {
-	if(strlen(pwd->pw_name) > buflen-offset)
-	{
-	    pwd->pw_name[buflen-offset-1] = '\0';
-	}
-	if(offset < buflen)
-	{
-	    strcpy(&buffer[offset], pwd->pw_name);
-	    pwd->pw_name = &buffer[offset];
-	    offset += strlen(pwd->pw_name) + 1;
-	}
-    }
-    /* pw_passwd */
-    if (pwd->pw_passwd)
-    {
-	if(strlen(pwd->pw_passwd) > buflen-offset)
-	{
-	    pwd->pw_passwd[buflen-offset-1] = '\0';
-	}
-	if(offset < buflen)
-	{
-	    strcpy(&buffer[offset], pwd->pw_passwd);
-	    pwd->pw_passwd = &buffer[offset];
-	    offset += strlen(pwd->pw_passwd) + 1;
-	}
-    }
-
-#   if defined(GLOBUS_HAVE_PW_AGE)
-    {
-	/* pw_age */
-	if (pwd->pw_age)
-	{
-	    if(strlen(pwd->pw_age) > buflen-offset)
-	    {
-		pwd->pw_age[buflen-offset-1] = '\0';
-	    }
-	    if(offset < buflen)
-	    {
-		strcpy(&buffer[offset], pwd->pw_age);
-		pwd->pw_age = &buffer[offset];
-		offset += strlen(pwd->pw_age) + 1;
-	    }
-	}
-    }
-#   endif
-
-#   if defined(GLOBUS_HAVE_PW_COMMENT)
-    {
-	/* pw_comment */
-	if (pwd->pw_comment)
-	{
-	    if(strlen(pwd->pw_comment) > buflen-offset)
-	    {
-		pwd->pw_comment[buflen-offset-1] = '\0';
-	    }
-	    if(offset < buflen)
-	    {
-		strcpy(&buffer[offset], pwd->pw_comment);
-		pwd->pw_comment = &buffer[offset];
-		offset += strlen(pwd->pw_comment) + 1;
-	    }
-	}
-    }
-#   endif
-
-    /* pw_gecos */
-    if (pwd->pw_gecos)
-    {
-	if(strlen(pwd->pw_gecos) > buflen-offset)
-	{
-	    pwd->pw_gecos[buflen-offset-1] = '\0';
-	}
-	if(offset < buflen)
-	{
-	    strcpy(&buffer[offset], pwd->pw_gecos);
-	    pwd->pw_gecos = &buffer[offset];
-	    offset += strlen(pwd->pw_gecos) + 1;
-	}
-    }
-    /* pw_dir */
-    if (pwd->pw_dir)
-    {
-	if(strlen(pwd->pw_dir) > buflen-offset)
-	{
-	    pwd->pw_dir[buflen-offset-1] = '\0';
-	}
-	if(offset < buflen)
-	{
-	    strcpy(&buffer[offset], pwd->pw_dir);
-	    pwd->pw_dir = &buffer[offset];
-	    offset += strlen(pwd->pw_dir) + 1;
-	}
-    }
-    /* pw_shell */
-    if (pwd->pw_shell)
-    {
-	if(strlen(pwd->pw_shell) > buflen-offset)
-	{
-	    pwd->pw_shell[buflen-offset-1] = '\0';
-	}
-	if(offset < buflen)
-	{
-	    strcpy(&buffer[offset], pwd->pw_shell);
-	    pwd->pw_shell = &buffer[offset];
-	    offset += strlen(pwd->pw_shell) + 1;
-	}
-    }
-} /* globus_l_libc_copy_pwd_data_to_buffer() */
-#endif /* TARGET_ARCH_WIN32 */
-
-
 
 
 /******************************************************************************
@@ -1872,12 +1684,6 @@ globus_libc_readdir_r(DIR *dirp,
 #       endif
 	strcpy(&entry->d_name[0], &tmpdir->d_name[0]);
 
-#       if defined(HAVE_DIRENT_NAMELEN)
-	{
-	    entry->d_namlen = tmpdir->d_namlen;
-	}
-#       endif
-
 	*result = entry;
 	globus_libc_unlock();
 	errno = save_errno;
@@ -2086,6 +1892,32 @@ globus_common_v_create_nstring(
     return new_string;
 }
 
+/******************************************************************************
+Function: globus_libc_vsnprintf()
+
+Description:
+
+Parameters:
+
+Returns:
+******************************************************************************/
+#undef globus_libc_vsnprintf
+int
+globus_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
+{
+    int rc;
+    int save_errno;
+
+    globus_libc_lock();
+
+    rc = globus_l_libc_vsnprintf(s, n, format, ap);
+    save_errno=errno;
+
+    globus_libc_unlock();
+
+    errno=save_errno;
+    return rc;
+} /* globus_libc_vsnprintf() */
 
 #ifdef TARGET_ARCH_CRAYT3E
 /* for alloca on T3E */

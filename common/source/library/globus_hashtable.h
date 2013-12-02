@@ -15,19 +15,22 @@
  */
 
 
-/** @file globus_hashtable.h Lightweight Chaining Hashtable */
+/** @file globus_hashtable.h Hash Table */
 
 #ifndef GLOBUS_HASHTABLE_H
 #define GLOBUS_HASHTABLE_H
 
-/********************************************************************
- *
- * This file defines the globus_hashtable_t type,
- * a lightweight chaining hashtable
- *
- *
- ********************************************************************/
-#include "globus_common_include.h"
+/**
+ * @defgroup globus_hashtable Hash Table
+ * @ingroup globus_common
+ * The globus_hashtable data type provides an abstract hashtable mapping
+ * representation and operations on such mappings. These queues can contain
+ * arbitrary data in the form of a void pointer for each key and a void pointer
+ * for each datum. It is the user's responsibility to provide and interpret
+ * keys and data of the correct type.
+ */
+
+#include "globus_types.h"
 #include "globus_list.h"
 
 #ifdef __cplusplus
@@ -35,7 +38,17 @@ extern "C" {
 #endif
 
 /**
- * Hash function.  User result must be modulo limit
+ * @ingroup globus_hashtable
+ * An anonymous hash function providing an onto mapping of (key, limit) pairs
+ * to integers, where the result integer is in the range [ 0, limit - 1 ] .
+ * *
+ * Note that as a proper function, such hash routines must always compute the
+ * same result given the same key and limit value.
+ * @param key
+ *     Value to map
+ * @param limit
+ *     Map range limit
+ * @return Integer hash value of key
  */
 typedef int
 (*globus_hashtable_hash_func_t)(
@@ -43,7 +56,11 @@ typedef int
     int                                 limit);
 
 /**
- * Comparator function. 0 if not equal, non-zero if equal
+ * @ingroup globus_hashtable
+ * An anonymous predicate that returns true when the keys are equal and false
+ * otherwise.
+ * Truth and falsity are represented by non-zero and zero (0) integers for use
+ * directly in C language conditionals.
  */
 typedef int
 (*globus_hashtable_keyeq_func_t)(
@@ -51,6 +68,7 @@ typedef int
     void *                              key2);
 
 /**
+ * @ingroup globus_hashtable
  * datum copy func
  */
 typedef void
@@ -62,6 +80,7 @@ typedef void
 
 
 /**
+ * @ingroup globus_hashtable
  * Destructor callback for use with globus_hashtable_destroy_all
  */
 typedef void
@@ -70,10 +89,6 @@ typedef void
 
 typedef struct globus_l_hashtable_s *     globus_hashtable_t;
 
-/**
- * Initialize hashtable with a bucket count of size, using hash_func for
- * hashing and keyeq_func for comparison
- */
 int
 globus_hashtable_init(
     globus_hashtable_t *                table,
@@ -81,139 +96,86 @@ globus_hashtable_init(
     globus_hashtable_hash_func_t        hash_func,
     globus_hashtable_keyeq_func_t       keyeq_func);
 
-/**
- * Initialize dest_table and copy src_table into it. copy_func is called for
- * each datum in src_table. if copy_func is null, dest will contain same
- * values as src.  does not duplicate ordering of entries in src_table.
- */
 int
 globus_hashtable_copy(
     globus_hashtable_t *                dest_table,
     globus_hashtable_t *                src_table,
     globus_hashtable_copy_func_t        copy_func);
     
-/**
- * Lookup datum associated with key.  NULL if not found
- */
 void *
 globus_hashtable_lookup(
     globus_hashtable_t *                table,
     void *                              key);
 
-/**
- * Insert new key->datum association.  key must not already exist and datum
- * must be non-null.  If key is non-scalar (ie, string), it should be part of
- * datum so its resources may be recovered.
- */
 int
 globus_hashtable_insert(
     globus_hashtable_t *                table,
     void *                              key,
     void *                              datum);
 
-/**
- * Update an existing key->datum association with new values for both, key and
- * datum.  The old datum is returned.  If key is non-scalar (ie, string), 
- * it should be part of datum so its resources may be recovered.  If old key
- * does not exist, NULL is returned.
- */
 void *
 globus_hashtable_update(
     globus_hashtable_t *                table,
     void *                              key,
     void *                              datum);
 
-/**
- * Remove entry associated with key.  Old datum is returned.  NULL if not found
- */
 void *
 globus_hashtable_remove(
     globus_hashtable_t *                table,
     void *                              key);
 
-/**
- * Create a list of all datums in hashtable
- */
 int
 globus_hashtable_to_list(
     globus_hashtable_t *                table,
     globus_list_t **                    list);
 
-/**
- * GLOBUS_TRUE if hashtable is empty, GLOBUS_FALSE otherwise
- */
 globus_bool_t
 globus_hashtable_empty(
     globus_hashtable_t *                table);
 
-/**
- * returns number of entries in hashtable
- */
 int
 globus_hashtable_size(
     globus_hashtable_t *                table);
 
 /**
- * For the following, the iterator is initially NULL until one of 
- * globus_hashtable_first or globus_hashtable_last has been called.  All other
- * calls have no effect on iterator except for globus_hashtable_remove.  If
- * the iterator points at the entry being removed, the iterator is moved to
- * the next entry.
+ * @defgroup globus_hashtable_iterators Iterators
+ * @ingroup globus_hashtable
+ * @details
+ * The iterator is initially NULL until one of 
+ * globus_hashtable_first() or globus_hashtable_last() has been called.  All
+ * other calls have no effect on iterator except for globus_hashtable_remove().
+ * If the iterator points at the entry being removed, the iterator is moved
+ * to the next entry.
  * 
- * Once an 'end' has been reached with globus_hashtable_next or
- * globus_hashtable_prev, the iterator must again be reset with 
- * globus_hashtable_first or globus_hashtable_last
- */
-
-/**
- * set iterator to first entry and return datum, NULL if empty 
+ * Once an 'end' has been reached with globus_hashtable_next() or
+ * globus_hashtable_prev(), the iterator must again be reset with 
+ * globus_hashtable_first() or globus_hashtable_last() before being used.
  */
 void *
 globus_hashtable_first(
     globus_hashtable_t *                table);
 
-/**
- * set iterator to next entry and return datum, NULL if at end 
- */
 void *
 globus_hashtable_next(
     globus_hashtable_t *                table);
 
-/** 
- * set iterator to last entry and return datum, NULL if empty 
- */
 void *
 globus_hashtable_last(
     globus_hashtable_t *                table);
 
-/** 
- * set iterator to prev entry and return datum, NULL if at beginning 
- */
 void *
 globus_hashtable_prev(
     globus_hashtable_t *                table);
 
-/**
- * Free all memory allocated by hashtable.  If the datums that were inserted
- * are non-scalar, you should use globus_hashtable_destroy_all to allow freeing
- * of any remaining entries.
- */
 int
 globus_hashtable_destroy(
     globus_hashtable_t *                table);
     
-/**
- * Free all memory associated with hashtable.  element_free will be called on
- * each remaining datum in the table.
- */
 void
 globus_hashtable_destroy_all(
     globus_hashtable_t *                table,
     globus_hashtable_destructor_func_t  element_free);
 
-/**
- * Predefined hash/eq functions for common data types
- */
 int
 globus_hashtable_string_hash(
     void *                              string,

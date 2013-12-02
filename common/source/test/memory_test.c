@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
+/** @file memory_test.c Test case for globus_memory_t */
 #include "globus_common.h"
 #include "globus_thread_common.h"
-
-#ifndef BUILD_DEBUG
 
 static globus_memory_t                   mem;
 
@@ -28,6 +27,10 @@ static globus_memory_t                   mem;
 #define POPS                 1000
 #endif
 
+const char * reference_output = 
+    "abc.....abc.....abc.....abc.....abc....." 
+    "abc.....abc.....abc.....abc.....abc....." 
+    "abc.....abc.....abc.....abc.....abc.....";
 typedef struct mem_test_s
 {
     char a;
@@ -39,14 +42,22 @@ typedef struct mem_test_s
 
 int mem_init(mem_test_t * m, int cnt);
 
-void dump(globus_byte_t * buf, int size);
+int dump(globus_byte_t * buf, int size);
 
-int main(int argc, char * argv[])
+int globus_memory_test(void)
 {
    int                         rc = GLOBUS_SUCCESS;
    mem_test_t *                mem_ptr[POPS];
    int                         cnt = 0;
 
+   printf("1..1\n");
+
+   /**
+    * @test
+    * Create a globus_memory_t with globus_memory_init(), pop a whole
+    * lot of memory off of it, dump the initial set of memory, and then
+    * push the nodes back.
+    */
    globus_module_activate(GLOBUS_COMMON_MODULE);
 
    globus_memory_init(&mem,
@@ -60,7 +71,8 @@ int main(int argc, char * argv[])
    }
 
    /* nodes are aligned on mod 8 boundaries, add 1 to 7 to make 8 */
-   dump((globus_byte_t *) mem_ptr[0], MEM_INIT_SIZE * (sizeof(mem_test_t) + 1));
+   rc = dump((globus_byte_t *) mem_ptr[0], MEM_INIT_SIZE * (sizeof(mem_test_t) + 1));
+   printf("%s\n", (rc==0)?"ok":"not ok");
    
    globus_memory_push_node(&mem, (globus_byte_t *)mem_ptr[0]);
    
@@ -75,6 +87,10 @@ int main(int argc, char * argv[])
 
    return rc;
 }
+int main(int argc, char * argv[])
+{
+    return globus_memory_test();
+}
 
 int
 mem_init(mem_test_t * m, int cnt)
@@ -87,37 +103,24 @@ mem_init(mem_test_t * m, int cnt)
     return GLOBUS_TRUE;
 }
 
-void dump(globus_byte_t * buf, int size)
+int dump(globus_byte_t * buf, int size)
 {
     int  ctr;
     int  col = 0;
+    int failed=0;
+    const char *p = reference_output;
     
-    printf("printing %d bytes\n", size);
-    printf("\n    ....+....1....+....2....+....3....+....4\n    ");
     for(ctr = 0; ctr < size; ctr++)
     {
-	printf("%c", isprint(buf[ctr]) ? buf[ctr] : '.');
+        if (reference_output[ctr] != (isprint(buf[ctr]) ? buf[ctr] : '.'))
+        {
+            failed++;
+        }
 	col++;
         if(col >= 40)
 	{
-            printf("\n    ");
 	    col = 0;
 	}
     }
-    printf("\n");
+    return failed;
 }
-
-#else /* BUILD_DEBUG */
-
-int main(int argc, char * argv[])
-{
-    printf("printing %d bytes\n\n", 120);
-    printf("    ....+....1....+....2....+....3....+....4\n");
-    printf("    abc.....abc.....abc.....abc.....abc.....\n");
-    printf("    abc.....abc.....abc.....abc.....abc.....\n");
-    printf("    abc.....abc.....abc.....abc.....abc.....\n");
-    printf("    \n");
-    return 0;
-}
-
-#endif

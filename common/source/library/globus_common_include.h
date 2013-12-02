@@ -151,20 +151,6 @@ extern int inet_pton(int af, const char *src, void *dst);
 #endif
 #endif
 
-typedef size_t                                      globus_size_t;
-typedef ssize_t                                     globus_ssize_t;
-
-typedef socklen_t                                   globus_socklen_t;
-
-#if defined(_WIN32)
-/* The ordering of the fields must match those in WSABUF */
-struct  iovec  
-{
-    unsigned long      iov_len;  /* Length in bytes.  */
-    char *             iov_base;  /* Starting address.  */
-};
-#endif 
-
 /* POSIX error code remapping */
 #ifdef _WIN32
 	#define EWOULDBLOCK EAGAIN
@@ -182,35 +168,6 @@ struct  iovec
 #define MAXHOSTNAMELEN 64
 #endif
 
-typedef unsigned char	                                globus_byte_t;
-/**
- * @brief Boolean type
- * @ingroup globus_common
- * @details
- * Set values to either the constant GLOBUS_TRUE and GLOBUS_FALSE
- */
-typedef int		                                globus_bool_t;
-/**
- * @ingroup globus_common
- * Weak pointer to a Globus Error object, or the special value GLOBUS_SUCCESS
- */
-typedef uint32_t                                        globus_result_t;
-typedef int64_t                                         globus_off_t;
-#define GLOBUS_OFF_T_FORMAT                             PRId64
-
-/**
- * @brief True value for globus_bool_t
- * @ingroup globus_common
- */
-#define GLOBUS_TRUE    1
-/**
- * @brief False value for globus_bool_t
- * @ingroup globus_common
- */
-#define GLOBUS_FALSE   0
-#define GLOBUS_NULL    0
-#define GLOBUS_SUCCESS 0
-#define GLOBUS_FAILURE  -1
-
+#include "globus_types.h"
 #endif  /* GLOBUS_COMMON_INCLUDE_H */
 

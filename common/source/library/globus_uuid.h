@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/** @file globus_uuid.h Globus UUID Generator */
+/**
+ * @defgroup globus_uuid Globus UUID Generator
+ * @ingroup globus_common
+ * @brief UUIDs
+ */
 #ifndef GLOBUS_UUID_H
 #define GLOBUS_UUID_H
 
@@ -59,15 +65,24 @@ typedef struct
 } globus_uuid_t;
 
 /**
- * creates a time based, Leach-Salz variant uuid, using the mac address when
+ * @brief Create UUID
+ * @ingroup globus_uuid
+ * Creates a time based, Leach-Salz variant uuid, using the mac address when
  * available.
  */
 int
 globus_uuid_create(
     globus_uuid_t *                     uuid);
 
-/* str must be at least GLOBUS_UUID_TEXTLEN long and be in the following format
- * 1b4e28ba-2fa1-11d2-883f-b9a761bde3fb
+/**
+ * @brief Import a UUID
+ * @ingroup globus_uuid
+ * Import a string in the text UUID format into a globus_uuid_t value.
+ * @param uuid
+ *    UUID to modify
+ * @param str
+ *     A string at least GLOBUS_UUID_TEXTLEN long and be in the 
+ *     format like 1b4e28ba-2fa1-11d2-883f-b9a761bde3fb
  */
 int
 globus_uuid_import(
@@ -75,7 +90,13 @@ globus_uuid_import(
     const char *                        str);
 
 /**
- * copy the fields from uuid to uuid_fields in host byte order
+ * @brief Extract fields from UUID
+ * @ingroup globus_uuid
+ * Copy the fields from uuid to uuid_fields in host byte order
+ * @param uuid
+ *     Pointer to a uuid.
+ * @param uuid_fields
+ *     Pointer to uuid fields.
  */
 int
 globus_uuid_fields(

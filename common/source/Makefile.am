@@ -7,7 +7,8 @@ SUBDIRS= \
 	library \
 	programs \
 	scripts \
-        manpages
+        manpages \
+        test
 
 libexec_SCRIPTS= \
 	config.guess

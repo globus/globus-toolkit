@@ -338,15 +338,6 @@ globus_l_pthread_preemptive_threads(void)
 
 
 
-/*
- * globus_threadattr_init()
- */
-static
-int
-globus_l_pthread_threadattr_init(globus_threadattr_t *attr)
-{
-    return pthread_attr_init(&attr->pthread);
-}
 
 /*
  * globus_threadattr_destroy()
@@ -354,35 +345,6 @@ globus_l_pthread_threadattr_init(globus_threadattr_t *attr)
 int globus_threadattr_destroy(globus_threadattr_t *attr)
 {
     return pthread_attr_destroy(&attr->pthread);
-}
-
-/*
- * globus_threadattr_setstacksize()
- */
-int globus_threadattr_setstacksize(globus_threadattr_t *attr,
-                                   size_t stacksize)
-{
-#if _POSIX_THREAD_ATTR_STACKSIZE > 0
-    return pthread_attr_setstacksize(&attr->pthread, stacksize);
-#else
-    return ENOTSUP;
-#endif
-}
-
-/*
- * globus_threadattr_getstacksize()
- */
-static
-int
-globus_threadattr_getstacksize(
-    globus_threadattr_t *               attr,
-    size_t *                            stacksize)
-{
-#if _POSIX_THREAD_ATTR_STACKSIZE > 0
-    return pthread_attr_getstacksize(&attr->pthread, stacksize);
-#else
-    return EINVAL;
-#endif
 }
 
 /*

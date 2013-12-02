@@ -241,7 +241,7 @@ globus_logging_vwrite(
 {
     globus_result_t                     res;
     globus_size_t                       remain;
-    globus_size_t                       nbytes;
+    globus_ssize_t                      nbytes;
     GlobusLoggingName(globus_logging_write);
 
     if(handle == NULL)
@@ -270,7 +270,7 @@ globus_logging_vwrite(
                 nbytes = remain;
                 handle->module.header_func(
                     (char *) &handle->buffer[handle->used_length],
-                    &nbytes);
+                    &remain);
                 handle->used_length += nbytes;
                 remain -= nbytes;
             }
@@ -280,11 +280,11 @@ globus_logging_vwrite(
             {
                 char                    suffix[64];
                 
-                snprintf(
+                globus_libc_snprintf(
                     suffix, 
                     sizeof(suffix), 
-                    " *** TRUNCATED %d bytes\n", 
-                    nbytes - remain + sizeof(suffix));
+                    " *** TRUNCATED %lu bytes\n", 
+                    (unsigned long) (nbytes - remain + sizeof(suffix)));
                 
                 memcpy(
                     &handle->buffer[handle->buffer_length - sizeof(suffix)], 

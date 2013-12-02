@@ -19,7 +19,7 @@
 #ifndef GLOBUS_PRIORITY_Q_H
 #define GLOBUS_PRIORITY_Q_H
 
-#include "globus_common_include.h"
+#include "globus_types.h"
 #include "globus_memory.h"
 
 #ifdef __cplusplus

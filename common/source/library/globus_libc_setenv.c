@@ -15,8 +15,9 @@ globus_libc_setenv(
     {
         tmp = malloc(len);
         sprintf(tmp, "%s=%s", name, value);
-        putenv(tmp);
+        return _putenv(tmp);
     }
+    return 0;
 #else
     return setenv(name, value, rewrite);
 #endif
@@ -30,7 +31,7 @@ globus_libc_unsetenv(
     size_t len = snprintf(NULL, 0, "%s=", name);
     char *tmp = malloc(len);
     sprintf(tmp, "%s=", name);
-    putenv(name);
+    _putenv(tmp);
 #else
     unsetenv(name);
 #endif

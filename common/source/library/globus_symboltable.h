@@ -19,8 +19,6 @@
 #ifndef GLOBUS_SYMBOLTABLE_H
 #define GLOBUS_SYMBOLTABLE_H
 
-#include "globus_common_include.h"
-#include "globus_list.h"
 #include "globus_hashtable.h"
 
 #ifdef __cplusplus

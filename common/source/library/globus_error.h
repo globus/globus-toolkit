@@ -31,9 +31,6 @@ typedef uint_least32_t globus_uint_t;
 extern "C" {
 #endif
 
-/**
- * @defgroup globus_error Globus Error Handling
- */
 /**********************************************************************
  * Error API Types
  *   globus_result_t          --   used as error object handle

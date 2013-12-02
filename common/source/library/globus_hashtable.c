@@ -65,6 +65,20 @@ typedef struct globus_l_hashtable_s
     globus_memory_t                     memory;
 } globus_l_hashtable_t;
 
+/**
+ * @brief Initialize a hash table
+ * @ingroup globus_hashtable
+ * @details
+ * Initializes a generic chaining hashtable to represent an empty mapping and
+ * returns zero, or returns non-zero on failure. The size parameter specifies
+ * the number of chains with which to represent the mapping. This defines the
+ * maximum possible number of mappings that can be represented without conflict
+ * given a perfect hash, and therefore affects performance as hash conflicts
+ * will be resolved by linear chains.
+ *
+ * The hash_func and keyeq_func anonymous functions will be used by the table
+ * to manipulate the user's keys.
+ */
 int
 globus_hashtable_init(
     globus_hashtable_t *                table,
@@ -268,6 +282,17 @@ globus_l_hashtable_search_bucket(
     return GLOBUS_NULL;
 }
 
+/**
+ * @brief Insert a datum into a hash table
+ * @ingroup globus_hashtable
+ * @details
+ * The routine globus_hashtable_insert adds a new mapping to the table,
+ * returning zero on success or non-zero on failure. Any previous mapping for
+ * the same key (where equality is defined by the keyeq_func provided at table
+ * initialization) is lost.
+ *
+ * It is an error to call this routine on an uninitialized table.
+ */
 int
 globus_hashtable_insert(
     globus_hashtable_t *                table,
@@ -339,6 +364,15 @@ error_param:
     return GLOBUS_FAILURE;
 }
 
+/**
+ * @brief Update a hash table mapping
+ * @ingroup globus_hashtable
+ * @details
+ * Update an existing key -> datum association with new values for both, key
+ * and datum.  The old datum is returned.  If key is non-scalar (eg, string), 
+ * it should be part of datum so its resources may be recovered.  If old key
+ * does not exist, NULL is returned.
+ */
 void *
 globus_hashtable_update(
     globus_hashtable_t *                table,
@@ -376,6 +410,15 @@ error_param:
     return GLOBUS_NULL;
 }
 
+/**
+ * @brief Look up a datum in a hash table
+ * @ingroup globus_hashtable
+ * @details
+ * The globus_hashtable_lookup routine returns the datum mapped to the given key
+ * in the table, or NULL if the key is not mapped.
+ *
+ * It is an error to call this routine on an uninitialized or empty table.
+ */
 void *
 globus_hashtable_lookup(
     globus_hashtable_t *                table,
@@ -407,6 +450,15 @@ error_param:
     return GLOBUS_NULL;
 }
 
+/**
+ * @brief Remove a datum from a hash table
+ * @ingroup globus_hashtable
+ * @details
+ * The globus_hashtable_remove() function removes the mapping of key in the
+ * table, or does nothing if no such mapping exists.
+ *
+ * It is an error to call this routine on an uninitialized or empty table.
+ */
 void *
 globus_hashtable_remove(
     globus_hashtable_t *                table,
@@ -484,6 +536,10 @@ error_param:
     return GLOBUS_NULL;
 }
 
+/**
+ * @brief Create a list of all datums in a hash table
+ * @ingroup globus_hashtable
+ */
 int
 globus_hashtable_to_list(
     globus_hashtable_t *                table,
@@ -514,6 +570,12 @@ error_param:
     return GLOBUS_FAILURE;   
 }
 
+/**
+ * @brief Test hash table emptiness
+ * @ingroup globus_hashtable
+ * @details
+ * @return GLOBUS_TRUE if hashtable is empty, GLOBUS_FALSE otherwise
+ */
 globus_bool_t
 globus_hashtable_empty(
     globus_hashtable_t *                table)
@@ -522,6 +584,11 @@ globus_hashtable_empty(
         (*table)->first == GLOBUS_NULL) ? GLOBUS_TRUE : GLOBUS_FALSE);
 }
 
+/**
+ * @brief Hash table size
+ * @ingroup globus_hashtable
+ * @return Number of entries in hashtable
+ */
 int
 globus_hashtable_size(
     globus_hashtable_t *                table)
@@ -535,7 +602,12 @@ globus_hashtable_size(
     return (*table)->load;
 }
 
-/* set iterator to first entry and return datum, NULL if empty */
+/**
+ * @brief Initialize iterator to first hash table entry
+ * @ingroup globus_hashtable_iterators
+ * @details
+ * Set iterator to first entry and return datum, NULL if empty 
+ */
 void *
 globus_hashtable_first(
     globus_hashtable_t *                table)
@@ -557,7 +629,12 @@ error_param:
     return GLOBUS_NULL;
 }
 
-/* set iterator to next entry and return datum, NULL if at end */
+/**
+ * @brief Increment hash table iterator
+ * @ingroup globus_hashtable_iterators
+ * @details
+ * Set iterator to next entry and return datum, NULL if at end 
+ */
 void *
 globus_hashtable_next(
     globus_hashtable_t *                table)
@@ -582,7 +659,12 @@ error_param:
     return GLOBUS_NULL;
 }
 
-/* set iterator to last entry and return datum, NULL if empty */
+/**
+ * @brief Initialize iterator to last hash table entry
+ * @ingroup globus_hashtable_iterators
+ * @details
+ * Set iterator to last entry and return datum, NULL if empty 
+ */
 void *
 globus_hashtable_last(
     globus_hashtable_t *                table)
@@ -604,7 +686,12 @@ error_param:
     return GLOBUS_NULL;
 }
 
-/* set iterator to prev entry and return datum, NULL if at beginning */
+/**
+ * @brief Decrement hash table iterator
+ * @ingroup globus_hashtable_iterators
+ * @details
+ * Set iterator to the previous entry and return datum, NULL if at end 
+ */
 void *
 globus_hashtable_prev(
     globus_hashtable_t *                table)
@@ -629,6 +716,17 @@ error_param:
     return GLOBUS_NULL;
 }
 
+/**
+ * @brief Destroy a hash table
+ * @ingroup globus_hashtable
+ * Destroys a hashtable representation, releasing any resources used to
+ * represent the mappings (abandoning any data in the queue). After this call,
+ * a hashtable is no longer considered initialized.
+ *
+ * It is an error to destroy a hashtable that is not initialized.
+ * @param table
+ *     Hash table to destroy.
+ */
 int
 globus_hashtable_destroy(
     globus_hashtable_t *                table)
@@ -695,6 +793,12 @@ error_param:
     return;
 }
 
+/**
+ * @brief Null-terminated string hash function
+ * @ingroup globus_hashtable
+ * @details
+ * A decent hash function for null-terminated character arrays.
+ */
 int
 globus_hashtable_string_hash(
     void *                              string,
@@ -713,6 +817,10 @@ globus_hashtable_string_hash(
     return h % limit;
 }
 
+/**
+ * @brief Null-terminated string equality predicate
+ * @ingroup globus_hashtable
+ */
 int
 globus_hashtable_string_keyeq(
     void *                              string1,
@@ -727,6 +835,16 @@ globus_hashtable_string_keyeq(
     return 0;
 }
 
+/**
+ * @brief Void pointer hash function
+ * @ingroup globus_hashtable
+ * @details
+ * A decent hash function for void pointers. This routine goes to some effort
+ * to distribute the information from the address into the hash index by XORing
+ * the upper and lower halves of the pointer into one accumulator and
+ * calculating the index as the remainder of dividing the accumulator by the
+ * table size.
+ */
 int
 globus_hashtable_voidp_hash(
     void *                              voidp,
@@ -741,6 +859,10 @@ globus_hashtable_voidp_hash(
         (key >> (sizeof(unsigned long) * 4))) % limit;
 }
 
+/**
+ * @brief Void pointer equality predicate
+ * @ingroup globus_hashtable
+ */
 int
 globus_hashtable_voidp_keyeq(
     void *                              voidp1,
@@ -749,6 +871,17 @@ globus_hashtable_voidp_keyeq(
     return (voidp1 == voidp2);
 }
 
+/**
+ * @brief Integer hash function
+ * @ingroup globus_hashtable
+ * @details
+ * A pathetic hash function for integers, calculating the index as the
+ * remainder of dividing the integer by the table size.
+ *
+ * Your pet gerbil could probably design a better hash function for your
+ * integer keys, but you might as well use this one if you were going to use
+ * modular division anyway.
+ */
 int
 globus_hashtable_int_hash(
     void *                              integer,
@@ -757,6 +890,10 @@ globus_hashtable_int_hash(
     return (long) integer % limit;
 }
 
+/**
+ * @brief Integer equality predicate
+ * @ingroup globus_hashtable
+ */
 int
 globus_hashtable_int_keyeq(
     void *                              integer1,

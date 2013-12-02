@@ -19,9 +19,10 @@
 #ifndef GLOBUS_ERROR_GENERIC_H
 #define GLOBUS_ERROR_GENERIC_H
 
-#include "globus_common_include.h"
 #include "globus_object.h"
 #include "globus_module.h"
+
+#include <stdarg.h>
 
 /**
  * @defgroup globus_error_api Globus Error API

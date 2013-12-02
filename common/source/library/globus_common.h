@@ -42,6 +42,25 @@
 /**
  * @defgroup globus_common Globus Common API
  * @brief Common Data Structures and Functions
+ * @section globus_common_containers_sect Container Data Types
+ * - @ref globus_list
+ * - @ref globus_fifo
+ * - @ref globus_handle_table
+ * - @ref globus_hashtable
+ * - @ref globus_priority_q
+ *
+ * @section globus_common_runtime_sect Common Runtime Components
+ * - @ref globus_thread
+ * - @ref globus_callback
+ * - @ref globus_memory
+ * - @ref globus_module
+ *
+ * @section globus_common_error_handling_sect Error Handling
+ * - @ref globus_error_api
+ *
+ * @section globus_common_misc_sect Miscellaneous Utilities
+ * - @ref globus_uuid
+ * - @ref globus_url
  */
 #include "globus_common_include.h"
 #include "globus_module.h"
@@ -111,6 +130,10 @@ typedef struct globus_barrier_s
 ******************************************************************************/
 extern globus_module_descriptor_t	globus_i_common_module;
 
+/**
+ * @brief Globus Common Module Descriptor
+ * @ingroup globus_common
+ */
 #define GLOBUS_COMMON_MODULE (&globus_i_common_module)
 
 

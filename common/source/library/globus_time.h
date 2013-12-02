@@ -18,7 +18,7 @@
 #if !defined(GLOBUS_TIME_H)
 #define      GLOBUS_TIME_H
 
-#include "globus_common_include.h"
+#include "globus_types.h"
 #include <time.h>
 
 #ifdef __cplusplus
@@ -32,7 +32,7 @@ extern "C" {
 #if _WIN32
 typedef struct globus_abstime_s
 {
-   long    tv_sec;
+   time_t  tv_sec;
    long    tv_nsec;
 } globus_abstime_t;
 #else
@@ -86,14 +86,14 @@ typedef struct timeval  globus_reltime_t;
 
 #define  GlobusTimeAbstimePrintf(Abstime)                 \
 {                                                         \
-    printf("sec  -->%lu\n", (Abstime).tv_sec);            \
-    printf("nsec -->%lu\n", (Abstime).tv_nsec);           \
+    printf("sec  -->%lu\n", (unsigned long) (Abstime).tv_sec);            \
+    printf("nsec -->%lu\n", (unsigned long) (Abstime).tv_nsec);           \
 }
 
 #define  GlobusTimeReltimePrintf(Reltime)                 \
 {                                                         \
-    printf("sec  -->%lu\n", (Reltime).tv_sec);            \
-    printf("usec -->%lu\n", (Reltime).tv_usec);           \
+    printf("sec  -->%lu\n", (unsigned long) (Reltime).tv_sec);            \
+    printf("usec -->%lu\n", (unsigned long) (Reltime).tv_usec);           \
 }
 
 /**

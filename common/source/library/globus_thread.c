@@ -25,6 +25,9 @@
 
 #include "config.h"
 #include "globus_thread.h"
+#include "globus_common_include.h"
+#include <string.h>
+
 extern globus_result_t globus_eval_path(const char *, char **);
 
 #include "ltdl.h"
@@ -1355,8 +1358,9 @@ globus_thread_yield(void)
 /**
  * @brief Terminate the current thread
  * @ingroup globus_thread
- *     The globus_thread_exit() terminates the current thread with the value
- *     passed to it. This function does not return.
+ * @details
+ * The globus_thread_exit() terminates the current thread with the value
+ * passed to it. This function does not return.
  */
 extern
 void

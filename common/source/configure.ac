@@ -1,8 +1,8 @@
 AC_PREREQ([2.60])
 AC_INIT([globus_common], [14.10], [support@globus.org])
 AM_INIT_AUTOMAKE
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AM_PROG_LIBTOOL
+AM_PROG_CC_C_O
 AC_CONFIG_HEADERS(config.h)
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
@@ -39,7 +39,6 @@ LT_LIB_DLLOAD
 AC_SEARCH_LIBS(socket, socket)
 AC_SEARCH_LIBS(gethostbyname, nsl)
 AC_SEARCH_LIBS(gethostbyaddr, nsl)
-AC_REPLACE_FUNCS(inet_pton)
 
 PACKAGE_DEPS=""
 PACKAGE_DEP_CFLAGS=""
@@ -49,33 +48,51 @@ AC_CHECK_HEADERS([ltdl.h],[],[AC_MSG_ERROR([Missing required header ltdl.h])])
 AC_CHECK_LIB(ltdl, lt_dlopen, PACKAGE_DEP_LIBS="$PACKAGE_DEP_LIBS $LDFLAGS -lltdl")
 
 case $host in
-    *mingw*)
+    *mingw* | *win32*)
         PACKAGE_DEP_LIBS="$PACKAGE_DEP_LIBS -lws2_32 -liphlpapi"
         PACKAGE_DEP_CFLAGS="-DWINVER=0x0502"
+        BUILD_FOR_WINDOWS=yes
         ;;
 esac
 
-AC_CHECK_FUNCS(lt_dlmutex_register)
-AC_CHECK_FUNCS([gethostname])
+AC_CHECK_HEADERS([arpa/inet.h])
+AC_CHECK_HEADERS([ifaddrs.h])
+AC_CHECK_HEADERS([net/if_arp.h])
+AC_CHECK_HEADERS([net/if_dl.h])
 AC_CHECK_HEADERS([net/if.h])
 AC_CHECK_HEADERS([sys/ioctl.h])
 AC_CHECK_HEADERS([ifaddrs.h])
 AC_CHECK_HEADERS([if/dl.h])
 AC_CHECK_HEADERS([if/arp.h])
 AC_CHECK_HEADERS([arpa/inet.h])
+AC_CHECK_HEADERS([strings.h])
+AC_CHECK_HEADERS([syslog.h])
+AC_CHECK_HEADERS([sys/sysctl.h])
+AC_DIR_HEADER
 AC_SUBST(PACKAGE_DEPS)
 AC_SUBST(PACKAGE_DEP_CFLAGS)
 AC_SUBST(PACKAGE_DEP_LIBS)
 
+AC_CHECK_FUNCS(lt_dlmutex_register)
+AC_CHECK_FUNCS([gethostname])
+AC_CHECK_FUNCS([geteuid])
+AC_CHECK_FUNCS([fork])
+AC_CHECK_FUNCS([seekdir])
+AC_CHECK_FUNCS([telldir])
+AC_CHECK_FUNCS([sigaction])
+AC_CHECK_FUNCS([sigprocmask])
+AC_CHECK_FUNCS([snprintf])
+AC_CHECK_FUNCS([vsnprintf])
+AC_CHECK_FUNCS([strncasecmp])
 AC_PATH_PROG([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
 if test "X$GLOBUS_VERSION" = "X"; then
-    if test -x ${GLOBUS_LOCATION}/bin/globus-version; then
-        GLOBUS_VERSION="`${GLOBUS_LOCATION}/bin/globus-version`"
+    if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version; then
+        GLOBUS_VERSION="`${GLOBUS_LOCATION-/usr}/bin/globus-version`"
         if test X"$GLOBUS_VERSIONNAME" = "X" ; then
-            GLOBUS_VERSION_FULL="`${GLOBUS_LOCATION}/bin/globus-version -full`"
+            GLOBUS_VERSION_FULL="`${GLOBUS_LOCATION-/usr}/bin/globus-version -full`"
             GLOBUS_VERSIONNAME="`echo $GLOBUS_VERSION_FULL | sed "s/ $GLOBUS_VERSION//"`"
         fi
     else
@@ -176,6 +193,8 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
                 test "$XSLTPROC" != "no" && \
                 test "$XMLLINT" != "no"])
 
+AM_CONDITIONAL(CROSS_COMPILING, [ test "$cross_compiling" = "yes" ])
+AM_CONDITIONAL(WINDOWS_TEST_SCRIPT, [ test "$BUILD_FOR_WINDOWS" = "yes"])
 
 AC_CONFIG_FILES([
 	Makefile
@@ -197,6 +216,7 @@ AC_CONFIG_FILES([
         scripts/globus-script-initializer
         scripts/globus-user-env.csh
         scripts/globus-user-env.sh
+        test/Makefile
         manpages/Makefile
 	version.h])
 AC_OUTPUT

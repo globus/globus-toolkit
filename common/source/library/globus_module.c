@@ -91,13 +91,7 @@ const int GLOBUS_L_ENVIRON_TABLE_SIZE = 13;
 static globus_mutex_t		globus_l_environ_hashtable_mutex;
 static globus_hashtable_t		globus_l_environ_table;
 
-#if defined(HAVE_ONEXIT)
-#    define atexit(a) on_exit(a,GLOBUS_NULL)
-#endif
-
-#if defined(HAVE_ATEXIT) || defined(HAVE_ONEXIT)
 globus_list_t *globus_l_module_atexit_funcs = GLOBUS_NULL;
-#endif
 
 /******************************************************************************
 		      Module specific function prototypes
@@ -219,24 +213,20 @@ globus_module_activate_proxy(
 		/*
 		 * Set up the exit handler
 		 */
-#                   if defined(HAVE_ATEXIT) || defined(HAVE_ONEXIT)
+                    if(module_descriptor->atexit_func != GLOBUS_NULL)
                     {
-                        if(module_descriptor->atexit_func != GLOBUS_NULL)
+                        /* only call the atexit function once */
+                        if(!globus_list_search(
+                            globus_l_module_atexit_funcs,
+                            (void *) module_descriptor->atexit_func))
                         {
-                            /* only call the atexit function once */
-                            if(!globus_list_search(
-                                globus_l_module_atexit_funcs,
-                                (void *) module_descriptor->atexit_func))
-                            {
-                                globus_list_insert(
-                                    &globus_l_module_atexit_funcs,
-                                    (void *) module_descriptor->atexit_func);
-    
-                                atexit(module_descriptor->atexit_func);
-                            }
+                            globus_list_insert(
+                                &globus_l_module_atexit_funcs,
+                                (void *) module_descriptor->atexit_func);
+
+                            atexit(module_descriptor->atexit_func);
                         }
                     }
-#                   endif
                 }
                 
                 globus_thread_setspecific(
@@ -250,6 +240,17 @@ globus_module_activate_proxy(
 }
 /* globus_module_activate() */
 
+/**
+ * @brief Activate a module
+ * @ingroup globus_module
+ * @details
+ * Add a reference to the module named by module_descriptor to the list of
+ * activated modules. If this is the first reference to this module, its
+ * activation function will be called.
+ *
+ * @param module_descriptor
+ *     Module to activate
+ */
 int
 globus_module_activate(
     globus_module_descriptor_t *	module_descriptor)
@@ -257,6 +258,19 @@ globus_module_activate(
     return globus_module_activate_proxy(module_descriptor, NULL, NULL);
 }
 
+/**
+ * @brief Activate a group of modules
+ * @ingroup globus_module
+ * @details
+ * Activate an NULL-terminated array of modules. If any fail to activate, all
+ * are deactivated and the error from the failed activation is returned. If
+ * nonzero is returned, and failed_module is non-NULL, it will be set to point
+ * to the 1st module which failed to activate. 
+ * @param module_array
+ *     NULL-terminated array of module descriptors to activate.
+ * @param failed_module
+ *     Pointer to set to the first module whose activation function failed.
+ */
 int
 globus_module_activate_array(
     globus_module_descriptor_t *        module_array[],
@@ -350,8 +364,9 @@ globus_module_activate_array_compat(
 
 #endif
 
-/*
- * globus_module_deactivate()
+/**
+ * @brief Deactivate a module
+ * @ingroup globus_module
  */
 int
 globus_module_deactivate(
@@ -531,7 +546,7 @@ globus_module_setenv(
      */
  
 
-    if((globus_l_environ_initialized == GLOBUS_FALSE))
+    if(globus_l_environ_initialized == GLOBUS_FALSE)
     {
 	if(globus_i_module_initialized==GLOBUS_TRUE)
 	{
@@ -586,7 +601,7 @@ globus_module_getenv(
 {
     char * 			entry;
 
-    if((globus_l_environ_initialized == GLOBUS_TRUE))
+    if(globus_l_environ_initialized == GLOBUS_TRUE)
     {
 	if((globus_i_module_initialized == GLOBUS_TRUE)
 	    &&(globus_l_environ_mutex_initialized == GLOBUS_TRUE))

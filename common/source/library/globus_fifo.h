@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_COMMON_FIFO_H
-#define GLOBUS_COMMON_FIFO_H
+#ifndef GLOBUS_FIFO_H
+#define GLOBUS_FIFO_H
 
 /** 
  * @file globus_fifo.h
@@ -26,11 +26,10 @@
  */
 
 /**
- * @defgroup globus_fifo globus_fifo
+ * @defgroup globus_fifo FIFO Queue
  * @ingroup globus_common
  * @brief FIFO Queue Implementation
  */
-#include "globus_common_include.h"
 #include "globus_list.h"
  
 #ifdef __cplusplus
@@ -175,4 +174,4 @@ globus_fifo_convert_to_list(
 }
 #endif
 
-#endif /* GLOBUS_COMMON_FIFO_H */
+#endif /* GLOBUS_FIFO_H */
