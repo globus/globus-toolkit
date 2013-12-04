@@ -60,7 +60,7 @@ AM_CPPFLAGS = \
     -I $(builddir) \
     $(PACKAGE_DEP_CFLAGS)
 
-libglobus_memory_debug_la_LIBADD = $(PACKAGE_DEP_LIBS) -lglobus_common $(LIBS)
+libglobus_memory_debug_la_LIBADD = $(PACKAGE_DEP_LIBS) libglobus_common.la $(LIBS)
 libglobus_memory_debug_la_CPPFLAGS = \
         $(AM_CPPFLAGS) \
         -DGLOBUS_MEMORY_DEBUG_LEAKS

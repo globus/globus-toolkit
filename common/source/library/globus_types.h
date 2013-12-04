@@ -22,15 +22,18 @@
 #define GLOBUS_TYPES_H 1
 
 #include <stdlib.h>
+#include <stdint.h>
+
+#if (!defined(_WIN32)) || (defined(__CYGWIN__) || defined(__MINGW32__))
+#include <sys/types.h>
+#endif
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #else
-#include <sys/types.h>
 #include <sys/socket.h>
 #endif
-
-#include <stdint.h>
 
 /** @brief Standard size of memory object
  * @ingroup globus_common

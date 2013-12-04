@@ -1478,8 +1478,6 @@ globus_libc_strndup(const char * string, globus_size_t length)
 /*
  * not defined on win32
  */
-#if !defined(TARGET_ARCH_WIN32)
-
 /******************************************************************************
 Function: globus_libc_lseek()
 
@@ -1627,7 +1625,6 @@ globus_libc_closedir(DIR *dirp)
     errno = EINVAL;
 #endif
 }
-#endif /* TARGET_ARCH_WIN32 */
 
 #undef globus_libc_readdir_r
 extern int

@@ -53,28 +53,15 @@ globus_memory_init(
     int                           node_size,
     int                           node_count);
 
-/**
- *  pop a chunk of memory out of the memory management structure.
- *  Equalent of a malloc.
- */
 void *
 globus_memory_pop_node(
     globus_memory_t *                           mem_info);
 
-/**
- *  push a chunk of memory back into the meory managemnt structure.
- *  equalvalent to a free.
- */
 globus_bool_t
 globus_memory_push_node(
     globus_memory_t *          mem_info,
     void *                      buf);
 
-/**
- *  Free all the mmory associated with the memory management structure.
- *  For every call to globus_memory_init() there should be a call to
- *  globus_memory_destroy() or else memory will leak.
- */
 globus_bool_t
 globus_memory_destroy(
     globus_memory_t *                           mem_info);

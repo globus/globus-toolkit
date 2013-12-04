@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef globus_libc_setenv
+#undef globus_libc_setenv
+#endif
 int
 globus_libc_setenv(
     register const char *name,
@@ -23,6 +26,9 @@ globus_libc_setenv(
 #endif
 }
 
+#ifdef  globus_libc_unsetenv
+#undef globus_libc_unsetenv
+#endif
 void
 globus_libc_unsetenv(
     const char *name)
@@ -37,6 +43,9 @@ globus_libc_unsetenv(
 #endif
 }
 
+#ifdef globus_libc_getenv
+#undef globus_libc_getenv
+#endif
 char *
 globus_libc_getenv(const char *name)
 {

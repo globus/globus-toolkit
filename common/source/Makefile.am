@@ -19,3 +19,6 @@ EXTRA_DIST = \
 	version.h.in \
 	globus_common.txt \
 	$(doc_DATA)
+
+distuninstallcheck:
+	@:
