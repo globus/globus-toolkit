@@ -6,6 +6,5 @@ includedir=@includedir@
 Name: globus-xio-gsi-driver
 Description: Globus Toolkit - Globus XIO GSI Driver
 Version: @PACKAGE_VERSION@
-Libs.private: @PACKAGE_DEP_LIBS@
+Requires.private: @PACKAGE_DEPS@
 Cflags: -I${includedir}
-Cflags.private: @PACKAGE_DEP_CFLAGS@
