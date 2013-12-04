@@ -72,12 +72,15 @@ AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
-AC_OUTPUT(
+AC_CONFIG_FILES(
     Makefile
     globus-xio.pc
     globus-xio-uninstalled.pc
     builtins/Makefile
+    test/Makefile
+    test/drivers/Makefile
     Doxyfile
     version.h
     extensions.h
     builtin_makefiles)
+AC_OUTPUT

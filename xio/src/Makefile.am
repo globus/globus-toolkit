@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 pkgconfigdir = $(libdir)/pkgconfig
-SUBDIRS= builtins .
+SUBDIRS= builtins . test
 
 
 include_HEADERS = \
