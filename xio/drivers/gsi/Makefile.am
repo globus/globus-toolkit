@@ -13,10 +13,10 @@ libglobus_xio_gsi_driver_la_SOURCES = \
 	globus_i_xio_gsi.h  globus_xio_gsi.h globus_xio_gsi.c
 libglobus_xio_gsi_driver_la_LDFLAGS = \
 	-version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
-        -module -rpath $(GLOBUS_LOCATION)/lib \
+        -module \
         -no-undefined
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+EXTRA_DIST = dirt.sh version.h.in $(doc_DATA) globus-vararg-enums-doxygen-filter.pl
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN
@@ -35,7 +35,7 @@ all-local: $(DOC_STAMPS)
 install-data-local: $(DOC_STAMPS)
 	if test -d doc/man/man3; then \
 		install -d -m 755 $(DESTDIR)$(mandir)/man3; \
-	        $(INSTALL) -m 644 doc/man/man3/globus*.3 $(DESTDIR)$(mandir)/man3 ; \
+		$(INSTALL) -m 644 doc/man/man3/[Gg][Ll][Oo][Bb][Uu][Ss]*.3 $(DESTDIR)$(mandir)/man3 ; \
         fi
 	if test -d doc/html; then \
 		for dir in `(cd doc; find html -type d)`; do \
@@ -50,3 +50,6 @@ dist-hook: $(DOC_STAMPS)
 	if test -d doc; then \
 		cp -R doc $(distdir)/doc ; \
 	fi ;
+
+distuninstallcheck:
+	@:
