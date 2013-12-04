@@ -43,7 +43,7 @@ globus_l_callout_library_table_element_free(
 
 static void
 globus_l_callout_data_free(
-    globus_i_callout_data_t *           data);
+    void *           data);
 
 
 static int globus_l_callout_activate(void);
@@ -995,10 +995,11 @@ globus_callout_call_type(
 
 static void
 globus_l_callout_data_free(
-    globus_i_callout_data_t *           data)
+    void *           datum)
 {
     static char *                       _function_name_ =
         "globus_l_callout_data_free";
+    globus_i_callout_data_t *           data = datum;
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
     if(data != NULL)

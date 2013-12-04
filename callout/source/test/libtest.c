@@ -14,27 +14,20 @@
  * limitations under the License.
  */
 
-static
-globus_version_t local_version = 
-{
-    @MAJOR_VERSION@,
-    @MINOR_VERSION@,
-    @DIRT_TIMESTAMP@,
-    @DIRT_BRANCH_ID@
-};
+#include <stdlib.h>
+#include <stdio.h>
+#include "globus_common.h"
 
-#define bittostr(x) str(x)
-#define str(x) #x
-
-#include <limits.h>
-#include <stdint.h>
-
-#if LONG_MAX == INT32_MAX
-#define FLAVOR_BITS 32
-#elif LONG_MAX == INT64_MAX
-#define FLAVOR_BITS 64
+#ifndef WIN32
+globus_result_t
+test_callout(va_list ap)
 #else
-#error "Unknown flavor bits"
+globus_result_t
+__declspec(dllexport) test_callout(va_list ap)
 #endif
+{
+    vprintf("Got arguments 1) %s 2) %s\n", ap);
+    return GLOBUS_SUCCESS;
+}
 
-static const char flavor[] = "cc" bittostr(FLAVOR_BITS);
+

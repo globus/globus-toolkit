@@ -1,4 +1,9 @@
+AC_PREREQ([2.60])
 AC_INIT([globus_callout], [2.4])
+dnl automake only installs install-sh if it isn't found in .,  .., or ../..
+dnl so it skips this one based on its position in the checkout unless an aux
+dir is defined
+AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE
 AM_PROG_LIBTOOL
 
@@ -26,11 +31,13 @@ AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != "no"])
 
-AC_OUTPUT(
+AC_CONFIG_FILES(
         Makefile
         globus-callout.pc
         globus-callout-uninstalled.pc
 	library/Makefile
 	library/Doxyfile
+        test/Makefile
 	version.h
 )
+AC_OUTPUT

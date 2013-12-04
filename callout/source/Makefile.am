@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 pkgconfigdir = $(libdir)/pkgconfig
-SUBDIRS = library
+SUBDIRS = library test
 
 doc_DATA = GLOBUS_LICENSE
 pkgconfig_DATA = globus-callout.pc
