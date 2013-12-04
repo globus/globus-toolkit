@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_XIO_GSI_DRIVER_INCLUDE
-#define GLOBUS_XIO_GSI_DRIVER_INCLUDE
+#ifndef GLOBUS_XIO_GSI_DRIVER_H
+#define GLOBUS_XIO_GSI_DRIVER_H
 
 /**
  * @file globus_xio_gsi.h
@@ -34,20 +34,17 @@ extern "C" {
 #ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
  * @mainpage Globus XIO GSI Driver
- * @copydoc gsi_driver
+ * @copydoc globus_xio_gsi_driver
  */
 #endif
 
 /**
- * @defgroup gsi_driver Globus XIO GSI Driver
- * @brief XIO GSI Driver
- * @details
- * The GSI driver.
+ * @defgroup globus_xio_gsi_driver Globus XIO GSI Driver
  */
 
 /**
- * @defgroup gsi_driver_instance Opening/Closing
- * @ingroup gsi_driver
+ * @addtogroup globus_xio_gsi_driver
+ * @section globus_xio_driver_instance_sect Opening/Closing
  * 
  * An XIO handle with the gsi driver can be created with either
  * globus_xio_handle_create () or globus_xio_server_register_accept ().
@@ -67,8 +64,9 @@ extern "C" {
  */
  
 /**
- * @defgroup gsi_driver_io Reading/Writing
- * @ingroup gsi_driver
+ * @addtogroup globus_xio_gsi_driver
+ * @section globus_xio_driver_readwrite_sect Reading/Writing
+ * 
  * The GSI driver behaves similar to the underlying transport driver with
  * respect to reads and writes, except for the try-read and try-write
  * operations (ie. waitforbytes ==0) which always return immediately. This is
@@ -78,8 +76,8 @@ extern "C" {
  */
 
 /**
- * @defgroup gsi_driver_server Server
- * @ingroup gsi_driver
+ * @addtogroup globus_xio_gsi_driver
+ * @section globus_xio_gsi_driver_server_sect Server
  *
  * globus_xio_server_create() causes a new transport-specific
  * listener socket to be created to handle new GSI connections.
@@ -97,8 +95,8 @@ extern "C" {
  */
 
 /**
- * @defgroup gsi_driver_envs Env Variables
- * @ingroup gsi_driver
+ * @addtogroup globus_xio_gsi_driver
+ * @section globus_xio_gsi_driver_envs_sect Environment Variables
  * 
  * The gsi driver uses the following environment variables
  * - X509_USER_PROXY 
@@ -107,27 +105,22 @@ extern "C" {
  * - X509_CERT_DIR
  *
  * For details see
- * <a href="http://www.globus.org/security/v2.0/env_variables.html">
- * Globus: GSI Environment Variables</a>
+ * <a href="http://toolkit.globus.org/toolkit/docs/latest-stable/gsic/pi/#gsic-pi-env">Globus: GSI Environment Variables</a>
  */
 
 /**
- * @defgroup gsi_driver_cntls Attributes and Cntls
- * @ingroup gsi_driver
+ * @addtogroup globus_xio_gsi_driver
+ * @section globus_xio_gsi_driver_cntls_sect Attributes and Cntls
  * 
- * GSI driver specific attrs and cntls.
+ * GSI driver specific attrs and cntls
  * 
  * @see globus_xio_attr_cntl ()
  * @see globus_xio_handle_cntl ()
  */
 
 /**
- * @defgroup gsi_driver_types Types
- * @ingroup gsi_driver
- */
-/**
- * @defgroup gsi_driver_errors Error Types
- * @ingroup gsi_driver
+ * @addtogroup globus_xio_gsi_driver
+ * @section globus_xio_gsi_driver_errors_sect Error Types
  * 
  * The GSI driver uses mostly GSSAPI calls, so it generally just wraps the
  * underlying GSSAPI errors or uses generic xio errors.
@@ -139,7 +132,7 @@ extern "C" {
 
 /**
  * GSI driver specific error types
- * @ingroup gsi_driver_errors
+ * @ingroup globus_xio_gsi_driver
  */
 typedef enum
 {
@@ -167,21 +160,23 @@ typedef enum
 
 /** doxygen varargs filter stuff
  * GlobusVarArgDefine(
- *      attr, globus_result_t, globus_xio_attr_cntl, attr, driver)
+ *      attr, globus_result_t, globus_xio_gsi_attr_cntl, attr, driver)
  * GlobusVarArgDefine(
- *      handle, globus_result_t, globus_xio_handle_cntl, handle, driver)
+ *      handle, globus_result_t, globus_xio_gsi_handle_cntl, handle, driver)
  */
 
+#define globus_xio_gsi_attr_cntl globus_xio_attr_cntl
+#define globus_xio_gsi_handle_cntl globus_xio_handle_cntl
 
 /**
  * GSI driver specific cntls
- * @ingroup gsi_driver_cntls
+ * @ingroup globus_xio_gsi_driver
  */
 typedef enum
 {
     /** GlobusVarArgEnum(attr, handle)
      * Set the credential to be used 
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param credential
      *      The credential to set. The credential structure
@@ -195,7 +190,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr, handle)
      * Get the credential to be used 
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param credential
      *      The credential that is currently set. This will only
@@ -208,7 +203,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Set the GSSAPI req_flags to be used
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param req_flags
      *      The req_flags to set
@@ -218,7 +213,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the GSSAPI req_flags to be used
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param req_flags
      *      The req flags currently in effect
@@ -228,7 +223,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Set the proxy mode
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param proxy_mode
      *      The proxy mode to set
@@ -239,7 +234,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the proxy mode
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param proxy_mode
      *      The proxy mode that is currently in effect
@@ -250,7 +245,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Set the authorization mode
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param authz_mode
      *      The authorization mode to set
@@ -260,7 +255,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the authorization mode
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param authz_mode
      *      The authorization mode that is currently in effect
@@ -270,7 +265,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Set the delegation mode
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param delegation_mode
      *      The delegation mode to use
@@ -281,7 +276,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the delegation mode
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param delegation_mode
      *      The delegation mode currently in effect
@@ -291,7 +286,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Make the on the wire protocol SSL compatible.
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * This implies no wrapping of security tokens and no delegation
      * 
@@ -304,7 +299,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Do anonymous authentication 
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param anon_mode
      *      The ssl compatibility mode to use
@@ -316,7 +311,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Set the wrapping mode
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * This mode determines whether tokens will be
      * wrapped with a Globus IO style header or not.
@@ -329,7 +324,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the wrapping mode
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * This mode determines whether tokens will
      * be wrapped with a Globus IO style header or not.
@@ -342,7 +337,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Set the read buffer size
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * The read buffer is used for buffering
      * wrapped data, is initialized with a default size of 128K and scaled
@@ -356,7 +351,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the read buffer size
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * The read buffer is used for buffering
      * wrapped data, is initialized with a default size of 128K and scaled
@@ -370,7 +365,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Set the protection level
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param protection_level
      *      The protection level to set
@@ -381,7 +376,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the protection level
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param protection_level
      *      The current protection level
@@ -391,7 +386,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Set the expected peer name
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param target_name
      *      The expected peer name
@@ -401,7 +396,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the expected peer name
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param target_name
      *      The expected peer name
@@ -411,7 +406,7 @@ typedef enum
 
     /** GlobusVarArgEnum(handle)
      * Get the GSS context
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param context
      *      The GSS context
@@ -421,7 +416,7 @@ typedef enum
 
     /** GlobusVarArgEnum(handle)
      * Get the delegated credential
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param credential
      *      The delegated credential
@@ -431,7 +426,7 @@ typedef enum
 
     /** GlobusVarArgEnum(handle)
      * Get the name of the peer 
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param peer_name
      *      The GSS name of the peer.
@@ -441,7 +436,7 @@ typedef enum
 
     /** GlobusVarArgEnum(handle)
      * Get the GSS name associated with the local credentials
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param local_name
      *      The GSS name of the local credentials
@@ -451,7 +446,7 @@ typedef enum
 
     /** GlobusVarArgEnum(handle)
      * Initialize delegation-at-any-time process
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param credential
      *      The GSS credential to delegate
@@ -471,7 +466,7 @@ typedef enum
 
     /** GlobusVarArgEnum(handle)
      * Initialize non-blocking delegation-at-any-time process
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param credential
      *      The GSS credential to delegate
@@ -496,7 +491,7 @@ typedef enum
     GLOBUS_XIO_GSI_REGISTER_INIT_DELEGATION,
     /** GlobusVarArgEnum(handle)
      * Accept delegation-at-any-time process
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param credential
      *      The delegated GSS credential
@@ -516,7 +511,7 @@ typedef enum
 
     /** GlobusVarArgEnum(handle)
      * Accept non-blocking delegation-at-any-time process
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param restriction_oids
      *      The OIDS for X.509 extensions to embed in the delegated
@@ -539,7 +534,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Force the server mode setting.
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * This explicitly sets the directionality of context establishment and
      * delegation. 
@@ -552,7 +547,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Set the allow missing signing policy flag
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param allow
      *      The flag setting to use
@@ -563,7 +558,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Get the allow missing signing policy flag
-     * @ingroup gsi_driver_cntls
+     * @ingroup globus_xio_gsi_driver
      *
      * @param allow
      *      The flag currently set
@@ -574,7 +569,7 @@ typedef enum
 
 /**
  * Globus XIO GSI protection levels
- * @ingroup gsi_driver_types
+ * @ingroup globus_xio_gsi_driver
  */
 typedef enum
 {
@@ -588,7 +583,7 @@ typedef enum
 
 /**
  * Globus XIO GSI delegation modes
- * @ingroup gsi_driver_types
+ * @ingroup globus_xio_gsi_driver
  */
 typedef enum
 {
@@ -602,7 +597,7 @@ typedef enum
 
 /**
  * Globus XIO GSI proxy modes
- * @ingroup gsi_driver_types
+ * @ingroup globus_xio_gsi_driver
  */
 typedef enum
 {
@@ -619,7 +614,7 @@ typedef enum
 
 /**
  * Globus XIO GSI authorization modes
- * @ingroup gsi_driver_types
+ * @ingroup globus_xio_gsi_driver
  */
 typedef enum
 {
@@ -641,7 +636,7 @@ typedef enum
 
 /**
  * Globus XIO GSI init delegation callback
- * @ingroup gsi_driver_types
+ * @ingroup globus_xio_gsi_driver
  */
 typedef void (* globus_xio_gsi_delegation_init_callback_t)(
     globus_result_t			result,
@@ -649,7 +644,7 @@ typedef void (* globus_xio_gsi_delegation_init_callback_t)(
 
 /**
  * Globus XIO GSI init delegation callback
- * @ingroup gsi_driver_types
+ * @ingroup globus_xio_gsi_driver
  */
 typedef void (* globus_xio_gsi_delegation_accept_callback_t)(
     globus_result_t			result,
@@ -661,4 +656,4 @@ typedef void (* globus_xio_gsi_delegation_accept_callback_t)(
 }
 #endif
 
-#endif
+#endif /* GLOBUS_XIO_GSI_DRIVER_H */

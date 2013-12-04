@@ -3607,7 +3607,7 @@ gsi_l_attr_parse_auth(
     globus_xio_driver_attr_cntl_t       cntl_func)
 {
     globus_result_t                     result;
-    globus_xio_gsi_authorization_mode_t type = -1;
+    globus_xio_gsi_authorization_mode_t type;
     GlobusXIOName(gsi_l_attr_parse_auth);
     GlobusXIOGSIDebugEnter();
 
@@ -3627,15 +3627,14 @@ gsi_l_attr_parse_auth(
     {
         type = GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION;
     }
-
-    if(type != -1)
-    {
-        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, type);
-    }
     else
     {
         result = GlobusXIOErrorParse(val);
+        goto done;
     }
+
+    result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, type);
+done:
     GlobusXIOGSIDebugExit();
 
     return result;
@@ -3649,7 +3648,7 @@ gsi_l_attr_parse_prot(
     int                                 cmd,
     globus_xio_driver_attr_cntl_t       cntl_func)
 {
-    globus_xio_gsi_protection_level_t   type = -1;
+    globus_xio_gsi_protection_level_t   type;
     globus_result_t                     result;
     GlobusXIOName(gsi_l_attr_parse_prot);
     GlobusXIOGSIDebugEnter();
@@ -3666,15 +3665,14 @@ gsi_l_attr_parse_prot(
     {
         type = GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY;
     }
-
-    if(type != -1)
-    {
-        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, type);
-    }
     else
     {
         result = GlobusXIOErrorParse(val);
+        goto done;
     }
+    result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, type);
+
+done:
     GlobusXIOGSIDebugExit();
 
     return result;
@@ -3688,7 +3686,7 @@ gsi_l_attr_parse_del(
     int                                 cmd,
     globus_xio_driver_attr_cntl_t       cntl_func)
 {
-    globus_xio_gsi_delegation_mode_t    type = -1;
+    globus_xio_gsi_delegation_mode_t    type;
     globus_result_t                     result;
     GlobusXIOName(gsi_l_attr_parse_del);
     GlobusXIOGSIDebugEnter();
@@ -3705,15 +3703,14 @@ gsi_l_attr_parse_del(
     {
         type = GLOBUS_XIO_GSI_DELEGATION_MODE_LIMITED;
     }
-
-    if(type != -1)
-    {
-        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, type);
-    }
     else
     {
         result = GlobusXIOErrorParse(val);
+        goto done;
     }
+
+    result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, type);
+done:
     GlobusXIOGSIDebugExit();
 
     return result;
@@ -3727,7 +3724,7 @@ gsi_l_attr_parse_proxy(
     int                                 cmd,
     globus_xio_driver_attr_cntl_t       cntl_func)
 {
-    globus_xio_gsi_proxy_mode_t         type = -1;
+    globus_xio_gsi_proxy_mode_t         type;
     globus_result_t                     result;
     GlobusXIOName(gsi_l_attr_parse_proxy);
     GlobusXIOGSIDebugEnter();
@@ -3744,15 +3741,14 @@ gsi_l_attr_parse_proxy(
     {
         type = GLOBUS_XIO_GSI_PROXY_MODE_LIMITED;
     }
-
-    if(type != -1)
-    {
-        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, type);
-    }
     else
     {
         result = GlobusXIOErrorParse(val);
+        goto done;
     }
+
+    result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, type);
+done:
     GlobusXIOGSIDebugExit();
 
     return result;
