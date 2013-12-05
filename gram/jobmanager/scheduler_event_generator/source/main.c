@@ -91,6 +91,12 @@ usage(char * cmd)
     printf("Usage: %s [-t timestamp] -s scheduler\n", cmd);
 }
 
+#ifndef TARGET_ARCH_WIN32
+#define DAEMON_FLAGS "p:b"
+#else
+#define DAEMON_FLAGS
+#endif
+
 int
 main(int argc, char *argv[])
 {
@@ -100,9 +106,11 @@ main(int argc, char *argv[])
     globus_result_t result = GLOBUS_SUCCESS;
     globus_bool_t background = GLOBUS_FALSE;
     char * directory = NULL;
+#ifndef TARGET_ARCH_WIN32
     char * pidfile = NULL;
+#endif
 
-    while ((rc = getopt(argc, argv, "hs:t:d:p:b")) != EOF)
+    while ((rc = getopt(argc, argv, "hs:t:d:" DAEMON_FLAGS)) != EOF)
     {
         switch (rc)
         {
@@ -118,19 +126,22 @@ main(int argc, char *argv[])
                     exename = argv[0];
                 }
 
-                printf("Usage: %s -s SEG-MODULE [OPTIONS]\n\
-Process LRM events into a common format for use with GRAM\n\n\
-Options:\n\
-   -s LRM                    Parse events for the local resource manager\n\
-                             named by LRM.\n\
-   -t TIMESTAMP              Ignore events that occur prior to TIMESTAMP\n\
-                             in seconds since the epoch\n\
-   -d DIRECTORY              Write log events to files in DIRECTORY named\n\
-                             by their event timestamp (DIRECTORY/YYYYMMDD)\n\
-                             If not present, events will be written to \n\
-                             standard output\n\
-   -b                        Run in the background (only if -d used)\n\
-   -p PIDFILE                Write background process PID to PIDFILE\n\n",
+                printf("Usage: %s -s SEG-MODULE [OPTIONS]\n"
+"Process LRM events into a common format for use with GRAM\n\n"
+"Options:\n"
+"   -s LRM                    Parse events for the local resource manager\n"
+"                             named by LRM.\n"
+"   -t TIMESTAMP              Ignore events that occur prior to TIMESTAMP\n"
+"                             in seconds since the epoch\n"
+"   -d DIRECTORY              Write log events to files in DIRECTORY named\n"
+"                             by their event timestamp (DIRECTORY/YYYYMMDD)\n"
+"                             If not present, events will be written to \n"
+"                             standard output\n"
+#ifndef TARGET_ARCH_WIN32
+"   -b                        Run in the background (only if -d used)\n"
+"   -p PIDFILE                Write background process PID to PIDFILE\n"
+#endif
+"\n",
                 exename);
             }
 
@@ -153,6 +164,7 @@ Options:\n\
             directory = optarg;
             break;
 
+#ifndef TARGET_ARCH_WIN32
         case 'p':
             pidfile = optarg;
             break;
@@ -160,6 +172,7 @@ Options:\n\
         case 'b':
             background = GLOBUS_TRUE;
             break;
+#endif
 
         default:
             fprintf(stderr, "Invalid option: %c\n", (char) rc);
@@ -175,6 +188,7 @@ Options:\n\
             directory, strerror(errno));
         exit(EXIT_FAILURE);
     }
+#ifndef TARGET_ARCH_WIN32
     if (background && !directory)
     {
         fprintf(stderr, "Ignoring -b option without -d\n");
@@ -226,6 +240,7 @@ Options:\n\
             setsid();
         }
     }
+#endif
     globus_thread_set_model(GLOBUS_THREAD_MODEL_NONE);
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
