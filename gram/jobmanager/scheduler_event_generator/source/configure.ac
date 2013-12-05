@@ -1,6 +1,6 @@
 AC_INIT([globus_scheduler_event_generator],[4.7])
 AM_INIT_AUTOMAKE
-AM_PROG_LIBTOOL
+LT_INIT([dlopen])
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
 MINOR_VERSION=${PACKAGE_VERSION##*.}
@@ -136,5 +136,6 @@ AC_CONFIG_FILES(
         init/globus-scheduler-event-generator-nolsb
         init/globus-scheduler-event-generator-lsb
         init/Makefile
+        test/Makefile
 	version.h)
 AC_OUTPUT
