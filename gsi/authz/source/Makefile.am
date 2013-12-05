@@ -9,7 +9,8 @@ pkgconfig_DATA = globus-authz.pc
 
 libglobus_authz_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 libglobus_authz_la_LDFLAGS = \
-        -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION)
+        -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+        -no-undefined
 libglobus_authz_la_LIBADD = $(PACKAGE_DEP_LIBS)
 libglobus_authz_la_SOURCES = \
 	globus_gsi_authz.c \
