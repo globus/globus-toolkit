@@ -20,7 +20,3 @@ libglobus_oldgaa_la_SOURCES = \
 	globus_oldgaa_utils.h \
 	rfc1779.c \
 	rfc1779.h
-
-
-EXTRA_DIST= \
-        config.h.in
