@@ -1,10 +1,12 @@
 AM_CPPFLAGS = -I$(top_srcdir)/library $(PACKAGE_DEP_CFLAGS) 
 LDADD = ../library/libglobus_common.la -lltdl
 
-if WINDOWS_TEST_SCRIPT
+if BUILD_WINDOWS_THREADS
 thread_model_opt = -DTHREAD_MODEL="\"windows\""
+thread_shobj = -dlopen ../library/libglobus_thread_windows.la
 else
 thread_model_opt = -DTHREAD_MODEL="\"pthread\""
+thread_shobj = -dlopen ../library/libglobus_thread_pthread.la
 endif
 
 check_PROGRAMS = \
@@ -30,8 +32,11 @@ if CROSS_COMPILING
 XFAIL_TESTS = $(TESTS)
 endif
 
+LOG_COMPILER = $(top_builddir)/libtool --mode=execute $(thread_shobj)
 
 thread_test_CPPFLAGS = $(thread_model_opt) $(AM_CPPFLAGS)
+thread_test_LDADD = $(thread_shobj) $(LDADD)
+thread_test_LDFLAGS = -R $(abs_top_builddir)/library
 
 if WINDOWS_TEST_SCRIPT
 CHECK_CMD_SCRIPT=check.cmd

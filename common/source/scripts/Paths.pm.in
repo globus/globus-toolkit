@@ -20,7 +20,7 @@ require Exporter;
 
 @EXPORT = qw($exec_prefix $prefix
              $sbindir $bindir
-             $libdir $libexecdir $includedir
+             $libexecdir $includedir
              $flavorincludedir
              $datarootdir
              $mandir
@@ -59,7 +59,6 @@ else
 $exec_prefix = "@exec_prefix@";
 $sbindir = "@sbindir@";
 $bindir = "@bindir@";
-@GLOBUS_PERL_LIBDIR_CHOICE@
 $includedir = "@includedir@";
 $datarootdir = "@datarootdir@";
 $datadir = "@datadir@";

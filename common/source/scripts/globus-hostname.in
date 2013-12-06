@@ -29,41 +29,18 @@ VERSION="@VERSION@"
 DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
 DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 
-prefix="@prefix@"
-set_paths()
-{
-    exec_prefix="@exec_prefix@"
-    sbindir="@sbindir@"
-    bindir="@bindir@"
-    libdir="@libdir@"
-    includedir="@includedir@"
-    datarootdir="@datarootdir@"
-    datadir="@datadir@"
-    libexecdir="@libexecdir@"
-    sysconfdir="@sysconfdir@"
-    sharedstatedir="@sharedstatedir@"
-    localstatedir="@localstatedir@"
-}
-
-set_paths
-
-mydir="$(dirname $0)"
-if ! expr "$mydir" : "^/" > /dev/null 2>&1 ; then
-    mydir="$(pwd)/$mydir"
-fi
-
-# If $0 has been moved, look in its new directory's parent as prefix
-if [ "$bindir" != "$mydir" ]; then
-    prefix="$(dirname $mydir)"
-    set_paths
-
-    if [ ! -r "${libexecdir}/globus-script-initializer" ] && \
-        [ -n "$GLOBUS_LOCATION" ]; then
-        prefix="$GLOBUS_LOCATION"
-        set_paths
-    fi
-fi
-
+prefix="${GLOBUS_LOCATION-@prefix@}"
+exec_prefix="@exec_prefix@"
+sbindir="@sbindir@"
+bindir="@bindir@"
+includedir="@includedir@"
+datarootdir="@datarootdir@"
+datadir="@datadir@"
+libexecdir="@libexecdir@"
+sysconfdir="@sysconfdir@"
+sharedstatedir="@sharedstatedir@"
+localstatedir="@localstatedir@"
+perlmoduledir="@perlmoduledir@"
 
 if test -r "${libexecdir}/globus-script-initializer"; then
     . "${libexecdir}/globus-script-initializer"

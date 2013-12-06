@@ -16,9 +16,11 @@
 # limitations under the License.
 # 
 
-use strict;
-use Getopt::Long
 require 5.8.0;
+
+use strict;
+use warnings;
+use Getopt::Long;
 use vars qw(@tests);
 
 my $dir = undef;

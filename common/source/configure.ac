@@ -1,7 +1,7 @@
 AC_PREREQ([2.60])
 AC_INIT([globus_common], [14.10], [support@globus.org])
 AM_INIT_AUTOMAKE
-AM_PROG_LIBTOOL
+LT_INIT(dlopen)
 AM_PROG_CC_C_O
 AC_CONFIG_HEADERS(config.h)
 
@@ -47,6 +47,7 @@ PACKAGE_DEP_LIBS=""
 AC_CHECK_HEADERS([ltdl.h],[],[AC_MSG_ERROR([Missing required header ltdl.h])])
 AC_CHECK_LIB(ltdl, lt_dlopen, PACKAGE_DEP_LIBS="$PACKAGE_DEP_LIBS $LDFLAGS -lltdl")
 
+BUILD_FOR_WINDOWS=no
 case $host in
     *mingw* | *win32*)
         PACKAGE_DEP_LIBS="$PACKAGE_DEP_LIBS -lws2_32 -liphlpapi"
@@ -108,7 +109,9 @@ AC_SUBST(GLOBUS_VERSION)
 AC_SUBST(GLOBUS_VERSIONNAME)
 
 AC_PATH_PROGS(GLOBUS_SH_PERL, perl perl5)
+AC_PATH_PROGS(PERL, perl perl5)
 AC_PATH_PROGS(GLOBUS_SH, sh bash ksh)
+AC_PATH_PROGS(SH, sh bash ksh)
 
 AC_ARG_WITH([backward-compatibility-hack],
     AC_HELP_STRING(
@@ -193,6 +196,7 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
                 test "$XSLTPROC" != "no" && \
                 test "$XMLLINT" != "no"])
 
+AC_SUBST([cross_compiling])
 AM_CONDITIONAL(CROSS_COMPILING, [ test "$cross_compiling" = "yes" ])
 AM_CONDITIONAL(WINDOWS_TEST_SCRIPT, [ test "$BUILD_FOR_WINDOWS" = "yes"])
 

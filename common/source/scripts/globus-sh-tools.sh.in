@@ -16,18 +16,18 @@
 # limitations under the License.
 # 
 
-prefix="${prefix-@prefix@}"
-exec_prefix="${exec_prefix-@exec_prefix@}"
-sbindir="${sbindir-@sbindir@}"
-bindir="${bindir-@bindir@}"
-libdir="${libdir-@libdir@}"
-includedir="${includedir-@includedir@}"
-datarootdir="${datarootdir-@datarootdir@}"
-datadir="${datadir-@datadir@}"
-libexecdir="${libexecdir-@libexecdir@}"
-sysconfdir="${sysconfdir-@sysconfdir@}"
-sharedstatedir="${sharedstatedir-@sharedstatedir@}"
-localstatedir="${localstatedir-@localstatedir@}"
+prefix="${GLOBUS_LOCATION-@prefix@}"
+exec_prefix="@exec_prefix@"
+sbindir="@sbindir@"
+bindir="@bindir@"
+libdir="@libdir@"
+includedir="@includedir@"
+datarootdir="@datarootdir@"
+datadir="@datadir@"
+libexecdir="@libexecdir@"
+sysconfdir="@sysconfdir@"
+sharedstatedir="@sharedstatedir@"
+localstatedir="@localstatedir@"
 
 if test -z "$GLOBUS_SH_VARIABLES_SET" ; then
     

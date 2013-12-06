@@ -1,4 +1,4 @@
-sysconf_DATA = \
+data_DATA = \
         globus-user-env.sh \
         globus-user-env.csh
 libexec_SCRIPTS = \

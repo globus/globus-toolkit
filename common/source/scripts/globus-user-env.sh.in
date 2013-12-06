@@ -23,12 +23,7 @@
 # your environment before applying the new GLOBUS_LOCATION
 #
 
-if test -n "${GLOBUS_LOCATION}" ; then
-    prefix="${GLOBUS_LOCATION}"
-else
-    prefix="@prefix@"
-fi
-
+prefix="${GLOBUS_LOCATION-@prefix@}"
 exec_prefix="@exec_prefix@"
 sbindir="@sbindir@"
 bindir="@bindir@"

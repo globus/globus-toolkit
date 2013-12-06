@@ -1,3 +1,16 @@
+prefix="${GLOBUS_LOCATION-@prefix@}"
+exec_prefix="@exec_prefix@"
+sbindir="@sbindir@"
+bindir="@bindir@"
+includedir="@includedir@"
+datarootdir="@datarootdir@"
+datadir="@datadir@"
+libdir="@libdir@"
+libexecdir="@libexecdir@"
+sysconfdir="@sysconfdir@"
+sharedstatedir="@sharedstatedir@"
+localstatedir="@localstatedir@"
+
 if [ x$prefix != "x/usr" ]; then
     if [ `uname 2> /dev/null` = Linux -o \
          `uname 2> /dev/null` = SunOS ]; then

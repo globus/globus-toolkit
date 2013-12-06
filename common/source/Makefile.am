@@ -13,6 +13,7 @@ SUBDIRS = \
 doc_DATA = GLOBUS_LICENSE
 
 pkgconf_DATA = globus-common.pc
+libexec_SCRIPTS = config.guess
 
 EXTRA_DIST = \
 	dirt.sh \
