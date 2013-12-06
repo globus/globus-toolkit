@@ -19,6 +19,20 @@ AC_SUBST(PACKAGE_DEPS)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
+AC_ARG_WITH([perlmoduledir],
+AC_HELP_STRING([--with-perlmoduledir=DIR],
+[perl module directory [[PREFIX/lib/perl]]]),
+[
+    if test x$withval = "xno" -o x$withval = "xyes" ; then
+        AC_MSG_ERROR([--with-perlmoduledir requires an argument])
+    fi
+    perlmoduledir=$withval
+],
+[
+    perlmoduledir='${libdir}/perl'
+])
+AC_SUBST(perlmoduledir)
+
 AC_CONFIG_FILES(
         globus-gass-cache-program-uninstalled.pc
         globus-gass-cache-program.pc
