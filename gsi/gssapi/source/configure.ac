@@ -32,6 +32,8 @@ AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
+SAVE_LIBS="$LIBS"
+LIBS="$LIBS $PACKAGE_DEP_LIBS"
 AC_MSG_CHECKING([if we can link with internal OpenSSL APIs])
 AC_LINK_IFELSE(
     [AC_LANG_PROGRAM(
@@ -41,10 +43,15 @@ AC_LINK_IFELSE(
     [ac_cv_can_link_with_openssl_internal_api=yes],
     [ac_cv_can_link_with_openssl_internal_api=no])
 AC_MSG_RESULT([$ac_cv_can_link_with_openssl_internal_api])
+LIBS="$SAVE_LIBS"
 
 if test "$ac_cv_can_link_with_openssl_internal_api" = yes; then
     AC_DEFINE([LINK_WITH_INTERNAL_OPENSSL_API],[1],[Define to `1' to use ss3_setup_buffers to import and export gss_cred_id_t structures])
 fi
+
+AM_CONDITIONAL(
+    [EXPORT_SEC_CONTEXT_WORKS],
+    [test "$ac_cv_can_link_with_openssl_internal_api" = yes])
 
 AM_CONDITIONAL(USE_SYMBOL_LABELS, test x$use_symbol_labels = "xyes")
 
@@ -55,5 +62,6 @@ AC_CONFIG_FILES(
         version.h
         library/Doxyfile
         library/Makefile
+        test/Makefile
 )
 AC_OUTPUT
