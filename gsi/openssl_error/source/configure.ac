@@ -23,11 +23,13 @@ AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != "no"])
 
-AC_OUTPUT(
+AC_CONFIG_FILES(
         Makefile
         globus-gsi-openssl-error.pc
         globus-gsi-openssl-error-uninstalled.pc
         library/Makefile
 	library/Doxyfile
+        test/Makefile
         version.h
 )
+AC_OUTPUT

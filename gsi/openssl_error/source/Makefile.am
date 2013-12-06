@@ -2,7 +2,7 @@ AUTOMAKE_OPTIONS = foreign
 
 pkgconfdir = $(libdir)/pkgconfig
 
-SUBDIRS = library
+SUBDIRS = library test
 
 doc_DATA = GLOBUS_LICENSE
 pkgconf_DATA = globus-gsi-openssl-error.pc
@@ -11,3 +11,6 @@ EXTRA_DIST= \
         version.h \
 	dirt.sh \
 	$(doc_DATA)
+
+distuninstallcheck:
+	@:

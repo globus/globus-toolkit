@@ -1,32 +1,20 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+check_DATA = $(Data)
+check_SCRIPTS = $(Scripts)
+check_PROGRAMS = globus_openssl_error_test
 
-SUBDIRS= \
-	pkgdata
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I.. -I$(top_srcdir)/library
+AM_LDFLAGS = $(PACKAGE_DEP_LIBS)
+LDADD = ../library/libglobus_openssl_error.la
 
-Sources= \
-	globus_openssl_error_test.c
+TESTS = globus-openssl-error-test.pl
 
-AM_CFLAGS = $(GPT_CFLAGS) 
-
-INCLUDES = $(GPT_INCLUDES)
-
-Scripts= \
+Scripts = \
 	TESTS.pl \
 	TESTS-junit.pl \
 	globus-openssl-error-test.pl
 
-Data= \
-	globus_openssl_error_test.stdout
+Data = globus_openssl_error_test.stdout
 
-test_DATA = $(Data)
-
-test_SCRIPTS = $(Scripts)
-
-EXTRA_DIST = $(Scripts) $(Data)
-
-test_PROGRAMS= \
-	globus_openssl_error_test
 
 test:
 	chmod a+x $(Scripts)
@@ -36,12 +24,8 @@ junit:
 	chmod a+x $(Scripts)
 	perl ./TESTS-junit.pl
 
-globus_openssl_error_test_SOURCES = globus_openssl_error_test.c
-globus_openssl_error_test_LDFLAGS = $(GPT_LDFLAGS)
-globus_openssl_error_test_LDADD = $(GPT_PGM_LINKS)
 
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
-
-
+EXTRA_DIST = $(Scripts) $(Data)
+DISTCLEANFILES = \
+        globus_openssl_error_test.log.stdout \
+        globus_openssl_error_test.log.stderr
