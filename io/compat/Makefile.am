@@ -1,5 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
+SUBDIRS = test
+
 pkgconfigdir = $(libdir)/pkgconfig
 
 include_HEADERS = \

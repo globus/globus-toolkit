@@ -1,4 +1,9 @@
+AC_PREREQ([2.60])
 AC_INIT([globus_io],[9.5])
+dnl automake only installs install-sh if it isn't found in .,  .., or ../..
+dnl so it skips this one based on its position in the checkout unless an aux
+dir is defined
+AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE
 AM_PROG_LIBTOOL
 
@@ -19,6 +24,8 @@ PACKAGE_DEPS="globus-common >= 14 globus-xio >= 3 globus-gss-assist >= 8 globus-
 AC_SUBST(PACKAGE_DEPS)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+GLOBUS_XIO_GSI_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-gsi-driver`
+AC_SUBST(GLOBUS_XIO_GSI_DRIVER_LIBDIR)
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
@@ -28,6 +35,7 @@ AC_CONFIG_FILES(
         globus-io.pc
         globus-io-uninstalled.pc
 	Makefile
+        test/Makefile
         Doxyfile
 	version.h
 )

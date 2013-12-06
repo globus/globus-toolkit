@@ -24,7 +24,6 @@ use strict;
 use POSIX;
 use POSIX "sys_wait_h";
 use Test::More;
-use Globus::Core::Paths;
 
 my @tests;
 
@@ -42,9 +41,9 @@ if (exists $ENV{VALGRIND})
     }
 }
 
-my $identity = `$Globus::Core::Paths::bindir/grid-proxy-info -identity`;
-
-chomp($identity);
+chomp(my $identity = `openssl x509 -subject -in \${X509_USER_CERT-\$HOME/.globus/usercert.pem} -noout`);
+$identity =~ s/^subject= //;
+print "    Using test identity $identity\n";
 
 sub basic_func
 {

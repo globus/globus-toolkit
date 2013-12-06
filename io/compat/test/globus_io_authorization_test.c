@@ -145,7 +145,9 @@ main(
 
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("Could not create listener\n");
+        char *msg = globus_error_print_friendly(globus_error_peek(result));
+	globus_libc_fprintf(stderr, "Could not create listener: %s\n", msg);
+        free(msg);
 
 	goto error_exit;
     }

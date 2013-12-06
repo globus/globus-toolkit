@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -21,11 +21,8 @@
 
 =cut
 
-@GLOBUS_PERL_INITIALIZER@
-
 use strict;
 use Test::More;
-use Globus::Core::Paths;
 
 my @tests;
 
@@ -43,31 +40,29 @@ if (exists $ENV{VALGRIND})
 
 sub basic_func
 {
-   my ($errors,$rc) = ("",0);
-   my $args = shift;
-   my $result;
-   my $expect_failure = shift;
-   my $test_name = shift;
+    my ($errors,$rc) = ("",0);
+    my $args = shift;
+    my $expect_failure = shift;
+    my $test_name = shift;
    
-   chomp($result = `$valgrind ./$test_prog $args`);
-   $rc = $?;
+    system("$valgrind ./$test_prog $args 1>&2");
+    $rc = $?;
 
-   ok((($rc == 0) && !$expect_failure) ||
+    ok((($rc == 0) && !$expect_failure) ||
       (($rc != 0) && $expect_failure),
       $test_name);
 }
 
-my $identity = `$Globus::Core::Paths::bindir/grid-proxy-info -identity`;
-chomp($identity);
+plan tests => 5;
+chomp(my $identity = `openssl x509 -subject -in \${X509_USER_CERT-\$HOME/.globus/usercert.pem} -noout`);
+$identity =~ s/^subject= //;
+print "    Using test identity $identity\n";
 
-push(@tests, "basic_func('self', 0, '$test_prog-self');");
-push(@tests, "basic_func('identity \"$identity\"',0, '$test_prog-identity')");
-push(@tests, "basic_func('identity \"/CN=bad DN\"',1, '$test_prog-bad-dn')");
-push(@tests, "basic_func('callback',0,'$test_prog-allowed-callback');");
-push(@tests, "basic_func('-callback',1, '$test_prog-disallowed-callback');");
-
-# Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests);
+basic_func('self', 0, "$test_prog-self");
+basic_func("identity '$identity'", 0, "$test_prog-identity");
+basic_func("identity \"/CN=bad DN\"", 1, "$test_prog-bad-dn");
+basic_func("callback", 0, "$test_prog-allowed-callback");
+basic_func("-callback", 1, "$test_prog-disallowed-callback");
 
 # And run them all.
 foreach (@tests)
