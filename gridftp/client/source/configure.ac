@@ -1,5 +1,6 @@
+AC_PREREQ([2.60])
 AC_INIT([globus_ftp_client],[7.6])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign 1.13])
 AM_PROG_LIBTOOL
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
@@ -28,5 +29,6 @@ AC_CONFIG_FILES(
         gridftp-ssh
         Makefile
         Doxyfile
+        test/Makefile
 	version.h)
 AC_OUTPUT

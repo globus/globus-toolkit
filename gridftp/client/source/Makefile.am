@@ -1,4 +1,5 @@
-AUTOMAKE_OPTIONS = foreign
+SUBDIRS = test
+
 pkgconfigdir = $(libdir)/pkgconfig
 
 libexec_SCRIPTS = gridftp-ssh

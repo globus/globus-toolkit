@@ -1,0 +1,74 @@
+#! /usr/bin/perl
+
+# 
+# Copyright 1999-2006 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# 
+
+use strict;
+use Cwd;
+use File::Basename;
+use Getopt::Long;
+use lib dirname($0);
+use FtpTestLib;
+
+require 5.8.0;
+use vars qw(@tests);
+
+my $server_pid;
+my $server_prog = "globus-gridftp-server";
+my $server_host = "localhost";
+my $server_port = 0;
+my $server_nosec = "";
+my $subject;
+
+my $server_args = "-no-fork -no-chdir -d 0 -p $server_port $server_nosec";
+
+chomp($subject = `openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert}`);
+$subject =~ s/^subject= *//;
+
+$server_pid = open(SERVER, "$server_prog $server_args |");
+ 
+if($server_pid == -1)
+{
+    print "Unable to start server\n";
+    exit 1;
+}
+
+select((select(SERVER), $| = 1)[0]);
+$server_port = <SERVER>;
+$server_port =~ s/Server listening at .*?:(\d+)/\1/;
+chomp($server_port);
+
+if($server_port !~ /\d+/)
+{
+    print "Unable to start server\n";
+    exit 1;
+}
+
+print "Started server at port $server_port\n";
+
+# sleep a second, some hosts are slow....
+
+sleep 5;
+
+$ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT} = $subject;
+$ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
+$ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
+
+my $rc = system(@ARGV);
+print "Test exited with $rc\n";
+
+kill 9, $server_pid;
+exit ($rc>>8);
