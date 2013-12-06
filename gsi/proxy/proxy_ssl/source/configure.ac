@@ -16,10 +16,12 @@ PKG_CHECK_MODULES([PACKAGE_DEP], [$PACKAGE_DEPS])
 AC_PATH_PROGS([DOXYGEN], doxygen)
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != "no"])
 
-AC_OUTPUT(
+AC_CONFIG_FILES(
         Makefile
         globus-gsi-proxy-ssl.pc
         globus-gsi-proxy-ssl-uninstalled.pc
 	library/Makefile
         library/Doxyfile
+        test/Makefile
 )
+AC_OUTPUT

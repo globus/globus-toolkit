@@ -1,13 +1,9 @@
 #! /usr/bin/perl
 
-@GLOBUS_PERL_INITIALIZER@
-
 BEGIN
 {
-    $ENV{PATH} = ".:" . $ENV{PATH};
+    $ENV{PATH} = dirname($0) . ":.:" . $ENV{PATH};
 }
-require 5.005;
-
 use warnings;
 use strict;
 use Test::Harness;

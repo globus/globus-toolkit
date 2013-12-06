@@ -11,8 +11,11 @@ in an X509 certificate.
 =cut
 
 use strict;
+use File::Basename;
 use File::Compare;
 use Test::More;
+
+$ENV{PATH} = dirname($0) . ":.:" . $ENV{PATH};
 
 my $test_prog = 'test_pci';
 
@@ -28,69 +31,58 @@ if (exists $ENV{VALGRIND})
     }
 }
 
-sub basic_func
+sub test_case
 {
-   my ($errors,$rc) = ("",0);
+    my $test_index = shift;
+    my $options = shift;
+    my $testname = shift;
 
-   my $test_index = shift;
-   my $options = shift;
-   my $testname = shift;
+    ok(system("$valgrind $test_prog $options -out $test_prog.norm$test_index.der 1>$test_prog.log1.stdout")  == 0, "$testname.norm");
+    ok(system("$valgrind $test_prog -in $test_prog.norm$test_index.der -out $test_prog.log$test_index.der 1> $test_prog.log2.stdout") == 0, "$testname.log");
 
-   my $rc1 = system("$valgrind $test_prog $options -out $test_prog.norm$test_index.der 1>$test_prog.log1.stdout") / 256;
-   my $rc2 = system("./$test_prog -in $test_prog.norm$test_index.der -out $test_prog.log$test_index.der 1> $test_prog.log2.stdout") / 256;
+    ok(File::Compare::compare("$test_prog.log$test_index.der",
+                               "$test_prog.norm$test_index.der") == 0,
+            "$testname.compareder");
+    ok(File::Compare::compare("$test_prog.log1.stdout",
+            "$test_prog.log2.stdout") == 0,
+            "$testname.compare_stdout");
 
-   ok($rc1 == 0 && $rc2 == 0 &&
-        File::Compare::compare("$test_prog.log$test_index.der",
-                               "$test_prog.norm$test_index.der") == 0 &&
-        File::Compare::compare("$test_prog.log1.stdout",
-                "$test_prog.log2.stdout") == 0,
-        $testname);
-
-  if( -e "$test_prog.log2.stdout" || -e "$test_prog.log1.stdout")
-  {
-     unlink("$test_prog.log2.stdout");
-     unlink("$test_prog.log1.stdout");
-  }
-      
-  if( -e "$test_prog.log2.stderr" || -e "$test_prog.log1.stderr")
-  {
-     unlink("$test_prog.log2.stderr");
-     unlink("$test_prog.log1.stderr");
-  }
+    &cleanup();
 }
 
-sub sig_handler
+$SIG{'INT'}  = 'cleanup';
+$SIG{'QUIT'} = 'cleanup';
+$SIG{'KILL'} = 'cleanup';
+
+plan tests => 4*5;      # 4 steps * 5 tests
+
+test_case(1, "-path 10 -rest POLICYLANGUAGE POLICY", "path10-policy");
+test_case(2, "-path 10", "path10");
+test_case(3, "-path 0 -rest POLICYLANGUAGE POLICY", "path0-policy");
+test_case(4, "-rest POLICYLANGUAGE POLICY", "policy");
+test_case(5, "-out test_pci5.der", "default");
+
+sub cleanup
 {
-    if( -e "$test_prog.log2.stdout" || -e "$test_prog.log1.stdout")
+    if (-e "$test_prog.log1.stdout")
     {
-        unlink("$test_prog.log2.stdout");
         unlink("$test_prog.log1.stdout");
     }
+    if (-e "$test_prog.log2.stdout")
+    {
+        unlink("$test_prog.log2.stdout");
+    }
     
-    if( -e "$test_prog.log2.stderr" || -e "$test_prog.log1.stderr")
+    if (-e "$test_prog.log1.stderr")
+    {
+        unlink("$test_prog.log1.stderr");
+    }
+    if (-e "$test_prog.log2.stderr")
     {
         unlink("$test_prog.log2.stderr");
-        unlink("$test_prog.log1.stderr");
     }
 }
 
-$SIG{'INT'}  = 'sig_handler';
-$SIG{'QUIT'} = 'sig_handler';
-$SIG{'KILL'} = 'sig_handler';
-
-
-push(@tests, "basic_func(1, \"-path 10 -rest POLICYLANGUAGE POLICY\", \"path10-policy\");");
-push(@tests, "basic_func(2, \"-path 10\", \"path10\");");
-push(@tests, "basic_func(3, \"-path 0 -rest POLICYLANGUAGE POLICY\", \"path0-policy\");");
-push(@tests, "basic_func(4, \"-rest POLICYLANGUAGE POLICY\", \"policy\");");
-push(@tests, "basic_func(5, \"-out test_pci5.der\", \"default\");");
-
-
-# Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests), todo => \@todo;
-
-# And run them all.
-foreach (@tests)
-{
-   eval "&$_";
+END {
+    &cleanup();
 }
