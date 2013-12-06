@@ -3,7 +3,7 @@ include_HEADERS = \
 	globus_gass_transfer_proto.h
 lib_LTLIBRARIES = libglobus_gass_transfer.la
 
-libglobus_gass_transfer_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
+libglobus_gass_transfer_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_builddir)
 libglobus_gass_transfer_la_LDFLAGS = \
         -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
         -no-undefined
