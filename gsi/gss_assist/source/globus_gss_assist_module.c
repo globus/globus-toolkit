@@ -75,7 +75,7 @@ globus_l_gsi_gss_assist_activate(void)
         globus_i_gsi_gss_assist_debug_fstream = fopen(tmp_string, "w");
         if(globus_i_gsi_gss_assist_debug_fstream == NULL)
         {
-            result = GLOBUS_NULL;
+            result = GLOBUS_FAILURE;
             goto exit;
         }
     }
