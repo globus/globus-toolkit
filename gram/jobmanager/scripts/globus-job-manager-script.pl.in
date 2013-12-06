@@ -19,7 +19,35 @@
 # any other return value indicates that the command will be denied.
 #$FILTER_COMMAND = '/usr/local/bin/commsh --check-user';
 
-@GLOBUS_PERL_INITIALIZER@
+my $prefix = "@prefix@";
+my $exec_prefix;
+my $sbindir;
+my $bindir;
+my $includedir;
+my $datarootdir;
+my $datadir;
+my $libexecdir;
+my $sysconfdir;
+my $sharedstatedir;
+my $localstatedir;
+my $perlmoduledir;
+
+BEGIN {
+    $prefix = $ENV{GLOBUS_LOCATION} if $ENV{GLOBUS_LOCATION};
+    $exec_prefix = "@exec_prefix@";
+    $sbindir = "@sbindir@";
+    $bindir = "@bindir@";
+    $includedir = "@includedir@";
+    $datarootdir = "@datarootdir@";
+    $datadir = "@datadir@";
+    $libexecdir = "@libexecdir@";
+    $sysconfdir = "@sysconfdir@";
+    $sharedstatedir = "@sharedstatedir@";
+    $localstatedir = "@localstatedir@";
+    $perlmoduledir = "@perlmoduledir@";
+
+    unshift(@INC, $perlmoduledir);
+}
 
 use Globus::Core::Paths;
 
@@ -34,20 +62,16 @@ my $library_map = {
     'openbsd' => [ 'LD_LIBRARY_PATH' ]
 };
 
-foreach my $libvar (@{$library_map->{$^O}})
-{
-    &append_path(\%ENV, $libvar, $Globus::Core::Paths::libdir);
-}
-
 use Getopt::Long;
 use Globus::GRAM::Error;
 use Globus::GRAM::JobDescription;
 
-my($manager_name, $argument_file, $command, $help);
+my($manager_name, $argument_file, $command, $libdir, $help);
 
 GetOptions('manager-name|m=s' => \$manager_name,
            'argument-file|f=s' => \$argument_file,
 	   'command|c=s' => \$command,
+           'libdir|l=s' => \$libdir,
            "help|h" => \$help);
 $|=1;
 
@@ -67,6 +91,14 @@ if ($help)
     print "\n";
     exit(0);
 }
+
+if ($libdir) {
+    foreach my $libvar (@{$library_map->{$^O}})
+    {
+        &append_path(\%ENV, $libvar, $libdir);
+    }
+}
+
 if (!defined($manager_name))
 {
     &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);

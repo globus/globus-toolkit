@@ -18,7 +18,21 @@
 # GridFTP protocol for secure, high-performance file transfer.
 ### END INIT INFO
 
-@GLOBUS_SCRIPT_INITIALIZER@
+if [ -n "$GLOBUS_LOCATION" ]; then
+    prefix="$GLOBUS_LOCATION"
+else
+    prefix="@prefix@"
+fi
+exec_prefix="@exec_prefix@"
+sbindir="@sbindir@"
+bindir="@bindir@"
+includedir="@includedir@"
+datarootdir="@datarootdir@"
+datadir="@datadir@"
+libexecdir="@libexecdir@"
+sysconfdir="@sysconfdir@"
+sharedstatedir="@sharedstatedir@"
+localstatedir="@localstatedir@"
 
 lsb=""
 if [ -f /lib/lsb/init-functions ]; then
