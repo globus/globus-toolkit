@@ -26,6 +26,7 @@
 #define GLOBUS_I_GSI_SYSTEM_CONFIG_H
 
 #include "globus_common.h"
+#include "config.h"
 #include "globus_gsi_system_config_constants.h"
 #include "globus_gsi_system_config.h"
 
