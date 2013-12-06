@@ -7,23 +7,7 @@ use Test::More;
 use IO::Handle;
 
 use File::Temp;
-my $bindir;
-eval "use Globus::Core::Paths";
-if ($@)
-{
-    if ($ENV{GLOBUS_LOCATION})
-    {
-        $bindir = "$ENV{GLOBUS_LOCATION}/bin";
-    }
-    else
-    {
-        $bindir = "/usr/bin";
-    }
-}
-else
-{
-    $bindir = $Globus::Core::Paths::bindir
-}
+my $bindir = "../programs";
 
 my $valgrind="";
 

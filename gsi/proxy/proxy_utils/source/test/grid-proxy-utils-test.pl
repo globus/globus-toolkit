@@ -3,26 +3,10 @@
 use strict;
 use Test::More;
 use File::Temp;
-my $bindir;
-eval "use Globus::Core::Paths";
-if ($@)
-{
-    if ($ENV{GLOBUS_LOCATION})
-    {
-        $bindir = "$ENV{GLOBUS_LOCATION}/bin";
-    }
-    else
-    {
-        $bindir = "/usr/bin";
-    }
-}
-else
-{
-    $bindir = $Globus::Core::Paths::bindir;
-}
 
 my ($proxy_fh, $proxy_file) = mkstemp( "/tmp/proxytest.XXXXXXXX" );
 my $valgrind="";
+my $bindir = "../programs";
 
 if (exists $ENV{VALGRIND})
 {

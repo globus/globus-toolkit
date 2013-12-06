@@ -65,5 +65,6 @@ AC_CONFIG_FILES(
         globus-proxy-utils.pc
         Makefile
 	programs/Makefile
+        test/Makefile
 	version.h)
 AC_OUTPUT
