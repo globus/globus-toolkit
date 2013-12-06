@@ -1,5 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = globus-gram-client.pc
 include_HEADERS = globus_gram_client.h
 lib_LTLIBRARIES = libglobus_gram_client.la
 doc_DATA = GLOBUS_LICENSE
