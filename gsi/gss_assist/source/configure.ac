@@ -65,20 +65,31 @@ fi
 AC_MSG_RESULT($docbook_xsl_available)
 AC_SUBST(MAN_XSL)
 
+AC_PATH_PROGS(PERL, [perl perl5])
+
 AM_CONDITIONAL(BUILD_MANPAGES, [
                 test "$docbook_xsl_available" != "no" && \
                 test "$docbook_dtd_available" != "no" && \
                 test "$XSLTPROC" != "no" && \
                 test "$XMLLINT" != "no"])
 
-AC_CONFIG_FILES(
+AC_CONFIG_FILES([
         globus-gss-assist-uninstalled.pc
         globus-gss-assist.pc
         Makefile
         Doxyfile
         programs/Makefile
-        programs/grid-mapfile-add-entry
-        programs/grid-mapfile-delete-entry
-        programs/grid-mapfile-check-consistency
-        version.h)
+        test/Makefile
+        version.h])
+
+AC_CONFIG_FILES(
+        [programs/grid-mapfile-add-entry],
+        [chmod a+x programs/grid-mapfile-add-entry])
+AC_CONFIG_FILES(
+        [programs/grid-mapfile-delete-entry],
+        [chmod a+x programs/grid-mapfile-delete-entry])
+AC_CONFIG_FILES(
+        [programs/grid-mapfile-check-consistency],
+        [chmod a+x programs/grid-mapfile-check-consistency])
+
 AC_OUTPUT

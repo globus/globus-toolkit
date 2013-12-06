@@ -1,15 +1,15 @@
 #!/usr/bin/perl
 
 use strict;
+use File::Basename;
 use Test::More;
-use Globus::Core::Paths;
 
 my @tests;
 my $dn = "/C=US/O=Globus Alliance/OU=User/CN=11783619ecc.2bcb9093";
 my $username = (getpwuid($<))[0];
-my $add = $Globus::Core::Paths::sbindir . "/grid-mapfile-add-entry";
-my $delete = $Globus::Core::Paths::sbindir . "/grid-mapfile-delete-entry";
-my $check = $Globus::Core::Paths::sbindir . "/grid-mapfile-check-consistency";
+my $add = "../programs/grid-mapfile-add-entry";
+my $delete = "../programs/grid-mapfile-delete-entry";
+my $check = "../programs/grid-mapfile-check-consistency";
 my $userok = "./gridmap-userok";
 
 
