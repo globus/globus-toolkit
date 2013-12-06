@@ -14,32 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_cred_constants.h
  * Globus GSI Credential Library
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #ifndef GLOBUS_GSI_CREDENTIAL_CONSTANTS_H
 #define GLOBUS_GSI_CREDENTIAL_CONSTANTS_H
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
+#ifdef __cplusplus
+extern "C" {
 #endif
-
-EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_gsi_credential_constants Credential Constants
@@ -126,7 +112,9 @@ typedef enum
 #define GLOBUS_NULL_GROUP               "GLOBUS_NULL_GROUP"
 #define GLOBUS_NULL_POLICY              "GLOBUS_NULL_POLICY"
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

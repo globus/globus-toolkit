@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_i_gsi_credential.h
- * Globus GSI Credential Library
+ * @file globus_i_gsi_credential.h Globus GSI Credential Library Internals
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 
-#ifndef GLOBUS_I_INCLUDE_GSI_CREDENTIAL_H
-#define GLOBUS_I_INCLUDE_GSI_CREDENTIAL_H
+#ifndef GLOBUS_I_GSI_CREDENTIAL_H
+#define GLOBUS_I_GSI_CREDENTIAL_H
 
 #include "globus_gsi_credential.h"
 #include "proxycertinfo.h"
 
-/* DEBUG MACROS */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/* DEBUG MACROS */
 #ifdef BUILD_DEBUG
 
 extern int                              globus_i_gsi_cred_debug_level;
@@ -264,8 +261,8 @@ globus_i_gsi_cred_error_join_chains_result(
     globus_result_t                     outter_error,
     globus_result_t                     inner_error);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_I_INCLUDE_GSI_CREDENTIAL_H */
-
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+#endif /* GLOBUS_I_GSI_CREDENTIAL_H */
