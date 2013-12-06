@@ -21,9 +21,24 @@
 # grid-mapfile-delete-entry
 #
 
-@GLOBUS_SCRIPT_INITIALIZER@
+prefix="${GLOBUS_LOCATION-@prefix@}"
+exec_prefix="@exec_prefix@"
+sbindir="@sbindir@"
+bindir="@bindir@"
+includedir="@includedir@"
+datarootdir="@datarootdir@"
+datadir="@datadir@"
+libexecdir="@libexecdir@"
+sysconfdir="@sysconfdir@"
+sharedstatedir="@sharedstatedir@"
+localstatedir="@localstatedir@"
 
-. ${libexecdir}/globus-script-initializer
+if [ -r ${libexecdir}/globus-script-initializer ]; then
+    . ${libexecdir}/globus-script-initializer
+else
+    echo "Unable to locate globus-script-initializer" 1>&2
+    exit 1
+fi
 
 globus_source ${libexecdir}/globus-sh-tools.sh
 
