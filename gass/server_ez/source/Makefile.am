@@ -1,5 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = globus-gass-server-ez.pc
 include_HEADERS = globus_gass_server_ez.h
 lib_LTLIBRARIES = libglobus_gass_server_ez.la
 bin_SCRIPTS = globus-gass-server-shutdown
