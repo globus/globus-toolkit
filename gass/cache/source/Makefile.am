@@ -1,8 +1,11 @@
 AUTOMAKE_OPTIONS = foreign
 
+pkgconfigdir = $(libdir)/pkgconfig
+
 doc_DATA = GLOBUS_LICENSE
 include_HEADERS = globus_gass_cache.h 
 lib_LTLIBRARIES = libglobus_gass_cache.la
+pkgconfig_DATA = globus-gass-cache.pc
 
 libglobus_gass_cache_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 libglobus_gass_cache_la_LDFLAGS = \
