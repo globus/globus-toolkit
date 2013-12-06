@@ -1799,24 +1799,30 @@ globus_i_gsi_gss_SSL_read_bio(
     BIO_read(bp, (char *) int_buffer, 4); 
     N2L(int_buffer, length);
 
-    if (BIO_pending(bp) < length)
+    if (length > 0)
     {
-        major_status = GSS_S_NO_CONTEXT;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BAD_LEN,
-            (_GGSL("Invalid BIO - not enough data to read an int")));
-        goto exit;
-    }
+        if (BIO_pending(bp) < length)
+        {
+            major_status = GSS_S_NO_CONTEXT;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BAD_LEN,
+                (_GGSL("Invalid BIO - not enough data to read an int")));
+            goto exit;
+        }
 
-    ssl_handle->s3->tmp.key_block = (unsigned char *) OPENSSL_malloc(length);
-    if (ssl_handle->s3->tmp.key_block == NULL)
-    {
-        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
-        major_status = GSS_S_FAILURE;
-        goto exit;
+        ssl_handle->s3->tmp.key_block = (unsigned char *) OPENSSL_malloc(length);
+        if (ssl_handle->s3->tmp.key_block == NULL)
+        {
+            GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
     }
-                
+    else
+    {
+        ssl_handle->s3->tmp.key_block = NULL;
+    }
     ssl_handle->s3->tmp.key_block_length = length;
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
