@@ -1,4 +1,4 @@
-#! @PERL@
+#! @GLOBUS_SH_PERL@
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -16,35 +16,13 @@
 # limitations under the License.
 # 
 
-
-@GLOBUS_PERL_INITIALIZER@
-
 use strict;
-use Globus::Core::Paths;
+use Pod::Usage;
 use Getopt::Long;
 use Cwd;
 
 #
 # do GPT version checking
-#
-
-my($environment);
-
-if ( defined eval "require Grid::GPT::V1::Package" )
-{
-    $environment = "gpt2";
-}
-else
-{
-    print "globus-makefile-header requires the GPT perl module.\n";
-    print "If you want to use it you have to install the grid-packaging-tools package.\n";
-    print "Consider using alternatives like pkg-config instead.\n";
-
-    exit 1;
-}
-
-#
-# argument specification
 #
 
 my($flavor, $static, $link, @pkgs, $help, $verbose);
@@ -93,30 +71,6 @@ if ( !@pkgs || (scalar(@pkgs) == 0) )
     @pkgs = ("ANY");
 }
 
-$args = {};
-$args->{flavor} = $flavor;
-$args->{static} = $static;
-$args->{pkgs} = \@pkgs;
-
-#
-# finish require'ing our include files
-#
-
-require Grid::GPT::Installation;
-require Grid::GPT::SetupInstallation;
-require Grid::GPT::PkgSet;
-require Grid::GPT::BuildLine;
-
-#
-# begin actual globus-makefile-header gpt 2.0-based code
-#
-
-my($common_error) = "(Hint: This error is most commonly caused when no packages of the specified flavor type are installed..)";
-
-#
-# get to work
-#
-
 main($args);
 
 exit;
@@ -132,23 +86,57 @@ exit;
 
 sub main
 {
-    my($args) = @_;
-    my($header, $hash);
-    $header = [];
-
-    getDevLines($header, $args);
-    getBuildEnvLines($header);
-    getBuildShellTools($header);
-    $hash = buildEnvHash($header);
-    if(!($hash->{container}->{GLOBUS_LD}))
-    {
-        $hash->{container}->{GLOBUS_LD} = $hash->{container}->{GLOBUS_CC};
-        my $ordering=$hash->{ordering};
-        push (@$ordering, "GLOBUS_LD");
+    my @ms;
+    my @pcs;
+    for my $pkg (@pkgs) {
+        my $pc = $pkg;
+        $pc =~ s/_/-/g;
+        push(@pcs, $pc);
+        my $m = $pkg;
+        $m =~ tr/[a-z]/[A-Z]/;
+        chomp(my $v= `pkg-config --modversion $pc`);
+        push(@ms, $m);
+        print "$m = $v\n";
     }
-    displayHash($hash);
+    my $cmd = "pkg-config --cflags-only-other " . join(" ", @pcs);
+    print "GLOBUS_CFLAGS = " . `$cmd`;
+    $cmd = "pkg-config --cflags-only-I " . join(" ", @pcs);
+    chomp(my $globus_includes = `$cmd`);
 
-    exit(0);
+    print "GLOBUS_INCLUDES = $globus_includes\n";
+
+    $cmd = "pkg-config --libs-only-L --libs-only-other " . join(" ", @pcs);
+    print "GLOBUS_LDFLAGS = ". `$cmd`;
+    $cmd = "pkg-config --libs-only-l " . ($static?"--static ":"") .join(" ", @pcs);
+    print "GLOBUS_PKG_LIBS = ". `$cmd`;
+    print "GLOBUS_CC = \$(CC)\n";
+    print "GLOBUS_CPP = \$(CPP)\n";
+    print "GLOBUS_FLAVOR_NAME = $flavor\n";
+    print "GLOBUS_CPPFLAGS = $globus_includes\n";
+    print "GLOBUS_CXX = \$(CXX)\n";
+    print "GLOBUS_CXXCPP = \$(CXX) -E\n";
+    print "GLOBUS_CXXFLAGS = \$(CXXFLAGS) -E\n";
+    print <<EOF;
+GLOBUS_F77 = \$(FC)
+GLOBUS_F77FLAGS = \$(FCFLAGS)
+GLOBUS_F90 = \$(FC)
+GLOBUS_F90FLAGS = \$(FCFLAGS)
+GLOBUS_AR = \$(AR)
+GLOBUS_ARFLAGS = \$(ARFLAGS)
+GLOBUS_RANLIB = \$(RANLIB)
+GLOBUS_NM = \$(NM)
+GLOBUS_OBJEXT = @OBJEXT@
+GLOBUS_EXEEXT = @EXEEXT@
+GLOBUS_OBJECT_MODE = 
+GLOBUS_CROSS = no
+GLOBUS_cross_compiling = @cross_compiling@
+GLOBUS_THREADS = none
+GLOBUS_HOST = @host@
+GLOBUS_DEBUG = yes
+GLOBUS_SH_PERL = @PERL@
+GLOBUS_SH = @SH@
+GLOBUS_LD = \$(CC)
+EOF
 }
 
 ### buildMultiArg( @exclude )
@@ -166,360 +154,3 @@ sub buildMultiArg
     return @out_arr;
 }
 
-### getDevLines( $header, $args )
-#
-# append a globus location's build information to our header array
-#
-
-sub getDevLines
-{
-    my($header, $args) = @_;
-    my($installation, $liblines);
-    my($cflagslist, $includeslist, $libslist, $pkglibslist, $extlibslist);
-
-    #
-    # pull out the command-line arguments
-    #
-
-    my($flavor, $static, $pkgs);
-    $flavor = $args->{flavor};
-    $static = $args->{static};
-    $pkgs = $args->{pkgs};
-
-    #
-    # point our installation object at our globus location
-    #
-
-    $installation = new Grid::GPT::Installation(pkgdir => "$Globus::Core::Paths::datadir/globus/packages");
-    $installation->set_depenv('Build');
-
-    #
-    # grab a set of packages that match what we are asked to find
-    #
-
-    my $verpkgs;
-
-    $verpkgs = $installation->query_pkgset(pkgnames => $pkgs, flavor => $flavor, pkgtype => 'dev');
-    for my $l(@{$verpkgs->{'pkgs'}})
-    {
-        my $vername=$l->{'depnode'}->{'Name'};
-        $vername =~ tr/a-z/A-Z/;
-        my $vernum = $l->{'depnode'}->{'Version'}->{'major'}."."
-            .$l->{'depnode'}->{'Version'}->{'minor'}."." 
-            .$l->{'depnode'}->{'Version'}->{'age'};
-
-        push(@$header, $vername."_VERSION= ".$vernum."\n");
-    }
-
-    my $libpkgs = $installation->query_pkgset(pkgnames => $pkgs, flavor => $flavor);
-    my $testpkgs = $libpkgs->{pkgs};
-    if (!@$testpkgs)
-    {
-        printf("No packages were found that matched your query!\n");
-        exit(1);
-    }
-    my $libenvs = $libpkgs->get_sorted_buildenvs();
-    $liblines = Grid::GPT::BuildLine::create_buildlines($libenvs);
-
-    #
-    # pull out the build information
-    #
-
-    $cflagslist = $liblines->{'cflags'};
-    $includeslist = $liblines->{'includes'};
-    $libslist = $liblines->{'libs'};
-    $pkglibslist = $liblines->{'pkglibs'};
-    $extlibslist = $liblines->{'extlibs'};
-
-    if ( defined($static) )
-    {
-        $pkglibslist = Grid::GPT::BuildLine::convert_static_libs($pkglibslist, $flavor);
-        $libslist = Grid::GPT::BuildLine::convert_static_libs($libslist, $flavor);
-    }
-
-    #
-    # format our output for beauty's sake
-    #
-
-    $cflagslist =~ s:\s+: :g;
-    $cflagslist =~ s:^\s|\s$::g;
-    $cflagslist =~ s:\\::g;
-
-    $includeslist =~ s:\s+: :g;
-    $includeslist =~ s:^\s|\s$::g;
-    $includeslist =~ s:\\::g;
-
-    $libslist =~ s:\s+: :g;
-    $libslist =~ s:^\s|\s$::g;
-
-    $pkglibslist =~ s:\s+: :g;
-    $pkglibslist =~ s:^\s|\s$::g;
-
-    $extlibslist =~ s:\s+: :g;
-    $extlibslist =~ s:^\s|\s$::g;
-
-
-    #
-    # push all of our entries onto our header array
-    #
-
-    push(@$header, "GLOBUS_CFLAGS=\"$cflagslist\"");
-    push(@$header, "GLOBUS_INCLUDES=\"-I$Globus::Core::Paths::includedir -I$Globus::Core::Paths::flavorincludedir $includeslist\"");
-    push(@$header, "GLOBUS_LIBS=\"$libslist\"");
-    push(@$header, "GLOBUS_LDFLAGS=\"-L$Globus::Core::Paths::libdir\"");
-    push(@$header, "GLOBUS_PKG_LIBS=\"$pkglibslist $extlibslist\"");
-}
-
-### getBuildEnvLines( $header )
-#
-# grab all of the data in globus-build-env-<flavor>, prepend GLOBUS_ to each entry, and
-# add to our header
-#
-
-sub getBuildEnvLines
-{
-    my($header) = @_;
-
-    open(IN, "/bin/sh $Globus::Core::Paths::libexecdir/globus-build-env-$flavor.sh makefile-header|") || die "ERROR: Cannot open $Globus::Core::Paths::libexecdir/globus-build-env-$flavor.sh!\n$common_error\n";
-
-    push(@$header, <IN>);
-
-    close(IN);
-}
-
-### getBuildShellTools( $header )
-#
-# grab all of the defines from $GL/libexec/globus-sh-tools.sh
-#
-
-sub getBuildShellTools
-{
-    my($header) = @_;
-    my($copy);
-
-    open(IN, "$Globus::Core::Paths::libexecdir/globus-sh-tools-vars.sh") || die "ERROR: Cannot open $Globus::Core::Paths::libexecdir/globus-sh-tools-vars.sh!\n$common_error\n";
-
-    while (<IN>) 
-    {
-        if ( /\S/ )
-        {
-            $copy = $_;
-
-            if ( $copy !~ /^#/ )
-            {
-                push(@$header, $copy);
-            }
-        }
-    }
-
-    close(IN);
-}
-
-### buildEnvHash( $header )
-#
-# from an array of k/v pairs, build a proper hash of those tuples.
-#
-
-sub buildEnvHash
-{
-    my($header) = @_;
-    my($hash, $container, $ordering);
-    my($key, $value, @restofstring);
-    my($temp);
-
-    $hash = {};
-    $hash->{container} = {};
-    $hash->{ordering} = [];
-
-    foreach my $i (@$header)
-    {
-        $container = $hash->{container};
-        $ordering = $hash->{ordering};
-
-        ($key, @restofstring) = split(/=/, $i);
-  
-        if ( $key =~ m/\S/ )
-        {
-            #
-            # we shouldn't have any comments in our hash anyway, but just in case
-            #
-
-            if ( $key =~ m/^#/ )
-            {
-                next;
-            }
-
-            if ( !grep(/^$key$/, @$ordering) )
-            {
-                push(@$ordering, $key);
-            }
-
-            #
-            # create a value from the rest of the string info
-            #
-
-            $value = join("=", @restofstring);
-            $value = stripHashValue($value);
-
-            #
-            # first match when $value contains something meaningful.  handle the degenerate case
-            # next.
-            #
-
-            if ( $value =~ m/\S/ )
-            {
-                $temp = $container->{$key};
-                if ( defined($temp) )
-                {
-                    $container->{$key} = $temp . " " . $value;
-                }
-                else
-                {
-                    $container->{$key} = $value;
-                }
-            }
-            else
-            {
-                if ( !defined($container->{$key}) )
-                {
-                    $container->{$key} = "";
-                }
-            }
-        }
-    }
-
-    return $hash;
-}
-
-### stripHashValue( $value )
-#
-# strip from $value all extraneous information
-#
-
-sub stripHashValue
-{
-    my($value) = @_;
-
-    $value =~ s:\s+: :g;
-    $value =~ s:\n+::g;
-    $value =~ s:"::g;
-    $value =~ s:^\s|\s$::g;
-
-    return $value;
-}
-
-### formatHashValue( $value )
-#
-# properly format $value for use in our hash
-#
-
-sub formatHashValue
-{
-    my($value) = @_;
-
-#    $value =~ s:(.*):"\1":;
-
-    return $value;
-}
-
-### displayHash( $hash )
-#
-# pretty print our hash tree
-#
-
-sub displayHash
-{
-    my($hash) = @_;
-    my($container, $ordering);
-    my($key, $value);
-
-    $container = $hash->{container};
-    $ordering = $hash->{ordering};
-
-    for my $key (@$ordering)
-    {
-        $value = $container->{$key};
-
-        #
-        # we'll assume that $value is already stripped of extraneous info
-        #
-
-        $value = stripHashValue($value);
-        $value = formatHashValue($value);
-
-        if ($key =~ /cross_compiling/ ) {
-            $value =~ s/CROSS/GLOBUS_CROSS/;
-        }
-        $value =~ s/\$GLOBUS_FLAVOR_NAME/$flavor/g;
-
-        printf("$key = $value\n");
-    }
-
-    printf("\n");
-}
-
-### pod2usage( )
-#
-# our stub usage function in place of Pod::Usage
-#
-
-sub pod2usage
-{
-    my $ex=shift;
-    print "Usage: Please specify a build flavor: --flavor=<flavorname>\n";
-    print "\tand one or more package names on which you depend, e.g.\n";
-    print "\n             globus-makefile-header --flavor=gcc32dbg globus_io\n\n";
-    print "\tIf you are linking statically, you can append the --static flag\n";
-    print "\tto get a proper list of dependencies.  Otherwise, the dependencies\n";
-    print "\twill be printed in shared form.\n";
-    exit $ex;
-}
-
-### inform( $content, $override )
-#
-# inform the user of an event
-#
-
-sub inform
-{
-    my ($content, $override) = @_;
-
-    if ( $verbose or defined($override) )
-    {
-        print "$content\n";
-    }
-}
-
-### action( $command, $dir )
-#
-# perform some command and inform the user
-#
-
-sub action
-{
-    my ($command, $dir) = @_;
-    my $pwd;
-    if (defined $dir) {
-        $pwd = cwd();
-        inform("[ Changing to $dir ]");
-        chdir($dir);
-    }
-
-    # Log the step
-    inform($command);
-
-    # Perform the step
-    my $result = system("$command 2>&1");
-
-    if ($result or $?)
-    {
-        # results are bad print them out.
-        die("ERROR: Command failed\n");
-    }
-
-    if (defined $dir)
-    {
-        inform("[ Changing to $pwd ]");
-        chdir($pwd);
-    }
-}
