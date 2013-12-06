@@ -6,7 +6,6 @@ includedir=@includedir@
 Name: globus-gsi-cert-utils
 Description: Globus Toolkit - Globus GSI Cert Utils Library
 Version: @PACKAGE_VERSION@
-Requires: @PACKAGE_DEPS@
+Requires.private: @PACKAGE_DEPS@
 Libs: -L${libdir} -lglobus_gsi_cert_utils
-Libs.private: @PACKAGE_DEP_LIBS@
 Cflags: -I${includedir}

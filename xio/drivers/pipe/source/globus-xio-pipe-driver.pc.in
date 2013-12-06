@@ -7,6 +7,4 @@ Name: globus-xio-pipe-driver
 Description: Globus Toolkit - Globus Pipe Driver
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: 
-Libs.private: 
 Cflags: -I${includedir} 

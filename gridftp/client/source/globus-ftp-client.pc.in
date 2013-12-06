@@ -8,5 +8,4 @@ Description: Globus Toolkit - GridFTP Client Library
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
 Libs: -L${libdir} -lglobus_ftp_client
-Libs.private: @GPT_EXTERNAL_LIBS@
 Cflags: -I${includedir}

@@ -6,7 +6,6 @@ includedir=@includedir@
 Name: globus-openssl-module
 Description: Globus Toolkit - Globus OpenSSL Module Wrapper
 Version: @PACKAGE_VERSION@
-Requires: @PACKAGE_DEPS@
+Requires.private: @PACKAGE_DEPS@
 Libs: -L${libdir} -lglobus_openssl
-Libs.private: 
 Cflags: -I${includedir} 

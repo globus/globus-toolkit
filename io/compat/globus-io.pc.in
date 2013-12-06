@@ -8,6 +8,4 @@ Description: Globus Toolkit - Uniform I/O interface to stream and datagram style
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
 Libs: -L${libdir} -lglobus_io
-Libs.private: @PACKAGE_DEP_LIBS@
 Cflags: -I${includedir}
-Cflags.private: @PACKAGE_DEP_CFLAGS@

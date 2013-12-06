@@ -8,5 +8,4 @@ Description: Globus Toolkit - Globus authz library
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
 Libs: -L${libdir} -lglobus_authz
-Libs.private: 
 Cflags: -I${includedir}

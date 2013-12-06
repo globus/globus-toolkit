@@ -6,7 +6,6 @@ includedir=@includedir@
 Name: globus-gssapi-gsi
 Description: Globus Toolkit - GSSAPI library
 Version: @PACKAGE_VERSION@
-Requires: @PACKAGE_DEPS@
+Requires.private: @PACKAGE_DEPS@
 Libs: -L${libdir} -lglobus_gssapi_gsi
-Libs.private: @PACKAGE_DEP_LIBS@
 Cflags: -I${includedir}

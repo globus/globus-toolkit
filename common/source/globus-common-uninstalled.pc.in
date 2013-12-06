@@ -9,6 +9,4 @@ Name: globus-common
 Description: Globus Toolkit - Common Library
 Version: @PACKAGE_VERSION@
 Libs: @LDFLAGS@ @LIBS@ -L${abs_top_builddir}/library -lglobus_common
-Libs.private: @PACKAGE_DEP_LIBS@
 Cflags: @LARGEFILE_CFLAGS@ @CFLAGS@ -I${abs_top_builddir} -I${abs_top_srcdir}/library
-Cflags.private: @PACKAGE_DEP_CFLAGS@

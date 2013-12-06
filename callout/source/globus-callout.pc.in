@@ -6,7 +6,6 @@ includedir=@includedir@
 Name: globus-callout
 Description: Globus Toolkit - Globus Callout Library
 Version: @PACKAGE_VERSION@
-Requires: @PACKAGE_DEPS@
+Requires.private: @PACKAGE_DEPS@
 Libs: -L${libdir} -lglobus_callout
-Libs.private: @PACKAGE_DEP_LIBS@
 Cflags: -I${includedir}

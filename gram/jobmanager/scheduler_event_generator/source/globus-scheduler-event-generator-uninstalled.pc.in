@@ -9,5 +9,4 @@ Description: Globus Toolkit - Scheduler Event Generator
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
 Libs: -L@abs_top_builddir@ -lglobus_scheduler_event_generator
-Libs.private:
 Cflags: -I${abs_top_srcdir}

@@ -8,7 +8,6 @@ abs_top_srcdir=@abs_top_srcdir@
 Name: globus-gsi-openssl-error
 Description: Globus Toolkit - Globus OpenSSL Error Handling
 Version: @PACKAGE_VERSION@
-Requires: @PACKAGE_DEPS@
-Libs: -L${libdir} -L${abs_top_builddir}/library -lglobus_openssl_error
-Libs.private: @PACKAGE_DEP_LIBS@
+Requires.private: @PACKAGE_DEPS@
+Libs: -L${abs_top_builddir}/library -lglobus_openssl_error
 Cflags: -I${abs_top_srcdir} -I${abs_top_srcdir}/library

@@ -8,7 +8,6 @@ abs_top_builddir=@abs_top_builddir@
 Name: globus-callout
 Description: Globus Toolkit - Globus Callout Library
 Version: @PACKAGE_VERSION@
-Requires: @PACKAGE_DEPS@
+Requires.private: @PACKAGE_DEPS@
 Libs: -L${abs_top_builddir}/library -lglobus_callout
-Libs.private: @PACKAGE_DEP_LIBS@
 Cflags: -I${abs_top_srcdir}/library

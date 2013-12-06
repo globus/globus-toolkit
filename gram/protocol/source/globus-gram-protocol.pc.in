@@ -8,5 +8,4 @@ Description: Globus Toolkit - GRAM Protocol Library
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
 Libs: -L${libdir} -lglobus_gram_protocol
-Libs.private:
 Cflags: -I${includedir}

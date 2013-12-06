@@ -8,5 +8,4 @@ Description: Globus Toolkit - XIO Library
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
 Libs: -L${libdir} -lglobus_xio
-Libs.private:
-Cflags: 
+Cflags: -I${includedir}

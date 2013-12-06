@@ -6,7 +6,6 @@ includedir=@includedir@
 Name: globus-gsi-openssl-error
 Description: Globus Toolkit - Globus OpenSSL Error Handling
 Version: @PACKAGE_VERSION@
-Requires: @PACKAGE_DEPS@
-Libs: -L${libdir} -lglobus_common
-Libs.private: @PACKAGE_DEP_LIBS@
+Requires.private: @PACKAGE_DEPS@
+Libs: -L${libdir} -lglobus_openssl_error
 Cflags: -I${includedir}

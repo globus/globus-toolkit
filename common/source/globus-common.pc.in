@@ -7,6 +7,4 @@ Name: globus-common
 Description: Globus Toolkit - Common Library
 Version: @PACKAGE_VERSION@
 Libs: @LDFLAGS@ @LIBS@ -L${libdir} -lglobus_common
-Libs.private: @PACKAGE_DEP_LIBS@
 Cflags: @LARGEFILE_CFLAGS@ @CFLAGS@ -I${includedir}
-Cflags.private: @PACKAGE_DEP_CFLAGS@

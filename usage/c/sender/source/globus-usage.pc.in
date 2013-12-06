@@ -10,5 +10,4 @@ Description: Globus Toolkit - Usage Library
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
 Libs: -L${libdir} -lglobus_usage
-Libs.private: 
 Cflags: -I${includedir}

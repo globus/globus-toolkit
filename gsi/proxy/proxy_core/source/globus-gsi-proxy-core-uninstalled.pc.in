@@ -8,6 +8,6 @@ abs_top_builddir=@abs_top_builddir@
 Name: globus-gsi-proxy-core
 Description: Globus Toolkit - Globus GSI Proxy Core Library
 Version: @PACKAGE_VERSION@
-Requires: @PACKAGE_DEPS@
+Requires.private: @PACKAGE_DEPS@
 Libs: -L${abs_top_builddir}/library -lglobus_gsi_proxy_core
 Cflags: -I${abs_top_srcdir}/library

@@ -6,7 +6,6 @@ includedir=@includedir@
 Name: globus-gsi-sysconfig
 Description: Globus Toolkit - Globus GSI System Config Library
 Version: @PACKAGE_VERSION@
-Requires: @PACKAGE_DEPS@
+Requires.private: @PACKAGE_DEPS@
 Libs: -L${libdir} -lglobus_gsi_sysconfig
-Libs.private: @PACKAGE_DEP_LIBS@
-Cflags: 
+Cflags: -I${includedir}
