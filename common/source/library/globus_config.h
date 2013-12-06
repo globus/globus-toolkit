@@ -15,6 +15,9 @@
  */
 
 /** @file globus_config.h */
+#include <stdint.h>
+#include <limits.h>
+
 #if !defined(GLOBUS_CONFIG_H)
 #define GLOBUS_CONFIG_H 1
 #define BUILD_DEBUG 1
@@ -74,4 +77,19 @@
 #define TARGET_ARCH_IA64 1
 #endif
 #endif
+
+#ifdef __GNUC__
+#define GLOBUS_FLAVOR_PREFIX "gcc"
+#else
+#define GLOBUS_FLAVOR_PREFIX "cc"
+#endif
+
+#if LONG_MAX >= INT64_MAX
+#define GLOBUS_FLAVOR_SUFFIX "64"
+#else
+#define GLOBUS_FLAVOR_SUFFIX "32"
+#endif
+
+#define GLOBUS_FLAVOR_NAME GLOBUS_FLAVOR_PREFIX GLOBUS_FLAVOR_SUFFIX
+
 #endif /* GLOBUS_CONFIG_H */

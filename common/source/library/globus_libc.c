@@ -1509,7 +1509,7 @@ globus_libc_lseek(int fd,
 extern DIR *
 globus_libc_opendir(char *filename)
 {
-#if HAVE_DIR
+#if HAVE_DIRENT_H
     DIR *dirp;
     int save_errno;
 
@@ -1583,7 +1583,7 @@ globus_libc_seekdir(DIR *dirp,
 extern void
 globus_libc_rewinddir(DIR *dirp)
 {
-#if HAVE_DIR
+#if HAVE_DIRENT_H
     int save_errno;
 
     if(dirp != GLOBUS_NULL)
@@ -1607,7 +1607,7 @@ globus_libc_rewinddir(DIR *dirp)
 extern void
 globus_libc_closedir(DIR *dirp)
 {
-#if HAVE_DIR
+#if HAVE_DIRENT_H
     int save_errno;
 
     if(dirp != GLOBUS_NULL)
@@ -1631,7 +1631,7 @@ extern int
 globus_libc_readdir_r(DIR *dirp,
 		      struct dirent **result)
 {
-#if HAVE_DIR
+#if HAVE_DIRENT_H
 #if !defined(HAVE_READDIR_R)
     {
 	struct dirent *tmpdir, *entry;
