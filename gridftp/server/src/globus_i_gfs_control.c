@@ -1589,7 +1589,7 @@ globus_l_gfs_request_command(
             GLOBUS_NULL);
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
         
-        if((freq = globus_libc_getenv("GFS_CKSM_MARKERS")) != NULL)
+        if((freq = getenv("GFS_CKSM_MARKERS")) != NULL)
         {
             command_info->chmod_mode = strtol(freq, NULL, 10);
         }

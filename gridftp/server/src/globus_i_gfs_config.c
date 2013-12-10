@@ -1126,7 +1126,7 @@ globus_l_gfs_config_load_config_env()
             continue;
         }
 
-        value = globus_libc_getenv(option_list[i].env_var_option);
+        value = getenv(option_list[i].env_var_option);
         
         if (!value)
         {
