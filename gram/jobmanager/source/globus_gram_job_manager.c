@@ -3184,7 +3184,7 @@ globus_l_gram_script_attr_init(
 {
     globus_result_t                     result;
     int                                 rc = GLOBUS_SUCCESS;
-    char *                              pipe_cmd[6];
+    char *                              pipe_cmd[8];
     char *                              env[8];
     int                                 i;
 
@@ -3207,7 +3207,7 @@ globus_l_gram_script_attr_init(
     pipe_cmd[2] = manager->config->jobmanager_type;
     pipe_cmd[3] = "-c";
     pipe_cmd[4] = "interactive";
-    pipe_cmd[5] = "-l"
+    pipe_cmd[5] = "-l";
     result = globus_eval_path(  
         "${libdir}",
         &pipe_cmd[6]);
