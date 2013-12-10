@@ -19,6 +19,7 @@
 # any other return value indicates that the command will be denied.
 #$FILTER_COMMAND = '/usr/local/bin/commsh --check-user';
 
+
 my $prefix = "@prefix@";
 my $exec_prefix;
 my $sbindir;
@@ -26,6 +27,7 @@ my $bindir;
 my $includedir;
 my $datarootdir;
 my $datadir;
+my $libdir;
 my $libexecdir;
 my $sysconfdir;
 my $sharedstatedir;
@@ -46,10 +48,9 @@ BEGIN {
     $localstatedir = "@localstatedir@";
     $perlmoduledir = "@perlmoduledir@";
 
-    unshift(@INC, $perlmoduledir);
+    unshift (@INC, $perlmoduledir);
 }
 
-use Globus::Core::Paths;
 
 my $library_map = {
     'linux' => [ 'LD_LIBRARY_PATH'],
@@ -66,7 +67,7 @@ use Getopt::Long;
 use Globus::GRAM::Error;
 use Globus::GRAM::JobDescription;
 
-my($manager_name, $argument_file, $command, $libdir, $help);
+my($manager_name, $argument_file, $command, $help);
 
 GetOptions('manager-name|m=s' => \$manager_name,
            'argument-file|f=s' => \$argument_file,
@@ -80,7 +81,7 @@ if ($help)
     my $managers;
     print "USAGE: $0 -m MANAGER -f FILE -c COMMAND\n";
     print "Installed managers:";
-    foreach (<$Globus::Core::Paths::perlmoduledir/Globus/GRAM/JobManager/*.pm>)
+    foreach (<$perlmoduledir/Globus/GRAM/JobManager/*.pm>)
     {
         my $manager = $_;
         chomp($manager);
