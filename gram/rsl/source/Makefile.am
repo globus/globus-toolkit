@@ -1,8 +1,11 @@
-AUTOMAKE_OPTIONS = foreign
+SUBDIRS = test
+
+pkgconfigdir = $(libdir)/pkgconfig
 
 doc_DATA = GLOBUS_LICENSE
 include_HEADERS = globus_rsl.h globus_rsl_assist.h
 lib_LTLIBRARIES = libglobus_rsl.la libglobus_rsl_assist.la
+pkgconfig_DATA = globus-rsl.pc
 
 BUILT_SOURCES = globus_rsl_scanner.c globus_rsl_scanner.h globus_rsl_parser.c globus_rsl_parser.h
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
@@ -67,3 +70,6 @@ dist-hook: $(DOC_STAMPS)
 	if test -d doc; then \
 		cp -R doc $(distdir)/doc ; \
 	fi ;
+
+distuninstallcheck:
+	@:

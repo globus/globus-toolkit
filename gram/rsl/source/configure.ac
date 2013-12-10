@@ -1,11 +1,12 @@
-AC_INIT([globus_rsl],[9.1])
-AM_INIT_AUTOMAKE
-AM_MAINTAINER_MODE
-AM_PROG_LIBTOOL
+AC_PREREQ([2.60])
+AC_INIT([globus_rsl],[10.0],[http://jira.globus.org])
+AC_CONFIG_AUX_DIR([build-aux])
+AM_INIT_AUTOMAKE([foreign parallel-tests 1.11])
+LT_INIT([dlopen win32-dll])
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
 MINOR_VERSION=${PACKAGE_VERSION##*.}
-AGE_VERSION=7
+AGE_VERSION=8
 
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)
@@ -37,6 +38,7 @@ AC_CONFIG_FILES(
         globus-rsl-uninstalled.pc
         globus-rsl.pc
         Makefile
+        test/Makefile
         Doxyfile
 	version.h)
 AC_OUTPUT

@@ -1556,13 +1556,13 @@ globus_rsl_value_concatenation_set_right (globus_rsl_value_t *concatenation_node
 }
 
 /**
- * @defgroup globus_list List Functions
+ * @defgroup globus_rsl_list List Functions
  * @ingroup globus_rsl
  */
 
 /**
  * @brief Create a reverse-order copy of a list
- * @ingroup globus_list
+ * @ingroup globus_rsl_list
  * @details
  * The globus_list_copy_reverse() function creates and returns a copy of
  * its input parameter, with the order of the list elements reversed. This

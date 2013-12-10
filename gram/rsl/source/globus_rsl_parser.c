@@ -1933,8 +1933,8 @@ globus_i_rsl_yyinput(globus_parse_state_t *parse_state, char *buf, yy_size_t *nu
     {
         memcpy(buf, parse_state->myinputptr, n);
         parse_state->myinputptr += n;
-        *num_read = n;
-    } /* endif */
+    }
+    *num_read = n;
 
     return n;
 }
