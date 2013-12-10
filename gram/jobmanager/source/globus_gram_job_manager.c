@@ -3207,7 +3207,17 @@ globus_l_gram_script_attr_init(
     pipe_cmd[2] = manager->config->jobmanager_type;
     pipe_cmd[3] = "-c";
     pipe_cmd[4] = "interactive";
-    pipe_cmd[5] = NULL;
+    pipe_cmd[5] = "-l"
+    result = globus_eval_path(  
+        "${libdir}",
+        &pipe_cmd[6]);
+    if (result != GLOBUS_SUCCESS || pipe_cmd[6] == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto libdir_malloc_failed;
+    }
+    pipe_cmd[7] = NULL;
 
     memset(env, 0, sizeof(env));
     i = 0;
@@ -3302,6 +3312,8 @@ env_strings_failed:
             free(env[i]);
         }
     }
+    free(pipe_cmd[6]);
+libdir_malloc_failed:
     free(pipe_cmd[0]);
 script_path_malloc_failed:
     return rc;
