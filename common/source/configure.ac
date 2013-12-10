@@ -1,4 +1,5 @@
 AC_PREREQ([2.60])
+AC_CONFIG_MACRO_DIR([m4])
 AC_INIT([globus_common], [15.0], [http://jira.globus.org])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign parallel-tests 1.11])
