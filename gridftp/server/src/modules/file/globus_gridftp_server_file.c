@@ -18,7 +18,7 @@
 #include "globus_gridftp_server.h"
 #include "globus_xio.h"
 #include "globus_xio_file_driver.h"
-#include "openssl/md5.h"
+#include <openssl/md5.h>
 #include "version.h"
 
 #include <utime.h>
@@ -650,7 +650,7 @@ globus_l_gfs_file_partition_path(
         }
     }    
 
-    if(filename[0] == NULL)
+    if(filename[0] == 0)
     { 
         filename[0] = '/';
         filename[1] = 0;
@@ -1702,7 +1702,7 @@ globus_l_gfs_file_cksm_read_cb(
                 NULL,
                 NULL,
                 NULL);
-            monitor->marker_handle = NULL;
+            monitor->marker_handle = GLOBUS_NULL_HANDLE;
         }
         
         MD5_Final(md, &monitor->mdctx);
