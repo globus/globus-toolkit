@@ -476,7 +476,7 @@ redo:
 	target->state = GLOBUS_FTP_CLIENT_TARGET_SITE_FAULT;
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_INFORMATION;
 
-	tmpstr = globus_libc_getenv("GLOBUS_FTP_CLIENT_FAULT_MODE");
+	tmpstr = getenv("GLOBUS_FTP_CLIENT_FAULT_MODE");
 
 	if(! tmpstr)
 	{
@@ -2285,7 +2285,7 @@ redo:
 		GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION ||
 		(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER &&
 		 target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM && 
-                 !globus_libc_getenv("GLOBUS_FTP_CLIENT_NO_SERVER_PASV")))
+                 !getenv("GLOBUS_FTP_CLIENT_NO_SERVER_PASV")))
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PASV;
 	}

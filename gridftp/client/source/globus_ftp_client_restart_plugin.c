@@ -1616,7 +1616,7 @@ globus_ftp_client_restart_plugin_init(
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin,
         response);
 
-    env_str = globus_libc_getenv("GUC_STALL_TIMEOUT");
+    env_str = getenv("GUC_STALL_TIMEOUT");
     if(env_str != NULL)
     {
         int                             sc;
