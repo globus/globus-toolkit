@@ -1078,7 +1078,9 @@ gfs_l_gfork_kill(
         GLOBUS_SUCCESS, 3, "killing pid %d.  mem at: %"
             GLOBUS_OFF_T_FORMAT"\n",
         entry->pid, gfs_l_memlimit_available);
+#ifndef TARGET_ARCH_WIN32
     kill(entry->pid, SIGKILL);
+#endif
     gfs_l_memlimit_available += entry->mem_size;
 
     globus_free(entry);
@@ -2215,7 +2217,7 @@ gfs_gfork_master_options(
         g_backend = GLOBUS_TRUE;
     }
 
-    g_be_cs = globus_libc_getenv(GFORK_CHILD_CS_ENV);
+    g_be_cs = getenv(GFORK_CHILD_CS_ENV);
     if(g_be_cs == NULL)
     {
         result = GFSGforkError(
@@ -2224,7 +2226,7 @@ gfs_gfork_master_options(
         goto error;
     }
 
-    env_s = globus_libc_getenv(GFORK_CHILD_INSTANCE_ENV);
+    env_s = getenv(GFORK_CHILD_INSTANCE_ENV);
     if(env_s == NULL)
     {
         result = GFSGforkError(
