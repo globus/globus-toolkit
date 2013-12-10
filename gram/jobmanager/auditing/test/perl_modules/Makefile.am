@@ -1,5 +1,3 @@
-include $(top_srcdir)/globus_automake_pre
-
 pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 pkgdatadir = $(GLOBUS_LOCATION)/test/$(PACKAGE)/perl_modules
 
@@ -11,8 +9,8 @@ pkgdata_DATA= \
     Uploader.pm \
     Util.pm
 
-EXTRA_DIST = GatekeeperManager.pm Util.pm \
-             ConfigurationManager.pm.in Uploader.pm.in
-
-
-include $(top_srcdir)/globus_automake_post
+EXTRA_DIST = \
+	GatekeeperManager.pm \
+	Util.pm \
+	ConfigurationManager.pm.in \
+	Uploader.pm.in
