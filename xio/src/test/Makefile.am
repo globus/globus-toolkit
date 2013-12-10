@@ -1,4 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
 SUBDIRS = drivers
 
 check_PROGRAMS =                        \
@@ -12,14 +11,12 @@ check_PROGRAMS =                        \
         handle_create_from_url_test     \
 	http_throughput_test
 
-
 noinst_DATA =                           \
 	headers				\
 	multi-line-header		\
 	long-headers			\
 	multi-headers			\
 	large-file
-
 
 check_SCRIPTS =                         \
 	basic-test.pl                   \
@@ -97,6 +94,9 @@ junit: TESTS-junit.pl $(check_SCRIPTS)
 	chmod a+x $?
 	$(LIBTOOL) --mode=execute -dlopen drivers/libglobus_xio_test_drivers.la \
         $<
+
+clean-local:
+	rm -rf *timings.txt test_output
 
 EXTRA_DIST =                            \
         $(check_SCRIPTS)               \

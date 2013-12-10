@@ -1,5 +1,3 @@
-include $(top_srcdir)/globus_automake_pre
-
 test_SCRIPTS = globus-gram-job-manager-stdio-test.pl
 
 test_DATA = \
@@ -24,5 +22,3 @@ test_DATA = \
     stdio019.err stdio019.out stdio019.rsl
 
 EXTRA_DIST = $(test_DATA)
-
-include $(top_srcdir)/globus_automake_post

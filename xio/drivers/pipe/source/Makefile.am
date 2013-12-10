@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfigdir = $(libdir)/pkgconfig
 
 include_HEADERS = globus_xio_pipe_driver.h
@@ -16,3 +14,6 @@ libglobus_xio_pipe_driver_la_LDFLAGS = \
         -module -rpath $(libdir)
 
 EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+
+distuninstallcheck:
+	@:

@@ -1,5 +1,3 @@
-include $(top_srcdir)/globus_automake_pre
-
 test_SCRIPTS = globus-gram-job-manager-submit-test.pl
 
 test_DATA = \
@@ -54,5 +52,3 @@ test_DATA = \
     submit049.err submit049.out submit049.rsl
 
 EXTRA_DIST = globus-gram-job-manager-submit-test.pl.in $(test_DATA)
-
-include $(top_srcdir)/globus_automake_post

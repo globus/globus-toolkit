@@ -1,4 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I config -I .
 
 pkgconfdir = ${libdir}/pkgconfig

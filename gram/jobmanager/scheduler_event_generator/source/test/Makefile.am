@@ -50,4 +50,4 @@ seg_api_test_LDADD = \
 	../libglobus_scheduler_event_generator.la \
 	$(PACKAGE_DEP_LIBS)
 
-EXTRA_DIST = dirt.sh version.h.in seg_test.dox $(check_DATA) $(check_SCRIPTS) make-test-data.pl
+EXTRA_DIST = seg_test.dox $(check_DATA) $(check_SCRIPTS) make-test-data.pl

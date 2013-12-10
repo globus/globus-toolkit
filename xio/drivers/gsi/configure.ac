@@ -1,10 +1,12 @@
-AC_INIT([globus_xio_gsi_driver],[2.4])
-AM_INIT_AUTOMAKE
-AM_PROG_LIBTOOL
+AC_PREREQ([2.60])
+AC_INIT([globus_xio_gsi_driver],[3.0],[http://jira.globus.org])
+AC_CONFIG_AUX_DIR([build-aux])
+AM_INIT_AUTOMAKE([foreign parallel-tests 1.11])
+LT_INIT([dlopen win32-dll])
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
 MINOR_VERSION=${PACKAGE_VERSION##*.}
-AGE_VERSION=2
+AGE_VERSION=3
 
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)

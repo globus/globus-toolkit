@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 DIST_SUBDIRS = config init
 
 if BUILD_GATEKEEPER
@@ -38,7 +36,7 @@ SUFFIXES = .logrotatein .logrotate
 .logrotatein.logrotate:
 	sed -e 's|@LOGDIR@|${localstatedir}/log|' < $< > $@
 
-EXTRA_DIST=$(doc_DATA) $(man8_MANS) \
+EXTRA_DIST=$(doc_DATA) $(man_MANS) \
         manual.xml \
         globus-gatekeeper.xml \
         globus-k5.xml \
@@ -53,3 +51,6 @@ SUFFIXES += .xml .8
 CLEANFILES = $(man_MANS)
 endif
 endif
+
+distuninstallcheck:
+	@:

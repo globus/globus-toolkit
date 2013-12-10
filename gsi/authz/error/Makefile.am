@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfigdir = $(libdir)/pkgconfig
 
 doc_DATA = GLOBUS_LICENSE
@@ -51,3 +49,6 @@ dist-hook: $(DOC_STAMPS)
 	if test -d doc; then \
 		cp -R doc $(distdir)/doc ; \
 	fi ;
+
+distuninstallcheck:
+	@:

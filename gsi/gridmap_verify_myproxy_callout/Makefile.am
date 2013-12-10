@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-	
 doc_DATA = GLOBUS_LICENSE
 sysconf_DATA = gridmap_verify_myproxy_callout-gsi_authz.conf
 lib_LTLIBRARIES = libglobus_gridmap_verify_myproxy_callout.la
@@ -15,3 +13,6 @@ libglobus_gridmap_verify_myproxy_callout_la_SOURCES = \
 	globus_gridmap_verify_myproxy.c
 
 EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+
+distuninstallcheck:
+	@:

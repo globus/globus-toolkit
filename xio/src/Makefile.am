@@ -1,8 +1,7 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfigdir = $(libdir)/pkgconfig
 SUBDIRS= builtins . test
 
+AM_CPPFLAGS = -DGLOBUS_BUILTIN=1
 
 include_HEADERS = \
     globus_xio_types.h                          \
@@ -38,7 +37,7 @@ libglobus_xio_la_SOURCES =                          \
         globus_i_xio_win32_socket.c                 \
         globus_i_xio_system_common.c                \
         globus_xio_load.c
-libglobus_xio_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
+libglobus_xio_la_CPPFLAGS = $(AM_CPPFLAGS) $(PACKAGE_DEP_CFLAGS)
 libglobus_xio_la_LDFLAGS = \
     -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
     -no-undefined
@@ -91,3 +90,6 @@ dist-hook: $(DOC_STAMPS)
 	if test -d doc; then \
 		cp -R doc $(distdir)/doc ; \
 	fi ;
+
+distuninstallcheck:
+	@:

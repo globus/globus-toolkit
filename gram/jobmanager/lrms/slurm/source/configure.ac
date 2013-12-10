@@ -1,9 +1,11 @@
-AC_INIT([globus_gram_job_manager_slurm],[1.2])
-AM_INIT_AUTOMAKE
+AC_PREREQ([2.60])
+AC_INIT([globus_gram_job_manager_slurm],[2.0],[http://jira.globus.org])
+AC_CONFIG_AUX_DIR([build-aux])
+AM_INIT_AUTOMAKE([foreign parallel-tests 1.11])
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
 MINOR_VERSION=${PACKAGE_VERSION##*.}
-AGE_VERSION=0
+AGE_VERSION=1
 
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)
@@ -189,6 +191,19 @@ else
     touch "$mpi_type_rvf" 
 fi
 AC_SUBST_FILE(mpi_type_rvf)
+AC_ARG_WITH([perlmoduledir],
+AC_HELP_STRING([--with-perlmoduledir=DIR],
+[perl module directory [[PREFIX/lib/perl]]]),
+[
+    if test x$withval = "xno" -o x$withval = "xyes" ; then
+        AC_MSG_ERROR([--with-perlmoduledir requires an argument])
+    fi
+    perlmoduledir=$withval
+],
+[
+    perlmoduledir='${libdir}/perl'
+])
+AC_SUBST(perlmoduledir)
 AC_CONFIG_FILES(
         globus-gram-job-manager-slurm-uninstalled.pc
         globus-gram-job-manager-slurm.pc

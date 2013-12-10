@@ -1,5 +1,5 @@
-AUTOMAKE_OPTIONS = foreign
 pkgconfigdir = $(libdir)/pkgconfig
+
 SUBDIRS = library
 
 doc_DATA = GLOBUS_LICENSE
@@ -9,3 +9,6 @@ EXTRA_DIST= \
         version.h \
         dirt.sh \
 	$(doc_DATA)
+
+distuninstallcheck:
+	@:

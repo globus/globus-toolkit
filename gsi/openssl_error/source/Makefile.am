@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfdir = $(libdir)/pkgconfig
 
 SUBDIRS = library test

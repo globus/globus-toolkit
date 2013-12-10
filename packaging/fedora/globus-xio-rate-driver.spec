@@ -1,0 +1,89 @@
+Name:		globus-xio-rate-driver
+%global _name %(tr - _ <<< %{name})
+Version:	0.3
+Release:	1%{?dist}
+Summary:	Globus Toolkit - Globus XIO Rate Limiting Driver
+
+Group:		System Environment/Libraries
+License:	ASL 2.0
+URL:		http://www.globus.org/
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+Requires:	globus-xio%{?_isa} >= 3
+Requires:	globus-common%{?_isa} >= 14
+
+BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-common-devel >= 14
+
+%package devel
+Summary:	Globus Toolkit - Globus XIO Rate Limiting Driver Development Files
+Group:		Development/Libraries
+Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	globus-gssapi-error-devel%{?_isa} >= 4
+Requires:	globus-gss-assist-devel%{?_isa} >= 8
+Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+
+%description
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The %{name} package contains:
+Globus XIO Rate Limiting Driver
+
+%description devel
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The %{name}-devel package contains:
+Globus XIO Rate Limiting Driver Development Files
+
+%prep
+%setup -q -n %{_name}-%{version}
+
+%build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+# Remove files that should be replaced during bootstrap
+rm -rf autom4te.cache
+
+autoreconf -i
+%endif
+
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
+
+make %{?_smp_mflags}
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT
+
+find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
+%files
+%defattr(-,root,root,-)
+%{_libdir}/libglobus*.so.*
+
+%files devel
+%defattr(-,root,root,-)
+%{_includedir}/globus/*
+%{_libdir}/libglobus*.so
+%{_libdir}/pkgconfig/%{name}.pc
+
+%changelog

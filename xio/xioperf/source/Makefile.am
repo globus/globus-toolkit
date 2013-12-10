@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfigdir = $(libdir)/pkgconfig
 
 bin_PROGRAMS = globus-xioperf
@@ -15,3 +13,6 @@ globus_xioperf_SOURCES = \
     globus_i_xioperf_opts.c
 
 EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+
+distuninstallcheck:
+	@:

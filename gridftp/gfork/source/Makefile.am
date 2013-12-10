@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfdir = $(libdir)/pkgconfig
 
 include_HEADERS = globus_gfork.h
@@ -27,3 +25,6 @@ gfork_LDADD = ./libglobus_gfork.la
 EXTRA_PROGRAMS = gfork
 
 EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+
+distuninstallcheck:
+	@:

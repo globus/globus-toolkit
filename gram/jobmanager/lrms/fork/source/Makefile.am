@@ -1,4 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
 SUBDIRS = starter seg
 
 globussysconfdir = ${sysconfdir}/globus
@@ -50,3 +49,6 @@ install-data-hook:
 	[ -L "jobmanager-fork" ] || \
 	ln -s available/jobmanager-fork-poll jobmanager-fork
 endif
+
+distuninstallcheck:
+	@:

@@ -1,8 +1,9 @@
-AUTOMAKE_OPTIONS = foreign
-	
+pkgconfigdir = $(libdir)/pkgconfig
+
 doc_DATA = GLOBUS_LICENSE
 sysconf_DATA = gridmap_eppn_callout-gsi_authz.conf
 lib_LTLIBRARIES = libglobus_gridmap_eppn_callout.la
+pkgconfig_DATA = globus-gridmap-eppn-callout.pc
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) 
 
@@ -15,3 +16,6 @@ libglobus_gridmap_eppn_callout_la_LIBADD = $(PACKAGE_DEP_LIBS)
 libglobus_gridmap_eppn_callout_la_SOURCES = globus_gridmap_eppn.c
 
 EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+
+distuninstallcheck:
+	@:

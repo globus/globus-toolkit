@@ -10748,7 +10748,7 @@ globus_gridftp_server_begin_transfer(
         event_reply.node_count = op->node_count;
     }
 
-    if(op->writing && (freq = globus_libc_getenv("GFS_RETR_MARKERS")) != NULL)
+    if(op->writing && (freq = getenv("GFS_RETR_MARKERS")) != NULL)
     {
         op->retr_markers = strtol(freq, NULL, 10);
     }

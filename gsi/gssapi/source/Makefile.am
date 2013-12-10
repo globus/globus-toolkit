@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 SUBDIRS = library . test
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -11,3 +9,6 @@ EXTRA_DIST = \
 	dirt.sh \
 	version.h.in \
 	$(doc_DATA)
+
+distuninstallcheck:
+	@:

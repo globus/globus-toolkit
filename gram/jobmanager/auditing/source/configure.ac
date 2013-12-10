@@ -1,9 +1,11 @@
-AC_INIT([globus_gram_audit],[3.2])
-AM_INIT_AUTOMAKE
+AC_PREREQ([2.60])
+AC_INIT([globus_gram_audit],[4.0],[http://jira.globus.org])
+AC_CONFIG_AUX_DIR([build-aux])
+AM_INIT_AUTOMAKE([foreign parallel-tests 1.11])
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
 MINOR_VERSION=${PACKAGE_VERSION##*.}
-AGE_VERSION=0
+AGE_VERSION=1
 
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)

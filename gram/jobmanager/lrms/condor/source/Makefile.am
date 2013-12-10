@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 globussysconfdir = ${sysconfdir}/globus
 gridservicesdir = ${sysconfdir}/grid-services/available
 validationdir = $(datadir)/globus/globus_gram_job_manager
@@ -34,3 +32,6 @@ EXTRA_DIST = \
 	GLOBUS_LICENSE
 
 CLEANFILES = jobmanager-condor
+
+distuninstallcheck:
+	@:

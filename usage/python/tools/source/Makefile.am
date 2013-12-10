@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pylibdir = $(libdir)/python/usage
 usagevardir = $(localstatedir)/usage
 
@@ -58,3 +56,5 @@ SUFFIXES = .xml .8
 CLEANFILES = $(man_MANS)
 endif
 
+distuninstallcheck:
+	@:

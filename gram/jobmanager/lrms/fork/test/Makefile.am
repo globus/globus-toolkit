@@ -1,11 +1,7 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
-
-SUBDIRS= seg pkgdata 
+SUBDIRS = seg pkgdata 
 
 test_SCRIPTS = TESTS.pl TESTS-junit.pl
 
-EXTRA_DIST= TESTS.pl.in TESTS-junit.pl.in
 
 test: all
 	perl "-I@perlmoduledir@" TESTS.pl
@@ -13,7 +9,6 @@ test: all
 junit: all
 	perl "-I@perlmoduledir@" TESTS-junit.pl
 
-.PHONY: junit test
+EXTRA_DIST = dirt.sh TESTS.pl.in TESTS-junit.pl.in
 
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+.PHONY: junit test

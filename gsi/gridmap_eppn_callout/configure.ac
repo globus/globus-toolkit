@@ -1,10 +1,12 @@
-AC_INIT([globus_gridmap_eppn_callout],[0.6])
-AM_INIT_AUTOMAKE
-AM_PROG_LIBTOOL
+AC_PREREQ([2.60])
+AC_INIT([globus_gridmap_eppn_callout],[1.0],[http://jira.globus.org])
+AC_CONFIG_AUX_DIR([build-aux])
+AM_INIT_AUTOMAKE([foreign parallel-tests 1.11])
+LT_INIT([dlopen win32-dll])
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
 MINOR_VERSION=${PACKAGE_VERSION##*.}
-AGE_VERSION=0
+AGE_VERSION=1
 
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)

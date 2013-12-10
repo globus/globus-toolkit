@@ -1,4 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
 SUBDIRS = seg
 
 globussysconfdir = ${sysconfdir}/globus
@@ -54,3 +53,6 @@ install-data-hook:
 	[ -L "jobmanager-pbs" ] || \
 	ln -s available/jobmanager-pbs-poll jobmanager-pbs
 endif
+
+distuninstallcheck:
+	@:

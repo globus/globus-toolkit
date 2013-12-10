@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfigdir = $(libdir)/pkgconfig
 globussysconfdir = ${sysconfdir}/globus
 gridservicesdir = ${sysconfdir}/grid-services/available
@@ -32,3 +30,6 @@ install-data-hook:
 	cd $(DESTDIR)$(gridservicesdir)/..; \
 	[ -L "jobmanager-slurm" ] || \
 	ln -s available/jobmanager-slurm-poll jobmanager-slurm
+
+distuninstallcheck:
+	@:

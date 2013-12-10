@@ -1,10 +1,12 @@
-AC_INIT([globus_gram_job_manager_pbs],[1.6])
-AM_INIT_AUTOMAKE
-AM_PROG_LIBTOOL
+AC_PREREQ([2.60])
+AC_INIT([globus_gram_job_manager_pbs],[2.0],[http://jira.globus.org])
+AC_CONFIG_AUX_DIR([build-aux])
+AM_INIT_AUTOMAKE([foreign parallel-tests 1.11])
+LT_INIT([dlopen win32-dll])
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
 MINOR_VERSION=${PACKAGE_VERSION##*.}
-AGE_VERSION=0
+AGE_VERSION=1
 
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)
@@ -198,6 +200,20 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
                 test "$docbook_dtd_available" != "no" && \
                 test "$XSLTPROC" != "no" && \
                 test "$XMLLINT" != "no"])
+
+AC_ARG_WITH([perlmoduledir],
+AC_HELP_STRING([--with-perlmoduledir=DIR],
+[perl module directory [[PREFIX/lib/perl]]]),
+[
+    if test x$withval = "xno" -o x$withval = "xyes" ; then
+        AC_MSG_ERROR([--with-perlmoduledir requires an argument])
+    fi
+    perlmoduledir=$withval
+],
+[
+    perlmoduledir='${libdir}/perl'
+])
+AC_SUBST(perlmoduledir)
 
 AC_CONFIG_FILES(
         globus-gram-job-manager-pbs-uninstalled.pc

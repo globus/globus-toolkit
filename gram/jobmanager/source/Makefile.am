@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I .
-AUTOMAKE_OPTIONS = foreign
-SUBDIRS = rvf scripts seg
+
+SUBDIRS = rvf scripts seg .
 
 validationdir = $(datadir)/globus/$(PACKAGE)
 globusconfigdir = ${sysconfdir}/globus
@@ -98,7 +98,7 @@ install-data-hook:
 	mkdir -p $(DESTDIR)$(localstatedir)/lib/globus/gram_job_state
 	chmod 1777 $(DESTDIR)$(localstatedir)/lib/globus/gram_job_state
 	mkdir -p $(DESTDIR)$(logrotatedir)
-	cp $(srcdir)/gram.logrotate $(DESTDIR)$(logrotatedir)/globus-job-manager
+	cp $(builddir)/gram.logrotate $(DESTDIR)$(logrotatedir)/globus-job-manager
 	mkdir -p $(DESTDIR)@LOGDIR@
 	chmod 1777 $(DESTDIR)@LOGDIR@
 	mkdir -p $(DESTDIR)$(sysconfdir)/globus/gram
@@ -120,3 +120,6 @@ SUFFIXES = .xml .1 .5 .8
 	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
 	$(XSLTPROC) --nonet $(MAN_XSL) $<
 endif
+
+distuninstallcheck:
+	@:

@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 bin_SCRIPTS = \
 	globus-gass-cache \
 	globus-gass-cache-destroy
@@ -21,3 +19,6 @@ EXTRA_DIST = \
 	globus-gass-cache-destroy.in \
 	GLOBUS_LICENSE \
 	version.h.in
+
+distuninstallcheck:
+	@:

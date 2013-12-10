@@ -1,4 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
 SUBDIRS = modules init
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -20,8 +19,7 @@ sbin_SCRIPTS = \
         globus-gridftp-server-setup-chroot
 pkgconfig_DATA = globus-gridftp-server.pc
 
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
-libglobus_gridftp_server_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -DGLOBUS_BUILTIN=1
 libglobus_gridftp_server_la_LIBADD = $(MODULE_LIBS) $(PACKAGE_DEP_LIBS)
 libglobus_gridftp_server_la_LDFLAGS =   \
         -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
@@ -50,7 +48,6 @@ libglobus_gridftp_server_la_SOURCES =   \
 	globus_i_gfs_control.h
 
 globus_gridftp_server_SOURCES = globus_gridftp_server.c
-globus_gridftp_server_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 globus_gridftp_server_LDADD = ./libglobus_gridftp_server.la $(PACKAGE_DEP_LIBS)
 
 gfs_gfork_master_SOURCES = gfs_gfork_master.c
@@ -83,3 +80,6 @@ EXTRA_DIST = \
     $(doc_DATA) \
     $(man_MANS) \
     globus-gridftp-server.xml
+
+distuninstallcheck:
+	@:

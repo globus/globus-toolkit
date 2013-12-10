@@ -1,4 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
 SUBDIRS = seg
 
 globussysconfdir = ${sysconfdir}/globus
@@ -48,3 +47,6 @@ install-data-hook:
 	[ -L "jobmanager-sge" ] || \
 	ln -s available/jobmanager-sge-poll jobmanager-sge
 endif
+
+distuninstallcheck:
+	@:

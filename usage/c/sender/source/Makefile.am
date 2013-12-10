@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfigdir = $(libdir)/pkgconfig
 
 include_HEADERS = globus_usage.h
@@ -16,3 +14,6 @@ libglobus_usage_la_LDFLAGS = \
 libglobus_usage_la_SOURCES = globus_usage.c
 
 EXTRA_DIST = dirt.sh $(doc_DATA)
+
+distuninstallcheck:
+	@:

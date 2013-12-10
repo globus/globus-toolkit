@@ -1,4 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
 pkgconfigdir = $(libdir)/pkgconfig
 
 SUBDIRS = library
@@ -23,3 +22,6 @@ EXTRA_DIST = \
 	$(man_MANS) \
 	$(MANUAL_SOURCE) \
 	$(doc_DATA)
+
+distuninstallcheck:
+	@:

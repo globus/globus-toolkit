@@ -1,10 +1,12 @@
-AC_INIT([globus_gram_job_manager_lsf],[1.2])
-AM_INIT_AUTOMAKE
-AM_PROG_LIBTOOL
+AC_PREREQ([2.60])
+AC_INIT([globus_gram_job_manager_lsf],[2.0],[http://jira.globus.org])
+AC_CONFIG_AUX_DIR([build-aux])
+AM_INIT_AUTOMAKE([foreign parallel-tests 1.11])
+LT_INIT([dlopen win32-dll])
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
 MINOR_VERSION=${PACKAGE_VERSION##*.}
-AGE_VERSION=0
+AGE_VERSION=1
 
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)
@@ -18,10 +20,6 @@ PACKAGE_DEPS="globus-common >= 14 globus-xio >= 3 globus-scheduler-event-generat
 AC_SUBST(PACKAGE_DEPS)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
-
-AC_PATH_PROGS([DOXYGEN], doxygen)
-
-AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
 AC_PATH_PROG(MPIEXEC, mpiexec, no)
 if test "$MPIEXEC" = "no" ; then
@@ -110,6 +108,20 @@ case "$SEG_ENABLED" in
 	    AC_MSG_ERROR([Invalid argument to --with-seg])
 	    ;;
 esac
+
+AC_ARG_WITH([perlmoduledir],
+AC_HELP_STRING([--with-perlmoduledir=DIR],
+[perl module directory [[PREFIX/lib/perl]]]),
+[
+    if test x$withval = "xno" -o x$withval = "xyes" ; then
+        AC_MSG_ERROR([--with-perlmoduledir requires an argument])
+    fi
+    perlmoduledir=$withval
+],
+[
+    perlmoduledir='${libdir}/perl'
+])
+AC_SUBST(perlmoduledir)
 
 
 AM_CONDITIONAL(SEG_ENABLED_COND, [test "$SEG_ENABLED" = "yes"])

@@ -1,4 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
 SUBDIRS = init config test
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -67,3 +66,6 @@ dist-hook: $(DOC_STAMPS)
 	if test -d doc; then \
 		cp -R doc $(distdir)/doc ; \
 	fi ;
+
+distuninstallcheck:
+	@:

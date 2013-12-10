@@ -1,6 +1,5 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfigdir = $(libdir)/pkgconfig
+
 include_HEADERS = globus_xio_gsi.h
 doc_DATA = GLOBUS_LICENSE
 lib_LTLIBRARIES = libglobus_xio_gsi_driver.la

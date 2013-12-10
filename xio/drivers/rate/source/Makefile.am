@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfdir = $(libdir)/pkgconfig
 
 include_HEADERS = globus_xio_rate_driver.h
@@ -16,3 +14,6 @@ libglobus_xio_rate_driver_la_LDFLAGS = \
 libglobus_xio_rate_driver_la_SOURCES = globus_xio_rate_driver.c
 
 EXTRA_DIST = dirt.sh version.h.in
+
+distuninstallcheck:
+	@:

@@ -1,10 +1,11 @@
-AUTOMAKE_OPTIONS = foreign
+SUBDIRS = test
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = globus-gram-client.pc
+
 include_HEADERS = globus_gram_client.h
 lib_LTLIBRARIES = libglobus_gram_client.la
 doc_DATA = GLOBUS_LICENSE
+pkgconfig_DATA = globus-gram-client.pc
 
 libglobus_gram_client_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 libglobus_gram_client_la_LIBADD = $(PACKAGE_DEP_LIBS)
@@ -54,3 +55,6 @@ dist-hook: $(DOC_STAMPS)
 	if test -d doc; then \
 		cp -R doc $(distdir)/doc ; \
 	fi ;
+
+distuninstallcheck:
+	@:

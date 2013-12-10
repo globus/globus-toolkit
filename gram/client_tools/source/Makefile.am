@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 BUILT_SOURCES = version.h
 bin_PROGRAMS = globusrun
 bin_SCRIPTS = \
@@ -55,3 +53,6 @@ SUFFIXES = .xml .1
 	$(XSLTPROC) --nonet $(MAN_XSL) $<
 CLEANFILES = $(man_MANS)
 endif
+
+distuninstallcheck:
+	@:

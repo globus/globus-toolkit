@@ -1,4 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
 SUBDIRS = schemas
 
 globusconfdir = $(sysconfdir)/globus
@@ -28,3 +27,6 @@ endif
 
 install-data-hook:
 	mkdir -p -m 01733 $(DESTDIR)$(localstatedir)/lib/globus/gram-audit
+
+distuninstallcheck:
+	@:

@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 bin_SCRIPTS = grid-ca-sign grid-ca-create grid-ca-package
 pkgdata_DATA = \
         ca-signing-policy.tmpl \
@@ -31,3 +29,6 @@ SUFFIXES = .xml .1
 	$(XSLTPROC) --nonet $(MAN_XSL) $<
 CLEANFILES = $(man_MANS)
 endif
+
+distuninstallcheck:
+	@:

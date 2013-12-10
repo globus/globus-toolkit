@@ -1,12 +1,11 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = globus-gass-server-ez.pc
+
 include_HEADERS = globus_gass_server_ez.h
 lib_LTLIBRARIES = libglobus_gass_server_ez.la
 bin_SCRIPTS = globus-gass-server-shutdown
 bin_PROGRAMS = globus-gass-server 
 doc_DATA = GLOBUS_LICENSE
+pkgconfig_DATA = globus-gass-server-ez.pc
 
 libglobus_gass_server_ez_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 libglobus_gass_server_ez_la_LIBADD = $(PACKAGE_DEP_LIBS)
@@ -26,3 +25,6 @@ EXTRA_DIST = \
         globus-gass-server-shutdown.in \
         $(doc_DATA) \
         version.h.in
+
+distuninstallcheck:
+	@:

@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 globusperldir=$(perlmoduledir)/Globus/GRAM
 perldocdir=$(docdir)/perl/Globus/GRAM
 
@@ -42,3 +40,6 @@ SUFFIXES += .xml .8
 	$(XSLTPROC) --nonet $(MAN_XSL) $<
 CLEANFILES = $(man_MANS)
 endif
+
+distuninstallcheck:
+	@:

@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfigdir = $(libdir)/pkgconfig
 
 doc_DATA = GLOBUS_LICENSE
@@ -78,3 +76,6 @@ EXTRA_DIST = \
         $(man_MANS) \
         globus-url-copy.xml
 
+
+distuninstallcheck:
+	@:

@@ -5,7 +5,7 @@ globus_fork_starter_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 globus_fork_starter_LDADD = $(PACKAGE_DEP_LIBS)
 globus_fork_starter_SOURCES = fork_starter.c
 
-EXTRA_DIST = $(man8_MANS) globus-fork-starter.xml
+EXTRA_DIST = $(man_MANS) globus-fork-starter.xml
 
 if BUILD_MANPAGES
 SUFFIXES = .xml .8

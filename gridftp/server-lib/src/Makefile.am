@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfigdir = $(libdir)/pkgconfig
 
 include_HEADERS = globus_gridftp_server_control.h globus_xio_gssapi_ftp.h
@@ -23,3 +21,6 @@ libglobus_gridftp_server_control_la_SOURCES = \
     globus_xio_gssapi_ftp.c
 
 EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+
+distuninstallcheck:
+	@:

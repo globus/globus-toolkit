@@ -1,13 +1,14 @@
 AC_PREREQ([2.60])
-AC_INIT([globus_common], [14.10], [support@globus.org])
-AM_INIT_AUTOMAKE
-LT_INIT(dlopen)
+AC_INIT([globus_common], [15.0], [http://jira.globus.org])
+AC_CONFIG_AUX_DIR([build-aux])
+AM_INIT_AUTOMAKE([foreign parallel-tests 1.11])
+LT_INIT([dlopen win32-dll])
 AM_PROG_CC_C_O
 AC_CONFIG_HEADERS(config.h)
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
 MINOR_VERSION=${PACKAGE_VERSION##*.}
-AGE_VERSION=14
+AGE_VERSION=15
 
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)
@@ -69,6 +70,7 @@ AC_CHECK_HEADERS([arpa/inet.h])
 AC_CHECK_HEADERS([strings.h])
 AC_CHECK_HEADERS([syslog.h])
 AC_CHECK_HEADERS([sys/sysctl.h])
+AC_CHECK_HEADERS([sys/types.h])
 AC_DIR_HEADER
 AC_SUBST(PACKAGE_DEPS)
 AC_SUBST(PACKAGE_DEP_CFLAGS)

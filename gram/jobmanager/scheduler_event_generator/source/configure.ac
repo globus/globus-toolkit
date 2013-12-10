@@ -1,10 +1,12 @@
-AC_INIT([globus_scheduler_event_generator],[4.7])
-AM_INIT_AUTOMAKE
-LT_INIT([dlopen])
+AC_PREREQ([2.60])
+AC_INIT([globus_scheduler_event_generator],[5.0],[http://jira.globus.org])
+AC_CONFIG_AUX_DIR([build-aux])
+AM_INIT_AUTOMAKE([foreign parallel-tests 1.11])
+LT_INIT([dlopen win32-dll])
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
 MINOR_VERSION=${PACKAGE_VERSION##*.}
-AGE_VERSION=4
+AGE_VERSION=5
 
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)

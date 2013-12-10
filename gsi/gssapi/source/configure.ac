@@ -1,11 +1,12 @@
-AC_INIT([globus_gssapi_gsi],[10.10])
-
-AM_INIT_AUTOMAKE
-AM_PROG_LIBTOOL
+AC_PREREQ([2.60])
+AC_INIT([globus_gssapi_gsi],[11.0],[http://jira.globus.org])
+AC_CONFIG_AUX_DIR([build-aux])
+AM_INIT_AUTOMAKE([foreign parallel-tests 1.11])
+LT_INIT([dlopen win32-dll])
 
 MAJOR_VERSION=${PACKAGE_VERSION%%.*}
 MINOR_VERSION=${PACKAGE_VERSION##*.}
-AGE_VERSION=6
+AGE_VERSION=7
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)
 AC_SUBST(AGE_VERSION)

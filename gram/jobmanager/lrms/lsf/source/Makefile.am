@@ -1,4 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
 SUBDIRS = seg
 
 globussysconfdir = ${sysconfdir}/globus
@@ -55,3 +54,6 @@ install-data-hook:
 	[ -L "jobmanager-lsf" ] || \
 	ln -s available/jobmanager-lsf-poll jobmanager-lsf
 endif
+
+distuninstallcheck:
+	@:

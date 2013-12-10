@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 pkgconfigdir = $(libdir)/pkgconfig
 
 include_HEADERS = globus_ftp_control.h
@@ -44,7 +42,7 @@ all-local: $(DOC_STAMPS)
 install-data-local: $(DOC_STAMPS)
 	if test -d doc/man/man3; then \
 		install -d -m 755 $(DESTDIR)$(mandir)/man3; \
-	        $(INSTALL) -m 644 doc/man/man3/globus*.3 $(DESTDIR)$(mandir)/man3 ; \
+	        $(INSTALL) -m 644 doc/man/man3/[Gg][Ll][Oo][Bb][Uu][Ss]*.3 $(DESTDIR)$(mandir)/man3 ; \
         fi
 	if test -d doc/html; then \
 		for dir in `(cd doc; find html -type d)`; do \
@@ -59,3 +57,6 @@ dist-hook: $(DOC_STAMPS)
 	if test -d doc; then \
 		cp -R doc $(distdir)/doc ; \
 	fi ;
+
+distuninstallcheck:
+	@:

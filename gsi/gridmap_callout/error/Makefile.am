@@ -1,8 +1,9 @@
-AUTOMAKE_OPTIONS = foreign
+pkgconfigdir = $(libdir)/pkgconfig
 
 doc_DATA = GLOBUS_LICENSE
 include_HEADERS = globus_gridmap_callout_error.h
 lib_LTLIBRARIES = libglobus_gridmap_callout_error.la
+pkgconfig_DATA = globus-gridmap-callout-error.pc
 
 libglobus_gridmap_callout_error_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 libglobus_gridmap_callout_error_la_LDFLAGS = \
@@ -47,3 +48,6 @@ dist-hook: $(DOC_STAMPS)
 	if test -d doc; then \
 		cp -R doc $(distdir)/doc ; \
 	fi ;
+
+distuninstallcheck:
+	@:
