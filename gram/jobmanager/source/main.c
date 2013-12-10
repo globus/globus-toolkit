@@ -685,7 +685,7 @@ main(
 /*
     {
         const char * gk_jm_id_var = "GATEKEEPER_JM_ID";
-        const char * gk_jm_id = globus_libc_getenv(gk_jm_id_var);
+        const char * gk_jm_id = getenv(gk_jm_id_var);
 
         globus_gram_job_manager_request_acct(
                 request,
