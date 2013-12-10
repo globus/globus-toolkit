@@ -153,9 +153,15 @@ extern int inet_pton(int af, const char *src, void *dst);
 
 /* POSIX error code remapping */
 #ifdef _WIN32
+#ifndef EWOULDBLOCK 
 	#define EWOULDBLOCK EAGAIN
+#endif
+#ifndef ETIMEDOUT 
 	#define ETIMEDOUT WSAETIMEDOUT
+#endif
+#ifndef EINPROGRESS 
 	#define EINPROGRESS WSAEINPROGRESS
+#endif
 #endif
 
 #include <inttypes.h>

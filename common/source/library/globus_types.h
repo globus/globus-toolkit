@@ -21,6 +21,8 @@
 #if !defined(GLOBUS_TYPES_H)
 #define GLOBUS_TYPES_H 1
 
+#include "globus_config.h"
+
 #include <stdlib.h>
 #include <stdint.h>
 
