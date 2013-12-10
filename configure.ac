@@ -178,12 +178,12 @@ GT_PACKAGE([globus_gridmap_callout_error],
         [gsi/gridmap_callout/error], [globus_common globus_gssapi_error],
         [gsi])
 dnl GT_PACKAGE([globus_xio_skeleton_driver], [xio/drivers/skeleton/source])
-GT_PACKAGE([globus_gram_client],[gram/client/source], 
-    [ globus_common  globus_gram_protocol  globus_io  globus_rsl
-      globus_gss_assist], [gram5])
 GT_PACKAGE([globus_gass_server_ez],[gass/server_ez/source],
     [ globus_common  globus_gass_transfer  globus_gssapi_gsi 
       globus_gss_assist ], [gram5])
+GT_PACKAGE([globus_gram_client],[gram/client/source], 
+    [ globus_common  globus_gram_protocol  globus_io  globus_rsl
+      globus_gss_assist], [gram5])
 GT_PACKAGE([globus_xio_gridftp_driver],
     [gridftp/gridftp_driver/source],
     [ globus_common  globus_xio  globus_ftp_client  globus_xio_gsi_driver ],
