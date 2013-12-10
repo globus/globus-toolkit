@@ -168,9 +168,9 @@ GT_PACKAGE([globus_gram_job_manager_sge],
           globus_gram_protocol ], [gram5-sge])
 GT_PACKAGE([globus_gram_job_manager_scripts],
         [gram/jobmanager/scripts], [], [gram5-server])
-GT_PACKAGE([globus_authz_null_callout],
-        [gsi/authz_null_callout/source],
-        [globus_authz], [gsi])
+dnl GT_PACKAGE([globus_authz_null_callout],
+dnl         [gsi/authz_null_callout/source],
+dnl         [globus_authz], [gsi])
 GT_PACKAGE([globus_gram_job_manager_slurm],
         [gram/jobmanager/lrms/slurm/source], [], [gram5-slurm])
 dnl GT_PACKAGE([globus_xio_udt_driver],[xio/drivers/udt_ref])
