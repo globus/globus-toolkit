@@ -1,46 +1,43 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+EXTRA_SCRIPTS = TESTS.pl test-wrapper
 
-# SUBDIRS is an automake macro which contains 
-# the list of subdirectories that have Makefile.am's
-SUBDIRS= \
-	pkgdata 
-
-
-# Scripts contains all of the scripts in this directory
-Scripts= \
-	TESTS.pl \
-	globus-gass-copy-local-test.pl \
-	globus-gass-copy-remote-test.pl \
+check_SCRIPTS = \
         guc-cc.pl \
         guc-fw.pl \
         guc-pp-cc.pl \
         guc-simple.pl \
         guc-stack.pl
-ScriptSources =  \
-	globus-gass-copy-local-test.pl.in \
-	globus-gass-copy-remote-test.pl.in \
-        guc-cc.pl.in \
-        guc-fw.pl.in \
-        guc-pp-cc.pl.in \
-        guc-simple.pl.in \
-        guc-stack.pl.in
-Data = \
-	dc31a685.0 \
-	dc31a685.signing_policy \
-	testcred.pem
 
+check_DATA =  \
+        testcred.key \
+        testcred.cert \
+        testcredlink \
+        gridmap
 
-test_SCRIPTS = $(Scripts)
-test_DATA=$(Data)
+testcred.key:
+	openssl genrsa -out $@ 1024 && chmod 0600 $@
 
-CLEANFILES = globus-test-perl-initializer
+testcred.req: testcred.key
+	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< -out $@
 
-# EXTRA_DIST is used to include files in 
-# a source distribution that automake fails to detect.
-EXTRA_DIST = TESTS.pl $(ScriptSources) $(Data)
+testcred.cert: testcred.req testcred.key
+	openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
 
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+testcredlink: testcred.cert
+	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
+	rm -f "$$linkname"; \
+	ln -s testcred.cert "$$linkname"
 
+gridmap: testcred.cert
+	subject=`openssl x509 -subject -noout -in testcred.cert | sed -e 's/subject= *//'` ; \
+        echo "\"$$subject\" `id -un`" > gridmap
 
+TESTS = $(check_SCRIPTS)
+AM_TESTS_ENVIRONMENT = \
+    export X509_USER_CERT=testcred.cert \
+    X509_USER_KEY=testcred.key \
+    X509_CERT_DIR=$(abs_builddir) \
+    GRIDMAP=$(abs_builddir)/gridmap;
+LOG_COMPILER = $(srcdir)/test-wrapper
+
+CLEANFILES = testcred.key testcred.cert testcred.req gridmap
+EXTRA_DIST = $(check_SCRIPTS) $(EXTRA_SCRIPTS)
