@@ -12,8 +12,8 @@
 
 Name:		globus-xio-gridftp-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.2
-Release:	2%{?dist}
+Version:	1.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
 
 Group:		System Environment/Libraries
@@ -189,6 +189,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Dec 11 2013 Globus Toolkit <support@globus.org> - 1.3-1
+- GT-490: No Functional Group in globus-xio-gridftp-driver GPT metadata
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 1.2-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

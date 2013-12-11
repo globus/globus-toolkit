@@ -1,3 +1,9 @@
+globus-xio-gridftp-driver (1.3-1) unstable; urgency=low
+
+  * GT-490: No Functional Group in globus-xio-gridftp-driver GPT metadata
+
+ -- Globus Toolkit <support@globus.org>  Wed, 11 December 2013 14:27:14 -0500
+
 globus-xio-gridftp-driver (1.2-1) unstable; urgency=low
 
   * add GLOBUS_LICENSE
