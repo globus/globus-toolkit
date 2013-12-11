@@ -1,6 +1,6 @@
 AC_INIT([globus_toolkit], [5.3.0], [support@globus.org])
 export GLOBUS_VERSION=$VERSION
-AM_INIT_AUTOMAKE(foreign)
+AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
 AM_PROG_LIBTOOL
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
@@ -260,9 +260,5 @@ AC_SUBST(GT_BUNDLES)
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Doxyfile])
 AC_CONFIG_FILES([doxygen/index.dox])
-gittop="`git rev-parse --show-toplevel`"
-if test -n "$gittop"; then
-    export ACLOCAL_PATH="${ACLOCAL_PATH:+$ACLOCAL_PATH:}$gittop"
-fi
 AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
 AC_OUTPUT
