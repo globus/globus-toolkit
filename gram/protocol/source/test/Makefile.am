@@ -4,7 +4,6 @@ LDADD = ../libglobus_gram_protocol.la $(PACKAGE_DEP_LIBS)
 check_SCRIPTS = \
 	allow-attach-test.pl \
 	error-test.pl \
-	io-test.pl \
 	pack-test.pl \
         create-extensions-test.pl \
         pack-with-extensions-test.pl \

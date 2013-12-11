@@ -36,5 +36,5 @@ CLEANFILES = \
     test_pci.norm5.der
 
 
-EXTRA_DIST = dirt.sh TESTS.pl TESTS-junit.pl test_pci.pl $(check_DATA)
+EXTRA_DIST = TESTS.pl TESTS-junit.pl test_pci.pl $(check_DATA)
 .PHONY: test junit
