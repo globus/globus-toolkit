@@ -397,6 +397,11 @@ typedef struct globus_i_xio_http_handle_s
      * drops us
      */
     globus_bool_t                       reopen_in_progress;
+    
+    /* error from internal response read, usually with a broken persistent
+     * connection
+     */
+    globus_object_t *                   pending_error;
 }
 globus_i_xio_http_handle_t;
 
@@ -553,13 +558,13 @@ globus_i_xio_http_header_info_copy(
     globus_i_xio_http_header_info_t *   dest,
     const globus_i_xio_http_header_info_t *
                                         src);
-
 extern
 globus_result_t
 globus_i_xio_http_header_info_set_header(
     globus_i_xio_http_header_info_t *   headers,
     const char *                        header_name,
-    const char *                        header_value);
+    const char *                        header_value,
+    globus_bool_t                       store_all);
 
 /* globus_xio_http_rfc2616.c */
 extern

@@ -231,7 +231,8 @@ globus_i_xio_http_header_parse(
         result = globus_i_xio_http_header_info_set_header(
                 headers,
                 header_name,
-                header_value);
+                header_value,
+                http_handle->target_info.is_client);
 
         if (result != GLOBUS_SUCCESS)
         {

@@ -141,13 +141,18 @@ error_exit:
  * Adds a new header to a header info structure, or updates the value of an
  * existing header. Copies of the name and value will be stored in a
  * #globus_xio_http_header_t in a hashtable in the header info structure.
- *
+ * 
  * @param headers
  *     Pointer to the header info structure.
  * @param header_name
  *     Name of the header.
  * @param header_value
  *     Value of the header.
+ * @param store_all
+ *     Set to GLOBUS_TRUE to add all entries to the hashtable, otherwise
+ *     Content-Length, Transfer-Encoding, and Connection are discarded.
+ *     You probably only want to do this when acting as a client and parsing
+ *     the server response.
  *
  * @retval GLOBUS_SUCCESS
  *     Header successfully added to the hashtable.
@@ -158,17 +163,20 @@ globus_result_t
 globus_i_xio_http_header_info_set_header(
     globus_i_xio_http_header_info_t *   headers,
     const char *                        header_name,
-    const char *                        header_value)
+    const char *                        header_value,
+    globus_bool_t                       store_all)
 {
     char *                              save_header;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_xio_http_header_t *          header;
     int                                 rc;
     unsigned long                       length;
+    globus_bool_t                       store;
     GlobusXIOName(globus_l_xio_http_header_set);
 
+    store = store_all;
     /* Special cases for entity-body handling headers */
-    if (strcmp(header_name, "Content-Length") == 0)
+    if (strcasecmp(header_name, "Content-Length") == 0)
     {
         rc = sscanf(header_value, "%lu", &length);
 
@@ -181,14 +189,14 @@ globus_i_xio_http_header_info_set_header(
         headers->content_length = length;
         headers->flags |= GLOBUS_I_XIO_HTTP_HEADER_CONTENT_LENGTH_SET;
     }
-    else if (strcmp(header_name, "Transfer-Encoding") == 0)
+    else if (strcasecmp(header_name, "Transfer-Encoding") == 0)
     {
-        if (strcmp(header_value, "identity") == 0)
+        if (strcasecmp(header_value, "identity") == 0)
         {
             headers->transfer_encoding =
                 GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY;
         }
-        else if (strcmp(header_value, "chunked") == 0)
+        else if (strcasecmp(header_value, "chunked") == 0)
         {
             headers->transfer_encoding =
                 GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED;
@@ -200,13 +208,13 @@ globus_i_xio_http_header_info_set_header(
             goto error_exit;
         }
     }
-    else if (strcmp(header_name, "Connection") == 0)
+    else if (strcasecmp(header_name, "Connection") == 0)
     {
-        if (strcmp(header_value, "close") == 0)
+        if (strcasecmp(header_value, "close") == 0)
         {
             headers->flags |= GLOBUS_I_XIO_HTTP_HEADER_CONNECTION_CLOSE;
         }
-        else if (strcmp(header_value, "keep-alive") == 0)
+        else if (strcasecmp(header_value, "keep-alive") == 0)
         {
             headers->flags &= ~GLOBUS_I_XIO_HTTP_HEADER_CONNECTION_CLOSE;
         }
@@ -218,6 +226,11 @@ globus_i_xio_http_header_info_set_header(
         }
     }
     else
+    {
+        store = GLOBUS_TRUE;
+    }
+    
+    if(store)
     {
         /*
          * Either modify the header's value in the hashtable, if it's a

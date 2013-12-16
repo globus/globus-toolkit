@@ -1,3 +1,15 @@
+globus-xio (3.8-1) unstable; urgency=low
+
+  * Fix hang on large GETs
+
+ -- Globus Toolkit <support@globus.org>  Fri, 13 Dec 2013 13:41:08 -0600
+
+globus-xio (3.7-1) unstable; urgency=low
+
+  * Fixes related to HTTP client support in GridFTP
+
+ -- Globus Toolkit <support@globus.org>  Thu, 12 Dec 2013 17:27:12 -0600
+
 globus-xio (3.6-1) unstable; urgency=low
 
   * GT-445: Doxygen fixes

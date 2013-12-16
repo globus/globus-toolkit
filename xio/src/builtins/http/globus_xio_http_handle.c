@@ -322,7 +322,8 @@ globus_i_xio_http_handle_cntl(
             result = globus_i_xio_http_header_info_set_header(
                     &http_handle->response_info.headers,
                     in_str,
-                    in_str2);
+                    in_str2,
+                    GLOBUS_FALSE);
 
             break;
 
@@ -423,7 +424,8 @@ globus_i_xio_http_handle_cntl(
             result = globus_i_xio_http_header_info_set_header(
                     &http_handle->request_info.headers,
                     in_header_name,
-                    in_header_value);
+                    in_header_value,
+                    GLOBUS_FALSE);
             break;
 
         default:
@@ -500,6 +502,11 @@ globus_i_xio_http_set_end_of_entity(
             http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
         }
     }
+    else if (http_handle->send_state == GLOBUS_XIO_HTTP_IDENTITY_BODY)
+    {
+        http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
+    }
+
 error_exit:
     return result;
 }

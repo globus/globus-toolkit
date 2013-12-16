@@ -335,7 +335,7 @@ globus_i_xio_http_client_write_request(
                     GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(
                         &http_handle->request_info.headers)))
         {
-            if (http_handle->request_info.http_version !=
+            if (0 && http_handle->request_info.http_version !=
                     GLOBUS_XIO_HTTP_VERSION_1_0)
             {
                 GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
@@ -698,7 +698,7 @@ globus_l_xio_http_client_read_response_callback(
     globus_mutex_lock(&http_handle->mutex);
     if (result != GLOBUS_SUCCESS)
     {
-        if (globus_xio_error_is_eof(result))
+        if (!http_handle->reopen_in_progress && globus_xio_error_is_eof(result))
         {
             eof = GLOBUS_TRUE;
             result = GLOBUS_SUCCESS;
@@ -725,6 +725,9 @@ globus_l_xio_http_client_read_response_callback(
             {
                 response_error = GlobusXIOHTTPErrorObjPersistentConnectionDropped(response_error);
             }
+            http_handle->pending_error = response_error;
+            http_handle->parse_state = GLOBUS_XIO_HTTP_EOF;
+            http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
             /* don't go to error exit yet because we may need to clean up
              * the cancel info
              */
@@ -742,8 +745,12 @@ globus_l_xio_http_client_read_response_callback(
     {
         result = globus_l_xio_http_client_parse_response(http_handle, &done);
     }
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
 
-    if (result == GLOBUS_SUCCESS && !done)
+    if (!done)
     {
         goto reregister_read;
     }
@@ -795,6 +802,7 @@ globus_l_xio_http_client_read_response_callback(
                     http_handle->response_info.headers.content_length == 0)
             {
                 /* Synthesize EOF if we've read all of the entity content */
+                http_handle->parse_state = GLOBUS_XIO_HTTP_EOF;
                 result = GlobusXIOErrorEOF();
             }
 

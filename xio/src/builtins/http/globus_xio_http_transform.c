@@ -177,6 +177,12 @@ globus_l_xio_http_reopen(
 
     globus_mutex_lock(&http_handle->mutex);
 
+    if (http_handle->pending_error)
+    {
+        result = globus_error_put(http_handle->pending_error);
+        goto error_exit;
+    }
+
     globus_assert(http_handle->target_info.is_client == http_target->is_client);
     globus_assert(http_handle->request_info.http_version
             == GLOBUS_XIO_HTTP_VERSION_1_1);
@@ -411,6 +417,12 @@ globus_i_xio_http_read(
 
     globus_mutex_lock(&http_handle->mutex);
 
+    if (http_handle->pending_error)
+    {
+        result = globus_error_put(http_handle->pending_error);
+        goto error_exit;
+    }
+    
     if (http_handle->read_operation.operation != NULL)
     {
         /* Only one read in progress per handle, sorry */
@@ -558,6 +570,7 @@ globus_i_xio_http_read(
             header_info->content_length == 0)
         {
             /* Synthesize EOF if we've read all of the entity content */
+            http_handle->parse_state = GLOBUS_XIO_HTTP_EOF;
             result = GlobusXIOErrorEOF();
         }
         /*
@@ -656,7 +669,8 @@ globus_i_xio_http_parse_residue(
         headers = &http_handle->request_info.headers;
     }
 
-    if (http_handle->read_operation.iovcnt == 0)
+    if (http_handle->read_operation.iovcnt == 0 || 
+        http_handle->parse_state == GLOBUS_XIO_HTTP_EOF)
     {
         http_handle->read_operation.wait_for = 0; 
         goto finish;
@@ -749,19 +763,32 @@ globus_i_xio_http_parse_residue(
                             {
                                 http_handle->read_operation.iov[i].iov_len =
                                     max_content - nbytes;
-                                nbytes +=
-                                    http_handle->read_operation.iov[i].iov_len;
                             }
+                            nbytes +=
+                                http_handle->read_operation.iov[i].iov_len;
+                        }
+                        if (nbytes > http_handle->read_operation.wait_for)
+                        {
+                            nbytes = http_handle->read_operation.wait_for;
                         }
                     }
-
+                    else
+                    {
+                        nbytes = http_handle->read_operation.wait_for;
+                    }
+                    
                     result = globus_xio_driver_pass_read(
                             http_handle->read_operation.operation,
                             http_handle->read_operation.iov,
                             http_handle->read_operation.iovcnt,
-                            http_handle->read_operation.wait_for,
+                            nbytes,
                             globus_l_xio_http_read_callback,
                             http_handle);
+                    if (result == GLOBUS_SUCCESS)
+                    {
+                        *registered_again = GLOBUS_TRUE;
+                    }  
+                          
                 }
                 break;
             case GLOBUS_XIO_HTTP_PRE_REQUEST_LINE:
@@ -958,6 +985,7 @@ globus_l_xio_http_read_callback(
 
         if (headers->content_length == 0 && result == GLOBUS_SUCCESS)
         {
+            http_handle->parse_state = GLOBUS_XIO_HTTP_EOF;
             if (http_handle->target_info.is_client)
             {
                 result = GlobusXIOErrorEOF();
@@ -1040,6 +1068,7 @@ globus_l_xio_http_read_chunk_header_callback(
             GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(headers) &&
             headers->content_length == 0)
         {
+            http_handle->parse_state = GLOBUS_XIO_HTTP_EOF;
             /* Synthesize EOF if we've read all of the entity content */
             if (http_handle->target_info.is_client)
             {
@@ -1347,78 +1376,87 @@ globus_i_xio_http_write(
     }
 
     globus_mutex_lock(&http_handle->mutex);
-    switch (http_handle->send_state)
-    {
-        case GLOBUS_XIO_HTTP_STATUS_LINE:
-            result = globus_i_xio_http_server_write_response(
-                http_handle,
-                iovec,
-                iovec_count,
-                op);
-            break;
-        case GLOBUS_XIO_HTTP_EOF:
-        case GLOBUS_XIO_HTTP_CLOSE:
-            result = GlobusXIOHttpErrorNoEntity();
-            break;
 
-        case GLOBUS_XIO_HTTP_CHUNK_BODY:
-            if (http_handle->write_operation.operation != NULL)
-            {
-                result = GlobusXIOErrorAlreadyRegistered();
-                break;
-            }
-            result = globus_i_xio_http_write_chunk(
-                    handle,
+    if (http_handle->pending_error)
+    {
+        result = globus_error_put(http_handle->pending_error);
+    }
+    else
+    {
+        
+        switch (http_handle->send_state)
+        {
+            case GLOBUS_XIO_HTTP_STATUS_LINE:
+                result = globus_i_xio_http_server_write_response(
+                    http_handle,
                     iovec,
                     iovec_count,
                     op);
-            break;
-        case GLOBUS_XIO_HTTP_IDENTITY_BODY:
-            if (http_handle->write_operation.operation != NULL)
-            {
-                result = GlobusXIOErrorAlreadyRegistered();
                 break;
-            }
-            result = globus_xio_driver_pass_write(
-                    op,
-                    (globus_xio_iovec_t *) iovec,
-                    iovec_count,
-                    globus_xio_operation_get_wait_for(op),
-                    globus_i_xio_http_write_callback,
-                    http_handle);
-            break;
-
-        case GLOBUS_XIO_HTTP_PRE_REQUEST_LINE:
-            if(http_handle->delay_write_header)
-            {
-                http_handle->first_write_iovec = iovec;
-                http_handle->first_write_iovec_count = iovec_count;
-
-                result = globus_i_xio_http_client_write_request(
-                    op,
-                    http_handle);
+            case GLOBUS_XIO_HTTP_EOF:
+            case GLOBUS_XIO_HTTP_CLOSE:
+                result = GlobusXIOHttpErrorNoEntity();
                 break;
-            }
-            /* FALLSTHROUGH */
-        case GLOBUS_XIO_HTTP_REQUEST_LINE:
-        case GLOBUS_XIO_HTTP_HEADERS:
-        case GLOBUS_XIO_HTTP_CHUNK_CRLF:
-        case GLOBUS_XIO_HTTP_CHUNK_LINE:
-        case GLOBUS_XIO_HTTP_CHUNK_FOOTERS:
-            globus_assert(http_handle->send_state
-                    != GLOBUS_XIO_HTTP_PRE_REQUEST_LINE);
-            globus_assert(http_handle->send_state
-                    != GLOBUS_XIO_HTTP_REQUEST_LINE);
-            globus_assert(http_handle->send_state
-                    != GLOBUS_XIO_HTTP_HEADERS);
-            globus_assert(http_handle->send_state
-                    != GLOBUS_XIO_HTTP_CHUNK_CRLF);
-            globus_assert(http_handle->send_state
-                    != GLOBUS_XIO_HTTP_CHUNK_LINE);
-            globus_assert(http_handle->send_state
-                    != GLOBUS_XIO_HTTP_CHUNK_FOOTERS);
-            result = GlobusXIOErrorParameter(handle);
-            break;
+    
+            case GLOBUS_XIO_HTTP_CHUNK_BODY:
+                if (http_handle->write_operation.operation != NULL)
+                {
+                    result = GlobusXIOErrorAlreadyRegistered();
+                    break;
+                }
+                result = globus_i_xio_http_write_chunk(
+                        handle,
+                        iovec,
+                        iovec_count,
+                        op);
+                break;
+            case GLOBUS_XIO_HTTP_IDENTITY_BODY:
+                if (http_handle->write_operation.operation != NULL)
+                {
+                    result = GlobusXIOErrorAlreadyRegistered();
+                    break;
+                }
+                result = globus_xio_driver_pass_write(
+                        op,
+                        (globus_xio_iovec_t *) iovec,
+                        iovec_count,
+                        globus_xio_operation_get_wait_for(op),
+                        globus_i_xio_http_write_callback,
+                        http_handle);
+                break;
+    
+            case GLOBUS_XIO_HTTP_PRE_REQUEST_LINE:
+                if(http_handle->delay_write_header)
+                {
+                    http_handle->first_write_iovec = iovec;
+                    http_handle->first_write_iovec_count = iovec_count;
+    
+                    result = globus_i_xio_http_client_write_request(
+                        op,
+                        http_handle);
+                    break;
+                }
+                /* FALLSTHROUGH */
+            case GLOBUS_XIO_HTTP_REQUEST_LINE:
+            case GLOBUS_XIO_HTTP_HEADERS:
+            case GLOBUS_XIO_HTTP_CHUNK_CRLF:
+            case GLOBUS_XIO_HTTP_CHUNK_LINE:
+            case GLOBUS_XIO_HTTP_CHUNK_FOOTERS:
+                globus_assert(http_handle->send_state
+                        != GLOBUS_XIO_HTTP_PRE_REQUEST_LINE);
+                globus_assert(http_handle->send_state
+                        != GLOBUS_XIO_HTTP_REQUEST_LINE);
+                globus_assert(http_handle->send_state
+                        != GLOBUS_XIO_HTTP_HEADERS);
+                globus_assert(http_handle->send_state
+                        != GLOBUS_XIO_HTTP_CHUNK_CRLF);
+                globus_assert(http_handle->send_state
+                        != GLOBUS_XIO_HTTP_CHUNK_LINE);
+                globus_assert(http_handle->send_state
+                        != GLOBUS_XIO_HTTP_CHUNK_FOOTERS);
+                result = GlobusXIOErrorParameter(handle);
+                break;
+        }
     }
     globus_mutex_unlock(&http_handle->mutex);
 

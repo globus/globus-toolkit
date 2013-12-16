@@ -186,7 +186,8 @@ globus_i_xio_http_attr_cntl(
             res = globus_i_xio_http_header_info_set_header(
                     &attr->request.headers,
                     in_header_name,
-                    in_header_value);
+                    in_header_value,
+                    GLOBUS_FALSE);
             break;
 
         case GLOBUS_XIO_HTTP_ATTR_DELAY_WRITE_HEADER:
