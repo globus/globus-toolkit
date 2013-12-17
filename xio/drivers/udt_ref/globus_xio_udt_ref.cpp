@@ -15,7 +15,13 @@
 #include "version.h"
 #include <arpa/inet.h>
 
-#include "udt.h"
+#include <udt.h>
+
+#ifdef UDT_HAS_BIND2
+#define G_UDT_BIND UDT::bind2
+#else
+#define G_UDT_BIND UDT::bind
+#endif
 
 extern "C"
 {
@@ -68,6 +74,8 @@ typedef struct xio_l_udt_ref_server_handle_s
     globus_sockaddr_t                   addr;
     int                                 listener;
     int                                 port;
+    globus_bool_t                       cancel_accept;
+    globus_mutex_t                      lock;
 } xio_l_udt_ref_server_handle_t;
 
 typedef struct xio_l_udt_ref_handle_s
@@ -101,6 +109,12 @@ typedef struct xio_l_udt_ref_attr_s
     globus_sockaddr_t                   ice_remote_addr;
     globus_socklen_t                    ice_remote_addr_len;
 } xio_l_udt_ref_attr_t;
+
+typedef struct globus_l_xio_udt_bounce_s
+{
+    globus_xio_operation_t              op;
+    xio_l_udt_ref_server_handle_t *     server;
+} globus_l_xio_udt_bounce_t;
 
 static
 int
@@ -518,18 +532,19 @@ globus_l_xio_udt_ref_bind(
 
     if(attr->ice)
     {
-        int udp_sock;
+        int                             ice_sock;
+        
         attr->ice = 0;
-        udp_sock = socket(attr->ice_local_addr.ss_family, SOCK_DGRAM, 0);
-        if(udp_sock < 0)
+        rc = ice_get_negotiated_sock(&attr->ice_data, &ice_sock);
+        if(rc < 0)
         {
-           result = GlobusXIOUdtError("udp bind failed");
+            result = GlobusXIOUdtError("Could not get negotiated socket.");
+            goto error_bind;
         }
+        
         ice_destroy(&attr->ice_data);
-        rc = UDT::bind(
-            fd,
-            (struct sockaddr *) &attr->ice_local_addr,
-            (unsigned int)GlobusLibcSockaddrLen(&attr->ice_local_addr));
+
+        rc = G_UDT_BIND(fd, ice_sock);
         if(rc < 0)
         {
             result = GlobusXIOUdtError(
@@ -599,7 +614,7 @@ globus_l_xio_udt_ref_server_init(
 
     server_handle = (xio_l_udt_ref_server_handle_t *)
         globus_calloc(1, sizeof(xio_l_udt_ref_server_handle_t));
-
+    
     server_handle->listener = UDT::socket(AF_INET, SOCK_STREAM, 0);
     if(server_handle->listener < 0)
     {
@@ -646,6 +661,8 @@ globus_l_xio_udt_ref_server_init(
     globus_libc_addr_to_contact_string(&server_handle->addr, 0, &tmp_cs);
     globus_xio_contact_parse(&my_contact_info, tmp_cs);
 
+    globus_mutex_init(&server_handle->lock, GLOBUS_NULL);
+
     globus_xio_driver_pass_server_init(op, &my_contact_info, server_handle);
     globus_xio_contact_destroy(&my_contact_info);
     globus_free(tmp_cs);
@@ -672,7 +689,8 @@ globus_l_xio_udt_ref_server_destroy(
 
     server_handle = (xio_l_udt_ref_server_handle_t *) driver_server;
     UDT::close(server_handle->listener);
-
+    globus_mutex_destroy(&server_handle->lock);
+    globus_free(server_handle);
     GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
 }
@@ -872,23 +890,86 @@ error:
     return;
 }
 
+
 static
-globus_result_t
-globus_l_xio_udt_ref_accept(
-    void *                              driver_server,
-    void **                             out_link)
+void
+globus_l_xio_udt_accept_cancel(
+    globus_xio_operation_t              op,
+    void *                              user_arg,
+    globus_xio_error_type_t             reason)
+{
+    xio_l_udt_ref_server_handle_t *     server;
+    
+    server = (xio_l_udt_ref_server_handle_t *) user_arg;
+    if(server)
+    {
+        globus_mutex_lock(&server->lock);
+        server->cancel_accept = GLOBUS_TRUE;
+        globus_mutex_unlock(&server->lock);
+    }
+}
+  
+
+static
+void
+globus_l_xio_udt_accept_kickout(
+    void *                              user_arg)
 {
     globus_result_t                     result;
     int                                 addr_len = sizeof(struct sockaddr_in);
     xio_l_udt_ref_handle_t *            handle;
     xio_l_udt_ref_server_handle_t *     server;
-    GlobusXIOName(globus_l_xio_udt_ref_accept);
+    UDT::UDSET                          readfds;
+    struct timeval                      tv;
+    int                                 rc;
+    globus_bool_t                       waiting = GLOBUS_TRUE;
+    globus_l_xio_udt_bounce_t *         bounce;
+    globus_bool_t                       cancel;
+    GlobusXIOName(globus_l_xio_udt_accept_kickout);
     GlobusXIOUDTRefDebugEnter();
-
-    server = (xio_l_udt_ref_server_handle_t *) driver_server;
+    
+    bounce = (globus_l_xio_udt_bounce_t *) user_arg;
+    server = bounce->server;
 
     handle = (xio_l_udt_ref_handle_t *)
         globus_calloc(1, sizeof(xio_l_udt_ref_handle_t));
+
+    globus_thread_blocking_will_block();
+
+    if(globus_xio_operation_enable_cancel(bounce->op, 
+        globus_l_xio_udt_accept_cancel, server))
+    {
+        result = GlobusXIOUdtError("UDT::accept canceled");
+        goto error_accept;
+    }
+        
+    UD_ZERO(&readfds);
+    tv.tv_sec = 10;
+    tv.tv_usec = 0;
+    
+    while(waiting)
+    {
+        UD_SET(server->listener, &readfds);
+        rc = UDT::select(1, &readfds, NULL, NULL, &tv);
+        if(rc < 0)
+        {
+            result = GlobusXIOUdtError("UDT::select failed");
+            goto error_accept;
+        }
+        globus_mutex_lock(&server->lock);
+        cancel = server->cancel_accept;
+        globus_mutex_unlock(&server->lock);
+        if(cancel)
+        {
+            result = GlobusXIOUdtError("UDT::accept canceled");
+            goto error_accept;
+        }
+        
+        if(rc > 0)
+        {
+            waiting = GLOBUS_FALSE;
+        }
+    }
 
     handle->sock = UDT::accept(
         server->listener, (sockaddr *)&handle->addr, &addr_len);
@@ -897,14 +978,47 @@ globus_l_xio_udt_ref_accept(
         result = GlobusXIOUdtError("UDT::accept failed");
         goto error_accept;
     }
-    *out_link = handle;
+    
+    globus_xio_driver_finished_accept(bounce->op, handle, GLOBUS_SUCCESS);
+
+    globus_free(bounce);
+    return;
+    
+error_accept:
+    globus_xio_driver_finished_accept(bounce->op, NULL, result);
+    globus_free(handle);
+    globus_free(bounce);
+    GlobusXIOUDTRefDebugExitWithError();
+    return;    
+}
+    
+    
+static
+globus_result_t
+globus_l_xio_udt_ref_accept(
+    void *                              driver_server,
+    globus_xio_operation_t              op)
+{
+    xio_l_udt_ref_server_handle_t *     server;
+    globus_l_xio_udt_bounce_t *         bounce;
+    GlobusXIOName(globus_l_xio_udt_ref_accept);
+    GlobusXIOUDTRefDebugEnter();
+
+    server = (xio_l_udt_ref_server_handle_t *) driver_server;
+
+    bounce = (globus_l_xio_udt_bounce_t *)
+        globus_calloc(1, sizeof(globus_l_xio_udt_bounce_t));
+    bounce->op = op;
+    bounce->server = server;
+
+    globus_callback_register_oneshot(
+        NULL,
+        NULL,
+        globus_l_xio_udt_accept_kickout,
+        bounce);    
 
     GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
-error_accept:
-    globus_free(handle);
-    GlobusXIOUDTRefDebugExitWithError();
-    return result;
 }
 
 
@@ -1152,7 +1266,7 @@ globus_l_xio_udt_ref_init(
     globus_xio_driver_set_server(
         driver,
         globus_l_xio_udt_ref_server_init,
-        NULL,
+        globus_l_xio_udt_ref_accept,
         globus_l_xio_udt_ref_server_destroy,
         globus_l_xio_udt_ref_server_cntl,
         globus_l_xio_udt_ref_link_cntl,
@@ -1170,7 +1284,7 @@ globus_l_xio_udt_ref_init(
         globus_l_xio_udt_ref_close,
         globus_l_xio_udt_ref_read,
         globus_l_xio_udt_ref_write,
-        globus_l_xio_udt_ref_accept);
+        NULL);
     globus_xio_driver_string_cntl_set_table(
         driver,
         udt_ref_l_string_opts_table);

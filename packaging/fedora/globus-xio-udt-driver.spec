@@ -12,14 +12,14 @@
 
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
-Version:	0.6
-Release:	2%{?dist}
+Version:	0.9
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.5/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -123,5 +123,17 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Nov 26 2013 Globus Toolkit <support@globus.org> - 0.9-1
+- Update build to check for bind2 in udt 4.11
+- Handle udt.h in /usr/include or /usr/include/udt
+- Update internal dependency build script to work with the official release
+
+* Mon Nov 25 2013 Globus Toolkit <support@globus.org> - 0.8-1
+- GT-486: Perform udt driver connection using the socket negotiated by ice instead of binding to the negotiated source addr.
+- cleanup
+
+* Wed Nov 06 2013 Globus Toolkit <support@globus.org> - 0.7-1
+- GT-481: avoid UDT driver blocking on accept, resulting in hung process if connection never comes.
+
 * Wed Oct 16 2013 Globus Toolkit <support@globus.org> - 0.6-2
 - New package

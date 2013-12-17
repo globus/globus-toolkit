@@ -24,10 +24,10 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <netinet/in.h>
 #include <string.h>
 #include <unistd.h>
 
+#define GLIB_VERSION_MIN_REQUIRED GLIB_VERSION_2_30
 #include <glib.h>
 
 #include "ice.h"
@@ -39,7 +39,7 @@
 static int lib_initialized;
 
 
-// nice callbacks and event thread
+/* nice callbacks and event thread */
 static void * thread_mainloop(void *data);
 static void cb_candidate_gathering_done(NiceAgent *agent, guint stream_id,
                                         gpointer data);
@@ -52,7 +52,7 @@ static void cb_new_selected_pair(NiceAgent *agent, guint stream_id,
 static void cb_nice_recv(NiceAgent *agent, guint stream_id, guint component_id,
                          guint len, gchar *buf, gpointer data);
 
-// helper functions
+/* helper functions */
 static int snprint_cand(char *out, size_t outlen, const NiceCandidate *cand);
 static NiceCandidate *parse_candidate(char *scand, guint stream_id);
 static int nice_p_address_safe_copy(NiceAddress *naddr, struct sockaddr *saddr,
@@ -62,6 +62,7 @@ static NiceCandidate *find_candidate(GSList *candidates,
 static void free_candidates(GSList *candidates);
 static const char *get_cand_type_name(NiceCandidateType nct);
 static const char *get_state_name(guint state);
+static int dup_socket(int sock);
 
 
 /**
@@ -95,6 +96,7 @@ int ice_init(struct icedata *ice_data,
              const char *stun_host, unsigned int stun_port,
              int controlling) {
     gboolean ok;
+    NiceAddress localaddr;
 
     if (!lib_initialized)
         return ICE_FAILURE;
@@ -178,8 +180,8 @@ int ice_init(struct icedata *ice_data,
     g_mutex_unlock(ice_data->state_mutex);
     g_debug("gathering done");
 
-    // TODO: make sure we found at least one candidate
-
+    /* TODO: make sure we found at least one candidate
+    */
     return ICE_SUCCESS;
 
 error:
@@ -199,12 +201,13 @@ error:
 int ice_get_local_data(struct icedata *ice_data, char *out, size_t outsize) {
     gboolean ok;
     int result = ICE_FAILURE;
-    int ufraglen, passwordlen;
+    size_t ufraglen, passwordlen;
     gchar *local_ufrag = NULL;
     gchar *local_password = NULL;
     char *p = out;
     int written;
-    GSList *cand = NULL, *item;
+    unsigned int j;
+    GSList *cand=NULL, *item=NULL;
     NiceCandidate *c;
 
     ok = nice_agent_get_local_credentials(ice_data->agent, 1,
@@ -218,12 +221,11 @@ int ice_get_local_data(struct icedata *ice_data, char *out, size_t outsize) {
         return ICE_FAILURE;
     }
 
-    // Note: snprintf return value does not include null byte
-    written = snprintf(out, outsize, "%.*s %.*s",
-                       ufraglen, local_ufrag,
-                       passwordlen, local_password);
-    if (written == -1 || written >= outsize) {
-        // buffer too small
+    /* Note: snprintf return value does not include null byte */
+    written = snprintf(out, outsize, "%s %s",
+                       local_ufrag, local_password);
+    if (written < 0 || (size_t)written >= outsize) {
+        /* buffer too small */
         return ICE_FAILURE;
     }
     outsize -= written;
@@ -243,8 +245,8 @@ int ice_get_local_data(struct icedata *ice_data, char *out, size_t outsize) {
         outsize--;
         p++;
         written = snprint_cand(p, outsize, c);
-        if (written == -1 || written >= outsize) {
-            // buffer too small
+        if (written < 0 || (size_t)written >= outsize) {
+            /* buffer too small */
             return ICE_FAILURE;
         }
         outsize -= written;
@@ -268,7 +270,8 @@ end:
  * Start ICE negotiation and block until it's complete, using remote
  * data parsed into args - rdata array with argc strings.
  *
- * After negotiation is successful, use ice_get_negotiated_addrs.
+ * After negotiation is successful, use ice_get_negotiated_addrs or
+ * ice_get_negotiated_sock.
  */
 int ice_negotiate(struct icedata *ice_data, int argc, char *rdata[]) {
     int i, status;
@@ -282,13 +285,13 @@ int ice_negotiate(struct icedata *ice_data, int argc, char *rdata[]) {
         return ICE_FAILURE;
     }
 
-    // First args are ufrag and password.
+    /* First args are ufrag and password. */
     strncpy(ufrag, rdata[0], sizeof(ufrag));
     strncpy(password, rdata[1], sizeof(password));
 
     g_debug("remote: ufrag='%s' password='%s'", ufrag, password);
 
-    // Remaining args are serialized canidates (at least one is required)
+    /* Remaining args are serialized canidates (at least one is required) */
     for (i=2; i < argc; i++) {
         c = parse_candidate(rdata[i], ice_data->stream_id);
         if (c == NULL) {
@@ -357,6 +360,46 @@ int ice_get_negotiated_addrs(struct icedata *ice_data,
 }
 
 
+/* hack to get access to private ICE socket */
+typedef struct _NiceSocket NiceSocket;
+
+struct _NiceSocket
+{
+  NiceAddress addr;
+  GSocket *fileno;
+  gint (*recv) (NiceSocket *sock, NiceAddress *from, guint len,
+      gchar *buf);
+  gboolean (*send) (NiceSocket *sock, const NiceAddress *to, guint len,
+      const gchar *buf);
+  gboolean (*is_reliable) (NiceSocket *sock);
+  void (*close) (NiceSocket *sock);
+  void *priv;
+};
+
+/*
+ * Duplicate the internal socket associated with the selected pair,
+ * and set in the @sock_dup out parameter.
+ */
+int ice_get_negotiated_sock(struct icedata *ice_data, int *sock_dup) {
+    NiceSocket *nice_socket;
+    int fd;
+
+    if (!ice_data->selected_pair_done)
+        return ICE_FAILURE;
+
+    nice_socket = (NiceSocket *)ice_data->sockptr;
+    GSocket *gsock = nice_socket->fileno;
+
+    g_object_get(G_OBJECT(gsock), "fd", &fd, NULL);
+
+    *sock_dup = dup_socket(fd);
+    if (*sock_dup == -1)
+        return ICE_FAILURE;
+
+    return ICE_SUCCESS;
+}
+
+
 /*
  * Destroy the ice session - closes the socket, stops event thread, and frees
  * resources.
@@ -387,7 +430,6 @@ void ice_destroy(struct icedata *ice_data) {
     }
     if (ice_data->gloopthread) {
         g_thread_join(ice_data->gloopthread);
-        g_thread_unref(ice_data->gloopthread);
         ice_data->gloopthread = NULL;
     }
 
@@ -413,6 +455,7 @@ static void *thread_mainloop(void *data) {
 
 static void cb_candidate_gathering_done(NiceAgent *agent, guint stream_id,
                                         gpointer data) {
+    int rval;
     struct icedata *ice_data = (struct icedata *)data;
 
     g_debug("SIGNAL: candidate gathering done");
@@ -445,7 +488,8 @@ static void cb_component_state_changed(NiceAgent *agent, guint stream_id,
 static void cb_new_selected_pair(NiceAgent *agent, guint stream_id,
                                  guint component_id, gchar *lfoundation,
                                  gchar *rfoundation, gpointer data) {
-    GSList *lcands, *rcands;
+    gboolean ok;
+    GSList *lcands, *rcands, *item;
     NiceCandidate *local, *remote;
     struct icedata *ice_data = (struct icedata *)data;
 
@@ -460,6 +504,7 @@ static void cb_new_selected_pair(NiceAgent *agent, guint stream_id,
     if (local && remote) {
         ice_data->bind_addr = nice_address_dup(&local->base_addr);
         ice_data->remote_addr = nice_address_dup(&remote->addr);
+        ice_data->sockptr = local->sockptr;
 
         ice_data->selected_pair_done = TRUE;
     }
@@ -499,7 +544,7 @@ static int snprint_cand(char *out, size_t outlen,
 
     nice_address_to_string(&cand->addr, ipaddr);
 
-    // (foundation),(prio),(addr),(port),(type)
+    /* (foundation),(prio),(addr),(port),(type) */
     written = snprintf(out, outlen, "%s,%u,%s,%u,%s",
                        cand->foundation,
                        cand->priority,
@@ -513,13 +558,13 @@ static int snprint_cand(char *out, size_t outlen,
 
 static NiceCandidate *parse_candidate(char *scand, guint stream_id) {
     char foundation[33], ipaddr[46], type[7];
-    int cnt, port;
+    int cnt, port, result = ICE_FAILURE;
     unsigned int prio;
     gboolean ok;
     NiceCandidate *rval = NULL, *out = NULL;
     NiceCandidateType ntype;
 
-    // (foundation),(prio),(addr),(port),(type)
+    /* (foundation),(prio),(addr),(port),(type) */
     cnt = sscanf(scand, "%32[^,],%u,%45[^,],%d,%6s", foundation, &prio, ipaddr,
                  &port, type);
     if (cnt != 5) {
@@ -576,8 +621,8 @@ static int nice_p_address_safe_copy(NiceAddress *naddr, struct sockaddr *saddr,
     }
 
     if (*addrlen < requiredlen) {
-        g_message("sockaddr is too small to fit address: %lu < %lu",
-                  (unsigned long) *addrlen, (unsigned long) requiredlen);
+        g_message("sockaddr is too small to fit address: %u < %u",
+                  *addrlen, requiredlen);
         return ICE_FAILURE;
     }
 
@@ -654,7 +699,6 @@ char **ice_parse_args(char *line, int *argc) {
     parse_argv = calloc(ICE_MAX_ARGS, sizeof(char *));
     *argc = 0;
     while (*p != '\0' && *argc < ICE_MAX_ARGS) {
-        //printf("[%d] p = %s\n", *argc, p);
         parse_argv[*argc] = p;
         (*argc)++;
         p = strchr(p, ' ');
@@ -666,3 +710,26 @@ char **ice_parse_args(char *line, int *argc) {
     return parse_argv;
 }
 
+/*
+ * Duplicate socket on win32 or POSIX. Returns -1 on error.
+ */
+static int dup_socket(int sock) {
+#ifdef _WIN32
+    int rval;
+    WSAPROTOCOL_INFO protInfo;
+    SOCKET new_sock;
+
+    rval = WSADuplicateSocket(sock, GetCurrentProcessId(), &protInfo);
+    if (rval == SOCKET_ERROR)
+        return -1;
+
+    new_sock = WSASocket(
+	FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO,
+        &protInfo, 0, WSA_FLAG_OVERLAPPED);
+    if (new_sock == INVALID_SOCKET)
+        return -1;
+    return new_sock;
+#else
+    return dup(sock);
+#endif
+}

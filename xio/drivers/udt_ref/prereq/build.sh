@@ -9,13 +9,15 @@ mkdir $INST
 cd $INST
 mkdir lib
 ln -s lib lib64
+mkdir include
 cd ..
 
-
+UDTHACK=""
 if [[ "$GLOBUS_FLAVOR" == *32* && "`getconf LONG_BIT`" == "64" ]]; then
     export CFLAGS="$CFLAGS -m32" 
     export LDFLAGS="$LDFLAGS -m32"
     export CXXFLAGS="$CXXFLAGS -m32"
+    UDTHACK=" -m32"
 fi
 
 export CFLAGS="$CFLAGS -fPIC -I$INST/include"
@@ -41,12 +43,20 @@ if [[ "`uname`" == *arwin* ]]; then
     cd ..
 fi
 
-rm -rf udt4/
-tar xfz udt4.tar.gz 
-cd udt4
-./configure --prefix=$INST --disable-shared
-make clean all install
-cd ..
+tar xfz udt.sdk.*.tar.gz 
+cd udt4/src
+UDTARCH=IA32
+UDTOS=LINUX
+if [[ "$GLOBUS_FLAVOR" == *64* ]]; then
+    UDTARCH=AMD64
+fi
+if [[ "`uname`" == *arwin* ]]; then
+    UDTOS=OSX
+fi
+make os="$UDTOS$UDTHACK" arch=$UDTARCH clean libudt.a
+cp libudt.a $INST/lib
+cp udt.h $INST/include
+cd ../..
 
 rm -rf glib-*/
 tar xfz glib-*.tar.gz
@@ -71,4 +81,3 @@ sed -i $_BLANK "/dlname=/ s/'.*'/''/" `find inst/lib -name '*.la'`
 sed -i $_BLANK "/library_names=/ s/'.*'/''/" `find inst/lib -name '*.la'`
 
 touch done
-

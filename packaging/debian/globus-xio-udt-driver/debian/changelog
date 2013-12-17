@@ -1,3 +1,24 @@
+globus-xio-udt-driver (0.9-1) unstable; urgency=low
+
+  * Update build to check for bind2 in udt 4.11
+  * Handle udt.h in /usr/include or /usr/include/udt
+  * Update internal dependency build script to work with the official release
+
+ -- Globus Toolkit <support@globus.org>  Tue, 26 Nov 2013 20:33:28 -0600
+
+globus-xio-udt-driver (0.8-1) unstable; urgency=low
+
+  * GT-486: Perform udt driver connection using the socket negotiated by ice instead of binding to the negotiated source addr.
+  * cleanup
+
+ -- Globus Toolkit <support@globus.org>  Mon, 25 Nov 2013 14:16:07 -0600
+
+globus-xio-udt-driver (0.7-1) unstable; urgency=low
+
+  * GT-481: avoid UDT driver blocking on accept, resulting in hung process if connection never comes.
+
+ -- Globus Toolkit <support@globus.org>  Wed, 06 Nov 2013 16:40:10 -0600
+
 globus-xio-udt-driver (0.6-3) unstable; urgency=low
 
   * attempt to fix libglib2.0-0 dependency

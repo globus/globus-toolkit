@@ -1,7 +1,9 @@
 dnl
 
-AC_REVISION($Revision$)
+AC_REVISION($Revision: 1.4.26.8 $)
 AC_INIT(Makefile.am)
+
+AC_PROG_CXX
 
 GLOBUS_INIT
 
@@ -40,13 +42,36 @@ if test -z "$GPT_IGNORE_DEPS"; then
         UDT_CFLAGS="-I$PWD/prereq/inst/include"
     else
         PKG_PROG_PKG_CONFIG
-        UDT_LIBS="-ludt"
-        UDT_CFLAGS=""
+        UDT_LIBS="-ludt $UDT_LIBS"
+        UDT_CFLAGS="-I/usr/include/udt $UDT_CFLAGS"
     fi
    
     PKG_CHECK_MODULES([NICE], [nice >= 0.0.12])
     PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.32 gthread-2.0 gio-2.0 gobject-2.0])
 fi
+
+save_CXXFLAGS="$CXXFLAGS"
+save_LIBS="$LIBS"
+CXXFLAGS="$CXXFLAGS $UDT_CFLAGS"
+LIBS="$UDT_LIBS $LIBS"
+
+# udt 4.11 renamed the 2 parameter bind() function to bind2().
+AC_MSG_CHECKING([UDT bind2() function])
+AC_LANG_PUSH([C++])
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([#include <udt.h>],
+    	[UDT::bind2(0, 0);]
+    )],
+    [udt_has_bind2=yes],
+    [udt_has_bind2=no]
+)
+if test "x$udt_has_bind2" = "xyes"; then
+    UDT_CFLAGS="$UDT_CFLAGS -DUDT_HAS_BIND2"
+fi
+AC_LANG_POP([C++])
+AC_MSG_RESULT($udt_has_bind2)
+LIBS="$save_LIBS"
+CXXFLAGS="$save_CXXFLAGS"
 
 AC_SUBST(NICE_LIBS)
 AC_SUBST(NICE_CFLAGS)
