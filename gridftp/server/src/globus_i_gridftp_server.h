@@ -21,6 +21,7 @@
 #include "globus_gridftp_server.h"
 #include "globus_gridftp_server_control.h"
 #include "globus_i_gfs_acl.h"
+#include "globus_i_gfs_http.h"
 #include "globus_xio.h"
 #include "globus_xio_system.h"
 #include "globus_xio_tcp_driver.h"

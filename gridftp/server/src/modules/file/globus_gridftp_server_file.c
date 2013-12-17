@@ -958,6 +958,67 @@ error_stat1:
     GlobusGFSFileDebugExitWithError();
 }
 
+
+static
+globus_result_t
+globus_l_gfs_file_truncate(
+    globus_gfs_operation_t              op,
+    const char *                        pathname,
+    globus_off_t                        offset)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    globus_xio_system_file_t            fd;
+    struct stat                         sbuf;
+    
+    GlobusGFSName(globus_l_gfs_file_truncate);
+    GlobusGFSFileDebugEnter();
+
+    result = globus_xio_system_file_open(
+        &fd, pathname, 
+        GLOBUS_XIO_FILE_RDWR | GLOBUS_XIO_FILE_BINARY, 0);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    if(fstat(fd, &sbuf) != 0)
+    {
+        result = GlobusGFSErrorSystemError("stat", errno);
+        goto error_close;
+    }
+    
+    if(offset > sbuf.st_size)
+    {
+        result = GlobusGFSErrorGeneric(
+            "Current size is smaller than truncate size.");
+        goto error_close;
+    }
+
+    result = globus_xio_system_file_truncate(fd, offset);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_close;
+    }
+    
+    result = globus_xio_system_file_close(fd);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+        
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, NULL);
+        
+    GlobusGFSFileDebugExit();
+    return GLOBUS_SUCCESS;
+
+error_close:
+    globus_xio_system_file_close(fd);
+error:
+    GlobusGFSFileDebugExitWithError();
+    return result;
+}
+
 static
 globus_result_t
 globus_l_gfs_file_mkdir(
@@ -1763,6 +1824,10 @@ globus_l_gfs_file_command(
         result = globus_l_gfs_file_delete(
             op, cmd_info->pathname, GLOBUS_FALSE);
         break;
+      case GLOBUS_GFS_CMD_TRNC:
+        result = globus_l_gfs_file_truncate(
+            op, cmd_info->pathname, cmd_info->cksm_offset);
+        break;
       case GLOBUS_GFS_CMD_SITE_RDEL:
         result = globus_l_gfs_file_delete(
             op, cmd_info->pathname, GLOBUS_TRUE);
@@ -2124,14 +2189,6 @@ globus_l_gfs_file_server_read_cb(
             globus_l_gfs_file_update_concurrency(monitor);
         }        
         
-        result = globus_l_gfs_file_dispatch_write(monitor);
-        if(result != GLOBUS_SUCCESS)
-        {
-            monitor->error = GlobusGFSErrorObjWrapFailed(
-                "globus_l_gfs_file_dispatch_write", result);
-            goto error_dispatch;
-        }
-
         rc = globus_priority_q_enqueue(
             &monitor->queue, buf_info, buf_info);
         if(rc != GLOBUS_SUCCESS)
@@ -2140,6 +2197,15 @@ globus_l_gfs_file_server_read_cb(
                 "globus_priority_q_enqueue failed");
             goto error_enqueue;
         }
+
+        result = globus_l_gfs_file_dispatch_write(monitor);
+        if(result != GLOBUS_SUCCESS)
+        {
+            monitor->error = GlobusGFSErrorObjWrapFailed(
+                "globus_l_gfs_file_dispatch_write", result);
+            goto error_dispatch;
+        }
+
     }
     globus_mutex_unlock(&monitor->lock);
     

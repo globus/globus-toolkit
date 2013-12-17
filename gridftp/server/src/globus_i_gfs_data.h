@@ -154,6 +154,19 @@ globus_i_gfs_data_virtualize_path(
     char *                              in_string,
     char **                             ret_string);
     
+char *
+globus_i_gfs_kv_getval(
+    char *                              kvstring,
+    char *                              key,
+    globus_bool_t                       urldecode);
+
+char *
+globus_i_gfs_kv_replaceval(
+    char *                              kvstring,
+    char *                              key,
+    char *                              new_val,
+    globus_bool_t                       encode);
+
 #define GFS_L_READ  1<<0
 #define GFS_L_WRITE 1<<1
 #define GFS_L_LIST  1<<2

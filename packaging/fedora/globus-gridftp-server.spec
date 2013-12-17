@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.38
+Version:	6.40
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.5/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -187,6 +187,15 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Thu Dec 12 2013 Globus Toolkit <support@globus.org> - 6.40-1
+- GT-480: Implement GO plan for HTTP protocol support     
+
+* Mon Nov 25 2013 Globus Toolkit <support@globus.org> - 6.39-1
+- GT-485: ~ defaults to / if the home dir path contains a symlink that leads outside of rp list
+- GT-487: Normalize paths passed via key=value; paramters
+- Fix possible race with command status markers
+- code cleanup
+
 * Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 6.38-1
 - Update dependencies for new credential/assist functions
 

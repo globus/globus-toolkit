@@ -1,3 +1,18 @@
+globus-gridftp-server (6.40-1) unstable; urgency=low
+
+  * GT-480: Implement GO plan for HTTP protocol support
+
+ -- Globus Toolkit <support@globus.org>  Thu, 12 Dec 2013 17:30:14 -0600
+
+globus-gridftp-server (6.39-1) unstable; urgency=low
+
+  * GT-485: ~ defaults to / if the home dir path contains a symlink that leads outside of rp list
+  * GT-487: Normalize paths passed via key=value; paramters
+  * Fix possible race with command status markers
+  * code cleanup
+
+ -- Globus Toolkit <support@globus.org>  Mon, 25 Nov 2013 15:16:41 -0600
+
 globus-gridftp-server (6.38-1) unstable; urgency=low
 
   * Update dependencies for new credential/assist functions

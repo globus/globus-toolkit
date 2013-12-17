@@ -95,6 +95,7 @@ globus_l_gfs_acl_kickout(
             acl_handle->auth_action,
             acl_handle->user_arg,
             acl_handle->cached_res);
+        globus_mutex_unlock(&acl_handle->mutex);
     }
     else
     {
@@ -106,6 +107,7 @@ globus_l_gfs_acl_kickout(
                 acl_handle->auth_action,
                 acl_handle->user_arg,
                 acl_handle->cached_res);
+            globus_mutex_unlock(&acl_handle->mutex);
         }
     }
     
@@ -136,7 +138,7 @@ globus_i_gfs_acl_init(
     acl_handle->user_arg = user_arg;
     acl_handle->context = context;
     acl_handle->hostname = globus_i_gfs_config_string("fqdn");
-
+    globus_mutex_init(&acl_handle->mutex, NULL);
     if(subject)
     {
         acl_handle->subject = globus_libc_strdup(subject);
@@ -220,6 +222,8 @@ globus_i_gfs_acl_destroy(
         acl_request->module->destroy_func(acl_request->user_handle);
         globus_free(acl_request);
     }
+    globus_mutex_destroy(&acl_handle->mutex);
+
     if(acl_handle->auth_object.name != NULL)
     {
         globus_free(acl_handle->auth_object.name);
@@ -257,6 +261,7 @@ globus_gfs_acl_authorize(
     GlobusGFSName(globus_gfs_acl_authorize);
     GlobusGFSDebugEnter();
 
+    globus_mutex_lock(&acl_handle->mutex);
     acl_handle->type = GLOBUS_L_GFS_ACL_TYPE_AUTHORIZE;
     acl_handle->cb = cb;
     acl_handle->user_arg = user_arg;
@@ -275,10 +280,16 @@ globus_gfs_acl_authorize(
     acl_handle->current_list = globus_list_copy(acl_handle->module_list);
     rc = globus_l_gfs_acl_next(acl_handle, out_res);
 
+    if(rc == GLOBUS_GFS_ACL_COMPLETE)
+    {
+        globus_mutex_unlock(&acl_handle->mutex);
+    }
+
     GlobusGFSDebugExit();
     return rc;
 
   err:
+    globus_mutex_unlock(&acl_handle->mutex);
     GlobusGFSDebugExitWithError();
     return -1;
 }

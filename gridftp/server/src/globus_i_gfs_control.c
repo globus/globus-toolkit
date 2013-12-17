@@ -489,6 +489,62 @@ done:
 }
 
 static
+globus_result_t
+globus_l_gfs_kvstr_path(
+    globus_l_gfs_server_instance_t *    instance,
+    int                                 access,
+    char *                              kvstr,
+    char **                             out_kvstr)
+{
+    char *                              chk_path = NULL;
+    char *                              real_path = NULL;
+    char *                              new_kvstr = NULL;
+    globus_result_t                     result = GLOBUS_FAILURE;
+
+    chk_path = globus_i_gfs_kv_getval(kvstr, "PATH", 1);
+    if(!chk_path)
+    {
+        goto err;
+    }
+    result = globus_l_gfs_get_full_path(instance, chk_path, &real_path, access);
+    if(result != GLOBUS_SUCCESS || real_path == NULL)
+    {
+        goto err;
+    }
+    if(strcmp(real_path, chk_path) != 0)
+    {
+        new_kvstr = globus_i_gfs_kv_replaceval(kvstr, "PATH", real_path, 1);
+        if(!new_kvstr)
+        {
+            goto err;
+        }
+    }
+    else
+    {
+        new_kvstr = globus_libc_strdup(kvstr);
+    }
+    
+    globus_free(chk_path);
+    globus_free(real_path);
+    
+    *out_kvstr = new_kvstr;
+    return GLOBUS_SUCCESS;
+    
+err:
+    if(chk_path)
+    {
+        globus_free(chk_path);
+    }
+    if(real_path)
+    {
+        globus_free(real_path);
+    }
+        
+    return result;    
+}
+
+
+static
 void
 globus_l_gfs_channel_close_cb(
     globus_xio_handle_t                 handle,
@@ -1065,6 +1121,52 @@ globus_l_gfs_data_command_cb(
             globus_free(msg);
             break;
 
+          case GLOBUS_GFS_CMD_HTTP_PUT:
+          case GLOBUS_GFS_CMD_HTTP_GET:
+            if(reply->code / 100 == 1)
+            {
+                struct timeval                          now;
+                gettimeofday(&now, NULL);
+                
+                switch(reply->code)
+                {
+                  case 112:
+                    msg = globus_common_create_string(
+                        "112-Perf Marker\r\n"
+                        " Timestamp:  %ld.%01ld\r\n"
+                        " Stripe Index: 0\r\n"
+                        " Stripe Bytes Transferred: %s\r\n"
+                        " Total Stripe Count: 1\r\n"
+                        "112 End.\r\n",
+                        now.tv_sec, now.tv_usec / 100000,
+                        reply->info.command.checksum);
+                        break;
+                  default:
+                    return;
+                }
+                        
+                globus_i_gsc_cmd_intermediate_reply(op, msg);
+                globus_free(msg);
+            }
+            else
+            {
+                if(reply->msg != NULL)
+                {
+                    char *                  _tmp;
+                    _tmp = globus_common_create_string(
+                        "OK.\n%s", reply->msg);
+                    msg = globus_gsc_string_to_959(200, _tmp, NULL);
+                } 
+                else
+                {
+                    msg = strdup("200 OK.\r\n");
+                }
+                globus_gsc_959_finished_command(op, msg);
+                globus_free(msg);
+            }
+
+            break;
+
           default:
             if(reply->info.command.command >= GLOBUS_GFS_MIN_CUSTOM_CMD)
             {
@@ -1358,6 +1460,7 @@ globus_l_gfs_request_command(
     globus_gfs_command_info_t *         command_info;
     globus_l_gfs_request_info_t *       request;
     globus_result_t                     result;
+    int                                 rc;
     globus_bool_t                       done = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_request_command);
     GlobusGFSDebugEnter();
@@ -1471,6 +1574,7 @@ globus_l_gfs_request_command(
     else if(strcmp(cmd_array[0], "CKSM") == 0)
     {
         char *                          freq;
+        int                             consumed;
         
         command_info->command = GLOBUS_GFS_CMD_CKSM;
         result = globus_l_gfs_get_full_path(
@@ -1480,14 +1584,29 @@ globus_l_gfs_request_command(
             goto err;
         }
         command_info->cksm_alg = globus_libc_strdup(cmd_array[1]);
-        globus_libc_scan_off_t(
+
+        rc = globus_libc_scan_off_t(
             cmd_array[2],
             &command_info->cksm_offset,
-            GLOBUS_NULL);
-        globus_libc_scan_off_t(
+            &consumed);
+        if(rc < 1 || *(cmd_array[2] + consumed) != '\0' || 
+            command_info->cksm_offset < 0)
+        {
+            result = GlobusGFSErrorGeneric("Invalid offset.");
+            goto err;
+        }
+
+        rc = globus_libc_scan_off_t(
             cmd_array[3],
             &command_info->cksm_length,
-            GLOBUS_NULL);
+            &consumed);
+        if(rc < 1 || *(cmd_array[3] + consumed) != '\0' || 
+            command_info->cksm_length < -1)
+        {
+            result = GlobusGFSErrorGeneric("Invalid length.");
+            goto err;
+        }
+
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
         
         if((freq = globus_libc_getenv("GFS_CKSM_MARKERS")) != NULL)
@@ -1773,14 +1892,36 @@ globus_l_gfs_request_command(
         else if(strcmp(cmd_array[1], "SHARING") == 0)
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_SHARING;
-            if(argc == 4 && cmd_array[3])
+            if(strcasecmp(cmd_array[2], "TESTPATH") == 0)
+            {
+                char *                  tmp_path;
+                result = globus_l_gfs_get_full_path(
+                    instance, cmd_array[3], &tmp_path, GFS_L_LIST);
+                if(result != GLOBUS_SUCCESS || !tmp_path)
+            {
+                    goto err;
+                }
+                command_info->pathname = globus_common_create_string(
+                    "%s %s", cmd_array[2], tmp_path);
+                globus_free(tmp_path);
+            }
+            else if(strcasecmp(cmd_array[2], "CREATE") == 0) 
+            {
+                char *                  tmp_argstr;
+                result = globus_l_gfs_kvstr_path(
+                    instance, GFS_L_LIST, cmd_array[3], &tmp_argstr);
+                if(result != GLOBUS_SUCCESS || !tmp_argstr)
+                {
+                    goto err;
+                }
+                command_info->pathname = globus_common_create_string(
+                    "%s %s", cmd_array[2], tmp_argstr);
+                globus_free(tmp_argstr);
+            }
+            else if(strcasecmp(cmd_array[2], "DELETE") == 0) 
             {
                 command_info->pathname = globus_common_create_string(
                     "%s %s", cmd_array[2], cmd_array[3]);
-            }
-            else
-            {
-                command_info->pathname = globus_libc_strdup(cmd_array[2]);
             }
                 
             if(command_info->pathname == NULL)
@@ -1802,6 +1943,63 @@ globus_l_gfs_request_command(
             command_info->pathname = globus_libc_strdup(cmd_array[2]);
     
             type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER_STATE;
+        }
+        else if(strcmp(cmd_array[1], "HTTP") == 0)
+        {
+            if(strcasecmp(cmd_array[2], "UPLOAD") == 0)
+            {
+                command_info->command = GLOBUS_GFS_CMD_HTTP_PUT;
+                result = globus_l_gfs_kvstr_path(
+                    instance, GFS_L_READ, cmd_array[3], &command_info->pathname);
+                if(result != GLOBUS_SUCCESS || !command_info->pathname)
+                {
+                    goto err;
+                }
+            } 
+            else if(strcasecmp(cmd_array[2], "DOWNLOAD") == 0)   
+            {
+                command_info->command = GLOBUS_GFS_CMD_HTTP_GET;
+                result = globus_l_gfs_kvstr_path(
+                    instance, GFS_L_WRITE, cmd_array[3], &command_info->pathname);
+                if(result != GLOBUS_SUCCESS || !command_info->pathname)
+                {
+                    goto err;
+                }
+            }
+            else if(strcasecmp(cmd_array[2], "CONFIG") == 0)   
+            {
+                command_info->command = GLOBUS_GFS_CMD_HTTP_CONFIG;
+                command_info->pathname = globus_libc_strdup(cmd_array[3]);
+            }
+            else
+            {
+                goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
+        }
+        else if(strcmp(cmd_array[1], "TRNC") == 0)
+        {
+            int                         consumed;
+            command_info->command = GLOBUS_GFS_CMD_TRNC;
+            result = globus_l_gfs_get_full_path(
+                instance, cmd_array[3], &command_info->pathname, GFS_L_WRITE);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            
+            rc = globus_libc_scan_off_t(
+                cmd_array[2],
+                &command_info->cksm_offset,
+                &consumed);
+            if(rc < 1 || *(cmd_array[2] + consumed) != '\0' || 
+                command_info->cksm_offset < 0)
+            {
+                result = GlobusGFSErrorGeneric("Invalid length.");
+                goto err;
+            }
+
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
         }
 
         else
@@ -3080,6 +3278,23 @@ globus_l_gfs_add_commands(
     result = globus_gridftp_server_control_add_feature(
         control_handle, "DCSC P,D");
 
+    result = globus_gridftp_server_control_add_feature(
+        control_handle, "HTTP");
+
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE HTTP",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        4,
+        4,
+        "SITE HTTP <sp> operation <sp> operation-parameters",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
     result = globus_gsc_959_command_add(
         control_handle,
         "SITE DSI",
@@ -3176,7 +3391,7 @@ globus_l_gfs_add_commands(
         "SITE SHARING",
         globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
-        3,
+        4,
         4,
         "SITE SHARING <sp> command",
         instance);
@@ -3220,6 +3435,20 @@ globus_l_gfs_add_commands(
         {
             goto error;
         }
+    }
+
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE TRNC",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        4,
+        4,
+        "SITE TRNC <sp> length <sp> path",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
     }
 
     GlobusGFSDebugExit();
