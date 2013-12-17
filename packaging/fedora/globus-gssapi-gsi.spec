@@ -12,14 +12,14 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	10.10
+Version:	10.12
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.5/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -204,6 +204,12 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Dec 12 2013 Globus Toolkit <support@globus.org> - 10.12-1
+- Enable adding in memory CA cert to cert store
+
+* Fri Dec 06 2013 Globus Toolkit <support@globus.org> - 10.11-1
+- GT-489: xio_gsi errors with OpenSSL 1.0.1e
+
 * Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 10.10-1
 - GT-445: Doxygen fixes
 
