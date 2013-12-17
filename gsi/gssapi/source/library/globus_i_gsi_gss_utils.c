@@ -1838,24 +1838,30 @@ globus_i_gsi_gss_SSL_read_bio(
     BIO_read(bp, (char *) int_buffer, 4); 
     N2L(int_buffer, length);
 
-    if (BIO_pending(bp) < length)
+    if (length > 0)
     {
-        major_status = GSS_S_NO_CONTEXT;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BAD_LEN,
-            (_GGSL("Invalid BIO - not enough data to read an int")));
-        goto exit;
-    }
+        if (BIO_pending(bp) < length)
+        {
+            major_status = GSS_S_NO_CONTEXT;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BAD_LEN,
+                (_GGSL("Invalid BIO - not enough data to read an int")));
+            goto exit;
+        }
 
-    ssl_handle->s3->tmp.key_block = (unsigned char *) OPENSSL_malloc(length);
-    if (ssl_handle->s3->tmp.key_block == NULL)
-    {
-        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
-        major_status = GSS_S_FAILURE;
-        goto exit;
+        ssl_handle->s3->tmp.key_block = (unsigned char *) OPENSSL_malloc(length);
+        if (ssl_handle->s3->tmp.key_block == NULL)
+        {
+            GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
     }
-                
+    else
+    {
+        ssl_handle->s3->tmp.key_block = NULL;
+    }
     ssl_handle->s3->tmp.key_block_length = length;
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
@@ -2304,6 +2310,51 @@ globus_i_gsi_gssapi_init_ssl_context(
             }
         }
     }
+    else
+    {
+        char *                          extra_pem;
+
+        extra_pem = getenv("GLOBUS_GFS_EXTRA_CA_CERTS");
+        if(extra_pem)
+        {
+            X509 *                      extra_x509 = NULL;
+            BIO *                       B_mem;
+
+            B_mem = BIO_new(BIO_s_mem());
+            BIO_puts(B_mem, extra_pem);
+            extra_x509 = PEM_read_bio_X509(B_mem, NULL, 0, NULL);
+            BIO_free(B_mem);
+
+            if(extra_x509)
+            {
+                if(!X509_STORE_add_cert(
+                    SSL_CTX_get_cert_store(cred_handle->ssl_context),
+                    extra_x509))
+                {
+                    /* need to free to reduce ref count */
+                    X509_free(extra_x509);
+                    if ((ERR_GET_REASON(ERR_peek_error()) ==
+                         X509_R_CERT_ALREADY_IN_HASH_TABLE))
+                    {
+                        ERR_clear_error();
+                    }
+                    else
+                    {
+                        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                            minor_status,
+                            GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
+                            (_GGSL("Couldn't add certificate to the SSL context's "
+                             "certificate store.")));
+                        major_status = GSS_S_FAILURE;
+                        goto exit;
+                    }
+                }
+            }
+            /* need to free to reduce ref count */
+            X509_free(extra_x509);
+        }
+    }
+
 
  exit:
 
