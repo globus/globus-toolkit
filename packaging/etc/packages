@@ -31,6 +31,7 @@ globus_gram_protocol	gram/protocol/source
 globus_scheduler_event_generator            ws-gram/job_monitoring/common/c/source
 globus_gram_job_manager_lsf	gram/jobmanager/lrms/lsf/source
 globus_xio_rate_driver	xio/drivers/rate/source
+globus_xio_blockz_driver	xio/drivers/blockz
 globus_gass_transfer	gass/transfer/source
 globus_xio_popen_driver	xio/drivers/popen/source
 globus_ftp_client	gridftp/client/source
@@ -66,6 +67,9 @@ globus_gatekeeper	gatekeeper/source
 globus_gass_cache_program	gass/cache_program/source
 globus_gram_job_manager_pbs	gram/jobmanager/lrms/pbs/source
 globus_gram_client_tools	gram_client_tools/source
+# These examples aren't in any bundle and aren't normally built 
+globus_xio_example	xio/example
+globus_gridftp_server_acl_example	gridftp/server/acl/example
 # Test packages:
 globus_gridftp_server_test	gridftp/server/test
 globus_gss_assist_test	gsi/gss_assist/test

@@ -567,7 +567,13 @@ sub populate_package_list
     while ( <$pkg_external_fh> )
     {
         s/#.*//;
-        s/\s*$//;
+        while (/\\$/) {
+            chop;
+            my $continuation = <$pkg_external_fh>;
+            $continuation =~ s/#.*//;
+            $_ .= " $continuation";
+        }
+        chomp;
         next if $_ eq '';
 
         my ($pkg, $subdir, $tarball, $commands) = split(' ', $_, 4);

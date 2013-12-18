@@ -17,6 +17,7 @@ my $gpt_ver;
 my $target;
 my $avoid_bootstrap=0;
 my @packagelist;
+my @nongpt_packagelist;
 
 GetOptions(
     "flavor|f=s" => \$flavor,
@@ -72,8 +73,8 @@ for my $p (@nocorepkgs) {
 }
 
 bootstrap(@sorted_package_names) if (!$avoid_bootstrap);
-copy_source_trees(@sorted_package_names);
-create_makefile_installer(@sorted_package_names);
+copy_source_trees(@sorted_package_names, @nongpt_packagelist);
+create_makefile_installer(\@sorted_package_names, \@nongpt_packagelist);
 
 sub read_package_list {
     my ($plist, $xplist) = @_;
@@ -85,7 +86,6 @@ sub read_package_list {
         s/#.*//;
         next if $_ eq '';
 
-        my $log;
         my ($pkg, $subdir) = split(/\s+/, $_);
 	print "package is ".$pkg." in ".$subdir."\n";
 	$packagemap{$pkg}=$subdir;
@@ -96,7 +96,7 @@ sub read_package_list {
             # gsi-openssh is a non-standard package
             if (-e "$checkout_top_dir/$subdir/pkg_data_src.gpt") {
                 push(@packagelist, "$checkout_top_dir/".$subdir."\/pkg_data_src.gpt");
-	    }
+            }
 	}
     }
 
@@ -105,13 +105,20 @@ sub read_package_list {
     while ( <PKG> ) {
         chomp;
         s/#.*//;
+        while (/\\$/) {
+            chop;
+            chomp(my $continuation = <PKG>);
+            $continuation =~ s/#.*//;
+            $_ .= " $continuation";
+        }
         next if $_ eq '';
-        my $log;
+
         # Column 1 is the package name
         # Column 2 is the path where the source of the package is unpacked
         # Column 3 is the package tarball name
         # Column 4 is the command to fetch the external package and untar it
         # into column 2
+
         
         my ($pkg, $subdir, $tarball, $fetch) = split(/\s+/, $_, 4);
 	print "package is $pkg in $subdir\n";
@@ -125,6 +132,8 @@ sub read_package_list {
             # gsi-openssh is a non-standard package
             if (-e "$checkout_top_dir/$subdir/pkg_data_src.gpt") {
                 push(@packagelist, "$checkout_top_dir/$subdir/pkg_data_src.gpt");
+	    } else {
+                push(@nongpt_packagelist, $pkg);
 	    }
 	}
     }
@@ -143,7 +152,7 @@ sub bootstrap {
     chdir($topsrcdir);
     for my $pkg (@sorted_package_names) {
         chdir("$checkout_top_dir/$packagemap{$pkg}");
-	print "[$pkg] cwd is ". cwd()."\n";
+	print "[$pkg] " .cwd()."\n";
 	if (-e "./make_gpt_dist") {
 	    # This is currently only for gsi_openssh
             system("autoconf");
@@ -174,6 +183,8 @@ sub copy_source_trees {
 
 sub create_makefile_installer {
     my ($file) = $@;
+    my @package_names = @{$_[0]};
+    my @nongpt_packages = @{$_[1]};
     my $installer="installer_makefile.frag";
     open(INS, ">$top_dir/$installer") or die "Can't open $installer: $!\n";
 
@@ -184,7 +195,7 @@ sub create_makefile_installer {
          
     my @subdirs="";
     my @dist_rules;
-    foreach my $pack ( @sorted_package_names ) {
+    foreach my $pack ( @package_names ) {
         my $packname = $pack;
         my $extras="";
         # Extract the list of dependent packages so we
@@ -250,6 +261,22 @@ EOF
         print INS "\t$packname"."-only\n";
 
 	push(@subdirs,"source-trees/$packagemap{$pack}");
+    }
+    foreach my $pack ( @nongpt_packages ) {
+        if ($pack eq 'udt') {
+            print INS <<EOF;
+${pack}-only: gpt
+	case "\$(host_os)" in linux*) export os=LINUX;; *) export os=\`echo \$(host_os) | tr -d .[0-9]\` ;; esac; \\
+	case "\$(host_cpu)" in x86_64*) export arch=AMD64;; *) export C++="g++ -m32";; esac; \\
+	make -C ./source-trees/$packagemap{$pack}; \\
+	mkdir -p \${libdir} \${includedir}; \\
+        cp ./source-trees/$packagemap{$pack}/src/libudt.so* \${libdir}; \\
+        cp ./source-trees/$packagemap{$pack}/src/udt.h \${includedir};
+EOF
+            push(@subdirs, "source-trees/$packagemap{$pack}");
+        } else {
+            die "Unhandled package $pack\n";
+        }
     }
     print INS "SUBDIRS=", join(" \\\n\t\t./", @subdirs), "\n";
     print INS "dist: ", join(" \\\n\t\t", @dist_rules), "\n";

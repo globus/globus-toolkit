@@ -3,6 +3,10 @@ srcdir=@srcdir@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
+includedir=@includedir@
+host_cpu=@host_cpu@
+host_os=@host_os@
+
 LIBPATH_VARIABLE=@LIBPATH_VARIABLE@
 
 CONFIG_SITE=@INSTALLER_ROOT@/config.site
@@ -44,7 +48,7 @@ distclean:
 # Functional group dependencies, expressed in bundles.
 common: gpt globus_core globus_common
 prews: gridftp gram
-gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@ varlockandrundirs
+gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk varlockandrundirs
 gram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus_user_env varlockandrundirs
 
 varlockandrundirs:
@@ -72,10 +76,6 @@ globus_openssl-compile: globus_system_openssl-compile
 globus_openssl-only: globus_system_openssl-only
 globus_binary_openssl:
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_openssl-*/*.tar.gz
-
-# Netlogger incubator
-netlogger_c: gpt globus_core globus_common
-	${GPT_LOCATION}/sbin/gpt-build  $(CONFIGOPTS_GPTMACRO) -srcdir=source-trees/netlogger-c-4.0.2 ${FLAVOR}
 
 # UDT
 udt: gpt globus_xio_udt_ref_driver

@@ -5,6 +5,72 @@
 # Column 3 is the package tarball name
 # Column 4 is the command to fetch the external package, copy its tarball into
 #        package-output/${column3} and unpack it into ${column2}
-gsi_openssh_setup	gssapi-openssh/setup	gsi_openssh_setup-5.6-src.tar.gz    mkdir -p gssapi-openssh/setup gssapi-openssh/tmp; curl -Ls http://sourceforge.net/projects/cilogon/files/gsissh/gsi_openssh_bundle-5.6-src.tar.gz/download | tar -C gssapi-openssh/tmp -xf -; cp gssapi-openssh/tmp/gsi_openssh_setup-5.6-src.tar.gz package-output; tar --strip 2 -C gssapi-openssh/setup -zxf package-output/gsi_openssh_setup-5.6-src.tar.gz; rm -rf gssapi-openssh/tmp
-gsi_openssh	gssapi-openssh/openssh	gsi_openssh-5.6-src.tar.gz    mkdir -p gssapi-openssh/openssh gssapi-openssh/tmp; curl -Ls http://sourceforge.net/projects/cilogon/files/gsissh/gsi_openssh_bundle-5.6-src.tar.gz/download | tar -C gssapi-openssh/tmp -xf -; cp gssapi-openssh/tmp/gsi_openssh-5.6-src.tar.gz package-output; tar --strip 2 -C gssapi-openssh/openssh -zxf package-output/gsi_openssh-5.6-src.tar.gz; rm -rf gssapi-openssh/tmp
-myproxy myproxy myproxy-5.9.tar.gz  mkdir -p myproxy package-output; curl -Ls http://sourceforge.net/projects/cilogon/files/myproxy/myproxy-5.9-gt5.2.tar.gz/download > package-output/myproxy-5.9.tar.gz ; tar -C myproxy --strip 1 -xf package-output/myproxy-5.9.tar.gz
+
+####################
+# GSI-OpenSSH Setup
+####################
+gsi_openssh_setup gssapi-openssh/setup gsi_openssh_setup-5.6-src.tar.gz \
+po="packaging/package-output"; \
+tmpdir=gssapi-openssh/tmp ; \
+bundle=gsi_openssh_bundle-5.6-src.tar.gz ; \
+setup=gsi_openssh_setup-5.6-src.tar.gz ; \
+setupdir=gssapi-openssh/setup; \
+mkdir -p $po $tmpdir $setupdir ; \
+if [ ! -f $po/$bundle ]; then \
+    curl -Ls http://sourceforge.net/projects/cilogon/files/gsissh/$bundle \
+         -o $po/$bundle; \
+fi ; \
+if [ ! -f $po/$setup ]; then \
+    tar -C $tmpdir -xf $po/$bundle; \
+    cp $tmpdir/$setup $po; \
+fi ; \
+tar -x -C $setupdir -z --strip 2 -f $po/$setup; \
+rm -rf $tmpdir 
+####################
+# GSI-OpenSSH Source
+####################
+gsi_openssh	gssapi-openssh/openssh	gsi_openssh-5.6-src.tar.gz \
+po=packaging/package-output ; \
+bundle=gsi_openssh_bundle-5.6-src.tar.gz ; \
+openssh=gsi_openssh-5.6-src.tar.gz; \
+tmpdir=gssapi-openssh/tmp; \
+opensshdir=gssapi-openssh/openssh; \
+mkdir -p $opensshdir $tmpdir; \
+if [ ! -f $po/$bundle ]; then \
+    curl -Ls \
+         http://sourceforge.net/projects/cilogon/files/gsissh/$bundle \
+         -o $po/$bundle; \
+fi; \
+if [ ! -f $po/$openssh ]; then \
+     tar -C $tmpdir -xf $po/$bundle; \
+     cp $tmpdir/$openssh $po; \
+fi ; \
+tar -x --strip 2 -C $opensshdir -zf $po/$openssh; \
+rm -rf gssapi-openssh/tmp ;
+####################
+# MyProxy
+####################
+myproxy	myproxy	myproxy-5.9-gt5.2.tar.gz \
+po=packaging/package-output; \
+myproxy=myproxy-5.9-gt5.2.tar.gz ; \
+myproxydir=myproxy ; \
+mkdir -p $po $myproxydir ; \
+if [ ! -f $po/$myproxy ]; then \
+    curl -Ls \
+        http://sourceforge.net/projects/cilogon/files/myproxy/$myproxy \
+        -o $po/$myproxy ; \
+fi; \
+tar -x --strip 1 -C $myproxydir -zf $po/$myproxy; 
+#####
+# UDT
+#####
+udt	xio/external_libs/udt/udt4	udt.sdk.4.11.tar.gz	\
+udt=udt.sdk.4.11.tar.gz ; \
+po=packaging/package-output; \
+udtdir=xio/external_libs/udt ; \
+mkdir -p $po $udtdir; \
+if [ ! -f $po/$udt ]; then \
+    curl -Ls http://sourceforge.net/projects/udt/files/udt/4.11/$udt \
+        -o $po/$udt; \
+fi; \
+tar -x -C $udtdir -zf $po/$udt
