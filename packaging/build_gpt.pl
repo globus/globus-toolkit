@@ -1,9 +1,12 @@
 #!/usr/bin/perl    
+use File::Basename;
+use File::Spec;
+
 my $gpt_dir;
     my $gpt_ver;
     my $target;
-    my $top_dir = `pwd`;
-    chomp $top_dir;
+    my $top_dir = dirname(File::Spec->rel2abs($0));
+
     my $log_dir = $top_dir."/buildlog";
     mkdir $log_dir;
 

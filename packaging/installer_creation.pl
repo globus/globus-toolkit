@@ -1,20 +1,17 @@
 #! /usr/bin/perl
 
 use File::Find;
+use File::Spec;
+use File::Basename;
 use Data::Dumper;
 use Cwd;
 use Getopt::Long;
 
-my $top_dir = $0;
-print "$top_dir\n";
-if ($top_dir =~ m|^/|) {
-    $top_dir =~ s|/+[^/]*$||;
-} else {
-    $top_dir = cwd() . "/$top_dir";
-    $top_dir =~ s|/+[^/]*$||;
-}
+my $top_dir = dirname(File::Spec->rel2abs($0));
+my $checkout_top_dir = dirname($top_dir);
 my $flavor = "gcc32";
-my $package_list_file = "etc/package-list-5.1.0";
+my $package_list_file = "$top_dir/etc/packages";
+my $external_package_list_file = "$top_dir/etc/packages-external";
 my $gpt_dir;
 my $gpt_ver;
 my $target;
@@ -44,7 +41,7 @@ my %packagemap;
 require Grid::GPT::PkgDist;
 my $dist = new Grid::GPT::PkgDist;
 
-read_package_list();
+read_package_list($package_list_file, $external_package_list_file);
 # to get the PkgDist object to actually read in metadata and sort it, we need
 # to put the packagelist into its structure.  This API sucks, but, well, it's
 # legacy
@@ -75,37 +72,69 @@ for my $p (@nocorepkgs) {
 }
 
 bootstrap(@sorted_package_names) if (!$avoid_bootstrap);
+copy_source_trees(@sorted_package_names);
 create_makefile_installer(@sorted_package_names);
 
 sub read_package_list {
-    print "in read_package_list\n";
-    open(PKG, "<", $package_list_file);
-    my $topsrcdir=cwd();
+    my ($plist, $xplist) = @_;
+    print "in $plist\n";
+    open(PKG, "<", $plist);
 
     while ( <PKG> ) {
+        chomp;
+        s/#.*//;
+        next if $_ eq '';
+
         my $log;
-        my ($pkg, $subdir, $custom, $pnb, $pkgtag) = split(' ', $_);
-        next if ($pkg =~ m/^#/ || $pkg =~ m/^$/);
+        my ($pkg, $subdir) = split(/\s+/, $_);
 	print "package is ".$pkg." in ".$subdir."\n";
-	$packagemap{$pkg}="./source-trees/".$subdir;
-	if (-e "./source-trees/$subdir/pkgdata/pkg_data_src.gpt.in") {
+	$packagemap{$pkg}=$subdir;
+	if (-e "$checkout_top_dir/$subdir/pkgdata/pkg_data_src.gpt.in") {
             push(@packagelist,
-                "./source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt.in");
+                "$checkout_top_dir/$subdir/pkgdata/pkg_data_src.gpt.in");
 	} else {
             # gsi-openssh is a non-standard package
-            if (-e "./source-trees/$subdir/pkg_data_src.gpt") {
-                push(@packagelist, "./source-trees/".$subdir."\/pkg_data_src.gpt");
+            if (-e "$checkout_top_dir/$subdir/pkg_data_src.gpt") {
+                push(@packagelist, "$checkout_top_dir/".$subdir."\/pkg_data_src.gpt");
 	    }
 	}
     }
 
+    open(PKG, "<$xplist");
+
+    while ( <PKG> ) {
+        chomp;
+        s/#.*//;
+        next if $_ eq '';
+        my $log;
+        # Column 1 is the package name
+        # Column 2 is the path where the source of the package is unpacked
+        # Column 3 is the package tarball name
+        # Column 4 is the command to fetch the external package and untar it
+        # into column 2
+        
+        my ($pkg, $subdir, $tarball, $fetch) = split(/\s+/, $_, 4);
+	print "package is $pkg in $subdir\n";
+        print "Fetching with cd $checkout_top_dir; $fetch\n";
+        system("cd $checkout_top_dir; $fetch");
+	$packagemap{$pkg}=$subdir;
+	if (-e "$checkout_top_dir/$subdir/pkgdata/pkg_data_src.gpt.in") {
+            push(@packagelist,
+                "$checkout_top_dir/$subdir/pkgdata/pkg_data_src.gpt.in");
+	} else {
+            # gsi-openssh is a non-standard package
+            if (-e "$checkout_top_dir/$subdir/pkg_data_src.gpt") {
+                push(@packagelist, "$checkout_top_dir/$subdir/pkg_data_src.gpt");
+	    }
+	}
+    }
 }
 
 sub bootstrap {
     my @sorted_package_names = @_;
     my $topsrcdir=cwd();
     chdir($packagemap{'globus_core'});
-    print "cwd is". cwd()."\n";
+    print "cwd is ". cwd()."\n";
     print "pkg is globus_core--- $ENV{'GPT_LOCATION'} is GPT LOCATION\n";
     system("./bootstrap");
     system("./configure --with-flavor=$flavor; make; make install");
@@ -113,8 +142,8 @@ sub bootstrap {
     system("make distclean");
     chdir($topsrcdir);
     for my $pkg (@sorted_package_names) {
-        chdir($packagemap{$pkg});
-	print "cwd is". cwd()."\n";
+        chdir("$checkout_top_dir/$packagemap{$pkg}");
+	print "[$pkg] cwd is ". cwd()."\n";
 	if (-e "./make_gpt_dist") {
 	    # This is currently only for gsi_openssh
             system("autoconf");
@@ -123,8 +152,22 @@ sub bootstrap {
             system("make distclean");
 	} else {
 	    system("./bootstrap");
+	    system("make distclean") if (-f 'config.status');
 	}
 	chdir($topsrcdir);
+   }
+}
+
+sub copy_source_trees {
+    my @sorted_package_names = @_;
+    my $topsrcdir=cwd();
+    chdir($packagemap{'globus_core'});
+    print "cwd is ". cwd()."\n";
+    print "pkg is globus_core--- $ENV{'GPT_LOCATION'} is GPT LOCATION\n";
+    chdir($topsrcdir);
+    for my $pkg (@sorted_package_names) {
+        system("mkdir -p $top_dir/source-trees/$packagemap{$pkg}");
+        system("cp -RpL $checkout_top_dir/$packagemap{$pkg}/. $top_dir/source-trees/$packagemap{$pkg}");
    }
 }
 
@@ -155,11 +198,6 @@ sub create_makefile_installer {
             push @pkgdirs, $e;
         }
 
-        # This package gets run in a sudo environment that doesn't
-        # have LD_LIBRARY_PATH set, so we want it to always be static.
-        if ( $pack=~/globus_gridmap_and_execute/ ) {
-            $extras = "-static ";
-        }
 	if ((!defined $pkg->{'depnode'})||(defined $pkg->{'depnode'}->{'Build_Instructions'})||($pack=~/globus_core/)) {
             # if there are Build_Instructions, it's a patch-n-build, and we're
             # going to punt and use gpt-build
@@ -168,28 +206,28 @@ sub create_makefile_installer {
 	    # by itself (yet)
             print INS <<EOF;
 ${packname}-only: gpt
-	\$(LIBPATH_VARIABLE)=\${libdir}:\${\$(LIBPATH_VARIABLE)} \$\{GPT_LOCATION\}/sbin/gpt-build $extras \$(CONFIGOPTS_GPTMACRO) -srcdir=$packagemap{$pack} \${FLAVOR}
+	\$(LIBPATH_VARIABLE)=\${libdir}:\${\$(LIBPATH_VARIABLE)} \$\{GPT_LOCATION\}/sbin/gpt-build $extras \$(CONFIGOPTS_GPTMACRO) -srcdir=./source-trees/$packagemap{$pack} \${FLAVOR}
 ${packname}-dist: ${packname} source-packages
-	cd $packagemap{$pack}; make dist;
-	. $packagemap{$pack}/gptdata.sh; \\
-        cp $packagemap{$pack}/\$\$GPT_NAME-\$\${GPT_MAJOR_VERSION}.\$\${GPT_MINOR_VERSION}.tar.gz source-packages/
+	cd ./source-trees/$packagemap{$pack}; make dist;
+	. ./source-trees/$packagemap{$pack}/gptdata.sh; \\
+        cp ./source-trees/$packagemap{$pack}/\$\$GPT_NAME-\$\${GPT_MAJOR_VERSION}.\$\${GPT_MINOR_VERSION}.tar.gz source-packages/
 EOF
 	} else {
             # "normal" gpt package
             print INS <<EOF;
 ${packname}-only: gpt ${packname}-configure ${packname}-make ${packname}-makeinstall
-${packname}-configure: $packagemap{$pack}/config.status
-$packagemap{$pack}/config.status:
-	cd $packagemap{$pack}; \\
+${packname}-configure: ./source-trees/$packagemap{$pack}/config.status
+./source-trees/$packagemap{$pack}/config.status:
+	cd ./source-trees/$packagemap{$pack}; \\
 	./configure $extras \$\{BUILD_OPTS\} --with-flavor=\${FLAVOR}
 ${packname}-make:
-	cd $packagemap{$pack} ; make
+	cd ./source-trees/$packagemap{$pack} ; make
 ${packname}-makeinstall:
-	cd $packagemap{$pack} ; make install
+	cd ./source-trees/$packagemap{$pack} ; make install
 ${packname}-dist: ${packname}-configure source-packages
-	cd $packagemap{$pack}; make dist;
-	. $packagemap{$pack}/gptdata.sh; \\
-        cp $packagemap{$pack}/\$\$GPT_NAME-\$\${GPT_MAJOR_VERSION}.\$\${GPT_MINOR_VERSION}.tar.gz source-packages/
+	cd ./source-trees/$packagemap{$pack}; make dist;
+	. ./source-trees/$packagemap{$pack}/gptdata.sh; \\
+        cp ./source-trees/$packagemap{$pack}/\$\$GPT_NAME-\$\${GPT_MAJOR_VERSION}.\$\${GPT_MINOR_VERSION}.tar.gz source-packages/
 EOF
 	}
         push(@dist_rules, "${packname}-dist");
@@ -211,9 +249,9 @@ EOF
 
         print INS "\t$packname"."-only\n";
 
-	push(@subdirs,$packagemap{$pack});
+	push(@subdirs,"source-trees/$packagemap{$pack}");
     }
-    print INS "SUBDIRS=", join(" \\\n\t\t", @subdirs), "\n";
+    print INS "SUBDIRS=", join(" \\\n\t\t./", @subdirs), "\n";
     print INS "dist: ", join(" \\\n\t\t", @dist_rules), "\n";
     close(INS) if $installer;
 }

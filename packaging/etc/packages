@@ -11,6 +11,7 @@ globus_openssl_module	gsi/openssl_module/source
 globus_gsi_cert_utils	gsi/cert_utils/source
 globus_gsi_sysconfig	gsi/sysconfig/source
 globus_callout	callout/source
+globus_gridmap_eppn_callout	gsi/gridmap_eppn_callout
 globus_gsi_callback	gsi/callback/source
 globus_gsi_credential	gsi/credential/source
 globus_gsi_proxy_core	gsi/proxy/proxy_core/source
@@ -39,6 +40,7 @@ globus_gass_cache	gass/cache/source
 globus_rsl	gram/rsl/source
 globus_gram_job_manager_callout_error   gram/jobmanager/callout_error
 globus_gram_job_manager	gram/jobmanager/source
+globus_gram_audit   gram/jobmanager/auditing/source
 globus_xio_gridftp_multicast	gridftp/server/multi/source
 globus_simple_ca	gsi/simple_ca/source
 globus_gram_job_manager_sge	gram/jobmanager/lrms/sge/source
@@ -48,6 +50,7 @@ globus_gram_job_manager_slurm	gram/jobmanager/lrms/slurm/source
 globus_xio_udt_driver	xio/drivers/udt_ref
 globus_user_env	user_env/source
 globus_gridmap_callout_error	gsi/gridmap_callout/error
+globus_gridmap_callout	gsi/gridmap_callout/source
 globus_xio_skeleton_driver      xio/drivers/skeleton/source
 globus_gram_client	gram/client/source
 globus_gass_server_ez	gass/server_ez/source
@@ -80,4 +83,5 @@ globus_ftp_client_test	gridftp/client/test
 globus_gssapi_gsi_test	gsi/gssapi/test
 globus_gass_copy_test	gass/copy/test
 globus_io_test	io/test
-globus_test	test
+globus_test	test/
+globus_scheduler_event_generator_test	ws-gram/job_monitoring/common/c/test

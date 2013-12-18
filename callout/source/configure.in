@@ -1,6 +1,8 @@
 
 AC_REVISION($Revision$)
+
 AC_INIT(Makefile.am)
+AC_CONFIG_AUX_DIR([build-aux])
 
 GLOBUS_INIT
 
