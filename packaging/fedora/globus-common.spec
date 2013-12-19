@@ -1,15 +1,3 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 %if %{?fedora}%{!?fedora:0} <= 16 || %{?rhel}%{!?rhel:0} < 7
 %global backwardcompat "--with-backward-compatibility-hack"
 %endif
@@ -18,17 +6,14 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.10
-Release:	4g%{?dist}
+Version:	15.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
-#		This is a workaround for the broken epstopdf script in RHEL5
-#		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
-Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 #		Obsolete dropped packages from Globus Toolkit 4.2.1
@@ -45,8 +30,6 @@ Provides:       globus-common-setup%{?_isa}
 %endif
 Obsoletes:      globus-libtool%{?_isa} < 2
 Obsoletes:      globus-common-setup%{?_isa} < 3
-BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if 0%{?suse_version} == 0
@@ -56,24 +39,6 @@ BuildRequires:	libtool-ltdl-devel
 %endif
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
-%endif
-BuildRequires:	ghostscript
-%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
-BuildRequires:	tex(latex)
-%else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
-BuildRequires:	tetex-latex
-%endif
-%endif
-
-%if %{?fedora}%{!?fedora:0} == 18
-BuildRequires: tex(sectsty.sty)
-BuildRequires: tex(tocloft.sty)
-BuildRequires: tex(xtab.sty)
-BuildRequires: tex(multirow.sty)
-BuildRequires: tex(fullpage.sty)
 %endif
 
 %package progs
@@ -95,8 +60,8 @@ Summary:	Globus Toolkit - Common Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Obsoletes:	globus-libtool-devel%{?_isa}
-Requires:	globus-core%{?_isa} >= 8
 #		Obsolete dropped packages from Globus Toolkit 4.2.1
+Provides:	globus-core
 Obsoletes:	globus-data-conversion-devel
 Obsoletes:	globus-mp-devel
 Obsoletes:	globus-nexus-devel
@@ -162,84 +127,41 @@ EOF
 %global __perl_requires %{_builddir}/%{_name}-%{version}/%{name}-req
 chmod +x %{__perl_requires}
 
-%if "%{rhel}" == "5"
-mkdir bin
-install %{SOURCE9} bin/epstopdf
-%endif
-
 %build
-%if "%{rhel}" == "5"
-export PATH=$PWD/bin:$PATH
-%endif
-
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
 %if "%{?globus_version}" != ""
 GLOBUS_VERSION=%{globus_version}
 %else
-GLOBUS_VERSION=5.2.5
+GLOBUS_VERSION=5.3.0
 %endif
 export GLOBUS_VERSION
-%configure --with-flavor=%{flavor} --enable-doxygen \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-           --disable-static %{backwardcompat}
+%configure \
+           --disable-static %{backwardcompat} \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --datadir=%{_datadir}/globus \
+           --libexecdir=%{_datadir}/globus \
+           --with-perlmoduledir=%{perl_vendorlib}
 
 make %{?_smp_mflags}
 
 cd -
 
 %install
-%if "%{rhel}" == "5"
-export PATH=$PWD/bin:$PATH
-%endif
-
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
 
-# Move globus-makefile-header to devel package
-grep globus-makefile-header $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-  >> $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
-sed /globus-makefile-header/d \
-  -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist
-
-# Remove unwanted documentation (needed for RHEL4)
-rm -f $RPM_BUILD_ROOT%{_mandir}/man3/*_%{_name}-%{version}_*.3
-sed -e '/_%{_name}-%{version}_.*\.3/d' \
-  -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-  | sed s!^!%{_prefix}! > package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! > package-progs.filelist
-
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | grep libglobus_thread_pthread.so \
-  | sed s!^!%{_prefix}! >> package.filelist
-
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | grep -v libglobus_thread_pthread.so \
-  | sed s!^!%{_prefix}! > package-devel.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | grep -v GLOBUS_LICENSE \
-  | sed -e 's!^!%doc %{_prefix}!' \
-  | sed -e 's!%{_mandir}/man.*!&.gz!' > package-doc.filelist
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -248,29 +170,40 @@ rm -rf $RPM_BUILD_ROOT
 
 %postun -p /sbin/ldconfig
 
-%files -f package.filelist
+%files 
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus
-%dir %{_datadir}/globus/packages
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%dir %{_datadir}/globus
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
-
-%files -f package-progs.filelist progs
-%defattr(-,root,root,-)
 %dir %{perl_vendorlib}/Globus
 %dir %{perl_vendorlib}/Globus/Core
+%{perl_vendorlib}/Globus/Core/*
+%{_libdir}/libglobus_*so.*
 
-%files -f package-devel.filelist devel
+%files progs
+%defattr(-,root,root,-)
+%{_bindir}/*
+%{_sbindir}/*
+%{_datadir}/man/man1/*
+%{_datadir}/globus/*
+
+%files devel
 %defattr(-,root,root,-)
 %dir %{_includedir}/globus
+%{_includedir}/globus/*.h
+%{_libdir}/libglobus_*so
 %{_libdir}/pkgconfig/%{name}.pc
 
-%files -f package-doc.filelist doc
+%files doc
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}/html
+%{_datadir}/man/man3/*
+%{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Thu Dec 19 2013 Globus Toolkit <support@globus.org> - 15.0-1
+- GT 6 branch: GPT-free builds
+
 * Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 14.10-3
 - Incorrect %dir for license file
 
