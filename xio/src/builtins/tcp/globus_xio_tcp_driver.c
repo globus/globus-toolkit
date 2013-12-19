@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "config.h"
 #include "globus_xio_driver.h"
 #include "globus_xio_tcp_driver.h"
 #include "version.h"

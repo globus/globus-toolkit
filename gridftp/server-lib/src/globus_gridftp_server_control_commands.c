@@ -16,12 +16,11 @@
 
 #include "globus_gridftp_server_control.h"
 #include "globus_i_gridftp_server_control.h"
-#include <grp.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <ctype.h>
-#include <sys/utsname.h>
+//#include <sys/utsname.h>
 
 /*
  *  These commands will only come in one at a time

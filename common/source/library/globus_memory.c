@@ -14,21 +14,7 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_memory.c
-
-Description:
-
-  A general polling infrastructure
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
+/** @file globus_memory.c Memory Pool Implementation */
 
 /******************************************************************************
 			     Include header files
@@ -58,7 +44,7 @@ struct globus_memory_s
     int                                         free_ptrs_offset;
 };
 
-#ifndef BUILD_DEBUG
+#ifndef GLOBUS_MEMORY_DEBUG_LEAKS 
 
 typedef struct globus_l_memory_header_s
 {
@@ -84,6 +70,26 @@ globus_bool_t
 globus_l_memory_create_list(
     globus_memory_t *           mem_info);
 
+/**
+ * @brief Initialize memory pool
+ * @ingroup globus_memory
+ * @details
+ * Initialize the globus memory management structure.
+ *
+ * Before using any functions associate with a memory structure
+ * this function must be called.
+ *
+ *  @param mem_info
+ *          The memory management datatype
+ *
+ *  @param node_size
+ *          The size of the memory to allocated with each pop.
+ *
+ *  @param node_count
+ *          The initial number of nodes allocated with the memory
+ *          management structure.  If it is exceded more will be 
+ *          allocated.
+ */
 globus_bool_t
 globus_memory_init(
     globus_memory_t *                           mem_info,
@@ -168,6 +174,14 @@ globus_l_memory_create_list(
     return GLOBUS_TRUE;
 }
 
+/**
+ * @brief Retrieve a memory item from a pool
+ * @ingroup globus_memory
+ * @details
+ * Pop a chunk of memory out of the memory management structure.
+ * Similar to malloc(). When no longer using this item, return it to the
+ * pool via globus_memory_push_node().
+ */
 void *
 globus_memory_pop_node(
     globus_memory_t *                           mem_info)
@@ -206,6 +220,13 @@ globus_memory_pop_node(
     return tmp_byte;
 }
 
+/**
+ * @brief Return a memory item to the pool
+ * @ingroup globus_memory
+ * @details
+ * Push a chunk of memory back into the memory management structure.
+ * Similar to free().
+ */
 globus_bool_t
 globus_memory_push_node(
     globus_memory_t *          mem_info,
@@ -239,6 +260,14 @@ globus_memory_push_node(
     return GLOBUS_TRUE;
 }
 
+/**
+ * @brief Destroy a memory pool
+ * @ingroup globus_memory
+ * @details
+ * Free all the memory associated with the memory management structure.
+ * For every call to globus_memory_init() there should be a call to
+ * globus_memory_destroy() or else memory will leak.
+ */
 globus_bool_t
 globus_memory_destroy(
     globus_memory_t *                           mem_info)
@@ -293,14 +322,6 @@ globus_memory_init(
 
     s_mem_info->node_size = node_size;
 
-    return GLOBUS_TRUE;
-}
-
-static
-globus_bool_t
-globus_l_memory_create_list(
-    globus_memory_t * mem_info)
-{
     return GLOBUS_TRUE;
 }
 

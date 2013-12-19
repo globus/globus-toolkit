@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file init_sec_context.c
+ * @file gssapi/source/library/init_sec_context.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -35,9 +27,9 @@ static char *rcsid = "$Id$";
 #include "globus_gsi_cert_utils.h"
 
 /**
- * @name Init Sec Context
+ * @brief Init Sec Context
+ * @ingroup globus_gsi_gssapi
  */
-/*@{*/
 OM_uint32 
 GSS_CALLCONV gss_init_sec_context(
     OM_uint32 *                         minor_status,
@@ -523,4 +515,3 @@ GSS_CALLCONV gss_init_sec_context(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */

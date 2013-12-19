@@ -14,22 +14,7 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_thread_none.c
-
-Description:
-
-  Stubs for the Globus threads package, to be used when Globus has been
-  configured not to use threads.
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
+/** @file globus_thread_none.c Non-threaded stubs for the Globus Threads interface */
 
 /******************************************************************************
                              Include header files

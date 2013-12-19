@@ -1,6 +1,13 @@
-include $(top_srcdir)/globus_automake_pre
+include_HEADERS = \
+    globus_xio_http.h
+noinst_HEADERS = \
+    globus_i_xio_http.h \
+    globus_i_xio_http_responses.h
+noinst_LTLIBRARIES = libglobus_xio_http_driver.la 
 
-Sources= \
+AM_CPPFLAGS = -I$(top_srcdir) -DGLOBUS_BUILTIN=1 $(PACKAGE_DEP_CFLAGS)
+AM_LDFLAGS = $(PACKAGE_DEP_LIBS)
+libglobus_xio_http_driver_la_SOURCES = \
     globus_xio_http.c \
     globus_xio_http_attr.c \
     globus_xio_http_client.c \
@@ -16,20 +23,3 @@ Sources= \
     globus_i_xio_http_responses.h \
     globus_i_xio_http.h \
     globus_xio_http.h
-
-include_HEADERS = \
-    globus_xio_http.h
-
-noinst_HEADERS = \
-    globus_i_xio_http.h \
-    globus_i_xio_http_responses.h
-
-noinst_LTLIBRARIES = libglobus_xio_http_driver.la 
-
-INCLUDES = -I$(top_srcdir) $(GPT_INCLUDES)
-
-libglobus_xio_http_driver_la_SOURCES = $(Sources)
-libglobus_xio_http_driver_la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_xio_http_driver_la_LIBADD = $(GPT_LIB_LINKS)
-
-include $(top_srcdir)/globus_automake_post

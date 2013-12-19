@@ -1,37 +1,35 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+SUBDIRS = seg
 
-SUBDIRS = seg pkgdata doxygen
-
-## globussysconf = [ DATA ]
 globussysconfdir = ${sysconfdir}/globus
-globussysconf_DATA = globus-lsf.conf
-
-## gridservices = [ DATA ]
 gridservicesdir = ${sysconfdir}/grid-services/available
-gridservices_DATA = jobmanager-lsf-poll jobmanager-lsf-seg
-
-## gramperlmodule = [ DATA ]
 gramperlmoduledir = ${perlmoduledir}/Globus/GRAM/JobManager
-gramperlmodule_DATA = lsf.pm
-
-## validation = [ DATA ]
 validationdir = $(datadir)/globus/globus_gram_job_manager
+pkgconfdir = $(libdir)/pkgconfig
+
+globussysconf_DATA = globus-lsf.conf
+gridservices_DATA = jobmanager-lsf-poll jobmanager-lsf-seg
+gramperlmodule_DATA = lsf.pm
 validation_DATA = lsf.rvf
+doc_DATA = GLOBUS_LICENSE
+pkgconf_DATA = globus-gram-job-manager-lsf.pc
 
 AT=@
-jobmanager-lsf-poll: jobmanager-lsf-poll.in
+jobmanager-lsf-poll: $(srcdir)/jobmanager-lsf-poll.in
 	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
 	    -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
 
-jobmanager-lsf-seg: jobmanager-lsf-seg.in
+jobmanager-lsf-seg: $(srcdir)/jobmanager-lsf-seg.in
 	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
 	    -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
 
-doc_DATA = GLOBUS_LICENSE
-
-EXTRA_DIST = globus-lsf.conf.in lsf.pm $(doc_DATA) $(validation_DATA) \
-    jobmanager-lsf-poll.in jobmanager-lsf-seg.in 
+EXTRA_DIST = \
+        dirt.sh \
+        globus-lsf.conf.in \
+        lsf.pm \
+        $(doc_DATA) \
+        $(validation_DATA) \
+        jobmanager-lsf-poll.in \
+        jobmanager-lsf-seg.in 
 
 CLEANFILES = jobmanager-lsf-poll jobmanager-lsf-seg
 
@@ -57,5 +55,5 @@ install-data-hook:
 	ln -s available/jobmanager-lsf-poll jobmanager-lsf
 endif
 
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+distuninstallcheck:
+	@:

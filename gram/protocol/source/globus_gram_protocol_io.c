@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * @file globus_gram_protocol_io.c I/O Functions
+ */
 #include "globus_i_gram_protocol.h"
 
 #include <string.h>
@@ -195,8 +198,9 @@ globus_l_gram_protocol_free_old_credentials();
 
 /**
  * @defgroup globus_gram_protocol_io Message I/O
+ * @brief Mesage I/O
  * @ingroup globus_gram_protocol_functions
- *
+ * @details
  * The functions in this section are related to sending and receiving
  * GRAM protocol messages. 
  */

@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_ftp_client_debug_plugin.c GridFTP Debugging Plugin Implementation
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_ftp_client_debug_plugin.h"
 

@@ -14,26 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gass_transfer_proto.h
  *
  * This header defines the GASS protocol module library interface
- *
- * CVS Information:
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
-#endif
 
 /**
+ * @brief Protocol Implementation API
  * @defgroup globus_gass_transfer_protocol Protocol Modules
- *
- * Protocol Implementation API.
- *
+ * @ingroup globus_gass_transfer
+ * @details
  * The GASS Protocol Module API is designed to make it possible to
  * extend the GASS client and server APIs to support additional protocols
  * without making any changes to the core of the GASS implementation. GASS
@@ -44,8 +35,8 @@
  * Every protocol module implementation must include the following
  * header file:
  * @code
- * #include "globus_gass_transfer_proto.h"
- * @endcode
+   #include "globus_gass_transfer_proto.h"
+   @endcode
  *
  * To implement a protocol module, one must create a 
  * #globus_gass_transfer_proto_descriptor_t structure which indicates what
@@ -69,23 +60,15 @@
  * globus_gass_transfer_server server@endlink operations.
  */
 
-#ifndef GLOBUS_GASS_INCLUDE_GLOBUS_GASS_PROTO_H
-#define GLOBUS_GASS_INCLUDE_GLOBUS_GASS_PROTO_H
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+#ifndef GLOBUS_GASS_PROTO_H
+#define GLOBUS_GASS_PROTO_H
 
 #include "globus_common.h"
 #include "globus_gass_transfer.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+"C" {
+#endif
 
 /* Module-specific types */
 /**
@@ -620,6 +603,8 @@ globus_gass_transfer_lf_to_crlf(
 
 #endif
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_GASS_INCLUDE_GLOBUS_GASS_PROTO_H */
+#endif /* GLOBUS_GASS_PROTO_H */

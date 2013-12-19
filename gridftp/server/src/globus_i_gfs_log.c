@@ -851,7 +851,7 @@ globus_i_gfs_log_create_transfer_event_msg(
     char *                              username)
 {
     char *                              transfermsg;
-    GlobusGFSName(globus_i_gfs_log_transfer);
+    GlobusGFSName(globus_i_gfs_log_create_transfer_event_msg);
     GlobusGFSDebugEnter();
 
     transfermsg = globus_common_create_string(

@@ -14,28 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file delete_sec_context.c
+ * @file gssapi/source/library/delete_sec_context.c
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 
 /**
- * @name GSS Delete Security Context
+ * @brief Delete Security Context
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Delete the GSS Security Context
  *
  * @param minor_status
@@ -212,4 +202,3 @@ GSS_CALLCONV gss_delete_sec_context(
     return GSS_S_COMPLETE;
 } 
 /* gss_delete_sec_context */
-/* @} */

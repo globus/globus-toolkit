@@ -1,4 +1,4 @@
-include $(top_srcdir)/globus_automake_pre
+testdir = @testdir@
 
 test_SCRIPTS = globus-gram-job-manager-failure-test.pl
 
@@ -77,5 +77,3 @@ test_DATA = \
     error_undefined_executable.rsl
 
 EXTRA_DIST = globus-gram-job-manager-failure-test.pl.in $(test_DATA)
-
-include $(top_srcdir)/globus_automake_post

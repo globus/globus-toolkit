@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
-* @file unwrap.c
+* @file gssapi/source/library/unwrap.c
 * @author Sam Lang, Sam Meder
-*
-* $RCSfile$
-* $Revision$
-* $Date$
 */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -33,12 +25,9 @@ static char *rcsid = "$Id$";
 #include <string.h>
 
 /**
- * @name Unwrap
+ * @brief Unwrap
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- *
+ * @details
  * GSSAPI routine to unwrap a buffer which may have been
  * received and wraped by wrap.c
  *
@@ -337,13 +326,11 @@ GSS_CALLCONV gss_unwrap(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Unseal
+ * @brief Unseal
  * @ingroup globus_gsi_gssapi
- */
-/**
+ * @details
  * Obsolete variant of gss_wrap for V1 compatability 
  * allow for non 32 bit integer in qop_state.
  *
@@ -395,4 +382,4 @@ GSS_CALLCONV gss_unseal(
   GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
   return major_status;
 }
-/* @} */
+/* gss_unseal() */

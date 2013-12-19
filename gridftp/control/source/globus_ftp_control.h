@@ -15,24 +15,11 @@
  */
 
 /**
- * @file globus_ftp_control.h
- *
- * GSIFTP Control Connection API (Data structures and types)
- *
+ * @file globus_ftp_control.h GridFTP Control Connection API 
  */
 
 #ifndef GLOBUS_INCLUDE_FTP_CONTROL_H
 #define GLOBUS_INCLUDE_FTP_CONTROL_H 1
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
 
 #include "globus_common.h"
 #include "globus_error_string.h"
@@ -40,11 +27,21 @@
 #include "globus_gss_assist.h"
 #include "globus_handle_table.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
+/**
+ * @mainpage Globus GridFTP Control Connection API
+ * @copydoc globus_ftp_control
+ */
+#endif
 
 /**
- * @mainpage Globus GSIFTP Control Connection API
- *
+ * @defgroup globus_ftp_control GridFTP Control API
+ * @brief GridFTP Control API
+ * @details
  * The globus_ftp_control library provides low-level services
  * needed to implement FTP client and servers. The API provided is
  * protocol specific. See the GASS Transfer library for a
@@ -55,48 +52,77 @@ EXTERN_C_BEGIN
  * as well as @ref page_extensions "extensions" for parallel, striped, and
  * partial data transfer.
  *
- * Any program that uses the GSIFTP Control Library must include
- * "globus_ftp_control.h".
+ * Any program that uses the GridFTP Control Library must include
+ * the globus_ftp_control.h header.
  *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
+ * The API documentation is organized into several sections
+ * - @ref globus_ftp_control_server
+ * - @ref globus_ftp_control_client
+ * - @ref globus_ftp_control_data
+ * - @ref globus_ftp_control_constants
  */
 
 /**
- * control structure types. The enumeration values match the character
- * value of the argument to TYPE.
+ * @defgroup globus_ftp_control_constants GridFTP Constants
+ * @ingroup globus_ftp_control
+ * @brief Constants
+ */
+
+/**
+ * @brief GridFTP TYPE values
+ * @ingroup globus_ftp_control_constants
+ * @details
+ * The enumeration values match the character value of the argument to TYPE.
  */
 typedef enum globus_ftp_control_type_e
 {
+    /** Undefined TYPE */
     GLOBUS_FTP_CONTROL_TYPE_NONE,
+    /** ASCII TYPE */
     GLOBUS_FTP_CONTROL_TYPE_ASCII = 'A',
+    /** EBCDIC TYPE */
     GLOBUS_FTP_CONTROL_TYPE_EBCDIC = 'E',
+    /** Image TYPE */
     GLOBUS_FTP_CONTROL_TYPE_IMAGE = 'I',
+    /** Local TYPE */
     GLOBUS_FTP_CONTROL_TYPE_LOCAL = 'L'
 } globus_ftp_control_type_t;
 
 /**
- *  control structure mode
+ * @brief GridFTP MODE values
+ * @ingroup globus_ftp_control_constants
+ * @details
+ * The enumeration values match the character value of the argument to MODE.
  */
 typedef enum globus_ftp_control_mode_e
 {
+    /** Undefined MODE */
     GLOBUS_FTP_CONTROL_MODE_NONE, 
+    /** Stream Mode */
     GLOBUS_FTP_CONTROL_MODE_STREAM = 'S',
+    /** Block Mode */
     GLOBUS_FTP_CONTROL_MODE_BLOCK = 'B', 
+    /** Extended Block Mode */
     GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK = 'E',
+    /** Compressed Mode */
     GLOBUS_FTP_CONTROL_MODE_COMPRESSED = 'C'
 } globus_ftp_control_mode_t;
 
 /**
- * control dcau types
+ * @brief GridFTP DCAU values
+ * @ingroup globus_ftp_control_constants
+ * @details
+ * The enumeration values match the character value of the argument to DCAU.
  */
 typedef enum globus_ftp_control_dcau_mode_e
 {
+    /** No Authorization */
     GLOBUS_FTP_CONTROL_DCAU_NONE = 'N',
+    /** Self Authorization */
     GLOBUS_FTP_CONTROL_DCAU_SELF = 'A',
+    /** Subject Authorization */
     GLOBUS_FTP_CONTROL_DCAU_SUBJECT = 'S',
+    /** Default Authorization */
     GLOBUS_FTP_CONTROL_DCAU_DEFAULT
 } globus_ftp_control_dcau_mode_t;
 
@@ -110,7 +136,11 @@ typedef struct globus_ftp_control_dcau_subject_s
 } globus_ftp_control_dcau_subject_t;
 
 /**
- *  control striping Types
+ * @brief GridFTP Striping Types
+ * @ingroup globus_ftp_control_constants
+ * @details
+ * The enumeration values match the types of striping handled by the GridFTP
+ * server.
  */
 typedef enum globus_ftp_control_striping_mode_e
 {
@@ -144,13 +174,21 @@ typedef union globus_ftp_control_dcau_u
 } globus_ftp_control_dcau_t;
 
 /**
- * control protection levels
+ * @brief GridFTP Protection Types
+ * @ingroup globus_ftp_control_constants
+ * @details
+ * The enumeration values match the types of protection handled by the GridFTP
+ * server.
  */
 typedef enum
 {
+    /** Clear protection */
     GLOBUS_FTP_CONTROL_PROTECTION_CLEAR = 'C',
+    /** Safe (integrity) protection */
     GLOBUS_FTP_CONTROL_PROTECTION_SAFE = 'S',
+    /** Confidential (encrypted) protection */
     GLOBUS_FTP_CONTROL_PROTECTION_CONFIDENTIAL = 'E',
+    /** Private (integrity and encrypted) protection */
     GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE = 'P'
 } globus_ftp_control_protection_t;
 
@@ -241,26 +279,31 @@ typedef struct globus_ftp_control_host_port_s
     int                                         hostlen;
 } globus_ftp_control_host_port_t;
 
-/** Module descriptor
+/**
+ * @addtogroup globus_ftp_control
  *
  * The Globus FTP Control library uses the standard module activation and
- * deactivation API to initialize it's state. Before any GSIFTP
+ * deactivation API to initialize it's state. Before any GridFTP
  * functions are called, the module must be activated
  *
  * @code
- *    globus_module_activate(GLOBUS_GSIFTP_CONTROL_MODULE);
- * @endcode
+      globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
+   @endcode
  *
- * This function returns GLOBUS_SUCCESS if the GSIFTP library was
+ * This function returns GLOBUS_SUCCESS if the GridFTP library was
  * successfully initialized. This may be called multiple times.
  *
- * To deactivate the GSIFTP library, the following must be called
+ * To deactivate the GridFTP library, the following must be called
  *
- * @code
- *    globus_module_deactivate(GLOBUS_GSIFTP_CONTROL_MODULE);
- * @endcode
+   @code
+      globus_module_deactivate(GLOBUS_FTP_CONTROL_MODULE);
+   @endcode
  */
 
+/**
+ * @brief Module descriptor
+ * @ingroup globus_ftp_control_constants
+ */
 #define GLOBUS_FTP_CONTROL_MODULE (&globus_i_ftp_control_module)
 
 extern globus_module_descriptor_t globus_i_ftp_control_module; 
@@ -462,7 +505,7 @@ globus_ftp_control_auth_info_t;
  * @param callback_arg
  *        User supplied argument to the callback function
  * @param handle
- *        A pointer to the GSIFTP control handle. Used to identify
+ *        A pointer to the GridFTP control handle. Used to identify
  *        which control connection the operation was applied to.
  * @param error
  *        Pointer to a globus error object containing information
@@ -486,7 +529,7 @@ typedef void (*globus_ftp_control_response_callback_t)(
  * @param callback_arg
  *        User supplied argument to the callback function
  * @param handle
- *        A pointer to the GSIFTP control handle. Used to identify
+ *        A pointer to the GridFTP control handle. Used to identify
  *        which control connection the operation was applied to.
  * @param error
  *        Pointer to a globus error object containing information
@@ -731,7 +774,7 @@ typedef struct globus_ftp_control_handle_s
  * @param callback_arg
  *        User supplied argument to the callback function
  * @param handle
- *        A pointer to the GSIFTP control handle. Used to identify
+ *        A pointer to the GridFTP control handle. Used to identify
  *        which control connection the operation was applied to.
  * @param error
  *        Pointer to a globus error object containing information
@@ -944,22 +987,27 @@ globus_X_ftp_control_data_write_stripe(
  *  ----------------------------------------------------------------
  */
 
-
+/**
+ * @defgroup globus_ftp_control_server GridFTP Server Control
+ * @brief Manage GridFTP Server Control Connections
+ * @ingroup globus_ftp_control
+ */
 struct globus_ftp_control_server_s;
 
 /**
- *  Server callback
+ * @brief Server callback
+ * @ingroup globus_ftp_control_server
  *
- *  A functions with this signature can be used as general callbacks for 
- *  the GSIFTP server API.
+ * A function with this signature can be used as general callbacks for 
+ * the GridFTP server API.
  *
- *  @param server_handle
- *         The server handle associated with callback.
- *  @param result
- *         Indicates if the operation completed successfully or
- *         if a failure occurred.
- *  @param callback_arg
- *         The user argument passed to the callback function.
+ * @param server_handle
+ *        The server handle associated with callback.
+ * @param result
+ *        Indicates if the operation completed successfully or
+ *        if a failure occurred.
+ * @param callback_arg
+ *        The user argument passed to the callback function.
  */
 typedef void (*globus_ftp_control_server_callback_t)(
     void *                                      callback_arg,
@@ -1258,14 +1306,11 @@ typedef struct globus_ftp_data_server_s
     int bogus;
 } globus_ftp_data_server_t;
 
-/*
- * API Functions -- Doxygen comments are included with the function
- * implementation.
+/**
+ * @defgroup globus_ftp_control_client GridFTP Control Client
+ * @brief Control Client
+ * @ingroup globus_ftp_control
  */
-
-#ifndef GLOBUS_SEPARATE_DOCS
-/* globus_ftp_control_client.c */
-
 globus_result_t 
 globus_ftp_control_auth_info_init(
     globus_ftp_control_auth_info_t *       auth_info,
@@ -1449,8 +1494,11 @@ globus_ftp_i_control_create_command_<port,pasv,spor,spas,etc>(
 
 */
 
-/* globus_ftp_control_data.c */
-
+/**
+ * @defgroup globus_ftp_control_data GridFTP Data Connections
+ * @brief Data Connections
+ * @ingroup globus_ftp_control
+ */
 globus_result_t
 globus_i_ftp_control_data_cc_init(
     globus_ftp_control_handle_t *                control_handle);
@@ -1649,8 +1697,6 @@ globus_result_t
 globus_ftp_control_ipv6_allow(
     globus_ftp_control_handle_t *               handle,
     globus_bool_t                               allow);
-    
-#endif /* GLOBUS_SEPARATE_DOCS */
 
 /*
  *  internal function defintions
@@ -1718,7 +1764,9 @@ globus_ftp_control_data_get_socket_buf(
     int *                               rcvbuf,
     int *                               sndbuf);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 
-#endif  /* GLOBUS_INCLUDE_GSIFTP_CONTROL_H */
+#endif  /* GLOBUS_INCLUDE_FTP_CONTROL_H */

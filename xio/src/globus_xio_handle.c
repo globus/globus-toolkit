@@ -2725,15 +2725,7 @@ globus_xio_handle_cntl(
         return GlobusXIOErrorParameter("handle");
     }
 
-#   ifdef HAVE_STDARG_H
-    {
-        va_start(ap, cmd);
-    }
-#   else
-    {
-        va_start(ap);
-    }
-#   endif
+    va_start(ap, cmd);
 
     if(driver != NULL)
     {

@@ -15,18 +15,13 @@
  */
 
 /**
- * @file globus_gass_copy.c
- *
- * Globus GASS Copy library
- *
- * @see See the detailed description in globus_gass_copy.h
+ * @file globus_gass_copy.c Globus GASS Copy Implementation
  */
 
 #include "globus_gass_copy.h"
 #include "version.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
 static int globus_l_gass_copy_activate(void);
 
 static int globus_l_gass_copy_deactivate(void);
@@ -266,8 +261,9 @@ globus_l_gass_copy_monitor_callback(
  ************************************************************/
 
 /**
- * Initialize a GASS Copy handle
- *
+ * @brief Initialize a GASS Copy handle
+ * @ingroup globus_gass_copy
+ * @details
  * A globus_gass_copy_handle must be initialized before any transfers may be
  * associated with it.  This function initializes a globus_gass_copy_handle
  * to be used for doing transfers, this includes initializing a
@@ -349,8 +345,9 @@ globus_gass_copy_handle_init(
 }
 
 /**
- *  Destroy a GASS Copy handle
- *
+ * @brief Destroy a GASS Copy handle
+ * @ingroup globus_gass_copy
+ * @details
  * Destroy a  gass_copy_handle, which was initialized using
  * globus_gass_copy_handle_init(), that will no longer be used for doing
  * transfers.  Once the handle is detroyed, no further transfers should be
@@ -494,8 +491,9 @@ globus_gass_copy_handleattr_set_ftp_attr(
 
 
 /**
- * Set the size of the buffer to be used for doing transfers
- *
+ * @brief Set the size of the buffer to be used for doing transfers
+ * @ingroup globus_gass_copy
+ * @details
  * This function allows the user to set the size of the buffer that will be
  * used for doing transfers, if this function is not called the buffer size
  * will default to 1M.
@@ -534,8 +532,9 @@ globus_gass_copy_set_buffer_length(
 } /* globus_gass_copy_set_buffer_length() */
 
 /**
- * Get the size of the buffer being used for doing transfers
- *
+ * @brief Get the size of the transfer buffer
+ * @ingroup globus_gass_copy
+ * @details
  * This function allows the user to get the size of the buffer that is being
  * used for doing transfers.
  *
@@ -573,8 +572,9 @@ globus_gass_copy_get_buffer_length(
 } /* globus_gass_copy_get_buffer_length() */
 
 /**
- * Turn third-party transfers on or off. (They are on by default.)
- *
+ * @brief Enable/Disable third-party transfers
+ * @ingroup globus_gass_copy
+ * @details
  * This function allows the user to turn third-party transfers on or off for
  * ftp to ftp transfers associated with a particular handle.  This is often desired
  * if one of the servers involved in the transfer does not allow third-party transfers.
@@ -629,8 +629,9 @@ globus_gass_copy_set_no_third_party_transfers(
 } /* globus_gass_copy_set_no_third_party_transfers() */
 
 /**
- * See if third-party transfers are turned on or off. (They are on by default.)
- *
+ * @brief Query third-party transfer status
+ * @ingroup globus_gass_copy
+ * @details
  * This function allows the user to see if third-party transfers are turned on or off for
  * ftp to ftp transfers associated with a particular handle.  This is often desired
  * if one of the servers involved in the transfer does not allow third-party transfers.
@@ -672,7 +673,8 @@ globus_gass_copy_get_no_third_party_transfers(
 
 
 /**
- * Set allo on or off
+ * @brief Set allo on or off
+ * @ingroup globus_gass_copy
  */
 globus_result_t
 globus_gass_copy_set_allocate(
@@ -685,7 +687,8 @@ globus_gass_copy_set_allocate(
 }
 
 /**
- * Make globus_gass_copy_expand_url() always send stat info
+ * @brief Make globus_gass_copy_expand_url() always send stat info
+ * @ingroup globus_gass_copy
  */
 globus_result_t
 globus_gass_copy_set_stat_on_expand(
@@ -698,8 +701,9 @@ globus_gass_copy_set_stat_on_expand(
 }
 
 /**
- * Set the offsets to be used for doing partial transfers
- *
+ * @brief Set partial file offsets
+ * @ingroup globus_gass_copy
+ * @details
  * This function allows the user to set the offsets that will be
  * used for doing partial transfers.  An offset of -1 will disable
  * partial transfers.  An end_offset of -1 means EOF.
@@ -743,8 +747,9 @@ globus_gass_copy_set_partial_offsets(
 } /* globus_gass_copy_set_partial_offsets() */
 
 /**
- * Get the offsets being used for doing partial transfers
- *
+ * @brief Get partial transfer offsets
+ * @ingroup globus_gass_copy
+ * @details
  * This function allows the user to get the offsets that are being
  * used for doing partial transfers.  An offset of -1 means partial
  * transfers are disabled.
@@ -811,8 +816,9 @@ globus_gass_copy_get_ftp_handle(
 } /* globus_gass_copy_get_ftp_handle() */
 
 /**
- * Initialize an attribute structure
- *
+ * @brief Initialize an attribute structure
+ * @ingroup globus_gass_copy
+ * @details
  * The globus_gass_copy_attr_t can be used to pass the globus_gass_copy library
  * information about how a transfer should be performed.
  * It must first be initialized by calling this function. Then any or all of
@@ -861,8 +867,9 @@ globus_gass_copy_attr_init(
 }
 
 /**
- * Set the attributes for ftp/gsiftp transfers
- *
+ * @brief Set the attributes for ftp/gsiftp transfers
+ * @ingroup globus_gass_copy
+ * @details
  * In order to specify attributes for ftp/gsiftp transfers, a
  * globus_ftp_client_operationattr_t should be initialized and its values
  * set using the appropriate globus_ftp_client_operationattr_* functions.  The
@@ -910,8 +917,9 @@ globus_gass_copy_attr_set_ftp(
 
 
 /**
- * Set the attributes for file transfers
- *
+ * @brief Set file transfers attributes
+ * @ingroup globus_gass_copy
+ * @details
  * In order to specify attributes for file transfers, a globus_io_attr_t should
  * be initialized and its values set using the appropriate globus_io_attr_*
  * functions.  The globus_io_attr_t can then be passed to the
@@ -957,8 +965,9 @@ globus_gass_copy_attr_set_io(
 
 
 /**
- * Set the attributes for http/https transfers
- *
+ * @brief Set the http/https attributes
+ * @ingroup globus_gass_copy
+ * @details
  * In order to specify attributes for http/https transfers, a
  * globus_gass_transfer_requestattr_t should be initialized and its values
  * set using the appropriate globus_gass_transfer_requestattr_* functions.
@@ -1006,9 +1015,9 @@ globus_gass_copy_attr_set_gass(
 
 
 /**
- * Classify the URL schema into the transfer method that will be used to do
- * the actual tranfer.
- *
+ * @brief Get URL scheme 
+ * @ingroup globus_gass_copy
+ * @details
  * This function enables the user to determine what protocol will be used to
  * transfer data to/from a particular url.  This information can then be used
  * to specify the appropriate attributes when initiating a transfer.
@@ -1079,8 +1088,9 @@ globus_gass_copy_get_url_mode(
 } /* globus_l_gass_copy_get_url_mode() */
 
 /**
- * Register a performance information callback
- *
+ * @brief Register a performance information callback
+ * @ingroup globus_gass_copy
+ * @details
  * Use this to register a performance information callback.
  * You change or set to GLOBUS_NULL the callback any time a transfer is not
  * occurring.
@@ -1518,8 +1528,9 @@ globus_l_gass_copy_generic_cancel(globus_i_gass_copy_cancel_t * cancel_info);
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
- * Get the status code of the current transfer.
- *
+ * @brief Get the status code of a transfer
+ * @ingroup globus_gass_copy
+ * @details
  * Get the status of the last transfer to be initiated using the given handle.
  * Only one transfer can be active on a handle at a given time, therefore
  * new transfers may only be initiated when the current status is one of the
@@ -1616,8 +1627,9 @@ globus_gass_copy_get_status(
 } /* globus_gass_copy_get_status() */
 
 /**
- * Get the status string of the current transfer.
- *
+ * @brief Get the status string of a transfer
+ * @ingroup globus_gass_copy
+ * @details
  * Get the status of the last transfer to be initiated using the given handle.
  * Only one transfer can be active on a handle at a given time, therefore
  * new transfers may only be initiated when the current status is one of the
@@ -2200,8 +2212,8 @@ globus_l_gass_copy_state_free(
 } /* globus_l_gass_copy_state_free() */
 
 /**
- * Start the transfer.
- *
+ * @brief Start the transfer
+ * @details
  * Based on the source and destination information in the state structure, start
  * the data transfer using the appropriate method - FTP, GASS, IO
  *
@@ -2687,8 +2699,8 @@ globus_l_gass_copy_read_from_queue(
 
 
 /**
- * register read
- *
+ * @brief register read
+ * @details
  * Based on the mod of the source, register a read using the appropriate
  * data transfer method.
  *
@@ -2797,8 +2809,8 @@ globus_l_gass_copy_register_read(
 
 
 /**
- * GASS setup callback.
- *
+ * @brief GASS setup callback
+ * @details
  * This function is called after the connection attempt to the target
  * (e.g source or destination) has completed, failed, is a referral, ...
  *
@@ -4488,7 +4500,7 @@ globus_l_gass_copy_io_write_callback(
     globus_gass_copy_state_t * state = handle->state;
     globus_bool_t close_handle = GLOBUS_FALSE;
     
-/**
+/*
  * used this to simulate a io write error
  *
     globus_object_t * err;
@@ -4590,8 +4602,9 @@ globus_l_gass_copy_io_write_callback(
  ************************************************************/
 
 /**
- * Transfer data from source URL to destination URL (blocking)
- *
+ * @brief Blocking Transfer between URLs
+ * @ingroup globus_gass_transfer
+ * @details
  * @param handle
  *        The handle to perform the copy operation
  * @param source_url
@@ -4726,8 +4739,9 @@ error_exit:
  *****************************************************************/
 
 /**
- * Transfer data from source URL to an IO handle (blocking)
- *
+ * @brief Blocking Transfer from an URL to an IO handle
+ * @ingroup globus_gass_transfer
+ * @details
  * @param handle
  *        The handle to perform the copy operation
  * @param source_url
@@ -4855,8 +4869,9 @@ error_exit:
 
 
 /**
- * Transfer data from an IO handle to destination URL  (blocking)
- *
+ * @brief Blocking transfer from an IO handle to an URL
+ * @ingroup globus_gass_transfer
+ * @details
  * @param handle
  *        The handle to perform the copy operation
  * @param source_handle
@@ -4989,8 +5004,9 @@ error_exit:
  ************************************************************/
 
 /**
- * Transfer data from source URL to destination URL (non-blocking)
- *
+ * Nonblocking Transfer between URLs
+ * @ingroup globus_gass_transfer
+ * @details
  * This functions initiates a transfer from source URL to destination URL,
  * then returns immediately.
  *
@@ -5389,8 +5405,9 @@ error_result_exit:
 }/* globus_gass_copy_register_url_to_url() */
 
 /**
- * Transfer data from source URL to an IO handle (non-blocking)
- *
+ * @brief Nonblocking transfer from an URL to an IO handle
+ * @ingroup globus_gass_transfer
+ * @details
  * This functions initiates a transfer from source URL to an IO handle,
  * then returns immediately.
  *
@@ -5548,8 +5565,9 @@ error_result_exit:
 
 
 /**
- * Transfer data from an IO handle to destination URL  (non-blocking)
- *
+ * Nonblocking Transfer From an IO handle to an URL
+ * @ingroup globus_gass_transfer
+ * @details
  * This functions initiates a transfer from an IO handle to destination URL,
  * then returns immediately.
  *
@@ -5706,8 +5724,9 @@ error_result_exit:
  ************************************************************/
 
 /**
- * Cache connections to an FTP or GSIFTP server.
- *
+ * @brief Cache connections to an FTP or GridFTP server
+ * @ingroup globus_gass_transfer
+ * @details
  * Explicitly cache connections to URL server. When
  * an URL is cached, the connection
  * to the URL server will not be closed after a file transfer completes.
@@ -5777,8 +5796,9 @@ globus_gass_copy_cache_url_state(
 } /* globus_gass_copy_cache_url_state() */
 
 /**
- * Remove a cached connection to an FTP or GSIFTP server.
- *
+ * @brief Remove an FTP or GridFTP cached connection 
+ * @ingroup globus_gass_transfer
+ * @details
  * Explicitly remove a cached connection to an FTP or GSIFTP server.
  * If an idle connection to an FTP server exists, it will be closed.
  *
@@ -5849,7 +5869,8 @@ globus_gass_copy_flush_url_state(
  ************************************************************/
 
 /**
- * Set a pointer in the handle to point at user-allocated memory.
+ * @brief Set the user pointer in a handle
+ * @ingroup globus_gass_transfer
  */
 globus_result_t
 globus_gass_copy_set_user_pointer(
@@ -5876,7 +5897,8 @@ globus_gass_copy_set_user_pointer(
 } /* globus_gass_copy_set_user_pointer() */
 
 /**
- * Get the pointer in the handle that points to user-allocated memory.
+ * @brief Get the user pointer in a handle
+ * @ingroup globus_gass_transfer
  */
 globus_result_t
 globus_gass_copy_get_user_pointer(
@@ -5903,7 +5925,8 @@ globus_gass_copy_get_user_pointer(
 }
 
 /**
- * Cancel the current transfer associated with this handle,
+ * @brief Cancel a transfer
+ * @ingroup globus_gass_transfer
  */
 globus_result_t
 globus_gass_copy_cancel(
@@ -5987,7 +6010,7 @@ globus_gass_copy_cancel(
         handle->status = GLOBUS_GASS_COPY_STATUS_CANCEL;
     }
 
-    /**
+    /*
      * store the cancel_callback and cancel_callback_arg in the handle.
      * Needed because the ftp callback will be the one given from the
      * original globus_ftp_client_third_party_transfer() call.
@@ -6051,7 +6074,7 @@ globus_gass_copy_cancel(
 }
 
 /**
- * Cancel the source or destination transfer in progress.
+ * @brief Cancel a transfer in progress
  */
 globus_result_t
 globus_l_gass_copy_target_cancel(
@@ -6365,7 +6388,8 @@ globus_l_gass_copy_generic_cancel(
  ************************************************************/
 #ifdef USE_FTP_ATTRS
 /**
- * Set TCP buffer/window size
+ * @brief Set TCP buffer/window size
+ * @ingroup globus_gass_transfer
  */
 globus_result_t
 globus_gass_copy_attr_set_tcpbuffer(
@@ -6409,7 +6433,8 @@ globus_gass_copy_attr_set_tcpbuffer(
 }
 
 /**
- * Set parallelism info
+ * @brief Set parallelism info
+ * @ingroup globus_gass_transfer
  */
 globus_result_t
 globus_gass_copy_attr_set_parallelism(
@@ -6420,7 +6445,8 @@ globus_gass_copy_attr_set_parallelism(
 }
 
 /**
- * Set striping info
+ * @brief Set striping info
+ * @ingroup globus_gass_transfer
  */
 globus_result_t
 globus_gass_copy_attr_set_striping(
@@ -6431,7 +6457,8 @@ globus_gass_copy_attr_set_striping(
 }
 
 /**
- * Set authorization info
+ * @brief Set authorization info
+ * @ingroup globus_gass_transfer
  */
 globus_result_t
 globus_gass_copy_attr_set_authorization(
@@ -6442,7 +6469,8 @@ globus_gass_copy_attr_set_authorization(
 }
 
 /**
- * Set secure channel info
+ * @brief Set secure channel info
+ * @ingroup globus_gass_transfer
  */
 globus_result_t
 globus_gass_copy_attr_set_secure_channel(
@@ -6456,7 +6484,7 @@ globus_gass_copy_attr_set_secure_channel(
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * Duplicate the passed in attribute structure.
+ * @brief Duplicate the passed in attribute structure.
  */
 globus_result_t
 globus_i_gass_copy_attr_duplicate(globus_gass_copy_attr_t ** attr)
@@ -6565,5 +6593,3 @@ globus_gass_copy_url_to_url(
     "gsiftp://lemon.mcs.anl.gov/tmp/foo");
 
 **/
-
-

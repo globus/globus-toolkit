@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_FTP_CLIENT_PLUGIN_H
-#define GLOBUS_INCLUDE_FTP_CLIENT_PLUGIN_H
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/** @file
- */
-#endif
+#ifndef GLOBUS_FTP_CLIENT_PLUGIN_H
+#define GLOBUS_FTP_CLIENT_PLUGIN_H
+
 /**
+ * @file globus_ftp_client_plugin.h
+ */
+
+/**
+ * @brief Plugin API
  * @defgroup globus_ftp_client_plugins Plugins
- *
- * Plugin API
- *
+ * @ingroup globus_ftp_client_api
+ * @details
  * A plugin is a way to implement application-independent reliability
  * and performance tuning behavior. Plugins are written using the API
  * described in this document.
@@ -54,7 +55,9 @@
 
 #include "globus_ftp_client.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Command Mask.
@@ -1567,6 +1570,8 @@ globus_ftp_client_plugin_set_complete_func(
     globus_ftp_client_plugin_t *		plugin,
     globus_ftp_client_plugin_complete_t		complete_func);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_INCLUDE_FTP_CLIENT_PLUGIN_H */
+#endif /* GLOBUS_FTP_CLIENT_PLUGIN_H */

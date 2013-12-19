@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/** @file globus_i_xio_http_responses.h HTTP Response Codes */
 static
 const char *
 globus_l_http_descriptions[] = {

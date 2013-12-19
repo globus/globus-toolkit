@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_sysconfig_system_config.c
+ * @file globus_gsi_system_config.c
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_common.h"
 #include "globus_gsi_system_config.h"
@@ -36,8 +30,6 @@
 #include <errno.h>
 #ifndef WIN32
 #include <sys/times.h>
-#elif defined(HAVE_DIRECT_H)
-#include <direct.h>
 #endif
 #include "version.h"
 
@@ -67,16 +59,9 @@ const char *default_gaa_file(void);
 #define WIN32_SECURE_PATH               win32_secure_path()
 #endif
 
-#ifdef TARGET_ARCH_NETOS
-#define FLASH_ROOT                      "FLASH0"
-#define RAM_ROOT                        "RAM0"
-#endif
-
 #ifndef DEFAULT_SECURE_TMP_DIR
 #ifdef WIN32
 #define DEFAULT_SECURE_TMP_DIR          WIN32_SECURE_PATH
-#elif defined(TARGET_ARCH_NETOS)
-#define DEFAULT_SECURE_TMP_DIR          RAM_ROOT
 #else
 #define DEFAULT_SECURE_TMP_DIR          "/tmp"
 #endif
@@ -149,31 +134,6 @@ const char *default_gaa_file(void);
 #define LOCAL_GAA_FILE                  ".gsi-gaa.conf"      /* Relative to CWD */
 
 
-#elif defined(TARGET_ARCH_NETOS) /* Net+OS Definitions */
-#define FILE_SEPERATOR                  "/"
-#define X509_DEFAULT_USER_CERT          "usercert.pem"
-#define X509_DEFAULT_USER_KEY           "userkey.pem"
-#define X509_DEFAULT_PKCS12_FILE        "usercred.p12"
-#define X509_DEFAULT_TRUSTED_CERT_DIR   FLASH_ROOT "/certificates"
-#define X509_INSTALLED_TRUSTED_CERT_DIR "certificates"
-#define X509_LOCAL_TRUSTED_CERT_DIR     "certificates"
-#define X509_DEFAULT_CERT_DIR           FLASH_ROOT "/grid-security"
-#define X509_INSTALLED_CERT_DIR         "grid-security"
-#define X509_LOCAL_CERT_DIR             "grid-security"
-#define DEFAULT_GRIDMAP                 FLASH_ROOT "/grid-mapfile"
-#define INSTALLED_GRIDMAP               DEFAULT_GRIDMAP
-#define LOCAL_GRIDMAP                   "grid-mapfile"
-#define DEFAULT_AUTHZ_FILE              FLASH_ROOT "gsi-authz.conf"
-#define INSTALLED_AUTHZ_FILE            "gsi-authz.conf"
-#define LOCAL_AUTHZ_FILE                INSTALLED_AUTHZ_FILE
-#define DEFAULT_AUTHZ_LIB_FILE_BASE     "gsi-authz_lib"
-#define DEFAULT_AUTHZ_LIB_FILE_DIR      "/etc/grid-security/"
-#define DEFAULT_AUTHZ_LIB_FILE_EXTENSION ".conf"
-#define INSTALLED_AUTHZ_LIB_DIR         FLASH_ROOT "/etc/"
-#define HOME_AUTHZ_LIB_FILE_BASE        ".gsi-authz_lib"
-#define DEFAULT_GAA_FILE                FLASH_ROOT "/gsi-gaa.conf"
-#define INSTALLED_GAA_FILE              "gsi-gaa.conf"
-#define LOCAL_GAA_FILE                  INSTALLED_GAA_FILE
 #else /* UNIX definitions */
 #define FILE_SEPERATOR                  "/"
 #define X509_DEFAULT_USER_CERT          ".globus/usercert.pem"
@@ -536,11 +496,9 @@ globus_i_gsi_sysconfig_create_key_string(
 
 
 /**
- * @name Win32 - Set Key Permissions
- */
-/* @{ */
-/**
+ * @brief Win32 - Set Key Permissions
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Set the file permissions of a file to read only by the user
  * which are the permissions that should be set for all private keys.
  *
@@ -555,7 +513,7 @@ globus_gsi_sysconfig_set_key_permissions_win32(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     int					                fd = -1;
-    struct stat                         stx;
+    struct _stat                        stx;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_set_key_permissions_win32";
         
@@ -649,11 +607,9 @@ globus_gsi_sysconfig_set_key_permissions_win32(
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
- * @name Win32 - Get HOME Directory
- */
-/* @{ */
-/**
+ * @brief Win32 - Get HOME Directory
  * @ingroup globus_i_gsi_sysconfig_win32
+ * @details
  * Get the HOME directory, currently c:\windows
  * 
  * @param home_dir
@@ -741,12 +697,10 @@ globus_gsi_sysconfig_get_home_dir_win32(
 #endif
 
 /**
- * @name Win32 - File Exists
- */
-/* @{ */
-/**
- * Check that the file exists
+ * @brief Win32 - File Exists
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
+ * Check that the file exists
  *
  * @param filename the file to check
  *
@@ -843,12 +797,10 @@ globus_gsi_sysconfig_file_exists_win32(
 
 
 /**
- * @name Win32 - Directory Exists
- */
-/* @{ */
-/**
- * Check that the directory exists
+ * @brief Win32 - Directory Exists
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
+ * Check that the directory exists
  *
  * @param filename the file to check
  *
@@ -930,11 +882,9 @@ globus_gsi_sysconfig_dir_exists_win32(
 
 
 /**
- * @name Win32 - Check File Status for Key
- */
-/* @{ */
-/**
+ * @brief Win32 - Check File Status for Key
  * @ingroup globus_i_gsi_sysconfig_win32
+ * @details
  * This is a convenience function used to check the status of a 
  * private key file.  The desired status is only the current user has
  * ownership and read permissions, everyone else should not be able
@@ -1048,11 +998,9 @@ globus_gsi_sysconfig_check_keyfile_win32(
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
- * @name Win32 - Check File Status for Cert
- */
-/* @{ */
-/**
+ * @brief Win32 - Check File Status for Cert
  * @ingroup globus_i_gsi_sysconfig_win32
+ * @details
  * This is a convenience function used to check the status of a 
  * certificate file.  The desired status is the current user has
  * ownership and read/write permissions, while group and others only
@@ -1162,12 +1110,10 @@ globus_gsi_sysconfig_check_certfile_win32(
 #endif
 
 /**
- * @name Win32 - Get Current Working Directory
- */
-/* @{ */
-/**
- * Get the current working directory on a windows system
+ * @brief Win32 - Get Current Working Directory
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
+ * Get the current working directory on a windows system
  *
  * @param working_dir
  *        The working directory to get
@@ -1237,11 +1183,9 @@ globus_gsi_sysconfig_get_current_working_dir_win32(
 /* @} */
 
 /**
- * @name Win32 - Make Absolute Path
- */
-/* @{ */
-/**
+ * @brief Win32 - Make Absolute Path
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Make the filename into an absolute path string based
  * on the current working directory.
  *
@@ -1314,11 +1258,9 @@ globus_gsi_sysconfig_make_absolute_path_for_filename_win32(
 /* @} */
 
 /**
- * @name Win32 - Split Directory and Filename
- */
-/* @{ */
-/**
+ * @brief Win32 - Split Directory and Filename
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Split the directory and filename portions of a filename string
  * into two separate strings
  *
@@ -1403,11 +1345,9 @@ globus_gsi_sysconfig_split_dir_and_filename_win32(
 /* @} */
 
 /**
- * @name Win32 - Get User ID
- */
-/* @{ */
-/**
+ * @brief Win32 - Get User ID
  * @ingroup globus_i_gsi_sysconfig_win32
+ * @details
  * Get a unique string representing the current user.  
  */
 globus_result_t
@@ -1430,11 +1370,9 @@ globus_gsi_sysconfig_get_user_id_string_win32(
 /* @} */
 
 /**
- * @name Win32 - Get Username
- */
-/* @{ */
-/**
+ * @brief Win32 - Get Username
  * @ingroup globus_i_gsi_sysconfig_win32
+ * @details
  * Get the username of the current user.  
  */
 globus_result_t
@@ -1480,11 +1418,9 @@ globus_gsi_sysconfig_get_username_win32(
 /* @} */
 
 /**
- * @name Win32 - Get Process ID
- */
-/* @{ */
-/**
+ * @brief Win32 - Get Process ID
  * @ingroup globus_i_gsi_sysconfig_win32
+ * @details
  * Get a unique string representing the current process.  
  */
 globus_result_t
@@ -1524,11 +1460,9 @@ globus_gsi_sysconfig_get_proc_id_string_win32(
 /* @} */
 
 /**
- * @name Win32 - Get Trusted CA Cert Dir
- */
-/* @{ */
-/**
+ * @brief Win32 - Get Trusted CA Cert Dir
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Get the Trusted Certificate Directory containing the trusted
  * Certificate Authority certificates.  This directory is determined
  * in the order shown below.  Failure in one method results in attempting
@@ -1543,7 +1477,7 @@ globus_gsi_sysconfig_get_proc_id_string_win32(
  * this registry key is set on windows, the directory it points to should
  * contain the trusted certificates.  The path to the registry key is
  * software\\Globus\\GSI
- * <li> <b>\\&lt;user home directory&gt;\\.globus\\certificates</b> - If this
+ * <li> <b>\\&lt;user home directory&gt;\\</b><b>.globus\\certificates</b> - If this
  * directory exists, and the previous methods of determining the trusted
  * certs directory failed, this directory will be used.  
  * <li> <b>Host Trusted Cert Dir</b> - This location is intended
@@ -1743,11 +1677,9 @@ globus_gsi_sysconfig_get_cert_dir_win32(
 /* @} */
 
 /**
- * @name Win32 - Get User Certificate Filename
- */
-/* @{ */
-/**
+ * @brief Win32 - Get User Certificate Filename
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Get the User Certificate Filename based on the current user's
  * environment.  The following locations are searched for cert and key
  * files in order:
@@ -1755,9 +1687,9 @@ globus_gsi_sysconfig_get_cert_dir_win32(
  * <ol>
  * <li>environment variables X509_USER_CERT and X509_USER_KEY
  * <li>registry keys x509_user_cert and x509_user_key in software\\Globus\\GSI
- * <li>&lt;users home directory&gt;\\.globus\\usercert.pem and 
- *     &lt;users home directory&gt;\\.globus\\userkey.pem
- * <li>&lt;users home directory&gt;\\.globus\\usercred.p12 - this is a PKCS12 credential
+ * <li><b>&lt;users home directory&gt;\\</b><b>.globus\\usercert.pem</b> and 
+ *     <b>&lt;users home directory&gt;\\</b><b>.globus\\userkey.pem</b>
+ * <li><b>&lt;users home directory&gt;\\</b><b>.globus\\usercred.p12</b> - this is a PKCS12 credential
  * </ol>
  *
  * @param user_cert
@@ -1987,11 +1919,9 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
 /* @} */
 
 /**
- * @name Win32 - Get Host Certificate and Key Filenames
- */
-/* @{ */
-/**
+ * @brief Win32 - Get Host Certificate and Key Filenames
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Get the Host Certificate and Key Filenames based on the current user's
  * environment.  The host cert and key are searched for in the following 
  * locations (in order):
@@ -1999,8 +1929,8 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
  * <ol>
  * <li>X509_USER_CERT and X509_USER_KEY environment variables
  * <li>registry keys x509_user_cert and x509_user_key in software\\Globus\\GSI
- * <li>&lt;GLOBUS_LOCATION&gt;\\etc\\host[cert|key].pem
- * <li>&lt;users home directory&gt;\\.globus\\host[cert|key].pem
+ * <li><b>&lt;GLOBUS_LOCATION&gt;\\etc\\host[cert|key].pem</b>
+ * <li><b>&lt;users home directory&gt;\\</b><b>.globus\\host[cert|key].pem</b>
  * </ol>
  * 
  * @param host_cert
@@ -2254,11 +2184,9 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
 /* @} */
 
 /**
- * @name Win32 - Get Service Certificate and Key Filenames
- */
-/* @{ */
-/**
+ * @brief Win32 - Get Service Certificate and Key Filenames
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Get the Service Certificate Filename based on the current user's
  * environment.  The host cert and key are searched for in the following 
  * locations (in order):
@@ -2269,8 +2197,8 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
  * <li>GLOBUS_LOCATION\\etc\\{service_name}\\{service_name}[cert|key].pem
  *     So for example, if my service was named: myservice, the location
  *     of the certificate would be: 
- *     GLOBUS_LOCATION\\etc\\myservice\\myservicecert.pem
- * <li>&lt;users home&gt;\\.globus\\{service_name}\\{service_name}[cert|key].pem
+ *     <b>&lt;GLOBUS_LOCATION&gt;\\etc\\myservice\\myservicecert.pem</b>
+ * <li><b>&lt;users home&gt;\\</b><b>.globus\\{service_name}\\{service_name}[cert|key].pem</b>
  * </ol>
  * 
  * @param service_name
@@ -2575,11 +2503,9 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
 /* @} */
 
 /**
- * @name Win32 - Get Proxy Filename
- */
-/* @{ */
-/**
+ * @brief Win32 - Get Proxy Filename
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Get the proxy cert filename based on the following
  * search order:
  * 
@@ -2742,11 +2668,9 @@ globus_gsi_sysconfig_get_proxy_filename_win32(
 /* @} */
 
 /**
- * @name Win32 - Get CA Cert Filenames
- */
-/* @{ */
-/**
+ * @brief Win32 - Get CA Cert Filenames
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Gets a list of trusted CA certificate filenames in 
  * a trusted CA certificate directory.  
  *
@@ -2886,11 +2810,9 @@ globus_gsi_sysconfig_get_ca_cert_files_win32(
 /* @} */
 
 /**
- * @name Win32 - Remove all proxies owned by current uid
- */
-/* @{ */
-/**
+ * @brief Win32 - Remove all proxies owned by current uid
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Removes all proxies (ie. all delegated and grid-proxy-init generated
  * proxies) found in the secure tmp directory that are owned by the
  * current user.
@@ -2905,7 +2827,7 @@ globus_result_t
 globus_gsi_sysconfig_remove_all_owned_files_win32(
     char *                              default_filename)
 {
-    struct stat                         stx;
+    struct _stat                         stx;
     char *                              full_filename = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     HANDLE                              search_handle = INVALID_HANDLE_VALUE;
@@ -3002,12 +2924,10 @@ globus_gsi_sysconfig_remove_all_owned_files_win32(
 /* @} */
 
 /**
- * @name Win32 - Get the path and file name of the grid map file
- */
-/* @{ */
-/**
- * Get the path and file name of the grid map file.
+ * @brief Win32 - Get the path and file name of the grid map file
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
+ * Get the path and file name of the grid map file.
  *
  * @param filename
  *        Contains the location of the grid map file upon successful return
@@ -3111,11 +3031,9 @@ globus_gsi_sysconfig_get_gridmap_filename_win32(
 /* @} */
 
 /**
- * @name Win32 - Get the path and file name of the grid map file
- */
-/* @{ */
-/**
+ * @brief Win32 - Get the path and file name of the grid map file
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Get the path and file name of the authorization callback
  * configuration file 
  *
@@ -3479,11 +3397,9 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
 
 
 /**
- * @name Win32 - Get the path and file name of the gaa config file
- */
-/* @{ */
-/**
+ * @brief Win32 - Get the path and file name of the gaa config file
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Get the path and file name of the gaa config configuration file .
  *
  * @param filename
@@ -3661,11 +3577,9 @@ globus_gsi_sysconfig_get_gaa_conf_filename_win32(
 /* @} */
 
 /**
- * @name Win32 - Check if the current user is root
- */
-/* @{ */
-/**
+ * @brief Win32 - Check if the current user is root
  * Checks whether the current user is root.
+ * @details
  * @ingroup globus_gsi_sysconfig_win32
  *
  * @param is_superuser
@@ -3695,11 +3609,9 @@ globus_gsi_sysconfig_is_superuser_win32(
 
 
 /**
- * @name Win32 - Get Signing Policy Filename
- */
-/* @{ */
-/**
+ * @brief Win32 - Get Signing Policy Filename
  * @ingroup globus_gsi_sysconfig_win32
+ * @details
  * Get the Signing Policy Filename on the current system,
  * based on the CA's subject name, and the trusted certificates
  * directory
@@ -3828,9 +3740,6 @@ globus_result_t
 globus_gsi_sysconfig_set_key_permissions_unix(
     char *                              filename)
 {
-#ifdef TARGET_ARCH_NETOS
-    return GLOBUS_SUCCESS;
-#else
     globus_result_t                     result = GLOBUS_SUCCESS;
     int					fd = -1;
     mode_t                              oldmask;
@@ -3931,7 +3840,6 @@ globus_gsi_sysconfig_set_key_permissions_unix(
     globus_libc_umask(oldmask);
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
-#endif
 }
 /* @} */
 
@@ -4018,18 +3926,6 @@ globus_result_t
 globus_gsi_sysconfig_get_username_unix(
     char **                             username)
 {
-#ifdef TARGET_ARCH_NETOS
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    GlobusFuncName(globus_gsi_sysconfig_get_username_unix);
-
-    *username = globus_libc_strdup("netosuser");
-    if(!*username)
-    {
-        result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-    }
-
-    return result;
-#else
     globus_result_t                     result = GLOBUS_SUCCESS;
     struct passwd                       pwd;
     struct passwd *                     pwd_result;
@@ -4101,7 +3997,6 @@ globus_gsi_sysconfig_get_username_unix(
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
-#endif
 }
 /* @} */
 
@@ -4352,17 +4247,6 @@ globus_result_t
 globus_gsi_sysconfig_get_current_working_dir_unix(
     char **                             working_dir)
 {
-#ifdef TARGET_ARCH_NETOS
-    GlobusFuncName(globus_gsi_sysconfig_get_working_dir_unix);
-
-    *working_dir = globus_libc_strdup(FLASH_ROOT);
-
-    if (!*working_dir)
-    {
-        return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-    }
-    return GLOBUS_SUCCESS;
-#else
     globus_result_t                     result = GLOBUS_SUCCESS;
     char *                              buffer = NULL;
     char *                              result_buffer = NULL;
@@ -4417,7 +4301,6 @@ globus_gsi_sysconfig_get_current_working_dir_unix(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
-#endif
 }
 /* @} */
 
@@ -4440,17 +4323,6 @@ globus_result_t
 globus_gsi_sysconfig_get_home_dir_unix(
     char **                             home_dir)
 {
-#ifdef TARGET_ARCH_NETOS
-    GlobusFuncName(globus_gsi_sysconfig_get_home_dir_unix);
-
-    *home_dir = globus_libc_strdup(FLASH_ROOT);
-
-    if (!*home_dir)
-    {
-        return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-    }
-    return GLOBUS_SUCCESS;
-#else
     char *                              temp_home_dir;
     struct passwd                       pwd;
     struct passwd *                     pwd_result;
@@ -4545,7 +4417,6 @@ globus_gsi_sysconfig_get_home_dir_unix(
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
-#endif
 }
 /* @} */
 
@@ -4568,26 +4439,6 @@ globus_result_t
 globus_gsi_sysconfig_file_exists_unix(
     const char *                        filename)
 {
-#ifdef TARGET_ARCH_NETOS
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    int fd ;
-    GlobusFuncName(globus_gsi_sysconfig_file_exists_unix);
-
-    fd = open(filename, O_RDONLY);
-    if (fd < 0)
-    {
-        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
-            (_GSSL("%s is not a valid file"), filename));            
-    }
-    else
-    {
-        close(fd);
-    }
-
-    return result;
-#else
     struct stat                         stx;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
@@ -4668,7 +4519,6 @@ globus_gsi_sysconfig_file_exists_unix(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
-#endif
 }    
 /* @} */
 
@@ -4691,24 +4541,6 @@ globus_result_t
 globus_gsi_sysconfig_dir_exists_unix(
     const char *                        filename)
 {
-#ifdef TARGET_ARCH_NETOS
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    DIR * f = opendir(filename);
-    GlobusFuncName(globus_gsi_sysconfig_dir_exists_unix);
-
-    if (f == NULL)
-    {
-        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
-            (_GSSL("%s is not a valid directory"), filename));            
-    }
-    else
-    {
-        closedir(f);
-    }
-    return result;
-#else
     struct stat                         stx;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
@@ -4772,7 +4604,6 @@ globus_gsi_sysconfig_dir_exists_unix(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
-#endif
 }    
 /* @} */
 
@@ -4801,9 +4632,6 @@ globus_result_t
 globus_gsi_sysconfig_check_keyfile_unix(
     const char *                        filename)
 {
-#ifdef TARGET_ARCH_NETOS
-    return globus_gsi_sysconfig_file_exists_unix(filename);
-#else
     struct stat                         stx;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -4907,7 +4735,6 @@ globus_gsi_sysconfig_check_keyfile_unix(
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
 
     return result;
-#endif
 }
 /* @} */
 
@@ -4935,9 +4762,6 @@ globus_result_t
 globus_gsi_sysconfig_check_certfile_unix(
     const char *                        filename)
 {
-#ifdef TARGET_ARCH_NETOS
-    return globus_gsi_sysconfig_file_exists_unix(filename);
-#else
     struct stat                         stx;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -5039,7 +4863,6 @@ globus_gsi_sysconfig_check_certfile_unix(
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
-#endif
 }
 /* @} */
 
@@ -5515,9 +5338,8 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
  *
  * <ol>
  * <li>X509_USER_CERT and X509_USER_KEY environment variables</li>
- * <li>registry keys x509_user_cert and x509_user_key in software\\Globus\\GSI</li>
- * <li>\\<GLOBUS_LOCATION\\>\\etc\\host[cert|key].pem</li>
- * <li>\\<users home directory\\>\\.globus\\host[cert|key].pem</li>
+ * <li><em>$GLOBUS_LOCATION</em>/etc/host[cert|key].pem</li>
+ * <li><em>$HOME</em>/.globus/host[cert|key].pem</li>
  * </ol>
  * 
  * @param host_cert

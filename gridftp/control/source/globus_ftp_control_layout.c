@@ -16,7 +16,6 @@
 
 /**
  * @file globus_ftp_control_layout.c
- *
  */
 
 #include "globus_ftp_control.h"

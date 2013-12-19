@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file hostname.c
+ * @file gss_assist/source/hostname.c
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_gss_assist.h"
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #define BUFFER_SIZE 8192
+#ifndef NI_MAXHOST 
+#define NI_MAXHOST 255
+#endif
+#endif
+
 /**
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_name
  * Create a GSS Name structure from the given hostname. This function tries to
  * resolve the given host name string to the canonical DNS name for the host.
  *
@@ -41,10 +41,6 @@
  * 
  * @return GLOBUS_SUCCESS on successful completion, a error object otherwise
  */
-#ifndef NI_MAXHOST 
-#define NI_MAXHOST 255
-#endif
-
 globus_result_t
 globus_gss_assist_authorization_host_name(
     char *                              hostname,
@@ -185,3 +181,4 @@ globus_gss_assist_authorization_host_name(
  error_exit:
     return result;
 }
+/* globus_gss_assist_authorization_host_name() */

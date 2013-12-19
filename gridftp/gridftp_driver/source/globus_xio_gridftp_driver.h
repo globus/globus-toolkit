@@ -14,30 +14,36 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_XIO_GRIDFTP_DRIVER_INCLUDE
-#define GLOBUS_XIO_GRIDFTP_DRIVER_INCLUDE
+#ifndef GLOBUS_XIO_GRIDFTP_DRIVER_H
+#define GLOBUS_XIO_GRIDFTP_DRIVER_H
 
 /**
- * @file
- * Header file for XIO GRIDFTP Client Driver
+ * @file globus_xio_gridftp_driver.h XIO GRIDFTP Client Driver
  */
 
 #include "globus_xio_system.h"
 #include "globus_common.h"
 
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
- * @defgroup gridftp_driver Globus XIO GRIDFTP Client Driver
+ * @mainpage Globus XIO GridFTP Driver
+ * @copydoc globus_xio_gridftp_driver 
+ */
+#endif
+
+/**
+ * @defgroup globus_xio_gridftp_driver Globus XIO GRIDFTP Client Driver
  */
 
 /**
- * @defgroup gridftp_driver_instance Opening/Closing
- * @ingroup gridftp_driver
+ * @addtogroup globus_xio_gridftp_driver
+ * @section globus_xio_gridftp_driver_handles Handles
  *
  * An XIO handle with the gridftp client driver can be created with 
- * @ref globus_xio_handle_create() 
+ * globus_xio_handle_create() 
  *
  * The gridftp client driver makes use of globus ftp client library. 
- * @ref globus_xio_register_open() call creates a new ftp client handle (unless 
+ * globus_xio_register_open() call creates a new ftp client handle (unless 
  * one is set on the attr passed), establishes connection with the 
  * gridftp server. The contact string must contain the scheme, host name,
  * and the resource, optionally it might contain port and subject also.
@@ -47,16 +53,16 @@
  */
 
 /**
- * @defgroup gridftp_driver_io Reading/Writing
- * @ingroup gridftp_driver
+ * @addtogroup globus_xio_gridftp_driver
+ * @section globus_xio_gridftp_driver_io Reading/Writing
  *
- * The @ref globus_xio_register_read() enforce that the waitforbytes parameter
+ * The globus_xio_register_read() enforce that the waitforbytes parameter
  * should be one. When multiple TCP streams are used between the client and the
  * server, data might not be delivered in order. 
- * @ref globus_xio_data_descriptor_cntl() can be used to get the offset of the
+ * globus_xio_data_descriptor_cntl() can be used to get the offset of the
  * data. 
  *
- * @ref globus_xio_register_write() does not enforce any restriction on the 
+ * globus_xio_register_write() does not enforce any restriction on the 
  * waitforbytes parameter. 
  *
  * In any case, when an error or EOF occurs before the waitforbytes request
@@ -65,15 +71,17 @@
  */
 
 /**
- * @defgroup gridftp_driver_envs Env Variables
- * @ingroup gridftp_driver
+ * @addtogroup globus_xio_gridftp_driver
+ * 
+ * @section globus_xio_gridftp_driver_env Environment Variables
+ *
  * - GLOBUS_XIO_GRIDFTP_DEBUG Available if using a debug build. See 
  * globus_debug.h for format. 
  */
 
 /**
- * @defgroup gridftp_driver_cntls Attributes and Cntls
- * @ingroup gridftp_driver
+ * @addtogroup globus_xio_gridftp_driver
+ * @section globus_xio_gridftp_driver_cntls Attributes and Cntls
  *
  * Gridftp driver specific attrs and cntls.
  *
@@ -83,13 +91,12 @@
  *
  * @see globus_xio_data_descriptor_cntl ()
  */
+#define globus_xio_gridftp_attr_cntl globus_xio_attr_cntl
+#define globus_xio_gridftp_handle_cntl globus_xio_handle_cntl
+
 /**
- * @defgroup gridftp_driver_types Types
- * @ingroup gridftp_driver
- */
-/**
- * @defgroup gridftp_driver_errors Error Types
- * @ingroup gridftp_driver
+ * @addtogroup globus_xio_gridftp_driver
+ * @section globus_xio_gridftp_driver_types Types
  *
  * The errors reported by the GRIDFTP driver include GLOBUS_XIO_ERROR_EOF, 
  * GLOBUS_XIO_ERROR_CANCELED, @ref GLOBUS_XIO_GRIDFTP_ERROR_OUTSTANDING_READ, 
@@ -104,8 +111,8 @@
  */
 
 /**
- * GRIDFTP driver specific error types
- * @ingroup gridftp_driver_errors
+ * GridFTP driver specific error types
+ * @ingroup globus_xio_gridftp_driver
  */
 typedef enum
 {
@@ -143,16 +150,19 @@ typedef enum
 
 } globus_xio_gridftp_error_type_t;
 
+#define globus_xio_gridftp_attr_cntl globus_xio_attr_cntl
+#define globus_xio_gridftp_handle_cntl globus_xio_handle_cntl
+
 /** doxygen varargs filter stuff
  * GlobusVarArgDefine(
- *      attr, globus_result_t, globus_xio_attr_cntl, attr, driver)
+ *      attr, globus_result_t, globus_xio_gridftp_attr_cntl, attr, driver)
  * GlobusVarArgDefine(
- *      handle, globus_result_t, globus_xio_handle_cntl, handle, driver)
+ *      handle, globus_result_t, globus_xio_gridftp_handle_cntl, handle, driver)
  */
 
 /**
  * GRIDFTP driver specific cntls
- * @ingroup gridftp_driver_cntls
+ * @ingroup globus_xio_gridftp_driver
  */
 
 typedef enum
@@ -478,7 +488,7 @@ typedef enum
 
 /**  
  * GRIDFTP driver specific types
- * @ingroup gridftp_driver_types
+ * @ingroup globus_xio_gridftp_driver
  * @hideinitializer
  */  
 
@@ -509,4 +519,4 @@ typedef enum globus_l_xio_gridftp_protection_e
 } globus_l_xio_gridftp_protection_t;
 
 
-#endif
+#endif /* GLOBUS_XIO_GRIDFTP_DRIVER_H */

@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_ftp_client_handle.c FTP Handle Manipulation.
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_ftp_client.h"
 #include "globus_xio.h"
@@ -333,7 +327,7 @@ globus_ftp_client_handle_init(
     i_handle->checksum_offset = 0;
     i_handle->checksum_length = -1;
     i_handle->checksum = GLOBUS_NULL;
-    i_handle->source_pasv = (globus_libc_getenv("GLOBUS_FTP_CLIENT_SOURCE_PASV") != NULL);
+    i_handle->source_pasv = (getenv("GLOBUS_FTP_CLIENT_SOURCE_PASV") != NULL);
     globus_fifo_init(&i_handle->src_op_queue);
     globus_fifo_init(&i_handle->dst_op_queue);
     globus_fifo_init(&i_handle->src_response_pending_queue);
@@ -1001,7 +995,7 @@ globus_l_ftp_client_target_new(
         }
 
 /*
-        remote_program = globus_libc_getenv("GLOBUS_REMOTE_SSHFTP");
+        remote_program = getenv("GLOBUS_REMOTE_SSHFTP");
         if(remote_program == NULL)
         {
             remote_program = "/etc/grid-security/sshftp";

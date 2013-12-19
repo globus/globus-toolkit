@@ -1,0 +1,8 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: globus-gram-job-manager-condor
+Description: Globus Toolkit - Condor Job Manager Support
+Version: @VERSION@

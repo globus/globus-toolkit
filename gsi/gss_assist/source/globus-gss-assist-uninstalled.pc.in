@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+abs_top_builddir=@abs_top_builddir@
+abs_top_srcdir=@abs_top_srcdir@
+
+Name: globus-gss-assist
+Description: Globus Toolkit - GSSAPI Assist Library
+Version: @PACKAGE_VERSION@
+Libs: -L${abs_top_builddir} -lglobus_gss_assist
+Requires.private: @PACKAGE_DEPS@
+Cflags: -I${abs_top_srcdir}

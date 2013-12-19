@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_proxy.c
+ * @file globus_gsi_proxy.c GSI Proxy Implementation
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #define PROXY_NAME                      "proxy"
 #define LIMITED_PROXY_NAME              "limited proxy"
@@ -184,11 +178,9 @@ globus_l_gsi_proxy_deactivate(void)
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
     
 /**
- * @name Create Request
- */
-/*@{*/
-/**
+ * @brief Create Request
  * @ingroup globus_gsi_proxy_operations
+ * @details
  * Create a proxy credential request
  *
  * This function creates a proxy credential request, ie. a unsigned 
@@ -599,14 +591,11 @@ globus_gsi_proxy_create_req(
     return result;
 }
 /* globus_gsi_proxy_create_req */
-/*@}*/
 
 /**
- * @name Inquire Request
- */
-/*@{*/
-/**
+ * @brief Inquire Request
  * @ingroup globus_gsi_proxy_operations
+ * @details
  * Inquire a proxy credential request
  *
  * This function reads the public part of a proxy credential request
@@ -808,15 +797,12 @@ globus_gsi_proxy_inquire_req(
     return result;
 }
 /* globus_gsi_proxy_inquire_req */
-/*@}*/
 
 
 /**
- * @name Resign Certificate
- */
-/*@{*/
-/**
+ * @brief Resign Certificate
  * @ingroup globus_gsi_proxy_operations
+ * @details
  * Resign a existing certificate into a proxy
  *
  * This function use the public key in a existing certificate
@@ -1006,15 +992,12 @@ globus_gsi_proxy_resign_cert(
     return result;
 }
 /* globus_gsi_proxy_resign_cert */
-/*@}*/
 
 
 /**
- * @name Sign Request
- */
-/*@{*/
-/**
+ * @brief Sign Request
  * @ingroup globus_gsi_proxy_operations
+ * @details
  * Sign a proxy certificate request
  *
  * This function signs the public part of a proxy credential request,
@@ -1128,7 +1111,6 @@ globus_gsi_proxy_sign_req(
     return result;
 }
 /* globus_gsi_proxy_sign_req */
-/*@}*/
 
 static globus_result_t
 globus_l_gsi_proxy_sign_key(
@@ -1837,11 +1819,9 @@ globus_l_gsi_proxy_sign_key(
 }
 
 /**
- * @name Create Signed
- */
-/* @{ */
-/**
+ * @brief Create Signed
  * @ingroup globus_gsi_proxy_operations
+ * @details
  * Create Signed Proxy Certificate
  *
  * @param handle
@@ -2081,15 +2061,12 @@ globus_gsi_proxy_create_signed(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* @} */            
 
 
 /**
- * @name Assemble credential
- */
-/*@{*/
-/**
+ * @brief Assemble credential
  * @ingroup globus_gsi_proxy_operations
+ * @details
  * Assemble a proxy credential
  *
  * This function assembles a proxy credential. It reads a signed proxy
@@ -2260,7 +2237,6 @@ globus_gsi_proxy_assemble_cred(
     return result;
 }
 /* globus_gsi_proxy_assemble_cred */
-/*@}*/
 
 /* INTERNAL FUNCTIONS */
 

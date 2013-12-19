@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+abs_top_builddir=@abs_top_builddir@
+abs_top_srcdir=@abs_top_srcdir@
+
+Name: globus-common
+Description: Globus Toolkit - Common Library
+Version: @PACKAGE_VERSION@
+Libs: @LDFLAGS@ @LIBS@ -L${abs_top_builddir}/library -lglobus_common
+Cflags: @LARGEFILE_CFLAGS@ @CFLAGS@ -I${abs_top_builddir} -I${abs_top_srcdir}/library

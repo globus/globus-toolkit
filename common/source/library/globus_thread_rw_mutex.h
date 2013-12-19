@@ -15,13 +15,15 @@
  */
 
 
-#ifndef GLOBUS_INCLUDE_GLOBUS_RW_MUTEX
-#define GLOBUS_INCLUDE_GLOBUS_RW_MUTEX 1
+#ifndef GLOBUS_THREAD_RW_MUTEX_H
+#define GLOBUS_THREAD_RW_MUTEX_H 1
 
 #include "globus_common_include.h"
 #include "globus_thread.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct
 {
@@ -81,5 +83,9 @@ globus_rw_cond_timedwait(
     globus_rw_mutex_t *                 rw_lock,
     globus_abstime_t *                  abstime);
 
-EXTERN_C_END
+
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_THREAD_RW_MUTEX_H */

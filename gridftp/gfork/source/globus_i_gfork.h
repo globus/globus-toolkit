@@ -143,7 +143,7 @@ typedef struct gfork_i_options_s
     int                                 port;
     int                                 instances;
     int                                 nice;
-    char *                              interface;
+    char *                              interfajce;
     globus_list_t *                     env_list;
     uid_t                               master_user;
     char *                              master;

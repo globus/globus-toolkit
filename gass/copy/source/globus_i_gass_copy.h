@@ -14,31 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H
-#define GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H
+#ifndef GLOBUS_I_GASS_COPY_H
+#define GLOBUS_I_GASS_COPY_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_i_gass_copy.h
- * Globus GASS Copy Library
+ * @file globus_i_gass_copy.h Globus GASS Copy Library Internals
  */
-#endif
 
 #include "globus_gass_copy.h"
 #include "globus_common.h"
 #include "globus_error_string.h"
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 /**
  * target status
@@ -258,6 +247,8 @@ globus_result_t
 globus_i_gass_copy_state_new(
     globus_gass_copy_handle_t *handle);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /*GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H */
+#endif /* GLOBUS_I_GASS_COPY_H */

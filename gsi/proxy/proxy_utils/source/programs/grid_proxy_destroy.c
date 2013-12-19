@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file grid_proxy_destroy.h
+ * @file grid_proxy_destroy.c
  * Globus GSI Proxy Utils
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_common.h"
 #include "globus_error.h"
@@ -33,9 +27,6 @@
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
 #include "globus_gsi_system_config.h"
-#ifdef WIN32
-#include "openssl/applink.c"
-#endif
 
 int                                     debug = 0;
 

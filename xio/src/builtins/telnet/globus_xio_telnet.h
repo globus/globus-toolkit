@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-#if !defined GLOBUS_XIO_DRIVER_TELNET_H
-#define GLOBUS_XIO_DRIVER_TELNET_H 1
+/** @file globus_xio_telnet.h XIO Telnet Driver */
+#if !defined GLOBUS_XIO_TELNET_H
+#define GLOBUS_XIO_TELNET_H 1
 
 #include "globus_common.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum globus_xio_telnet_attr_type_e
 {
@@ -25,5 +30,8 @@ typedef enum globus_xio_telnet_attr_type_e
     GLOBUS_XIO_TELNET_BUFFER
 } globus_xio_telnet_attr_type_t;
 
-
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_XIO_TELNET_H */

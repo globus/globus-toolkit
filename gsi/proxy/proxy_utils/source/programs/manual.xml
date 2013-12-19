@@ -31,12 +31,12 @@ $Header$
 <title>Globus Commands</title>
 
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="grid_proxy_init-manual.xml"></xi:include>
+    href="grid_proxy_init.xml"></xi:include>
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="grid_proxy_info-manual.xml"></xi:include>
+    href="grid_proxy_info.xml"></xi:include>
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="grid_proxy_destroy-manual.xml"></xi:include>
+    href="grid_proxy_destroy.xml"></xi:include>
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="grid_cert_diagnostics-manual.xml"></xi:include>
+    href="grid_cert_diagnostics.xml"></xi:include>
 
 </reference>

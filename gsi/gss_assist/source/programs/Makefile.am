@@ -1,37 +1,26 @@
-include $(top_srcdir)/globus_automake_pre
-
-Admin_Scripts = \
+sbin_SCRIPTS = \
 	grid-mapfile-add-entry \
 	grid-mapfile-delete-entry \
 	grid-mapfile-check-consistency
 
-Dist_Scripts = \
+man_MANS =  grid-mapfile-add-entry.8 \
+            grid-mapfile-delete-entry.8 \
+            grid-mapfile-check-consistency.8
+
+EXTRA_DIST = $(man_MANS) \
         grid-mapfile-add-entry.in \
         grid-mapfile-delete-entry.in \
-        grid-mapfile-check-consistency.in
-
-sbin_SCRIPTS = $(Admin_Scripts)
-## man8dir = [ DOC ]
-man8_MANS =  grid-mapfile-add-entry.8 \
-                grid-mapfile-delete-entry.8 \
-                grid-mapfile-check-consistency.8
-
-MANUALS_SOURCE = manual.xml \
-        grid-mapfile-add-entry-manual.xml \
-        grid-mapfile-delete-entry-manual.xml \
-        grid-mapfile-check-consistency-manual.xml \
+        grid-mapfile-check-consistency.in \
+        grid-mapfile-add-entry.xml \
+        grid-mapfile-delete-entry.xml \
+        grid-mapfile-check-consistency.xml \
         replace-version.xsl 
 
-EXTRA_DIST = $(Dist_Scripts) $(MANUALS_SOURCE) $(man8_MANS)
-INCLUDES =  -I$(top_srdir) $(GPT_INCLUDES) 
+if BUILD_MANPAGES
+SUFFIXES = .xml .8
 
-if GENERATE_MANPAGES
-export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
-
-$(man8_MANS): $(MANUALS_SOURCE)
-	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd manual.xml > /dev/null
-	$(XSLTPROC) --stringparam version "`$$GLOBUS_LOCATION/bin/globus-version 2> /dev/null || echo`" --xinclude replace-version.xsl manual.xml
+.xml.8:
+	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
+	$(XSLTPROC) --nonet $(MAN_XSL) $<
+CLEANFILES = $(man_MANS)
 endif
-
-
-include $(top_srcdir)/globus_automake_post

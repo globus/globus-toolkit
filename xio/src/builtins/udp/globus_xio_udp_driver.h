@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_XIO_UDP_DRIVER_INCLUDE
-#define GLOBUS_XIO_UDP_DRIVER_INCLUDE
+#ifndef GLOBUS_XIO_UDP_DRIVER_H
+#define GLOBUS_XIO_UDP_DRIVER_H
 /**
- * @file
- * Header file for XIO UDP Driver
+ * @file globus_xio_udp_driver.h XIO UDP Driver
  */
+
 #include "globus_xio_system.h"
 
 /**
- * @defgroup udp_driver Globus XIO UDP Driver
+ * @defgroup globus_xio_udp_driver Globus XIO UDP Driver
+ * @ingroup globus_xio
  * The IPV4/6 UDP socket driver.
  */
  
 /**
- * @defgroup udp_driver_instance Opening/Closing
- * @ingroup udp_driver
+ * @defgroup globus_xio_udp_driver_instance Opening/Closing
+ * @ingroup globus_xio_udp_driver
  * 
  * An XIO handle with the udp driver can be created with
  * @ref globus_xio_handle_create().
@@ -49,8 +50,8 @@
  */
  
 /**
- * @defgroup udp_driver_io Reading/Writing
- * @ingroup udp_driver
+ * @defgroup globus_xio_udp_driver_io Reading/Writing
+ * @ingroup globus_xio_udp_driver
  * 
  * @ref globus_xio_register_read() semantics:
  * 
@@ -99,8 +100,8 @@
  */
  
 /**
- * @defgroup udp_driver_envs Env Variables
- * @ingroup udp_driver
+ * @defgroup globus_xio_udp_driver_envs Env Variables
+ * @ingroup globus_xio_udp_driver
  * 
  * The udp driver uses the following environment variables
  * - GLOBUS_HOSTNAME Used when setting the hostname in the contact string
@@ -115,8 +116,8 @@
  */
 
 /**
- * @defgroup udp_driver_cntls Attributes and Cntls
- * @ingroup udp_driver
+ * @defgroup globus_xio_udp_driver_cntls Attributes and Cntls
+ * @ingroup globus_xio_udp_driver
  * 
  * UDP driver specific attrs and cntls.
  * 
@@ -125,12 +126,12 @@
  * @see globus_xio_data_descriptor_cntl()
  */
 /**
- * @defgroup udp_driver_types Types
- * @ingroup udp_driver
+ * @defgroup globus_xio_udp_driver_types Types
+ * @ingroup globus_xio_udp_driver
  */
 /**
- * @defgroup udp_driver_errors Error Types
- * @ingroup udp_driver
+ * @defgroup globus_xio_udp_driver_errors Error Types
+ * @ingroup globus_xio_udp_driver
  * 
  * The UDP driver is very close to the system code, so most errors
  * reported by it are converted from the system errno. A few of the exceptions
@@ -144,7 +145,7 @@
 
 /**
  * Invalid handle type
- * @ingroup udp_driver_types
+ * @ingroup globus_xio_udp_driver_types
  * @hideinitializer
  * @see GLOBUS_XIO_UDP_SET_HANDLE
  */
@@ -152,7 +153,7 @@
 
 /**
  * UDP driver specific error types
- * @ingroup udp_driver_errors
+ * @ingroup globus_xio_udp_driver_errors
  */
 typedef enum
 {
@@ -179,13 +180,13 @@ typedef enum
 
 /**
  * UDP driver specific cntls
- * @ingroup udp_driver_cntls
+ * @ingroup globus_xio_udp_driver_cntls
  */
 typedef enum
 {
     /** GlobusVarArgEnum(attr)
      * Set the udp socket to use.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param handle
      *      Use this handle (fd or SOCKET).
@@ -196,7 +197,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Set the udp service name to listen on.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param service_name
      *      The service name to use when setting up the listener.  If the 
@@ -208,7 +209,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Get the service name to listen on.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param service_name_out
      *      A pointer to the service name will be stored here  If none is set,
@@ -220,7 +221,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Set the port number to listen on.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * The default is 0 (system assigned)
      * 
      * @param listener_port
@@ -233,7 +234,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      *  the port number to listen on.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param listener_port_out
      *      The port will be stored here.
@@ -243,7 +244,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Set the port range to confine the listener to.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * Used only where no specific service or port has been set.  It overrides
      * the range set in the GLOBUS_UDP_PORT_RANGE env variable.  If
      * 'restrict port' is true, the listening port will be constrained to the
@@ -263,7 +264,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Get the udp port range on an attr.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param listener_min_port_out
      *      The lower bound will be stored here.
@@ -277,7 +278,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Set the interface to bind the socket to.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param interface
      *      The interface to use.  Can be a hostname or numeric IP
@@ -287,7 +288,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Get the interface on the attr.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param interface_out
      *      A pointer to the interface will be stored here  If one is set,
@@ -299,7 +300,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Enable or disable the listener range constraints.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * This enables or ignores the port range found in the attr or in then env.
      * By default, those ranges are enabled.
      * 
@@ -313,7 +314,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Get the restrict port flag.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param restrict_port_out
      *      The restrict port flag will be stored here.
@@ -323,7 +324,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Reuse addr when binding.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * Used to determine whether or not to allow reuse of addresses when
      * binding a socket to a port number.
      * 
@@ -335,7 +336,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Get the reuseaddr flag on an attr.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param resuseaddr_out
      *      The reuseaddr flag will be stored here.
@@ -345,7 +346,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Restrict to IPV4 only.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * Disallow IPV6 sockets from being used
      * (default is to use either ipv4 or ipv6)
      * 
@@ -357,7 +358,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Get the no ipv6 flag on an attr.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param no_ipv6_out
      *      The no ipv6 flag will be stored here.
@@ -367,7 +368,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr, handle)
      * Get the socket handle on an attr or handle.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param handle_out
      *      The udp socket will be stored here. If none is set,
@@ -378,7 +379,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr, handle)
      * Set the socket send buffer size.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * Used to set the size of the send buffer used on the socket.
      * 
      * @param sndbuf
@@ -389,7 +390,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr, handle)
      * Get the send buffer size on the attr or handle.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param sndbuf_out
      *      The send buffer size will be stored here.
@@ -399,7 +400,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr, handle)
      * Set the socket receive buffer size.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * Used to set the size of the receive buffer used on the socket.
      * 
      * @param rcvbuf
@@ -410,7 +411,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr, handle)
      * Get the receive buffer size on the attr or handle.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * 
      * @param rcvbuf_out
      *      The receive buffer size will be stored here.
@@ -420,7 +421,7 @@ typedef enum
     
     /** GlobusVarArgEnum(handle, dd)
      * Get the contact string associated with a handle or data descriptor.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * Use with globus_xio_handle_cntl() to get a contact string for the udp
      * listener.  Use with globus_xio_data_descriptor_cntl() to get the
      * sender's contact string from a data descriptor passed to
@@ -438,7 +439,7 @@ typedef enum
     
     /** GlobusVarArgEnum(handle, dd)
      * Get the contact string associated with a handle or data descriptor.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * Use with globus_xio_handle_cntl() to get a contact string for the udp
      * listener.  Use with globus_xio_data_descriptor_cntl() to get the
      * sender's contact string from a data descriptor passed to
@@ -456,7 +457,7 @@ typedef enum
     
     /** GlobusVarArgEnum(dd)
      * Set the destination contact.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * Use on a data descriptor passed to @ref globus_xio_register_write() to
      * specify the recipient of the data.  This is necessary with unconnected
      * handles or to send to recipients other than the connected one.
@@ -472,7 +473,7 @@ typedef enum
     
     /** GlobusVarArgEnum(handle)
      * Set the default destination contact.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * Connecting a handle to a specific contact blocks packets from any other
      * contact.  It also sets the default destination of all outgoing packets
      * so, using @ref GLOBUS_XIO_UDP_SET_CONTACT is unnecessary.
@@ -486,7 +487,7 @@ typedef enum
     
    /** GlobusVarArgEnum(attr)
      * Join a multicast group.
-     * @ingroup udp_driver_cntls
+     * @ingroup globus_xio_udp_driver_cntls
      * Specifiy a multicast group to join.  All packets received will be
      * to the specified multicast address.  Do not use
      * @ref GLOBUS_XIO_UDP_CONNECT, @ref GLOBUS_XIO_UDP_SET_PORT, or

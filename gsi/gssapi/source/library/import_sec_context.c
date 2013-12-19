@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file import_sec_context.c
+ * @file gssapi/source/library/import_sec_context.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -38,15 +30,11 @@ static char *rcsid = "$Id$";
 #include <string.h>
 
 /**
- * @name Import Security Context
+ * @brief Import Security Context
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
  * GSSAPI routine to import the security context based
  * on the input token.
  * See: <draft-ietf-cat-gssv2-cbind-04.txt>
- *
  */
 OM_uint32 
 GSS_CALLCONV gss_import_sec_context(
@@ -384,4 +372,3 @@ exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */

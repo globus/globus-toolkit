@@ -187,6 +187,9 @@ sub write_c_header
  * $0. Do not modify.
  */
 
+/**
+ * \@file globus_gram_protocol_constants.h Protocol Constants
+ */
 #ifndef GLOBUS_GRAM_PROTOCOL_CONSTANTS_H
 #define GLOBUS_GRAM_PROTOCOL_CONSTANTS_H
 
@@ -200,6 +203,9 @@ EOF
 	$output->print(<<EOF);
 /**
  * \@defgroup $basename $types->{$type}->{brief}
+ * \@ingroup globus_gram_protocol
+ * \@brief $types->{$type}->{brief}
+ * \@details
  * $types->{$type}->{documentation}
  * \@anchor $type
  */

@@ -14,19 +14,8 @@
  * limitations under the License.
  */
 
-/*****************************************************************************
-globus_print.c
+/** @file globus_print.c Error- and status-reporting functions */
 
-Description:
-   Error- and status-reporting functions, extracted from nexus
-
-CVS Information:
-   $Source$
-   $Date$
-   $Revision$
-   $State$
-   $Author$
-******************************************************************************/
 #include "globus_common_include.h"
 #include "globus_print.h"
 #include "globus_libc.h"
@@ -42,8 +31,8 @@ static void
 globus_l_descriptor_string(
     char *                                          fmt,
     char *                                          s1,
-	char *                                          s2,
-	char *                                          s3);
+    char *                                          s2,
+    char *                                          s3);
 
 /*****************************************************************************
 		      Module specific prototypes
@@ -65,26 +54,15 @@ globus_silent_fatal(void)
 /*
  * globus_fatal()
  */
-#ifdef HAVE_STDARG_H
 void
 globus_fatal(char *msg, ...)
-#else
-void
-globus_fatal(msg, va_alist)
-char *msg;
-va_dcl
-#endif
 {
     char fmt[1024];
     va_list ap;
 
     globus_l_descriptor_string(fmt, _GCSL("Fatal error"), msg, (char *) NULL);
 
-#ifdef HAVE_STDARG_H
     va_start(ap, msg);
-#else
-    va_start(ap);
-#endif
     vprintf(fmt, ap);
     va_end(ap);
 
@@ -141,24 +119,14 @@ globus_l_descriptor_string(char *fmt, char *s1, char *s2, char *s3)
 /*
  * globus_error()
  */
-#ifdef HAVE_STDARG_H
 void globus_error(char *msg, ...)
-#else
-void globus_error(msg, va_alist)
-char *msg;
-va_dcl
-#endif
 {
     char fmt[1024];
     va_list ap;
 
     globus_l_descriptor_string(fmt, _GCSL("Error"), msg, (char *) NULL);
 
-#ifdef HAVE_STDARG_H
     va_start(ap, msg);
-#else
-    va_start(ap);
-#endif
     vfprintf(stdout, fmt, ap);
     fflush(stdout);
     va_end(ap);
@@ -168,24 +136,14 @@ va_dcl
 /*
  * globus_warning()
  */
-#ifdef HAVE_STDARG_H
 void globus_warning(char *msg, ...)
-#else
-void globus_warning(msg, va_alist)
-char *msg;
-va_dcl
-#endif
 {
     char fmt[1024];
     va_list ap;
     
     globus_l_descriptor_string(fmt, _GCSL("Warning"), msg, (char *) NULL);
 
-#ifdef HAVE_STDARG_H
     va_start(ap, msg);
-#else
-    va_start(ap);
-#endif
     vfprintf(stdout, fmt, ap);
     fflush(stdout);
     va_end(ap);
@@ -195,24 +153,14 @@ va_dcl
 /*
  * globus_notice()
  */
-#ifdef HAVE_STDARG_H
 void globus_notice(char *msg, ...)
-#else
-void globus_notice(msg, va_alist)
-char *msg;
-va_dcl
-#endif
 {
     char fmt[1024];
     va_list ap;
 
     globus_l_descriptor_string(fmt, _GCSL("Notice"), msg, (char *) NULL);
 
-#ifdef HAVE_STDARG_H
     va_start(ap, msg);
-#else
-    va_start(ap);
-#endif
     globus_libc_vfprintf(stdout, fmt, ap);
     
     fflush(stdout);
@@ -225,13 +173,7 @@ va_dcl
 /*
  * globus_perror()
  */
-#ifdef HAVE_STDARG_H
 void globus_perror(char *msg, ...)
-#else
-void globus_perror(msg, va_alist)
-char *msg;
-va_dcl
-#endif
 {
     char fmt[1024];
     va_list ap;
@@ -240,11 +182,7 @@ va_dcl
     save_error = errno;
     globus_l_descriptor_string(fmt, "", msg, globus_libc_system_error_string(save_error));
 
-#ifdef HAVE_STDARG_H
     va_start(ap, msg);
-#else
-    va_start(ap);
-#endif
     globus_libc_vfprintf(stdout, fmt, ap);
     fflush(stdout);
     va_end(ap);
@@ -252,13 +190,7 @@ va_dcl
 } /* globus_perror() */
 
 
-#ifdef HAVE_STDARG_H
 void globus_fatal_perror(char *msg, ...)
-#else
-void globus_fatal_perror(msg, va_alist)
-char *msg;
-va_dcl
-#endif
 {
     char fmt[1024];
     va_list ap;
@@ -267,11 +199,7 @@ va_dcl
     save_error = errno;
     globus_l_descriptor_string(fmt, _GCSL("Fatal error: "), msg, globus_libc_system_error_string(save_error));
 
-#ifdef HAVE_STDARG_H
     va_start(ap, msg);
-#else
-    va_start(ap);
-#endif
     globus_libc_vfprintf(stdout, fmt, ap);
     fflush(stdout);
     va_end(ap);
@@ -284,22 +212,12 @@ va_dcl
  *
  * This is used by the NexusAssert2() macro...
  */
-#ifdef HAVE_STDARG_H
 char *globus_assert_sprintf(char *msg, ...)
-#else
-char *globus_assert_sprintf(msg, va_alist)
-char *msg;
-va_dcl
-#endif
 {
     static char assert_sprintf_buf[1024];
     va_list ap;
     
-#ifdef HAVE_STDARG_H
     va_start(ap, msg);
-#else
-    va_start(ap);
-#endif
     globus_libc_vsprintf(assert_sprintf_buf, msg, ap);
     va_end(ap);
 

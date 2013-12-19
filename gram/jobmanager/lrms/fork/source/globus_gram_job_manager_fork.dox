@@ -1,5 +1,11 @@
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
-@mainpage Fork Job Manager
+ * @mainpage Fork Job Manager
+ * @copydoc globus_gram_job_manager_fork
+ */
+#endif
+/**
+@defgroup globus_gram_job_manager_fork Fork Job Manager
 
 This package contains the "fork" interface to the GRAM Job Manager. It is
 a setup package; the script setup-globus-job-manager-fork must be run

@@ -1,5 +1,3 @@
-include $(top_srcdir)/globus_automake_pre
-
 pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 pkgdatadir = $(GLOBUS_LOCATION)/test/$(PACKAGE)/records
 
@@ -12,7 +10,3 @@ pkgdata_DATA = \
     ok.gramaudit.in
 
 EXTRA_DIST = $(pkgdata_DATA)
-
-include $(top_srcdir)/globus_automake_post
-
-

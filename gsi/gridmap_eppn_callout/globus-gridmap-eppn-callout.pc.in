@@ -1,0 +1,9 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: globus-gridmap-eppn-callout
+Description: Globus Toolkit - Globus gridmap ePPN callout.
+Version: @VERSION@
+Requires.private: @PACKAGE_DEPS@

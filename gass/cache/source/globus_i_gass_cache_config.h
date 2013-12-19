@@ -14,32 +14,19 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_i_gass_cache_config.h
+/**
+ * @file globus_i_gass_cache_config.h
+ * Generic config file utility. Could be used elsewhere.
+ */
 
-Description:
-
-  Generic config file utility. Could be used elsewhere.
-  
-CVS Information:
-     
-******************************************************************************/
-#ifndef _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_CONFIG_H_
-#define _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_CONFIG_H_
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+#ifndef GLOBUS_I_GASS_CACHE_CONFIG_H
+#define GLOBUS_I_GASS_CACHE_CONFIG_H
 
 #include "globus_hashtable.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_L_ERROR_CONFIG_FILE_NOT_FOUND      -200
 #define GLOBUS_L_ERROR_CONFIG_FILE_READ           -201
@@ -136,7 +123,9 @@ globus_l_gass_cache_config_save(globus_l_gass_cache_config_t *config,
 				globus_bool_t                *overwrite);
 
 
-EXTERN_C_END
-
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_I_GASS_CACHE_CONFIG_H */
 

@@ -17,16 +17,13 @@
 #ifndef GLOBUS_GSI_AUTHZ_CONSTANTS_H
 #define GLOBUS_GSI_AUTHZ_CONSTANTS_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_cred_constants.h
- * Globus GSI Authorization Library
- *
+ * @file globus_gsi_authz_constants.h Globus GSI Authorization Library Constants
  */
-#endif
 
 /**
  * @defgroup globus_gsi_authz_constants GSI Credential Constants
+ * @ingroup globus_gsi_authz
  */
 /**
  * GSI Authz Error codes

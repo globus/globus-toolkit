@@ -1,0 +1,133 @@
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)/library
+LDADD = libgssapi_test_utils.la \
+        ../library/libglobus_gssapi_gsi.la \
+        $(PACKAGE_DEP_LIBS)
+
+noinst_LTLIBRARIES = libgssapi_test_utils.la
+
+check_DATA_real = \
+        compare_name_test.txt \
+        compare_name_test_strict_gt2.txt \
+        compare_name_test_strict_rfc2818.txt \
+        test.example.org.pem \
+        star.example.org.pem \
+        192.168.1.1.example.org.pem \
+        192.168.1.1-2.example.org.pem
+
+check_DATA = $(check_DATA_real) \
+        testcred.key \
+        testcred.cert \
+        testcredlink
+
+check_SCRIPTS = \
+        compare-name-test.pl \
+        compare-name-test-gt2.pl \
+        compare-name-test-rfc2818.pl \
+        duplicate-name-test.pl \
+        inquire-names-for-mech-test.pl \
+	gssapi-anonymous-test.pl \
+	gssapi-delegation-test.pl \
+        gssapi-import-context-test.pl \
+        gssapi-import-name.pl \
+	gssapi-limited-delegation-test.pl \
+	gssapi-delegation-compat-test.pl \
+	gssapi-thread-test.pl \
+	gssapi-context-test.pl \
+	gssapi-expimp-test.pl \
+	gssapi-acquire-test.pl \
+	gssapi-inquire-sec-ctx-by-oid-test.pl \
+        indicate-mechs-test.pl \
+        nonterminated-export-cred-test.pl \
+        release-name-test.pl
+
+check_PROGRAMS= \
+        compare-name-test \
+        duplicate-name-test \
+	gssapi-anonymous-test \
+	gssapi-delegation-test \
+        gssapi-import-context-test \
+        gssapi-import-name \
+	gssapi-limited-delegation-test \
+	gssapi-delegation-compat-test \
+	gssapi-thread-test \
+	gssapi-context-test \
+	gssapi-expimp-test \
+	gssapi-inquire-sec-ctx-by-oid-test \
+	gssapi-acquire-test \
+	gssapi-module-test \
+        indicate-mechs-test \
+        inquire-names-for-mech-test \
+        nonterminated-export-cred-test \
+        release-name-test
+
+TESTS = $(check_SCRIPTS)
+
+if !EXPORT_SEC_CONTEXT_WORKS
+XFAIL_TESTS = gssapi-import-context-test.pl
+endif
+TESTS_ENVIRONMENT = env \
+    X509_USER_CERT=testcred.cert \
+    X509_USER_KEY=testcred.key \
+    X509_CERT_DIR=$(abs_builddir)
+
+libgssapi_test_utils_la_SOURCES = \
+        gssapi_test_utils.c \
+        gssapi_test_utils.h
+
+gssapi_anonymous_test_SOURCES = \
+        gssapi_anonymous_test.c
+gssapi_delegation_test_SOURCES = \
+        gssapi_delegation_test.c \
+	$(top_srcdir)/library/gssapi_openssl.h \
+	$(top_srcdir)/library/globus_gsi_gss_constants.h
+
+gssapi_limited_delegation_test_SOURCES = gssapi_limited_delegation_test.c 
+gssapi_delegation_compat_test_SOURCES = gssapi_delegation_compat_test.c
+gssapi_thread_test_SOURCES = gssapi_thread_test.c
+gssapi_import_context_test_SOURCES = gssapi_import_context_test.c
+gssapi_context_test_SOURCES =	gssapi_context_test.c 
+gssapi_acquire_test_SOURCES =	gssapi_acquire_test.c
+gssapi_expimp_test_SOURCES =	gssapi_expimp_test.c 
+
+gssapi_inquire_sec_ctx_by_oid_test_SOURCES = \
+				gssapi_inquire_sec_ctx_by_oid_test.c 
+
+gssapi_module_test_SOURCES = gssapi_module_test.c
+gssapi_import_name_SOURCES = gssapi_import_name.c 
+compare_name_test_SOURCES = compare_name_test.c
+inquire_names_for_mech_test_SOURCES = inquire_names_for_mech_test.c
+release_name_test_SOURCES = release_name_test.c
+duplicate_name_test_SOURCES = duplicate_name_test.c
+indicate_mechs_test_SOURCES = indicate_mechs_test.c
+nonterminated_export_cred_test_SOURCES = nonterminated_export_cred_test.c
+
+testcred.key:
+	openssl genrsa -out $@ 1024 && chmod 0600 $@
+
+testcred.req: testcred.key
+	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< -out $@
+
+testcred.cert: testcred.req testcred.key
+	openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
+
+testcredlink: testcred.cert
+	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
+	rm -f "$$linkname"; \
+	ln -s testcred.cert "$$linkname"
+
+test:
+	chmod a+x $(Scripts)
+	perl ./TESTS.pl
+
+junit:
+	chmod a+x $(Scripts)
+	perl ./TESTS-junit.pl
+
+EXTRA_DIST = \
+	TESTS.pl \
+	TESTS-junit.pl \
+        $(check_DATA_real) \
+        $(check_SCRIPTS)
+
+CLEANFILES = testcred.key testcred.cert testcred.req
+.PHONY: test junit testcredlink

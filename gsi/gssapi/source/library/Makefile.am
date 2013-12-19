@@ -1,6 +1,11 @@
-include $(top_srcdir)/globus_automake_pre
+include_HEADERS = gssapi.h
+lib_LTLIBRARIES = libglobus_gssapi_gsi.la
 
-Sources = \
+if USE_SYMBOL_LABELS
+LABELFLAGS = -Wl,--version-script,$(srcdir)/gssapi.sym
+endif
+
+libglobus_gssapi_gsi_la_SOURCES = \
 	accept_sec_context.c \
 	acquire_cred.c \
 	compare_name.c \
@@ -32,10 +37,6 @@ Sources = \
         globus_i_gsi_gss_utils.c \
         globus_gsi_gss_constants.h \
         globus_gsi_gss_error.c \
-	$(Sources_GSS_EXTENSIONS) \
-	$(Sources_OPENSSL_INTERNALS)
-
-Sources_GSS_EXTENSIONS = \
 	accept_delegation.c \
 	import_cred.c \
 	export_cred.c \
@@ -43,32 +44,46 @@ Sources_GSS_EXTENSIONS = \
 	inquire_cred_by_oid.c \
 	inquire_sec_context_by_oid.c \
 	buffer_set.c \
-	set_sec_context_option.c
-
-Sources_OPENSSL_INTERNALS = \
+	set_sec_context_option.c \
 	globus_ssl_locl.h
 
-include_HEADERS = \
-	gssapi.h
-
-if USE_SYMBOL_LABELS
-LABELFLAGS = -Wl,--version-script,gssapi.sym
-else
-LABELFLAGS =
-endif
-
-#AM_CFLAGS = -DDEBUG
-
-lib_LTLIBRARIES = libglobus_gssapi_gsi.la
-
-INCLUDES = -I.. $(GPT_INCLUDES)
-
-libglobus_gssapi_gsi_la_SOURCES = $(Sources)
-
-libglobus_gssapi_gsi_la_LIBADD = $(GPT_LIB_LINKS)
-libglobus_gssapi_gsi_la_LDFLAGS = $(GPT_LDFLAGS) \
-	$(LABELFLAGS)
+libglobus_gssapi_gsi_la_CPPFLAGS = -I$(top_builddir) $(PACKAGE_DEP_CFLAGS)
+libglobus_gssapi_gsi_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_gssapi_gsi_la_LDFLAGS = $(LABELFLAGS) \
+	-version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+	-no-undefined
 
 EXTRA_DIST = gssapi.sym
 
-include $(top_srcdir)/globus_automake_post
+DOC_STAMPS =
+if ENABLE_DOXYGEN
+DOC_STAMPS += doc-stamp
+
+doc-stamp: Doxyfile $(libglobus_gssapi_gsi_la_SOURCES)
+	$(DOXYGEN)
+	touch $@
+
+clean-local:
+	rm -rf doc doc-stamp
+endif
+
+all-local: $(DOC_STAMPS)
+
+install-data-local: $(DOC_STAMPS)
+	if test -d doc/man/man3; then \
+		install -d -m 755 $(DESTDIR)$(mandir)/man3; \
+	        $(INSTALL) -m 644 doc/man/man3/globus*.3 $(DESTDIR)$(mandir)/man3 ; \
+        fi
+	if test -d doc/html; then \
+		for dir in `(cd doc; find html -type d)`; do \
+			install -d -m 755 $(DESTDIR)$(docdir)/$$dir; \
+		done ; \
+		for f in `(cd doc; find html -type f)`; do \
+			$(INSTALL) -m 644 doc/$$f $(DESTDIR)$(docdir)/$$f ; \
+		done ; \
+	fi
+
+dist-hook: $(DOC_STAMPS)
+	if test -d doc; then \
+		cp -R doc $(distdir)/doc ; \
+	fi ;

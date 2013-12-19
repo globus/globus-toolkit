@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file wrap.c
+ * @file gssapi/source/library/wrap.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi.h"
 #include "globus_i_gsi_gss_utils.h"
@@ -33,11 +25,9 @@ static char *rcsid = "$Id$";
 #include <string.h>
 
 /**
- * @name Wrap Size Limit
+ * @brief Wrap Size Limit
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * GSSAPI routine to take a buffer, calculate a MIC 
  * which is returned as a token. We will use the SSL
  * protocol here. 
@@ -117,15 +107,11 @@ GSS_CALLCONV gss_wrap_size_limit(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Wrap
+ * @brief Wrap
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * 
+ * @details 
  * Wrap a message for integretry and protection.
  * We do this using the SSLv3 routines, by writing to the
  * SSL bio, and pulling off the buffer from the back 
@@ -344,12 +330,11 @@ GSS_CALLCONV gss_wrap(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 /**
- * @name Seal
+ * @brief Seal
  * @ingroup globus_gsi_gssapi
- *
+ * @details
  * Obsolete variant of gss_wrap for V1 compatability
  *
  * @param minor_status
@@ -396,4 +381,4 @@ GSS_CALLCONV gss_seal(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
+/* gss_seal() */

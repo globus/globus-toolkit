@@ -31,10 +31,10 @@ $Header$
 <title>Globus Commands</title>
 
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="grid-ca-create-manual.xml"></xi:include>
+    href="grid-ca-create.xml"></xi:include>
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="grid-ca-package-manual.xml"></xi:include>
+    href="grid-ca-package.xml"></xi:include>
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="grid-ca-sign-manual.xml"></xi:include>
+    href="grid-ca-sign.xml"></xi:include>
 
 </reference>

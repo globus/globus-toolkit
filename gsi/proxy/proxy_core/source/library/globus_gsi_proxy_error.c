@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/** @file globus_gsi_proxy_error.c GSI Proxy Error Handling */
 
 #include "globus_i_gsi_proxy.h"
 #include "globus_gsi_proxy_constants.h"

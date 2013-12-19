@@ -1,20 +1,12 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+SUBDIRS = starter seg
 
-SUBDIRS = starter seg pkgdata doxygen
-
-## globussysconf = [ DATA ]
 globussysconfdir = ${sysconfdir}/globus
-globussysconf_DATA = globus-fork.conf
-
-## gridservices = [ DATA ]
 gridservicesdir = ${sysconfdir}/grid-services/available
-gridservices_DATA = jobmanager-fork-poll jobmanager-fork-seg
-
-## gramperlmodule = [ DATA ]
 gramperlmoduledir = ${perlmoduledir}/Globus/GRAM/JobManager
-gramperlmodule_DATA = fork.pm
 
+globussysconf_DATA = globus-fork.conf
+gridservices_DATA = jobmanager-fork-poll jobmanager-fork-seg
+gramperlmodule_DATA = fork.pm
 doc_DATA = GLOBUS_LICENSE
 
 AT=@
@@ -27,7 +19,12 @@ jobmanager-fork-seg: jobmanager-fork-seg.in
 	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
             -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
 
-EXTRA_DIST = fork.pm jobmanager-fork-poll.in jobmanager-fork-seg.in $(doc_DATA)
+EXTRA_DIST = \
+        dirt.sh \
+        fork.pm \
+        jobmanager-fork-poll.in \
+        jobmanager-fork-seg.in \
+        $(doc_DATA)
 
 CLEANFILES = jobmanager-fork-poll jobmanager-fork-seg
 
@@ -53,6 +50,5 @@ install-data-hook:
 	ln -s available/jobmanager-fork-poll jobmanager-fork
 endif
 
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+distuninstallcheck:
+	@:

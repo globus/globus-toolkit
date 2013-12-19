@@ -17,10 +17,24 @@
 static
 globus_version_t local_version = 
 {
-    @GPT_MAJOR_VERSION@,
-    @GPT_MINOR_VERSION@,
+    @MAJOR_VERSION@,
+    @MINOR_VERSION@,
     @DIRT_TIMESTAMP@,
     @DIRT_BRANCH_ID@
 };
 
-static const char flavor[] = "@GLOBUS_FLAVOR_NAME@";
+#define bittostr(x) str(x)
+#define str(x) #x
+
+#include <limits.h>
+#include <stdint.h>
+
+#if LONG_MAX == INT32_MAX
+#define FLAVOR_BITS 32
+#elif LONG_MAX == INT64_MAX
+#define FLAVOR_BITS 64
+#else
+#error "Unknown flavor bits"
+#endif
+
+static const char flavor[] = "cc" bittostr(FLAVOR_BITS);

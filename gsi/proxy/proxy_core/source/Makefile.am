@@ -1,17 +1,14 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+pkgconfigdir = $(libdir)/pkgconfig
 
-SUBDIRS= \
-	library \
-	pkgdata \
-	doxygen
+SUBDIRS = library
 
 doc_DATA = GLOBUS_LICENSE
+pkgconfig_DATA = globus-gsi-proxy-core.pc
 
 EXTRA_DIST= \
         version.h \
         dirt.sh \
 	$(doc_DATA)
 
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+distuninstallcheck:
+	@:

@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_libc.h
+/** @file globus_libc.h Thread-safe libc macros, function prototypes */
 
-Description:
-   Thread-safe libc macros, function prototypes
-
-******************************************************************************/
-#ifndef GLOBUS_INCLUDE_GLOBUS_LIBC_H_
-#define GLOBUS_INCLUDE_GLOBUS_LIBC_H_ 1
+#ifndef GLOBUS_LIBC_H
+#define GLOBUS_LIBC_H 1
 
 #include "globus_common_include.h"
 #include "globus_thread.h"
@@ -43,7 +38,9 @@ Description:
 #   define GLOBUS_DEPRECATED(func) func
 #endif
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern globus_mutex_t globus_libc_mutex;
 
@@ -81,35 +78,26 @@ extern int globus_libc_unlock(void);
 #define globus_libc_vfprintf vfprintf
 #define globus_libc_vsprintf vsprintf
 
-#if !defined(HAVE_SNPRINTF)
-extern int globus_libc_snprintf(char *s, size_t n, const char *format, ...);
-#else
+#if __STDC_VERSION__ >= 199901L
 #define globus_libc_snprintf snprintf
-#endif
-
-#if !defined(HAVE_VSNPRINTF)
+#define globus_libc_vsnprintf vsnprintf
+#else
+extern int globus_libc_snprintf(char *s, size_t n, const char *format, ...);
 extern int globus_libc_vsnprintf(char *s, size_t n, const char *format,
     va_list ap);
-#else
-#   define globus_libc_vsnprintf vsnprintf
 #endif
 
 /*
  * File I/O routines
  *  These functions are not supported on the windwos platform
  */
-#if !defined(TARGET_ARCH_WIN32)
+#if !defined(_WIN32)
 #define globus_libc_open open
 #define globus_libc_close close
 #define globus_libc_read read
 #define globus_libc_write write
 #define globus_libc_umask umask
-#if defined(HAVE_WRITEV)
 #define globus_libc_writev writev
-#else
-#define globus_libc_writev(fd,iov,iovcnt) \
-	    write(fd,iov[0].iov_base,iov[0].iov_len)
-#endif
 #define globus_libc_fstat fstat
 
 #define globus_libc_opendir opendir
@@ -117,21 +105,14 @@ extern int globus_libc_vsnprintf(char *s, size_t n, const char *format,
 #define globus_libc_seekdir seekdir
 #define globus_libc_rewinddir rewinddir
 #define globus_libc_closedir closedir
-
-int
-globus_libc_getpwuid_r(
-    uid_t                           uid,
-    struct passwd *                 pwd,
-    char *                          buffer,
-    int                             bufsize,
-    struct passwd **                result);
+#define globus_libc_getpwuid_r getpwuid_r
 
 int
 globus_libc_readdir_r(
     DIR *                           dirp,
     struct dirent **                result);
 
-#else /* TARGET_ARCH_WIN32 */
+#else /* _WIN32 */
 
 extern
 mode_t
@@ -146,19 +127,14 @@ globus_libc_umask_win32(
 #           define globus_libc_writev(fd,iov,iovcnt) \
 	            write(fd,iov[0].iov_base,iov[0].iov_len)
 #   define uid_t int
-
-/*
- * these are only on windows for now
- */
+#if defined(TARGET_ARCH_CYGWIN) || defined(TARGET_ARCH_MINGW32)
+extern
 int
-globus_libc_system_memory(
-    globus_off_t *                  mem);
-
-int
-globus_libc_free_memory(
-    globus_off_t *                  mem);
-
-#endif /* TARGET_ARCH_WIN32 */
+globus_libc_readdir_r(
+    DIR *                           dirp,
+    struct dirent **                result);
+#endif
+#endif /* _WIN32 */
 
 /*
  * Memory allocation routines
@@ -173,26 +149,7 @@ globus_libc_free_memory(
 #define globus_libc_calloc	calloc
 #define globus_libc_free	free
 #define globus_libc_alloca	alloca
-
-#ifdef TARGET_ARCH_CRAYT3E
-extern void *alloca(size_t bytes);
-#endif /* TARGET_ARCH_CRAYT3E */
-
-globus_byte_t *
-globus_libc_memrchr(
-    globus_byte_t *                         s,
-    globus_byte_t                           c,
-    globus_size_t                           n);
-
-globus_byte_t *
-globus_libc_memmem(
-    globus_byte_t *                         haystack,
-    globus_size_t                           h_len,
-    globus_byte_t *                         needle,
-    globus_size_t                           n_len);
-
-/* Never a macro because globus_off_t must match largefile definition */
-extern int globus_libc_lseek(int fd, globus_off_t offset, int whence);
+#define globus_libc_lseek lseek
 
 /* Miscellaneous libc functions (formerly md_unix.c) */
 int globus_libc_gethostname(char *name, int len);
@@ -206,40 +163,33 @@ extern int globus_libc_sprint_off_t(char * s, globus_off_t off);
 /* returns 1 if scanned succeeded */
 extern int globus_libc_scan_off_t(char *s, globus_off_t *off, int *consumed);
 
-/* single interface to reentrant libc functions we use*/
-struct hostent *globus_libc_gethostbyname_r(char *name,
+/* Use getaddrinfo instead */
+GLOBUS_DEPRECATED(struct hostent *globus_libc_gethostbyname_r(char *name,
 					    struct hostent *result,
 					    char *buffer,
 					    int buflen,
-					    int *h_errnop);
-struct hostent *globus_libc_gethostbyaddr_r(char *addr,
+					    int *h_errnop));
+/* Use getnameinfo instead */
+GLOBUS_DEPRECATED(struct hostent *globus_libc_gethostbyaddr_r(char *addr,
 					    int length,
 					    int type,
 					    struct hostent *result,
 					    char *buffer,
 					    int buflen,
-					    int *h_errnop);
+					    int *h_errnop));
 
-char *globus_libc_ctime_r(time_t *clock,
-			  char *buf,
-			  int buflen);
+#ifdef _POSIX_THREAD_SAFE_FUCTIONS
+#define globus_libc_ctime_r(clock, buf, buflen) ctime_r(clock, buf)
+#define globus_libc_localtime_r(timer, result) localtime_r(timer, result)
+#define globus_libc_gmtime_r(timer, result) gmtime_r(timer, result)
+#else
+char *globus_libc_ctime_r(/*should be const */time_t *clock, char *buf, int buflen);
+struct tm * globus_libc_localtime_r(const time_t *timep, struct tm *result);
+struct tm * globus_libc_gmtime_r(const time_t *timep, struct tm *result);
+#endif
 
-struct tm *
-globus_libc_localtime_r(
-    const time_t *timep, 
-    struct tm *result);
-
-struct tm *
-globus_libc_gmtime_r(
-    const time_t *timep, 
-    struct tm *result);
-
-#if !defined(TARGET_ARCH_WIN32)
-int globus_libc_getpwnam_r(char *name,
-			   struct passwd *pwd,
-			   char *buffer,
-			   int bufsize,
-			   struct passwd **result);
+#if !defined(_WIN32)
+#define globus_libc_getpwnam_r getpwnam_r
 #endif
 
 int
@@ -248,13 +198,15 @@ globus_libc_strncasecmp(
     const char *                            s2,
     globus_size_t                           n);
 
-GLOBUS_DEPRECATED(int globus_libc_setenv(register const char *name,
+int globus_libc_setenv(register const char *name,
 		       register const char *value,
-		       int rewrite));
-GLOBUS_DEPRECATED(void globus_libc_unsetenv(register const char *name));
+		       int rewrite);
+void globus_libc_unsetenv(register const char *name);
 
+/* Use getenv instead */
 GLOBUS_DEPRECATED(char *globus_libc_getenv(register const char *name));
 
+/* Use strerror or strerror_r as needed instead */
 char *globus_libc_system_error_string(int the_error);
 
 char *
@@ -310,75 +262,12 @@ globus_common_v_create_nstring(
 /* for backwards compatibility */
 #define globus_libc_memmove(d, s, n) memmove((d), (s), (n)) 
 
-#ifdef TARGET_ARCH_HPUX
+#ifdef __hpux
 #   define   globus_libc_setegid(a)  setresgid(-1,a,-1)
 #   define   globus_libc_seteuid(a)  setresuid(-1,a,-1)
 #else
 #   define   globus_libc_setegid(a)  setegid(a)
 #   define   globus_libc_seteuid(a)  seteuid(a)
-#endif
-
-#ifndef HAVE_GETADDRINFO
-#ifndef AI_PASSIVE
-# define AI_PASSIVE     0x0001
-# define AI_CANONNAME   0x0002
-# define AI_NUMERICHOST 0x0004
-
-struct addrinfo
-{
-    int                                 ai_flags;
-    int                                 ai_family;
-    int                                 ai_socktype;
-    int                                 ai_protocol;
-    size_t                              ai_addrlen;
-    struct sockaddr *                   ai_addr;
-    char *                              ai_canonname;
-    struct addrinfo *                   ai_next;
-};
-#endif
-
-#define GLOBUS_IMPLEMENT_GETADDRINFO 1
-#define HAVE_GETADDRINFO
-int
-getaddrinfo(
-    const char *                        node,
-    const char *                        service,
-    const struct addrinfo *             hints,
-    struct addrinfo **                  res);
-#endif
-
-#ifndef HAVE_FREEADDRINFO
-#define HAVE_FREEADDRINFO 1
-#define GLOBUS_IMPLEMENT_FREEADDRINFO 1
-void
-freeaddrinfo(struct addrinfo * res);
-#endif
-
-#ifndef HAVE_GAI_STRERROR
-#define GLOBUS_IMPLEMENT_GAI_STRERROR 1
-#define HAVE_GAI_STRERROR
-const char * gai_strerror(int errorcode);
-#endif
-
-#ifndef HAVE_GETNAMEINFO
-#define GLOBUS_IMPLEMENT_GETNAMEINFO 1
-#define HAVE_GETNAMEINFO
-int
-getnameinfo(
-    const struct sockaddr *             sa,
-    globus_socklen_t                    sa_len,
-    char *                              host,
-    size_t                              hostlen,
-    char *                              serv,
-    size_t                              servlen,
-    int                                 flags);
-#ifndef NI_NUMERICHOST
-#define NI_NUMERICHOST 1
-#define NI_NUMERICSERV 2
-#define NI_NOFQDN      4
-#define NI_NAMEREQD    8
-#define NI_DGRAM       16
-#endif
 #endif
 
 
@@ -517,18 +406,11 @@ typedef struct addrinfo                 globus_addrinfo_t;
 #define GlobusLibcSockaddrCopy(dest_addr, source_addr, source_len)          \
     (memcpy(&(dest_addr), &(source_addr), (source_len)))
 
-#ifdef HAVE_SOCKAPI_H
-/* Net+OS only has sockaddr_in */
-#define GlobusLibcSockaddrLen(addr)                                         \
-    (((struct sockaddr *) (addr))->sin_family == AF_INET                    \
-        ? sizeof(struct sockaddr_in) : 1)
-#else
 #define GlobusLibcSockaddrLen(addr)                                         \
     (((struct sockaddr *) (addr))->sa_family == AF_INET                     \
         ? sizeof(struct sockaddr_in) :                                      \
             (((struct sockaddr *) (addr))->sa_family == AF_INET6            \
         ? sizeof(struct sockaddr_in6) : -1))
-#endif
 
 #define GLOBUS_AI_PASSIVE               AI_PASSIVE
 #define GLOBUS_AI_NUMERICHOST           AI_NUMERICHOST
@@ -635,6 +517,8 @@ globus_libc_gethostaddr_by_family(
     globus_sockaddr_t *                 addr,
     int                                 family);
 
-EXTERN_C_END
-
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_LIBC_H */

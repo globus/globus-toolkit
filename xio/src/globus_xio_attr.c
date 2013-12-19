@@ -412,15 +412,7 @@ globus_xio_attr_cntl(
 
     attr = user_attr;
 
-#   ifdef HAVE_STDARG_H
-    {
-        va_start(ap, cmd);
-    }
-#   else
-    {
-        va_start(ap);
-    }
-#   endif
+    va_start(ap, cmd);
 
     res = globus_i_xio_driver_attr_cntl(attr, driver, cmd, ap);
     if(res != GLOBUS_SUCCESS)
@@ -803,15 +795,7 @@ globus_xio_data_descriptor_cntl(
 
     op = (globus_i_xio_op_t *) data_desc;
 
-#   ifdef HAVE_STDARG_H
-    {
-        va_start(ap, cmd);
-    }
-#   else
-    {
-        va_start(ap);
-    }
-#   endif
+    va_start(ap, cmd);
 
     res = globus_i_xio_driver_dd_cntl(op, driver, op->type, cmd, ap);
 

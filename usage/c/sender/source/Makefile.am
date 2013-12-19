@@ -1,24 +1,19 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
-
-SUBDIRS = pkgdata
-
-Sources= globus_usage.c
+pkgconfigdir = $(libdir)/pkgconfig
 
 include_HEADERS = globus_usage.h
-
 lib_LTLIBRARIES = libglobus_usage.la 
-
-INCLUDES = @GPT_INCLUDES@
-
-libglobus_usage_la_LIBADD = @GPT_LIB_LINKS@
-
-libglobus_usage_la_SOURCES = $(Sources)
-libglobus_usage_la_LDFLAGS = @GPT_LDFLAGS@
-
 doc_DATA = GLOBUS_LICENSE
+pkgconfig_DATA = globus-usage.pc
 
-EXTRA_DIST = $(doc_DATA)
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+libglobus_usage_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_usage_la_LDFLAGS = \
+    -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+    -no-undefined
+libglobus_usage_la_SOURCES = globus_usage.c
+
+EXTRA_DIST = dirt.sh $(doc_DATA)
+
+distuninstallcheck:
+	@:

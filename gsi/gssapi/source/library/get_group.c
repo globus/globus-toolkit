@@ -14,29 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file get_group.c
+ * @file gssapi/source/library/get_group.c
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 #include <string.h>
 
 /**
- * @name Get Group
+ * @brief Get Group
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Get the proxy group from a GSS name.
  *
  * This function will get the proxy group from a GSS name structure. If
@@ -218,6 +208,3 @@ GSS_CALLCONV gss_get_group(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
-
-

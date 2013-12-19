@@ -379,7 +379,7 @@ globus_error_get (globus_result_t result)
   if (err) return NULL;
 
   error = globus_object_cache_remove (&s_result_to_object_mapper,
-				      (void *)result);
+				      (void *) (intptr_t) result);
 
   local_mutex_unlock (&s_result_to_object_mutex);
 
@@ -404,7 +404,7 @@ globus_error_peek(
   if (err) return NULL;
 
   error = globus_object_cache_lookup (&s_result_to_object_mapper,
-				      (void *) result);
+				      (void *) (intptr_t) result);
   
   if (error!=NULL) 
   {
@@ -450,10 +450,10 @@ globus_error_put (globus_object_t * error)
   {
      new_result = s_next_available_result_count++;
   } while(globus_object_cache_lookup(
-      &s_result_to_object_mapper, (void *) new_result) != NULL);
+      &s_result_to_object_mapper, (void *) (intptr_t) new_result) != NULL);
 
   globus_object_cache_insert (&s_result_to_object_mapper,
-			      (void *)new_result, error);
+			      (void *) (intptr_t) new_result, error);
 
   local_mutex_unlock (&s_result_to_object_mutex);
 

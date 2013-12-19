@@ -182,19 +182,19 @@ main(
     /* Set environment variables from configuration */
     if(config.globus_location != NULL)
     {
-        globus_libc_setenv("GLOBUS_LOCATION",
+        setenv("GLOBUS_LOCATION",
                            config.globus_location,
                            GLOBUS_TRUE);
     }
     if(config.tcp_port_range != NULL)
     {
-        globus_libc_setenv("GLOBUS_TCP_PORT_RANGE",
+        setenv("GLOBUS_TCP_PORT_RANGE",
                            config.tcp_port_range,
                            GLOBUS_TRUE);
     }
     if(config.tcp_source_range != NULL)
     {
-        globus_libc_setenv("GLOBUS_TCP_SOURCE_RANGE",
+        setenv("GLOBUS_TCP_SOURCE_RANGE",
                            config.tcp_source_range,
                            GLOBUS_TRUE);
     }
@@ -685,7 +685,7 @@ main(
 /*
     {
         const char * gk_jm_id_var = "GATEKEEPER_JM_ID";
-        const char * gk_jm_id = globus_libc_getenv(gk_jm_id_var);
+        const char * gk_jm_id = getenv(gk_jm_id_var);
 
         globus_gram_job_manager_request_acct(
                 request,

@@ -14,22 +14,7 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_tilde_expand.c
- 
-Description:
-    Contain only the function globus_tilde_expand which can be use to expand
-    ~ or ~user.
-
- 
-CVS Information:
- 
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
+/** @file globus_tilde_expand.c Expand ~ or ~user in path strings */
  
 /******************************************************************************
                              Include header files
@@ -37,41 +22,34 @@ CVS Information:
 #include "globus_tilde_expand.h"
 #include "globus_libc.h"
 
-/******************************************************************************
-Function: globus_tilde_expand()
-
-Description: 
-
-  Expand the leading ~ (or ~user) characters from inpath to the home directory
-  path of the current user (or user specified in ~user); the result is stored
-  in a newly allocated buffer *outpath (which will need to be freed by a call
-  to globus_free.) The string following the ~/or ~user/ is copied verbatim to
-  the output string.
-
-Parameters: 
-
-  options:
-    The expansion is conditioned by the options as defined in
-    globus_tilde_expand.h:
-  
-     if GLOBUS_TILDE_EXPAND is set in the option, ~ will be expanded
-     if GLOBUS_TILDE_USER_EXPAND is set in the option, ~user will be expanded
-     Otherwise, the corresponding form is not expanded (just copied int the
-     output path)
-     
-  url_form  True if the inpath follows an URL format (/~)
-            Used when expanding an url (for : <sheme>://host[:port][/path]
-	    were /path  can be of the form /~[user][/...]
-	    Otherwise, the form ~[user][/...] is expected.
-  
-  inpath
-     Input string to expand. 
-
-  outpath
-     Output string; Need to be freed when not used anymore.
-
-Returns: 
-******************************************************************************/
+/**
+ * @brief Expand ~ and/or ~user in path strings
+ * @ingroup globus_common
+ * @details
+ *
+ * Expand the leading ~ (or ~user) characters from inpath to the home directory
+ * path of the current user (or user specified in ~user); the result is stored
+ * in a newly allocated buffer *outpath (which will need to be freed by a call
+ * to globus_free.) The string following the ~/or ~user/ is copied verbatim to
+ * the output string.
+ *
+ * @param options
+ *     The expansion is conditioned by the options as defined in
+ *     globus_tilde_expand.h:
+ *     - GLOBUS_TILDE_EXPAND: expand ~
+ *     - GLOBUS_TILDE_USER_EXPAND: expand ~user
+ *     Otherwise, the corresponding form is not expanded (just copied int the
+ *     output path)
+ * @param url_form
+ *     True if the inpath follows an URL format (/~)
+ *     Used when expanding an url (for : &lt;scheme&gt;://host[:port][/path]
+ *     were /path  can be of the form /~[user][/...]. Otherwise, the form
+ *     ~[user][/...] is expected.
+ * @param inpath
+ *     Input string to expand. 
+ * @param outpath
+ *   Output string; Need to be freed when not used anymore.
+ */
 #if defined(TARGET_ARCH_WIN32)
 int
 globus_tilde_expand(
@@ -251,8 +229,6 @@ notilde:
     *outpath = globus_malloc(strlen(inpath)+1);
     strcpy(*outpath, inpath);
     return GLOBUS_SUCCESS;
-} /* globus_tilde_expand() */
-
+}
+/* globus_tilde_expand() */
 #endif /* WIN32 */
-
-

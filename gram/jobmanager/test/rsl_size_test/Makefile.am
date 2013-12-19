@@ -1,5 +1,3 @@
-include $(top_srcdir)/globus_automake_pre
-
 test_SCRIPTS = globus-gram-job-manager-rsl-size-test.pl
 
 test_DATA = \
@@ -10,5 +8,3 @@ test_DATA = \
         huge.err huge.out huge.rc huge.rsl
 
 EXTRA_DIST = globus-gram-job-manager-rsl-size-test.pl.in $(test_DATA)
-
-include $(top_srcdir)/globus_automake_post

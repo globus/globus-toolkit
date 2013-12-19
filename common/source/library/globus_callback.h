@@ -14,35 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_GLOBUS_CALLBACK
-#define GLOBUS_INCLUDE_GLOBUS_CALLBACK
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/*
+#ifndef GLOBUS_CALLBACK_H
+#define GLOBUS_CALLBACK_H
+
+/**
  * @file globus_callback.h Globus Callback API
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
  * @defgroup globus_callback Globus Callback
- *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
+ * @ingroup globus_common
+ * @brief Globus Callback Function Interface
  */
 
 #include "globus_common_include.h"
 #include "globus_module.h"
 #include "globus_time.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern globus_module_descriptor_t       globus_i_callback_module;
+extern
+globus_module_descriptor_t       globus_i_callback_module;
 
 /**
  * @brief Module descriptor
@@ -129,10 +123,6 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
  * @defgroup globus_callback_api Globus Callback API
  * @ingroup globus_callback
  *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
  */
 
 /**
@@ -686,11 +676,6 @@ globus_callback_was_restarted();
 /**
  * @defgroup globus_callback_spaces Globus Callback Spaces
  * @ingroup globus_callback
- *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
  */
 
 /**
@@ -773,12 +758,7 @@ typedef enum
  *        - GLOBUS_SUCCESS
  *
  * @see globus_condattr_setspace()
- * @see 
- * @htmlonly
- * <a class="el" href="../../globus_io/html/group__attr.html#globus_io_attr_set_callback_space_anchor">
- *    globus_io_attr_set_callback_space()
- * </a>
- * @endhtmlonly
+ * @see globus_io_attr_set_callback_space()
  */
 globus_result_t
 globus_callback_space_init(
@@ -966,11 +946,8 @@ globus_callback_space_is_single(
 
 /**
  * @defgroup globus_callback_signal Globus Callback Signal Handling
+ * @ingroup globus_callback
  *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
  */
 
 /**
@@ -1092,6 +1069,8 @@ globus_callback_add_wakeup_handler(
     void                                (*wakeup)(void *),
     void *                              user_arg);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_INCLUDE_GLOBUS_CALLBACK */
+#endif /* GLOBUS_CALLBACK_H */

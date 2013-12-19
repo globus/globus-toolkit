@@ -16,11 +16,6 @@
 
 /*
  * @file globus_thread_common.h Common Thread Interface
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 
 #ifndef GLOBUS_THREAD_COMMON_H
@@ -30,7 +25,10 @@
 #include "globus_module.h"
 #include "globus_callback.h"
 
-EXTERN_C_BEGIN
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern globus_module_descriptor_t       globus_i_thread_common_module;
 
@@ -82,6 +80,9 @@ globus_thread_blocking_reset();
 
 void thread_print(char * s, ...);
 
-EXTERN_C_END
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

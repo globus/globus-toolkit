@@ -14,24 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef _GLOBUS_INCLUDE_GLOBUS_RSL_H
-#define _GLOBUS_INCLUDE_GLOBUS_RSL_H
+/** @file globus_rsl.h Globus RSL Parsing */
 
+#ifndef GLOBUS_RSL_H
+#define GLOBUS_RSL_H
+
+#include "globus_module.h"
 #include "globus_list.h"
 #include "globus_symboltable.h"
 #include "globus_hashtable.h"
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 #define GLOBUS_RSL_BOOLEAN  1
 #define GLOBUS_RSL_RELATION 2
@@ -414,6 +409,8 @@ globus_rsl_unparse (globus_rsl_t *rsl_spec);
 char *
 globus_rsl_value_unparse (globus_rsl_value_t * rsl_value);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* _GLOBUS_INCLUDE_GLOBUS_RSL_H */
+#endif /* GLOBUS_RSL_H */

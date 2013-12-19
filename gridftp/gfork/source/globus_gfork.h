@@ -3,8 +3,10 @@
 
 #include "globus_common.h"
 #include "globus_xio.h"
-#include "globus_xio_tcp_driver.h"
-#include "globus_xio_mode_e_driver.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef __GNUC__
 #define GlobusGForkFuncName(func) static const char * _gfork_func_name __attribute__((__unused__)) = #func
@@ -34,7 +36,7 @@ typedef enum
  *  server plug in functions
  */
 
-/* whne a connection is accepted */
+/* when a connection is accepted */
 typedef void 
 (*globus_gfork_open_func_t)(
     gfork_child_handle_t                handle,
@@ -63,8 +65,6 @@ typedef void
     globus_byte_t *                     buffer,
     globus_size_t                       len);
     
-
-/* ... other randomly useless function */
 
 /*
  * client functions
@@ -110,8 +110,11 @@ globus_gfork_child_stop(
     gfork_child_handle_t                in_handle);
 
 extern globus_module_descriptor_t       globus_i_gfork_parent_module;
-#define GLOBUS_GFORK_PARENT_MODULE &globus_i_gfork_parent_module
+#define GLOBUS_GFORK_PARENT_MODULE      (&globus_i_gfork_parent_module)
 extern globus_module_descriptor_t       globus_i_gfork_child_module;
-#define GLOBUS_GFORK_CHILD_MODULE &globus_i_gfork_child_module
+#define GLOBUS_GFORK_CHILD_MODULE       (&globus_i_gfork_child_module)
 
+#ifdef __cplusplus
+}
 #endif
+#endif /* GLOBUS_GFORK_H */

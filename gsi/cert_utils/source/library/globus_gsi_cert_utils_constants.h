@@ -19,30 +19,19 @@
  * @file globus_gsi_cert_utils_constants.h
  * Globus GSI Cert Utils
  * @author Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 
 #ifndef GLOBUS_GSI_CERT_UTILS_CONSTANTS_H
 #define GLOBUS_GSI_CERT_UTILS_CONSTANTS_H
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
+#ifdef __cplusplus
+extern "C" {
 #endif
-
-EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_gsi_cert_utils_constants Cert Utils Constants
+ * @ingroup globus_gsi_cert_utils
  */
 /**
  * Cert Utils Error Codes
@@ -184,6 +173,8 @@ typedef enum globus_gsi_cert_utils_cert_type_e
              GLOBUS_GSI_CERT_UTILS_TYPE_RESTRICTED_PROXY)
 } globus_gsi_cert_utils_cert_type_t;
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

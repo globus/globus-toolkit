@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_callout_error.c
  * Globus Callout Infrastructure
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_callout_constants.h"
 #include "globus_i_callout.h"

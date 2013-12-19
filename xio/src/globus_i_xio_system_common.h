@@ -63,8 +63,6 @@ GlobusDebugDeclare(GLOBUS_XIO_SYSTEM);
 #ifdef WIN32
 #include <winsock2.h>
 #define GlobusXIOSystemUpdateErrno() (errno = WSAGetLastError())
-#elif defined(TARGET_ARCH_NETOS)
-#define GlobusXIOSystemUpdateErrno() (errno = getErrno())
 #else
 #define GlobusXIOSystemUpdateErrno()
 #endif
@@ -200,7 +198,7 @@ typedef enum
 } globus_i_xio_system_op_state_t;
 
 
-#if !defined(HAVE_RECVMSG) || defined(WIN32)
+#if defined(_WIN32)
 struct msghdr
 {
     void *                              msg_name;

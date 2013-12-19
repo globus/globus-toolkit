@@ -14,41 +14,30 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_module.h
+/** @file globus_module.h Reference Counting Module Activation and Deactivation */
 
-Description:
+#if !defined(GLOBUS_MODULE_H)
+#define GLOBUS_MODULE_H 1
 
-  XXX - fill this in
+/** @defgroup globus_module Module Activation Management
+ * @ingroup globus_common
+ */
 
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
-
-#if !defined(GLOBUS_INCLUDE_GLOBUS_MODULE)
-#ifndef SWIG
-#define GLOBUS_INCLUDE_GLOBUS_MODULE 1
-
-/******************************************************************************
-			     Include header files
-******************************************************************************/
+/**
+ * @ingroup globus_module
+ */
+/*@{*/
 struct globus_module_descriptor_s;
 typedef struct globus_module_descriptor_s globus_module_descriptor_t;
+/*@}*/
 
-#include "globus_common_include.h"
 #include "globus_error_generic.h"
+
 #include <stdio.h>
   
-EXTERN_C_BEGIN
-
-/* endif SWIG */
+#ifdef __cplusplus
+extern "C" {
 #endif
-
 
 /******************************************************************************
 			       Type definitions
@@ -67,17 +56,28 @@ typedef struct
     int                                 branch_id;
 } globus_version_t;
 
-/*
- * this remains publicly exposed.  Used throughpout globus
+/**
+ * @brief Module Descriptor
+ * @ingroup globus_module
+ * @details
+ * Public data structure which contains function pointers to activate
+ * deactivate a module.
  */
 struct globus_module_descriptor_s
 {
+    /** Module name string */
     char *				module_name;
+    /** Module activation function */
     globus_module_activation_func_t	activation_func;
+    /** Module deactivation function */
     globus_module_deactivation_func_t	deactivation_func;
+    /** Module atexit function */
     globus_module_atexit_func_t		atexit_func;
+    /** Module get_pointer function */
     globus_module_get_pointer_func_t 	get_pointer_func;
+    /** Module version */
     globus_version_t *                  version;
+    /** Module error message function */
     globus_error_print_friendly_t       friendly_error_func;
 };
 
@@ -89,34 +89,19 @@ struct globus_module_descriptor_s
  * NOTE: all functions return either GLOBUS_SUCCESS or an error code
  */
 
-/**
- *  Activate a module
- */
 int
 globus_module_activate(
     globus_module_descriptor_t *        module_descriptor);
 
-/**
- * Activate an NULL-terminated array of modules. If any fail to activate, all are
- * deactivated and the error from the failed activation is returned. If nonzero is
- * returned, and failed_module is non-null, it will be set to point to the 1st
- * module which failed to activate. 
- */
 int
 globus_module_activate_array(
     globus_module_descriptor_t *        modules[],
     globus_module_descriptor_t **       failed_module);
 
-/**
- *  Deactivate a module
- */
 int
 globus_module_deactivate(
     globus_module_descriptor_t *        module_descriptor);
 
-/**
- *  deactivate all active modules
- */
 int
 globus_module_deactivate_all(void);
 
@@ -202,8 +187,9 @@ globus_module_get_args(
     int **                              argc,
     char ****                           argv);
 
-#ifndef SWIG
-EXTERN_C_END
+
+#ifdef __cplusplus
+}
 #endif
 
-#endif /* GLOBUS_INCLUDE_GLOBUS_MODULE */
+#endif /* GLOBUS_MODULE_H */

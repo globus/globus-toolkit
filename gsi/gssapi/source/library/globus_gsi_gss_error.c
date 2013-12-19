@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_gssapi_error.h
+ * @file gssapi/source/library/globus_gsi_gss_error.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_gsi_gss_utils.h"
 #include "globus_gsi_gss_constants.h"

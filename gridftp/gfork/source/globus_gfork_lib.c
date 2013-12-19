@@ -455,7 +455,7 @@ gfork_l_get_env_fd(
     int                                 fd;
     GForkFuncName(gfork_l_get_env_fd);
 
-    tmp_str = globus_libc_getenv(env);
+    tmp_str = getenv(env);
     if(tmp_str == NULL)
     {
         res = GForkErrorStr("Env not set");

@@ -19,35 +19,21 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_i_error_errno.c
+ * @file globus_i_error_openssl.h
  * Globus Generic Error
  *
- * $RCSfile$$
- * $Revision$
- * $Date$
- * 
  * @author Sam Lang
  */
 
 #include "globus_error_openssl.h"
 
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
+extern "C" {
 #endif
 
-EXTERN_C_BEGIN
-
-/* debug macros */
 
 #ifdef BUILD_DEBUG
-
 extern int globus_i_gsi_openssl_error_debug_level;
 
 #define GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG(_LEVEL_) \
@@ -102,11 +88,15 @@ typedef struct globus_l_openssl_error_handle_s
 } globus_i_openssl_error_handle_t;
 
 globus_openssl_error_handle_t
-globus_i_openssl_error_handle_init();
+globus_i_openssl_error_handle_init(void);
 
 void
 globus_i_openssl_error_handle_destroy(
     globus_openssl_error_handle_t       handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 

@@ -15,7 +15,6 @@
  */
 
 #include "globus_i_gridftp_server_control.h"
-#include <grp.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -54,6 +53,19 @@ static uint64_t  globus_l_test_msg[3] =
 #define GlobusLTestSuiteMsg()
 #endif
 
+
+#ifdef TARGET_ARCH_WIN32
+
+struct passwd *getpwuid(uid_t uid) { return NULL; }
+struct passwd *getpwnam(const char *t) { return NULL; }
+
+struct group *getgrgid(gid_t gid) { return NULL; }
+struct group *getgrnam(const char *t) { return NULL; }
+
+#define lstat(x,y) stat(x,y)
+#define S_ISLNK(x) 0
+
+#endif
 
 #define GlobusLServerRefInc(_s)                                         \
 do                                                                      \
@@ -2784,8 +2796,12 @@ globus_gridftp_server_control_start(
     rc = fstat(system_handle, &statbuf);
     if(rc != 0)
     {
+#ifdef TARGET_ARCH_WIN32
+        statbuf.st_mode = 0;
+#else
         res = GlobusGridFTPServerErrorParameter("system_handle");
         goto err;
+#endif
     }
     
     if(S_ISFIFO(statbuf.st_mode))
@@ -3767,6 +3783,7 @@ struct passwd *
 globus_libc_cached_getpwuid(
     uid_t                               uid)
 {
+#ifndef TARGET_ARCH_WIN32
     struct passwd *                     result_pw = NULL;
     globus_l_libc_cached_pwent_t *      pwent;
     int                                 rc;
@@ -3778,8 +3795,7 @@ globus_libc_cached_getpwuid(
     if(pwent == NULL)
     {
         pwent = (globus_l_libc_cached_pwent_t *) 
-            globus_calloc(1, sizeof(globus_l_libc_cached_pwent_t));
-        rc = globus_libc_getpwuid_r(
+            globus_calloc(1, sizeof(globus_l_libc_cached_pwent_t));		        rc = globus_libc_getpwuid_r(
             uid, &pwent->pw, pwent->buffer, GSU_MAX_PW_LENGTH, &result_pw);
         if(rc != 0 || result_pw == NULL)
         {
@@ -3799,6 +3815,7 @@ globus_libc_cached_getpwuid(
     
 error_pwent:
     globus_free(pwent);
+#endif
     return NULL;
 }   
 

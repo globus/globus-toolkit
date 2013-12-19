@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef _GLOBUS_EXTENSION_
-#define _GLOBUS_EXTENSION_
+/** @file globus_extension.h Globus Extension Modules */
+#ifndef GLOBUS_EXTENSION_H
+#define GLOBUS_EXTENSION_H
 
 #include "globus_common_include.h"
 #include "globus_module.h"
 #include "globus_hashtable.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern globus_module_descriptor_t       globus_i_extension_module;
 #define GLOBUS_EXTENSION_MODULE (&globus_i_extension_module)
@@ -219,6 +222,8 @@ void
 globus_extension_unregister_builtins(
     globus_extension_builtin_t *        builtins);
 
-EXTERN_C_END
-
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_EXTENSION_H */

@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_FTP_CLIENT_THROUGHPUT_NL_PLUGIN_H
-#define GLOBUS_INCLUDE_FTP_CLIENT_THROUGHPUT_NL_PLUGIN_H
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+#ifndef GLOBUS_FTP_CLIENT_THROUGHPUT_NL_PLUGIN_H
+#define GLOBUS_FTP_CLIENT_THROUGHPUT_NL_PLUGIN_H
+
 /**
  * @file globus_ftp_client_throughput_nl_plugin.h GridFTP Netlogger Throughput Plugin
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- * $Author$
  */
-#endif
 
 /**
  * @defgroup globus_ftp_client_throughput_nl_plugin Netlogger Throughput Plugin
@@ -39,32 +33,32 @@
  * TransferPerfTotal : This event type will be sent everytime a throughput
  *      plugin total callback is received.
  *
- * - URL.SOURCE   <string>  Source url of transfer
- * - URL.DEST     <string>  Dest url of transfer
- * - BYTES        <int>     Total bytes transfered thus far
- * - BW.CURRENT   <float>   Current (instantaneous) bandwidth
- * - BW.AVG       <float>   Average (instantaneous) bandwidth
+ * - URL.SOURCE   &lt;string&gt;  Source url of transfer
+ * - URL.DEST     &lt;string&gt;  Dest url of transfer
+ * - BYTES        &lt;int&gt;     Total bytes transfered thus far
+ * - BW.CURRENT   &lt;float&gt;   Current (instantaneous) bandwidth
+ * - BW.AVG       &lt;float&gt;   Average (instantaneous) bandwidth
  *
  * TransferPerfStripe  : This event type will be sent everytime a throughput
  *      plugin stripe callback is received.
  *
- * - URL.SOURCE   <string>  Source url of transfer
- * - URL.DEST     <string>  Dest url of transfer
- * - INDEX        <int>     The stripe index the event applies to
- * - BYTES        <int>     Total bytes transfered thus far on this stripe
- * - BW.CURRENT   <float>   Current (instantaneous) bandwidth on this stripe
- * - BW.AVG       <float>   Average (instantaneous) bandwidth on this stripe
+ * - URL.SOURCE   &lt;string&gt;  Source url of transfer
+ * - URL.DEST     &lt;string&gt;  Dest url of transfer
+ * - INDEX        &lt;int&gt;     The stripe index the event applies to
+ * - BYTES        &lt;int&gt;     Total bytes transfered thus far on this stripe
+ * - BW.CURRENT   &lt;float&gt;   Current (instantaneous) bandwidth on this stripe
+ * - BW.AVG       &lt;float&gt;   Average (instantaneous) bandwidth on this stripe
  *
  * TransferBegin  : This event type will be sent everytime a throughput
  *      plugin begin callback is received.
  *
- * - URL.SOURCE   <string>  Source url of transfer
- * - URL.DEST     <string>  Dest url of transfer
+ * - URL.SOURCE   &lt;string&gt;  Source url of transfer
+ * - URL.DEST     &lt;string&gt;  Dest url of transfer
  *
  * TransferEnd  : This event type will be sent everytime a throughput
  *      plugin complete callback is received.
  *
- * - SUCCESS      <bool>    Completion status
+ * - SUCCESS      &lt;bool&gt;    Completion status
  *
  */
 
@@ -75,17 +69,9 @@
 #include "globus_ftp_client_throughput_plugin.h"
 #include "NetLogger.h"
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 /** Module descriptor
  * @ingroup globus_ftp_client_throughput_nl_plugin
@@ -121,6 +107,8 @@ globus_ftp_client_throughput_nl_plugin_set_callbacks(
     globus_ftp_client_throughput_plugin_complete_cb_t   complete_cb,
     void *                                              user_specific);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_INCLUDE_FTP_CLIENT_THROUGHPUT_NL_PLUGIN_H */
+#endif /* GLOBUS_FTP_CLIENT_THROUGHPUT_NL_PLUGIN_H */

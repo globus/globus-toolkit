@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
+/** @file globus_options.h Command-Line Options Parser */
+
 #ifndef GLOBUS_OPTIONS_H
 #define GLOBUS_OPTIONS_H 1
 
 #include "globus_common_include.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum 
 {
@@ -100,4 +107,8 @@ void
 globus_options_help(
     globus_options_handle_t             handle);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_OPTIONS_H */

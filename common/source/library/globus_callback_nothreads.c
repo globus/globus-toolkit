@@ -35,10 +35,8 @@
  */
 #define GLOBUS_L_CALLBACK_POST_STOP_ONESHOTS 10
 
-#ifdef TARGET_ARCH_WIN32
+#ifdef _WIN32
 #define pause() Sleep(1000);
-#elif defined(TARGET_ARCH_NETOS)
-#define pause() tx_thread_sleep(0xFFFFFFFF)
 #endif
 
 static
@@ -1759,7 +1757,7 @@ globus_bool_t
 globus_l_callback_uncatchable_signal(
     int                                 signum)
 {
-#ifndef TARGET_ARCH_WIN32
+#ifndef _WIN32
 /* i would have used a switch here, but some of the signal numbers have the
  * same value
  */

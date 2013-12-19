@@ -14,28 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file display_name.c
+ * @file gssapi/source/library/display_status.c
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 #include <string.h>
 
 /**
- * @name Display Status
- */
-/*@{*/
-/**
+ * @brief Display Status
+ * @ingroup globus_gsi_gssapi
  * Calls the SSLeay error print routines to produce a printable
  * message. This may need some work, as the SSLeay error messages 
  * are more of a trace, and my not be the best for the user. 
@@ -151,4 +141,3 @@ GSS_CALLCONV gss_display_status(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */

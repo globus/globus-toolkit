@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_gass_cache_config.c
- 
-Description:
-    Internal utlity functions for extracting GASS cache configuration
-    information.
-
-******************************************************************************/
+/** @file globus_gass_cache_config.c
+ *  Internal utlity functions for extracting GASS cache configuration
+ *  information.
+ */
 
 #include "globus_common.h"
 #include "globus_hashtable.h"
@@ -68,6 +64,7 @@ globus_l_gass_cache_config_init(
     globus_l_gass_cache_config_t *  config)
 {
     globus_off_t                    length;
+    struct stat                     st;
     int                             i, n, fd, rc, status;
     char                            *p, *q, *r;
     char                            *key, *value;
@@ -88,24 +85,20 @@ globus_l_gass_cache_config_init(
         goto cleanup;
     }
 
-    length = globus_libc_lseek(fd,0,SEEK_END);
-    if (length <= 0)
+    rc = fstat(fd, &st);
+    if (rc < 0)
     {
         status = GLOBUS_L_ERROR_CONFIG_FILE_READ;
         goto cleanup;
     }
 
-    config->buf = globus_libc_malloc(length+1);
+    length = st.st_size;
+
+    config->buf = malloc(length+1);
     if (config->buf == NULL)
     {
         status = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
         goto cleanup;
-    }
-
-    if (globus_libc_lseek(fd,0,SEEK_SET) != 0)
-    {
-        status = GLOBUS_L_ERROR_CONFIG_FILE_READ ;
-        goto free_config_buf;
     }
 
     for (i=0; i<length; i+=n)

@@ -1,24 +1,24 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS= \
+pkgconfdir = ${libdir}/pkgconfig
+
+SUBDIRS = \
 	library \
 	programs \
 	scripts \
-	pkgdata \
-	config \
-	doxygen \
-        manpages
-
-libexec_SCRIPTS= \
-	config.guess
+        manpages \
+        test
 
 doc_DATA = GLOBUS_LICENSE
 
+pkgconf_DATA = globus-common.pc
+libexec_SCRIPTS = build-aux/config.guess
+
 EXTRA_DIST = \
-	version.h.in\
+	dirt.sh \
+	version.h.in \
 	globus_common.txt \
 	$(doc_DATA)
 
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+distuninstallcheck:
+	@:

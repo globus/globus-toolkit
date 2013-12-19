@@ -15,7 +15,7 @@
  */
 
 #include "globus_i_gridftp_server_control.h"
-#include <sys/utsname.h>
+//#include <sys/utsname.h>
 
 /*************************************************************************
  *                      get functions

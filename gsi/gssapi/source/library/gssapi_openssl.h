@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef _GSSAPI_OPENSSL_H
-#define _GSSAPI_OPENSSL_H
+#ifndef GSSAPI_OPENSSL_H
+#define GSSAPI_OPENSSL_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file gssapi_openssl.h
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
-#if defined(WIN32)
+#include "globus_config.h"
+
+#if defined(_WIN32)
 #define _WINSOCKAPI_  //rcg 9/23/03
 #   include "windows.h"
 #endif
@@ -187,4 +183,4 @@ globus_thread_once_t                    once_control;
 void
 globus_l_gsi_gssapi_activate_once(void);
 
-#endif /* _GSSAPI_OPENSSL_H */
+#endif /* GSSAPI_OPENSSL_H */

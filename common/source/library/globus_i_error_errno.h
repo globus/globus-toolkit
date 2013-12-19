@@ -16,24 +16,17 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-#ifndef GLOBUS_I_INCLUDE_ERRNO_ERROR_H
-#define GLOBUS_I_INCLUDE_ERRNO_ERROR_H
+#ifndef GLOBUS_I_ERROR_ERRNO_H
+#define GLOBUS_I_ERROR_ERRNO_H
 
 /**
  * @file globus_i_error_errno.h
  * Globus Errno Error
- *
- * $RCSfile$
- * $Revision$
- * $Date $
  */
 
 #include "globus_common_include.h"
 
-EXTERN_C_BEGIN
-
-EXTERN_C_END
 
 #endif /* GLOBUS_I_INCLUDE_ERRNO_ERROR_H */
 
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+#endif /* GLOBUS_I_ERROR_ERRNO_H */

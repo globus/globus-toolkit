@@ -21,19 +21,17 @@
 #include "globus_thread_rmutex.h"
 #include "globus_libc.h"
 
-#ifndef BUILD_STATIC_ONLY
 #include "ltdl.h"
-#endif /* !BUILD_STATIC_ONLY */
-
-#include "globus_common.h"
-/* provides local_version and build_flavor */
-#include "version.h"
 
 #ifdef WIN32
 #define MY_LIB_EXT ".dll"
 #else
 #define MY_LIB_EXT ".so"
 #endif
+
+#include "globus_common.h"
+/* provides local_version and build_flavor */
+#include "version.h"
 
 #if USE_SYMBOL_LABELS
 extern int WARNING_USING_MIXED_THREAD_MODELS;
@@ -129,6 +127,7 @@ globus_l_libtool_mutex_unlock(void)
     globus_rmutex_unlock(&globus_l_libtool_mutex);
 }
 
+#if HAVE_LT_DLMUTEX_REGISTER
 static
 void
 globus_l_libtool_set_error(
@@ -143,6 +142,7 @@ globus_l_libtool_get_error(void)
 {
     return (char *) globus_thread_getspecific(globus_l_libtool_key);
 }
+#endif
 #endif /* !defined(BUILD_STATIC_ONLY) */
 
 /**

@@ -14,30 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_GLOBUS_URL_H_
-#define GLOBUS_INCLUDE_GLOBUS_URL_H_
+#ifndef GLOBUS_URL_H
+#define GLOBUS_URL_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_url.h URL Parsing.
- *
+ * @file globus_url.h URL Parsing
  */
-#endif
 
 /**
  * @defgroup globus_url URL String Parser
+ * @ingroup globus_common
  *
  * The Globus URL functions provide a simple mechanism for parsing
  * a URL string into a data structure, and for determining the scheme
  * of an URL string.
- *
- * These functions are part of the Globus common library. The GLOBUS_COMMON
- * module must be activated in order to use them.
  */
 
-#include "globus_common_include.h"
-
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Supported URL Schemes */
 /**
@@ -188,5 +183,9 @@ globus_url_string_hex_encode(
 #define GLOBUS_URL_TRUE 1
 #define GLOBUS_URL_FALSE 0
 
-EXTERN_C_END
+
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_URL_H */

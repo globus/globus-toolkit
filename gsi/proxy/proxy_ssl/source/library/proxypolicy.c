@@ -24,10 +24,6 @@
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
 /**
- * @name Get a method for ASN1 conversion
- */
-/* @{ */
-/**
  * @ingroup proxypolicy
  *  
  * Creates an ASN1_METHOD structure, which contains
@@ -50,13 +46,8 @@ ASN1_METHOD * PROXYPOLICY_asn1_meth()
     return (&proxypolicy_asn1_meth);
 }
 /* PROXYPOLICY_asn1_meth() */
-/* @} */
 #endif
 
-/**
- * @name New
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  *
@@ -78,13 +69,8 @@ PROXYPOLICY * PROXYPOLICY_new()
     M_ASN1_New_Error(ASN1_F_PROXYPOLICY_NEW);
 }
 /* PROXYPOLICY_new() */
-/* @} */
 
 
-/**
- * @name Free
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  *
@@ -101,13 +87,8 @@ void PROXYPOLICY_free(
     OPENSSL_free(policy);
 }
 /* PROXYPOLICY_free() */
-/* @} */
 
 
-/**
- * @name Duplicate
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  * 
@@ -128,13 +109,8 @@ PROXYPOLICY * PROXYPOLICY_dup(
                                      (char *)policy));
 }
 /* PROXYPOLICY_dup() */
-/* @} */
 
 
-/**
- * @name Compare
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  *
@@ -156,13 +132,8 @@ int PROXYPOLICY_cmp(
     }
     return 0;
 }
-/* @} */
 
 
-/**
- * @name Print to a BIO stream
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  *
@@ -188,13 +159,8 @@ int PROXYPOLICY_print(
     sk_CONF_VALUE_pop_free(values, X509V3_conf_free);
     return 1;
 }
-/* @} */
 
 
-/**
- * @name Print to a File Stream
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  *
@@ -218,13 +184,8 @@ int PROXYPOLICY_print_fp(
 
     return (ret);
 }
-/* @} */
 
 
-/**
- * @name Set the Policy Language Field
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  *
@@ -247,12 +208,7 @@ int PROXYPOLICY_set_policy_language(
     }
     return 0;
 }
-/* @} */
 
-/**
- * @name Get the Policy Language Field
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  * 
@@ -268,12 +224,7 @@ ASN1_OBJECT * PROXYPOLICY_get_policy_language(
 {
     return policy->policy_language;
 }
-/* @} */
 
-/**
- * @name Set the Policy Field
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  *
@@ -313,13 +264,8 @@ int PROXYPOLICY_set_policy(
 
     return 1;
 }
-/* @} */
 
 
-/**
- * @name Get the Policy Field
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  *
@@ -348,13 +294,8 @@ unsigned char * PROXYPOLICY_get_policy(
     
     return NULL;
 }
-/* @} */
 
 
-/**
- * @name Convert from Internal to DER encoded form
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  *
@@ -387,13 +328,8 @@ int i2d_PROXYPOLICY(
     }
     M_ASN1_I2D_finish();
 }
-/* @} */
 
 
-/**
- * @name Convert from DER encoded form to Internal
- */
-/* @{ */
 /**
  * @ingroup proxypolicy
  *
@@ -438,7 +374,6 @@ PROXYPOLICY * d2i_PROXYPOLICY(
                       PROXYPOLICY_free, 
                       ASN1_F_D2I_PROXYPOLICY);
 }
-/* @} */
 
 
 X509V3_EXT_METHOD * PROXYPOLICY_x509v3_ext_meth()

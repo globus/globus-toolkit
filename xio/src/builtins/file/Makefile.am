@@ -1,18 +1,7 @@
-include $(top_srcdir)/globus_automake_pre
 
-Sources= \
-    globus_xio_file_driver.c
-
-include_HEADERS = \
-    globus_xio_file_driver.h 
-
-
+include_HEADERS = globus_xio_file_driver.h 
 noinst_LTLIBRARIES = libglobus_xio_file_driver.la 
 
-INCLUDES = -I$(top_srcdir) $(GPT_INCLUDES)
-
-libglobus_xio_file_driver_la_SOURCES = $(Sources)
-libglobus_xio_file_driver_la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_xio_file_driver_la_LIBADD = $(GPT_LIB_LINKS)
-
-include $(top_srcdir)/globus_automake_post
+AM_CPPFLAGS = -I$(top_srcdir) -DGLOBUS_BUILTIN=1 $(PACKAGE_DEP_CFLAGS)
+libglobus_xio_file_driver_la_SOURCES = globus_xio_file_driver.c
+libglobus_xio_file_driver_la_LDFLAGS = $(PACKAGE_DEP_LIBS)

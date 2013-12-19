@@ -437,7 +437,7 @@ globus_error_set_type(
 {
     globus_object_t *                   tmp;
 
-    if ((error = globus_object_upcast(error, GLOBUS_ERROR_TYPE_GLOBUS)) != NULL)
+    if ((tmp = globus_object_upcast(error, GLOBUS_ERROR_TYPE_GLOBUS)) != NULL)
     {
         ((globus_l_error_data_t *)
                 globus_object_get_local_instance_data(tmp))->type = type;

@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
 /**
- * @file module.c
+ * @file gssapi/source/library/module.c
  * GSSAPI module activation code
- *
- * $RCSfile$
- * $Revision$
- * $Date $
  */
 
 #include "gssapi.h"
@@ -205,5 +199,3 @@ globus_l_gsi_gssapi_activate_once(void)
 {
     globus_mutex_init(&globus_i_gssapi_activate_mutex, NULL);
 }
-
-#endif

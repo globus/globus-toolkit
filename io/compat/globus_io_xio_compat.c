@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/** @file globus_io_xio_compat.c Globus I/O Emulation */
 
 #include "globus_io.h"
 #ifndef TARGET_ARCH_WIN32

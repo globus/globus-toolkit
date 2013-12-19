@@ -15,10 +15,7 @@
  */
 
 /**
- * @file globus_ftp_control_data.c
- *
- * FTP Data Connection Configuration and Management
- *
+ * @file globus_ftp_control_data.c FTP Data Connection Configuration and Management
  */
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
@@ -160,7 +157,7 @@ typedef struct globus_ftp_data_stripe_s
     globus_size_t                               eods_received;
 } globus_ftp_data_stripe_t;
 
-/* trasniant */
+/* transient */
 typedef struct globus_i_ftp_dc_transfer_handle_s
 {
     globus_ftp_data_stripe_t *                  stripes;
@@ -987,8 +984,9 @@ globus_list_remove_element(
 
 
 /**
- * Create an incoming FTP data connection.
- *
+ * @brief Create an incoming FTP data connection
+ * @ingroup globus_ftp_control_data
+ * @details
  * This function will register a globus_io_{accept, connect}. Further
  * accepts/connects are done by registering a new accept/connect in
  * the current accept/connect callback. A call to either
@@ -1105,10 +1103,12 @@ globus_ftp_control_data_connect_read(
 
     return result;
 }
+/* globus_ftp_control_data_connect_read() */
 
 /**
- * Create an outgoing FTP data connection.
- *
+ * @brief Create an outgoing FTP data connection
+ * @ingroup globus_ftp_control_data
+ * @details
  *  This function sets the interface that will be used to send and
  *  receive information along the data channel.
  *
@@ -1179,8 +1179,9 @@ globus_ftp_control_data_set_interface(
 }
 
 /**
- * Create an outgoing FTP data connection.
- *
+ * @brief Create an outgoing FTP data connection
+ * @ingroup globus_ftp_control_data
+ * @details
  * This function will register a globus_io_{accept, connect}. Further
  * accepts/connects are done by registering a new accept/connect in
  * the current accept/connect callback. A call to either
@@ -1795,6 +1796,9 @@ globus_l_ftp_control_data_stream_connect_direction(
 }
 
 /**
+ * @brief Add data channels
+ * @ingroup globus_ftp_control_data
+ * @details
  * Opens additional data channels (connections) to the host identified
  * by the stripe parameter.
  *
@@ -1859,7 +1863,10 @@ globus_ftp_control_data_add_channels(
 }
 
 /**
- *  Sends an eof message to each stripe along an open data connection.
+ * @brief Send EOF
+ * @ingroup globus_ftp_control_data
+ * @details
+ * Sends an EOF message to each stripe along an open data connection.
  *
  * @param handle
  *        A pointer to a FTP control handle.  This handle contains the
@@ -2135,6 +2142,9 @@ globus_l_ftp_control_data_send_eof(
 }
 
 /**
+ * @brief Remove Data Channels
+ * @ingroup globus_ftp_control_data
+ * @details
  * Removes data channels (connections) to the host identified by the
  * stripe parameter.
  *
@@ -2244,6 +2254,9 @@ globus_ftp_control_data_remove_channels(
 }
 
 /**
+ * @brief Number of data channels
+ * @ingroup globus_ftp_control_data
+ * @details
  * Returns the number of currently open channels for the host
  * identified by the stripe parameter.  This number may be less then
  * the level of parallelism specified in local_parallelism, due to
@@ -2332,6 +2345,9 @@ globus_ftp_control_data_query_channels(
 }
 
 /**
+ * @brief Get Total Data Channels For a Stripe
+ * @ingroup globus_ftp_control_data
+ * @details
  * Returns the total number of data channels used so far in the
  * current transfer on the given stripe.
  *
@@ -2564,16 +2580,19 @@ globus_ftp_control_data_get_remote_hosts(
 }
 
 /**
- *  Determines if the library will automatically send an EOF message in
- *  extended block mode, or if the user will have to explicitly do it
- *  by calling globus_ftp_control_data_send_eof().
+ * @brief Enable or disable automatic EOF handling
+ * @ingroup globus_ftp_control_data
+ * @details
+ * Determines if the library will automatically send an EOF message in
+ * extended block mode, or if the user will have to explicitly do it
+ * by calling globus_ftp_control_data_send_eof().
  *
- *  @param handle
- *         The ftp handle you wish to sent the send_eof attribute on.
+ * @param handle
+ *        The ftp handle you wish to sent the send_eof attribute on.
  *
- *  @param send_eof
- *         A boolean representing whether or not to automatically send an
- *         EOF message.
+ * @param send_eof
+ *        A boolean representing whether or not to automatically send an
+ *        EOF message.
  */
 globus_result_t
 globus_ftp_control_local_send_eof(
@@ -2619,6 +2638,7 @@ globus_ftp_control_local_send_eof(
 
     return GLOBUS_SUCCESS;
 }
+/* globus_ftp_control_local_send_eof() */
 
 globus_result_t
 globus_ftp_control_get_parallelism(
@@ -2678,6 +2698,9 @@ globus_ftp_control_get_parallelism(
 }
 
 /**
+ * @brief Set control handle parallelism
+ * @ingroup globus_ftp_control_data
+ * @details
  * Set the parallelism information in a FTP control handle
  *
  * @param handle
@@ -2758,8 +2781,12 @@ globus_ftp_control_local_parallelism(
 
     return GLOBUS_SUCCESS;
 }
+/* globus_ftp_control_local_parallelism() */
 
 /**
+ * @brief Create a passive socket
+ * @ingroup globus_ftp_control_data
+ * @details
  * Create a local listening socket, bind it and return the address the
  * socket is listening to. If there is a existing data connection it
  * is closed.
@@ -2870,7 +2897,7 @@ globus_ftp_control_local_pasv(
                 unsigned short          p;
                 char *                  dataip;
                 
-                if(dataip = globus_libc_getenv("GLOBUS_FTP_CLIENT_DATA_IP"))
+                if(dataip = getenv("GLOBUS_FTP_CLIENT_DATA_IP"))
                 {
                     result = globus_libc_contact_string_to_ints(
                         dataip, address->host, &address->hostlen, NULL);
@@ -2921,8 +2948,12 @@ globus_ftp_control_local_pasv(
 
     return result;
 }
+/* globus_ftp_control_local_pasv() */
 
 /**
+ * @brief Create multiple passive sockets
+ * @ingroup globus_ftp_control_data
+ * @details
  * Create num_addresses local listening sockets, bind them and return
  * the addresses the sockets are listening to. If there is a existing
  * data connection it is closed.
@@ -2948,8 +2979,12 @@ globus_ftp_control_local_spas(
               GLOBUS_NULL,
               _FCSL("globus_ftp_control_local_spas(): this function is not implemented")));
 }
+/* globus_ftp_control_local_spas() */
 
 /**
+ * @brief Set remote data address
+ * @ingroup globus_ftp_control_data
+ * @details
  * Insert the host/port information returned by a PASV on the remote
  * host into the local FTP control handle. (close any outstanding data
  * con)
@@ -3040,6 +3075,7 @@ globus_ftp_control_local_port(
 
     return result;
 }
+/* globus_ftp_control_local_port() */
 
 globus_result_t
 globus_ftp_control_get_spor(
@@ -3124,6 +3160,9 @@ globus_ftp_control_get_spor(
 }
 
 /**
+ * @brief Set remote data addresses
+ * @ingroup globus_ftp_control_data
+ * @details
  * Insert the host/port addresses returned by a SPAS on the remote
  * host into the local FTP control handle. If there are any
  * outstanding data connections at this point, they are closed.
@@ -3212,6 +3251,9 @@ globus_ftp_control_local_spor(
 }
 
 /**
+ * @brief Set control handle TYPE value
+ * @ingroup globus_ftp_control_data
+ * @details
  * Update the FTP control handle with the given type information.
  *
  * @param handle
@@ -3281,6 +3323,7 @@ globus_ftp_control_local_type(
 
     return GLOBUS_SUCCESS;
 }
+/* globus_ftp_control_local_type() */
 
 globus_result_t
 globus_ftp_control_get_type(
@@ -3378,6 +3421,9 @@ globus_ftp_control_get_mode(
 }
 
 /**
+ * @brief Set data handle mode
+ * @ingroup globus_ftp_control_data
+ * @details
  * Update the FTP control handle with the given mode information.
  *
  * @param handle
@@ -3450,6 +3496,9 @@ globus_ftp_control_local_mode(
 
 
 /**
+ * @brief Set data handle TCP buffer size
+ * @ingroup globus_ftp_control_data
+ * @details
  * Update the FTP control handle with the given socket buffer
  * information.
  *
@@ -3636,6 +3685,9 @@ globus_ftp_control_data_get_socket_buf(
 }
 
 /**
+ * @brief Set data channel DCAU
+ * @ingroup globus_ftp_control_data
+ * @details
  * Update the FTP control handle with the given data channel
  * authentication information.
  *
@@ -3983,6 +4035,9 @@ globus_ftp_control_get_prot(
 /* globus_ftp_control_get_prot() */
 
 /**
+ * @brief Set data channel protection buffer size
+ * @ingroup globus_ftp_control_data
+ * @details
  * Update the FTP control handle with the given protection buffer size
  * information.
  *
@@ -4042,6 +4097,9 @@ error_exit:
 /* globus_ftp_control_local_pbsz() */
 
 /**
+ * @brief Get data channel protection buffer size
+ * @ingroup globus_ftp_control_data
+ * @details
  * Query the FTP control handle for the protection buffer size
  * information.
  *
@@ -4087,6 +4145,9 @@ globus_ftp_control_get_pbsz(
 /* globus_ftp_control_get_pbsz() */
 
 /**
+ * @brief Set data channel structure
+ * @ingroup globus_ftp_control_data
+ * @details
  * Updates the handle with information on the structure of the data
  * being sent on the data channel.
  *
@@ -4162,6 +4223,9 @@ globus_ftp_control_local_stru(
 }
 
 /**
+ * @brief Write data to data connections
+ * @ingroup globus_ftp_control_data
+ * @details
  * Writes data from the supplied buffer to data connection(s)
  *
  * This function writes contained in the buffer to the data
@@ -4368,6 +4432,9 @@ globus_ftp_control_get_stripe_count(
 }
 
 /**
+ * @brief Read data from data connections
+ * @ingroup globus_ftp_control_data
+ * @details
  * Reads data from data connection(s) and put them in the supplied
  * buffer.
  *
@@ -5142,6 +5209,9 @@ globus_ftp_control_layout_register_func(
 }
 
 /**
+ * @brief Set data layout
+ * @ingroup globus_ftp_control_data
+ * @details
  * Update the handle with the layout and the size of the data sent
  * over the data channel.
  *
@@ -5393,12 +5463,13 @@ globus_X_ftp_control_local_layout(
 }
 
 /**
- * Create a globus_ftp_control_data_write_info_t structure.
- *
- * This funciton populates a globus_ftp_control_data_callback_t
+ * @brief Create a globus_ftp_control_data_write_info_t structure
+ * @ingroup globus_ftp_control_data
+ * @details
+ * This function populates a globus_ftp_control_data_callback_t
  * structure with valid information.  This structure provides the user
  * a way to register several data writes with a single callback.  This
- * is quite useful to the writter of enqueue functions.  It allows a
+ * is quite useful to the writer of enqueue functions.  It allows a
  * single call to globus_ftp_control_data_write() to be broken up
  * into many writes, potentially on different stripes, and for a single
  * callback to be called when all are finished.
@@ -5516,8 +5587,9 @@ globus_ftp_control_create_data_info(
 }
 
 /**
- * Release a data_info structure.
- *
+ * @brief Release a data_info structure.
+ * @ingroup globus_ftp_control_data
+ * @details
  * This function releases all memory and references created when a call
  * to globus_ftp_control_create_data_info() was made.  For every call to
  * globus_ftp_control_create_data_info() a call to this function must be
@@ -5592,8 +5664,9 @@ globus_ftp_control_release_data_info(
 }
 
 /**
- * Write FTP data to a particular stripe.
- *
+ * @brief Write FTP data to a stripe
+ * @ingroup globus_ftp_control_data
+ * @details
  * This function allows the user to write to a specified stripe.  The stripe
  * index relates to the order passsed into local_spor().  This function
  * differs from globus_ftp_control_data_write() in that no enqueue function
@@ -5722,8 +5795,9 @@ exit:
 }
 
 /**
- * Write data on a specific stripe from an enqueue callback function only.
- *
+ * @brief Write data to a stripe from an enqueue callback
+ * @ingroup globus_ftp_control_data
+ * @details
  * This function allows the user to register the write of ftp data on
  * a specfic stripe.  This function can only be called fromed an enqueue
  * function callback.  This function should be used only by the implementor
@@ -7514,7 +7588,10 @@ globus_i_ftp_control_data_cc_destroy(
 }
 
 /**
- *  Forces an imediate close of all data connections.
+ * @brief Close data connections
+ * @ingroup globus_ftp_control_data
+ * @details
+ * Forces an imediate close of all data connections.
  *
  *  @param control_handle
  *         The globus_ftp_control_handle that is have its data
@@ -7655,7 +7732,6 @@ globus_l_ftp_control_strip_ascii(
         return length;
     }
 
-#ifndef TARGET_ARCH_WIN32
     for(ctr = 0; ctr < length - 1; ctr++)
     {
         if(buf[ctr] == '\r' &&
@@ -7665,7 +7741,6 @@ globus_l_ftp_control_strip_ascii(
             count++;
         }
     }
-#endif
 
     return length - count;
 }
@@ -7685,7 +7760,6 @@ globus_l_ftp_control_add_ascii(
         return GLOBUS_NULL;
     }
 
-#ifndef TARGET_ARCH_WIN32
     /* allocating twice the memory may be a bad idea */
     out_buf = (globus_byte_t *)globus_malloc(length*2);
 
@@ -7699,11 +7773,6 @@ globus_l_ftp_control_add_ascii(
         out_buf[out_ndx] = in_buf[ctr];
         out_ndx++;
     }
-#else
-    out_buf = (globus_byte_t *)globus_malloc(length);
-	memcpy( out_buf, in_buf, length );
-	out_ndx= length;
-#endif
 
     *ascii_len = out_ndx;
 
@@ -9131,7 +9200,7 @@ globus_l_ftp_eb_read_header_callback(
                 if(data_conn->close)
                 {
                     /*
-                     *  next assertion happens if the writter breaks
+                     *  next assertion happens if the writer breaks
                      *  the protocol and sends a CLOSE prior to
                      *  an EOD.  
                      *

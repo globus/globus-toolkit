@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_strptime.h
- 
-Description:
-   Contains only the function globus_strptime.
- 
-******************************************************************************/
-#ifndef GLOBUS_INCLUDE_GLOBUS_STRPTIME_H_
-#define GLOBUS_INCLUDE_GLOBUS_STRPTIME_H_ 1
+/** @file globus_strptime.h strptime */
+
+#ifndef GLOBUS_STRPTIME_H
+#define GLOBUS_STRPTIME_H 1
  
 #include "globus_common_include.h"
  
@@ -128,7 +123,9 @@ Format specification:
 
 ******************************************************************************/
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 char*
 globus_strptime(
@@ -136,8 +133,9 @@ globus_strptime(
     char*       format_str,
     struct tm*  time_ptr );
 
-EXTERN_C_END
  
+#ifdef __cplusplus
+}
 #endif
 
-
+#endif /* GLOBUS_STRPTIME_H */

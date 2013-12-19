@@ -24,52 +24,60 @@
 
 EXTERN_C_BEGIN
 
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
  * @mainpage Globus XIO
- *
- * The Globus eXtensible Input Output library.
+ * @copydoc globus_xio
+ */
+#endif
+
+/**
+ * @defgroup globus_xio Globus XIO
+ * @brief eXtensible Input Output library
  *
  * - @ref GLOBUS_XIO_API
- * - @ref GLOBUS_XIO_API_ASSIST 
+ * - @ref GLOBUS_XIO_API_ASSIST
  * - @ref globus_xio_driver
- * - @ref driver_pgm
+ * - @ref globus_xio_driver_programming
  */
 
 /**
- *  @defgroup GLOBUS_XIO_API The globus_xio user API.
+ *  @defgroup GLOBUS_XIO_API Globus XIO API
+ *  @ingroup globus_xio
  */
 
 /**
- *  @defgroup GLOBUS_XIO_API_ASSIST User API Assistance.
- *  \n
+ *  @defgroup GLOBUS_XIO_API_ASSIST XIO Examples
+ *  @ingroup globus_xio
+ *
  *  Help understanding the globus_xio api.
- *  \n
+ *
  */
 /**
  * \addtogroup GLOBUS_XIO_API_ASSIST 
  * 
- *  \par Stack Constuction.
+ *  \section globus_xio_stack_construction Stack Construction
  *  The driver stack that is used for a given xio handle is constructed
  *  using a globus_xio_stack_t.  Each driver is loaded by name 
  *  and pushed onto a stack.
  * 
+ *  Stack setup example:
  *  \code
- *  stack setup example:
- * 
- *  // First load the drivers
- *  globus_xio_driver_load("tcp", &tcp_driver);
- *  globus_xio_driver_load("gsi", &gsi_driver);
- * 
- *  //build the stack
- *  globus_xio_stack_init(&stack);
- *  globus_xio_stack_push_driver(stack, tcp_driver, NULL);
- *  globus_xio_stack_push_driver(stack, gsi_driver, NULL);
- *  \endcode
+   
+    // First load the drivers
+    globus_xio_driver_load("tcp", &tcp_driver);
+    globus_xio_driver_load("gsi", &gsi_driver);
+   
+    //build the stack
+    globus_xio_stack_init(&stack);
+    globus_xio_stack_push_driver(stack, tcp_driver, NULL);
+    globus_xio_stack_push_driver(stack, gsi_driver, NULL);
+    \endcode
  */
 /**
  *  \addtogroup GLOBUS_XIO_API_ASSIST
  *
- *  \par Servers
+ *  \section globus_xio_servers Servers
  *  A server data structure provides functionality for passive opens.
  *  A server is initialized and bound to a protocol stack and set
  *  of attributes with the function globus_xio_server_create().  Once
@@ -77,29 +85,29 @@ EXTERN_C_BEGIN
  *  will result in an intialized handle which can later be opened.
  *
  *  \code
- *
- *  globus_xio_server_t             server;
- *  globus_xio_attr_t               attr;
- *
- *  globus_xio_attr_init(&attr);
- *  globus_xio_server_create(&server_handle, attr, stack); 
- *  globus_xio_server_accept(&handle, server);
- *
- *  \endcode
+  
+    globus_xio_server_t             server;
+    globus_xio_attr_t               attr;
+  
+    globus_xio_attr_init(&attr);
+    globus_xio_server_create(&server_handle, attr, stack); 
+    globus_xio_server_accept(&handle, server);
+  
+    \endcode
  */
 
 /**
  *  \addtogroup GLOBUS_XIO_API_ASSIST
  *
- *  \par Handle Construction
+ *  \section globus_xio_handle_construction Handle Construction
  *  There are two ways to create a handle.  The first is for use as a 
  *  client (one that is doing an active open).  The function:
  *  globus_xio_handle_create() is used to create such a handle and bind
  *  that handle to a protocol stack.
  *
  *  \code
- *  globus_xio_handle_create(&handle, stack);
- *  \endcode
+    globus_xio_handle_create(&handle, stack);
+    \endcode
  *
  *  The second means of creating a handle is for use as a server (one
  *  that is doing a passive open).  This is created by accepting a
@@ -110,8 +118,8 @@ EXTERN_C_BEGIN
  *  via a call to globus_xio_handle_cntl() described later.
  *
  *  \code
- *  globus_xio_server_accept(&xio_handle, server_handle);
- *  \endcode
+    globus_xio_server_accept(&xio_handle, server_handle);
+    \endcode
  * 
  *  once a handle is intialized the user can call globus_xio_open()
  *  to begin the open process.
@@ -120,17 +128,19 @@ EXTERN_C_BEGIN
 /**
  * @addtogroup GLOBUS_XIO_API_ASSIST
  *
- *  \par Timeouts
+ *  \section globus_xio_timeouts Timeouts
  *  A user can set a timeout value for any io operation.  Each IO 
  *  operation (open close read write) can have its own timeout value.
  *  If no timeout is set the operation will be allowed to infinitly
- *  block.\n
+ *  block.
+ *
  *  When time expires the outstanding operation is canceled.  If the
  *  timeout callback for the given operation is not NULL it is called first to
  *  notify the user that the operation timed out and give the user a chance to
  *  ignore that timeout.  If canceled, the user will get the callback they 
  *  registered for the operation as well, but it will come with an error
- *  indicating that it has been canceled.\n
+ *  indicating that it has been canceled.
+ *
  *  It is possiblie that part of an io operation will complete before
  *  the timeout expires.  In this case the opperation can still be 
  *  canceled.  The user will receive there IO callback with and 
@@ -140,7 +150,7 @@ EXTERN_C_BEGIN
 /**
  * @addtogroup GLOBUS_XIO_API_ASSIST
  *
- * \par Data Desciptor
+ *  \section data_descriptor Data Desciptor
  *  The data descriptor ADT gives the user a means of attaching/extracting
  *  meta data to a read or write operation.\n
  *  Things like offset, out of band message, and other driver specific
@@ -149,14 +159,14 @@ EXTERN_C_BEGIN
  *  globus_xio_write().  Within the globus_xio framework
  *  it is acceptable to pass NULL instead of a valid data_descriptor,
  *
+ *  Example:
  *  \code
- *  ex:
- *  globus_xio_data_descriptor_init(&desc);
- *  globus_xio_data_descriptor_cntl(desc, 
- *      tcp_driver,
- *      GLOBUS_XIO_TCP_SET_SEND_FLAGS,
- *      GLOBUS_XIO_TCP_SEND_OOB);
- *  \endcode
+    globus_xio_data_descriptor_init(&desc);
+    globus_xio_data_descriptor_cntl(desc, 
+        tcp_driver,
+        GLOBUS_XIO_TCP_SET_SEND_FLAGS,
+        GLOBUS_XIO_TCP_SEND_OOB);
+    \endcode
  */
 
 /*************************************************************************
@@ -166,7 +176,7 @@ EXTERN_C_BEGIN
 /**
  * \addtogroup GLOBUS_XIO_API_ASSIST
  *
- *  \par User Attributes
+ *  \section user_attributes User Attributes
  *  Globus XIO uses a single attribute object for all of its functions.
  *  Attributes give an the user an extenable mechanism to alter default
  *  values which control parameters in an operation.\n
@@ -174,12 +184,14 @@ EXTERN_C_BEGIN
  *  attribute as a parameter.  In many cases the user may ignore the
  *  attribute parameter and just pass in NULL.  However at times the user
  *  will wish to tweak the operation.  The attribute structure is used for
- *  this tweaking.\n
+ *  this tweaking.
+ *
  *  There are only three attribute functions. @ref globus_xio_attr_init 
  *  @ref globus_xio_attr_cntl and @ref globus_xio_attr_destroy.  The
  *  init and destroy functions are very simple and require little explaination.
  *  Before an attribute can be used it must be intialized, and to clean up all
- *  memory associated with it the user must call destroy on it.\n
+ *  memory associated with it the user must call destroy on it.
+ *
  *  The function @ref globus_xio_attr_cntl manipulates values in the
  *  attribute.  For more info on it see @ref globus_xio_attr_cntl.
  */

@@ -361,7 +361,7 @@ globus_object_get_type (const globus_object_t * object)
   if ( globus_object_assert_valid (object) 
        == GLOBUS_FALSE ) return NULL;
 
-  if ( (object==NULL) ) {
+  if (object==NULL) {
     return NULL;
   }
 
@@ -371,7 +371,7 @@ globus_object_get_type (const globus_object_t * object)
 const globus_object_type_t *
 globus_object_type_get_parent_type (const globus_object_type_t * type)
 {
-  if ( (type==NULL) ) {
+  if (type==NULL) {
     return NULL;
   }
 

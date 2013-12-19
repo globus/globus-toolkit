@@ -1600,12 +1600,12 @@ globus_gram_job_manager_request_acct(
     {
         const char *s;
 
-        if ((s = globus_libc_getenv( "JOBMANAGER_SYSLOG_ID"  )) != 0)
+        if ((s = getenv( "JOBMANAGER_SYSLOG_ID"  )) != 0)
         {
             jm_syslog_id = *s ? s : 0;
         }
 
-        if ((s = globus_libc_getenv( "JOBMANAGER_SYSLOG_FAC" )) != 0)
+        if ((s = getenv( "JOBMANAGER_SYSLOG_FAC" )) != 0)
         {
             if (sscanf( s, "%u", &jm_syslog_fac ) != 1)
             {
@@ -1613,7 +1613,7 @@ globus_gram_job_manager_request_acct(
             }
         }
 
-        if ((s = globus_libc_getenv( "JOBMANAGER_SYSLOG_LVL" )) != 0) {
+        if ((s = getenv( "JOBMANAGER_SYSLOG_LVL" )) != 0) {
             if (sscanf( s, "%u", &jm_syslog_lvl ) != 1) {
                 jm_syslog_id = 0;
             }
@@ -1646,7 +1646,7 @@ globus_gram_job_manager_request_acct(
         }
     }
 
-    if (!(gk_acct_fd = globus_libc_getenv( gk_acct_fd_var )))
+    if (!(gk_acct_fd = getenv( gk_acct_fd_var )))
     {
         return -1;
     }

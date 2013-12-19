@@ -4348,10 +4348,10 @@ globus_l_gram_info_get_int(
  * @ingroup globus_gram_client
  *
  * @details
- *     The globus_gram_client_job_info_destroy() function frees data pointed
- *     to by the @a extensions and @a job_contact fields of the
- *     @a globus_gram_client_job_info_t structure pointed to by the 
- *     @a info parameter. 
+ * The globus_gram_client_job_info_destroy() function frees data pointed
+ * to by the @a extensions and @a job_contact fields of the
+ * @a globus_gram_client_job_info_t structure pointed to by the 
+ * @a info parameter. 
  *
  * @param info
  *     A structure containing data to free.

@@ -21,18 +21,13 @@
  *
  * Stubs for the Globus threads package, to be used when Globus has been
  * configured not to use threads.
- *
- * CVS Information:
- *
- * $Source$
- * $Date$
- * $Revision$
- * $State$
- * $Author$
  */
 
 #include "config.h"
 #include "globus_thread.h"
+#include "globus_common_include.h"
+#include <string.h>
+
 extern globus_result_t globus_eval_path(const char *, char **);
 
 #include "ltdl.h"
@@ -64,6 +59,8 @@ globus_module_descriptor_t              globus_i_thread_module =
 
 /**
  * @defgroup globus_thread Threading
+ * @ingroup globus_common
+ * @brief Portable Thread Abstraction
  *
  * The Globus runtime includes support for portably creating threads on POSIX
  * and Windows systems. It also provides a callback-driven system for
@@ -91,29 +88,29 @@ globus_module_descriptor_t              globus_i_thread_module =
  * @brief Select threading model for an application
  * @ingroup globus_thread
  * @details
- *     The globus_thread_set_model() function selects which runtime model
- *     the current application will use. By default, the Globus runtime
- *     uses a non-threaded model. Additional models may be available based
- *     on system support: pthread, or windows. This function must be called
- *     prior to activating any globus module, as it changes how certain
- *     functions (like globus_mutex_lock() and globus_cond_wait()) behave.
- *     This function overrides the value set by the
- *     GLOBUS_THREAD_MODEL environment variable.
+ * The globus_thread_set_model() function selects which runtime model
+ * the current application will use. By default, the Globus runtime
+ * uses a non-threaded model. Additional models may be available based
+ * on system support: pthread, or windows. This function must be called
+ * prior to activating any globus module, as it changes how certain
+ * functions (like globus_mutex_lock() and globus_cond_wait()) behave.
+ * This function overrides the value set by the
+ * GLOBUS_THREAD_MODEL environment variable.
  *
- *     The globus_thread_set_model() function will fail if a Globus module
- *     has been activated already.
+ * The globus_thread_set_model() function will fail if a Globus module
+ * has been activated already.
  *
  * @param model
- *     The name of the thread model to use. Depending on operating system
- *     capabilities, this may be "none", "pthread", "windows", or some other
- *     custom thread implementation. The corresponding libtool module
- *     "libglobus_thread_pthread.la" or "libglobus_thread_windows.la" must
- *     be installed on the system for it to be used. 
+ * The name of the thread model to use. Depending on operating system
+ * capabilities, this may be "none", "pthread", "windows", or some other
+ * custom thread implementation. The corresponding libtool module
+ * "libglobus_thread_pthread.la" or "libglobus_thread_windows.la" must
+ * be installed on the system for it to be used. 
  * 
  * @return
- *     On success, globus_thread_set_model() sets the name of the thread
- *     model to use and returns GLOBUS_SUCCESS. If an error occurs, then
- *     globus_thread_set_model() returns GLOBUS_FAILURE.
+ * On success, globus_thread_set_model() sets the name of the thread
+ * model to use and returns GLOBUS_SUCCESS. If an error occurs, then
+ * globus_thread_set_model() returns GLOBUS_FAILURE.
  */
 extern
 int
@@ -232,11 +229,11 @@ globus_i_thread_pre_activate(void)
  * @defgroup globus_mutex Mutual Exclusion
  * @ingroup globus_thread
  * @details
- *     The Globus runtime includes three portable, related mutual exclusion
- *     primitives that can be used in applications and libraries. These are
- *     - globus_mutex_t: a non-recursive, non-shared lock
- *     - globus_rmutex_t: a recursive non-shared lock
- *     - globus_rw_mutex_t: a reader-writer lock
+ * The Globus runtime includes three portable, related mutual exclusion
+ * primitives that can be used in applications and libraries. These are
+ * - globus_mutex_t: a non-recursive, non-shared lock
+ * - globus_rmutex_t: a recursive non-shared lock
+ * - globus_rw_mutex_t: a reader-writer lock
  */
 
 /**
@@ -283,11 +280,11 @@ globus_mutex_init(
  * @brief Destroy a mutex
  * @ingroup globus_mutex
  * @details
- *     The globus_mutex_destroy() function destroys the mutex pointed to by its
- *     @a mutex parameter. After a mutex is destroyed it may no longer be used
- *     unless it is again initialized by globus_mutex_init(). Behavior is
- *     undefined if globus_mutex_destroy() is called with a pointer to a locked
- *     mutex.
+ * The globus_mutex_destroy() function destroys the mutex pointed to by its
+ * @a mutex parameter. After a mutex is destroyed it may no longer be used
+ * unless it is again initialized by globus_mutex_init(). Behavior is
+ * undefined if globus_mutex_destroy() is called with a pointer to a locked
+ * mutex.
  *
  * @param mutex
  *     The mutex to destroy
@@ -322,15 +319,15 @@ globus_mutex_destroy(
  * @brief Lock a mutex
  * @ingroup globus_mutex
  * @details
- *     The globus_mutex_lock() function locks the mutex pointed to by its
- *     @a mutex parameter.
- *     Upon successful
- *     return, the thread calling globus_mutex_lock() has an exclusive 
- *     lock on the resources protected by @a mutex. Other threads calling
- *     globus_mutex_lock() will wait until that thread later calls
- *     globus_mutex_unlock() or globus_cond_wait() with that mutex. Depending
- *     on the thread model, calling globus_mutex_lock on a mutex locked
- *     by the current thread will either return an error or result in deadlock.
+ * The globus_mutex_lock() function locks the mutex pointed to by its
+ * @a mutex parameter.
+
+ * Upon successful return, the thread calling globus_mutex_lock() has an
+ * exclusive lock on the resources protected by @a mutex. Other threads calling
+ * globus_mutex_lock() will wait until that thread later calls
+ * globus_mutex_unlock() or globus_cond_wait() with that mutex. Depending on
+ * the thread model, calling globus_mutex_lock on a mutex locked by the current
+ * thread will either return an error or result in deadlock.
  *
  * @param mutex
  *     The mutex to lock.
@@ -366,13 +363,13 @@ globus_mutex_lock(
  * @brief Unlock a mutex
  * @ingroup globus_mutex
  * @details
- *     The globus_mutex_unlock() function unlocks the mutex pointed to by its
- *     @a mutex parameter.  Upon successful
- *     return, the thread calling globus_mutex_unlock() no longer has an
- *     exclusive lock on the resources protected by @a mutex. Another thread
- *     calling globus_mutex_lock() may be unblocked so that it may acquire
- *     the mutex. Behavior is undefined if globus_mutex_unlock is called with
- *     an unlocked mutex.
+ * The globus_mutex_unlock() function unlocks the mutex pointed to by its
+ * @a mutex parameter.  Upon successful
+ * return, the thread calling globus_mutex_unlock() no longer has an
+ * exclusive lock on the resources protected by @a mutex. Another thread
+ * calling globus_mutex_lock() may be unblocked so that it may acquire
+ * the mutex. Behavior is undefined if globus_mutex_unlock is called with
+ * an unlocked mutex.
  *
  * @param mutex
  *     The mutex to unlock.
@@ -407,14 +404,14 @@ globus_mutex_unlock(
  * @brief Lock a mutex if it is not locked
  * @ingroup globus_mutex
  * @details
- *     The globus_mutex_trylock() function locks the mutex pointed to by its
- *     @a mutex parameter if no thread has already locked the mutex. If 
- *     @a mutex is locked, then globus_mutex_trylock() returns EBUSY and does
- *     not block the current thread or lock the mutex.  Upon successful
- *     return, the thread calling globus_mutex_trylock() has an exclusive 
- *     lock on the resources protected by @a mutex. Other threads calling
- *     globus_mutex_lock() will wait until that thread later calls
- *     globus_mutex_unlock() or globus_cond_wait() with that mutex. 
+ * The globus_mutex_trylock() function locks the mutex pointed to by its
+ * @a mutex parameter if no thread has already locked the mutex. If 
+ * @a mutex is locked, then globus_mutex_trylock() returns EBUSY and does
+ * not block the current thread or lock the mutex.  Upon successful
+ * return, the thread calling globus_mutex_trylock() has an exclusive 
+ * lock on the resources protected by @a mutex. Other threads calling
+ * globus_mutex_lock() will wait until that thread later calls
+ * globus_mutex_unlock() or globus_cond_wait() with that mutex. 
  *
  * @param mutex
  *     The mutex to lock.
@@ -451,18 +448,18 @@ globus_mutex_trylock(
  * @defgroup globus_cond Condition Variables
  * @ingroup globus_thread
  * @details
- *     The globus_cond_t provides condition variables for signalling events
- *     between threads interested in particular state. One or many threads
- *     may wait on a condition variable until it is signalled, at which point
- *     they can attempt to lock a mutex related to that condition's state
- *     and process the event.
+ * The globus_cond_t provides condition variables for signalling events
+ * between threads interested in particular state. One or many threads
+ * may wait on a condition variable until it is signalled, at which point
+ * they can attempt to lock a mutex related to that condition's state
+ * and process the event.
  *
- *     In a non-threaded model, the condition variable wait operations are
- *     used to poll the event driver to handle any operations that have been
- *     scheduled for execution by the globus_callback system or I/O system.
- *     In this way, applications written to  use those systems to handle
- *     nonblocking operations will work with either a threaded or nonthreaded
- *     runtime choice.
+ * In a non-threaded model, the condition variable wait operations are
+ * used to poll the event driver to handle any operations that have been
+ * scheduled for execution by the globus_callback system or I/O system.
+ * In this way, applications written to  use those systems to handle
+ * nonblocking operations will work with either a threaded or nonthreaded
+ * runtime choice.
  */
 
 /** @brief Initialize a condition variable
@@ -508,10 +505,10 @@ globus_cond_init(
  * @brief Destroy a condition variable
  * @ingroup globus_cond
  * @details
- *     The globus_cond_destroy() function destroys the condition variable
- *     pointed to by its @a cond parameter. After a condition variable is
- *     destroyed it may no longer be used
- *     unless it is again initialized by globus_cond_init(). 
+ * The globus_cond_destroy() function destroys the condition variable
+ * pointed to by its @a cond parameter. After a condition variable is
+ * destroyed it may no longer be used
+ * unless it is again initialized by globus_cond_init(). 
  *
  * @param cond
  *     The condition variable to destroy.
@@ -547,12 +544,12 @@ globus_cond_destroy(
  * @brief Wait for a condition to be signalled
  * @ingroup globus_cond
  * @details
- *     The globus_cond_wait() function atomically unlocks the mutex pointed to
- *     by the @a mutex parameter and blocks the current thread until the
- *     condition variable pointed to by @a cond is signalled by either
- *     globus_cond_signal() or globus_cond_broadcast(). Behavior is undefined
- *     if globus_cond_wait() is called with the mutex pointed to by the @a
- *     mutex variable unlocked.
+ * The globus_cond_wait() function atomically unlocks the mutex pointed to
+ * by the @a mutex parameter and blocks the current thread until the
+ * condition variable pointed to by @a cond is signalled by either
+ * globus_cond_signal() or globus_cond_broadcast(). Behavior is undefined
+ * if globus_cond_wait() is called with the mutex pointed to by the @a
+ * mutex variable unlocked.
  *
  * @param cond
  *     The condition variable to wait for.
@@ -594,14 +591,14 @@ globus_cond_wait(
  * @brief Wait for a condition to be signalled
  * @ingroup globus_cond
  * @details
- *     The globus_cond_timedwait() function atomically unlocks the mutex
- *     pointed to by the @a mutex parameter and blocks the current thread until
- *     either the condition variable pointed to by @a cond is signalled by
- *     another thread or the current time exceeds the value pointed to by the
- *     @a abstime parameter. If the timeout occurs before the condition is
- *     signalled, globus_cond_timedwait() returns ETIMEDOUT. Behavior is
- *     undefined if globus_cond_timedwait() is called with the mutex pointed to
- *     by the @a mutex variable unlocked.
+ * The globus_cond_timedwait() function atomically unlocks the mutex
+ * pointed to by the @a mutex parameter and blocks the current thread until
+ * either the condition variable pointed to by @a cond is signalled by
+ * another thread or the current time exceeds the value pointed to by the
+ * @a abstime parameter. If the timeout occurs before the condition is
+ * signalled, globus_cond_timedwait() returns ETIMEDOUT. Behavior is
+ * undefined if globus_cond_timedwait() is called with the mutex pointed to
+ * by the @a mutex variable unlocked.
  *
  * @param cond
  *     The condition variable to wait for.
@@ -647,8 +644,8 @@ globus_cond_timedwait(
  * @brief Signal a condition to a thread
  * @ingroup globus_cond
  * @details
- *     The globus_cond_signal() function signals a condition as occurring.
- *     This will unblock at least one thread waiting for that condition.
+ * The globus_cond_signal() function signals a condition as occurring.
+ * This will unblock at least one thread waiting for that condition.
  *
  * @param cond
  *     A pointer to the condition variable to signal.
@@ -683,8 +680,8 @@ globus_cond_signal(
  * @brief Signal a condition to multiple threads
  * @ingroup globus_cond
  * @details
- *     The globus_cond_signal() function signals a condition as occurring.
- *     This will unblock all threads waiting for that condition.
+ * The globus_cond_signal() function signals a condition as occurring.
+ * This will unblock all threads waiting for that condition.
  *
  * @param cond
  *     A pointer to the condition variable to signal.
@@ -720,10 +717,10 @@ globus_cond_broadcast(
  * @brief Initialize a mutex attribute
  * @ingroup globus_mutex
  * @details
- *     The globus_mutexattr_init() function initializes the mutex attribute
- *     structure pointed to by its @a attr parameter. Currently there are
- *     no attribute values that can be set via this API, so there's no real
- *     use to calling this function.
+ * The globus_mutexattr_init() function initializes the mutex attribute
+ * structure pointed to by its @a attr parameter. Currently there are
+ * no attribute values that can be set via this API, so there's no real
+ * use to calling this function.
  *
  * @param attr
  *     Attribute structure to initialize.
@@ -761,8 +758,8 @@ globus_mutexattr_init(
  * @brief Destroy a mutex attribute
  * @ingroup globus_mutex
  * @details
- *     The globus_mutexattr_destroy() function destroys the mutex attribute
- *     structure pointed to by its @a attr parameter. 
+ * The globus_mutexattr_destroy() function destroys the mutex attribute
+ * structure pointed to by its @a attr parameter. 
  *
  * @param attr
  *     Attribute structure to destroy.
@@ -800,9 +797,9 @@ globus_mutexattr_destroy(
  * @brief Initialize a condition variable attribute
  * @ingroup globus_cond
  * @details
- *     The globus_condattr_init() function initializes the condition variable
- *     attribute structure pointed to by its @a cond_attr parameter to the
- *     system default values.
+ * The globus_condattr_init() function initializes the condition variable
+ * attribute structure pointed to by its @a cond_attr parameter to the
+ * system default values.
  *
  * @param cond_attr
  *     Attribute structure to initialize.
@@ -839,8 +836,8 @@ globus_condattr_init(
  * @brief Destroy a condition attribute
  * @ingroup globus_cond
  * @details
- *     The globus_condattr_destroy() function destroys the condition variable
- *     attribute structure pointed to by its @a cond_attr parameter. 
+ * The globus_condattr_destroy() function destroys the condition variable
+ * attribute structure pointed to by its @a cond_attr parameter. 
  *
  * @param cond_attr
  *     Attribute structure to destroy.
@@ -967,18 +964,18 @@ globus_condattr_getspace(
  * @brief Create a new thread
  * @ingroup globus_thread
  * @details
- *     The globus_thread_create() function creates a new thread of execution
- *     in the current process to run the function pointed to by the @a func
- *     parameter passed the @a user_arg value as its only parameter. This
- *     new thread will be detached, so that storage associated with the thread
- *     will be automatically reclaimed by the operating system. A thread
- *     identifier will be copied to the value pointed by the @a thread
- *     parameter if it is non-NULL. The caller may use this thread identifier
- *     to signal or cancel this thread. The @a attr paramter is ignored by
- *     this function. If the "none" threading model is used by an application,
- *     then this function will always fail. One alternative that will work both
- *     with and without threads is to use the functions in the
- *     @link globus_callback Globus Callback API @endlink.
+ * The globus_thread_create() function creates a new thread of execution
+ * in the current process to run the function pointed to by the @a func
+ * parameter passed the @a user_arg value as its only parameter. This
+ * new thread will be detached, so that storage associated with the thread
+ * will be automatically reclaimed by the operating system. A thread
+ * identifier will be copied to the value pointed by the @a thread
+ * parameter if it is non-NULL. The caller may use this thread identifier
+ * to signal or cancel this thread. The @a attr paramter is ignored by
+ * this function. If the "none" threading model is used by an application,
+ * then this function will always fail. One alternative that will work both
+ * with and without threads is to use the functions in the
+ * @link globus_callback Globus Callback API @endlink.
  *
  * @param thread
  *     Pointer to a variable to contain the new thread's identifier.
@@ -1047,19 +1044,19 @@ globus_thread_key_create_compat(
  * @defgroup globus_thread_key Thread-Specific Storage
  * @ingroup globus_thread
  * @details
- *     The globus_thread_key_t data type acts as a key to thread-specific
- *     storage. For each key created by globus_thread_key_create(), each 
- *     thread may store and retrieve its own value. 
+ * The globus_thread_key_t data type acts as a key to thread-specific
+ * storage. For each key created by globus_thread_key_create(), each 
+ * thread may store and retrieve its own value. 
  */
 /**
  * @brief Create a key for thread-specific storage
  * @ingroup globus_thread_key
  * @details
- *     The globus_thread_key_create() function creates a new key for
- *     thread-specific data. The new key will be available for all threads
- *     to store a distinct value. If the function pointer @a destructor
- *     is non-NULL, then that function will be invoked when a thread exits
- *     that has a non-NULL value associated with the key.
+ * The globus_thread_key_create() function creates a new key for
+ * thread-specific data. The new key will be available for all threads
+ * to store a distinct value. If the function pointer @a destructor
+ * is non-NULL, then that function will be invoked when a thread exits
+ * that has a non-NULL value associated with the key.
  *
  * @param key
  *     Pointer to be set to the new key.
@@ -1101,11 +1098,11 @@ globus_thread_key_create(
  * @brief Delete a thread-local storage key
  * @ingroup globus_thread_key
  * @details
- *     The globus_thread_key_delete() function deletes the key used for a 
- *     thread-local storage association. The destructor function for this
- *     key will no longer be called after this function returns. The behavior
- *     of subsequent calls to globus_thread_getspecific() or
- *     globus_thread_setspecific() with this key will be undefined.
+ * The globus_thread_key_delete() function deletes the key used for a 
+ * thread-local storage association. The destructor function for this
+ * key will no longer be called after this function returns. The behavior
+ * of subsequent calls to globus_thread_getspecific() or
+ * globus_thread_setspecific() with this key will be undefined.
  *
  * @param key
  *     Key to destroy.
@@ -1143,12 +1140,12 @@ globus_thread_key_delete(
  * @defgroup globus_thread_once One-time execution
  * @ingroup globus_thread
  * @details
- *     The globus_thread_once_t provides a way for applications and libraries
- *     to execute some code exactly one time, independent of the number of 
- *     threads which attempt to execute it. To use this, statically initialize
- *     a globus_thread_once_t control with the value GLOBUS_THREAD_ONCE_INIT,
- *     and pass a pointer to a function to execute once, along with the control,
- *     to globus_thread_once().
+ * The globus_thread_once_t provides a way for applications and libraries
+ * to execute some code exactly one time, independent of the number of 
+ * threads which attempt to execute it. To use this, statically initialize
+ * a globus_thread_once_t control with the value GLOBUS_THREAD_ONCE_INIT,
+ * and pass a pointer to a function to execute once, along with the control,
+ * to globus_thread_once().
  */
 
 #if USE_SYMBOL_LABELS
@@ -1173,11 +1170,11 @@ globus_thread_once_compat(
  * @brief Execute a function one time
  * @ingroup globus_thread_once
  * @details
- *     The globus_thread_once() function will execute the function pointed to
- *     by its @a init_routine parameter one time for each unique
- *     globus_thread_once_t object passed to it, independent of the number
- *     of threads calling it. The @a once value must be a static value
- *     initialized to GLOBUS_THREAD_ONCE_INIT.
+ * The globus_thread_once() function will execute the function pointed to
+ * by its @a init_routine parameter one time for each unique
+ * globus_thread_once_t object passed to it, independent of the number
+ * of threads calling it. The @a once value must be a static value
+ * initialized to GLOBUS_THREAD_ONCE_INIT.
  *
  * @param once
  *     A pointer to the value used to govern whether the function passed via
@@ -1241,10 +1238,10 @@ globus_thread_getspecific_compat(
  * @brief Get a thread-specific data value
  * @ingroup globus_thread_key
  * @details
- *     The globus_thread_getspecific() function returns the value associated
- *     with the thread-specific data key passed as its first parameter. This
- *     function returns NULL if the value has not been set by the current
- *     thread. The return value is undefined if the key is not valid.
+ * The globus_thread_getspecific() function returns the value associated
+ * with the thread-specific data key passed as its first parameter. This
+ * function returns NULL if the value has not been set by the current
+ * thread. The return value is undefined if the key is not valid.
  * @param key
  *     Thread-specific data key to look up.
  * @return
@@ -1293,10 +1290,10 @@ globus_thread_setspecific_compat(
  * @brief Set a thread-specific data value
  * @ingroup globus_thread_key
  * @details
- *     The globus_thread_setspecific() function associates a thread-specific
- *     value with a data key. If the key had a previous value set in the
- *     current thread, it is replaced, but the destructor function is not
- *     called for the old value.
+ * The globus_thread_setspecific() function associates a thread-specific
+ * value with a data key. If the key had a previous value set in the
+ * current thread, it is replaced, but the destructor function is not
+ * called for the old value.
  * @param key
  *     Thread-specific data key to store.
  * @param value
@@ -1336,9 +1333,9 @@ globus_thread_setspecific(
  * @brief Yield execution to another thread
  * @ingroup globus_thread
  * @details
- *     The globus_thread_yield() function yields execution to other threads
- *     which are ready for execution. The current thread may continue to
- *     execute if there are no other threads in the system's ready queue.
+ * The globus_thread_yield() function yields execution to other threads
+ * which are ready for execution. The current thread may continue to
+ * execute if there are no other threads in the system's ready queue.
  */
 extern
 void
@@ -1361,8 +1358,9 @@ globus_thread_yield(void)
 /**
  * @brief Terminate the current thread
  * @ingroup globus_thread
- *     The globus_thread_exit() terminates the current thread with the value
- *     passed to it. This function does not return.
+ * @details
+ * The globus_thread_exit() terminates the current thread with the value
+ * passed to it. This function does not return.
  */
 extern
 void
@@ -1388,11 +1386,11 @@ globus_thread_exit(
  * @brief Modify the current thread's signal mask
  * @ingroup globus_thread
  * @details
- *     The globus_thread_sigmask() function modifies the current thread's
- *     signal mask and returns the old value of the signal mask in the value
- *     pointed to by the @a old_mask parameter. The @a how parameter can be
- *     one of SIG_BLOCK, SIG_UNBLOCK, or SIG_SETMASK to control how the
- *     signal mask is modified.
+ * The globus_thread_sigmask() function modifies the current thread's
+ * signal mask and returns the old value of the signal mask in the value
+ * pointed to by the @a old_mask parameter. The @a how parameter can be
+ * one of SIG_BLOCK, SIG_UNBLOCK, or SIG_SETMASK to control how the
+ * signal mask is modified.
  * 
  * @param how
  *     Flag indicating how to interpret @a new_mask if it is non-NULL. If 
@@ -1443,12 +1441,12 @@ globus_thread_sigmask(
  * @brief Send a signal to a thread
  * @ingroup globus_thread
  * @details
- *     The globus_thread_kill() function sends the signal specified by the
- *     @a sig number to the thread whose ID matches the @a thread parameter.
- *     Depending on the signal mask of that thread, this may result in
- *     a signal being delivered or not, and depending on the process's
- *     signal actions, a signal handler, termination, or no operation will
- *     occur in that thread.
+ * The globus_thread_kill() function sends the signal specified by the
+ * @a sig number to the thread whose ID matches the @a thread parameter.
+ * Depending on the signal mask of that thread, this may result in
+ * a signal being delivered or not, and depending on the process's
+ * signal actions, a signal handler, termination, or no operation will
+ * occur in that thread.
  *
  * @param thread
  *     The thread identifier of the thread to signal.
@@ -1488,9 +1486,11 @@ globus_thread_kill(
  * @brief Determine the current thread's ID
  * @ingroup globus_thread
  * @details
- *     The globus_thread_self() function returns the thread identifier of the
- *     current thread. This value is unique among all threads which are running
- *     at any given time.
+ * The globus_thread_self() function returns the thread identifier of the
+ * current thread. This value is unique among all threads which are running
+ * at any given time.
+ * @return 
+ *     The globus_thread_self() function returns the current thread's ID.
  */
 extern
 globus_thread_t
@@ -1520,15 +1520,17 @@ globus_thread_self(void)
  * @brief Check whether thread identifiers match
  * @ingroup globus_thread
  * @details
- *     The globus_thread_equal() function checks whether the thread identifiers
- *     passed as the @a thread1 and @a thread2 parameters refer to the same
- *     thread. If so, globus_thread_equal() returns GLOBUS_TRUE; otherwise
- *     GLOBUS_FALSE.
+ * The globus_thread_equal() function checks whether the thread identifiers
+ * passed as the @a thread1 and @a thread2 parameters refer to the same
+ * thread. If so, globus_thread_equal() returns GLOBUS_TRUE; otherwise
+ * GLOBUS_FALSE.
  *
  * @param thread1
  *     Thread identifier to compare.
  * @param thread2
  *     Thread identifier to compare.
+ * @retval GLOBUS_TRUE thread1 and thread2 refer to the same thread.
+ * @retval GLOBUS_TRUE thread1 and thread2 do not refer to the same thread.
  */
 extern
 globus_bool_t
@@ -1557,9 +1559,9 @@ globus_thread_equal(
 /**
  * @brief Indicate whether the active thread model supports preemption
  * @ingroup globus_thread
- * @details
+ * @return 
  *     The globus_thread_preemptive_threads() function returns GLOBUS_TRUE
- *     if the current thread model supports thread preemption; othwerise
+ *     if the current thread model supports thread preemption; otherwise
  *     it returns GLOBUS_FALSE.
  */
 extern
@@ -1588,11 +1590,11 @@ globus_thread_preemptive_threads(void)
  * @brief Determine if threads are supported
  * @ingroup globus_thread
  * @details
+ * The globus_i_am_only_thread() function determines whether multiple
+ * threads may be running in this process. 
+ * @return 
  *     The globus_i_am_only_thread() function returns GLOBUS_TRUE if the
  *     current thread model is the "none" thread model; GLOBUS_FALSE otherwise.
- *     If running with the "none" thread model, there will only
- *     be one Globus thread available and the globus_thread_create() function
- *     will always fail.
  */
 extern
 globus_bool_t
@@ -1620,9 +1622,9 @@ globus_i_am_only_thread(void)
  * @brief Execute a function with thread cleanup in case of cancellation
  * @ingroup globus_thread
  * @details
- *     The globus_thread_cancellable_func() function provides an interface to
- *     POSIX thread cancellation points that does not rely on preprocessor
- *     macros. It is roughly equivalent to 
+ * The globus_thread_cancellable_func() function provides an interface to
+ * POSIX thread cancellation points that does not rely on preprocessor
+ * macros. It is roughly equivalent to 
  * @code
  * pthread_cleanup_push(cleanup_func, cleanup_arg);
  * (*func)(arg);
@@ -1676,11 +1678,11 @@ globus_thread_cancellable_func(
  * @brief Cancel a thread
  * @ingroup globus_thread
  * @details
- *     The globus_thread_cancel() function cancels the thread with the
- *     identifier @a thr if it is still executing. If it is running with a 
- *     cancellation cleanup stack, the functions in that stack are executed.
- *     The target thread's cancel state determines when the cancellation is
- *     delivered.
+ * The globus_thread_cancel() function cancels the thread with the
+ * identifier @a thr if it is still executing. If it is running with a 
+ * cancellation cleanup stack, the functions in that stack are executed.
+ * The target thread's cancel state determines when the cancellation is
+ * delivered.
  *
  * @param thr
  *     The id of the thread to cancel
@@ -1717,11 +1719,11 @@ globus_thread_cancel(globus_thread_t thr)
  * @brief Thread cancellation point
  * @ingroup globus_thread
  * @details
- *     The globus_thread_testcancel() function acts as a cancellation point
- *     for the current thread. If a thread has called globus_thread_cancel()
- *     and cancellation is enabled, this will cause the thread to be cancelled
- *     and any functions on the thread's cleanup stack to be executed. This
- *     function will not return if the thread is cancelled.
+ * The globus_thread_testcancel() function acts as a cancellation point
+ * for the current thread. If a thread has called globus_thread_cancel()
+ * and cancellation is enabled, this will cause the thread to be cancelled
+ * and any functions on the thread's cleanup stack to be executed. This
+ * function will not return if the thread is cancelled.
  */
 extern
 void
@@ -1744,10 +1746,10 @@ globus_thread_testcancel(void)
  * @brief Set the thread's cancellable state
  * @ingroup globus_thread
  * @details
- *     The globus_thread_setcancelstate() function sets the current
- *     cancellation state to either GLOBUS_THREAD_CANCEL_DISABLE or
- *     GLOBUS_THREAD_CANCEL_ENABLE, do control whether globus_thread_cancel()
- *     is able to cancel this thread.
+ * The globus_thread_setcancelstate() function sets the current
+ * cancellation state to either GLOBUS_THREAD_CANCEL_DISABLE or
+ * GLOBUS_THREAD_CANCEL_ENABLE, do control whether globus_thread_cancel()
+ * is able to cancel this thread.
  *
  * @param state
  *     The desired cancellation state. If the value is

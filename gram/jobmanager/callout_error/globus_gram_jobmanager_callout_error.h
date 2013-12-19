@@ -14,33 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gram_jobmanager_callout_error.h
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #ifndef GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_H
 #define GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_H
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
-EXTERN_C_BEGIN
 
 #include "globus_common.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /** 
  * @defgroup globus_gram_jobmanager_callout_error_activation Activation
@@ -129,6 +116,8 @@ extern char * globus_i_gram_jobmanager_callout_error_strings[];
 }
 
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

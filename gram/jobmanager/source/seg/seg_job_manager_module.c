@@ -22,7 +22,7 @@
 #include <string.h>
 
 /**
- * @mainpage Job Manager SEG Module
+ * @file seg_job_manager_module.c Job Manager SEG Module
  */
 #define SEG_JOB_MANAGER_DEBUG(level, message) \
     GlobusDebugPrintf(SEG_JOB_MANAGER, level, message)
@@ -209,7 +209,7 @@ globus_l_job_manager_module_activate(void)
             goto gmtime_failed;
         }
     }
-    scheduler = globus_libc_getenv(JOB_MANAGER_SEG_SCHEDULER);
+    scheduler = getenv(JOB_MANAGER_SEG_SCHEDULER);
     if (scheduler == NULL)
     {
         SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_ERROR,
@@ -661,7 +661,9 @@ globus_l_job_manager_find_logfile(
                     goto error;
 
                 case ENOTDIR:
+#ifdef ELOOP
                 case ELOOP:
+#endif
                 case ENAMETOOLONG:
                     /* broken path (fatal) */
                     SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_ERROR,

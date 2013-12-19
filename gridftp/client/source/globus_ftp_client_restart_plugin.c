@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_ftp_client_restart_plugin.c GridFTP Restart Plugin Implementation
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_ftp_client.h"
 #include "globus_ftp_client_restart_plugin.h"
@@ -1622,7 +1616,7 @@ globus_ftp_client_restart_plugin_init(
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin,
         response);
 
-    env_str = globus_libc_getenv("GUC_STALL_TIMEOUT");
+    env_str = getenv("GUC_STALL_TIMEOUT");
     if(env_str != NULL)
     {
         int                             sc;

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/** @file globus_i_xio_http.h XIO HTTP Driver Internals */
 #ifndef GLOBUS_I_XIO_HTTP_H
 #define GLOBUS_I_XIO_HTTP_H 1
 

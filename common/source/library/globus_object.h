@@ -19,9 +19,11 @@
 #define GLOBUS_OBJECT_H
 
 
-#include "globus_common_include.h"
+#include "globus_types.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**********************************************************************
  * Object API Types
@@ -197,10 +199,7 @@ extern globus_module_descriptor_t globus_i_object_module;
 
 #define GLOBUS_OBJECT_MODULE (&globus_i_object_module)
 
-EXTERN_C_END
-
+#ifdef __cplusplus
+}
+#endif
 #endif /* GLOBUS_OBJECT_H */
-
-
-
-

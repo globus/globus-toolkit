@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2013 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,70 +17,71 @@
 #ifndef GLOBUS_INCLUDE_OPENSSL_ERROR_H
 #define GLOBUS_INCLUDE_OPENSSL_ERROR_H
 
-
 /**
- * @anchor globus_openssl_error_api
- * @defgroup globus_openssl_error_api Globus OPENSSL Error API
- * @ingroup globus_error_api
+ * @file globus_error_openssl.h
+ */
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
+/**
+ * @mainpage Globus OpenSSL Error API
+ * @copydoc globus_openssl_error_api
+ */
+#endif
+/**
+ * @defgroup globus_openssl_error_api Globus OpenSSL Error API
  *
- * These globus_openssl_error functions provide a wrapper to error
- * types defined by OpenSSL
+ * The globus_gsi_openssl_error functions provide a wrapper to error
+ * types defined by OpenSSL. The types and prototypes for the
+ * globus_gsi_openssl_error library are defined in the 
+ * globus_error_openssl.h header. Applications which use these functions
+ * must link with the libglobus_openssl_error library. The library is
+ * distributed with a pkg-config module called globus-gsi-openssl-error
+ * to automatically find header and library paths.
  *
- * Any program that uses Globus OpenSSL Error functions must include
- * "globus_error_openssl.h". 
- *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
+ * @section globus_gsi_openssl_error_activation_section Library Initialization
+ * @copydoc globus_gsi_openssl_error_activation
+ * @section globus_openssl_error_object_section Error Object Data Definition
+ * @copydoc globus_openssl_error_object
+ * @section globus_openssl_error_utility_section Error Object Manipulators
+ * @copydoc globus_openssl_error_utility
  */
 
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
-
-EXTERN_C_BEGIN
 
 #include "globus_common.h"
 #include "globus_error_generic.h"
 #include "openssl/err.h"
-#include <string.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
- * @defgroup globus_gsi_openssl_error_activation Activation
- * @ingroup globus_openssl_error_api
- *
- * Globus GSI OpenSSL Error uses standard Globus module activation and
- * deactivation. Before any Globus GSI OpenSSL Error functions are called, the
- * following function must be called:
- *
- * @code
- *      globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE)
- * @endcode
- *
- *
- * This function returns GLOBUS_SUCCESS if Globus GSI OpenSSL Error was
- * successfully initialized, and you are therefore allowed to
- * subsequently call Globus GSI OpenSSL Error functions.  Otherwise, an error
- * code is returned, and Globus GSI OpenSSL Error functions should not be
- * subsequently called. This function may be called multiple times.
- *
- * To deactivate Globus GSI OpenSSL Error, the 
- * following function must be called:
- *
- * @code
- *    globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE)
- * @endcode
- *
- * This function should be called once for each time Globus GSI OpenSSL Error
- * was activated. 
- *
+ @defgroup globus_gsi_openssl_error_activation Activation
+ @ingroup globus_openssl_error_api
+ 
+ Globus GSI OpenSSL Error uses standard Globus module activation and
+ deactivation. Before any Globus GSI OpenSSL Error functions are called, the
+ following function must be called:
+ 
+ @code
+      globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE)
+ @endcode
+ 
+ 
+ This function returns GLOBUS_SUCCESS if Globus GSI OpenSSL Error was
+ successfully initialized, and you are therefore allowed to
+ subsequently call Globus GSI OpenSSL Error functions.  Otherwise, an error
+ code is returned, and Globus GSI OpenSSL Error functions should not be
+ subsequently called. This function may be called multiple times.
+ 
+ To deactivate Globus GSI OpenSSL Error, the 
+ following function must be called:
+ 
+ @code
+    globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE)
+ @endcode
+ 
+ This function should be called once for each time Globus GSI OpenSSL Error
+ was activated. 
  */
 
 /** Module descriptor
@@ -106,13 +107,14 @@ extern const globus_object_type_t GLOBUS_ERROR_TYPE_OPENSSL_DEFINITION;
 		GLOBUS_GSI_OPENSSL_ERROR_MODULE, \
 		s)
 /**
- * @defgroup globus_openssl_error_object Error Construction
+ * @defgroup globus_openssl_error_object Globus OpenSSL Error Object
  * @ingroup globus_openssl_error_api
  *
- * Create and initialize a Globus OpenSSL Error object.
- *
- * This section defines operations to create and initialize Globus
- * OpenSSLError objects.
+ * The globus_openssl_error_handle_t is an opaque structure pointer which
+ * contains information about the OpenSSL call which generated an error. The
+ * functions in the @link globus_openssl_error_object Globus OpenSSL Error Object @endlink section of
+ * the API are used to create, manipulate, and destroy Globus
+ * OpenSSL Error object data. 
  */
 
 typedef struct globus_l_openssl_error_handle_s *
@@ -164,13 +166,13 @@ globus_error_initialize_openssl_error(
     globus_openssl_error_handle_t       openssl_error_handle);
 
 /**
- * @defgroup globus_openssl_error_utility Error Helper Functions
+ * @defgroup globus_openssl_error_utility Error Object Helper Functions
  * @ingroup globus_openssl_error_api
  *
- * Utility functions that deal with Globus OpenSSL Error objects
- *
- * This section defines utility function for Globus
- * OpenSSL Error objects.
+ * The functions in the @link globus_openssl_error_utility Error Object Helper Functions @endlink section
+ * deal with Globus error objects constructed with OpenSSL error data.
+ * These functions manipulate the generic globus_object_t representation
+ * of an OpenSSL error.
  */
 
 globus_object_t *
@@ -218,6 +220,8 @@ int
 globus_error_openssl_error_get_data_flags(
     globus_object_t *                   error);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_INCLUDE_OPENSSL_ERROR_H */

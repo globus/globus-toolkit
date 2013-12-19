@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * @file globus_gram_protocol_pack.c Message Packing
+ */
 #include "globus_i_gram_protocol.h"
 #include <string.h>
 
@@ -53,6 +56,7 @@ globus_l_gram_protocol_get_string_attribute(
 
 /**
  * @defgroup globus_gram_protocol_pack Message Packing
+ * @brief Message Packing
  * @ingroup globus_gram_protocol_functions
  */
 

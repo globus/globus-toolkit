@@ -14,28 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file release_cred.c
+ * @file gssapi/source/library/release_cred.c
  * @author Sam Meder, Sam Lang
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 
 /**
- * @name GSS Release Cred
+ * @brief GSS Release Cred
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Release the GSS cred handle
  *
  * @param minor_status
@@ -93,4 +83,3 @@ GSS_CALLCONV gss_release_cred(
     return major_status;
 } 
 /* gss_release_cred */
-/* @} */

@@ -1,0 +1,17 @@
+PROJECT_NAME           = @PACKAGE@
+PROJECT_NUMBER         = @VERSION@
+OPTIMIZE_OUTPUT_FOR_C  = YES
+GENERATE_MAN           = YES
+MAN_LINKS              = YES
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
+OUTPUT_DIRECTORY       = doc
+HIDE_UNDOC_MEMBERS     = YES
+HIDE_UNDOC_CLASSES     = YES
+HIDE_UNDOC_RELATIONS   = YES
+GENERATE_DEPRECATEDLIST= NO
+QUIET                  = YES
+PREDEFINED             = GLOBUS_DONT_DOCUMENT_INTERNAL DOXYGEN
+INPUT                  = @srcdir@
+EXCLUDE_PATTERNS       = version.h
+INPUT_FILTER           = @srcdir@/globus-vararg-enums-doxygen-filter.pl

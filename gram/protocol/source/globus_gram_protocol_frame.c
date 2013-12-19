@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+/**
+ * @file globus_gram_protocol_frame.c Message Framing
+ */
+
 #include "globus_i_gram_protocol.h"
 #include <string.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
 static
 char *
 globus_l_gram_protocol_lookup_reason(
@@ -28,8 +31,9 @@ globus_l_gram_protocol_lookup_reason(
 
 /**
  * @defgroup globus_gram_protocol_framing Message Framing
+ * @brief Message Framing
  * @ingroup globus_gram_protocol_functions
- *
+ * @details
  * The functions in this section frame a GRAM request, query, or reply 
  * message with HTTP headers compatible with the GRAM2 protocol parsers in 
  * GT2 GT3, and GT4. 

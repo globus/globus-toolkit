@@ -17,20 +17,38 @@
 #ifndef GLOBUS_GSI_AUTHZ_H
 #define GLOBUS_GSI_AUTHZ_H 1
 
+/**
+ * @file globus_gsi_authz.h GSI Authorization API
+ */
 #include "globus_common.h"
 #include "gssapi.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_GSI_AUTHZ_MODULE         (&globus_i_gsi_authz_module)
 
 extern
 globus_module_descriptor_t    globus_i_gsi_authz_module;
 
-/** @defgroup globus_gsi_authz GSI Authorization API
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
+/**
+ * @mainpage Globus GSI Authorization API
+ * @copydoc globus_gsi_authz
  */
-
-
+#endif 
+/**
+ * @defgroup globus_gsi_authz GSI Authorization API
+ * @brief Authorization Callouts
+ * @details
+ * The GSI Authorization API provides an interface for making
+ * generic authorization decisions using dynamically-loaded authorization
+ * modules. The API documentation is divided into the following sections:
+ *
+ * - @ref globus_gsi_authz
+ * - @ref globus_gsi_authz_constants
+ */
 typedef struct globus_i_gsi_authz_handle_s *
     globus_gsi_authz_handle_t;
 
@@ -65,6 +83,8 @@ globus_gsi_authz_handle_destroy(
     globus_gsi_authz_cb_t               callback,
     void *                              callback_arg);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_GSI_AUTHZ_H */

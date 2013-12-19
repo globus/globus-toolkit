@@ -14,24 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_cred_error.c
- * Globus GSI Credential Library
+ * @file gss_assist/source/globus_gss_assist_error.c GSS Assist Error Handling
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_common.h"
 #include "globus_i_gss_assist.h"
 #include "globus_gss_assist_constants.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
 char *
 globus_l_gsi_gss_assist_error_strings[GLOBUS_GSI_GSS_ASSIST_ERROR_LAST] =
 {
@@ -138,5 +130,4 @@ globus_i_gsi_gss_assist_error_chain_result(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return result;
 }
-
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

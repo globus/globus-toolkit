@@ -17,53 +17,46 @@
 #ifndef GLOBUS_GSI_SYSTEM_CONFIG_H
 #define GLOBUS_GSI_SYSTEM_CONFIG_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_system_config.h
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
-EXTERN_C_BEGIN
 
 #include "globus_common.h"
 #include "globus_gsi_system_config_constants.h"
 #include "openssl/x509.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
  * @mainpage Globus GSI System Config API
  *
+ * @copydoc globus_gsi_sysconfig
+ */
+#endif
+
+/**
+ * @defgroup globus_gsi_sysconfig Globus GSI System Config API
+ *
  * This API provides helper functions for detecting installation and
  * environment specific settings applicabale to GSI. It also servers as a
- * abstraction layer for OS specific programming details. This is achieves by
- * defining preprocessor symbols that point at the correct platform specific
- * function. <b>You should never use the platform specific functions
- * directly.</b>.
- * Any program that uses Globus GSI System Config functions must include
- * "globus_gsi_system_config.h".  
+ * abstraction layer for OS specific programming details. The public interface
+ * for this library consists of the GLOBUS_GSI_SYSCONFIG_* macros that point at
+ * the resolve to platform specific functions. <b>You should never use the
+ * platform specific functions directly.</b>.
  *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
+ * Any program that uses Globus GSI System Config functions must include
+ * the globus_gsi_system_config.h header.
+ *
  */
 
 /**
  * @defgroup globus_gsi_system_config_defines Defines
+ * @ingroup globus_gsi_sysconfig
  *
  * These precompiler defines allow for a platform (ie Win32 vs UNIX)
  * independent API.
@@ -73,6 +66,7 @@ EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_gsi_sysconfig_unix Functions for UNIX platforms
+ * @ingroup globus_gsi_sysconfig
  *
  * These functions implement the UNIX version of the Globus GSI System
  * Configuration API. <b>They should never be called directly, please use the
@@ -82,6 +76,7 @@ EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_gsi_sysconfig_win32 Functions for Win32 platforms 
+ * @ingroup globus_gsi_sysconfig
  *
  * These functions implement the Win32 version of the Globus GSI System
  * Configuration API. <b>They should never be called directly, please use the
@@ -91,6 +86,7 @@ EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_gsi_sysconfig_shared Functions for all platforms
+ * @ingroup globus_gsi_sysconfig
  *
  * These functions are platform independent members of the Globus GSI System
  * Configuration API. 
@@ -120,6 +116,7 @@ EXTERN_C_BEGIN
 
 /** 
  * @defgroup globus_gsi_sysconfig_activation Activation
+ * @ingroup globus_gsi_sysconfig
  *
  * Globus GSI System Configuration API uses standard Globus module activation
  * and deactivation.  Before any Globus GSI System Configuration API functions
@@ -659,6 +656,8 @@ globus_result_t
 globus_gsi_sysconfig_get_unique_proxy_filename(
     char **                             unique_filename);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_GSI_SYSTEM_CONFIG_H */

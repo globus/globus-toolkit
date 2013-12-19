@@ -1,0 +1,254 @@
+#! /bin/sh
+# globus-scheduler-event-generator Parse LRM events into a common log format
+# for the GRAM job manager to use
+# chkconfig: @CHKCONFIG_DEFAULT@ 20 80
+
+### BEGIN INIT INFO
+# Provides:          globus-scheduler-event-generator
+# Required-Start:    $time
+# Required-Stop:
+@DEFAULT_START_LINE@
+@DEFAULT_STOP_LINE@
+# Short-Description: Globus Scheduler Event Generator
+# Description:       The Globus Scheduler Event Generator service 
+#                    process state from local resource managers (such as
+#                    torque or SGE) into a form that the globus-job-manager
+#                    process can easily parse.
+#                    It is part of the Globus Toolkit(tm)
+### END INIT INFO
+
+# Copyright 1999-2011 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+prefix="${GLOBUS_LOCATION-@prefix@}"
+exec_prefix="@exec_prefix@"
+sbindir="@sbindir@"
+bindir="@bindir@"
+libdir="@libdir@"
+includedir="@includedir@"
+datarootdir="@datarootdir@"
+datadir="@datadir@"
+libexecdir="@libexecdir@"
+sysconfdir="@sysconfdir@"
+sharedstatedir="@sharedstatedir@"
+localstatedir="@localstatedir@"
+
+if [ -r ${libexecdir}/globus-script-initializer ]; then
+    . ${libexecdir}/globus-script-initializer
+else
+    echo "Unable to locate globus-script-initializer" 1>&2
+    exit 1
+fi
+
+progname=globus-scheduler-event-generator
+GLOBUS_SEG_CONFIG=${GLOBUS_SEG_CONFIG:-@SEG_CONFIGDIR@/@SEG_CONFIGFILE@}
+test -f "${GLOBUS_SEG_CONFIG}" && . "${GLOBUS_SEG_CONFIG}"
+test -f ${sbindir}/$progname || exit 0
+prog="${sbindir}/${progname}"
+lockfile="@LOCKFILE@"
+
+GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
+
+# avoid ksh93 built-in aliases (GRAM-335)
+for aname in "start" "stop" "restart" "status"; do
+    if alias "$aname" > /dev/null 2>&1; then
+        unalias "$aname"
+    fi
+done
+
+full=1
+if [ -n "$2" ]; then
+    full=0
+fi
+for lrm in "${GLOBUS_SEG_LRM_DIR}"/*; do
+    if [ -n "$2" -a "$(basename "$lrm")" != "$2" ]; then
+        continue
+    fi
+    if [ -f "$lrm" ]; then
+        lrms="${lrms:+$lrms }$(basename $lrm)"
+    fi
+done
+
+GLOBUS_SEG_PIDFMT="${GLOBUS_SEG_PIDFMT:-${localstatedir}/run/globus-scheduler-event-generator-%s.pid}"
+GLOBUS_SEG_LOGFMT="${GLOBUS_SEG_LOGFMT:-${localstatedir}/globus/globus-seg-%s}"
+GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
+
+start()
+{
+    allrc=0
+    started=""
+    failed=""
+    for lrm in $lrms; do
+        pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
+        logdir="$(printf "$GLOBUS_SEG_LOGFMT" "$lrm")"
+
+        status $lrm > /dev/null
+        rc=$?
+        if [ $rc -eq 0 ]; then
+            continue
+        fi
+
+        if [ ! -d "$logdir" ]; then
+            (umask 022; mkdir "$logdir")
+        fi
+        ${GLOBUS_SEG_NICE_LEVEL:+nice -n "${GLOBUS_SEG_NICE_LEVEL}"} \
+            "${prog}" \
+            -s "$lrm" \
+            -p "$pidfile" \
+            -d "$logdir" \
+            -b > /dev/null
+        rc=$?
+        if [ $rc = 0 ]; then
+            started="${started:+${started}, }$lrm"
+        else
+            failed="${failed:+${failed}, }$lrm"
+            allrc=$rc
+        fi
+    done
+    if [ "$allrc" -eq 0 -a "$lrms" != "" ]; then
+        echo "Started globus-scheduler-event-generator${started:+ for ($started)}"
+        touch "$lockfile"
+    elif [ "$allrc" -eq 0 ]; then
+        echo "$progname: no LRMS installed"
+    elif [ "$started" = "" ]; then
+        echo "Failed to start globus-scheduler-event-generator for ($failed)"
+    else
+        echo "Some problems starting globus-scheduler-event-generator for ($failed), but ($started) were ok"
+        touch "$lockfile"
+    fi
+    return $allrc
+}
+
+stop()
+{
+    allrc=0
+    stopped=""
+    failed=""
+    for lrm in $lrms; do
+        pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
+        logdir="$(printf "$GLOBUS_SEG_LOGFMT" "$lrm")"
+
+        if [ -f "$pidfile" ]; then
+            read pid < "${pidfile}" 2> /dev/null
+            if [ "$pid" -gt 0 ] 2>/dev/null; then
+                if kill -0 "${pid}" 2> /dev/null; then
+                    kill -TERM "${pid}"
+                    if sleep 1 && kill -0 "${pid}" 2>/dev/null &&  \
+                        sleep 3 && kill -0 "${pid}" 2>/dev/null; then
+                        kill -KILL "${pid}"
+                    fi
+
+                    if kill -0 "${pid}" 2> /dev/null; then
+                        failed="${failed:+$failed, }$lrm"
+                        allrc=1
+                        continue
+                    fi
+                fi
+            fi
+            stopped="${stopped:+${stopped}, }$lrm"
+            rm -f "${pidfile}"
+        fi
+    done
+    if [ "$allrc" -eq 0 ]; then
+        echo "Stopped globus-scheduler-event-generator${stopped:+ for ($stopped)}"
+        if [ "$full" -eq 1 ]; then
+            rm -f "$lockfile"
+        fi
+    elif [ "$stopped" = "" ]; then
+        echo "Failed to stop globus-scheduler-event-generator for $failed"
+    else
+        echo "Some problems stopping globus-scheduler-event-generator for $failed, but $stopped were ok"
+    fi
+    return $allrc
+}
+
+restart()
+{
+    stop
+    start
+}
+
+status()
+{
+    _lrms="$1"
+    running=0
+    stale=0
+    nopidfile=0
+
+    if [ "$_lrms" = "" ]; then
+        _lrms="$lrms"
+    fi
+    for lrm in $_lrms; do
+        pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
+        if [ -f "$pidfile" ]; then
+            read pid < "$pidfile" 2>/dev/null
+            if [ "$pid" -gt 0 ] 2>/dev/null; then
+                if ps -p "$pid" > /dev/null; then
+                    echo "$progname ($lrm) is running (pid=$pid)"
+                    running=1
+                else
+                    echo "Stale PID file for $progname ($lrm)"
+                    stale=1
+                fi
+            fi
+        else
+            echo "$progname ($lrm) is not running"
+        fi
+    done
+
+    if [ "$stale" -ne 0 ]; then
+        return 1
+    fi
+    if [ "$running" -eq 0 -a "$stale" -eq 0 -a "${lrms}" != "" -a -f "${lockfile}" ]; then
+        echo "Stale lock file for $progname"
+        return 2
+    fi
+
+    if [ "$running" -eq 1 ]; then
+        return 0
+    else
+        echo "$progname not running, no LRMs installed"
+        return 3
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        restart
+        ;;
+    reload)
+        exit 0
+        ;;
+    force-reload)
+        restart
+        ;;
+    status)
+        status
+        ;;
+    condrestart|try-restart)
+        status || exit 0
+        restart
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload}"
+        exit 2
+        ;;
+esac

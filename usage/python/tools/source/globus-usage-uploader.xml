@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+
+<refentry>
+<refentryinfo>
+<orgname>University of Chicago</orgname>
+</refentryinfo>
+<refmeta>
+<refentrytitle>globus-usage-uploader</refentrytitle>
+<manvolnum>8</manvolnum>
+<refmiscinfo class="manual">Globus Toolkit</refmiscinfo>
+</refmeta>
+
+<refnamediv>
+<refdescriptor>Usage Statistics Database Uploader</refdescriptor>
+<refname>globus-usage-uploader</refname>
+<refpurpose>Store usage statistics packets in a database</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+<cmdsynopsis>
+<command>globus-usage-uploader</command>
+<arg>-h</arg>
+<arg>-d <replaceable>DIRECTORY</replaceable></arg>
+<arg>-n</arg>
+</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1><title>Description</title>
+<para>
+The <command>globus-usage-uploader</command> command is a utility
+which parses usage packets in directories of the form created by
+<command>globus-usage-collector</command> and uploads them to a
+postgresql database.
+</para>
+
+<para>
+The full set of command-line options to
+<command>globus-usage-uploader</command> consists of:
+
+<informaltable>
+    <tgroup cols="2">
+        <tbody>
+            <row>
+                <entry>-h</entry>
+                <entry>Display a help message and exit</entry>
+            </row>
+            <row>
+                <entry>-d <replaceable>DIRECTORY</replaceable></entry>
+                <entry>Read data from <replaceable>DIRECTORY</replaceable>
+                    instead of the configured path.</entry>
+            </row>
+            <row>
+                <entry>-n</entry>
+                <entry>Don't commit usage packets to the database after
+                processing files (for testing)</entry>
+            </row>
+        </tbody>
+    </tgroup>
+</informaltable>
+</para>
+</refsect1>
+
+<refsect1><title>Examples</title>
+
+<screen><prompt>% </prompt><command>globus-usage-uploader</command>
+<computeroutput>
+Processing packets: 20090723
+Processing packets: 20090724
+14.gup... ok [2 packets]
+
+Processed 1 file(s).
+Processed 2 packet(s).
+</computeroutput></screen>
+
+</refsect1>
+
+</refentry>

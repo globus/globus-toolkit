@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
+#include "globus_config.h"
+
 static
 globus_version_t local_version = 
 {
-    @GPT_MAJOR_VERSION@,
-    @GPT_MINOR_VERSION@,
+    @MAJOR_VERSION@,
+    @MINOR_VERSION@,
     @DIRT_TIMESTAMP@,
     @DIRT_BRANCH_ID@
 };
 
-static const char build_flavor[] = "@GLOBUS_FLAVOR_NAME@";
+static const char build_flavor[] = GLOBUS_FLAVOR_NAME;

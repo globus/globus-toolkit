@@ -14,34 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file import_sec_context.c
+ * @file gss_assist/source/import_sec_context.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_gss_assist.h"
 #include "gssapi.h"
 #include <stdio.h>
 
 /**
- * @anchor globus_gsi_gss_assist
- * @mainpage Globus GSI GSS Assist
- *
- * The GSS Assist code provides convenience functions
- * for using the Globus GSS-API.
- */
-
-/* @name Import Security Context
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_context
  * Import the security context from a file
  *
  * @param minor_status 
@@ -212,4 +195,3 @@ globus_gss_assist_import_sec_context(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return major_status;
 }
-/* @} */

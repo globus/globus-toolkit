@@ -15,6 +15,7 @@
  */
 
 
+/** @file globus_debug.h Debugging Routines */
 #ifndef GLOBUS_DEBUG_H
 #define GLOBUS_DEBUG_H
 

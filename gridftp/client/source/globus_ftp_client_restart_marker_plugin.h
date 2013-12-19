@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_FTP_CLIENT_RESTART_MARKER_PLUGIN_H
-#define GLOBUS_INCLUDE_FTP_CLIENT_RESTART_MARKER_PLUGIN_H
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+#ifndef GLOBUS_FTP_CLIENT_RESTART_MARKER_PLUGIN_H
+#define GLOBUS_FTP_CLIENT_RESTART_MARKER_PLUGIN_H
+
 /**
  * @file globus_ftp_client_restart_marker_plugin.h GridFTP Restart Marker Plugin Implementation
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- * $Author$
  */
-#endif
 
 /**
  * @defgroup globus_ftp_client_restart_marker_plugin Restart Marker Plugin
@@ -39,21 +33,12 @@
  * plugin via the 'begin' callback to force the transfer to be restarted from
  * the last marked point.
  */
-
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_plugin.h"
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 /** Module descriptor
  * @ingroup globus_ftp_client_restart_marker_plugin
@@ -64,9 +49,9 @@ extern
 globus_module_descriptor_t globus_i_ftp_client_restart_marker_plugin_module;
 
 /**
- * Transfer begin callback
+ * @brief Transfer begin callback
  * @ingroup globus_ftp_client_restart_marker_plugin
- *
+ * @details
  * This callback is called when a get, put, or third party transfer is
  * started.
  *
@@ -191,6 +176,8 @@ globus_ftp_client_restart_marker_plugin_destroy(
     globus_ftp_client_plugin_t *                    plugin);
 
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_INCLUDE_FTP_CLIENT_RESTART_MARKER_PLUGIN_H */
+#endif /* GLOBUS_FTP_CLIENT_RESTART_MARKER_PLUGIN_H */

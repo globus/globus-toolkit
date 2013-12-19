@@ -14,27 +14,29 @@
  * limitations under the License.
  */
 
+/** @file globus_time.h Time Types and Macros */
 #if !defined(GLOBUS_TIME_H)
 #define      GLOBUS_TIME_H
 
-#include "globus_config.h"
-#include "globus_common_include.h"
+#include "globus_types.h"
 #include <time.h>
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_I_TIME_INFINITY_SEC   INT_MAX
 #define GLOBUS_I_TIME_INFINITY_NSEC  INT_MAX
 #define GLOBUS_I_TIME_INFINITY_USEC  INT_MAX
 
-#if defined (GLOBUS_TIMESPEC_EXISTS)
-    typedef struct timespec      globus_abstime_t;
+#if _WIN32
+typedef struct globus_abstime_s
+{
+   time_t  tv_sec;
+   long    tv_nsec;
+} globus_abstime_t;
 #else
-    typedef struct globus_abstime_s
-    {
-       long    tv_sec;
-       long    tv_nsec;
-    } globus_abstime_t;
+typedef struct timespec      globus_abstime_t;
 #endif
 
 typedef struct timeval  globus_reltime_t;
@@ -84,14 +86,14 @@ typedef struct timeval  globus_reltime_t;
 
 #define  GlobusTimeAbstimePrintf(Abstime)                 \
 {                                                         \
-    printf("sec  -->%lu\n", (Abstime).tv_sec);            \
-    printf("nsec -->%lu\n", (Abstime).tv_nsec);           \
+    printf("sec  -->%lu\n", (unsigned long) (Abstime).tv_sec);            \
+    printf("nsec -->%lu\n", (unsigned long) (Abstime).tv_nsec);           \
 }
 
 #define  GlobusTimeReltimePrintf(Reltime)                 \
 {                                                         \
-    printf("sec  -->%lu\n", (Reltime).tv_sec);            \
-    printf("usec -->%lu\n", (Reltime).tv_usec);           \
+    printf("sec  -->%lu\n", (unsigned long) (Reltime).tv_sec);            \
+    printf("usec -->%lu\n", (unsigned long) (Reltime).tv_usec);           \
 }
 
 /**
@@ -208,7 +210,7 @@ typedef struct timeval  globus_reltime_t;
 /**
  *  Get the current time
  */
-#if defined(TARGET_ARCH_WIN32)
+#if defined(_WIN32)
 #   define GlobusTimeAbstimeGetCurrent(Abstime)           \
     {                                                     \
         struct _timeb timebuffer;                      \
@@ -217,18 +219,6 @@ typedef struct timeval  globus_reltime_t;
         (Abstime).tv_sec = timebuffer.time;               \
         (Abstime).tv_nsec = (timebuffer.millitm * 1000);  \
     }
-/*
- * On Net+OS on ARM, this is needed if the device is not running NTP or
- * does not have a RTC. In this case, times will overflow after about a 
- * year and a half.
-#elif defined(TARGET_ARCH_NETOS)
-#   define  GlobusTimeAbstimeGetCurrent(Abstime)          \
-    {                                                     \
-        ULONG ticks = tx_time_get();                      \
-        (Abstime).tv_sec = ticks / NABspTicksPerSecond;  \
-        (Abstime).tv_nsec = (ticks % NABspTicksPerSecond) * 1000000000;  \
-    }
-*/
 #else
 #   define  GlobusTimeAbstimeGetCurrent(Abstime)          \
     {                                                     \
@@ -342,6 +332,7 @@ globus_reltime_cmp(
     const globus_reltime_t *                     reltime_2);
 
 
-EXTERN_C_END
-
+#ifdef __cplusplus
+}
+#endif
 #endif /* GLOBUS_TIME_H */

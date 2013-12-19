@@ -15,22 +15,6 @@
  */
 
 /******************************************************************************
-globus_common.h
-
-Description:
-
-  Routines common to all of Globus
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
-
-/******************************************************************************
 			     Include header files
 ******************************************************************************/
 #include "globus_common.h"
@@ -118,7 +102,7 @@ globus_l_common_activate(void)
     globus_l_common_i18n_get_string_by_key = NULL;
     i18n_handle = NULL;
     /*Check for GLOBUS_I18N==NO to see if we should load i18n lib*/
-    env = globus_libc_getenv("GLOBUS_I18N");
+    env = getenv("GLOBUS_I18N");
     if(env != GLOBUS_NULL && strncmp(env, "NO", 2) != 0)
     {
         if(globus_extension_activate("globus_i18n") != GLOBUS_SUCCESS)

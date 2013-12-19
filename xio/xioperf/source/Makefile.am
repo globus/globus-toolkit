@@ -1,28 +1,18 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+pkgconfigdir = $(libdir)/pkgconfig
 
-SUBDIRS = \
-	pkgdata 
+bin_PROGRAMS = globus-xioperf
+doc_DATA = GLOBUS_LICENSE
+pkgconfig_DATA = globus-xioperf.pc
 
-Sources= \
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
+
+globus_xioperf_LDADD = $(PACKAGE_DEP_LIBS)
+globus_xioperf_SOURCES = \
     globus_i_xioperf.h \
     globus_xioperf.c  \
     globus_i_xioperf_opts.c
 
+EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
 
-INCLUDES = $(GPT_INCLUDES)
-LDADD = $(GPT_PGM_LINKS)
-
-bin_PROGRAMS= \
-    globus-xioperf
-
-globus_xioperf_CFLAGS = $(GPT_CFLAGS)
-globus_xioperf_SOURCES = $(Sources)
-globus_xioperf_LDFLAGS = $(GPT_LDFLAGS)
-
-doc_DATA = GLOBUS_LICENSE
-
-EXTRA_DIST = version.h.in $(doc_DATA)
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+distuninstallcheck:
+	@:

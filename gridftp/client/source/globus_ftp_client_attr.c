@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_ftp_client_attr.c Operation and handle attribute manipulation.
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_ftp_client.h"
 #include "globus_error_string.h"
@@ -34,8 +28,6 @@
 #include "openssl/pem.h"
 #include "globus_gsi_credential.h"
 #include "globus_gsi_system_config.h"
-
-
 
 /*  to be moved into gss_assist  */
 OM_uint32 
@@ -3096,7 +3088,7 @@ error_exit:
  * @param protection
  *        The value of data channel protection attribute. 
  *
- * @bug Only safe and private protection levels are supported by gsiftp.
+ * @note Only safe and private protection levels are supported by gsiftp.
  */
 globus_result_t
 globus_ftp_client_operationattr_set_data_protection(
@@ -3318,7 +3310,7 @@ error_exit:
  * @param protection
  *        The value of control channel protection attribute. 
  *
- * @bug The clear and safe protection levels are treated identically, with
+ * @note The clear and safe protection levels are treated identically, with
  *      the client integrity checking all commands. The
  *      confidential and private protection levels are treated identically,
  *      with the client encrypting all commands.
@@ -4050,4 +4042,4 @@ globus_i_ftp_client_plugin_list_search(void * datum,
     
     return !strcmp(plugin->plugin_name, name);
 }
-#endif
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

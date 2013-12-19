@@ -131,7 +131,6 @@ test_dashn( char *   value,
 	    void *   ignored,
 	    char **  errmsg )
 {
-    globus_bool_t  b = GLOBUS_TRUE;
     char *         p;
     int            res = 0;
 
@@ -200,7 +199,6 @@ int main(int argc, char **argv)
     OM_uint32                           maj_stat;
     OM_uint32                           min_stat;
     static gss_cred_id_t                globus_l_gass_server_credential;
-    char *				env;
 
 
     /*

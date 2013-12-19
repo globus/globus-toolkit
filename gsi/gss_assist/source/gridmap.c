@@ -14,24 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file module.c
- * GSSAPI module activation code
- *
- * $RCSfile$
- * $Revision$
- * $Date $
+ * @file gss_assist/source/gridmap.c GSS Assist Gridmap Functions
  */
-#endif
 
 #include "globus_i_gss_assist.h"
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_credential.h"
 #include "globus_callout.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+
 typedef struct _gridmap_line_s {
   char *dn;
   char **user_ids;
@@ -520,7 +515,7 @@ gridmapdir_userok(char *     globusidp,
 
 /**
  * @brief Look up the default mapping for a Grid identity in a gridmap file
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_gridmap
  * 
  * @details
  * The globus_gss_assist_gridmap() function parses the default gridmap file
@@ -671,7 +666,7 @@ globus_gss_assist_gridmap(
 
 /**
  * @brief Gridmap entry existence check
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_gridmap
  *
  * @details
  * The globus_gss_assist_userok() function parses the default gridmap file
@@ -802,7 +797,7 @@ globus_gss_assist_userok(
 
 /**
  * @brief Look up the default Grid identity associated with a local user name
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_gridmap
  *
  * @details
  * The globus_gss_assist_map_local_user() function parses the 
@@ -940,11 +935,6 @@ globus_gss_assist_map_local_user(
 /* globus_gss_assist_map_local_user() */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
-/**
- * @name Gridmap Find DN
- */
-/* @{ */
 /**
  * @ingroup globus_i_gsi_gss_assist
  * Locate the entry for the given DN in the default gridmap file
@@ -1093,12 +1083,7 @@ globus_i_gss_assist_gridmap_find_dn(
     return result;
 } 
 /* gridmap_find_dn() */
-/* @} */
 
-/**
- * @name Find Local User
- */
-/* @{ */
 /**
  * @ingroup globus_i_gsi_gss_assist
  * Locate the first entry with the given local user as the default in the
@@ -1281,12 +1266,6 @@ globus_i_gss_assist_gridmap_find_local_user(
     return result;
 }
 /* gridmap_find_local_user() */
-/* @} */
-
-/**
- * @name Gridmap Parse Line
- */
-/* @{ */
 /**
  * @ingroup globus_i_gsi_gss_assist
  * 
@@ -1533,12 +1512,6 @@ globus_i_gss_assist_gridmap_parse_line(
     return result;
 } 
 /* gridmap_parse_line() */
-/* @} */
-
-/**
- * @name globus_i_gsi_gss_assist
- */
-/* @{ */
 /**
  * @ingroup globus_i_gsi_gss_assist
  * Frees all memory allocated to a gridmap_line_t structure.
@@ -1582,12 +1555,7 @@ globus_i_gss_assist_gridmap_line_free(
     }
 } 
 /* gridmap_free_gridmap_line() */
-/* @} */
 
-/**
- * @name Gridmap Parse Globusid
- */
-/* @{ */
 /**
  * @ingroup globus_i_gsi_gss_assist
  * Given a pointer to a string containing the globusid from the
@@ -1757,12 +1725,7 @@ globus_i_gss_assist_gridmap_parse_globusid(
     return result;
 } 
 /* gridmap_parse_globusid() */
-/* @} */
 
-/**
- * @name Hexadecimal Digit to Integer
- */
-/* @{ */
 /**
  * @ingroup globus_i_gsi_gss_assist
  * Convert an ascii character representing a hexadecimal digit
@@ -1791,14 +1754,12 @@ globus_i_gss_assist_xdigit_to_value(
     return -1;
 } 
 /* xdigit_to_value() */
-/* @} */
-
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 
 /**
  * @brief Look up all Grid IDs associated with a local user ID
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_gridmap
  *
  * @details
  * The globus_gss_assist_lookup_all_globusid() function parses a 
@@ -1982,7 +1943,7 @@ globus_gss_assist_lookup_all_globusid(
 
 /**
  * @brief Authorize the peer of a security context to use a service
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_gridmap
  *
  * @details
  * The globus_gss_assist_map_and_authorize() function attempts to authorize
@@ -2154,7 +2115,7 @@ globus_gss_assist_map_and_authorize(
 
 /**
  * @brief Authorize a particular credential for shared access.
- * @ingroup globus_gsi_gss_assist
+ * @ingroup globus_gss_assist_gridmap
  *
  * @details
  * The globus_gss_assist_map_and_authorize_sharing() function attempts to

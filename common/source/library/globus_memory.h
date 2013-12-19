@@ -14,31 +14,29 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_memory.h
+/** @file globus_memory.h Memory Pool */
 
-Description:
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
-
-#if !defined(GLOBUS_INCLUDE_GLOBUS_MEMORY_H)
-#define GLOBUS_INCLUDE_GLOBUS_MEMORY_H 
+#if !defined(GLOBUS_MEMORY_H)
+#define GLOBUS_MEMORY_H 
 
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "globus_common_include.h"
+#include "globus_types.h"
+#include "globus_module.h"
 #include "globus_thread.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/**
+ * @defgroup globus_memory Memory Pool
+ * @ingroup globus_common
+ * @details
+ * The globus_memory abstraction implements a memory management pool for
+ * groups of same-sized data items.
+ */
 /******************************************************************************
 			       Type definitions
 ******************************************************************************/
@@ -49,55 +47,28 @@ typedef struct globus_memory_s *                globus_memory_t;
 globus_bool_t
 globus_i_memory_pre_activate();
 
-/**
- *  Initialize the globus memory management structure.
- *
- *  Before using any functions associate with a memory structure
- *  this function must be called.
- *
- *  @param mem_info
- *          The memory management datatype
- *
- *  @param node_size
- *          The size of the memory to allocated with each pop.
- *
- *  @param node_count
- *          The initial number of nodes allocated with the memory
- *          management structure.  If it is exceded more will be 
- *          allocated.
- */
 globus_bool_t
 globus_memory_init(
     globus_memory_t *             mem_info,
     int                           node_size,
     int                           node_count);
 
-/**
- *  pop a chunk of memory out of the memory management structure.
- *  Equalent of a malloc.
- */
 void *
 globus_memory_pop_node(
     globus_memory_t *                           mem_info);
 
-/**
- *  push a chunk of memory back into the meory managemnt structure.
- *  equalvalent to a free.
- */
 globus_bool_t
 globus_memory_push_node(
     globus_memory_t *          mem_info,
     void *                      buf);
 
-/**
- *  Free all the mmory associated with the memory management structure.
- *  For every call to globus_memory_init() there should be a call to
- *  globus_memory_destroy() or else memory will leak.
- */
 globus_bool_t
 globus_memory_destroy(
     globus_memory_t *                           mem_info);
 
-EXTERN_C_END
 
-#endif /* GLOBUS_INCLUDE_GLOBUS_MEMORY_H */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GLOBUS_MEMORY_H */

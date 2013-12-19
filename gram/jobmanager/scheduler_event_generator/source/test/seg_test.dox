@@ -1,0 +1,7 @@
+/**
+ * @page globus_scheduler_event_generator_tests SEG Tests
+ *
+ * - @ref seg_load_test "Load module test"
+ * - @ref seg_timestamp_test "Timestamp Test"
+ * - @ref seg_api_test "API Test"
+ */

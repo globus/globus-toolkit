@@ -14,26 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file unwrap.c
+ * @file gss_assist/source/unwrap.c Unwrap Tokens
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_gss_assist.h"
 #include "gssapi.h"
 
 /**
- * @name Get Unwrap
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_gss_assist
+ * @brief Get Unwrap
+ * @ingroup globus_gss_assist_context
+ * @details
  * Gets a token using the specific tokenizing functions,
  * and performs the GSS unwrap of that token
  *
@@ -130,4 +122,4 @@ globus_gss_assist_get_unwrap(
   GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
   return major_status;
 }
-/* @} */
+/* globus_gss_assist_get_unwrap() */

@@ -74,12 +74,21 @@ typedef struct xio_l_pipe_attr_s
 } xio_l_pipe_attr_t;
 
 /* default attr */
+#ifdef _WIN32
+static xio_l_pipe_attr_t                xio_l_pipe_attr_default =
+{
+    GLOBUS_FALSE,
+    NULL, /* Set in globus_l_xio_pipe_activate() */
+    NULL  /* Set in globus_l_xio_pipe_activate() */
+};
+#else
 static const xio_l_pipe_attr_t          xio_l_pipe_attr_default =
 {
     GLOBUS_FALSE,
     STDIN_FILENO,
     STDOUT_FILENO
 };
+#endif
 
 /*
  *  handle structure
@@ -180,10 +189,10 @@ globus_l_xio_pipe_attr_cntl(
             attr->use_blocking_io = va_arg(ap, globus_bool_t);
             break;
         case GLOBUS_XIO_PIPE_SET_IN_HANDLE:
-            attr->infd = va_arg(ap, int);
+            attr->infd = va_arg(ap, globus_xio_system_file_t);
             break;
         case GLOBUS_XIO_PIPE_SET_OUT_HANDLE:
-            attr->outfd = va_arg(ap, int);
+            attr->outfd = va_arg(ap, globus_xio_system_file_t);
             break;
             
         default:
@@ -589,6 +598,10 @@ globus_l_xio_pipe_activate(void)
     {
         goto error_activate;
     }
+#   ifdef _WIN32
+    xio_l_pipe_attr_default.infd = GetStdHandle(STD_INPUT_HANDLE);
+    xio_l_pipe_attr_default.outfd = GetStdHandle(STD_OUTPUT_HANDLE);
+#   endif
     
     GlobusXIORegisterDriver(pipe);
     

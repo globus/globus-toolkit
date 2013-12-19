@@ -14,13 +14,25 @@
  * limitations under the License.
  */
 
+/** @file globus_thread_pool.h Thread Pooling */
+
+/**
+ * @defgroup globus_thread_pool Thread Pooling
+ * @ingroup globus_common
+ * @details
+ * The globus_thread_pool interface is an internal module which allows
+ * Globus to reuse system threads for different callbacks.
+ */
+
 #if !defined(GLOBUS_THREAD_POOL_H)
 #define GLOBUS_THREAD_POOL_H 1
 
 #include "globus_common_include.h"
 #include "globus_thread.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int
 globus_i_thread_pool_activate(void);
@@ -45,6 +57,7 @@ extern globus_module_descriptor_t       globus_i_thread_pool_module;
 
 #define GLOBUS_THREAD_POOL_MODULE (&globus_i_thread_pool_module)
 
-EXTERN_C_END
-
+#ifdef __cplusplus
+}
+#endif
 #endif

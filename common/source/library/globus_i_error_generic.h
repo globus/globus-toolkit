@@ -16,21 +16,16 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-#ifndef GLOBUS_I_INCLUDE_GENERIC_ERROR_H
-#define GLOBUS_I_INCLUDE_GENERIC_ERROR_H
+#ifndef GLOBUS_I_ERROR_GENERIC_H
+#define GLOBUS_I_ERROR_GENERIC_H
 
-/**
- * @file globus_i_error_generic.h
- * Globus Generic Error
- *
- * $RCSfile$
- * $Revision$
- * $Date $
- */
+/** @file globus_i_error_generic.h Globus Generic Error */
 
 #include "globus_common_include.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Generic Error object instance data definition
@@ -61,8 +56,10 @@ typedef struct globus_l_error_data_s
 }
 globus_l_error_data_t;
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_I_INCLUDE_GENERIC_ERROR_H */
+#endif /* GLOBUS_I_ERROR_GENERIC_H */
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

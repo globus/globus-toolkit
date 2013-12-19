@@ -14,32 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gass_transfer.h
  */
-#endif
 
-#ifndef GLOBUS_GASS_INCLUDE_GLOBUS_GASS_TRANSFER_H
-#define GLOBUS_GASS_INCLUDE_GLOBUS_GASS_TRANSFER_H
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+#ifndef GLOBUS_GASS_TRANSFER_H
+#define GLOBUS_GASS_TRANSFER_H
 
 #include "globus_common.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
+/**
+ * @mainpage Globus GASS Transfer
+ * @copydoc globus_gass_transfer
+ */
+#endif
 
 /**
- * @mainpage
- *
+ * @defgroup globus_gass_transfer GASS Transfer API
+ * @brief GASS Transfer API
+ * @details
  * The GASS Transfer API is the core part of the GASS
  * (Global Access to Secondary Storage) component of the Globus Toolkit.
  * The purpose of GASS is to provide a simple way to enable grid applications
@@ -69,15 +67,11 @@ EXTERN_C_BEGIN
  *
  * The #GLOBUS_GASS_TRANSFER_MODULE must be activated before calling any
  * functions in this API.
- *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
  */
 
 /**
  * @defgroup globus_gass_transfer_activation Activation
+ * @ingroup globus_gass_transfer
  *
  * The Globus GASS Transfer library uses the standard module activation
  * and deactivation API to initialize its state. Before any GASS
@@ -333,9 +327,10 @@ typedef void
     globus_gass_transfer_request_t 		request);
 /* Client Interface */
 /**
+ * @brief GASS Transfer Client Operations
  * @defgroup globus_gass_transfer_client Client-Initiated Operations
- * GASS Transfer Client Operations
- *
+ * @ingroup globus_gass_transfer
+ * @details
  * One mode of using the GASS Transfer API is to initiate
  * file transfers. The operations supported by the GASS Transfer API
  * are file get, put, and append. These operations are provided for
@@ -397,9 +392,10 @@ globus_gass_transfer_append(
     globus_size_t				length);
 
 /**
+ * @brief GASS Server Implementation
  * @defgroup globus_gass_transfer_server Implementing Servers
- * GASS Server Implementation API.
- *
+ * @ingroup globus_gass_transfer
+ * @details
  * Another mode of using the GASS Transfer API is to implement
  * data servers. The primary difference between the client and
  * server parts of the GASS Transfer API are how requests are generated.
@@ -503,6 +499,7 @@ globus_gass_transfer_listener_set_user_pointer(
 
 /**
  * @defgroup globus_gass_transfer_data Sending and Receiving Data
+ * @ingroup globus_gass_tansfer
  */
 
 /**
@@ -556,8 +553,10 @@ globus_gass_transfer_fail(
     globus_gass_transfer_callback_t		callback,
     void *					user_arg);
 /**
+ * @brief GASS Referrals
  * @defgroup globus_gass_transfer_referral Referrals
- *
+ * @ingroup globus_gass_transfer
+ * @details
  * The GASS Transfer API supports referring URL requests to alternate
  * URLs via referrals. Referrals are essentially pointers to another
  * URL or URLs which contain the same file as the original location which
@@ -595,8 +594,10 @@ globus_gass_transfer_referral_destroy(
 
 /* Request Accessors */
 /**
+ * @brief Request Handles
  * @defgroup globus_gass_transfer_request Request Handles
- *
+ * @ingroup globus_gass_transfer
+ * @details
  * Request handles are used by the GASS Transfer API to associate
  * operations with a single file transfer request. Specifically,
  * they are used to register multiple byte range buffers with
@@ -683,7 +684,8 @@ globus_gass_transfer_request_set_type(
 
 /**
  * @defgroup globus_gass_transfer_requestattr Request Attributes
- * 
+ * @ingroup globus_gass_transfer
+ * @details
  * The GASS Transfer library uses Globus objects to provide an
  * extensible way of creating protocol-specific attributes.
  */
@@ -691,7 +693,7 @@ globus_gass_transfer_request_set_type(
 int
 globus_gass_transfer_requestattr_init(
     globus_gass_transfer_requestattr_t *	attr,
-    char *					url_scheme);
+    char *				        url_scheme);
 
 int
 globus_gass_transfer_requestattr_destroy(
@@ -700,7 +702,7 @@ globus_gass_transfer_requestattr_destroy(
 int
 globus_gass_transfer_listenerattr_init(
     globus_gass_transfer_listenerattr_t *	attr,
-    char *					url_scheme);
+    char *				        url_scheme);
 
 int
 globus_gass_transfer_listenerattr_destroy(
@@ -710,7 +712,7 @@ globus_gass_transfer_listenerattr_destroy(
 int
 globus_gass_transfer_requestattr_set_proxy_url(
     globus_gass_transfer_requestattr_t *	attr,
-    char *					proxy_url);
+    char *				        proxy_url);
 
 int
 globus_gass_transfer_requestattr_get_proxy_url(
@@ -794,6 +796,7 @@ globus_gass_transfer_secure_requestattr_get_authorization(
 
 /**
  * @defgroup globus_gass_transfer_listenerattr Listener attributes
+ * @ingroup globus_gass_transfer
  */
 #ifndef DOXYGEN
 int
@@ -819,6 +822,7 @@ globus_gass_transfer_listenerattr_get_port(
 
 /**
  * @defgroup globus_gass_transfer_requestattr_implementation Implementing Request Attributes
+ * @ingroup globus_gass_transfer
  */
 extern const globus_object_type_t
 GLOBUS_GASS_OBJECT_TYPE_REQUESTATTR_DEFINITION;
@@ -883,6 +887,8 @@ globus_gass_transfer_listenerattr_initialize(
     int						backlog,
     unsigned short				port);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_GASS_INCLUDE_GLOBUS_GASS_TRANSFER_H */
+#endif /* GLOBUS_GASS_TRANSFER_H */

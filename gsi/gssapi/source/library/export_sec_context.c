@@ -14,29 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file export_sec_context.c
+ * @file gssapi/source/library/export_sec_context.c
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
-
-static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 #include <string.h>
 
 /**
- * @name Export Security Context
+ * @brief Export Security Context
  * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
+ * @details
  * Saves the important info about the session, converts
  * it to a token, then deletes the context. 
  *
@@ -275,4 +265,3 @@ GSS_CALLCONV gss_export_sec_context(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */

@@ -1,8 +1,4 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
-
-SUBDIRS = pkgdata submit_test stdio_test failure_test \
-        rsl_size_test user_test
+SUBDIRS = pkgdata submit_test stdio_test failure_test rsl_size_test user_test
 
 Scripts = \
 	TESTS.pl \
@@ -17,12 +13,12 @@ test_SCRIPTS = $(Scripts) TESTS-junit.pl
 
 test_DATA=$(Data)
 
-EXTRA_DIST = $(Data) TESTS-junit.pl
+EXTRA_DIST = \
+        dirts.sh \
+        $(Data) \
+        TESTS-junit.pl
 
 junit: $(test_SCRIPTS) $(test_DATA)
 	perl "-I$(perlmoduledir)" TESTS-junit.pl
 
 .PHONY: junit
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top

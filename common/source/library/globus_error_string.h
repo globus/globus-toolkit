@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/** @file globus_error_string.h Error Object Containing a String */
 #ifndef GLOBUS_ERROR_STRING_H
 #define GLOBUS_ERROR_STRING_H
 
@@ -21,7 +21,9 @@
 #include "globus_error.h"
 
  
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern const globus_object_type_t GLOBUS_ERROR_TYPE_STRING_DEFINITION;
 
@@ -48,8 +50,8 @@ globus_error_initialize_string(
     const char *			fmt,
     va_list				ap);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_ERROR_STRING_H */
-
-

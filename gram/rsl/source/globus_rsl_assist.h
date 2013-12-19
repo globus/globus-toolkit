@@ -14,34 +14,28 @@
  * limitations under the License.
  */
 
-/*
- * globus_rsl_assist.h
- *
- * Description:
- *
- *   This header contains the interface prototypes for the rsl_assist library.
- *   
- * CVS Information:
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
- */
-#ifndef _GLOBUS_RSL_ASSIST_INCLUDE_GLOBUS_RSL_ASSIST_H_
-#define _GLOBUS_RSL_ASSIST_INCLUDE_GLOBUS_RSL_ASSIST_H_
+/** @file globus_rsl_assist.h RSL Utility Functions */
+
+#ifndef GLOBUS_RSL_ASSIST_H
+#define GLOBUS_RSL_ASSIST_H
 
 #include "globus_common.h"
 #include "globus_rsl.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+extern
 void
 globus_rsl_assist_string_canonicalize(char * ptr);
 
+extern
 int
 globus_rsl_assist_attributes_canonicalize(globus_rsl_t * rsl);
 
-EXTERN_C_END
-
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_RSL_ASSIST_H */

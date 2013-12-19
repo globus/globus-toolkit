@@ -163,6 +163,12 @@ main(int argc, char ** argv)
         exit(1);
     }
 
+    if (argc < 3)
+    {
+        fprintf(stderr, "Missing parameters lib_name or symbol_name\n");
+        exit(1);
+    }
+
     lib_name = argv[argc-2];
     symbol_name = argv[argc-1];
 

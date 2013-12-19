@@ -1,14 +1,11 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+SUBDIRS = library
 
-SUBDIRS= \
-	library \
-	pkgdata \
-	doxygen
+pkgconfigdir = $(libdir)/pkgconfig
 
 doc_DATA = GLOBUS_LICENSE
+pkgconfig_DATA = globus-gssapi-error.pc
 
-EXTRA_DIST= $(doc_DATA) 
+EXTRA_DIST = dirt.sh $(doc_DATA) 
 
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+distuninstallcheck:
+	@:

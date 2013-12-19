@@ -1,13 +1,8 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
-
-SUBDIRS= \
-	programs \
-	pkgdata
+SUBDIRS = programs test
 
 doc_DATA = GLOBUS_LICENSE
 
-EXTRA_DIST= $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+distuninstallcheck:
+	@:

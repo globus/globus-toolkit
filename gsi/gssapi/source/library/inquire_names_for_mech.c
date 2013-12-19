@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * @file gssapi/source/library/inquire_names_for_mech.c
+ */
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 

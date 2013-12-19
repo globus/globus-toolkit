@@ -14,153 +14,100 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_handle_table.h
+/** @file globus_handle_table.h Handle Table for Reference Counting Data */
 
-Description:
-    This header defines a reference-counting handle table structure.
+/**
+ * @defgroup globus_handle_table Handle Table for Reference Counting Data
+ * @ingroup globus_common
+ * @details
+ * The globus_handle_table_t abstraction provides a reference-counting
+ * handle table to automatically free data when there are no more
+ * references to it. Each datum in the globus_handle_table_t container
+ * has a count associated with it which may be incremented and decremented
+ * in single steps or by an increment. While a handle has any references to
+ * it, the globus_handle_table_lookup() will return the datum associated
+ * with the handle, otherwise it will return NULL. The value of a
+ * globus_handle_t is not reused until INT_MAX data have been inserted into
+ * the handle table.
+ */
+#ifndef GLOBUS_HANDLE_TABLE_H
+#define GLOBUS_HANDLE_TABLE_H
 
-CVS Information:
+#include "globus_types.h"
 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
-#ifndef GLOBUS_INCLUDE_HANDLE_TABLE_H
-#define GLOBUS_INCLUDE_HANDLE_TABLE_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include "globus_common_include.h"
-
-
-EXTERN_C_BEGIN
-
+/**
+ * @brief Handle table abstract type
+ * @ingroup globus_handle_table
+ */
 typedef struct globus_l_handle_table_s * globus_handle_table_t;
 
+/**
+ * @brief Handle abstract type
+ * @ingroup globus_handle_table
+ */
 typedef int globus_handle_t;
 
+/**
+ * @brief Handle datum destructor
+ * @ingroup globus_handle_table
+ * @param datum
+ *     Datum to destroy
+ */
 typedef 
 void 
 (*globus_handle_destructor_t)(
     void *                              datum);
 
+/**
+ * Invalid handle value
+ * @ingroup globus_handle_table
+ * @hideinitializer
+ */
 #define GLOBUS_NULL_HANDLE 0
 #define GLOBUS_HANDLE_TABLE_NO_HANDLE 0
 
-/**
- *  Initialize a table of unique reference counted handles.
- * 
- *  @param  handle_table
- *          the table of unique handles we want to use.
- *  @param  destructor
- *          Function to call to free the data associated with
- *          a handle when the handle's reference count reaches
- *          0 or the handle table is destroyed.
- */
 int
 globus_handle_table_init(
     globus_handle_table_t *             handle_table,
     globus_handle_destructor_t          destructor);
 
-/**
- *  Destroy a handle table
- */
 int
 globus_handle_table_destroy(
     globus_handle_table_t *             handle_table);
 
-/**
- *  insert a piece of memory into the table for reference counting
- * 
- *  @param  handle_table
- *          the table of unique handles we want to use.
- *          
- *  @param  datum
- *          the piece of memory to reference count
- * 
- *  @param  initial_refs
- *          the intial reference count of this piece of memory.
- */
 globus_handle_t
 globus_handle_table_insert(
     globus_handle_table_t *             handle_table,
     void *                              datum,
     int                                 initial_refs);
 
-/**
- * add a reference to a handle table entry.
- * 
- *  @param  handle_table
- *          the table of unique handles we want to use.
- *          
- *  @param  handle       
- *          the handle that we want to increment
- * 
- * Returns:  GLOBUS_TRUE if the handle is still referenced.
- *
- */
 globus_bool_t
 globus_handle_table_increment_reference(
     globus_handle_table_t *             handle_table,
     globus_handle_t                     handle);
 
-/**
- *  increment the reference count by inc
- * 
- *  @param  handle_table
- *          the table of unique handles we want to use.
- *          
- *  @param  handle       
- *          the handle that we want to increment
- *  @param  inc
- *          the number of references to add the the handle
- * 
- * Returns:  GLOBUS_TRUE if the handle is still referenced.
- *
- */
 globus_bool_t
 globus_handle_table_increment_reference_by(
     globus_handle_table_t *             handle_table,
     globus_handle_t                     handle,
     unsigned int                        inc);
 
-/**
- *  Remove a reference to a handle table entry,
- *              deleting the entry if no more references
- *              exist.
- * 
- *  @param  handle_table
- *          the table of unique handles we want to use.
- *          
- *  @param  handle       
- *          the handle that we want to decrement
- * 
- *  Returns  GLOBUS_TRUE if the handle is still referenced.
- *
- */
 globus_bool_t
 globus_handle_table_decrement_reference(
     globus_handle_table_t *             handle_table,
     globus_handle_t                     handle);
 
-/**
- * Find the void * corresponding to a unique
- *              handle. Does not update the reference count.
- * 
- *  @param  handle_table
- *          the table of unique handles we want to use
- *                  
- *  @param  handle
- *          the handle that we want to look up
- * 
- * Returns:  the data value associated with the handle
- *
- */
 void *
 globus_handle_table_lookup(
     globus_handle_table_t *             handle_table,
     globus_handle_t                     handle);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_INCLUDE_HANDLE_TABLE_H */
+#endif /* GLOBUS_HANDLE_TABLE_H */

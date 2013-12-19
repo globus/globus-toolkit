@@ -14,38 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_i_gass_transfer.h
  *
  * This header defines the internal interface of the GASS transfer library
- *
- * CVS Information:
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 
-#ifndef GLOBUS_GASS_INCLUDE_GLOBUS_I_GASS_TRANSFER_H
-#define GLOBUS_GASS_INCLUDE_GLOBUS_I_GASS_TRANSFER_H
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+#ifndef GLOBUS_I_GASS_TRANSFER_H
+#define GLOBUS_I_GASS_TRANSFER_H
 
 #include "globus_gass_transfer.h"
 #include "globus_gass_transfer_proto.h"
 #include "globus_i_gass_transfer_keyvalue.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern globus_hashtable_t globus_i_gass_transfer_protocols;
 extern globus_handle_table_t globus_i_gass_transfer_request_handles;
@@ -226,7 +210,8 @@ globus_i_gass_transfer_deactivate_callback(
     void *					user_arg,
     globus_gass_transfer_request_t		request);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_GASS_INCLUDE_GLOBUS_I_GASS_TRANSFER_H */
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+#endif /* GLOBUS_I_GASS_TRANSFER_H */

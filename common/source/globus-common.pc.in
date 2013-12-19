@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: globus-common
+Description: Globus Toolkit - Common Library
+Version: @PACKAGE_VERSION@
+Libs: @LDFLAGS@ @LIBS@ -L${libdir} -lglobus_common
+Cflags: @LARGEFILE_CFLAGS@ @CFLAGS@ -I${includedir}

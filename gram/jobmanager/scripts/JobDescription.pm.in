@@ -7,8 +7,6 @@
 #     $Revision$
 #     $Author$
 
-@GLOBUS_PERL_INITIALIZER@
-
 use Globus::Core::Paths;
 
 =head1 NAME

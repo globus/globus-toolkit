@@ -1,22 +1,46 @@
+include_HEADERS = globus_error_openssl.h
+lib_LTLIBRARIES = libglobus_openssl_error.la
 
-include $(top_srcdir)/globus_automake_pre
-
-Sources = globus_error_openssl.h \
+AM_CPPFLAGS = -I.. $(PACKAGE_DEP_CFLAGS)
+libglobus_openssl_error_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_openssl_error_la_LDFLAGS = \
+    -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+    -no-undefined
+libglobus_openssl_error_la_SOURCES = \
+          globus_error_openssl.h \
           globus_error_openssl.c \
           globus_i_error_openssl.h \
           globus_i_error_openssl.c
 
-include_HEADERS = \
-          globus_error_openssl.h
+DOC_STAMPS =
+if ENABLE_DOXYGEN
+DOC_STAMPS += doc-stamp
 
-lib_LTLIBRARIES = libglobus_openssl_error.la
+doc-stamp: Doxyfile $(libglobus_openssl_error_la_SOURCES)
+	$(DOXYGEN)
+	touch $@
 
-INCLUDES = -I.. @GPT_INCLUDES@
+clean-local:
+	rm -rf doc doc-stamp
+endif
 
-libglobus_openssl_error_la_LDFLAGS = @GPT_LDFLAGS@
+all-local: $(DOC_STAMPS)
 
-libglobus_openssl_error_la_LIBADD = @GPT_LIB_LINKS@
+install-data-local: $(DOC_STAMPS)
+	if test -d doc/man/man3; then \
+		install -d -m 755 $(DESTDIR)$(mandir)/man3; \
+	        $(INSTALL) -m 644 doc/man/man3/globus*.3 $(DESTDIR)$(mandir)/man3 ; \
+        fi
+	if test -d doc/html; then \
+		for dir in `(cd doc; find html -type d)`; do \
+			install -d -m 755 $(DESTDIR)$(docdir)/$$dir; \
+		done ; \
+		for f in `(cd doc; find html -type f)`; do \
+			$(INSTALL) -m 644 doc/$$f $(DESTDIR)$(docdir)/$$f ; \
+		done ; \
+	fi
 
-libglobus_openssl_error_la_SOURCES = $(Sources)
-
-include $(top_srcdir)/globus_automake_post
+dist-hook: $(DOC_STAMPS)
+	if test -d doc; then \
+		cp -R doc $(distdir)/doc ; \
+	fi ;

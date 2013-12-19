@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_FTP_CLIENT_DEBUG_PLUGIN_H
-#define GLOBUS_INCLUDE_FTP_CLIENT_DEBUG_PLUGIN_H
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+#ifndef GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_H
+#define GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_H
 /**
- * @file
+ * @file globus_ftp_client_debug_plugin.h
  */
-#endif
 
 /**
  * @defgroup globus_ftp_client_debug_plugin Debugging Plugin
@@ -36,21 +34,19 @@
  * begins an operation, for all data buffers which pass through while
  * handling a data transfer, and for all protocol messages which are sent and
  * received.
- *
- * <b>Example Usage:</b>
+ */
+/**
+ * @example globus_ftp_client_debug_plugin.example
  *
  * The following example illustrates a typical use of the debug plugin.
  * In this case, we configure a plugin instance to output log messages
  * preceded by the process name and pid to a file named gridftp.log.
- *
- * \include globus_ftp_client_debug_plugin.example
-
- *
  */
-
 #include "globus_ftp_client_plugin.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /** Module descriptor
  * @ingroup globus_ftp_client_debug_plugin
@@ -69,6 +65,8 @@ globus_result_t
 globus_ftp_client_debug_plugin_destroy(
     globus_ftp_client_plugin_t *		plugin);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_INCLUDE_FTP_CLIENT_DEBUG_PLUGIN_H */
+#endif /* GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_H */

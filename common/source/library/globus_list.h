@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_COMMON_LIST_H
-#define GLOBUS_COMMON_LIST_H
+/** @file globus_list.h Linked List */
+/**
+ * @defgroup globus_list Linked List
+ * @ingroup globus_common
+ */
+#ifndef GLOBUS_LIST_H
+#define GLOBUS_LIST_H
 
-#include "globus_common_include.h"
-/********************************************************************
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @brief List data type
+ * @ingroup globus_list
+ * @param
+ * A structure representing a node containing a single datum and a reference to
+ * additional elements in the list.
  *
- * This file defines the list_t type
- *
- *
- ********************************************************************/
-
-
-EXTERN_C_BEGIN
-
+ * The special value NULL is used to represent a list with zero elements, also
+ * called an empty list.
+ */
 typedef struct globus_list 
 {
     void * volatile                        datum;
@@ -35,10 +43,48 @@ typedef struct globus_list
     int                                    malloced;
 } globus_list_t;
 
-typedef int (*globus_list_pred_t) (void *datum, void *args);
+/**
+ * @brief List search predicate
+ * @ingroup globus_list
+ * @details
+ * An anonymous predicate that evaluates a datum as true or false in the
+ * context of user-provided arg. These predicates are used for example in
+ * general searches with globus_list_search_pred(), and the arg field is used
+ * to implement in C something approximating closures in a functional language
+ * by encapsulating instance-specific search criteria.
+ *
+ * These predicates return non-zero for truth and zero for falsity so they can
+ * be used in C conditional expressions.
+ * @param datum
+ *     Datum of the list item to compute the predicate against.
+ * @param arg
+ *     Parameter supplied to globus_list_search_pred()
+ */
+typedef int (*globus_list_pred_t) (void *datum, void *arg);
 
+/**
+ * @brief Relation predicate
+ * @ingroup globus_list
+ * @details
+ * An anonymous predicate that defines a partial ordering of data. Such
+ * ordering predicates evaluate true if low_datum is <em>less than</em>
+ * (or <em>comes before</em>) high_datum in the ordering, and false otherwise.
+ * These predicates are used for example in general sorts with
+ * globus_list_sort(), and the relation_arg field is used to implement in C
+ * something approximating closures in a functional language by encapsulating
+ * instance-specific ordering criteria.
+ *
+ * These predicates return non-zero for truth and zero for falsity so they can
+ * be used in C conditional expressions.
+ * @param low_datum
+ *     Datum to compare
+ * @param high_datum
+ *     Datum to compare
+ * @param relation_arg
+ *     Parameter supplied to globus_list_sort()
+ */
 typedef int (*globus_list_relation_t) (void *low_datum, void *high_datum,
-				       void *relation_args);
+				       void *relation_arg);
 int
 globus_i_list_pre_activate(void);
 
@@ -128,8 +174,8 @@ globus_list_from_string(
     int                                 delim,
     const char *                        ignored);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_LIST_H */
-
-

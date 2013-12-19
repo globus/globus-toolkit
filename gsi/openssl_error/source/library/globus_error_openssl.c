@@ -135,10 +135,6 @@ globus_l_gsi_openssl_error_deactivate(void)
 #endif
 
 /**
- * @name Get Error Code
- */
-/* @{ */
-/**
  * @ingroup globus_openssl_error_object
  * Get the openssl error code which represents the openssl error
  * from the openssl error handle
@@ -152,7 +148,7 @@ unsigned long
 globus_openssl_error_handle_get_error_code(
     globus_openssl_error_handle_t       handle)
 {
-    unsigned long                        error_code;
+    unsigned long                        error_code = 0;
     static char *                       _function_name_ =
         "globus_openssl_error_handle_get_error_code";
 
@@ -164,19 +160,12 @@ globus_openssl_error_handle_get_error_code(
         goto done;
     }
     
-    error_code = 0;
-
  done:
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error_code;
 }
-/* @} */
 
-/**
- * @name Get Error Data
- */
-/* @{ */
 /**
  * @ingroup globus_openssl_error_object
  * Get the openssl error data which contains additional data about the error
@@ -210,11 +199,6 @@ globus_openssl_error_handle_get_data(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return data;
 }
-/* @} */
-/**
- * @name Get Error Data Flags
- */
-/* @{ */
 /**
  * @ingroup globus_openssl_error_object
  * Get the openssl error data flags from the openssl error handle
@@ -247,12 +231,7 @@ globus_openssl_error_handle_get_data_flags(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return flags;
 }
-/* @} */
 
-/**
- * @name Get Filename
- */
-/* @{ */
 /**
  * @ingroup globus_openssl_error_object
  * Get the filename where the openssl error occurred
@@ -286,12 +265,7 @@ globus_openssl_error_handle_get_filename(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return filename;
 }
-/* @} */
 
-/**
- * @name Get Linenumber
- */
-/* @{ */
 /**
  * @ingroup globus_openssl_error_object
  * Get the linenumber on which the openssl error occurred
@@ -325,12 +299,7 @@ globus_openssl_error_handle_get_linenumber(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return linenumber;
 }
-/* @} */
 
-/**
- * @name Get Library
- */
-/* @{ */
 /**
  * @ingroup globus_openssl_error_object
  * Get the library name where the openssl error occurred in
@@ -364,13 +333,8 @@ globus_openssl_error_handle_get_library(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return library;
 }
-/* @} */
 
 
-/**
- * @name Get Function
- */
-/* @{ */
 /**
  * @ingroup globus_openssl_error_object
  * Get the function name where the openssl error occurred 
@@ -404,12 +368,7 @@ done:
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return function;
 }
-/* @} */
 
-/**
- * @name Get Reason
- */
-/* @{ */
 /**
  * @ingroup globus_openssl_error_object
  * Get the reason string which caused the openssl error 
@@ -443,12 +402,7 @@ done:
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return reason;
 }
-/* @} */
 
-/**
- * @name Construct Error
- */
-/*@{*/
 /**
  * @ingroup globus_openssl_error_object
  * Allocate and initialize an error of type GLOBUS_ERROR_TYPE_OPENSSL
@@ -528,12 +482,7 @@ globus_error_construct_openssl_error(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error;
 }/* globus_error_construct_openssl_error() */
-/*@}*/
 
-/**
- * @name Initialize Error
- */
-/*@{*/
 /**
  * Initialize a previously allocated error of type
  * GLOBUS_ERROR_TYPE_OPENSSL
@@ -573,13 +522,7 @@ globus_error_initialize_openssl_error(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error;
 }/* globus_error_initialize_openssl_error() */
-/*@}*/
 
-/**
- * @name Get OpenSSL Filename
- * @ingroup globus_openssl_error_object
- */
-/* @{ */
 /**
  * Get the OpenSSL filename where the error occurred 
  *
@@ -625,14 +568,8 @@ done:
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return filename;
 }
-/* @} */
 
 
-/**
- * @name Get OpenSSL Linenumber
- * @ingroup globus_openssl_error_object
- */
-/* @{ */
 /**
  * Get the OpenSSL linenumber where the error occurred 
  *
@@ -678,13 +615,7 @@ done:
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return linenumber;
 }
-/* @} */
 
-/**
- * @name Get OpenSSL Library
- * @ingroup globus_openssl_error_object
- */
-/* @{ */
 /**
  * Get the OpenSSL libraray the error occurred in
  *
@@ -730,13 +661,7 @@ done:
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return library;
 }
-/* @} */
 
-/**
- * @name Get OpenSSL Function
- * @ingroup globus_openssl_error_object
- */
-/* @{ */
 /**
  * Get the OpenSSL filename where the error occurred 
  *
@@ -782,13 +707,7 @@ globus_error_openssl_error_get_function(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return function;
 }
-/* @} */
 
-/**
- * @name Get OpenSSL Reason
- * @ingroup globus_openssl_error_object
- */
-/* @{ */
 /**
  * Get the OpenSSL reason for the error
  *
@@ -834,13 +753,7 @@ done:
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return reason;
 }
-/* @} */
 
-/**
- * @name Get OpenSSL Error Data
- * @ingroup globus_openssl_error_object
- */
-/* @{ */
 /**
  * Get the OpenSSL Error Data
  *
@@ -886,13 +799,7 @@ done:
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return data;
 }
-/* @} */
 
-/**
- * @name Get OpenSSL Error Data Flags
- * @ingroup globus_openssl_error_object
- */
-/* @{ */
 /**
  * Get the OpenSSL Error Data Flags
  *
@@ -938,13 +845,8 @@ done:
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return flags;
 }
-/* @} */
 
 
-/**
- * @name OpenSSL Error Match
- */
-/*@{*/
 /**
  * Check whether the error originated from a specific library, from a specific
  * function and is of a specific type.
@@ -1010,12 +912,7 @@ globus_error_match_openssl_error(
     }
 }
 /* globus_error_match_openssl_error */
-/*@}*/
 
-/**
- * @name Wrap OpenSSL Error
- */
-/* @{ */
 /**
  * Wrap the OpenSSL error and create a wrapped globus error object from the
  * error. 
@@ -1090,4 +987,3 @@ globus_error_wrap_openssl_error(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error;
 }
-/* @} */

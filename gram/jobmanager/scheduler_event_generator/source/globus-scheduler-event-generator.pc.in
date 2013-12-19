@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: globus-scheduler-event-generator
+Description: Globus Toolkit - Scheduler Event Generator
+Version: @PACKAGE_VERSION@
+Requires.private: @PACKAGE_DEPS@
+Libs: -L${libdir} -lglobus_scheduler_event_generator
+Cflags: -I${includedir}

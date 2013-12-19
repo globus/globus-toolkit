@@ -16,11 +16,44 @@
 # limitations under the License.
 # 
 
-#use warnings;
+use warnings;
+use strict;
 
-@GLOBUS_PERL_INITIALIZER@
+my $prefix;
+my $exec_prefix;
+my $sbindir;
+my $bindir;
+my $libdir;
+my $includedir;
+my $datarootdir;
+my $datadir;
+my $libexecdir;
+my $sysconfdir;
+my $sharedstatedir;
+my $localstatedir;
+my $perlmoduledir;
 
-use Globus::Core::Paths;
+BEGIN {
+    $prefix="@prefix@";
+    if ($ENV{GLOBUS_LOCATION}) {
+        $prefix = $ENV{GLOBUS_LOCATION};
+    }
+    $exec_prefix="@exec_prefix@";
+    $sbindir="@sbindir@";
+    $bindir="@bindir@";
+    $libdir="@libdir@";
+    $includedir="@includedir@";
+    $datarootdir="@datarootdir@";
+    $datadir="@datadir@";
+    $libexecdir="@libexecdir@";
+    $sysconfdir="@sysconfdir@";
+    $sharedstatedir="@sharedstatedir@";
+    $localstatedir="@localstatedir@";
+    $perlmoduledir = "@perlmoduledir@";
+
+    unshift(@INC, $perlmoduledir);
+}
+
 
 # Prototypes
 sub main( @ );
@@ -50,7 +83,7 @@ my $PerlOptions =<<END_OPTIONS;
 END_OPTIONS
 
 my $Program = $0;
-my $ProgramC = $Globus::Core::Paths::bindir . '/globus-gass-cache-util';
+my $ProgramC = $bindir . '/globus-gass-cache-util';
 my $Verbose = 0;
 
 
@@ -189,8 +222,7 @@ sub main( @ )
     # Did we do anything?  If not, punt to the C program...
     if ( $#JobList < 0 )
     {
-	exec ( "$ProgramC", @CprogArgv );
-	return;		# Should never *get* here!
+	exec ( "$ProgramC", @CprogArgv ) || die "exec $ProgramC";
     }
 
     # Ok, here we have real work to do..
@@ -325,7 +357,7 @@ sub GassCacheListNormal ( )
     # *************************************************
     print "Scanning the global entries in $CacheInfo{GLOBAL_ROOT}\n" if( $Verbose );
     my %Global;
-    $Cmd = "$Globus::Core::Paths::bindir/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{GLOBAL_ROOT} -name \"data*\" -print'";
+    $Cmd = "$bindir/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{GLOBAL_ROOT} -name \"data*\" -print'";
     foreach my $FullPath (`$Cmd` )
     {
 	chomp $FullPath;
@@ -368,7 +400,7 @@ sub GassCacheListNormal ( )
     # ******************************************
     print "Scanning the local entries in $CacheInfo{LOCAL_ROOT}\n" if( $Verbose );
     my %Local;
-    $Cmd = "$Globus::Core::Paths::bindir/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{LOCAL_ROOT} -name \"data*\" -print'";
+    $Cmd = "$bindir/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{LOCAL_ROOT} -name \"data*\" -print'";
     foreach my $FullPath (`$Cmd` )
     {
 	chomp $FullPath;
@@ -458,7 +490,7 @@ sub GassCacheListNormal ( )
     foreach my $Inode ( keys %Global )
     {
 	# Does it match??
-	next if (  ( $Settings{MangledUrl} ne "" ) &&
+	next if (  ( $Settings{MangledUrl} ) &&
 		   ( $Settings{MangledUrl} ne $Global{$Inode}->{Mangled} )  );
 	if ( $Settings{Tag} ne "" )
 	{
@@ -687,7 +719,7 @@ sub GassCacheCleanupUrlNormal ( )
     # Scan through the local directory, now..
     my %Local;
     my $LocalCount = 0;
-    my $Cmd = "$Globus::Core::Paths::bindir/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{LOCAL_ROOT} -inum $FullGlobalDataInode -print'";
+    my $Cmd = "$bindir/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{LOCAL_ROOT} -inum $FullGlobalDataInode -print'";
     open( FIND, "$Cmd|" ) || die "Can't run '$Cmd'";
     print "Scanning the local entries in $CacheInfo{LOCAL_ROOT}\n"
 	if( $Verbose );

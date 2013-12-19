@@ -14,34 +14,19 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_l_gass_transfer_http.h
- 
-Description:
-    This header defines the prototypes for the local functions in the
-    http protocol module source file
- 
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
-#ifndef GLOBUS_GASS_INCLUDE_GLOBUS_L_GASS_TRANSFER_HTTP_H
-#define GLOBUS_GASS_INCLUDE_GLOBUS_L_GASS_TRANSFER_HTTP_H
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+/**
+ * @file globus_l_gass_transfer_http.h
+ * @details
+ *  This header defines the prototypes for the local functions in the
+ *  http protocol module source file
+ */
+#ifndef GLOBUS_L_GASS_TRANSFER_HTTP_H
+#define GLOBUS_L_GASS_TRANSFER_HTTP_H
 
 EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /******************************************************************************
 			  Module Specific Constants
@@ -657,6 +642,8 @@ void
 globus_l_gass_transfer_http_listener_close(
     globus_gass_transfer_http_listener_proto_t * proto);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* GLOBUS_GASS_INCLUDE_GLOBUS_L_GASS_TRANSFER_HTTP_H */
+#endif /* GLOBUS_L_GASS_TRANSFER_HTTP_H */

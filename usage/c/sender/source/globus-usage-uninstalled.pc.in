@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+abs_top_srcdir=@abs_top_srcdir@
+abs_top_builddir=@abs_top_builddir@
+
+Name: globus-usage
+Description: Globus Toolkit - Usage Library
+Version: @VERSION@
+Requires.private: @PACKAGE_DEPS@
+Libs: -L${abs_top_builddir} -lglobus_usage
+Cflags: -I${abs_top_srcdir}

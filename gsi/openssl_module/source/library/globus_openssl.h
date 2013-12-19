@@ -14,53 +14,51 @@
  * limitations under the License.
  */
 
+/**
+ * @file globus_openssl.h
+ */
+
 #ifndef GLOBUS_INCLUDE_GLOBUS_OPENSSL_H
 #define GLOBUS_INCLUDE_GLOBUS_OPENSSL_H
 
 #include "globus_common.h"
 
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
- * @anchor globus_openssl
- * @mainpage Globus OpenSSL activation/deactivation
- *
+ * @mainpage Globus OpenSSL Module
+ * @copydoc globus_openssl_module
+ */
+#endif
+/**
+ * @defgroup globus_openssl_module Globus OpenSSL Module
  * The globus_openssl library is motivated by the desire to
  * make OpenSSL thread safe. This is done by allocating a mutex pool
  * and setting relevant callback functions in the module activation
  * functions. 
  *
- * Any program that uses OpenSSL functions must include
- * "globus_openssl.h". 
+ * Any program that uses OpenSSL functions with Globus must include
+ * the globus_openssl.h header.
  *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
+ * @copydoc globus_openssl_activation
  */
 
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
+#ifdef __cplusplus
+extern "C" {
 #endif
-
-EXTERN_C_BEGIN
 
 
 /**
  * @defgroup globus_openssl_activation Activation
+ * @ingroup globus_openssl_module
  *
  * Globus OpenSSL uses standard Globus module activation and
  * deactivation. Before any OpenSSL functions are called, the
  * following function must be called:
  *
- * @code
- *      globus_module_activate(GLOBUS_OPENSSL_MODULE)
- * @endcode
+   @code
+        globus_module_activate(GLOBUS_OPENSSL_MODULE)
+   @endcode
  *
  *
  * This function returns GLOBUS_SUCCESS if OpenSSL was
@@ -72,9 +70,9 @@ EXTERN_C_BEGIN
  * To deactivate the OpenSSL module , the following function must be
  * called: 
  *
- * @code
- *    globus_module_deactivate(GLOBUS_OPENSSL_MODULE)
- * @endcode
+   @code
+      globus_module_deactivate(GLOBUS_OPENSSL_MODULE)
+   @endcode
  *
  * This function should be called once for each time OpenSSL
  * was activated. 
@@ -90,18 +88,8 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t		globus_i_openssl_module;
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_OPENSSL_H */
-
-
-
-
-
-
-
-
-
-
-
-

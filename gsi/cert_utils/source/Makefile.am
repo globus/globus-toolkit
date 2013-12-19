@@ -1,27 +1,14 @@
+pkgconfigdir = $(libdir)/pkgconfig
 
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
-
-SUBDIRS= \
-	library \
-	programs \
-	pkgdata \
-	doxygen
+SUBDIRS = library programs
 
 doc_DATA = GLOBUS_LICENSE
+pkgconfig_DATA = globus-gsi-cert-utils.pc
 
-EXTRA_DIST= \
+EXTRA_DIST = \
         version.h \
         dirt.sh \
 	$(doc_DATA)
 
-distclean-local: 
-	-rm -f stamp-h.in
-
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
-
-
-
-
-
+distuninstallcheck:
+	@:

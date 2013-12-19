@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_INCLUDE_ERRNO_ERROR_H
-#define GLOBUS_INCLUDE_ERRNO_ERROR_H
+/** @file globus_error_errno.h */
 
+#ifndef GLOBUS_ERROR_ERRNO_H
+#define GLOBUS_ERROR_ERRNO_H
 
 /**
- * @anchor globus_errno_error_api
  * @defgroup globus_errno_error_api Globus Errno Error API
  * @ingroup globus_error_api
  *
@@ -33,18 +33,15 @@
  *
  * Any program that uses Globus Errno Error functions must include
  * "globus_common.h". 
- *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
  */
 
 #include "globus_common_include.h"
 #include "globus_object.h"
 #include "globus_module.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @defgroup globus_errno_error_object Error Construction
@@ -136,11 +133,8 @@ globus_error_wrap_errno_error(
 
 #endif
 
-EXTERN_C_END
-#endif /* GLOBUS_INCLUDE_ERRNO_ERROR_H */
+#ifdef __cplusplus
+}
+#endif
 
-
-
-
-
-
+#endif /* GLOBUS_ERROR_ERRNO_H */

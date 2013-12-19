@@ -1,0 +1,244 @@
+#! /bin/sh
+# globus-scheduler-event-generator Parse LRM events into a common log format
+# for the GRAM job manager to use
+# chkconfig: @CHKCONFIG_DEFAULT@ 20 80
+
+### BEGIN INIT INFO
+# Provides:          globus-scheduler-event-generator
+# Required-Start:    $time
+# Required-Stop:
+@DEFAULT_START_LINE@
+@DEFAULT_STOP_LINE@
+# Short-Description: Globus Scheduler Event Generator
+# Description:       The Globus Scheduler Event Generator service 
+#                    process state from local resource managers (such as
+#                    torque or SGE) into a form that the globus-job-manager
+#                    process can easily parse.
+#                    It is part of the Globus Toolkit(tm)
+### END INIT INFO
+
+# Copyright 1999-2011 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+prefix="${GLOBUS_LOCATION-@prefix@}"
+exec_prefix="@exec_prefix@"
+sbindir="@sbindir@"
+bindir="@bindir@"
+libdir="@libdir@"
+includedir="@includedir@"
+datarootdir="@datarootdir@"
+datadir="@datadir@"
+libexecdir="@libexecdir@"
+sysconfdir="@sysconfdir@"
+sharedstatedir="@sharedstatedir@"
+localstatedir="@localstatedir@"
+
+if [ -r ${libexecdir}/globus-script-initializer ]; then
+    . ${libexecdir}/globus-script-initializer
+else
+    echo "Unable to locate globus-script-initializer" 1>&2
+    exit 1
+fi
+progname="globus-scheduler-event-generator"
+
+GLOBUS_SEG_CONFIG=${GLOBUS_SEG_CONFIG:-@SEG_CONFIGDIR@/@SEG_CONFIGFILE@}
+test -f "${GLOBUS_SEG_CONFIG}" && . "${GLOBUS_SEG_CONFIG}"
+test -f ${sbindir}/globus-scheduler-event-generator || exit 0
+prog="${sbindir}/globus-scheduler-event-generator"
+lockfile="@LOCKFILE@"
+
+. /lib/lsb/init-functions
+
+lsb_ok=1
+# Old versions of RH LSB init scripts cause infinite loops with the -p
+# parameter
+if [ -f /etc/redhat-release ] && lsb_release -v | grep -q 'core-[123]'; then
+    unset lsb_ok
+fi
+
+GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
+
+full=1
+if [ -n "$2" ]; then
+    full=0
+fi
+for lrm in "${GLOBUS_SEG_LRM_DIR}"/*; do
+    if [ -n "$2" -a "$(basename "$lrm")" != "$2" ]; then
+        continue
+    fi
+    if [ -f "$lrm" ]; then
+        lrms="${lrms:+$lrms }$(basename $lrm)"
+    fi
+done
+
+GLOBUS_SEG_PIDFMT="${GLOBUS_SEG_PIDFMT:-${localstatedir}/run/globus-scheduler-event-generator-%s.pid}"
+GLOBUS_SEG_LOGFMT="${GLOBUS_SEG_LOGFMT:-${localstatedir}/globus/globus-seg-%s}"
+GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
+
+start()
+{
+    allrc=0
+    started=""
+    failed=""
+    for lrm in $lrms; do
+        pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
+        logdir="$(printf "$GLOBUS_SEG_LOGFMT" "$lrm")"
+        if [ ! -d "$logdir" ]; then
+            (umask 022; mkdir "$logdir")
+        fi
+        start_daemon ${GLOBUS_SEG_NICE_LEVEL:+-n "${GLOBUS_SEG_NICE_LEVEL}"} \
+            ${lsb_ok:+-p "$pidfile"} "${prog}" \
+            -s "$lrm" \
+            -p "$pidfile" \
+            -d "$logdir" \
+            -b > /dev/null
+        rc=$?
+        if [ $rc = 0 ]; then
+            started="${started:+${started}, }$lrm"
+        else
+            failed="${failed:+${failed}, }$lrm"
+            allrc=$rc
+        fi
+    done
+    if [ "$allrc" -eq 0 -a "$started" != "" ]; then
+        log_success_msg "Started globus-scheduler-event-generator for ($started)"
+        touch "$lockfile"
+    elif [ "$allrc" -eq 0 ]; then
+        log_warning_msg "$progname: No LRMs installed"
+    elif [ "$started" = "" ]; then
+        log_failure_msg "Failed to start globus-scheduler-event-generator for ($failed)"
+    else
+        log_success_msg "Some problems starting globus-scheduler-event-generator for ($failed), but ($started) were ok"
+        touch "$lockfile"
+    fi
+    return $allrc
+}
+
+stop()
+{
+    allrc=0
+    stopped=""
+    failed=""
+    for lrm in $lrms; do
+        pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
+        logdir="$(printf "$GLOBUS_SEG_LOGFMT" "$lrm")"
+
+        if [ -f "$pidfile" ]; then
+            killproc ${lsb_ok:+-p "$pidfile"} "${prog}"
+            rc=$?
+            if [ $rc = 0 ]; then
+                stopped="${stopped:+$stopped, }$lrm"
+            else
+                failed="${failed:+$failed, }$lrm"
+                allrc=$rc
+            fi
+        fi
+    done
+    if [ "$allrc" -eq 0 ]; then
+        log_success_msg "Stopped globus-scheduler-event-generator${stopped:+ for ($stopped)}"
+        if [ "$full" -eq 1 ]; then
+            rm -f "$lockfile"
+        fi
+    elif [ "$stopped" = "" ]; then
+        log_failure_msg "Failed to stop globus-scheduler-event-generator for $failed"
+    else
+        log_success_msg "Some problems stopping globus-scheduler-event-generator for $failed, but $stopped were ok"
+    fi
+    return $allrc
+}
+
+restart()
+{
+    stop
+    start
+}
+
+status()
+{
+    allrc=0
+
+    for lrm in $lrms; do
+        pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
+        pid="$(pidofproc ${lsb_ok:+-p "${pidfile}"} "${prog}")"
+        rc=$?
+        case $rc in
+            0)
+                echo "$progname ($lrm) is running (pid=$pid)"
+                ;;
+            1)
+                echo "Stale PID file for $progname ($lrm)"
+                ;;
+            2)
+                echo "Stale lock file for $progname"
+                ;;
+            3)
+                echo "$progname ($lrm) is not running"
+                ;;
+            4)
+                # Debian pidofproc returns 4 when pid file is specified
+                # but does not exist. LSB Spec says:
+                # If the -p pidfile option is specified and the named pidfile
+                # does not exist, the functions shall assume that the daemon is
+                # not running.
+                if [ -n "$lsb_ok" -a ! -f "${GLOBUS_GATEKEEPER_PIDFILE}" ]; then
+                    echo "$progname ($lrm) is not running"
+                    rc=0
+                fi
+                ;;
+            *)
+                echo "Unknown status for $progname ($lrm)"
+                ;;
+        esac
+        if [ "$allrc" -eq 0 -a "$rc" -ne 0 ]; then
+            allrc=$rc
+        fi
+    done
+
+    if [ "$allrc" -eq 0 -a "$lrms" = "" ]; then
+        echo "$progname not running, no LRMs installed"
+        allrc=3
+    fi
+    return $allrc
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    reload)
+        exit 0
+        ;;
+    force-reload)
+        restart
+        ;;
+    status)
+        status
+        ;;
+    condrestart|try-restart)
+        status || exit 0
+        restart
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload}"
+        exit 2
+        ;;
+esac

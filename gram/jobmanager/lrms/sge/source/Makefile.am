@@ -1,24 +1,14 @@
-include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
+SUBDIRS = seg
 
-SUBDIRS = seg pkgdata doxygen
-
-## globussysconf = [ DATA ]
 globussysconfdir = ${sysconfdir}/globus
-globussysconf_DATA = globus-sge.conf
-
-## gridservices = [ DATA ]
 gridservicesdir = ${sysconfdir}/grid-services/available
-gridservices_DATA = jobmanager-sge-poll jobmanager-sge-seg
-
-## gramperlmodule = [ DATA ]
 gramperlmoduledir = ${perlmoduledir}/Globus/GRAM/JobManager
-gramperlmodule_DATA = sge.pm
-
-## validation = [ DATA ]
 validationdir = $(datadir)/globus/globus_gram_job_manager
-validation_DATA = sge.rvf
 
+globussysconf_DATA = globus-sge.conf
+gridservices_DATA = jobmanager-sge-poll jobmanager-sge-seg
+gramperlmodule_DATA = sge.pm
+validation_DATA = sge.rvf
 doc_DATA = AUTHORS CREDITS LICENSE LICENSE.GTPL LICENSE.LGPL
 
 AT=@
@@ -32,8 +22,14 @@ jobmanager-sge-seg: jobmanager-sge-seg.in
 
 
 
-EXTRA_DIST = globus-sge.conf.in sge.pm $(doc_DATA) $(validation_DATA) \
-        jobmanager-sge-poll.in jobmanager-sge-seg.in
+EXTRA_DIST = \
+        dirt.sh \
+        globus-sge.conf.in \
+        sge.pm \
+        $(doc_DATA) \
+        $(validation_DATA) \
+        jobmanager-sge-poll.in \
+        jobmanager-sge-seg.in
 
 CLEANFILES = jobmanager-sge-poll jobmanager-sge-seg
 
@@ -52,5 +48,5 @@ install-data-hook:
 	ln -s available/jobmanager-sge-poll jobmanager-sge
 endif
 
-include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
+distuninstallcheck:
+	@:

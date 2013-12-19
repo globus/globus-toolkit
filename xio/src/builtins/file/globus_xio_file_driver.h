@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_XIO_FILE_DRIVER_INCLUDE
-#define GLOBUS_XIO_FILE_DRIVER_INCLUDE
+#ifndef GLOBUS_XIO_FILE_DRIVER_H
+#define GLOBUS_XIO_FILE_DRIVER_H
 /**
- * @file
- * Header file for XIO File Driver
+ * @file globus_xio_file_driver.h XIO File Driver
  */
 #include "globus_xio_system.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
- * @defgroup file_driver Globus XIO File Driver
- * The File I/O driver.
+ * @defgroup globus_xio_file_driver Globus XIO File Driver
+ * @ingroup globus_xio
+ * File I/O driver
  */
 
 /**
- * @defgroup file_driver_instance Opening/Closing
- * @ingroup file_driver
+ * @defgroup globus_xio_file_driver_instance Opening/Closing
+ * @ingroup globus_xio_file_driver
  * 
  * An XIO handle with the file driver can be created with
  * @ref globus_xio_handle_create()
@@ -51,8 +55,8 @@
  */
  
 /**
- * @defgroup file_driver_io Reading/Writing
- * @ingroup file_driver
+ * @defgroup globus_xio_file_driver_io Reading/Writing
+ * @ingroup globus_xio_file_driver
  * 
  * Both the @ref globus_xio_register_read() and
  * @ref globus_xio_register_write() calls follow similar semantics as described
@@ -85,8 +89,8 @@
  */
  
 /**
- * @defgroup file_driver_envs Env Variables
- * @ingroup file_driver
+ * @defgroup globus_xio_file_driver_envs Env Variables
+ * @ingroup globus_xio_file_driver
  * 
  * The file driver uses the following environment variables
  * - GLOBUS_XIO_FILE_DEBUG Available if using a debug build. See globus_debug.h
@@ -102,8 +106,8 @@
  */
 
 /**
- * @defgroup file_driver_cntls Attributes and Cntls
- * @ingroup file_driver
+ * @defgroup globus_xio_file_driver_cntls Attributes and Cntls
+ * @ingroup globus_xio_file_driver
  * 
  * File driver specific attrs and cntls.
  * 
@@ -111,12 +115,12 @@
  * @see globus_xio_handle_cntl()
  */
 /**
- * @defgroup file_driver_types Types
- * @ingroup file_driver
+ * @defgroup globus_xio_file_driver_types Types
+ * @ingroup globus_xio_file_driver
  */
 /**
- * @defgroup file_driver_errors Error Types
- * @ingroup file_driver
+ * @defgroup globus_xio_file_driver_errors Error Types
+ * @ingroup globus_xio_file_driver
  * 
  * The File driver is very close to the system code, so most errors
  * reported by it are converted from the system errno. A few of the exceptions
@@ -128,7 +132,7 @@
 
 /**
  * Invalid handle type
- * @ingroup file_driver_types
+ * @ingroup globus_xio_file_driver_types
  * @hideinitializer
  * @see GLOBUS_XIO_FILE_SET_HANDLE
  */
@@ -143,13 +147,13 @@
 
 /**
  * File driver specific cntls
- * @ingroup file_driver_cntls
+ * @ingroup globus_xio_file_driver_cntls
  */
 typedef enum
 {
     /** GlobusVarArgEnum(attr)
      * Set the file create mode.
-     * @ingroup file_driver_cntls
+     * @ingroup globus_xio_file_driver_cntls
      * Use this to set the permissions a non-existent file is created with,
      * The default mode is 0644.
      * 
@@ -158,14 +162,14 @@ typedef enum
      * 
      * @see globus_xio_file_mode_t
      *
-     * string opt: mode=<int>
+     * string opt: mode=<em>int</em>
      */
     /* int                              mode */
     GLOBUS_XIO_FILE_SET_MODE,
     
     /** GlobusVarArgEnum(attr)
      * Get the file create mode.
-     * @ingroup file_driver_cntls
+     * @ingroup globus_xio_file_driver_cntls
      * 
      * @param mode_out
      *      The current mode will be stored here.
@@ -175,7 +179,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Set the file open flags.
-     * @ingroup file_driver_cntls
+     * @ingroup globus_xio_file_driver_cntls
      * The default flags specify to create the file if it doesn't exist,
      * open it for reading and writing, and interpret it as a binary file.
      * 
@@ -184,14 +188,14 @@ typedef enum
      * 
      * @see globus_xio_file_flag_t
      *
-     * string opt: flags=<int>
+     * string opt: flags=<em>int</em>
      */
     /* int                              flags */
     GLOBUS_XIO_FILE_SET_FLAGS,
     
     /** GlobusVarArgEnum(attr)
      * Get the file open flags.
-     * @ingroup file_driver_cntls
+     * @ingroup globus_xio_file_driver_cntls
      * 
      * @param flags_out
      *      The current flags will be stored here.
@@ -201,7 +205,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Set the file truncate offset.
-     * @ingroup file_driver_cntls
+     * @ingroup globus_xio_file_driver_cntls
      * Use this in conjunction with the @ref GLOBUS_XIO_FILE_TRUNC flag
      * to truncate a file to a non-zero offset. If the file was larger
      * than offset bytes, the extra data is lost.  If the file was shorter or
@@ -216,7 +220,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Get the file truncate offset.
-     * @ingroup file_driver_cntls
+     * @ingroup globus_xio_file_driver_cntls
      * 
      * @param offset_out
      *      The offset will be stored here.
@@ -226,7 +230,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr)
      * Set the file handle to use.
-     * @ingroup file_driver_cntls
+     * @ingroup globus_xio_file_driver_cntls
      * Do not open a new file, use this preopened handle instead.
      * 
      * @param handle
@@ -238,7 +242,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr, handle)
      * Get the file handle in use or in attr.
-     * @ingroup file_driver_cntls
+     * @ingroup globus_xio_file_driver_cntls
      * 
      * @param handle_out
      *      The file handle (fd or HANDLE) will be stored here. If none is set,
@@ -250,7 +254,7 @@ typedef enum
     /** GlobusVarArgEnum(attr, handle)
      * Enable true blocking io when making globus_xio_read/write() calls.
      * Note: use with caution.  you can deadlock an entire app with this.
-     * @ingroup file_driver_cntls
+     * @ingroup globus_xio_file_driver_cntls
      * 
      * @param use_blocking_io
      *      If GLOBUS_TRUE, true blocking io will be enabled.
@@ -261,19 +265,19 @@ typedef enum
     
     /** GlobusVarArgEnum(attr, handle)
      * Get the blocking io status in use or in attr.
-     * @ingroup file_driver_cntls
+     * @ingroup globus_xio_file_driver_cntls
      * 
      * @param use_blocking_io_out
      *      The flag will be set here.  GLOBUS_TRUE for enabled.
      *
-     * string opt: blocking=<bool>
+     * string opt: blocking=<em>bool</em>
      */
     /* globus_bool_t *                  use_blocking_io_out */
     GLOBUS_XIO_FILE_GET_BLOCKING_IO,
     
     /** GlobusVarArgEnum(handle)
      * Reposition read/write file offset.
-     * @ingroup file_driver_cntls
+     * @ingroup globus_xio_file_driver_cntls
      * 
      * @param in_out_offset
      *      Specify the desired offset (according to whence).  On success,
@@ -292,7 +296,7 @@ typedef enum
 
 /**
  * File driver open flags
- * @ingroup file_driver_types
+ * @ingroup globus_xio_file_driver_types
  * @hideinitializer
  * OR together all the flags you want
  * @see GLOBUS_XIO_FILE_SET_FLAGS
@@ -326,7 +330,7 @@ typedef enum
 
 /**
  * File driver create mode
- * @ingroup file_driver_types
+ * @ingroup globus_xio_file_driver_types
  * @hideinitializer
  * OR these modes together to get the mode you want.
  * @see GLOBUS_XIO_FILE_SET_MODE
@@ -364,7 +368,7 @@ typedef enum
 
 /**
  * File driver seek options
- * @ingroup file_driver_types
+ * @ingroup globus_xio_file_driver_types
  * @hideinitializer
  * @see GLOBUS_XIO_FILE_SEEK
  */
@@ -378,4 +382,8 @@ typedef enum
     GLOBUS_XIO_FILE_SEEK_END            = SEEK_END
 } globus_xio_file_whence_t;
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* GLOBUS_XIO_FILE_DRIVER_H */

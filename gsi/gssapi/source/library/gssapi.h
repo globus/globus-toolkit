@@ -54,28 +54,47 @@
  */
 #include <stddef.h>
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
+extern "C" {
 #endif
 
-EXTERN_C_BEGIN
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
+/**
+ * @mainpage Globus GSSAPI
+ * @copydoc globus_gsi_gssapi
+ */
+#endif
+
+/**
+ * @defgroup globus_gsi_gssapi Globus GSSAPI
+ * @brief GSI Implementation Details
+ * @details
+ * The Globus GSI GSSAPI is an implementation of <a href="http://www.ietf.org/rfc/rfc2744.txt">GSS API C Bindings</a> using OpenSSL. This API documentation
+ * is intended to explain implementation-specific behavior of this GSSAPI
+ * implementation, as well as GSSAPI extensions.
+ *
+ * The API documentation is divided into sections covering:
+ * - @ref globus_gsi_gssapi 
+ * - @ref globus_gsi_gssapi_activation
+ * - @ref globus_gsi_gssapi_constants
+ * - @ref globus_gsi_gss_requested_context_flags
+ * - @ref globus_gsi_gss_returned_context_flags
+ * - @ref globus_gsi_gssapi_extensions
+ * - @ref globus_gsi_gssapi_extensions_delegation
+ */
 
 /**
  * @defgroup globus_gsi_gssapi_activation Activation
- *
+ * @brief Module Activation
+ * @ingroup globus_gsi_gssapi
+ * @details
  * Globus GSI GSSAPI uses standard Globus module activation and
  * deactivation. Before any Globus GSI GSSAPI functions are called,
  * the following function should be called:
  *
  * @code
- *      globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE)
- * @endcode
+        globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE)
+   @endcode
  *
  *
  * This function returns GLOBUS_SUCCESS if Globus GSI GSSAPI was
@@ -86,9 +105,9 @@ EXTERN_C_BEGIN
  *
  * To deactivate Globus GSI GSSAPI, the following function should be called:
  *
- * @code
- *    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE)
- * @endcode
+   @code
+      globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE)
+   @endcode
  *
  * This function should be called once for each time Globus GSI GSSAPI
  * was activated. 
@@ -225,8 +244,10 @@ typedef struct gss_channel_bindings_struct
  */
 
 /**
- * @defgroup globus_gsi_gss_requested_context_flags GSS Req Flags
- *
+ * @defgroup globus_gsi_gss_requested_context_flags Request Flags
+ * @brief Request Flags
+ * @ingroup globus_gsi_gssapi
+ * @details
  * These macros set the REQUESTED type of context - these should
  * be set (or not) in the context's req_flags (or
  * in the context's ret_flags if accept_sec_context is
@@ -234,93 +255,92 @@ typedef struct gss_channel_bindings_struct
  */
 
 /**
+ * @brief No limited proxy flag
  * @ingroup globus_gsi_gss_requested_context_flags
- */
-/* @{ */
-/**
+ * @hideinitializer
+ * @details
  * Set if you don't want a context to accept a limited proxy.
  * If this flag is set, and a limited proxy is received, 
  * the call will not be successful
  * and the context will not be set up
  */
 #define GSS_C_GLOBUS_DONT_ACCEPT_LIMITED_PROXY_FLAG 8192
-/* @} */
 
 /**
+ * @brief Delegate Limited Proxy Flag
  * @ingroup globus_gsi_gss_requested_context_flags
- */
-/* @{ */
-/**
- * Set if you wan the delegated proxy to be a limited proxy
+ * @hideinitializer
+ * @details
+ * Set if you want the delegated proxy to be a limited proxy
  */
 #define GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG    4096
-/* @} */
 
 /**
+ * @brief Accept Proxy Signed By Limited Proxy Flag
  * @ingroup globus_gsi_gss_requested_context_flags
- */
-/* @{ */
-/**
+ * @hideinitializer
+ * @details
  * Set if you want to accept proxies signed by limited proxies
  * @deprecated We now accept proxies signed by limited proxies if
  * they are limited or independent.
  */
 #define GSS_C_GLOBUS_ACCEPT_PROXY_SIGNED_BY_LIMITED_PROXY_FLAG 32768
-/* @} */
  
 /**
+ * @brief Allow Missing Signing Policy Flag
  * @ingroup globus_gsi_gss_requested_context_flags
- */
-/* @{ */
-/**
+ * @hideinitializer
+ * @details
  * Set if you want to allow CA certs without a signing policy to verify.
  */
 #define GSS_C_GLOBUS_ALLOW_MISSING_SIGNING_POLICY 65536
-/* @} */
 
 /**
+ * @brief Force SSLv3 Flag
  * @ingroup globus_gsi_gss_requested_context_flags
- */
-/* @{ */
-/**
+ * @hideinitializer
+ * @details
  * Set if you want to force SSLv3 instead of negotiating TLSv1 or SSLv3
  */
 #define GSS_C_GLOBUS_FORCE_SSL3 131072
-/* @} */
 
 /**
- * @defgroup globus_gsi_gss_returned_context_flags GSS Ret Flags
- *
+ * @defgroup globus_gsi_gss_returned_context_flags Return Flags
+ * @brief Return Flags
+ * @ingroup globus_gsi_gssapi
+ * @details
  * These macros set the RETURNED context type - these will be
  * be set (or not) in the context's ret_flags
  */
 
 /**
+ * @brief Received Limited Proxy Flag
  * @ingroup globus_gsi_gss_returned_context_flags
- */
-/* @{ */
-/**
+ * @hideinitializer
+ * @details
  * If the proxy received is a limited proxy, this flag will be
  * set in the returned context flags (ret_flags)
  */
 #define GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_FLAG    8192
-/* @} */
 
 /**
+ * @brief Received Limited Proxy During Delegation Flag
  * @ingroup globus_gsi_gss_returned_context_flags
- */
-/* @{ */
-/**
+ * @hideinitializer
+ * @details
  * If the proxy received is a limited proxy received during
  * delegation, this flag is set in the returned flags
  */
 #define GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_DURING_DELEGATION_FLAG 4096
-/* @} */
 
 #define GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG  4096
 #define GSS_C_GLOBUS_LIMITED_PROXY_FLAG        8192
 #define GSS_C_GLOBUS_SSL_COMPATIBLE           16384
 /**
+ * @brief Limited Proxy Many Flag
+ * @ingroup globus_gsi_gss_returned_context_flags
+ * @hideinitializer
+ * @details
  * @deprecated We now accept proxies signed by limited proxies if
  * they are limited or independent.
  */
@@ -935,13 +955,27 @@ GSS_CALLCONV GSS_FUNC(gss_unseal)
 
 #ifndef USE_ONLY_STANDARD_GSSAPI
 #define _HAVE_GSI_EXTENDED_GSSAPI 
-/* 
- * Additional experimental GSSAPI routines are defined here.
+
+/**
+ * @defgroup globus_gsi_gssapi_extensions GSSAPI Extensions
+ * @brief extensions
+ * @ingroup globus_gsi_gssapi 
+ * @details
+ * Experimental GSSAPI routines are defined here.
  * These may change, and we will be looking at adding
- * these to Kerberos as mods, and submitting them to the IETF
+ * these to Kerberos as mods, and submitting them to the IETF. 
+ * 
+ * These extensions are more fully documented in <a href="http://www.ggf.org/documents/GFD.24.pdf">GSS-API Extensions</a>
  */
 
-
+/**
+ * @defgroup globus_gsi_gssapi_extensions_delegation Delegation
+ * @ingroup globus_gsi_gssapi_extensions
+ * @brief Delegation Functions
+ * @details
+ * Functions in this section allow delegation to occur outside of
+ * the context initiation handshake.
+ */
 typedef struct gss_buffer_set_desc_struct
 {
     size_t                              count;
@@ -1062,7 +1096,9 @@ extern const gss_OID_desc * const GSS_APPLICATION_WILL_HANDLE_EXTENSIONS;
 
 #endif /* GSI_EXTENDED_GSSAPI */
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GSSAPI_H_ */
 

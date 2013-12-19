@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_ftp_client_throughput_nl_plugin.c GridFTP Netlogger Throughput Plugin
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- * $Author$
  */
 
 #include "globus_ftp_client_throughput_nl_plugin.h"
@@ -264,8 +258,6 @@ throughput_plugin_user_destroy_cb(
 
     globus_free(info);
 }
-
-#endif  /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
  * Initialize netlogger wrapped throughput plugin

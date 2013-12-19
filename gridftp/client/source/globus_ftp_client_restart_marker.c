@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_ftp_client_restart_marker.c
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
-#endif
 
 #include "globus_i_ftp_client.h"
 #include <string.h>
@@ -450,7 +444,6 @@ globus_ftp_client_restart_marker_set_offset(
  *
  * @return
  *        - Error on NULL marker or total bytes
- *        - <possible return>
  */
 globus_result_t
 globus_ftp_client_restart_marker_get_total(

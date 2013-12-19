@@ -14,29 +14,13 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-globus_common_paths.c
-
-Description:
-
-    Install and deploy path discovery functions
-
-CVS Information:
-
-  $Source$
-  $Date$
-  $Revision$
-  $State$
-  $Author$
-******************************************************************************/
+/** @file globus_common_paths.c Install and deploy path discovery functions */
 
 #include "config.h"
 #include "globus_common.h"
 #include "globus_l_common_paths.h"
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
 /******************************************************************************
                            ERROR object declaration
@@ -109,7 +93,7 @@ globus_l_common_env_path( char** bufp, char* name )
     char *   p;
 
     *bufp = GLOBUS_NULL;
-    p = globus_libc_getenv(name);
+    p = getenv(name);
     if (!p || strlen(p)==0)
     {
 	globus_libc_sprintf(errmsg,_GCSL("Environment variable %s is not set"), name);
@@ -194,7 +178,7 @@ globus_eval_path(const char * pathstring, char **bufp)
     tmp = strdup(pathstring);
     while (tmp != NULL && strchr(tmp, '$') != 0)
     {
-        char * end;
+        char * end = NULL;
         if ((newtmp = strstr(tmp, "${")) != NULL)
         {
             *newtmp = 0;
@@ -213,7 +197,7 @@ globus_eval_path(const char * pathstring, char **bufp)
         {
             if (strcmp(newtmp, globus_l_common_path_lookup_table[i].name) == 0)
             {
-                newtmp = malloc(strlen(tmp) + strlen(globus_l_common_path_lookup_table[i].path) + strlen(end+1) + 1);
+                newtmp = malloc(strlen(tmp) + strlen(globus_l_common_path_lookup_table[i].path) + (end ? strlen(end+1):0) + 1);
                 if (newtmp == NULL)
                 {
                     free(tmp);
@@ -222,7 +206,7 @@ globus_eval_path(const char * pathstring, char **bufp)
                 else
                 {
                     sprintf(newtmp, "%s%s%s",
-                        tmp, globus_l_common_path_lookup_table[i].path, end+1);
+                        tmp, globus_l_common_path_lookup_table[i].path, end?end+1:"");
                     free(tmp);
                     tmp = newtmp;
                 }
