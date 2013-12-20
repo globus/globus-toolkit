@@ -210,6 +210,7 @@ main(int argc, char *argv[])
     basic_test_count = 0;
     ctr = 1;
 
+    printf("1..7\n");
     verbose_printf(0, "==================================\n");
     verbose_printf(0, "   Starting poll tests pass %d\n", ctr);
     verbose_printf(0, "==================================\n");

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
+#include "globus_common.h"
+#include "globus_test_tap.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include "globus_common.h"
-
 
 const char * oneline_usage
     = "globus_args_test [-foo] [-replicate file N] [-host hn] [-file file]";
@@ -37,11 +38,11 @@ const char * long_usage
 #define np_id    4
 #define file_id  5
 
-static char *  foo_aliases[]  = { "-foo", GLOBUS_NULL };
-static char *  np_aliases[]   = { "-np", GLOBUS_NULL };
-static char *  file_aliases[] = { "-file", "-f", GLOBUS_NULL };
-static char *  rep_aliases[]  = { "-replicate", "-rep", "-r", GLOBUS_NULL };
-static char *  hn_aliases[]   = { "-host", "-hn", "-h", GLOBUS_NULL };
+static char *  foo_aliases[]  = { "-foo", NULL };
+static char *  np_aliases[]   = { "-np", NULL };
+static char *  file_aliases[] = { "-file", "-f", NULL };
+static char *  rep_aliases[]  = { "-replicate", "-rep", "-r", NULL };
+static char *  hn_aliases[]   = { "-host", "-hn", "-h", NULL };
 
 
 static int validate_filename_parms
@@ -77,10 +78,10 @@ static globus_args_valid_predicate_t hn_checks[]
     = { test_hostname };
 
 static globus_args_option_descriptor_t option_list[]
-    = { {foo_id,  foo_aliases,  0, GLOBUS_NULL, GLOBUS_NULL} ,
+    = { {foo_id,  foo_aliases,  0, NULL, NULL} ,
         {np_id,   np_aliases,   1, np_checks,   np_check_parms} ,
         {rep_id,  rep_aliases,  2, rep_checks,  rep_check_parms} ,
-        {hn_id,   hn_aliases,   1, hn_checks,   GLOBUS_NULL} ,
+        {hn_id,   hn_aliases,   1, hn_checks,   NULL} ,
         {file_id, file_aliases, 1, file_checks, file_check_parms} };
 
 
@@ -109,47 +110,73 @@ do_test( char *argv[] )
     int                              n_options;
     int                              err;
     int                              i;
+    globus_bool_t                    at_newline;
 
     for (argc=0; argv[argc]; argc++)
 	;
 
     n_options = sizeof(option_list)/sizeof(globus_args_option_descriptor_t);
 
-    error_msg = GLOBUS_NULL;
+    error_msg = NULL;
+    printf("    Calling globus_args_scan with: ");
+    for (int p = 0; p < argc; p++)
+    {
+        printf("%s ", argv[p]);
+    }
+    printf("\n");
     err = globus_args_scan( &argc,
 			    &argv,
 			    n_options,
 			    option_list,
 			    "footest",
-			    GLOBUS_NULL,
+			    NULL,
 			    oneline_usage,
 			    long_usage,
 			    &options_found,
-			    GLOBUS_NULL    );
+			    &error_msg    );
 
-    printf("globus_args_scan returned %d\n", err);
+    printf("    globus_args_scan returned %d\n", err);
+    at_newline = GLOBUS_TRUE;
 
     if (error_msg)
-        printf("%s", error_msg);
+    {
+        for (int p = 0; error_msg[p]; p++)
+        {
+            if (at_newline)
+            {
+                printf("    ");
+                at_newline = GLOBUS_FALSE;
+            }
+            if (error_msg[p] != '\n')
+            {
+                putchar(error_msg[p]);
+            }
+            else
+            {
+                printf("\n");
+                at_newline = 1;
+            }
+        }
+    }
     else
-	printf("error_msg = null\n");
+	printf("    error_msg = null\n");
 
     if (err >= 0)
     {
-        printf("after args_scan : argc = %d\n", argc);
+        printf("    after args_scan : argc = %d\n", argc);
         for (i=0; i<argc; i++)
-            printf("\targv[%2d] = [%s]\n", i, (argv[i]) ? argv[i] : "NULL" );
+            printf("    \targv[%2d] = [%s]\n", i, (argv[i]) ? argv[i] : "NULL" );
 
-	printf("option list : \n");
+	printf("    option list : \n");
 
 	for (list = options_found;
 	     !globus_list_empty(list);
 	     list = globus_list_rest(list))
 	{
 	    option = globus_list_first(list);
-	    printf("\tid=%d arity=%d\n", option->id_number, option->arity);
+	    printf("    \tid=%d arity=%d\n", option->id_number, option->arity);
 	    for (i=0; i<option->arity; i++)
-		printf("\t\tval[%2d] = [%s]\n", i,
+		printf("    \t\tval[%2d] = [%s]\n", i,
 		       (option->values[i]) ? option->values[i] : "NULL" );
 	}
 
@@ -161,43 +188,43 @@ do_test( char *argv[] )
 
 
 static char * test1[] = { 
-    "globus_args_test", "-foo", GLOBUS_NULL };    /* ok */
+    "globus_args_test", "-foo", NULL };    /* ok */
 
 static char * test2[] = {
-    "globus_args_test", "-file", "globus_common_args_test", GLOBUS_NULL };   /* ok */
+    "globus_args_test", "-file", "Makefile", NULL };   /* ok */
 
 static char * test3[] = {
-    "globus_args_test", "-rep", "globus_common_args_test", "3", GLOBUS_NULL };   /* ok */
+    "globus_args_test", "-rep", "Makefile", "3", NULL };   /* ok */
 
 static char * test4[] = {
-    "globus_args_test", "-np", "12", GLOBUS_NULL };   /* ok */
+    "globus_args_test", "-np", "12", NULL };   /* ok */
 
 static char * testhexok[] = {
-    "globus_args_test", "-np", "0x2F", GLOBUS_NULL };  /* ok */
+    "globus_args_test", "-np", "0x2F", NULL };  /* ok */
 
 static char * testhexmax[] = {
-    "globus_args_test", "-np", "0xAB", GLOBUS_NULL };  /* fail */
+    "globus_args_test", "-np", "0xAB", NULL };  /* fail */
 
 static char * testoctok[] = {
-    "globus_args_test", "-np", "077", GLOBUS_NULL };  /* ok */
+    "globus_args_test", "-np", "077", NULL };  /* ok */
 
 static char * testoctmax[] = {
-    "globus_args_test", "-np", "0101", GLOBUS_NULL };  /* fail */
+    "globus_args_test", "-np", "0101", NULL };  /* fail */
 
 static char * test7[] = {
-    "globus_args_test", "-np", "-1", GLOBUS_NULL };  /* fail */
+    "globus_args_test", "-np", "-1", NULL };  /* fail */
 
 static char * test8[] = {
-    "globus_args_test", "-np", "65", GLOBUS_NULL };  /* fail */
+    "globus_args_test", "-np", "65", NULL };  /* fail */
 
 static char * test9[] = {
-    "globus_args_test", "-file", "does/not/exist", GLOBUS_NULL };  /* fail */
+    "globus_args_test", "-file", "does/not/exist", NULL };  /* fail */
 
 static char * testhnok[] = {
-    "globus_args_test", "-hn", "www.globus.org", GLOBUS_NULL }; /*ok*/
+    "globus_args_test", "-hn", "www.globus.org", NULL }; /*ok*/
 
 static char * testhnfail[] = {
-    "globus_args_test", "-hn", "smutt.mqs.anl.gov", GLOBUS_NULL }; /*fail*/
+    "globus_args_test", "-hn", "smutt.mqs.anl.gov", NULL }; /*fail*/
 
 
 int
@@ -205,28 +232,24 @@ main(int argc, char *argv[])
 {
     int i = 1;
 
-    #define xxx(q) printf("test %d returned %d\n", i++, do_test(q) );
-
     globus_module_activate(GLOBUS_COMMON_MODULE);
 
-    xxx(test1);
-    xxx(test2);
-    xxx(test3);
-    xxx(test4);
-    xxx(testhexok);
-    xxx(testhexmax);
-    xxx(testoctok);
-    xxx(testoctmax);
-    xxx(test7);
-    xxx(test8);
-    xxx(test9);
-    xxx(testhnok);
-    xxx(testhnfail);
+    printf("1..13\n");
+    ok(do_test(test1) == 1, "test1");
+    ok(do_test(test2) == 1, "test2");
+    ok(do_test(test3) == 1, "test3");
+    ok(do_test(test4) == 1, "test4");
+    ok(do_test(testhexok) == 1, "testhexok");
+    ok(do_test(testhexmax) < 0, "testhexmax");
+    ok(do_test(testoctok) == 1, "testoctok");
+    ok(do_test(testoctmax) < 0, "testoctmax");
+    ok(do_test(test7) < 0, "test7");
+    ok(do_test(test8) < 0, "test8");
+    ok(do_test(test9) < 0, "test9");
+    ok(do_test(testhnok) == 1, "testhnok");
+    ok(do_test(testhnfail) < 0, "testhnfail");
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
-    return 0;
+    return TEST_EXIT_CODE;
 }
-
-
-
