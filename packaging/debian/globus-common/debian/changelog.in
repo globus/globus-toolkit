@@ -1,8 +1,8 @@
-globus-common (14.10-2) unstable; urgency=low
+globus-common (15.0-1+gt6-@distro@) @distro@; urgency=low
 
-  * Bump globus-version to 5.2.5
+  * First build of version from GT6 branch
 
- -- Globus Toolkit <support@globus.org>  Wed, 23 October 2013 09:02:11 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 19 December 2013 21:44:50 -0400
 
 globus-common (14.10-1) unstable; urgency=low
 

@@ -12,29 +12,24 @@ endif
 include /usr/share/quilt/quilt.make
 
 name = globus-common
-_name = globus_common
-version = 14.10
+version = 15.0
 soname = 0
-toolkit_version = 5.2.5
+toolkit_version = 5.3.1
 
 INSTALLDIR = $(CURDIR)/debian/tmp
-GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 _prefix = /usr
 _bindir = $(_prefix)/bin
 _sbindir = $(_prefix)/sbin
-_libdir = $(_prefix)/lib
+_includedir = $(_prefix)/include
+_libdir = $(_prefix)/lib/$(DEB_HOST_MULTIARCH)
 _datadir = $(_prefix)/share
 _mandir = $(_datadir)/man
 _docdir = $(_datadir)/doc
+perl_vendorlib = $(shell eval "`perl -V:installvendorlib`"; echo $$installvendorlib)
 
 DEB_BUILD_ARCH_CPU ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_CPU)
-
-ifneq (,$(filter $(DEB_HOST_ARCH_CPU), amd64 alpha ia64 s390x ppc64 sparc64))
-flavor = gcc64
-else
-flavor = gcc32
-endif
 
 sed: sed-stamp
 	:
@@ -55,7 +50,7 @@ configure: configure-stamp
 configure-stamp: sed-stamp
 	dh_testdir
 
-	/usr/share/globus/globus-bootstrap.sh
+	autoreconf -if
 
 	for f in config.sub config.guess ; do \
 	  if [ -e /usr/share/misc/$$f -a ! -e $$f.dist ] ; then \
@@ -63,17 +58,17 @@ configure-stamp: sed-stamp
 	    cp -f /usr/share/misc/$$f $$f ; \
 	  fi ; \
 	done
-
 	GLOBUS_VERSION=$(toolkit_version) ./configure \
-	   --host=$(DEB_HOST_GNU_TYPE) \
-	   --build=$(DEB_BUILD_GNU_TYPE) \
+ 	   --host=$(DEB_HOST_GNU_TYPE) \
 	   --prefix=$(_prefix) \
-	   --mandir='$${datadir}/man' \
-	   --infodir='$${datadir}/info' \
-	   --with-flavor=$(flavor) \
+	   --build=$(DEB_BUILD_GNU_TYPE) \
+	   --docdir='$(_docdir)/lib$(name)-dev' \
+	   --includedir='$(_includedir)/globus' \
+	   --datadir='$(_datadir)/globus' \
+	   --libdir='$(_libdir)' \
+	   --libexecdir='$(_datadir)/globus' \
+	   --with-perlmoduledir=$(perl_vendorlib) \
 	   --disable-static \
-	   --docdir='$(_docdir)/$(name)' \
-	   --enable-doxygen \
 	   --with-backward-compatibility-hack
 
 	touch $@
@@ -85,6 +80,9 @@ build-stamp: configure-stamp
 	dh_testdir
 
 	$(MAKE)
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	$(MAKE) check
+endif
 
 	touch $@
 
@@ -111,14 +109,10 @@ cleanup:
 	rm -f configure
 	rm -f config.guess
 	rm -f config.sub
+	rm -f depcomp
 	rm -f ltmain.sh
 	rm -f mkinstalldirs
 
-	rm -f doxygen/Doxyfile*
-	rm -f doxygen/Makefile.am
-	rm -f pkgdata/Makefile.am
-	rm -f pkgdata/*.filelist
-	rm -f pkgdata/*.gpt
 	rm -f globus_automake*
 	rm -rf autom4te.cache
 
@@ -147,43 +141,9 @@ install: build-stamp
 	chmod -x $(INSTALLDIR)$(_datadir)/globus/globus-script-initializer
 	chmod -x $(INSTALLDIR)$(_datadir)/globus/globus-sh-tools.sh
 
-	# Move globus-makefile-header to dev package
-	grep globus-makefile-header \
-	  $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_pgm.filelist \
-	  >> $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist
-	sed /globus-makefile-header/d \
-	  -i $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_pgm.filelist
-
-	# Don't use /usr/bin/env
-	sed 's!/usr/bin/env perl!/usr/bin/perl!' \
-	  -i $(INSTALLDIR)$(_bindir)/globus-makefile-header
-
-	# Move documentation to default debian location
-	mv $(INSTALLDIR)$(_docdir)/$(name) \
-	  $(INSTALLDIR)$(_docdir)/lib$(name)-dev
-	sed s!doc/$(name)!doc/lib$(name)-dev! \
-	  -i $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_doc.filelist
-
-	# Remove deprecated.3 man page (too common name)
-	rm -f $(INSTALLDIR)$(_mandir)/man3/deprecated.3
-	sed /deprecated\.3/d \
-	  -i $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_doc.filelist
-
 	# Remove .la files
 	rm -f $(INSTALLDIR)/$(_libdir)/lib*.la
-	sed /lib.*\.la/d \
-	  -i $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist
-
-	# Generate package filelists
-	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_rtl.filelist \
-	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)$(soname).install
-	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_pgm.filelist \
-	    $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
-	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name)-progs.install
-	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist \
-	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)-dev.install
-	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_doc.filelist \
-	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)-doc.install
+	rm -f $(INSTALLDIR)/$(_docdir)/lib$(name)-dev/html/installdox
 
 	# Touch ghost files
 	touch $(INSTALLDIR)$(_datadir)/globus/globus-sh-tools-vars.sh
@@ -191,8 +151,23 @@ install: build-stamp
 	echo debian/tmp$(_datadir)/globus/globus-sh-tools-vars.sh \
 	  >> debian/$(name)-progs.install
 
-	echo debian/tmp$(_libdir)/pkgconfig/$(name).pc \
-	  >> debian/lib$(name)-dev.install
+	ls -1 debian/tmp$(perl_vendorlib)/Globus/Core/*.pm \
+	  debian/tmp$(_libdir)/libglobus*.so.* \
+	  > debian/lib$(name)$(soname).install
+	ls -1 debian/tmp$(_includedir)/globus/*.h \
+	  debian/tmp$(_libdir)/*.so \
+	  debian/tmp$(_libdir)/pkgconfig/*.pc \
+	  > debian/lib$(name)-dev.install
+	ls -1 debian/tmp$(_bindir)/* \
+	  debian/tmp$(_sbindir)/* \
+	  debian/tmp$(_datadir)/globus/* \
+	  debian/tmp/$(_mandir)/man1/* \
+	  > debian/$(name)-progs.install
+	ls -1 debian/tmp$(_docdir)/lib$(name)-dev/html/*.* \
+	  debian/tmp$(_docdir)/lib$(name)-dev/html/*/* \
+	  debian/tmp/$(_mandir)/man3/* \
+	  debian/tmp$(_docdir)/lib$(name)-dev/GLOBUS_LICENSE \
+	  > debian/lib$(name)-doc.install
 
 binary-indep:
 	:
