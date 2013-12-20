@@ -54,8 +54,8 @@ configure-stamp: sed-stamp
 
 	for f in config.sub config.guess ; do \
 	  if [ -e /usr/share/misc/$$f -a ! -e $$f.dist ] ; then \
-	    mv $$f $$f.dist ; \
-	    cp -f /usr/share/misc/$$f $$f ; \
+	    mv build-aux/$$f $$f.dist ; \
+	    cp -f /usr/share/misc/$$f build-aux/$$f ; \
 	  fi ; \
 	done
 	GLOBUS_VERSION=$(toolkit_version) ./configure \
@@ -99,7 +99,7 @@ cleanup:
 
 	for f in config.sub config.guess ; do \
 	  if [ -e $$f.dist ] ; then \
-	    mv -f $$f.dist $$f ; \
+	    mv -f $$f.dist build-aux/$$f ; \
 	  fi ; \
 	done
 
@@ -107,8 +107,6 @@ cleanup:
 
 	rm -f aclocal.m4
 	rm -f configure
-	rm -f config.guess
-	rm -f config.sub
 	rm -f depcomp
 	rm -f ltmain.sh
 	rm -f mkinstalldirs
