@@ -1,5 +1,12 @@
 globus-common (15.0-1+gt6.@distro@) @distro@; urgency=low
 
+  * Fix issue with test output
+  * Explicitly check for c99 features
+
+ -- Globus Toolkit <support@globus.org>  Fri, 20 December 2013 14:43:55 -0500
+
+globus-common (15.0-1+gt6.@distro@) @distro@; urgency=low
+
   * First build of version from GT6 branch
 
  -- Globus Toolkit <support@globus.org>  Thu, 19 December 2013 21:44:50 -0400

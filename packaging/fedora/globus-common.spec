@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.0
+Version:	15.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
@@ -201,6 +201,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Dec 20 2013 Globus Toolkit <support@globus.org> - 15.1-1
+- Fix issue with test output
+- Explicitly check for c99 features
+
 * Thu Dec 19 2013 Globus Toolkit <support@globus.org> - 15.0-1
 - GT 6 branch: GPT-free builds
 
