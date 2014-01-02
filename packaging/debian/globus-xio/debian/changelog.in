@@ -1,3 +1,9 @@
+globus-xio (4.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Remove GPT
+
+ -- Globus Toolkit <support@globus.org>  Fri, 13 Dec 2013 13:41:08 -0600
+
 globus-xio (3.8-1) unstable; urgency=low
 
   * Fix hang on large GETs
