@@ -1,3 +1,9 @@
+globus-common (15.1-2+gt6.@distro@) @distro@; urgency=low
+
+  * Remove -dev dependency on globus-core
+
+ -- Globus Toolkit <support@globus.org>  Thu, 02 January 2014 14:31:30 -0500
+
 globus-common (15.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix issue with test output

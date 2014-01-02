@@ -40,7 +40,7 @@ Description: Globus Toolkit - Common Library Programs
 Package: libglobus-common-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-common0 (= ${binary:Version}), ${misc:Depends}, globus-core (>= 7), globus-common-progs (= ${binary:Version}), ${perl:Depends}
+Depends: libglobus-common0 (= ${binary:Version}), ${misc:Depends}, globus-common-progs (= ${binary:Version}), ${perl:Depends}
 Recommends: libglobus-common-doc (= ${binary:Version})
 Description: Globus Toolkit - Common Library Development Files
  The Globus Toolkit is an open source software toolkit used for
