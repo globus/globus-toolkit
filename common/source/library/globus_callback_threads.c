@@ -16,6 +16,7 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
+#include "config.h"
 #include "globus_common_include.h"
 #include "globus_i_callback.h"
 #include "globus_thread_common.h"

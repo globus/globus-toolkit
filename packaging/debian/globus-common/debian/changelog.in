@@ -1,3 +1,9 @@
+globus-common (15.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix missing include of config.h in some .c files
+
+ -- Globus Toolkit <support@globus.org>  Mon, 06 January 2014 12:58:35 -0500
+
 globus-common (15.1-2+gt6.@distro@) @distro@; urgency=low
 
   * Remove -dev dependency on globus-core

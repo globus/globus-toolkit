@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "config.h"
 #include "globus_common_include.h"
 #include "globus_libc.h"
 #ifdef WIN32
