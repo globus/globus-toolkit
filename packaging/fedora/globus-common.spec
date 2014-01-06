@@ -201,7 +201,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
-* Mon Jan 06 2013 Globus Toolkit <support@globus.org> - 15.2-1
+* Mon Jan 06 2014 Globus Toolkit <support@globus.org> - 15.2-1
 - fix missing include of config.h in some .c files
 
 * Fri Dec 20 2013 Globus Toolkit <support@globus.org> - 15.1-1
