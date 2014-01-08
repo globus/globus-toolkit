@@ -70,7 +70,7 @@ def public_name():
     """
     Try to guess the public host name of this machine. If this is
     on a machine which is able to access ec2 metadata, it will use
-    that; otherwise platform.node()
+    that; otherwise socket.getfqdn()
     """
     url = 'http://169.254.169.254/latest/meta-data/public-hostname'
     value = None
@@ -84,7 +84,7 @@ def public_name():
         value = None
 
     if value is None:
-        value = platform.node()
+        value = socket.getfqdn()
     return value
 
 def public_ip():
@@ -147,7 +147,7 @@ def is_local_service(name):
 
     if '.' in name:
         name = name.split('.')[0]
-    node = platform.node()
+    node = socket.getfqdn()
     if '.' in node:
         node = node.split('.')[0]
 
@@ -291,6 +291,8 @@ class GCMU(object):
         self.api = api
         self.service = None
         self.cilogon_cas = ['cilogon-basic', 'cilogon-silver']
+        self.__myproxy_dn = None
+        self.__myproxy_ca_dn = None
 
         default_dir = os.path.join(self.conf.root, self.conf.DEFAULT_DIR)
         if not os.path.exists(default_dir):
@@ -662,36 +664,73 @@ class GCMU(object):
 
     def get_myproxy_dn_from_server(self):
         self.logger.debug("ENTER: get_myproxy_dn_from_server()")
-        
-        server_dn = None
-        self.logger.debug("fetching myproxy dn from server")
-        temppath = tempfile.mkdtemp()
 
-        pipe_env = copy.deepcopy(os.environ)
-        # If we have valid credential, myproxy will try to use it, but,
-        # if the server doesn't trust it there are some errors.
-        #
-        # We'll make that impossible by setting some environment
-        # variables
-        pipe_env['X509_CERT_DIR'] = temppath
-        pipe_env['X509_USER_CERT'] = ""
-        pipe_env['X509_USER_KEY'] = ""
-        pipe_env['X509_USER_PROXY'] = ""
+        if self.__myproxy_dn is None:
+            server_dn = None
+            self.logger.debug("fetching myproxy dn from server")
+            temppath = tempfile.mkdtemp()
 
-        args = [ 'myproxy-get-trustroots', '-b', '-s',
-                self.conf.get_myproxy_server() ]
-        myproxy_bootstrap = Popen(args, stdout=PIPE, stderr=PIPE, 
-            env=pipe_env)
-        (out, err) = myproxy_bootstrap.communicate()
-        server_dn_match = re.search("MYPROXY_SERVER_DN=\"([^\"]*)\"", err)
-        if server_dn_match is not None:
-            server_dn = server_dn_match.groups()[0]
+            pipe_env = copy.deepcopy(os.environ)
+            # If we have valid credential, myproxy will try to use it, but,
+            # if the server doesn't trust it there are some errors.
+            #
+            # We'll make that impossible by setting some environment
+            # variables
+            pipe_env['X509_CERT_DIR'] = temppath
+            pipe_env['X509_USER_CERT'] = ""
+            pipe_env['X509_USER_KEY'] = ""
+            pipe_env['X509_USER_PROXY'] = ""
 
-        shutil.rmtree(temppath, ignore_errors=True)
-        self.logger.debug("MyProxy DN is " + str(server_dn))
+            args = [ 'myproxy-get-trustroots', '-b', '-s',
+                    self.conf.get_myproxy_server() ]
+            myproxy_bootstrap = Popen(args, stdout=PIPE, stderr=PIPE, 
+                env=pipe_env)
+            (out, err) = myproxy_bootstrap.communicate()
+            server_dn_match = re.search("New trusted MyProxy server: (.*)", err)
+            if server_dn_match is not None:
+                server_dn = server_dn_match.groups()[0]
+            else:
+                server_dn_match = re.search("MYPROXY_SERVER_DN=\"([^\"]*)\"", err)
+                if server_dn_match is not None:
+                    server_dn = server_dn_match.groups()[0]
+            shutil.rmtree(temppath, ignore_errors=True)
+            self.logger.debug("MyProxy DN is " + str(server_dn))
+            self.__myproxy_dn = server_dn
         self.logger.debug("EXIT: get_myproxy_dn_from_server()")
+        return self.__myproxy_dn
 
-        return server_dn
+    def get_myproxy_ca_dn_from_server(self):
+        self.logger.debug("ENTER: get_myproxy_ca_dn_from_server()")
+
+        if self.__myproxy_ca_dn is None:
+            server_dn = None
+            self.logger.debug("fetching myproxy ca dn from server")
+            temppath = tempfile.mkdtemp()
+
+            pipe_env = copy.deepcopy(os.environ)
+            # If we have valid credential, myproxy will try to use it, but,
+            # if the server doesn't trust it there are some errors.
+            #
+            # We'll make that impossible by setting some environment
+            # variables
+            pipe_env['X509_CERT_DIR'] = temppath
+            pipe_env['X509_USER_CERT'] = ""
+            pipe_env['X509_USER_KEY'] = ""
+            pipe_env['X509_USER_PROXY'] = ""
+
+            args = [ 'myproxy-get-trustroots', '-b', '-s',
+                    self.conf.get_myproxy_server() ]
+            myproxy_bootstrap = Popen(args, stdout=PIPE, stderr=PIPE, 
+                env=pipe_env)
+            (out, err) = myproxy_bootstrap.communicate()
+            server_dn_match = re.search(r"New trusted CA \(([0-9a-f\.]*)\): (.*)", err)
+            if server_dn_match is not None:
+                server_dn = server_dn_match.groups()[1]
+            shutil.rmtree(temppath, ignore_errors=True)
+            self.logger.debug("MyProxy CA DN is " + str(server_dn))
+            self.__myproxy_ca_dn = server_dn
+        self.logger.debug("EXIT: get_myproxy_ca_dn_from_server()")
+        return self.__myproxy_ca_dn
 
     def disable(self, **kwargs):
         service_disable = None
