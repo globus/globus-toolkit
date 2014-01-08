@@ -1,5 +1,5 @@
 Name:           globus-connect-server
-Version:        3.0.2
+Version:        3.0.3
 Release:        1%{?dist}
 Summary:        Globus Connect Server
 %global _name %(tr - _ <<< %{name})
@@ -209,6 +209,10 @@ if [ -f %{_sysconfdir}/globus-connect-multiuser.conf ]; then
 fi
 
 %changelog
+* Wed Jan 08 2014 Globus Toolkit <support@globus.org> 3.0.3-1
+- ticket #301682: fix fully qualified domain name on ubuntu
+- ticket #301799: fix error determining dn for existing myproxy server
+
 * Mon Nov 18 2013 Globus Toolkit <support@globus.org> 3.0.2-1
 - Rename Globus Online to Globus
 

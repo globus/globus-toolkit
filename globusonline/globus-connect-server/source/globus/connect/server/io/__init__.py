@@ -321,18 +321,19 @@ server
             myproxy_signing_policy = None
             myproxy_ca_dn = self.conf.get_myproxy_ca_subject_dn()
             myproxy_server = self.conf.get_myproxy_server()
-            if myproxy_ca_dn is None and \
-                    myproxy_server is not None and \
-                    self.is_local_myproxy():
-                myproxy_ca_dir = self.conf.get_myproxy_ca_directory()
-                myproxy_ca_dn = security.get_certificate_subject(
-                        os.path.join(myproxy_ca_dir, "cacert.pem"))
-            else:
-                # Assume the CA name is the same as the MyProxy server's
-                # subject
-                myproxy_ca_dn = self.conf.get_myproxy_dn()
+            if myproxy_ca_dn is None and myproxy_server is not None:
+                if self.is_local_myproxy():
+                    myproxy_ca_dir = self.conf.get_myproxy_ca_directory()
+                    myproxy_ca_dn = security.get_certificate_subject(
+                            os.path.join(myproxy_ca_dir, "cacert.pem"))
+                else:
+                    myproxy_ca_dn = self.get_myproxy_ca_dn_from_server()
                 if myproxy_ca_dn is None:
-                    myproxy_ca_dn = self.get_myproxy_dn_from_server()
+                    # Assume the CA name is the same as the MyProxy server's
+                    # subject
+                    myproxy_ca_dn = self.conf.get_myproxy_dn()
+                    if myproxy_ca_dn is None:
+                        myproxy_ca_dn = self.get_myproxy_dn_from_server()
 
             cadir = self.conf.get_security_trusted_certificate_directory()
             self.logger.debug("MyProxy CA DN is " + str(myproxy_ca_dn))
