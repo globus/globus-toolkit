@@ -1,3 +1,15 @@
+globus-connect-server (3.0.2-1) unstable; urgency=low
+
+  * Rename Globus Online to Globus
+
+ -- Globus Toolkit <support@globus.org>  Mon, 18 November 2013 12:18:45 -0500
+
+globus-connect-server (3.0.1-1) unstable; urgency=low
+
+  * Add support for gridmap instead of cilogon/myproxy callout
+
+ -- Globus Toolkit <support@globus.org>  Mon, 11 November 2013 13:34:17 -0500
+
 globus-connect-server (3.0.0-1) unstable; urgency=low
 
   * Bump to new version
