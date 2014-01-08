@@ -1,0 +1,94 @@
+.TH globus-connect-multiuser-io-setup 8
+
+.SH NAME
+globus-connect-multiuser-io-setup - Configure a GridFTP server and register it as a Globus endpoint
+
+.SH SYNOPSIS
+.HP
+globus-connect-multiuser-io-setup [-h|--help]
+.HP
+globus-connect-multiuser-io-setup
+.br 
+{-c FILENAME|--config-file=FILENAME}
+.br
+{-v|--verbose}
+.br
+{-r PATH|--root=PATH}
+.br
+{-s|--reset-endpoint}
+
+.SH DESCRIPTION
+The
+.B globus-connect-multiuser-io-setup
+command generates GridFTP service configuration based on the
+globus-connect-multiuser configuration file, starts the GridFTP server, and
+registers it as a Globus  endpoint. Depending on features enabled in the
+configuration file, this process will include fetching a service credential
+from the Globus Connect CA, writing GridFTP configuration files in the
+/etc/gridftp.d/ directory, adding trusted certificates to the GridFTP server's
+trust roots, restarting the GridFTP server, enabling the GridFTP server to
+start at boot, and creating or modifying an endpoint to point to this server.
+.P
+If the
+.B -s
+or
+.B --reset-endpoint
+command-line option is used,
+.B globus-connect-multiuser-io-setup
+removes all other GridFTP servers associated
+with the endpoint before adding this server, if the endpoint already exists.
+Otherwise,
+.B globus-connect-multiuser-io-setup
+adds this server to the list of servers associated with the endpoint.
+.P
+If the
+.B "-r PATH"
+or
+.B "--root=PATH"
+command-line option is used,
+.B globus-connect-multiuser-io-setup
+will write its GridFTP configuration and certificates in a subdirectory rooted
+at
+.I PATH
+instead of /. This means, for example, that
+.B globus-connect-multiuser-io-setup
+writes GridFTP configuration files in
+.IR "PATH/etc/gridftp.d" .
+.P
+The following options are available:
+
+.HP
+.B "-h, --help"
+.br
+Display help information
+.HP
+.B "-c FILENAME, --config-file=FILENAME"
+.br
+Use configuration file FILENAME instead of /etc/globus-connect-multiuser.conf
+.HP
+.B "-v, --verbose"
+.br
+Print more information about tasks
+.HP
+.B "-r PATH, --root=PATH"
+.br
+Add PATH as the directory prefix for the configuration files that
+.B globus-connect-multiuser-io-setup
+writes
+.HP
+.B "-s, --reset-endpoint"
+.br
+Remove all other GridFTP servers from this endpoint before adding this one
+
+.SH ENVIRONMENT
+.HP
+.B GLOBUS_USER
+.br
+Default Globus user name
+.HP
+.B GLOBUS_PASSWORD
+.br
+Default Globus password
+
+.SH "SEE ALSO"
+globus-connect-multiuser-io-cleanup(8)

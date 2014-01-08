@@ -1,0 +1,91 @@
+.TH globus-connect-multiuser-io-cleanup 8
+.SH NAME
+globus-connect-multiuser-io-cleanup - Remove a GridFTP server configuration and remove it from a Globus  endpoint
+
+.SH SYNOPSIS
+.HP
+globus-connect-multiuser-io-cleanup [-h|--help]
+.HP
+globus-connect-multiuser-io-cleanup
+.br
+{-c FILENAME|--config-file=FILENAME}
+.br
+{-v|--verbose}
+.br
+{-r PATH|--root=PATH}
+.br
+{-d|--delete-endpoint}
+
+.SH DESCRIPTION
+.P
+The 
+.B globus-connect-multiuser-io-cleanup
+command deletes GridFTP service configuration previously created by running
+.B globus-connect-multiuser-io-setup
+and removes it from a Globus  endpoint. It deletes configuration files,
+stops, and disables the GridFTP server. It also removes the server from an
+endpoint, optionally deleting the endpoint.
+.P
+If the 
+.B -d
+or
+.B --delete-endpoint
+command-line option is used,
+.B globus-connect-multiuser-io-cleanup
+removes the endpoint named in the configuration file as well as cleaning up
+.B "globus-connect-multiuser-io-setup-"
+generated configuration files.
+.P
+If the
+.B "-r PATH"
+or 
+.B "--root=PATH"
+command-line option is used,
+.B "globus-connect-multiuser-io-cleanup"
+will write its GridFTP configuration and certificates in a subdirectory rooted
+at
+.I PATH
+instead of /. This means, for example, that
+.B globus-connect-multiuser-io-cleanup
+deletes GridFTP configuration files in
+.IR "PATH/etc/gridftp.d" .
+.P
+The following options are available:
+.HP
+.B "-h, --help"
+.br
+Display help information
+.HP
+.B "-c FILENAME, --config-file=FILENAME"
+.br
+Use configuration file FILENAME instead of
+.I /etc/globus-connect-multiuser.conf
+.HP
+.B "-v, --verbose"
+.br
+Print more information about tasks
+.HP
+.B "-r PATH, --root=PATH"
+.br
+Add 
+.I PATH
+as the directory prefix for the configuration files that
+.B "globus-connect-multiuser-io-cleanup"
+writes
+.HP
+.B "-d, --delete-endpoint"
+.br
+Delete the Globus  endpoint
+
+.SH ENVIRONMENT
+.HP
+.B GLOBUS_USER
+.br
+Default Globus user name
+.HP
+.B GLOBUS_PASSWORD
+.br
+Default Globus password
+
+.SH "SEE ALSO"
+.B globus-connect-multiuser-io-setup(8)
