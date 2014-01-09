@@ -1,5 +1,5 @@
 AC_PREREQ([2.60])
-AC_INIT([globus_gram_job_manager_lsf],[2.0],[http://jira.globus.org])
+AC_INIT([globus_gram_job_manager_lsf],[2.1],[http://jira.globus.org])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
 LT_INIT([dlopen win32-dll])
@@ -91,7 +91,16 @@ AC_ARG_WITH(log-path,
     [LSF_LOG_PATH=${log_guess}])
 AC_SUBST(LSF_LOG_PATH)
 
-globusstatedir="`eval echo $localstatedir/globus`"
+AC_ARG_WITH(globus-state-dir,
+	AC_HELP_STRING(
+		[--with-globus-state-dir=PATH],
+		[Path to Globus state files]),
+	globusstatedir="$withval",
+	globusstatedir=$localstatedir)
+
+# GRAM-333: SEG config in installer has variables that aren't resolved at
+# runtime
+globusstatedir="`eval echo $globusstatedir`"
 AC_SUBST(globusstatedir)
 
 AC_ARG_WITH(seg,
