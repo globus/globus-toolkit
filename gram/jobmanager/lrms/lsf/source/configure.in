@@ -84,6 +84,15 @@ AC_ARG_WITH(log-path,
     [LSF_LOG_PATH=${log_guess}])
 AC_SUBST(LSF_LOG_PATH)
 
+AC_ARG_WITH(globus-state-dir,
+	AC_HELP_STRING(
+		[--with-globus-state-dir=PATH],
+		[Path to Globus state files]),
+	globusstatedir="$withval",
+	globusstatedir=$localstatedir)
+
+# GRAM-333: SEG config in installer has variables that aren't resolved at
+# runtime
 globusstatedir="`eval echo $globusstatedir`"
 AC_SUBST(globusstatedir)
 
