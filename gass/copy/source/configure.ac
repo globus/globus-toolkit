@@ -27,7 +27,7 @@ AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
 GLOBUS_TOOLKIT_ID=unknown
 if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version ; then
-    GLOBUS_TOOLKIT_ID="`${GLOBUS_LOCATION-usr}/bin/globus-version -full`"
+    GLOBUS_TOOLKIT_ID="`${GLOBUS_LOCATION-/usr}/bin/globus-version -full`"
 fi
 AC_MSG_RESULT($GLOBUS_TOOLKIT_ID)
 AC_SUBST(GLOBUS_TOOLKIT_ID)
