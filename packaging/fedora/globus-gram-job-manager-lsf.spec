@@ -15,7 +15,7 @@
 
 Name:		globus-gram-job-manager-lsf
 %global _name %(tr - _ <<< %{name})
-Version:	1.2
+Version:	1.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
@@ -222,6 +222,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-lsf-seg
 
 %changelog
+* Thu Jan 09 2014 Globus Toolkit <support@globus.org> - 1.3-1
+- GT-493: Missing configure option in GRAM LSF
+
 * Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 1.2-1
 - GT-344: Cut and past error in gpt metadata for GRAM LSF module
 

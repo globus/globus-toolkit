@@ -1,3 +1,9 @@
+globus-gram-job-manager-lsf (1.3-1) unstable; urgency=low
+
+  * GT-493: Missing configure option in GRAM LSF
+
+ -- Globus Toolkit <support@globus.org>  Thu, 09 Jan 2014 12:45:38 -0500
+
 globus-gram-job-manager-lsf (1.2-1) unstable; urgency=low
 
   * GT-344: Cut and past error in gpt metadata for GRAM LSF module
