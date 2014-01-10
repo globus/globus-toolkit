@@ -8,6 +8,8 @@ use Pod::Usage;
 use Data::Dumper;
 use strict;
 
+my $packagingdir=dirname($0);
+
 my $gptfile;
 my $verbose;
 my $gtrelease = undef;
@@ -143,7 +145,7 @@ sub update_rpm($$$)
 {
     my ($pkgname, $allpkgmeta, $bumprelease) = @_;
     my $pkgmeta = $allpkgmeta->{$pkgname};
-    my $specfilename = "./fedora/" . $pkgname . ".spec";
+    my $specfilename = "$packagingdir/fedora/$pkgname.spec";
 
     if ($verbose) {print "Acting on $specfilename \n";}
 
@@ -250,12 +252,9 @@ sub update_rpm($$$)
         my %issues = ();
         my $pkgdatadir = dirname($pkgmeta->{GPTFILE});
 
-        foreach (split(/\n/, `git log --format=oneline origin..HEAD $pkgdatadir`)) {
+        foreach (split(/\n/, `git log --format=oneline origin..HEAD -- $pkgdatadir`)) {
             $_ = (split(/ /, $_, 2))[1];
-            if (/^[A-Z]+-[0-9]+/)
-            {
-                $issues{$_} = 1;
-            }
+            $issues{$_} = 1;
         }
         $changelog = join("\n", sort(keys %issues), "");
         if ($changelog eq '')
@@ -334,7 +333,7 @@ sub update_debian($$$)
     my ($pkgname, $allpkgmeta, $changed) = @_;
     my $pkgmeta = $allpkgmeta->{$pkgname};
 
-    if ($verbose) {print "Acting on files in ./debian/$pkgname/debian\n";}
+    if ($verbose) {print "Acting on files in $packagingdir/debian/$pkgname/debian\n";}
 
     my $version = "$pkgmeta->{MAJOR}.$pkgmeta->{MINOR}";
 
@@ -366,7 +365,7 @@ sub update_debian($$$)
 sub update_control
 {
     my ($pkgmeta, $allpkgmeta) = @_;
-    my $controlpath = "./debian/$pkgmeta->{NATIVE_NAME}/debian/control";
+    my $controlpath = "$packagingdir/debian/$pkgmeta->{NATIVE_NAME}/debian/control";
     my $soname = $pkgmeta->{SONAME};
     my $changed = 0;
     my $fd;
@@ -583,7 +582,7 @@ sub update_rules
     my ($package, $major, $minor, $age) =
         ($pkgmeta->{NATIVE_NAME}, $pkgmeta->{MAJOR}, $pkgmeta->{MINOR}, $pkgmeta->{AGE});
     my $soname = $pkgmeta->{SONAME};
-    my $rulespath = "debian/$package/debian/rules";
+    my $rulespath = "$packagingdir/debian/$package/debian/rules";
     my $fd;
     my @oldrules;
     my $changed = 0;
@@ -633,7 +632,7 @@ sub check_if_version_is_different
     my $old_version;
     my @oldchanges;
     my $fd;
-    my $changelogpath = "debian/$package/debian/changelog";
+    my $changelogpath = "$packagingdir/debian/$package/debian/changelog";
     my $update;
 
     open($fd, "<$changelogpath") || return 0;
@@ -655,10 +654,10 @@ sub check_if_debian_metadata_changed
 {
     my $pkgmeta = shift;
     my $package = $pkgmeta->{NATIVE_NAME};
-    my $debianpath = "debian/$package/debian";
+    my $debianpath = "$packagingdir/debian/$package/debian";
     my $status;
 
-    open($status, "git log --format=oneline origin..HEAD $debianpath|") || return 0;
+    open($status, "git log --format=oneline origin..HEAD -- $debianpath|") || return 0;
 
     while (<$status>)
     {
@@ -676,7 +675,7 @@ sub update_changelog
     my $version = "$pkgmeta->{MAJOR}.$pkgmeta->{MINOR}";
     my @oldchanges;
     my $fd;
-    my $changelogpath = "debian/$package/debian/changelog";
+    my $changelogpath = "$packagingdir/debian/$package/debian/changelog";
     my $update;
     my $release = 1;
 
@@ -701,12 +700,9 @@ sub update_changelog
         my %issues = ();
         my $pkgdatadir = dirname($pkgmeta->{GPTFILE});
 
-        foreach (split(/\n/, `git log --format=oneline origin..HEAD $pkgdatadir`)) {
+        foreach (split(/\n/, `git log --format=oneline origin..HEAD -- $pkgdatadir`)) {
             $_ = (split(/ /, $_, 2))[1];
-            if (/^[A-Z]+-[0-9]+/)
-            {
-                $issues{$_} = 1;
-            }
+            $issues{$_} = 1;
         }
         $changelog = join("\n", sort(keys %issues), "");
         if ($changelog eq '')
@@ -762,7 +758,7 @@ GetOptions('gptfile=s' => \$gptfile,
 if (!defined($gtrelease))
 {
     my $fh;
-    open($fh, "<fait_accompli/version");
+    open($fh, "<$packagingdir/fait_accompli/version");
     chomp($gtrelease = <$fh>);
     close($fh);
 
@@ -793,23 +789,23 @@ if ($gtrelease)
 
 if (!(defined $gptfile))
 {
-    open(PKG, "etc/package-list-5.1.0");
+    open(PKG, "$packagingdir/etc/packages");
 
     while ( <PKG> )
     {
-        my ($pkg, $subdir, $pnb, $pkgtag) = split(' ', $_);
+        my ($pkg, $subdir) = split(' ', $_);
         next if ($pkg =~ m/^#/ || $pkg =~ m/^$/);
         #print $subdir."\n";
         next if ($pkg =~ m/openssh/);
-        if (-f "source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt.in")
+        if (-f "$packagingdir/../$subdir/pkgdata/pkg_data_src.gpt.in")
         {
             push(@packagelist,
-                "source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt.in");
+                "$packagingdir/../$subdir/pkgdata/pkg_data_src.gpt.in");
         }
-        elsif (-f  "source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt")
+        elsif (-f  "$packagingdir/../$subdir/pkgdata/pkg_data_src.gpt")
         {
             push(@packagelist,
-                "source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt");
+                "$packagingdir/../$subdir/pkgdata/pkg_data_src.gpt");
         }
     }
 }
