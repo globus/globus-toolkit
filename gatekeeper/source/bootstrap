@@ -1,5 +1,7 @@
 #! /bin/sh
 
+mkdir -p build-aux
+
 # checking for the GLOBUS_LOCATION
 
 if test "x$GLOBUS_LOCATION" = "x"; then
