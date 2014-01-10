@@ -12,8 +12,8 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.15
-Release:	2%{?dist}
+Version:	9.16
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
@@ -125,6 +125,9 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Fri Jan 10 2014 Globus Toolkit <support@globus.org> - 9.16-1
+- Fix some bootstrapping issues
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 9.15-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

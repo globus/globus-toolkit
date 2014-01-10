@@ -1,3 +1,9 @@
+globus-callout (2.5-1) unstable; urgency=low
+
+  * Fix some bootstrapping issues
+
+ -- Globus Toolkit <support@globus.org>  Fri, 10 Jan 2014 09:39:36 -0500
+
 globus-callout (2.4-1) unstable; urgency=low
 
   * GT-412: allow chaining of callouts and passing of env vars in the callout config

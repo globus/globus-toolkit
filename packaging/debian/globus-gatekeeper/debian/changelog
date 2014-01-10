@@ -1,3 +1,9 @@
+globus-gatekeeper (9.16-1) unstable; urgency=low
+
+  * Fix some bootstrapping issues
+
+ -- Globus Toolkit <support@globus.org>  Fri, 10 Jan 2014 09:43:08 -0500
+
 globus-gatekeeper (9.15-1) unstable; urgency=low
 
   * GT-354: Compatibility with automake 1.13

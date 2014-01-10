@@ -1,3 +1,9 @@
+globus-core (8.17-1) unstable; urgency=low
+
+  * Fix some bootstrapping issues
+
+ -- Globus Toolkit <support@globus.org>  Fri, 10 Jan 2014 09:41:25 -0500
+
 globus-core (8.16-1) unstable; urgency=low
 
   * GT-446: Documentation built twice

@@ -12,8 +12,8 @@
 
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
-Version:	10.4
-Release:	5%{?dist}
+Version:	10.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
 Group:		Applications/Internet
@@ -84,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Fri Jan 10 2014 Globus Toolkit <support@globus.org> - 10.5-1
+- Fix some bootstrapping issues
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 10.4-5
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

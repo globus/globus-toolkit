@@ -12,7 +12,7 @@
 
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	9.5
+Version:	9.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
@@ -121,6 +121,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Fri Jan 10 2014 Globus Toolkit <support@globus.org> - 9.6-1
+- Fix some bootstrapping issues
+
 * Tue Oct 15 2013 Globus Toolkit <support@globus.org> - 9.5-1
 - GT-470: Globus IO reports timeout error as cancellation
 
