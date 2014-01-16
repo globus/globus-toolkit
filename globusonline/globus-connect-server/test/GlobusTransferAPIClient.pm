@@ -32,7 +32,7 @@ our %base_url = (
     Production => "https://transfer.api.globusonline.org/v0.10");
 our %web_hosts = (
     Test => "test.globuscs.info",
-    Production => "www.globusonline.org");
+    Production => "www.globus.org");
 
 our $json_parser = JSON->new();
 
@@ -113,7 +113,7 @@ sub get_access_token($;%)
     if (! $self->{access_token})
     {
         # Get access token
-        $url = sprintf "https://\%s:\%s\@\%s/goauth/token?grant_type=client_credentials",
+        $url = sprintf 'https://%s:%s@%s/goauth/token?grant_type=client_credentials',
                 $args{user}, $args{password}, $args{token_host};
         $req = HTTP::Request->new(GET => $url);
         $res = $self->{ua}->request($req);
@@ -222,7 +222,7 @@ sub activate($$$$)
 
         # Authenticate with GO web page to get saml token
         $req = HTTP::Request->new(POST =>
-            sprintf "https://\%s/service/graph/authenticate",
+            sprintf 'https://%s/service/graph/authenticate',
                     $self->{web_host});
         $content = $json_parser->encode({
                 username=>$self->{user},
@@ -235,8 +235,8 @@ sub activate($$$$)
         # Visit activation page (not sure how this form gets generated from the
         # mess of javascript on globusonline)
         $req = HTTP::Request->new(POST =>
-            "https://www.globusonline.org/service/graph/authenticate_oauth");
-        $content = sprintf "server=$oauth_server&return_path=https\%3A\%2F\%2F%s\%2Fxfer\%2FActivateEndpoints\%3Fep\%3D$endpoint\%26activate_oauth\%3D$oauth_server", $self->{web_host};
+            "https://www.globus.org/service/graph/authenticate_oauth");
+        $content = sprintf 'server=%s&return_path=https%%3A%%2F%%2F%s%%2Fxfer%%2FActivateEndpoints%%3Fep%%3D%s%%26activate_oauth%%3D%s', $oauth_server, $self->{web_host}, $endpoint, $oauth_server;
         $req->header("Content-Type", "application/x-www-form-urlencoded");
         $req->header("Content-Length", length($content));
         $req->header(Referer => sprintf 'https://%s/xfer/ActivateEndpoints',
