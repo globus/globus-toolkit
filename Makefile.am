@@ -16,6 +16,19 @@ $(GT_TARGETS_DIST):
 	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && MAKEFLAGS= $(MAKE) $(AM_MAKEFLAGS) dist
 	@cp $($@_SUBDIR)/$($@-tarball) package-output
 
+$(GT_ALL_STAMPS):
+	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; ( (cd $($@-all_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) all) && touch $@) || exit 1
+
+$(GT_ONLY):
+	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@-all_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) all
+
+RPMDIRS = BUILD BUILDROOT RPMS SOURCES SPECS SRPMS
+
+$(GT_TARGETS_RPM):
+	@for d in $(RPMDIRS); do mkdir -p rpmbuild/$$d; done
+	@cp $($@_SOURCE) rpmbuild/SOURCES
+	@HOME=$$(pwd) rpmbuild -ba $($@_SPECFILE)
+
 DOC_STAMPS =
 DOC_PHONY = 
 DOC_CLEAN = 

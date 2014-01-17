@@ -25,12 +25,14 @@ $1: $1-all
 $1-all: $1-stamp
 $1-install: $1-stamp m4_foreach(p, m4_split(m4_normalize($3)), p[-install ]) 
 $1-stamp: [\$(]$1[-deps)]
-	@export PKG_CONFIG_PATH=\$(PKG_CONFIG_PATH) ; ( (cd \$($1-all_SUBDIR) && \$(MAKE) \$(AM_MAKEFLAGS) all) && touch \$[]@) || exit 1
-$1-only:
-	@export PKG_CONFIG_PATH=\$(PKG_CONFIG_PATH) ; cd \$($1-all_SUBDIR) && \$(MAKE) \$(AM_MAKEFLAGS) all
 m4_pushdef([AC_INIT],[$]1-[$]2)dnl
 m4_define([pkgver], m4_esyscmd(grep AC[_]INIT [$2][/configure.ac]))dnl
 $1-dist-tarball = m4_normalize(pkgver)[.tar.gz]
+package-output/$1-dist-tarball: $1-dist
+$1-rpm_SPECFILE = \$(srcdir)/packaging/fedora/m4_translit([$1], [_], [-]).spec
+$1-rpm_SOURCE = package-output/$1-dist-tarball 
+$1-rpm: \$($1-rpm_SOURCE) \$($1-rpm_SPECFILE)
+
 m4_popdef([AC_INIT])dnl
 ])
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
@@ -44,6 +46,8 @@ m4_popdef([AC_INIT])dnl
     m4_append([GT_TARGETS_DIST_MACRO], [$1-dist], [ ])dnl
     m4_append([GT_DOXYGEN_SUBDIRS_MACRO], [$srcdir/$2], [ ])dnl
     m4_append([GT_ALL_STAMPS_MACRO], [$1-stamp], [ ])dnl
+    m4_append([GT_ONLY_MACRO], [$1-only], [ ])dnl
+    m4_append([GT_TARGETS_RPM_MACRO], [$1-rpm])dnl
 ])dnl
 
 
@@ -233,6 +237,7 @@ GT_TARGETS_CLEAN="GT_TARGETS_CLEAN_MACRO"
 GT_TARGETS_INSTALL="GT_TARGETS_INSTALL_MACRO"
 GT_TARGETS_DISTCLEAN="GT_TARGETS_DISTCLEAN_MACRO"
 GT_TARGETS_DIST="GT_TARGETS_DIST_MACRO"
+GT_TARGETS_RPM="GT_TARGETS_RPM_MACRO"
 GT_PKGCONFIG_DIRS="GT_PKGCONFIG_DIRS_MACRO"
 GT_DOXYGEN_SUBDIRS="GT_DOXYGEN_SUBDIRS_MACRO"
 GT_ALL_STAMPS="GT_ALL_STAMPS_MACRO"
@@ -253,6 +258,7 @@ AC_SUBST(GT_TARGETS_CLEAN)
 AC_SUBST(GT_TARGETS_INSTALL)
 AC_SUBST(GT_TARGETS_DIST)
 AC_SUBST(GT_TARGETS_DISTCLEAN)
+AC_SUBST(GT_TARGETS_RPM)
 AC_SUBST(GT_PKGCONFIG_DIRS)
 AC_SUBST(GT_DOXYGEN_SUBDIRS)
 AC_SUBST(GT_ALL_STAMPS)
