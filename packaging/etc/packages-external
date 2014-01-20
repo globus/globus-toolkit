@@ -74,3 +74,12 @@ if [ ! -f $po/$udt ]; then \
         -o $po/$udt; \
 fi; \
 tar -x -C $udtdir -zf $po/$udt
+#####
+# Myproxy-oauth
+#####
+myproxy_oauth   myproxy/oauth/source    myproxy_oauth-0.14.tar.gz   \
+po=packaging/package-output; \
+cd myproxy/oauth/source; \
+python setup.py sdist; \
+cd -; \
+cp myproxy/oauth/source/dist/myproxy_oauth-0.14.tar.gz $po

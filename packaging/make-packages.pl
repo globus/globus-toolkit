@@ -426,6 +426,7 @@ sub import_package_dependencies
             "$subdir/pkg_data_src.gpt",
             "$subdir/pkgdata/pkg_data_src.gpt"))[0];
 
+        next if (exists $external_package_list{$pack} && !$metadatafile);
         die "Unable to find metadata for $pack" unless $metadatafile;
 
         require Grid::GPT::V1::Package;
@@ -566,14 +567,14 @@ sub populate_package_list
     open (my $pkg_external_fh, "$top_dir/etc/packages-external");
     while ( <$pkg_external_fh> )
     {
+        chomp;
         s/#.*//;
         while (/\\$/) {
             chop;
-            my $continuation = <$pkg_external_fh>;
+            chomp(my $continuation = <$pkg_external_fh>);
             $continuation =~ s/#.*//;
             $_ .= " $continuation";
         }
-        chomp;
         next if $_ eq '';
 
         my ($pkg, $subdir, $tarball, $commands) = split(' ', $_, 4);
@@ -582,6 +583,7 @@ sub populate_package_list
         %{$external_package_list{$pkg}} = (
                 tarball => $tarball,
                 commands => $commands );
+        system($commands);
     }
     close ($pkg_external_fh);
 }
@@ -908,6 +910,11 @@ sub topol_sort
     {
         $metadatafile = package_subdir($node) . "/pkgdata/pkg_data_src.gpt";
     }
+    if ( ! -e $metadatafile )
+    {
+        push @{$sorted_nodes_ref}, $node;   
+        return;
+    }
 
     require Grid::GPT::V1::Package;
     my $pkg = new Grid::GPT::V1::Package;
@@ -1036,8 +1043,10 @@ sub inplace_build()
     chdir $subdir;
     if ( !$avoid_bootstrap || ! -e 'configure')
     {
-        log_system("./bootstrap", "$pkglog/$package");
-        paranoia("Inplace bootstrap of $package in $subdir failed!");
+        if (-f 'bootstrap') {
+            log_system("./bootstrap", "$pkglog/$package");
+            paranoia("Inplace bootstrap of $package in $subdir failed!");
+        }
     }
     my $build_args = "";
     $build_args .= " CONFIGOPTS_GPTMACRO=--enable-doxygen " if $doxygen;
@@ -1066,8 +1075,10 @@ sub package_source_bootstrap
     system("mkdir -p $pkglog");
 
     if ( !$avoid_bootstrap || ! -e 'configure') {
-       log_system("./bootstrap", "$pkglog/$package");
-       paranoia("bootstrap failed for package $package");
+       if (-f 'bootstrap') {
+           log_system("./bootstrap", "$pkglog/$package");
+           paranoia("bootstrap failed for package $package");
+       }
     }
     chdir $oldcwd;
 }
@@ -1092,8 +1103,10 @@ sub package_source_gpt
         print "Following GPT packaging for $package.\n";
 
         if ( !$avoid_bootstrap || ! -e 'configure') {
-            log_system("./bootstrap", "$pkglog/$package");
-            paranoia("$package bootstrap failed.");
+            if (-f 'bootstrap') {
+                log_system("./bootstrap", "$pkglog/$package");
+                paranoia("$package bootstrap failed.");
+            }
         }
 
         if ( -e 'Makefile' )
@@ -1102,14 +1115,23 @@ sub package_source_gpt
            paranoia("make distclean failed for $package");
         }
 
-        log_system("./configure --with-flavor=$flavor $enable_64bit",
-                   "$pkglog/$package");
-        paranoia "configure failed.  See $pkglog/$package.";
-        log_system("make dist", "$pkglog/$package");
-        paranoia "make dist failed.  See $pkglog/$package.";
-        my $version = gpt_get_version("pkgdata/pkg_data_src.gpt");
-        log_system("cp ${package}-${version}.tar.gz $package_output", "$pkglog/$package");
-        paranoia "cp of ${package}-*.tar.gz failed: $!  See $pkglog/$package.";
+        if ( -e 'configure') {
+            log_system("./configure --with-flavor=$flavor $enable_64bit",
+                       "$pkglog/$package");
+            paranoia "configure failed.  See $pkglog/$package.";
+            log_system("make dist", "$pkglog/$package");
+            paranoia "make dist failed.  See $pkglog/$package.";
+            my $version = gpt_get_version("pkgdata/pkg_data_src.gpt");
+            log_system("cp ${package}-${version}.tar.gz $package_output", "$pkglog/$package");
+            paranoia "cp of ${package}-*.tar.gz failed: $!  See $pkglog/$package.";
+        } elsif ( -e 'setup.py') {
+            log_system("rm -rf dist");
+            paranoia("clean failed");
+            log_system("python setup.py sdist");
+            paranoia("sdist failed");
+            log_system("cp dist/*.tar.gz $package_output");
+            paranoia("cp failed");
+        }
         delete $ENV{'GPT_IGNORE_DEPS'};
     }
 }
@@ -1153,6 +1175,7 @@ sub install_bundles
 {
     chdir $bundle_output;
 
+    return if ($skipbundle);
     for my $bundle ( @bundle_build_list )
     {
         next if $bundle eq "" or $bundle eq "user_def";
