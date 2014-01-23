@@ -1,7 +1,7 @@
 Source: globus-gass-cache
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-common-dev (>= 14), libssl-dev (>= 0), globus-core (>= 5.15-5)
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libssl-dev (>= 0)
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes
@@ -26,7 +26,8 @@ Description: Globus Toolkit - Globus Gass Cache
 Package: libglobus-gass-cache-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gass-cache5 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libssl-dev, globus-core (>= 4)
+Depends: libglobus-gass-cache5 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libssl-dev
+Recommends: libglobus-gass-cache-doc (= ${binary:Version})
 Description: Globus Toolkit - Globus Gass Cache Development Files
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
@@ -36,6 +37,20 @@ Description: Globus Toolkit - Globus Gass Cache Development Files
  .
  The libglobus-gass-cache-dev package contains:
  Globus Gass Cache Development Files
+
+Package: libglobus-gass-cache-doc
+Section: doc
+Architecture: any
+Depends: libglobus-gass-cache-dev (= ${binary:Version}), ${misc:Depends}
+Description: Globus Toolkit - Globus Gass Cache Documentation Files
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-gass-cache-doc package contains:
+ Globus Gass Cache Documentation Files
 
 Package: globus-gass-cache-dbg
 Section: debug

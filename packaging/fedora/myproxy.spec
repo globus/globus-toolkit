@@ -1,11 +1,4 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
-
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
 Name:           myproxy
 Version:	5.9
 Release:	8%{?dist}
@@ -43,7 +36,6 @@ BuildRequires:  openldap2-devel
 BuildRequires:  openldap-devel >= 2.3
 %endif
 %endif
-BuildRequires:  grid-packaging-tools  >= 3.4
 BuildRequires:  doxygen
 
 %if "%{?rhel}" == "5"

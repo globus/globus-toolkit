@@ -1,7 +1,7 @@
 Source: globus-gram-client
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, grid-packaging-tools, libglobus-gram-protocol-dev (>= 11), libglobus-common-dev (>= 14), libglobus-rsl-dev (>= 9), libglobus-io-dev (>= 9), globus-core (>= 5.15-5), libglobus-gram-protocol-doc (>= 3), libglobus-common-doc, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-gram-protocol-dev, libglobus-common-dev, libglobus-rsl-dev, libglobus-io-dev, libglobus-gram-protocol-doc (>= 3), libglobus-common-doc, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
@@ -26,7 +26,7 @@ Description: Globus Toolkit - GRAM Client Library
 Package: libglobus-gram-client-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gram-client3 (= ${binary:Version}), ${misc:Depends}, libglobus-gram-protocol-dev, libglobus-common-dev, libglobus-rsl-dev, libglobus-io-dev, globus-core (>= 4)
+Depends: libglobus-gram-client3 (= ${binary:Version}), ${misc:Depends}, libglobus-gram-protocol-dev, libglobus-common-dev, libglobus-rsl-dev, libglobus-io-dev
 Recommends: libglobus-gram-client-doc (= ${binary:Version})
 Description: Globus Toolkit - GRAM Client Library Development Files
  The Globus Toolkit is an open source software toolkit used for

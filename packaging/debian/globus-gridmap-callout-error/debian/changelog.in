@@ -1,0 +1,17 @@
+globus-gridmap-callout-error (2.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Repackage for GT6 without GPT
+
+ -- Globus Toolkit <support@globus.org>  Wed, 22 Jan 2014 15:06:39 -0500
+
+globus-gridmap-callout-error (1.2-2) unstable; urgency=low
+
+  * GT 5.2.2 final
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+
+globus-gridmap-callout-error (1.2-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Globus Toolkit <support@globus.org>  Wed, 27 Feb 2012 14:25:26 -0400

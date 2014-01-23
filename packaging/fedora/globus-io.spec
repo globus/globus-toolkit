@@ -1,18 +1,6 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	9.5
+Version:	10.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
@@ -28,12 +16,10 @@ Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	globus-xio%{?_isa} >= 3
 Requires:	globus-gssapi-gsi%{?_isa} >= 10
 
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-gsi-driver-devel >= 2
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-gssapi-gsi-devel >= 10
-BuildRequires:	globus-core >= 8
 BuildRequires:	globus-gssapi-error >= 4
 
 %package devel
@@ -44,7 +30,6 @@ Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-gss-assist-devel%{?_isa} >= 8
 Requires:	globus-xio-devel%{?_isa} >= 3
 Requires:	globus-gssapi-gsi-devel%{?_isa} >= 10
-Requires:	globus-core%{?_isa} >= 8
 BuildRequires:	globus-gssapi-error-devel%{?_isa} >= 4
 
 %description
@@ -69,20 +54,19 @@ uniform I/O interface Development Files
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --with-flavor=%{flavor} \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-           --disable-static
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
@@ -90,18 +74,13 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
+rm -rvf $RPM_BUILD_ROOT%{_docdir}/%{name}-%{version}/html
+rm -rvf $RPM_BUILD_ROOT%{_mandir}
 
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist  \
-  | sed s!^!%{_prefix}! > package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | sed s!^!%{_prefix}! > package-devel.filelist
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -110,17 +89,22 @@ rm -rf $RPM_BUILD_ROOT
 
 %postun -p /sbin/ldconfig
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_libdir}/libglobus_*.so.*
 
-%files -f package-devel.filelist devel
+%files devel
 %defattr(-,root,root,-)
+%{_includedir}/globus/*
+%{_libdir}/lib*.so
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 10.0-1
+- Repackage for GT6 without GPT
+
 * Tue Oct 15 2013 Globus Toolkit <support@globus.org> - 9.5-1
 - GT-470: Globus IO reports timeout error as cancellation
 

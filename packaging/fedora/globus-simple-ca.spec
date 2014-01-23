@@ -1,16 +1,8 @@
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-%global flavor "noflavor"
-
-
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	3.5
+Version:	4.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
@@ -24,8 +16,6 @@ Requires:   globus-common-progs
 Requires:   openssl
 Requires(post):   openssl
 Requires(post):   globus-gsi-cert-utils-progs
-BuildRequires:  grid-packaging-tools >= 3.4
-BuildRequires:  globus-core >= 7.5
 BuildArch:      noarch
 
 %description
@@ -41,21 +31,18 @@ Globus Simple CA
 %setup -q -n %{_name}-%{version}
 
 %build
-%if "%{rhel}" == "5"
-export PATH=$PWD/bin:$PATH
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+# Remove files that should be replaced during bootstrap
+rm -rf autom4te.cache
+
+autoreconf -i
 %endif
 
-# Remove files that should be replaced during bootstrap
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
-rm -rf autom4te.cache
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
-
-%{_datadir}/globus/globus-bootstrap.sh
-
-export GLOBUS_VERSION=5.2.0
-%configure --%{docdiroption}=%{_docdir}/%{name}-%{version}
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
@@ -64,21 +51,6 @@ cd -
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
-
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-  | sed s!^!%{_prefix}! > package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! >> package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | sed s!^!%{_prefix}! >> package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | grep -v GLOBUS_LICENSE \
-  | sed -e 's!^!%doc %{_prefix}!' \
-  | sed -e 's!%{_mandir}/man.*!&.gz!' >> package.filelist
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -118,15 +90,19 @@ if [ ! -f ${simplecadir}/cacert.pem ] ; then
     fi
     cd -
 fi
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus
-%dir %{_datadir}/globus/packages
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%dir %{_datadir}/%{_name}
+%{_datadir}/%{_name}/*
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_bindir}/*
+%{_mandir}/man1/*
 
 %changelog
+* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 4.0-1
+- Repackage for GT6 without GPT
+
 * Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 3.5-1
 - GT-405: Non-portable use of echo in shell script
 

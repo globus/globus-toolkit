@@ -1,7 +1,7 @@
 Source: globus-gssapi-gsi
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-gsi-credential-dev (>= 5), libglobus-gsi-callback-dev, libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-proxy-core-dev (>= 6), globus-core (>= 7.7), libglobus-gsi-cert-utils-dev (>= 8), libglobus-common-dev (>= 14), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1) | doxygen-latex, graphviz, texlive-fonts-recommended, texlive-font-utils, ghostscript
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-gsi-credential-dev, libglobus-gsi-callback-dev, libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-proxy-core-dev, libglobus-gsi-cert-utils-dev, libglobus-common-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
@@ -12,7 +12,7 @@ Homepage: http://www.globus.org/
 Package: libglobus-gssapi-gsi4
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libglobus-gsi-cert-utils0 (>= 8)
+Depends: ${shlibs:Depends}, ${misc:Depends}, libglobus-gsi-cert-utils0
 Description: Globus Toolkit - GSSAPI library
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
@@ -26,7 +26,7 @@ Description: Globus Toolkit - GSSAPI library
 Package: libglobus-gssapi-gsi-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gssapi-gsi4 (= ${binary:Version}), ${misc:Depends}, libglobus-gsi-credential-dev, libglobus-gsi-callback-dev, libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-proxy-core-dev, globus-core (>= 7.7), libglobus-gsi-cert-utils-dev, libglobus-common-dev
+Depends: libglobus-gssapi-gsi4 (= ${binary:Version}), ${misc:Depends}, libglobus-gsi-credential-dev, libglobus-gsi-callback-dev, libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-proxy-core-dev, libglobus-gsi-cert-utils-dev, libglobus-common-dev
 Recommends: libglobus-gssapi-gsi-doc (= ${binary:Version})
 Description: Globus Toolkit - GSSAPI library Development Files
  The Globus Toolkit is an open source software toolkit used for

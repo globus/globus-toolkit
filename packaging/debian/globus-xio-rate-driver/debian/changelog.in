@@ -1,0 +1,5 @@
+globus-xio-rate-driver (1.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Package for GT6
+
+ -- Globus Toolkit <support@globus.org>  Wed, 22 Jan 2014 08:38:06 -0500

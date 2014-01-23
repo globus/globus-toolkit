@@ -1,7 +1,7 @@
 Source: globus-gsi-proxy-ssl
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 6.0.7~), autotools-dev, grid-packaging-tools, libssl-dev, globus-core (>= 5.15-5), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
+Build-Depends: debhelper (>= 6.0.7~), autotools-dev, libssl-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
@@ -26,7 +26,7 @@ Description: Globus Toolkit - Globus GSI Proxy SSL Library
 Package: libglobus-gsi-proxy-ssl-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gsi-proxy-ssl1 (= ${binary:Version}), ${misc:Depends}, libssl-dev, globus-core (>= 4)
+Depends: libglobus-gsi-proxy-ssl1 (= ${binary:Version}), ${misc:Depends}, libssl-dev
 Recommends: libglobus-gsi-proxy-ssl-doc (= ${binary:Version})
 Description: Globus Toolkit - Globus GSI Proxy SSL Library Development Files
  The Globus Toolkit is an open source software toolkit used for

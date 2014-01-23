@@ -158,7 +158,6 @@ BuildRequires: globus-gss-assist-devel >= 8
 BuildRequires: globus-usage-devel >= 3
 BuildRequires: globus-common-progs >= 14
 BuildRequires: globus-core >= 8
-BuildRequires: grid-packaging-tools >= 3.4
 %endif
 
 %if %{libedit}

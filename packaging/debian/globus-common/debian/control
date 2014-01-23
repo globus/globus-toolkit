@@ -12,6 +12,7 @@ Homepage: http://www.globus.org/
 Package: libglobus-common0
 Section: libs
 Architecture: any
+Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Globus Toolkit - Common Library
  The Globus Toolkit is an open source software toolkit used for
@@ -25,6 +26,7 @@ Description: Globus Toolkit - Common Library
 
 Package: globus-common-progs
 Section: net
+Multi-Arch: same
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}
 Description: Globus Toolkit - Common Library Programs
@@ -39,6 +41,7 @@ Description: Globus Toolkit - Common Library Programs
 
 Package: libglobus-common-dev
 Section: libdevel
+Multi-Arch: same
 Architecture: any
 Depends: libglobus-common0 (= ${binary:Version}), ${misc:Depends}, globus-common-progs (= ${binary:Version}), ${perl:Depends}
 Recommends: libglobus-common-doc (= ${binary:Version})
@@ -54,6 +57,7 @@ Description: Globus Toolkit - Common Library Development Files
 
 Package: libglobus-common-doc
 Section: doc
+Multi-Arch: foreign
 Architecture: any
 Depends: libglobus-common-dev (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Common Library Documentation Files

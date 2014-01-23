@@ -1,7 +1,7 @@
 Source: globus-gass-cache-program
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-common-dev (>= 14), libglobus-gram-client-dev (>= 12), libglobus-gass-server-ez-dev (>= 4), libglobus-gass-copy-dev (>= 8), libglobus-gass-cache-dev (>= 8), globus-core (>= 5.15-5)
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-gram-client-dev, libglobus-gass-server-ez-dev, libglobus-gass-copy-dev, libglobus-gass-cache-dev
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes

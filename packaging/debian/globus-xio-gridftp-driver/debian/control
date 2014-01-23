@@ -1,7 +1,7 @@
 Source: globus-xio-gridftp-driver
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-xio-dev, globus-core (>= 7.7), libglobus-common-dev, libglobus-ftp-client-dev, libglobus-xio-gsi-driver-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1) | doxygen-latex, graphviz, texlive-fonts-recommended, texlive-font-utils, ghostscript
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-xio-dev, libglobus-common-dev, libglobus-ftp-client-dev, libglobus-xio-gsi-driver-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
@@ -27,6 +27,7 @@ Package: libglobus-xio-gridftp-driver-dev
 Section: libdevel
 Architecture: any
 Depends: libglobus-xio-gridftp-driver1 (= ${binary:Version}), ${misc:Depends}, libglobus-xio-dev
+Recommends: libglobus-xio-gridftp-driver-doc (= ${binary:Version})
 Description: Globus Toolkit - Globus XIO GridFTP Driver Development Files
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
@@ -36,6 +37,20 @@ Description: Globus Toolkit - Globus XIO GridFTP Driver Development Files
  .
  The libglobus-xio-gridftp-driver-dev package contains:
  Globus XIO GridFTP Driver Development Files
+
+Package: libglobus-xio-gridftp-driver-doc
+Section: doc
+Architecture: any
+Depends: libglobus-xio-gridftp-driver-dev (= ${binary:Version}), ${misc:Depends}
+Description: Globus Toolkit - Globus XIO GridFTP Driver Documentation Files
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-xio-gridftp-driver-dev package contains:
+ Globus XIO GridFTP Driver Documentation Files
 
 Package: globus-xio-gridftp-driver-dbg
 Section: debug

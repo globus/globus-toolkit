@@ -27,9 +27,8 @@ check_PROGRAMS = \
     thread_test \
     timedwait_test \
     uuid_test
+if !CROSS_COMPILING
 TESTS = $(check_PROGRAMS)
-if CROSS_COMPILING
-XFAIL_TESTS = $(TESTS)
 endif
 
 LOG_COMPILER = $(top_builddir)/libtool --mode=execute $(thread_shobj)

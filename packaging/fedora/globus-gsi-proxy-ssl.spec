@@ -1,62 +1,26 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-gsi-proxy-ssl
 %global _name %(tr - _ <<< %{name})
-Version:	4.1
-Release:	12%{?dist}
+Version:	5.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
-#		This is a workaround for the broken epstopdf script in RHEL5
-#		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
-Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:  openssl-devel
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
-BuildRequires:	ghostscript
-%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
-BuildRequires:	tex(latex)
-%else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
-BuildRequires:	tetex-latex
-%endif
-%endif
-
-%if %{?fedora}%{!?fedora:0} == 18
-BuildRequires: tex(sectsty.sty)
-BuildRequires: tex(tocloft.sty)
-BuildRequires: tex(xtab.sty)
-BuildRequires: tex(multirow.sty)
-BuildRequires: tex(fullpage.sty)
-%endif
 
 %package devel
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library Documentation Files
@@ -96,61 +60,31 @@ Globus GSI Proxy SSL Library Documentation Files
 %prep
 %setup -q -n %{_name}-%{version}
 
-%if "%{rhel}" == "5"
-mkdir bin
-install %{SOURCE9} bin/epstopdf
-%endif
-
 %build
-%if "%{rhel}" == "5"
-export PATH=$PWD/bin:$PATH
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+# Remove files that should be replaced during bootstrap
+rm -rf autom4te.cache
+
+autoreconf -i
 %endif
 
-# Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
-rm -rf autom4te.cache
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
-
-%{_datadir}/globus/globus-bootstrap.sh
-
-%configure --with-flavor=%{flavor} --enable-doxygen \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-           --disable-static
-
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
 %install
-%if "%{rhel}" == "5"
-export PATH=$PWD/bin:$PATH
-%endif
-
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
 
-# Remove unwanted documentation (needed for RHEL4)
-rm -f $RPM_BUILD_ROOT%{_mandir}/man3/*_%{_name}-%{version}_*.3
-sed -e '/_%{_name}-%{version}_.*\.3/d' \
-  -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-  | sed s!^!%{_prefix}! > package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | sed s!^!%{_prefix}! > package-devel.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | grep -v GLOBUS_LICENSE \
-  | sed -e 's!/man/.*!&*!' -e 's!^!%doc %{_prefix}!' > package-doc.filelist
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -159,21 +93,29 @@ rm -rf $RPM_BUILD_ROOT
 
 %postun -p /sbin/ldconfig
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_libdir}/libglobus_*so.*
 
-%files -f package-devel.filelist devel
+%files devel
 %defattr(-,root,root,-)
 %{_libdir}/pkgconfig/%{name}.pc
+%{_includedir}/globus/*
+%{_libdir}/libglobus_*so
 
-%files -f package-doc.filelist doc
+
+%files doc
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}/html
+%{_docdir}/%{name}-%{version}/html/*
+%{_mandir}/*
 
 %changelog
+* Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 5.0-1
+- Repackage for GT6 without GPT
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 4.1-12
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

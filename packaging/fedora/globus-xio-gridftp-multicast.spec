@@ -1,6 +1,6 @@
 Name:		globus-xio-gridftp-multicast
 %global _name %(tr - _ <<< %{name})
-Version:	0.1
+Version:	1.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Multicast Driver
 
@@ -13,11 +13,9 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-common >= 14
 Requires:	globus-xio%{?_isa} >= 3
 Requires:	globus-ftp-client%{?_isa} >= 2
-Requires:	globus-xio-gsi-driver%{?_isa} >= 0
 
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-common-devel >= 14
-BuildRequires:	globus-xio-gsi-driver >= 0
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO GridFTP Multicast Driver Development Files
@@ -88,6 +86,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 1.0-1
+- Repackage for GT6 without GPT
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.2-7
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

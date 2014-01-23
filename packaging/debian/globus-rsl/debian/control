@@ -1,7 +1,7 @@
 Source: globus-rsl
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, grid-packaging-tools, libglobus-common-dev (>= 14), globus-core (>= 5.15-5), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.8.4
 Section: net
 Homepage: http://www.globus.org/
@@ -23,7 +23,7 @@ Description: Globus Toolkit - Resource Specification Language Library
 Package: libglobus-rsl-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-rsl2 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, globus-core (>= 4)
+Depends: libglobus-rsl2 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev
 Recommends: libglobus-rsl-doc (= ${binary:Version})
 Description: Globus Toolkit - Resource Specification Language Library Development Files
  The Globus Toolkit is an open source software toolkit used for

@@ -1,28 +1,13 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	4.7
-Release:	4%{?dist}
+Version:	5.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
-#		This is a workaround for the broken epstopdf script in RHEL5
-#		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
-Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gram-protocol%{?_isa} >= 11
@@ -30,7 +15,6 @@ Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:	globus-xio%{?_isa} >= 3
 
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gram-protocol-devel >= 11
 %if 0%{?suse_version} == 0
 %if 0%{?rhel} > 4 || 0%{?rhel} == 0
@@ -40,29 +24,10 @@ BuildRequires:	libtool-ltdl-devel
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-gsi-driver-devel >= 2
 BuildRequires:	globus-xio-devel >= 3
-BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
-%endif
-BuildRequires:	ghostscript
-%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 5
-BuildRequires:	tex(latex)
-%else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
-BuildRequires:	tetex-latex
-%endif
-%endif
-
-%if %{?fedora}%{!?fedora:0} == 18
-BuildRequires: tex(sectsty.sty)
-BuildRequires: tex(tocloft.sty)
-BuildRequires: tex(xtab.sty)
-BuildRequires: tex(multirow.sty)
-BuildRequires: tex(fullpage.sty)
 %endif
 
 %package progs
@@ -96,7 +61,6 @@ Requires:  libtool-ltdl-devel
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-xio-devel%{?_isa} >= 3
-Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - Scheduler Event Generator Documentation Files
@@ -145,64 +109,35 @@ Scheduler Event Generator Documentation Files
 %prep
 %setup -q -n %{_name}-%{version}
 
-%if "%{rhel}" == "5"
-mkdir bin
-install %{SOURCE9} bin/epstopdf
-%endif
-
 %build
-%if "%{rhel}" == "5"
-export PATH=$PWD/bin:$PATH
-%endif
-
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --with-flavor=%{flavor} --enable-doxygen \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus \
            --with-lsb \
            --with-initscript-config-path=/etc/sysconfig/%{name} \
-           --with-lockfile-path='${localstatedir}/lock/subsys/%{name}' \
-           --disable-static
+           --with-lockfile-path='${localstatedir}/lock/subsys/%{name}'
 
 make %{?_smp_mflags}
 
 %install
-%if "%{rhel}" == "5"
-export PATH=$PWD/bin:$PATH
-%endif
-
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
 
-# Remove unwanted documentation (needed for RHEL4)
-rm -f $RPM_BUILD_ROOT%{_mandir}/man3/*_%{_name}-%{version}_*.3
-sed -e '/_%{_name}-%{version}_.*\.3/d' \
-  -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-  | sed s!^!%{_prefix}! > package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! \
-  | sed s!^%{_prefix}/etc!/etc! > package-progs.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | sed s!^!%{_prefix}! > package-devel.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | sed -e 's!/man/.*!&*!' -e 's!^!%doc %{_prefix}!' > package-doc.filelist
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -227,23 +162,34 @@ if [ $1 -eq 1 ]; then
     /sbin/service %{name} condrestart > /dev/null 2>&1 || :
 fi
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_libdir}/libglobus*.so.*
 
-%files -f package-progs.filelist progs
+%files progs
 %defattr(-,root,root,-)
-%config(noreplace) /etc/sysconfig/globus-scheduler-event-generator
+%config(noreplace) /etc/sysconfig/%{name}
+%{_sysconfdir}/init.d/%{name}
+%{_sbindir}/*
 
-%files -f package-devel.filelist devel
+%files devel
 %defattr(-,root,root,-)
+%{_includedir}/globus/*
+%{_libdir}/libglobus*.so
+%{_libdir}/pkgconfig/*.pc
 
-%files -f package-doc.filelist doc
+%files doc
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}/html
+%{_docdir}/%{name}-%{version}/html/*
+%{_mandir}/man3/*
 
 %changelog
+* Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 5.0-1
+- Repackage for GT6 without GPT
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 4.7-4
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

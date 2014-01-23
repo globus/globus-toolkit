@@ -1,31 +1,15 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
-
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-gram-protocol
 %global _name %(tr - _ <<< %{name})
-Version:	11.3
-Release:	8%{?dist}
+Version:	12.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Protocol Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
-#		This is a workaround for the broken epstopdf script in RHEL5
-#		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
-Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -40,11 +24,8 @@ Requires:     perl = %{perl_version}
 %else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 %endif
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-io-devel >= 8
-BuildRequires:	globus-core >= 8
-BuildRequires:	globus-common-doc >= 14
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -75,7 +56,6 @@ Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-io-devel%{?_isa} >= 8
-Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - GRAM Protocol Library Documentation Files
@@ -115,62 +95,36 @@ GRAM Protocol Library Documentation Files
 %prep
 %setup -q -n %{_name}-%{version}
 
-%if "%{rhel}" == "5"
-mkdir bin
-install %{SOURCE9} bin/epstopdf
-%endif
-
 %build
-%if "%{rhel}" == "5"
-export PATH=$PWD/bin:$PATH
-%endif
-
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --with-flavor=%{flavor} --enable-doxygen \
-	   --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-	   --disable-static
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus \
+           --with-perlmoduledir=%{perl_vendorlib}
 
 make %{?_smp_mflags}
 
 %install
-%if "%{rhel}" == "5"
-export PATH=$PWD/bin:$PATH
-%endif
-
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
-
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
 
 # This script is intended to be sourced, not executed
 chmod 644 $RPM_BUILD_ROOT%{_datadir}/globus/globus-gram-protocol-constants.sh
 
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
 
-# Remove unwanted documentation (needed for RHEL4)
-rm -f $RPM_BUILD_ROOT%{_mandir}/man3/*_%{_name}-%{version}_*.3
-sed -e '/_%{_name}-%{version}_.*\.3/d' \
-  -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! > package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | sed s!^!%{_prefix}! > package-devel.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | sed -e 's!/man/.*!&*!' -e 's!^!%doc %{_prefix}!' > package-doc.filelist
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -179,25 +133,37 @@ rm -rf $RPM_BUILD_ROOT
 
 %postun -p /sbin/ldconfig
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{perl_vendorlib}/Globus
 %dir %{perl_vendorlib}/Globus/GRAM
+%{perl_vendorlib}/Globus/GRAM/*.pm
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_libdir}/libglobus*.so.*
+%{_datadir}/globus/globus-gram-protocol-constants.sh
 
-%files -f package-devel.filelist devel
+
+%files devel
 %defattr(-,root,root,-)
+%{_includedir}/globus/*
+%{_libdir}/libglobus*.so
+%{_libdir}/pkgconfig/*.pc
 
-%files -f package-doc.filelist doc
+%files doc
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}/html
 %dir %{_docdir}/%{name}-%{version}/perl
 %dir %{_docdir}/%{name}-%{version}/perl/Globus
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
+%{_docdir}/%{name}-%{version}/perl/Globus/GRAM/*
+%{_docdir}/%{name}-%{version}/html/*
+%{_mandir}/man3/*
 
 %changelog
+* Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 12.0-1
+- Repackage for GT6 without GPT
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 11.3-8
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

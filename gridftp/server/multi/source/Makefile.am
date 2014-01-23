@@ -2,6 +2,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 
 include_HEADERS = globus_xio_gridftp_multicast_driver.h
 lib_LTLIBRARIES = libglobus_xio_gridftp_multicast_driver.la
+doc_DATA = GLOBUS_LICENSE
 pkgconfig_DATA = globus-xio-gridftp-multicast.pc
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
@@ -14,7 +15,7 @@ libglobus_xio_gridftp_multicast_driver_la_LDFLAGS = \
         -no-undefined
 	-module -rpath $(libdir)
 
-EXTRA_DIST = dirt.sh version.h.in
+EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
 
 distuninstallcheck:
 	@:

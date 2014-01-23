@@ -1,7 +1,7 @@
 Source: globus-gram-client-tools
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, grid-packaging-tools, libglobus-common-dev (>= 14), libglobus-gass-server-ez-dev (>= 4), libglobus-gram-client-dev (>= 12), libglobus-gss-assist-dev (>= 8), libglobus-rsl-dev (>= 9), globus-core (>= 5.15-5)
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev, libglobus-gass-server-ez-dev, libglobus-gram-client-dev, libglobus-gss-assist-dev, libglobus-rsl-dev
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes

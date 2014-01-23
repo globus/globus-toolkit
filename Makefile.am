@@ -29,6 +29,15 @@ $(GT_TARGETS_RPM):
 	@cp $($@_SOURCE) rpmbuild/SOURCES
 	@HOME=$$(pwd) rpmbuild -ba $($@_SPECFILE)
 
+$(GT_TARGETS_DEB):
+	@rm -rf debbuild/$($@_PACKAGE_NAME)
+	@mkdir -p debbuild/$($@_PACKAGE_NAME)
+	@cp $($@_SOURCE) $($@_TARBALL)
+	@cp -R $(srcdir)/packaging/debian/$($@_PACKAGE_NAME) debbuild
+	@sed -e 's/@distro@/$(shell lsb_release -cs)/g' <  $(srcdir)/packaging/debian/$($@_PACKAGE_NAME)/debian/changelog.in > debbuild/$($@_PACKAGE_NAME)/debian/changelog
+	@tar --strip 1 -zxf $($@_SOURCE) -C debbuild/$($@_PACKAGE_NAME)
+	@cd debbuild/$($@_PACKAGE_NAME) && dpkg-buildpackage -uc -us $(DPKG_BUILDPACKAGE_OPTS)
+
 DOC_STAMPS =
 DOC_PHONY = 
 DOC_CLEAN = 
@@ -67,4 +76,4 @@ clean-local: $(GT_TARGETS_CLEAN) $(DOC_CLEAN)
 distclean-local: $(GT_TARGETS_DISTCLEAN)
 dist-hook: $(GT_TARGETS_DIST)
 
-.PHONY: $(GT_TARGETS_ALL) $(GT_TARGETS_ONLY) $(GT_TARGETS_CLEAN) $(GT_TARGETS_INSTALL) $(GT_TARGETS_DISTCLEAN) $(GT_TARGETS_DIST) $(DOC_PHONY)
+.PHONY: $(GT_TARGETS_ALL) $(GT_TARGETS_ONLY) $(GT_TARGETS_CLEAN) $(GT_TARGETS_INSTALL) $(GT_TARGETS_DISTCLEAN) $(GT_TARGETS_DIST) $(DOC_PHONY) $(GT_TARGETS_RPM) $(GT_TARGETS_DEB)

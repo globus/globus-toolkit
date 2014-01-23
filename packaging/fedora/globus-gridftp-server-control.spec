@@ -1,18 +1,6 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
-Version:	2.10
+Version:	3.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
@@ -28,12 +16,10 @@ Requires:	globus-xio-pipe-driver%{?_isa} >= 2
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:	globus-gssapi-error%{?_isa} >= 4
 
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-pipe-driver-devel >= 2
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-gsi-driver-devel >= 2
 BuildRequires:	globus-xio-devel >= 3
-BuildRequires:	globus-core >= 8
 
 %package devel
 Summary:	Globus Toolkit - Globus GridFTP Server Library Development Files
@@ -67,20 +53,19 @@ Globus GridFTP Server Library Development Files
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --with-flavor=%{flavor} \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-           --disable-static
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
@@ -88,18 +73,8 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | sed s!^!%{_prefix}! > package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | sed s!^!%{_prefix}! > package-devel.filelist
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -108,16 +83,22 @@ rm -rf $RPM_BUILD_ROOT
 
 %postun -p /sbin/ldconfig
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_libdir}/libglobus*so.*
 
-%files -f package-devel.filelist devel
+%files devel
 %defattr(-,root,root,-)
+%{_includedir}/globus/*
+%{_libdir}/libglobus*.so
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 3.0-1
+- Repackage for GT6 without GPT
+
 * Tue Oct 15 2013 Globus Toolkit <support@globus.org> - 2.10-1
 - GT-472: GridFTP server fails to detect client disconnection with piplining
 

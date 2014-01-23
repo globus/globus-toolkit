@@ -1,7 +1,7 @@
 Source: globus-usage
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-common-dev, libglobus-xio-dev, globus-core (>= 7.7)
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-xio-dev
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
@@ -27,7 +27,7 @@ Description: Globus Toolkit - Usage Library
 Package: libglobus-usage-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-usage0 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-xio-dev, globus-core (>= 7)
+Depends: libglobus-usage0 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-xio-dev
 Description: Globus Toolkit - Usage Library Development Files
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

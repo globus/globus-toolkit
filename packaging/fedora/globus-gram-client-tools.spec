@@ -1,19 +1,7 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
-Version:	10.4
-Release:	5%{?dist}
+Version:	11.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
 Group:		Applications/Internet
@@ -28,13 +16,11 @@ Requires:	globus-gram-client%{?_isa} >= 12
 Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	globus-rsl%{?_isa} >= 9
 
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gass-server-ez-devel >= 4
 BuildRequires:	globus-gram-client-devel >= 12
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-rsl-devel >= 9
-BuildRequires:	globus-core >= 8
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -49,18 +35,19 @@ Job Management Tools (globusrun)
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --with-flavor=%{flavor} \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-           --disable-static
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
@@ -68,22 +55,20 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | sed -e s!^!%{_prefix}! -e 's!.*/man/.*!%doc &*!' > package.filelist
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_bindir}/*
+%{_mandir}/man1/*
 
 %changelog
+* Thu Jan 23 2014 Globus Toolkit <support@globus.org> - 11.0-1
+- Repackage for GT6 without GPT
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 10.4-5
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

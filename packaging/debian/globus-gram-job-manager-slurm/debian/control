@@ -1,7 +1,7 @@
 Source: globus-gram-job-manager-slurm
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, grid-packaging-tools, globus-core
+Build-Depends: debhelper (>= 5), autotools-dev
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes

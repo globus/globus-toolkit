@@ -1,7 +1,7 @@
 Source: globus-gram-protocol
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-common-dev (>= 14), libglobus-io-dev (>= 8), globus-core (>= 5.15-5), libglobus-common-doc (>= 3), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-io-dev, libglobus-common-doc (>= 3), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes
@@ -26,7 +26,7 @@ Description: Globus Toolkit - GRAM Protocol Library
 Package: libglobus-gram-protocol-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gram-protocol3 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-io-dev, globus-core (>= 4)
+Depends: libglobus-gram-protocol3 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-io-dev
 Recommends: libglobus-gram-protocol-doc (= ${binary:Version})
 Description: Globus Toolkit - GRAM Protocol Library Development Files
  The Globus Toolkit is an open source software toolkit used for

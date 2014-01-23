@@ -1,0 +1,51 @@
+Source: globus-xio-gridftp-multicast
+Priority: optional
+Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-xio-dev, libglobus-common-dev, libglobus-ftp-client-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
+Standards-Version: 3.9.2
+Section: net
+DM-Upload-Allowed: yes
+Homepage: http://www.globus.org/
+
+Package: libglobus-xio-gridftp-multicast0
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Globus Toolkit - Globus XIO GridFTP Multicast Driver
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-xio-gridftp-multicast0 package contains:
+ Globus XIO GridFTP Multicast Driver
+
+Package: libglobus-xio-gridftp-multicast-dev
+Section: libdevel
+Architecture: any
+Depends: libglobus-xio-gridftp-multicast0 (= ${binary:Version}), ${misc:Depends}, libglobus-xio-dev
+Description: Globus Toolkit - Globus XIO GridFTP Multicast Driver Development Files
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-xio-gridftp-multicast-dev package contains:
+ Globus XIO GridFTP Multicast Driver Development Files
+
+Package: globus-xio-gridftp-multicast-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: libglobus-xio-gridftp-multicast0 (= ${binary:Version}), ${misc:Depends}
+Description: Globus Toolkit - Globus XIO GridFTP Multicast Driver Debug Symbols
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The globus-xio-gridftp-multicast-dbg package contains:
+ Globus XIO GridFTP Multicast Driver Debug Symbols

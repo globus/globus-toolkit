@@ -1,0 +1,23 @@
+globus-gram-job-manager-slurm (2.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Repackage for GT6 without GPT
+
+ -- Globus Toolkit <support@globus.org>  Wed, 22 Jan 2014 14:46:34 -0500
+
+globus-gram-job-manager-slurm (1.2-1) unstable; urgency=low
+
+  * update description
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Oct 2013 14:19:24 -0400
+
+globus-gram-job-manager-slurm (1.1-1) unstable; urgency=low
+
+  * Search for commands in path if not in config
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 Sep 2013 14:05:39 -0400
+
+globus-gram-job-manager-slurm (1.0-1) unstable; urgency=low
+
+  * Initial packaging
+
+ -- Globus Toolkit <support@globus.org>  Mon, 09 September 2013 12:42:12 -0400

@@ -1,19 +1,7 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-xioperf
 %global _name %(tr - _ <<< %{name})
-Version:	3.1
-Release:	7%{?dist}
+Version:	4.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - XIO Performance Tool
 
 Group:		Applications/Internet
@@ -25,8 +13,6 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-xio%{?_isa} >= 3
 
-BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3
 
@@ -43,19 +29,19 @@ XIO Performance Tool
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --with-flavor=%{flavor} \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version}
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
@@ -63,21 +49,20 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | sed s!^!%{_prefix}! > package.filelist
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_bindir}/%{name}
+%{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Jan 23 2014 Globus Toolkit <support@globus.org> - 4.0-1
+- Add openssl dependency
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.1-7
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

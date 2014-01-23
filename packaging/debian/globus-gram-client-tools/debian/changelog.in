@@ -1,0 +1,87 @@
+globus-gram-client-tools (11.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Repackage for GT6 without GPT
+
+ -- Globus Toolkit <support@globus.org>  Thu, 23 Jan 2014 09:40:48 -0500
+
+globus-gram-client-tools (10.4-1) unstable; urgency=low
+
+  * GT-198: globusrun crashes when authentication fails for status check
+
+ -- Globus Toolkit <support@globus.org>  Mon, 21 May 2012 12:45:08 -0400
+
+globus-gram-client-tools (10.3-1) unstable; urgency=low
+
+  * GRAM-339: globus-job-run and globus-job-submit can't always handle "-e" as an argument
+
+ -- Globus Toolkit <support@globus.org>  Wed, 11 Apr 2012 14:38:21 -0500
+
+globus-gram-client-tools (10.2-1) unstable; urgency=low
+
+  * GRAM-331: Remove dead code from globusrun
+  * GRAM-341: globusrun ignores state callbacks that occur too early
+
+ -- Globus Toolkit <support@globus.org>  Wed, 11 Apr 2012 05:33:53 -0500
+
+globus-gram-client-tools (10.1-1) unstable; urgency=low
+
+  * GRAM-311: Undefined variable defaults in shell scripts
+  * RIC-226: Some dependencies are missing in GPT metadata
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:43:46 -0500
+
+globus-gram-client-tools (10.0-2) unstable; urgency=low
+
+  * Update for 5.2.0 release
+
+ -- Globus Toolkit <support@globus.org>  Mon, 05 Dec 2011 17:42:01 -0500
+
+globus-gram-client-tools (10.0-1) unstable; urgency=low
+
+  * Remove obsolete get-orig-source rules
+
+ -- Globus Toolkit <support@globus.org>  Wed, 23 Nov 2011 14:54:53 -0500
+
+globus-gram-client-tools (10.0-0) unstable; urgency=low
+
+  * Update to 5.1.2
+
+ -- Globus Toolkit <support@globus.org>  Thu, 27 Oct 2011 10:13:10 -0400
+
+globus-gram-client-tools (9.0-0GT5.1.2a) unstable; urgency=low
+
+  * Non-maintainer upload.
+
+ -- Globus Support <support@globus.org>  Mon, 01 Aug 2011 09:14:20 -0400
+
+globus-gram-client-tools (8.2-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.2
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Mon, 19 Jul 2010 14:03:02 +0200
+
+globus-gram-client-tools (8.1-2) unstable; urgency=low
+
+  * Converting to package format 3.0 (quilt)
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Fri, 04 Jun 2010 04:43:29 +0200
+
+globus-gram-client-tools (8.1-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.1
+  * Drop patch globus-gram-client-tools.patch (fixed upstream)
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Thu, 15 Apr 2010 18:06:25 +0200
+
+globus-gram-client-tools (7.3-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.0
+  * Add debug package
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Wed, 27 Jan 2010 20:32:08 +0100
+
+globus-gram-client-tools (5.0-1) unstable; urgency=low
+
+  * Initial release (Closes: #540270).
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Fri, 07 Aug 2009 12:10:03 +0200

@@ -30,6 +30,7 @@ sub parse_package
     my @lines;
     my %values;
 
+    print "Parsing $package_dir \n" if $verbose;
     open(my $configure, "<$configure_script");
     @lines = grep(/^(PACKAGE_NAME|PACKAGE_VERSION|AGE_VERSION|PACKAGE_DEPS)=/, <$configure>);
     foreach (@lines) {
@@ -241,8 +242,6 @@ sub update_debian($$)
     my $pkgmeta = $allpkgmeta->{$pkgname};
 
     if ($verbose) {print "Acting on files in $topdir/debian/$pkgname/debian\n";}
-
-    my $version = "$pkgmeta->{MAJOR}.$pkgmeta->{MINOR}";
 
     $changed |= update_rules($pkgmeta);
     $changed |= update_control($pkgmeta, $allpkgmeta);
@@ -531,11 +530,11 @@ sub check_if_version_is_different
 {
     my $pkgmeta = shift;
     my $package = $pkgmeta->{NATIVE_NAME};
-    my $version = "$pkgmeta->{MAJOR}.$pkgmeta->{MINOR}";
+    my $version = $pkgmeta->{VERSION};
     my $old_version;
     my @oldchanges;
     my $fd;
-    my $changelogpath = "$topdir/debian/$package/debian/changelog";
+    my $changelogpath = "$topdir/debian/$package/debian/changelog.in";
     my $update;
 
     open($fd, "<$changelogpath") || return 0;
@@ -576,10 +575,10 @@ sub update_changelog
 {
     my $pkgmeta = $_[0];
     my $package = $pkgmeta->{NATIVE_NAME};
-    my $version = "$pkgmeta->{MAJOR}.$pkgmeta->{MINOR}";
+    my $version = $pkgmeta->{VERSION};
     my @oldchanges;
     my $fd;
-    my $changelogpath = "debian/$package/debian/changelog";
+    my $changelogpath = "debian/$package/debian/changelog.in";
     my $update;
     my $release = 1;
 
@@ -590,14 +589,20 @@ sub update_changelog
     if ($oldchanges[0] =~ /\(([0-9\.]+)-([^)]*)\)/)
     {
         my ($oldversion, $oldrelease) = ($1, $2);
+        $oldrelease =~ m/([0-9\.]+).*/;
+        my ($oldreleasever) = $1;
 
         if ($oldversion eq $version)
         {
-            $release = int($oldrelease) + 1;
+            $release = sprintf("%d+gt6.\@distro\@", int($oldreleasever) + 1);
+        }
+        else
+        {
+            $release = "1+gt6.\@distro\@";
         }
     }
 
-    $update = "$package ($version-$release) unstable; urgency=low\n\n";
+    $update = "$package ($version-$release) \@distro\@; urgency=low\n\n";
 
     if ($git_changelog)
     {
@@ -664,7 +669,7 @@ setlocale(LC_TIME, 'C');
 
 $package =~ s/_/-/g if $package;
 
-open(PKG, "$topdir/etc/packages");
+open(PKG, "sed -ne '/-all_SUBDIR *=/s/-all_SUBDIR *= */    /gp' '$topdir/../configure'|");
 while ( <PKG> )
 {
     chomp;

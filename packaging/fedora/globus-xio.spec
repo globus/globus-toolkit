@@ -1,6 +1,6 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	4.0
+Version:	3.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
@@ -71,7 +71,7 @@ unset GPT_LOCATION
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -if
+autoreconf -i
 %endif
 
 %configure \

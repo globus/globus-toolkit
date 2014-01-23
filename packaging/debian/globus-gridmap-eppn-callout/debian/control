@@ -1,7 +1,7 @@
 Source: globus-gridmap-eppn-callout
 Priority: optional
 Maintainer: Globus Toolkit <support@globus.org>
-Build-Depends: debhelper (>= 5), autotools-dev, grid-packaging-tools, libglobus-common-dev, globus-core (>= 8), libglobus-gsi-sysconfig-dev (>= 1), libglobus-gssapi-gsi-dev (>= 4), libglobus-gss-assist-dev (>= 3), libglobus-gridmap-callout-error-dev, libglobus-gsi-credential-dev (>= 6)
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev, libglobus-gssapi-gsi-dev, libglobus-gss-assist-dev, libglobus-gridmap-callout-error-dev, libglobus-gsi-credential-dev
 Standards-Version: 3.8.4
 Section: net
 Homepage: http://www.globus.org/
@@ -19,20 +19,6 @@ Description: Globus Toolkit - Globus Gridmap EPPN Callout
  .
  The libglobus-gridmap-eppn-callout0 package contains:
  Globus Gridmap EPPN Callout
-
-Package: libglobus-gridmap-eppn-callout-doc
-Section: doc
-Architecture: any
-Depends: libglobus-gridmap-eppn-callout0 (= ${binary:Version}), ${misc:Depends}
-Description: Globus Toolkit - Globus Gridmap EPPN Callout Documentation Files
- The Globus Toolkit is an open source software toolkit used for
- building Grid systems and applications. It is being developed by the
- Globus Alliance and many others all over the world. A growing number
- of projects and companies are using the Globus Toolkit to unlock the
- potential of grids for their cause.
- .
- The libglobus-gridmap-eppn-callout-doc package contains:
- Globus Gridmap EPPN Callout Documentation Files
 
 Package: globus-gridmap-eppn-callout-dbg
 Section: debug

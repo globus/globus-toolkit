@@ -1,25 +1,13 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
-Version:	0.9
-Release:	1%{?dist}
+Version:	0.6
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.5/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -29,7 +17,6 @@ Requires:       glib2%{?_isa} >= 2.32
 Requires:       libnice%{?_isa} >= 0.0.12
 Requires:       libffi
 
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-devel >= 0
 BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
@@ -66,20 +53,19 @@ Globus XIO UDT Driver Development Files
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --with-flavor=%{flavor} \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-           --disable-static
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
@@ -87,25 +73,11 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
 # This library is opened using lt_dlopenext, so the libtool archives
 # (.la files) can not be removed - fix the libdir...
 for lib in `find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la'` ; do
   sed "s!^libdir=.*!libdir=\'%{_libdir}\'!" -i $lib
 done
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-  $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist  \
-  | sed s!^!%{_prefix}! > package.filelist
-# Add libtool archive to runtime filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | grep 'lib[^/]*\.la$' \
-  | sed s!^!%{_prefix}! >> package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | grep -v 'lib[^/]*\.la$' \
-  | sed s!^!%{_prefix}! > package-devel.filelist
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -123,17 +95,5 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
-* Tue Nov 26 2013 Globus Toolkit <support@globus.org> - 0.9-1
-- Update build to check for bind2 in udt 4.11
-- Handle udt.h in /usr/include or /usr/include/udt
-- Update internal dependency build script to work with the official release
-
-* Mon Nov 25 2013 Globus Toolkit <support@globus.org> - 0.8-1
-- GT-486: Perform udt driver connection using the socket negotiated by ice instead of binding to the negotiated source addr.
-- cleanup
-
-* Wed Nov 06 2013 Globus Toolkit <support@globus.org> - 0.7-1
-- GT-481: avoid UDT driver blocking on accept, resulting in hung process if connection never comes.
-
 * Wed Oct 16 2013 Globus Toolkit <support@globus.org> - 0.6-2
 - New package

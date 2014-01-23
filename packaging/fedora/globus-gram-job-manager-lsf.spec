@@ -1,21 +1,8 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-gram-job-manager-lsf
 %global _name %(tr - _ <<< %{name})
-Version:	1.2
+Version:	2.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
@@ -38,8 +25,6 @@ Requires:     perl = %{perl_version}
 %else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 %endif
-BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-scheduler-event-generator-devel >= 4
@@ -100,21 +85,23 @@ PBS Job Manager Setup using SEG to monitor job state
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
 export MPIEXEC=no
 export MPIRUN=no
-%configure --with-flavor=%{flavor} \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
            --with-globus-state-dir=%{_localstatedir}/lib/globus \
-           --disable-static
+           --libexecdir=%{_datadir}/globus \
+           --with-perlmoduledir=%{perl_vendorlib}
 
 make %{?_smp_mflags}
 
@@ -125,39 +112,10 @@ make install DESTDIR=$RPM_BUILD_ROOT
 # added/removed by post scripts
 rm $RPM_BUILD_ROOT/etc/grid-services/jobmanager-lsf
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
-
-
-# Generate package filelists
-# Main package: lsf.pm and globus-lsf.config
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! \
-  | sed s!^%{_prefix}/etc!/etc! \
-  | grep -E 'lsf\.pm|lsf\.rvf|globus-lsf\.conf|pkg_data_|.filelist' > package.filelist
-
-# setup-poll package: /etc/grid-services/available/job-manager-lsf-poll
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! \
-  | sed s!^%{_prefix}/etc!/etc! \
-  | grep jobmanager-lsf-poll > package-setup-poll.filelist
-
-# setup-seg package: /etc/grid-services/available/job-manager-lsf-seg
-# plus seg module
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! \
-  | sed s!^%{_prefix}/etc!/etc! \
-  | grep -Ev 'jobmanager-lsf-poll|globus-lsf.conf|lsf.pm|pkg_data_%{flavor}_rtl|pkg_data_noflavor_data|%{flavor}_rtl.filelist|noflavor_data.filelist' > package-setup-seg.filelist
-
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | sed 's!^!%doc %{_prefix}!' >> package.filelist
+# Remove pkg-config files (.pc files)
+find $RPM_BUILD_ROOT%{_libdir} -name '*.pc' -exec rm -v '{}' \;
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -207,21 +165,28 @@ elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
     globus-gatekeeper-admin -E > /dev/null 2>&1 || :
 fi
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %config(noreplace) %{_sysconfdir}/globus/globus-lsf.conf
+%{_datadir}/globus/globus_gram_job_manager/lsf.rvf
+%{_sysconfdir}/globus/scheduler-event-generator/available/lsf
+%{perl_vendorlib}/Globus/GRAM/JobManager/lsf.pm
 
-%files setup-poll -f package-setup-poll.filelist
+%files setup-poll
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-lsf-poll
 
-%files setup-seg -f package-setup-seg.filelist
+%files setup-seg
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-lsf-seg
+%{_libdir}/libglobus*
 
 %changelog
+* Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 2.1-1
+- Repackage for GT6 without GPT
+
 * Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 1.2-1
 - GT-344: Cut and past error in gpt metadata for GRAM LSF module
 

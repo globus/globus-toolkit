@@ -1,0 +1,11 @@
+globus-xio-gridftp-multicast (1.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Repackage for GT6 without GPT
+
+ -- Globus Toolkit <support@globus.org>  Wed, 22 Jan 2014 13:16:20 -0500
+
+globus-xio-gridftp-multicast (0.0-1) unstable; urgency=low
+
+  * Initial Packaging
+
+ -- Globus Toolkit <support@globus.org>  Wed, 11 December 2013 14:27:14 -0500

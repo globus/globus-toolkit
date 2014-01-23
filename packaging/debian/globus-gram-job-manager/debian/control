@@ -1,7 +1,7 @@
 Source: globus-gram-job-manager
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-scheduler-event-generator-dev (>= 4), libglobus-xio-popen-driver-dev (>= 2), libglobus-xio-dev (>= 3), libglobus-gss-assist-dev (>= 8), globus-core (>= 5.15-5), libglobus-gsi-sysconfig-dev (>= 5), libglobus-callout-dev, libglobus-gram-job-manager-callout-error-dev, libglobus-gram-protocol-dev (>= 11), libglobus-common-dev (>= 14), libglobus-usage-dev (>= 3), libglobus-rsl-dev (>= 9), libglobus-gass-cache-dev (>= 8), libxml2-dev, libglobus-gass-transfer-dev (>= 7), libglobus-gram-protocol-doc (>= 9), libglobus-common-doc, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-scheduler-event-generator-dev, libglobus-xio-popen-driver-dev, libglobus-xio-dev, libglobus-gss-assist-dev, libglobus-gsi-sysconfig-dev, libglobus-callout-dev, libglobus-gram-job-manager-callout-error-dev, libglobus-gram-protocol-dev, libglobus-common-dev, libglobus-usage-dev, libglobus-rsl-dev, libglobus-gass-cache-dev, libxml2-dev, libglobus-gass-transfer-dev, libglobus-gram-protocol-doc (>= 9), libglobus-common-doc, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
@@ -12,7 +12,7 @@ Homepage: http://www.globus.org/
 Package: globus-gram-job-manager
 Section: net
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libglobus-xio-popen-driver0 (>= 2), libxml2, globus-gram-job-manager-scripts, globus-gass-copy-progs, globus-proxy-utils, globus-gass-cache-program, globus-common-progs, globus-gatekeeper
+Depends: ${shlibs:Depends}, ${misc:Depends}, libglobus-xio-popen-driver0, libxml2, globus-gram-job-manager-scripts, globus-gass-copy-progs, globus-proxy-utils, globus-gass-cache-program, globus-common-progs, globus-gatekeeper
 Recommends: globus-gram-job-manager-doc (= ${binary:Version})
 Breaks: globus-gram-job-manager-doc (<< 10.59)
 Description: Globus Toolkit - GRAM Jobmanager

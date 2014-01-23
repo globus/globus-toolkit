@@ -9,8 +9,6 @@ License:	ASL 2.0
 URL:		http://www.globus.org/
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:       grid-packaging-tools
-Requires:       globus-core
 Requires:       globus-common
 Requires:       globus-common-devel
 Requires:       globus-common-doc

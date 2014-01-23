@@ -809,7 +809,7 @@ unlock_exit:
 	*cwd_buffer = GLOBUS_NULL;
     }
     if(cwd_buffer_length) {
-	*cwd_buffer_length = GLOBUS_NULL;
+	*cwd_buffer_length = 0;
     }
 
     /* And return our error */
@@ -1427,7 +1427,7 @@ unlock_exit:
 
     globus_i_ftp_client_handle_is_not_active(u_handle);
     *stat_buffer = GLOBUS_NULL;
-    *stat_buffer_length = GLOBUS_NULL;
+    *stat_buffer_length = 0;
     
     /* And return our error */
 error_exit:
@@ -1809,7 +1809,7 @@ unlock_exit:
 
     globus_i_ftp_client_handle_is_not_active(u_handle);
     *mlst_buffer = GLOBUS_NULL;
-    *mlst_buffer_length = GLOBUS_NULL;
+    *mlst_buffer_length = 0;
     
     /* And return our error */
 error_exit:

@@ -1,14 +1,8 @@
-%if "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-gram-job-manager-slurm
 %global _name %(tr - _ <<< %{name})
-Version:	1.2
+Version:	2.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - SLURM Job Manager
 
@@ -30,20 +24,10 @@ Requires:     perl = %{perl_version}
 %else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 %endif
-BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-gram-protocol-devel >= 11
 BuildArch:      noarch
-
-%if %{?fedora}%{!?fedora:0} == 18
-BuildRequires: tex(sectsty.sty)
-BuildRequires: tex(tocloft.sty)
-BuildRequires: tex(xtab.sty)
-BuildRequires: tex(multirow.sty)
-BuildRequires: tex(fullpage.sty)
-%endif
 
 %package doc
 Summary:	Globus Toolkit - SLURM Job Manager Documentation Files
@@ -98,18 +82,23 @@ SLURM Job Manager Setup using polling to monitor job state
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
 export MPIEXEC=no
 export MPIRUN=no
-%configure --%{docdiroption}=%{_docdir}/%{name}-%{version} \
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus \
            --with-globus-state-dir=%{_localstatedir}/lib/globus \
-           --disable-static
+           --with-perlmoduledir=%{perl_vendorlib}
 
 make %{?_smp_mflags}
 
@@ -117,26 +106,6 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 rm -rf $RPM_BUILD_ROOT/etc/grid-services/jobmanager-slurm
-
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
-# Generate package filelists
-# Main package: slurm.pm and globus-slurm.conf
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! \
-  | sed s!^%{_prefix}/etc!/etc! \
-  | grep -E 'slurm\.pm|slurm\.rvf|globus-slurm\.conf|pkg_data_|.filelist' > package.filelist
-
-# setup-poll package: /etc/grid-services/available/job-manager-slurm-poll
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! \
-  | sed s!^%{_prefix}/etc!/etc! \
-  | grep -v 'globus-slurm.conf' \
-  | grep jobmanager-slurm-poll > package-setup-poll.filelist
-
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | sed 's!^!%doc %{_prefix}!' > package-doc.filelist
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -161,20 +130,27 @@ elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
     globus-gatekeeper-admin -E > /dev/null 2>&1 || :
 fi
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
+%{perl_vendorlib}/Globus/GRAM/JobManager/slurm.pm
 %dir %{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{version}/*LICENSE*
 %config(noreplace) %{_sysconfdir}/globus/globus-slurm.conf
+%{_libdir}/pkgconfig/*.pc
+%{_datadir}/globus/globus_gram_job_manager/slurm.rvf
 
-%files setup-poll -f package-setup-poll.filelist
+
+%files setup-poll
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-slurm-poll
 
-%files doc -f package-doc.filelist
+%files doc
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 2.0-1
+- Repackage for GT6 without GPT
+
 * Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 1.2-1
 - update description
 

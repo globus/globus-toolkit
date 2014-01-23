@@ -1,6 +1,12 @@
-Name:		globus-xio-rate-driver
+%changelog
+* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 1.1-1
+- Add license
+
+* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 1.0-1
+- Repackage for GT6 without GPT
+
 %global _name %(tr - _ <<< %{name})
-Version:	0.3
+Version:	1.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Rate Limiting Driver
 
@@ -20,10 +26,7 @@ BuildRequires:	globus-common-devel >= 14
 Summary:	Globus Toolkit - Globus XIO Rate Limiting Driver Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-gssapi-error-devel%{?_isa} >= 4
-Requires:	globus-gss-assist-devel%{?_isa} >= 8
 Requires:	globus-xio-devel%{?_isa} >= 3
-Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid

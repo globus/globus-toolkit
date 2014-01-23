@@ -1,0 +1,154 @@
+globus-gss-assist (10.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Repackage for GT6 without GPT
+
+ -- Globus Toolkit <support@globus.org>  Tue, 21 Jan 2014 11:21:58 -0500
+
+globus-gss-assist (9.0-2) unstable; urgency=low
+
+  * Fix dependency
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 October 2013 16:02:46 -0400
+
+globus-gss-assist (9.0-1) unstable; urgency=low
+
+  * Update Major version for globus_gss_assist_map_and_authorize_sharing
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Oct 2013 13:25:13 -0400
+
+globus-gss-assist (8.9-1) unstable; urgency=low
+
+  * Update sharing to support a full cert chain at logon
+
+ -- Globus Toolkit <support@globus.org>  Tue, 19 Mar 2013 14:54:01 -0500
+
+globus-gss-assist (8.8-1) unstable; urgency=low
+
+  * GT-365: Switch sharing user identification from DN to CERT
+
+ -- Globus Toolkit <support@globus.org>  Tue, 05 Mar 2013 17:09:04 -0500
+
+globus-gss-assist (8.7-1) unstable; urgency=low
+
+  * GT-302: Add initial sharing support to the GridFTP server
+  * GT-356: Add configuration and a command to make the sharing authorization file easier to manage
+
+ -- Globus Toolkit <support@globus.org>  Tue, 05 Feb 2013 08:02:35 -0500
+
+globus-gss-assist (8.6-1) unstable; urgency=low
+
+  * GT-255: gridmapdir support doesn't compile on non-POSIX systems
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 Jul 2012 13:52:29 -0400
+
+globus-gss-assist (8.5-2) unstable; urgency=low
+
+  * GT 5.2.2 final
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+
+globus-gss-assist (8.5-1) unstable; urgency=low
+
+  * RIC-239: GSSAPI Token inspection fails when using TLS 1.2
+
+ -- Globus Toolkit <support@globus.org>  Mon, 02 Apr 2012 12:12:53 -0400
+
+globus-gss-assist (8.3-1) unstable; urgency=low
+
+  * RIC-224: Eliminate some doxygen warnings
+  * RIC-226: Some dependencies are missing in GPT metadata
+  * RIC-227: Potentially unsafe format strings in GSI
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:37 -0500
+
+globus-gss-assist (8.2-1) unstable; urgency=low
+
+  * Doxygen markup errors (bugzilla #7185)
+
+ -- Globus Toolkit <support@globus.org>  Thu, 22 Dec 2011 10:43:36 -0500
+
+globus-gss-assist (8.1-2) unstable; urgency=low
+
+  * Update for 5.2.0 release
+
+ -- Globus Toolkit <support@globus.org>  Mon, 05 Dec 2011 17:42:01 -0500
+
+globus-gss-assist (8.1-1) unstable; urgency=low
+
+  * Remove obsolete get-orig-source rules
+
+ -- Globus Toolkit <support@globus.org>  Wed, 23 Nov 2011 14:54:53 -0500
+
+globus-gss-assist (8.1-0) unstable; urgency=low
+
+  * Update to 5.1.3
+
+ -- Globus Toolkit <support@globus.org>  Tue, 15 Nov 2011 16:26:13 -0500
+
+globus-gss-assist (7.3-0GT5.1.1a) unstable; urgency=low
+
+  * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
+
+ -- Globus Toolkit <support@globus.org>  Wed, 25 May 2011 21:44:47 -0400
+
+globus-gss-assist (5.9-2) unstable; urgency=low
+
+  * Add README file
+  * Use new doxygen-latex build dependency (Closes: #616241)
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Tue, 26 Apr 2011 08:54:28 +0200
+
+globus-gss-assist (5.9-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.2
+  * Move client man pages to progs package
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Mon, 19 Jul 2010 08:56:35 +0200
+
+globus-gss-assist (5.8-2) unstable; urgency=low
+
+  * Converting to package format 3.0 (quilt)
+  * Add new build dependency on texlive-font-utils due to changes in texlive
+    packaging (epstopdf moved there) (Closes: #583038)
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Fri, 04 Jun 2010 04:43:30 +0200
+
+globus-gss-assist (5.8-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.1
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Thu, 15 Apr 2010 14:37:20 +0200
+
+globus-gss-assist (5.5-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.0
+  * Add debug package
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Tue, 26 Jan 2010 19:00:40 +0100
+
+globus-gss-assist (4.0-4) unstable; urgency=low
+
+  * Fix rule dependencies in the debian/rules file.
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Wed, 13 May 2009 14:07:54 +0200
+
+globus-gss-assist (4.0-3) unstable; urgency=low
+
+  * Initial release (Closes: #514472).
+  * Rebuilt to correct libltdl dependency.
+  * Preparing for other 64bit platforms than amd64.
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Sat, 18 Apr 2009 20:17:33 +0200
+
+globus-gss-assist (4.0-2) UNRELEASED; urgency=low
+
+  * Only quote the Apache-2.0 license if necessary.
+  * Updated deprecated Source-Version in debian/control.
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Thu, 26 Mar 2009 09:21:25 +0100
+
+globus-gss-assist (4.0-1) UNRELEASED; urgency=low
+
+  * First build.
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Sat, 03 Jan 2009 10:18:08 +0100

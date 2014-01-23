@@ -1,7 +1,7 @@
 Source: globus-scheduler-event-generator
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-gram-protocol-dev (>= 11), libltdl3-dev, libglobus-common-dev (>= 14), libglobus-xio-gsi-driver-dev, libglobus-xio-dev, globus-core (>= 5.15-5), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-gram-protocol-dev, libltdl3-dev, libglobus-common-dev, libglobus-xio-gsi-driver-dev, libglobus-xio-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes
@@ -40,7 +40,7 @@ Description: Globus Toolkit - Scheduler Event Generator Programs
 Package: libglobus-scheduler-event-generator-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-scheduler-event-generator0 (= ${binary:Version}), ${misc:Depends}, libglobus-gram-protocol-dev, libltdl3-dev, libglobus-common-dev, libglobus-xio-gsi-driver-dev, libglobus-xio-dev, globus-core (>= 4)
+Depends: libglobus-scheduler-event-generator0 (= ${binary:Version}), ${misc:Depends}, libglobus-gram-protocol-dev, libltdl3-dev, libglobus-common-dev, libglobus-xio-gsi-driver-dev, libglobus-xio-dev
 Recommends: libglobus-scheduler-event-generator-doc (= ${binary:Version})
 Description: Globus Toolkit - Scheduler Event Generator Development Files
  The Globus Toolkit is an open source software toolkit used for

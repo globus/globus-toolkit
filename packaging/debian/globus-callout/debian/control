@@ -1,7 +1,7 @@
 Source: globus-callout
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libltdl3-dev, libglobus-common-dev (>= 14), globus-core (>= 7.7), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libltdl3-dev, libglobus-common-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes
@@ -26,7 +26,7 @@ Description: Globus Toolkit - Globus Callout Library
 Package: libglobus-callout-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-callout0 (= ${binary:Version}), ${misc:Depends}, libltdl3-dev, libglobus-common-dev, globus-core (>= 7)
+Depends: libglobus-callout0 (= ${binary:Version}), ${misc:Depends}, libltdl3-dev, libglobus-common-dev
 Recommends: libglobus-callout-doc (= ${binary:Version})
 Description: Globus Toolkit - Globus Callout Library Development Files
  The Globus Toolkit is an open source software toolkit used for

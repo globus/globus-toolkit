@@ -1,7 +1,7 @@
 Source: globus-gsi-proxy-core
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, grid-packaging-tools, libglobus-gsi-proxy-ssl-dev (>= 4), libglobus-gsi-credential-dev (>= 5), libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, globus-core (>= 7.7), libglobus-gsi-cert-utils-dev (>= 8), libglobus-common-dev (>= 14), libglobus-gsi-sysconfig-dev (>= 5), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1) | doxygen-latex, graphviz, texlive-fonts-recommended, texlive-font-utils, ghostscript
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-gsi-proxy-ssl-dev, libglobus-gsi-credential-dev, libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-cert-utils-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
@@ -26,7 +26,7 @@ Description: Globus Toolkit - Globus GSI Proxy Core Library
 Package: libglobus-gsi-proxy-core-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gsi-proxy-core0 (= ${binary:Version}), ${misc:Depends}, libglobus-gsi-proxy-ssl-dev, libglobus-gsi-credential-dev, libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, globus-core (>= 7), libglobus-gsi-cert-utils-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev
+Depends: libglobus-gsi-proxy-core0 (= ${binary:Version}), ${misc:Depends}, libglobus-gsi-proxy-ssl-dev, libglobus-gsi-credential-dev, libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-cert-utils-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev
 Recommends: libglobus-gsi-proxy-core-doc (= ${binary:Version})
 Description: Globus Toolkit - Globus GSI Proxy Core Library Development Files
  The Globus Toolkit is an open source software toolkit used for

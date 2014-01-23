@@ -1,7 +1,7 @@
 Source: globus-openssl-module
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 6.0.7~), autotools-dev, quilt, grid-packaging-tools, libglobus-gsi-proxy-ssl-dev (>= 4), libglobus-common-dev (>= 14), libglobus-gsi-openssl-error-dev, globus-core (>= 7.7), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
+Build-Depends: debhelper (>= 6.0.7~), autotools-dev, quilt, libglobus-gsi-proxy-ssl-dev, libglobus-common-dev, libglobus-gsi-openssl-error-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
@@ -40,7 +40,7 @@ Description: Globus Toolkit - Globus OpenSSL Module Wrapper
 Package: libglobus-openssl-module-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-openssl-module0 (= ${binary:Version}), ${misc:Depends}, libglobus-gsi-proxy-ssl-dev, libglobus-common-dev, libglobus-gsi-openssl-error-dev, globus-core (>= 7)
+Depends: libglobus-openssl-module0 (= ${binary:Version}), ${misc:Depends}, libglobus-gsi-proxy-ssl-dev, libglobus-common-dev, libglobus-gsi-openssl-error-dev
 Recommends: libglobus-openssl-module-doc (= ${binary:Version})
 Description: Globus Toolkit - Globus OpenSSL Module Wrapper Development Files
  The Globus Toolkit is an open source software toolkit used for

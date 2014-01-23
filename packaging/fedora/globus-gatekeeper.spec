@@ -1,19 +1,7 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.15
-Release:	2%{?dist}
+Version:	10.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
@@ -40,10 +28,8 @@ BuildRequires:       lsb
 %else
 BuildRequires:       insserv
 %endif
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-gssapi-gsi-devel >= 9
-BuildRequires:	globus-core >= 8
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -59,18 +45,19 @@ Globus Gatekeeper Setup
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --with-flavor=%{flavor} \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
+
+%configure \
            --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus \
            --with-lsb \
 	   --with-initscript-config-path=/etc/sysconfig/globus-gatekeeper \
            --with-lockfile-path='${localstatedir}/lock/subsys/globus-gatekeeper'
@@ -80,21 +67,8 @@ make %{?_smp_mflags}
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
-
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | grep -v '^/etc' \
-  | sed -e s!^!%{_prefix}! -e 's!.*/man/.*!%doc &*!' > package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | grep '^/etc' >> package.filelist
-mkdir -p $RPM_BUILD_ROOT/etc/grid-services
-mkdir -p $RPM_BUILD_ROOT/etc/grid-services/available
+mkdir $RPM_BUILD_ROOT/etc/grid-services
+mkdir $RPM_BUILD_ROOT/etc/grid-services/available
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -115,16 +89,23 @@ if [ $1 -eq 1 ]; then
     /sbin/service %{name} condrestart > /dev/null 2>&1 || :
 fi
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %dir /etc/grid-services
 %dir /etc/grid-services/available
-%config(noreplace) /etc/sysconfig/globus-gatekeeper
-%config(noreplace) /etc/logrotate.d/globus-gatekeeper
+%config(noreplace) /etc/sysconfig/%{name}
+%config(noreplace) /etc/logrotate.d/%{name}
+%{_sysconfdir}/init.d/%{name}
+%{_sbindir}/*
+%{_mandir}/man8/*
+
 
 %changelog
+* Thu Jan 23 2014 Globus Toolkit <support@globus.org> - 10.0-1
+- Repackage for GT6 without GPT
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 9.15-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

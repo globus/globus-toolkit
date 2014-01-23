@@ -1,18 +1,6 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.4
+Version:	3.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
@@ -20,9 +8,6 @@ Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
-#		This is a workaround for the broken epstopdf script in RHEL5
-#		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
-Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gssapi-error%{?_isa} >= 4
@@ -31,35 +16,15 @@ Requires:	globus-xio%{?_isa} >= 3
 Requires:	globus-gssapi-gsi%{?_isa} >= 9
 Requires:	globus-common%{?_isa} >= 14
 
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gssapi-error-devel >= 4
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-gssapi-gsi-devel >= 9
 BuildRequires:	globus-xio-doc >= 3
-BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
-%endif
-BuildRequires:	ghostscript
-%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
-BuildRequires:	tex(latex)
-%else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
-BuildRequires:	tetex-latex
-%endif
-%endif
-
-%if %{?fedora}%{!?fedora:0} == 18
-BuildRequires: tex(sectsty.sty)
-BuildRequires: tex(tocloft.sty)
-BuildRequires: tex(xtab.sty)
-BuildRequires: tex(multirow.sty)
-BuildRequires: tex(fullpage.sty)
 %endif
 
 %package devel
@@ -109,68 +74,28 @@ Globus XIO GSI Driver Documentation Files
 %prep
 %setup -q -n %{_name}-%{version}
 
-%if "%{rhel}" == "5"
-mkdir bin
-install %{SOURCE9} bin/epstopdf
-%endif
-
 %build
-%if "%{rhel}" == "5"
-export PATH=$PWD/bin:$PATH
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+# Remove files that should be replaced during bootstrap
+rm -rf autom4te.cache
+
+autoreconf -i
 %endif
 
-# Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
-rm -rf autom4te.cache
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
 
-%{_datadir}/globus/globus-bootstrap.sh
-
-%configure --with-flavor=%{flavor} --enable-doxygen \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-           --disable-static
-
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
 %install
-%if "%{rhel}" == "5"
-export PATH=$PWD/bin:$PATH
-%endif
-
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
-# This library is opened using lt_dlopenext, so the libtool archives
-# (.la files) can not be removed - fix the libdir...
-for lib in `find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la'` ; do
-  sed -e "s!^libdir=.*!libdir=\'%{_libdir}\'!" -i $lib
-done
-
-# Move libtool archives (.la files) to rtl
-grep '/lib[^/]*\.la$' $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
- >> $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist 
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
-
-# Remove unwanted documentation (needed for RHEL4)
-rm -f $RPM_BUILD_ROOT%{_mandir}/man3/*_%{_name}-%{version}_*.3
-sed -e '/_%{_name}-%{version}_.*\.3/d' \
-  -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-  | sed s!^!%{_prefix}! > package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | sed s!^!%{_prefix}! > package-devel.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | grep -v GLOBUS_LICENSE \
-  | sed -e 's!/man/.*!&*!' -e 's!^!%doc %{_prefix}!' > package-doc.filelist
+find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -179,21 +104,28 @@ rm -rf $RPM_BUILD_ROOT
 
 %postun -p /sbin/ldconfig
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_libdir}/libglobus*.so.*
 
-%files -f package-devel.filelist devel
+%files devel
 %defattr(-,root,root,-)
+%{_includedir}/globus/*
+%{_libdir}/libglobus*.so
 %{_libdir}/pkgconfig/%{name}.pc
 
-%files -f package-doc.filelist doc
+%files doc
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}/html
+%{_docdir}/%{name}-%{version}/html/*
+%{_mandir}/man3/*
 
 %changelog
+* Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 3.0-1
+- Repackage for GT6 without GPT
+
 * Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 2.4-1
 - Remove reference to TCP as the underlying protocol.
 

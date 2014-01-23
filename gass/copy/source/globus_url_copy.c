@@ -3363,7 +3363,7 @@ guc_build_mc_str(
         globus_free(url_opts);
         count++;
 
-        memset(url_line, 512, '\0');
+        memset(url_line, 0, sizeof(url_line));
         ptr = fgets(url_line, 512, fptr);
     }
 

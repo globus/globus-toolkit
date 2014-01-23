@@ -1,19 +1,7 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.53
-Release:	2%{?dist}
+Version:	14.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -43,12 +31,10 @@ Requires:	globus-gass-cache-program >= 2
 Requires:	globus-gatekeeper >= 9
 Requires:	psmisc
 
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-scheduler-event-generator-devel >= 4
 BuildRequires:	globus-xio-popen-driver-devel >= 2
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-gss-assist-devel >= 8
-BuildRequires:	globus-core >= 8
 BuildRequires:	globus-gsi-sysconfig-devel >= 5
 BuildRequires:	globus-callout-devel >= 2
 BuildRequires:	globus-gram-job-manager-callout-error-devel >= 2
@@ -61,29 +47,6 @@ BuildRequires:	libxml2-devel >= 2.6.11
 BuildRequires:	globus-gass-transfer-devel >= 7
 BuildRequires:	globus-gram-protocol-doc >= 11
 BuildRequires:	globus-common-doc >= 14
-BuildRequires:	doxygen
-BuildRequires:	graphviz
-%if "%{?rhel}" == "5"
-BuildRequires:	graphviz-gd
-%endif
-BuildRequires:	ghostscript
-%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 5
-BuildRequires:	tex(latex)
-%else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
-BuildRequires:	tetex-latex
-%endif
-%endif
-
-%if %{?fedora}%{!?fedora:0} == 18
-BuildRequires: tex(sectsty.sty)
-BuildRequires: tex(tocloft.sty)
-BuildRequires: tex(xtab.sty)
-BuildRequires: tex(multirow.sty)
-BuildRequires: tex(fullpage.sty)
-%endif
 
 %package doc
 Summary:	Globus Toolkit - GRAM Jobmanager Documentation Files
@@ -116,18 +79,19 @@ GRAM Jobmanager Documentation Files
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-aclocal_includes="-I ." %{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --with-flavor=%{flavor} --enable-doxygen \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-           --disable-static
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
@@ -135,56 +99,38 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
-# Move client and server man pages to main package
-grep '.[18]$' $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  >> $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist
-sed '/.[18]$/d' -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
-
-# Move documentation to default RPM location
-
-# Fix doxygen glitches
-for f in man3/globus_gram_job_manager_configuration.3 \
-	 man3/globus_gram_job_manager_job_execution_environment.3 \
-	 man3/globus_gram_job_manager_rsl_validation_file.3 \
-	 man5/rsl.5 ; do
-  sed 's/P\.RS/P\n.RS/' -i $RPM_BUILD_ROOT%{_mandir}/$f
-done
-
-# Remove unwanted documentation (needed for RHEL4)
-rm -f $RPM_BUILD_ROOT%{_mandir}/man3/*_%{_name}-%{version}_*.3
-sed -e '/_%{_name}-%{version}_.*\.3/d' \
-  -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed -e s!^!%{_prefix}! -e 's!.*/man/.*!%doc &*!' \
-  | sed -e s!^%{_prefix}/etc!/etc!  > package.filelist
-
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | sed -e 's!/man/.*!&*!' -e 's!^!%doc %{_prefix}!' > package-doc.filelist
+find ${RPM_BUILD_ROOT} -name 'libglobus*.la' -exec rm -vf '{}' \;
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
+%dir %{_datadir}/globus/globus_gram_job_manager
+%{_datadir}/globus/globus_gram_job_manager/*.rvf
 %dir %{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %dir %{_localstatedir}/lib/globus/gram_job_state
 %dir %{_localstatedir}/log/globus
 %config(noreplace) %{_sysconfdir}/globus/globus-gram-job-manager.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/globus-job-manager
+%{_sbindir}/*
+%{_bindir}/*
+%{_mandir}/man8/*
+%{_mandir}/man1/*
+%{_libdir}/libglobus*.so*
 
-%files doc -f package-doc.filelist
+%files doc
 %defattr(-,root,root,-)
-%dir %{_docdir}/%{name}-%{version}/html
+%{_mandir}/man5/*
 
 %changelog
+* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 14.1-1
+- Repackage for GT6 without GPT
+
+* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 14.0-1
+- Repackage for GT6 without GPT
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 13.53-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

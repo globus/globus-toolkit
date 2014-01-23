@@ -4,7 +4,7 @@ AC_INIT([globus_gridftp_server],[7.0],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-xio >= 3, globus-xio-gsi-driver >= 2, globus-gfork >= 3, globus-gridftp-server-control >= 2, globus-ftp-control >= 4, globus-authz >= 2, globus-usage >= 3, globus-gss-assist >= 9, globus-gsi-credential >= 6, openssl >= 0.9.8"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-xio >= 3, globus-xio-gsi-driver >= 2, globus-gfork >= 3, globus-gridftp-server-control >= 2, globus-ftp-control >= 4, globus-authz >= 2, globus-usage >= 3, globus-gssapi-gsi >= 11, globus-gss-assist >= 9, globus-gsi-credential >= 6, openssl >= 0.9.8"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])

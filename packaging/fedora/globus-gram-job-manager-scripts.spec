@@ -1,14 +1,7 @@
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	5.0
+Version:	6.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
@@ -29,8 +22,6 @@ Requires:     perl = %{perl_version}
 %else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 %endif
-BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core >= 8
 
 %package doc
 Summary:	Globus Toolkit - GRAM Job ManagerScripts Documentation Files
@@ -59,17 +50,20 @@ GRAM Job ManagerScripts Documentation Files
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --without-flavor \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version}
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus \
+           --with-perlmoduledir=%{perl_vendorlib}
 
 make %{?_smp_mflags}
 
@@ -77,38 +71,33 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! > package.filelist
-
-grep /man/ $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | sed -e 's!/man/.*!&*!' -e 's!^!%doc %{_prefix}!' >> package.filelist
-
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | grep -v /man/ \
-  | sed 's!^!%doc %{_prefix}!' > package-doc.filelist
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
+%dir %{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_datadir}/globus/globus-job-manager-script.pl
 %dir %{perl_vendorlib}/Globus
 %dir %{perl_vendorlib}/Globus/GRAM
+%{perl_vendorlib}/Globus/GRAM/*.pm
 %dir %{_docdir}/%{name}-%{version}
+%{_mandir}/man8/*
+%{_sbindir}/globus-gatekeeper-admin
 
-%files doc -f package-doc.filelist
+%files doc
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}/perl
 %dir %{_docdir}/%{name}-%{version}/perl/Globus
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
+%{_docdir}/%{name}-%{version}/perl/Globus/GRAM/*.html
+
 
 %changelog
+* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 6.0-1
+- Repackage for GT6 without GPT
+
 * Fri Sep 06 2013 Globus Toolkit <support@globus.org> - 5.0-1
 - Add new features for slurm lrm implementation
 

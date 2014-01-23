@@ -1,7 +1,7 @@
 Source: globus-gass-transfer
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-common-dev (>= 14), libglobus-io-dev (>= 8), libglobus-gssapi-gsi-dev (>= 9), globus-core (>= 7.7), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1) | doxygen-latex, graphviz, texlive-fonts-recommended, texlive-font-utils, ghostscript
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-io-dev, libglobus-gssapi-gsi-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
@@ -26,7 +26,7 @@ Description: Globus Toolkit - Globus Gass Transfer
 Package: libglobus-gass-transfer-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gass-transfer2 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-io-dev, libglobus-gssapi-gsi-dev, globus-core (>= 7)
+Depends: libglobus-gass-transfer2 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-io-dev, libglobus-gssapi-gsi-dev
 Recommends: libglobus-gass-transfer-doc (= ${binary:Version})
 Description: Globus Toolkit - Globus Gass Transfer Development Files
  The Globus Toolkit is an open source software toolkit used for

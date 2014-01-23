@@ -1,22 +1,9 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
-Version:	1.6
-Release:	5%{?dist}
+Version:	2.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
@@ -39,8 +26,6 @@ Requires:     perl = %{perl_version}
 %else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 %endif
-BuildRequires:	grid-packaging-tools >= 3.4
-BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-scheduler-event-generator-devel >= 4
@@ -143,14 +128,12 @@ PBS Job Manager Setup using SEG to monitor job state
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
 export MPIEXEC=no
 export MPIRUN=no
@@ -162,11 +145,15 @@ export QSUB=/usr/bin/qsub-torque
 %else
    %global pbs_log_path /var/log/torque/server_logs 
 %endif
-%configure --with-flavor=%{flavor} --enable-doxygen \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus \
            --with-globus-state-dir=%{_localstatedir}/lib/globus \
            --with-log-path=%{pbs_log_path} \
-           --disable-static
+           --with-perlmoduledir=%{perl_vendorlib}
 
 make %{?_smp_mflags}
 
@@ -177,40 +164,8 @@ make install DESTDIR=$RPM_BUILD_ROOT
 # added/removed by post scripts
 rm $RPM_BUILD_ROOT/etc/grid-services/jobmanager-pbs
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
-
-
-# Generate package filelists
-# Main package: pbs.pm and globus-pbs.config
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! \
-  | sed s!^%{_prefix}/etc!/etc! \
-  | grep -E 'pbs\.pm|pbs\.rvf|globus-pbs\.conf|pkg_data_|.filelist' > package.filelist
-
-# setup-poll package: /etc/grid-services/available/job-manager-pbs-poll
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! \
-  | sed s!^%{_prefix}/etc!/etc! \
-  | grep jobmanager-pbs-poll > package-setup-poll.filelist
-
-# setup-seg package: /etc/grid-services/available/job-manager-pbs-seg
-# plus seg module
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! \
-  | sed s!^%{_prefix}/etc!/etc! \
-  | grep -Ev 'jobmanager-pbs-poll|globus-pbs.conf|pbs.pm|pkg_data_%{flavor}_rtl|pkg_data_noflavor_data|%{flavor}_rtl.filelist|noflavor_data.filelist' > package-setup-seg.filelist
-
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | sed 's!^!%doc %{_prefix}!' > package-doc.filelist
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -259,25 +214,35 @@ elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
     globus-gatekeeper-admin -E > /dev/null 2>&1 || :
 fi
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
 %config(noreplace) %{_sysconfdir}/globus/globus-pbs.conf
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_datadir}/globus/globus_gram_job_manager/pbs.rvf
+%{perl_vendorlib}/Globus/GRAM/JobManager/pbs.pm
 
-%files setup-poll -f package-setup-poll.filelist
+%files setup-poll
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-pbs-poll
 
-%files setup-seg -f package-setup-seg.filelist
+%files setup-seg
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-pbs-seg
+%{_sysconfdir}/globus/scheduler-event-generator/available/pbs
+%{_libdir}/libglobus_*
 
-%files doc -f package-doc.filelist
+
+%files doc
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}/html
+%{_docdir}/%{name}-%{version}/html/*
+%{_mandir}/man3/*
 
 %changelog
+* Thu Jan 23 2014 Globus Toolkit <support@globus.org> - 2.0-1
+- Repackage for GT6 without GPT
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 1.6-5
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

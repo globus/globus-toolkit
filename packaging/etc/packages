@@ -28,7 +28,7 @@ globus_authz_callout_error	gsi/authz/error
 globus_authz	gsi/authz/source
 globus_gridftp_server	gridftp/server/src
 globus_gram_protocol	gram/protocol/source
-globus_scheduler_event_generator            ws-gram/job_monitoring/common/c/source
+globus_scheduler_event_generator            gram/jobmanager/scheduler_event_generator/source
 globus_gram_job_manager_lsf	gram/jobmanager/lrms/lsf/source
 globus_xio_rate_driver	xio/drivers/rate/source
 globus_xio_blockz_driver	xio/drivers/blockz
@@ -63,10 +63,10 @@ globus_gram_job_manager_condor	gram/jobmanager/lrms/condor/source
 globus_gridmap_verify_myproxy_callout gsi/gridmap_verify_myproxy_callout
 globus_proxy_utils	gsi/proxy/proxy_utils/source
 globus_xioperf	xio/xioperf/source
-globus_gatekeeper	gatekeeper/source
+globus_gatekeeper	gram/gatekeeper/source
 globus_gass_cache_program	gass/cache_program/source
 globus_gram_job_manager_pbs	gram/jobmanager/lrms/pbs/source
-globus_gram_client_tools	gram_client_tools/source
+globus_gram_client_tools	gram/client_tools/source
 # These examples aren't in any bundle and aren't normally built 
 globus_xio_example	xio/example
 globus_gridftp_server_acl_example	gridftp/server/acl/example

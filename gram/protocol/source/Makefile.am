@@ -1,5 +1,6 @@
 SUBDIRS = scripts test
 
+libexecdatadir = $(libexecdir)
 pkgconfigdir = $(libdir)/pkgconfig
 
 BUILT_SOURCES = globus_gram_protocol_constants.h
@@ -13,7 +14,7 @@ include_HEADERS = \
 	globus_gram_protocol_constants.h \
 	globus_gram_protocol.h 
 noinst_HEADERS = globus_i_gram_protocol.h
-libexec_SCRIPTS = globus-gram-protocol-constants.sh
+libexecdata_DATA = globus-gram-protocol-constants.sh
 doc_DATA = GLOBUS_LICENSE
 lib_LTLIBRARIES = libglobus_gram_protocol.la
 pkgconfig_DATA = globus-gram-protocol.pc

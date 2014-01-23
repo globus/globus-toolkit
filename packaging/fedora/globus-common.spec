@@ -6,8 +6,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.2
-Release:	1%{?dist}
+Version:	14.10
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -61,7 +61,7 @@ Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Obsoletes:	globus-libtool-devel%{?_isa}
 #		Obsolete dropped packages from Globus Toolkit 4.2.1
-Provides:	globus-core
+Obsoletes:	globus-core
 Obsoletes:	globus-data-conversion-devel
 Obsoletes:	globus-mp-devel
 Obsoletes:	globus-nexus-devel
@@ -138,7 +138,7 @@ autoreconf -i
 %if "%{?globus_version}" != ""
 GLOBUS_VERSION=%{globus_version}
 %else
-GLOBUS_VERSION=5.3.0
+GLOBUS_VERSION=5.2.5
 %endif
 export GLOBUS_VERSION
 %configure \
@@ -201,16 +201,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
-* Mon Jan 06 2014 Globus Toolkit <support@globus.org> - 15.2-1
-- fix missing include of config.h in some .c files
-
-* Fri Dec 20 2013 Globus Toolkit <support@globus.org> - 15.1-1
-- Fix issue with test output
-- Explicitly check for c99 features
-
-* Thu Dec 19 2013 Globus Toolkit <support@globus.org> - 15.0-1
-- GT 6 branch: GPT-free builds
-
 * Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 14.10-3
 - Incorrect %dir for license file
 

@@ -1,7 +1,7 @@
 Source: globus-gatekeeper
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-gss-assist-dev (>= 8), libglobus-gssapi-gsi-dev (>= 9), globus-core (>= 5.15-5)
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-gss-assist-dev, libglobus-gssapi-gsi-dev
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes

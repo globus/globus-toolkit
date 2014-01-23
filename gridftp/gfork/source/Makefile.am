@@ -20,7 +20,7 @@ libglobus_gfork_la_SOURCES = \
     globus_gfork_opts.c
 
 gfork_SOURCES = globus_gfork_server.c
-gfork_LDADD = ./libglobus_gfork.la 
+gfork_LDADD = ./libglobus_gfork.la $(PACKAGE_DEP_LIBS)
 
 EXTRA_PROGRAMS = gfork
 

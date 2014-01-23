@@ -1,7 +1,7 @@
 Source: globus-io
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-common-dev, libglobus-xio-gsi-driver-dev, libglobus-gss-assist-dev (>= 8), libglobus-xio-dev, globus-core (>= 7.7), libglobus-gssapi-error-dev (>= 4)
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-xio-gsi-driver-dev, libglobus-gss-assist-dev, libglobus-xio-dev, libglobus-gssapi-error-dev
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
@@ -26,7 +26,7 @@ Description: Globus Toolkit - uniform I/O interface
 Package: libglobus-io-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-io3 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-xio-gsi-driver-dev, libglobus-gss-assist-dev, libglobus-xio-dev, globus-core (>= 7.7)
+Depends: libglobus-io3 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-xio-gsi-driver-dev, libglobus-gss-assist-dev, libglobus-xio-dev
 Description: Globus Toolkit - uniform I/O interface Development Files
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
@@ -37,6 +37,21 @@ Description: Globus Toolkit - uniform I/O interface Development Files
  The libglobus-io-dev package contains:
  uniform I/O interface to stream and datagram style communications
  Development Files
+
+Package: libglobus-io-doc
+Section: doc
+Architecture: any
+Depends: libglobus-io-dev (= ${binary:Version}), ${misc:Depends}
+Description: Globus Toolkit - uniform I/O interface Development Files
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-gsi-credential-doc package contains:
+ uniform I/O interface to stream and datagram style communications
+ Documentation Files
 
 Package: globus-io-dbg
 Section: debug

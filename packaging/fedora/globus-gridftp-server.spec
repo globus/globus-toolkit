@@ -1,25 +1,13 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.40
+Version:	7.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.5/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -32,7 +20,6 @@ Requires:	globus-ftp-control%{?_isa} >= 4
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:	globus-gsi-credential%{?_isa} >= 6
 
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gridftp-server-control-devel >= 2
 BuildRequires:	globus-usage-devel >= 3
 BuildRequires:	globus-xio-gsi-driver-devel >= 2
@@ -40,7 +27,6 @@ BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-authz-devel >= 2
 BuildRequires:	globus-gfork-devel >= 3
 BuildRequires:	globus-ftp-control-devel >= 4
-BuildRequires:	globus-core >= 8
 BuildRequires:	globus-gss-assist-devel >= 9
 BuildRequires:  globus-common-progs >= 14
 BuildRequires:	globus-gsi-credential-devel >= 6
@@ -96,21 +82,20 @@ Globus GridFTP Server Development Files
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
 export GRIDMAP=/etc/grid-security/grid-mapfile
-%configure --with-flavor=%{flavor} --sysconfdir=/etc/%{name} \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-           --disable-static
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
@@ -122,29 +107,8 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d
 mv $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.xinetd.default $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d/gridftp
 mv $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.gfork.default $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.gfork
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | sed -e '/\/man[0-9]/d' \
-  | sed s!^!%{_prefix}! > package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | grep -Ev '(gridftp.conf.default|gridftp.xinetd.default|gridftp.gfork.default)' \
-  | sed -e s!^!%{_prefix}! | sed -e s!^/usr/etc!/etc! \
-  > package-progs.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-  | grep '/man[0-9]/' \
-  | sed -e s!^!%{_prefix}! | sed -e s!^/usr/etc!/etc! \
-  | sed -e 's!/man[0-9]/.*!&.gz!' \
-  >> package-progs.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | sed s!^!%{_prefix}! > package-devel.filelist
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -172,29 +136,30 @@ if [ $1 -eq 1 ]; then
     /sbin/service globus-gridftp-sshftp condrestart > /dev/null 2>&1 || :
 fi
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_libdir}/libglobus*.so.*
 
-%files -f package-progs.filelist progs
+%files progs
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/gridftp.conf
 %config(noreplace) %{_sysconfdir}/gridftp.gfork
 %config(noreplace) %{_sysconfdir}/xinetd.d/gridftp
+%{_sysconfdir}/init.d/*
+%{_sbindir}/*
+%{_mandir}/man8/*
 
-%files -f package-devel.filelist devel
+%files devel
 %defattr(-,root,root,-)
+%{_includedir}/globus/*
+%{_libdir}/libglobus*.so
+%{_libdir}/pkgconfig/*.pc
 
 %changelog
-* Thu Dec 12 2013 Globus Toolkit <support@globus.org> - 6.40-1
-- GT-480: Implement GO plan for HTTP protocol support     
-
-* Mon Nov 25 2013 Globus Toolkit <support@globus.org> - 6.39-1
-- GT-485: ~ defaults to / if the home dir path contains a symlink that leads outside of rp list
-- GT-487: Normalize paths passed via key=value; paramters
-- Fix possible race with command status markers
-- code cleanup
+* Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 7.0-1
+- Repackage for GT6 without GPT
 
 * Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 6.38-1
 - Update dependencies for new credential/assist functions

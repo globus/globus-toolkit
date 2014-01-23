@@ -1,18 +1,6 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
-Version:	0.6
+Version:	1.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
@@ -23,8 +11,6 @@ Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{ve
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
-BuildRequires:	grid-packaging-tools >= 3.6
-BuildRequires:	globus-core >= 8
 BuildRequires:	globus-gsi-sysconfig-devel >= 1
 BuildRequires:	globus-gss-assist-devel >= 3
 BuildRequires:	globus-gridmap-callout-error-devel
@@ -44,19 +30,19 @@ Globus gridmap eppn callout.
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --disable-static --with-flavor=%{flavor} \
-	   --%{docdiroption}=%{_docdir}/%{name}-%{version}
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
@@ -64,26 +50,8 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
-
-# Remove pkgconf file
-find $RPM_BUILD_ROOT%{_libdir} -name '*.pc' -exec rm -v '{}' \;
-sed '/lib.*\.pc$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | grep -v '^/etc' \
-  | sed s!^!%{_prefix}! > package.filelist
-grep '^/etc' \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  >> package.filelist
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -93,14 +61,18 @@ rm -rf $RPM_BUILD_ROOT
 
 %postun -p /sbin/ldconfig
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %config(noreplace) %{_sysconfdir}/gridmap_eppn_callout-gsi_authz.conf
-
+%{_libdir}/libglobus*
+%{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 1.0-1
+- Repackage for GT6 without GPT
+
 * Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 0.6-1
 - Update dependencies for new credential functions
 

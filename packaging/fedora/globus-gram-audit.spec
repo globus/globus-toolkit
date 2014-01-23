@@ -1,16 +1,3 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-gram-audit
@@ -41,7 +28,6 @@ Requires:	perl(DBI)
 %if 0%{?suse_version} == 0
 Requires:	crontabs
 %endif
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core >= 8
 
 %description
@@ -57,34 +43,25 @@ GRAM Auditing
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
 
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
+autoreconf -i
+%endif
 
-%{_datadir}/globus/globus-bootstrap.sh
 
-%configure --%{docdiroption}=%{_docdir}/%{name}-%{version}
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
-
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
-# Generate package filelists
-# Main package: fork.pm and globus-fork.config
-cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}/noflavor_pgm.filelist \
-  | sed s!^!%{_prefix}! \
-  | sed -e 's!/man/.*!&*!' \
-  | sed s!^%{_prefix}/etc!/etc! > package.filelist
 
 %clean
 rm -rf $RPM_BUILD_ROOT

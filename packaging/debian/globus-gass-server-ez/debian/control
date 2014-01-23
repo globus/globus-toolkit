@@ -1,7 +1,7 @@
 Source: globus-gass-server-ez
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, grid-packaging-tools, libglobus-common-dev (>= 14), libglobus-gss-assist-dev (>= 8), libglobus-gass-transfer-dev (>= 7), globus-core (>= 5.15-5)
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev, libglobus-gss-assist-dev, libglobus-gass-transfer-dev
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes
@@ -40,7 +40,7 @@ Description: Globus Toolkit - Globus Gass Server_ez Programs
 Package: libglobus-gass-server-ez-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gass-server-ez2 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-gss-assist-dev, libglobus-gass-transfer-dev, globus-core (>= 4)
+Depends: libglobus-gass-server-ez2 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-gss-assist-dev, libglobus-gass-transfer-dev
 Description: Globus Toolkit - Globus Gass Server_ez Development Files
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

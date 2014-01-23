@@ -1,19 +1,7 @@
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global docdiroption "with-docdir"
-%else
-%global docdiroption "docdir"
-%endif
-
 Name:		globus-xio-pipe-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.2
-Release:	7%{?dist}
+Version:	3.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Pipe Driver
 
 Group:		System Environment/Libraries
@@ -25,9 +13,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-common >= 14
 Requires:	globus-xio%{?_isa} >= 3
 
-BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-devel >= 3
-BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
 
 %package devel
@@ -58,20 +44,19 @@ Globus Pipe Driver Development Files
 %setup -q -n %{_name}-%{version}
 
 %build
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 # Remove files that should be replaced during bootstrap
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
-rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 rm -rf autom4te.cache
-unset GLOBUS_LOCATION
-unset GPT_LOCATION
 
-%{_datadir}/globus/globus-bootstrap.sh
+autoreconf -i
+%endif
 
-%configure --with-flavor=%{flavor} \
-           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-           --disable-static
+
+%configure \
+           --disable-static \
+           --docdir=%{_docdir}/%{name}-%{version} \
+           --includedir=%{_includedir}/globus \
+           --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
 
@@ -79,25 +64,7 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
-# This library is opened using lt_dlopenext, so the libtool archives
-# (.la files) can not be removed - fix the libdir...
-for lib in `find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la'` ; do
-  sed "s!^libdir=.*!libdir=\'%{_libdir}\'!" -i $lib
-done
-
-# Generate package filelists
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
-  $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist  \
-  | sed s!^!%{_prefix}! > package.filelist
-# Add libtool archive to runtime filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | grep 'lib[^/]*\.la$' \
-  | sed s!^!%{_prefix}! >> package.filelist
-cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
-  | grep -v 'lib[^/]*\.la$' \
-  | sed s!^!%{_prefix}! > package-devel.filelist
+find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -vf "{}" \;
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -106,15 +73,22 @@ rm -rf $RPM_BUILD_ROOT
 
 %postun -p /sbin/ldconfig
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_libdir}/libglobus*.so.*
 
-%files -f package-devel.filelist devel
+%files devel
 %defattr(-,root,root,-)
+%{_includedir}/globus/*
+%{_libdir}/libglobus*.so
+%{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 3.0-1
+- Repackage for GT6 without GPT
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.2-7
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 
