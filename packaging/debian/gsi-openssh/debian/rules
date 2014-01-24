@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = gsi-openssh
 _name = gsi_openssh
-version = 5.6
+version = 5.7
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
@@ -27,12 +27,6 @@ _mandir = $(_datadir)/man
 _docdir = $(_datadir)/doc
 
 DEB_BUILD_ARCH_CPU ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_CPU)
-
-ifneq (,$(filter $(DEB_HOST_ARCH_CPU), amd64 alpha ia64 s390x ppc64 sparc64))
-flavor = gcc64
-else
-flavor = gcc32
-endif
 
 sed: sed-stamp
 	:
@@ -59,7 +53,6 @@ configure-stamp: sed-stamp
 	    cp -f /usr/share/misc/$$f $$f ; \
 	  fi ; \
 	done
-
 	./configure \
 	   --prefix=/usr \
 	   --sysconfdir=/etc/gsi-openssh \

@@ -35,7 +35,7 @@
 %global nologin 1
 
 %global gsi_openssh_rel 1
-%global gsi_openssh_ver 5.6
+%global gsi_openssh_ver 5.7
 
 %ifarch alpha ia64 ppc64 s390x sparc64 x86_64
 %global flavor gcc64
@@ -158,6 +158,7 @@ BuildRequires: globus-gss-assist-devel >= 8
 BuildRequires: globus-usage-devel >= 3
 BuildRequires: globus-common-progs >= 14
 BuildRequires: globus-core >= 8
+BuildRequires: grid-packaging-tools >= 3.4
 %endif
 
 %if %{libedit}
@@ -478,6 +479,9 @@ fi
 %endif
 
 %changelog
+* Mon Nov 11 2013 Globus Toolkit <support@globus.org> - 5.7-1
+- Update to 5.7
+
 * Tue Apr 02 2013 Globus Toolkit <support@globus.org> - 5.6-1
 - Update to 5.6
 
