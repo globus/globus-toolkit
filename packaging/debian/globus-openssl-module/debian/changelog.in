@@ -1,3 +1,9 @@
+globus-openssl-module (4.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Missing dependency
+
+ -- Globus Toolkit <support@globus.org>  Mon, 27 January 2014 15:14:45 -0500
+
 globus-openssl-module (4.0-2+gt6.@distro@) @distro@; urgency=low
 
   * Fix doxygen packaging issue
