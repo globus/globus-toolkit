@@ -12,8 +12,8 @@
 
 Name:		globus-gsi-proxy-core
 %global _name %(tr - _ <<< %{name})
-Version:	6.2
-Release:	9%{?dist}
+Version:	6.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
 
 Group:		System Environment/Libraries
@@ -200,6 +200,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jan 27 2014 Globus Toolkit <support@globus.org> - 6.3-1
+- GT-515: Increase default proxy key size in gsi-proxy-core
+
 * Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 6.2-9
 - openssl-libs for newer fedora
 
