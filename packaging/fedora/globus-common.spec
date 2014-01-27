@@ -6,8 +6,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.10
-Release:	5%{?dist}
+Version:	15.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -201,6 +201,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Mon Jan 27 2014 Globus Toolkit <support@globus.org> - 15.2-1
+- Repackage for GT6 without GPT
+
 * Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 14.10-3
 - Incorrect %dir for license file
 
