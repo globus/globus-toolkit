@@ -1,8 +1,14 @@
+globus-gsi-openssl-error (3.0-2+gt6.@distro@) @distro@; urgency=low
+
+  * Tweak doxygen packaging
+
+ -- Globus Toolkit <support@globus.org>  Mon, 27 January 2014 13:20:45 -0500
+
 globus-gsi-openssl-error (3.0-1+gt6.@distro@) @distro@; urgency=low
 
-  * Repackage for GT6 without GPT
+  * repackage for gt6 without gpt
 
- -- Globus Toolkit <support@globus.org>  Tue, 21 Jan 2014 10:00:11 -0500
+ -- globus toolkit <support@globus.org>  tue, 21 jan 2014 10:00:11 -0500
 
 globus-gsi-openssl-error (2.1-5) unstable; urgency=low
 

@@ -123,7 +123,8 @@ install: build-stamp
 
 	# Remove libtool archives (.la files)
 	find $(INSTALLDIR)$(_libdir) -name 'lib*.la' -exec rm -v '{}' \;
-
+	# Remove doxygen installdox if present
+	rm -f debian/tmp$(_docdir)/lib$(name)-dev/html/installdox
 	# Generate package filelists
 	ls -1 \
 	  debian/tmp$(_libdir)/libglobus*.so.* \
@@ -132,9 +133,8 @@ install: build-stamp
 	ls -1 \
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*.* \
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*/* \
-	  debian/tmp$(_mandir)/man3/globus*.3 \
-	  > debian/lib$(name)-doc.install
-
+	  debian/tmp$(_mandir)/man3/[Gg][Ll][Oo][Bb][Uu][Ss]*.3 \
+	  > debian/lib$(name)-doc.install || true
 	ls -1 debian/tmp$(_includedir)/globus/*.h \
 	  debian/tmp$(_libdir)/*.so \
 	  debian/tmp$(_libdir)/pkgconfig/*.pc \
