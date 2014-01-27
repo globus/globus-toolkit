@@ -1,6 +1,6 @@
 Name:		globus-gsi-proxy-core
 %global _name %(tr - _ <<< %{name})
-Version:	7.0
+Version:	7.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
 
@@ -138,6 +138,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jan 27 2014 Globus Toolkit <support@globus.org> - 7.1-1
+- GT-515: Increase default proxy key size in gsi-proxy-core
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 7.0-1
 - Repackage for GT6 without GPT
 
