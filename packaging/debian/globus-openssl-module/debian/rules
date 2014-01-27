@@ -48,16 +48,13 @@ configure: configure-stamp
 
 configure-stamp: sed-stamp
 	dh_testdir
-
 	autoreconf -if
-
 	for f in config.sub config.guess ; do \
 	  if [ -e /usr/share/misc/$$f -a ! -e $$f.dist ] ; then \
 	    mv build-aux/$$f $$f.dist ; \
 	    cp -f /usr/share/misc/$$f build-aux/$$f ; \
 	  fi ; \
 	done
-
 	./configure \
  	   --host=$(DEB_HOST_GNU_TYPE) \
 	   --build=$(DEB_BUILD_GNU_TYPE) \
@@ -67,9 +64,7 @@ configure-stamp: sed-stamp
 	   --datadir='$(_datadir)/globus' \
 	   --libdir='$(_libdir)' \
 	   --libexecdir='$(_datadir)/globus' \
-	   --disable-static \
-	   --enable-doxygen
-
+	   --disable-static
 	touch $@
 
 build: build-stamp
@@ -128,7 +123,8 @@ install: build-stamp
 
 	# Remove libtool archives (.la files)
 	find $(INSTALLDIR)$(_libdir) -name 'lib*.la' -exec rm -v '{}' \;
-
+	# Remove doxygen installdox if present
+	rm -f debian/tmp$(_docdir)/lib$(name)-dev/html/installdox
 	# Generate package filelists
 	ls -1 \
 	  debian/tmp$(_libdir)/libglobus*.so.* \
@@ -143,7 +139,6 @@ install: build-stamp
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*/* \
 	  debian/tmp$(_mandir)/man3/globus*.3 \
 	  > debian/lib$(name)-doc.install
-
 	ls -1 debian/tmp$(_includedir)/globus/*.h \
 	  debian/tmp$(_libdir)/*.so \
 	  debian/tmp$(_libdir)/pkgconfig/*.pc \

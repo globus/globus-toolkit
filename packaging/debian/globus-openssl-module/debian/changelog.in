@@ -1,3 +1,9 @@
+globus-openssl-module (4.0-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix doxygen packaging issue
+
+ -- Globus Toolkit <support@globus.org>  Mon, 27 January 2014 14:58:45 -0500
+
 globus-openssl-module (4.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT
