@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.0
+Version:	11.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -141,6 +141,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Jan 28 2014 Globus Toolkit <support@globus.org> - 11.1-1
+- Add #include <sys/wait.h>
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 11.0-1
 - Repackage for GT6 without GPT
 
