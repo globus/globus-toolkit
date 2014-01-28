@@ -1,3 +1,9 @@
+globus-gssapi-gsi (11.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update dependencies
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 Jan 2014 18:34:27 -0500
+
 globus-gssapi-gsi (11.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT
