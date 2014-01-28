@@ -1,7 +1,7 @@
 Source: globus-gsi-credential
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, libglobus-gsi-callback-dev, libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-cert-utils-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev, libglobus-proxy-ssl-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-gsi-callback-dev, libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-cert-utils-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev, libglobus-gsi-proxy-ssl-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes

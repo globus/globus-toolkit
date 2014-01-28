@@ -24,7 +24,7 @@ BuildRequires:	openssl-devel
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gsi-sysconfig-devel >= 5
-BuildRequires:	globus-proxy-ssl-devel >= 5
+BuildRequires:	globus-gsi-proxy-ssl-devel >= 5
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
