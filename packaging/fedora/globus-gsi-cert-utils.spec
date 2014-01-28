@@ -24,6 +24,7 @@ Requires:	globus-gsi-openssl-error%{?_isa} >= 2
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-openssl-module-devel >= 3
 BuildRequires:	globus-gsi-openssl-error-devel >= 2
+BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
 BuildRequires:	openssl-devel
 BuildRequires:	doxygen
 BuildRequires:	graphviz
