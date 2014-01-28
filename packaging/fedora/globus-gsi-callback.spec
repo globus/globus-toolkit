@@ -1,6 +1,6 @@
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
-Version:	4.6
+Version:	5.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
@@ -128,6 +128,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jan 27 2014 Globus Toolkit <support@globus.org> - 5.0-1
+- Remove GPT and make-packages.pl from build process
+
 * Fri Sep 13 2013 Globus Toolkit <support@globus.org> - 4.6-1
 - GT-426: memory leaks in globus-gsi-callback package
 

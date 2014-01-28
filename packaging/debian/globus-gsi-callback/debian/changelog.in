@@ -1,3 +1,9 @@
+globus-gsi-callback (5.0-1+gt6.@distro@) @distro@; urgency=low
+
+  *  Remove GPT and make-packages.pl from build process
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 January 2014 11:01:13 -0500
+
 globus-gsi-callback (4.6-1) unstable; urgency=low
 
   * GT-426: memory leaks in globus-gsi-callback package
