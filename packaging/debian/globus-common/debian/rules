@@ -141,8 +141,8 @@ install: build-stamp
 
 	# Remove .la files
 	rm -f $(INSTALLDIR)/$(_libdir)/lib*.la
+	# Remove doxygen installdox if present
 	rm -f $(INSTALLDIR)/$(_docdir)/lib$(name)-dev/html/installdox
-
 	# Touch ghost files
 	touch $(INSTALLDIR)$(_datadir)/globus/globus-sh-tools-vars.sh
 

@@ -109,6 +109,8 @@ install: build-stamp
 	find $(INSTALLDIR)$(_libdir) -name 'lib*.la' -exec rm -v '{}' \;
 	# Remove jobmanager-pbs file
 	rm $(INSTALLDIR)/etc/grid-services/jobmanager-pbs
+	# Remove doxygen installdox if present
+	rm -f debian/tmp$(_docdir)/lib$(name)-dev/html/installdox
 	# Generate package filelists
 	ls -1 \
 	  debian/tmp$(_sysconfdir)/globus/*.conf \

@@ -11,7 +11,7 @@ endif
 
 name = globus-gsi-callback
 _name = globus_gsi_callback
-version = 4.5
+version = 5.0
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp
@@ -127,7 +127,8 @@ install: build-stamp
 
 	# Remove libtool archives (.la files)
 	find $(INSTALLDIR)$(_libdir) -name 'lib*.la' -exec rm -v '{}' \;
-
+	# Remove doxygen installdox if present
+	rm -f debian/tmp$(_docdir)/lib$(name)-dev/html/installdox
 	# Generate package filelists
 	ls -1 \
 	  debian/tmp$(_libdir)/libglobus*.so.* \

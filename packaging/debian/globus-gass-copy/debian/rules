@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gass-copy
 _name = globus_gass_copy
-version = 9.1
+version = 9.0
 soname = 2
 
 INSTALLDIR = $(CURDIR)/debian/tmp
@@ -111,6 +111,8 @@ install: build-stamp
 	$(MAKE) install DESTDIR=$(INSTALLDIR)
 	# Remove libtool archives (.la files)
 	find $(INSTALLDIR)$(_libdir) -name 'lib*.la' -exec rm -v '{}' \;
+	# Remove doxygen installdox if present
+	rm -f debian/tmp$(_docdir)/lib$(name)-dev/html/installdox
 	# Generate package filelists
 	ls -1 \
 	  debian/tmp$(_libdir)/libglobus*.so.* \
