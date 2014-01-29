@@ -12,7 +12,7 @@ endif
 include /usr/share/quilt/quilt.make
 
 name = globus-common
-version = 15.2
+version = 15.3
 soname = 0
 toolkit_version = 5.3.1
 

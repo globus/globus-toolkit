@@ -6,6 +6,7 @@ libexec_SCRIPTS = \
 	globus-sh-tools.sh \
 	globus-sh-tools-vars.sh \
         globus-script-initializer \
+        globus-script-initializer.$(host_cpu)-$(host_vendor)-$(host_os) \
         globus-vararg-enums-doxygen-filter.pl
 
 bin_SCRIPTS = \
