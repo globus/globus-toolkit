@@ -23,6 +23,7 @@ BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-callout-devel >= 2
 BuildRequires:	globus-gssapi-gsi-devel >= 9
 BuildRequires:	globus-gsi-credential-devel >= 6
+BuildRequires:	globus-common-progs >= 14
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
