@@ -7,9 +7,9 @@ AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [15])
 AC_SUBST([PACKAGE_DEPS], [""])
 
-AC_CANONICAL_HOST
-
 AC_CONFIG_AUX_DIR([build-aux])
+
+AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
 LT_INIT([dlopen win32-dll])
 AM_PROG_CC_C_O
