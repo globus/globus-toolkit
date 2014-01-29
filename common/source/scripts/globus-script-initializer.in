@@ -5,40 +5,44 @@ bindir="@bindir@"
 includedir="@includedir@"
 datarootdir="@datarootdir@"
 datadir="@datadir@"
-host_triplet="@host_cpu@-@host_vendor@-@host_os@"
-if [ -f "${datadir}/globus-script-initializer.$(host_triplet)" ]; then
-    . "${datadir}/globus-script-initializer.$(host_triplet)"
-fi
+for arch_specific in "${datadir}/globus-script-initializer."*; do
+    if [ -f "${arch_specific}" ]; then
+        . "${datadir}/${arch_specific}"
+        libdirs="${libdirs:+$libdirs }$libdir"
+    fi
+done
 libexecdir="@libexecdir@"
 sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ x$prefix != "x/usr" ]; then
-    if [ `uname 2> /dev/null` = Linux -o \
-         `uname 2> /dev/null` = SunOS ]; then
-        LD_LIBRARY_PATH="${libdir}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-        export LD_LIBRARY_PATH 
-    fi
-
-    if [ `uname 2> /dev/null` = 'Darwin' ]; then
-        DYLD_LIBRARY_PATH="${libdir}${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
-        export DYLD_LIBRARY_PATH
-    fi
-
-    if [ `uname 2> /dev/null` = 'AIX' ]; then
-        if [ -z "${LIBPATH}" ]; then
-            LIBPATH="/usr/lib:/lib"
+for libdir in ${libdirs}; do
+    if [ x$prefix != "x/usr" ]; then
+        if [ `uname 2> /dev/null` = Linux -o \
+             `uname 2> /dev/null` = SunOS ]; then
+            LD_LIBRARY_PATH="${libdir}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            export LD_LIBRARY_PATH 
         fi
-        LIBPATH="${libdir}:${LIBPATH}"
-        export LIBPATH
-    fi
 
-    if [ `uname 2> /dev/null` = 'HP-UX' ]; then
-        SHLIB_PATH="${libdir}${SHLIB_PATH:+:$SHLIB_PATH}"
-        export SHLIB_PATH
+        if [ `uname 2> /dev/null` = 'Darwin' ]; then
+            DYLD_LIBRARY_PATH="${libdir}${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+            export DYLD_LIBRARY_PATH
+        fi
+
+        if [ `uname 2> /dev/null` = 'AIX' ]; then
+            if [ -z "${LIBPATH}" ]; then
+                LIBPATH="/usr/lib:/lib"
+            fi
+            LIBPATH="${libdir}:${LIBPATH}"
+            export LIBPATH
+        fi
+
+        if [ `uname 2> /dev/null` = 'HP-UX' ]; then
+            SHLIB_PATH="${libdir}${SHLIB_PATH:+:$SHLIB_PATH}"
+            export SHLIB_PATH
+        fi
     fi
-fi
+done
 
 globus_source () {
 

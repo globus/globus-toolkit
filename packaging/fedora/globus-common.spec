@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.3
+Version:	15.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
@@ -201,6 +201,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Wed Jan 29 2014 Globus Toolkit <support@globus.org> - 15.4-1
+- Tweak initializer
+
 * Wed Jan 29 2014 Globus Toolkit <support@globus.org> - 15.3-1
 - Add arch-specific initializer
 
