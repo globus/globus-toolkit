@@ -32,6 +32,7 @@ BuildRequires:	globus-gsi-openssl-error-devel >= 2
 BuildRequires:	globus-gsi-proxy-core-devel >= 6
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
 BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-gsi-sysconfig-devel >= 5
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
