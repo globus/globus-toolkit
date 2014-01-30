@@ -7,7 +7,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	15.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
