@@ -27,11 +27,19 @@ prefix="${GLOBUS_LOCATION-@prefix@}"
 exec_prefix="@exec_prefix@"
 sbindir="@sbindir@"
 bindir="@bindir@"
-libdir="@libdir@"
+
 includedir="@includedir@"
 datarootdir="@datarootdir@"
 datadir="@datadir@"
 libexecdir="@libexecdir@"
+for arch_specific in "${libexecdir}/globus-script-initializer."*; do
+    if [ -f "${arch_specific}" ]; then
+        . "${arch_specific}"
+        if [ -d "$libdir" ]; then
+            libdirs="${libdirs:+$libdirs }$libdir"
+        fi
+    fi
+done
 sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
@@ -74,28 +82,30 @@ if [ -n "${MANPATH}" ]; then
     MANPATH="${datadir}/man:${MANPATH}"
 fi
 
-DELIM=
-if [ -n "${LD_LIBRARY_PATH}" ]; then
-    DELIM=:
-fi
-LD_LIBRARY_PATH="${libdir}${DELIM}${LD_LIBRARY_PATH}"
+for libdir in $libdirs; do
+    DELIM=
+    if [ -n "${LD_LIBRARY_PATH}" ]; then
+        DELIM=:
+    fi
+    LD_LIBRARY_PATH="${libdir}${DELIM}${LD_LIBRARY_PATH}"
 
-DELIM=
-if [ -n "${DYLD_LIBRARY_PATH}" ]; then
-    DELIM=:
-fi
-DYLD_LIBRARY_PATH="${libdir}${DELIM}${DYLD_LIBRARY_PATH}"
+    DELIM=
+    if [ -n "${DYLD_LIBRARY_PATH}" ]; then
+        DELIM=:
+    fi
+    DYLD_LIBRARY_PATH="${libdir}${DELIM}${DYLD_LIBRARY_PATH}"
 
-if [ -z "${LIBPATH}" ]; then
-    LIBPATH="/usr/lib:/lib"
-fi
-LIBPATH="${libdir}:${LIBPATH}"
+    if [ -z "${LIBPATH}" ]; then
+        LIBPATH="/usr/lib:/lib"
+    fi
+    LIBPATH="${libdir}:${LIBPATH}"
 
-DELIM=
-if [ -n "${SHLIB_PATH}" ]; then
-    DELIM=:
-fi
-SHLIB_PATH="${libdir}${DELIM}${SHLIB_PATH}"
+    DELIM=
+    if [ -n "${SHLIB_PATH}" ]; then
+        DELIM=:
+    fi
+    SHLIB_PATH="${libdir}${DELIM}${SHLIB_PATH}"
+done
 
 export GLOBUS_PATH PATH MANPATH LD_LIBRARY_PATH DYLD_LIBRARY_PATH LIBPATH SHLIB_PATH
 

@@ -6,8 +6,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.5
-Release:	2%{?dist}
+Version:	15.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -201,6 +201,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Thu Jan 30 2014 Globus Toolkit <support@globus.org> - 15.6-1
+- Make scripts the same for arches
+
 * Wed Jan 29 2014 Globus Toolkit <support@globus.org> - 15.5-1
 - initializer tweak
 

@@ -1,7 +1,7 @@
 AC_PREREQ([2.60])
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_INIT([globus_common], [15.5], [http://jira.globus.org])
+AC_INIT([globus_common], [15.6], [http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [15])
@@ -10,6 +10,8 @@ AC_SUBST([PACKAGE_DEPS], [""])
 AC_CONFIG_AUX_DIR([build-aux])
 
 AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+
 AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
 LT_INIT([dlopen win32-dll])
 AM_PROG_CC_C_O
@@ -223,7 +225,7 @@ AC_CONFIG_FILES([
         scripts/globus-script-initializer
         scripts/globus-user-env.csh
         scripts/globus-user-env.sh
-        scripts/globus-script-initializer.$host_cpu-$host_vendor-$host_os:scripts/globus-script-initializer-host.in
+        scripts/globus-script-initializer.$target_cpu-$target_vendor-$target_os:scripts/globus-script-initializer-host.in
         test/Makefile
         manpages/Makefile
 	version.h])

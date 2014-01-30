@@ -51,13 +51,6 @@ while ( $bindir != $old )
 end
 
 set old=""
-set libdir='@libdir@'
-while ( $libdir != $old )
-    set old="$libdir"
-    eval "set libdir=$libdir"
-end
-
-set old=""
 set includedir='@includedir@'
 while ( $includedir != $old )
     set old="$includedir"
@@ -115,29 +108,6 @@ if (! $?GLOBUS_LOCATION ) then
     end
 endif
 
-set old=""
-set perlmoduledir='@perlmoduledir@'
-while ( $perlmoduledir != $old )
-    set old="$perlmoduledir"
-    eval "set perlmoduledir=$perlmoduledir"
-end
-
-if ( ! $?LD_LIBRARY_PATH ) then
-    setenv LD_LIBRARY_PATH ''
-endif
-
-if ( ! $?DYLD_LIBRARY_PATH ) then
-    setenv DYLD_LIBRARY_PATH ''
-endif
-
-if ( ! $?LIBPATH ) then
-    setenv LIBPATH '/usr/lib:/lib'
-endif
-
-if ( ! $?SHLIB_PATH ) then
-    setenv SHLIB_PATH ''
-endif
-
 if ( $?GLOBUS_PATH ) then
     setenv PATH `echo "${PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     setenv LD_LIBRARY_PATH `echo "${LD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
@@ -176,29 +146,66 @@ if ( $?MANPATH ) then
     setenv MANPATH "${datadir}/man${DELIM}${MANPATH}"
 endif
 
-set DELIM=
-if ( "X${LD_LIBRARY_PATH}" != "X" ) then
-    set DELIM=:
-endif
-setenv LD_LIBRARY_PATH "${libdir}${DELIM}${LD_LIBRARY_PATH}"
+set matches=`ls -1d "$libexecdir/globus-script-initializer."* /dev/null | grep -v /dev/null`
+if ($matches != "") then
+    foreach arch_specific ($matches)
+        if ( -f "$arch_specific" ) then
+            eval "set `cat $arch_specific`"
+            set old=""
+            while ( $libdir != $old )
+                set old="$libdir"
+                eval "set libdir=$libdir"
+            end
 
-set DELIM=
-if ( "X${DYLD_LIBRARY_PATH}" != "X" ) then
-    set DELIM=:
-endif
-setenv DYLD_LIBRARY_PATH "${libdir}${DELIM}${DYLD_LIBRARY_PATH}"
+            set DELIM=
+            if ( "X${LD_LIBRARY_PATH}" != "X" ) then
+                set DELIM=:
+            endif
+            setenv LD_LIBRARY_PATH "${libdir}${DELIM}${LD_LIBRARY_PATH}"
 
-set DELIM=
-if ( "X${LIBPATH}" != "X" ) then
-    set DELIM=:
-endif
-setenv LIBPATH "${libdir}${DELIM}${LIBPATH}"
+            set DELIM=
+            if ( "X${DYLD_LIBRARY_PATH}" != "X" ) then
+                set DELIM=:
+            endif
+            setenv DYLD_LIBRARY_PATH "${libdir}${DELIM}${DYLD_LIBRARY_PATH}"
 
-set DELIM=
-if ( "X${SHLIB_PATH}" != "X" ) then
-    set DELIM=:
+            set DELIM=
+            if ( "X${LIBPATH}" != "X" ) then
+                set DELIM=:
+            endif
+            setenv LIBPATH "${libdir}${DELIM}${LIBPATH}"
+
+            set DELIM=
+            if ( "X${SHLIB_PATH}" != "X" ) then
+                set DELIM=:
+            endif
+            setenv SHLIB_PATH "${libdir}${DELIM}${SHLIB_PATH}"
+        endif
+    end
 endif
-setenv SHLIB_PATH "${libdir}${DELIM}${SHLIB_PATH}"
+
+set old=""
+set perlmoduledir='@perlmoduledir@'
+while ( $perlmoduledir != $old )
+    set old="$perlmoduledir"
+    eval "set perlmoduledir=$perlmoduledir"
+end
+
+if ( ! $?LD_LIBRARY_PATH ) then
+    setenv LD_LIBRARY_PATH ''
+endif
+
+if ( ! $?DYLD_LIBRARY_PATH ) then
+    setenv DYLD_LIBRARY_PATH ''
+endif
+
+if ( ! $?LIBPATH ) then
+    setenv LIBPATH '/usr/lib:/lib'
+endif
+
+if ( ! $?SHLIB_PATH ) then
+    setenv SHLIB_PATH ''
+endif
 
 if ( -d ${perlmoduledir} ) then
     set DELIM

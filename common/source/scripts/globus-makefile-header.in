@@ -131,7 +131,6 @@ GLOBUS_OBJECT_MODE =
 GLOBUS_CROSS = no
 GLOBUS_cross_compiling = @cross_compiling@
 GLOBUS_THREADS = none
-GLOBUS_HOST = @host@
 GLOBUS_DEBUG = yes
 GLOBUS_SH_PERL = @PERL@
 GLOBUS_SH = @SH@

@@ -28,7 +28,9 @@
 #include "globus_module.h"
 #include "globus_time.h"
 
+#if !defined(_WIN32)
 #include <unistd.h>
+#endif
 
 #if _POSIX_THREADS
 #if !defined(HAVE_PTHREAD)

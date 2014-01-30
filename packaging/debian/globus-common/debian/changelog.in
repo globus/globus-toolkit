@@ -1,3 +1,9 @@
+globus-common (15.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Make scripts the same for arches
+
+ -- Globus Toolkit <support@globus.org>  Thu, 30 Jan 2014 16:41:27 -0500
+
 globus-common (15.5-1+gt6.@distro@) @distro@; urgency=low
 
   * initializer tweak
