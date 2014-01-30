@@ -7,8 +7,10 @@ datarootdir="@datarootdir@"
 datadir="@datadir@"
 for arch_specific in "${datadir}/globus-script-initializer."*; do
     if [ -f "${arch_specific}" ]; then
-        . "${datadir}/${arch_specific}"
-        libdirs="${libdirs:+$libdirs }$libdir"
+        . "${arch_specific}"
+        if [ -d "$libdir" ]; then
+            libdirs="${libdirs:+$libdirs }$libdir"
+        fi
     fi
 done
 libexecdir="@libexecdir@"
