@@ -16,6 +16,7 @@ Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	globus-common
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gss-assist-devel >= 8
+BuildRequires:  globus-gssapi-gsi-devel >= 9
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -28,6 +29,7 @@ Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-gss-assist-devel%{?_isa} >= 8
+Requires:       globus-gssapi-gsi-devel%{?_isa} >= 9
 
 %package doc
 Summary:	Globus Toolkit - GSSAPI Error Library Documentation Files

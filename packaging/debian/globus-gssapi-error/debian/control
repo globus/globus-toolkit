@@ -1,7 +1,7 @@
 Source: globus-gssapi-error
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-gss-assist-dev, libglobus-gssapi-gsi-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-gss-assist-dev (>= 8), libglobus-gssapi-gsi-dev (>= 9), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes

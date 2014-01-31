@@ -1,3 +1,15 @@
+globus-gssapi-error (5.0-3+gt6.@distro@) @distro@; urgency=low
+
+  * GSSAPI Dependency
+
+ -- Globus Toolkit <support@globus.org>  Fri, 31 Jan 2014 10:40:56 -0500
+
+globus-gssapi-error (5.0-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix missing check for flex
+
+ -- Globus Toolkit <support@globus.org>  Fri, 31 Jan 2014 08:40:08 -0500
+
 globus-gssapi-error (5.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT
