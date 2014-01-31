@@ -19,7 +19,9 @@
 #include "globus_gsi_credential.h"
 #include "globus_gss_assist.h"
 #include "openssl/bn.h"
-#ifndef _WIN32
+#ifdef _WIN32
+#include <getopt.h>
+#else
 #include <regex.h>
 #endif
 

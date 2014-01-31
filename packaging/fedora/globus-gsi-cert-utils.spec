@@ -1,6 +1,6 @@
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
-Version:	9.0
+Version:	9.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
@@ -152,6 +152,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Jan 31 2014 Globus Toolkit <support@globus.org> - 9.1-1
+- Win32 build problem
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 9.0-1
 - Repackage for GT6 without GPT
 
