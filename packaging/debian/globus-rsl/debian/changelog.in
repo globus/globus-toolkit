@@ -1,3 +1,9 @@
+globus-rsl (10.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix missing check for flex
+
+ -- Globus Toolkit <support@globus.org>  Fri, 31 Jan 2014 08:40:13 -0500
+
 globus-rsl (10.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT

@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_rsl],[10.0],[http://jira.globus.org])
+AC_INIT([globus_rsl],[10.1],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [8])
@@ -22,7 +22,7 @@ AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
 AC_PROG_LEX
 if test "x$LEX" != xflex; then
-    LEX="$SHELL $missing_dir/missing flex"
+    LEX="$SHELL \$(top_srcdir)/build-aux/missing flex"
     AC_SUBST([LEX_OUTPUT_ROOT], [lex.yy])
     AC_SUBST([LEXLIB], [''])
 fi
