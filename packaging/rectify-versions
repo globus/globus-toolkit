@@ -111,7 +111,7 @@ sub update_rpm($$)
         {
             $changelogindex = $index;
         }
-        elsif ($specline =~ m/(Requires:\s*(\S*)\s*>=\s*)([0-9.]+)/)
+        elsif ($specline =~ m/(Requires:\s*(\S*)\s*)(>=\s* [0-9.]+)/)
         {
             # Kind of ugly here. What we do is see if the requirement package
             # name is a gpt dependency. We try some variations on the name
@@ -135,14 +135,14 @@ sub update_rpm($$)
                     my $new_base = $base_requirement;
                     $new_base =~ s/$suffix$//;
 
-                    if (exists $package->{PACKAGE_DEPS}->{$new_base})
+                    if (exists $package->{DEPS}->{$new_base})
                     {
-                        $requirever = $package->{PACKAGE_DEPS}->{$new_base};
+                        $requirever = $package->{DEPS}->{$new_base};
                         last;
                     }
                 }
             }
-            if ($requirever != $old_requirever)
+            if ($requirever ne $old_requirever)
             {
                 print "Updating version $requirement from $old_requirever to $requirever\n" if ($verbose);
                 $specline =~ s/(Requires:\s*\S+\s*>=\s*)[0-9.]+/$1$requirever/;
@@ -159,7 +159,7 @@ sub update_rpm($$)
         my %issues = ();
         my $pkgdatadir = $package->{PACKAGE_DIR};
 
-        foreach (split(/\n/, `git log --format=oneline origin..HEAD -- $pkgdatadir`)) {
+        foreach (split(/\n/, `git log --format=oneline origin/globus_6_branch..HEAD -- $pkgdatadir`)) {
             $_ = (split(/ /, $_, 2))[1];
             $issues{$_} = 1;
         }
@@ -336,17 +336,17 @@ sub update_control
                     # if there's a dependency on $basename and a (>= $version)
                     # associated with that dependency, update the $version
                     # part to match the GPT dependency for that package
-                    if ($pkgmeta->{PACKAGE_DEPS}->{$basename}
+                    if ($pkgmeta->{DEPS}->{$basename}
                         && $dependency_pred)
                     {
                         print "GPT dependency is for "
-                            . $pkgmeta->{PACKAGE_DEPS}->{$basename}
+                            . $pkgmeta->{DEPS}->{$basename}
                             . "\n" if ($verbose);
                         if ($dependency_pred =~ m/>=\s*([0-9\.]+)/)
                         {
                             my $newdep;
                             $newdep = "$basename$suffix (>= "
-                                . $pkgmeta->{PACKAGE_DEPS}->{$basename}
+                                . $pkgmeta->{DEPS}->{$basename}
                                 . ")";
 
                             if ($newdep ne $dep)
@@ -369,16 +369,17 @@ sub update_control
                     print "Checking if dependency on lib$libname$soname$dev "
                         . "$depver needs update\n" if ($verbose);
                     print "Depends on lib$libname$dev "
-                        . $pkgmeta->{PACKAGE_DEPS}->{$libname}
+                        . $pkgmeta->{DEPS}->{$libname}
                         . "\n" if ($verbose);
 
                     # If the dependency has either a soname appended to the
                     # library name or a (>= $version), compare them to 
                     # the GPT package dependency version and soname for the 
                     # package
-                    $newdepver = $pkgmeta->{PACKAGE_DEPS}->{$libname};
+                    $newdepver = $pkgmeta->{DEPS}->{$libname};
+                    $newdepver =~ s/>=\s*//;
                     $newsoname = $allpkgmeta->{$libname}->{SONAME};
-                    if ($depver && $depver ne $newdepver)
+                    if (defined($depver) && ($depver ne $newdepver))
                     {
                         $depver = $newdepver;
                         $thischanged = 1;
@@ -424,7 +425,7 @@ sub update_control
                 {
                     my ($basename, $suffix, $dependency_pred) = ($1, $2, $4);
 
-                    if ($pkgmeta->{PACKAGE_DEPS}{$basename} && $dependency_pred)
+                    if ($pkgmeta->{DEPS}{$basename} && $dependency_pred)
                     {
                         if ($dependency_pred =~ m/>=\s*([0-9\.]+)/)
                         {
@@ -578,7 +579,7 @@ sub update_changelog
     my $version = $pkgmeta->{VERSION};
     my @oldchanges;
     my $fd;
-    my $changelogpath = "debian/$package/debian/changelog.in";
+    my $changelogpath = "$topdir/debian/$package/debian/changelog.in";
     my $update;
     my $release = 1;
 
@@ -607,9 +608,9 @@ sub update_changelog
     if ($git_changelog)
     {
         my %issues = ();
-        my $pkgdatadir = $package->{PACKAGE_DIR};
+        my $pkgdatadir = $pkgmeta->{PACKAGE_DIR};
 
-        foreach (split(/\n/, `git log --format=oneline origin..HEAD -- $pkgdatadir`)) {
+        foreach (split(/\n/, `git log --format=oneline origin/globus_6_branch..HEAD -- $pkgdatadir`)) {
             $_ = (split(/ /, $_, 2))[1];
             $issues{$_} = 1;
         }
