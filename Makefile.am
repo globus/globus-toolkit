@@ -17,17 +17,32 @@ $(GT_TARGETS_DIST):
 	@cp $($@_SUBDIR)/$($@-tarball) package-output
 
 $(GT_ALL_STAMPS):
-	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; ( (cd $($@-all_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) all) && touch $@) || exit 1
+	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; ( (cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) all) && touch $@) || exit 1
 
 $(GT_ONLY):
-	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@-all_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) all
+	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) all
 
 RPMDIRS = BUILD BUILDROOT RPMS SOURCES SPECS SRPMS
 
-$(GT_TARGETS_RPM):
+rpmbuild/.rpmmacros:
+	@$(MKDIR_P) rpmbuild
+	@(case `lsb_release -is`:`lsb_release -rs` in \
+		CentOS*:5|RedHat*:5*|Scientific*:5*) \
+			echo "%rhel 5" \
+			;; \
+		CentOS*:6|RedHat*:6*|Scientific*:6*) \
+			echo "%rhel 6" \
+			;; \
+	  esac; \
+	  echo "%_topdir $(abs_builddir)/rpmbuild"; \
+	  echo "%globus_version $(PACKAGE_VERSION)"; \
+	) > $@
+
+
+$(GT_TARGETS_RPM): rpmbuild/.rpmmacros
 	@for d in $(RPMDIRS); do mkdir -p rpmbuild/$$d; done
 	@cp $($@_SOURCE) rpmbuild/SOURCES
-	@HOME=$$(pwd) rpmbuild -ba $($@_SPECFILE)
+	@HOME=$$(pwd) ac_cv_host=$(host_triplet) rpmbuild --target=$(host_triplet) -ba $($@_SPECFILE)
 
 $(GT_TARGETS_DEB):
 	@rm -rf debbuild/$($@_PACKAGE_NAME)
@@ -46,7 +61,7 @@ DOC_STAMPS += doc-stamp
 DOC_CLEAN += doc-clean
 
 doc: doc-stamp
-doc-stamp: Doxyfile $(GT_ALL_STAMPS) doxygen/index.dox
+doc-stamp: Doxyfile doxygen/index.dox $(GT_ENABLED_BUNDLES)
 	@$(DOXYGEN)
 	@touch $@
 doc-clean:
@@ -68,12 +83,18 @@ install-data-local: $(DOC_STAMPS)
 		done ; \
 	fi
 
-
+install-exec-local:
+	@for stamp in $(GT_ALL_STAMPS); do \
+	    if [ -f $$stamp ]; then \
+		stamp_pkg=`echo $$stamp | sed -e s'/-stamp//'`; \
+	        export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; $(MAKE) $(AM_MAKEFLAGS) $${stamp_pkg}-install ; \
+	    fi; \
+	done
 EXTRA_DIST=doxygen/index.dox globus-vararg-enums-doxygen-filter.pl 
 
-all-local: $(GT_ALL_STAMPS) $(DOC_STAMPS)
+all-local: $(GT_ENABLED_BUNDLES) $(DOC_STAMPS)
 clean-local: $(GT_TARGETS_CLEAN) $(DOC_CLEAN)
 distclean-local: $(GT_TARGETS_DISTCLEAN)
 dist-hook: $(GT_TARGETS_DIST)
 
-.PHONY: $(GT_TARGETS_ALL) $(GT_TARGETS_ONLY) $(GT_TARGETS_CLEAN) $(GT_TARGETS_INSTALL) $(GT_TARGETS_DISTCLEAN) $(GT_TARGETS_DIST) $(DOC_PHONY) $(GT_TARGETS_RPM) $(GT_TARGETS_DEB)
+.PHONY: $(GT_TARGETS_ALL) $(GT_TARGETS_ONLY) $(GT_TARGETS_CLEAN) $(GT_TARGETS_INSTALL) $(GT_TARGETS_DISTCLEAN) $(GT_TARGETS_DIST) $(DOC_PHONY) $(GT_TARGETS_RPM) $(GT_TARGETS_DEB) $(GT_BUNDLES)

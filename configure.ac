@@ -13,6 +13,7 @@ m4_define([TARGETS_MACRO],[
 m4_define([GT_PACKAGE],
 [
     m4_append([TARGETS_MACRO],[dnl
+$1-stamp_SUBDIR = $2
 $1-all_SUBDIR = $2
 $1-clean_SUBDIR = $2
 $1-install_SUBDIR = $2
@@ -41,7 +42,7 @@ $1-deb: \$($1-deb_SOURCE)
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
     m4_append([GT_SUBDIRS_MACRO], [$2], [ ])dnl
     m4_append_uniq([GT_BUNDLES_MACRO],[$4], [ ])dnl
-    m4_append([GT_BUNDLES_$4_MACRO],[$1-all], [ ])dnl
+    m4_append([GT_BUNDLES_$4_MACRO],[$1-stamp], [ ])dnl
     m4_append([GT_TARGETS_ALL_MACRO], [$1-all], [ ])dnl
     m4_append([GT_TARGETS_CLEAN_MACRO], [$1-clean], [ ])dnl
     m4_append([GT_TARGETS_INSTALL_MACRO], [$1-install], [ ])dnl
@@ -250,12 +251,39 @@ GT_ALL_STAMPS="GT_ALL_STAMPS_MACRO"
 TARGETS="TARGETS_MACRO m4_foreach([bundle],
     m4_split(GT_BUNDLES_MACRO),
     [
-bundle: m4_expand([GT_BUNDLES_]bundle[_MACRO])])"
+bundle[-deps] =  m4_expand([GT_BUNDLES_]bundle[_MACRO])
+bundle: \$(bundle[-deps])])"
 GT_BUNDLES="m4_normalize(GT_BUNDLES_MACRO)"
 AC_PATH_PROGS([DOXYGEN], [doxygen])
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 TARGETS_FILE=makefile.targets
 echo "$TARGETS" > "$TARGETS_FILE"
+
+dnl Don't build globus-gram5-* on windows
+case "$host_os" in
+    mingw*|cygwin*)
+        default_bundles="m4_foreach([bundle], m4_split(GT_BUNDLES_MACRO),
+        [ifelse(m4_expand(m4_substr(bundle, 0, 6)),[gram5-],[],[bundle ])])"
+        ;;
+       *)
+        default_bundles="GT_BUNDLES_MACRO"
+        ;;
+esac
+
+m4_foreach([bundle],
+    m4_split(GT_BUNDLES_MACRO),
+    [
+    AC_SUBST(m4_translit(bundle,[-],[_])_SUBDIRS,["GT_BUNDLES_]m4_translit(bundle,[-],[_])[_SUBDIRS_MACRO"])
+    AC_ARG_ENABLE(bundle, AS_HELP_STRING([--enable-[]bundle], [Enable bundle]),
+        [if test "$enableval" = "yes"; then
+            enabled_bundles="${enabled_bundles:+$enabled_bundles }bundle"
+        fi])
+])
+if test X"$enabled_bundles" = X; then
+    enabled_bundles="$default_bundles"
+fi
+
+
 AC_SUBST_FILE(TARGETS_FILE)
 AC_SUBST(SUBDIRS)
 AC_SUBST(DIST_SUBDIRS)
@@ -269,6 +297,7 @@ AC_SUBST(GT_TARGETS_DEB)
 AC_SUBST(GT_PKGCONFIG_DIRS)
 AC_SUBST(GT_DOXYGEN_SUBDIRS)
 AC_SUBST(GT_ALL_STAMPS)
+AC_SUBST(GT_ENABLED_BUNDLES, ["$enabled_bundles"])
 AC_SUBST(GT_BUNDLES)
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Doxyfile])
