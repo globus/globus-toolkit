@@ -1,3 +1,9 @@
+globus-proxy-utils (6.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * version update
+
+ -- Globus Toolkit <support@globus.org>  Sat, 01 Feb 2014 17:16:22 -0500
+
 globus-proxy-utils (6.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Add openssl dependency

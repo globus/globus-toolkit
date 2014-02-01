@@ -1,6 +1,6 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	6.1
+Version:	6.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
@@ -89,6 +89,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Sat Feb 01 2014 Globus Toolkit <support@globus.org> - 6.2-1
+- version update
+
+* Mon Jan 27 2014 Globus Toolkit <support@globus.org> - 6.0-1
+- Add tests to globus_proxy_utils
+- Doxygen / header cleanup
+- Native debian package updates
+- New version of rectify-versions
+- Opt for POSIX 1003.1-2001 (pax) format tarballs
+- Remove GPT and make-packages.pl from build process
+- Remove GPT metadata
+- autoconf/automake updates
+
 * Thu Jan 23 2014 Globus Toolkit <support@globus.org> - 6.1-1
 - Add openssl dependency
 
