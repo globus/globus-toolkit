@@ -1,6 +1,6 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	6.2
+Version:	6.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
@@ -89,6 +89,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Sat Feb 01 2014 Globus Toolkit <support@globus.org> - 6.3-1
+- Fix test cred permissions
+
 * Sat Feb 01 2014 Globus Toolkit <support@globus.org> - 6.2-1
 - version update
 
