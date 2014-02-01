@@ -1,6 +1,6 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	10.0
+Version:	10.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
@@ -104,6 +104,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Sat Feb 01 2014 Globus Toolkit <support@globus.org> - 10.1-1
+- umask for test creds
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 10.0-1
 - Repackage for GT6 without GPT
 
