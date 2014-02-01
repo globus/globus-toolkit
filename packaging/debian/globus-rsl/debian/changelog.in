@@ -1,3 +1,9 @@
+globus-rsl (10.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Maintainer mode
+
+ -- Globus Toolkit <support@globus.org>  Sat, 01 Feb 2014 15:21:07 -0500
+
 globus-rsl (10.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix missing check for flex

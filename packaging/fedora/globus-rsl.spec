@@ -1,6 +1,6 @@
 Name:		globus-rsl
 %global _name %(tr - _ <<< %{name})
-Version:	10.1
+Version:	10.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Resource Specification Language Library
 
@@ -117,6 +117,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Sat Feb 01 2014 Globus Toolkit <support@globus.org> - 10.2-1
+- Maintainer mode
+
 * Fri Jan 31 2014 Globus Toolkit <support@globus.org> - 10.1-1
 - Fix missing check for flex
 
