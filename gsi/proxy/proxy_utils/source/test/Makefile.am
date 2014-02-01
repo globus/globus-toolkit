@@ -7,6 +7,7 @@ check_SCRIPTS = \
         proxy-order-test.pl
 
 check_DATA = \
+	testwrapper \
         testcred.key \
         testcred.cert \
         testcredlink
@@ -21,10 +22,15 @@ junit:
 
 TESTS = $(check_SCRIPTS)
 
-AM_TESTS_ENVIRONMENT = env \
-    X509_USER_CERT=testcred.cert \
-    X509_USER_KEY=testcred.key \
-    X509_CERT_DIR=$(abs_builddir)
+LOG_COMPILER = $(builddir)/testwrapper
+
+testwrapper:
+	(echo '#! /bin/sh'; \
+         echo 'export X509_USER_CERT=testcred.cert'; \
+	 echo 'export X509_USER_KEY=testcred.key'; \
+	 echo 'export X509_CERT_DIR=$(abs_builddir)'; \
+         echo '"$$@"') > $@
+	chmod a+x $@
 
 testcred.key:
 	umask 077; openssl genrsa -out $@ 1024
