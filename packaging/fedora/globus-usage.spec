@@ -14,12 +14,14 @@ Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-common-devel >= 14
 
 %package devel
 Summary:	Globus Toolkit - Usage Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-common-devel%{?_isa} >= 14
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid

@@ -1,3 +1,9 @@
+globus-io (10.0-2+gt6.@distro@) @distro@; urgency=low
+
+  * dependency
+
+ -- Globus Toolkit <support@globus.org>  Sat, 01 Feb 2014 15:01:45 -0500
+
 globus-io (10.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT

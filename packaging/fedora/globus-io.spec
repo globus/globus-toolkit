@@ -16,6 +16,7 @@ Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	globus-xio%{?_isa} >= 3
 Requires:	globus-gssapi-gsi%{?_isa} >= 10
 
+BuildRequires:	globus-common >= 14
 BuildRequires:	globus-xio-gsi-driver-devel >= 2
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-xio-devel >= 3
@@ -26,6 +27,7 @@ BuildRequires:	globus-gssapi-error >= 4
 Summary:	Globus Toolkit - uniform I/O interface Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-gss-assist-devel%{?_isa} >= 8
 Requires:	globus-xio-devel%{?_isa} >= 3
