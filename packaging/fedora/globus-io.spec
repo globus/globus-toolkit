@@ -16,7 +16,7 @@ Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	globus-xio%{?_isa} >= 3
 Requires:	globus-gssapi-gsi%{?_isa} >= 10
 
-BuildRequires:	globus-common >= 14
+BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-gsi-driver-devel >= 2
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-xio-devel >= 3
