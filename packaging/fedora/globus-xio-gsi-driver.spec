@@ -1,7 +1,7 @@
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
 Version:	3.0
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
 Group:		System Environment/Libraries
@@ -109,12 +109,11 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
-%{_libdir}/libglobus*.so.*
+%{_libdir}/libglobus*.so*
 
 %files devel
 %defattr(-,root,root,-)
 %{_includedir}/globus/*
-%{_libdir}/libglobus*.so
 %{_libdir}/pkgconfig/%{name}.pc
 
 %files doc

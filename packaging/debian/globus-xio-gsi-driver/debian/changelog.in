@@ -1,3 +1,15 @@
+globus-xio-gsi-driver (3.0-5+gt6.@distro@) @distro@; urgency=low
+
+  * package .so in main library for dynamic loaded file
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Feb 2014 15:23:46 -0500
+
+globus-xio-gsi-driver (3.0-4+gt6.@distro@) @distro@; urgency=low
+
+  * Dependency
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Feb 2014 11:40:43 -0500
+
 globus-xio-gsi-driver (3.0-3+gt6.@distro@) @distro@; urgency=low
 
   * Dependency versions
