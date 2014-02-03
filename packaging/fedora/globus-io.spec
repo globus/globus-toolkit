@@ -1,7 +1,7 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
 Version:	10.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
@@ -21,7 +21,7 @@ BuildRequires:	globus-xio-gsi-driver-devel >= 2
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-gssapi-gsi-devel >= 10
-BuildRequires:	globus-gssapi-error >= 4
+BuildRequires:	globus-gssapi-error-devel >= 4
 
 %package devel
 Summary:	Globus Toolkit - uniform I/O interface Development Files
@@ -32,7 +32,7 @@ Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-gss-assist-devel%{?_isa} >= 8
 Requires:	globus-xio-devel%{?_isa} >= 3
 Requires:	globus-gssapi-gsi-devel%{?_isa} >= 10
-BuildRequires:	globus-gssapi-error-devel%{?_isa} >= 4
+Requires:	globus-gssapi-error-devel%{?_isa} >= 4
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
