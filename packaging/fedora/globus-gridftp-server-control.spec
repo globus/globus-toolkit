@@ -15,11 +15,13 @@ Requires:	globus-xio%{?_isa} >= 3
 Requires:	globus-xio-pipe-driver%{?_isa} >= 2
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:	globus-gssapi-error%{?_isa} >= 4
+Requires:	globus-gss-assist%{?_isa} >= 8
 
 BuildRequires:	globus-xio-pipe-driver-devel >= 2
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-gsi-driver-devel >= 2
 BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-gss-assist-devel >= 8
 
 %package devel
 Summary:	Globus Toolkit - Globus GridFTP Server Library Development Files
@@ -30,6 +32,7 @@ Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-xio-devel%{?_isa} >= 3
 Requires:	globus-gssapi-error-devel%{?_isa} >= 4
+Requires:	globus-gss-assist-devel%{?_isa} >= 8
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
