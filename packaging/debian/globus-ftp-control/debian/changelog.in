@@ -1,3 +1,15 @@
+globus-ftp-control (5.0-3+gt6.@distro@) @distro@; urgency=low
+
+  * dependency
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Feb 2014 11:06:01 -0500
+
+globus-ftp-control (5.0-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix missing check for flex
+
+ -- Globus Toolkit <support@globus.org>  Fri, 31 Jan 2014 08:40:08 -0500
+
 globus-ftp-control (5.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT

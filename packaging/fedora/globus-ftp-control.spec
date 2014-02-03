@@ -21,6 +21,9 @@ BuildRequires:	globus-io-devel >= 8
 BuildRequires:	globus-gssapi-gsi-devel >= 9
 BuildRequires:	doxygen
 BuildRequires:	graphviz
+BuildRequires:  globus-xio-devel >= 3
+BuildRequires:  globus-gssapi-error-devel >= 4
+
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
@@ -33,6 +36,8 @@ Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-gss-assist-devel%{?_isa} >= 8
 Requires:	globus-io-devel%{?_isa} >= 8
 Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+Requires:       globus-xio-devel%{?_isa} >= 3
+Requires:       globus-gssapi-error-devel%{?_isa} >= 4
 
 %package doc
 Summary:	Globus Toolkit - GridFTP Control Library Documentation Files
