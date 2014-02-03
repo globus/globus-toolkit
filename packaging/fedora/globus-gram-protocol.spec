@@ -26,29 +26,14 @@ Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 %endif
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-io-devel >= 8
+BuildRequires:	globus-gssapi-gsi-devel >= 10
+BuildRequires:	globus-gssapi-gss-assist >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
-BuildRequires:	ghostscript
-%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 5
-BuildRequires:	tex(latex)
-%else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
-BuildRequires:	tetex-latex
-%endif
-%endif
 
-%if %{?fedora}%{!?fedora:0} == 18
-BuildRequires: tex(sectsty.sty)
-BuildRequires: tex(tocloft.sty)
-BuildRequires: tex(xtab.sty)
-BuildRequires: tex(multirow.sty)
-BuildRequires: tex(fullpage.sty)
-%endif
 
 %package devel
 Summary:	Globus Toolkit - GRAM Protocol Library Development Files
@@ -56,6 +41,8 @@ Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-io-devel%{?_isa} >= 8
+Requires:	globus-gssapi-gsi-devel%{?_isa} >= 10
+Requires:	globus-gss-assist-devel%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - GRAM Protocol Library Documentation Files
