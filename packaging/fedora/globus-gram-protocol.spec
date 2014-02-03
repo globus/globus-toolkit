@@ -27,7 +27,7 @@ Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-io-devel >= 8
 BuildRequires:	globus-gssapi-gsi-devel >= 10
-BuildRequires:	globus-gssapi-gss-assist >= 8
+BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
