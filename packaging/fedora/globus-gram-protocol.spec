@@ -2,7 +2,7 @@
 
 Name:		globus-gram-protocol
 %global _name %(tr - _ <<< %{name})
-Version:	12.1
+Version:	12.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Protocol Library
 
@@ -161,6 +161,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Feb 03 2014 Globus Toolkit <support@globus.org> - 12.2-1
+- Test credentials permissions
+
 * Mon Feb 03 2014 Globus Toolkit <support@globus.org> - 12.1-1
 - Dependency
 
