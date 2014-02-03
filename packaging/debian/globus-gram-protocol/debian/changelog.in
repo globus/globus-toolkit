@@ -1,3 +1,9 @@
+globus-gram-protocol (12.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Dependency
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Feb 2014 11:40:47 -0500
+
 globus-gram-protocol (12.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT
