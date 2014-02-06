@@ -1,5 +1,5 @@
 AM_CPPFLAGS = -I$(top_srcdir)/library $(PACKAGE_DEP_CFLAGS) 
-LDADD = ../library/libglobus_common.la -lltdl
+LDADD = ../library/libglobus_common.la
 
 if BUILD_WINDOWS_THREADS
 thread_model_opt = -DTHREAD_MODEL="\"windows\""

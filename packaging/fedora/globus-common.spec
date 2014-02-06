@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.6
+Version:	15.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
@@ -39,7 +39,12 @@ BuildRequires:	libtool-ltdl-devel
 %endif
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
+%else
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
 %endif
+BuildRequires:  pkgconfig
 
 %package progs
 Summary:	Globus Toolkit - Common Library Programs
@@ -201,6 +206,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Thu Feb 06 2014 Globus Toolkit <support@globus.org> - 15.7-1
+- Fix some configure problems
+
 * Thu Jan 30 2014 Globus Toolkit <support@globus.org> - 15.6-1
 - Make scripts the same for arches
 

@@ -3,7 +3,6 @@ sbin_PROGRAMS = globus-libc-hostname globus-redia
 
 AM_CPPFLAGS = -I$(top_srcdir)/library $(PACKAGE_DEP_CFLAGS) 
 AM_LDFLAGS = $(PACKAGE_DEP_LIBS)
-AM_LIBADD = -lltdl
 
 globus_redia_SOURCES = globus_redia.c
 globus_redia_LDADD = ../library/libglobus_common.la $(AM_LIBADD)

@@ -1,3 +1,9 @@
+globus-common (15.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix some configure problems
+
+ -- Globus Toolkit <support@globus.org>  Thu, 06 Feb 2014 15:30:11 -0500
+
 globus-common (15.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Make scripts the same for arches

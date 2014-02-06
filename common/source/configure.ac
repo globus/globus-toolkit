@@ -1,7 +1,6 @@
 AC_PREREQ([2.60])
+AC_INIT([globus_common], [15.7], [http://jira.globus.org])
 AC_CONFIG_MACRO_DIR([m4])
-
-AC_INIT([globus_common], [15.6], [http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [15])
@@ -12,7 +11,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
-AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
+AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
 AM_PROG_CC_C_O
 AC_PROG_CC_C99
@@ -48,9 +47,6 @@ AC_SEARCH_LIBS(gethostbyaddr, nsl)
 PACKAGE_DEP_CFLAGS=""
 PACKAGE_DEP_LIBS=""
 
-AC_CHECK_HEADERS([ltdl.h],[],[AC_MSG_ERROR([Missing required header ltdl.h])])
-AC_CHECK_LIB(ltdl, lt_dlopen, PACKAGE_DEP_LIBS="$PACKAGE_DEP_LIBS $LDFLAGS -lltdl")
-
 BUILD_FOR_WINDOWS=no
 case $host in
     *mingw* | *win32*)
@@ -64,7 +60,10 @@ AC_CHECK_HEADERS([arpa/inet.h])
 AC_CHECK_HEADERS([ifaddrs.h])
 AC_CHECK_HEADERS([net/if_arp.h])
 AC_CHECK_HEADERS([net/if_dl.h])
-AC_CHECK_HEADERS([net/if.h])
+AC_CHECK_HEADERS([sys/socket.h])
+AC_CHECK_HEADERS([net/if.h],[],[],[#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif])
 AC_CHECK_HEADERS([sys/ioctl.h])
 AC_CHECK_HEADERS([ifaddrs.h])
 AC_CHECK_HEADERS([if/dl.h])
@@ -204,6 +203,18 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
 AC_SUBST([cross_compiling])
 AM_CONDITIONAL(CROSS_COMPILING, [ test "$cross_compiling" = "yes" ])
 AM_CONDITIONAL(WINDOWS_TEST_SCRIPT, [ test "$BUILD_FOR_WINDOWS" = "yes"])
+
+if test x"${LTDLINCL}" != x; then
+    CPPFLAGS="${CPPFLAGS} ${LTDLINCL}"
+else
+    AC_CHECK_HEADERS([ltdl.h],[],[AC_MSG_ERROR([Missing required header ltdl.h])])
+fi
+if test x"$LIBLTDL" != x; then
+    LIBS="${LIBS} ${LIBLTDL}"
+else
+    AC_CHECK_LIB([ltdl], [lt_dlopen], PACKAGE_DEP_LIBS="$PACKAGE_DEP_LIBS $LDFLAGS -lltdl")
+fi
+
 
 AC_CONFIG_FILES([
 	Makefile
