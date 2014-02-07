@@ -1,6 +1,6 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
-Version:	3.0
+Version:	3.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
@@ -22,6 +22,12 @@ BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
+%else
+%endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
 %endif
 
 %package devel
@@ -121,6 +127,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Feb 07 2014 Globus Toolkit <support@globus.org> - 3.1-1
+- Dependencies
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 3.0-1
 - Repackage for GT6 without GPT
 
