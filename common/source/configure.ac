@@ -1,5 +1,5 @@
 AC_PREREQ([2.60])
-AC_INIT([globus_common], [15.8], [http://jira.globus.org])
+AC_INIT([globus_common], [15.9], [http://jira.globus.org])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -212,7 +212,7 @@ fi
 if test x"$LIBLTDL" != x; then
     LIBS="${LIBS} ${LIBLTDL}"
 else
-    AC_CHECK_LIB([ltdl], [lt_dlopen], PACKAGE_DEP_LIBS="$PACKAGE_DEP_LIBS $LDFLAGS -lltdl")
+    AC_CHECK_LIB([ltdl], [lt_dlopen])
 fi
 
 

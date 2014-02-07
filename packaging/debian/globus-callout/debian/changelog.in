@@ -1,3 +1,9 @@
+globus-callout (3.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix some configure problems
+
+ -- Globus Toolkit <support@globus.org>  Fri, 07 Feb 2014 12:54:05 -0500
+
 globus-callout (3.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Dependencies
