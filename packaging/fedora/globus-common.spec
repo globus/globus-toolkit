@@ -6,8 +6,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.7
-Release:	2%{?dist}
+Version:	15.8
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -208,6 +208,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Feb 07 2014 Globus Toolkit <support@globus.org> - 15.8-1
+- fix inconsistent arch-specific initializer
+
 * Thu Feb 06 2014 Globus Toolkit <support@globus.org> - 15.7-1
 - Fix some configure problems
 

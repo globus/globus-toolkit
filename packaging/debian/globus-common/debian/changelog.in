@@ -1,3 +1,9 @@
+globus-common (15.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix inconsistent arch-specific initializer
+
+ -- Globus Toolkit <support@globus.org>  Fri, 07 Feb 2014 09:08:34 -0500
+
 globus-common (15.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix some configure problems
