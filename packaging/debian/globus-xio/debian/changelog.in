@@ -1,3 +1,9 @@
+globus-xio (4.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix test case
+
+ -- Globus Toolkit <support@globus.org>  Fri, 07 Feb 2014 22:00:49 -0500
+
 globus-xio (4.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Remove GPT

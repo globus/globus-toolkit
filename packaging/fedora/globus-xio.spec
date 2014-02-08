@@ -1,6 +1,6 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	3.7
+Version:	4.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
@@ -18,6 +18,12 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO Framework Development Files
@@ -125,6 +131,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Fri Feb 07 2014 Globus Toolkit <support@globus.org> - 4.1-1
+- Fix test case
+
+* Mon Jan 27 2014 Globus Toolkit <support@globus.org> - 4.0-1
+- Add tests to xio package
+- Fix issues with .pc.in files
+- Merge branch 'toplevel_makefile' of https://github.com/globus/globus-toolkit into globus_6_branch
+- Native packaging for globus-xio from GT6 branch
+- New version of rectify-versions
+- Opt for POSIX 1003.1-2001 (pax) format tarballs
+- Remove GPT and make-packages.pl from build process
+- autoconf/automake updates
+
 * Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 3.6-1
 - GT-445: Doxygen fixes
 

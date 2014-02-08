@@ -559,6 +559,7 @@ http_l_test_server_request_callback(
                 &headers);
         if (result == GLOBUS_SUCCESS)
         {
+            printf("   Handling %s\n", uri);
             uri_handler = globus_hashtable_lookup(
                     &test_server->uri_handlers,
                     (void*) uri);
@@ -576,6 +577,10 @@ http_l_test_server_request_callback(
                     headers);
                 return;
             }
+        }
+        else
+        {
+            printf("   No handler for %s\n", uri);
         }
     }
     globus_xio_register_close(
@@ -619,9 +624,10 @@ http_test_client_request(
     size_t                              header_array_length)
 {
     char *                              url;
-    char *                              fmt = "http://%s/%s";
+    const char *                        fmt = "http://%s/%s";
     globus_xio_attr_t                   attr;
     int                                 i;
+    int                                 tries;
     globus_result_t                     result = GLOBUS_SUCCESS;
     GlobusXIOName(http_test_client_request);
 
@@ -687,10 +693,26 @@ http_test_client_request(
         }
     }
 
-    result = globus_xio_open(
-            *new_handle,
-            url, 
-            attr);
+    for (tries = 0; tries < 10; tries++)
+    {
+        result = globus_xio_open(
+                *new_handle,
+                url, 
+                attr);
+        if (result == GLOBUS_SUCCESS)
+        {
+            break;
+        }
+        printf("    [%d] open failed: %s\n",
+            tries+1,
+            globus_error_print_friendly(globus_error_peek(result)));
+        if (*new_handle)
+        {
+            globus_xio_close(*new_handle, NULL);
+            *new_handle = NULL;
+        }
+        sleep(1);
+    }
 
 destroy_attr_exit:
     globus_xio_attr_destroy(attr);
