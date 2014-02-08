@@ -1,7 +1,7 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
 Version:	4.1
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
@@ -24,7 +24,7 @@ BuildRequires:	autoconf >= 2.60
 BuildRequires:	libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
-%if %{?fedora}%{!?fedora:0} >= 18
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
 %endif
 
