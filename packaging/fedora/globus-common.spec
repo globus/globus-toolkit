@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.9
+Version:	15.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
@@ -208,6 +208,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Feb 07 2014 Globus Toolkit <support@globus.org> - 15.10-1
+- Use Libs.private for common deps
+
 * Fri Feb 07 2014 Globus Toolkit <support@globus.org> - 15.9-1
 - Fix some configure problems
 
