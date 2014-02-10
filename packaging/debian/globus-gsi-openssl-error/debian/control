@@ -1,7 +1,7 @@
 Source: globus-gsi-openssl-error
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 6.0.7~), autotools-dev, libglobus-common-dev, libssl-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
+Build-Depends: debhelper (>= 6.0.7~), autotools-dev, libglobus-common-dev (>= 14), libssl-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes
