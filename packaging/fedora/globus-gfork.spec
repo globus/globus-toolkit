@@ -1,6 +1,6 @@
 Name:		globus-gfork
 %global _name %(tr - _ <<< %{name})
-Version:	4.0
+Version:	4.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GFork
 
@@ -15,6 +15,15 @@ Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
+BuildRequires:  perl-Test-Simple
+%endif
 
 %package progs
 Summary:	Globus Toolkit - GFork Programs
@@ -115,6 +124,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/globus-gfork.pc
 
 %changelog
+* Mon Feb 10 2014 Globus Toolkit <support@globus.org> - 4.1-1
+- Put automake version requirement first
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 4.0-1
 - Repackage for GT6 without GPT
 

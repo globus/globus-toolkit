@@ -1,7 +1,7 @@
 Source: globus-gfork
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-xio-dev
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-xio-dev (>= 3), libglobus-common (>= 14), pkg-config
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes
@@ -43,7 +43,7 @@ Description: Globus Toolkit - GFork Programs
 Package: libglobus-gfork-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gfork0 (= ${binary:Version}), ${misc:Depends}, libglobus-xio-dev
+Depends: libglobus-gfork0 (= ${binary:Version}), ${misc:Depends}, libglobus-xio-dev, libglobus-common-dev
 Description: Globus Toolkit - GFork Development Files
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
