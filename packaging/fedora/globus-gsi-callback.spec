@@ -1,6 +1,6 @@
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
-Version:	5.0
+Version:	5.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
@@ -28,6 +28,12 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Globus GSI Callback Library Development Files
@@ -128,6 +134,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Feb 10 2014 Globus Toolkit <support@globus.org> - 5.1-1
+- Packaging fixes
+
 * Mon Jan 27 2014 Globus Toolkit <support@globus.org> - 5.0-1
 - Remove GPT and make-packages.pl from build process
 
