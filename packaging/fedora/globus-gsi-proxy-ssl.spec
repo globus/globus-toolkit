@@ -1,6 +1,6 @@
 Name:		globus-gsi-proxy-ssl
 %global _name %(tr - _ <<< %{name})
-Version:	5.0
+Version:	5.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library
 
@@ -11,10 +11,19 @@ Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{ve
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	doxygen
-BuildRequires:  openssl-devel
+BuildRequires:  openssl-devel >= 0.9.8
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
+%endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
+BuildRequires:  perl-Test-Simple
 %endif
 
 %package devel
@@ -113,6 +122,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Mon Feb 10 2014 Globus Toolkit <support@globus.org> - 5.1-1
+- Packaging fixes
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 5.0-1
 - Repackage for GT6 without GPT
 
