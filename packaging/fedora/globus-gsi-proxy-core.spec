@@ -1,6 +1,6 @@
 Name:		globus-gsi-proxy-core
 %global _name %(tr - _ <<< %{name})
-Version:	7.1
+Version:	7.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
 
@@ -37,6 +37,12 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library Development Files
@@ -93,7 +99,7 @@ Globus GSI Proxy Core Library Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -138,6 +144,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Feb 10 2014 Globus Toolkit <support@globus.org> - 7.2-1
+- Packaging fixes
+
 * Mon Jan 27 2014 Globus Toolkit <support@globus.org> - 7.1-1
 - GT-515: Increase default proxy key size in gsi-proxy-core
 

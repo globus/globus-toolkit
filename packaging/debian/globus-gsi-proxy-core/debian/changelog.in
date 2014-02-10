@@ -1,3 +1,9 @@
+globus-gsi-proxy-core (7.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Mon, 10 Feb 2014 18:31:37 -0500
+
 globus-gsi-proxy-core (7.1-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-515: Increase default proxy key size in gsi-proxy-core
