@@ -1,7 +1,7 @@
 Source: globus-gfork
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-xio-dev (>= 3), libglobus-common (>= 14), pkg-config
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-xio-dev (>= 3), libglobus-common-dev (>= 14), pkg-config
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes
