@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gssapi-gsi
 _name = globus_gssapi_gsi
-version = 11.1
+version = 11.2
 soname = 4
 
 INSTALLDIR = $(CURDIR)/debian/tmp

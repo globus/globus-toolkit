@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.1
+Version:	11.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -37,6 +37,15 @@ BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
+%endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
+BuildRequires:  perl-Test-Simple
 %endif
 
 %package devel
@@ -94,7 +103,7 @@ GSSAPI library Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -142,6 +151,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Feb 10 2014 Globus Toolkit <support@globus.org> - 11.2-1
+- Packaging fixes
+
 * Tue Jan 28 2014 Globus Toolkit <support@globus.org> - 11.1-1
 - Add #include <sys/wait.h>
 
