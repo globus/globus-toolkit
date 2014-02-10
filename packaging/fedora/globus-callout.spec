@@ -1,7 +1,7 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
 Version:	3.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries
@@ -29,6 +29,9 @@ BuildRequires:	autoconf >= 2.60
 BuildRequires:	libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
+BuildRequires:  perl-Test-Simple
+%endif
 
 %package devel
 Summary:	Globus Toolkit - Globus Callout Library Development Files
