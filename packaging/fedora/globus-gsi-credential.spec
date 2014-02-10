@@ -1,6 +1,6 @@
 Name:		globus-gsi-credential
 %global _name %(tr - _ <<< %{name})
-Version:	7.0
+Version:	7.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Credential Library
 
@@ -24,12 +24,18 @@ BuildRequires:	openssl-devel
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gsi-sysconfig-devel >= 5
-BuildRequires:	globus-gsi-proxy-ssl-devel >= 5
+BuildRequires:	globus-gsi-proxy-ssl-devel >= >= 4
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Globus GSI Credential Library Development Files
@@ -86,7 +92,7 @@ Globus GSI Credential Library Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -131,6 +137,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Feb 10 2014 Globus Toolkit <support@globus.org> - 7.1-1
+- Packaging fixes
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 7.0-1
 - Repackage for GT6 without GPT
 

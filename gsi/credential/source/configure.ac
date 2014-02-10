@@ -1,13 +1,13 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gsi_credential],[7.0],[http://jira.globus.org])
+AC_INIT([globus_gsi_credential],[7.1],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [6])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gsi-proxy-ssl >= 4, globus-gsi-openssl-error >= 2, globus-gsi-cert-utils >= 8, globus-gsi-sysconfig >= 5, globus-gsi-callback >= 4, openssl >= 0.9.8"])
 
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
+AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
 
 m4_include([dirt.sh])

@@ -1,7 +1,7 @@
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
 Version:	5.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
 Group:		System Environment/Libraries
@@ -89,7 +89,7 @@ Globus GSI Callback Library Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 

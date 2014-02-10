@@ -1,7 +1,7 @@
 Name:		globus-gsi-sysconfig
 %global _name %(tr - _ <<< %{name})
 Version:	6.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
 Group:		System Environment/Libraries
@@ -80,7 +80,7 @@ Globus GSI System Config Library Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 

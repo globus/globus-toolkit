@@ -1,7 +1,7 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
 Version:	3.2
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries
@@ -83,7 +83,7 @@ Globus Callout Library Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 %configure \
