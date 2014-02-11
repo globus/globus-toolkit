@@ -1,13 +1,13 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_gsi_driver],[3.0],[http://jira.globus.org])
+AC_INIT([globus_xio_gsi_driver],[3.1],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [3])
 AC_SUBST([PACKAGE_DEPS], ["globus-xio >= 3, globus-gss-assist >= 8, globus-gssapi-error >= 4, globus-gssapi-gsi >= 9, globus-common >= 14"])
 
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
+AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
 
 m4_include([dirt.sh])
