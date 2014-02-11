@@ -32,7 +32,7 @@ AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
 LDADD = ../libglobus_gss_assist.la $(PACKAGE_DEP_LIBS)
 
 TESTS = $(check_SCRIPTS)
-TESTS_ENVIRONMENT = env \
+TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR=$(abs_builddir)
@@ -58,18 +58,9 @@ gss_assist_impexp_accept_SOURCES = gss_assist_impexp_accept.c
 gss_assist_gridmap_SOURCES = gss_assist_gridmap.c
 gridmap_test_SOURCES = gridmap_test.c
 gridmap_userok_SOURCES = gridmap_userok.c
-test:
-	chmod a+x $(Scripts)
-	perl ./TESTS.pl
-
-junit:
-	chmod a+x $(Scripts)
-	perl ./TESTS-junit.pl
 
 EXTRA_DIST = \
         $(check_DATA_DIST) \
-        $(check_SCRIPTS) \
-	TESTS.pl \
-	TESTS-junit.pl
+        $(check_SCRIPTS)
 
 .PHONY: test junit

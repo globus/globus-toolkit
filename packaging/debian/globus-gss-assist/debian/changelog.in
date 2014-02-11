@@ -1,3 +1,9 @@
+globus-gss-assist (10.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Test fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 11 Feb 2014 11:45:50 -0500
+
 globus-gss-assist (10.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix test credential file permssions
