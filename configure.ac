@@ -1,5 +1,6 @@
 AC_INIT([globus_toolkit], [5.3.0], [support@globus.org])
 export GLOBUS_VERSION=$VERSION
+syscmd([./update-dirt.sh])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 AC_CONFIG_HEADERS([ltdlconfig.h])
 LT_CONFIG_LTDL_DIR([libltdl])
