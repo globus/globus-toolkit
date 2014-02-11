@@ -99,7 +99,6 @@ EXTRA_DIST=doxygen/index.dox globus-vararg-enums-doxygen-filter.pl
 all-local: $(GT_ENABLED_BUNDLES) $(DOC_STAMPS)
 clean-local: $(GT_TARGETS_CLEAN) $(DOC_CLEAN)
 distclean-local: $(GT_TARGETS_DISTCLEAN)
-dist-hook:
 check-local:
 	@for stamp in $(GT_ALL_STAMPS); do \
 	    if [ -f $$stamp ]; then \
