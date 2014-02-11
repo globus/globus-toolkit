@@ -1,7 +1,7 @@
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	3.0
-Release:	3%{?dist}
+Version:	3.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
 Group:		System Environment/Libraries
@@ -27,6 +27,12 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO GSI Driver Development Files
@@ -80,7 +86,7 @@ Globus XIO GSI Driver Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -123,6 +129,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Feb 11 2014 Globus Toolkit <support@globus.org> - 3.1-1
+- Packaging fixes
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 3.0-1
 - Repackage for GT6 without GPT
 

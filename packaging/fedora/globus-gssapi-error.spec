@@ -22,6 +22,12 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - GSSAPI Error Library Development Files
