@@ -1,7 +1,7 @@
 Name:		globus-gssapi-error
 %global _name %(tr - _ <<< %{name})
 Version:	5.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GSSAPI Error Library
 
 Group:		System Environment/Libraries
