@@ -12,6 +12,7 @@ my $package;
 my $verbose;
 my $allpkgmeta = {};
 my $gtreleaseuri = undef;
+my $stage = undef;
 my $changelog = undef;
 my %changelogs;
 my $prompt_for_changelog = undef;
@@ -232,6 +233,9 @@ sub update_rpm($$)
         seek(FH,0,0) or die "Seeking: $!"; 
         print FH @ARRAY or die "Printing: $!"; 
         truncate(FH,tell(FH)) or die "Truncating: $!"; 
+        if ($stage) {
+            system("git add $specfilename");
+        }
     }
     close(FH) or die "Closing: $!";
 }
@@ -479,6 +483,9 @@ sub update_control
             print $fd "$line\n";
         }
         close($fd);
+        if ($stage) {
+            system("git add $controlpath");
+        }
     }
     return $changed;
 }
@@ -519,6 +526,9 @@ sub update_rules
     {
         print "rules file $rulespath changed\n";
         rename "$rulespath.new", $rulespath;
+        if ($stage) {
+            system("git add $rulespath");
+        }
     }
     else
     {
@@ -648,6 +658,9 @@ sub update_changelog
         print $fd $update;
         print $fd join('', @oldchanges);
         close($fd);
+        if ($stage) {
+            system("git add $changelogpath");
+        }
     }
     return 1;
 }
@@ -662,6 +675,7 @@ GetOptions('package=s' => \$package,
            'git-changelog' => \$git_changelog,
            'bumprelease' => \$bumprelease,
            'update' => \$update,
+           'stage' => \$stage,
            'help' => \$help);
 
 Pod::Usage::pod2usage() if defined $help;

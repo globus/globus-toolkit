@@ -1,3 +1,9 @@
+globus-gss-assist (10.4-1+gt6.@distro@) @distro@; urgency=low
+
+  * Test fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 11 Feb 2014 12:41:14 -0500
+
 globus-gss-assist (10.3-1+gt6.@distro@) @distro@; urgency=low
 
   * Test fixes
