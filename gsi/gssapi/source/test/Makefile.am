@@ -114,17 +114,7 @@ testcredlink: testcred.cert
 	rm -f "$$linkname"; \
 	ln -s testcred.cert "$$linkname"
 
-test:
-	chmod a+x $(Scripts)
-	perl ./TESTS.pl
-
-junit:
-	chmod a+x $(Scripts)
-	perl ./TESTS-junit.pl
-
 EXTRA_DIST = \
-	TESTS.pl \
-	TESTS-junit.pl \
         $(check_DATA_real) \
         $(check_SCRIPTS)
 
