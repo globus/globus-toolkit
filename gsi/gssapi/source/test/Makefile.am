@@ -116,7 +116,8 @@ testcredlink: testcred.cert
 
 EXTRA_DIST = \
         $(check_DATA_real) \
-        $(check_SCRIPTS)
+        $(check_SCRIPTS) \
+        gssapi-test-wrapper
 
 CLEANFILES = testcred.key testcred.cert testcred.req
 .PHONY: test junit testcredlink
