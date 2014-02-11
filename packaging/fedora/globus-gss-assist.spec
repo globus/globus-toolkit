@@ -1,6 +1,6 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	10.2
+Version:	10.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
@@ -160,6 +160,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Feb 11 2014 Globus Toolkit <support@globus.org> - 10.3-1
+- Test fixes
+
 * Tue Feb 11 2014 Globus Toolkit <support@globus.org> - 10.2-1
 - Test fixes
 
