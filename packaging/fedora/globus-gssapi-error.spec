@@ -1,6 +1,6 @@
 Name:		globus-gssapi-error
 %global _name %(tr - _ <<< %{name})
-Version:	5.0
+Version:	5.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI Error Library
 
@@ -74,7 +74,7 @@ GSSAPI Error Library Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -119,6 +119,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Feb 11 2014 Globus Toolkit <support@globus.org> - 5.1-1
+- Test fixes
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 5.0-1
 - Repackage for GT6 without GPT
 

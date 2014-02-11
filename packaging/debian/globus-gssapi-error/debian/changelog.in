@@ -1,3 +1,9 @@
+globus-gssapi-error (5.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Test fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 11 Feb 2014 12:49:41 -0500
+
 globus-gssapi-error (5.0-3+gt6.@distro@) @distro@; urgency=low
 
   * GSSAPI Dependency
