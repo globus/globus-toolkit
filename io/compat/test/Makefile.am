@@ -35,24 +35,12 @@ TESTS = $(check_SCRIPTS)
 TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
-    X509_CERT_DIR=$(abs_builddir); \
-    if [ -f $(GLOBUS_XIO_GSI_DRIVER_LIBDIR)/libglobus_xio_gsi_driver.la ]; then \
-        libtoolline="../libtool --mode=execute -dlopen $(GLOBUS_XIO_GSI_DRIVER_LIBDIR)/libglobus_xio_gsi_driver.la"; \
-    fi ; \
-    $$libtoolline
-
+    X509_CERT_DIR=$(abs_builddir) \
+    GLOBUS_XIO_GSI_DRIVER_LIBDIR=$(GLOBUS_XIO_GSI_DRIVER_LIBDIR);
+LOG_COMPILER = $(srcdir)/globus-io-test-wrapper
 
 EXTRA_DIST = \
 	$(check_SCRIPTS) \
-	TESTS.pl \
-	TESTS-junit.pl
+        globus-io-test-wrapper
 
-test:
-	chmod a+x $(test_SCRIPTS)
-	perl ./TESTS.pl
-
-junit:
-	chmod a+x $(test_SCRIPTS)
-	perl ./TESTS-junit.pl
-
-.PHONY: test junit testcredlink
+.PHONY: testcredlink

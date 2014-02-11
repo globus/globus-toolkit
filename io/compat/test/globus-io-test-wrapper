@@ -1,0 +1,23 @@
+#! /bin/sh
+
+PATH="${PATH}:$(dirname $0):."
+
+# Perl scripts pass through, otherwise run the program under valgrind
+# conditionally
+if [ "${1##*.}" = "pl" ]; then
+    "$@"
+else
+    if [ -n "${VALGRIND}" ]; then
+        valgrind="${VALGRIND+valgrind --log-file=VALGRIND-$(basename $1).log}"
+        if [ -n "$VALGRIND_OPTIONS" ]; then
+            valgrind="${valgrind} ${VALGRIND_OPTIONS}"
+        fi
+        $valgrind "$@"
+    else
+        "$@"
+    fi
+fi
+
+rc=$?
+
+exit $rc

@@ -1,7 +1,7 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	10.1
-Release:	2%{?dist}
+Version:	10.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
@@ -22,6 +22,15 @@ BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-gssapi-gsi-devel >= 10
 BuildRequires:	globus-gssapi-error-devel >= 4
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
+BuildRequires:  perl-Test-Simple
+%endif
 
 %package devel
 Summary:	Globus Toolkit - uniform I/O interface Development Files
@@ -60,7 +69,7 @@ uniform I/O interface Development Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -104,6 +113,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Tue Feb 11 2014 Globus Toolkit <support@globus.org> - 10.2-1
+- Packaging fixes
+
 * Sat Feb 01 2014 Globus Toolkit <support@globus.org> - 10.1-1
 - umask for test creds
 
