@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gssapi_gsi],[11.2],[http://jira.globus.org])
+AC_INIT([globus_gssapi_gsi],[11.3],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [7])

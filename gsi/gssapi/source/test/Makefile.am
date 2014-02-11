@@ -23,22 +23,9 @@ check_SCRIPTS = \
         compare-name-test.pl \
         compare-name-test-gt2.pl \
         compare-name-test-rfc2818.pl \
-        duplicate-name-test.pl \
-        inquire-names-for-mech-test.pl \
-	gssapi-anonymous-test.pl \
-	gssapi-delegation-test.pl \
-        gssapi-import-context-test.pl \
-        gssapi-import-name.pl \
-	gssapi-limited-delegation-test.pl \
-	gssapi-delegation-compat-test.pl \
 	gssapi-thread-test.pl \
 	gssapi-context-test.pl \
-	gssapi-expimp-test.pl \
-	gssapi-acquire-test.pl \
-	gssapi-inquire-sec-ctx-by-oid-test.pl \
-        indicate-mechs-test.pl \
-        nonterminated-export-cred-test.pl \
-        release-name-test.pl
+	gssapi-inquire-sec-ctx-by-oid-test.pl
 
 check_PROGRAMS= \
         compare-name-test \
@@ -60,15 +47,27 @@ check_PROGRAMS= \
         nonterminated-export-cred-test \
         release-name-test
 
-TESTS = $(check_SCRIPTS)
+TESTS = $(check_SCRIPTS) \
+        duplicate-name-test \
+        inquire-names-for-mech-test \
+	gssapi-anonymous-test \
+	gssapi-delegation-test \
+        gssapi-import-context-test \
+        gssapi-import-name \
+	gssapi-limited-delegation-test \
+	gssapi-delegation-compat-test \
+	gssapi-expimp-test \
+	gssapi-acquire-test \
+        indicate-mechs-test \
+        nonterminated-export-cred-test \
+        release-name-test
 
-if !EXPORT_SEC_CONTEXT_WORKS
-XFAIL_TESTS = gssapi-import-context-test.pl
-endif
-TESTS_ENVIRONMENT = env \
+LOG_COMPILER = $(srcdir)/gssapi-test-wrapper
+
+TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
-    X509_CERT_DIR=$(abs_builddir)
+    X509_CERT_DIR=$(abs_builddir);
 
 libgssapi_test_utils_la_SOURCES = \
         gssapi_test_utils.c \

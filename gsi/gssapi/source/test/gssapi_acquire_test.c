@@ -16,6 +16,7 @@
 
 #include "gssapi_openssl.h"
 #include "gssapi.h"
+#include "gssapi_test_utils.h"
 
 int main()
 {

@@ -30,7 +30,7 @@ struct thread_arg
 {
     gss_cred_id_t                       credential;
     int                                 fd;
-    struct sockaddr_in *                address;
+    globus_sockaddr_t *                 address;
 };
 
 
@@ -84,13 +84,13 @@ main()
     address.sin_addr.s_addr = INADDR_ANY;
 
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (ret < 0)
+    if (listen_fd < 0)
     {
         perror("socket");
         exit(EXIT_FAILURE);
     }
     ret = bind(listen_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_in));
-    if (ret < 0)
+    if (listen_fd < 0)
     {
         perror("bind");
         exit(EXIT_FAILURE);

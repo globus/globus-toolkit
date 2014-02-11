@@ -390,7 +390,7 @@ globus_gsi_gssapi_test_dump_cert_chain(
         {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x08"}; 
     gss_buffer_set_t                    cert_chain_buffers;
     X509 *                              cert;
-    unsigned char *                     tmp_ptr;
+    const unsigned char *                   tmp_ptr;
     
     dump_file = fopen(filename,"w");
 

@@ -17,6 +17,7 @@
 #define EXT_SIZE 16
 #include "gssapi.h"
 #include "gssapi_openssl.h"
+#include "gssapi_test_utils.h"
 
 void globus_print_error(
     globus_result_t                     error_result);

@@ -10,6 +10,7 @@
  */
 
 #include "gssapi.h"
+#include "gssapi_test_utils.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +20,8 @@ int main()
     OM_uint32                           init_maj_stat;
     OM_uint32                           accept_maj_stat;
     OM_uint32                           min_stat;
-    OM_uint32                           ret_flags;
+    OM_uint32                           init_ret_flags;
+    OM_uint32                           accept_ret_flags;
     OM_uint32                           req_flags;
     gss_buffer_desc                     send_tok;
     gss_buffer_desc                     recv_tok;
@@ -36,6 +38,9 @@ int main()
     gss_ctx_id_t  			del_accept_context;
     gss_cred_id_t                       delegated_cred;
     char *                              error_str;
+    int                                 rc = 0;
+
+    printf("1..1\n");
 
     /* Initialize variables */
     
@@ -47,7 +52,8 @@ int main()
     name_type = GSS_C_NT_USER_NAME;
     delegated_cred = GSS_C_NO_CREDENTIAL;
     accept_maj_stat = GSS_S_CONTINUE_NEEDED;
-    ret_flags = 0;
+    init_ret_flags = 0;
+    accept_ret_flags = 0;
     req_flags = GSS_C_CONF_FLAG;
 
     /* set up the first security context */
@@ -62,14 +68,15 @@ int main()
                                          token_ptr,
                                          NULL,
                                          &send_tok,
-                                         NULL,
+                                         &init_ret_flags,
                                          NULL);
 
 
     if(init_maj_stat != GSS_S_CONTINUE_NEEDED)
     {
         globus_gsi_gssapi_test_print_error(stderr, init_maj_stat, min_stat);
-        exit(1);
+        rc = 1;
+        goto fail;
     }
 
     while(1)
@@ -83,16 +90,17 @@ int main()
                                                &source_name,
                                                &mech_type,
                                                &recv_tok,
-                                               &ret_flags,
+                                               &accept_ret_flags,
                                                /* ignore time_rec */
                                                0, 
-                                               GSS_C_NO_CREDENTIAL);
+                                               NULL);
 
         if(accept_maj_stat != GSS_S_COMPLETE &&
            accept_maj_stat != GSS_S_CONTINUE_NEEDED)
         {
             globus_gsi_gssapi_test_print_error(stderr, accept_maj_stat, min_stat);
-            exit(1);
+            rc = 1;
+            goto fail;
         }
         else if(accept_maj_stat == GSS_S_COMPLETE)
         {
@@ -110,7 +118,7 @@ int main()
                                              &recv_tok,
                                              NULL,
                                              &send_tok,
-                                             NULL,
+                                             &init_ret_flags,
                                              NULL);
         
         
@@ -118,8 +126,15 @@ int main()
            init_maj_stat != GSS_S_CONTINUE_NEEDED)
         {
             globus_gsi_gssapi_test_print_error(stderr, init_maj_stat, min_stat);
-            exit(1);
+            rc = 1;
+            goto fail;
         }
+    }
+    if (!(init_ret_flags&GSS_C_TRANS_FLAG))
+    {
+        printf("ok 1 - gssapi_import_context_test # skip GSS_C_TRANS_FLAG not set\n");
+        rc = 77;
+        goto skip;
     }
     
     /* Wrap a token with the initiator context */
@@ -130,19 +145,22 @@ int main()
     if (init_maj_stat != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, init_maj_stat, min_stat);
-        exit(1);
+        rc = 1;
+        goto fail;
     }
     /* unwrap the token with the acceptor context */
     accept_maj_stat = gss_unwrap(&min_stat, accept_context, &recv_tok, &send_tok, 0, NULL);
     if (accept_maj_stat != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, accept_maj_stat, min_stat);
-        exit(1);
+        rc = 1;
+        goto fail;
     }
     if (strcmp("hello", send_tok.value) != 0)
     {
         printf("Hello garbled\n");
-        exit(1);
+        rc = 1;
+        goto fail;
     }
     /* Export initiator context */
     init_maj_stat = gss_export_sec_context(
@@ -151,7 +169,8 @@ int main()
     if (init_maj_stat != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, init_maj_stat, min_stat);
-        exit(1);
+        rc = 1;
+        goto fail;
     }
 
     /* Export acceptor context */
@@ -161,7 +180,8 @@ int main()
     if (accept_maj_stat != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, accept_maj_stat, min_stat);
-        exit(1);
+        rc = 1;
+        goto fail;
     }
 
     /* Import the init context */
@@ -170,7 +190,8 @@ int main()
     if (init_maj_stat != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, init_maj_stat, min_stat);
-        exit(1);
+        rc = 1;
+        goto fail;
     }
 
     /* Import the accept context */
@@ -179,7 +200,8 @@ int main()
     if (accept_maj_stat != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, accept_maj_stat, min_stat);
-        exit(1);
+        rc = 1;
+        goto fail;
     }
     /* Wrap a token with the initiator context */
     send_tok.value = "hello";
@@ -189,20 +211,29 @@ int main()
     if (init_maj_stat != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, init_maj_stat, min_stat);
-        exit(1);
+        rc = 1;
+        goto fail;
     }
     /* unwrap the token with the acceptor context */
     accept_maj_stat = gss_unwrap(&min_stat, accept_context, &recv_tok, &send_tok, 0, NULL);
     if (accept_maj_stat != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, accept_maj_stat, min_stat);
-        exit(1);
+        rc = 1;
+        goto fail;
     }
     if (strcmp("hello", send_tok.value) != 0)
     {
-        printf("Hello garbled in 2nd message\n");
-        exit(1);
+        rc = 1;
+        fprintf(stderr, "# Hello garbled in 2nd message\n");
+        goto fail;
     }
 
+ok:
+    printf("ok 1 - gssapi_import_context_test\n");
     return 0;
+fail:
+    printf("not ok 1 - gssapi_import_context_test\n");
+skip:
+    return rc;
 }

@@ -54,6 +54,7 @@ main()
     int                                 rc = EXIT_SUCCESS;
     int                                 socks[2];
 
+    printf("1..1\n");
     /* ToDo: Make this run on windows */
 #   ifdef WIN32
     printf("This Test Doesn't Run On Windows Yet\n");
@@ -141,6 +142,10 @@ done:
             (rc == 0) ? "" : "not ",
             (rc == 0 && skip_test)
                 ? " # skip GSS_C_TRANS_FLAG not in context" :"");
+        if (rc == 0 && skip_test)
+        {
+            rc = 77;
+        }
     }
 
     /* release credentials */

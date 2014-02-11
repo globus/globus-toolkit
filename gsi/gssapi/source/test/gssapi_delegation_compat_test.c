@@ -16,6 +16,7 @@
 
 #include "gssapi.h"
 #include "gssapi_openssl.h"
+#include "gssapi_test_utils.h"
 
 void internal_release_buffer(
     gss_buffer_desc *                   buffer);
