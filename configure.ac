@@ -1,7 +1,23 @@
 AC_INIT([globus_toolkit], [5.3.0], [support@globus.org])
 export GLOBUS_VERSION=$VERSION
-AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
-AM_PROG_LIBTOOL
+AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
+AC_CONFIG_HEADERS([ltdlconfig.h])
+LT_CONFIG_LTDL_DIR([libltdl])
+LT_INIT([dlopen win32-dll])
+LTDL_INIT([recursive installable])
+AC_CONFIG_FILES([libltdl/Makefile])
+
+AC_MSG_CHECKING([for need to compile ltdl])
+AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([[int have_ltdl=HAVE_LTDL;]],
+                         [[return have_ltdl;]])],
+        [AC_MSG_RESULT([no])
+        HAVE_LTDL=1],
+        [AC_MSG_RESULT([yes])
+        HAVE_LTDL=0])
+
+AM_CONDITIONAL([HAVE_LTDL], [test "$HAVE_LTDL" = 1])
+
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
 dnl Leading newline allows this multi-line value be AC_SUBST into the
@@ -17,6 +33,7 @@ $1-stamp_SUBDIR = $2
 $1-all_SUBDIR = $2
 $1-clean_SUBDIR = $2
 $1-install_SUBDIR = $2
+$1-check_SUBDIR = $2
 $1-distclean_SUBDIR = $2
 $1-clean_stamp = $1-stamp
 $1-install_stamp = $1-stamp
@@ -42,9 +59,10 @@ $1-deb: \$($1-deb_SOURCE)
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
     m4_append([GT_SUBDIRS_MACRO], [$2], [ ])dnl
     m4_append_uniq([GT_BUNDLES_MACRO],[$4], [ ])dnl
-    m4_append([GT_BUNDLES_$4_MACRO],[$1-stamp], [ ])dnl
+    m4_append([GT_BUNDLES_]m4_translit($4,[-],[_])[_MACRO],[$1-stamp], [ ])dnl
     m4_append([GT_TARGETS_ALL_MACRO], [$1-all], [ ])dnl
     m4_append([GT_TARGETS_CLEAN_MACRO], [$1-clean], [ ])dnl
+    m4_append([GT_TARGETS_CHECK_MACRO], [$1-check], [ ])dnl
     m4_append([GT_TARGETS_INSTALL_MACRO], [$1-install], [ ])dnl
     m4_append([GT_TARGETS_DISTCLEAN_MACRO], [$1-distclean], [ ])dnl
     m4_append([GT_TARGETS_DIST_MACRO], [$1-dist], [ ])dnl
@@ -236,11 +254,12 @@ GT_PACKAGE([globus_gram_client_tools],[gram/client_tools/source],
 PKG_CONFIG_PATH="[${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}]GT_PKGCONFIG_DIRS_MACRO"
 export PKG_CONFIG_PATH
 dnl 
-SUBDIRS=""
-DIST_SUBDIRS="GT_SUBDIRS_MACRO"
+TOP_SUBDIRS="libltdl ."
+TOP_DIST_SUBDIRS="libltdl GT_SUBDIRS_MACRO"
 GT_TARGETS_ALL="GT_TARGETS_ALL_MACRO"
 GT_TARGETS_CLEAN="GT_TARGETS_CLEAN_MACRO"
 GT_TARGETS_INSTALL="GT_TARGETS_INSTALL_MACRO"
+GT_TARGETS_CHECK="GT_TARGETS_CHECK_MACRO"
 GT_TARGETS_DISTCLEAN="GT_TARGETS_DISTCLEAN_MACRO"
 GT_TARGETS_DIST="GT_TARGETS_DIST_MACRO"
 GT_TARGETS_RPM="GT_TARGETS_RPM_MACRO"
@@ -251,7 +270,7 @@ GT_ALL_STAMPS="GT_ALL_STAMPS_MACRO"
 TARGETS="TARGETS_MACRO m4_foreach([bundle],
     m4_split(GT_BUNDLES_MACRO),
     [
-bundle[-deps] =  m4_expand([GT_BUNDLES_]bundle[_MACRO])
+bundle[-deps] =  m4_expand([GT_BUNDLES_]m4_translit(bundle,[-],[_])[_MACRO])
 bundle: \$(bundle[-deps])])"
 GT_BUNDLES="m4_normalize(GT_BUNDLES_MACRO)"
 AC_PATH_PROGS([DOXYGEN], [doxygen])
@@ -273,7 +292,6 @@ esac
 m4_foreach([bundle],
     m4_split(GT_BUNDLES_MACRO),
     [
-    AC_SUBST(m4_translit(bundle,[-],[_])_SUBDIRS,["GT_BUNDLES_]m4_translit(bundle,[-],[_])[_SUBDIRS_MACRO"])
     AC_ARG_ENABLE(bundle, AS_HELP_STRING([--enable-[]bundle], [Enable bundle]),
         [if test "$enableval" = "yes"; then
             enabled_bundles="${enabled_bundles:+$enabled_bundles }bundle"
@@ -285,11 +303,12 @@ fi
 
 
 AC_SUBST_FILE(TARGETS_FILE)
-AC_SUBST(SUBDIRS)
-AC_SUBST(DIST_SUBDIRS)
+AC_SUBST(TOP_SUBDIRS)
+AC_SUBST(TOP_DIST_SUBDIRS)
 AC_SUBST(GT_TARGETS_ALL)
 AC_SUBST(GT_TARGETS_CLEAN)
 AC_SUBST(GT_TARGETS_INSTALL)
+AC_SUBST(GT_TARGETS_CHECK)
 AC_SUBST(GT_TARGETS_DIST)
 AC_SUBST(GT_TARGETS_DISTCLEAN)
 AC_SUBST(GT_TARGETS_RPM)
@@ -303,4 +322,19 @@ AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Doxyfile])
 AC_CONFIG_FILES([doxygen/index.dox])
 AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
+
+expand_libtool_var()
+{
+    varname="$1"
+    eval "value=\${$varname}"
+    top_build_prefix=${top_build_prefix:-$(pwd)/} \
+    top_builddir=${top_builddir:-$(pwd)} \
+    top_srcdir=$(pwd)/${top_srcdir:-${srcdir}} \
+    eval "echo $varname=$value"
+}
+eval `expand_libtool_var LIBLTDL`
+eval `expand_libtool_var LTDLDEPS`
+eval `expand_libtool_var LTDLINCL`
+export LIBLTDL LTDLDEPS LTDLINCL 
+
 AC_OUTPUT

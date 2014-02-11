@@ -1,4 +1,6 @@
 PKG_CONFIG_PATH = $(GT_PKGCONFIG_DIRS)
+SUBDIRS = @TOP_SUBDIRS@
+DIST_SUBDIRS = @TOP_DIST_SUBDIRS@
 
 @TARGETS_FILE@
 
@@ -9,6 +11,8 @@ $(GT_TARGETS_CLEAN):
 	@rm -f $($@_stamp)
 $(GT_TARGETS_INSTALL):
 	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) install
+$(GT_TARGETS_CHECK):
+	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) check
 $(GT_TARGETS_DISTCLEAN):
 	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) distclean
 $(GT_TARGETS_DIST):
@@ -95,6 +99,13 @@ EXTRA_DIST=doxygen/index.dox globus-vararg-enums-doxygen-filter.pl
 all-local: $(GT_ENABLED_BUNDLES) $(DOC_STAMPS)
 clean-local: $(GT_TARGETS_CLEAN) $(DOC_CLEAN)
 distclean-local: $(GT_TARGETS_DISTCLEAN)
-dist-hook: $(GT_TARGETS_DIST)
+dist-hook:
+check-local:
+	@for stamp in $(GT_ALL_STAMPS); do \
+	    if [ -f $$stamp ]; then \
+		stamp_pkg=`echo $$stamp | sed -e s'/-stamp//'`; \
+	        export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; $(MAKE) $(AM_MAKEFLAGS) $${stamp_pkg}-check ; \
+	    fi; \
+	done
 
-.PHONY: $(GT_TARGETS_ALL) $(GT_TARGETS_ONLY) $(GT_TARGETS_CLEAN) $(GT_TARGETS_INSTALL) $(GT_TARGETS_DISTCLEAN) $(GT_TARGETS_DIST) $(DOC_PHONY) $(GT_TARGETS_RPM) $(GT_TARGETS_DEB) $(GT_BUNDLES)
+.PHONY: $(GT_TARGETS_ALL) $(GT_TARGETS_ONLY) $(GT_TARGETS_CLEAN) $(GT_TARGETS_INSTALL) $(GT_TARGETS_CHECK) $(GT_TARGETS_DISTCLEAN) $(GT_TARGETS_DIST) $(DOC_PHONY) $(GT_TARGETS_RPM) $(GT_TARGETS_DEB) $(GT_BUNDLES)
