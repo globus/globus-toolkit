@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
-Version:	2.0
+Version:	2.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
@@ -35,24 +35,12 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
-BuildRequires:	ghostscript
-%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
-BuildRequires:	tex(latex)
-%else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
-BuildRequires:	tetex-latex
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
 %endif
-%endif
-
-%if %{?fedora}%{!?fedora:0} == 18
-BuildRequires: tex(sectsty.sty)
-BuildRequires: tex(tocloft.sty)
-BuildRequires: tex(xtab.sty)
-BuildRequires: tex(multirow.sty)
-BuildRequires: tex(fullpage.sty)
-%endif
+BuildRequires:  pkgconfig
 
 %package doc
 Summary:	Globus Toolkit - PBS Job Manager Documentation Files
@@ -132,7 +120,7 @@ PBS Job Manager Setup using SEG to monitor job state
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 export MPIEXEC=no
@@ -240,6 +228,9 @@ fi
 %{_mandir}/man3/*
 
 %changelog
+* Tue Feb 11 2014 Globus Toolkit <support@globus.org> - 2.1-1
+- Add getline implementations for older or non-POSIX systems
+
 * Thu Jan 23 2014 Globus Toolkit <support@globus.org> - 2.0-1
 - Repackage for GT6 without GPT
 

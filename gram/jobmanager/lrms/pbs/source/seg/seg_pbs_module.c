@@ -21,6 +21,15 @@
 
 #include <string.h>
 
+#ifndef HAVE_GETLINE
+#if !(__STDC_VERSION__ >= 199901L)
+#define restrict
+#endif
+ssize_t
+seg_getline(char ** restrict linep, size_t * restrict linecapp, FILE * restrict stream);
+#define getline(l,c,s) seg_getline(l,c,s)
+#endif
+
 #define SEGPbsEnter() \
         SEGPbsDebug(SEG_PBS_DEBUG_INFO, ("Enter %s\n", _globus_func_name))
 

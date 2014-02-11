@@ -7,7 +7,7 @@ libglobus_seg_pbs_la_LDFLAGS = \
         -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
         -no-undefined \
         -module
-libglobus_seg_pbs_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_seg_pbs_la_LIBADD = $(LTLIBOBJS) $(PACKAGE_DEP_LIBS)
 
 ## seglrms = [ DATA ]
 seglrmsdir=${sysconfdir}/globus/scheduler-event-generator/available
