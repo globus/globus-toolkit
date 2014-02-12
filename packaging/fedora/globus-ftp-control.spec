@@ -1,6 +1,6 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	5.2
+Version:	5.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
@@ -134,6 +134,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Feb 12 2014 Globus Toolkit <support@globus.org> - 5.3-1
+- Test fixes
+
 * Wed Feb 12 2014 Globus Toolkit <support@globus.org> - 5.2-1
 - Test fixes
 

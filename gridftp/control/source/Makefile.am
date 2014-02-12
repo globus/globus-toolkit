@@ -1,6 +1,6 @@
 pkgconfigdir = $(libdir)/pkgconfig
 
-SUBDIRS = test
+SUBDIRS = . test
 
 include_HEADERS = globus_ftp_control.h
 lib_LTLIBRARIES = libglobus_ftp_control.la
