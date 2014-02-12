@@ -57,6 +57,7 @@ globus_ftp_control_test_SOURCES = \
     abort_test.c \
     async_control_test.c \
     globus_ftp_control_test.c \
+    globus_ftp_control_test.h \
     eb_simple_data_test.c \
     outstanding_io_test.c \
     simple_control_test.c \
