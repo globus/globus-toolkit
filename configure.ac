@@ -19,6 +19,20 @@ AC_COMPILE_IFELSE(
 
 AM_CONDITIONAL([HAVE_LTDL], [test "$HAVE_LTDL" = 1])
 
+expand_libtool_var()
+{
+    varname="$1"
+    eval "value=\${$varname}"
+    top_build_prefix=${top_build_prefix:-$(pwd)/} \
+    top_builddir=${top_builddir:-$(pwd)} \
+    top_srcdir=$(pwd)/${top_srcdir:-${srcdir}} \
+    eval "echo $varname=$value"
+}
+eval `expand_libtool_var LIBLTDL`
+eval `expand_libtool_var LTDLDEPS`
+eval `expand_libtool_var LTDLINCL`
+export LIBLTDL LTDLDEPS LTDLINCL 
+
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
 dnl Leading newline allows this multi-line value be AC_SUBST into the
@@ -35,6 +49,7 @@ $1-all_SUBDIR = $2
 $1-clean_SUBDIR = $2
 $1-install_SUBDIR = $2
 $1-check_SUBDIR = $2
+$1-check: $1-stamp
 $1-distclean_SUBDIR = $2
 $1-clean_stamp = $1-stamp
 $1-install_stamp = $1-stamp
@@ -76,7 +91,7 @@ $1-deb: \$($1-deb_SOURCE)
 
 
 GT_PACKAGE(
-    [globus_common], [common/source],[],[ccommonlibs])
+    [globus_common], [common/source],[libltdl],[ccommonlibs])
 GT_PACKAGE(
     [globus_xio], [xio/src], [globus_common],[ccommonlibs])
 GT_PACKAGE(
@@ -322,20 +337,7 @@ AC_SUBST(GT_BUNDLES)
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Doxyfile])
 AC_CONFIG_FILES([doxygen/index.dox])
-AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
 
-expand_libtool_var()
-{
-    varname="$1"
-    eval "value=\${$varname}"
-    top_build_prefix=${top_build_prefix:-$(pwd)/} \
-    top_builddir=${top_builddir:-$(pwd)} \
-    top_srcdir=$(pwd)/${top_srcdir:-${srcdir}} \
-    eval "echo $varname=$value"
-}
-eval `expand_libtool_var LIBLTDL`
-eval `expand_libtool_var LTDLDEPS`
-eval `expand_libtool_var LTDLINCL`
-export LIBLTDL LTDLDEPS LTDLINCL 
+AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
 
 AC_OUTPUT
