@@ -1,3 +1,5 @@
+SUBDIRS = . test
+
 pkgconfigdir = $(libdir)/pkgconfig
 
 include_HEADERS = globus_gridftp_server_control.h globus_xio_gssapi_ftp.h

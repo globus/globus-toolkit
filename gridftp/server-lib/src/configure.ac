@@ -7,7 +7,7 @@ AC_SUBST([AGE_VERSION], [3])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-xio >= 3, globus-xio-gsi-driver >= 2, globus-xio-pipe-driver >= 2, globus-gss-assist >= 8, globus-gssapi-gsi >= 10, globus-gsi-openssl-error >= 2, globus-gssapi-error >= 4"])
 
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
+AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
 
 m4_include([dirt.sh])
@@ -20,5 +20,6 @@ AC_CONFIG_FILES(
         globus-gridftp-server-control.pc
         globus-gridftp-server-control-uninstalled.pc
         Makefile
-	version.h)
+	version.h
+        test/Makefile)
 AC_OUTPUT

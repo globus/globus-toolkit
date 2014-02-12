@@ -1,3 +1,9 @@
+globus-gridftp-server-control (3.0-2+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Wed, 12 Feb 2014 17:19:21 -0500
+
 globus-gridftp-server-control (3.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT

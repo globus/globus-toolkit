@@ -466,9 +466,11 @@ globus_gridftp_server_control_events_enable(
     globus_gridftp_server_control_event_cb_t event_cb,
     void *                              user_arg);
 
+/*
 globus_result_t
 globus_gridftp_server_control_events_disable(
     globus_gridftp_server_control_op_t      op);
+*/
 
 /**
  *  finished resource query request
