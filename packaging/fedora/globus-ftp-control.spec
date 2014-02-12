@@ -1,6 +1,6 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	5.0
+Version:	5.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
@@ -27,6 +27,12 @@ BuildRequires:  globus-gssapi-error-devel >= 4
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - GridFTP Control Library Development Files
@@ -82,7 +88,7 @@ GridFTP Control Library Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -128,6 +134,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Feb 12 2014 Globus Toolkit <support@globus.org> - 5.1-1
+- Pull in tests
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 5.0-1
 - Repackage for GT6 without GPT
 

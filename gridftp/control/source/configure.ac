@@ -1,13 +1,13 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_ftp_control], [5.0],[http://jira.globus.org])
+AC_INIT([globus_ftp_control], [5.1],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [4])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gss-assist >= 8, globus-gssapi-gsi >= 9, globus-io >= 8, globus-xio >= 3, globus-gssapi-error >= 4"])
 
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
+AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
 
 m4_include([dirt.sh])
@@ -24,6 +24,7 @@ AC_CONFIG_FILES(
         globus-ftp-control-uninstalled.pc
         Makefile
         Doxyfile
-	version.h)
+	version.h
+        test/Makefile)
 
 AC_OUTPUT
