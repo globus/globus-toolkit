@@ -1,7 +1,7 @@
 Source: globus-xio-pipe-driver
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-xio-dev
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-xio-dev (>= 3), pkg-config
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes
