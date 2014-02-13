@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 
     if (result != GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Load %s returned %s\n", modname, globus_error_print_friendly(globus_error_peek(result)));
+        fprintf(stderr, "# Load %s returned %s\n", modname, globus_error_print_friendly(globus_error_peek(result)));
         rc = 1;
         goto deactivate_error;
     }
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
         rc = 1;
         goto deactivate_error;
     }
-    printf("ok\n");
+    printf("ok - module load\n");
     notok--;
 
 deactivate_error:

@@ -38,14 +38,14 @@ GlobusExtensionDefineModule(globus_seg_load_test_module) =
 int
 globus_l_test_module_activate(void)
 {
-    printf("ok\n");
+    printf("ok - test module activate\n");
     return 0;
 }
 
 int
 globus_l_test_module_deactivate(void)
 {
-    printf("ok\n");
+    printf("ok - test module deactivate\n");
     return 0;
 }
 

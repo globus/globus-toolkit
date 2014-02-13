@@ -1,4 +1,4 @@
-SUBDIRS = init config test
+SUBDIRS = init config . test
 
 pkgconfigdir = $(libdir)/pkgconfig
 

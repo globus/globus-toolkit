@@ -48,14 +48,14 @@ globus_l_test_module_activate(void)
 
     if (env == NULL)
     {
-        printf ("not ok\n");
+        printf ("not ok - no TEST_MODULE_TIMESTAMP environment\n");
         return 0;
     }
     expected = atoi(env);
 
     if (expected < 0)
     {
-        printf ("not ok\n");
+        printf ("not ok - non-numeric timestamp\n");
         return 0;
     }
 
@@ -63,16 +63,16 @@ globus_l_test_module_activate(void)
 
     if (result != GLOBUS_SUCCESS)
     {
-        printf ("not ok\n");
+        printf ("not ok - globus_scheduler_event_generator_get_timestamp\n");
         return 0;
     }
 
     if (stamp != expected)
     {
-        printf ("not ok\n");
+        printf ("not ok - timestamp mismatch\n");
         return 0;
     }
-    printf("ok\n");
+    printf("ok - test_module_activate timestamp test\n");
     return 0;
 }
 
