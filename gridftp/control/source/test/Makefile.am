@@ -29,7 +29,7 @@ testcred.key:
 	umask 077 ; openssl genrsa -out $@ 1024
 
 testcred.req: testcred.key
-	printf "NA\nNA\nNA\nNA\nNA\n$$(openssl rand -hex 1)\n$$(openssl rand -hex 1)\n\n\n\n" | openssl req -new -key $< -out $@
+	printf "NA\nNA\nNA\nNA\nNA\nNA\n$$(openssl rand -base64 6)\n\n\n\n" | openssl req -new -key $< -out $@
 
 testcred.cert: testcred.req testcred.key
 	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
@@ -41,12 +41,13 @@ testcredgridmap: testcred.cert
 testcredlink: testcred.cert
 	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
 	rm -f "$$linkname"; \
-	ln -s testcred.cert "$$linkname"
+	ln -s testcred.cert "$$linkname" ; \
+	echo "$$linkname" > $@
 
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
 test_ldadd = libtest_common.la ../libglobus_ftp_control.la $(PACKAGE_DEP_LIBS)
 
-noinst_LTLIBRARIES = libtest_common.la
+check_LTLIBRARIES = libtest_common.la
 libtest_common_la_SOURCES = connect_disconnect_test.c test_common.c test_common.h
 libtest_common_la_LIBADD = ../libglobus_ftp_control.la $(PACKAGE_DEP_LIBS)
 
@@ -69,5 +70,9 @@ globus_ftp_control_test_LDADD = $(test_ldadd)
 pipe_test_LDADD = $(test_ldadd)
 test_server_LDADD = $(test_ldadd)
 
+CLEANFILES = testcredgridmap testcred.cert testcred.key testcred.req get_lingering_close.sh.port
+clean-local:
+	if [ -f testcredlink ]; then \
+            rm -f $$(cat testcredlink) testcredlink; \
+        fi
 EXTRA_DIST = $(check_SCRIPTS)
-.PHONY: testcredlink
