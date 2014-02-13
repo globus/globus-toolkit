@@ -120,11 +120,11 @@ int main(int argc, char * argv[])
         if (rc != 0)
         {
             not_ok++;
-            printf("not ok # %s\n", tests[i].name);
+            printf("not ok - %s\n", tests[i].name);
         }
         else
         {
-            printf("ok\n");
+            printf("ok - %s\n", tests[i].name);
         }
     }
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);

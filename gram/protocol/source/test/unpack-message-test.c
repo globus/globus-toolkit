@@ -40,7 +40,7 @@ static
 int
 unpack_test(void)
 {
-    globus_byte_t *                     message;
+    char *                              message;
     globus_size_t                       message_size;
     globus_hashtable_t                  hashtable;
     globus_gram_protocol_extension_t *  entry;
@@ -58,7 +58,7 @@ unpack_test(void)
             job_id,
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE,
             0,
-            &message,
+            (globus_byte_t **)&message,
             &message_size);
     test_assert(
             rc == GLOBUS_SUCCESS,
@@ -118,7 +118,7 @@ static
 int
 unpack_test_with_extensions(void)
 {
-    globus_byte_t *                     message;
+    char *                              message;
     globus_size_t                       message_size;
     globus_hashtable_t                  hashtable;
     globus_gram_protocol_extension_t *  entry;
@@ -138,7 +138,7 @@ unpack_test_with_extensions(void)
             job_id,
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE,
             0,
-            &message,
+            (globus_byte_t **) &message,
             &message_size);
     test_assert(
             rc == GLOBUS_SUCCESS,
@@ -150,10 +150,10 @@ unpack_test_with_extensions(void)
             message != NULL,
             ("# Error reallocing test message\n"));
     strcat(message, ext_text);
-    message_size = strlen(message)+1;
+    message_size = strlen((char *) message)+1;
 
     rc = globus_gram_protocol_unpack_message(
-            message,
+            (char *) message,
             message_size,
             &hashtable);
     test_assert(
@@ -231,7 +231,7 @@ unpack_null_param_test(void)
              globus_gram_protocol_error_string(rc)));
 
     rc = globus_gram_protocol_unpack_message(
-            message,
+            (char *) message,
             message_size,
             NULL);
     test_assert(
@@ -346,11 +346,11 @@ int main(int argc, char * argv[])
         if (rc != 0)
         {
             not_ok++;
-            printf("not ok # %s\n", tests[i].name);
+            printf("not ok - %s\n", tests[i].name);
         }
         else
         {
-            printf("ok\n");
+            printf("ok - %s\n", tests[i].name);
         }
     }
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);

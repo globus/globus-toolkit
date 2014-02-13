@@ -2,7 +2,7 @@
 
 Name:		globus-gram-protocol
 %global _name %(tr - _ <<< %{name})
-Version:	12.2
+Version:	12.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Protocol Library
 
@@ -33,7 +33,12 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
-
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - GRAM Protocol Library Development Files
@@ -87,7 +92,7 @@ GRAM Protocol Library Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -148,6 +153,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 12.3-1
+- Test fixes
+
 * Mon Feb 03 2014 Globus Toolkit <support@globus.org> - 12.2-1
 - Test credentials permissions
 

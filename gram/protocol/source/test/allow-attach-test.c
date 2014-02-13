@@ -38,7 +38,7 @@ int test1()
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
-	fprintf(stderr, "Error activating protocol module beacuse %s.\n",
+	fprintf(stderr, "Error activating protocol module because %s.\n",
 		globus_gram_protocol_error_string(rc));
 	return rc;
     }
@@ -198,30 +198,51 @@ int main(int argc, char **argv)
     if(argc > 1)
     {
 	test_num = atoi(argv[1]);
+        printf("1..1\n");
+    }
+    else
+    {
+        printf("1..4\n");
     }
     if(test_num == 0 || test_num == 1)
     {
 	rc = test1();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
-	not_ok |= rc;
+	printf("%sok - disable_bogus_callback_contact\n",
+            (rc == 0) ? "" : "not ");
+        if (rc)
+        {
+            not_ok++;
+        }
     }
     if(test_num == 0 || test_num == 2)
     {
 	rc = test2();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
-	not_ok |= rc;
+	printf("%sok - create_and_disable_callback_contact\n",
+            (rc == 0) ? "" : "not ");
+        if (rc)
+        {
+            not_ok++;
+        }
     }
     if(test_num == 0 || test_num == 3)
     {
 	rc = test3();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
-	not_ok |= rc;
+	printf("%sok - create_and_disable_multiple_contacts\n",
+            (rc == 0) ? "" : "not ");
+        if (rc)
+        {
+            not_ok++;
+        }
     }
     if(test_num == 0 || test_num == 4)
     {
 	rc = test4();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
-	not_ok |= rc;
+	printf("%sok - create_multiple_and_deactivate\n",
+            (rc == 0) ? "" : "not ");
+        if (rc)
+        {
+            not_ok++;
+        }
     }
 
     return not_ok;

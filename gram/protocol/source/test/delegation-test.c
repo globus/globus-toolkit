@@ -68,6 +68,8 @@ int main()
     globus_gram_protocol_handle_t	handle;
     int					i;
 
+    printf("1..1\n");
+
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
@@ -142,6 +144,12 @@ int main()
     }
     globus_gram_protocol_callback_disallow(server_callback_contact);
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
+    if (monitor.error)
+    {
+        goto error_out;
+    }
+
+    printf("ok - delegate\n");
 
     return monitor.error;
 
@@ -154,7 +162,9 @@ unlock_error:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
-    return rc;
+    printf("%s - delegate\n", rc == GLOBUS_SUCCESS ? "ok" : "not ok");
+error_out:
+    return EXIT_FAILURE;
 }
 
 static

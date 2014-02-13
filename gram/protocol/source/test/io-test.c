@@ -60,6 +60,7 @@ int main(
     globus_size_t			msgsize;
     monitor_t 				monitor;
 
+    printf("1..1\n");
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
@@ -131,15 +132,16 @@ int main(
        monitor.job_failure_code[0] != monitor.job_failure_code[1] ||
        strcmp(monitor.status_request[0], monitor.status_request[1]) != 0)
     {
-	fprintf(stderr, "transmission error.\n");
-
-	monitor.error++;
+        printf("not ");
+        rc = EXIT_FAILURE;
     }
     globus_libc_free(monitor.status_request[1]);
     globus_gram_protocol_callback_disallow(server_callback_contact);
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
 
-    return monitor.error;
+    printf("ok - io-test\n");
+
+    return rc;
 
 free_msg_error:
     globus_libc_free(msg);
@@ -150,6 +152,8 @@ unlock_error:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
+error_out:
+    printf("not ok - io-test %d\n", rc);
     return rc;
 }
 

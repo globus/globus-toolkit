@@ -19,6 +19,8 @@
 #include "globus_gram_protocol.h"
 #include <string.h>
 
+const char * testname = NULL;
+
 /* job request */
 int test1()
 {
@@ -28,6 +30,8 @@ int test1()
     char *				rsl[2];
     globus_byte_t *				query;
     globus_size_t			query_size;
+
+    testname = "pack_job_request";
 
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
@@ -92,6 +96,7 @@ int test2()
     globus_byte_t *			query;
     globus_size_t			query_size;
 
+    testname = "pack_job_request_null_callback";
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
@@ -154,6 +159,7 @@ int test3()
     globus_byte_t *			msg;
     globus_size_t			msg_size;
 
+    testname = "pack_job_request_reply";
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
@@ -213,6 +219,7 @@ test4()
     globus_byte_t *			msg;
     globus_size_t			msg_size;
 
+    testname = "pack_status_request";
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
@@ -270,6 +277,7 @@ test5()
     globus_byte_t *			msg;
     globus_size_t			msg_size;
 
+    testname = "pack_status_reply";
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
@@ -335,6 +343,7 @@ test6()
     globus_byte_t *			msg;
     globus_size_t			msg_size;
 
+    testname = "pack_status_update";
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
@@ -396,45 +405,47 @@ int main(int argc, char *argv[])
     int					rc;
     int					test_num = 0;
 
-    if(argc > 1)
+    printf("1..6\n");
+    rc = test1();
+    printf("%s - %s\n", (rc == 0) ? "ok" : "not ok", testname);
+    if (rc)
     {
-	test_num = atoi(argv[1]);
+        not_ok++;
     }
-    if(test_num == 0 || test_num == 1)
+
+    rc = test2();
+    printf("%s - %s\n", (rc == 0) ? "ok" : "not ok", testname);
+    if (rc)
     {
-	rc = test1();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
-	not_ok |= rc;
+        not_ok++;
     }
-    if(test_num == 0 || test_num == 2)
+
+    rc = test3();
+    printf("%s - %s\n", (rc == 0) ? "ok" : "not ok", testname);
+    if (rc)
     {
-	rc = test2();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
-	not_ok |= rc;
+        not_ok++;
     }
-    if(test_num == 0 || test_num == 3)
+
+    rc = test4();
+    printf("%s - %s\n", (rc == 0) ? "ok" : "not ok", testname);
+    if (rc)
     {
-	rc = test3();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
-	not_ok |= rc;
+        not_ok++;
     }
-    if(test_num == 0 || test_num == 4)
+
+    rc = test5();
+    printf("%s - %s\n", (rc == 0) ? "ok" : "not ok", testname);
+    if (rc)
     {
-	rc = test4();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
-	not_ok |= rc;
+        not_ok++;
     }
-    if(test_num == 0 || test_num == 5)
+
+    rc = test6();
+    printf("%s - %s\n", (rc == 0) ? "ok" : "not ok", testname);
+    if (rc)
     {
-	rc = test5();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
-	not_ok |= rc;
-    }
-    if(test_num == 0 || test_num == 6)
-    {
-	rc = test6();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
-	not_ok |= rc;
+        not_ok++;
     }
     return not_ok;
 }

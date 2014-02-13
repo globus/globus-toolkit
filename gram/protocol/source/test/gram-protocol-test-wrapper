@@ -1,0 +1,7 @@
+#! /bin/sh
+
+if [ "$VALGRIND" != "" ]; then
+    valgrind="valgrind --xml=yes --log-file=$(basename $1.valgrind) --xml-file=$(basename $1).vxml ${VALGRIND_OPTIONS}"
+fi
+
+$valgrind "$@"

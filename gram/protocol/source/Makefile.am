@@ -1,4 +1,4 @@
-SUBDIRS = scripts test
+SUBDIRS = scripts . test
 
 libexecdatadir = $(libexecdir)
 pkgconfigdir = $(libdir)/pkgconfig

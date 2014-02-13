@@ -21,40 +21,29 @@ int main(int argc, char * argv[])
 {
     int rc = 0;
     int i;
-    char * str;
-    int verbose = 0;
+    const char * str;
     int testno = 0;
+    int fail_count=0;
 
-    if(argc > 1)
-    {
-	testno = atoi(argv[1]);
-    }
-    if(argc > 2)
-    {
-	verbose = 1;
-    }
+    printf("1..3\n");
 
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
-    if(rc != GLOBUS_SUCCESS)
+    printf("%s - activate GLOBUS_GRAM_PROTOCOL_MODULE\n",
+        rc == GLOBUS_SUCCESS ? "ok" : "not ok");
+    rc = 0;
+    for(i = -1; i < GLOBUS_GRAM_PROTOCOL_ERROR_LAST+1; i++)
     {
-	goto out;
-    }
-    if(testno == 0 || testno == 1)
-    {
-	for(i = -1; i < GLOBUS_GRAM_PROTOCOL_ERROR_LAST+1; i++)
-	{
-	    str = (char *) globus_gram_protocol_error_string(i);
+        str = (char *) globus_gram_protocol_error_string(i);
 
-	    if(str == NULL)
-	    {
-		rc = 1;
-		goto error_exit;
-	    }
-
-	    if(verbose) printf("%d: %s\n", i, str);
-	}
+        if(str == NULL)
+        {
+            rc = 1;
+            fail_count++;
+            break;
+        }
     }
-    if(testno == 0 || testno == 2)
+    printf("%s - globus_gram_protocol_error_string\n",
+        (rc == 0) ? "ok" : "not ok");
     {
 	char *error1 = "error1";
 	char *error2 = "error2";
@@ -62,45 +51,32 @@ int main(int argc, char * argv[])
 
 	globus_gram_protocol_error_7_hack_replace_message(error1);
 	str = globus_gram_protocol_error_string(7);
-	if(verbose)
-	{
-	    printf("comparing %p:%s to %p:%s\n", 
-		    error1, error1, str, str);
-	}
 	if(strcmp(str, "error1") != 0)
 	{
 	    rc = GLOBUS_FAILURE;
 	}
 	globus_gram_protocol_error_7_hack_replace_message(error2);
 	str = globus_gram_protocol_error_string(7);
-	if(verbose)
-	{
-	    printf("comparing %p:%s to %p:%s\n", 
-		    error2, error2, str, str);
-	}
 	if(strcmp(str, error2) != 0)
 	{
 	    rc = GLOBUS_FAILURE;
 	}
 	globus_gram_protocol_error_7_hack_replace_message(error3);
 	str = globus_gram_protocol_error_string(7);
-	if(verbose)
-	{
-	    printf("comparing %p:%s to %p:%s\n", 
-		    error3, error3, str, str);
-	}
 	if(strcmp(str, error3) != 0)
 	{
 	    rc = GLOBUS_FAILURE;
 	}
     }
+    printf("%s - globus_gram_protocol_error_7_hack_replace_message\n",
+        (rc == 0) ? "ok" : "not ok");
+    if (rc)
+    {
+        fail_count++;
+    }
 
 error_exit:
     globus_module_deactivate_all();
 out:
-    if(rc == 0)
-    {
-	printf("ok\n");
-    }
-    return rc;
+    return fail_count;
 }
