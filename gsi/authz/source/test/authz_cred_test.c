@@ -14,31 +14,9 @@
  * limitations under the License.
  */
 
-#include "gssapi_test_utils.h"
 #include "gssapi.h"
 #include "globus_gsi_authz.h"
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-
-#define USAGE "Usage: %s service_name\n"
-
-struct context_arg
-{
-    gss_cred_id_t                       credential;
-    int                                 fd;
-    struct sockaddr_un *                address;
-};
-
-static void *
-server_func(
-    void *                              arg,
-    char *				servicename
-    );
-
-static void *
-client_func(
-    void *                              arg);
 
 static void
 authtest_l_handle_init_callback(void *				cb_arg,
@@ -60,296 +38,217 @@ authtest_l_authz_get_authz_id_callback(void *				cb_arg,
 				       globus_gsi_authz_handle_t 	handle,
 				       globus_result_t		result);
 
+#define check_result(pred, str) \
+    do { \
+        int __ok = (pred); \
+        if (!__ok) { \
+            fail_count++; \
+        } \
+        printf("%s - %s\n", \
+                (__ok) ? "ok" : "not ok", str); \
+        ok = -1; \
+    } while(0)
+
 int
 main(int argc, char **argv)
 {
     gss_cred_id_t                       credential;
-    int                                 listen_fd;
-    int                                 accept_fd;
-    struct sockaddr_un *                address;
     struct context_arg *                arg = NULL;
-    pid_t                               pid;
-    char *				servicename = NULL;
+    gss_buffer_desc                     init_token = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc                     accept_token = GSS_C_EMPTY_BUFFER;
+    OM_uint32                           maj_stat, min_stat;
+    gss_ctx_id_t                        init_ctx = GSS_C_NO_CONTEXT;
+    gss_ctx_id_t                        accept_ctx = GSS_C_NO_CONTEXT;
+    globus_result_t                     result;
+    globus_gsi_authz_handle_t           authz_handle;
+    char                                buf[128];
+    char *                              request_action;
+    char *                              request_object;
+    char *                              identity;
+    int                                 ok = -1;
+    int                                 fail_count = 0;
 
-    if (argc != 2)
-    {
-	fprintf(stderr, USAGE, argv[0]);
-	exit(1);
-    }
-    servicename = argv[1];
+    printf("1..11\n");
+
     /* module activation */
-
-    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_GSI_AUTHZ_MODULE);
     
-    /* setup listener */
-
-    address = malloc(sizeof(struct sockaddr_un));
-
-    memset(address,0,sizeof(struct sockaddr_un));
-
-    address->sun_family = PF_UNIX;
-
-    tmpnam(address->sun_path);
-    
-    listen_fd = socket(PF_UNIX, SOCK_STREAM, 0);
-
-    bind(listen_fd, (struct sockaddr *) address, sizeof(struct sockaddr_un));
-
-    listen(listen_fd,1);
-
     /* acquire credentials */
-
-    credential = globus_gsi_gssapi_test_acquire_credential();
-
-    if(credential == GSS_C_NO_CREDENTIAL)
+    maj_stat = gss_acquire_cred(
+        &min_stat,
+        GSS_C_NO_NAME,
+        GSS_C_INDEFINITE,
+        GSS_C_NO_OID_SET,
+        GSS_C_BOTH,
+        &credential,
+        NULL,
+        NULL);
+    if (maj_stat != GSS_S_COMPLETE)
     {
-        fprintf(stderr,"Unable to aquire credential\n");
-        exit(-1);
+        fprintf(stderr,"Unable to acquire credential\n");
+        exit(EXIT_FAILURE);
     }
 
-    pid = fork();
-
-    if(pid == 0)
+    do
     {
-        /* child */
-     	arg = malloc(sizeof(struct context_arg));
-        
-	arg->address = address;
-        
-	arg->credential = credential;
+        maj_stat = gss_init_sec_context(
+            &min_stat,
+            credential,
+            &init_ctx,
+            GSS_C_NO_NAME,
+            GSS_C_NO_OID,
+            0,
+            0,
+            GSS_C_NO_CHANNEL_BINDINGS,
+            &accept_token,
+            NULL,
+            &init_token,
+            NULL,
+            NULL);
+        if (GSS_ERROR(maj_stat))
+        {
+            fprintf(stderr, "Unable to establish security context\n");
+            exit(EXIT_FAILURE);
+        }
+        gss_release_buffer(&min_stat, &accept_token);
+        accept_token.value = NULL;
+        accept_token.length = 0;
 
-        client_func(arg);
+        if (init_token.length != 0)
+        {
+            maj_stat = gss_accept_sec_context(
+                &min_stat,
+                &accept_ctx,
+                credential,
+                &init_token,
+                GSS_C_NO_CHANNEL_BINDINGS,
+                NULL,
+                NULL,
+                &accept_token,
+                NULL,
+                NULL,
+                NULL);
+        }
     }
-    else
+    while ((maj_stat & GSS_S_CONTINUE_NEEDED) && accept_token.length != 0);
+
+    if (GSS_ERROR(maj_stat))
     {
-        accept_fd = accept(listen_fd,NULL,0);
-        
-	if(accept_fd < 0)
-	{
-	    abort();
-	}
-	
-	arg = malloc(sizeof(struct context_arg));
-        
-	arg->fd = accept_fd;
-        
-	arg->credential = credential;
-
-        server_func(arg, servicename);
+        fprintf(stderr, "Unable to establish security context\n");
+        exit(EXIT_FAILURE);
     }
 
-    /* close the listener */
 
-    close(listen_fd);
-    
+    if ((result = globus_module_activate(GLOBUS_GSI_AUTHZ_MODULE))
+            != GLOBUS_SUCCESS)
+    {
+        char * msg = globus_error_print_friendly(globus_error_peek(result));
+	fprintf(stderr, "SERVER: activation of authz module failed: %s\n",
+            msg);
+        free(msg);
+	exit(EXIT_FAILURE);
+    }
+  
+    ok = -1;
+    result = globus_gsi_authz_handle_init(&authz_handle,
+					  "goodservice",
+					  GSS_C_NO_CONTEXT,
+					  authtest_l_handle_init_callback,
+					  &ok);
+    check_result(ok == GLOBUS_TRUE, "globus_gsi_authz_handle_init");
+    result = globus_gsi_authz_get_authorization_identity (
+        authz_handle,
+        &identity,
+        authtest_l_authz_get_authz_id_callback,
+        &ok);
+    check_result(ok == GLOBUS_FALSE && identity == NULL,
+        "globus_gsi_authz_get_authorization_identity no context");
+    result = globus_gsi_authz_handle_destroy(
+            authz_handle,
+            authtest_l_authz_handle_destroy_callback,
+            &ok);
+    check_result(ok == GLOBUS_TRUE, "globus_gsi_authz_handle_destroy");
+
+    result = globus_gsi_authz_handle_init(&authz_handle,
+					  "goodservice",
+					  accept_ctx,
+					  authtest_l_handle_init_callback,
+					  &ok);
+    check_result(ok == GLOBUS_TRUE, "globus_gsi_authz_handle_init");
+
+    result = globus_gsi_authz_get_authorization_identity (
+        authz_handle,
+        &identity,
+        authtest_l_authz_get_authz_id_callback,
+        &ok);
+    check_result(ok == GLOBUS_TRUE && strcmp(identity, "identity") == 0,
+        "globus_gsi_authz_get_authorization_identity");
+    free(identity);
+
+    result = globus_gsi_authorize(authz_handle,
+                                  "inaction",
+                                  "good",
+                                  authtest_l_authorize_callback, 
+                                  &ok);
+    check_result(ok == GLOBUS_FALSE, "globus_gsi_authorize bad action good object");
+
+    result = globus_gsi_authorize(authz_handle,
+                                  "action",
+                                  "good",
+                                  authtest_l_authorize_callback, 
+                                  &ok);
+    check_result(ok == GLOBUS_TRUE, "globus_gsi_authorize good action good object");
+
+    result = globus_gsi_authorize(authz_handle,
+                                  "inaction",
+                                  "bad",
+                                  authtest_l_authorize_callback, 
+                                  &ok);
+    check_result(ok == GLOBUS_FALSE,
+        "globus_gsi_authorize bad action bad object");
+
+    result = globus_gsi_authorize(authz_handle,
+                                  "action",
+                                  "bad",
+                                  authtest_l_authorize_callback, 
+                                  &ok);
+    check_result(ok == GLOBUS_FALSE,
+        "globus_gsi_authorize good action bad object");
+
+    result = globus_gsi_authz_handle_destroy(
+            authz_handle,
+            authtest_l_authz_handle_destroy_callback,
+            &ok);
+    check_result(ok == GLOBUS_TRUE, "globus_gsi_authz_handle_destroy");
+
+    result = globus_module_deactivate(GLOBUS_GSI_AUTHZ_MODULE);
+    check_result(result == GLOBUS_SUCCESS, "globus_module_deactivate");
+
     /* release credentials */
-    
-    globus_gsi_gssapi_test_release_credential(&credential); 
-    
-    /* free address */
-    
-    free(address);
+    gss_release_cred(&min_stat, &credential);
     
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
-    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
 
-    exit(0);
+    return fail_count;
 }
 
-
-void *
-server_func(
-    void *                              arg,
-    char *				servicename)
-{
-    struct context_arg *                server_args;
-    globus_bool_t                       boolean_result;
-    gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
-    char *                              user_id = NULL;
-    gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
-    globus_result_t			result;
-    globus_gsi_authz_handle_t		authz_handle;
-    char 				buf[2048];
-    char *				request_action = 0;
-    char *				request_object = 0;
-    char *				identity = 0;
-    
-    server_args = (struct context_arg *) arg;
-
-    boolean_result = globus_gsi_gssapi_test_authenticate(
-	server_args->fd,
-	GLOBUS_TRUE, 
-	server_args->credential, 
-	&context_handle, 
-	&user_id, 
-	&delegated_cred);
-    
-    if(boolean_result == GLOBUS_FALSE)
-    {
-	fprintf(stderr, "SERVER: Authentication failed\n");
-        exit(1);
-    }
-
-    if (globus_module_activate(GLOBUS_GSI_AUTHZ_MODULE) != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "SERVER: activation of authz module failed\n");
-	exit(1);
-    }
-  
-    result = globus_gsi_authz_handle_init(&authz_handle,
-					  servicename,
-					  context_handle,
-					  authtest_l_handle_init_callback,
-					  "init callback arg");
-    if (result != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "SERVER: globus_gsi_authz_handle_init failed: %s\n",
-		globus_error_print_chain(globus_error_get(result)));
-	exit(1);
-    }
-
-    printf("> ");
-    while (fgets(buf, sizeof(buf), stdin)) {
-	request_action = strtok(buf, " \t\n");
-	request_object = strtok(0, " \t\n");
-
-	identity = 0;
-	if (strcmp(request_action, "authz") == 0)
-	{
-	    result = globus_gsi_authz_get_authorization_identity (
-		authz_handle,
-		&identity,
-		authtest_l_authz_get_authz_id_callback,
-		"get_authz_id_callback_arg");
-	    if (result == GLOBUS_SUCCESS)
-	    {
-		printf("%s\n", (identity ? identity : ""));
-	    }
-	    else
-	    {
-		printf("SERVER: globus_gsi_authz_get_authorization_identity failed: %s\n",
-		       globus_error_print_chain(globus_error_get(result)));
-	    }
-	}
-	else if (request_action && request_object)
-	{
-	    result = globus_gsi_authorize(authz_handle,
-					  request_action,
-					  request_object,
-					  authtest_l_authorize_callback, 
-					  "authorize_callback_arg");
-	    if (result == GLOBUS_SUCCESS)
-	    {
-		printf("SERVER: authorize succeeded\n");
-	    }
-	    else
-	    {
-		printf("SERVER: authz denied or failed: %s\n",
-		       globus_error_print_chain(globus_error_get(result)));
-	    }
-	}
-	printf("> ");
-    }
-
-    result = globus_gsi_authz_handle_destroy(authz_handle,
-					     authtest_l_authz_handle_destroy_callback,
-					     "authz_handle_destroy_arg");
-    if (result != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "SERVER: authz_handle_destroy failed: %s\n",
-		globus_error_print_chain(globus_error_get(result)));
-    }
-
-    result = globus_module_deactivate(GLOBUS_GSI_AUTHZ_MODULE);
-    if (result != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "SERVER: deactivation of authz module failed: %s\n",
-		globus_error_print_chain(globus_error_get(result)));
-	exit(1);
-    }
-
-
-    close(server_args->fd);
-    
-    free(server_args);
-    
-    globus_gsi_gssapi_test_cleanup(&context_handle,
-				   user_id,
-				   &delegated_cred);
-
-    return NULL;
-}
-
-void *
-client_func(
-    void *                              arg)
-{
-    struct context_arg *                client_args;
-    globus_bool_t                       result;
-    gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
-    char *                              user_id = NULL;
-    gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
-    int                                 connect_fd;
-    int                                 rc;
-
-    client_args = (struct context_arg *) arg;
-
-    connect_fd = socket(PF_UNIX, SOCK_STREAM, 0);
-
-    rc = connect(connect_fd,
-                 (struct sockaddr *) client_args->address,
-                 sizeof(struct sockaddr_un));
-
-    if(rc != 0)
-    {
-        abort();
-    }
-
-
-    result = globus_gsi_gssapi_test_authenticate(
-        connect_fd,
-        GLOBUS_FALSE, 
-        client_args->credential, 
-        &context_handle, 
-        &user_id, 
-        &delegated_cred);
-    
-    if(result == GLOBUS_FALSE)
-    {
-        fprintf(stderr, "CLIENT: Authentication failed\n");
-        exit(1);
-    }
-
-    globus_gsi_gssapi_test_cleanup(&context_handle,
-                                   user_id,
-                                   &delegated_cred);
-    user_id = NULL;
-    
-    close(connect_fd);
-
-    free(client_args);
-
-    return NULL;
-}
 
 static void
 authtest_l_handle_init_callback(void *				cb_arg,
 				globus_gsi_authz_handle_t 	handle,
 				globus_result_t		result)
 {
-    printf("in authtest_l_handle_init_callback, arg is %s\n",
-	   (char *)cb_arg);
+    int *okp = cb_arg;
     if (result == GLOBUS_SUCCESS)
     {
-	printf("handle_init succeeded\n");
+        *okp = GLOBUS_TRUE;
     }
     else
     {
-	printf("handle_init failed\n");
+        *okp = GLOBUS_FALSE;
     }
 }
 
@@ -358,15 +257,14 @@ authtest_l_authorize_callback(void *				cb_arg,
 			      globus_gsi_authz_handle_t 	handle,
 			      globus_result_t			result)
 {
-    printf("in authtest_l_authorize_callback, arg is %s\n",
-	   (char *)cb_arg);
+    int *okp = cb_arg;
     if (result == GLOBUS_SUCCESS)
     {
-	printf("authorization succeeded\n");
+        *okp = GLOBUS_TRUE;
     }
     else
     {
-	printf("authorization failed\n");
+        *okp = GLOBUS_FALSE;
     }
 }
 
@@ -375,15 +273,14 @@ authtest_l_authz_handle_destroy_callback(void *				cb_arg,
 					 globus_gsi_authz_handle_t 	handle,
 					 globus_result_t		result)
 {
-    printf("in authtest_l_authz_handle_destroy_callback, arg is %s\n",
-	   (char *)cb_arg);
+    int *okp = cb_arg;
     if (result == GLOBUS_SUCCESS)
     {
-	printf("handle_destroy succeeded\n");
+        *okp = GLOBUS_TRUE;
     }
     else
     {
-	printf("handle_destroy failed\n");
+        *okp = GLOBUS_FALSE;
     }
 }
 
@@ -392,14 +289,14 @@ authtest_l_authz_get_authz_id_callback(void *				cb_arg,
 					 globus_gsi_authz_handle_t 	handle,
 					 globus_result_t		result)
 {
-    printf("in authtest_l_authz_get_authz_id_callback, arg is %s\n",
-	   (char *)cb_arg);
+    int *okp = cb_arg;
+
     if (result == GLOBUS_SUCCESS)
     {
-	printf("get_authz_id succeeded\n");
+        *okp = GLOBUS_TRUE;
     }
     else
     {
-	printf("get_authz_id failed\n");
+        *okp = GLOBUS_FALSE;
     }
 }

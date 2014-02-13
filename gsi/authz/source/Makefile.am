@@ -1,3 +1,5 @@
+SUBDIRS = . test
+
 pkgconfigdir = $(libdir)/pkgconfig
 
 doc_DATA = GLOBUS_LICENSE

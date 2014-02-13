@@ -83,6 +83,13 @@ globus_gsi_authz_handle_destroy(
     globus_gsi_authz_cb_t               callback,
     void *                              callback_arg);
 
+globus_result_t
+globus_gsi_authz_get_authorization_identity(
+    globus_gsi_authz_handle_t           handle,
+    char **				identity_ptr,
+    globus_gsi_authz_cb_t               callback,
+    void *                              callback_arg);
+
 #ifdef __cplusplus
 }
 #endif

@@ -19,6 +19,8 @@
 #include <stdlib.h>
 
 
+static gss_ctx_id_t current_context = GSS_C_NO_CONTEXT;
+
 /*
  * ap is:
  *		void * authz_system_state;
@@ -27,13 +29,11 @@ globus_result_t
 authz_test_system_init_callout(
                                va_list ap)
 {
-    void                               *authz_system_state;
+    void                               **authz_system_state;
 
     globus_result_t                     result = GLOBUS_SUCCESS;
 
-    authz_system_state = va_arg(ap, void *);
-    printf("in %s, system state is %x\n", __func__,
-           (unsigned)authz_system_state);
+    authz_system_state = va_arg(ap, void **);
 
     return result;
 }
@@ -48,8 +48,6 @@ authz_test_system_destroy_callout(
     globus_result_t                     result = GLOBUS_SUCCESS;
 
     authz_system_state = va_arg(ap, void *);
-    printf("in %s, system state is %x\n", __func__,
-           (unsigned)authz_system_state);
 
     return result;
 }
@@ -74,14 +72,18 @@ authz_test_handle_init_callout(
     callback = va_arg(ap, globus_gsi_authz_cb_t);
     callback_arg = va_arg(ap, void *);
     authz_system_state = va_arg(ap, void *);
-    printf("in %s\n\tservice name is %s\n\tcontext is %x\n\tsystem state is %x\n",
-           __func__, service_name,
-           (unsigned)context,
-           (unsigned)authz_system_state);
 
-    *handle = calloc(1, sizeof(globus_gsi_authz_handle_t));
+    current_context = context;
 
-    /* Do something here. */
+    if (strcmp(service_name, "goodservice") == 0)
+    {
+        result = GLOBUS_SUCCESS;
+    }
+    else
+    {
+        result = GLOBUS_FAILURE;
+    }
+
     callback(callback_arg, callback_arg, result);
 
     return result;
@@ -109,12 +111,21 @@ authz_test_authorize_async_callout(
     callback_arg = va_arg(ap, void *);
     authz_system_state = va_arg(ap, void *);
 
-    /* ???????????? */
-    /* Am I supposed to call GAA-API as a callback with callback_arg???? */
-    /* Or, can I just do something like below? */
-    printf("in %s, action is %s, object is %s, system state is %x\n",
-           __func__, action, object,
-           (unsigned)authz_system_state);
+    if (strcmp(action, "action") == 0)
+    {
+        if (strcmp(object, "good") == 0)
+        {
+            result = GLOBUS_SUCCESS;
+        }
+        else
+        {
+            result = GLOBUS_FAILURE;
+        }
+    }
+    else
+    {
+        result = GLOBUS_FAILURE;
+    }
 
     callback(callback_arg, handle, result);
 
@@ -130,9 +141,6 @@ authz_test_cancel_callout(
     int                                 result = (int)GLOBUS_SUCCESS;
 
     authz_system_state = va_arg(ap, void *);
-    printf("in %s, system state is %x\n", __func__,
-           (unsigned)authz_system_state);
-    /* Do something here. */
 
     return result;
 }
@@ -141,20 +149,53 @@ int
 authz_test_handle_destroy_callout(
                                   va_list ap)
 {
-    globus_gsi_authz_handle_t          *handle;
-    void                               *authz_system_state;
-
+    globus_gsi_authz_handle_t   handle;
+    globus_gsi_authz_cb_t callback;
+    void * callback_arg;
+    void * authz_system_state;
     int                                 result = (int)GLOBUS_SUCCESS;
 
-    authz_system_state = va_arg(ap, void *);
-    printf("in %s, system state is %x\n", __func__,
-           (unsigned)authz_system_state);
 
-    if (handle != NULL)
-    {
-        free(handle);
-    }
+    handle = va_arg(ap, globus_gsi_authz_handle_t);
+    callback = va_arg(ap, globus_gsi_authz_cb_t);
+    callback_arg = va_arg(ap, void *);
+    authz_system_state = va_arg(ap, void **);
+    current_context = GSS_C_NO_CONTEXT;
+
+    callback(callback_arg, handle, result);
 
     return result;
 
+}
+
+int
+authz_test_get_authorization_identity(va_list ap)
+{
+    globus_gsi_authz_handle_t           handle;
+    char                              **identity_ptr;
+    globus_gsi_authz_cb_t               callback;
+    void                               *callback_arg;
+    void                               *authz_system_state;
+
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+    handle = va_arg(ap, globus_gsi_authz_handle_t);
+    identity_ptr = va_arg(ap, char **);
+    callback = va_arg(ap, globus_gsi_authz_cb_t);
+    callback_arg = va_arg(ap, void *);
+    authz_system_state = va_arg(ap, void *);
+
+    if (current_context != NULL)
+    {
+        *identity_ptr = strdup("identity");
+    }
+    else
+    {
+        *identity_ptr = NULL;
+        result = GLOBUS_FAILURE;
+    }
+
+    callback(callback_arg, handle, result);
+
+    return result;
 }
