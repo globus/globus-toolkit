@@ -1,6 +1,6 @@
 Name:		globus-authz
 %global _name %(tr - _ <<< %{name})
-Version:	3.2
+Version:	3.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus authz library
 
@@ -133,7 +133,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
-* Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 3.2-1
+* Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 3.3-1
 - Test fixes
 
 * Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 3.1-1
