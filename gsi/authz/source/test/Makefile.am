@@ -33,7 +33,7 @@ testcred.key:
 	umask 077 ; openssl genrsa -out $@ 1024
 
 testcred.req: testcred.key
-	printf "$$(openssl rand -hex 1)\n$$(openssl rand -hex 1)\n$$(openssl rand -hex 1)\n$$(openssl rand -hex 1)\n$$(openssl rand -hex 1)\n$$(openssl rand -hex 1)\n$$(openssl rand -hex 4)\n\n\n\n" | openssl req -new -key $< -out $@
+	printf "NA\nNA\nNA\nNA\nNA\nNA\n$$(openssl rand -base64 6)\n\n\n\n" | openssl req -new -key $< -out $@
 
 testcred.cert: testcred.req testcred.key
 	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
