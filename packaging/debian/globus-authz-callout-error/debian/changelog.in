@@ -1,3 +1,9 @@
+globus-authz-callout-error (3.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Thu, 13 Feb 2014 08:29:33 -0500
+
 globus-authz-callout-error (3.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT
