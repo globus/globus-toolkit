@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_protocol],[12.3],[http://jira.globus.org])
+AC_INIT([globus_gram_protocol],[12.4],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [9])
@@ -10,8 +10,15 @@ AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
 
-GLOBUS_XIO_GSI_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-gsi-driver`
-AC_SUBST(GLOBUS_XIO_GSI_DRIVER_LIBDIR)
+GSI_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-gsi-driver`
+GSI_DRIVER=""
+for ext in .la .so .dylib .a; do
+    if test -r $GSI_DRIVER_LIBDIR/libglobus_xio_gsi_driver${ext}; then
+        GSI_DRIVER=$GSI_DRIVER_LIBDIR/libglobus_xio_gsi_driver${ext} 
+        break
+    fi
+done
+AC_SUBST(GLOBUS_XIO_GSI_DRIVER, $GSI_DRIVER)
 
 m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)

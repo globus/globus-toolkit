@@ -28,8 +28,12 @@ int main(int argc, char * argv[])
     printf("1..3\n");
 
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
-    printf("%s - activate GLOBUS_GRAM_PROTOCOL_MODULE\n",
-        rc == GLOBUS_SUCCESS ? "ok" : "not ok");
+    printf("%s - activate GLOBUS_GRAM_PROTOCOL_MODULE %d\n",
+        rc == GLOBUS_SUCCESS ? "ok" : "not ok", rc);
+    if (rc)
+    {
+        fail_count++;
+    }
     rc = 0;
     for(i = -1; i < GLOBUS_GRAM_PROTOCOL_ERROR_LAST+1; i++)
     {

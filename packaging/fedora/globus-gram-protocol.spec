@@ -2,7 +2,7 @@
 
 Name:		globus-gram-protocol
 %global _name %(tr - _ <<< %{name})
-Version:	12.3
+Version:	12.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Protocol Library
 
@@ -153,6 +153,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 12.4-1
+- Test fixes
+
 * Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 12.3-1
 - Test fixes
 

@@ -27,7 +27,7 @@ TESTS_ENVIRONMENT = export \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR=$(abs_builddir);
 
-LOG_COMPILER = $(LIBTOOL) --mode=execute --dlopen $(GLOBUS_XIO_GSI_DRIVER_LIBDIR)/libglobus_xio_gsi_driver.la $(srcdir)/gram-protocol-test-wrapper
+LOG_COMPILER = $(LIBTOOL) --mode=execute -dlopen $(GLOBUS_XIO_GSI_DRIVER) $(srcdir)/gram-protocol-test-wrapper
 testcred.key:
 	umask 077; openssl genrsa -out $@ 1024
 
