@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.0
+Version:	7.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -30,6 +30,12 @@ BuildRequires:	globus-ftp-control-devel >= 4
 BuildRequires:	globus-gss-assist-devel >= 9
 BuildRequires:  globus-common-progs >= 14
 BuildRequires:	globus-gsi-credential-devel >= 6
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package progs
 Summary:	Globus Toolkit - Globus GridFTP Server Programs
@@ -86,7 +92,7 @@ Globus GridFTP Server Development Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 export GRIDMAP=/etc/grid-security/grid-mapfile
@@ -158,6 +164,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 7.1-1
+- Packagin fixes
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 7.0-1
 - Repackage for GT6 without GPT
 

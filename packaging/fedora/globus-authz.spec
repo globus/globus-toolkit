@@ -1,7 +1,7 @@
 Name:		globus-authz
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus authz library
 
 Group:		System Environment/Libraries
@@ -103,6 +103,9 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
+
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
