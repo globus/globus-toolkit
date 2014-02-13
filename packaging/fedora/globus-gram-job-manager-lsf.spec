@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-lsf
 %global _name %(tr - _ <<< %{name})
-Version:	2.1
+Version:	2.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
@@ -29,6 +29,12 @@ BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-scheduler-event-generator-devel >= 4
 BuildRequires:	globus-gram-protocol-devel >= 11
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package setup-poll
 Summary:        Globus Toolkit - PBS Job Manager Setup Files
@@ -89,7 +95,7 @@ PBS Job Manager Setup using SEG to monitor job state
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 export MPIEXEC=no
@@ -116,6 +122,9 @@ rm $RPM_BUILD_ROOT/etc/grid-services/jobmanager-lsf
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 # Remove pkg-config files (.pc files)
 find $RPM_BUILD_ROOT%{_libdir} -name '*.pc' -exec rm -v '{}' \;
+
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -184,6 +193,9 @@ fi
 %{_libdir}/libglobus*
 
 %changelog
+* Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 2.2-1
+- Packaging Fixes
+
 * Tue Jan 21 2014 Globus Toolkit <support@globus.org> - 2.1-1
 - Repackage for GT6 without GPT
 
