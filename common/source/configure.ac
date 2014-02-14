@@ -1,5 +1,5 @@
 AC_PREREQ([2.60])
-AC_INIT([globus_common], [15.10], [http://jira.globus.org])
+AC_INIT([globus_common], [15.11], [http://jira.globus.org])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -203,6 +203,10 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
 AC_SUBST([cross_compiling])
 AM_CONDITIONAL(CROSS_COMPILING, [ test "$cross_compiling" = "yes" ])
 AM_CONDITIONAL(WINDOWS_TEST_SCRIPT, [ test "$BUILD_FOR_WINDOWS" = "yes"])
+
+AC_ARG_VAR([LIBLTDL],[libltdl library path])
+AC_ARG_VAR([LTDLINCL],[libltdl include header path])
+AC_ARG_VAR([LTDLDEPS],[libltdl compile dependencies])
 
 if test x"${LTDLINCL}" != x; then
     CPPFLAGS="${CPPFLAGS} ${LTDLINCL}"
