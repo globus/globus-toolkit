@@ -1,3 +1,9 @@
+globus-common (15.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * Test Fixes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 14 Feb 2014 12:12:47 -0500
+
 globus-common (15.10-1+gt6.@distro@) @distro@; urgency=low
 
   * Use Libs.private for common deps

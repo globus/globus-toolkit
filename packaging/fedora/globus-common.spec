@@ -6,8 +6,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.10
-Release:	2%{?dist}
+Version:	15.11
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -208,6 +208,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 15.11-1
+- Test Fixes
+
 * Fri Feb 07 2014 Globus Toolkit <support@globus.org> - 15.10-1
 - Use Libs.private for common deps
 
