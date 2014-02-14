@@ -1,7 +1,7 @@
 Source: globus-xio-rate-driver
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-xio-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 0), libglobus-xio-dev (>= 0), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes

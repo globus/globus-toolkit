@@ -1,12 +1,5 @@
-%changelog
-* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 1.1-1
-- Add license
-
-* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 1.0-1
-- Repackage for GT6 without GPT
-
 %global _name %(tr - _ <<< %{name})
-Version:	1.1
+Version:	1.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Rate Limiting Driver
 
@@ -16,17 +9,23 @@ URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-xio%{?_isa} >= 3
+Requires:	globus-xio%{?_isa} >= 0
 Requires:	globus-common%{?_isa} >= 14
 
-BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-xio-devel >= 0
 BuildRequires:	globus-common-devel >= 14
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO Rate Limiting Driver Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-xio-devel%{?_isa} >= 0
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -54,7 +53,7 @@ Globus XIO Rate Limiting Driver Development Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -71,6 +70,9 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
+
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -90,3 +92,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 1.2-1
+- Packaging Fixes
+
+* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 1.1-1
+- Add license
+
+* Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 1.0-1
+- Repackage for GT6 without GPT
