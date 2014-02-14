@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_ftp_client],[8.0],[http://jira.globus.org])
+AC_INIT([globus_ftp_client],[8.1],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [6])
@@ -13,6 +13,35 @@ LT_INIT([dlopen win32-dll])
 m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
+
+GSI_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-gsi-driver`
+GSI_DRIVER=""
+for ext in .la .so .dylib .a; do
+    if test -r $GSI_DRIVER_LIBDIR/libglobus_xio_gsi_driver${ext}; then
+        GSI_DRIVER=$GSI_DRIVER_LIBDIR/libglobus_xio_gsi_driver${ext} 
+        break
+    fi
+done
+
+AC_SUBST(GLOBUS_XIO_GSI_DRIVER, $GSI_DRIVER)
+
+PIPE_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-pipe-driver`
+PIPE_DRIVER=""
+for ext in .la .so .dylib .a; do
+    if test -r $PIPE_DRIVER_LIBDIR/libglobus_xio_pipe_driver${ext}; then
+        PIPE_DRIVER=$PIPE_DRIVER_LIBDIR/libglobus_xio_pipe_driver${ext} 
+        break
+    fi
+done
+
+AC_SUBST(GLOBUS_XIO_PIPE_DRIVER, $PIPE_DRIVER)
+
+GRIDFTP_SBINDIR=`pkg-config --variable=sbindir globus-gridftp-server`
+AC_SUBST(GRIDFTP_SBINDIR, $GRIDFTP_SBINDIR)
+AM_CONDITIONAL([GRIDFTP_TESTS],
+  [ test "$GSI_DRIVER" != "" && \
+    test "$PIPE_DRIVER" != "" && \
+    test -d "$GRIDFTP_SBINDIR"])
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 

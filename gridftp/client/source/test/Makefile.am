@@ -1,4 +1,4 @@
-EXTRA_SCRIPTS = TESTS.pl TESTS-junit.pl run-tests.pl many-server.pl run-backend-tests.pl test-wrapper
+EXTRA_SCRIPTS = run-tests.pl many-server.pl run-backend-tests.pl test-wrapper
 
 check_SCRIPTS = \
 	dir-test.pl \
@@ -80,7 +80,9 @@ check_PROGRAMS = \
 	user-auth-test \
         restart-marker-test
 
+if GRIDFTP_TESTS
 TESTS = $(check_SCRIPTS)
+endif
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
 LDADD = libglobus_ftp_client_test.la $(top_builddir)/libglobus_ftp_client.la $(PACKAGE_DEP_LIBS)
 
@@ -89,8 +91,12 @@ AM_TESTS_ENVIRONMENT = \
     export X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR=$(abs_builddir) \
-    GRIDMAP=$(abs_builddir)/gridmap;
-LOG_COMPILER = $(srcdir)/test-wrapper
+    GRIDMAP=$(abs_builddir)/gridmap \
+    PATH="$(GRIDFTP_SBINDIR):$${PATH}";
+LOG_COMPILER = $(LIBTOOL) --mode=execute \
+	-dlopen $(GLOBUS_XIO_GSI_DRIVER) \
+	-dlopen $(GLOBUS_XIO_PIPE_DRIVER) \
+	$(srcdir)/test-wrapper
 
 libglobus_ftp_client_test_la_SOURCES = \
 	globus_ftp_client_test_abort_plugin.h \
@@ -108,41 +114,35 @@ libglobus_ftp_client_test_la_SOURCES = \
 libglobus_ftp_client_test_la_LDFLAGS = $(top_builddir)/libglobus_ftp_client.la $(PACKAGE_DEP_LIBS) -rpath $(abs_builddir) -no-undefined
 
 testcred.key:
-	openssl genrsa -out $@ 1024 && chmod 0600 $@
+	umask 077; openssl genrsa -out $@ 1024
 
 testcred.req: testcred.key
-	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< -out $@
+	printf "NA\nNA\nNA\nNA\nNA\n$$(openssl rand -base64 6)\n\n\n\n" | openssl req -new -key $< -out $@
 
 testcred.cert: testcred.req testcred.key
-	openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
+	umask 077; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
 
 testcredlink: testcred.cert
 	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
 	rm -f "$$linkname"; \
-	ln -s testcred.cert "$$linkname"
+	ln -s testcred.cert "$$linkname" ; \
+	echo "$$linkname" > $@
 
 gridmap: testcred.cert
 	subject=`openssl x509 -subject -noout -in testcred.cert | sed -e 's/subject= *//'` ; \
         echo "\"$$subject\" `id -un`" > gridmap
 
-test: $(test_SCRIPTS)
-	chmod a+x $(test_SCRIPTS)
-	perl ./TESTS.pl
 
-junit: $(test_SCRIPTS)
-	chmod a+x $(test_SCRIPTS)
-	perl ./TESTS-junit.pl
+CLEANFILES = testcred.key testcred.cert testcred.req gridmap
 
-CLEANFILES = testcred.key testcred.cert testcred.req
+clean-local:
+	if [ -f testcredlink ]; then \
+	    rm -f $$(cat testcredlink) testcredlink; \
+	fi
 
 EXTRA_DIST = \
-        dirt.sh \
         $(check_DATA_real) \
         $(globusperl_DATA) \
-	TESTS.pl \
-        TESTS-junit.pl \
 	FtpTestLib.pm \
         $(check_SCRIPTS) \
 	$(EXTRA_SCRIPTS)
-
-.PHONY: test junit testcredlink
