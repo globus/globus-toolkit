@@ -1,6 +1,5 @@
 Name:           globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Name:           
 Version:	1.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Rate Limiting Driver
