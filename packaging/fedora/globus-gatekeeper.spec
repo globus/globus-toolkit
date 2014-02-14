@@ -1,6 +1,6 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	10.0
+Version:	10.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -30,6 +30,12 @@ BuildRequires:       insserv
 %endif
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-gssapi-gsi-devel >= 9
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -49,7 +55,7 @@ Globus Gatekeeper Setup
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -69,6 +75,9 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 mkdir $RPM_BUILD_ROOT/etc/grid-services
 mkdir $RPM_BUILD_ROOT/etc/grid-services/available
+
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -103,6 +112,9 @@ fi
 
 
 %changelog
+* Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 10.1-1
+- Packaging fixes
+
 * Thu Jan 23 2014 Globus Toolkit <support@globus.org> - 10.0-1
 - Repackage for GT6 without GPT
 
