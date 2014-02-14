@@ -37,11 +37,6 @@ my $server_args = "-no-fork -no-chdir -d 0 -p $server_port $server_nosec";
 
 chomp($subject = `openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert}`);
 $subject =~ s/^subject= *//;
-    foreach my $name (keys %ENV) {
-        if ($name =~ /PATH/) {
-            print "$name=$ENV{$name}\n";
-        }
-    }
 
 $server_pid = open(SERVER, "$server_prog $server_args |");
  

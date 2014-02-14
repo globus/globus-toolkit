@@ -11,7 +11,7 @@ endif
 
 name = globus-rsl
 _name = globus_rsl
-version = 10.2
+version = 10.3
 soname = 2
 
 INSTALLDIR = $(CURDIR)/debian/tmp

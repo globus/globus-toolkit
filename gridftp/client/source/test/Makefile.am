@@ -87,7 +87,7 @@ AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
 LDADD = libglobus_ftp_client_test.la $(top_builddir)/libglobus_ftp_client.la $(PACKAGE_DEP_LIBS)
 
 
-AM_TESTS_ENVIRONMENT = \
+TESTS_ENVIRONMENT = \
     export X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR=$(abs_builddir) \

@@ -1,6 +1,6 @@
 Name:		globus-rsl
 %global _name %(tr - _ <<< %{name})
-Version:	10.2
+Version:	10.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Resource Specification Language Library
 
@@ -19,6 +19,12 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Resource Specification Language Library Development Files
@@ -69,7 +75,7 @@ Resource Specification Language Library Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -117,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 10.3-1
+- Packaging fixes
+
 * Sat Feb 01 2014 Globus Toolkit <support@globus.org> - 10.2-1
 - Maintainer mode
 
