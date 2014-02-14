@@ -1,6 +1,6 @@
 Name:		globus-xio-popen-driver
 %global _name %(tr - _ <<< %{name})
-Version:	3.0
+Version:	3.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Pipe Open Driver
 
@@ -15,6 +15,12 @@ Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO Pipe Open Driver Development Files
@@ -49,7 +55,7 @@ Globus XIO Pipe Open Driver Development Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -66,6 +72,9 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -vf '{}' \;
+
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -87,6 +96,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 3.1-1
+- Packaging Fixes
+
 * Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 3.0-1
 - Repackage for GT6 without GPT
 

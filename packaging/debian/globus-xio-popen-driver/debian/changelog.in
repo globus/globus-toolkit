@@ -1,3 +1,9 @@
+globus-xio-popen-driver (3.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging Fixes
+
+ -- Globus Toolkit <support@globus.org>  Thu, 13 Feb 2014 19:16:02 -0500
+
 globus-xio-popen-driver (3.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT
