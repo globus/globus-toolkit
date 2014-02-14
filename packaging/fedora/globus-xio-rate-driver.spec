@@ -85,6 +85,8 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %{_libdir}/libglobus*.so.*
+%dir %{_docdir}/%{name}-%{version}
+%doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %files devel
 %defattr(-,root,root,-)
