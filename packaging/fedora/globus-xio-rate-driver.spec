@@ -1,4 +1,4 @@
-Name:           globus-xio-gsi-driver
+Name:           globus-xio-rate-driver
 %global _name %(tr - _ <<< %{name})
 Version:	1.2
 Release:	1%{?dist}
