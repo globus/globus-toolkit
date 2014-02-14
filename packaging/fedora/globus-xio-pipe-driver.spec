@@ -1,6 +1,6 @@
 Name:		globus-xio-pipe-driver
 %global _name %(tr - _ <<< %{name})
-Version:	3.1
+Version:	3.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Pipe Driver
 
@@ -92,6 +92,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 3.2-1
+- Packaging fixes
+
 * Wed Feb 12 2014 Globus Toolkit <support@globus.org> - 3.1-1
 - Packaging fixes
 

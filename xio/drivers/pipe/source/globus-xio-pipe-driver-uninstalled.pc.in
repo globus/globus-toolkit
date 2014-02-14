@@ -1,7 +1,7 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
+libdir=@abs_top_builddir@
+includedir=@abs_top_srcdir@
 abs_top_builddir=@abs_top_builddir@
 abs_top_srcdir=@abs_top_srcdir@
 
@@ -9,4 +9,4 @@ Name: globus-xio-pipe-driver
 Description: Globus Toolkit - Globus Pipe Driver
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Cflags: -I${abs_top_srcdir} 
+Cflags: -I${includedir} 

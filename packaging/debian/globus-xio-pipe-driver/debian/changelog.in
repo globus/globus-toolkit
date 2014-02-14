@@ -1,3 +1,9 @@
+globus-xio-pipe-driver (3.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 14 Feb 2014 08:58:07 -0500
+
 globus-xio-pipe-driver (3.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes
