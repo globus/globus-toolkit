@@ -1,7 +1,7 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
 Version:	8.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
@@ -21,6 +21,8 @@ BuildRequires:	globus-ftp-control-doc >= 4
 BuildRequires:	globus-gridftp-server-progs
 BuildRequires:	doxygen
 BuildRequires:	graphviz
+BuildRequires:	globus-gridftp-server-devel >= 0
+BuildRequires:	globus-xio-pipe-driver-devel >= 0
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
@@ -134,6 +136,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 8.1-2
+- Test fixes
+
 * Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 8.1-1
 - Packaging fixes
 
