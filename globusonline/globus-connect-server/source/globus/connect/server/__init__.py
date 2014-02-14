@@ -723,12 +723,19 @@ class GCMU(object):
             myproxy_bootstrap = Popen(args, stdout=PIPE, stderr=PIPE, 
                 env=pipe_env)
             (out, err) = myproxy_bootstrap.communicate()
-            server_dn_match = re.search(r"New trusted CA \(([0-9a-f\.]*)\): (.*)", err)
+            server_dn_match = re.search(r"New trusted MyProxy server: (.*)", err)
+            server_ca_dn_match = re.search(r"New trusted CA \(([0-9a-f\.]*)\): (.*)", err)
+            server_ca_dn = None
+            server_dn = None
+            if server_ca_dn_match is not None:
+                server_ca_dn = server_ca_dn_match.groups()[1]
             if server_dn_match is not None:
-                server_dn = server_dn_match.groups()[1]
+                server_dn = server_dn_match.groups()[0]
+            if server_ca_dn is None or server_ca_dn == '/C=US/O=Globus Consortium/CN=Globus Connect CA':
+                server_ca_dn = server_dn
             shutil.rmtree(temppath, ignore_errors=True)
-            self.logger.debug("MyProxy CA DN is " + str(server_dn))
-            self.__myproxy_ca_dn = server_dn
+            self.logger.debug("MyProxy CA DN is " + str(server_ca_dn))
+            self.__myproxy_ca_dn = server_ca_dn
         self.logger.debug("EXIT: get_myproxy_ca_dn_from_server()")
         return self.__myproxy_ca_dn
 
