@@ -1,7 +1,7 @@
 Source: globus-gass-transfer
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-io-dev, libglobus-gssapi-gsi-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-io-dev (>= 8), libglobus-gssapi-gsi-dev (>= 10), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes

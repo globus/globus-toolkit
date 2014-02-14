@@ -1,6 +1,6 @@
 Name:		globus-gass-transfer
 %global _name %(tr - _ <<< %{name})
-Version:	8.0
+Version:	8.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Transfer
 
@@ -12,16 +12,22 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-io%{?_isa} >= 8
-Requires:	globus-gssapi-gsi%{?_isa} >= 9
+Requires:	globus-gssapi-gsi%{?_isa} >= 10
 
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-io-devel >= 8
-BuildRequires:	globus-gssapi-gsi-devel >= 9
+BuildRequires:	globus-gssapi-gsi-devel >= 10
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Globus Gass Transfer Development Files
@@ -29,7 +35,7 @@ Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-io-devel%{?_isa} >= 8
-Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+Requires:	globus-gssapi-gsi-devel%{?_isa} >= 10
 
 %package doc
 Summary:	Globus Toolkit - Globus Gass Transfer Documentation Files
@@ -74,7 +80,7 @@ Globus Gass Transfer Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -92,6 +98,9 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
+
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -119,6 +128,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 8.1-1
+- Packaging Fixes
+
 * Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 8.0-1
 - Repackage for GT6 without GPT
 

@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gass-transfer
 _name = globus_gass_transfer
-version = 8.0
+version = 8.1
 soname = 2
 
 INSTALLDIR = $(CURDIR)/debian/tmp
