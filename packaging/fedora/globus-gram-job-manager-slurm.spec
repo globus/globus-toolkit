@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-slurm
 %global _name %(tr - _ <<< %{name})
-Version:	2.0
+Version:	2.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - SLURM Job Manager
 
@@ -27,6 +27,11 @@ Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-gram-protocol-devel >= 11
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
 BuildArch:      noarch
 
 %package doc
@@ -86,7 +91,7 @@ SLURM Job Manager Setup using polling to monitor job state
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 export MPIEXEC=no
@@ -106,6 +111,9 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 rm -rf $RPM_BUILD_ROOT/etc/grid-services/jobmanager-slurm
+
+%check
+make %{_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -148,6 +156,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Sat Feb 15 2014 Globus Toolkit <support@globus.org> - 2.1-1
+- Packaging fixes
+
 * Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 2.0-1
 - Repackage for GT6 without GPT
 
