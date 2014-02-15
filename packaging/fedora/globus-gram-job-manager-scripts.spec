@@ -1,7 +1,7 @@
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	6.0
+Version:	6.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
@@ -21,6 +21,11 @@ Requires:     perl = %{perl_version}
     %endif
 %else
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
+%endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
 %endif
 
 %package doc
@@ -54,7 +59,7 @@ GRAM Job ManagerScripts Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -95,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sat Feb 15 2014 Globus Toolkit <support@globus.org> - 6.1-1
+- Packaging fixes
+
 * Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 6.0-1
 - Repackage for GT6 without GPT
 
