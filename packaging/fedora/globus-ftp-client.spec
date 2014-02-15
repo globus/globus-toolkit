@@ -1,7 +1,7 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.1
-Release:	2%{?dist}
+Version:	8.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
@@ -136,6 +136,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 8.2-1
+- Packaging fixes
+
 * Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 8.1-2
 - Test fixes
 
