@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
-Version:	2.0
+Version:	2.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
@@ -35,6 +35,12 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package setup-poll
 Summary:        Globus Toolkit - SGE Job Manager Setup Files
@@ -97,7 +103,7 @@ SGE Job Manager Setup using SEG to monitor job state
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 # Explicitly set SGE-related command paths
@@ -133,6 +139,9 @@ rm $RPM_BUILD_ROOT/etc/grid-services/jobmanager-sge
 
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
+
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -201,6 +210,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-sge-seg
 
 %changelog
+* Sat Feb 15 2014 Globus Toolkit <support@globus.org> - 2.1-1
+- Packaging fixes
+
 * Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 2.0-1
 - Repackage for GT6 without GPT
 

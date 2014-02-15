@@ -1,7 +1,7 @@
 Source: globus-gram-job-manager-sge
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, libglobus-scheduler-event-generator-dev
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-scheduler-event-generator-dev (>= 4), pkg-config
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
