@@ -1,6 +1,6 @@
 Name:		globus-xioperf
 %global _name %(tr - _ <<< %{name})
-Version:	4.0
+Version:	4.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - XIO Performance Tool
 
@@ -15,6 +15,12 @@ Requires:	globus-xio%{?_isa} >= 3
 
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -33,7 +39,7 @@ XIO Performance Tool
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -49,6 +55,9 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
+%check
+make %{?_smp_mflags} check
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -60,6 +69,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 4.1-1
+- Packaging fixes
+
 * Thu Jan 23 2014 Globus Toolkit <support@globus.org> - 4.0-1
 - Add openssl dependency
 
