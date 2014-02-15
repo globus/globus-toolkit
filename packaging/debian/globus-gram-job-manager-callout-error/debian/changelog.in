@@ -1,3 +1,15 @@
+globus-gram-job-manager-callout-error (3.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 14 Feb 2014 19:41:27 -0500
+
+globus-gram-job-manager-callout-error (3.0-2+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 14 Feb 2014 19:40:44 -0500
+
 globus-gram-job-manager-callout-error (3.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT
