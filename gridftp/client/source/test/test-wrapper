@@ -30,7 +30,7 @@ my $server_pid;
 my $server_prog = "globus-gridftp-server";
 my $server_host = "localhost";
 my $server_port = 0;
-my $server_nosec = "";
+my $server_nosec = "-auth-level 4";
 my $subject;
 
 my $server_args = "-no-fork -no-chdir -d 0 -p $server_port $server_nosec";
