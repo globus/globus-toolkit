@@ -1,7 +1,7 @@
 Name:		globus-xio-gridftp-multicast
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Multicast Driver
 
 Group:		System Environment/Libraries
@@ -10,18 +10,24 @@ URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common >= 14
-Requires:	globus-xio%{?_isa} >= 3
+Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-xio%{?_isa} >= 0
 Requires:	globus-ftp-client%{?_isa} >= 2
 
-BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-xio-devel >= 0
 BuildRequires:	globus-common-devel >= 14
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO GridFTP Multicast Driver Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-xio-devel%{?_isa} >= 0
 Requires:	globus-common%{?_isa} >= 14
 
 %description
@@ -50,7 +56,7 @@ Globus XIO GridFTP Multicast Driver Development Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -67,6 +73,9 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -vf "{}" \;
+
+%check
+make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -86,6 +95,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Feb 17 2014 Globus Toolkit <support@globus.org> - 1.0-2
+- Packaging fixes
+
 * Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 1.0-1
 - Repackage for GT6 without GPT
 
