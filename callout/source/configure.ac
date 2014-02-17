@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_callout], [3.2], [http://jira.globus.org])
+AC_INIT([globus_callout], [3.3], [http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [3])
@@ -15,6 +15,10 @@ AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+
+AC_ARG_VAR([LIBLTDL],[libltdl library path])
+AC_ARG_VAR([LTDLINCL],[libltdl include header path])
+AC_ARG_VAR([LTDLDEPS],[libltdl compile dependencies])
 
 if test x"${LTDLINCL}" != x; then
     CPPFLAGS="${CPPFLAGS} ${LTDLINCL}"

@@ -1,7 +1,7 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
-Version:	3.2
-Release:	3%{?dist}
+Version:	3.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries
@@ -130,6 +130,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Feb 17 2014 Globus Toolkit <support@globus.org> - 3.3-1
+- Packaging fixes
+
 * Fri Feb 07 2014 Globus Toolkit <support@globus.org> - 3.2-1
 - Fix some configure problems
 
