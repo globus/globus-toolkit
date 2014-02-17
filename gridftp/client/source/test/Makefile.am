@@ -130,7 +130,7 @@ testcredlink: testcred.cert
 
 gridmap: testcred.cert
 	subject=`openssl x509 -subject -noout -in testcred.cert | sed -e 's/subject= *//'` ; \
-        echo "\"$$subject\" `id -un`" > gridmap
+        echo "\"$$subject\" $${LOGNAME:-`id -un`}" > gridmap
 
 
 CLEANFILES = testcred.key testcred.cert testcred.req gridmap
