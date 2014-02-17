@@ -1,0 +1,84 @@
+#! /usr/bin/perl
+
+use strict;
+use warnings;
+use Test::More;
+use IPC::Open3;
+use Symbol 'gensym';
+use File::Temp qw(tempdir tempfile);
+
+require v5.8.0;
+
+my $testdir = tempdir(CLEANUP => 1);
+chdir $testdir;
+
+plan tests => 10;
+
+help_tests(); # 1..4
+sign_tests(); # 5..10
+
+sub help_tests
+{
+    my ($infd, $outfd, $errfd, $pid, $rc);
+    $errfd = gensym;
+
+    $pid = open3($infd, $outfd, $errfd, "grid-ca-sign", "-help");
+
+    ok($pid > 0, "grid-ca-sign -help runs");
+    local $/;
+    close($infd);
+    waitpid($pid, 0);
+    ok($? == 0, "grid-ca-sign exits with 0");
+
+    ok(<$outfd> ne "", "grid-ca-sign -help prints help");
+    ok(<$errfd> eq "", "grid-ca-sign -help doesn't error");
+}
+
+sub sign_tests
+{
+    my ($infd, $outfd, $errfd, $pid, $rc);
+    $errfd = gensym;
+
+    # Try to create a CA
+    $pid = open3($infd, $outfd, $errfd, "grid-ca-create",
+        "-dir", "$testdir/ca", "-noint", "-pass", "globus");
+    ok($pid > 0, "grid-ca-create -dir $testdir/ca");
+    local $/;
+    print $infd "\n\n\n";
+    close($infd);
+
+    SKIP: {
+        skip "Didn't run grid-ca-create", 5 unless $pid > 0;
+
+        waitpid($pid, 0);
+        ok($? == 0, "grid-ca-create exits with 0");
+
+        # Try to create a cert request from the CA config
+        $errfd = gensym;
+        $pid = open3($infd, $outfd, $errfd, "openssl",
+            "req", "-new", "-config", "$testdir/ca/globus-user-ssl.conf",
+            "-passin", "pass:globus", "-passout", "pass:globus");
+        ok($pid > 0, "openssl req -new -config $testdir/ca/globus-user-ssl.conf -passin pass:globus");
+        local $/;
+        print $infd "\n\n\n\nTester\n";
+        close($infd);
+        waitpid($pid, 0);
+        ok($? == 0, "req exits with $? == 0");
+
+        my ($reqfd, $reqfn) = tempfile;
+        my ($certfd, $certfn) = tempfile;
+        $reqfd->print(<$outfd>);
+        $reqfd->flush();
+
+        $errfd = gensym;
+        $pid = open3($infd, $outfd, $errfd, "grid-ca-sign",
+            "-dir", "$testdir/ca",
+            "-in", $reqfn, "-out", $certfn,
+            "-passin", "pass:globus");
+        close($infd);
+        waitpid($pid, 0);
+        ok($? == 0, "sign exits with $? == 0");
+        ok(system("grep -q -- '-----BEGIN CERTIFICATE-----' $certfn") == 0,
+            "signed certificate");
+    }
+}

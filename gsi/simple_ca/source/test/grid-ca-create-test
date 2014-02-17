@@ -1,0 +1,184 @@
+#! /usr/bin/perl
+
+use strict;
+use warnings;
+use Test::More;
+use IPC::Open3;
+use Symbol 'gensym';
+use File::Temp qw(tempdir tempfile);
+
+require v5.8.0;
+
+my $testdir = tempdir(CLEANUP => 1);
+chdir $testdir;
+
+plan tests => 27;
+
+help_tests(); # 1..4
+create_ca_tests(); # 5..14
+email_test(); # 15..17
+days_test(); # 18..20
+pass_test(); # 21..23
+subject_test(); # 24..27
+
+sub help_tests
+{
+    my ($infd, $outfd, $errfd, $pid, $rc);
+    $errfd = gensym;
+
+    $pid = open3($infd, $outfd, $errfd, "grid-ca-create", "-help");
+
+    ok($pid > 0, "grid-ca-create -help runs");
+    local $/;
+    close($infd);
+    waitpid($pid, 0);
+    ok($? == 0, "grid-ca-create exits with 0");
+
+    ok(<$outfd> ne "", "grid-ca-create -help prints help");
+    ok(<$errfd> eq "", "grid-ca-create -help doesn't error");
+}
+
+sub create_ca_tests
+{
+    my ($infd, $outfd, $errfd, $pid, $rc);
+    $errfd = gensym;
+
+    # Try to create a CA
+    $pid = open3($infd, $outfd, $errfd, "grid-ca-create",
+        "-dir", "$testdir/create", "-pass", "stdin");
+    ok($pid > 0, "grid-ca-create -dir $testdir/create");
+    local $/;
+    print $infd "\n\n\n";
+    close($infd);
+
+    SKIP: {
+        skip "Didn't run grid-ca-create", 10 unless $pid > 0;
+
+        waitpid($pid, 0);
+        ok($? == 0, "grid-ca-create exits with 0");
+
+        ok(<$outfd> ne "", "grid-ca-create -noint prints output");
+        ok(<$errfd> eq "", "grid-ca-create -noint doesn't error");
+
+        # Try to create a CA in an already populated dir
+        $errfd = gensym;
+        $pid = open3($infd, $outfd, $errfd, "grid-ca-create",
+            "-dir", "$testdir/create", "-pass", "stdin");
+        ok($pid > 0, "grid-ca-create -dir $testdir/create");
+        local $/;
+        print $infd "\n\n\n";
+        close($infd);
+        waitpid($pid, 0);
+        ok($? != 0, "grid-ca-create to existing dir should fail");
+
+        # Try to create a CA in an already populated dir with force
+        $errfd = gensym;
+        $pid = open3($infd, $outfd, $errfd, "grid-ca-create",
+            "-dir", "$testdir/create", "-force", "-pass", "stdin");
+        ok($pid > 0, "grid-ca-create -noint -dir $testdir/create -force");
+        local $/;
+        print $infd "\n\n\n";
+        close($infd);
+        waitpid($pid, 0);
+        ok($? == 0, "grid-ca-create -noint -force exits with 0");
+
+        ok(<$outfd> ne "", "grid-ca-create -noint -force prints output");
+        ok(<$errfd> eq "", "grid-ca-create -noint -force doesn't error");
+    }
+}
+
+sub email_test
+{
+    my ($infd, $outfd, $errfd, $pid, $rc, $email);
+    my $reference_email = "foo\@bar.com";
+    $errfd = gensym;
+
+    # Try to create a CA
+    $pid = open3($infd, $outfd, $errfd, "grid-ca-create", "-noint",
+        "-dir", "$testdir/emailtest", "-email", $reference_email);
+    ok($pid > 0, "grid-ca-create -noint -dir $testdir/emailtest -email $reference_email");
+
+    SKIP: {
+        skip "Unable to run grid-ca-create", 2 unless ($pid > 0);
+        local $/;
+        close($infd);
+        waitpid($pid, 0);
+        ok($? == 0, "grid-ca-create -noint -email exits with 0");
+
+        $email = `. $testdir/emailtest/grid-security.conf; echo \$DEFAULT_GSI_CA_EMAIL_ADDR`;
+        chop($email);
+        ok($email eq $reference_email, "Email $email matches $reference_email");
+    }
+}
+
+sub days_test
+{
+    my ($infd, $outfd, $errfd, $pid, $rc, @enddate);
+    my @reference_enddate = gmtime(time() + 5*60*60*24); # 5 days
+    $errfd = gensym;
+
+    # Try to create a CA
+    $pid = open3($infd, $outfd, $errfd, "grid-ca-create", "-noint",
+        "-dir", "$testdir/datetest", "-days", "5");
+    ok($pid > 0, "grid-ca-create -noint -dir $testdir/datetest -days 5");
+
+    SKIP: {
+        skip "Unable to run grid-ca-create", 2 unless ($pid > 0);
+        local $/;
+        close($infd);
+        waitpid($pid, 0);
+        ok($? == 0, "grid-ca-create -noint -days exits with 0");
+
+        my $datestring = `openssl x509 -enddate -in $testdir/datetest/cacert.pem -noout`;
+        @enddate = gmtime(chomp($datestring));
+        ok($enddate[7] - $reference_enddate[7] < 2, "enddate match");
+    }
+}
+
+sub pass_test
+{
+    my ($infd, $outfd, $errfd, $pid, $rc);
+    my $password = "12345";
+    $errfd = gensym;
+
+    # Try to create a CA
+    $pid = open3($infd, $outfd, $errfd, "grid-ca-create", "-noint",
+        "-dir", "$testdir/passtest", "-pass", $password);
+    ok($pid > 0, "grid-ca-create -noint -dir $testdir/passtest");
+
+    SKIP: {
+        skip "Unable to run grid-ca-create", 3 unless ($pid > 0);
+        local $/;
+        close($infd);
+        waitpid($pid, 0);
+        ok($? == 0, "grid-ca-create -noint -pass $password exits with 0");
+
+        my $stderr = `openssl rsa -in $testdir/passtest/private/cakey.pem -noout -passin pass:$password 2>&1 1>/dev/null`;
+        ok($stderr eq '', "Check passphrase works with no output");
+        ok($? == 0, "Check passphrase works with 0 exit code");
+    }
+}
+
+sub subject_test
+{
+    my ($infd, $outfd, $errfd, $pid, $rc, $subject);
+    my $reference_subject = "CN=My Test CA,OU=Test,O=Globus,C=US";
+    $errfd = gensym;
+
+    # Try to create a CA
+    $pid = open3($infd, $outfd, $errfd, "grid-ca-create", "-noint",
+        "-dir", "$testdir/subjecttest", "-subject", $reference_subject);
+    ok($pid > 0, "grid-ca-create -noint -dir $testdir/subjecttest -subject $reference_subject");
+
+    SKIP: {
+        skip "Unable to run grid-ca-create", 2 unless ($pid > 0);
+        local $/;
+        close($infd);
+        waitpid($pid, 0);
+        ok($? == 0, "grid-ca-create -noint -subject exits with 0");
+        $subject = `openssl x509 -in $testdir/subjecttest/cacert.pem -noout -subject -nameopt rfc2253`;
+        $subject =~ s/^subject= *//;
+        chop($subject);
+        ok($subject eq $reference_subject, "subject $subject and $reference_subject match");
+    }
+}

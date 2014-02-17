@@ -1,3 +1,4 @@
+SUBDIRS = . test
 bin_SCRIPTS = grid-ca-sign grid-ca-create grid-ca-package
 pkgdata_DATA = \
         ca-signing-policy.tmpl \

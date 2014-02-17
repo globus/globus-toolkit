@@ -2,7 +2,7 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	4.0
+Version:	4.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
@@ -16,6 +16,11 @@ Requires:   globus-common-progs
 Requires:   openssl
 Requires(post):   openssl
 Requires(post):   globus-gsi-cert-utils-progs
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
 BuildArch:      noarch
 
 %description
@@ -35,7 +40,7 @@ Globus Simple CA
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 %configure \
@@ -100,6 +105,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Tue Feb 18 2014 Globus Toolkit <support@globus.org> - 4.1-1
+- Packaging fixes
+
 * Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 4.0-1
 - Repackage for GT6 without GPT
 
