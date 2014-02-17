@@ -1,7 +1,7 @@
 Name:		globus-xio-gridftp-multicast
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
-Release:	2%{?dist}
+Version:	1.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Multicast Driver
 
 Group:		System Environment/Libraries
@@ -16,6 +16,7 @@ Requires:	globus-ftp-client%{?_isa} >= 2
 
 BuildRequires:	globus-xio-devel >= 0
 BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-ftp-client >= 2
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
@@ -95,6 +96,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Feb 17 2014 Globus Toolkit <support@globus.org> - 1.1-1
+- Packaging fixes
+
 * Mon Feb 17 2014 Globus Toolkit <support@globus.org> - 1.0-2
 - Packaging fixes
 

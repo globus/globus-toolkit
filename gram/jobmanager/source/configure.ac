@@ -7,7 +7,7 @@ AC_SUBST([AGE_VERSION], [1])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gsi-credential >= 5, globus-gass-cache >= 8, globus-gass-transfer >= 7, globus-gram-protocol >= 11, globus-gssapi-gsi >= 10, globus-gss-assist >= 8, globus-gsi-sysconfig >= 5, globus-callout >= 2, globus-xio >= 3, globus-xio-popen-driver >= 2, globus-rsl >= 9, globus-gram-job-manager-callout-error >= 2, globus-scheduler-event-generator >= 4, globus-usage >= 3, openssl >= 0.9.8"])
 
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
+AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
 
 m4_include([dirt.sh])
@@ -21,7 +21,7 @@ AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
-GLOBUS_TOOLKIT_VERSION="`globus-version`"
+GLOBUS_TOOLKIT_VERSION="${GLOBUS_VERSION:-`globus-version`}"
 if test "x$GLOBUS_TOOLKIT_VERSION" = "x"; then
     GLOBUS_TOOLKIT_VERSION="UNKNOWN"
 fi

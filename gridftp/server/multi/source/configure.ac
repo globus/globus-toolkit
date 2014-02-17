@@ -1,10 +1,10 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_gridftp_multicast],[1.0],[http://jira.globus.org])
+AC_INIT([globus_xio_gridftp_multicast],[1.1],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
-AC_SUBST([PACKAGE_DEPS], ["globus-xio >= 0, globus-ftp-client >= 2"])
+AC_SUBST([PACKAGE_DEPS], ["globus-xio >= 0, globus-common >= 14, globus-ftp-client >= 2"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
