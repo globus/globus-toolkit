@@ -639,7 +639,7 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 
 PROGRAM_NAME="${0##*/}"
 
-PROGRAM_VERSION="$(expr '$Revision$' : ".Revision: \([0-9\.]*\) .")"
+PROGRAM_VERSION="@VERSION@"
 
 VERSION="@VERSION@"
 

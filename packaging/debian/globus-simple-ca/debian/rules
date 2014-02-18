@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-simple-ca
 _name = globus_simple_ca
-version = 4.1
+version = 4.2
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 
@@ -22,6 +22,7 @@ _bindir = $(_prefix)/bin
 _sbindir = $(_prefix)/sbin
 _libdir = $(_prefix)/lib
 _datadir = $(_prefix)/share
+_libexecdir = $(_datadir)/globus
 _mandir = $(_datadir)/man
 _docdir = $(_datadir)/doc
 
@@ -57,7 +58,8 @@ configure-stamp: sed-stamp
 	   --mandir='$${datadir}/man' \
 	   --infodir='$${datadir}/info' \
 	   --docdir='$(_docdir)/$(name)' \
-           --localstatedir=/var
+           --localstatedir=/var \
+           --libexecdir='$(_libexecdir)'
 
 	touch $@
 
