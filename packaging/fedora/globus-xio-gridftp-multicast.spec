@@ -1,7 +1,7 @@
 Name:		globus-xio-gridftp-multicast
 %global _name %(tr - _ <<< %{name})
 Version:	1.1
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Multicast Driver
 
 Group:		System Environment/Libraries
@@ -87,6 +87,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
+%dir %{_docdir}/%{name}-%{version}
+%doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %{_libdir}/libglobus*.so.*
 
 %files devel
