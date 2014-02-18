@@ -111,7 +111,6 @@ install: build-stamp
 	ls -1 \
 	  debian/tmp$(_bindir)/* \
 	  debian/tmp$(_mandir)/man1/*.1 \
-	  debian/tmp$(_datadir)/globus_simple_ca/* \
 	  debian/tmp$(_docdir)/$(name)/GLOBUS_LICENSE \
 	  > debian/$(name).install
 
