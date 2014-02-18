@@ -42,7 +42,7 @@ get_security_dir() {
 
 get_hashes() {
     cadir=$1
-    ${GLOBUS_SH_LS-ls} ${cadir}/*.0 2> /dev/null || true
+    ls ${cadir}/*.0 2> /dev/null || true
 }
 
 ca_list() {
@@ -106,7 +106,7 @@ interactive() {
     
     eval "CA_SUBJECT=\${CA_SUBJECT${CA_CHOSEN_INDEX}}"
     eval "CA_CERT=\${CA${CA_CHOSEN_INDEX}}"
-    CA_CERT_DIR=`echo $CA_CERT | ${GLOBUS_SH_SED-sed} -e "s|/[^\/]*$||"`
+    CA_CERT_DIR=`echo $CA_CERT | sed -e "s|/[^\/]*$||"`
 }
 
 create_source_package_tarball()
@@ -525,15 +525,15 @@ readCommandLine () {
     while [ "X$1" != "X" ]
     do
         case $1 in
-            -\?|-h|-help|usage)
+            -\?|-h|-help|-usage|--help|--usage)
                 long_usage
                 exit 0
                 ;;
-            -ca)
+            -ca|--ca)
                 ca_to_use="$2"
                 shift 2
                 ;;
-            -cadir)
+            -cadir|--cadir)
                 cadir="$2"
                 shift 2
                 ;;
@@ -554,8 +554,35 @@ readCommandLine () {
                 create_gpt_package=1
                 shift;
                 ;;
+             -version|--version)
+                if [ "X${PROGRAM_NAME}" != "X" -a \
+                      "X${PROGRAM_VERSION}" != "X" ]; then
+                    echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+                elif [ "X${PACKAGE}" != "X" -a \
+                       "X${VERSION}" != "X" ]; then
+                    echo "${PACKAGE}: ${VERSION}"
+                else
+                    echo "No version information available."
+                fi
+                exit 0
+                ;;
+             -versions|--versions)
+                __AT='@'
+                if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+                     -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+                     "X${DIRT_TIMESTAMP}" != "X${__AT}DIRT_TIMESTAMP${__AT}" -a \
+                     "X${DIRT_BRANCH_ID}" != "X${__AT}DIRT_BRANCH_ID${__AT}" ];
+                then
+                    echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+                else
+                    echo "No DiRT information available."
+                fi
+                exit 0;
+                ;;
             *)
-                globus_args_unrecognized_option "$1"
+                echo "ERROR: option $1 : unrecognized option"
+                short_usage
+                exit 1
                 ;;
          esac
     done
@@ -628,15 +655,6 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
-
-globus_source ${libexecdir}/globus-sh-tools.sh
-
 PROGRAM_NAME="${0##*/}"
 
 PROGRAM_VERSION="@VERSION@"
@@ -649,8 +667,6 @@ DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
 DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 
 short_usage="$PROGRAM_NAME [-help] [ options ...]"
-
-. $libexecdir/globus-args-parser-header
 
 readCommandLine "$@"
 

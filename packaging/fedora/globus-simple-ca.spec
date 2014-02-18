@@ -2,7 +2,7 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	4.2
+Version:	4.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
@@ -105,6 +105,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Tue Feb 18 2014 Globus Toolkit <support@globus.org> - 4.3-1
+- Don't depend on finding initializer/args parser
+
 * Tue Feb 18 2014 Globus Toolkit <support@globus.org> - 4.2-1
 - Test fixes
 

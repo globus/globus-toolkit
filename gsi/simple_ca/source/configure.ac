@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_simple_ca],[4.2],[http://jira.globus.org])
+AC_INIT([globus_simple_ca],[4.3],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -12,6 +12,13 @@ AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
+
+grid_security_conf_tmpl="$srcdir/grid-security.conf.tmpl"
+AC_SUBST_FILE(grid_security_conf_tmpl)
+ca_signing_policy_tmpl="$srcdir/ca-signing-policy.tmpl"
+AC_SUBST_FILE(ca_signing_policy_tmpl)
+grid_ca_ssl_conf_tmpl="$srcdir/grid-ca-ssl.conf.tmpl"
+AC_SUBST_FILE(grid_ca_ssl_conf_tmpl)
 
 AC_PATH_PROG(XSLTPROC, "xsltproc")
 AC_PATH_PROG(XMLLINT, "xmllint")

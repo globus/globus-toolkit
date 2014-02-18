@@ -46,7 +46,7 @@ sub create_ca_tests
     # Try to create a CA
     $pid = open3($infd, $outfd, $errfd, "grid-ca-create",
         "-dir", "$testdir/create", "-pass", "stdin");
-    ok($pid > 0, "grid-ca-create -dir $testdir/create");
+    ok($pid > 0, "grid-ca-create -dir \$testdir/create");
     local $/;
     print $infd "\n\n\n";
     close($infd);
@@ -64,7 +64,7 @@ sub create_ca_tests
         $errfd = gensym;
         $pid = open3($infd, $outfd, $errfd, "grid-ca-create",
             "-dir", "$testdir/create", "-pass", "stdin");
-        ok($pid > 0, "grid-ca-create -dir $testdir/create");
+        ok($pid > 0, "grid-ca-create -dir \$testdir/create");
         local $/;
         print $infd "\n\n\n";
         close($infd);
@@ -75,7 +75,7 @@ sub create_ca_tests
         $errfd = gensym;
         $pid = open3($infd, $outfd, $errfd, "grid-ca-create",
             "-dir", "$testdir/create", "-force", "-pass", "stdin");
-        ok($pid > 0, "grid-ca-create -noint -dir $testdir/create -force");
+        ok($pid > 0, "grid-ca-create -noint -dir \$testdir/create -force");
         local $/;
         print $infd "\n\n\n";
         close($infd);
@@ -96,7 +96,7 @@ sub email_test
     # Try to create a CA
     $pid = open3($infd, $outfd, $errfd, "grid-ca-create", "-noint",
         "-dir", "$testdir/emailtest", "-email", $reference_email);
-    ok($pid > 0, "grid-ca-create -noint -dir $testdir/emailtest -email $reference_email");
+    ok($pid > 0, "grid-ca-create -noint -dir \$testdir/emailtest -email $reference_email");
 
     SKIP: {
         skip "Unable to run grid-ca-create", 2 unless ($pid > 0);
@@ -120,7 +120,7 @@ sub days_test
     # Try to create a CA
     $pid = open3($infd, $outfd, $errfd, "grid-ca-create", "-noint",
         "-dir", "$testdir/datetest", "-days", "5");
-    ok($pid > 0, "grid-ca-create -noint -dir $testdir/datetest -days 5");
+    ok($pid > 0, "grid-ca-create -noint -dir \$testdir/datetest -days 5");
 
     SKIP: {
         skip "Unable to run grid-ca-create", 2 unless ($pid > 0);
@@ -144,7 +144,7 @@ sub pass_test
     # Try to create a CA
     $pid = open3($infd, $outfd, $errfd, "grid-ca-create", "-noint",
         "-dir", "$testdir/passtest", "-pass", $password);
-    ok($pid > 0, "grid-ca-create -noint -dir $testdir/passtest");
+    ok($pid > 0, "grid-ca-create -noint -dir \$testdir/passtest");
 
     SKIP: {
         skip "Unable to run grid-ca-create", 3 unless ($pid > 0);
@@ -168,7 +168,7 @@ sub subject_test
     # Try to create a CA
     $pid = open3($infd, $outfd, $errfd, "grid-ca-create", "-noint",
         "-dir", "$testdir/subjecttest", "-subject", $reference_subject);
-    ok($pid > 0, "grid-ca-create -noint -dir $testdir/subjecttest -subject $reference_subject");
+    ok($pid > 0, "grid-ca-create -noint -dir \$testdir/subjecttest -subject $reference_subject");
 
     SKIP: {
         skip "Unable to run grid-ca-create", 2 unless ($pid > 0);

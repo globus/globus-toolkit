@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.11
+Version:	15.12
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
@@ -208,6 +208,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Tue Feb 18 2014 Globus Toolkit <support@globus.org> - 15.12-1
+- Don't depend on finding initializer/args parser
+
 * Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 15.11-1
 - Test Fixes
 

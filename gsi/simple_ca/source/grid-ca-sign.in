@@ -35,15 +35,6 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
-
-globus_source ${libexecdir}/globus-sh-tools.sh
-
 PROGRAM_NAME="${0##*/}"
 PROGRAM_VERSION="@VERSION@"
 PACKAGE="@PACKAGE@"
@@ -110,41 +101,64 @@ EOF
             openssl ca command, such as -passin pass:PASSWORD"
 }
 
-. $libexecdir/globus-args-parser-header
-
 readCommandLine() {
 
     while test -n "$1" 
     do
         case $1 in
-            -\?|-h|-help|-usage)
+            -\?|-h|-help|-usage|--help|--usage)
                 long_usage
                 exit 0
                 ;;
-            -force)
+            -force|--force)
                 force_sign="true"
                 shift;
                 ;;
-            -dir)
+            -dir|--dir)
                 shift;
                 GRID_CA_DIR=$1;
                 shift;
                 ;;
-            -in)
+            -in|--in)
                 shift;
                 INPUT_REQ_FILE=$1;
                 shift;
                 ;;
-            -out)
+            -out|--out)
                 shift;
                 SIGNED_OUTPUT_FILE=$1;
                 shift;
                 ;;
-            -openssl-help)
+            -openssl-help|--openssl-help)
                 shift;
 		openssl ca -help
 		exit;
 		;;
+             -version|--version)
+                if [ "X${PROGRAM_NAME}" != "X" -a \
+                      "X${PROGRAM_VERSION}" != "X" ]; then
+                    echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+                elif [ "X${PACKAGE}" != "X" -a \
+                       "X${VERSION}" != "X" ]; then
+                    echo "${PACKAGE}: ${VERSION}"
+                else
+                    echo "No version information available."
+                fi
+                exit 0
+                ;;
+             -versions|--versions)
+                __AT='@'
+                if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+                     -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+                     "X${DIRT_TIMESTAMP}" != "X${__AT}DIRT_TIMESTAMP${__AT}" -a \
+                     "X${DIRT_BRANCH_ID}" != "X${__AT}DIRT_BRANCH_ID${__AT}" ];
+                then
+                    echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+                else
+                    echo "No DiRT information available."
+                fi
+                exit 0;
+                ;;
 	    *)
                 openssl_options="$openssl_options $1"
                 shift;
@@ -185,12 +199,12 @@ do_trap() {
 
 do_cleanup() {
 
-    ${GLOBUS_SH_RM-rm} -f ${tmp_output}
+    rm -f ${tmp_output}
 }
 
 do_password_input() {
     if test $need_password_input; then
-        ${GLOBUS_SH_STTY-stty} -echo
+        stty -echo
         echo ""
         echo $@
         printf "please enter the password for the CA key: "
@@ -199,7 +213,7 @@ do_password_input() {
 
 end_password_input() {
     if test $need_password_input; then
-        ${GLOBUS_SH_STTY-stty} echo
+        stty echo
         echo ""
     fi
 }
@@ -220,13 +234,13 @@ if test ${openssl_result} != 0; then
 
     # check that a certificate with the same subject has not
     # already been signed
-    already_signed=`${GLOBUS_SH_GREP-grep} \
+    already_signed=`grep \
                         "ERROR:There is already a certificate" \
                         ${tmp_output}`
-    already_signed2=`${GLOBUS_SH_GREP-grep} \
+    already_signed2=`grep \
                         "unique_subject = \"yes\"" \
                         ${tmp_output}`
-    already_signed3=`${GLOBUS_SH_GREP-grep} \
+    already_signed3=`grep \
                         "TXT_DB error number 2" \
                         ${tmp_output}`
     if test -n "${already_signed}" || test -n "${already_signed2}" \
@@ -244,8 +258,8 @@ if test ${openssl_result} != 0; then
             exit 1
         fi
         
-        req_subj=`cat ${subj_tmp_output} | ${GLOBUS_SH_GREP-grep} "subject=" \
-                                 | ${GLOBUS_SH_SED-sed} -e "s/subject=[ ]*//"` 
+        req_subj=`cat ${subj_tmp_output} | grep "subject=" \
+                                 | sed -e "s/subject=[ ]*//"` 
         # find signed cert
         for p in ${GRID_CA_DIR}/newcerts/*.pem; do
             subj_tmp_output=/tmp/tmp_output.$$
@@ -258,7 +272,7 @@ if test ${openssl_result} != 0; then
                 echo ""
             fi
 
-            signed_subj=`cat ${subj_tmp_output} | ${GLOBUS_SH_SED-sed} -e "s/subject=[ ]*//"`
+            signed_subj=`cat ${subj_tmp_output} | sed -e "s/subject=[ ]*//"`
 
             if test "${signed_subj}" = "${req_subj}"; then
                 SIGNED_CERT=${p}
@@ -308,12 +322,12 @@ if test ${openssl_result} != 0; then
     		cat ${tmp_revoke_output} 1>&2
     		echo "================================================="
 	        echo ""
-                ${GLOBUS_SH_RM-rm} -f ${tmp_revoke_output}
+                rm -f ${tmp_revoke_output}
                 do_cleanup
                 exit 1
             else
                 
-                ${GLOBUS_SH_RM-rm} -f ${tmp_revoke_output}
+                rm -f ${tmp_revoke_output}
                 echo ""
                 echo "Signing new certificate"
                 do_sign;
@@ -330,7 +344,7 @@ if test ${openssl_result} != 0; then
             echo "this certificate and create a new one."
             echo ""
 
-            ${GLOBUS_SH_RM-rm} -f ${subj_tmp_output}
+            rm -f ${subj_tmp_output}
             
             do_cleanup
             exit 1
@@ -349,7 +363,7 @@ if test ${openssl_result} != 0; then
     echo "================================================="
 
     # check if the error was with 
-    no_config_file=`${GLOBUS_SH_GREP-grep} "error loading the config file" ${tmp_output}`
+    no_config_file=`grep "error loading the config file" ${tmp_output}`
     if test -n "${no_config_file}"; then
 
         echo ""
@@ -362,7 +376,7 @@ if test ${openssl_result} != 0; then
     fi
 
     # check if the CA's private key could be loaded
-    wrong_password=`${GLOBUS_SH_GREP-grep} "unable to load CA private key" ${tmp_output}`
+    wrong_password=`grep "unable to load CA private key" ${tmp_output}`
     if test -n "${wrong_password}"; then
     
         echo ""
@@ -372,7 +386,7 @@ if test ${openssl_result} != 0; then
     fi
 
     # check that the cert request matches the CA cert
-    wrong_org=`${GLOBUS_SH_GREP-grep} "field needed to be the same" ${tmp_output}`
+    wrong_org=`grep "field needed to be the same" ${tmp_output}`
     if test -n "${wrong_org}"; then
     
         echo "" 
@@ -386,7 +400,7 @@ if test ${openssl_result} != 0; then
         echo ""
     fi
 
-    ${GLOBUS_SH_RM-rm} -f ${tmp_output}
+    rm -f ${tmp_output}
 
     echo ""
     do_cleanup

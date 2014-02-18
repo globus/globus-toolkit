@@ -214,6 +214,13 @@ get_ca_lifetime()
     eval "${_varname}=\"${_ca_cert_days}\""
 }
 
+grid_security_conf_template()
+{
+    cat <<'EOF'
+@grid_security_conf_tmpl@
+EOF
+}
+
 ##
 # save_ca_settings: save the settings determined from this
 #                   script to grid-security.conf for this CA
@@ -229,7 +236,6 @@ save_ca_settings()
     exec 4>&1
 
     # Translate template to configuration file
-    exec 0< "${datadir}/globus_simple_ca/grid-security.conf.tmpl" 
     exec 1> "${_dest}/grid-security.conf" 
 
     # Template variables
@@ -239,7 +245,7 @@ save_ca_settings()
     GSI_CA_EMAIL="${_addr}"
 
     # Replace template variables in the configuration file
-    while read line; do
+    grid_security_conf_template | while read line; do
         case "$line" in
             "#"*)
                 echo "$line"
@@ -388,11 +394,17 @@ rfc2253_to_oneline()
     echo "$_oneline"
 }
 
+ca_signing_policy_tmpl()
+{
+    cat <<'EOF'
+@ca_signing_policy_tmpl@
+EOF
+}
+
 generate_signing_policy()
 {
     _cadir="${1}"
     _caname="${2}"
-    _template="${datadir}/globus_simple_ca/ca-signing-policy.tmpl"
 
     GRID_CA_SUBJECT="$(rfc2253_to_oneline "${_caname}")"
     rc=$?
@@ -405,10 +417,9 @@ generate_signing_policy()
     exec 3<&0
     exec 4>&1
 
-    exec 0< "${_template}"
     exec 1> "${_cadir}/signing-policy"
 
-    while read line; do
+    ca_signing_policy_tmpl | while read line; do
         if expr "${line}" : ".*#" > /dev/null; then
             comment="#${line#*#}"
         else
@@ -449,25 +460,28 @@ setup_grid_security_dir()
     echo "done"
 }
 
+grid_ca_ssl_conf_tmpl()
+{
+    cat <<'EOF'
+@grid_ca_ssl_conf_tmpl@
+EOF
+}
+
 create_ssl_config()
 {
 (
     _type="${1}"
-    _template="${2}"
-    _caname="${3}"
-    _cadir="${4}"
+    _caname="${2}"
+    _cadir="${3}"
 
     . "${_cadir}/grid-security.conf"
 
-    _ssl_conf_template=${datadir}/globus_simple_ca/grid-ca-ssl.conf.tmpl
-
     exec 3<&0
-    exec 0< "${_ssl_conf_template}"
 
     _skip=0
 
     GRID_CA_DIR="${_cadir}"
-    while read line; do
+    grid_ca_ssl_conf_tmpl | while read line; do
         if expr "${line}" : ".*#" > /dev/null; then
             comment="#${line#*#}"
         else
@@ -515,11 +529,10 @@ generate_ca_certificate()
     _user_ssl_conf="${_cadir}/globus-user-ssl.conf"
     _host_ssl_conf="${_cadir}/globus-host-ssl.conf"
 
-    _ssl_conf_template="${datadir}/globus_simple_ca/grid-ca-ssl.conf.tmpl"
 
-    create_ssl_config -ca "${_ssl_conf_template}" "${_caname}" "${_cadir}" > "${_ca_ssl_conf}"
-    create_ssl_config -user "${_ssl_conf_template}" "${_caname}" "${_cadir}" > "${_user_ssl_conf}"
-    create_ssl_config -host "${_ssl_conf_template}" "${_caname}" "${_cadir}" > "${_host_ssl_conf}"
+    create_ssl_config -ca "${_caname}" "${_cadir}" > "${_ca_ssl_conf}"
+    create_ssl_config -user "${_caname}" "${_cadir}" > "${_user_ssl_conf}"
+    create_ssl_config -host "${_caname}" "${_cadir}" > "${_host_ssl_conf}"
 
     CA_REQ_INPUT=${_privatedir}/tmp_openssl_input.conf
 
@@ -592,14 +605,6 @@ libexecdir="@libexecdir@"
 sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
-
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
-globus_source "${libexecdir}/globus-sh-tools-vars.sh"
 
 PROGRAM_NAME="${0##*/}"
 PROGRAM_VERSION="@VERSION@"
@@ -681,14 +686,12 @@ EOF
             with this script."
 }
 
-. "${libexecdir}/globus-args-parser-header"
-
 readCommandLine () {
   # Expects $@ from the shell invocation
 
   while test -n "$1"; do
     case $1 in
-      -\?|-h|-help|-usage)
+      -\?|-h|-help|-usage|--help|--usage)
          long_usage
          exit 0
          ;;
@@ -701,7 +704,7 @@ readCommandLine () {
          backward_compatible=1
          shift
          ;;
-     -dir)
+     -dir|--dir)
          tmp_ca_dir="$2"
          if test -z "${tmp_ca_dir}"; then
             echo "ERROR: the -dir option expects a directory."
@@ -715,11 +718,11 @@ readCommandLine () {
          
          shift ; shift
          ;;
-     -force)
+     -force|--force)
          force="yes"
          shift
          ;;
-     -subject)
+     -subject|--subject)
          shift
          request_subject="${1}"
          shift
@@ -730,28 +733,28 @@ readCommandLine () {
              exit 1
          fi
          ;;
-     -email)
+     -email|--email)
          request_email="${2}"
          shift ; shift
          ;;
-     -days)
+     -days|--days)
          request_days="${2}"
          shift ; shift
          ;;
-     -pass)
+     -pass|--pass)
          request_password="${2}"
          shift ; shift
          ;;
-     -nobuild)
+     -nobuild|--nobuild)
          nobuild="yes"
          shift
          ;;
-     -noint)
+     -noint|--noint)
          noint="yes"
          force="yes"
          shift
          ;;
-     -verbose)
+     -verbose|--verbose)
          verbose="yes"
          shift
          ;;
@@ -760,6 +763,31 @@ readCommandLine () {
          openssl req -help;
          exit;
          ;;
+     -version|--version)
+        if [ "X${PROGRAM_NAME}" != "X" -a \
+              "X${PROGRAM_VERSION}" != "X" ]; then
+            echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+        elif [ "X${PACKAGE}" != "X" -a \
+               "X${VERSION}" != "X" ]; then
+            echo "${PACKAGE}: ${VERSION}"
+        else
+            echo "No version information available."
+        fi
+        exit 0
+        ;;
+     -versions|--versions)
+        __AT='@'
+        if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+             -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+             "X${DIRT_TIMESTAMP}" != "X${__AT}DIRT_TIMESTAMP${__AT}" -a \
+             "X${DIRT_BRANCH_ID}" != "X${__AT}DIRT_BRANCH_ID${__AT}" ];
+        then
+            echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+        else
+            echo "No DiRT information available."
+        fi
+        exit 0;
+        ;;
 
      *)
          openssl_options="$openssl_options $1"
@@ -787,7 +815,7 @@ fi
 CA_KEY_FILE="${GRID_CA_DIR}/private/cakey.pem"
 CA_CERT_FILE="${GRID_CA_DIR}/cacert.pem"
 
-${GLOBUS_SH_CAT-cat} <<EOF
+cat <<EOF
  
 
     C e r t i f i c a t e    A u t h o r i t y    S e t u p

@@ -42,13 +42,6 @@ sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 perlmoduledir="@perlmoduledir@"
 
-if test -r "${libexecdir}/globus-script-initializer"; then
-    . "${libexecdir}/globus-script-initializer"
-else
-    echo "Cannot locate globus-script-initializer" 1>&2
-    exit 1
-fi
-
 short_usage="${PROGRAM_NAME} [-help] [-version]"
 
 long_usage()
@@ -83,12 +76,41 @@ cat 1>&2 <<EOF
 EOF
 }
 
-. ${libexecdir}/globus-args-parser-header
+for arg in "$@"; do
+    case "$arg" in
+        -version|--version)
+            if [ "X${PROGRAM_NAME}" != "X" -a \
+                  "X${PROGRAM_VERSION}" != "X" ]; then
+                echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+            elif [ "X${PACKAGE}" != "X" -a \
+                   "X${VERSION}" != "X" ]; then
+                echo "${PACKAGE}: ${VERSION}"
+            else
+                echo "No version information available."
+            fi
+            exit 0
+            ;;
+        -versions|--versions)
+            __AT=@
+            if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+                 -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+                 "X${DIRT_TIMESTAMP}" != "X${__AT}DIRT_TIMESTAMP${__AT}" -a \
+                 "X${DIRT_BRANCH_ID}" != "X${__AT}DIRT_BRANCH_ID${__AT}" ];
+            then
+                echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+            else
+                echo "No DiRT information available."
+            fi
+            exit 0;
+            ;;
+        *)
+            echo "ERROR: option $arg : unrecognized option"
+            echo "${short_usage}"
+            exit 1;
+            ;;
+    esac
+done
 
-if [ -n "$1" ]; then
-    globus_args_unrecognized_option "$1"
-fi
- 
 _hostname="${GLOBUS_HOSTNAME}"
 
 # If the ENV variable is not set, determine its correct value

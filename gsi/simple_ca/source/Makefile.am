@@ -1,9 +1,5 @@
 SUBDIRS = . test
 bin_SCRIPTS = grid-ca-sign grid-ca-create grid-ca-package
-pkgdata_DATA = \
-        ca-signing-policy.tmpl \
-        grid-ca-ssl.conf.tmpl \
-        grid-security.conf.tmpl
 doc_DATA = GLOBUS_LICENSE
 man_MANS = grid-ca-create.1 grid-ca-package.1 grid-ca-sign.1
 
@@ -14,7 +10,9 @@ MANUALS_SOURCE = \
 
 EXTRA_DIST = \
         dirt.sh \
-        $(pkgdata_DATA) \
+        ca-signing-policy.tmpl \
+        grid-ca-ssl.conf.tmpl \
+        grid-security.conf.tmpl \
         $(doc_DATA) \
         grid-ca-sign.in \
         grid-ca-create.in \

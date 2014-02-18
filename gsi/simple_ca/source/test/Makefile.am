@@ -4,3 +4,4 @@ check_SCRIPTS = \
 TESTS = $(check_SCRIPTS)
 
 EXTRA_DIST = $(check_SCRIPTS)
+TESTS_ENVIRONMENT=export PATH=$(abs_top_builddir):$${PATH};
