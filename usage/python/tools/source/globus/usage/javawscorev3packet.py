@@ -16,7 +16,7 @@ Object definition for processing Java WS Core (version 3) usage packets.
 """
 
 import struct
-from javawscorev1packet import JavaWSCoreV1Packet
+from globus.usage.javawscorev1packet import JavaWSCoreV1Packet
 
 class JavaWSCoreV3Packet(JavaWSCoreV1Packet):
     """

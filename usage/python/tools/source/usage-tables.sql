@@ -2,7 +2,7 @@ CREATE TABLE  unknown_packets(
     id BIGSERIAL,
     componentcode SMALLINT NOT NULL,
     versioncode SMALLINT NOT NULL,
-    contents BYTEA NOT NULL,  
+    contents BYTEA NOT NULL,
     PRIMARY KEY (id)
 );
 
@@ -179,7 +179,7 @@ CREATE TABLE gftp_versions(
    distro_string varchar(64),
    UNIQUE(major, minor, flavor, dirt_timestamp, dirt_branch, distro_string),
    PRIMARY KEY (id)
-); 
+);
 
 CREATE TABLE gftp_server(
     id BIGSERIAL,
@@ -236,14 +236,14 @@ CREATE TABLE gftp_xfer_type(
     PRIMARY KEY(id));
 
 COPY gftp_xfer_type(command) FROM STDIN;
-'STOR'
-'RETR'
-'ESTO'
-'ERET'
-'LIST'
-'NLST'
-'MLST'
-'MLSD'
+STOR
+RETR
+ESTO
+ERET
+LIST
+NLST
+MLST
+MLSD
 \.
 
 
@@ -369,7 +369,7 @@ CREATE TABLE gram5_versions (
     UNIQUE(major, minor, flavor, dirt_timestamp, dirt_branch, distro_string)
 );
 
--- This table contains a mapping of unique LRM names to an integer key. 
+-- This table contains a mapping of unique LRM names to an integer key.
 -- This table is referenced by the gram5_job_managers table to associate the
 -- configured LRM with a particular service deployment.
 CREATE TABLE gram5_lrms (
@@ -528,7 +528,7 @@ CREATE TABLE gram5_rsl_attribute_groups(
     -- Bitwise or of 2^(rsl attribute id)
     bitfield NUMERIC(64),
     -- String containing comma-separated list of attributes
-    attributes VARCHAR(256) NOT NULL,
+    attributes VARCHAR(512) NOT NULL,
     PRIMARY KEY(bitfield));
 
 -- The bitwise operations didn't work to well in practice with > 62 RSL
@@ -618,7 +618,7 @@ CREATE TABLE gram5_jobs(
     client_id INTEGER REFERENCES gram5_client(id),
     -- executable name
     executable_id INTEGER REFERENCES gram5_executable(id),
-    -- bitwise-or of 2^(each gram5_rsl_attributes value present) 
+    -- bitwise-or of 2^(each gram5_rsl_attributes value present)
     rsl_bitfield NUMERIC(64) NOT NULL,
     -- GRAM5 Job Type
     jobtype INTEGER NOT NULL references gram5_job_types(id),
@@ -866,3 +866,52 @@ CREATE TABLE myproxy_packets(
     user_dn VARCHAR(128),
     PRIMARY KEY (id)
 );
+
+
+CREATE TABLE usage_community(
+    community_name                      TEXT,
+    dns_pattern                         TEXT,
+    UNIQUE(community_name, dns_pattern));
+
+COPY usage_community(community_name, dns_pattern) FROM STDIN;
+LHC	%.cern.ch
+LHC	%cms%
+LHC	%atl%
+LHC	%lhc%
+LHC	%lcg%
+LHC	%hep%
+LHC	%qmul%
+LHC	%particle%
+LHC	%physik%
+LHC	%gridka%
+OSG	%osg%
+XSEDE	%.teragrid.org
+XSEDE	%.xsede.org
+LIGO	%ligo%
+LIGO	%ldr%
+DES	des%
+D0	d0%
+EDU	%.edu
+ESA	%.esa.int
+ESA	%terradue%
+ESA	%unina%
+ESA	%sissa%
+ESA	%inaf%
+ESA	%fatebenefratelli%
+DOE	%.gov
+DOE	%.lbl.gov
+DOE	%.anl.gov
+DOE	%.pnl.gov
+DOE	%.lanl.gov
+DOE	%.ornl.gov
+DOE	%.bnl.gov
+DOE	%.fnal.gov
+DOE	%.pnnl.gov
+DOE	%.pppl.gov
+DOE	%.inl.gov
+DOE	%.slac.stanford.edu
+DOE	%.doe.gov
+DOE	%.snl.gov
+DOE	%.jlab.org
+\.
+

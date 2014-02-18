@@ -12,49 +12,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Object definition for processing DRS usage packets.
+Object definition for processing C WS Core (version 2) usage packets.
 """
 
-from iptimemonitorpacket import IPTimeMonitorPacket
+from globus.usage.cwscorev1packet import CWSCoreV1Packet
 
-class DRSPacket(IPTimeMonitorPacket):
+class CWSCoreV2Packet(CWSCoreV1Packet):
     """
-    DRS Usage Packet
+    C WS Core Usage Packet (version 2). Adds a container id, start/stop events
+    and service list
     """
-
-    def __init__(self, address, packet):
-        IPTimeMonitorPacket.__init__(self, address, packet)
-        [self.number_of_files, self.number_of_resources] = self.unpack('qq')
 
     insert_statement = '''
-        INSERT INTO drs_packets (
-            component_code,
-            version_code,
-            send_time,
-            ip_address,
-            number_of_files,
-            number_of_resources)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    '''
+            INSERT INTO c_ws_core_packets(
+                component_code,
+                version_code,
+                send_time,
+                ip_address,
+                container_id,
+                event_type,
+                service_list)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)'''
 
     def values(self, dbclass):
         """
-        Return a values tuple which matches the parameters in the
-        class's insert_statement.
+        Return a values tuple which matches the parameters in the class's
+        insert_statement.
 
         Arguments:
-        self -- An DRSPacket object
+        self -- A CWSCoreV2Packet object
+        dbclass -- Database driver module for driver-specific type bindings
 
         Returns:
         Tuple containing
             (component_code, version_code, send_time, ip_address,
-            number_of_files, number_of_resources)
-
+             container_id, event_type, service_list)
         """
         return (
             self.component_code,
             self.packet_version,
             dbclass.Timestamp(*self.send_time),
             self.ip_address,
-            self.number_of_files,
-            self.number_of_resources)
+            self.data.get('ID'),
+            self.data.get('EVENT'),
+            self.data.get('SERVICES'))

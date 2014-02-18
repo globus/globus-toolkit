@@ -12,41 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Object definition for processing RFT usage packets.
+Object definition for processing DRS usage packets.
 """
 
-from iptimemonitorpacket import IPTimeMonitorPacket
-import struct
+from globus.usage.iptimemonitorpacket import IPTimeMonitorPacket
 
-class RFTPacket(IPTimeMonitorPacket):
+class DRSPacket(IPTimeMonitorPacket):
     """
-    RFT Usage Packet handler
+    DRS Usage Packet
     """
+
     def __init__(self, address, packet):
         IPTimeMonitorPacket.__init__(self, address, packet)
-        [
-            self.request_type,
-            self.number_of_files,
-            self.number_of_bytes,
-            self.number_of_resources,
-            self.resource_creation_time,
-            self.factory_start_time
-        ] = self.unpack("Bqqqqq")
-
+        [self.number_of_files, self.number_of_resources] = self.unpack('qq')
 
     insert_statement = '''
-            INSERT INTO rft_packets(
-                component_code,
-                version_code,
-                send_time,
-                ip_address,
-                request_type,
-                number_of_files,
-                number_of_bytes,
-                number_of_resources,
-                creation_time,
-                factory_start_time)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
+        INSERT INTO drs_packets (
+            component_code,
+            version_code,
+            send_time,
+            ip_address,
+            number_of_files,
+            number_of_resources)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    '''
 
     def values(self, dbclass):
         """
@@ -54,14 +43,12 @@ class RFTPacket(IPTimeMonitorPacket):
         class's insert_statement.
 
         Arguments:
-        self -- A RFTPacket object
+        self -- An DRSPacket object
 
         Returns:
         Tuple containing
             (component_code, version_code, send_time, ip_address,
-             request_type, number_of_files, number_of_bytes,
-             number_of_resources, creation_time,
-             factory_start_time)
+            number_of_files, number_of_resources)
 
         """
         return (
@@ -69,10 +56,5 @@ class RFTPacket(IPTimeMonitorPacket):
             self.packet_version,
             dbclass.Timestamp(*self.send_time),
             self.ip_address,
-            self.request_type,
             self.number_of_files,
-            self.number_of_bytes,
-            self.number_of_resources,
-            self.resource_creation_time,
-            self.factory_start_time)
-
+            self.number_of_resources)

@@ -16,8 +16,8 @@
 Utilities and objects for processing GRAM5 usage packets.
 """
 
-from cusagepacket import CUsagePacket
-from dnscache import DNSCache
+from globus.usage.cusagepacket import CUsagePacket
+from globus.usage.dnscache import DNSCache
 import time
 import re
 
@@ -31,7 +31,6 @@ class GRAM5Packet(CUsagePacket):
     dns_cache = None
     __lrms = dict()
     __job_managers = dict()
-    __job_manager_instances = dict()
     __job_manager_instances_by_uuid = dict()
     clients = dict()
     executables = dict()
@@ -46,11 +45,7 @@ class GRAM5Packet(CUsagePacket):
 
     
     @staticmethod
-    def upload_many(dbclass, cursor, packets):
-        """
-        Upload many GRAM5Packet usage packets to the database referred to
-        by the given cursor. It will also prepare the caches of id tables
-        """
+    def pre_upload(dbclass, cursor):
         if GRAM5Packet.__all_init == 0:
             GRAM5Packet.db_class = dbclass
 
@@ -59,15 +54,25 @@ class GRAM5Packet(CUsagePacket):
             GRAM5Packet.__init_versions(cursor)
             GRAM5Packet.__init_lrms(cursor)
             GRAM5Packet.__init_job_managers(cursor)
-            GRAM5Packet.__init_job_manager_instances(cursor)
+            #GRAM5Packet.__init_job_manager_instances(cursor)
             GRAM5Packet.__init_rsl_attributes(cursor)
             GRAM5Packet.__init_rsl_bitfields(cursor)
             GRAM5Packet.__init_job_type_ids(cursor)
             GRAM5Packet.__init_clients(cursor)
             GRAM5Packet.__init_executables(cursor)
             GRAM5Packet.cursor = cursor
-        CUsagePacket.upload_many(dbclass, cursor, packets)
-        
+
+    @staticmethod
+    def upload_many(dbclass, cursor, packets):
+        """
+        Upload many GRAM5Packet usage packets to the database referred to
+        by the given cursor. It will also prepare the caches of id tables.
+
+        Returns an array of bad packets
+        """
+        GRAM5Packet.pre_upload(dbclass, cursor)
+        return CUsagePacket.upload_many(dbclass, cursor, packets)
+
     def get_job_manager_id(self, cursor):
         """
         Determine the job manager key which matches the host, version,
@@ -98,7 +103,8 @@ class GRAM5Packet(CUsagePacket):
         if job_manager_id is None:
             cursor.execute("select nextval('gram5_job_managers_id_seq') as key")
             job_manager_id = cursor.fetchone()[0]
-            values_sql = (job_manager_id, host_id, version_id, lrm_id, seg_used, poll_used, audit_used)
+            values_sql = (job_manager_id, host_id, version_id, \
+                lrm_id, seg_used, poll_used, audit_used)
 
             cursor.execute('''
                 INSERT INTO gram5_job_managers(
@@ -137,10 +143,25 @@ class GRAM5Packet(CUsagePacket):
                 float(self.data.get('A')))
         byuuidresult = GRAM5Packet.__job_manager_instances_by_uuid.get(uuid)
         job_manager_instance_id = None
+
+        if byuuidresult is None:
+            # Not in cache -- check to see if it's in the table
+            cursor.execute("""
+                SELECT id, job_manager_id
+                FROM gram5_job_manager_instances
+                WHERE uuid = '%s'""" % (uuid) )
+            for row in cursor:
+                [jmi_id, job_manager_id] = row
+                GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
+                    (jmi_id, job_manager_id)
+                byuuidresult = (jmi_id, job_manager_id)
+                break
+
         if byuuidresult is not None:
             (job_manager_instance_id, jmid) = byuuidresult
         if job_manager_instance_id is None:
-            cursor.execute("select nextval('gram5_job_manager_instances_id_seq') as key")
+            cursor.execute( \
+                "select nextval('gram5_job_manager_instances_id_seq') as key")
             job_manager_instance_id = cursor.fetchone()[0]
             values = (job_manager_instance_id, job_manager_id, uuid, start_time)
             cursor.execute('''
@@ -187,6 +208,18 @@ class GRAM5Packet(CUsagePacket):
                     float(self.data.get('A')))
         job_manager_instance_id = None
         by_uuid_entry = GRAM5Packet.__job_manager_instances_by_uuid.get(uuid)
+        if by_uuid_entry is None:
+            # Not in cache -- check to see if it's in the table
+            cursor.execute("""
+                SELECT id, job_manager_id
+                FROM gram5_job_manager_instances
+                WHERE uuid = '%s'""" % (uuid) )
+            for row in cursor:
+                [jmi_id, job_manager_id] = row
+                GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
+                    (jmi_id, job_manager_id)
+                by_uuid_entry = (jmi_id, job_manager_id)
+                break
         if by_uuid_entry is not None:
             job_manager_instance_id = by_uuid_entry[0]
         if job_manager_instance_id is None:
@@ -203,8 +236,6 @@ class GRAM5Packet(CUsagePacket):
                         start_time)
                 VALUES(%s, %s, %s)
                 ''', values)
-            GRAM5Packet.__job_manager_instances[values] = \
-                    job_manager_instance_id
             GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
                     (job_manager_instance_id, None)
         return job_manager_instance_id
@@ -451,8 +482,8 @@ class GRAM5Packet(CUsagePacket):
     @staticmethod
     def __init_job_manager_instances(cursor):
         """
-        Initialize the dictionary GRAM5Packet.__job_manager_instances which
-        caches the values in the gram5_job_manager_instances table.
+        Initialize the dictionary GRAM5Packet.__job_manager_instances_by_uuid
+        which caches the values in the gram5_job_manager_instances table.
 
         The dictionary maps
         (job_manager_id, uuid, start_time) -> id
@@ -463,7 +494,7 @@ class GRAM5Packet(CUsagePacket):
 
         Returns:
         None, but alters the global variable
-        GRAM5Packet.__job_manager_instances.
+        GRAM5Packet.__job_manager_instances_by_uuid.
 
         """
 
@@ -472,8 +503,6 @@ class GRAM5Packet(CUsagePacket):
             FROM gram5_job_manager_instances""")
         for row in cursor:
             [jmi_id, job_manager_id, uuid, start_time] = row
-            values = (job_manager_id, uuid, start_time)
-            GRAM5Packet.__job_manager_instances[values] = jmi_id
             GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
                 (jmi_id, job_manager_id)
 
@@ -625,7 +654,8 @@ class GRAM5Packet(CUsagePacket):
         send_time = self.send_time_ticks
         return "%f seconds" % (send_time - start_time)
 
-    def get_rsl_attribute_index(self, attr, cursor):
+    @staticmethod
+    def get_rsl_attribute_index(attr, cursor):
         attribute_id = GRAM5Packet.__rsl_attributes.get(attr)
         if attribute_id is None:
             cursor.execute("""
@@ -652,7 +682,7 @@ class GRAM5Packet(CUsagePacket):
         if attrs is not None and attrs != '':
             extra_rsl = attrs.split(',')
             for attr in extra_rsl:
-                attr_index = self.get_rsl_attribute_index(attr, cursor)
+                attr_index = GRAM5Packet.get_rsl_attribute_index(attr, cursor)
                 bitfield = bitfield | (2**attr_index)
 
         attribute_list = []
@@ -707,17 +737,19 @@ class GRAM5Packet(CUsagePacket):
 
     @staticmethod
     def TimestampFromTicks(ticks):
-        timestamp=0
+        timestamp = 0
         try: 
             timestamp = GRAM5Packet.db_class.TimestampFromTicks(float(ticks))
         except:
-            timestamp = GRAM5Packet.db_class.TimestampFromTicks(round(float(ticks),0))
+            timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+                round(float(ticks),0))
         return timestamp
 
 class GRAM5JMPacket(GRAM5Packet):
     """
     GRAM5 Usage Packet handler for job manager status packets
     """
+    __seen_packets__ = {}
     
     def __init__(self, address, packet):
         GRAM5Packet.__init__(self, address, packet)
@@ -763,10 +795,20 @@ class GRAM5JMPacket(GRAM5Packet):
              stage_in, pending, active, stage_out, failed, done)
         """
 
+        jmid = self.get_job_manager_instance_id(GRAM5Packet.cursor)
+        when = GRAM5Packet.TimestampFromTicks(float(self.data.get("C")))
+
+        seenkey = (jmid, when)
+
+        if GRAM5JMPacket.__seen_packets__.get(seenkey):
+            return None
+        else:
+            GRAM5JMPacket.__seen_packets__[seenkey] = 1
+
         values = (
-            self.get_job_manager_instance_id(GRAM5Packet.cursor),
+            jmid,
             self.data.get("I"),
-            dbclass.Timestamp(*self.send_time),
+            when,
             self.get_lifetime(),
             self.data.get("K"),
             self.data.get("L"),
@@ -789,9 +831,55 @@ class GRAM5JobPacket(GRAM5Packet):
     GRAM5 Usage Packet handler for job status packets
     """
     
+    data_aggregation = {}
+
     def __init__(self, address, packet):
         GRAM5Packet.__init__(self, address, packet)
 
+    @staticmethod
+    def upload_many(dbclass, cursor, packets):
+        """
+        Upload many GRAM5Packet usage packets to the database referred to
+        by the given cursor. It will also prepare the caches of id tables.
+
+        Returns an array of bad packets
+        """
+        res = GRAM5Packet.upload_many(dbclass, cursor, packets)
+
+        for pack in packets:
+            if pack is not None and pack not in res:
+                send_time = list(pack.send_time)
+                send_time[4] = send_time[5] = 0
+                send_time = tuple(send_time)
+
+                server_id = pack.get_job_manager_instance_id_by_uuid(cursor)
+                failure_code = pack.data.get('j') or 0
+
+                agg_key = (send_time, server_id, failure_code)
+
+                if agg_key not in GRAM5JobPacket.data_aggregation.keys():
+                    GRAM5JobPacket.data_aggregation[agg_key] = 0
+                GRAM5JobPacket.data_aggregation[agg_key] += 1;
+        return res
+
+    @staticmethod
+    def upload_aggregation(dbclass, cursor):
+        try:
+            cursor.execute("SAVEPOINT gram_aggregation")
+            cursor.executemany(
+                """INSERT INTO gram5_aggregations_hourly(
+                        aggregation_time,
+                        job_manager_instance_id,
+                        failure_code,
+                        job_count)
+                   VALUES(%s,%s,%s,%s)""",
+                [(dbclass.Timestamp(*agg_key[0]), agg_key[1], agg_key[2], 
+                    GRAM5JobPacket.data_aggregation[agg_key])
+                    for agg_key in GRAM5JobPacket.data_aggregation.keys()])
+        except Exception, e:
+            print "Error uploading aggregation data: " + e.message
+            cursor.execute("ROLLBACK TO SAVEPOINT gram_aggregation")
+        GRAM5JobPacket.data_aggregation = {}
     
     insert_statement = '''
             INSERT INTO gram5_job_status(
@@ -840,6 +928,10 @@ class GRAM5JobPacket(GRAM5Packet):
         failed_timestamp = None
         file_stage_out_timestamp = None
         done_timestamp = None
+
+        # GT-183: Usage stats server doesn't discard bad packets
+        if self.data.get('B') is None or len(self.data.get('B')) != 36:
+            return None
 
         if self.data.get('c') is not None and float(self.data.get('c')) > 1:
             unsubmitted_timestamp = GRAM5Packet.TimestampFromTicks(
@@ -1072,7 +1164,8 @@ class GRAM5JobPacket(GRAM5Packet):
                     file_stage_out_https,
                     file_stage_out_ftp,
                     file_stage_out_gsiftp)
-                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                VALUES(%s, %s, %s, %s, %s, %s, %s, 
+                       %s, %s, %s, %s, %s, %s, %s)''',
                 values)
         return file_info_id
 

@@ -20,7 +20,7 @@ packet
 import struct
 import time
 import socket
-from usagepacket import UsagePacket
+from globus.usage.usagepacket import UsagePacket
 
 class IPTimeMonitorPacket(UsagePacket):
     """
@@ -87,7 +87,7 @@ class IPTimeMonitorPacket(UsagePacket):
         return  (
             self.component_code,
             self.packet_version,
-            dbclass.Binary(self.raw_packet))
+            dbclass.Binary(self.packet_body))
 
     def __str__(self):
         res  = "Component Code: " + str(self.component_code) + "\n"

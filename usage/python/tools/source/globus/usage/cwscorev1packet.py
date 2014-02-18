@@ -12,30 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Object definition for processing OGSADAI usage packets.
+Object definition for processing C WS Core (version 2) usage packets.
 """
 
-from iptimemonitorpacket import IPTimeMonitorPacket
+from globus.usage.cusagepacket import CUsagePacket
 
-class OGSADAIPacket(IPTimeMonitorPacket):
+class CWSCoreV1Packet(CUsagePacket):
     """
-    OGSADAI Usage Packet
+    C WS Core Usage Packet v1.
     """
-
-    def __init__(self, address, packet):
-        IPTimeMonitorPacket.__init__(self, address, packet)
-        [activity_len] = self.unpack("q")
-        self.activity = self.unpack_string(activity_len)
-
-    insert_statement = '''
-        INSERT INTO ogsadai_packets (
+    insert_statement = """
+        INSERT INTO c_ws_core_packets (
             component_code,
             version_code,
             send_time,
-            ip_address,
-            activity)
-        VALUES (%s, %s, %s, %s, %s)
-    '''
+            ip_address)
+        VALUES(%s, %s, %s, %s)"""
 
     def values(self, dbclass):
         """
@@ -43,16 +35,15 @@ class OGSADAIPacket(IPTimeMonitorPacket):
         class's insert_statement.
 
         Arguments:
-        self -- An OGSADAIPacket object
+        self -- A CWSCoreV1Packet object
 
         Returns:
         Tuple containing
-            (component_code, version_code, send_time, ip_address, activity)
+            (component_code, version_code, send_time, ip_address)
 
         """
         return (
             self.component_code,
             self.packet_version,
             dbclass.Timestamp(*self.send_time),
-            self.ip_address,
-            self.activity)
+            self.ip_address)

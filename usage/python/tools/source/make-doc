@@ -1,0 +1,44 @@
+#! /bin/sh
+
+if [ -z "$DOCBOOK_XSL" ]; then
+    if [ -d /usr/share/sgml/docbook/xsl-stylesheets ]; then
+        DOCBOOK_XSL="/usr/share/sgml/docbook/xsl-stylesheets"
+    elif [ -d /usr/share/xml/docbook/stylesheet/docbook-xsl ]; then
+        DOCBOOK_XSL="/usr/share/xml/docbook/stylesheet/docbook-xsl"
+    else
+        fmt 1>&2 <<-EOF
+	    Can't find docbook stylesheets: please set the
+	    DOCBOOK_XSL environment variable to the path containing the
+	    stylesheets
+EOF
+        exit 1
+    fi
+fi
+
+echo "Generating manpages"
+xsltproc $DOCBOOK_XSL/manpages/docbook.xsl manual.xml
+
+echo "Creating hyperlink targets for html document"
+xsltproc --nonet --xinclude \
+         --stringparam collect.xref.targets only \
+         --stringparam targets.filename target.db \
+         $DOCBOOK_XSL/html/docbook.xsl admin.xml
+
+echo "Creating html manual"
+xsltproc --nonet --xinclude \
+         --stringparam current.docid usagestats-admin \
+         --stringparam target.database.document olinkdb.xml \
+         --stringparam collect.xref.targets "no" \
+         $DOCBOOK_XSL/html/docbook.xsl admin.xml > index.html
+
+if command -v fop > /dev/null; then
+    xsltproc --nonet --xinclude \
+             --stringparam current.docid usagestats-admin \
+             --stringparam target.database.document olinkdb.xml \
+             --stringparam collect.xref.targets "no" \
+             $DOCBOOK_XSL/fo/docbook.xsl admin.xml > admin.fo
+    fop admin.fo admin.pdf
+else
+    echo "Unable to locate fop, pdf manual not updated"
+    exit 1
+fi

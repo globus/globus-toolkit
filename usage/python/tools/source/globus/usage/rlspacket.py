@@ -15,7 +15,7 @@
 Object definition for processing RLS usage packets.
 """
 
-from cusagepacket import CUsagePacket
+from globus.usage.cusagepacket import CUsagePacket
 
 class RLSPacket(CUsagePacket):
     """

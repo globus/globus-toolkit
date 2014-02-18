@@ -17,7 +17,7 @@ C-Style (name=value) Usage Packet
 
 import re
 import time
-from usagepacket import UsagePacket
+from globus.usage.usagepacket import UsagePacket
 
 class CUsagePacket(UsagePacket):
     """C-Style (name=value) Usage Packet
@@ -46,8 +46,8 @@ class CUsagePacket(UsagePacket):
         # The C Usage Packet sender sent corrupt IP addresses in the packets
         # by sending integers as octets. We'll ignore this address and use
         # the one in the udp header
-        ip_data = header_data[0:16]
-        #self.ip_address = UsagePacket.parse_address(ip_data)
+        # ip_data = header_data[0:16]
+        # self.ip_address = UsagePacket.parse_address(ip_data)
         self.send_time = tuple((list(time.gmtime(send_time_data)))[0:6])
         self.send_time_ticks = send_time_data
 

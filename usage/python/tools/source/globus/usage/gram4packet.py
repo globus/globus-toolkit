@@ -15,8 +15,7 @@
 Object definition for processing GRAM4 usage packets.
 """
 
-from iptimemonitorpacket import IPTimeMonitorPacket
-import struct
+from globus.usage.iptimemonitorpacket import IPTimeMonitorPacket
 import time
 
 class GRAM4Packet(IPTimeMonitorPacket):
@@ -106,7 +105,7 @@ class GRAM4Packet(IPTimeMonitorPacket):
             self.fault_class)
 
     def unpack_lrm_string(self):
-        lrm_string=''
+        lrm_string = ''
         for _ in range(GRAM4Packet.__MAX_SCHEDULER_SIZE):
             [byte_value] = self.unpack("B")
             if byte_value > 1:

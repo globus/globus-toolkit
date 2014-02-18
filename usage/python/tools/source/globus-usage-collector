@@ -40,22 +40,14 @@ import signal
 import thread
 import time
 
-sys.path.append(
-    os.path.join(os.environ['GLOBUS_LOCATION'], 'lib', 'python', 'usage'))
-
-import packetfile
-import usageconfig
+from globus.usage.packetfile import PacketFile
+import globus.usage.usageconfig as usageconfig
 
 collector_port = "4810"
 
+config = usageconfig.UsageConfig()
 
-# loads configuration file created by setup script
-execfile(
-    os.path.join(
-        os.environ['GLOBUS_LOCATION'], 'etc', 'globus-usage-tools.conf'))
-
-
-packetfile = packetfile.PacketFile(usageconfig.data_directory, "a")
+packetfile = PacketFile(config.data_directory, "a")
 packetfile_lock = thread.allocate_lock()
 
 pidfile_path = None
@@ -141,7 +133,7 @@ def main(argv):
             elif option_name[0] == "-p":
                 port = int(option_name[1])
             elif option_name[0] == "-d":
-                usageconfig.data_directory = option_name[1]
+                config.data_directory = option_name[1]
             elif option_name[0] == "-b":
                 background = 1
             elif option_name[0] == "-f":
