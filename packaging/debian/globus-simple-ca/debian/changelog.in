@@ -1,3 +1,9 @@
+globus-simple-ca (4.4-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 18 Feb 2014 15:46:22 -0500
+
 globus-simple-ca (4.3-1+gt6.@distro@) @distro@; urgency=low
 
   * Don't depend on finding initializer/args parser

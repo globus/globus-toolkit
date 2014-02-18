@@ -82,3 +82,4 @@ sub sign_tests
             "signed certificate");
     }
 }
+chdir '/';

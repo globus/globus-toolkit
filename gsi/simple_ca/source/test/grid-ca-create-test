@@ -182,3 +182,4 @@ sub subject_test
         ok($subject eq $reference_subject, "subject $subject and $reference_subject match");
     }
 }
+chdir '/';
