@@ -282,6 +282,8 @@ class GRAM5Packet(CUsagePacket):
         lrm = self.data.get("E")
 
         if lrm is not None:
+            if lrm == 'jobmanager-condor':
+                lrm = 'condor'
             lrm_id = GRAM5Packet.__lrms.get(lrm)
             if lrm_id is None:
                 cursor.execute("""
@@ -697,7 +699,7 @@ class GRAM5Packet(CUsagePacket):
                     INSERT INTO gram5_rsl_attribute_groups(
                             bitfield,
                             attributes)
-                    VALUES(%s, %s)''', (bitfield, ','.join(attribute_list)))
+                    VALUES(%s, %s)''', (bitfield, ','.join(attribute_list)[0:512]))
             GRAM5Packet.__rsl_bitfields[bitfield] = bitfield
             for (name, rslid) in GRAM5Packet.__rsl_attributes.items():
                 if (bitfield & (2**int(rslid))) != 0:

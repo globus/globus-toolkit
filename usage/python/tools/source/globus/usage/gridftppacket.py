@@ -1167,13 +1167,16 @@ class GridFTPPacket(CUsagePacket):
 
         matches = GridFTPPacket.version_re.match(verstring)
         if matches != None:
+            distro_string = matches.group(7)
+            if distro_string is not None:
+                distro_string = distro_string[0:63]
             return (
                 int(matches.group(1)),
                 int(matches.group(2)),
                 matches.group(3),
                 int(matches.group(4)),
                 int(matches.group(5)),
-                matches.group(7))
+                distro_string)
         else:
             return None
 
