@@ -98,7 +98,6 @@ fi
 %files
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
-%dir %{_datadir}/%{_name}
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %{_bindir}/*
 %{_mandir}/man1/*
