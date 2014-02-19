@@ -2,7 +2,7 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	4.5
+Version:	4.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
@@ -21,6 +21,7 @@ BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
+BuildRequires:  pkg-config
 BuildArch:      noarch
 
 %description
@@ -103,6 +104,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Tue Feb 18 2014 Globus Toolkit <support@globus.org> - 4.6-1
+- Packaging fixes
+
 * Tue Feb 18 2014 Globus Toolkit <support@globus.org> - 4.5-1
 - Test fixes
 

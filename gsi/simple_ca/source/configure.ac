@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_simple_ca],[4.5],[http://jira.globus.org])
+AC_INIT([globus_simple_ca],[4.6],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -39,7 +39,7 @@ fi
 AC_MSG_RESULT($docbook_dtd_available)
 AC_SUBST(DOCBOOK_DTD)
 
-PKG_CHECK_VAR([GLOBUS_COMMON_PATH], [globus-common], [path], [], [GLOBUS_COMMON_PATH=""])
+AC_SUBST([GLOBUS_COMMON_PATH], ["$(pkg-config --variable=path globus-common)"])
 AM_CONDITIONAL([RUN_TESTS], [test "$GLOBUS_COMMON_PATH" != ""])
 
 AC_MSG_CHECKING([docbook xsl])
