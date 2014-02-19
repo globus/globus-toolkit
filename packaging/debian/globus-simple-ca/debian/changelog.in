@@ -1,4 +1,4 @@
-globus-simple-ca (4.6-1+gt6.@distro@) @distro@; urgency=low
+globus-simple-ca (4.6-2+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes
 
