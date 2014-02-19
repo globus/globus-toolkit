@@ -1,7 +1,7 @@
 Name:		globus-xio-gridftp-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.2
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
 
 Group:		System Environment/Libraries
@@ -15,9 +15,10 @@ Requires:	globus-ftp-client%{?_isa} >= 7
 
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-ftp-client-devel >= 7
-BuildRequires:	globus-xio-gsi-driver >= 2
-BuildRequires:	globus-xio-pipe-driver >= 0
+BuildRequires:	globus-xio-gsi-driver-devel >= 2
+BuildRequires:	globus-xio-pipe-driver-devel >= 0
 BuildRequires:	globus-gridftp-server-progs >= 0
+BuildRequires:	globus-gridftp-server-devel >= 0
 BuildRequires:	globus-xio-doc >= 3
 BuildRequires:	doxygen
 BuildRequires:	graphviz
