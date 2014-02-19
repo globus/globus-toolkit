@@ -1,7 +1,7 @@
 Source: globus-simple-ca
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 6.0.7~), autotools-dev, quilt
+Build-Depends: debhelper (>= 6.0.7~), autotools-dev, quilt, pkg-config
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
