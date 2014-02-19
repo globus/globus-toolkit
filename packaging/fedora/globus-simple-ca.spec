@@ -22,7 +22,7 @@ BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 BuildRequires:  globus-common-devel >= 14
 %endif
-BuildRequires:  pkg-config
+BuildRequires:  pkgconfig
 BuildArch:      noarch
 
 %description
