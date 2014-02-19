@@ -30,8 +30,14 @@ sub help_tests
     waitpid($pid, 0);
     ok($? == 0, "grid-ca-sign exits with 0");
 
-    ok(<$outfd> ne "", "grid-ca-sign -help prints help");
-    ok(<$errfd> eq "", "grid-ca-sign -help doesn't error");
+    my ($out, $err) = (<$outfd>, <$errfd>);
+    $out =~ s/^/# /mg if $out;
+    print STDERR "# stdout: \n$out" if $out;
+    $err =~ s/^/# /mg if ($err);
+    print STDERR "# stderr: \n$err" if $err;
+
+    ok($out ne "", "grid-ca-sign -help prints help");
+    ok($err eq "", "grid-ca-sign -help doesn't error");
 }
 
 sub sign_tests

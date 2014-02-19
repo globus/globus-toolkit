@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_simple_ca],[4.4],[http://jira.globus.org])
+AC_INIT([globus_simple_ca],[4.3],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -38,6 +38,9 @@ EOF
 fi
 AC_MSG_RESULT($docbook_dtd_available)
 AC_SUBST(DOCBOOK_DTD)
+
+PKG_CHECK_VAR([GLOBUS_COMMON_PATH], [globus-common], [path], [], [GLOBUS_COMMON_PATH=""])
+AM_CONDITIONAL([RUN_TESTS], [test "$GLOBUS_COMMON_PATH" != ""])
 
 AC_MSG_CHECKING([docbook xsl])
 MAN_XSL=http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl

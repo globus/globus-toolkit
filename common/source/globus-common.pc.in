@@ -1,5 +1,6 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
+path=@bindir@:@sbindir@
 libdir=@libdir@
 includedir=@includedir@
 

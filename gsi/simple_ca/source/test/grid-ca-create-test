@@ -34,8 +34,14 @@ sub help_tests
     waitpid($pid, 0);
     ok($? == 0, "grid-ca-create exits with 0");
 
-    ok(<$outfd> ne "", "grid-ca-create -help prints help");
-    ok(<$errfd> eq "", "grid-ca-create -help doesn't error");
+    my ($out, $err) = (<$outfd>, <$errfd>);
+    $out =~ s/^/# /mg if $out;
+    print STDERR "# stdout: \n$out" if $out;
+    $err =~ s/^/# /mg if ($err);
+    print STDERR "# stderr: \n$err" if $err;
+
+    ok($out ne "", "grid-ca-create -help prints help");
+    ok($err eq "", "grid-ca-create -help doesn't error");
 }
 
 sub create_ca_tests
@@ -57,8 +63,14 @@ sub create_ca_tests
         waitpid($pid, 0);
         ok($? == 0, "grid-ca-create exits with 0");
 
-        ok(<$outfd> ne "", "grid-ca-create -noint prints output");
-        ok(<$errfd> eq "", "grid-ca-create -noint doesn't error");
+        my ($out, $err) = (<$outfd>, <$errfd>);
+        $out =~ s/^/# /mg if $out;
+        print STDERR "# stdout: \n$out" if $out;
+        $err =~ s/^/# /mg if ($err);
+        print STDERR "# stderr: \n$err" if $err;
+
+        ok($out ne "", "grid-ca-create -noint prints output");
+        ok($err eq "", "grid-ca-create -noint doesn't error");
 
         # Try to create a CA in an already populated dir
         $errfd = gensym;
@@ -82,8 +94,14 @@ sub create_ca_tests
         waitpid($pid, 0);
         ok($? == 0, "grid-ca-create -noint -force exits with 0");
 
-        ok(<$outfd> ne "", "grid-ca-create -noint -force prints output");
-        ok(<$errfd> eq "", "grid-ca-create -noint -force doesn't error");
+        ($out, $err) = (<$outfd>, <$errfd>);
+        $out =~ s/^/# /mg if $out;
+        print STDERR "# stdout: \n$out" if $out;
+        $err =~ s/^/# /mg if ($err);
+        print STDERR "# stderr: \n$err" if $err;
+
+        ok($out ne "", "grid-ca-create -noint -force prints output");
+        ok($err eq "", "grid-ca-create -noint -force doesn't error");
     }
 }
 

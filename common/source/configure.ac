@@ -1,5 +1,5 @@
 AC_PREREQ([2.60])
-AC_INIT([globus_common], [15.12], [http://jira.globus.org])
+AC_INIT([globus_common], [15.13], [http://jira.globus.org])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -243,5 +243,6 @@ AC_CONFIG_FILES([
         scripts/globus-script-initializer.$host_cpu-$host_vendor-$host_os:scripts/globus-script-initializer-host.in
         test/Makefile
         manpages/Makefile
-	version.h])
+	version.h],
+        [chmod a+x scripts/globus-hostname scripts/globus-domainname])
 AC_OUTPUT
