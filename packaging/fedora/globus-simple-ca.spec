@@ -3,7 +3,7 @@
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
 Version:	4.8
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -23,7 +23,11 @@ BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  globus-common-progs >= 14
 BuildRequires:  globus-common-devel >= 14
+BuildRequires:  openssl
 BuildRequires:  pkgconfig
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
+BuildRequires:  perl-Test-Simple
+%endif
 BuildArch:      noarch
 
 %description
