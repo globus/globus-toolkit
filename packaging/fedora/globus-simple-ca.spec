@@ -3,7 +3,7 @@
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
 Version:	4.8
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -21,6 +21,7 @@ BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
+BuildRequires:  globus-common-progs >= 14
 BuildRequires:  globus-common-devel >= 14
 BuildRequires:  pkgconfig
 BuildArch:      noarch
