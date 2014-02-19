@@ -126,7 +126,7 @@ create_source_package_tarball()
     printf "Creating RPM source tarball... "
 
     while [ -z "$_pkgdir" ]; do
-        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$(openssl rand -base64 6)}"
+        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$(openssl rand -base64 6 | tr / _)}"
         rc=$?
 
         if [ $rc != 0 -o ! -d "${_pkgdir}" ]; then
