@@ -18,6 +18,8 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute \
 	-dlopen $(top_builddir)/libglobus_xio_gridftp_driver.la \
 	$(srcdir)/test-wrapper
 
+EXTRA_DIST = $(check_SCRIPTS) test-wrapper
+
 testcred.key:
 	umask 077; openssl genrsa -out $@ 1024
 
@@ -44,4 +46,3 @@ clean-local:
 	if [ -f testcredlink ]; then \
 	    rm -f $$(cat testcredlink) testcredlink; \
 	fi
-
