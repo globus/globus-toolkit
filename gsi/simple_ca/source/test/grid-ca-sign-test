@@ -37,7 +37,7 @@ sub help_tests
     print STDERR "# stderr: \n$err" if $err;
 
     ok($out ne "", "grid-ca-sign -help prints help");
-    ok($err eq "", "grid-ca-sign -help doesn't error");
+    ok(!$err, "grid-ca-sign -help doesn't error");
 }
 
 sub sign_tests

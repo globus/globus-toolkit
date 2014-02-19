@@ -2,8 +2,8 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	4.7
-Release:	2%{?dist}
+Version:	4.8
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -108,6 +108,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Wed Feb 19 2014 Globus Toolkit <support@globus.org> - 4.8-1
+- Packaging fixes
+
 * Tue Feb 18 2014 Globus Toolkit <support@globus.org> - 4.7-1
 - Test fixes
 

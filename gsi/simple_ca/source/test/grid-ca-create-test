@@ -41,7 +41,7 @@ sub help_tests
     print STDERR "# stderr: \n$err" if $err;
 
     ok($out ne "", "grid-ca-create -help prints help");
-    ok($err eq "", "grid-ca-create -help doesn't error");
+    ok(!$err, "grid-ca-create -help doesn't error");
 }
 
 sub create_ca_tests
@@ -70,7 +70,7 @@ sub create_ca_tests
         print STDERR "# stderr: \n$err" if $err;
 
         ok($out ne "", "grid-ca-create -noint prints output");
-        ok($err eq "", "grid-ca-create -noint doesn't error");
+        ok(!$err, "grid-ca-create -noint doesn't error");
 
         # Try to create a CA in an already populated dir
         $errfd = gensym;
@@ -101,7 +101,7 @@ sub create_ca_tests
         print STDERR "# stderr: \n$err" if $err;
 
         ok($out ne "", "grid-ca-create -noint -force prints output");
-        ok($err eq "", "grid-ca-create -noint -force doesn't error");
+        ok(!$err, "grid-ca-create -noint -force doesn't error");
     }
 }
 

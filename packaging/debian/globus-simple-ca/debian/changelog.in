@@ -1,3 +1,9 @@
+globus-simple-ca (4.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Wed, 19 Feb 2014 00:14:37 -0500
+
 globus-simple-ca (4.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Test fixes
