@@ -1,3 +1,9 @@
+globus-gass-copy (9.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Wed, 19 Feb 2014 14:52:36 -0500
+
 globus-gass-copy (9.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT

@@ -1,13 +1,13 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gass_copy],[9.1],[http://jira.globus.org])
+AC_INIT([globus_gass_copy],[9.2],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [7])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-ftp-client >= 7, globus-ftp-control >= 4, globus-gsi-sysconfig >= 4, globus-gass-transfer >= 7, globus-io >= 8, globus-gssapi-gsi >= 9, globus-gssapi-error >= 4, openssl >= 0.9.8"])
 
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
+AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
 
 m4_include([dirt.sh])
@@ -15,6 +15,35 @@ AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+
+GSI_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-gsi-driver`
+GSI_DRIVER=""
+for ext in .la .so .dylib .a; do
+    if test -r $GSI_DRIVER_LIBDIR/libglobus_xio_gsi_driver${ext}; then
+        GSI_DRIVER=$GSI_DRIVER_LIBDIR/libglobus_xio_gsi_driver${ext} 
+        break
+    fi
+done
+
+AC_SUBST(GLOBUS_XIO_GSI_DRIVER, $GSI_DRIVER)
+
+PIPE_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-pipe-driver`
+PIPE_DRIVER=""
+for ext in .la .so .dylib .a; do
+    if test -r $PIPE_DRIVER_LIBDIR/libglobus_xio_pipe_driver${ext}; then
+        PIPE_DRIVER=$PIPE_DRIVER_LIBDIR/libglobus_xio_pipe_driver${ext} 
+        break
+    fi
+done
+
+AC_SUBST(GLOBUS_XIO_PIPE_DRIVER, $PIPE_DRIVER)
+
+GRIDFTP_SBINDIR=`pkg-config --variable=sbindir globus-gridftp-server`
+AC_SUBST(GRIDFTP_SBINDIR, $GRIDFTP_SBINDIR)
+AM_CONDITIONAL([GRIDFTP_TESTS],
+  [ test "$GSI_DRIVER" != "" && \
+    test "$PIPE_DRIVER" != "" && \
+    test -d "$GRIDFTP_SBINDIR"])
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
@@ -74,5 +103,6 @@ AC_CONFIG_FILES(
         globus-gass-copy-uninstalled.pc
         globus-gass-copy.pc
         Makefile
-	version.h)
+	version.h
+        test/Makefile)
 AC_OUTPUT

@@ -1,7 +1,7 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
 # 
-# Copyright 1999-2006 University of Chicago
+# Copyright 1999-2014 University of Chicago
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,146 +16,128 @@
 # limitations under the License.
 # 
 
-@GLOBUS_TEST_PERL_INITIALIZER@
+# These tests use globus-url-copy with various striping and concurrency options
+require 5.8.0;
 
 use strict;
-use Test::Harness;
+use warnings;
+use Test::More;
 use Cwd;
+use IPC::Open3;
+use Symbol qw/gensym/;
 use Getopt::Long;
-use Globus::Core::Paths;
-require 5.005;
 use File::Temp qw/ tempfile tempdir /;
+use File::Copy;
+use File::Path qw/remove_tree/;
 
-require "gfs_common.pl";
+srand(1);
 
-my @tests;
-my @todo;
+my $subject = $ENV{FTP_TEST_SUBJECT};
+my $server_cs = $ENV{FTP_TEST_CONTACT};
 
+my @mode = ([], ["-fast"], ["-p", "2"], ["-p", "4"], ["-stripe"],
+    ["-stripe", "-p", "4"]);
 
-#$Test::Harness::verbose = 1;
-
-my $runserver;
-my $runwuserver;
-my $nogsi;
-my $server_pid;
-my $server_cs;
-my $subject;
-
-GetOptions('nogsi' => \$nogsi);
-
-my @mode;
-push(@mode, "");
-push(@mode, " -fast ");
-push(@mode, " -p 2 ");
-push(@mode, " -p 4 ");
-push(@mode, " -stripe ");
-push(@mode, " -stripe -p 4 ");
-
-
-my @dc_opts;
-
-my @proto;
-
-if(!defined($ENV{FTP_TEST_NO_GSI}))
-{
-    push(@dc_opts, "");
-    push(@proto, "ftp://");
-}
-else
-{
-    $subject = gfs_setup_security_env();
-
-    push(@dc_opts, "-subject \"$subject\"");
-
-    push(@proto, "gsiftp://");
-}
+my $dc_opt = [];
+$dc_opt = ["-subject", $subject] if $subject;
 
 my @concur;
-push(@concur, "");
-for(my $i = 1; $i < 20; $i += 3)
+push(@concur, []);
+my $concur_max=20;
+for(my $i = 1; $i < $concur_max; $i += 3)
 {
-    push(@concur, "-cc $i");
+    push(@concur, ["-cc", $i]);
 }
-# tests here
-#$server_pid,$server_cs = gfs_setup_server_basic();
-# setup dirs
+
 my $work_dir = tempdir( CLEANUP => 1);
 mkdir("$work_dir/GL");
 
-print "Setting up source transfer dir\n";
-system("cp -rL $Globus::Core::Paths::includedir/* $work_dir/GL/ >/dev/null 2>&1");
+my @chars=("A".."Z","a".."z","0".."9");
+for (my $i = 0; $i < 64; $i++)
+{
+    my $fn = "";
+    $fn .= $chars[rand(@chars)] for 1..8;
+    my $fd;
+    open($fd, ">$work_dir/$fn");
+    print $fd $chars[rand @chars] for 1..int(rand(4096));
+}
 
-print "Make empty files and directories\n";
-mkdir("$work_dir/GL/EMPTY");
-system("touch $work_dir/GL/file_mt");
+mkdir("$work_dir/empty", 0700);
+my $fd;
+open($fd, ">$work_dir/file_mt") && close($fd);
 
-system("dd if=/dev/urandom of=$work_dir/src.data count=10 bs=1024 >/dev/null 2>&1");
+open ($fd, ">$work_dir/src.data");
+print $fd $chars[rand @chars] for 1..10240;
 
 for(my $i = 1; $i <= 10; $i++)
 {
-    mkdir("$work_dir/GL/$i");
+    mkdir("$work_dir/GL/$i", 0700);
     for(my $j = 1; $j <= $i; $j++)
     {
-        system("cp $work_dir/src.data $work_dir/GL/$i/$j");
+        copy("$work_dir/src.data", "$work_dir/GL/$i/$j");
     }
 }
 
-my $test_ndx = 0;
-my $cnt=0;
-($server_pid, $server_cs, $test_ndx) = gfs_next_test($test_ndx);
-while($test_ndx != -1)
-{
-    print "Server config $test_ndx\n";
+plan tests => 2*scalar(@mode)*scalar(@concur);
 
-    foreach(@mode)
+foreach my $mode (@mode)
+{
+    my $p=$_;
+    my $server_port = $server_cs;
+    $server_port =~ s/.*://;
+    my $dst_url = "${server_cs}${work_dir}/GL2/";
+    my $src_url = "${server_cs}${work_dir}/GL/";
+
+    foreach my $cc (@concur)
     {
-        my $md = $_;
-        foreach(@proto)
+        my ($infd, $outfd, $errfd);
+        my ($out, $err);
+        my ($pid, $rc);
+        $errfd = gensym;
+
+        $pid = open3($infd, $outfd, $errfd, "globus-url-copy",
+            @{$mode}, @{$cc}, @{$dc_opt},
+            "-cd", "-r", $src_url, $dst_url);
+        close($infd);
+
+        waitpid($pid, 0);
+        $rc = $?;
+
         {
-            my $p=$_;
-            my $server_port = $server_cs;
-            $server_port =~ s/.*://;
-            my $dst_url = "$p"."127.0.0.1:$server_port"."$work_dir/GL2/";
-            my $src_url = "$p"."localhost:$server_port"."$work_dir/GL/";
+            local($/);
+            $out = <$outfd> if $outfd;
+            $err = <$errfd> if $errfd;
 
-            foreach(@dc_opts)
-            {
-                my $dc_opt=$_;
+            $out =~ s/^/# /mg if $out;
+            $err =~ s/^/# /mg if $err;
 
-                foreach(@concur)
-                {
-                    my $cc=$_;
-                    my $cmd = "$Globus::Core::Paths::bindir/globus-url-copy $md $cc $dc_opt -cd -r $src_url $dst_url";
-
-                    &run_guc_test($cmd);
-                    system("rm -rf $work_dir/GL2/");
-                    $cnt++;
-                }
-            }
+            print STDERR "# stdout:\n$out" if $out;
+            print STDERR "# stderr:\n$err" if $err;
         }
+
+        ok($rc == 0, join(" ", "guc cc", @{$mode}, @{$cc},
+            ,"exits with 0"));
+
+        $errfd = gensym;
+        $pid = open3($infd, $outfd, $errfd, "diff", "-r",
+            "$work_dir/GL", "$work_dir/GL2");
+        close($infd);
+        waitpid($pid, 0);
+        $rc = $?;
+        {
+            local($/);
+            $out = <$outfd> if $outfd;
+            $err = <$errfd> if $errfd;
+
+            $out =~ s/^/# /mg if $out;
+            $err =~ s/^/# /mg if $err;
+
+            print STDERR "# stdout:\n$out" if $out;
+            print STDERR "# stderr:\n$err" if $err;
+        }
+
+        ok($rc == 0 && !$out, join(" ", "guc cc diff ", @{$mode}, @{$cc}));
+        remove_tree("$work_dir/GL2");
     }
-    ($server_pid, $server_cs, $test_ndx) = gfs_next_test($test_ndx);
 }
-
-
-
-sub run_guc_test()
-{
-    my $cmd = shift;
-        print "$cmd\n";
-        my $rc = system($cmd);
-        if($rc != 0)
-        {
-            gfs_cleanup();
-            print "ERROR\n";
-            exit 1;
-        }
-        print "Transfer successful, checking results...\n";
-        $rc = system("diff -r $work_dir/GL/ $work_dir/GL2/");
-        if($rc != 0)
-        {
-            gfs_cleanup();
-            print "ERROR\n";
-            exit 1;
-        }
-}
+exit(77) if ((!$server_cs) || (!$subject));

@@ -20,8 +20,6 @@ use strict;
 use Cwd;
 use File::Basename;
 use Getopt::Long;
-use lib dirname($0);
-use FtpTestLib;
 
 require 5.8.0;
 use vars qw(@tests);
@@ -30,14 +28,14 @@ my $server_pid;
 my $server_prog = "globus-gridftp-server";
 my $server_host = "localhost";
 my $server_port = 0;
-my $server_nosec = "";
 my $subject;
 
-my $server_args = "-no-fork -no-chdir -d 0 -p $server_port $server_nosec";
+my $server_args = "-no-fork -no-chdir -d 0 -p $server_port";
 
 chomp($subject = `openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert}`);
 $subject =~ s/^subject= *//;
 
+#$server_pid = open(SERVER, "valgrind --log-file=/tmp/vallog $server_prog $server_args |");
 $server_pid = open(SERVER, "$server_prog $server_args |");
  
 if($server_pid == -1)
@@ -57,18 +55,23 @@ if($server_port !~ /\d+/)
     exit 1;
 }
 
-print "Started server at port $server_port\n";
+print STDERR "# Started server at port $server_port\n";
 
 # sleep a second, some hosts are slow....
+sleep 1;
 
-sleep 5;
-
-$ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT} = $subject;
-$ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
-$ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
+$ENV{FTP_TEST_SUBJECT} = $subject;
+$ENV{FTP_TEST_CONTACT} = "gsiftp://$server_host:$server_port";
 
 my $rc = system(@ARGV);
-print "Test exited with $rc\n";
+print STDERR "# Test exited with $rc\n";
 
-kill 9, $server_pid;
+kill 15, $server_pid;
+
+if (kill 0, $server_pid) {
+    sleep(1);
+    if (kill 0, $server_pid) {
+        kill 9, $server_pid;
+    }
+}
 exit ($rc>>8);
