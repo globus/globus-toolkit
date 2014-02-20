@@ -24,6 +24,8 @@ use Getopt::Long;
 require 5.8.0;
 use vars qw(@tests);
 
+$ENV{GLOBUS_USAGE_OPTOUT} = "1";
+
 my $server_pid;
 my $server_prog = "globus-gridftp-server";
 my $server_host = "localhost";
@@ -35,7 +37,6 @@ my $server_args = "-no-fork -no-chdir -d 0 -p $server_port";
 chomp($subject = `openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert}`);
 $subject =~ s/^subject= *//;
 
-#$server_pid = open(SERVER, "valgrind --log-file=/tmp/vallog $server_prog $server_args |");
 $server_pid = open(SERVER, "$server_prog $server_args |");
  
 if($server_pid == -1)
