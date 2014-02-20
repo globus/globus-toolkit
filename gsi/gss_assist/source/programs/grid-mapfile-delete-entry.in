@@ -33,18 +33,9 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
+PROGRAM_NAME=`echo $0 | sed 's|.*/||g'`
 
-globus_source ${libexecdir}/globus-sh-tools.sh
-
-PROGRAM_NAME=`echo $0 |${GLOBUS_SH_SED-sed} 's|.*/||g'`
-
-PROGRAM_VERSION=`echo '$Revision$'| ${GLOBUS_SH_SED-sed} -e 's|\\$||g' -e 's|Revision: \(.*\)|\1|'`
+PROGRAM_VERSION="@VERSION@"
 
 VERSION="@VERSION@"
 
@@ -58,7 +49,7 @@ short_usage="$PROGRAM_NAME [-help] [-dn <DN>] [-ln <local name>] [-d] [-f file]"
 
 long_usage() {
 
-    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+    cat >&2 <<EOF
 
 ${short_usage}
 
@@ -69,35 +60,33 @@ ${short_usage}
     -version                Displays version
     -dn <DN>                Distinguished Name (DN) to delete
     -ln <local name>        Local Login Name (LN) to delete
-    -dryrun, -d             Shows what would be done but will not
-    delete the entry
+    -dryrun, -d             Shows what would be done but will not delete the
+                            entry
     -mapfile file, -f file  Path of gridmap file to be used
 
 EOF
 }
 
-globus_source $libexecdir/globus-args-parser-header $@
-
 ##############################################
 Cleanup()
 {
     if [ -f $DELETED_ENTRIES ] ; then
-        ${GLOBUS_SH_RM-rm} $DELETED_ENTRIES
+        rm $DELETED_ENTRIES
     fi
 
     if [ -f $CONSISTENCY_CHECK ] ; then
-	${GLOBUS_SH_RM-rm} $CONSISTENCY_CHECK
+	rm $CONSISTENCY_CHECK
     fi
 
     if [ -f $GRID_MAP_FILE_COPY ] ; then
-	${GLOBUS_SH_RM-rm} $GRID_MAP_FILE_COPY
+	rm $GRID_MAP_FILE_COPY
     fi
 
     if [ -f $NEW_GRID_MAP_FILE ] ; then
-	${GLOBUS_SH_RM-rm} $NEW_GRID_MAP_FILE
+	rm $NEW_GRID_MAP_FILE
     fi
 
-    ${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
+    chmod 644 $GRID_MAP_FILE
     if [ $? -ne 0 ] ; then
         echo "ERROR: Could not change mode of $GRID_MAP_FILE back to 644" >&2
         exit 1
@@ -112,7 +101,7 @@ removeLNs ()
 
     for name in $ln ; do
 	modif_line=$aux_line
-	aux_line=`echo $aux_line | ${GLOBUS_SH_SED-sed} -e "s/,$name,/,/" -e "s/,$name$//" -e "s/^$name,//" -e "s/^$name$//"`
+	aux_line=`echo $aux_line | sed -e "s/,$name,/,/" -e "s/,$name$//" -e "s/^$name,//" -e "s/^$name$//"`
 	if test ! "$modif_line" = "$aux_line" ; then
 	    removed_map="$removed_map $name"
 	    removed_map_count=`expr $removed_map_count + 1`
@@ -131,7 +120,7 @@ parseLine()
     if [ "X$delim" = "X\"" ]; then
         # DN is double quote delimited
         # Check for terminating double quote
-        term_check=`echo $line | cut -c2- | ${GLOBUS_SH_GREP-grep} \"`
+        term_check=`echo $line | cut -c2- | grep \"`
         if [ -z "$term_check" ]; then
             echo "The following entry is missing a closing double quote"
             echo "$line"
@@ -142,11 +131,11 @@ parseLine()
         existing_ln=`echo $line | cut -f3 -d\"`
     else
         # No double quote delimitor on DN
-        existing_dn=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/\([^	 ]*\)[	 ]*.*/\1/'`
-	existing_ln=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/[^	 ]*[	 ]*\(.*\)/\1/'`
+        existing_dn=`echo $line | sed -e 's/\([^	 ]*\)[	 ]*.*/\1/'`
+	existing_ln=`echo $line | sed -e 's/[^	 ]*[	 ]*\(.*\)/\1/'`
     fi
 
-    existing_ln=`echo ${existing_ln} | ${GLOBUS_SH_SED-sed} -e 's/[	 ]*//g'`
+    existing_ln=`echo ${existing_ln} | sed -e 's/[	 ]*//g'`
 }
 
 # Main Logic
@@ -158,14 +147,61 @@ deleted_entries=0
 removed_map_count=0
 
 # Parse command line arguments
+globus_args_short_usage()
+{
+    cat 1>&2 <<-EOF
+	Syntax : ${short_usage}
 
-if [ $# -lt 2 ] ; then
+	Use -help to display full usage.
+	EOF
+}
+
+globus_args_option_error()
+{
+    cat 1>&2 <<-EOF
+	ERROR: option $1 : $2
+	EOF
     globus_args_short_usage
     exit 1
-fi
+}
+
+globus_args_unrecognized_option()
+{
+    globus_args_option_error $1 "unrecognized option"
+    exit 1
+}	
 
 while [ -n "$1" ]; do
     case "$1" in
+	-help | -h | --help | -usage | --usage)
+	    long_usage
+	    exit 0
+	    ;;
+        -version|--version)
+            if [ "X${PROGRAM_NAME}" != "X" -a \
+                  "X${PROGRAM_VERSION}" != "X" ]; then
+                echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+            elif [ "X${PACKAGE}" != "X" -a \
+                   "X${VERSION}" != "X" ]; then
+                echo "${PACKAGE}: ${VERSION}"
+            else
+                echo "No version information available."
+            fi
+            exit 0
+            ;;
+        -versions|--versions)
+            __AT__=@
+            if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+                 -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+                 "X${DIRT_TIMESTAMP}" != "X${__AT__}DIRT_TIMESTAMP${__AT__}" -a \
+                 "X${DIRT_BRANCH_ID}" != "X${__AT__}DIRT_BRANCH_ID${__AT__}" ];
+            then
+                echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+            else
+                echo "No DiRT information available."
+            fi
+            exit 0;
+            ;;
         -dn) 
 	    shift
             if [ $# -ge 1 ] ; then
@@ -217,7 +253,7 @@ while [ -n "$1" ]; do
 
 done
 
-secure_tmpdir="`${GLOBUS_SH_DIRNAME-dirname} \"${GRID_MAP_FILE}\"`"
+secure_tmpdir="`dirname \"${GRID_MAP_FILE}\"`"
 
 if test ! \( -r "${secure_tmpdir}" -a -w "${secure_tmpdir}" \) ; then
     echo "ERROR: This script requires read/write permissions in ${secure_tmpdir}" >&2
@@ -252,7 +288,7 @@ echo "Modifying ${GRID_MAP_FILE} ..."
 
 # Make a copy of production map file for comparison to original later
 
-${GLOBUS_SH_CP-cp} $GRID_MAP_FILE $GRID_MAP_FILE_COPY
+cp $GRID_MAP_FILE $GRID_MAP_FILE_COPY
 if [ $? -ne 0 ] ; then
     echo "ERROR: Could not make a copy of $GRID_MAP_FILE" >&2
     Cleanup
@@ -261,7 +297,7 @@ fi
 
 # Change mode of existing map file to read only (logical UNIX lock)
 
-${GLOBUS_SH_CHMOD-chmod} 400 $GRID_MAP_FILE
+chmod 400 $GRID_MAP_FILE
 if [ $? -ne 0 ] ; then
     echo "ERROR: Could not change mode of $GRID_MAP_FILE" >&2
     Cleanup
@@ -284,7 +320,7 @@ fi
 
 # Create new map file
 
-${GLOBUS_SH_TOUCH-touch} $NEW_GRID_MAP_FILE
+touch $NEW_GRID_MAP_FILE
 
 while read line || test ! -z "${line}" ; do
     # Match ONLY DNs
@@ -305,7 +341,7 @@ while read line || test ! -z "${line}" ; do
     elif test -z "$requested_dn" -a -n "$requested_ln" ; then
 	found_match=""
 	for name in $ln ; do
-	    found_match=`echo $line | ${GLOBUS_SH_GREP-grep} $name`
+	    found_match=`echo $line | grep $name`
 	    if [ -n "$found_match" ] ; then
 		break
 	    fi
@@ -374,7 +410,7 @@ if [ "$deleted_entries" -ne  0 ] || [ "$removed_map_count" -ne  0 ] ; then
     # Verify that no changes to original map file
     # during the execution of this program
 
-    ${GLOBUS_SH_DIFF-diff} $GRID_MAP_FILE_COPY $GRID_MAP_FILE > $CONSISTENCY_CHECK
+    diff $GRID_MAP_FILE_COPY $GRID_MAP_FILE > $CONSISTENCY_CHECK
     if  [ -s $CONSISTENCY_CHECK ] ; then
 	echo "ERROR: $GRID_MAP_FILE has changed since this program started" >&2
 	echo "No changes will be made." >&2
@@ -383,16 +419,16 @@ if [ "$deleted_entries" -ne  0 ] || [ "$removed_map_count" -ne  0 ] ; then
     else
       	# make copy of old map file
 	
-	${GLOBUS_SH_CP-cp} $GRID_MAP_FILE_COPY $GRID_MAP_FILE.old
+	cp $GRID_MAP_FILE_COPY $GRID_MAP_FILE.old
 	if [ $? -ne 0 ] ; then
 	    echo "ERROR: Could not create a copy of $GRID_MAP_FILE" >&2
 	fi
 	
 	# Restore old permissions on map file
 	
-	${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
+	chmod 644 $GRID_MAP_FILE
 	
-	${GLOBUS_SH_MV-mv} $NEW_GRID_MAP_FILE $GRID_MAP_FILE
+	mv $NEW_GRID_MAP_FILE $GRID_MAP_FILE
 	
 	if [ $? -ne 0 ] ; then
 	    echo "ERROR: Could not create a new $GRID_MAP_FILE" >&2
@@ -403,7 +439,7 @@ if [ "$deleted_entries" -ne  0 ] || [ "$removed_map_count" -ne  0 ] ; then
 	removed_count=0
 	ignored_count=0
 	for name in $ln ; do
-	    is_present=`echo $removed_map | ${GLOBUS_SH_GREP-grep} "$name"`
+	    is_present=`echo $removed_map | grep "$name"`
 	    if  test -n "$is_present" ; then
 		removed_count=`expr $removed_count + 1`
 		printable_removed="$printable_removed $name"

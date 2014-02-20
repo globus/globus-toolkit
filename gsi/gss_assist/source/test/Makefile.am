@@ -49,7 +49,14 @@ testcred.cert: testcred.req testcred.key
 testcredlink: testcred.cert
 	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
 	rm -f "$$linkname"; \
-	ln -s testcred.cert "$$linkname"
+	ln -s testcred.cert "$$linkname"; \
+	echo "$$linkname" > $@
+
+CLEAN_FILES = testcred.req testcred.key testcred.cert
+clean-local:
+	@if [ -f testcredlink ]; then \
+	    rm -f `cat testcredlink` testcredlink; \
+	fi
 
 gss_assist_auth_init_SOURCES = gss_assist_auth_init.c
 gss_assist_auth_accept_SOURCES = gss_assist_auth_accept.c
@@ -62,5 +69,3 @@ gridmap_userok_SOURCES = gridmap_userok.c
 EXTRA_DIST = \
         $(check_DATA_DIST) \
         $(check_SCRIPTS)
-
-.PHONY: test junit
