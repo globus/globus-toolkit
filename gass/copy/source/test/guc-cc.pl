@@ -78,66 +78,70 @@ for(my $i = 1; $i <= 10; $i++)
     }
 }
 
-plan tests => 2*scalar(@mode)*scalar(@concur);
+my $test_count = 2*scalar(@mode)*scalar(@concur);
+plan tests => $test_count;
 
-foreach my $mode (@mode)
-{
-    my $p=$_;
-    my $server_port = $server_cs;
-    $server_port =~ s/.*://;
-    my $dst_url = "${server_cs}${work_dir}/GL2/";
-    my $src_url = "${server_cs}${work_dir}/GL/";
-
-    foreach my $cc (@concur)
+SKIP: {
+    skip "Missing URL or subject", $test_count unless($server_cs && $subject);
+    foreach my $mode (@mode)
     {
-        my ($infd, $outfd, $errfd);
-        my ($out, $err);
-        my ($pid, $rc);
-        $errfd = gensym;
+        my $p=$_;
+        my $server_port = $server_cs;
+        $server_port =~ s/.*://;
+        my $dst_url = "${server_cs}${work_dir}/GL2/";
+        my $src_url = "${server_cs}${work_dir}/GL/";
 
-        $pid = open3($infd, $outfd, $errfd, "globus-url-copy",
-            @{$mode}, @{$cc}, @{$dc_opt},
-            "-cd", "-r", $src_url, $dst_url);
-        close($infd);
-
-        waitpid($pid, 0);
-        $rc = $?;
-
+        foreach my $cc (@concur)
         {
-            local($/);
-            $out = <$outfd> if $outfd;
-            $err = <$errfd> if $errfd;
+            my ($infd, $outfd, $errfd);
+            my ($out, $err);
+            my ($pid, $rc);
+            $errfd = gensym;
 
-            $out =~ s/^/# /mg if $out;
-            $err =~ s/^/# /mg if $err;
+            $pid = open3($infd, $outfd, $errfd, "globus-url-copy",
+                @{$mode}, @{$cc}, @{$dc_opt},
+                "-cd", "-r", $src_url, $dst_url);
+            close($infd);
 
-            print STDERR "# stdout:\n$out" if $out;
-            print STDERR "# stderr:\n$err" if $err;
+            waitpid($pid, 0);
+            $rc = $?;
+
+            {
+                local($/);
+                $out = <$outfd> if $outfd;
+                $err = <$errfd> if $errfd;
+
+                $out =~ s/^/# /mg if $out;
+                $err =~ s/^/# /mg if $err;
+
+                print STDERR "# stdout:\n$out" if $out;
+                print STDERR "# stderr:\n$err" if $err;
+            }
+
+            ok($rc == 0, join(" ", "guc cc", @{$mode}, @{$cc},
+                ,"exits with 0"));
+
+            $errfd = gensym;
+            $pid = open3($infd, $outfd, $errfd, "diff", "-r",
+                "$work_dir/GL", "$work_dir/GL2");
+            close($infd);
+            waitpid($pid, 0);
+            $rc = $?;
+            {
+                local($/);
+                $out = <$outfd> if $outfd;
+                $err = <$errfd> if $errfd;
+
+                $out =~ s/^/# /mg if $out;
+                $err =~ s/^/# /mg if $err;
+
+                print STDERR "# stdout:\n$out" if $out;
+                print STDERR "# stderr:\n$err" if $err;
+            }
+
+            ok($rc == 0 && !$out, join(" ", "guc cc diff ", @{$mode}, @{$cc}));
+            remove_tree("$work_dir/GL2");
         }
-
-        ok($rc == 0, join(" ", "guc cc", @{$mode}, @{$cc},
-            ,"exits with 0"));
-
-        $errfd = gensym;
-        $pid = open3($infd, $outfd, $errfd, "diff", "-r",
-            "$work_dir/GL", "$work_dir/GL2");
-        close($infd);
-        waitpid($pid, 0);
-        $rc = $?;
-        {
-            local($/);
-            $out = <$outfd> if $outfd;
-            $err = <$errfd> if $errfd;
-
-            $out =~ s/^/# /mg if $out;
-            $err =~ s/^/# /mg if $err;
-
-            print STDERR "# stdout:\n$out" if $out;
-            print STDERR "# stderr:\n$err" if $err;
-        }
-
-        ok($rc == 0 && !$out, join(" ", "guc cc diff ", @{$mode}, @{$cc}));
-        remove_tree("$work_dir/GL2");
     }
 }
 exit(77) if ((!$server_cs) || (!$subject));
