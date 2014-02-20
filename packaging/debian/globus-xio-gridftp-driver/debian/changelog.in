@@ -1,3 +1,9 @@
+globus-xio-gridftp-driver (2.3-1+gt6.@distro@) @distro@; urgency=low
+
+  * GLOBUS_USAGE_OPTOUT tests
+
+ -- Globus Toolkit <support@globus.org>  Thu, 20 Feb 2014 11:28:38 -0500
+
 globus-xio-gridftp-driver (2.2-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes

@@ -25,6 +25,8 @@ use lib dirname($0);
 require 5.8.0;
 use vars qw(@tests);
 
+$ENV{GLOBUS_USAGE_OPTOUT} = "1";
+
 my $server_pid;
 my $server_prog = "globus-gridftp-server";
 my $server_host = "localhost";

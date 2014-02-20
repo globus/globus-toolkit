@@ -1,7 +1,7 @@
 Name:		globus-xio-gridftp-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.2
-Release:	3%{?dist}
+Version:	2.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
 
 Group:		System Environment/Libraries
@@ -133,6 +133,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Feb 20 2014 Globus Toolkit <support@globus.org> - 2.3-1
+- GLOBUS_USAGE_OPTOUT tests
+
 * Wed Feb 19 2014 Globus Toolkit <support@globus.org> - 2.2-1
 - Packaging fixes
 
