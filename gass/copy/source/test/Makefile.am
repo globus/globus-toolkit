@@ -32,7 +32,7 @@ gridmap: testcred.cert
         echo "\"$$subject\" `id -un`" > gridmap
 
 TESTS = $(check_SCRIPTS)
-AM_TESTS_ENVIRONMENT = \
+TESTS_ENVIRONMENT = \
     export X509_USER_CERT=$(abs_builddir)/testcred.cert \
     X509_USER_KEY=$(abs_builddir)/testcred.key \
     X509_CERT_DIR=$(abs_builddir) \
