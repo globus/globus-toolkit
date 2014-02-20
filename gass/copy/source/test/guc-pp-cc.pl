@@ -28,7 +28,7 @@ use Symbol qw/gensym/;
 use Getopt::Long;
 use File::Temp qw/ tempfile tempdir /;
 use File::Copy;
-use File::Path qw/remove_tree/;
+use File::Path qw/rmtree/;
 
 srand(1);
 
@@ -127,7 +127,7 @@ SKIP: {
             }
 
             ok($rc == 0 && !$out, join(" ", "guc pp-cc $i diff ", @{$cc}, @{$dc_opt}[0..scalar(@$dc_opt)-3]));
-            remove_tree("$work_dir/GL2");
+            rmtree("$work_dir/GL2");
             $i++;
         }
     }
