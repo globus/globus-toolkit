@@ -1,7 +1,7 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
 Version:	9.5
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
 Group:		System Environment/Libraries
@@ -24,7 +24,7 @@ BuildRequires:	globus-gssapi-gsi-devel >= 9
 BuildRequires:	globus-io-devel >= 8
 BuildRequires:	globus-gass-transfer-devel >= 7
 BuildRequires:	globus-ftp-control-devel >= 4
-BuildRequires:	globus-gridftp-server 
+BuildRequires:	globus-gridftp-server-progs
 BuildRequires:	globus-gridftp-server-devel
 BuildRequires:	globus-xio-gsi-driver-devel
 BuildRequires:	globus-xio-pipe-driver-devel
