@@ -1,6 +1,6 @@
 Name:		globus-gass-server-ez
 %global _name %(tr - _ <<< %{name})
-Version:	5.0
+Version:	5.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Server_ez
 
@@ -17,6 +17,12 @@ Requires:	globus-gass-transfer%{?_isa} >= 7
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-gass-transfer-devel >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package progs
 Summary:	Globus Toolkit - Globus Gass Server_ez Programs
@@ -66,7 +72,7 @@ Globus Gass Server_ez Development Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -109,6 +115,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Feb 20 2014 Globus Toolkit <support@globus.org> - 5.1-1
+- Packaging fixes
+
 * Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 5.0-1
 - Repackage for GT6 without GPT
 

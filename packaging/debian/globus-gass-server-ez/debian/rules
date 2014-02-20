@@ -11,7 +11,7 @@ endif
 
 name = globus-gass-server-ez
 _name = globus_gass_server_ez
-version = 5.0
+version = 5.1
 soname = 2
 
 INSTALLDIR = $(CURDIR)/debian/tmp

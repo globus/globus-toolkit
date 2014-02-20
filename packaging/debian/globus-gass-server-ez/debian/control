@@ -1,7 +1,7 @@
 Source: globus-gass-server-ez
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev, libglobus-gss-assist-dev, libglobus-gass-transfer-dev
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev (>= 14), libglobus-gss-assist-dev (>= 8), libglobus-gass-transfer-dev (>= 7), pkg-config
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes
