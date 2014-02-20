@@ -1,3 +1,9 @@
+globus-gridftp-server (7.3-1+gt6.@distro@) @distro@; urgency=low
+
+  * Crash on DCAU N with custom net stack
+
+ -- Globus Toolkit <support@globus.org>  Thu, 20 Feb 2014 11:07:03 -0500
+
 globus-gridftp-server (7.2-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes

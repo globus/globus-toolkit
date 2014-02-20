@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.2
+Version:	7.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -164,6 +164,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Feb 20 2014 Globus Toolkit <support@globus.org> - 7.3-1
+- Crash on DCAU N with custom net stack
+
 * Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 7.2-1
 - Packaging fixes
 

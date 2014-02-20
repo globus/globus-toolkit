@@ -6180,7 +6180,9 @@ globus_l_gfs_data_handle_init(
     {
         globus_xio_stack_t              stack;
         globus_xio_attr_t               xio_attr;
-
+        globus_list_t *                 p;
+        globus_list_t *                 new_net_stack_list = NULL;
+        globus_list_t **                tailp = &new_net_stack_list;
 
         result = globus_i_ftp_control_data_get_attr(
             &handle->data_channel,
@@ -6194,34 +6196,26 @@ globus_l_gfs_data_handle_init(
             goto error_control;
         }
         
-        if(handle->info.dcau == 'N')
+
+        for (p = net_stack_list; !globus_list_empty(p); p = globus_list_rest(p))
         {
-            globus_xio_driver_list_ent_t *      ent;
-            
-            ent = globus_xio_driver_list_find_driver(net_stack_list, "gsi");
-            if(ent)
+            globus_xio_driver_list_ent_t *  ent;
+            ent = globus_list_first(p);
+
+            /* Add drivers to driver list, but when dcau N, skip gsi */
+            if (handle->info.dcau != 'N' || strcmp(ent->driver_name, "gsi"))
             {
-                globus_list_remove(&net_stack_list, globus_list_search(net_stack_list, ent));
-                if(ent->loaded)
-                {
-                    globus_xio_driver_unload(ent->driver);
-                }
-                if(ent->driver_name)
-                {
-                    globus_free(ent->driver_name);
-                }
-                if(ent->opts)
-                {
-                    globus_free(ent->opts);
-                }
-                globus_free(ent);
+                globus_list_insert(tailp, ent);
+                tailp = globus_list_rest_ref(*tailp);
             }
         }
         
         globus_xio_stack_init(&stack, NULL);
         
         result = globus_xio_driver_list_to_stack_attr(
-            net_stack_list, stack, xio_attr);
+            new_net_stack_list, stack, xio_attr);
+        globus_list_free(new_net_stack_list);
+
         if(result != GLOBUS_SUCCESS)
         {
             globus_gfs_log_message(
