@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_job_manager],[14.1],[http://jira.globus.org])
+AC_INIT([globus_gram_job_manager],[14.2],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -21,7 +21,7 @@ AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
-GLOBUS_TOOLKIT_VERSION="${GLOBUS_VERSION:-`globus-version`}"
+GLOBUS_TOOLKIT_VERSION="${GLOBUS_VERSION:-`test -x globus-version && globus-version`}"
 if test "x$GLOBUS_TOOLKIT_VERSION" = "x"; then
     GLOBUS_TOOLKIT_VERSION="UNKNOWN"
 fi

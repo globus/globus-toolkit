@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 21 Feb 2014 10:26:14 -0500
+
 globus-gram-job-manager (14.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT
