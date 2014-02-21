@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
-Version:	2.0
+Version:	2.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
@@ -28,6 +28,12 @@ Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 Requires(post): globus-gram-job-manager-scripts >= 4
 Requires(preun): globus-gram-job-manager-scripts >= 4
 Provides:       globus-gram-job-manager-setup
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -46,7 +52,7 @@ Condor Job Manager
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 export CONDOR_RM=/usr/bin/condor_rm
@@ -99,6 +105,9 @@ fi
 %{_datadir}/globus/globus_gram_job_manager/condor.rvf
 
 %changelog
+* Thu Feb 20 2014 Globus Toolkit <support@globus.org> - 2.1-1
+- Packaging fixes
+
 * Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 2.0-1
 - Repackage for GT6 without GPT
 

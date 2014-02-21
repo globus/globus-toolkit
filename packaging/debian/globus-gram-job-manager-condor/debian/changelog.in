@@ -1,3 +1,9 @@
+globus-gram-job-manager-condor (2.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Thu, 20 Feb 2014 20:12:25 -0500
+
 globus-gram-job-manager-condor (2.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Repackage for GT6 without GPT
