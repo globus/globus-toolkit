@@ -245,7 +245,7 @@ GT_PACKAGE([globus_gridmap_eppn_callout], [gsi/gridmap_eppn_callout],
       globus_gridmap_callout_error globus_gsi_credential ],
     [gsi])
 dnl no spec for this one: globus_usage_tools
-GT_PACKAGE([globus_usage_tools], [usage/python/tools/source], [], [usage])
+dnl GT_PACKAGE([globus_usage_tools], [usage/python/tools/source], [], [usage])
 GT_PACKAGE([globus_gram_job_manager_condor],
     [gram/jobmanager/lrms/condor/source], [], [gram5-condor])
 GT_PACKAGE([globus_proxy_utils],[gsi/proxy/proxy_utils/source],
