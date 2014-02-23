@@ -57,7 +57,7 @@ $1-dist_SUBDIR = $2
 $1-deps = m4_foreach(p, m4_split(m4_normalize($3)), p[-stamp ]) 
 $1: $1-all
 $1-all: $1-stamp
-$1-install: $1-stamp m4_foreach(p, m4_split(m4_normalize($3)), p[-install ]) 
+$1-install: $1-stamp
 $1-stamp: [\$(]$1[-deps)]
 m4_pushdef([AC_INIT],[$]2)dnl
 m4_define([pkgver], m4_normalize(m4_esyscmd(grep AC[_]INIT [$2][/configure.ac])))dnl
