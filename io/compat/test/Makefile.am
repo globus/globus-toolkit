@@ -35,9 +35,13 @@ TESTS = $(check_SCRIPTS)
 TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
-    X509_CERT_DIR=$(abs_builddir) \
-    GLOBUS_XIO_GSI_DRIVER_LIBDIR=$(GLOBUS_XIO_GSI_DRIVER_LIBDIR);
-LOG_COMPILER = $(srcdir)/globus-io-test-wrapper
+    X509_CERT_DIR=$(abs_builddir);
+
+if GLOBUS_XIO_GSI_DRIVER_FOUND
+GLOBUS_XIO_GSI_DRIVER_LOAD = -dlopen $(GLOBUS_XIO_GSI_DRIVER)
+endif
+LOG_COMPILER = $(LIBTOOL) --mode=execute $(GLOBUS_XIO_GSI_DRIVER_LOAD) \
+    $(srcdir)/globus-io-test-wrapper
 
 EXTRA_DIST = \
 	$(check_SCRIPTS) \

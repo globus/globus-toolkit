@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_io],[10.2],[http://jira.globus.org])
+AC_INIT([globus_io],[10.3],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [7])
@@ -16,8 +16,15 @@ AC_SUBST(DIRT_BRANCH_ID)
 
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
-GLOBUS_XIO_GSI_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-gsi-driver`
-AC_SUBST(GLOBUS_XIO_GSI_DRIVER_LIBDIR)
+GLOBUS_XIO_GSI_DRIVER_LIBDIR="$(pkg-config --variable=libdir globus-xio-gsi-driver)"
+for ext in .la .so .dylib .shlib; do
+    driver="${GLOBUS_XIO_GSI_DRIVER_LIBDIR}/libglobus_xio_gsi_driver${ext}"
+    if test -f "${driver}"; then
+        GLOBUS_XIO_GSI_DRIVER="${driver}"
+    fi
+done
+AC_SUBST(GLOBUS_XIO_GSI_DRIVER)
+AM_CONDITIONAL([GLOBUS_XIO_GSI_DRIVER_FOUND], [test "$GLOBUS_XIO_GSI_DRIVER" != ""])
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
