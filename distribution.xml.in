@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<installer-gui-script minSpecVersion="1">
+    <title>Globus Toolkit</title>
+    <organization>org.globus</organization>
+    <domains enable_localSystem="true" enable_currentUserHome="true"/>
+    <options customize="allow" require-scripts="true" />
+    <license file="GLOBUS_LICENSE" mime-type="text/plain" />
+
+    @MAC_INSTALLER_PKG_REFS@
+
+    <choices-outline>
+        @MAC_INSTALLER_CHOICE_LINES@
+    </choices-outline>
+
+    <!-- Define each choice above -->
+    <choice
+        id="org.globus.bundle.ccommonlibs"
+        visible="true"
+        enabled="false"
+        title="Common Runtime Libraries and Tools"
+        description="Common Runtime Libraries and Tools"
+        selected="true"
+        start_selected="true"/>
+    <choice
+        id="org.globus.bundle.gridftp"
+        visible="true"
+        title="Globus GridFTP"
+        description="GridFTP Libraries and Tools"
+        start_selected="true"/>
+    <choice
+        id="org.globus.bundle.gsi"
+        visible="true"
+        title="Globus GSI"
+        description="Security Libraries and Tools"
+        start_selected="true"/>
+    <choice
+        id="org.globus.bundle.gram5"
+        visible="true"
+        title="Globus GRAM5"
+        description="Job Management Libraries and Tools"
+        start_selected="true"/>
+    <choice
+        id="org.globus.bundle.gram5-server"
+        visible="true"
+        title="Globus GRAM5 Server"
+        description="Job Management Server"
+        start_selected="false"/>
+    <choice
+        id="org.globus.bundle.gram5-lsf"
+        visible="false"
+        title="Globus GRAM5 Server for LSF"
+        description="Job Management Server for LSF"
+        start_selected="false"/>
+    <choice
+        id="org.globus.bundle.gram5-sge"
+        visible="false"
+        title="Globus GRAM5 Server for SGE"
+        description="Job Management Server for SGE"
+        start_selected="false"/>
+    <choice
+        id="org.globus.bundle.gram5-slurm"
+        visible="false"
+        title="Globus GRAM5 Server for SLURM"
+        description="Job Management Server for SLURM"
+        start_selected="false"/>
+    <choice
+        id="org.globus.bundle.gram5-condor"
+        visible="false"
+        title="Globus GRAM5 Server for Condor"
+        description="Job Management Server for Condor"
+        start_selected="false"/>
+    <choice
+        id="org.globus.bundle.gram5-pbs"
+        visible="false"
+        title="Globus GRAM5 Server for PBS"
+        description="Job Management Server for PBS"
+        start_selected="false"/>
+
+    @MAC_INSTALLER_PACKAGE_CHOICES@
+
+</installer-gui-script>

@@ -57,6 +57,38 @@ $(GT_TARGETS_DEB):
 	@tar --strip 1 -zxf $($@_SOURCE) -C debbuild/$($@_PACKAGE_NAME)
 	@cd debbuild/$($@_PACKAGE_NAME) && dpkg-buildpackage -uc -us $(DPKG_BUILDPACKAGE_OPTS)
 
+$(GT_TARGETS_OSX_PKG):
+	rm -f $@
+	export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) install DESTDIR=$(abs_builddir)/osxdest/$@
+	for filename in `find $(abs_builddir)/osxdest/$@ -type f | grep -v '\.a$$'`; do \
+	    if file "$$filename" | grep -q Mach-O; then \
+		echo "Processing $$filename"; \
+		for lib in `otool -L "$$filename" | sed 1d | grep -E "$(libdir)|ltdl" | awk '{print $$1}'`; do \
+		    echo "Rewriting $$lib"; \
+		    install_name_tool -change "$$lib" "@loader_path/../lib/`basename $$lib`" $$filename; \
+	       	done; \
+		if basename $$filename | grep -vq '^lib'; then \
+		    install_name_tool -add_rpath "@loader_path/../lib" $$filename; \
+		fi; \
+	    fi; \
+	done
+	@pkgbuild --root $(abs_builddir)/osxdest/$@ \
+            --version $($@_PACKAGE_VERSION) \
+	    --identifier org.globus.$($@_PACKAGE_NAME) \
+            --ownership recommended \
+	    $($($@_PACKAGE_NAME)_macosx_scripts) \
+            $@
+
+globus_common_macosx_scripts = --scripts osx/scripts
+$(globus_common-osx-pkg): osx/scripts/postinstall
+
+$(PACKAGE)-$(VERSION).pkg: $(GT_TARGETS_OSX_PKG) distribution.xml
+	@productbuild --distribution distribution.xml \
+		--package-path . \
+		--resources $(srcdir) \
+		$@
+osx-pkgs: $(PACKAGE)-$(VERSION).pkg
+
 DOC_STAMPS =
 DOC_PHONY = 
 DOC_CLEAN = 
@@ -94,7 +126,7 @@ install-exec-local:
 	        export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; $(MAKE) $(AM_MAKEFLAGS) $${stamp_pkg}-install ; \
 	    fi; \
 	done
-EXTRA_DIST=doxygen/index.dox globus-vararg-enums-doxygen-filter.pl 
+EXTRA_DIST=doxygen/index.dox globus-vararg-enums-doxygen-filter.pl GLOBUS_LICENSE
 
 all-local: $(GT_ENABLED_BUNDLES) $(DOC_STAMPS)
 clean-local: $(GT_TARGETS_CLEAN) $(DOC_CLEAN)

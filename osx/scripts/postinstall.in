@@ -1,0 +1,36 @@
+#! /bin/sh
+
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+bindir="@bindir@"
+sbindir="@sbindir@"
+
+launchdpath="$(launchctl getenv PATH)"
+pathappend=""
+OLDIFS="$IFS"
+IFS=:
+b="$(echo "${2}/$bindir" | sed -e 's!//*!/!g')"
+s="$(echo "${2}/$sbindir" | sed -e 's!//*!/!g')"
+l="$(echo "${2}/$prefix" | sed -e 's!//*!/!g')"
+for p in launchdpath; do
+    p="$(echo "$p" | sed -e 's!/+!/!g')"
+    if [ "$p" = "$b" ]; then
+        skipbin=1
+    fi
+    if [ "$p" = "$s" ]; then
+        skipsbin=1
+    fi
+done
+IFS="$OLDIFS"
+
+if [ "${skipsbin:-0}" -ne 1 ]; then
+    pathappend="${pathappend:+$pathappend:}$s"
+fi
+if [ "${skipbin:-0}" -ne 1 ]; then
+    pathappend="${pathappend:+$pathappend:}$b"
+fi
+
+if [ "$pathappend" != "" ]; then
+    launchctl setenv PATH "${launchdpath:+$launchdpath:}${pathappend}"
+fi
+launchctl setenv GLOBUS_LOCATION "$l"

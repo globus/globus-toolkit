@@ -43,6 +43,11 @@ m4_define([TARGETS_MACRO],[
 # GT_PACKAGE(package, subdir, dependencies, bundle)
 m4_define([GT_PACKAGE],
 [
+m4_pushdef([AC_INIT],[$]2)dnl
+m4_define([pkgver], m4_normalize(m4_esyscmd(grep AC[_]INIT [$2][/configure.ac])))dnl
+m4_popdef([AC_INIT])dnl
+m4_define([native_name], m4_translit([$1],[_],[-]))
+
     m4_append([TARGETS_MACRO],[dnl
 $1-stamp_SUBDIR = $2
 $1-all_SUBDIR = $2
@@ -59,23 +64,28 @@ $1: $1-all
 $1-all: $1-stamp
 $1-install: $1-stamp
 $1-stamp: [\$(]$1[-deps)]
-m4_pushdef([AC_INIT],[$]2)dnl
-m4_define([pkgver], m4_normalize(m4_esyscmd(grep AC[_]INIT [$2][/configure.ac])))dnl
-m4_popdef([AC_INIT])dnl
-$1-dist-tarball = $1-pkgver[.tar.gz]
+$1-dist-tarball = $1-]pkgver[.tar.gz
 package-output/\$($1-dist-tarball): $1-dist
-$1-rpm_SPECFILE = \$(srcdir)/packaging/fedora/m4_translit([$1], [_], [-]).spec
+$1-rpm_SPECFILE = \$(srcdir)/packaging/fedora/]native_name[.spec
 $1-rpm_SOURCE = package-output/\$($1-dist-tarball)
 $1-rpm: \$($1-rpm_SOURCE) \$($1-rpm_SPECFILE)
-$1-deb_PACKAGE_NAME = m4_translit([$1], [_], [-])
+$1-deb_PACKAGE_NAME = ]native_name[
 $1-deb_SOURCE = package-output/\$($1-dist-tarball)
-$1-deb_TARBALL = [debbuild/]m4_translit([$1], [_], [-])[_]pkgver[.orig.tar.gz]
+$1-deb_TARBALL = debbuild/]native_name[_]pkgver[.orig.tar.gz
 $1-deb: \$($1-deb_SOURCE)
+$1-]pkgver[.pkg: $1-stamp
+$1-]pkgver[.pkg_SUBDIR = $2
+$1-]pkgver[.pkg_PACKAGE_NAME = $1
+$1-]pkgver[.pkg_PACKAGE_VERSION = ]pkgver[
+$1-osx-pkg = $1-]pkgver[.pkg
+$1-osx-pkg: \$($1-osx-pkg)
+$1-]pkgver[.pkg_SUBDIR = $2
 ])
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
     m4_append([GT_SUBDIRS_MACRO], [$2], [ ])dnl
     m4_append_uniq([GT_BUNDLES_MACRO],[$4], [ ])dnl
     m4_append([GT_BUNDLES_]m4_translit($4,[-],[_])[_MACRO],[$1-stamp], [ ])dnl
+    m4_append([GT_BUNDLE_PACKAGES]m4_translit($4,[-],[_]),[$1], [ ])dnl
     m4_append([GT_TARGETS_ALL_MACRO], [$1-all], [ ])dnl
     m4_append([GT_TARGETS_CLEAN_MACRO], [$1-clean], [ ])dnl
     m4_append([GT_TARGETS_CHECK_MACRO], [$1-check], [ ])dnl
@@ -87,6 +97,13 @@ $1-deb: \$($1-deb_SOURCE)
     m4_append([GT_ONLY_MACRO], [$1-only], [ ])dnl
     m4_append([GT_TARGETS_RPM_MACRO], [$1-rpm], [ ])dnl
     m4_append([GT_TARGETS_DEB_MACRO], [$1-deb], [ ])dnl
+    m4_append([GT_TARGETS_OSX_PKG_MACRO], [\$($1-osx-pkg)], [ ])dnl
+    m4_append([GT_BUNDLES_]$4[_PACKAGES],native_name)
+    m4_append([GT_PACKAGE_LIST], [$1], [ ])dnl
+    m4_define($1[_VERSION], pkgver)
+    m4_append($1[_BUNDLE], $4)
+    m4_foreach([req], m4_split(m4_normalize($3)), [dnl
+        m4_append(req[_REQUIRES], [choices]@<:@'org.globus.package.$1'@:>@[.selected], [ || ])])dnl
 ])dnl
 
 
@@ -203,7 +220,7 @@ GT_PACKAGE([globus_gram_job_manager],[gram/jobmanager/source],
 GT_PACKAGE([globus_xio_gridftp_multicast],
         [gridftp/server/multi/source],
         [ globus_xio  globus_ftp_client  globus_xio_gsi_driver ],
-        [ccommonlibs])
+        [gridftp])
 GT_PACKAGE([globus_simple_ca],[gsi/simple_ca/source], [], [gsi])
 GT_PACKAGE([globus_gram_job_manager_sge],
         [gram/jobmanager/lrms/sge/source],
@@ -280,6 +297,7 @@ GT_TARGETS_DISTCLEAN="GT_TARGETS_DISTCLEAN_MACRO"
 GT_TARGETS_DIST="GT_TARGETS_DIST_MACRO"
 GT_TARGETS_RPM="GT_TARGETS_RPM_MACRO"
 GT_TARGETS_DEB="GT_TARGETS_DEB_MACRO"
+GT_TARGETS_OSX_PKG="GT_TARGETS_OSX_PKG_MACRO"
 GT_PKGCONFIG_DIRS="GT_PKGCONFIG_DIRS_MACRO"
 GT_DOXYGEN_SUBDIRS="GT_DOXYGEN_SUBDIRS_MACRO"
 GT_ALL_STAMPS="GT_ALL_STAMPS_MACRO"
@@ -294,6 +312,45 @@ AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 TARGETS_FILE=makefile.targets
 echo "$TARGETS" > "$TARGETS_FILE"
 
+MAC_INSTALLER_PKG_REFS="MAC_INSTALLER_PKG_REFS"
+MAC_INSTALLER_CHOICE_LINES="MAC_INSTALLER_CHOICE_LINES"
+MAC_INSTALLER_PACKAGE_CHOICES="MAC_INSTALLER_PACKAGE_CHOICES"
+rm -f "MAC_INSTALLER_PKG_REFS" "MAC_INSTALLER_CHOICE_LINES" "MAC_INSTALLER_PACKAGE_CHOICES"
+
+touch MAC_INSTALLER_PKG_REFS MAC_INSTALLER_CHOICE_LINES MAC_INSTALLER_PACKAGE_CHOICES
+
+m4_foreach([packname], m4_split(GT_PACKAGE_LIST), [
+cat <<EOF >> "MAC_INSTALLER_PKG_REFS"
+    <pkg-ref id="org.globus.packname" version="m4_expand(packname[_VERSION])">packname[-]m4_expand(packname[_VERSION]).pkg</pkg-ref>
+EOF
+cat <<EOF >> "MAC_INSTALLER_PACKAGE_CHOICES"
+    <choice 
+        id="org.globus.package.packname"
+        visible="false"
+        title="packname"
+        description="packname Libraries and Tools"dnl
+m4_ifdef(packname[_REQUIRES],[
+        selected="m4_expand(packname[_REQUIRES])"])
+        start_selected="choices@<:@'org.globus.bundle.m4_expand(packname[_BUNDLE])'@:>@.selected">
+        <pkg-ref id="org.globus.packname"/>
+    </choice>
+EOF
+])
+
+cat <<EOF >> "MAC_INSTALLER_CHOICE_LINES"
+m4_foreach([bundlename],
+    m4_split(GT_BUNDLES_MACRO),
+    [
+    <line choice="org.globus.bundle.bundlename">
+    m4_foreach([pkgname], m4_split(m4_expand([GT_BUNDLE_PACKAGES]m4_translit(bundlename,[-],[_]))), [
+        <line choice="org.globus.package.pkgname"/>])
+    </line>
+    ])
+EOF
+    
+AC_SUBST_FILE(MAC_INSTALLER_PKG_REFS)
+AC_SUBST_FILE(MAC_INSTALLER_CHOICE_LINES)
+AC_SUBST_FILE(MAC_INSTALLER_PACKAGE_CHOICES)
 dnl Don't build globus-gram5-* on windows
 case "$host_os" in
     mingw*|cygwin*)
@@ -317,7 +374,6 @@ if test X"$enabled_bundles" = X; then
     enabled_bundles="$default_bundles"
 fi
 
-
 AC_SUBST_FILE(TARGETS_FILE)
 AC_SUBST(TOP_SUBDIRS)
 AC_SUBST(TOP_DIST_SUBDIRS)
@@ -329,6 +385,7 @@ AC_SUBST(GT_TARGETS_DIST)
 AC_SUBST(GT_TARGETS_DISTCLEAN)
 AC_SUBST(GT_TARGETS_RPM)
 AC_SUBST(GT_TARGETS_DEB)
+AC_SUBST(GT_TARGETS_OSX_PKG)
 AC_SUBST(GT_PKGCONFIG_DIRS)
 AC_SUBST(GT_DOXYGEN_SUBDIRS)
 AC_SUBST(GT_ALL_STAMPS)
@@ -337,6 +394,8 @@ AC_SUBST(GT_BUNDLES)
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Doxyfile])
 AC_CONFIG_FILES([doxygen/index.dox])
+AC_CONFIG_FILES([distribution.xml])
+AC_CONFIG_FILES([osx/scripts/postinstall], [chmod a+x osx/scripts/postinstall])
 
 AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
 

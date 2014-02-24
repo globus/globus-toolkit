@@ -1,8 +1,10 @@
 #! /bin/sh
 
+export GLOBUS_USAGE_OPTOUT=1
+
 PATH="${PATH}:$(dirname $0):."
 
-echo "   Starting personal gatekeeper"
+echo "#   Starting personal gatekeeper"
 contact="$(globus-personal-gatekeeper -start | sed -e 's/GRAM contact: //')"
 
 if [ "$?" != 0 ] || [ -z "$contact" ]; then
