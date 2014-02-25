@@ -1073,7 +1073,7 @@ globus_gass_copy_get_url_mode(
     {
 	*mode = GLOBUS_GASS_COPY_URL_MODE_GASS;
     }
-    else if ( (url_info.scheme_type == GLOBUS_URL_SCHEME_FILE))
+    else if ( url_info.scheme_type == GLOBUS_URL_SCHEME_FILE)
     {
 	*mode = GLOBUS_GASS_COPY_URL_MODE_IO;
     }
@@ -2466,7 +2466,7 @@ globus_l_gass_copy_transfer_start(
 	    &(state->dest.data.gass.request),
 	    (state->dest.attr->gass_requestattr),
 	    state->dest.url,
-	    GLOBUS_NULL,
+	    0,
 	    globus_l_gass_copy_gass_setup_callback,
 	    (void *) handle);
 
@@ -2908,7 +2908,7 @@ globus_l_gass_copy_gass_setup_callback(
 		&request,
 		(state->dest.attr->gass_requestattr),
 		state->dest.url,
-		GLOBUS_NULL,
+		0,
 		globus_l_gass_copy_gass_setup_callback,
 		(void *) handle)) != GLOBUS_SUCCESS )
 	    { /* there was an error */

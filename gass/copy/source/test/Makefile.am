@@ -37,10 +37,26 @@ TESTS_ENVIRONMENT = \
     X509_USER_KEY=$(abs_builddir)/testcred.key \
     X509_CERT_DIR=$(abs_builddir) \
     GRIDMAP=$(abs_builddir)/gridmap \
-    PATH="$(GRIDFTP_SBINDIR):$(abs_top_builddir):$${PATH}";
+    PATH="$(GRIDFTP_SBINDIR):$(abs_top_builddir):$${PATH}"; \
+    for ext in .la .so .dylib .a; do \
+	driver="$(GSI_DRIVER_LIBDIR)/libglobus_xio_gsi_driver$${ext}"; \
+	if test -r "$${driver}"; then \
+	    export GSI_DRIVER_LOAD="-dlopen $${driver}"; \
+	    break; \
+	fi; \
+    done; \
+    for ext in .la .so .dylib .a; do \
+	driver="$(PIPE_DRIVER_LIBDIR)/libglobus_xio_pipe_driver$${ext}"; \
+	if test -r "$${driver}"; then \
+	    export PIPE_DRIVER_LOAD="-dlopen $${driver}"; \
+	    break; \
+	fi; \
+    done;
+    
+
 LOG_COMPILER = $(LIBTOOL) --mode=execute \
-    -dlopen $(GLOBUS_XIO_GSI_DRIVER) \
-    -dlopen $(GLOBUS_XIO_PIPE_DRIVER) \
+    $${GSI_DRIVER_LOAD} \
+    $${PIPE_DRIVER_LOAD} \
     $(srcdir)/test-wrapper
 
 CLEANFILES = testcred.key testcred.cert testcred.req gridmap

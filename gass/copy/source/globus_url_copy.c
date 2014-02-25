@@ -106,9 +106,9 @@ int guc_mkcert(X509 **x509p, EVP_PKEY **pkeyp, int bits, int serial, int days)
     * Normally we'd check the return value for errors...
     */
     X509_NAME_add_entry_by_txt(name,"C",
-    MBSTRING_ASC, "US", -1, -1, 0);
+    MBSTRING_ASC, (const unsigned char *) "US", -1, -1, 0);
     X509_NAME_add_entry_by_txt(name,"CN",
-    MBSTRING_ASC, "Globus DCSC Cert", -1, -1, 0);
+    MBSTRING_ASC, (const unsigned char *) "Globus DCSC Cert", -1, -1, 0);
 
     /* Its self signed so set the issuer name to be the same as the
     * subject.
@@ -5126,7 +5126,7 @@ globus_l_guc_expand_single_url(
             globus_error_construct_error( 
                 GLOBUS_NULL,              
                 globus_error_peek(result),   
-                GLOBUS_NULL,     
+                0,     
                 __FILE__,                     
                 GLOBUS_NULL,                    
                 __LINE__,                     
@@ -5187,7 +5187,7 @@ globus_l_guc_expand_single_url(
                         globus_error_construct_error(
                             GLOBUS_NULL,
                             globus_error_peek(result),
-                            GLOBUS_NULL,
+                            0,
                             __FILE__,
                             GLOBUS_NULL,
                             __LINE__,
@@ -5237,7 +5237,7 @@ globus_l_guc_expand_single_url(
                     globus_error_construct_error(
                         GLOBUS_NULL,
                         tmp_err,
-                        GLOBUS_NULL,
+                        0,
                         __FILE__,
                         GLOBUS_NULL,
                         __LINE__,
@@ -5726,7 +5726,7 @@ globus_l_guc_init_gass_copy_handle(
         result = globus_gass_copy_register_performance_cb(
             gass_copy_handle,
             globus_l_gass_copy_performance_cb,
-            (void *) id);
+            (void *) (intptr_t) id);
 
         if(result != GLOBUS_SUCCESS)
         {
