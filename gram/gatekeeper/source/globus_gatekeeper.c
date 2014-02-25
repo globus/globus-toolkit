@@ -2200,10 +2200,10 @@ Returns:
 static int 
 net_accept(int skt)
 {
-    netlen_t           fromlen;
+    globus_socklen_t   fromlen;
     int                skt2;
     int                gotit;
-    struct sockaddr_in from;
+    globus_sockaddr_t  from;
 
     fromlen = sizeof(from);
     gotit = 0;
