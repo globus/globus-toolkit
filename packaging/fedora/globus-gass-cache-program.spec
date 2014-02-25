@@ -21,6 +21,12 @@ BuildRequires:	globus-gram-client-devel >= 12
 BuildRequires:	globus-gass-server-ez-devel >= 4
 BuildRequires:	globus-gass-copy-devel >= 8
 BuildRequires:	globus-gass-cache-devel >= 8
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid

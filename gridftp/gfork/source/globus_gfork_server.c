@@ -240,7 +240,8 @@ gfork_l_kid_read_close_cb(
 
     globus_mutex_lock(&gfork_l_mutex);
     {
-        list = globus_list_search(gfork_l_pid_list, (void *)kid_handle->pid);
+        list = globus_list_search(gfork_l_pid_list,
+                (void *) (intptr_t) kid_handle->pid);
         if(list != NULL)
         {
             globus_list_remove(&gfork_l_pid_list, list);
@@ -596,7 +597,7 @@ gfork_l_spawn_master(
         close(infds[1]);
         master_child_handle->pid = pid;
 
-        globus_list_insert(&gfork_l_pid_list, (void *)pid);
+        globus_list_insert(&gfork_l_pid_list, (void *) (intptr_t) pid);
 
         msg = (gfork_i_msg_t *) globus_calloc(1, sizeof(gfork_i_msg_t));
         msg->from_kid = master_child_handle;
@@ -616,7 +617,9 @@ gfork_l_spawn_master(
         }
 
         globus_hashtable_insert(
-            &gfork_l_master_pid_table, (void*) pid, master_child_handle);
+            &gfork_l_master_pid_table,
+            (void*) (intptr_t) pid,
+            master_child_handle);
         gfork_log(2, "master is pid %d\n", pid);
     }
     else
@@ -656,13 +659,13 @@ gfork_l_dead_kid(
 
     kid_handle = (gfork_i_child_handle_t *)
         globus_hashtable_remove(
-            &gfork_l_pid_table, (void *)child_pid);
+            &gfork_l_pid_table, (void *) (intptr_t) child_pid);
     if(kid_handle == NULL)
     {
         /* could be a master */
         kid_handle = (gfork_i_child_handle_t *)
             globus_hashtable_remove(
-                &gfork_l_master_pid_table, (void *)child_pid);
+                &gfork_l_master_pid_table, (void *) (intptr_t) child_pid);
     }
 
     /* has to be in one or the other */
@@ -683,7 +686,7 @@ gfork_l_dead_kid(
         gfork_log(2, "Master died! %d\n", child_pid);
     }
 
-    list = globus_list_search(gfork_l_pid_list, (void *)child_pid);
+    list = globus_list_search(gfork_l_pid_list, (void *) (intptr_t) child_pid);
     globus_assert(list != NULL);
 
     globus_list_remove(&gfork_l_pid_list, list);
@@ -898,7 +901,7 @@ gfork_l_server_accepted(
         close(infds[1]);
 
         close(socket_handle);
-        globus_list_insert(&gfork_l_pid_list, (void *)pid);
+        globus_list_insert(&gfork_l_pid_list, (void *) (intptr_t) pid);
         gfork_log(2, "Started child %d\n", pid);
 
         gfork_l_connection_count++;
@@ -938,7 +941,7 @@ gfork_l_server_accepted(
         }
         globus_hashtable_insert(
             &gfork_l_pid_table,
-            (void *)pid,
+            (void *) (intptr_t) pid,
             kid_handle);
 
         gfork_i_write_open(kid_handle);
@@ -1213,7 +1216,7 @@ gfork_l_read_body_cb(
         {
             gfork_log(1, "gfork_l_read_body_cb() specific destination\n");
             to_kid = (gfork_i_child_handle_t *) globus_hashtable_lookup(
-                &gfork_l_pid_table, (void *) msg->header.to_pid);
+                &gfork_l_pid_table, (void *) (intptr_t) msg->header.to_pid);
             if(to_kid == NULL)
             {
                 /* just cleat in up and repost header */

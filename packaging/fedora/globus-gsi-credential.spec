@@ -1,6 +1,6 @@
 Name:		globus-gsi-credential
 %global _name %(tr - _ <<< %{name})
-Version:	7.1
+Version:	7.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Credential Library
 
@@ -137,6 +137,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Feb 25 2014 Globus Toolkit <support@globus.org> - 7.2-1
+- Packaging fixes
+
 * Mon Feb 10 2014 Globus Toolkit <support@globus.org> - 7.1-1
 - Packaging fixes
 

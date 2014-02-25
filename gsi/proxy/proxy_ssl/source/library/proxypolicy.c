@@ -38,9 +38,9 @@ ASN1_METHOD * PROXYPOLICY_asn1_meth()
 {
     static ASN1_METHOD proxypolicy_asn1_meth =
     {
-        (int (*)())   i2d_PROXYPOLICY,
-        (char *(*)()) d2i_PROXYPOLICY,
-        (char *(*)()) PROXYPOLICY_new,
+        (i2d_of_void *) i2d_PROXYPOLICY,
+        (d2i_of_void *) d2i_PROXYPOLICY,
+        (void *(*)()) PROXYPOLICY_new,
         (void (*)())  PROXYPOLICY_free
     };
     return (&proxypolicy_asn1_meth);
@@ -104,8 +104,8 @@ void PROXYPOLICY_free(
 PROXYPOLICY * PROXYPOLICY_dup(
     PROXYPOLICY *                       policy)
 {
-    return ((PROXYPOLICY *) ASN1_dup((int (*)())i2d_PROXYPOLICY,
-                                     (char *(*)())d2i_PROXYPOLICY,
+    return ((PROXYPOLICY *) ASN1_dup((i2d_of_void*)i2d_PROXYPOLICY,
+                                     (d2i_of_void*)d2i_PROXYPOLICY,
                                      (char *)policy));
 }
 /* PROXYPOLICY_dup() */
@@ -401,10 +401,10 @@ STACK_OF(CONF_VALUE) * i2v_PROXYPOLICY(
     PROXYPOLICY *                       ext,
     STACK_OF(CONF_VALUE) *              extlist)
 {
-    char *                              policy = NULL;
+    unsigned char *                     policy = NULL;
     char                                policy_lang[128];
-    char *                              tmp_string = NULL;
-    char *                              index = NULL;
+    unsigned char *                     tmp_string = NULL;
+    unsigned char *                     index = NULL;
     int                                 nid;
     int                                 policy_length;
 
@@ -441,14 +441,14 @@ STACK_OF(CONF_VALUE) * i2v_PROXYPOLICY(
         tmp_string = policy;
         while(1)
         {
-            index = strchr(tmp_string, '\n');
+            index = (unsigned char *) strchr((char *) tmp_string, '\n');
             if(!index)
             {
                 int                     length;
-                unsigned char *         last_string;
+                char *                  last_string;
                 length = (policy_length - (tmp_string - policy)) + 9;
                 last_string = malloc(length);
-                BIO_snprintf(last_string, length, "%8s%s", "", tmp_string);
+                BIO_snprintf(last_string, length, "%8s%s", "", (char *) tmp_string);
                 X509V3_add_value(NULL, last_string, &extlist);
                 free(last_string);
                 break;
@@ -456,7 +456,7 @@ STACK_OF(CONF_VALUE) * i2v_PROXYPOLICY(
             
             *index = '\0';
             
-            X509V3_add_value(NULL, tmp_string, &extlist);
+            X509V3_add_value(NULL, (char *) tmp_string, &extlist);
             
             tmp_string = index + 1;
         }

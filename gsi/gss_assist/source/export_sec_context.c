@@ -137,7 +137,7 @@ globus_gss_assist_export_sec_context(
  err:
     if (fdp < 0 && fd >= 0)
     {
-        (void *) close(fd);
+        (void) close(fd);
     }
 
     gss_release_buffer(&local_minor_status,

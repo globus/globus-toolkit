@@ -1269,7 +1269,7 @@ globus_gsi_cred_get_policies(
     STACK **                            policies)
 {
     int                                 index;
-    char *                              policy_string = NULL;
+    unsigned char *                     policy_string = NULL;
     char *                              final_policy_string = NULL;
     int                                 policy_string_length = 0;
     PROXYPOLICY *                       policy;
@@ -1329,7 +1329,7 @@ globus_gsi_cred_get_policies(
            (policy = PROXYCERTINFO_get_policy(pci)) == NULL)
         {
             /* no proxycertinfo extension = so no policy for this cert */
-            policy_string = GLOBUS_NULL_POLICY;
+            policy_string = (unsigned char *) GLOBUS_NULL_POLICY;
             policy_string_length = strlen(GLOBUS_NULL_POLICY);            
         }
         else

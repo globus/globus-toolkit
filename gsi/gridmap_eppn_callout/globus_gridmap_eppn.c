@@ -267,7 +267,7 @@ ggvm_get_eppn(
     if (ASN1_get_object(&eppn_data, length, &tag, &xclass, eppn_str->length) == 0x80)
         return GLOBUS_FAILURE;
 
-    *data = eppn_data;
+    *data = (char *) eppn_data;
     *length = eppn_str->length;
 
     return GLOBUS_SUCCESS;
@@ -316,7 +316,7 @@ ggvm_get_myproxy_userid(
     /* xinetd does not allow to specify env vars with spaces.
     Use ~ and the callout translates ~ to ' ' */
     at = myproxy_authorized_dn;
-    while (at = strchr(at, '~')) {
+    while ((at = strchr(at, '~')) != NULL) {
         *at = ' ';
         ++at;
     }

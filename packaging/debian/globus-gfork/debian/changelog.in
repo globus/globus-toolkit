@@ -1,3 +1,9 @@
+globus-gfork (4.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 25 Feb 2014 16:10:18 -0500
+
 globus-gfork (4.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Put automake version requirement first

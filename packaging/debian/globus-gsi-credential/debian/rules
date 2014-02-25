@@ -11,7 +11,7 @@ endif
 
 name = globus-gsi-credential
 _name = globus_gsi_credential
-version = 7.1
+version = 7.2
 soname = 1
 
 INSTALLDIR = $(CURDIR)/debian/tmp

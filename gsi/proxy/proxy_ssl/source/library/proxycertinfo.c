@@ -50,9 +50,9 @@ ASN1_METHOD * PROXYCERTINFO_asn1_meth()
 {
     static ASN1_METHOD proxycertinfo_asn1_meth =
     {
-        (int (*)())   i2d_PROXYCERTINFO,
-        (char *(*)()) d2i_PROXYCERTINFO,
-        (char *(*)()) PROXYCERTINFO_new,
+        (i2d_of_void *) i2d_PROXYCERTINFO,
+        (d2i_of_void *) d2i_PROXYCERTINFO,
+        (void *(*)()) PROXYCERTINFO_new,
         (void (*)())  PROXYCERTINFO_free
     };
     return (&proxycertinfo_asn1_meth);
@@ -117,8 +117,8 @@ void PROXYCERTINFO_free(
 PROXYCERTINFO * PROXYCERTINFO_dup(
     PROXYCERTINFO *                     cert_info)
 {
-    return ((PROXYCERTINFO *) ASN1_dup((int (*)())i2d_PROXYCERTINFO,
-                                       (char *(*)())d2i_PROXYCERTINFO,
+    return ((PROXYCERTINFO *) ASN1_dup((i2d_of_void *)i2d_PROXYCERTINFO,
+                                       (d2i_of_void *)d2i_PROXYCERTINFO,
                                        (char *)cert_info));
 }
 /* PROXYCERINFO_dup() */

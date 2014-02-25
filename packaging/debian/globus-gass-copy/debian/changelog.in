@@ -1,14 +1,14 @@
+globus-gass-copy (9.6-2+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 25 Feb 2014 16:10:49 -0500
+
 globus-gass-copy (9.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes
 
  -- Globus Toolkit <support@globus.org>  Tue, 25 Feb 2014 14:31:50 -0500
-
-globus-gass-copy (9.5-2+gt6.@distro@) @distro@; urgency=low
-
-  * Packaging fixes
-
- -- Globus Toolkit <support@globus.org>  Tue, 25 Feb 2014 14:31:07 -0500
 
 globus-gass-copy (9.5-1+gt6.@distro@) @distro@; urgency=low
 

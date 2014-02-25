@@ -1,6 +1,6 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	6.4
+Version:	6.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
@@ -59,7 +59,7 @@ Globus GSI Proxy Utility Programs
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -89,6 +89,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Tue Feb 25 2014 Globus Toolkit <support@globus.org> - 6.5-1
+- Packaging fixes
+
 * Sat Feb 01 2014 Globus Toolkit <support@globus.org> - 6.4-1
 - Fix test wrapper with old automake
 

@@ -968,7 +968,7 @@ globus_gsi_cred_read_proxy_bio(
             strcmp(name, PEM_STRING_X509_OLD) == 0)
         {
             tmp_cert = NULL;
-            tmp_cert = d2i_X509(&tmp_cert, &data, len);
+            tmp_cert = d2i_X509(&tmp_cert, (const unsigned char **) &data, len);
             if (tmp_cert == NULL)
             {
                 GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -1002,7 +1002,7 @@ globus_gsi_cred_read_proxy_bio(
                 goto exit;
             }
 
-            handle->key = d2i_AutoPrivateKey(&handle->key, &data, len);
+            handle->key = d2i_AutoPrivateKey(&handle->key, (const unsigned char **) &data, len);
             if (handle->key == NULL)
             {
                 GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -1017,7 +1017,7 @@ globus_gsi_cred_read_proxy_bio(
         {
             PKCS8_PRIV_KEY_INFO *p8inf = NULL;
 
-            p8inf = d2i_PKCS8_PRIV_KEY_INFO(p8inf, &data, len);
+            p8inf = d2i_PKCS8_PRIV_KEY_INFO(&p8inf, (const unsigned char **) &data, len);
             if (p8inf == NULL)
             {
                 GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -1834,7 +1834,7 @@ globus_result_t globus_gsi_cred_write(
         goto error_exit;
     }
     
-    if(!PEM_ASN1_write_bio(i2d_PrivateKey, PEM_STRING_RSA,
+    if(!PEM_ASN1_write_bio((i2d_of_void *) i2d_PrivateKey, PEM_STRING_RSA,
                            bio, (char *) handle->key,
                            NULL, NULL, 0, NULL, NULL))
     {
