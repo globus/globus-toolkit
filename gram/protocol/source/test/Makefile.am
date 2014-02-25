@@ -25,9 +25,17 @@ TESTS = $(check_PROGRAMS)
 TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
-    X509_CERT_DIR=$(abs_builddir);
+    X509_CERT_DIR=$(abs_builddir); \
+    for ext in .la .so .dylib .a; do \
+        driver="$(GSI_DRIVER_LIBDIR)/libglobus_xio_gsi_driver$${ext}";  \
+        if test -f "$${driver}"; then \
+            export GLOBUS_XIO_GSI_DRIVER_LOAD="-dlopen $${driver}"; \
+            break; \
+        fi; \
+    done;
+LOG_COMPILER = $(LIBTOOL) --mode=execute $${GLOBUS_XIO_GSI_DRIVER_LOAD} \
+    $(srcdir)/gram-protocol-test-wrapper
 
-LOG_COMPILER = $(LIBTOOL) --mode=execute -dlopen $(GLOBUS_XIO_GSI_DRIVER) $(srcdir)/gram-protocol-test-wrapper
 testcred.key:
 	umask 077; openssl genrsa -out $@ 1024
 
