@@ -17,35 +17,6 @@
 # 
 
 
-my_seq_lines() {
-    start=$1
-    end=$2
-
-    while test $start -lt $end; do
-        echo $start
-        start=`expr $start + 1`
-    done
-}
-
-my_seq() {
-
-    echo `my_seq_lines $@ | xargs`
-}
-
-
-if test "`echo -n \"testecho\"`" = "testecho"; then
-    ECHOOPTION=" -n "
-    ECHOTAIL=""
-else
-    ECHOOPTION=""
-    ECHOTAIL=' \c'
-fi
-
-recho() {
-
-    echo $ECHOOPTION $@ $ECHOTAIL
-}
-
 find_ca_dir() {
     cahash=$1
     shift
@@ -72,7 +43,7 @@ get_security_dir() {
 
 get_hashes() {
     cadir=$1
-    ${GLOBUS_SH_LS-ls} ${cadir}/*.0 2> /dev/null | xargs
+    ls ${cadir}/*.0 2> /dev/null | xargs
 }
 
 show_default() {
@@ -87,12 +58,12 @@ show_default() {
         gsconf="${sysconfdir}/grid-security.conf"
     fi
 
-    DEFAULTCACONFFILE=`${GLOBUS_SH_LS-ls} -l "$gsconf" 2>/dev/null | ${GLOBUS_SH_SED-sed} -e "s|.*-> \(.*\)|\1|"`
-    DEFAULTCAHASH=`echo "$DEFAULTCACONFFILE" | ${GLOBUS_SH_SED-sed} -e "s|.*\.\(.*\)$|\1|"`
+    DEFAULTCACONFFILE=`ls -l "$gsconf" 2>/dev/null | sed -e "s|.*-> \(.*\)|\1|"`
+    DEFAULTCAHASH=`echo "$DEFAULTCACONFFILE" | sed -e "s|.*\.\(.*\)$|\1|"`
 
     for x in "$@"; do
         if test -f "${x}/$DEFAULTCAHASH.0"; then
-            DEFAULT_SUBJECT=`${SSL_EXEC} x509 -in ${x}/$DEFAULTCAHASH.0 -noout -subject | ${GLOBUS_SH_SED-sed} -e "s|subject= ||"`
+            DEFAULT_SUBJECT=`${SSL_EXEC} x509 -in ${x}/$DEFAULTCAHASH.0 -noout -subject | sed -e "s|subject= ||"`
             echo
             echo "The default CA is: $DEFAULT_SUBJECT"
             echo "         Location: ${x}/$DEFAULTCAHASH.0"
@@ -121,8 +92,8 @@ ca_list() {
             if test -r "${cert}" ; then 
                 eval "CA${index}=${cert}"
                 TEMP_SUBJECT=`${SSL_EXEC} x509 -in ${cert} -noout -subject`
-                eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
-                TEMP_HASH=`echo ${cert} | ${GLOBUS_SH_SED-sed} -e  "s|.*/\([^/]*\)\.0|\1|"`
+                eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | sed -e \"s|subject= ||\"`\""
+                TEMP_HASH=`echo ${cert} | sed -e  "s|.*/\([^/]*\)\.0|\1|"`
                 eval "CA_HASH${index}=$TEMP_HASH"
                 eval "echo \"$index) \${CA_HASH${index}} -  \${CA_SUBJECT${index}}\""
                 index=`expr $index + 1`
@@ -146,7 +117,7 @@ interactive() {
     while [ -z "$CA_CHOSEN_INDEX" ]
     do
         echo
-        recho "Enter the index number of the CA to set as the default [q to quit]: "
+        printf "Enter the index number of the CA to set as the default [q to quit]: "
         read CA_CHOSEN_INDEX
 
         if [ "${CA_CHOSEN_INDEX}" = "" ] || \
@@ -167,8 +138,35 @@ interactive() {
     
     eval "CA_SUBJECT=\${CA_SUBJECT${CA_CHOSEN_INDEX}}"
     eval "CA_CERT=\${CA${CA_CHOSEN_INDEX}}"
-    CA_CERT_DIR=`echo $CA_CERT | ${GLOBUS_SH_SED-sed} -e "s|/[^\/]*$||"`
+    CA_CERT_DIR=`echo $CA_CERT | sed -e "s|/[^\/]*$||"`
 }
+
+globus_args_short_usage()
+{
+    cat 1>&2 <<EOF
+
+Syntax : ${short_usage}
+
+Use -help to display full usage.
+
+EOF
+}
+
+globus_args_option_error()
+{
+    cat 1>&2 <<EOF
+
+ERROR: option $1 : $2
+EOF
+    globus_args_short_usage
+    exit 1
+}
+
+globus_args_unrecognized_option()
+{
+    globus_args_option_error $1 "unrecognized option"
+    exit 1
+}	
 
 readCommandLine () {
     # Expects $* from the shell invocation
@@ -176,20 +174,20 @@ readCommandLine () {
     while [ "X$1" != "X" ]
     do
         case $1 in
-            -\?|-h|-help|usage)
+            -\?|-h|-help|usage|--help|-usage|--usage)
                 long_usage
                 exit 0
                 ;;
                 
-            -list)
+            -list|--list)
                 JUSTLIST=1
                 shift 
                 ;;
-            -ca)
+            -ca|--ca)
                 ca_to_use="$2"
                 shift ; shift
                 ;;
-            -dir)
+            -dir|--dir)
                 X509_CERT_DIR="$2"
                 shift; shift;
                 ;;
@@ -214,7 +212,7 @@ error() {
 }
 
 long_usage () {
-    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+    cat >&2 <<EOF
 
 ${short_usage}
 
@@ -259,9 +257,9 @@ fi
 
 globus_source ${libexecdir}/globus-sh-tools.sh
 
-PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
+PROGRAM_NAME=`echo $0 | sed 's|.*/||g'`
 
-PROGRAM_VERSION=`echo '$Revision$'| ${GLOBUS_SH_SED-sed} -e 's|\\$||g' -e 's|Revision: \(.*\)|\1|'`
+PROGRAM_VERSION=`echo '$Revision$'| sed -e 's|\\$||g' -e 's|Revision: \(.*\)|\1|'`
 
 VERSION="@VERSION@"
 
@@ -349,7 +347,7 @@ else
         exit 1
     fi
     TMP_SUBJECT=`${SSL_EXEC} x509 -in ${CA_CERT} -noout -subject`
-    CA_SUBJECT=`echo ${TMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e "s|subject= ||"`
+    CA_SUBJECT=`echo ${TMP_SUBJECT} | sed -e "s|subject= ||"`
 fi
 
 secconfdir=`get_security_dir ${CA_CERT_DIR}`
@@ -379,8 +377,8 @@ if [ -w ${GRID_SECURITY_FILE} ]; then
     echo "linking ${GRID_SECURITY_FILE} to"
     echo "        ${secconfdir}/grid-security.conf"
     echo
-    ${GLOBUS_SH_RM-rm} -f ${secconfdir}/grid-security.conf
-    ${GLOBUS_SH_LN-ln} -s ${GRID_SECURITY_FILE} \
+    rm -f ${secconfdir}/grid-security.conf
+    ln -s ${GRID_SECURITY_FILE} \
 			  ${secconfdir}/grid-security.conf 
 else
     error GRID_SECURITY_FILE
@@ -391,8 +389,8 @@ if [ -w ${CA_SSL_HOST_CONFIG_FILE} ]; then
     echo "linking ${CA_SSL_HOST_CONFIG_FILE} to"
     echo "        ${secconfdir}/globus-host-ssl.conf"
     echo
-    ${GLOBUS_SH_RM-rm} -f ${secconfdir}/globus-host-ssl.conf
-    ${GLOBUS_SH_LN-ln} -s ${CA_SSL_HOST_CONFIG_FILE} \
+    rm -f ${secconfdir}/globus-host-ssl.conf
+    ln -s ${CA_SSL_HOST_CONFIG_FILE} \
 		          ${secconfdir}/globus-host-ssl.conf
 else
     error CA_SSL_HOST_CONFIG_FILE
@@ -403,8 +401,8 @@ if [ -w ${CA_SSL_USER_CONFIG_FILE} ]; then
     echo "linking ${CA_SSL_USER_CONFIG_FILE} to"
     echo "        ${secconfdir}/globus-user-ssl.conf"
     echo
-    ${GLOBUS_SH_RM-rm} -f ${secconfdir}/globus-user-ssl.conf
-    ${GLOBUS_SH_LN-ln} -s ${CA_SSL_USER_CONFIG_FILE} \
+    rm -f ${secconfdir}/globus-user-ssl.conf
+    ln -s ${CA_SSL_USER_CONFIG_FILE} \
 	    	          ${secconfdir}/globus-user-ssl.conf
 else
     error CA_SSL_USER_CONFIG_FILE
@@ -415,14 +413,14 @@ if [ -w ${DIRECTIONS_FILE} ]; then
     echo "linking ${DIRECTIONS_FILE} to"
     echo "        ${secconfdir}/directions"
     echo
-    ${GLOBUS_SH_RM-rm} -f ${secconfdir}/directions
-    ${GLOBUS_SH_LN-ln} -s ${DIRECTIONS_FILE} \
+    rm -f ${secconfdir}/directions
+    ln -s ${DIRECTIONS_FILE} \
 	    	          ${secconfdir}/directions
 else
     if test -r ${secconfdir}/directions ; then
         echo "removing link ${secconfdir}/directions"
         echo
-        ${GLOBUS_SH_RM-rm} -f ${secconfdir}/directions
+        rm -f ${secconfdir}/directions
     fi
 fi
 

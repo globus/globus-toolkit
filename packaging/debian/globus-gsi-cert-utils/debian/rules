@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gsi-cert-utils
 _name = globus_gsi_cert_utils
-version = 9.2
+version = 9.3
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp

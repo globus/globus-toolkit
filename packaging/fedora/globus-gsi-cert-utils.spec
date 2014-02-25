@@ -1,7 +1,7 @@
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
-Version:	9.2
-Release:	2%{?dist}
+Version:	9.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
 Group:		System Environment/Libraries
@@ -161,6 +161,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Feb 25 2014 Globus Toolkit <support@globus.org> - 9.3-1
+- Packaging Fixes
+
 * Mon Feb 10 2014 Globus Toolkit <support@globus.org> - 9.2-1
 - Packaging fixes
 

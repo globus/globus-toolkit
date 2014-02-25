@@ -33,22 +33,11 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
+PATH="${bindir}:${sbindir}:${PATH}"
 
-
-globus_source ${libexecdir}/globus-sh-tools.sh
-
-PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
-
-PROGRAM_VERSION=`echo '$Revision$'| ${GLOBUS_SH_SED-sed} -e 's|\\$||g' -e 's|Revision: \(.*\)|\1|'`
-
+PROGRAM_NAME=`echo $0 | sed -e 's|.*/||g'`
+PROGRAM_VERSION="@VERSION@"
 VERSION="@VERSION@"
-
 PACKAGE="@PACKAGE@"
 
 DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
@@ -57,7 +46,7 @@ DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 short_usage="$PROGRAM_NAME [-help] [-version] [-file private_key_file]"
 
 long_usage () {
-    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+    cat >&2 <<EOF
 
 ${short_usage}
 
@@ -78,16 +67,7 @@ ${short_usage}
 EOF
 }
 
-globus_source $libexecdir/globus-args-parser-header $@
-
-# SSL related need
-if test -x ${bindir}/openssl; then
-    SSLEAY=${bindir}/openssl;
-else
-    SSLEAY="openssl"
-fi
-
-if ! ${SSLEAY} version > /dev/null 2> /dev/null; then
+if ! openssl version > /dev/null 2> /dev/null; then
     echo "Unable to locate openssl binary in $bindir or PATH" 1>&2
     exit 1
 fi
@@ -128,9 +108,65 @@ key_format()
 
 private_key=""
 
+globus_args_short_usage()
+{
+    cat 1>&2 <<EOF
+
+Syntax : ${short_usage}
+
+Use -help to display full usage.
+
+EOF
+}
+
+globus_args_option_error()
+{
+    cat 1>&2 <<EOF
+
+ERROR: option $1 : $2
+EOF
+    globus_args_short_usage
+    exit 1
+}
+
+globus_args_unrecognized_option()
+{
+    globus_args_option_error $1 "unrecognized option"
+    exit 1
+}	
 if [ -n "$1" ]; then
     case "$1" in
-	-file)
+        -help | -h | --help | -usage | --usage)
+            long_usage
+            exit 0
+            ;;
+        -version|--version)
+            if [ "X${PROGRAM_NAME}" != "X" -a \
+                  "X${PROGRAM_VERSION}" != "X" ]; then
+                echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+            elif [ "X${PACKAGE}" != "X" -a \
+                   "X${VERSION}" != "X" ]; then
+                echo "${PACKAGE}: ${VERSION}"
+            else
+                echo "No version information available."
+            fi
+            exit 0
+            ;;
+        -versions|--versions)
+            __AT=@
+            if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+                 -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+                 "X${DIRT_TIMESTAMP}" != "X${__AT}DIRT_TIMESTAMP${__AT}" -a \
+                 "X${DIRT_BRANCH_ID}" != "X${__AT}DIRT_BRANCH_ID${__AT}" ];
+            then
+                echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+            else
+                echo "No DiRT information available."
+            fi
+            exit 0;
+            ;;
+
+	-file | --file)
 	    private_key="$2"
 	    ;;
 	--)
@@ -160,18 +196,18 @@ fi
 
 umask 077
 if [ "$keyform" = pkcs12 ]; then
-    ${GLOBUS_SH_RM-rm} -f ${private_key}.new
-    "${SSLEAY}" pkcs12 -in "${private_key}" -nodes | \
-        ${SSLEAY} pkcs12 -export -out ${private_key}.new
+    rm -f ${private_key}.new
+    openssl pkcs12 -in "${private_key}" -nodes | \
+        openssl pkcs12 -export -out ${private_key}.new
 else
-    ${GLOBUS_SH_RM-rm} -f ${private_key}.new
-    ${SSLEAY} rsa -des3 -in ${private_key} -out ${private_key}.new
+    rm -f ${private_key}.new
+    openssl rsa -des3 -in ${private_key} -out ${private_key}.new
 fi
 
 if [ $? -eq 0 ]; then
-    ${GLOBUS_SH_RM-rm} -f ${private_key}.old
-    ${GLOBUS_SH_CP-cp} -p ${private_key} ${private_key}.old
-    ${GLOBUS_SH_MV-mv} -f ${private_key}.new ${private_key}
+    rm -f ${private_key}.old
+    cp -p ${private_key} ${private_key}.old
+    mv -f ${private_key}.new ${private_key}
 else
     echo "Failed to change passphrase" >&2
     exit 1

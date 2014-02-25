@@ -35,18 +35,11 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
+PATH=${bindir}:${sbindir}:${PATH}
 
-globus_source ${libexecdir}/globus-sh-tools.sh
+PROGRAM_NAME=`echo $0 | sed 's|.*/||g'`
 
-PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
-
-PROGRAM_VERSION=`echo '$Revision$'| ${GLOBUS_SH_SED-sed} -e 's|\\$||g' -e 's|Revision: \(.*\)|\1|'`
+PROGRAM_VERSION="@VERSION@"
 
 VERSION="@VERSION@"
 
@@ -58,7 +51,7 @@ DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 short_usage="$PROGRAM_NAME [-help] [-file certfile] [-all] [-subject] [...]"
 
 long_usage () {
-    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+    cat >&2 <<EOF
 
 ${short_usage}
 
@@ -128,22 +121,12 @@ certificate_format()
 }
 
 
-globus_source $libexecdir/globus-args-parser-header $@
-
-
-#SSL related needs
-if test -x ${bindir}/openssl; then
-    SSL_EXEC=${bindir}/openssl
-else
-    SSL_EXEC="openssl"
-fi
-
-if ! ${SSL_EXEC} version > /dev/null 2> /dev/null; then
-    echo "Unable to locate openssl binary in $bindir or PATH" 1>&2
+if ! openssl version > /dev/null 2> /dev/null; then
+    echo "Unable to locate openssl binary in PATH" 1>&2
     exit 1
 fi
 
-# DEFault Generated Files
+# Default Generated Files
 cert_format=x509
 openssl_options=""
 toprint=""
@@ -152,9 +135,64 @@ toprint=""
 #
 certfile=`find_default_credential`
 
+globus_args_short_usage()
+{
+    cat 1>&2 <<EOF
+
+Syntax : ${short_usage}
+
+Use -help to display full usage.
+
+EOF
+}
+
+globus_args_option_error()
+{
+    cat 1>&2 <<EOF
+
+ERROR: option $1 : $2
+EOF
+    globus_args_short_usage
+    exit 1
+}
+
+globus_args_unrecognized_option()
+{
+    globus_args_option_error $1 "unrecognized option"
+    exit 1
+}	
 while [ "X$1" != "X" ]; do
     case $1 in
-    -file| -f)
+    -help | -h | --help | -usage | --usage)
+        long_usage
+        exit 0
+        ;;
+    -version|--version)
+        if [ "X${PROGRAM_NAME}" != "X" -a \
+              "X${PROGRAM_VERSION}" != "X" ]; then
+            echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+        elif [ "X${PACKAGE}" != "X" -a \
+               "X${VERSION}" != "X" ]; then
+            echo "${PACKAGE}: ${VERSION}"
+        else
+            echo "No version information available."
+        fi
+        exit 0
+        ;;
+    -versions|--versions)
+        __AT=@
+        if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+             -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+             "X${DIRT_TIMESTAMP}" != "X${__AT}DIRT_TIMESTAMP${__AT}" -a \
+             "X${DIRT_BRANCH_ID}" != "X${__AT}DIRT_BRANCH_ID${__AT}" ];
+        then
+            echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+        else
+            echo "No DiRT information available."
+        fi
+        exit 0;
+        ;;
+    -file| -f | --file)
         if [ -n "$2" -a -f "$2" -a -r "$2" ]; then
             certfile=$2
         else
@@ -166,25 +204,25 @@ while [ "X$1" != "X" ]; do
         fi
         shift
         ;;
-    -all)
+    -all | -all)
 	toprint="$toprint -text"
 	;;
-    -subject|-s)
+    -subject|-s | --subject)
 	toprint="$toprint SUBJECT"
 	;;
-    -issuerhash|-ih)
+    -issuerhash|-ih | --issuerhash)
 	toprint="$toprint -issuer_hash"
 	;;
-    -issuer|-i)
+    -issuer|-i | --issuer)
 	toprint="$toprint -issuer"
 	;;
-    -startdate|-sd)
+    -startdate|-sd|--startdate)
 	toprint="$toprint -startdate"
 	;;
-    -enddate|-ed)
+    -enddate|-ed|--enddate)
 	toprint="$toprint -enddate"
 	;;
-    -rfc2253)
+    -rfc2253|--rfc2253)
         openssl_options='-nameopt rfc2253'
         ;;
     *)
@@ -211,10 +249,10 @@ fi
  
 if [ "$cert_format" = pkcs12 ]; then
     echo "Credentials are in pkcs12 format, OpenSSL will prompt for p12 password"
-    cert_data="`${SSL_EXEC} pkcs12 -nokeys -clcerts -nomacver -in ${certfile}`"
-    command_stub="${SSL_EXEC} x509 -noout $openssl_options"
+    cert_data="`openssl pkcs12 -nokeys -clcerts -nomacver -in ${certfile}`"
+    command_stub="openssl x509 -noout $openssl_options"
 else
-    command_stub="${SSL_EXEC} x509 -noout -in ${certfile} $openssl_options"
+    command_stub="openssl x509 -noout -in ${certfile} $openssl_options"
 fi
 
 
@@ -229,17 +267,17 @@ if test $? -ne 0 ; then
     exit 1
 fi
 
-subject=`echo ${subject} | ${GLOBUS_SH_SED-sed} 's%^subject=\ *%%'`
+subject=`echo ${subject} | sed 's%^subject=\ *%%'`
 
 eval set -- "$toprint"
 for i in "$@"; do
     case "$i" in
     -*)
-	echo "$cert_data" | eval "{ ${command_stub} $i || exit $?; } | ${GLOBUS_SH_SED-sed} 's/^[a-zA-Z]*=[ ]*//'"
+	echo "$cert_data" | eval "{ ${command_stub} $i || exit $?; } | sed 's/^[a-zA-Z]*=[ ]*//'"
 	;;
     SUBJECT)
 	# Do not show the proxy levels
-	echo "${subject}" | ${GLOBUS_SH_SED-sed} -e 's%/CN=proxy%%g' -e 's%/CN=limited proxy%%g'
+	echo "${subject}" | sed -e 's%/CN=proxy%%g' -e 's%/CN=limited proxy%%g'
 	;;
     esac
 done

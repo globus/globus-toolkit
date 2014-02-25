@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gsi_cert_utils], [9.2],[http://jira.globus.org])
+AC_INIT([globus_gsi_cert_utils], [9.3],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [9])
@@ -114,10 +114,18 @@ AC_CONFIG_FILES([
 	library/Makefile
 	library/Doxyfile
         programs/Makefile
-        programs/grid-cert-info
-        programs/grid-change-pass-phrase
-        programs/grid-cert-request
-        programs/grid-default-ca
 	version.h])
+AC_CONFIG_FILES(
+    [programs/grid-cert-info],
+    [chmod a+x programs/grid-cert-info])
+AC_CONFIG_FILES(
+    [programs/grid-change-pass-phrase],
+    [chmod a+x programs/grid-change-pass-phrase])
+AC_CONFIG_FILES(
+    [programs/grid-cert-request],
+    [chmod a+x programs/grid-cert-request])
+AC_CONFIG_FILES(
+    [programs/grid-default-ca],
+    [chmod a+x programs/grid-default-ca])
 
 AC_OUTPUT
