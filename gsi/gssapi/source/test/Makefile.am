@@ -67,7 +67,8 @@ LOG_COMPILER = $(srcdir)/gssapi-test-wrapper
 TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
-    X509_CERT_DIR=$(abs_builddir);
+    X509_CERT_DIR=$(abs_builddir) \
+    TEST_CERT_DIR=$(srcdir);
 
 libgssapi_test_utils_la_SOURCES = \
         gssapi_test_utils.c \
