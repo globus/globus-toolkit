@@ -23,6 +23,19 @@
 #include "proxypolicy.h"
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
+
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define gt_i2d_cast (int (*)())
+#define gt_d2i_cast (char *(*)())
+#define gt_create_cast (char *(*)())
+#define gt_destroy_cast (void(*)())
+#else
+#define gt_i2d_cast (i2d_of_void *)
+#define gt_d2i_cast (d2i_of_void *)
+#define gt_create_cast (void *(*)(void))
+#define gt_destroy_cast (void (*)(void *))
+#endif
+
 /**
  * @ingroup proxypolicy
  *  
@@ -38,10 +51,10 @@ ASN1_METHOD * PROXYPOLICY_asn1_meth()
 {
     static ASN1_METHOD proxypolicy_asn1_meth =
     {
-        (i2d_of_void *) i2d_PROXYPOLICY,
-        (d2i_of_void *) d2i_PROXYPOLICY,
-        (void *(*)()) PROXYPOLICY_new,
-        (void (*)())  PROXYPOLICY_free
+        gt_i2d_cast     i2d_PROXYPOLICY,
+        gt_d2i_cast     d2i_PROXYPOLICY,
+        gt_create_cast  PROXYPOLICY_new,
+        gt_destroy_cast PROXYPOLICY_free
     };
     return (&proxypolicy_asn1_meth);
 }
@@ -104,8 +117,8 @@ void PROXYPOLICY_free(
 PROXYPOLICY * PROXYPOLICY_dup(
     PROXYPOLICY *                       policy)
 {
-    return ((PROXYPOLICY *) ASN1_dup((i2d_of_void*)i2d_PROXYPOLICY,
-                                     (d2i_of_void*)d2i_PROXYPOLICY,
+    return ((PROXYPOLICY *) ASN1_dup(gt_i2d_cast i2d_PROXYPOLICY,
+                                     gt_d2i_cast d2i_PROXYPOLICY,
                                      (char *)policy));
 }
 /* PROXYPOLICY_dup() */

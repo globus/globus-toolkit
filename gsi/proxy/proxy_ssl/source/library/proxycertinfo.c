@@ -34,6 +34,19 @@
 #include "proxycertinfo.h"
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
+
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define gt_i2d_cast (int (*)())
+#define gt_d2i_cast (char *(*)())
+#define gt_create_cast (char *(*)())
+#define gt_destroy_cast (void(*)())
+#else
+#define gt_i2d_cast (i2d_of_void *)
+#define gt_d2i_cast (d2i_of_void *)
+#define gt_create_cast (void *(*)(void))
+#define gt_destroy_cast (void (*)(void *))
+#endif
+
 /** 
  * Define the functions required for 
  * manipulating a PROXYCERTINFO and its ASN1 form. 
@@ -50,10 +63,10 @@ ASN1_METHOD * PROXYCERTINFO_asn1_meth()
 {
     static ASN1_METHOD proxycertinfo_asn1_meth =
     {
-        (i2d_of_void *) i2d_PROXYCERTINFO,
-        (d2i_of_void *) d2i_PROXYCERTINFO,
-        (void *(*)()) PROXYCERTINFO_new,
-        (void (*)())  PROXYCERTINFO_free
+        gt_i2d_cast i2d_PROXYCERTINFO, 
+        gt_d2i_cast d2i_PROXYCERTINFO, 
+        gt_create_cast  PROXYCERTINFO_new, 
+        gt_destroy_cast PROXYCERTINFO_free 
     };
     return (&proxycertinfo_asn1_meth);
 }
@@ -117,8 +130,8 @@ void PROXYCERTINFO_free(
 PROXYCERTINFO * PROXYCERTINFO_dup(
     PROXYCERTINFO *                     cert_info)
 {
-    return ((PROXYCERTINFO *) ASN1_dup((i2d_of_void *)i2d_PROXYCERTINFO,
-                                       (d2i_of_void *)d2i_PROXYCERTINFO,
+    return ((PROXYCERTINFO *) ASN1_dup(gt_i2d_cast i2d_PROXYCERTINFO,
+                                       gt_d2i_cast d2i_PROXYCERTINFO,
                                        (char *)cert_info));
 }
 /* PROXYCERINFO_dup() */
