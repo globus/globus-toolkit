@@ -1,6 +1,6 @@
 Name:		globus-gass-cache-program
 %global _name %(tr - _ <<< %{name})
-Version:	6.0
+Version:	6.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Tools to manipulate local and remote GASS caches
 
@@ -39,7 +39,7 @@ Tools to manipulate local and remote GASS caches
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -66,6 +66,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/globus/globus-gass-cache-util.pl
 
 %changelog
+* Tue Feb 25 2014 Globus Toolkit <support@globus.org> - 6.1-1
+- Packaging fixes
+
 * Thu Jan 23 2014 Globus Toolkit <support@globus.org> - 6.0-1
 - Repackage for GT6 without GPT
 

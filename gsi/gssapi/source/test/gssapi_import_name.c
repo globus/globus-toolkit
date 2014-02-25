@@ -129,7 +129,7 @@ import_username(void)
     if (strcasecmp(name_tok.value, subject) != 0)
     {
         fprintf(stderr,
-            "Expected subject name \"%s\" got \"%s\"\n",
+            "# Expected subject name \"%s\" got \"%s\"\n",
             subject,
             (char *) name_tok.value);
         return 1;
@@ -181,7 +181,7 @@ import_anonymous(void)
     if (strcasecmp(name_tok.value, "<anonymous>") != 0)
     {
         fprintf(stderr,
-            "Expected subject name \"%s\" got \"%s\"\n",
+            "# Expected subject name \"%s\" got \"%s\"\n",
             "<anonymous>",
             (char *) name_tok.value);
         return 1;
@@ -235,7 +235,7 @@ import_hostbase_service(void)
     if (strcasecmp(name_tok.value, "/CN=service/cvs.globus.org") != 0)
     {
         fprintf(stderr,
-            "Expected subject name \"/CN=service/cvs.globus.org\" got \"%s\"\n",
+            "# Expected subject name \"/CN=service/cvs.globus.org\" got \"%s\"\n",
             (char *) name_tok.value);
         return 1;
     }
@@ -289,7 +289,7 @@ import_host_ip(void)
     if (strcasecmp(name_tok.value, subject) != 0)
     {
         fprintf(stderr,
-            "Expected subject name \"%s\" got \"%s\"\n",
+            "# Expected subject name \"%s\" got \"%s\"\n",
             subject,
             (char *) name_tok.value);
         return 1;
@@ -313,6 +313,7 @@ import_x509(void)
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     int                                 i;
+    const char *                        test_cert_dir;
     char *                              test_certs[] =
     {
         "192.168.1.1-2.example.org.pem",    /* multiple ipAddress */
@@ -321,28 +322,42 @@ import_x509(void)
         "star.example.org.pem"              /* Wildcard dNSName */
     };
 
+    test_cert_dir = getenv("TEST_CERT_DIR");
+    if (test_cert_dir == NULL)
+    {
+        test_cert_dir = ".";
+    }
+
     for (i = 0; i < SIZEOF_ARRAY(test_certs); i++)
     {
+        char *                          test_cert;
+
+        test_cert = globus_common_create_string("%s/%s",
+                test_cert_dir, test_certs[i]);
+        if (test_cert == NULL)
+        {
+            fprintf(stderr, "# malloc failed\n");
+            return 1;
+        }
         result = globus_gsi_cred_handle_init(&cred_handle, NULL);
         if (result != GLOBUS_SUCCESS)
         {
             globus_gsi_gssapi_test_print_result(stderr, result);
-
+            free(test_cert);
             return 2;
         }
 
-        result = globus_gsi_cred_read_cert(cred_handle, test_certs[i]);
+        result = globus_gsi_cred_read_cert(cred_handle, test_cert);
+        free(test_cert);
         if (result != GLOBUS_SUCCESS)
         {
             globus_gsi_gssapi_test_print_result(stderr, result);
-
             return 3;
         }
         result = globus_gsi_cred_get_cert(cred_handle, &x509);
         if (result != GLOBUS_SUCCESS)
         {
             globus_gsi_gssapi_test_print_result(stderr, result);
-
             return 4;
         }
 
@@ -387,7 +402,7 @@ import_x509(void)
         if (strcasecmp(name_tok.value, subject) != 0)
         {
             fprintf(stderr,
-                "Expected subject name \"%s\" got \"%s\"\n",
+                "# Expected subject name \"%s\" got \"%s\"\n",
                 subject,
                 (char *) name_tok.value);
             return 1;
@@ -441,5 +456,5 @@ int main()
         printf("%s %s\n", rc == 0 ? "ok" : "not ok", tests[i].name);
     }
 
-    return 0;
+    return failed;
 }

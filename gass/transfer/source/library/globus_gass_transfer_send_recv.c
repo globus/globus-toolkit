@@ -470,7 +470,7 @@ globus_i_gass_transfer_fail(
 	    GLOBUS_NULL,
 	    &delay_time,
 	    globus_l_gass_transfer_drain_callbacks,
-	    (void *) request);
+	    (void *) (intptr_t) request);
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILED:
       case GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL1:

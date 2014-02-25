@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.6
+Version:	11.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -151,6 +151,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Feb 25 2014 Globus Toolkit <support@globus.org> - 11.7-1
+- Packaging fixes
+
 * Tue Feb 25 2014 Globus Toolkit <support@globus.org> - 11.6-1
 - Test fixes
 

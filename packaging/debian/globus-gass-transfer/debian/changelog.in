@@ -1,3 +1,9 @@
+globus-gass-transfer (8.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 25 Feb 2014 14:38:18 -0500
+
 globus-gass-transfer (8.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging Fixes

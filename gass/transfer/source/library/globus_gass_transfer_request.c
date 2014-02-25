@@ -734,7 +734,7 @@ globus_i_gass_transfer_request_init(
     req->type			= type;
     req->status			= GLOBUS_GASS_TRANSFER_REQUEST_STARTING;
     req->referral_url		= GLOBUS_NULL;
-    req->referral_count		= GLOBUS_NULL;
+    req->referral_count		= 0;
     req->callback		= callback;
     req->callback_arg		= user_arg;
     req->proto			= GLOBUS_NULL;
@@ -772,7 +772,7 @@ globus_i_gass_transfer_request_init(
 					  (void *) req,
 					  2);
     globus_list_insert(&globus_i_gass_transfer_requests,
-		       (void *) (*request));
+		       (void *) (intptr_t) (*request));
     
     return;
 
@@ -831,7 +831,7 @@ globus_i_gass_transfer_request_destroy(
 	globus_list_t *				tmp;
 
 	tmp = globus_list_search(globus_i_gass_transfer_requests,
-				 (void *) request);
+				 (void *) (intptr_t) request);
 	
 #if DEBUG_GASS_TRANSFER
 	printf(_GTSL("removing from list\n"));

@@ -114,7 +114,7 @@ globus_gass_transfer_create_listener(
 					   (void *) l,
 					   2);
     globus_list_insert(&globus_i_gass_transfer_listeners,
-		       (void *) (*listener));
+		       (void *) (intptr_t) (*listener));
     
     rc = protocol->new_listener(*listener,
 				attr,
@@ -927,7 +927,7 @@ globus_i_gass_transfer_close_listener(
 	    GLOBUS_NULL,
 	    &delay_time,
 	    globus_l_gass_transfer_callback_close_callback,
-	    (void *) listener);
+	    (void *) (intptr_t) listener);
 
 	break;
 
@@ -1017,7 +1017,7 @@ globus_i_gass_transfer_listener_destroy(
 	globus_list_t *				tmp;
 
 	tmp = globus_list_search(globus_i_gass_transfer_listeners,
-				 (void *) listener);
+				 (void *) (intptr_t) listener);
 
 	globus_list_remove(&globus_i_gass_transfer_listeners,
 			   tmp);

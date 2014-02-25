@@ -488,12 +488,6 @@ globus_ftp_client_plugin_restart_chmod(
 
 	return globus_error_put(err);
     }
-    if(mode == GLOBUS_NULL)
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("mode");
-
-	return globus_error_put(err);
-    }
 
     i_handle = *handle;
 

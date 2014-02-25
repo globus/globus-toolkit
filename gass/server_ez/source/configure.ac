@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gass_server_ez],[5.1],[http://jira.globus.org])
+AC_INIT([globus_gass_server_ez],[5.2],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [3])
@@ -20,10 +20,12 @@ AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 AC_CONFIG_FILES(
-        globus-gass-server-ez-uninstalled.pc
+        [globus-gass-server-ez-uninstalled.pc
         globus-gass-server-ez.pc
         Makefile
         Doxyfile
-        globus-gass-server-shutdown
-	version.h)
+	version.h])
+AC_CONFIG_FILES(
+        [globus-gass-server-shutdown],
+        [chmod a+x globus-gass-server-shutdown])
 AC_OUTPUT

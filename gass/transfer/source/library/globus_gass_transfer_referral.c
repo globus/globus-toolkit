@@ -91,8 +91,7 @@ globus_gass_transfer_referral_get_url(
     {
 	return GLOBUS_NULL;
     }
-    else if(index < 0 ||
-	    index >= referral->count)
+    else if(index >= referral->count)
     {
 	return GLOBUS_NULL;
     }

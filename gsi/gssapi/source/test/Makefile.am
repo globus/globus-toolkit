@@ -3,7 +3,7 @@ LDADD = libgssapi_test_utils.la \
         ../library/libglobus_gssapi_gsi.la \
         $(PACKAGE_DEP_LIBS)
 
-noinst_LTLIBRARIES = libgssapi_test_utils.la
+check_LTLIBRARIES = libgssapi_test_utils.la
 
 check_DATA_real = \
         compare_name_test.txt \

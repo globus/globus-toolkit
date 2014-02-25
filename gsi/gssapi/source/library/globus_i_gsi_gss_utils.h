@@ -239,7 +239,6 @@ globus_i_gsi_gss_create_anonymous_cred(
     gss_cred_id_t *                     output_cred_handle,
     const gss_cred_usage_t              cred_usage);
 
-#if LINK_WITH_INTERNAL_OPENSSL_API
 OM_uint32
 globus_i_gsi_gss_cred_read_bio(
     OM_uint32 *                         minor_status,
@@ -253,7 +252,6 @@ globus_i_gsi_gss_cred_read(
     const gss_cred_usage_t              cred_usage,
     gss_cred_id_t *                     cred_handle,
     const X509_NAME *                   desired_subject);
-#endif /* LINK_WITH_INTERNAL_OPENSSL_API */
 
 OM_uint32
 globus_i_gsi_gss_create_cred(
@@ -291,6 +289,7 @@ globus_i_gsi_gss_retrieve_peer(
     gss_ctx_id_desc *                   context_handle,
     const gss_cred_usage_t              cred_usage);
 
+#if LINK_WITH_INTERNAL_OPENSSL_API
 OM_uint32
 globus_i_gsi_gss_SSL_write_bio(
     OM_uint32 *                         minor_status,
@@ -302,6 +301,7 @@ globus_i_gsi_gss_SSL_read_bio(
     OM_uint32 *                         minor_status,
     gss_ctx_id_desc *                   context,
     BIO *                               bp);
+#endif
 
 OM_uint32
 globus_i_gsi_gss_get_context_goodtill(

@@ -28,26 +28,13 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
+PATH="${bindir}:${sbindir}:${PATH}
 
-globus_source ${libexecdir}/globus-sh-tools.sh
-
-#  CVS Information:
-#     $Source$
-#     $Date$
-#     $Revision$
-#     $Author$
- 
 # defaults list of machine to clean
 TARGETS=${HOME}/.globus/my-contacts
 
 # command to list it, will be replaced with a simple echo if one machine specified
-CAT_TARGETS="[ -r \${TARGETS} ] && ${GLOBUS_SH_CAT-cat} \${TARGETS}"
+CAT_TARGETS="[ -r \${TARGETS} ] && cat \${TARGETS}"
 
 ###############################################################################
 # USAGE
@@ -68,10 +55,10 @@ clean_one()
 TARGET_MACH="${1}"
 
 TMPSCRIPT="${local_tmpdir}/cdscript$$"
-${GLOBUS_SH_RM-rm} -rf $TMPSCRIPT > /dev/null 2>&1
-${GLOBUS_SH_CAT-cat} > $TMPSCRIPT  <<MYEND
+rm -rf $TMPSCRIPT > /dev/null 2>&1
+cat > $TMPSCRIPT  <<MYEND
 
-(\${GLOBUS_SH_SLEEP-sleep} \$CACHE_SLEEP_TIME; \${GLOBUS_SH_RM-rm}  -rf \$HOME/.globus/.gass_cache)> /dev/null 2>&1 < /dev/null&
+(\sleep \$CACHE_SLEEP_TIME; \rm  -rf \$HOME/.globus/.gass_cache)> /dev/null 2>&1 < /dev/null&
 
 if test "\$CACHE_SLEEP_TIME" = "0"; then
     wait
@@ -82,10 +69,20 @@ exit 0
  
 MYEND
 
-if test ${TARGET_MACH} = "localhost" -o ${TARGET_MACH} = "localhost.localdomain" -o ${TARGET_MACH} = "`${bindir}/globus-hostname`"; then
-    RESULT=`CACHE_SLEEP_TIME=0 ${bindir}/globus-sh-exec $TMPSCRIPT`
-else
-    RESULT=`echo "" |${bindir}/globusrun -s -r "${TARGET_MACH}"  "&(environment=(CACHE_SLEEP_TIME 60))(executable=\\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(library_path=\\$(GLOBUS_LOCATION)/lib)(arguments=\\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
+if command -v globus-hostname > /dev/null ; then
+    SELF_MACH="$(globus-hostname)"
+elif command -v hostname > /dev/null; then
+    SELF_MACH="$(hostname)"
+elif command -v uname > /dev/null; then
+    SELF_MACH="$(uname -n)"
+fi
+case "${TARGET_MACH}" in
+    localhost|localhost.localdomain|${SELF_MACH})
+        RESULT=`CACHE_SLEEP_TIME=0 sh $TMPSCRIPT`
+        ;;
+    *)
+        RESULT=`echo "" | globusrun -s -r "${TARGET_MACH}"  "&(environment=(CACHE_SLEEP_TIME 60))(executable=/bin/sh)(library_path=\\$(GLOBUS_LOCATION)/lib)(arguments=\\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
+        ;;
 fi
 
 THIS_STATUS=$?
@@ -93,11 +90,11 @@ if [ $THIS_STATUS -ne 0 ]
 then
     echo "Cleaning failed: " 1>&2
     echo "$RESULT" 1>&2
-    ${GLOBUS_SH_RM-rm} -rf $TMPSCRIPT > /dev/null 2>&1
+    rm -rf $TMPSCRIPT > /dev/null 2>&1
     exit $THIS_STATUS
 fi
 
-${GLOBUS_SH_RM-rm} -rf $TMPSCRIPT > /dev/null 2>&1
+rm -rf $TMPSCRIPT > /dev/null 2>&1
 
 if [ "x$RESULT" != "xsuccessful" ]
 then
@@ -138,11 +135,8 @@ while [ $# -ge 1 ]; do
                         Usage
                 fi
         ;;
-        -h )
+        -h|-help|--help )
                 Usage
-	;;
-	-help )
-		Usage
         ;;
         *)
                 echo "Unknown parameter ${arg}" 1>&2
@@ -152,12 +146,8 @@ while [ $# -ge 1 ]; do
 done
 
 
-#eval $CAT_TARGETS  | ${GLOBUS_SH_EGREP-egrep} '(fork|poe)' | ${GLOBUS_SH_AWK-awk} -F: '{print $1}' | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} | while read TARGET; do
-#eval $CAT_TARGETS  | ${GLOBUS_SH_SED-sed} '/fork/ p;/poe/ p; d' | ${GLOBUS_SH_AWK-awk} -F: '{print $1}' | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} | while read TARGET; do
-eval $CAT_TARGETS  | ${GLOBUS_SH_AWK-awk} -F: '{print $1}' | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} | while read TARGET; do
+eval $CAT_TARGETS  | awk -F: '{print $1}' | sort | uniq | while read TARGET; do
 
 clean_one "${TARGET}"
 
 done
-
-

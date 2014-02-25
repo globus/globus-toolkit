@@ -215,7 +215,7 @@ GSS_CALLCONV gss_get_mic(
         
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             2, (globus_i_gsi_gssapi_debug_fstream,
-                "get_mic: len=%u mic:", message_token->length));
+                "get_mic: len=%zd mic:", message_token->length));
         p = message_token->value;
         for (index = 0;  index < message_token->length; index++)
         {

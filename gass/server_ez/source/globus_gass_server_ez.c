@@ -203,7 +203,7 @@ globus_gass_server_ez_init(
         goto error_exit;
     }
     globus_hashtable_insert(&globus_l_gass_server_ez_listeners,
-			    (void *)*listener,
+			    (void *) (intptr_t) *listener,
 			    server);
 
     rc = globus_gass_transfer_register_listen(
@@ -215,7 +215,7 @@ globus_gass_server_ez_init(
     {
         globus_hashtable_remove(
                 &globus_l_gass_server_ez_listeners,
-                (void*) *listener);
+                (void*) (intptr_t) *listener);
 error_exit:
         globus_mutex_destroy(&server->lock);
         free(server);
@@ -248,7 +248,9 @@ globus_gass_server_ez_shutdown(globus_gass_transfer_listener_t listener)
     globus_l_gass_server_ez_enter();
     if (globus_l_gass_server_ez_activated)
     {
-        s = globus_hashtable_lookup(&globus_l_gass_server_ez_listeners, (void*)listener);
+        s = globus_hashtable_lookup(
+                &globus_l_gass_server_ez_listeners,
+                (void*) (intptr_t) listener);
         if (s)
         {
             globus_mutex_lock(&s->lock);
@@ -304,7 +306,7 @@ globus_l_gass_server_ez_close_callback(
     globus_l_gass_server_ez_enter();
     server = globus_hashtable_remove(
                 &globus_l_gass_server_ez_listeners,
-                (void*) listener);
+                (void *) (intptr_t) listener);
     globus_l_gass_server_ez_destroy(server);
     globus_cond_signal(&globus_l_gass_server_ez_cond);
     globus_l_gass_server_ez_exit();
@@ -324,7 +326,7 @@ globus_l_gass_server_ez_listen_callback(
 				 user_arg,
 				 listener,
 				 globus_l_gass_server_ez_register_accept_callback,
-				 (void *)listener);
+				 (void *) (intptr_t) listener);
 
     if(rc != GLOBUS_SUCCESS)
     {

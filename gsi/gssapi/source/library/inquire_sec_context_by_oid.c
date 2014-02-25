@@ -245,11 +245,13 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     {
         for(chain_index = 0; chain_index < cert_count; chain_index++)
         {
+            int certlen;
             cert = sk_X509_value(cert_chain, chain_index);
 
-            data_set_buffer.length = i2d_X509(cert, NULL);
+            certlen = i2d_X509(cert, NULL);
+            data_set_buffer.length = certlen;
 
-            if(data_set_buffer.length < 0)
+            if (certlen < 0)
             {
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status,

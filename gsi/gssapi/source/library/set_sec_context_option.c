@@ -102,7 +102,7 @@ GSS_CALLCONV gss_set_sec_context_option(
         goto exit;
     }
     
-    if ((*context_handle == (gss_ctx_id_t) GSS_C_NO_CONTEXT))
+    if (*context_handle == GSS_C_NO_CONTEXT)
     {
         /* for now just malloc and zero the context */
         context = (gss_ctx_id_desc *) malloc(sizeof(gss_ctx_id_desc));

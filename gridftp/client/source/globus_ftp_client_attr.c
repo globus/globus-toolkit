@@ -3203,7 +3203,7 @@ globus_ftp_client_operationattr_set_data_security(
         result = globus_l_ftp_base64_encode(
             gsi_buffer.value,
             gsi_buffer.length,
-            i_attr->dcsc_blob,
+            (globus_byte_t *) i_attr->dcsc_blob,
             &blob_len);
         gss_release_buffer(&min_rc, &gsi_buffer);
         if(result != GLOBUS_SUCCESS)
@@ -3223,7 +3223,7 @@ globus_ftp_client_operationattr_set_data_security(
         result = globus_l_ftp_base64_encode(
             buf->value,
             buf->length,
-            i_attr->dcsc_blob,
+            (globus_byte_t *) i_attr->dcsc_blob,
             &blob_len);
         if(result != GLOBUS_SUCCESS)
         {

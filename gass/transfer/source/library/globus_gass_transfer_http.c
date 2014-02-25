@@ -2493,7 +2493,7 @@ globus_l_gass_transfer_http_new_request(
         GLOBUS_NULL,
 	&delay_time,
 	globus_l_gass_transfer_http_callback_denied,
-	(void *) request);
+	(void *) (intptr_t) request);
 
     debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
 }
@@ -3542,7 +3542,7 @@ globus_l_gass_transfer_http_response_callback(
     return;
 
   repost_read:
-    if(result != GLOBUS_NULL)
+    if(result != GLOBUS_SUCCESS)
     {
 	proto->code = GLOBUS_L_DEFAULT_FAILURE_CODE;
 	proto->reason = globus_libc_strdup(GLOBUS_L_DEFAULT_FAILURE_REASON);
@@ -3965,7 +3965,7 @@ globus_l_gass_transfer_http_request_callback(
     return;
 
   repost_read:
-    if(result != GLOBUS_NULL)
+    if(result != GLOBUS_SUCCESS)
     {
 	goto deny_exit;
     }
