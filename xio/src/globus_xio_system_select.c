@@ -568,7 +568,7 @@ globus_l_xio_system_cancel_cb(
                         {
                             globus_list_insert(
                                 &globus_l_xio_system_canceled_reads,
-                                (void *) op_info->handle->fd);
+                                (void *) (intptr_t) op_info->handle->fd);
                         }
                         else
                         {
@@ -582,7 +582,7 @@ globus_l_xio_system_cancel_cb(
                         {
                             globus_list_insert(
                                 &globus_l_xio_system_canceled_writes,
-                                (void *) op_info->handle->fd);
+                                (void *) (intptr_t) op_info->handle->fd);
                         }
                         else
                         {
@@ -1254,7 +1254,8 @@ globus_l_xio_system_bad_apple(void)
                         op_info->state = GLOBUS_I_XIO_SYSTEM_OP_CANCELED;
                         op_info->error = GlobusXIOErrorObjParameter("handle");
                         globus_list_insert(
-                            &globus_l_xio_system_canceled_reads, (void *) fd);
+                            &globus_l_xio_system_canceled_reads,
+                            (void *) (intptr_t) fd);
                     }
                 }
             }
@@ -1276,7 +1277,8 @@ globus_l_xio_system_bad_apple(void)
                         op_info->state = GLOBUS_I_XIO_SYSTEM_OP_CANCELED;
                         op_info->error = GlobusXIOErrorObjParameter("handle");
                         globus_list_insert(
-                            &globus_l_xio_system_canceled_writes, (void *) fd);
+                            &globus_l_xio_system_canceled_writes,
+                            (void *) (intptr_t) fd);
                     }
                 }
             }

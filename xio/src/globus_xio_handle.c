@@ -2287,10 +2287,6 @@ globus_xio_register_read(
     {
         return GlobusXIOErrorParameter("buffer");
     }
-    if(buffer_length < 0)
-    {
-        return GlobusXIOErrorParameter("buffer_length");
-    }
 
     op = data_desc;
     if(op == NULL)
@@ -2450,10 +2446,6 @@ globus_xio_register_write(
     if(buffer == NULL)
     {
         return GlobusXIOErrorParameter("buffer");
-    }
-    if(buffer_length < 0)
-    {
-        return GlobusXIOErrorParameter("buffer_length");
     }
 
     op = data_desc;
@@ -3111,11 +3103,6 @@ globus_xio_read(
         res = GlobusXIOErrorParameter("buffer");
         goto param_error;
     }
-    if(buffer_length < 0)
-    {
-        res = GlobusXIOErrorParameter("buffer_length");
-        goto param_error;
-    }
     
     if(nbytes != NULL)
     {
@@ -3370,11 +3357,6 @@ globus_xio_write(
     if(buffer == NULL)
     {
         res = GlobusXIOErrorParameter("buffer");
-        goto param_error;
-    }
-    if(buffer_length < 0)
-    {
-        res = GlobusXIOErrorParameter("buffer_length");
         goto param_error;
     }
     

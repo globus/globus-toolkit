@@ -108,7 +108,8 @@ GlobusXIODefineModule(test) =
 static void
 cancel_cb(
     globus_xio_operation_t              op,
-    void *                              user_arg)
+    void *                              user_arg,
+    globus_xio_error_type_t             error_type)
 {
     globus_l_xio_test_op_wrapper_t *    ow;
     globus_bool_t                       active;

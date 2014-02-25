@@ -611,9 +611,9 @@ main(
                 }
                 break;
             case 'b':
-                buffer_size = atoi(optarg);
+                rc = sscanf(optarg, "%zd", &buffer_size);
 
-                if (buffer_size < 0)
+                if (rc != 1)
                 {
                     usage(argv[0]);
                     exit(1);

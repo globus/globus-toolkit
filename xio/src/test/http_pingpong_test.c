@@ -546,9 +546,9 @@ main(
                 }
                 break;
             case 'b':
-                info->size = atoi(optarg);
+                sscanf(optarg, "%zd", &info->size);
 
-                if (info->size < 0)
+                if (rc != 1)
                 {
                     usage(argv[0]);
                     exit(1);

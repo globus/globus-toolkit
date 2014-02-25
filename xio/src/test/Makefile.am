@@ -1,4 +1,4 @@
-SUBDIRS = drivers
+SUBDIRS = drivers .
 
 check_PROGRAMS =                        \
 	framework_test			\

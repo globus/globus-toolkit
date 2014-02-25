@@ -1391,6 +1391,7 @@ globus_l_xio_udp_cntl(
     globus_sockaddr_t                   sock_name;
     globus_xio_system_socket_t          fd;
     globus_size_t                       len;
+    globus_socklen_t                    optlen;
     int                                 flags;
     char **                             out_string;
     globus_xio_system_socket_t *        out_fd;
@@ -1423,9 +1424,11 @@ globus_l_xio_udp_cntl(
       /* int *                          sndbuf_out */
       case GLOBUS_XIO_UDP_GET_SNDBUF:
         out_int = va_arg(ap, int *);
-        len = sizeof(int);
+
+        optlen = sizeof(int);
+
         result = globus_xio_system_socket_getsockopt(
-            fd, SOL_SOCKET, SO_SNDBUF, out_int, &len);
+            fd, SOL_SOCKET, SO_SNDBUF, out_int, &optlen);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_sockopt;
@@ -1446,9 +1449,9 @@ globus_l_xio_udp_cntl(
       /* int *                          rcvbuf_out */
       case GLOBUS_XIO_UDP_GET_RCVBUF:
         out_int = va_arg(ap, int *);
-        len = sizeof(int);
+        optlen = sizeof(int);
         result = globus_xio_system_socket_getsockopt(
-            fd, SOL_SOCKET, SO_RCVBUF, out_int, &len);
+            fd, SOL_SOCKET, SO_RCVBUF, out_int, &optlen);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_sockopt;
@@ -1464,9 +1467,9 @@ globus_l_xio_udp_cntl(
       /* char **                        contact_string_out */
       case GLOBUS_XIO_UDP_GET_CONTACT:
       case GLOBUS_XIO_GET_LOCAL_CONTACT:
-        len = sizeof(globus_sockaddr_t);
+        optlen = sizeof(globus_sockaddr_t);
         result = globus_xio_system_socket_getsockname(
-            fd, (struct sockaddr *) &sock_name, &len);
+            fd, (struct sockaddr *) &sock_name, &optlen);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_sockopt;
