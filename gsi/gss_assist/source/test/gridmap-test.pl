@@ -16,3 +16,4 @@ if (exists $ENV{VALGRIND})
 }
 
 system("$valgrind $test_prog");
+exit($? >> 8);

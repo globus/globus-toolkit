@@ -41,6 +41,7 @@ static char *                           secondary_username[] =
     "doeJohn"
 };
 static char *                           wrong_username = "notJohn";
+static const char *                     gridmap_dir;
 
 struct gridmap_lookup_result
 {
@@ -95,7 +96,7 @@ create_contexts(void)
 
         if (GSS_ERROR(init_maj_stat))
         {
-            fprintf(stderr, "Error initialzing conext\n");
+            fprintf(stderr, "# Error initialzing conext\n");
             return 1;
         }
 
@@ -122,7 +123,7 @@ create_contexts(void)
 
         if (GSS_ERROR(maj_stat))
         {
-            fprintf(stderr, "Error accepting context\n");
+            fprintf(stderr, "# Error accepting context\n");
             return 2;
         }
     }
@@ -142,19 +143,22 @@ int gridmap_bad_params_test(void)
     char *                              globusid = "globusid";
     char *                              userid = "userid";
     int                                 rc;
+    char *                              gridmap;
+    
+    gridmap = globus_common_create_string("%s/%s", gridmap_dir, "grid-mapfile");
 
-    rc = setenv("GRIDMAP", "grid-mapfile", 1);
+    rc = setenv("GRIDMAP", gridmap, 1);
 
     if (rc != 0)
     {
-        fprintf(stderr, "Error setting GRIDMAP location\n");
+        fprintf(stderr, "# Error setting GRIDMAP location\n");
         goto out;
     }
 
     rc = globus_gss_assist_gridmap(NULL, &userid);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_gridmap with null globusid\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_gridmap with null globusid\n");
         rc = 1;
         goto out;
     }
@@ -162,13 +166,14 @@ int gridmap_bad_params_test(void)
     rc = globus_gss_assist_gridmap(globusid, NULL);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_gridmap with null userid\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_gridmap with null userid\n");
         rc = 1;
         goto out;
     }
     rc = 0;
 
 out:
+    free(gridmap);
     return rc;
 }
 /* gridmap_bad_params_test() */
@@ -179,19 +184,22 @@ userok_bad_params_test(void)
     char *                              globusid = "globusid";
     char *                              userid = "userid";
     int                                 rc;
+    char *                              gridmap;
+    
+    gridmap = globus_common_create_string("%s/%s", gridmap_dir, "grid-mapfile");
 
-    rc = setenv("GRIDMAP", "grid-mapfile", 1);
+    rc = setenv("GRIDMAP", gridmap, 1);
 
     if (rc != 0)
     {
-        fprintf(stderr, "Error setting GRIDMAP location\n");
+        fprintf(stderr, "# Error setting GRIDMAP location\n");
         goto out;
     }
 
     rc = globus_gss_assist_userok(NULL, userid);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_userok with null globusid\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_userok with null globusid\n");
         rc = 1;
         goto out;
     }
@@ -199,13 +207,14 @@ userok_bad_params_test(void)
     rc = globus_gss_assist_userok(globusid, NULL);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_userok with null userid\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_userok with null userid\n");
         rc = 1;
         goto out;
     }
     rc = 0;
 
 out:
+    free(gridmap);
     return rc;
 }
 /* userok_bad_params_test() */
@@ -216,19 +225,22 @@ map_local_user_bad_params_test(void)
     char *                              globusid;
     char *                              userid = "joe";
     int                                 rc;
+    char *                              gridmap;
+    
+    gridmap = globus_common_create_string("%s/%s", gridmap_dir, "grid-mapfile");
 
-    rc = setenv("GRIDMAP", "grid-mapfile", 1);
+    rc = setenv("GRIDMAP", gridmap, 1);
 
     if (rc != 0)
     {
-        fprintf(stderr, "Error setting GRIDMAP location\n");
+        fprintf(stderr, "# Error setting GRIDMAP location\n");
         goto out;
     }
 
     rc = globus_gss_assist_map_local_user(userid, NULL);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_map_local_user with null globusidp\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_map_local_user with null globusidp\n");
         rc = 1;
         goto out;
     }
@@ -236,13 +248,14 @@ map_local_user_bad_params_test(void)
     rc = globus_gss_assist_map_local_user(NULL, &globusid);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_map_local_user with null userid\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_map_local_user with null userid\n");
         rc = 1;
         goto out;
     }
     rc = 0;
 
 out:
+    free(gridmap);
     return rc;
 }
 /* map_local_user_bad_params_test() */
@@ -254,19 +267,22 @@ lookup_all_globusid_bad_params_test(void)
     char **                             dns;
     int                                 dn_count;
     int                                 rc;
+    char *                              gridmap;
+    
+    gridmap = globus_common_create_string("%s/%s", gridmap_dir, "grid-mapfile");
 
-    rc = setenv("GRIDMAP", "grid-mapfile", 1);
+    rc = setenv("GRIDMAP", gridmap, 1);
 
     if (rc != 0)
     {
-        fprintf(stderr, "Error setting GRIDMAP location\n");
+        fprintf(stderr, "# Error setting GRIDMAP location\n");
         goto out;
     }
 
     rc = globus_gss_assist_lookup_all_globusid(NULL, &dns, &dn_count);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_lookup_all_globusid with null username\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_lookup_all_globusid with null username\n");
         rc = 1;
         goto out;
     }
@@ -274,7 +290,7 @@ lookup_all_globusid_bad_params_test(void)
     rc = globus_gss_assist_lookup_all_globusid(username, NULL, &dn_count);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_lookup_all_globusid with null dns\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_lookup_all_globusid with null dns\n");
         rc = 2;
         goto out;
     }
@@ -282,13 +298,14 @@ lookup_all_globusid_bad_params_test(void)
     rc = globus_gss_assist_lookup_all_globusid(username, &dns, NULL);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_lookup_all_globusid with null dn_count\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_lookup_all_globusid with null dn_count\n");
         rc = 3;
         goto out;
     }
     rc = 0;
 
 out:
+    free(gridmap);
     return rc;
 }
 /* lookup_all_globusid_bad_params_test() */
@@ -301,19 +318,23 @@ map_and_authorize_bad_params_test(void)
     char *                              desired_identity = "id";
     char *                              identity_buffer = "id";
     unsigned int                        identity_buffer_length = 2;
+    char *                              gridmap;
+    
+    gridmap = globus_common_create_string("%s/%s", gridmap_dir, "grid-mapfile");
 
-    rc = setenv("GRIDMAP", "grid-mapfile", 1);
+
+    rc = setenv("GRIDMAP", gridmap, 1);
 
     if (rc != 0)
     {
-        fprintf(stderr, "Error setting GRIDMAP location\n");
+        fprintf(stderr, "# Error setting GRIDMAP location\n");
         goto out;
     }
 
     rc = globus_gss_assist_map_and_authorize(GSS_C_NO_CONTEXT, service, desired_identity, identity_buffer, identity_buffer_length);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_map_and_authorize with null context\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_map_and_authorize with null context\n");
         rc = 1;
         goto out;
     }
@@ -321,7 +342,7 @@ map_and_authorize_bad_params_test(void)
     rc = globus_gss_assist_map_and_authorize(accept_ctx, NULL, desired_identity, identity_buffer, identity_buffer_length);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_map_and_authorize with null service\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_map_and_authorize with null service\n");
         rc = 2;
         goto out;
     }
@@ -329,7 +350,7 @@ map_and_authorize_bad_params_test(void)
     rc = globus_gss_assist_map_and_authorize(accept_ctx, service, NULL, identity_buffer, identity_buffer_length);
     if (rc == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Unexpected success: globus_gss_assist_map_and_authorize with null desired_identity\n");
+        fprintf(stderr, "# Unexpected success: globus_gss_assist_map_and_authorize with null desired_identity\n");
         rc = 3;
         goto out;
     }
@@ -337,6 +358,7 @@ map_and_authorize_bad_params_test(void)
     rc = 0;
 
 out:
+    free(gridmap);
     return rc;
 }
 /* map_and_authorize_bad_params_test() */
@@ -356,13 +378,17 @@ gridmap_test(void)
     int                                 i;
     int                                 failed;
     int                                 rc;
+    char *                              gridmap;
+    
 
     for (i = 0, failed = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = setenv("GRIDMAP", tests[i].gridmap, 1);
+        gridmap = globus_common_create_string(
+                "%s/%s", gridmap_dir, tests[i].gridmap);
+        rc = setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
-            fprintf(stderr, "Error setting GRIDMAP location\n");
+            fprintf(stderr, "# Error setting GRIDMAP location\n");
             failed++;
             continue;
         }
@@ -370,21 +396,24 @@ gridmap_test(void)
         rc = globus_gss_assist_gridmap(tests[i].dn, &username);
         if (rc != 0 && tests[i].success)
         {
-            fprintf(stderr, "globus_gss_assist_gridmap unexpectedly failed [lookup %s in %s]\n", tests[i].dn, tests[i].gridmap);
+            fprintf(stderr, "# globus_gss_assist_gridmap unexpectedly failed [lookup %s in %s]\n", tests[i].dn, tests[i].gridmap);
             failed++;
+            free(gridmap);
             continue;
         }
         else if (rc == 0 && !tests[i].success)
         {
-            fprintf(stderr, "globus_gss_assist_gridmap unexpectedly succeeded [lookup %s in %s]\n", tests[i].dn, tests[i].gridmap);
+            fprintf(stderr, "# globus_gss_assist_gridmap unexpectedly succeeded [lookup %s in %s]\n", tests[i].dn, tests[i].gridmap);
             failed++;
+            free(gridmap);
             continue;
         }
         else if (rc == 0 && strcmp(tests[i].username, username) != 0)
         {
-            fprintf(stderr, "globus_gss_assist_gridmap mapped to wrong name [lookup %s in %s]\nexpected \"%s\" got \"%s\"", tests[i].dn, tests[i].gridmap,
+            fprintf(stderr, "# globus_gss_assist_gridmap mapped to wrong name [lookup %s in %s]\nexpected \"%s\" got \"%s\"", tests[i].dn, tests[i].gridmap,
             username, tests[i].username);
             failed++;
+            free(gridmap);
             continue;
 
         }
@@ -393,6 +422,7 @@ gridmap_test(void)
             free(username);
             username = NULL;
         }
+        free(gridmap);
     }
 
     return failed;
@@ -426,27 +456,35 @@ userok_test(void)
 
     for (i = 0, failed = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = setenv("GRIDMAP", tests[i].gridmap, 1);
+        char *                          gridmap;
+
+        gridmap = globus_common_create_string(
+                "%s/%s", gridmap_dir, tests[i].gridmap);
+        rc = setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
-            fprintf(stderr, "Error setting GRIDMAP location\n");
+            fprintf(stderr, "# Error setting GRIDMAP location\n");
             failed++;
+            free(gridmap);
             continue;
         }
 
         rc = globus_gss_assist_userok(tests[i].dn, tests[i].username);
         if (rc != 0 && tests[i].success)
         {
-            fprintf(stderr, "globus_gss_assist_userok unexpectedly failed [userok %s for %s in %s]\n", tests[i].username, tests[i].dn, tests[i].gridmap);
+            fprintf(stderr, "# globus_gss_assist_userok unexpectedly failed [userok %s for %s in %s]\n", tests[i].username, tests[i].dn, tests[i].gridmap);
             failed++;
+            free(gridmap);
             continue;
         }
         else if (rc == 0 && !tests[i].success)
         {
-            fprintf(stderr, "globus_gss_assist_userok unexpectedly succeeded [userok %s for %s in %s]\n", tests[i].username, tests[i].dn, tests[i].gridmap);
+            fprintf(stderr, "# globus_gss_assist_userok unexpectedly succeeded [userok %s for %s in %s]\n", tests[i].username, tests[i].dn, tests[i].gridmap);
             failed++;
+            free(gridmap);
             continue;
         }
+        free(gridmap);
     }
 
     return failed;
@@ -477,31 +515,39 @@ map_local_user_test(void)
 
     for (i = 0, failed = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = setenv("GRIDMAP", tests[i].gridmap, 1);
+        char *                          gridmap;
+
+        gridmap = globus_common_create_string(
+                "%s/%s", gridmap_dir, tests[i].gridmap);
+        rc = setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
-            fprintf(stderr, "Error setting GRIDMAP location\n");
+            fprintf(stderr, "# Error setting GRIDMAP location\n");
             failed++;
+            free(gridmap);
             continue;
         }
 
         rc = globus_gss_assist_map_local_user(tests[i].username, &dn);
         if (rc != 0 && tests[i].success)
         {
-            fprintf(stderr, "globus_gss_assist_map_local_user unexpectedly failed [map %s in %s]\n", tests[i].username, tests[i].gridmap);
+            fprintf(stderr, "# globus_gss_assist_map_local_user unexpectedly failed [map %s in %s]\n", tests[i].username, tests[i].gridmap);
             failed++;
+            free(gridmap);
             continue;
         }
         else if (rc == 0 && !tests[i].success)
         {
-            fprintf(stderr, "globus_gss_assist_map_local_user unexpectedly succeeded [map %s in %s]\n", tests[i].username, tests[i].gridmap);
+            fprintf(stderr, "# globus_gss_assist_map_local_user unexpectedly succeeded [map %s in %s]\n", tests[i].username, tests[i].gridmap);
             failed++;
+            free(gridmap);
             continue;
         }
         else if (rc == 0 && strcmp(tests[i].dn, dn) != 0)
         {
-            fprintf(stderr, "globus_gss_assist_map_local_user mapped %s to %s using %s [expected %s]\n", tests[i].username, dn, tests[i].gridmap, tests[i].dn);
+            fprintf(stderr, "# globus_gss_assist_map_local_user mapped %s to %s using %s [expected %s]\n", tests[i].username, dn, tests[i].gridmap, tests[i].dn);
             failed++;
+            free(gridmap);
             continue;
         }
         if (dn != NULL)
@@ -509,6 +555,7 @@ map_local_user_test(void)
             free(dn);
             dn = NULL;
         }
+        free(gridmap);
     }
 
     return failed;
@@ -548,11 +595,16 @@ lookup_all_globusid_test(void)
 
     for (i = 0, failed = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = setenv("GRIDMAP", tests[i].gridmap, 1);
+        char *                          gridmap;
+
+        gridmap = globus_common_create_string(
+                "%s/%s", gridmap_dir, tests[i].gridmap);
+        rc = setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
-            fprintf(stderr, "Error setting GRIDMAP location\n");
+            fprintf(stderr, "# Error setting GRIDMAP location\n");
             failed++;
+            free(gridmap);
             continue;
         }
         if (dns != NULL)
@@ -567,14 +619,16 @@ lookup_all_globusid_test(void)
                 &dn_count);
         if (result != GLOBUS_SUCCESS && tests[i].success)
         {
-            fprintf(stderr, "globus_gss_assist_lookup_all_globusid unexpectedly failed [map %s in %s]\n", tests[i].username, tests[i].gridmap);
+            fprintf(stderr, "# globus_gss_assist_lookup_all_globusid unexpectedly failed [map %s in %s]\n", tests[i].username, tests[i].gridmap);
             failed++;
+            free(gridmap);
             continue;
         }
         else if (result == GLOBUS_SUCCESS && !tests[i].success)
         {
-            fprintf(stderr, "globus_gss_assist_lookup_all_globusid unexpectedly succeeded [map %s in %s]\n", tests[i].username, tests[i].gridmap);
+            fprintf(stderr, "# globus_gss_assist_lookup_all_globusid unexpectedly succeeded [map %s in %s]\n", tests[i].username, tests[i].gridmap);
             failed++;
+            free(gridmap);
             continue;
         }
         else if (result == GLOBUS_SUCCESS)
@@ -583,24 +637,27 @@ lookup_all_globusid_test(void)
                 tests[i].test_dn2 != NULL &&
                 dn_count != 2)
             {
-                fprintf(stderr, "globus_gss_assist_lookup_all_globusid returned %d DNS, expected 2 when mapping %s in %s\n", dn_count, tests[i].username, tests[i].gridmap);
+                fprintf(stderr, "# globus_gss_assist_lookup_all_globusid returned %d DNS, expected 2 when mapping %s in %s\n", dn_count, tests[i].username, tests[i].gridmap);
                 failed++;
+                free(gridmap);
                 continue;
             }
             else if (tests[i].test_dn1 != NULL &&
                      tests[i].test_dn2 == NULL &&
                      dn_count != 1)
             {
-                fprintf(stderr, "globus_gss_assist_lookup_all_globusid returned %d DNS, expected 1 when mapping %s in %s\n", dn_count, tests[i].username, tests[i].gridmap);
+                fprintf(stderr, "# globus_gss_assist_lookup_all_globusid returned %d DNS, expected 1 when mapping %s in %s\n", dn_count, tests[i].username, tests[i].gridmap);
                 failed++;
+                free(gridmap);
                 continue;
             }
             else if (tests[i].test_dn1 == NULL &&
                     tests[i].test_dn2 == NULL &&
                     dn_count != 0)
             {
-                fprintf(stderr, "globus_gss_assist_lookup_all_globusid returned %d DNS, expected 0\n", dn_count);
+                fprintf(stderr, "# globus_gss_assist_lookup_all_globusid returned %d DNS, expected 0\n", dn_count);
                 failed++;
+                free(gridmap);
                 continue;
             }
             if (tests[i].test_dn1 != NULL && tests[i].test_dn2 != NULL)
@@ -611,13 +668,15 @@ lookup_all_globusid_test(void)
                       strcmp(tests[i].test_dn2, dns[0]) == 0))
                 {
                     /* Good */
+                    free(gridmap);
                     continue;
                 }
                 else
                 {
-                    fprintf(stderr, "expected globus_gss_assist_lookup_all_globusid to return %s and %s, got %s and %s\n",
+                    fprintf(stderr, "# expected globus_gss_assist_lookup_all_globusid to return %s and %s, got %s and %s\n",
                             tests[i].test_dn1, test_dn2, dns[0], dns[1]);
                     failed++;
+                    free(gridmap);
                     continue;
                 }
             }
@@ -626,15 +685,17 @@ lookup_all_globusid_test(void)
                 if (strcmp(tests[i].test_dn1, dns[0]) == 0)
                 {
                     /* Good */
+                    free(gridmap);
                     continue;
                 }
                 else
                 {
-                    fprintf(stderr, "expected globus_gss_assist_lookup_all_globusid to return %s, got %s",
+                    fprintf(stderr, "# expected globus_gss_assist_lookup_all_globusid to return %s, got %s",
                             tests[i].test_dn1, dns[0]);
                 }
             }
         }
+        free(gridmap);
     }
     if (dns != NULL)
     {
@@ -649,16 +710,19 @@ lookup_all_globusid_test(void)
 int
 long_line_test(void)
 {
-    char *                              gridmap = "gridmap.long_line";
     int                                 i;
     int                                 failed;
     int                                 rc;
     char                                localname[7];
+    char *                              gridmap;
+
+    gridmap = globus_common_create_string(
+            "%s/%s", gridmap_dir, "gridmap.long_line");
 
     rc = setenv("GRIDMAP", gridmap, 1);
     if (rc != 0)
     {
-        fprintf(stderr, "Error setting GRIDMAP location\n");
+        fprintf(stderr, "# Error setting GRIDMAP location\n");
         failed++;
         goto setenv_failed;
     }
@@ -670,7 +734,7 @@ long_line_test(void)
         rc = globus_gss_assist_userok(test_dn, localname);
         if (rc != 0)
         {
-            fprintf(stderr, "globus_gss_assist_userok unexpectedly failed [userok %s for %s in %s]\n", localname, test_dn, gridmap);
+            fprintf(stderr, "# globus_gss_assist_userok unexpectedly failed [userok %s for %s in %s]\n", localname, test_dn, gridmap);
             failed++;
             continue;
         }
@@ -682,12 +746,13 @@ long_line_test(void)
         rc = globus_gss_assist_userok(test_dn, localname);
         if (rc == 0)
         {
-            fprintf(stderr, "globus_gss_assist_userok unexpectedly succeeded [userok %s for %s in %s]\n", localname, test_dn, gridmap);
+            fprintf(stderr, "# globus_gss_assist_userok unexpectedly succeeded [userok %s for %s in %s]\n", localname, test_dn, gridmap);
             failed++;
             continue;
         }
     }
 setenv_failed:
+    free(gridmap);
     return failed;
 }
 /* userok_test() */
@@ -695,15 +760,18 @@ setenv_failed:
 int
 blank_line_test(void)
 {
-    char *                              gridmap = "gridmap.blank_line";
     int                                 i;
     int                                 failed = 0;
     int                                 rc;
+    char *                              gridmap;
+
+    gridmap = globus_common_create_string(
+            "%s/%s", gridmap_dir, "gridmap.blank_line");
 
     rc = setenv("GRIDMAP", gridmap, 1);
     if (rc != 0)
     {
-        fprintf(stderr, "Error setting GRIDMAP location\n");
+        fprintf(stderr, "# Error setting GRIDMAP location\n");
         failed++;
         goto setenv_failed;
     }
@@ -711,11 +779,12 @@ blank_line_test(void)
     rc = globus_gss_assist_userok(test_dn, "jdoe");
     if (rc != 0)
     {
-        fprintf(stderr, "globus_gss_assist_userok unexpectedly failed [userok %s for %s in %s]\n", "jdoe", test_dn, gridmap);
+        fprintf(stderr, "# globus_gss_assist_userok unexpectedly failed [userok %s for %s in %s]\n", "jdoe", test_dn, gridmap);
         failed++;
     }
 
 setenv_failed:
+    free(gridmap);
     return failed;
 }
 /* blank_line_test() */
@@ -741,6 +810,11 @@ int main(int argc, char * argv[])
     int                                 failed = 0;
     int                                 rc;
 
+    gridmap_dir = getenv("TEST_GRIDMAP_DIR");
+    if (gridmap_dir == NULL)
+    {
+        gridmap_dir = ".";
+    }
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     if (rc != 0)
     {

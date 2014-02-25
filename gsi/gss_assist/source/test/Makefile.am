@@ -35,7 +35,8 @@ TESTS = $(check_SCRIPTS)
 TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
-    X509_CERT_DIR=$(abs_builddir);
+    X509_CERT_DIR=$(abs_builddir) \
+    TEST_GRIDMAP_DIR=$(srcdir);
 
 testcred.key:
 	umask 077 ; openssl genrsa -out $@ 1024

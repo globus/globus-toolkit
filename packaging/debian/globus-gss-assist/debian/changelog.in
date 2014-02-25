@@ -1,3 +1,15 @@
+globus-gss-assist (10.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Test fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 25 Feb 2014 07:25:52 -0500
+
+globus-gss-assist (10.5-2+gt6.@distro@) @distro@; urgency=low
+
+  * Test fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 25 Feb 2014 07:25:29 -0500
+
 globus-gss-assist (10.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Eliminate script initializer use

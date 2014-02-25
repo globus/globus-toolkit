@@ -1,6 +1,6 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	10.5
+Version:	10.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
@@ -160,6 +160,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Feb 25 2014 Globus Toolkit <support@globus.org> - 10.6-1
+- Test fixes
+
 * Thu Feb 20 2014 Globus Toolkit <support@globus.org> - 10.5-1
 - Eliminate script initializer use
 

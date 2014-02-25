@@ -14,6 +14,14 @@ if (exists $ENV{VALGRIND})
     }
 }
 
-$ENV{GRIDMAP} = "grid-mapfile";
+if ($ENV{TEST_GRIDMAP_DIR})
+{
+    $ENV{GRIDMAP} = "$ENV{TEST_GRIDMAP_DIR}/grid-mapfile";
+}
+else
+{
+    $ENV{GRIDMAP} = "grid-mapfile";
+}
 
 system("$valgrind $test_prog");
+exit($? >> 8)
