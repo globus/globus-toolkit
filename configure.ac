@@ -18,6 +18,7 @@ AC_COMPILE_IFELSE(
         HAVE_LTDL=0])
 
 AM_CONDITIONAL([HAVE_LTDL], [test "$HAVE_LTDL" = 1])
+AC_SUBST([LTDL_VERSION], LT_PACKAGE_VERSION)
 
 expand_libtool_var()
 {
@@ -301,6 +302,14 @@ GT_TARGETS_OSX_PKG="GT_TARGETS_OSX_PKG_MACRO"
 GT_PKGCONFIG_DIRS="GT_PKGCONFIG_DIRS_MACRO"
 GT_DOXYGEN_SUBDIRS="GT_DOXYGEN_SUBDIRS_MACRO"
 GT_ALL_STAMPS="GT_ALL_STAMPS_MACRO"
+dnl These could live in Makefile.am if automake could handle these variable
+dnl names
+m4_append([TARGETS_MACRO], [
+ltdl-$LTDL_VERSION.pkg_SUBDIR = libltdl
+ltdl-$LTDL_VERSION.pkg_PACKAGE_NAME = libltdl
+ltdl-$LTDL_VERSION.pkg_PACKAGE_VERSION = $LTDL_VERSION
+])
+
 TARGETS="TARGETS_MACRO m4_foreach([bundle],
     m4_split(GT_BUNDLES_MACRO),
     [

@@ -72,6 +72,7 @@ $(GT_TARGETS_OSX_PKG):
 		fi; \
 	    fi; \
 	done
+	@find osxdest/$@ \( -name '*.la' -o -name '*.a' \) -a -exec rm {} +
 	@pkgbuild --root $(abs_builddir)/osxdest/$@ \
             --version $($@_PACKAGE_VERSION) \
 	    --identifier org.globus.$($@_PACKAGE_NAME) \
@@ -79,6 +80,10 @@ $(GT_TARGETS_OSX_PKG):
 	    $($($@_PACKAGE_NAME)_macosx_scripts) \
             $@
 
+if !HAVE_LTDL
+LTDL_MAC_PKG = ltdl-@LTDL_VERSION@.pkg
+GT_TARGETS_OSX_PKG += $(LTDL_MAC_PKG)
+endif
 globus_common_macosx_scripts = --scripts osx/scripts
 $(globus_common-osx-pkg): osx/scripts/postinstall
 

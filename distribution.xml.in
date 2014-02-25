@@ -4,15 +4,26 @@
     <organization>org.globus</organization>
     <domains enable_localSystem="true" enable_currentUserHome="true"/>
     <options customize="allow" require-scripts="true" />
-    <license file="GLOBUS_LICENSE" mime-type="text/plain" />
+    <license file="@abs_top_srcdir@/GLOBUS_LICENSE" mime-type="text/plain" />
 
     @MAC_INSTALLER_PKG_REFS@
+    <pkg-ref id="org.globus.prereq.libltdl" version="@LTDL_VERSION@">ltdl-@LTDL_VERSION@.pkg</pkg-ref>
 
     <choices-outline>
+        <line choice="org.globus.package.libltdl"/>
         @MAC_INSTALLER_CHOICE_LINES@
     </choices-outline>
 
     <!-- Define each choice above -->
+    <choice id="org.globus.package.libltdl"
+        visible="false"
+        enabled="false"
+        title="libltdl"
+        description="ltdl"
+        selected="true"
+        start_selected="true">
+        <pkg-ref id="org.globus.prereq.libltdl"/>
+    </choice>
     <choice
         id="org.globus.bundle.ccommonlibs"
         visible="true"
