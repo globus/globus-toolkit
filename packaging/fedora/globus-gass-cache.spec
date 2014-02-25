@@ -1,6 +1,6 @@
 Name:		globus-gass-cache
 %global _name %(tr - _ <<< %{name})
-Version:	9.0
+Version:	9.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Cache
 
@@ -15,6 +15,12 @@ Requires:	globus-common%{?_isa} >= 14
 
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	openssl-devel
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Globus Gass Cache Development Files
@@ -66,7 +72,7 @@ Globus Gass Cache Documentation Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -111,6 +117,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Tue Feb 25 2014 Globus Toolkit <support@globus.org> - 9.1-1
+- Packaging fixes
+
 * Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 9.0-1
 - Repackage for GT6 without GPT
 
