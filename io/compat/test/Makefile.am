@@ -35,12 +35,16 @@ TESTS = $(check_SCRIPTS)
 TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
-    X509_CERT_DIR=$(abs_builddir);
+    X509_CERT_DIR=$(abs_builddir); \
+    for ext in .la .so .dylib .shlib .a; do \
+        driver="$(GLOBUS_XIO_GSI_DRIVER_LIBDIR)/libglobus_xio_gsi_driver$${ext}";  \
+        if test -f "$${driver}"; then \
+            export GLOBUS_XIO_GSI_DRIVER_LOAD="-dlopen $${driver}"; \
+            break; \
+        fi; \
+    done ;
 
-if GLOBUS_XIO_GSI_DRIVER_FOUND
-GLOBUS_XIO_GSI_DRIVER_LOAD = -dlopen $(GLOBUS_XIO_GSI_DRIVER)
-endif
-LOG_COMPILER = $(LIBTOOL) --mode=execute $(GLOBUS_XIO_GSI_DRIVER_LOAD) \
+LOG_COMPILER = $(LIBTOOL) --mode=execute $${GLOBUS_XIO_GSI_DRIVER_LOAD} \
     $(srcdir)/globus-io-test-wrapper
 
 EXTRA_DIST = \
