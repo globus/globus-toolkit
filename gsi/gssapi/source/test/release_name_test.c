@@ -248,18 +248,31 @@ release_x509(void)
         "test.example.org.pem",             /* dnsName */
         "star.example.org.pem"              /* Wildcard dNSName */
     };
+    char *                              test_cert_dir = getenv("TEST_CERT_DIR");
+
+    if (test_cert_dir == NULL)
+    {
+        test_cert_dir = ".";
+    }
 
     for (i = 0; i < SIZEOF_ARRAY(test_certs); i++)
     {
+        char * test_cert;
+        
+        test_cert = globus_common_create_string("%s/%s",
+            test_cert_dir, test_certs[i]);
+
         result = globus_gsi_cred_handle_init(&cred_handle, NULL);
         if (result != GLOBUS_SUCCESS)
         {
             globus_gsi_gssapi_test_print_result(stderr, result);
+            free(test_cert);
 
             return 2;
         }
 
-        result = globus_gsi_cred_read_cert(cred_handle, test_certs[i]);
+        result = globus_gsi_cred_read_cert(cred_handle, test_cert);
+        free(test_cert);
         if (result != GLOBUS_SUCCESS)
         {
             globus_gsi_gssapi_test_print_result(stderr, result);
