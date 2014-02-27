@@ -1512,7 +1512,7 @@ globus_l_ftp_control_auth_read_cb(
 
             rc=globus_ftp_control_command_init(
                 &command,
-                cc_handle->read_buffer,
+                (char *) cc_handle->read_buffer,
                 &cc_handle->auth_info);
 
             if(rc != GLOBUS_SUCCESS)
@@ -1596,7 +1596,7 @@ globus_l_ftp_control_auth_read_cb(
 
                 rc=globus_io_register_write(
                     handle,
-                    reply,
+                    (globus_byte_t *) reply,
                     (globus_size_t) strlen(reply),
                     globus_l_ftp_control_auth_write_cb,
                     arg);
@@ -1639,7 +1639,7 @@ globus_l_ftp_control_auth_read_cb(
                 }
                 
                 rc=globus_i_ftp_control_radix_decode(
-                    command.adat.string_arg, 
+                    (globus_byte_t *) command.adat.string_arg, 
                     recv_tok.value, 
                     &length);
                 if(rc != GLOBUS_SUCCESS)
@@ -1758,7 +1758,7 @@ globus_l_ftp_control_auth_read_cb(
                             length=send_tok.length;
                             
                             rc = globus_i_ftp_control_radix_encode(send_tok.value, 
-                                                                   &(reply[9]), 
+                                                                   (globus_byte_t *) &(reply[9]), 
                                                                    &length);
                             gss_release_buffer(&min_stat, &send_tok);
                             
@@ -1775,7 +1775,7 @@ globus_l_ftp_control_auth_read_cb(
                         
                         rc=globus_io_register_write(
                             handle,
-                            reply,
+                            (globus_byte_t *) reply,
                             (globus_size_t) strlen(reply),
                             globus_l_ftp_control_auth_write_cb,
                             arg);
@@ -1839,7 +1839,7 @@ globus_l_ftp_control_auth_read_cb(
                     length=send_tok.length;
                     
                     rc = globus_i_ftp_control_radix_encode(send_tok.value, 
-                                                           &(reply[9]), 
+                                                           (globus_byte_t *) &(reply[9]), 
                                                            &length);
                     gss_release_buffer(&min_stat, &send_tok);
 
@@ -1855,7 +1855,7 @@ globus_l_ftp_control_auth_read_cb(
                     
                     rc=globus_io_register_write(
                         handle,
-                        reply,
+                        (globus_byte_t *) reply,
                         (globus_size_t) length+11,
                         globus_l_ftp_control_auth_write_cb,
                         arg);
@@ -1999,7 +1999,7 @@ globus_l_ftp_control_auth_read_cb(
 
                     rc=globus_io_register_write(
                         handle,
-                        reply,
+                        (globus_byte_t *) reply,
                         (globus_size_t) strlen(reply),
                         globus_l_ftp_control_auth_write_cb,
                         arg);
@@ -2111,7 +2111,7 @@ globus_l_ftp_control_auth_read_cb(
                     
                     rc=globus_io_register_write(
                         handle,
-                        reply,
+                        (globus_byte_t *) reply,
                         (globus_size_t) strlen(reply),
                         globus_l_ftp_control_auth_write_cb,
                         arg);
@@ -2448,7 +2448,7 @@ globus_l_ftp_control_read_command_cb(
 
             rc=globus_ftp_control_command_init(
                 &command,
-                &(cc_handle->read_buffer[last]),
+                (char *) &(cc_handle->read_buffer[last]),
                 &cc_handle->auth_info);
 
             if(rc != GLOBUS_SUCCESS)
@@ -2679,7 +2679,7 @@ globus_ftp_control_send_response(
 
     if(handle->cc_handle.auth_info.authenticated == GLOBUS_TRUE)
     {
-        rc=globus_i_ftp_control_encode_reply(buf,(char **) (void *) &encoded_buf,
+        rc=globus_i_ftp_control_encode_reply((char *) buf,(char **) (void *) &encoded_buf,
                                              &(handle->cc_handle.auth_info));
 
         globus_libc_free(buf);
@@ -2746,7 +2746,7 @@ globus_ftp_control_send_response(
     {
         rc = globus_io_register_write(&(handle->cc_handle.io_handle),
                                       buf,
-                                      (globus_size_t) strlen(buf),
+                                      (globus_size_t) strlen((char *) buf),
                                       globus_l_ftp_control_send_response_cb,
                                       (void *) handle);
     
@@ -3047,8 +3047,8 @@ globus_i_ftp_control_decode_command(
     }
         
     rc=globus_i_ftp_control_radix_decode(
-        tmp,
-        *decoded_cmd,&length);
+        (globus_byte_t *) tmp,
+        (globus_byte_t *) *decoded_cmd,&length);
         
     if(rc != GLOBUS_SUCCESS)
     {
@@ -3203,7 +3203,8 @@ globus_i_ftp_control_encode_reply(
     
     length = out_buf.length;
     globus_i_ftp_control_radix_encode(
-        out_buf.value,&((*encoded_reply)[4]), 
+        out_buf.value,
+        (globus_byte_t *) &((*encoded_reply)[4]), 
         &length);
 
     (*encoded_reply)[length+4]='\r';

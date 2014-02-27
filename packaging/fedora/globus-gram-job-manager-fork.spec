@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
-Version:	2.0
+Version:	2.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
@@ -35,6 +35,12 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package setup-poll
 Summary:	Globus Toolkit - Fork Job Manager Setup Files
@@ -93,7 +99,7 @@ Fork Job Manager Setup using SEG to monitor job state
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 export MPIEXEC=no
@@ -203,6 +209,9 @@ fi
 %{_mandir}/man8/globus-fork-starter.8.gz
 
 %changelog
+* Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 2.1-1
+- Packaging fixes, Warning Cleanup
+
 * Wed Jan 22 2014 Globus Toolkit <support@globus.org> - 2.0-1
 - Repackage for GT6 without GPT
 

@@ -22,7 +22,7 @@
 #include <netinet/tcp.h>
 #endif
 
-#ifdef WIN32
+#if defined(_WIN32) && !defined(EADDRINUSE)
 #define EADDRINUSE              WSAEADDRINUSE
 #endif
 

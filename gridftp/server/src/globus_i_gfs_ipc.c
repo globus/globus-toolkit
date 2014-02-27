@@ -3623,8 +3623,7 @@ globus_l_gfs_ipc_unpack_event_request(
     GlobusGFSName(globus_l_gfs_ipc_unpack_event_request);
     GlobusGFSDebugEnter();
     
-    event_info = (globus_gfs_event_info_t *) 
-        globus_calloc(1, sizeof(globus_gfs_event_info_t));
+    event_info = globus_calloc(1, sizeof(globus_gfs_event_info_t));
 
     GFSDecodeUInt32P(buffer, len, event_info->event_arg);
     GFSDecodeUInt32(buffer, len, event_info->type);
@@ -3778,7 +3777,7 @@ globus_i_gfs_ipc_query_op_info(
     void *                              data;
     
     data = globus_hashtable_remove(
-        &globus_l_ipc_op_info_table, (void *) op_info_id);
+        &globus_l_ipc_op_info_table, (void *) (intptr_t) op_info_id);
        
     return data;   
 }
@@ -3883,7 +3882,8 @@ globus_l_gfs_ipc_request_read_body_cb(
                             char *      new;
 
                             ent = globus_hashtable_remove(
-                                &globus_l_ipc_op_info_table, request->op_info_id);
+                                &globus_l_ipc_op_info_table, 
+                                (void *) (intptr_t) request->op_info_id);
                             
                             if(ent)
                             {
@@ -3896,14 +3896,14 @@ globus_l_gfs_ipc_request_read_body_cb(
                                 
                                 globus_hashtable_insert(
                                     &globus_l_ipc_op_info_table,
-                                    request->op_info_id,
+                                    (void *) (intptr_t) request->op_info_id,
                                     remote_ip);
                             }
                             else
                             {
                                 globus_hashtable_insert(
                                     &globus_l_ipc_op_info_table,
-                                    request->op_info_id,
+                                    (void *) (intptr_t) request->op_info_id,
                                     remote_ip);
                             }
                         }
@@ -4234,7 +4234,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
                     }
                     request->info_struct = stat_info;
                     globus_hashtable_insert(
-                        &ipc->reply_table, (void *)request->id, request);
+                        &ipc->reply_table, (void *) (intptr_t) request->id, request);
                     break;
 
                 case GLOBUS_GFS_OP_RECV:
@@ -4247,7 +4247,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
                     }
                     request->info_struct = trans_info;
                     globus_hashtable_insert(
-                        &ipc->reply_table, (void *)request->id, request);
+                        &ipc->reply_table, (void *) (intptr_t) request->id, request);
                     break;
 
                 case GLOBUS_GFS_OP_SEND:
@@ -4260,7 +4260,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
                     }
                     request->info_struct = trans_info;
                     globus_hashtable_insert(
-                        &ipc->reply_table, (void *)request->id, request);
+                        &ipc->reply_table, (void *) (intptr_t) request->id, request);
                     break;
 
                 case GLOBUS_GFS_OP_LIST:
@@ -4273,7 +4273,8 @@ globus_l_gfs_ipc_reply_read_body_cb(
                     }
                     request->info_struct = trans_info;
                     globus_hashtable_insert(
-                        &ipc->reply_table, (void *)request->id, request);
+                        &ipc->reply_table, (void *) (intptr_t) request->id,
+                        request);
                     break;
 
                 case GLOBUS_GFS_OP_COMMAND:
@@ -4286,7 +4287,8 @@ globus_l_gfs_ipc_reply_read_body_cb(
                     }
                     request->info_struct = cmd_info;
                     globus_hashtable_insert(
-                        &ipc->reply_table, (void *)request->id, request);
+                        &ipc->reply_table, (void *) (intptr_t) request->id,
+                        request);
                     break;
 
                 case GLOBUS_GFS_OP_PASSIVE:
@@ -4298,7 +4300,8 @@ globus_l_gfs_ipc_reply_read_body_cb(
                     }
                     request->info_struct = data_info;
                     globus_hashtable_insert(
-                        &ipc->reply_table, (void *)request->id, request);
+                        &ipc->reply_table, (void *) (intptr_t) request->id,
+                        request);
                     break;
 
                 case GLOBUS_GFS_OP_ACTIVE:
@@ -4310,7 +4313,8 @@ globus_l_gfs_ipc_reply_read_body_cb(
                     }
                     request->info_struct = data_info;
                     globus_hashtable_insert(
-                        &ipc->reply_table, (void *)request->id, request);
+                        &ipc->reply_table, (void *) (intptr_t) request->id,
+                        request);
                     break;
 
                 case GLOBUS_GFS_OP_DESTROY:
@@ -5010,7 +5014,7 @@ globus_gfs_ipc_reply_finished(
                 request = (globus_gfs_ipc_request_t *) 
                     globus_hashtable_remove(
                     &ipc->reply_table,
-                    (void *)reply->id);
+                    (void *) (intptr_t) reply->id);
                 if(request == NULL)
                 {
                     res = GlobusGFSErrorParameter("request");
@@ -5024,7 +5028,7 @@ globus_gfs_ipc_reply_finished(
                 request = (globus_gfs_ipc_request_t *) 
                     globus_hashtable_lookup(
                     &ipc->reply_table,
-                    (void *)reply->id);
+                    (void *) (intptr_t) reply->id);
                 if(request == NULL)
                 {
                     res = GlobusGFSErrorParameter("request");
@@ -5163,7 +5167,7 @@ globus_gfs_ipc_reply_finished(
                 case GLOBUS_GFS_OP_PASSIVE:
                     GFSEncodeUInt32(
                         buffer, ipc->buffer_size, ptr, 
-                        reply->info.data.data_arg);
+                        (intptr_t) reply->info.data.data_arg);
                     GFSEncodeUInt32(
                         buffer, ipc->buffer_size, ptr, 
                         reply->info.data.cs_count);
@@ -5182,7 +5186,7 @@ globus_gfs_ipc_reply_finished(
                 case GLOBUS_GFS_OP_ACTIVE:
                     GFSEncodeUInt32(
                         buffer, ipc->buffer_size, ptr, 
-                        reply->info.data.data_arg);
+                        (intptr_t) reply->info.data.data_arg);
                     ch = (char) reply->info.data.bi_directional;
                     GFSEncodeChar(buffer, ipc->buffer_size, ptr, ch);
                     break;
@@ -5331,7 +5335,7 @@ globus_gfs_ipc_reply_event(
                     ipc->transfer_complete = GLOBUS_FALSE;
                     ipc->outstanding_event_arg = reply->event_arg;
                     GFSEncodeUInt32(
-                        buffer, ipc->buffer_size, ptr, reply->event_arg);
+                        buffer, ipc->buffer_size, ptr, (intptr_t) reply->event_arg);
                     GFSEncodeUInt32(
                         buffer, ipc->buffer_size, ptr, reply->event_mask);
                     GFSEncodeUInt32(
@@ -5346,7 +5350,7 @@ globus_gfs_ipc_reply_event(
                     
                 case GLOBUS_GFS_EVENT_DISCONNECTED:
                     GFSEncodeUInt32(
-                        buffer, ipc->buffer_size, ptr, reply->data_arg);
+                        buffer, ipc->buffer_size, ptr, (intptr_t) reply->data_arg);
                     break;
                     
                 case GLOBUS_GFS_EVENT_BYTES_RECVD:
@@ -5746,7 +5750,7 @@ globus_l_gfs_ipc_transfer_pack(
     GFSEncodeUInt64(buffer, ipc->buffer_size, ptr, trans_info->partial_offset);
     GFSEncodeUInt64(buffer, ipc->buffer_size, ptr, trans_info->partial_length);
     GFSEncodeUInt64(buffer, ipc->buffer_size, ptr, trans_info->alloc_size);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->data_arg);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, (intptr_t) trans_info->data_arg);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->eof_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->stripe_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_count);
@@ -6160,7 +6164,7 @@ globus_gfs_ipc_request_transfer_event(
 
         /* pack body */
         GFSEncodeUInt32(
-            buffer, ipc->buffer_size, ptr, event_info->event_arg);
+            buffer, ipc->buffer_size, ptr, (intptr_t) event_info->event_arg);
         GFSEncodeUInt32(
             buffer, ipc->buffer_size, ptr, event_info->type);
 
@@ -6606,7 +6610,7 @@ globus_gfs_ipc_request_data_destroy(
         GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
 
         /* pack body */
-        GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_arg);
+        GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, (intptr_t) data_arg);
             
         msg_size = ptr - buffer;
         /* now that we know size, add it in */

@@ -70,10 +70,11 @@ TESTS = \
         stdio-update-test \
         version-test
 
-AM_TESTS_ENVIRONMENT = export \
+TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
-    X509_CERT_DIR=$(abs_builddir);
+    X509_CERT_DIR=$(abs_builddir) \
+    PATH=$(GLOBUS_GRAM_JOB_MANAGER_PATH):$(PROXY_UTILS_PATH):$${PATH};
 LOG_COMPILER = $(srcdir)/gram-test-wrapper
 
 EXTRA_DIST = $(Scripts) $(Data) run-tests.pl.in \

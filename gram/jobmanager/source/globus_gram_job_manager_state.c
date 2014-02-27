@@ -1256,7 +1256,7 @@ globus_gram_job_manager_reply(
          * No response context, the gatekeeper will supply HTTP response line,
          * so we skip the first line of the framed reply
          */
-        reply = strstr(sendbuf, "\r\n");
+        reply = (globus_byte_t *) strstr((char *) sendbuf, "\r\n");
 
         reply += 2;
         sendsize -= (reply - sendbuf);

@@ -40,7 +40,7 @@ globus_gfs_acl_test_init(
     globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
-    globus_gfs_acl_action_t             fail_str;
+    int                                 fail_str;
     GlobusGFSName(globus_gfs_acl_test_init);
     GlobusGFSDebugEnter();
 
@@ -76,7 +76,7 @@ globus_gfs_acl_test_authorize(
     globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
-    globus_gfs_acl_action_t             fail_str;
+    int                                 fail_str;
     GlobusGFSName(globus_gfs_acl_test_authorize);
     GlobusGFSDebugEnter();
 

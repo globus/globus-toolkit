@@ -29,6 +29,12 @@
 static const gss_OID_desc               ggvm_cert_chain_oid =
     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x08"}; 
 
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define GT_D2I_ARG_CAST (unsigned char **)
+#else
+#define GT_D2I_ARG_CAST
+#endif
+
 static
 globus_result_t
 ggvm_load_cert_from_file(
@@ -111,7 +117,7 @@ ggvm_extract_cert_from_chain(
     ptr = cert_chain_buffers->elements[cert_index].value;
     cert = d2i_X509(
         NULL, 
-        &ptr, 
+        GT_D2I_ARG_CAST &ptr, 
         cert_chain_buffers->elements[cert_index].length);
     if(cert == NULL)
     {

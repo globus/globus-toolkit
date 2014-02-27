@@ -2,6 +2,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
+path=@sbindir@:@bindir@
 
 Name: globus-gram-job-manager
 Description: Globus Toolkit - GRAM Jobmanager

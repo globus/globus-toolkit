@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_client],[13.1],[http://jira.globus.org])
+AC_INIT([globus_gram_client],[13.2],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [10])
@@ -18,6 +18,11 @@ PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
 TEST_PACKAGE_DEPS="globus-gass-server-ez"
 PKG_CHECK_MODULES([TEST_PACKAGE_DEP], $TEST_PACKAGE_DEPS)
+GLOBUS_GRAM_JOB_MANAGER_PATH=$(pkg-config --variable=path globus-gram-job-manager)
+AC_SUBST([GLOBUS_GRAM_JOB_MANAGER_PATH])
+
+PROXY_UTILS_PATH=$(pkg-config --variable=path globus-proxy-utils)
+AC_SUBST([PROXY_UTILS_PATH])
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 

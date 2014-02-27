@@ -35,20 +35,13 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
-
-globus_source ${libexecdir}/globus-sh-tools.sh
+PATH=${sbindir}:${bindir}:${PATH}
 
 short_usage="globus-personal-gatekeeper [-help] [-start] [-list] [-killall] ..."
 
 long_usage ()
 {
-    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+    cat >&2 <<EOF
 
 Syntax: globus-personal-gatekeeper [options]
 
@@ -98,7 +91,32 @@ EOF
 }
 
 
-globus_source ${libexecdir}/globus-args-parser-header $*
+globus_args_short_usage()
+{
+    cat 1>&2 <<EOF
+
+Syntax : ${short_usage}
+
+Use -help to display full usage.
+
+EOF
+}
+
+globus_args_option_error()
+{
+    cat 1>&2 <<EOF
+
+ERROR: option $1 : $2
+EOF
+    globus_args_short_usage
+    exit 1
+}
+
+globus_args_unrecognized_option()
+{
+    globus_args_option_error $1 "unrecognized option"
+    exit 1
+}	
 
 debug=:
 
@@ -110,7 +128,7 @@ verify_setup ()
     if test "$1" != 'kill'; then
         hours="-hours 1"
     fi
-    ${bindir}/grid-proxy-info -exists $hours
+    grid-proxy-info -exists $hours
     
     if [ $? -ne 0 ]; then
         echo "ERROR: no valid proxy, or lifetime to small (one hour)" >&2
@@ -140,23 +158,17 @@ killem ()
     found=false
     foundit=false
 
-    if test -z "${GLOBUS_SH_WHOAMI}"; then
-	if test -z "${LOGNAME}"; then
-	    user=$USER
-	else
-	    user=$LOGNAME
-	fi
-    else
-	user=`${GLOBUS_SH_WHOAMI}`
-    fi
+    user=${LOGNAME}
+    user=${user:-$USER}
+    user=${user:-`whoami`}
     for dir in `ls -1d ${file_location}/${file_prefix}* 2> /dev/null`
     do
         if [ -n "${dir}" ]; then
             found=true
             if [ -r ${dir}/gatekeeper.log ]; then
-                contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
-                    ${GLOBUS_SH_TAIL-tail} -1 |
-                    ${GLOBUS_SH_SED-sed} 's/^.*GRAM contact: //'`"
+                contact="`grep 'GRAM contact' ${dir}/gatekeeper.log |
+                    tail -1 |
+                    sed 's/^.*GRAM contact: //'`"
                 ${debug} "found contact= [${contact}]"
             fi
 
@@ -174,13 +186,13 @@ killem ()
 
                 echo "killing gatekeeper: \"${contact}\""
                 if [ -r ${dir}/gatekeeper.pid ]; then
-                    pid=`${GLOBUS_SH_CAT-cat} ${dir}/gatekeeper.pid`
-                    ${GLOBUS_SH_KILL-kill} -9 $pid &
+                    pid=`cat ${dir}/gatekeeper.pid`
+                    kill -9 $pid &
                 fi
                 cd
 		statedir="${TMPDIR:-/tmp}/${user}/`echo \"${dir}\" | sed -e 's|.*/||'`"
                 if [ -r ${dir}/jobmanager.conf ]; then
-                    host=`${bindir}/globus-hostname | ${GLOBUS_SH_CUT-cut} -d. -f1`
+                    host=`globus_hostname | cut -d. -f1`
                     args=`cat "${dir}/jobmanager.conf"`
                     service_tag="`eval get_jm_arg_value -service-tag $args`"
                     if [ "$service_tag" = "" ]; then
@@ -199,14 +211,14 @@ killem ()
                     if [ "$jmpid" != "" ]; then
                         kill $jmpid
                     fi
-                    [ -e "$pidfile" ] && ${GLOBUS_SH_RM-rm} "$pidfile"
-                    [ -e "$sockfile" ] && ${GLOBUS_SH_RM-rm} "$sockfile"
-                    [ -e "$lockfile" ] && ${GLOBUS_SH_RM-rm} "$lockfile"
-                    [ -e "$credfile" ] && ${GLOBUS_SH_RM-rm} "$credfile"
+                    [ -e "$pidfile" ] && rm "$pidfile"
+                    [ -e "$sockfile" ] && rm "$sockfile"
+                    [ -e "$lockfile" ] && rm "$lockfile"
+                    [ -e "$credfile" ] && rm "$credfile"
                 fi
 
-                ${GLOBUS_SH_RM-rm} -rf ${dir} &
-		${GLOBUS_SH_RM-rm} -rf "${statedir}" &
+                rm -rf ${dir} &
+		rm -rf "${statedir}" &
             fi
         fi
     done
@@ -229,9 +241,9 @@ findit ()
         if [ -n "${dir}" ]; then
             found=true
             if [ -r ${dir}/gatekeeper.log ]; then
-                contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
-                    ${GLOBUS_SH_TAIL-tail} -1 |
-                    ${GLOBUS_SH_SED-sed} 's/^.*GRAM contact: //'`"
+                contact="`grep 'GRAM contact' ${dir}/gatekeeper.log |
+                    tail -1 |
+                    sed 's/^.*GRAM contact: //'`"
 
                 if [ "$1" = "$contact" ]; then
                     foundit=true
@@ -256,11 +268,11 @@ listem ()
         if [ -n "${dir}" ]; then
             found=true
             if [ -r ${dir}/gatekeeper.log ]; then
-                contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
-                    ${GLOBUS_SH_TAIL-tail} -1 |
-                    ${GLOBUS_SH_SED-sed} 's/^.*GRAM contact: //'`"
+                contact="`grep 'GRAM contact' ${dir}/gatekeeper.log |
+                    tail -1 |
+                    sed 's/^.*GRAM contact: //'`"
                 ${debug} "found contact= [${contact}]"
-                ${bindir}/globusrun -a -r "${contact}" 1>/dev/null 2>/dev/null
+                globusrun -a -r "${contact}" 1>/dev/null 2>/dev/null
                 if [ $? -eq 0 ]; then
                     echo "${contact}"
                 else
@@ -287,8 +299,8 @@ listem ()
 cleanup ()
 {
     if [ ${docleanup} = true ]; then
-        ${GLOBUS_SH_RM-rm} -rf ${scratch}
-        ${GLOBUS_SH_RM-rm} -rf ${statefiledir}
+        rm -rf ${scratch}
+        rm -rf ${statefiledir}
         docleanup=false
     fi
 }
@@ -299,7 +311,22 @@ jmtype=fork
 port=
 docleanup=false
 startnew=false
-host=`${bindir}/globus-hostname| ${GLOBUS_SH_CUT-cut} -d. -f1`
+
+globus_hostname()
+{
+    if command -v globus-hostname; then
+        host=`globus-hostname| cut -d. -f1`
+    fi
+
+    if [ "${host}" = "" ] && command -v hostname > /dev/null 2>&1; then
+        host=`hostname`
+    fi
+
+    if [ "${host}" = "" ] && command -v uname > /dev/null 2>&1; then
+        host=`uname -n`
+    fi
+}
+
 file_location="$HOME/.globus/."
 file_prefix="gram.$host"
 log=never
@@ -311,6 +338,36 @@ valgrind=0
 
 while [ -n "$1" ]; do
     case "$1" in
+    -help | -h | --help | -usage | --usage)
+        long_usage
+        exit 0
+        ;;
+    -version|--version)
+        if [ "X${PROGRAM_NAME}" != "X" -a \
+              "X${PROGRAM_VERSION}" != "X" ]; then
+            echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+        elif [ "X${PACKAGE}" != "X" -a \
+               "X${VERSION}" != "X" ]; then
+            echo "${PACKAGE}: ${VERSION}"
+        else
+            echo "No version information available."
+        fi
+        exit 0
+        ;;
+    -versions|--versions)
+        __AT__=@
+        if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+             -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+             "X${DIRT_TIMESTAMP}" != "X${__AT__}DIRT_TIMESTAMP${__AT__}" -a \
+             "X${DIRT_BRANCH_ID}" != "X${__AT__}DIRT_BRANCH_ID${__AT__}" ];
+        then
+            echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+        else
+            echo "No DiRT information available."
+        fi
+        exit 0;
+        ;;
+    
     -kill)
     verify_setup kill
     killem "$2"
@@ -388,15 +445,8 @@ if [ $startnew != true ]; then
     exit 1
 fi
 
-if test -z "${GLOBUS_SH_WHOAMI}"; then
-    if test -z "${LOGNAME}"; then
-        user=$USER
-    else
-        user=$LOGNAME
-    fi
-else
-    user=`${GLOBUS_SH_WHOAMI}`
-fi
+user=${LOGNAME:-$USER}
+user=${user:-`id -un`}
 
 if test -z "${user}"; then
     echo "ERROR: globus-personal-gatekeeper: can not determine user name" >&2
@@ -412,8 +462,8 @@ trap cleanup 0 1 2 3 6 9 12 15
 
 
 docleanup=true
-${GLOBUS_SH_MKDIR-mkdir} -p ${scratch}
-${GLOBUS_SH_MKDIR-mkdir} -p "${statefiledir}"
+mkdir -p ${scratch}
+mkdir -p "${statefiledir}"
 
 if test $? != 0; then
     echo "Error making state file dir (${statefiledir})." 1>&2
@@ -421,12 +471,12 @@ if test $? != 0; then
 fi
 
 for file in gridmap services.conf gatekeeper.conf jobmanager.conf gatekeeper.log ; do
-    ${GLOBUS_SH_RM-rm} -f ${scratch}/${file}
+    rm -f ${scratch}/${file}
 done
 
-subject=`${bindir}/grid-proxy-info -identity`
+subject=`grid-proxy-info -identity`
 
-${GLOBUS_SH_CAT-cat} > ${scratch}/gridmap <<EOF
+cat > ${scratch}/gridmap <<EOF
 "${subject}" ${user}
 EOF
 
@@ -436,16 +486,18 @@ if [ $valgrind -eq 1 ]; then
         echo "Error: can't find valgrind" 1>&2
         exit 1
     fi
-${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager <<EOF
-stderr_log,local_cred - $valgrind valgrind --leak-check=full --leak-resolution=high --show-reachable=yes --log-file=${HOME}/valgrind.%p.log ${sbindir}/globus-job-manager -conf ${scratch}/jobmanager.conf
+job_manager_path="$(command -v globus-job-manager)"
+
+cat > ${scratch}/jobmanager <<EOF
+stderr_log,local_cred - $valgrind valgrind --leak-check=full --leak-resolution=high --show-reachable=yes --log-file=${HOME}/valgrind.%p.log ${job_manager_path} -conf ${scratch}/jobmanager.conf
 EOF
 else
-${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager <<EOF
-stderr_log,local_cred - ${sbindir}/globus-job-manager globus-job-manager -conf ${scratch}/jobmanager.conf
+cat > ${scratch}/jobmanager <<EOF
+stderr_log,local_cred - ${job_manager_path} globus-job-manager -conf ${scratch}/jobmanager.conf
 EOF
 fi
 
-${GLOBUS_SH_CAT-cat} > ${scratch}/gatekeeper.conf <<EOF
+cat > ${scratch}/gatekeeper.conf <<EOF
 -gridmap ${scratch}/gridmap
 -home ${GLOBUS_LOCATION:-@exec_prefix@}
 -e ${sbindir}
@@ -463,11 +515,17 @@ if [ ! -z "${acctfile}" ]; then
 fi
 
 
-host_info=`${libexecdir}/config.guess`
-host_cputype=`echo $host_info | ${GLOBUS_SH_AWK-awk} -F'-' '{print $1}'`
-host_manufacturer=`echo $host_info | ${GLOBUS_SH_AWK-awk} -F'-' '{print $2}'`
-host_osname=`${GLOBUS_SH_UNAME-uname} -s`
-host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
+if [ -x ${libexecdir}/config.guess ]; then
+    host_info=`${libexecdir}/config.guess`
+
+    host_cputype=`echo $host_info | awk -F'-' '{print $1}'`
+    host_manufacturer=`echo $host_info | awk -F'-' '{print $2}'`
+else
+    host_cputype=`uname -m`
+    host_manufacturer=unknown
+fi
+host_osname=`uname -s`
+host_osversion=`uname -r`
 if [ "$logdir" != "" ]; then
     log_line=`echo "-stdio-log \"$logdir\""`
     log_levels="-log-levels 'FATAL|ERROR'"
@@ -479,7 +537,7 @@ else
   globus_toolkit_version="Unknown"
 fi
 
-${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
+cat > ${scratch}/jobmanager.conf <<EOF
 -home ${GLOBUS_LOCATION:-@exec_prefix@}
 -type ${jmtype}
 -globus-gatekeeper-subject "${subject}"
@@ -499,7 +557,7 @@ EOF
 
 
 if [ ! -z "${auditdir}" ]; then
-    ${GLOBUS_SH_CAT-cat} >> ${scratch}/jobmanager.conf <<EOF
+    cat >> ${scratch}/jobmanager.conf <<EOF
 -audit-directory ${auditdir}
 EOF
 fi
@@ -512,7 +570,7 @@ echo "-globus-job-dir ${TMPDIR:-/tmp}" >> ${scratch}/jobmanager.conf
 
 docleanup=false
  
-${sbindir}/globus-gatekeeper -c ${scratch}/gatekeeper.conf -test \
+globus-gatekeeper -c ${scratch}/gatekeeper.conf -test \
     1>/dev/null 2>/dev/null
 x=$?
 if [ $x -ne 0 ]; then
@@ -521,7 +579,7 @@ if [ $x -ne 0 ]; then
     exit 1
 fi
 
-${sbindir}/globus-gatekeeper -c ${scratch}/gatekeeper.conf < /dev/null > /dev/null 2>/dev/null  &
+globus-gatekeeper -c ${scratch}/gatekeeper.conf < /dev/null > /dev/null 2>/dev/null  &
 x=$?
 pid=$!
 if [ $x -ne 0 ]; then
@@ -535,10 +593,10 @@ contact=
 shallexit=
 count=0
 while [ ${count} -lt 10 -a -z "${contact}" -a -z "${shallexit}" ]; do
-    ${GLOBUS_SH_SLEEP-sleep} 1
-    contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${scratch}/gatekeeper.log`"
-    shallexit="`${GLOBUS_SH_GREP-grep} FAILED_PLEASE_EXIT ${scratch}/gatekeeper.log`"
-    count=`${GLOBUS_SH_EXPR-expr} ${count} + 1`
+    sleep 1
+    contact="`grep 'GRAM contact' ${scratch}/gatekeeper.log`"
+    shallexit="`grep FAILED_PLEASE_EXIT ${scratch}/gatekeeper.log`"
+    count=$((${count} + 1))
 done
 
 if [ ${count} -ge 10 -o -n "${shallexit}" ]; then
@@ -546,14 +604,14 @@ if [ ${count} -ge 10 -o -n "${shallexit}" ]; then
     docleanup=true
     exit 1
 else
-    host=`echo "$contact" | ${GLOBUS_SH_CUT-cut} -d: -f5`
-    port=`echo "$contact" | ${GLOBUS_SH_CUT-cut} -d: -f6`
+    host=`echo "$contact" | cut -d: -f5`
+    port=`echo "$contact" | cut -d: -f6`
 
-    ${GLOBUS_SH_CAT-cat} >> ${scratch}/jobmanager.conf <<EOF
+    cat >> ${scratch}/jobmanager.conf <<EOF
 -globus-gatekeeper-host $host
 -globus-gatekeeper-port $port
 EOF
-    echo "$contact" | ${GLOBUS_SH_SED-sed} -e 's/^.*GRAM contact:/GRAM contact:/'
+    echo "$contact" | sed -e 's/^.*GRAM contact:/GRAM contact:/'
 fi
 
 

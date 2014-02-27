@@ -30,6 +30,10 @@
 #include "globus_gsi_system_config_constants.h"
 #include "globus_gsi_system_config.h"
 
+#define _GSSL(s) globus_common_i18n_get_string(\
+			GLOBUS_GSI_SYSCONFIG_MODULE,\
+			s)
+
 /* DEBUG MACROS */
 
 extern int                              globus_i_gsi_sysconfig_debug_level;

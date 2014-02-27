@@ -374,7 +374,7 @@ GSS_CALLCONV gss_seal(
     if(GSS_ERROR(major_status))
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, &local_minor_status,
+            minor_status, local_minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_ENCRYPTING_MESSAGE);
     }
 

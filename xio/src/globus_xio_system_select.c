@@ -1406,7 +1406,7 @@ globus_l_xio_system_poll(
 
             while(!globus_list_empty(globus_l_xio_system_canceled_reads))
             {
-                fd = (int) globus_list_remove(
+                fd = (int) (intptr_t) globus_list_remove(
                     &globus_l_xio_system_canceled_reads,
                     globus_l_xio_system_canceled_reads);
                 
@@ -1423,7 +1423,7 @@ globus_l_xio_system_poll(
 
             while(!globus_list_empty(globus_l_xio_system_canceled_writes))
             {
-                fd = (int) globus_list_remove(
+                fd = (int) (intptr_t) globus_list_remove(
                     &globus_l_xio_system_canceled_writes,
                     globus_l_xio_system_canceled_writes);
                 

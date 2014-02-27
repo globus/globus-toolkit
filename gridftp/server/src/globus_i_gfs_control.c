@@ -3587,7 +3587,7 @@ globus_i_gfs_control_end_421(
 
             globus_gridftp_server_control_421_end(
                 instance->server_handle,
-                msg);
+                (char *) msg);
         }
     }
     globus_mutex_unlock(&globus_l_gfs_control_mutex);

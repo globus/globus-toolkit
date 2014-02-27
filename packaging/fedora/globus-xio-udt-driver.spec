@@ -24,6 +24,12 @@ BuildRequires:  udt-devel >= 4
 BuildRequires:  udt >= 4
 BuildRequires:  glib2-devel >= 2.32
 BuildRequires:  libnice-devel >= 0.0.12
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO UDT Driver Development Files
@@ -57,7 +63,7 @@ Globus XIO UDT Driver Development Files
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 

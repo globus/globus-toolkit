@@ -28,16 +28,9 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
+PATH="${bindir}:${sbindir}:${libexecdir}:${PATH}"
 
-globus_source ${libexecdir}/globus-sh-tools.sh
-
-PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
+PROGRAM_NAME="${0##*/}"
 PROGRAM_VERSION='@VERSION@'
 PACKAGE='@PACKAGE@'
 VERSION='@VERSION@'
@@ -48,7 +41,7 @@ short_usage="$PROGRAM_NAME [-help] [-version] [-f N] [-tail N] [-r <resource man
 
 long_usage()
 {
-    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+    cat >&2 <<EOF
 
 Usage: ${short_usage}
 
@@ -71,13 +64,6 @@ Usage: ${short_usage}
 EOF
 }
 
-globus_source ${libexecdir}/globus-args-parser-header $*
-
-if [ $# -lt 1 ]; then
-    globus_args_short_usage
-    exit 1
-fi
-
 outopt=
 erropt=
 jobid=
@@ -85,26 +71,87 @@ resource=
 tailopt=no
 followopt=no
 
+
+globus_args_short_usage()
+{
+    cat 1>&2 <<EOF
+
+Syntax : ${short_usage}
+
+Use -help to display full usage.
+
+EOF
+}
+
+globus_args_option_error()
+{
+    cat 1>&2 <<EOF
+
+ERROR: option $1 : $2
+EOF
+    globus_args_short_usage
+    exit 1
+}
+
+globus_args_unrecognized_option()
+{
+    globus_args_option_error $1 "unrecognized option"
+    exit 1
+}	
+if [ $# -lt 1 ]; then
+    globus_args_short_usage
+    exit 1
+fi
+
 while [ -n "$1" ]; do
     case "$1" in
-	-out)
+        -help | -h | --help | -usage | --usage)
+            long_usage
+            exit 0
+            ;;
+        -version|--version)
+            if [ "X${PROGRAM_NAME}" != "X" -a \
+                  "X${PROGRAM_VERSION}" != "X" ]; then
+                echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+            elif [ "X${PACKAGE}" != "X" -a \
+                   "X${VERSION}" != "X" ]; then
+                echo "${PACKAGE}: ${VERSION}"
+            else
+                echo "No version information available."
+            fi
+            exit 0
+            ;;
+        -versions|--versions)
+            AT=@
+            if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+                 -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+                 "X${DIRT_TIMESTAMP}" != "X${AT}DIRT_TIMESTAMP${AT}" -a \
+                 "X${DIRT_BRANCH_ID}" != "X${AT}DIRT_BRANCH_ID${AT}" ];
+            then
+                echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+            else
+                echo "No DiRT information available."
+            fi
+            exit 0;
+            ;;
+	-out | --out)
 	    outopt=true
 	    ;;
-	-err)
+	-err | --err)
 	    erropt=true
 	    ;;
-	-r|-resource)
+	-r | -resource | --resource)
 	    if [ -z "$2" ]; then
 		globus_args_option_error "$1" "need a resource contact string"
 	    fi
 	    resource="$2"
 	    shift
 	    ;;
-	-t|-tail|-f|-follow)
+	-t|-tail|-f|-follow|--tail|--follow)
 	    if [ -z "$2" ]; then
 		globus_args_option_error "$1" "need an integer argument"
 	    fi
-	    if ${GLOBUS_SH_EXPR-expr} "$2" + 1 - 1 \> 0 \
+	    if expr "$2" + 1 - 1 \> 0 \
 		1>/dev/null 2>/dev/null
 	    then
                 case "$1" in
@@ -163,11 +210,11 @@ if [ "${followopt}" != no -a "${tailopt}" != no ]; then
 fi
 
 if [ -z "${resource}" ]; then
-    resource=`echo ${jobid} | ${GLOBUS_SH_AWK-awk} -F: '{print $2}' | \
-	${GLOBUS_SH_SED-sed} 's|/||g'`
+    resource=`echo ${jobid} | awk -F: '{print $2}' | \
+	sed 's|/||g'`
 fi
 
-${bindir}/grid-proxy-info -exists
+grid-proxy-info -exists
 if [ $? -ne 0 ]; then
     echo "" >&2
     echo "ERROR: unable to locate a valid proxy" >&2
@@ -178,25 +225,25 @@ fi
 case ${tailopt}:${followopt} in
     no:no)
 	# cat the file, exit
-	command="\${GLOBUS_SH_CAT-cat}"
+	command="\cat"
 	;;
     *:no)
 	# tail the file
-	command="\${GLOBUS_SH_TAIL-tail} -${tailopt}"
+	command="\tail -${tailopt}"
 	;;
     no:*)
 	# follow the file
-	command="\${GLOBUS_SH_TAIL-tail} -${followopt}f"
+	command="\tail -${followopt}f"
 	;;
     *)
 	echo "INTERNAL ERROR: tailopt:followopt = ${tailopt}:${followopt}" >&2
 	;;
 esac
 
-tmpfile=${TMPDIR:-/tmp}/globus_job_get_output.`${GLOBUS_SH_WHOAMI-whoami}`.tmp.$$
+tmpfile=${TMPDIR:-/tmp}/globus_job_get_output.${LOGNAME}.tmp.$$
 
 # redirect stderr to file so we can see if error occurs after the fact
-${bindir}/globusrun -s -r "$resource" 2> $tmpfile \
+globusrun -s -r "$resource" 2> $tmpfile \
     "&(executable=\$(GLOBUSRUN_GASS_URL)/$bindir/globus-job-get-output-helper)
       (arguments=
             anExtraTag

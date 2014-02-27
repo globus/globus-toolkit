@@ -852,7 +852,7 @@ globus_hashtable_voidp_hash(
 {
     unsigned long                       key;
     
-    key = (unsigned long) voidp;
+    key = (unsigned long) (uintptr_t) voidp;
     
     /* swap left and right halves portably */
     return (key << ((sizeof(unsigned long) * 4)) ^ 
@@ -887,7 +887,7 @@ globus_hashtable_int_hash(
     void *                              integer,
     int                                 limit)
 {
-    return (long) integer % limit;
+    return (intptr_t) integer % limit;
 }
 
 /**

@@ -2199,14 +2199,6 @@ globus_ftp_control_data_remove_channels(
                   myname);
         return globus_error_put(err);
     }
-    if(num_channels < 0)
-    {
-        err =  globus_error_construct_string(
-                      GLOBUS_FTP_CONTROL_MODULE,
-                      GLOBUS_NULL,
-                _FCSL("number of channels must be greater than zero."));
-        return globus_error_put(err);
-    }
 
     dc_handle = &handle->dc_handle;
     GlobusFTPControlDataTestMagic(dc_handle);
@@ -2897,7 +2889,7 @@ globus_ftp_control_local_pasv(
                 unsigned short          p;
                 char *                  dataip;
                 
-                if(dataip = getenv("GLOBUS_FTP_CLIENT_DATA_IP"))
+                if((dataip = getenv("GLOBUS_FTP_CLIENT_DATA_IP")) != NULL)
                 {
                     result = globus_libc_contact_string_to_ints(
                         dataip, address->host, &address->hostlen, NULL);

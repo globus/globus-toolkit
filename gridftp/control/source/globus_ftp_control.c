@@ -263,7 +263,7 @@ globus_ftp_control_host_port_init(
     unsigned short                                port)
 {
     struct hostent                                hostent;
-    globus_byte_t                                 bs_buf[8192];
+    char                                          bs_buf[8192];
     int                                           err_no;
     char                                          hostip[30];
 

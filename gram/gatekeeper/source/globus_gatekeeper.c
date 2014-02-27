@@ -92,6 +92,12 @@ extern void unsetenv();
 #include "openssl/bio.h"
 #include "openssl/pem.h"
 
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define GT_D2I_DATA_CAST (unsigned char **)
+#else
+#define GT_D2I_DATA_CAST 
+#endif
+
 
 char *pidpath = NULL;
 static gss_OID_desc gss_ext_x509_cert_chain_oid_desc =
@@ -2022,7 +2028,7 @@ static void doit()
                                 i);
                     }
                     p = buffer_set->elements[i].value;
-                    c = d2i_X509(NULL, &p, buffer_set->elements[i].length);
+                    c = d2i_X509(NULL, GT_D2I_DATA_CAST &p, buffer_set->elements[i].length);
 
                     PEM_write_bio_X509(b, c);
 

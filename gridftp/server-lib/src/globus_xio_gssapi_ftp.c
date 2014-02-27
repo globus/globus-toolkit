@@ -213,7 +213,8 @@ static char *                           globus_l_xio_gssapi_ftp_state_names[] =
     "GSSAPI_FTP_STATE_CLIENT_SENDING_AUTH",
     "GSSAPI_FTP_STATE_CLIENT_ADAT_INIT",
     "GSSAPI_FTP_STATE_CLIENT_SENDING_ADAT",
-    "GSSAPI_FTP_STATE_OPEN"
+    "GSSAPI_FTP_STATE_OPEN",
+    "GSSAPI_FTP_STATE_OPEN_CLEAR"
 };
 
 static globus_xio_driver_t              globus_l_gssapi_telnet_driver = NULL;
@@ -665,7 +666,7 @@ globus_l_xio_gssapi_ftp_token(
     GlobusXIOGssapiftpDebugEnter();
 
     end_ptr = &in_str[length];
-    tmp_ptr = (char *)in_str;
+    tmp_ptr = in_str;
     while(tmp_ptr != end_ptr && isspace(*tmp_ptr))
     {
         tmp_ptr++;
@@ -704,7 +705,7 @@ globus_l_xio_gssapi_ftp_decode_adat(
     OM_uint32                           min_stat;
     OM_uint32                           maj_stat;
     globus_size_t                       length;
-    char *                              decoded_cmd;
+    globus_byte_t *                     decoded_cmd;
     gss_buffer_desc                     recv_tok = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc                     send_tok = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc                     subject_buf = GSS_C_EMPTY_BUFFER;
@@ -721,14 +722,14 @@ globus_l_xio_gssapi_ftp_decode_adat(
         goto err;
     }
 
-    decoded_cmd = (char *) globus_libc_malloc((length+3) * 6/8);
+    decoded_cmd = malloc((length+3) * 6/8);
     if(decoded_cmd == NULL)
     {
         res = GlobusXIOGssapiFTPAllocError();
         goto err;
     }
     res = globus_l_xio_gssapi_ftp_radix_decode(
-            wrapped_command,
+            (globus_byte_t *) wrapped_command,
             decoded_cmd,
             &length);
     if(res != GLOBUS_SUCCESS)
@@ -808,7 +809,7 @@ globus_l_xio_gssapi_ftp_decode_adat(
                 res = globus_l_xio_gssapi_ftp_radix_encode(
                         send_tok.value,
                         send_tok.length,
-                        &reply[strlen(REPLY_235_ADAT_DATA)],
+                        (globus_byte_t *) &reply[strlen(REPLY_235_ADAT_DATA)],
                         &length);
                 if(res != GLOBUS_SUCCESS)
                 {
@@ -837,7 +838,7 @@ globus_l_xio_gssapi_ftp_decode_adat(
             res = globus_l_xio_gssapi_ftp_radix_encode(
                     send_tok.value,
                     send_tok.length,
-                    &reply[strlen(REPLY_335_ADAT_DATA)],
+                    (globus_byte_t *) &reply[strlen(REPLY_335_ADAT_DATA)],
                     &length);
             if(res != GLOBUS_SUCCESS)
             {
@@ -918,7 +919,7 @@ globus_l_xio_gssapi_ftp_parse_command(
 
     len = length;
     ctr = 0;
-    tmp_ptr = globus_l_xio_gssapi_ftp_token(
+    tmp_ptr = (char *) globus_l_xio_gssapi_ftp_token(
         command, len, &start_ndx, &sub_len);
     while(tmp_ptr != NULL)
     {
@@ -943,8 +944,8 @@ globus_l_xio_gssapi_ftp_parse_command(
                 if(tmp_ptr[3] == ' ')
                 {
                     len -= 4;
-                    tmp_ptr = globus_l_xio_gssapi_ftp_token(
-                        &tmp_ptr[4], len, &start_ndx, &sub_len);
+                    tmp_ptr = (char *) globus_l_xio_gssapi_ftp_token(
+                        (globus_byte_t *) &tmp_ptr[4], len, &start_ndx, &sub_len);
                 }
                 else if(tmp_ptr[3] == '-')
                 {
@@ -967,8 +968,8 @@ globus_l_xio_gssapi_ftp_parse_command(
             tmp_ptr, sub_len);
         len -= sub_len;
         tmp_ptr += sub_len;
-        tmp_ptr = globus_l_xio_gssapi_ftp_token(
-            tmp_ptr, len, &start_ndx, &sub_len);
+        tmp_ptr = (char *) globus_l_xio_gssapi_ftp_token(
+            (globus_byte_t *) tmp_ptr, len, &start_ndx, &sub_len);
         ctr++;
         if(ctr == cmd_len)
         {
@@ -1036,7 +1037,8 @@ globus_l_xio_gssapi_ftp_unwrap(
     }
     len = in_length;
 
-    res = globus_l_xio_gssapi_ftp_radix_decode(in_buf, buf, &len);
+    res = globus_l_xio_gssapi_ftp_radix_decode(
+            (const globus_byte_t *) in_buf, buf, &len);
     if(res != GLOBUS_SUCCESS)
     {
         res = GlobusXIOGssapiFTPAllocError();
@@ -1172,7 +1174,7 @@ globus_l_xio_gssapi_ftp_wrap(
     globus_l_xio_gssapi_ftp_radix_encode(
         gss_out_buf.value,
         gss_out_buf.length,
-        &encoded_buf[4],
+        (globus_byte_t *) &encoded_buf[4],
         &gss_out_buf.length);
 
     encoded_buf[gss_out_buf.length+4]='\r';
@@ -1899,7 +1901,7 @@ globus_l_xio_gssapi_ftp_client_adat(
             }
                                                                                 
             res = globus_l_xio_gssapi_ftp_radix_decode(
-                    buffer,
+                    (const globus_byte_t *) buffer,
                     radix_buf,
                     &length);
             if(res != GLOBUS_SUCCESS)
@@ -1972,7 +1974,7 @@ globus_l_xio_gssapi_ftp_client_adat(
                 radix_buf[length+6] = '\n';
                 radix_buf[length+7] = '\0';
 
-                *out_buffer = radix_buf;
+                *out_buffer = (char *) radix_buf;
             }
 
             break; 
@@ -2641,7 +2643,8 @@ globus_l_xio_gssapi_ftp_write(
                         out_buf[3] = '-';
                         tmp_i += tmp_i2;
                     }
-                    next_ptr = strstr(tmp_ptr, "\r\n");
+                    next_ptr = (globus_byte_t *)
+                        strstr((const char *) tmp_ptr, "\r\n");
                     len = next_ptr - tmp_ptr + 2;
 
                     res = globus_l_xio_gssapi_ftp_wrap(

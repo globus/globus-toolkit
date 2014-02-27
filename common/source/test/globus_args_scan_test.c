@@ -88,19 +88,17 @@ static globus_args_option_descriptor_t option_list[]
 int
 test_hostname( char * value, void * parms, char ** error_msg )
 {
-    struct hostent    h, *hp;
-    char              buf[2048];
-    int               err;
+    struct addrinfo *                   ai = NULL;
+    int                                 rc;
 
-    err = 0;
-    hp = globus_libc_gethostbyname_r( value, &h, buf, 2048, &err );
+    rc = getaddrinfo(value, NULL, NULL, &ai);
 
-    if (hp == NULL && err == 0)
+    if (ai)
     {
-        err = HOST_NOT_FOUND;
+        freeaddrinfo(ai);
     }
 
-    return err;
+    return rc;
 }
 
 

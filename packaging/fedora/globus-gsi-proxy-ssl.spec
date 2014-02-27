@@ -1,6 +1,6 @@
 Name:		globus-gsi-proxy-ssl
 %global _name %(tr - _ <<< %{name})
-Version:	5.3
+Version:	5.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library
 
@@ -122,6 +122,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 5.4-1
+- Packaging fixes, Warning Cleanup
+
 * Tue Feb 25 2014 Globus Toolkit <support@globus.org> - 5.3-1
 - Packaging fixes
 

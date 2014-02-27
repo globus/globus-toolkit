@@ -81,7 +81,7 @@ globus_l_fault_handler(
     globus_result_t                     fault);
 
 static
-globus_result_t
+void
 globus_l_seg_sigint_handler(void * arg);
 
 static
@@ -355,7 +355,7 @@ error:
 /* main() */
 
 static
-globus_result_t
+void
 globus_l_seg_sigint_handler(void * arg)
 {
     globus_mutex_lock(&shutdown_mutex);

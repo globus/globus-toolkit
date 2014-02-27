@@ -1,6 +1,6 @@
 Name:		globus-gass-server-ez
 %global _name %(tr - _ <<< %{name})
-Version:	5.1
+Version:	5.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Server_ez
 
@@ -115,6 +115,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 5.3-1
+- Packaging fixes, Warning Cleanup
+
 * Thu Feb 20 2014 Globus Toolkit <support@globus.org> - 5.1-1
 - Packaging fixes
 

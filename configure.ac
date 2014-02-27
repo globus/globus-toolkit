@@ -8,6 +8,9 @@ LT_INIT([dlopen win32-dll])
 LTDL_INIT([recursive installable])
 AC_CONFIG_FILES([libltdl/Makefile])
 
+AM_PROG_CC_C_O
+AC_PROG_CC_C99
+
 AC_MSG_CHECKING([for need to compile ltdl])
 AC_COMPILE_IFELSE(
         [AC_LANG_PROGRAM([[int have_ltdl=HAVE_LTDL;]],
@@ -24,9 +27,13 @@ expand_libtool_var()
 {
     varname="$1"
     eval "value=\${$varname}"
-    top_build_prefix=${top_build_prefix:-$(pwd)/} \
-    top_builddir=${top_builddir:-$(pwd)} \
-    top_srcdir=$(pwd)/${top_srcdir:-${srcdir}} \
+    top_build_prefix=${top_build_prefix:-$(pwd)/}
+    top_builddir=${top_builddir:-$(pwd)}
+    if test "${value#/}" != "${value}" ; then
+        top_srcdir=$(pwd)/${top_srcdir:-${srcdir}}
+    else
+        top_srcdir=${top_srcdir:-${srcdir}}
+    fi
     eval "echo $varname=$value"
 }
 eval `expand_libtool_var LIBLTDL`

@@ -244,7 +244,7 @@ globus_gram_protocol_error_string(
 
     if (hacktable != NULL)
     {
-        str = globus_hashtable_lookup(hacktable, (void *) error_code);
+        str = globus_hashtable_lookup(hacktable, (void *) (intptr_t) error_code);
     }
 
     if (str == NULL)
@@ -379,7 +379,7 @@ globus_i_gram_protocol_error_hack_replace_message(
         return;
     }
 
-    old = globus_hashtable_remove(hacktable, (void *) errorcode);
+    old = globus_hashtable_remove(hacktable, (void *) (intptr_t) errorcode);
     if (old)
     {
         free(old);
@@ -395,7 +395,7 @@ globus_i_gram_protocol_error_hack_replace_message(
     {
         rc = globus_hashtable_insert(
                 hacktable,
-                (void *) errorcode,
+                (void *) (intptr_t) errorcode,
                 old);
 
         if (rc != GLOBUS_SUCCESS)

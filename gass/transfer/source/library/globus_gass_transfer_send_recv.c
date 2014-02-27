@@ -727,7 +727,7 @@ globus_l_gass_transfer_drain_callbacks(
     globus_gass_transfer_callback_t		callback;
     void *					callback_arg;
 
-    request = (globus_gass_transfer_request_t) arg;
+    request = (globus_gass_transfer_request_t) (intptr_t) arg;
 
     req =
 	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,

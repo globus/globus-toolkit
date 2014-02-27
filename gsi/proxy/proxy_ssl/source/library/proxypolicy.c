@@ -22,8 +22,6 @@
 
 #include "proxypolicy.h"
 
-#if OPENSSL_VERSION_NUMBER < 0x10000000L
-
 #if OPENSSL_VERSION_NUMBER < 0x0090801fL
 #define gt_i2d_cast (int (*)())
 #define gt_d2i_cast (char *(*)())
@@ -35,6 +33,8 @@
 #define gt_create_cast (void *(*)(void))
 #define gt_destroy_cast (void (*)(void *))
 #endif
+
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
 
 /**
  * @ingroup proxypolicy

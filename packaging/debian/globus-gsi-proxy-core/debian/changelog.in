@@ -1,3 +1,9 @@
+globus-gsi-proxy-core (7.3-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes, Warning Cleanup
+
+ -- Globus Toolkit <support@globus.org>  Thu, 27 Feb 2014 16:48:42 -0500
+
 globus-gsi-proxy-core (7.2-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes

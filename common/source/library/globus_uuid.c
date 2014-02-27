@@ -17,12 +17,9 @@
 #include "config.h"
 #include "globus_common_include.h"
 #include "globus_libc.h"
-#ifdef WIN32
+#ifdef _WIN32
 #include <iptypes.h>
 #include <iphlpapi.h>
-typedef unsigned __int64 uint64_t;
-typedef unsigned short uint16_t;
-typedef unsigned char uint8_t;
 #endif
 #include "globus_uuid.h"
 #include "globus_hashtable.h"
@@ -71,7 +68,7 @@ globus_l_uuid_get_mac(
 #if defined SIOCGIFHWADDR
     /* linux systems */
     
-    struct ifreq                        interface;
+    struct ifreq                        interfacereq;
     int                                 sock;
     
     if((sock = socket(PF_INET, SOCK_DGRAM, 0)) < 0)
@@ -80,14 +77,14 @@ globus_l_uuid_get_mac(
     }
     
     /* should probably try multiple interfaces here */
-    memset(&interface, 0, sizeof(interface));
-    strcpy(interface.ifr_name, "eth0");
-    if(ioctl(sock, SIOCGIFHWADDR, &interface) < 0)
+    memset(&interfacereq, 0, sizeof(interfacereq));
+    strcpy(interfacereq.ifr_name, "eth0");
+    if(ioctl(sock, SIOCGIFHWADDR, &interfacereq) < 0)
     {
         close(sock);
         return GLOBUS_FAILURE;
     }
-    memcpy(mac, interface.ifr_addr.sa_data, 6);
+    memcpy(mac, interfacereq.ifr_addr.sa_data, 6);
     close(sock);
     return GLOBUS_SUCCESS;
     
@@ -123,7 +120,7 @@ globus_l_uuid_get_mac(
 #elif defined HAVE_IFADDRS_H
     /* other bsd systems */
     
-    struct ifaddrs *                    interface;
+    struct ifaddrs *                    iaddr;
     struct ifaddrs *                    save;
     int                                 rc = GLOBUS_FAILURE;
 
@@ -132,13 +129,13 @@ globus_l_uuid_get_mac(
         return GLOBUS_FAILURE;
     }
 
-    for(interface = save; interface; interface = interface->ifa_next)
+    for(iaddr = save; iaddr; iaddr = iaddr->ifa_next)
     {
-        if(interface->ifa_addr && interface->ifa_addr->sa_family == AF_LINK)
+        if(iaddr->ifa_addr && iaddr->ifa_addr->sa_family == AF_LINK)
         {
             struct sockaddr_dl *        sdl;
         
-            sdl = (struct sockaddr_dl *)interface->ifa_addr;
+            sdl = (struct sockaddr_dl *)iaddr->ifa_addr;
             if(sdl->sdl_alen == 6)
             {
                 memcpy(mac, sdl->sdl_data + sdl->sdl_nlen, 6);

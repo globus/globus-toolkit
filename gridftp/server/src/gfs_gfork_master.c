@@ -192,7 +192,7 @@ gfs_l_gfork_timeout(
         ent_buf->timeout_count--;
         if(ent_buf->timeout_count < 0)
         {
-            buffer = ent_buf->buffer;
+            buffer = (char *) ent_buf->buffer;
             gfs_l_gfork_log(
                 GLOBUS_SUCCESS, 2, "Backend registration for %s expired\n",
                 &buffer[GF_DYN_CS_NDX]);
@@ -1167,7 +1167,7 @@ gfs_l_gfork_mem_try(
         entry->tcp_buffer_mem = mem_given / 3;
     
         globus_hashtable_insert(
-            &gfs_l_memlimit_table, (void *) entry->pid, entry);
+            &gfs_l_memlimit_table, (void *) (intptr_t) entry->pid, entry);
 
         gfs_l_gfork_mem_limit_send(
             entry->handle, entry->pid, entry->tcp_buffer_mem);
@@ -1312,7 +1312,7 @@ gfs_l_gfork_closed_cb(
         {
             /* if we have it as a memory entry */
             entry = (gfs_l_memlimit_entry_t *) globus_hashtable_remove(
-                &gfs_l_memlimit_table, (void *) from_pid);
+                &gfs_l_memlimit_table, (void *) (intptr_t) from_pid);
             if(entry != NULL)
             {
                 gfs_l_memlimit_available += entry->mem_size;
@@ -1353,7 +1353,7 @@ gfs_l_gfork_incoming_cb(
         }
 
         entry = (gfs_l_memlimit_entry_t *) globus_hashtable_lookup(
-            &gfs_l_memlimit_table, (void *) from_pid);
+            &gfs_l_memlimit_table, (void *) (intptr_t) from_pid);
         if(entry == NULL)
         {
             gfs_l_gfork_log(GLOBUS_SUCCESS, 0, 

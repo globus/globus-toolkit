@@ -33,16 +33,9 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
+PATH="${bindir}:${sbindir}:${libexecdir}:${PATH}"
 
-globus_source ${libexecdir}/globus-sh-tools.sh
-
-PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
+PROGRAM_NAME="${0##*/}"
 PROGRAM_VERSION='@VERSION@'
 PACKAGE='@PACKAGE@'
 VERSION='@VERSION@'
@@ -63,7 +56,7 @@ esac
 
 long_usage ()
 {
-${GLOBUS_SH_CAT-cat} >&2 <<EOF
+cat >&2 <<EOF
 
 Usage: $PROGRAM_NAME
       [-help|-usage]                     print usage and exit
@@ -115,15 +108,13 @@ Usage: $PROGRAM_NAME
 EOF
 }
 
-globus_source ${libexecdir}/globus-args-parser-header "$@"
-
-rslfile=${TMPDIR:-/tmp}/globus_job_run.`${GLOBUS_SH_WHOAMI-whoami}`.rsl.$$
-tmpfile=${TMPDIR:-/tmp}/globus_job_run.`${GLOBUS_SH_WHOAMI-whoami}`.tmp.$$
+rslfile=${TMPDIR:-/tmp}/globus_job_run.`whoami`.rsl.$$
+tmpfile=${TMPDIR:-/tmp}/globus_job_run.`whoami`.tmp.$$
 
 
 remove_files ()
 {
-    ${GLOBUS_SH_RM-rm} -f ${rslfile} ${tmpfile}
+    rm -f ${rslfile} ${tmpfile}
 }
 
 
@@ -140,10 +131,10 @@ stringify ()
     # NOTE: if the argument contains the pattern $(...), it is most likely
     # an RSL substitution: if so, suppress quoting.
     #
-    arg="`${GLOBUS_SH_CAT-cat} -`"
+    arg="`cat -`"
 
-    if [ "X`printf "%s" "${arg}" | ${GLOBUS_SH_SED-sed} -n '/\$(.*)/p'`" = "X" ]; then
-        printf "%s" "${arg}" | ${GLOBUS_SH_SED-sed} -e 's/"/""/g' -e 's/^.*$/"&"/g'
+    if [ "X`printf "%s" "${arg}" | sed -n '/\$(.*)/p'`" = "X" ]; then
+        printf "%s" "${arg}" | sed -e 's/"/""/g' -e 's/^.*$/"&"/g'
     else
         printf "%s" "${arg}"
     fi
@@ -152,7 +143,7 @@ stringify ()
 
 parse_integer ()
 {
-    if ${GLOBUS_SH_EXPR-expr} "$2" + 1 - 1 \> 0 > /dev/null 2>&1 ; then
+    if expr "$2" + 1 - 1 \> 0 > /dev/null 2>&1 ; then
 	result="$2"
     else
 	globus_args_option_error "$1" "\"$2\" is not an integer"
@@ -169,12 +160,12 @@ get_real_pwd ()
     # This code is at large based on code from the MPICH mpirun command,
     # where they try to solve the same problem.
     #
-    PWDtest="`${GLOBUS_SH_PWD-pwd} | ${GLOBUS_SH_SED-sed} 's@/tmp_mnt/@/@g'`"
+    PWDtest="`pwd | sed 's@/tmp_mnt/@/@g'`"
     if [ ! -d "$PWDtest" ] ; then
-        PWDtest="`${GLOBUS_SH_PWD-pwd}`"
+        PWDtest="`pwd`"
     fi
     if [ -n "$PWD" ] ; then
-        PWDtest2=`echo $PWD | ${GLOBUS_SH_SED-sed} 's@/tmp_mnt/@/@g'`
+        PWDtest2=`echo $PWD | sed 's@/tmp_mnt/@/@g'`
 	if [ ! -r "${PWDtest2}/file" ]; then
             PWD=$PWDtest2
 	else
@@ -200,26 +191,26 @@ normalize_filename()
 
    # collapse all sequences of '/'s to a single '/'
    #
-   file=`echo $file | ${GLOBUS_SH_SED-sed} -e 's://*:/:g'`
+   file=`echo $file | sed -e 's://*:/:g'`
 
    # collapse all instances of "/./" to a single '/'
    # note we must loop for all series forms "/././" because
    # the patterns overlap and only half match in each iteration
    #
-   while echo $file | ${GLOBUS_SH_GREP-grep} '/\./' > /dev/null 2>&1
+   while echo $file | grep '/\./' > /dev/null 2>&1
    do
       # this goes faster when we inline a couple iterations
       # into one sed command
-      file=`echo $file | ${GLOBUS_SH_SED-sed} -e 's:/\./:/:g' \
+      file=`echo $file | sed -e 's:/\./:/:g' \
                              -e 's:/\./:/:g'`
    done
 
    # reduce all '/../' expressions
    #    root is its own parent
    #    foo/bar/../ is foo iff bar!=..
-   while echo $file | ${GLOBUS_SH_FGREP-fgrep} '/\.\./' > /dev/null 2>&1
+   while echo $file | fgrep '/\.\./' > /dev/null 2>&1
    do
-      file=`echo $file | ${GLOBUS_SH_SED-sed} -e 's:^/\.\./:/:g' \
+      file=`echo $file | sed -e 's:^/\.\./:/:g' \
                              -e 's:/[^./][^/]*/\.\./:/:g' \
                              -e 's:/\.[^./][^/]*/\.\./:/:g' \
                              -e 's:/\.\.[^/][^/]*/\.\./:/:g'`
@@ -227,7 +218,7 @@ normalize_filename()
 
    # remove trailing '/.' or '/'
    #
-   file=`echo $file | ${GLOBUS_SH_SED-sed} -e 's:/$::g' \
+   file=`echo $file | sed -e 's:/$::g' \
                           -e 's:\(/\.\)*$::g'`
 
    echo $file
@@ -397,8 +388,8 @@ parse_environment ()
     if [ ! "$#" = "0" ] ; then
 	case "$1" in
 	?*=*)
-	    name=`echo "$1" | ${GLOBUS_SH_SED-sed} -e 's/^\([^=]*\)=\(.*\)/\1/g'`
-	    value=`echo "$1" | ${GLOBUS_SH_SED-sed} -e 's/^\([^=]*\)=\(.*\)/\2/g'`
+	    name=`echo "$1" | sed -e 's/^\([^=]*\)=\(.*\)/\1/g'`
+	    value=`echo "$1" | sed -e 's/^\([^=]*\)=\(.*\)/\2/g'`
 	    echo "("`echo "$name" | stringify` `echo "$value" | stringify`")"
 	    return 2
 	    ;;
@@ -415,11 +406,11 @@ parse_user_args ()
 {
     shift_count=0
     temp_arguments=""
-    while ${GLOBUS_SH_EXPR-expr} "$#" \> 0 > /dev/null 2> /dev/null ; do
+    while expr "$#" \> 0 > /dev/null 2> /dev/null ; do
         arg=`printf "%s" "$1" | stringify`
         temp_arguments="${temp_arguments} ${arg}"
         shift
-        shift_count=`${GLOBUS_SH_EXPR-expr} "$shift_count" + 1 2> /dev/null`
+        shift_count=`expr "$shift_count" + 1 2> /dev/null`
     done
 
     echo "$temp_arguments"
@@ -503,13 +494,13 @@ parse_hostclause ()
 		    case "$2" in
 		    \&*)
 			subjob_extra_rsl=`echo "$2" | \
-				    ${GLOBUS_SH_SED-sed} 's/^&//'`
+				    sed 's/^&//'`
 			;;
 		    *)
 			subjob_extra_rsl="$2"
 			;;
 		    esac
-		    ${bindir}/globusrun -p "&${subjob_extra_rsl}" \
+		    globusrun -p "&${subjob_extra_rsl}" \
 			1>/dev/null 2>/dev/null
 		    if [ $? -ne 0 ]; then
 			globus_args_option_error "$1" "cannot parse RSL stub"
@@ -517,7 +508,7 @@ parse_hostclause ()
 		    ;;
 	    esac
 	    shift 2
-	    shift_count=`${GLOBUS_SH_EXPR-expr} $shift_count + 2`
+	    shift_count=`expr $shift_count + 2`
 	    ;;
 	-stdin | -stdout | -stderr)
 	    parse_fileopt "$@"
@@ -537,7 +528,7 @@ parse_hostclause ()
 		    ;;
 	    esac
 	    shift $stdio_shift
-	    shift_count=`${GLOBUS_SH_EXPR-expr} $shift_count + $stdio_shift`
+	    shift_count=`expr $shift_count + $stdio_shift`
 	    ;;
 	-env)
 	    subjob_environment=${subjob_environment}\ `parse_environment "$@"`
@@ -546,7 +537,7 @@ parse_hostclause ()
 		return 0
 	    else
 		shift $env_shift
-		shift_count=`${GLOBUS_SH_EXPR-expr} $shift_count + $env_shift`
+		shift_count=`expr $shift_count + $env_shift`
 	    fi
 	    ;;
 	*)
@@ -572,15 +563,15 @@ parse_hostclause ()
 	    executable=${result}
 	    #
 	    # added a phantom "executable" argument above: adjust for that
-	    exec_shift=`${GLOBUS_SH_EXPR-expr} $exec_shift - 1`
+	    exec_shift=`expr $exec_shift - 1`
 	    shift $exec_shift
-	    shift_count=`${GLOBUS_SH_EXPR-expr} $shift_count + $exec_shift`
+	    shift_count=`expr $shift_count + $exec_shift`
 
 	    # and now the arguments...
 	    #
 	    while [ ! "$#" = "0" ]; do
                 if [ "$1" = "--" ]; then
-                    shift_count=`${GLOBUS_SH_EXPR-expr} $shift_count + 1`
+                    shift_count=`expr $shift_count + 1`
                     if [ $# -ge 2 -a "$2" = "--" ]; then
                         shift
                     else
@@ -589,7 +580,7 @@ parse_hostclause ()
                     fi
 		fi
 		subjob_args="$subjob_args `printf "%s" "$1" | stringify`"
-		shift_count=`${GLOBUS_SH_EXPR-expr} $shift_count + 1`
+		shift_count=`expr $shift_count + 1`
 		shift
 	    done
 	    clause_done=true
@@ -606,22 +597,78 @@ parse_hostclause ()
     return $shift_count
 }
 
+globus_args_short_usage()
+{
+    cat 1>&2 <<EOF
+
+Syntax : ${short_usage}
+
+Use -help to display full usage.
+
+EOF
+}
+
+globus_args_option_error()
+{
+    cat 1>&2 <<EOF
+
+ERROR: option $1 : $2
+EOF
+    globus_args_short_usage
+    exit 1
+}
+
+globus_args_unrecognized_option()
+{
+    globus_args_option_error $1 "unrecognized option"
+    exit 1
+}	
+
 
 parse_global_opts ()
 {
     while [ ! "$#" = "0" ] ; do
 	case "$1" in
-	-dump | -dumprsl )
+        -help | -h | --help | -usage | --usage)
+            long_usage
+            exit 0
+            ;;
+        -version|--version)
+            if [ "X${PROGRAM_NAME}" != "X" -a \
+                  "X${PROGRAM_VERSION}" != "X" ]; then
+                echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+            elif [ "X${PACKAGE}" != "X" -a \
+                   "X${VERSION}" != "X" ]; then
+                echo "${PACKAGE}: ${VERSION}"
+            else
+                echo "No version information available."
+            fi
+            exit 0
+            ;;
+        -versions|--versions)
+            AT=@
+            if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+                 -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+                 "X${DIRT_TIMESTAMP}" != "X${AT}DIRT_TIMESTAMP${AT}" -a \
+                 "X${DIRT_BRANCH_ID}" != "X${AT}DIRT_BRANCH_ID${AT}" ];
+            then
+                echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+            else
+                echo "No DiRT information available."
+            fi
+            exit 0;
+            ;;
+	-dump | -dumprsl | --dump | --dumprsl)
 	    shift
 	    job_print_rsl=true
 	    job_submit=false
 	    ;;
-	-dryrun)
+	-dryrun | --dryrun)
 	    shift
 	    job_verify=true
 	    job_submit=false
 	    ;;
-	-verify)
+	-verify | --verify)
 	    shift
 	    job_verify=true
 	    job_submit=true
@@ -632,7 +679,7 @@ parse_global_opts ()
 	    shift $?
 	    ;;
 	*)
-	    single_flag=`${GLOBUS_SH_EXPR-expr} ${single_flag} + 1`
+	    single_flag=`expr ${single_flag} + 1`
 	    if [ ${job_is_multi} = true -o ${single_flag} -gt 1 ]; then
 		globus_args_option_error "$1" \
 				      "Cannot mix single and multi-req syntax"
@@ -643,7 +690,7 @@ parse_global_opts ()
 		return 1
 	    fi
 	    shift $shift_count
-	    job_hostclause_count=`${GLOBUS_SH_EXPR-expr} $job_hostclause_count + 1`
+	    job_hostclause_count=`expr $job_hostclause_count + 1`
 	    ;;
 	esac
     done
@@ -713,8 +760,8 @@ if [ $# -eq 0 ]; then
 fi
 
 for file in ${rslfile} ${tmpfile} ; do
-    ${GLOBUS_SH_RM-rm} -f ${file}
-    ${GLOBUS_SH_TOUCH-touch} ${file}
+    rm -f ${file}
+    touch ${file}
     if [ $? -ne 0 ] ; then
 	echo "ERROR: Could not create temporary file \"${file}\"!" >&2
 	error_exit 1
@@ -726,7 +773,7 @@ if parse_top "$@" > ${rslfile}
 then
 
     if [ "${job_print_rsl}" = "true" ]; then
-	${GLOBUS_SH_CAT-cat} ${rslfile}
+	cat ${rslfile}
     fi
 
     gassflag=""
@@ -764,13 +811,13 @@ then
     # Check if proxy exists and is valid long enough.
     #
     if [ ${job_verify} = true -o ${job_submit} = true ]; then
-	${bindir}/grid-proxy-info -exists
+	grid-proxy-info -exists
 	if [ $? -ne 0 ]; then
 	    echo "ERROR: proxy does not exist" >&2
 	    error_exit 1
 	fi
-	hours=`${GLOBUS_SH_EXPR-expr} ${job_maxtime} / 60 + 1`
-	${bindir}/grid-proxy-info -exists -valid "${hours}:0"
+	hours=`expr ${job_maxtime} / 60 + 1`
+	grid-proxy-info -exists -valid "${hours}:0"
 	if [ $? -ne 0 ]; then
 	    echo "ERROR: proxy is not valid long enough " \
 		 "(${hours} hours)" >&2
@@ -781,16 +828,16 @@ then
     # Dryrun to see if things will be OK.
     #
     if [ "${job_verify}" = "true" ]; then
-	eval ${bindir}/globusrun "-d ${globusrun_args}"  1>${tmpfile} 2>&1
+	eval globusrun "-d ${globusrun_args}"  1>${tmpfile} 2>&1
 	if [ $? -ne 0 ]; then
 	    echo "ERROR: verify failed:" >&2
-	    ${GLOBUS_SH_CAT-cat} ${tmpfile} >&2
+	    cat ${tmpfile} >&2
 	    error_exit 1
 	else
 	    echo "Dryrun successful" >&2
 	fi
 	if [ ${job_cache_stdout} = true -o ${job_cache_stderr} = true ]; then
-	    jobid=`${GLOBUS_SH_GREP-grep} x-nexus ${tmpfile}`
+	    jobid=`grep x-nexus ${tmpfile}`
 	    basecmd="\$bindir/globus-gass-cache -cleanup-url x-gass-cache://"
 	    command=
 	    if [ ${job_cache_stdout} = true ]; then
@@ -800,7 +847,7 @@ then
 		command="${command} ; ${basecmd}${jobid}stderr"
 	    fi
 	    if [ -n "${command}" ]; then
-		echo ${bindir}/globusrun -q -b -r "${job_contact}" \
+		echo globusrun -q -b -r "${job_contact}" \
                    "&(executable=\${bindir}//globus-sh-exec) \
 		     (arguments=-e \"${command}\")"
 	    fi
@@ -810,7 +857,7 @@ then
     # Just do it (tm).
     #
     if [ "${job_submit}" = "true" ]; then
-	eval ${bindir}/globusrun "-q ${globusrun_args}"
+	eval globusrun "-q ${globusrun_args}"
 	return_status=$?
 	exit $return_status
     fi

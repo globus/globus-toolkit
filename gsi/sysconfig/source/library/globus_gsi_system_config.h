@@ -154,10 +154,6 @@ extern "C" {
 extern 
 globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
 
-#define _GSSL(s) globus_common_i18n_get_string(\
-			GLOBUS_GSI_SYSCONFIG_MODULE,\
-			s)
-
 #ifdef WIN32
 #    define GLOBUS_GSI_SYSCONFIG_SET_KEY_PERMISSIONS \
             globus_gsi_sysconfig_set_key_permissions_win32

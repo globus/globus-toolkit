@@ -14,17 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * @file globus_gsi_credential.c
- * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
-
 #include "globus_i_gsi_credential.h"
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_cert_utils.h"
@@ -35,6 +24,20 @@
 #include "openssl/err.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define gt_i2d_cast (int (*)())
+#define gt_d2i_cast (char *(*)())
+#define gt_create_cast (char *(*)())
+#define gt_destroy_cast (void(*)())
+#define d2i_arg_2_cast
+#else
+#define gt_i2d_cast (i2d_of_void *)
+#define gt_d2i_cast (d2i_of_void *)
+#define gt_create_cast (void *(*)(void))
+#define gt_destroy_cast (void (*)(void *))
+#define d2i_arg_2_cast (const unsigned char **)
+#endif
 
 static int globus_l_gsi_credential_activate(void);
 static int globus_l_gsi_credential_deactivate(void);
@@ -968,7 +971,7 @@ globus_gsi_cred_read_proxy_bio(
             strcmp(name, PEM_STRING_X509_OLD) == 0)
         {
             tmp_cert = NULL;
-            tmp_cert = d2i_X509(&tmp_cert, (const unsigned char **) &data, len);
+            tmp_cert = d2i_X509(&tmp_cert, d2i_arg_2_cast &data, len);
             if (tmp_cert == NULL)
             {
                 GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -1002,7 +1005,7 @@ globus_gsi_cred_read_proxy_bio(
                 goto exit;
             }
 
-            handle->key = d2i_AutoPrivateKey(&handle->key, (const unsigned char **) &data, len);
+            handle->key = d2i_AutoPrivateKey(&handle->key, d2i_arg_2_cast &data, len);
             if (handle->key == NULL)
             {
                 GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -1017,7 +1020,7 @@ globus_gsi_cred_read_proxy_bio(
         {
             PKCS8_PRIV_KEY_INFO *p8inf = NULL;
 
-            p8inf = d2i_PKCS8_PRIV_KEY_INFO(&p8inf, (const unsigned char **) &data, len);
+            p8inf = d2i_PKCS8_PRIV_KEY_INFO(&p8inf, d2i_arg_2_cast &data, len);
             if (p8inf == NULL)
             {
                 GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -1834,7 +1837,7 @@ globus_result_t globus_gsi_cred_write(
         goto error_exit;
     }
     
-    if(!PEM_ASN1_write_bio((i2d_of_void *) i2d_PrivateKey, PEM_STRING_RSA,
+    if(!PEM_ASN1_write_bio(gt_i2d_cast i2d_PrivateKey, PEM_STRING_RSA,
                            bio, (char *) handle->key,
                            NULL, NULL, 0, NULL, NULL))
     {

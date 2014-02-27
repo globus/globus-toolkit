@@ -446,7 +446,10 @@ globus_i_xio_http_set_end_of_entity(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_xio_http_header_info_t *   headers;
-    static globus_xio_iovec_t           end_of_body_iovec = { "0\r\n\r\n", 5 };
+    static globus_xio_iovec_t           end_of_body_iovec = {
+        .iov_base = "0\r\n\r\n", 
+        .iov_len = 5
+    };
     GlobusXIOName(globus_i_xio_http_set_end_of_entity);
 
     if (http_handle->write_operation.operation != NULL)

@@ -895,4 +895,4 @@ globus_i_xio_win32_event_post(
     
     GlobusXIOSystemDebugExit();
 }
-#endif /* TARGET_ARCH_WIN32 */
+#endif /* _WIN32 */

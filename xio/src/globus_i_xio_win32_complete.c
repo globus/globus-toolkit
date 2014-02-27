@@ -334,4 +334,4 @@ globus_i_xio_win32_complete(
 error_malloc:
     return result;
 }
-#endif /* TARGET_ARCH_WIN32 */
+#endif /* _WIN32 */

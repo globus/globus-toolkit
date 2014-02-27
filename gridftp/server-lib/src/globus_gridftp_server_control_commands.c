@@ -811,7 +811,7 @@ globus_l_gsc_cmd_stat_cb(
                 code, op->path, tmp_ptr, code);
             globus_free(tmp_ptr);
         }
-        else if(user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD)
+        else if((intptr_t) user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD)
         {
             if(response_type == 
                 GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PARTIAL_SUCCESS)
@@ -880,7 +880,7 @@ globus_l_gsc_cmd_stat_cb(
     }
     else
     {
-        if(user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD)
+        if((intptr_t) user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD)
         {
             globus_mutex_unlock(&op->stat_lock);
         }
@@ -925,7 +925,7 @@ globus_l_gsc_cmd_stat(
     }
     else
     {
-        if(user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD)
+        if((intptr_t) user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD)
         {
             mask = GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_DIRECTORY_LIST;
         }

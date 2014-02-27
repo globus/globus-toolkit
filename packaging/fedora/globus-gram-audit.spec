@@ -28,7 +28,6 @@ Requires:	perl(DBI)
 %if 0%{?suse_version} == 0
 Requires:	crontabs
 %endif
-BuildRequires:	globus-core >= 8
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -47,7 +46,7 @@ GRAM Auditing
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 

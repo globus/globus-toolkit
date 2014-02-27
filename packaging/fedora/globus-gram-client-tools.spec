@@ -1,6 +1,6 @@
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
-Version:	11.0
+Version:	11.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
@@ -21,6 +21,12 @@ BuildRequires:	globus-gass-server-ez-devel >= 4
 BuildRequires:	globus-gram-client-devel >= 12
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-rsl-devel >= 9
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -39,7 +45,7 @@ Job Management Tools (globusrun)
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
-autoreconf -i
+autoreconf -if
 %endif
 
 
@@ -66,6 +72,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 11.1-1
+- Packaging fixes, Warning Cleanup
+
 * Thu Jan 23 2014 Globus Toolkit <support@globus.org> - 11.0-1
 - Repackage for GT6 without GPT
 

@@ -14,17 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * @file globus_gsi_cred_handle.c
- * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
-
 #include "globus_i_gsi_credential.h"
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_callback.h"
@@ -34,6 +23,13 @@
 #include "openssl/x509v3.h"
 #include "openssl/err.h"
 #include <math.h>
+
+
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define GT_SK_UNSHIFT_CAST (char *)
+#else
+#define GT_SK_UNSHIFT_CAST
+#endif
 
 #define GLOBUS_GSI_CRED_HANDLE_MALLOC_ERROR(_LENGTH_) \
     globus_error_put(globus_error_wrap_errno_error( \
@@ -104,7 +100,7 @@ globus_gsi_cred_handle_init(
     }
 
     /* initialize everything to NULL */
-    memset(*handle, (int) NULL, sizeof(globus_i_gsi_cred_handle_t));
+    memset(*handle, 0, sizeof(globus_i_gsi_cred_handle_t));
 
     if(handle_attrs == NULL)
     {
@@ -1149,7 +1145,7 @@ globus_result_t globus_gsi_cred_get_X509_identity_name(
         cert_chain = sk_X509_dup(handle->cert_chain);
     }
 
-    sk_X509_unshift(cert_chain, handle->cert);
+    sk_X509_unshift(cert_chain, GT_SK_UNSHIFT_CAST handle->cert);
 
     result = globus_gsi_cert_utils_get_base_name(identity, cert_chain);
 

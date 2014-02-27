@@ -1,6 +1,6 @@
 Name:           globus-xio-rate-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.2
+Version:	1.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Rate Limiting Driver
 
@@ -95,6 +95,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 1.3-1
+- Packaging fixes, Warning Cleanup
+
 * Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 1.2-1
 - Packaging Fixes
 

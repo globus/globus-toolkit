@@ -28,16 +28,10 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
+PATH="${bindir}:${sbindir}:${libexecdir}:${PATH}"
 
-globus_source ${libexecdir}/globus-sh-tools.sh
 
-PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
+PROGRAM_NAME=${0##*/}
 PROGRAM_VERSION='@VERSION@'
 # DiRT
 PACKAGE='@PACKAGE@'
@@ -59,7 +53,7 @@ short_usage="${PROGRAM_NAME} [-help] [-version] [-force] jobid"
 
 long_usage()
 {
-    ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
+    cat 1>&2 <<EOF
 
 ${short_usage}
 
@@ -67,7 +61,7 @@ ${short_usage}
     started with globus-job-submit.
 EOF
     if [ ${action} = cleanup ]; then
-	${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
+	cat 1>&2 <<EOF
 
     Also cleans up the cached output on the remote machine (unless
     you have specifically stated to save that in another file but
@@ -76,7 +70,7 @@ EOF
     resourceline="-resource         (-r)  Cleanup job using the specified resource
                                 manager"
     fi
-    ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
+    cat 1>&2 <<EOF
 
     A valid proxy certificate is required for this operation to succeed.
 
@@ -90,15 +84,13 @@ EOF
     echo "" >&2
 }
 
-globus_source ${libexecdir}/globus-args-parser-header $*
-
 cancelJob()
 {
-    status="`${bindir}/globusrun -status \"$1\"`"
+    status="$(globusrun -status "$1")"
     xxx=$?
     if [ ${xxx} -eq 0 ]; then
 	if [ "${status}" != "DONE" ]; then
-	    ${bindir}/globusrun -kill "$1"
+	    globusrun -kill "$1"
 	    xxx=$?
 	fi
     fi
@@ -106,26 +98,82 @@ cancelJob()
 }
 
 
-if [ $# -eq 0 ]; then
-    globus_args_short_usage
-    exit 1
-fi
-
 jobid=
 resource=
 force=no
 quiet=no
 
+globus_args_short_usage()
+{
+    cat 1>&2 <<EOF
+
+Syntax : ${short_usage}
+
+Use -help to display full usage.
+
+EOF
+}
+
+globus_args_option_error()
+{
+    cat 1>&2 <<EOF
+
+ERROR: option $1 : $2
+EOF
+    globus_args_short_usage
+    exit 1
+}
+
+globus_args_unrecognized_option()
+{
+    globus_args_option_error $1 "unrecognized option"
+    exit 1
+}
+
+if [ $# -eq 0 ]; then
+    globus_args_short_usage
+    exit 1
+fi
+
 while [ -n "$1" ]; do
     case $1 in
-	-f | -force)
+        -help | -h | --help | -usage | --usage)
+            long_usage
+            exit 0
+            ;;
+        -version|--version)
+            if [ "X${PROGRAM_NAME}" != "X" -a \
+                  "X${PROGRAM_VERSION}" != "X" ]; then
+                echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+            elif [ "X${PACKAGE}" != "X" -a \
+                   "X${VERSION}" != "X" ]; then
+                echo "${PACKAGE}: ${VERSION}"
+            else
+                echo "No version information available."
+            fi
+            exit 0
+            ;;
+        -versions|--versions)
+            AT=@
+            if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+                 -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+                 "X${DIRT_TIMESTAMP}" != "X${AT}DIRT_TIMESTAMP${AT}" -a \
+                 "X${DIRT_BRANCH_ID}" != "X${AT}DIRT_BRANCH_ID${AT}" ];
+            then
+                echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+            else
+                echo "No DiRT information available."
+            fi
+            exit 0;
+            ;;
+	-f | -force | --force)
 	    force=yes
 	    ;;
-	-q | -quiet)
+	-q | -quiet | --quiet)
 	    force=yes
 	    quiet=yes
 	    ;;
-        -r | -resource)
+        -r | -resource | --resource)
             if [ -z "$2" ]; then
                 globus_args_option_error "$1" "need a resource contact string"
             fi
@@ -157,12 +205,12 @@ fi
 
 if [ ${action} = cleanup ]; then
    if [ -z "${resource}" ]; then
-      resource=`echo ${jobid} | ${GLOBUS_SH_AWK-awk} -F: '{print $2}' | \
-          ${GLOBUS_SH_SED-sed} 's|/||g'`
+      resource="$(echo ${jobid} | awk -F: '{print $2}' | \
+          sed 's|/||g')"
    fi
 fi
 
-${bindir}/grid-proxy-info -exists
+grid-proxy-info -exists
 if [ $? -ne 0 ]; then
     echo "" >&2
     echo "ERROR: unable to locate a valid proxy" >&2
@@ -175,14 +223,14 @@ if [ ${force} = yes ]; then
     answer="Yes"
 else
     if [ ${action} = cleanup ]; then
-	${GLOBUS_SH_CAT-cat} <<EOF
+	cat <<EOF
 
     WARNING: Cleaning a job means:
         - Kill the job if it still running, and
         - Remove the cached output on the remote resource
 EOF
     fi
-    ${GLOBUS_SH_CAT-cat} <<EOF
+    cat <<EOF
 
     Are you sure you want to ${action} the job now (Y/N) ?
 EOF
@@ -216,7 +264,7 @@ case "${action}:${answer}" in
 	# Eeeech... ugly...
 	#
 	myrsl="&(executable=\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(arguments=-exec \"bad=0; \$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stdout >/dev/null 2>/dev/null; if test \$? != 0; then bad=1; fi ; \$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stderr  >/dev/null 2>/dev/null; if test \$? != 0; then bad=1; fi; echo \$bad;\")"
-	output=`${bindir}/globusrun -o -r "${resource}" "${myrsl}"`
+	output="$(globusrun -o -r "${resource}" "${myrsl}")"
 	status=$?
 
 	if [ $status -ne 0 ] || [ "$output" = "1" ]; then

@@ -101,7 +101,7 @@ globus_l_gfs_reject_open_cb(
 
         result = globus_xio_register_write(
             xio_handle,
-            sorry_msg,
+            (globus_byte_t *) sorry_msg,
             strlen(sorry_msg),
             strlen(sorry_msg),
             NULL,

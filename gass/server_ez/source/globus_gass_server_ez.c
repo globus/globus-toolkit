@@ -547,7 +547,8 @@ globus_l_gass_server_ez_register_accept_callback(
 
   reregister_nourl:
     globus_gass_transfer_register_listen(
-				(globus_gass_transfer_listener_t) listener,
+				(globus_gass_transfer_listener_t) (intptr_t)
+                                    listener,
 				globus_l_gass_server_ez_listen_callback,
 				s->reqattr);
 

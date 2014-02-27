@@ -96,7 +96,7 @@ AC_DEFUN([LAC_THREADS_WINDOWS],
     windowsthreads_ldflags=""
 
     case "$host" in
-        *cygwin* | *mingw* [)]
+        *mingw* [)]
             build_windows_threads="yes"
             ;;
     esac

@@ -6471,7 +6471,7 @@ globus_l_gass_transfer_http_callback_denied(
 {
     globus_gass_transfer_request_t		request;
 
-    request = (globus_gass_transfer_request_t) arg;
+    request = (globus_gass_transfer_request_t) (intptr_t) arg;
     
     debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_denied")));
     globus_gass_transfer_proto_request_denied(

@@ -22,6 +22,12 @@
 #define PROXY_NAME                      "proxy"
 #define LIMITED_PROXY_NAME              "limited proxy"
 
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define GT_SK_UNSHIT_CAST (char *)
+#else
+#define GT_SK_UNSHIT_CAST
+#endif
+
 #include "globus_i_gsi_proxy.h"
 #include "globus_gsi_proxy_constants.h"
 #include "version.h"
@@ -30,6 +36,13 @@
 #include "proxycertinfo.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define GT_I2D_CAST (int (*)())
+#else
+#define GT_I2D_CAST (i2d_of_void *)
+#endif
+
 
 #define GLOBUS_GSI_PROXY_MALLOC_ERROR(_LENGTH_) \
     globus_error_put(globus_error_wrap_errno_error( \
@@ -958,7 +971,7 @@ globus_gsi_proxy_resign_cert(
         goto done;
     }
 
-    sk_X509_unshift(issuer_cert_chain, issuer_cert);
+    sk_X509_unshift(issuer_cert_chain, GT_SK_UNSHIT_CAST issuer_cert);
     issuer_cert = NULL;
     
     result = globus_gsi_cred_set_cert_chain(*resigned_credential,
@@ -1247,7 +1260,7 @@ globus_l_gsi_proxy_sign_key(
 
         ext_method = X509V3_EXT_get_nid(pci_NID);
 
-        ASN1_digest(i2d_PUBKEY,sha1,(char *) public_key,md,&len);
+        ASN1_digest(GT_I2D_CAST i2d_PUBKEY,sha1,(char *) public_key,md,&len);
 
         sub_hash = md[0] + (md[1] + (md[2] + (md[3] >> 1) * 256) * 256) * 256; 
         
@@ -1878,7 +1891,7 @@ globus_gsi_proxy_create_signed(
         }
         result = globus_gsi_proxy_handle_attrs_set_signing_algorithm(
                 handle->attrs,
-                issuer_digest);
+                (EVP_MD *) issuer_digest);
         if (result != GLOBUS_SUCCESS)
         {
             goto exit;

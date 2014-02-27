@@ -291,38 +291,6 @@ test_job_id( char *    value,
     return res;
 }
 
-int
-test_hostname( char *   value,
-	       void *   ignored,
-	       char **  errmsg )
-{
-    struct hostent *   hostent;
-    struct hostent     result;
-    char               buf[1024];
-    int                rc;
-
-    hostent = globus_libc_gethostbyname_r( (char *) value,
-					   &result,
-					   buf,
-					   1024,
-					   &rc     );
-    if (hostent == NULL)
-	*errmsg = globus_libc_strdup("cannot resolve hostname");
-    return rc;
-}
-
-int
-test_integer( char *   value,
-	      void *   ignored,
-	      char **  errmsg )
-{
-    int  res = (atoi(value) <= 0);
-    if (res)
-	*errmsg = globus_libc_strdup("argument is not a positive integer");
-    return res;
-}
-
-
 enum { arg_q = 1, arg_o, arg_s, arg_w, arg_n, arg_b,
 	     arg_p, arg_d, arg_a,
 	     arg_r, arg_f, arg_k, arg_y, arg_status,

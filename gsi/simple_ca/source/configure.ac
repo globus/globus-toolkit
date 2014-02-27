@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_simple_ca],[4.8],[http://jira.globus.org])
+AC_INIT([globus_simple_ca],[4.10],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -68,11 +68,11 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
 AC_CONFIG_FILES(
         [globus-simple-ca-undefined.pc
         globus-simple-ca.pc
-        grid-ca-create
-        grid-ca-package
-        grid-ca-sign
         Makefile
-        test/Makefile],
-        [chmod a+x grid-ca-create grid-ca-package grid-ca-sign])
+        test/Makefile])
+
+AC_CONFIG_FILES([grid-ca-create], [chmod a+x grid-ca-create])
+AC_CONFIG_FILES([grid-ca-package], [chmod a+x grid-ca-package])
+AC_CONFIG_FILES([grid-ca-sign], [chmod a+x grid-ca-sign])
 
 AC_OUTPUT

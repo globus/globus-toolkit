@@ -760,7 +760,7 @@ gfork_l_int_delay_cb(
         list = gfork_l_pid_list;
         while(!globus_list_empty(list))
         {
-            kid_pid = (pid_t) globus_list_first(list);
+            kid_pid = (pid_t) (intptr_t) globus_list_first(list);
 
             list = globus_list_rest(list);
 
@@ -796,7 +796,7 @@ gfork_l_int(
         list = gfork_l_pid_list;
         while(!globus_list_empty(list))
         {
-            kid_pid = (pid_t) globus_list_first(list);
+            kid_pid = (pid_t) (intptr_t) globus_list_first(list);
 
             list = globus_list_rest(list);
 

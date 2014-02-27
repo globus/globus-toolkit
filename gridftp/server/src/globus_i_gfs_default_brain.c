@@ -399,7 +399,7 @@ globus_l_gfs_gfork_incoming_cb(
                             "globus_l_gfs_gfork_incoming_cb()", n32);
                 for(i = 0; i < count && len >= GF_DYN_PACKET_LEN; i++)
                 {
-                    tmp_buf = &buffer[off];
+                    tmp_buf = (char *) &buffer[off];
                     memcpy(&n32,
                         &tmp_buf[GF_DYN_ENTRY_COUNT_NDX], sizeof(uint32_t));
 
@@ -421,7 +421,7 @@ globus_l_gfs_gfork_incoming_cb(
                             handle,
                             user_arg,
                             from_pid,
-                            tmp_buf,
+                            (globus_byte_t *) tmp_buf,
                             GF_DYN_PACKET_LEN);
                     }
                     off += GF_DYN_PACKET_LEN;

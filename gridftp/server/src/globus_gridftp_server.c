@@ -820,7 +820,7 @@ globus_l_gfs_new_server_cb(
                 remote_contact,
                 local_contact, 
                 globus_l_gfs_server_closed,
-                system_handle);
+                (void *) (intptr_t) system_handle);
         }
         if(result != GLOBUS_SUCCESS)
         {
@@ -958,7 +958,7 @@ globus_l_gfs_reject_open_cb(
 
         result = globus_xio_register_write(
             handle,
-            sorry_msg,
+            (globus_byte_t *) sorry_msg,
             len,
             len,
             NULL,

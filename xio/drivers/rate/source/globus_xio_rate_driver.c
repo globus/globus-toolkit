@@ -393,7 +393,7 @@ xio_l_rate_attr_to_handle(
     handle->finished_func = finished_func;
     handle->pass_func = pass_func;
 
-    if(attr->burst_size < 0)
+    if(attr->burst_size == (globus_size_t) -1)
     {
         attr->burst_size = 2 * attr->rate;
     }

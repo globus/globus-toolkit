@@ -1378,7 +1378,7 @@ globus_thread_exit(
     {
         globus_l_thread_impl->thread_exit(value);
     }
-    exit((int)value);
+    exit((intptr_t)value);
 }
 /* globus_thread_exit() */
 

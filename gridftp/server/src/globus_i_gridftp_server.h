@@ -30,7 +30,15 @@
 #include "globus_gsi_authz.h"
 #include "globus_usage.h"
 
+#define _GSSL(s) globus_common_i18n_get_string_by_key(\
+		    NULL, \
+		    "globus_gridftp_server", \
+		    s)
 
+#define _FSSL(s,p) globus_common_i18n_get_string_by_key(\
+		     p, \
+		    "globus_gridftp_server", \
+		    s)
 
 typedef void
 (*globus_i_gfs_server_close_cb_t)(

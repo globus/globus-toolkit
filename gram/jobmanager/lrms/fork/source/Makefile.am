@@ -12,11 +12,11 @@ doc_DATA = GLOBUS_LICENSE
 AT=@
 
 jobmanager-fork-poll: jobmanager-fork-poll.in
-	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
+	@sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
             -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
 
 jobmanager-fork-seg: jobmanager-fork-seg.in
-	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
+	@sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
             -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
 
 EXTRA_DIST = \

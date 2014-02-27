@@ -462,7 +462,7 @@ int main(int argc, char *argv[])
                 {
                     new_task = globus_hashtable_remove(
                         &globus_l_fork_active_tasks,
-                        (void *) pid);
+                        (void *) (intptr_t) pid);
 
                     /* Some process completed */
                     if (WIFEXITED(status) && new_task)
@@ -1078,7 +1078,7 @@ globus_l_fork_start_task(
                 }
                 globus_hashtable_insert(
                         &globus_l_fork_active_tasks,
-                        (void *) task->pids[i],
+                        (void *) (intptr_t) task->pids[i],
                         task);
                 task->pidcount++;
             }
@@ -1196,7 +1196,7 @@ kill_procs:
 
         globus_hashtable_remove(
             &globus_l_fork_active_tasks,
-            (void *) task->pids[i]);
+            (void *) (intptr_t) task->pids[i]);
         task->pidcount--;
     }
 error:

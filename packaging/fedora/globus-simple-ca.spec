@@ -2,7 +2,7 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	4.9
+Version:	4.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
@@ -113,6 +113,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 4.10-1
+- Packaging fixes, Warning Cleanup
+
 * Tue Feb 25 2014 Globus Toolkit <support@globus.org> - 4.9-1
 - Packaging fixes
 

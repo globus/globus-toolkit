@@ -25,6 +25,19 @@
 #include <openssl/ssl.h>
 #include <stdio.h>
 
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define GT_D2I_ARG_CAST (unsigned char **)
+#else
+#define GT_D2I_ARG_CAST
+#endif
+
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define GT_ASN1_GET_OBJECT_CAST 
+#else
+#define GT_ASN1_GET_OBJECT_CAST (const unsigned char **)
+#endif
+
+
 /* 1.2.3.4.4.3.2.1.7.8 */
 static const gss_OID_desc               ggvm_cert_chain_oid =
     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x08"}; 
@@ -115,7 +128,7 @@ ggvm_extract_cert_from_chain(
     ptr = cert_chain_buffers->elements[cert_index].value;
     cert = d2i_X509(
         NULL,
-        &ptr,
+        GT_D2I_ARG_CAST &ptr,
         cert_chain_buffers->elements[cert_index].length);
     if(cert == NULL)
     {
@@ -246,7 +259,7 @@ ggvm_get_eppn(
     int                                 extpos;
     X509_EXTENSION *                    eppn_ext;
     ASN1_STRING *                       eppn_str;
-    const unsigned char *               eppn_data;
+    unsigned char *                     eppn_data;
     int                                 tag;
     int                                 xclass;
 
@@ -264,7 +277,8 @@ ggvm_get_eppn(
 
     eppn_data = eppn_str->data;
 
-    if (ASN1_get_object(&eppn_data, length, &tag, &xclass, eppn_str->length) == 0x80)
+    if (ASN1_get_object(GT_ASN1_GET_OBJECT_CAST &eppn_data,
+            length, &tag, &xclass, eppn_str->length) == 0x80)
         return GLOBUS_FAILURE;
 
     *data = (char *) eppn_data;

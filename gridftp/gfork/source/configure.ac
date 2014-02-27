@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gfork], [4.2], [http://jira.globus.org/])
+AC_INIT([globus_gfork], [4.3], [http://jira.globus.org/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [4])
@@ -16,8 +16,10 @@ AC_SUBST(DIRT_BRANCH_ID)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
+AC_CANONICAL_HOST
+
 case $host in
-    *mingw* | win* | cygwin*)
+    *mingw* | win* | *cygwin*)
         GFORK_EXE=""
         ;;
     *)

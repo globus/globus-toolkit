@@ -472,7 +472,8 @@ globus_ftp_control_connect(
 	goto error_exit;
     }
 
-    if(port > 65536)
+#if USHRT_MAX > 65536 
+    if (port > 65536)
     {
 	rc = globus_error_put(
 	    globus_error_construct_string(
@@ -482,6 +483,7 @@ globus_ftp_control_connect(
 	    ); 
 	goto error_exit;
     }
+#endif
 
     if(callback == GLOBUS_NULL)
     {
@@ -1127,7 +1129,7 @@ globus_l_ftp_control_end_of_reply(
     int                                       found;
     int                                       length;
     int                                       total_length;
-    char *                                    out_buf;
+    unsigned char *                           out_buf;
     gss_buffer_desc                           wrapped_token;
     gss_buffer_desc                           unwrapped_token;
     globus_ftp_control_response_t *           response;
@@ -1323,7 +1325,7 @@ globus_l_ftp_control_end_of_reply(
 
         response->response_buffer[found - 1] = '\0';
 
-        if(sscanf(&(response->response_buffer[last+1]), 
+        if(sscanf((const char *) &(response->response_buffer[last+1]), 
                   "%d", &response->code) < 1)
         {
             globus_assert(0); 
@@ -1842,8 +1844,8 @@ globus_ftp_control_send_command(
     globus_bool_t                               queue_empty;
     globus_bool_t                               authenticated;
     globus_bool_t                               call_close_cb = GLOBUS_FALSE;
-    globus_byte_t *                             buf;
-    globus_byte_t *                             encode_buf;
+    char *                                      buf;
+    char *                                      encode_buf;
     va_list                                     ap;
     int                                         arglength;
 
@@ -1879,8 +1881,7 @@ globus_ftp_control_send_command(
         goto error;
     }
 
-    buf=(globus_byte_t *) globus_libc_malloc(sizeof(globus_byte_t)*
-                                             (arglength+1));
+    buf = globus_libc_malloc(arglength+1);
 
     if(buf == GLOBUS_NULL)
     {
@@ -1895,7 +1896,7 @@ globus_ftp_control_send_command(
 
     va_start(ap, callback_arg);
     
-    if(globus_libc_vsprintf((char *) buf, cmdspec,ap) < arglength)
+    if(globus_libc_vsprintf(buf, cmdspec,ap) < arglength)
     {
         globus_libc_free(buf);
         result= globus_error_put(
@@ -1922,7 +1923,7 @@ globus_ftp_control_send_command(
 
         rc=globus_i_ftp_control_encode_command(&(handle->cc_handle),
                                                buf,
-                                               (char **) (void *) &encode_buf);
+                                               &encode_buf);
         
         globus_libc_free(buf);
 
@@ -1955,7 +1956,7 @@ globus_ftp_control_send_command(
     element->callback = callback;
     element->arg = callback_arg;
     element->write_flags = 0;
-    element->write_buf = buf;
+    element->write_buf = (globus_byte_t *) buf;
     element->write_callback = globus_l_ftp_control_write_cb;
     element->read_callback = globus_l_ftp_control_read_cb;
     element->expect_response = GLOBUS_TRUE;
@@ -1991,7 +1992,7 @@ globus_ftp_control_send_command(
         /* queue was empty, we need to do the write/send */
 
         rc = globus_io_register_write(&handle->cc_handle.io_handle,
-                                      buf,
+                                      element->write_buf,
                                       (globus_size_t) strlen(buf),
                                       element->write_callback,
                                       (void *) handle);
@@ -2293,7 +2294,7 @@ globus_ftp_control_abort(
         element_ip,
         callback,
         callback_arg,
-        GLOBUS_I_TELNET_IP,
+        (globus_byte_t *) GLOBUS_I_TELNET_IP,
         0,
         globus_l_ftp_control_write_cb,
         GLOBUS_NULL,
@@ -2328,7 +2329,7 @@ globus_ftp_control_abort(
         element_synch,
         callback,
         callback_arg,
-        GLOBUS_I_TELNET_SYNCH,
+        (globus_byte_t *) GLOBUS_I_TELNET_SYNCH,
         MSG_OOB,
         globus_l_ftp_control_write_cb,
         GLOBUS_NULL,
@@ -2366,7 +2367,7 @@ globus_ftp_control_abort(
         element_abor,
         callback,
         callback_arg,
-        "ABOR\r\n",
+        (globus_byte_t *) "ABOR\r\n",
         0,
         globus_l_ftp_control_write_cb,
         globus_l_ftp_control_read_cb,
@@ -2447,7 +2448,7 @@ globus_ftp_control_abort(
         rc = globus_io_register_write(&handle->cc_handle.io_handle,
                                       element_ip->write_buf,
                                       (globus_size_t) strlen(
-                                          element_ip->write_buf),
+                                          (char *) element_ip->write_buf),
                                       element_ip->write_callback,
                                       (void *) handle);
     
@@ -2664,7 +2665,7 @@ globus_l_ftp_control_send_cmd_cb(
     gss_buffer_desc                             send_tok;
     gss_buffer_desc                             recv_tok;
     gss_buffer_desc *                           token_ptr;
-    char *                                      radix_buf;
+    globus_byte_t *                             radix_buf;
     OM_uint32                                   max_input_size[2];
     OM_uint32                                   pbsz;
     int                                         tmp_host[16];
@@ -2839,7 +2840,7 @@ globus_l_ftp_control_send_cmd_cb(
 	     * server 
 	     */
 	    	    
-	    radix_buf = globus_libc_malloc(send_tok.length * 8 / 6 + 4);
+	    radix_buf = malloc(send_tok.length * 8 / 6 + 4);
 	    
 	    if(radix_buf == GLOBUS_NULL)
 	    {
@@ -2858,7 +2859,7 @@ globus_l_ftp_control_send_cmd_cb(
 	    if(rc != GLOBUS_SUCCESS) 
 	    {
 		gss_release_buffer(&min_stat, &send_tok);
-		globus_libc_free(radix_buf);
+		free(radix_buf);
 		error_obj = globus_error_get(rc);
 		goto return_error;
 	    }
@@ -2907,7 +2908,7 @@ globus_l_ftp_control_send_cmd_cb(
 	    ftp_response->response_buffer
 		[ftp_response->response_length-3]='\0';
 	    
-	    len = strlen(ftp_response->response_buffer);
+	    len = strlen((const char *) ftp_response->response_buffer);
 						
 	    radix_buf = globus_libc_malloc((len + 1) * 6 / 8 + 1);
 	    
@@ -3033,15 +3034,16 @@ globus_l_ftp_control_send_cmd_cb(
 	    cb_arg->cmd=GLOBUS_I_FTP_USER;
 	    /* base64 decode the reply */
 
-            if(!strncmp(ftp_response->response_buffer, "235 ADAT=", 8))
+            if(!strncmp((const char *) ftp_response->response_buffer,
+                    "235 ADAT=", 8))
             { 
             
                 ftp_response->response_buffer
                     [ftp_response->response_length-3]='\0';
 	    
-                len = strlen(ftp_response->response_buffer);
+                len = strlen((char *) ftp_response->response_buffer);
 						
-                radix_buf = globus_libc_malloc((len + 1) * 6 / 8 + 1);
+                radix_buf = malloc((len + 1) * 6 / 8 + 1);
 	    
                 if(radix_buf == GLOBUS_NULL)
                 {
@@ -4379,7 +4381,7 @@ globus_i_ftp_control_encode_command(
     
     length = out_buf.length;
     globus_i_ftp_control_radix_encode(out_buf.value,
-                                      &((*encoded_cmd)[4]), 
+                                      (unsigned char *) &((*encoded_cmd)[4]), 
                                       &length);
 
     (*encoded_cmd)[length+4]='\r';
@@ -4680,7 +4682,7 @@ globus_i_ftp_control_write_next(
         rc = globus_io_register_send(&handle->cc_handle.io_handle,
                                      element->write_buf,
                                      (globus_size_t) strlen(
-                                         element->write_buf),
+                                         (char *) element->write_buf),
                                      element->write_flags,
                                      element->write_callback,
                                      (void *) handle);
@@ -4821,13 +4823,14 @@ globus_l_ftp_control_queue_element_init(
     {
         result=globus_i_ftp_control_encode_command(
             &handle->cc_handle,
-            write_buf,
+            (char *) write_buf,
             (char **) (void *) &element->write_buf);     
     }
     else
     {
 
-        element->write_buf = globus_libc_strdup(write_buf);
+        element->write_buf = (globus_byte_t *) 
+                globus_libc_strdup((const char *) write_buf);
         
         if(element->write_buf == GLOBUS_NULL)
         {

@@ -2963,8 +2963,8 @@ globus_libc_contact_string_to_ints(
             *(s++) = 0;
         }
         /* (no inet_pton in windows) */
-#ifdef WIN32
-        if((addr4.S_un.S_addr = inet_addr(buf)) == INADDR_NONE)
+#ifdef _WIN32
+        if((addr4.s_addr = inet_addr(buf)) == INADDR_NONE)
         {
             goto error_parse;
         }

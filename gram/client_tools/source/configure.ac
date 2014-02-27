@@ -1,13 +1,13 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_client_tools],[11.0],[http://jira.globus.org])
+AC_INIT([globus_gram_client_tools],[11.1],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gram-client >= 12, globus-gram-protocol >= 11, globus-gass-transfer >= 7, globus-gass-server-ez >= 4, globus-rsl >= 9, globus-gss-assist >= 8"])
 
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
+AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
 
 m4_include([dirt.sh])
@@ -58,14 +58,21 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
                 test "$XSLTPROC" != "no" && \
                 test "$XMLLINT" != "no"])
 AC_CONFIG_FILES(
-        globus-gram-client-tools-uninstalled.pc
+        [globus-gram-client-tools-uninstalled.pc
         globus-gram-client-tools.pc
-        globus-job-cancel:globus-job-clean.in
-        globus-job-clean
-        globus-job-submit:globus-job-run.in
-        globus-job-run
-        globus-job-status
-        globus-job-get-output
         Makefile
-	version.h)
+	version.h])
+AC_CONFIG_FILES(
+        [globus-job-cancel:globus-job-clean.in],
+        [chmod a+x globus-job-cancel])
+AC_CONFIG_FILES(
+        [globus-job-clean], [chmod a+x globus-job-clean])
+AC_CONFIG_FILES(
+        [globus-job-submit:globus-job-run.in], [chmod a+x globus-job-submit])
+AC_CONFIG_FILES(
+        [globus-job-run], [chmod a+x globus-job-run])
+AC_CONFIG_FILES(
+        [globus-job-status], [chmod a+x globus-job-status])
+AC_CONFIG_FILES(
+        [globus-job-get-output], [chmod a+x globus-job-get-output])
 AC_OUTPUT

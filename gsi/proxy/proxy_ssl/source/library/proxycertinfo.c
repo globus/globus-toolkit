@@ -33,8 +33,6 @@
 
 #include "proxycertinfo.h"
 
-#if OPENSSL_VERSION_NUMBER < 0x10000000L
-
 #if OPENSSL_VERSION_NUMBER < 0x0090801fL
 #define gt_i2d_cast (int (*)())
 #define gt_d2i_cast (char *(*)())
@@ -47,6 +45,7 @@
 #define gt_destroy_cast (void (*)(void *))
 #endif
 
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
 /** 
  * Define the functions required for 
  * manipulating a PROXYCERTINFO and its ASN1 form. 
@@ -90,7 +89,7 @@ PROXYCERTINFO * PROXYCERTINFO_new()
     ret = NULL;
 
     M_ASN1_New_Malloc(ret, PROXYCERTINFO);
-    memset(ret, (int) NULL, sizeof(PROXYCERTINFO));
+    memset(ret, 0, sizeof(PROXYCERTINFO));
     ret->path_length      = NULL;
     ret->policy           = PROXYPOLICY_new();
     return (ret);

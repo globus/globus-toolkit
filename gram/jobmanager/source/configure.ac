@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_job_manager],[14.2],[http://jira.globus.org])
+AC_INIT([globus_gram_job_manager],[14.3],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -90,7 +90,7 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
                 test "$docbook_dtd_available" != "no" && \
                 test "$XSLTPROC" != "no" && \
                 test "$XMLLINT" != "no"])
-AC_OUTPUT(
+AC_CONFIG_FILES([
 	globus-gram-job-manager-uninstalled.pc
 	globus-gram-job-manager.pc
 	scripts/Makefile
@@ -101,5 +101,6 @@ AC_OUTPUT(
         gram.logrotate
         Makefile
         version.h
-)
+],
+    [chmod a+x globus-personal-gatekeeper])
 AC_OUTPUT

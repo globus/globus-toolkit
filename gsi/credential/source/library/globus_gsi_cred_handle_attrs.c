@@ -91,7 +91,7 @@ globus_gsi_cred_handle_attrs_init(
 
     /* initialize all the handle attributes to NULL */
     memset(*handle_attrs, 
-           (int) NULL, 
+           0,
            sizeof(globus_i_gsi_cred_handle_attrs_t));
     
     (*handle_attrs)->search_order = 

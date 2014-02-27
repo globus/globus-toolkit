@@ -43,16 +43,6 @@
 
 #define GLOBUS_MAPPING_STRING ":globus-mapping:"
 
-#define _GSSL(s) globus_common_i18n_get_string_by_key(\
-		    NULL, \
-		    "globus_gridftp_server", \
-		    s)
-
-#define _FSSL(s,p) globus_common_i18n_get_string_by_key(\
-		     p, \
-		    "globus_gridftp_server", \
-		    s)
-
 extern globus_module_descriptor_t      globus_i_gfs_module;
 #define GLOBUS_GRIDFTP_SERVER_MODULE (&globus_i_gfs_module)
 

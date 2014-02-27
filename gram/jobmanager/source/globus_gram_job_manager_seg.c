@@ -462,12 +462,15 @@ globus_gram_job_manager_seg_handle_event(
         event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
     {
         if (request->expected_terminal_state ==
-                GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
+                GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE && 
+            event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
         {
-            request->expected_terminal_state = event->event_type;
+            request->expected_terminal_state =
+                    GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
         }
         if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE &&
-            request->exit_code == 0)
+            request->exit_code == 0 &&
+            event->exit_code != 0)
         {
             request->exit_code = event->exit_code;
         }
@@ -479,14 +482,31 @@ globus_gram_job_manager_seg_handle_event(
     if (event->event_type != GLOBUS_SCHEDULER_EVENT_DONE &&
          event->event_type != GLOBUS_SCHEDULER_EVENT_FAILED)
     {
-        if (globus_i_gram_job_manager_script_valid_state_change(
-                    request,
-                    event->event_type))
+        int protocol_event_type;
+
+        switch (event->event_type)
         {
-            globus_gram_job_manager_request_set_status(
-                    request,
-                    event->event_type);
-            request->unsent_status_change = GLOBUS_TRUE;
+            case GLOBUS_SCHEDULER_EVENT_PENDING:
+                protocol_event_type = GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING;
+                break;
+            case GLOBUS_SCHEDULER_EVENT_ACTIVE:
+                protocol_event_type = GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING;
+                break;
+            default:
+                protocol_event_type = -1;
+        }
+
+        if (protocol_event_type != -1)
+        {
+            if (globus_i_gram_job_manager_script_valid_state_change(
+                        request,
+                        protocol_event_type))
+            {
+                globus_gram_job_manager_request_set_status(
+                        request,
+                        protocol_event_type);
+                request->unsent_status_change = GLOBUS_TRUE;
+            }
         }
     }
     else if (*request->job_id_string == '\0')

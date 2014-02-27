@@ -970,7 +970,7 @@ globus_l_gass_transfer_callback_close_callback(
     globus_gass_transfer_close_callback_t	callback;
     void *					callback_arg;
 
-    listener = (globus_gass_transfer_listener_t) arg;
+    listener = (globus_gass_transfer_listener_t) (intptr_t) arg;
 
     l = (globus_gass_transfer_listener_struct_t *) arg;
 

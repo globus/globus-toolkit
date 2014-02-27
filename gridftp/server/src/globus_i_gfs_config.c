@@ -2331,7 +2331,7 @@ globus_l_gfs_config_misc()
         globus_free(hostname);
     }            
 
-    if(value = globus_i_gfs_config_string("version_tag"))
+    if((value = globus_i_gfs_config_string("version_tag")) != NULL)
     {
         toolkit_version = 
             globus_common_create_string("%s %s", toolkit_id, value);

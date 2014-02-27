@@ -23,6 +23,7 @@
  *   packing macros
  *   --------------
  ***********************************************************************/
+
 #define GFSEncodeUInt32(_start, _len, _buf, _w)                         \
 do                                                                      \
 {                                                                       \
@@ -36,7 +37,7 @@ do                                                                      \
         _start = globus_libc_realloc(_start, _len);                     \
         _buf = _start + _ndx;                                           \
     }                                                                   \
-    _cw = htonl((uint32_t)_w);                                          \
+    _cw = (uint32_t) htonl((uint32_t)_w);                                          \
     memcpy(_buf, &_cw, 4);                                              \
     _buf += 4;                                                          \
 } while(0)
@@ -51,7 +52,7 @@ do                                                                      \
         goto decode_err;                                                \
     }                                                                   \
     memcpy(&_cw, _buf, 4);                                              \
-    _w = (void *) htonl((uint32_t)_cw);                                 \
+    _w = (void *) (intptr_t) htonl((uint32_t)_cw);                      \
     _buf += 4;                                                          \
     _len -= 4;                                                          \
 } while(0)

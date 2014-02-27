@@ -19,6 +19,7 @@
  * @author Sam Meder, Sam Lang
  */
 
+
 #define GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(_LENGTH_) \
     globus_error_put(globus_error_wrap_errno_error( \
         GLOBUS_GSI_PROXY_MODULE, \
@@ -31,6 +32,12 @@
         _LENGTH_))
 
 #include "globus_i_gsi_proxy.h"
+
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define GT_D2I_DATA_CAST 
+#else
+#define GT_D2I_DATA_CAST (const unsigned char **)
+#endif
 
 /**
  * @brief Initialize Handle
@@ -419,7 +426,7 @@ globus_gsi_proxy_handle_get_private_key(
     tmp = der_encoded;
     
     if(!d2i_PrivateKey(handle->proxy_key->type, proxy_key, 
-                       &tmp, length))
+                       GT_D2I_DATA_CAST &tmp, length))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -523,7 +530,7 @@ globus_gsi_proxy_handle_set_private_key(
         tmp = der_encoded;
         
         if(!d2i_PrivateKey(proxy_key->type, &handle->proxy_key, 
-                           &tmp, length))
+                           GT_D2I_DATA_CAST &tmp, length))
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
@@ -1823,7 +1830,7 @@ globus_gsi_proxy_handle_set_is_limited(
 
 
 /**
- * Check to see if the proxy is a limited proxy 
+ * Check to see  the proxy is a limited proxy 
  *
  * @param handle
  *        the proxy handle to check
