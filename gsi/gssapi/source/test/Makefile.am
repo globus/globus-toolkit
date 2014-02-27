@@ -113,7 +113,8 @@ testcred.cert: testcred.req testcred.key
 testcredlink: testcred.cert
 	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
 	rm -f "$$linkname"; \
-	ln -s testcred.cert "$$linkname"
+	ln -s testcred.cert "$$linkname"; \
+        echo "$$linkname" > testcredlink
 
 EXTRA_DIST = \
         $(check_DATA_real) \
@@ -121,4 +122,10 @@ EXTRA_DIST = \
         gssapi-test-wrapper
 
 CLEANFILES = testcred.key testcred.cert testcred.req
+
+clean-local:
+	@if [ -f testcredlink ]; then \
+            rm -f `cat testcredlink` testcredlink; \
+        fi
+
 .PHONY: test junit testcredlink
