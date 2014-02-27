@@ -28,17 +28,18 @@ Dist_Scripts = \
 	grid-default-ca.in
 
 
-EXTRA_DIST = $(Dist_Scripts) $(MANUALS_SOURCE) $(man1_MANS) $(man8_MANS)
+EXTRA_DIST = $(Dist_Scripts) $(MANUALS_SOURCE) $(man1_MANS) $(man8_MANS) \
+    replace-version.xsl
 
 if BUILD_MANPAGES
 SUFFIXES = .xml .1 .8
 
 .xml.8:
 	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd $< > /dev/null
-	$(XSLTPROC) --stringparam version "`$$GLOBUS_LOCATION/bin/globus-version 2> /dev/null || echo`" --xinclude $(srcdir)/replace-version.xsl $<
+	$(XSLTPROC) --stringparam version "`globus-version 2> /dev/null || echo`" --xinclude $(srcdir)/replace-version.xsl $<
 .xml.1:
 	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd $< > /dev/null
-	$(XSLTPROC) --stringparam version "`$$GLOBUS_LOCATION/bin/globus-version 2> /dev/null || echo`" --xinclude $(srcdir)/replace-version.xsl $<
+	PATH=$${PATH}:$(bindir) $(XSLTPROC) --stringparam version "$${GLOBUS_VERSION:-`globus-version 2> /dev/null || echo`}" --xinclude $(srcdir)/replace-version.xsl $<
 endif
 
 CLEANFILES = $(User_Scripts)
