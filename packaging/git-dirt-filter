@@ -12,7 +12,7 @@ case "$1" in
     --smudge)
         while read line; do
             echo "$line" | \
-            sed -e "s/DIRT_TIMESTAMP=.*/DIRT_TIMESTAMP=$current_timestamp/" \
+            sed -e "s/DIRT_TIMESTAMP=.*/DIRT_TIMESTAMP=${current_timestamp:-0}/" \
                 -e "s/DIRT_BRANCH_ID=.*/DIRT_BRANCH_ID=${current_branch_id:-0}/"\
                 1>&3
 

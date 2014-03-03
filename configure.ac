@@ -81,13 +81,12 @@ $1-deb_PACKAGE_NAME = ]native_name[
 $1-deb_SOURCE = package-output/\$($1-dist-tarball)
 $1-deb_TARBALL = debbuild/]native_name[_]pkgver[.orig.tar.gz
 $1-deb: \$($1-deb_SOURCE)
-$1-]pkgver[.pkg: $1-stamp
-$1-]pkgver[.pkg_SUBDIR = $2
-$1-]pkgver[.pkg_PACKAGE_NAME = $1
-$1-]pkgver[.pkg_PACKAGE_VERSION = ]pkgver[
-$1-osx-pkg = $1-]pkgver[.pkg
+$1-osx-pkg = osx/packages/$1-]pkgver[.pkg
+\$($1-osx-pkg): $1-stamp
+\$($1-osx-pkg)_SUBDIR = $2
+\$($1-osx-pkg)_PACKAGE_NAME = $1
+\$($1-osx-pkg)_PACKAGE_VERSION = ]pkgver[
 $1-osx-pkg: \$($1-osx-pkg)
-$1-]pkgver[.pkg_SUBDIR = $2
 ])
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
     m4_append([GT_SUBDIRS_MACRO], [$2], [ ])dnl
@@ -241,7 +240,7 @@ dnl         [gsi/authz_null_callout/source],
 dnl         [globus_authz], [gsi])
 GT_PACKAGE([globus_gram_job_manager_slurm],
         [gram/jobmanager/lrms/slurm/source], [], [gram5-slurm])
-dnl GT_PACKAGE([globus_xio_udt_driver],[xio/drivers/udt_ref])
+GT_PACKAGE([globus_xio_udt_driver],[xio/drivers/udt/source], [globus_common globus_xio], [udt])
 GT_PACKAGE([globus_gridmap_callout_error],
         [gsi/gridmap_callout/error], [globus_common globus_gssapi_error],
         [gsi])
@@ -328,18 +327,19 @@ AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 TARGETS_FILE=makefile.targets
 echo "$TARGETS" > "$TARGETS_FILE"
 
-MAC_INSTALLER_PKG_REFS="MAC_INSTALLER_PKG_REFS"
-MAC_INSTALLER_CHOICE_LINES="MAC_INSTALLER_CHOICE_LINES"
-MAC_INSTALLER_PACKAGE_CHOICES="MAC_INSTALLER_PACKAGE_CHOICES"
-rm -f "MAC_INSTALLER_PKG_REFS" "MAC_INSTALLER_CHOICE_LINES" "MAC_INSTALLER_PACKAGE_CHOICES"
+MAC_INSTALLER_PKG_REFS="osx/MAC_INSTALLER_PKG_REFS"
+MAC_INSTALLER_CHOICE_LINES="osx/MAC_INSTALLER_CHOICE_LINES"
+MAC_INSTALLER_PACKAGE_CHOICES="osx/MAC_INSTALLER_PACKAGE_CHOICES"
+rm -f "$MAC_INSTALLER_PKG_REFS" "$MAC_INSTALLER_CHOICE_LINES" "$MAC_INSTALLER_PACKAGE_CHOICES"
+mkdir -p osx
 
-touch MAC_INSTALLER_PKG_REFS MAC_INSTALLER_CHOICE_LINES MAC_INSTALLER_PACKAGE_CHOICES
+touch $MAC_INSTALLER_PKG_REFS $MAC_INSTALLER_CHOICE_LINES $MAC_INSTALLER_PACKAGE_CHOICES
 
 m4_foreach([packname], m4_split(GT_PACKAGE_LIST), [
-cat <<EOF >> "MAC_INSTALLER_PKG_REFS"
+cat <<EOF >> "$MAC_INSTALLER_PKG_REFS"
     <pkg-ref id="org.globus.packname" version="m4_expand(packname[_VERSION])">packname[-]m4_expand(packname[_VERSION]).pkg</pkg-ref>
 EOF
-cat <<EOF >> "MAC_INSTALLER_PACKAGE_CHOICES"
+cat <<EOF >> "$MAC_INSTALLER_PACKAGE_CHOICES"
     <choice 
         id="org.globus.package.packname"
         visible="false"
@@ -353,7 +353,7 @@ m4_ifdef(packname[_REQUIRES],[
 EOF
 ])
 
-cat <<EOF >> "MAC_INSTALLER_CHOICE_LINES"
+cat <<EOF >> "$MAC_INSTALLER_CHOICE_LINES"
 m4_foreach([bundlename],
     m4_split(GT_BUNDLES_MACRO),
     [
@@ -371,10 +371,12 @@ dnl Don't build globus-gram5-* on windows
 case "$host_os" in
     mingw*|cygwin*)
         default_bundles="m4_foreach([bundle], m4_split(GT_BUNDLES_MACRO),
-        [ifelse(m4_expand(m4_substr(bundle, 0, 6)),[gram5-],[],[bundle ])])"
+        [ifelse(m4_expand(m4_substr(bundle, 0, 6)),[gram5-],[],
+            ifelse(m4_expand(m4_substr(bundle, 0, 3)), [udt],[],[bundle ]))])"
         ;;
        *)
-        default_bundles="GT_BUNDLES_MACRO"
+        default_bundles="m4_foreach([bundle], m4_split(GT_BUNDLES_MACRO),
+            [ifelse(m4_expand(m4_substr(bundle, 0, 3)), [udt],[],[bundle ])])"
         ;;
 esac
 
@@ -383,7 +385,16 @@ m4_foreach([bundle],
     [
     AC_ARG_ENABLE(bundle, AS_HELP_STRING([--enable-[]bundle], [Enable bundle]),
         [if test "$enableval" = "yes"; then
-            enabled_bundles="${enabled_bundles:+$enabled_bundles }bundle"
+            skip=0
+            for name in $enabled_bundles; do
+                if test "$name" = bundle ; then
+                    skip=1
+                    break
+                fi
+            done
+            if test "$skip" = 0; then
+                enabled_bundles="${enabled_bundles:+$enabled_bundles }bundle"
+            fi
         fi])
 ])
 if test X"$enabled_bundles" = X; then
@@ -410,7 +421,7 @@ AC_SUBST(GT_BUNDLES)
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Doxyfile])
 AC_CONFIG_FILES([doxygen/index.dox])
-AC_CONFIG_FILES([distribution.xml])
+AC_CONFIG_FILES([osx/distribution.xml])
 AC_CONFIG_FILES([osx/scripts/postinstall], [chmod a+x osx/scripts/postinstall])
 
 AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)

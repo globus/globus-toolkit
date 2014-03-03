@@ -1,36 +1,101 @@
 #! /bin/sh
+exec 2> /tmp/installog
+set -x
+
+SCRIPT_PATH="$0"
+PACKAGE_PATH="$1"
+TARGET_LOCATION="$2"
+TARGET_VOLUME="$3"
 
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 bindir="@bindir@"
 sbindir="@sbindir@"
+datarootdir="@datarootdir@"
+datadir="@datadir@"
+mandir="@mandir@"
 
-launchdpath="$(launchctl getenv PATH)"
-pathappend=""
-OLDIFS="$IFS"
-IFS=:
-b="$(echo "${2}/$bindir" | sed -e 's!//*!/!g')"
-s="$(echo "${2}/$sbindir" | sed -e 's!//*!/!g')"
-l="$(echo "${2}/$prefix" | sed -e 's!//*!/!g')"
-for p in launchdpath; do
-    p="$(echo "$p" | sed -e 's!/+!/!g')"
-    if [ "$p" = "$b" ]; then
-        skipbin=1
+l="$(echo "${TARGET_LOCATION}/$prefix" | sed -e 's!//*!/!g')"
+b="$(echo "${TARGET_LOCATION}/$bindir" | sed -e 's!//*!/!g')"
+s="$(echo "${TARGET_LOCATION}/$sbindir" | sed -e 's!//*!/!g')"
+m="$(echo "${TARGET_LOCATION}/$mandir" | sed -e 's!//*!/!g')"
+
+
+if [ "$TARGET_LOCATION" = "/" ]; then
+    for d in /etc/paths.d /etc/manpaths.d; do
+        if [ ! -d $d ]; then
+            mkdir -m 755 $d
+        fi
+    done
+    cat <<-EOF > /etc/paths.d/Globus
+	$b
+	$s
+	EOF
+    cat <<-EOF > /etc/manpaths.d/Globus
+	$m
+	EOF
+else
+    if [ -f "$HOME/.profile" ]; then
+        profile_wo_globus="$(awk < "$HOME/.profile" "
+            /# BEGIN GLOBUS/ { skip=1; next; }
+            /# END GLOBUS/ { skip=0; next; }
+            skip == 1 { next; }
+            { print }
+        ")"
+    else
+        profile_wo_globus=""
     fi
-    if [ "$p" = "$s" ]; then
-        skipsbin=1
+    echo "$profile_wo_globus" > "$HOME/.profile.globus"
+    cat >> "$HOME/.profile.globus" <<EOF
+# BEGIN GLOBUS
+PATH="\${PATH:+\$PATH:}${b}:${s}"
+MANPATH="\${MANPATH:+\$MANPATH:}${m}"
+# END GLOBUS
+EOF
+    mv "$HOME/.profile" "$HOME/.profile.globus.save"
+    mv "$HOME/.profile.globus" "$HOME/.profile" 
+fi
+
+launchctl setenv GLOBUS_LOCATION "${l}"
+
+UNINSTALLER="${s}/globus-uninstall"
+cat <<EOF > "${UNINSTALLER}"
+#! /bin/sh
+
+files="\$(pkgutil --volume "${TARGET_LOCATION}" --regexp --files='^org\.globus.*')"
+for file in \$files; do
+    fp="\$(echo ${TARGET_LOCATION}/\$file | sed -e 's!//*!/!g')"
+    if [ -f "\${fp}" ] || [ -L "\${fp}" ]; then
+        rm -f "\${fp}";
     fi
 done
-IFS="$OLDIFS"
+rm -f "${UNINSTALLER}"
+find "${l}" -depth -type d -exec rmdir {} +
+pkgutil --volume "${TARGET_LOCATION}" --regexp --forget '^org\.globus.*' > /dev/null
 
-if [ "${skipsbin:-0}" -ne 1 ]; then
-    pathappend="${pathappend:+$pathappend:}$s"
-fi
-if [ "${skipbin:-0}" -ne 1 ]; then
-    pathappend="${pathappend:+$pathappend:}$b"
-fi
+launchctl unsetenv GLOBUS_LOCATION
+EOF
 
-if [ "$pathappend" != "" ]; then
-    launchctl setenv PATH "${launchdpath:+$launchdpath:}${pathappend}"
+if [ "$TARGET_LOCATION" = "/" ]; then
+    cat <<-EOF >> "${UNINSTALLER}"
+	rm -f /etc/paths.d/Globus
+	rm -f /etc/manpaths.d/Globus
+	EOF
+else
+    cat <<-EOF >> "${UNINSTALLER}"
+	    if [ -f "\$HOME/.profile" ]; then
+	        profile_wo_globus="\$(awk < "$HOME/.profile" "
+	            /# BEGIN GLOBUS/ { skip=1; next; }
+	            /# END GLOBUS/ { skip=0; next; }
+	            skip == 1 { next; }
+	            { print }
+	        ")"
+	    else
+	        profile_wo_globus=""
+	    fi
+	    echo "\$profile_wo_globus" > "\$HOME/.profile.globus"
+	    mv "\$HOME/.profile" "\$HOME/.profile.globus.save"
+	    mv "\$HOME/.profile.globus" "\$HOME/.profile" 
+	EOF
 fi
-launchctl setenv GLOBUS_LOCATION "$l"
+chmod a+x "${UNINSTALLER}"

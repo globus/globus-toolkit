@@ -59,8 +59,8 @@ $(GT_TARGETS_DEB):
 
 $(GT_TARGETS_OSX_PKG):
 	rm -f $@
-	export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) install DESTDIR=$(abs_builddir)/osxdest/$@
-	for filename in `find $(abs_builddir)/osxdest/$@ -type f | grep -v '\.a$$'`; do \
+	export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) install DESTDIR=$(abs_builddir)/osx/dest/$$(basename $@ .pkg)
+	for filename in `find $(abs_builddir)/osx/dest/$$(basename $@ .pkg) -type f | grep -v '\.a$$'`; do \
 	    if file "$$filename" | grep -q Mach-O; then \
 		echo "Processing $$filename"; \
 		for lib in `otool -L "$$filename" | sed 1d | grep -E "$(libdir)|ltdl" | awk '{print $$1}'`; do \
@@ -72,8 +72,9 @@ $(GT_TARGETS_OSX_PKG):
 		fi; \
 	    fi; \
 	done
-	@find osxdest/$@ \( -name '*.la' -o -name '*.a' \) -a -exec rm {} +
-	@pkgbuild --root $(abs_builddir)/osxdest/$@ \
+	@find osx/dest/$$(basename $@ .pkg) \( -name '*.la' -o -name '*.a' \) -a -exec rm {} +
+	@mkdir -p osx/packages
+	@pkgbuild --root $(abs_builddir)/osx/dest/$$(basename $@ .pkg) \
             --version $($@_PACKAGE_VERSION) \
 	    --identifier org.globus.$($@_PACKAGE_NAME) \
             --ownership recommended \
@@ -87,12 +88,12 @@ endif
 globus_common_macosx_scripts = --scripts osx/scripts
 $(globus_common-osx-pkg): osx/scripts/postinstall
 
-$(PACKAGE)-$(VERSION).pkg: $(GT_TARGETS_OSX_PKG) distribution.xml
-	@productbuild --distribution distribution.xml \
-		--package-path . \
-		--resources $(srcdir) \
+osx/$(PACKAGE)-$(VERSION).pkg: $(GT_TARGETS_OSX_PKG) osx/distribution.xml
+	@productbuild --distribution osx/distribution.xml \
+		--package-path osx/packages \
+		--resources $(srcdir)/osx/resources \
 		$@
-osx-pkgs: $(PACKAGE)-$(VERSION).pkg
+osx-pkgs: osx/$(PACKAGE)-$(VERSION).pkg
 
 DOC_STAMPS =
 DOC_PHONY = 

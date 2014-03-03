@@ -81,7 +81,7 @@ main()
     /* setup listener */
     address.sin_family = AF_INET;
     address.sin_port = 0;
-    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_addr.s_addr = INADDR_LOOPBACK;
 
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (listen_fd < 0)
