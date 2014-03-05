@@ -15,7 +15,7 @@ libnice-unpack-stamp: $(libnice_tarball)
 
 libnice-configure-stamp: libnice-unpack-stamp
 	export PKG_CONFIG_PATH="$(PKG_CONFIG_PATH):$(GLIB2_PKG_CONFIG_PATH)"; \
-        cd source && ./configure --prefix=$(abs_builddir) --disable-shared --disable-dependency-tracking --enable-static CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"
+        cd source && ./configure --prefix=$(abs_builddir) --disable-shared --disable-dependency-tracking --enable-static CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"
 	touch $@
 
 libnice: libnice-configure-stamp

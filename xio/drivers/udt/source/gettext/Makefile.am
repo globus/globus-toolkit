@@ -15,7 +15,7 @@ gettext-unpack-stamp: $(gettext_tarball)
 
 gettext-configure-stamp: gettext-unpack-stamp
 	export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH); \
-        cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS)" LD="$(LD)" --host="$(host_triplet)"
+        cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS) $(lt_prog_compiler_pic)" LD="$(LD)" --host="$(host_triplet)"
 	touch $@
 
 gettext: gettext-configure-stamp

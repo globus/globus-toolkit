@@ -30,20 +30,20 @@ libffi-configure-stamp: libffi-unpack-stamp
 			    fi; \
 			done ; \
 			if test "x$$arches" = "x"; then \
-			    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"; \
+			    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"; \
 			else \
 			    for arch in $$arches; do \
 				$(MKDIR_P) source/build/$$arch; \
 				cd source/build/$$arch; \
-				../../configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="-arch $$arch $$other_flags" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$$arch-$(host_vendor)-$(host_os)"; \
+				../../configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="-arch $$arch $$other_flags $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$$arch-$(host_vendor)-$(host_os)"; \
 				cd "$$OLDPWD"; \
 			    done; \
 			fi ; \
 			;; \
 		*) \
-		    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"; \
+		    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"; \
 		    ;; \
-	esac; \
+	esac;
 	touch $@
 
 libffi: libffi-configure-stamp
@@ -79,9 +79,9 @@ libffi: libffi-configure-stamp
 			fi ; \
 			;; \
 		*) \
-		    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"; \
+		    cd source && env toolexeclibdir='$${libdir}' $(MAKE) MAKEFLAGS=-e $(AM_MAKEFLAGS) -e install; \
 		    ;; \
-	esac; \
+	esac;
 	touch $@
 
 CLEANFILES = libffi

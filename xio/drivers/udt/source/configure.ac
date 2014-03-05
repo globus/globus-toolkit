@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_udtdriver],[1.0],[http://jira.globus.org])
+AC_INIT([globus_xio_udt_driver],[1.0],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -16,6 +16,8 @@ AC_CANONICAL_HOST
 AC_CANONICAL_BUILD
 
 AC_LANG(C++)
+
+AC_SUBST(lt_prog_compiler_pic)
 
 m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)

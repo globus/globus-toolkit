@@ -116,6 +116,7 @@ typedef struct globus_l_xio_udt_bounce_s
     xio_l_udt_ref_server_handle_t *     server;
 } globus_l_xio_udt_bounce_t;
 
+extern "C" {
 static
 int
 globus_l_xio_udt_ref_activate(void);
@@ -139,6 +140,7 @@ GlobusXIODefineModule(udt) =
     NULL,
     &local_version
 };
+}
 
 
 static  xio_l_udt_ref_attr_t            globus_l_xio_udt_ref_attr_default;

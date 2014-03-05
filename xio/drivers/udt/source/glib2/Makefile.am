@@ -42,7 +42,7 @@ endif
 			done ; \
 			    $(MKDIR_P) build/$(build_triplet); \
 			    cd build/$(build_triplet); \
-			    ../../source/configure --prefix=$(abs_builddir)/$(build_triplet) --disable-shared --enable-static CFLAGS="$$other_flags" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$$other_ldflags $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --disable-dependency-tracking -q || exit 1; \
+			    ../../source/configure --prefix=$(abs_builddir)/$(build_triplet) CFLAGS="$$other_flags" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$$other_ldflags $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --disable-dependency-tracking -q || exit 1; \
 			    $(MAKE) $(AM_MAKEFLAGS) install ; \
 			;; \
 	esac;
@@ -53,7 +53,7 @@ glib2-configure-stamp: glib2-unpack-stamp
 	export PATH="$${PATH}:$(GETTEXT_PATH)"; \
 	case $(host_os) in \
 		*darwin*) \
-			export PATH="$(abs_builddir)/$(host_triplet)/bin:$${PATH}"; \
+			export PATH="$(abs_builddir)/$(build_triplet)/bin:$${PATH}"; \
 			export glib_cv_stack_grows=no; \
 			export glib_cv_uscore=no; \
 			export ac_cv_func_posix_getpwuid_r=yes; \
@@ -81,18 +81,18 @@ glib2-configure-stamp: glib2-unpack-stamp
 			    fi; \
 			done ; \
 			if test "x$$arches" = "x"; then \
-			    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$(LDFLAGS) $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)" --disable-dependency-tracking -q || exit 1; \
+			    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$(LDFLAGS) $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)" --disable-dependency-tracking -q || exit 1; \
 			else \
 			    for arch in $$arches; do \
 				$(MKDIR_P) build/$$arch; \
 				cd build/$$arch; \
-				../../source/configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="-arch $$arch $$other_flags" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="-arch $$arch $$other_ldflags $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$$arch-$(host_vendor)-$(host_os)" --disable-dependency-tracking -q || exit 1; \
+				../../source/configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="-arch $$arch $$other_flags $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="-arch $$arch $$other_ldflags $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$$arch-$(host_vendor)-$(host_os)" --disable-dependency-tracking -q || exit 1; \
 				cd "$$OLDPWD"; \
 			    done; \
 			fi ; \
 			;; \
 		*) \
-		    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$(LDFLAGS) $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)" --disable-dependency-tracking || exit 1; \
+		    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$(LDFLAGS) $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)" --disable-dependency-tracking || exit 1; \
 		    ;; \
 	esac;
 	touch $@
@@ -139,7 +139,7 @@ glib2: glib2-configure-stamp
 			fi ; \
 			;; \
 		*) \
-		    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"; \
+		    cd source && $(MAKE) $(AM_MAKEFLAGS) install; \
 		    ;; \
 	esac;
 	touch $@
