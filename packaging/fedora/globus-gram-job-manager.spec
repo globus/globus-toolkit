@@ -12,8 +12,8 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.53
-Release:	2%{?dist}
+Version:	13.54
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -185,6 +185,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Mar 11 2014 Globus Toolkit <support@globus.org> - 13.54-1
+- GT-520: Job Manager segfault
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 13.53-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

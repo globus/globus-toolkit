@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+GLOBUS_FLAVOR_NAME=@GLOBUS_FLAVOR_NAME@
+flavorincludedir=@flavorincludedir@
+
+Name: globus-gram-job-manager
+Description: Globus Toolkit - GRAM Jobmanager
+Version: 13.53
+Requires.private: globus-xio-popen-driver >= 2 globus-scheduler-event-generator >= 4 globus-gram-job-manager-callout-error >= 2 globus-gsi-credential >= 5 globus-callout >= 2 globus-gsi-sysconfig >= 5 globus-rsl >= 9 globus-gss-assist >= 8 globus-gass-transfer >= 7 globus-gssapi-gsi >= 10 globus-common >= 14 globus-usage >= 3 globus-gass-cache >= 8 globus-core >= 8 @GPT_PKGCONFIG_DEPENDENCIES@ globus-xio >= 3 globus-gram-protocol >= 11
+Libs: -L${libdir}
+Libs.private: @GPT_EXTERNAL_LIBS@
+Cflags: @GPT_PKG_CFLAGS@ -I${includedir} -I${flavorincludedir} @GPT_EXTERNAL_INCLUDES@

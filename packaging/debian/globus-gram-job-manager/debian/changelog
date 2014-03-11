@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.54-1) unstable; urgency=low
+
+  * GT-520: Job Manager Segfault
+
+ -- Globus Toolkit <support@globus.org>  Tue, 11 Mar 2014 15:34:48 -0400
+
 globus-gram-job-manager (13.53-1) unstable; urgency=low
 
   * GT-311: globus job manager is leaking memory
