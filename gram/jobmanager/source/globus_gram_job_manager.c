@@ -3057,6 +3057,7 @@ globus_l_gram_restart_job(
             GSS_C_NO_CREDENTIAL,
             GSS_C_NO_CONTEXT,
             NULL,
+            NULL,
             GLOBUS_TRUE,
             NULL,
             NULL,

@@ -911,6 +911,7 @@ globus_gram_job_manager_request_init(
     char *                              rsl,
     gss_cred_id_t                       delegated_credential,
     gss_ctx_id_t                        response_ctx,
+    const char *                        peer_address,
     globus_gsi_cred_handle_t            peer_cred,
     globus_bool_t                       reinit,
     char **                             old_job_contact,

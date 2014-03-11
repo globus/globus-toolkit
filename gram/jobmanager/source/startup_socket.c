@@ -1676,6 +1676,28 @@ globus_l_gram_startup_socket_callback(
             goto failed_import_cred;
         }
 
+        /* Determine client address if we don't know it from the
+         * gatekeeper
+         */
+        if (peername == NULL)
+        {
+            globus_sockaddr_t           peer_address;
+            socklen_t                   peer_address_len;
+
+            peer_address_len = sizeof(peer_address);
+            rc = getpeername(
+                    response_fd,
+                    (struct sockaddr *) &peer_address,
+                    &peer_address_len);
+            if (rc == GLOBUS_SUCCESS)
+            {
+                rc = globus_libc_addr_to_contact_string(
+                        &peer_address,
+                        GLOBUS_LIBC_ADDR_NUMERIC,
+                        &peername);
+            }
+        }
+
         /* Load request data */
         rc = globus_gram_job_manager_request_load(
                 manager,
@@ -1907,32 +1929,6 @@ globus_l_gram_startup_socket_callback(
 
         if (!version_only)
         {
-            globus_sockaddr_t           peer_address;
-            socklen_t                   peer_address_len;
-            char *                      peer_str = NULL;
-
-            if (peername != NULL)
-            {
-                peer_str = peername;
-                peername = NULL;
-            }
-            else
-            {
-                peer_address_len = sizeof(peer_address);
-
-                rc = getpeername(
-                        response_fd,
-                        (struct sockaddr *) &peer_address,
-                        &peer_address_len);
-                if (rc == GLOBUS_SUCCESS)
-                {
-                    rc = globus_libc_addr_to_contact_string(
-                            &peer_address,
-                            GLOBUS_LIBC_ADDR_NUMERIC,
-                            &peer_str);
-                }
-            }
-
             globus_gram_job_manager_request_log(
                     request,
                     GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
@@ -1942,17 +1938,8 @@ globus_l_gram_startup_socket_callback(
                     "peer=%s "
                     "\n",
                     request->job_contact_path,
-                    peer_str ? peer_str : "\"\"");
-
-            if (request->job_stats.client_address == NULL)
-            {
-                request->job_stats.client_address = peer_str;
-            }
-            else if (peer_str)
-            {
-                free(peer_str);
-            }
-
+                    peername ? peername : "\"\"");
+            
             /* Start state machine and send response */
             rc = globus_gram_job_manager_request_start(
                     manager,
