@@ -2705,7 +2705,11 @@ globus_gridftp_server_control_destroy(
     {
         globus_free(server_handle->fault_cmd);
     }
-
+    if(server_handle->del_cred != GSS_C_NO_CREDENTIAL)
+    {
+        OM_uint32 min, maj;
+        maj = gss_release_cred(&min, &server_handle->del_cred);
+    }
     while(!globus_list_empty(server_handle->all_cmd_list))
     {
         cmd_ent = (globus_l_gsc_cmd_ent_t *) globus_list_remove(

@@ -1,3 +1,9 @@
+globus-gridftp-server-control (3.3-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix leak
+
+ -- Globus Toolkit <support@globus.org>  Tue, 11 Mar 2014 08:43:03 -0400
+
 globus-gridftp-server-control (3.2-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes, Warning Cleanup
