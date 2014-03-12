@@ -1,4 +1,4 @@
-SUBDIRS = test
+SUBDIRS = . test
 
 pkgconfigdir = $(libdir)/pkgconfig
 
@@ -9,7 +9,7 @@ lib_LTLIBRARIES = libglobus_io.la
 doc_DATA = GLOBUS_LICENSE
 pkgconfig_DATA = globus-io.pc
 
-libglobus_io_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
+libglobus_io_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) $(GSI_DRIVER_CFLAGS)
 
 libglobus_io_la_LIBADD = $(PACKAGE_DEP_LIBS)
 libglobus_io_la_LDFLAGS = \

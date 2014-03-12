@@ -201,8 +201,17 @@ globus_i_thread_pre_activate(void)
         globus_l_thread_impl_module = lt_dlsym(impl_lib, "globus_extension_module");
         if (globus_l_thread_impl_module == NULL)
         {
-            printf("dlsym: %s\n", lt_dlerror());
-            exit(1);
+            char extension_name_format[] = "globus_thread_%s_module";
+            char * extension_name = malloc(sizeof(extension_name_format) + strlen(globus_l_thread_model) + 1);
+            sprintf(extension_name, extension_name_format, globus_l_thread_model);
+            globus_l_thread_impl_module = lt_dlsym(impl_lib, extension_name);
+            if (globus_l_thread_impl_module == NULL)
+            {
+                printf("dlsym %s: %s\n", extension_name, lt_dlerror());
+                free(extension_name);
+                exit(1);
+            }
+            free(extension_name);
         }
         globus_assert(globus_l_thread_impl_module != NULL);
     }

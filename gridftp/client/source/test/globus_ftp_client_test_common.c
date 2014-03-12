@@ -34,6 +34,7 @@
 #include "globus_ftp_client_test_perf_plugin.h"
 #include "globus_ftp_client_test_throughput_plugin.h"
 #include "globus_ftp_client_test_pause_plugin.h"
+#include "globus_preload.h"
 
 int test_abort_count = 0;
 

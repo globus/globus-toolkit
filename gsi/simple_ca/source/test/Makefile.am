@@ -2,11 +2,14 @@ check_SCRIPTS = \
     grid-ca-create-test \
     grid-ca-sign-test
 
-if RUN_TESTS
 test_scripts = $(check_SCRIPTS)
-endif
 
 TESTS = $(test_scripts)
+if !RUN_TESTS
+XFAIL_TESTS = $(test_scripts)
+endif
+
+TEST_PATH=$(abs_top_builddir):$(GLOBUS_COMMON_PATH):$${PATH}
 
 EXTRA_DIST = $(check_SCRIPTS)
-TESTS_ENVIRONMENT=export PATH=$(abs_top_builddir):$(GLOBUS_COMMON_PATH):$${PATH};
+TESTS_ENVIRONMENT=export PATH=$(TEST_PATH);

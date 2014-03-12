@@ -5,10 +5,12 @@ includedir=@includedir@
 path=@abs_top_builddir@/scripts:@abs_top_builddir@/programs
 abs_top_builddir=@abs_top_builddir@
 abs_top_srcdir=@abs_top_srcdir@
+dlopen=@PTHREAD_PREOPEN_UNINSTALLED@ @WINDOWS_PREOPEN_UNINSTALLED@
+thread_models=@thread_models@
 
 Name: globus-common
 Description: Globus Toolkit - Common Library
 Version: @PACKAGE_VERSION@
-Libs: @LDFLAGS@ -L${abs_top_builddir}/library -lglobus_common
+Libs: @LDFLAGS@ ${abs_top_builddir}/library/libglobus_common.la
 Libs.private: @LIBS@
 Cflags: @LARGEFILE_CFLAGS@ @CFLAGS@ -I${abs_top_builddir} -I${abs_top_srcdir}/library

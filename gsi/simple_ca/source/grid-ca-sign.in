@@ -42,11 +42,21 @@ VERSION="@VERSION@"
 DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
 DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 
+CYGPATH_W="@CYGPATH_W@"
+host_os="@host_os@"
 
 short_usage="$PROGRAM_NAME [-help] -in REQUEST -out CERTIFICATE [options ...]"
 
 openssl_options=""
 
+alias construct_path=echo
+if test x"$CYGPATH_W" != x; then
+    case $host_os in
+        *mingw32*)
+            alias construct_path="$CYGPATH_W"
+            ;;
+    esac
+fi
 
 printhelp() {
     option="${1}"
@@ -222,8 +232,9 @@ do_sign() {
  
 do_password_input "To sign the request"
 tmp_output=/tmp/tmp_output.$$
-${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
-                  -in ${INPUT_REQ_FILE} -out ${SIGNED_OUTPUT_FILE} \
+${openssl_cmd} ca $openssl_options -batch -config $(construct_path ${grid_ca_conf}) \
+                  -in $(construct_path ${INPUT_REQ_FILE}) \
+                  -out $(construct_path ${SIGNED_OUTPUT_FILE}) \
                   > $tmp_output 2>&1
 
 openssl_result=$?
@@ -247,7 +258,7 @@ if test ${openssl_result} != 0; then
                                    || test -n "${already_signed3}"; then
 
         subj_tmp_output=/tmp/tmp_output.$$
-        ${openssl_cmd} req -noout -in ${INPUT_REQ_FILE} \
+        ${openssl_cmd} req -noout -in $(construct_path ${INPUT_REQ_FILE}) \
                            -subject > ${subj_tmp_output} 2>&1
         res=$?
         if test $res != 0; then
@@ -263,7 +274,7 @@ if test ${openssl_result} != 0; then
         # find signed cert
         for p in ${GRID_CA_DIR}/newcerts/*.pem; do
             subj_tmp_output=/tmp/tmp_output.$$
-            ${openssl_cmd} x509 -noout -subject -in ${p} \
+            ${openssl_cmd} x509 -noout -subject -in $(construct_path ${p}) \
                                > ${subj_tmp_output} 2>&1
             res=$?
             if test $res != 0; then
@@ -298,7 +309,7 @@ if test ${openssl_result} != 0; then
         fi
 
         SIGNED_SUBJECT="${req_subj}"
-        expired=`${openssl_cmd} x509 -in ${SIGNED_CERT} -checkend 0 > /dev/null; echo $?`
+        expired=`${openssl_cmd} x509 -in $(construct_path ${SIGNED_CERT}) -checkend 0 > /dev/null; echo $?`
 
         if test -n "${force_sign}" || test "${expired}" = "0"; then
 
@@ -308,8 +319,8 @@ if test ${openssl_result} != 0; then
             tmp_revoke_output=/tmp/tmp_revoke_out.$$
 
             do_password_input "To revoke the current certificate"
-            ${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
-                    -revoke ${SIGNED_CERT} \
+            ${openssl_cmd} ca $openssl_options -batch -config $(construct_path ${grid_ca_conf}) \
+                    -revoke $(construct_path ${SIGNED_CERT}) \
                     2> ${tmp_revoke_output}
 	    res=$?
 	    end_password_input
@@ -355,8 +366,8 @@ if test ${openssl_result} != 0; then
     echo "ERROR running command:"
     echo ""
     echo " ${openssl_cmd} ca $openssl_options \\"
-    echo "    -batch -config ${grid_ca_conf} \\"
-    echo "    -in ${INPUT_REQ_FILE} -out ${SIGNED_OUTPUT_FILE}"
+    echo "    -batch -config $(construct_path ${grid_ca_conf}) \\"
+    echo "    -in $(construct_path ${INPUT_REQ_FILE}) -out $(construct_path ${SIGNED_OUTPUT_FILE})"
     echo ""
     echo "========== ERROR MESSAGES FROM OPENSSL =========="
     cat ${tmp_output} 1>&2
@@ -451,7 +462,7 @@ if test ! $res1 = 0; then
 fi
 if test ! $res1 = 0; then
     if test -f ${GRID_CA_DIR}/passwd; then
-        openssl_options="${openssl_options} -passin file:${GRID_CA_DIR}/passwd"
+        openssl_options="${openssl_options} -passin file:$(construct_path ${GRID_CA_DIR}/passwd)"
         res1=0
     fi
 fi
@@ -470,7 +481,7 @@ if test ! -f ${SIGNED_OUTPUT_FILE}; then
 	exit 1
 fi
 
-NEW_SERIAL="$(${openssl_cmd} x509 -in ${SIGNED_OUTPUT_FILE} -noout -serial)"
+NEW_SERIAL="$(${openssl_cmd} x509 -in $(construct_path ${SIGNED_OUTPUT_FILE}) -noout -serial)"
 res=$?
 if test $res != 0; then
         exec 1>&2

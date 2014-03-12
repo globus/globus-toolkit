@@ -53,9 +53,14 @@ case $host in
         PACKAGE_DEP_LIBS="$PACKAGE_DEP_LIBS -lws2_32 -liphlpapi"
         PACKAGE_DEP_CFLAGS="-DWINVER=0x0502"
         BUILD_FOR_WINDOWS=yes
+        ac_cv_func_gethostname=yes
         ;;
 esac
 
+gtsave_LIBS="$LIBS"
+gtsave_CPPFLAGS="$CPPFLAGS"
+LIBS="$LIBS $PACKAGE_DEP_LIBS"
+CPPFLAGS="$CPPFLAGS -DWINVER=0x0502"
 AC_CHECK_HEADERS([arpa/inet.h])
 AC_CHECK_HEADERS([ifaddrs.h])
 AC_CHECK_HEADERS([net/if_arp.h])
@@ -90,6 +95,8 @@ AC_CHECK_FUNCS([snprintf])
 AC_CHECK_FUNCS([vsnprintf])
 AC_CHECK_FUNCS([strncasecmp])
 AC_PATH_PROG([DOXYGEN], doxygen)
+LIBS="$gtsave_LIBS"
+CPPFLAGS="$gtsave_CPPFLAGS"
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 

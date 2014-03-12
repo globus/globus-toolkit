@@ -23,7 +23,7 @@
 
 #include "ltdl.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #define MY_LIB_EXT ".dll"
 #else
 #define MY_LIB_EXT ".so"
@@ -78,9 +78,7 @@ typedef struct globus_l_extension_module_s
     long                                ref;
     long                                module_ref;
     globus_module_descriptor_t *        module;
-#ifndef BUILD_STATIC_ONLY
     lt_dlhandle                         dlhandle;
-#endif /* !BUILD_STATIC_ONLY */
     struct globus_l_extension_module_s *owner;
 } globus_l_extension_module_t;
 
@@ -112,7 +110,6 @@ static char *                           globus_l_globus_location;
 static globus_hashtable_t               globus_l_extension_mappings;
 */
 
-#if !defined(BUILD_STATIC_ONLY)
 static
 void
 globus_l_libtool_mutex_lock(void)
@@ -143,7 +140,6 @@ globus_l_libtool_get_error(void)
     return (char *) globus_thread_getspecific(globus_l_libtool_key);
 }
 #endif
-#endif /* !defined(BUILD_STATIC_ONLY) */
 
 /**
  * load config file.  substitute $BUILD_FLAVOR for build_flavor,
@@ -164,7 +160,6 @@ globus_l_extension_activate(void)
         globus_rmutex_init(&globus_l_libtool_mutex, NULL);
         globus_thread_key_create(&globus_l_libtool_key, NULL);
 
-#       ifndef BUILD_STATIC_ONLY
         if(lt_dlinit() != 0)
         {
             goto error_dlinit;
@@ -179,7 +174,6 @@ globus_l_extension_activate(void)
             goto error_dlmutex;
         }
 #       endif
-#       endif /* !BUILD_STATIC_ONLY */
         
         globus_hashtable_init(
             &globus_l_extension_loaded,
@@ -210,7 +204,6 @@ globus_l_extension_activate(void)
 error_path:
     globus_hashtable_destroy(&globus_l_extension_builtins);
     globus_hashtable_destroy(&globus_l_extension_loaded);
-#   ifndef BUILD_STATIC_ONLY
 #   if HAVE_LT_DLMUTEX_REGISTER
 error_dlmutex:
 #   endif
@@ -218,7 +211,6 @@ error_dlmutex:
 error_dlinit:
     GlobusExtensionDebugExitWithError();
     return GLOBUS_FAILURE;
-#   endif /* !BUILD_STATIC_ONLY */
 }
 
 /**
@@ -274,25 +266,21 @@ globus_l_extension_shutdown_extension(
      */
     if(extension->ref == 0)
     {
-#       if !defined(BUILD_STATIC_ONLY)
+        if(extension->dlhandle)
         {
-            if(extension->dlhandle)
-            {
-                /* cant do this until i provide a way for callbacks to be
-                 * wrapped and hold a reference on this.  from the xio TODO:
-                 * - extension code needs to reference count callbacks to
-                 *   prevent modules from being unloaded.  there is no way for
-                 *   the user to protect itself from this. this ref count does
-                 *   not need to block module deactivation, only the dlclose().
-                 *   probably also need a register_oneshot wrapper function
-                 *   that can do this.
-                 * -- for now, extensions are just never unloaded.
-                 *
-                lt_dlclose(extension->dlhandle);
-                 */
-            }
+            /* cant do this until i provide a way for callbacks to be
+             * wrapped and hold a reference on this.  from the xio TODO:
+             * - extension code needs to reference count callbacks to
+             *   prevent modules from being unloaded.  there is no way for
+             *   the user to protect itself from this. this ref count does
+             *   not need to block module deactivation, only the dlclose().
+             *   probably also need a register_oneshot wrapper function
+             *   that can do this.
+             * -- for now, extensions are just never unloaded.
+             *
+            lt_dlclose(extension->dlhandle);
+             */
         }
-#       endif /* !defined(BUILD_STATIC_ONLY) */
         globus_free(extension->name);
         globus_free(extension);
     }
@@ -324,7 +312,6 @@ globus_l_extension_deactivate_proxy(
     return GLOBUS_SUCCESS;
 }
 
-#ifndef BUILD_STATIC_ONLY
 static
 globus_result_t
 globus_l_extension_dlopen(
@@ -398,7 +385,7 @@ globus_l_extension_dlopen(
     {
         snprintf(library, 1024, "lib%s_%s",
             name,
-            (sizeof(long) == 8) ? "gcc64pthr" : "gcc32pthr");
+            GLOBUS_FLAVOR_NAME);
         library[1023] = 0;
         dlhandle = lt_dlopenext(library);
 
@@ -406,7 +393,7 @@ globus_l_extension_dlopen(
         {
             /* older libtools dont search the extensions correctly */
             snprintf(library, 1024, "lib%s_%s" MY_LIB_EXT, name,
-                (sizeof(long) == 8) ? "gcc64pthr" : "gcc32pthr");
+                GLOBUS_FLAVOR_NAME);
             library[1023] = 0;
             dlhandle = lt_dlopenext(library);
         }
@@ -421,10 +408,11 @@ globus_l_extension_dlopen(
         
         GlobusExtensionDebugPrintf(
             GLOBUS_L_EXTENSION_DEBUG_DLL,
-            (_GCSL("[%s] Couldn't dlopen %s in %s (or LD_LIBRARY_PATH): %s\n"),
+            (_GCSL("[%s] Couldn't dlopen %s in %s (or %s): %s\n"),
              _globus_func_name, library,
              search_path ? search_path : globus_l_globus_location 
                 ? globus_l_globus_location : "(default)",
+             "LD_LIBRARY_PATH, DYLD_LIBRARY_PATH, etc",
              error ? error : "(null)"));
         result = globus_error_put(
             globus_error_construct_error(
@@ -535,7 +523,6 @@ globus_l_extension_get_module(
     *module_desc = module;
     return result;
 }
-#endif /* !BUILD_STATIC_ONLY */
 
 int
 globus_extension_activate(
@@ -582,12 +569,7 @@ globus_extension_activate(
                     &globus_l_extension_builtins, (void *) extension_name);
             if(builtin && (!builtin->owner || builtin->owner->module_ref > 0))
             {
-#               if !defined(BUILD_STATIC_ONLY)
-                {
-
-                    extension->dlhandle = NULL;
-                }
-#               endif
+                extension->dlhandle = NULL;
                 extension->module = builtin->module;
                 extension->owner = builtin->owner;
                 if(extension->owner)
@@ -599,40 +581,21 @@ globus_extension_activate(
             {
                 extension->owner = NULL;
 
-#               if !defined(BUILD_STATIC_ONLY)
-                {
 
-                    result =   
-                        globus_l_extension_dlopen(
-                            extension->name,
-                            &extension->dlhandle);
-                    if(result != GLOBUS_SUCCESS)
-                    {
-                        goto error_dll;
-                    }
-                    
-                    result =
-                       globus_l_extension_get_module(
-                           extension->dlhandle,
-                           extension_name,
-                           &extension->module);
-
-                }
-#               else
+                result =   
+                    globus_l_extension_dlopen(
+                        extension->name,
+                        &extension->dlhandle);
+                if(result != GLOBUS_SUCCESS)
                 {
-                    globus_assert(BUILD_STATIC_ONLY == 0);
-                    result = globus_error_put(
-                        globus_error_construct_error(
-                            GLOBUS_EXTENSION_MODULE,
-                            NULL,
-                            GLOBUS_EXTENSION_ERROR_OPEN_FAILED,
-                            __FILE__,
-                            _globus_func_name,
-                            __LINE__,
-                            "No support for dynamically loading %s\n",
-                            extension->name));
+                    goto error_dll;
                 }
-#               endif /* !defined(BUILD_STATIC_ONLY) */
+                
+                result =
+                   globus_l_extension_get_module(
+                       extension->dlhandle,
+                       extension_name,
+                       &extension->module);
 
                 if(result != GLOBUS_SUCCESS)
                 {
@@ -696,13 +659,11 @@ error_activate:
         builtin->owner->ref--;
     }
 error_module:
-#ifndef BUILD_STATIC_ONLY
     if(extension->dlhandle)
     {
         lt_dlclose(extension->dlhandle);
     }
 error_dll:
-#endif /* !BUILD_STATIC_ONLY */
     globus_free(extension->name);
 error_strdup:
     globus_free(extension);

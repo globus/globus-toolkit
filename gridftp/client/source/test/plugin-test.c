@@ -19,6 +19,7 @@
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_restart_plugin.h"
 #include "globus_ftp_client_debug_plugin.h"
+#include "globus_preload.h"
 
 #include <stdio.h>
 
@@ -32,6 +33,7 @@ int main()
     globus_result_t result;
     globus_ftp_client_handleattr_t handleattr;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
     globus_module_activate(GLOBUS_FTP_CLIENT_RESTART_PLUGIN_MODULE);
     globus_module_activate(GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_MODULE);

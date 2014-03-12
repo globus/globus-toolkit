@@ -20,6 +20,7 @@
 #include "globus_common.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "ltdl.h"
 
 
 int main()
@@ -28,6 +29,8 @@ int main()
     char *                      srcdir;
     char *                      filename;
     globus_result_t             result;
+
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_CALLOUT_MODULE);

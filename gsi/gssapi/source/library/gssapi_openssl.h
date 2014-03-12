@@ -23,16 +23,11 @@
  */
 
 #include "globus_config.h"
-
-#if defined(_WIN32)
-#define _WINSOCKAPI_  //rcg 9/23/03
-#   include "windows.h"
-#endif
+#include "globus_common.h"
 
 #include "gssapi.h"
 #include "globus_gsi_gss_constants.h"
 
-#include "globus_common.h"
 #include "globus_gsi_callback.h"
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"

@@ -60,6 +60,15 @@ struct gridmap_all_globusid_result
     globus_bool_t                   success;
 };
 
+char *create_file_path(const char * dir, const char * filename)
+{
+#if defined(_WIN32)
+#define PATH_DELIM "\\"
+#else
+#define PATH_DELIM "/"
+#endif
+    return globus_common_create_string("%s" PATH_DELIM "%s", dir, filename);
+}
 
 
 int
@@ -96,7 +105,7 @@ create_contexts(void)
 
         if (GSS_ERROR(init_maj_stat))
         {
-            fprintf(stderr, "# Error initialzing conext\n");
+            fprintf(stderr, "# Error initialzing context\n");
             return 1;
         }
 
@@ -145,7 +154,7 @@ int gridmap_bad_params_test(void)
     int                                 rc;
     char *                              gridmap;
     
-    gridmap = globus_common_create_string("%s/%s", gridmap_dir, "grid-mapfile");
+    gridmap = create_file_path(gridmap_dir, "grid-mapfile");
 
     rc = setenv("GRIDMAP", gridmap, 1);
 
@@ -186,7 +195,7 @@ userok_bad_params_test(void)
     int                                 rc;
     char *                              gridmap;
     
-    gridmap = globus_common_create_string("%s/%s", gridmap_dir, "grid-mapfile");
+    gridmap = create_file_path(gridmap_dir, "grid-mapfile");
 
     rc = setenv("GRIDMAP", gridmap, 1);
 
@@ -227,7 +236,7 @@ map_local_user_bad_params_test(void)
     int                                 rc;
     char *                              gridmap;
     
-    gridmap = globus_common_create_string("%s/%s", gridmap_dir, "grid-mapfile");
+    gridmap = create_file_path(gridmap_dir, "grid-mapfile");
 
     rc = setenv("GRIDMAP", gridmap, 1);
 
@@ -269,7 +278,7 @@ lookup_all_globusid_bad_params_test(void)
     int                                 rc;
     char *                              gridmap;
     
-    gridmap = globus_common_create_string("%s/%s", gridmap_dir, "grid-mapfile");
+    gridmap = create_file_path(gridmap_dir, "grid-mapfile");
 
     rc = setenv("GRIDMAP", gridmap, 1);
 
@@ -320,7 +329,7 @@ map_and_authorize_bad_params_test(void)
     unsigned int                        identity_buffer_length = 2;
     char *                              gridmap;
     
-    gridmap = globus_common_create_string("%s/%s", gridmap_dir, "grid-mapfile");
+    gridmap = create_file_path(gridmap_dir, "grid-mapfile");
 
 
     rc = setenv("GRIDMAP", gridmap, 1);
@@ -383,8 +392,7 @@ gridmap_test(void)
 
     for (i = 0, failed = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        gridmap = globus_common_create_string(
-                "%s/%s", gridmap_dir, tests[i].gridmap);
+        gridmap = create_file_path(gridmap_dir, tests[i].gridmap);
         rc = setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
@@ -458,8 +466,7 @@ userok_test(void)
     {
         char *                          gridmap;
 
-        gridmap = globus_common_create_string(
-                "%s/%s", gridmap_dir, tests[i].gridmap);
+        gridmap = create_file_path(gridmap_dir, tests[i].gridmap);
         rc = setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
@@ -517,8 +524,7 @@ map_local_user_test(void)
     {
         char *                          gridmap;
 
-        gridmap = globus_common_create_string(
-                "%s/%s", gridmap_dir, tests[i].gridmap);
+        gridmap = create_file_path(gridmap_dir, tests[i].gridmap);
         rc = setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
@@ -597,8 +603,7 @@ lookup_all_globusid_test(void)
     {
         char *                          gridmap;
 
-        gridmap = globus_common_create_string(
-                "%s/%s", gridmap_dir, tests[i].gridmap);
+        gridmap = create_file_path(gridmap_dir, tests[i].gridmap);
         rc = setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
@@ -716,8 +721,7 @@ long_line_test(void)
     char                                localname[7];
     char *                              gridmap;
 
-    gridmap = globus_common_create_string(
-            "%s/%s", gridmap_dir, "gridmap.long_line");
+    gridmap = create_file_path(gridmap_dir, "gridmap.long_line");
 
     rc = setenv("GRIDMAP", gridmap, 1);
     if (rc != 0)
@@ -765,8 +769,7 @@ blank_line_test(void)
     int                                 rc;
     char *                              gridmap;
 
-    gridmap = globus_common_create_string(
-            "%s/%s", gridmap_dir, "gridmap.blank_line");
+    gridmap = create_file_path(gridmap_dir, "gridmap.blank_line");
 
     rc = setenv("GRIDMAP", gridmap, 1);
     if (rc != 0)
@@ -809,6 +812,9 @@ int main(int argc, char * argv[])
     int                                 i;
     int                                 failed = 0;
     int                                 rc;
+
+    setbuf(stdout, NULL);
+    setbuf(stderr, NULL);
 
     gridmap_dir = getenv("TEST_GRIDMAP_DIR");
     if (gridmap_dir == NULL)

@@ -300,7 +300,7 @@ globus_gss_assist_display_status_str(
         }
         else
         {
-#if _POSIX_THREAD_SAFE_FUNCTIONS
+#if defined(_POSIX_THREAD_SAFE_FUNCTIONS) && !defined(__MINGW32__)
             char errbuf[80] = {0};
 
             strerror_r(-token_status, errbuf, sizeof(errbuf));

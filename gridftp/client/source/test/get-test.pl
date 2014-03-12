@@ -371,7 +371,7 @@ if(defined($ENV{FTP_TEST_RANDOMIZE}))
 {
     shuffle(\@tests);
 }
-
+@ARGV=(2);
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);

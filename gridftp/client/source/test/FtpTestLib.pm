@@ -34,9 +34,6 @@ require Exporter;
             );            # symbols to export by default
 
 
-my $default_big_file = "/bin/sh";
-my $default_small_file = "/etc/group";
-my $self = {};
 use strict;
 
 use POSIX ();
@@ -45,7 +42,9 @@ use Sys::Hostname;
 use Data::Dumper;
 use File::Copy;
 use File::Spec;
+use File::Temp qw/mktemp/;
 use Config;
+
 defined $Config{sig_name} || die "No sigs?";
 my $name;
 my $i = 0;
@@ -55,6 +54,30 @@ foreach $name (split(' ', $Config{sig_name}))
     $signame[$i] = $name;
     $i++;
 }
+
+my $default_big_file = mktemp(POSIX::getcwd() . "/big_file_XXXXX");
+my $default_small_file = mktemp(POSIX::getcwd() . "/small_file_XXXXX");
+my $fh;
+
+open($fh, ">$default_big_file");
+binmode($fh);
+
+for (my $i = 0; $i < 6000000; $i++)
+{
+    printf $fh "%c", int(rand(256));
+}
+close($fh);
+
+open($fh, ">$default_small_file");
+binmode($fh);
+
+for (my $i = 0; $i < 5000; $i++)
+{
+    printf $fh "%c", int(rand(256));
+}
+close($fh);
+
+my $self = {};
 
 =head1 NAME
 
@@ -489,5 +512,14 @@ sub END
     {
         delete $self->{host_db};
     }
+    if ($default_big_file)
+    {
+        unlink $default_big_file;
+    }
+    if ($default_small_file)
+    {
+        unlink $default_small_file;
+    }
 }
+
 1;

@@ -8,5 +8,5 @@ Name: globus-scheduler-event-generator
 Description: Globus Toolkit - Scheduler Event Generator
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L@abs_top_builddir@ -lglobus_scheduler_event_generator
+Libs: @abs_top_builddir@/libglobus_scheduler_event_generator.la
 Cflags: -I${abs_top_srcdir}

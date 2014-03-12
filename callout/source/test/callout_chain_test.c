@@ -16,6 +16,7 @@
 
 #include "globus_callout.h"
 #include "globus_common.h"
+#include "ltdl.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,6 +25,8 @@ int main()
 {
     globus_callout_handle_t     callout_handle;
     globus_result_t             result;
+
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_CALLOUT_MODULE);

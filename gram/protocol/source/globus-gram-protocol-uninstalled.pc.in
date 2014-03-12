@@ -9,5 +9,5 @@ Name: globus-gram-protocol
 Description: Globus Toolkit - GRAM Protocol Library
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_gram_protocol
+Libs: ${abs_top_builddir}/libglobus_gram_protocol.la
 Cflags: -I${abs_top_srcdir} -I${abs_top_builddir}

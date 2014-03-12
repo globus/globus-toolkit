@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
+#include "globus_common.h"
 #include "gssapi.h"
 #include "globus_gss_assist.h"
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <string.h>
+#include "tokens_bsd.h"
 
 #define ACCEPT_MESSAGE                  "ACCEPTOR WRAP MESSAGE"
 #define ACCEPT_CONTEXT_FILE             "exported_accept_context"
@@ -37,8 +34,6 @@ int main(int argc, char * argv[])
     OM_uint32                           ret_flags = 0;
     OM_uint32                           flags = 0;
     int                                 sock, connect_sock;
-    FILE *                              infd;
-    FILE *                              outfd;
     char *                              print_buffer = NULL;
     char *                              recv_buffer = NULL;
     size_t                              buffer_length;
@@ -90,14 +85,6 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
-    infd = fdopen(dup(connect_sock), "r");
-    setbuf(infd, NULL);
-
-    outfd = fdopen(dup(connect_sock), "w");
-    setbuf(outfd, NULL);
-    
-    close(connect_sock);
-
     /* ACCEPTOR PROCESS */
     major_status = globus_gss_assist_acquire_cred(&minor_status,
                                                   GSS_C_ACCEPT,
@@ -123,10 +110,10 @@ int main(int argc, char * argv[])
         NULL,
         &token_status,
         &delegated_init_cred,
-        globus_gss_assist_token_get_fd,
-        (void *) (infd),
-        globus_gss_assist_token_send_fd,
-        (void *) (outfd));
+        token_bsd_get,
+        (void *) (connect_sock),
+        token_bsd_send,
+        (void *) (connect_sock));
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
@@ -161,8 +148,8 @@ int main(int argc, char * argv[])
     {
         if (!(flags & GSS_C_TRANS_FLAG))
         {
-            fprintf(stderr, "Skipping gss-assist-expimp-test: not implemented\n");
-            return EXIT_SUCCESS;
+            fprintf(stderr, "# Skipping gss-assist-expimp-test: not implemented\n");
+            return 77;
         }
     }
 
@@ -262,8 +249,8 @@ int main(int argc, char * argv[])
         &recv_buffer,
         &buffer_length,
         &token_status,
-        globus_gss_assist_token_get_fd,
-        (void *) (infd),
+        token_bsd_get,
+        (void *) (connect_sock),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -295,8 +282,8 @@ int main(int argc, char * argv[])
         ACCEPT_MESSAGE,
         sizeof(ACCEPT_MESSAGE),
         &token_status,
-        globus_gss_assist_token_send_fd,
-        (void *) (outfd),
+        token_bsd_send,
+        (void *) (connect_sock),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -315,8 +302,8 @@ int main(int argc, char * argv[])
         &recv_buffer,
         &buffer_length,
         &token_status,
-        globus_gss_assist_token_get_fd,
-        (void *) (infd),
+        token_bsd_get,
+        (void *) (connect_sock),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -348,8 +335,8 @@ int main(int argc, char * argv[])
         ACCEPT_MESSAGE,
         sizeof(ACCEPT_MESSAGE),
         &token_status,
-        globus_gss_assist_token_send_fd,
-        (void *) (outfd),
+        token_bsd_send,
+        (void *) (connect_sock),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -362,9 +349,6 @@ int main(int argc, char * argv[])
         exit(1);
     }
     
-    fclose(infd);
-    fclose(outfd);
-                
     globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     exit(0);
 }

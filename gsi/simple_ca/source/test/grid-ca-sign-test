@@ -78,7 +78,7 @@ sub sign_tests
 
         $errfd = gensym;
         $pid = open3($infd, $outfd, $errfd, "grid-ca-sign",
-            "-dir", "$testdir/ca",
+            "-dir", "ca",
             "-in", $reqfn, "-out", $certfn,
             "-passin", "pass:globus");
         close($infd);

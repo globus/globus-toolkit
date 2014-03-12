@@ -7191,7 +7191,15 @@ globus_gsi_sysconfig_get_unique_proxy_filename(
         goto done;
     }
     
-    unique_postfix = strrchr(unique_tmp_name, '/');
+    unique_postfix = strrchr(unique_tmp_name, FILE_SEPERATOR[0]);
+    if (unique_postfix == NULL)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_DELEG_FILENAME,
+            (_GSSL("Could not get a unique filename for the temporary proxy cert")));
+        goto done;
+    }
     ++unique_postfix;
 
     do

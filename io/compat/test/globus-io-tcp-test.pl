@@ -28,8 +28,8 @@ use Test::More;
 my @tests;
 
 my $test = 'globus-io-tcp-test';
-my $server_prog = './globus_io_tcp_test_server';
-my $client_prog = './globus_io_tcp_test_client';
+my $server_prog = './globus_io_tcp_test_server.exe';
+my $client_prog = './globus_io_tcp_test_client.exe';
 my $valgrind="";
 
 if (exists $ENV{VALGRIND})
@@ -107,6 +107,7 @@ sub basic_func
    }
 
    $port = <SERVER>;
+   print STDERR "# Server said $port";
    chomp($port);
    $port =~ s/listening on port //;
 
@@ -145,6 +146,7 @@ sub basic_func
    close(CLIENT);
    close(SERVER);
 
+   print STDERR "# $errors\n";
    ok(($errors eq "" && !$expect_failure) || ($errors ne "" && $expect_failure),
         $test_name);
 

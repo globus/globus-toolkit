@@ -86,7 +86,6 @@ globus_l_xio_gsi_activate();
 static int
 globus_l_xio_gsi_deactivate();
 
-
 GlobusXIODefineModule(gsi) =
 {
     "globus_xio_gsi",

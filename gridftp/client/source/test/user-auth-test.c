@@ -94,6 +94,7 @@ int main(int argc,
     int						i;
     char * 					subject = GLOBUS_NULL;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
     globus_ftp_client_handleattr_init(&handle_attr);
 

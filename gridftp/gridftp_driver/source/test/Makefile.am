@@ -32,7 +32,7 @@ testcred.cert: testcred.req testcred.key
 testcredlink: testcred.cert
 	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
 	rm -f "$$linkname"; \
-	ln -s testcred.cert "$$linkname" ; \
+	cp testcred.cert "$$linkname" ; \
 	echo "$$linkname" > $@
 
 gridmap: testcred.cert

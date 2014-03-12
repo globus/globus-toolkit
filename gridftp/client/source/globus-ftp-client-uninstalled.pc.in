@@ -9,5 +9,5 @@ Name: globus-ftp-client
 Description: Globus Toolkit - GridFTP Client Library
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_ftp_client
+Libs: ${abs_top_builddir}/libglobus_ftp_client.la
 Cflags: -I${abs_top_srcdir}

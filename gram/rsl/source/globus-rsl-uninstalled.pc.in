@@ -9,5 +9,5 @@ Name: globus-rsl
 Description: Globus Toolkit - Resource Specification Language Library
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_rsl_assist -lglobus_rsl
+Libs: ${abs_top_builddir}/libglobus_rsl_assist.la ${abs_top_builddir}/libglobus_rsl.la
 Cflags: -I${abs_top_srcdir}

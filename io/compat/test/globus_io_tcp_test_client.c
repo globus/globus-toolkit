@@ -19,9 +19,11 @@
 
 int test1(int argc, char **argv);
 
-#ifdef TARGET_ARCH_WIN32
-#include "getoptWin.h"
+#ifdef __MINGW32__
+#include "getopt.h"
 #endif
+
+#include "globus_preload.h"
 
 typedef struct
 {
@@ -92,7 +94,9 @@ int
 main(int argc, char **argv)
 {
     int					rc;
-    
+
+    LTDL_SET_PRELOADED_SYMBOLS();
+
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_IO_MODULE);    
 
@@ -138,8 +142,6 @@ test1(int argc, char **argv)
     globus_size_t			large_buf_size;
     int					i;
     int					c;
-    extern char *			optarg;
-    extern int				optind;
     char *				host=GLOBUS_NULL;
     unsigned short			port=0;
     char *			        errstring=GLOBUS_NULL;
@@ -163,11 +165,7 @@ test1(int argc, char **argv)
     globus_io_attr_set_tcp_restrict_port(
 	&attr,
 	GLOBUS_FALSE);
-#ifndef TARGET_ARCH_WIN32
     while (( c = getopt(argc, argv, "abrHi:vgsch:p:I:dDz:P:")) != EOF)
-#else
-    while (( c = getoptWin(argc, argv, "rHi:gsch:p:I:dDz:P:")) != EOF)
-#endif
     {
 	switch(c)
 	{

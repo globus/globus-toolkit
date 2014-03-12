@@ -1,36 +1,24 @@
-EXTRA_SCRIPTS = \
-        TESTS.pl \
-        TESTS-junit.pl
-
 check_SCRIPTS = \
         grid-proxy-utils-test.pl \
         proxy-order-test.pl
 
 check_DATA = \
-	testwrapper \
         testcred.key \
         testcred.cert \
         testcredlink
 
-test:
-	chmod a+x $(pkgtest_SCRIPTS)
-	perl ./TESTS.pl
-
-junit:
-	chmod a+x $(pkgtest_SCRIPTS)
-	perl ./TESTS-junit.pl
+if CYGPATH_W_DEFINED
+X509_CERT_DIR = $$($(CYGPATH_W) $(abs_builddir))
+else
+X509_CERT_DIR = $(abs_builddir)
+endif
 
 TESTS = $(check_SCRIPTS)
-
-LOG_COMPILER = $(builddir)/testwrapper
-
-testwrapper:
-	(echo '#! /bin/sh'; \
-         echo 'export X509_USER_CERT=testcred.cert'; \
-	 echo 'export X509_USER_KEY=testcred.key'; \
-	 echo 'export X509_CERT_DIR=$(abs_builddir)'; \
-         echo '"$$@"') > $@
-	chmod a+x $@
+TESTS_ENVIRONMENT = \
+	export X509_USER_CERT=testcred.cert \
+	       X509_USER_KEY=testcred.key \
+	       X509_CERT_DIR=$(X509_CERT_DIR) \
+	       PATH=../programs:$$PATH;
 
 testcred.key:
 	umask 077; openssl genrsa -out $@ 1024
@@ -44,8 +32,12 @@ testcred.cert: testcred.req testcred.key
 testcredlink: testcred.cert
 	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
 	rm -f "$$linkname"; \
-	ln -s testcred.cert "$$linkname"
+	cp testcred.cert "$$linkname"; \
+	echo "$$linkname" > $@
 
+CLEANFILES = testcred.cert testcred.key testcred.req
+clean-local:
+	if test -f testcredlink; then \
+	    rm -f $$(cat testcredlink) testcredlink; \
+	fi
 EXTRA_DIST = $(EXTRA_SCRIPTS) $(check_SCRIPTS)
-
-.PHONY: test junit testcredlink

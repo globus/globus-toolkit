@@ -8,6 +8,6 @@ abs_top_srcdir=@abs_top_srcdir@
 Name: globus-gssapi-error
 Description: Globus Toolkit - GSSAPI Error Library
 Version: @PACKAGE_VERSION@
-Libs: -L${abs_top_builddir}/library -lglobus_gssapi_error
+Libs: ${abs_top_builddir}/library/libglobus_gssapi_error.la
 Requires.private: @PACKAGE_DEPS@
 Cflags: -I${abs_top_srcdir}/library

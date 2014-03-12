@@ -16,6 +16,7 @@
 
 #include "globus_ftp_control.h"
 #include <string.h>
+#include "globus_preload.h"
 
 static globus_bool_t  g_done;
 
@@ -260,10 +261,19 @@ main(
     char *                            argv[])
 {
     unsigned short                    port = 0;
+    int                               rc;
     globus_result_t                   res;
     globus_ftp_control_server_t       server_handle;
 
-    globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
+    LTDL_SET_PRELOADED_SYMBOLS();
+
+    rc = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "Error activating GLOBUS_FTP_CONTROL_MODULE: %s\n",
+            globus_error_print_friendly(globus_error_peek(rc)));
+        exit(EXIT_FAILURE);
+    }
 
     res = globus_ftp_control_server_handle_init(&server_handle);
     error_msg(res, __LINE__);

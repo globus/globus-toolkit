@@ -34,27 +34,38 @@ my $server_port = 0;
 my $server_nosec = "-auth-level 4";
 my $subject;
 
-my $server_args = "-no-fork -no-chdir -d 0 -p $server_port $server_nosec";
+my $server_args = "-no-fork -no-chdir -d 0 -hostname localhost -p $server_port $server_nosec";
 
 chomp($subject = `openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert}`);
 $subject =~ s/^subject= *//;
 
-$server_pid = open(SERVER, "$server_prog $server_args |");
+my $server_dir;
+
+foreach $server_dir (split(/:/,$ENV{PATH})) {
+    if (-x "$server_dir/$server_prog") {
+        $server_prog = "$server_dir/$server_prog";
+        last;
+    }
+}
+print STDERR "#Subject is $subject\n";
+print STDERR "#PATH is $ENV{PATH}\n";
+print STDERR "#executing $server_prog $server_args\n";
+$server_pid = open(SERVER, "env $server_prog $server_args |");
  
 if($server_pid == -1)
 {
     print "Unable to start server\n";
-    exit 1;
+    exit 99;
 }
 
 select((select(SERVER), $| = 1)[0]);
 $server_port = <SERVER>;
 $server_port =~ s/Server listening at .*?:(\d+)/\1/;
-chomp($server_port);
+$server_port =~ s/\s*$//;
 
 if($server_port !~ /\d+/)
 {
-    print "Unable to start server\n";
+    print "Unable to start server: $server_port\n";
     exit 1;
 }
 

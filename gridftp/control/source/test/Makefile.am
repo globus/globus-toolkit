@@ -18,21 +18,30 @@ TESTS = \
     pipe_test \
     $(check_SCRIPTS)
 
+if CYGPATH_W_DEFINED
+X509_CERT_DIR = $$($(CYGPATH_W) $(abs_builddir))
+GRIDMAP = $$($(CYGPATH_W) $(abs_builddir)/testcredgridmap)
+else
+X509_CERT_DIR = $(abs_builddir)
+GRIDMAP = $(abs_builddir)/testcredgridmap
+endif
+
 TESTS_ENVIRONMENT = export \
-    X509_USER_CERT=$(abs_builddir)/testcred.cert \
-    X509_USER_KEY=$(abs_builddir)/testcred.key \
-    X509_CERT_DIR=$(abs_builddir) \
-    GRIDMAP=$(abs_builddir)/testcredgridmap \
+    X509_USER_CERT=testcred.cert \
+    X509_USER_KEY=testcred.key \
+    X509_CERT_DIR=$(X509_CERT_DIR) \
+    GRIDMAP=$(GRIDMAP) \
     PATH=$${PATH}:$(abs_builddir):$(abs_srcdir);
+LOG_COMPILER = $(LIBTOOL) --mode=execute $(GSI_DRIVER_LIBS)
 
 testcred.key:
-	umask 077 ; openssl genrsa -out $@ 1024
+	umask 077 ; openssl genrsa 1024 > $@
 
 testcred.req: testcred.key
-	printf "NA\nNA\nNA\nNA\nNA\nNA\n$$(openssl rand -base64 6)\n\n\n\n" | openssl req -new -key $< -out $@
+	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< -config openssl.cnf > $@
 
 testcred.cert: testcred.req testcred.key
-	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
+	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
 
 testcredgridmap: testcred.cert
 	@subject=`openssl x509 -subject -in $< -noout | sed -e 's/subject= //'`; \
@@ -41,11 +50,11 @@ testcredgridmap: testcred.cert
 testcredlink: testcred.cert
 	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
 	rm -f "$$linkname"; \
-	ln -s testcred.cert "$$linkname" ; \
+	cp testcred.cert "$$linkname" ; \
 	echo "$$linkname" > $@
 
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
-test_ldadd = libtest_common.la ../libglobus_ftp_control.la $(PACKAGE_DEP_LIBS)
+test_ldadd = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) libtest_common.la ../libglobus_ftp_control.la $(PACKAGE_DEP_LIBS)
 
 check_LTLIBRARIES = libtest_common.la
 libtest_common_la_SOURCES = connect_disconnect_test.c test_common.c test_common.h

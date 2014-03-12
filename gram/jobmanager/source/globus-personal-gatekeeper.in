@@ -128,12 +128,12 @@ verify_setup ()
     if test "$1" != 'kill'; then
         hours="-hours 1"
     fi
-    grid-proxy-info -exists $hours
-    
-    if [ $? -ne 0 ]; then
-        echo "ERROR: no valid proxy, or lifetime to small (one hour)" >&2
-        exit 1
-    fi
+    #grid-proxy-info -exists $hours
+    #
+    #if [ $? -ne 0 ]; then
+    #    echo "ERROR: no valid proxy, or lifetime to small (one hour)" >&2
+    #    exit 1
+    #fi
 
     ${debug} "done."
 }
@@ -474,7 +474,14 @@ for file in gridmap services.conf gatekeeper.conf jobmanager.conf gatekeeper.log
     rm -f ${scratch}/${file}
 done
 
-subject=`grid-proxy-info -identity`
+subject=`grid-proxy-info -identity 2> /dev/null`
+if [ $? != 0 ] || [ x"$subject" = x ]; then
+    subject=`grid-cert-info -subject 2> /dev/null`
+fi
+if [ x"$subject" = x ]; then
+    echo "Unable to determine security identity"
+    exit 1
+fi
 
 cat > ${scratch}/gridmap <<EOF
 "${subject}" ${user}

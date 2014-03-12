@@ -2,6 +2,9 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
+bindir=@bindir@
+sbindir=@sbindir@
+path=${bindir}:${sbindir}
 
 Name: globus-gsi-cert-utils
 Description: Globus Toolkit - Globus GSI Cert Utils Library

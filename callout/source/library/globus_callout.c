@@ -31,7 +31,7 @@
 #define GLOBUS_I_CALLOUT_HASH_SIZE 64
 #define GLOBUS_I_CALLOUT_LINEBUF 4096
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 #define MY_LIB_EXT ".dll"
 #else
 #define MY_LIB_EXT ".so"
@@ -754,12 +754,8 @@ globus_callout_call_type(
     ...)
 {
     globus_i_callout_data_t *           current_datum;
-#ifdef BUILD_STATIC_ONLY
-    void *                              function;
-#else
     lt_ptr                              function;
     lt_dlhandle *                       dlhandle;
-#endif
     globus_result_t                     result = GLOBUS_SUCCESS;
     va_list                             ap;
     int                                 rc;
@@ -798,15 +794,6 @@ globus_callout_call_type(
     
     do
     {
-#ifdef BUILD_STATIC_ONLY
-        GLOBUS_CALLOUT_ERROR_RESULT(
-            result,
-            GLOBUS_CALLOUT_ERROR_WITH_DL,
-            ("couldn't dlopen %s: %s\n",
-             current_datum->file,
-             "(null)"));
-        goto exit;
-#else
         dlhandle = globus_hashtable_lookup(&handle->library_htable,
                                            current_datum->file);
 
@@ -981,7 +968,6 @@ globus_callout_call_type(
         }
 
         current_datum = current_datum->next;
-#endif
     }
     while(current_datum);
     

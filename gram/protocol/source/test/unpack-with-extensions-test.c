@@ -1,4 +1,5 @@
 #include "globus_gram_protocol.h"
+#include "globus_preload.h"
 
 #define test_assert(assertion, message) \
     if (!(assertion)) \
@@ -451,6 +452,7 @@ int main(int argc, char * argv[])
     int                                 rc;
     int                                 not_ok = 0;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     printf("1..%d\n", ARRAY_LEN(tests));
 
     globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);

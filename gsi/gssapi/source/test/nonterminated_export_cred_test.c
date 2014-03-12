@@ -21,6 +21,7 @@ nonterminated(gss_cred_id_t cred, OM_uint32 option_req)
 
     if (major_status != GSS_S_COMPLETE)
     {
+        fprintf(stderr, "# %s\n", globus_error_print_friendly(globus_error_peek(minor_status)));
         rc = 1;
 
         goto failed_export;

@@ -19,11 +19,13 @@
 #include <string.h>
 #include <unistd.h>
 
-int test1(int argc, char **argv);
-
-#ifdef TARGET_ARCH_WIN32
-#include "getoptWin.h"
+#ifdef __MINGW32__
+#include "getopt.h"
 #endif
+
+#include "globus_preload.h"
+
+int test1(int argc, char **argv);
 
 typedef struct
 {
@@ -95,14 +97,25 @@ main(int argc, char **argv)
 {
     int					rc;
 
-    globus_module_activate(GLOBUS_COMMON_MODULE);
-    globus_module_activate(GLOBUS_IO_MODULE);
+    LTDL_SET_PRELOADED_SYMBOLS();
+    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "# Error activating GLOBUS_COMMON_MODULE\n");
+        exit(99);
+    }
+    rc = globus_module_activate(GLOBUS_IO_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "# Error activating GLOBUS_IO_MODULE\n");
+        exit(99);
+    }
 
     rc = test1(argc, argv); /* secure server*/
     globus_module_deactivate(GLOBUS_IO_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
-    return rc;
+    return rc != 0;
 }
 /* main() */
 
@@ -170,11 +183,7 @@ test1(int argc, char **argv)
 	&attr,
 	GLOBUS_FALSE);
 */
-#ifndef TARGET_ARCH_WIN32
     while (( c = getopt(argc, argv, "brgscvz:i:I:P:")) != EOF)
-#else
-    while (( c = getoptWin(argc, argv, "rgscz:i:I:P:")) != EOF)
-#endif
     {
         switch(c)
 	{

@@ -16,6 +16,26 @@ AC_SUBST(DIRT_BRANCH_ID)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
+AC_ARG_WITH([preloaded-modules],
+    AS_HELP_STRING([--with-preloaded-modules=MODULE,...],
+        [Use libtool to preload MODULES when built statically]),
+    [if test x"$withval" != x; then
+        preload_modules="$withval"
+    fi])
+
+if test x"$preload_modules" != x; then
+    preload_modules="$(echo $preload_modules | tr , ' ')"
+    for module in $preload_modules; do
+        PKG_CHECK_EXISTS([$module], [
+            preload_links="$preload_links $($PKG_CONFIG --variable=dlopen $module)"]
+        )
+    done
+fi
+if test x"$preload_links" = x; then
+    preload_links="-dlpreopen force"
+fi
+AC_SUBST([preload_links])
+
 AC_MSG_CHECKING([builtin modules])
 m4_define([gridftp_modules], m4_normalize(
     m4_esyscmd([ls modules/*/Makefile.am | cut -d/ -f2])))
