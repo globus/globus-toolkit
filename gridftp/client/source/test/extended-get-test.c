@@ -96,6 +96,7 @@ int main(int argc,
     int						i;
     globus_ftp_client_restart_marker_t		restart;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
     globus_ftp_client_handleattr_init(&handle_attr);
     globus_ftp_client_operationattr_init(&attr);

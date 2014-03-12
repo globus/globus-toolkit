@@ -134,8 +134,12 @@ install-exec-local:
 	done
 EXTRA_DIST=doxygen/index.dox globus-vararg-enums-doxygen-filter.pl GLOBUS_LICENSE
 
+if !HAVE_LTDL
+LTDL_CLEAN = libltdl-clean
+endif
+
 all-local: $(GT_ENABLED_BUNDLES) $(DOC_STAMPS)
-clean-local: $(GT_TARGETS_CLEAN) $(DOC_CLEAN)
+clean-local: $(GT_TARGETS_CLEAN) $(DOC_CLEAN) $(LTDL_CLEAN)
 distclean-local: $(GT_TARGETS_DISTCLEAN)
 check-local:
 	@for stamp in $(GT_ALL_STAMPS); do \
@@ -149,9 +153,17 @@ libltdl-install:
 if !HAVE_LTDL
 	PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd libltdl; $(MAKE) $(AM_MAKEFLAGS) install
 endif
+	:
 libltdl-stamp:
 if !HAVE_LTDL
 	PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd libltdl; $(MAKE) $(AM_MAKEFLAGS)
 endif
 	touch $@
+
+if !HAVE_LTDL
+libltdl-clean:
+	PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd libltdl; $(MAKE) $(AM_MAKEFLAGS) clean
+	rm -f libltdl-stamp
+endif
+	
 .PHONY: $(GT_TARGETS_ALL) $(GT_TARGETS_ONLY) $(GT_TARGETS_CLEAN) $(GT_TARGETS_INSTALL) $(GT_TARGETS_CHECK) $(GT_TARGETS_DISTCLEAN) $(GT_TARGETS_DIST) $(DOC_PHONY) $(GT_TARGETS_RPM) $(GT_TARGETS_DEB) $(GT_BUNDLES)

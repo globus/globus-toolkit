@@ -54,6 +54,8 @@ CVS Information:
 #endif
 
 
+#include "globus_preload.h"
+
 #include <openssl/pem.h>
 #include <openssl/conf.h>
 #include <openssl/x509v3.h>
@@ -1847,6 +1849,7 @@ main(int argc, char **argv)
     int                                     i;
     globus_callback_handle_t                dumpfile_handle;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     err = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
     if( err != GLOBUS_SUCCESS )
     {

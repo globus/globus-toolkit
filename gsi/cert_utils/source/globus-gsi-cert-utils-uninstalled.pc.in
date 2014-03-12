@@ -4,10 +4,12 @@ libdir=@libdir@
 includedir=@includedir@
 abs_top_srcdir=@abs_top_srcdir@
 abs_top_builddir=@abs_top_builddir@
+bindir=${abs_top_builddir}/programs
+path=${bindir}
 
 Name: globus-gsi-cert-utils
 Description: Globus Toolkit - Globus GSI Cert Utils Library
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir}/library -lglobus_gsi_cert_utils
+Libs: ${abs_top_builddir}/library/libglobus_gsi_cert_utils.la
 Cflags: -I${abs_top_srcdir}/library

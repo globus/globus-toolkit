@@ -14,24 +14,37 @@ m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
+AC_CANONICAL_HOST
+AM_CONDITIONAL([CYGPATH_W_DEFINED], [
+    case $host in
+        *mingw32*)
+        test x"$CYGPATH_W" != x;
+        ;;
+        *)
+        false
+        ;;
+    esac])
+
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
-GSI_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-gsi-driver`
-AC_SUBST(GSI_DRIVER_LIBDIR)
+PKG_CHECK_EXISTS([globus-xio-gsi-driver >= 2], [
+    GSI_DRIVER_CFLAGS="$($PKG_CONFIG --cflags globus-xio-gsi-driver)"
+    GSI_DRIVER_LIBS="$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+if test x"$GSI_DRIVER_LIBS" = x; then
+    DLPREOPEN_FORCE="-dlpreopen force"
+fi
+PKG_CHECK_EXISTS([globus-xio-pipe-driver >= 2], [
+    PIPE_DRIVER_LIBS="$($PKG_CONFIG --variable=dlopen globus-xio-pipe-driver)"])
+if test x"$PIPE_DRIVER_LIBS" = x; then
+    DLPREOPEN_FORCE="-dlpreopen force"
+fi
+AC_SUBST([GSI_DRIVER_CFLAGS])
+AC_SUBST([GSI_DRIVER_LIBS])
+AC_SUBST([PIPE_DRIVER_LIBS])
+AC_SUBST([DLPREOPEN_FORCE])
 
-PIPE_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-pipe-driver`
-AC_SUBST(PIPE_DRIVER_LIBDIR)
-PIPE_DRIVER=""
-for ext in .la .so .dylib .a; do
-    if test -r $PIPE_DRIVER_LIBDIR/libglobus_xio_pipe_driver${ext}; then
-        PIPE_DRIVER=$PIPE_DRIVER_LIBDIR/libglobus_xio_pipe_driver${ext} 
-        break
-    fi
-done
-
-
-GRIDFTP_SBINDIR=`pkg-config --variable=sbindir globus-gridftp-server`
-AC_SUBST(GRIDFTP_SBINDIR, $GRIDFTP_SBINDIR)
+GRIDFTP_SERVER_PATH=`$PKG_CONFIG --variable=path globus-gridftp-server`
+AC_SUBST([GRIDFTP_SERVER_PATH])
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
@@ -92,5 +105,6 @@ AC_CONFIG_FILES(
         globus-gass-copy.pc
         Makefile
 	version.h
-        test/Makefile)
+        test/Makefile
+        test/openssl.cnf)
 AC_OUTPUT

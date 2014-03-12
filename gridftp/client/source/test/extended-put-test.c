@@ -98,6 +98,7 @@ int main(int argc, char **argv)
     globus_ftp_control_parallelism_t		parallelism;
     globus_ftp_control_layout_t			layout;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
     globus_ftp_client_handleattr_init(&handle_attr);
     globus_ftp_client_operationattr_init(&attr);

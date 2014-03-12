@@ -46,6 +46,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <getopt.h>
+#endif
+
 #define HTTP_1_0 "HTTP/1.0"
 #define HTTP_1_1 "HTTP/1.1"
 #define CHUNKED  "chunked"

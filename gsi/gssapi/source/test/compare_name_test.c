@@ -20,10 +20,6 @@
 #include "gssapi_test_utils.h"
 #include "openssl/x509.h"
 #include <strings.h>
-#include <libgen.h>
-
-
-char * test_dir;
 
 typedef enum
 {
@@ -339,6 +335,12 @@ import_names()
     }
 }
 
+#ifdef _WIN32
+#define PATH_DELIMITER "\\"
+#else
+#define PATH_DELIMITER "/"
+#endif
+
 static
 void
 compare_l_parse_name_type(
@@ -373,12 +375,8 @@ compare_l_parse_name_type(
 
         if (*name_type_val == GSS_L_X509)
         {
-            char *p;
-            *name_token_val = malloc(strlen(test_dir) + strlen(name_token)+2);
-            strcpy(*name_token_val, test_dir);
-            strcat(*name_token_val, "/");
-            p = *name_token_val + strlen(*name_token_val);
-            sscanf(name_token, "\"%[^\"]\"", p);
+            *name_token_val = malloc(strlen(name_token)+1);
+            sscanf(name_token, "\"%[^\"]\"", *name_token_val);
         }
         else
         {
@@ -404,8 +402,6 @@ globus_l_gss_read_test_cases(char * filename)
     static char name_token1[128], name_token2[128];
     static char expectation[16];
 
-    test_dir = dirname(filename);
-
     rc = stat(filename, &st);
     if (rc != 0)
     {
@@ -422,7 +418,7 @@ globus_l_gss_read_test_cases(char * filename)
     fd = open(filename, O_RDONLY, 0);
     if (fd < 0)
     {
-        perror("open");
+        printf("Opening %s: %s", filename, strerror(errno));
         exit(1);
     }
 
@@ -544,6 +540,7 @@ int main(int argc, char * argv[])
         NULL
     }, *failed_module = NULL;
 
+    setvbuf(stdout, NULL, _IONBF, 0);
     if (argc != 2)
     {
         fprintf(stderr, "%s test-case-file\n", argv[0]);
@@ -622,7 +619,7 @@ int main(int argc, char * argv[])
         c++;
         if (rc == 0)
         {
-            printf("ok %s\n", test_case->test_name);
+            printf("ok %d %s\n", c, test_case->test_name);
         }
         else
         {

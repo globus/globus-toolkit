@@ -111,8 +111,7 @@ globus_l_winthread_deactivate(void)
 }
 /* globus_l_thread_deactivate() */
 
-globus_module_descriptor_t
-globus_extension_module =
+GlobusExtensionDefineModule(globus_thread_windows) =
 {
     "globus_thread_windows",
     globus_l_winthread_activate,

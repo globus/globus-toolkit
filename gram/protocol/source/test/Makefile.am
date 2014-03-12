@@ -1,5 +1,6 @@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(PACKAGE_DEP_CFLAGS)
-LDADD = ../libglobus_gram_protocol.la $(PACKAGE_DEP_LIBS)
+LDADD = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) \
+    ../libglobus_gram_protocol.la $(PACKAGE_DEP_LIBS)
 
 check_SCRIPTS = gram-protocol-test-wrapper 
 
@@ -22,18 +23,19 @@ check_DATA = \
         testcredlink
 
 TESTS = $(check_PROGRAMS)
+
+if CYGPATH_W_DEFINED
+X509_CERT_DIR = $$($(CYGPATH_W) "$(abs_builddir)")
+else
+X509_CERT_DIR = $(abs_builddir)
+endif
+
 TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
-    X509_CERT_DIR=$(abs_builddir); \
-    for ext in .la .so .dylib .a; do \
-        driver="$(GSI_DRIVER_LIBDIR)/libglobus_xio_gsi_driver$${ext}";  \
-        if test -f "$${driver}"; then \
-            export GLOBUS_XIO_GSI_DRIVER_LOAD="-dlopen $${driver}"; \
-            break; \
-        fi; \
-    done;
-LOG_COMPILER = $(LIBTOOL) --mode=execute $${GLOBUS_XIO_GSI_DRIVER_LOAD} \
+    X509_CERT_DIR=$(X509_CERT_DIR);
+
+LOG_COMPILER = $(LIBTOOL) --mode=execute $(GSI_DRIVER_LIBS) \
     $(srcdir)/gram-protocol-test-wrapper
 
 testcred.key:
@@ -48,7 +50,7 @@ testcred.cert: testcred.req testcred.key
 testcredlink: testcred.cert
 	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
 	rm -f "$$linkname"; \
-	ln -s testcred.cert "$$linkname"; \
+	cp testcred.cert "$$linkname"; \
         echo "$$linkname" > $@
 
 EXTRA_DIST = $(check_SCRIPTS) 

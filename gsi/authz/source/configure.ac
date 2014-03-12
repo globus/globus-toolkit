@@ -14,6 +14,7 @@ m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
+AM_CONDITIONAL([CYGPATH_W_DEFINED], [test "$CYGPATH_W" != ""])
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
@@ -25,5 +26,6 @@ AC_CONFIG_FILES(
         Makefile
         Doxyfile
 	version.h
-        test/Makefile)
+        test/Makefile
+        test/openssl.cnf)
 AC_OUTPUT

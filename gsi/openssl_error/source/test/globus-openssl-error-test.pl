@@ -31,6 +31,8 @@ sub basic_func
     while ( my $line = <EXPECTED> )
     {
         my $logged = <LOGGED>;
+        chomp($line);
+        chomp($logged);
         $rc++ unless ( $logged =~ /$line/ );
     }
     ok($rc == 0, "Match reference output");

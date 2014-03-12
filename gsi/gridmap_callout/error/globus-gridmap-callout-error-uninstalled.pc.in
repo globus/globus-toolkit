@@ -9,5 +9,5 @@ Name: globus-gridmap-callout-error
 Description: Globus Toolkit - Globus Gridmap Callout Errors
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_gridmap_callout_error
+Libs: ${abs_top_builddir}/libglobus_gridmap_callout_error.la
 Cflags: -I${abs_top_srcdir}

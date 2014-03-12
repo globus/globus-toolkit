@@ -16,6 +16,7 @@
 
 #include "globus_ftp_control.h"
 #include "gssapi.h"
+#include "globus_preload.h"
 
 globus_mutex_t the_lock;
 globus_cond_t the_cond;
@@ -120,12 +121,12 @@ int main(int                                    argc,
         char **                                 argv)
 {
     globus_ftp_control_handle_t         handle;
-    char * g_host;
-    unsigned short g_port;
+    char * g_host = NULL;
+    unsigned short g_port = 0;
     int i;
     int rc;
 
-    printf("1..1\n");
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     for (i = 1; i < argc; i++)
     {
@@ -135,6 +136,14 @@ int main(int                                    argc,
             g_port = atoi(argv[++i]);
         }
     }
+
+    if (g_host == NULL || g_port == 0)
+    {
+        fprintf(stderr, "Usage: %s --host HOST PORT\n", argv[0]);
+        exit(99);
+    }
+
+    printf("1..1\n");
 
     globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
 

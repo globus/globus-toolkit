@@ -14,6 +14,17 @@ m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
+AC_CANONICAL_HOST
+AM_CONDITIONAL([CYGPATH_W_DEFINED], [
+    case $host in
+        *mingw32*)
+        test x"$CYGPATH_W" != x;
+        ;;
+        *)
+        false
+        ;;
+    esac])
+
 case "$host" in
 *-*-linux* | *-*-gnu* | *-*-k*bsd*-gnu)
     use_symbol_labels="yes"
@@ -24,6 +35,18 @@ case "$host" in
 esac
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+
+PKG_CHECK_EXISTS([globus-thread-pthread], [
+pthread_dlopen=$($PKG_CONFIG --variable=dlopen globus-thread-pthread)])
+
+AM_CONDITIONAL([PTHREAD_DLOPEN_VAR], [test X"$pthread_dlopen" != X""])
+AC_SUBST([PTHREAD_DLOPEN], [$pthread_dlopen])
+
+PKG_CHECK_EXISTS([globus-thread-windows], [
+windows_dlopen=$($PKG_CONFIG --variable=dlopen globus-thread-windows)])
+
+AM_CONDITIONAL([WINDOWS_DLOPEN_VAR], [test X"$windows_dlopen" != X""])
+AC_SUBST([WINDOWS_DLOPEN], [$windows_dlopen])
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
@@ -60,5 +83,6 @@ AC_CONFIG_FILES(
         library/Doxyfile
         library/Makefile
         test/Makefile
+        test/openssl.cnf
 )
 AC_OUTPUT

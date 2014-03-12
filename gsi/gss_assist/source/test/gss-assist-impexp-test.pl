@@ -64,8 +64,9 @@ sub basic_func
    }
    
    waitpid($server_pid,0);
+   my $server_exit_code = $? >> 8;
 
-   if($? != 0)
+   if ($server_exit_code != 0 && $server_exit_code != 77)
    {
        $errors .= "Server exited abnormally. \n The following output was generated:\n";
        while(<SERVER>)
@@ -75,8 +76,9 @@ sub basic_func
    }
 
    waitpid($client_pid,0);
+   my $client_exit_code = $? >> 8;
 
-   if($? != 0)
+   if ($client_exit_code != 0 && $client_exit_code != 77)
    {
        $errors .= "Client exited abnormally. \n The following output was generated:\n";
        while(<CLIENT>)
@@ -88,7 +90,10 @@ sub basic_func
    close(CLIENT);
    close(SERVER);
 
-   ok($errors eq "" || $expect_failure, $test_name)
+   SKIP: {
+       skip "Non-transportable context", 1 unless($client_exit_code != 77 && $server_exit_code != 77);
+       ok($errors eq "" || $expect_failure, $test_name)
+   }
 }
 
 push(@tests, "basic_func(0,0, \"default-sec-env\");");

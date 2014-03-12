@@ -30,6 +30,7 @@
 #include "globus_xio_gsi.h"
 #include "globus_gfork.h"
 #include "gfs_i_gfork_plugin.h"
+#include "globus_preload.h"
 
 #define GFSGforkError(error_msg, _type)                                     \
     globus_error_put(                                                       \
@@ -1691,6 +1692,8 @@ main(
     globus_result_t                     result;
     int                                 rc;
     GFSGForkFuncName(main);
+
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     rc = globus_module_activate(GLOBUS_GFORK_CHILD_MODULE);
     if(rc != 0)

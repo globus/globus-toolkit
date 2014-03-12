@@ -4,6 +4,7 @@ libdir=@abs_top_builddir@
 includedir=@includedir@
 abs_top_builddir=@abs_top_builddir@
 abs_top_srcdir=@abs_top_srcdir@
+dlopen=-dlopen @abs_top_builddir@/libglobus_xio_gsi_driver.la
 
 Name: globus-xio-gsi-driver
 Description: Globus Toolkit - Globus XIO GSI Driver

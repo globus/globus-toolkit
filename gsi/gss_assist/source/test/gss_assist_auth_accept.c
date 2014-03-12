@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
+#include "globus_common.h"
 #include "gssapi.h"
+#include "tokens_bsd.h"
 #include "globus_gss_assist.h"
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <string.h>
 
 #define accept_message "ACCEPTOR WRAP MESSAGE"
+
+#ifdef _WIN32
+#define close closesocket
+#undef perror
+#define perror(m) do { \
+        int wsa__last_error = WSAGetLastError(); \
+        printf(m ": %d\n", wsa__last_error); \
+    } while (0)
+#endif
 
 int main(int argc, char * argv[])
 {
@@ -35,8 +41,6 @@ int main(int argc, char * argv[])
     gss_ctx_id_t                        accept_context = GSS_C_NO_CONTEXT;
     OM_uint32                           ret_flags = 0;
     int                                 sock, connect_sock;
-    FILE *                              infd;
-    FILE *                              outfd;
     char *                              print_buffer = NULL;
     char *                              recv_buffer = NULL;
     size_t                              buffer_length;
@@ -59,7 +63,7 @@ int main(int argc, char * argv[])
     }
 
     sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = INADDR_ANY;
+    sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     sockaddr.sin_port = 0;
     if(bind(sock, (struct sockaddr *) &sockaddr, sizeof(sockaddr)))
     {
@@ -91,14 +95,6 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
-    infd = fdopen(dup(connect_sock), "r");
-    setbuf(infd, NULL);
-
-    outfd = fdopen(dup(connect_sock), "w");
-    setbuf(outfd, NULL);
-    
-    close(connect_sock);
-
     /* ACCEPTOR PROCESS */
     major_status = globus_gss_assist_acquire_cred(&minor_status,
                                                   GSS_C_ACCEPT,
@@ -124,10 +120,10 @@ int main(int argc, char * argv[])
         NULL,
         &token_status,
         &delegated_init_cred,
-        globus_gss_assist_token_get_fd,
-        (void *) (infd),
-        globus_gss_assist_token_send_fd,
-        (void *) (outfd));
+        token_bsd_get,
+        (void *) (connect_sock),
+        token_bsd_send,
+        (void *) (connect_sock));
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
@@ -192,8 +188,8 @@ int main(int argc, char * argv[])
         &recv_buffer,
         &buffer_length,
         &token_status,
-        globus_gss_assist_token_get_fd,
-        (void *) (infd),
+        token_bsd_get,
+        (void *) (connect_sock),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -227,8 +223,8 @@ int main(int argc, char * argv[])
         accept_message,
         sizeof(accept_message),
         &token_status,
-        globus_gss_assist_token_send_fd,
-        (void *) (outfd),
+        token_bsd_send,
+        (void *) (connect_sock),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -247,8 +243,8 @@ int main(int argc, char * argv[])
         &recv_buffer,
         &buffer_length,
         &token_status,
-        globus_gss_assist_token_get_fd,
-        (void *) (infd),
+        token_bsd_get,
+        (void *) (connect_sock),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -282,8 +278,8 @@ int main(int argc, char * argv[])
         accept_message,
         sizeof(accept_message),
         &token_status,
-        globus_gss_assist_token_send_fd,
-        (void *) (outfd),
+        token_bsd_send,
+        (void *) (connect_sock),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -320,18 +316,6 @@ int main(int argc, char * argv[])
             major_status,
             minor_status,
             0);
-        exit(1);
-    }
-
-    if(fclose(infd) == EOF)
-    {
-        perror("closing stream socket");
-        exit(1);
-    }
-
-    if(fclose(outfd) == EOF)
-    {
-        perror("closing stream socket");
         exit(1);
     }
 

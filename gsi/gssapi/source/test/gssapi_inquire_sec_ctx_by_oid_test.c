@@ -31,7 +31,7 @@ struct context_arg
     int                                 fd;
 };
 
-void *
+int
 server_func(
     void *                              arg);
 
@@ -52,8 +52,9 @@ main()
 
     /* ToDo: Make this run on windows */
 #   ifdef WIN32
-    printf("This Test Doesn't Run On Windows Yet\n");
-    exit(0);
+    printf("1..1\n");
+    printf("ok # SKIP This Test Doesn't Run On Windows Yet\n");
+    exit(77);
 #   endif
 
     /* module activation */
@@ -93,6 +94,7 @@ main()
     }
     else if (pid > 0)
     {
+        printf("1..1\n");
 	arg = malloc(sizeof(struct context_arg));
         
 	arg->fd = socks[1];
@@ -100,11 +102,20 @@ main()
         
 	arg->credential = credential;
 
-        server_func(arg);
+        rc = server_func(arg);
+        if (rc == 0)
+        {
+            printf("ok\n");
+        }
+        else
+        {
+            printf("not ok\n");
+        }
     }
     else
     {
-        perror("fork");
+        printf("1..1\n");
+        perror("not ok - fork");
         exit(EXIT_FAILURE);
     }
 
@@ -115,11 +126,11 @@ main()
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
 
-    exit(0);
+    exit(rc);
 }
 
 
-void *
+int
 server_func(
     void *                              arg)
 {
@@ -142,7 +153,7 @@ server_func(
     if(result == GLOBUS_FALSE)
     {
 	fprintf(stderr, "SERVER: Authentication failed\n");
-        exit(1);
+        return 1;
     }
 
     result = globus_gsi_gssapi_test_dump_cert_chain(
@@ -152,7 +163,7 @@ server_func(
     if(result == GLOBUS_FALSE)
     {
 	fprintf(stderr, "SERVER: Failed to dump cert chain\n");
-        exit(1);
+        return 1;
     }
     
     close(server_args->fd);
@@ -163,7 +174,7 @@ server_func(
 				   user_id,
 				   &delegated_cred);
     
-    return NULL;
+    return 0;
 }
 
 void *

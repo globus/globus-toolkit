@@ -3,6 +3,7 @@ exec_prefix=@exec_prefix@
 path=@bindir@:@sbindir@
 libdir=@libdir@
 includedir=@includedir@
+thread_models=@thread_models@
 
 Name: globus-common
 Description: Globus Toolkit - Common Library

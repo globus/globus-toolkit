@@ -1,4 +1,4 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -17,37 +17,41 @@
 # 
 
 use strict;
+use warnings;
 use Test::More;
-
-my $type = 0;
-if(@ARGV == 1)
-{
-    $type = 1;
-}
+use IPC::Open2 qw(open2);
 
 my @tests;
 my $test_exec="./http_throughput_test";
-my $data_dir=$ENV{srcdir};
 
-my $client_args = '-c ';
-my $server_args = '-s ';
+plan tests => 1;
 
-push (@tests, [$client_args, $server_args]);
+my $result;
+my ($client_in, $client_out, $server_in, $server_out);
+my ($client_pid, $server_pid);
 
-if($type == 1)
-{
-    foreach (@ARGV) {
-        print "$test_exec $tests[$_]->[1] | $test_exec $tests[$_]->[0]\n";
-    }
+$client_pid = open2($client_out, $client_in, $test_exec, '-c');
+$server_pid = open2($server_out, $server_in, $test_exec, '-s');
+
+my $input = <$server_out>;
+close($server_in);
+close($server_out);
+if (!$input) {
+    ok(0, $_->[2]);
+    close($client_in);
+    close($client_out);
+    waitpid($server_pid, 0);
+    waitpid($client_pid, 0);
+    exit(1);
 }
-else
-{
-    plan tests => scalar(@tests);
-    foreach(@tests)
-    {
-        my $result;
-        chomp ($result = `$test_exec $_->[1]  | $test_exec $_->[0]`);
 
-        ok($result eq 'Success', 'http_throughput_test');
-    }
-}
+print $client_in $input;
+close($client_in);
+local ($/);
+waitpid($server_pid, 0);
+waitpid($client_pid, 0);
+$result = <$client_out>;
+$result =~ s/\s*$//;
+close($client_out);
+
+ok($result eq 'Success', 'http_throughput_test');

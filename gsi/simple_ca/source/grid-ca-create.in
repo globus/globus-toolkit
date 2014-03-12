@@ -443,7 +443,7 @@ setup_grid_security_dir()
 {
     _cadir="${1}"
     _destdir="${2}"
-    _cahash="$(openssl x509 -in "${_cadir}/cacert.pem" -noout -hash)"
+    _cahash="$(openssl x509 -in "$(construct_path ${_cadir}/cacert.pem)" -noout -hash)"
 
     printf "Installing new CA files to ${_destdir}... "
 
@@ -548,16 +548,16 @@ generate_ca_certificate()
 
     # create CA certificate
     if [ -n "${verbose}" ]; then
-        openssl req ${openssl_options} ${password_option} -config "${_ca_ssl_conf}" \
+        openssl req ${openssl_options} ${password_option} -config "$(construct_path ${_ca_ssl_conf})" \
             -x509 -days ${CA_CERT_DAYS} \
-            -newkey rsa:1024 -keyout ${CA_KEY_FILE} \
-            -out ${CA_CERT_FILE} < ${CA_REQ_INPUT}
+            -newkey rsa:1024 -keyout $(construct_path ${CA_KEY_FILE}) \
+            -out $(construct_path ${CA_CERT_FILE}) < ${CA_REQ_INPUT}
         RET=$?
     else
-        openssl req ${openssl_options} ${password_option} -config "${_ca_ssl_conf}" \
+        openssl req ${openssl_options} ${password_option} -config "$(construct_path ${_ca_ssl_conf})" \
             -x509 -days ${CA_CERT_DAYS} \
-            -newkey rsa:1024 -keyout ${CA_KEY_FILE} \
-            -out ${CA_CERT_FILE} < ${CA_REQ_INPUT} > openssl_req.log 2>&1
+            -newkey rsa:1024 -keyout $(construct_path ${CA_KEY_FILE}) \
+            -out $(construct_path ${CA_CERT_FILE}) < ${CA_REQ_INPUT} > openssl_req.log 2>&1
         RET=$?
     fi
 
@@ -613,6 +613,17 @@ VERSION="@VERSION@"
 DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
 DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 
+CYGPATH_W="@CYGPATH_W@"
+host_os="@host_os@"
+
+alias construct_path=echo
+if test x"$CYGPATH_W" != x; then
+    case $host_os in
+        *mingw32*)
+            alias construct_path="$CYGPATH_W"
+            ;;
+    esac
+fi
 
 short_usage="$PROGRAM_NAME [-help] [ options ...] [ openssl options ...]"
 
@@ -851,7 +862,7 @@ else
     echo "\${datadir}/certificates)"
 fi
 
-cahash="$(openssl x509 -in "${_cadir}/cacert.pem" -noout -hash)"
+cahash="$(openssl x509 -in "$(construct_path ${_cadir}/cacert.pem)" -noout -hash)"
 
 if [ -z "$nobuild" ]; then
     grid-ca-package ${backward_compatible:+-b} ${gpt_package:+-g} -cadir "${GRID_CA_DIR}"

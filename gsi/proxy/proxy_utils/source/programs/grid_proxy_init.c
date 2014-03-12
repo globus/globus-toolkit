@@ -995,7 +995,8 @@ main(
         globus_i_gsi_proxy_utils_print_error(
             result, debug, __FILE__, __LINE__,
             "The proxy credential could not be "
-            "written to the output file.");
+            "written to the output file: %s.",
+            globus_error_print_friendly(globus_error_peek(result)));
     }
 
     if(proxy_out_filename)

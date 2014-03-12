@@ -9,5 +9,5 @@ Name: globus-authz
 Description: Globus Toolkit - Globus authz library
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_authz
+Libs: ${abs_top_builddir}/libglobus_authz.la
 Cflags: -I${abs_top_srcdir}

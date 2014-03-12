@@ -9,5 +9,5 @@ Name: globus-ftp-control
 Description: Globus Toolkit - GridFTP Control Library
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_ftp_control
+Libs: ${abs_top_builddir}/libglobus_ftp_control.la
 Cflags: -I${abs_top_srcdir}

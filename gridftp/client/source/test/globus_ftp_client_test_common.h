@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "globus_preload.h"
+
 void
 test_parse_args(int argc, 
 		char *argv[],

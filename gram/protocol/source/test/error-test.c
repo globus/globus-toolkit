@@ -16,6 +16,7 @@
 
 #include "globus_gram_protocol.h"
 #include <string.h>
+#include "globus_preload.h"
 
 int main(int argc, char * argv[])
 {
@@ -25,6 +26,7 @@ int main(int argc, char * argv[])
     int testno = 0;
     int fail_count=0;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     printf("1..3\n");
 
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);

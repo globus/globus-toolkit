@@ -24,7 +24,7 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-enum { GLOBUS_XIO_HTTP_CHUNK_SIZE = 128 };
+enum { GLOBUS_XIO_HTTP_CHUNK_SIZE = 4000 };
 
 typedef enum
 {

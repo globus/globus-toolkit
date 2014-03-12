@@ -18,6 +18,7 @@
 
 #include "globus_gram_protocol.h"
 #include <string.h>
+#include "globus_preload.h"
 
 void
 callback_func(
@@ -195,6 +196,7 @@ int main(int argc, char **argv)
     int					rc;
     int					test_num = 0;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     if(argc > 1)
     {
 	test_num = atoi(argv[1]);

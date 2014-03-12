@@ -23,7 +23,7 @@
 #include "globus_i_thread.h"
 #include "version.h"
 
-#if HAVE_PTHREAD
+#if _POSIX_THREADS
 
 #if defined __GNUC__ && defined __EXCEPTIONS
 #undef __EXCEPTIONS
@@ -76,8 +76,7 @@ globus_l_pthread_get_impl(void);
 static int globus_l_pthread_activate();
 static int globus_l_pthread_deactivate();
 
-globus_module_descriptor_t
-globus_extension_module =
+GlobusExtensionDefineModule(globus_thread_pthread) = 
 {
     "globus_thread_pthreads",
     globus_l_pthread_activate,
@@ -93,7 +92,7 @@ globus_l_pthread_pre_activate( void )
 {
   int rc;
 
-#ifndef WIN32
+#ifndef _WIN32
     rc = globus_i_thread_ignore_sigpipe();
 #endif
     return rc;
@@ -374,9 +373,11 @@ int
 globus_l_pthread_thread_key_delete(
     globus_thread_key_t                 key)
 {
-    int rc;
+    int rc=0;
+#ifndef __MINGW32__
     rc = pthread_key_delete(key.pthread);
     globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: globus_thread_key_delete() failed\n"));
+#endif
     return(rc);
 } /* globus_thread_key_delete() */
 
@@ -773,7 +774,7 @@ globus_l_pthread_cond_broadcast(
     }
 } /* globus_cond_broadcast() */
 
-#ifndef TARGET_ARCH_WIN32
+#if !defined(_WIN32) && !defined(__MINGW32__)
 static
 int
 globus_l_pthread_thread_sigmask(
@@ -867,7 +868,7 @@ static globus_thread_impl_t globus_l_pthread_impl =
     globus_l_pthread_thread_setspecific,
     globus_l_pthread_thread_yield,
     globus_l_pthread_thread_exit,
-#ifndef TARGET_ARCH_WIN32
+#if !defined(_WIN32) && !defined(__MINGW32__)
     globus_l_pthread_thread_sigmask,
     globus_l_pthread_thread_kill,
 #else
@@ -891,4 +892,4 @@ globus_l_pthread_get_impl(void)
 {
     return &globus_l_pthread_impl;
 }
-#endif /* HAVE_PTHREAD */
+#endif /* _POSIX_THREADS */

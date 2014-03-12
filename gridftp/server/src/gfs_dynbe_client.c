@@ -19,6 +19,7 @@
 #include "globus_xio_gsi.h"
 #include "globus_gfork.h"
 #include "gfs_i_gfork_plugin.h"
+#include "globus_preload.h"
 
 
 #ifdef __GNUC__
@@ -167,6 +168,7 @@ main(
     char *                              reg_cs;
     globus_size_t                       nbytes;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     if(rc != 0)
     {

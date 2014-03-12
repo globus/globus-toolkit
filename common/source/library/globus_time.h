@@ -29,7 +29,7 @@ extern "C" {
 #define GLOBUS_I_TIME_INFINITY_NSEC  INT_MAX
 #define GLOBUS_I_TIME_INFINITY_USEC  INT_MAX
 
-#if _WIN32
+#if defined(_WIN32) && !defined(_POSIX)
 typedef struct globus_abstime_s
 {
    time_t  tv_sec;

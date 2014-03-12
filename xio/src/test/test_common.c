@@ -24,6 +24,11 @@
 #include "globus_xio_stack_driver.h"
 #include "globus_xio_verify.h"
 #include "test_common.h"
+#include "ltdl.h"
+
+#ifdef _WIN32
+#include <getopt.h>
+#endif
 
 typedef  int
 (*main_func_t)(
@@ -345,6 +350,7 @@ main(
     globus_result_t                             res;
 
     globus_l_program_name = argv[0];
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_assert(rc == 0);
@@ -469,7 +475,7 @@ main(
         int                             cnt;
         char **                         out_argv;
 
-        in = fopen(name, "r");
+        in = fopen(name, "rb");
         globus_assert(in != NULL);
 
         while(fgets(line, 512, in) != NULL && rc == 0)

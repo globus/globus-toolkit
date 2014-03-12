@@ -252,7 +252,7 @@ globus_l_io_activate(void)
     {
         goto error_activate;
     }
-    
+
     if(globus_xio_driver_load(
         "file", &globus_l_io_file_driver) != GLOBUS_SUCCESS)
     {
@@ -1827,7 +1827,8 @@ globus_l_io_file_open(
     const char *                        path,
     int                                 flags,
     int                                 mode,
-    int                                 fd)
+    int                                 fd,
+    globus_xio_system_file_t            winhandle)
 {
     globus_result_t                     result;
     globus_io_attr_t                    myattr;
@@ -1882,7 +1883,14 @@ globus_l_io_file_open(
 #ifndef WIN32
         file = fd;
 #else
-        file = (globus_xio_system_file_t) _get_osfhandle(fd);
+        if (fd)
+        {
+            file = (globus_xio_system_file_t) _get_osfhandle(fd);
+        }
+        else
+        {
+            file = (globus_xio_system_file_t) winhandle;
+        }
 #endif
          result = globus_xio_attr_cntl(
             iattr->attr,
@@ -1946,7 +1954,7 @@ globus_io_file_open(
     
     GlobusLIOCheckNullParam(path);
     
-    return globus_l_io_file_open(handle, attr, path, flags, mode, -1);
+    return globus_l_io_file_open(handle, attr, path, flags, mode, -1, 0);
 }
 
 globus_result_t
@@ -1981,8 +1989,29 @@ globus_io_file_posix_convert(
         GLOBUS_NULL,
         0,
         0,
+        fd,
+        0);
+}
+
+#if _WIN32
+globus_result_t
+globus_io_file_windows_convert(
+    globus_xio_system_file_t            fd,
+    globus_io_attr_t *                  attr,
+    globus_io_handle_t *                handle)
+{
+    GlobusIOName(globus_io_file_posix_convert);
+    
+    return globus_l_io_file_open(
+        handle,
+        attr,
+        GLOBUS_NULL,
+        0,
+        0,
+        0,
         fd);
 }
+#endif
 
 /* tcp operations */
 

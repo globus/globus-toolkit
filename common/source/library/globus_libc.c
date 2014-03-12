@@ -2692,7 +2692,7 @@ globus_libc_addr_is_wildcard(
             result = GLOBUS_TRUE;
         }
         break;
-#if defined(AF_INET6) && defined(IN6_IS_ADDR_UNSPECIFIED)
+#if defined(AF_INET6) && (defined(IN6_IS_ADDR_UNSPECIFIED) || defined(HAVE_IN6_IS_ADDR_UNSPECIFIED))
       case AF_INET6:
         if(IN6_IS_ADDR_UNSPECIFIED(
           &((struct sockaddr_in6 *) _addr)->sin6_addr) ||
@@ -2705,6 +2705,7 @@ globus_libc_addr_is_wildcard(
         break;
 #endif
       default:
+	    printf("%d\n%d\n", _addr->sa_family, AF_INET6);
         globus_assert(0 &&
                       "Unknown family in globus_libc_addr_is_wildcard");
         break;

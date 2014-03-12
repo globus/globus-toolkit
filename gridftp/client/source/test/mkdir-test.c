@@ -36,11 +36,13 @@ done_cb(
 {
     char * tmpstr;
 
-    if(err) tmpstr = " an";
-    else    tmpstr = "out";
+    if(err) tmpstr = globus_error_print_friendly(err);
+    else    tmpstr = NULL;
 
-    if(err) { printf("done with%s error\n", tmpstr);
-	      error = GLOBUS_TRUE; }
+    if(err) {
+        printf("%s%s\n", tmpstr?"failed: ":"done",tmpstr?tmpstr:"");
+	error = GLOBUS_TRUE;
+    }
     globus_mutex_lock(&lock);
     done = GLOBUS_TRUE;
     globus_cond_signal(&cond);
@@ -57,6 +59,7 @@ int main(int argc, char * argv[])
     char *					src;
     char *					dst;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
     globus_ftp_client_handleattr_init(&handle_attr);
     globus_ftp_client_operationattr_init(&attr);

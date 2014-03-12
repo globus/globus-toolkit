@@ -6,18 +6,28 @@ check_DATA = \
         testcred.cert \
         testcredlink
 
+X509_USER_CERT=$(abs_builddir)/testcred.cert
+X509_USER_KEY=$(abs_builddir)/testcred.key
+if CYGPATH_W_DEFINED
+X509_CERT_DIR=$$($(CYGPATH_W) $(abs_builddir))
+GSI_AUTHZ_CONF=$$($(CYGPATH_W) $(abs_srcdir)/authz_test_callout.conf)
+else
+X509_CERT_DIR=$(abs_builddir)
+GSI_AUTHZ_CONF=$(abs_srcdir)/authz_test_callout.conf
+endif
+
 TESTS = $(check_PROGRAMS)
 TESTS_ENVIRONMENT = export \
-    X509_USER_CERT=$(abs_builddir)/testcred.cert \
-    X509_USER_KEY=$(abs_builddir)/testcred.key \
-    X509_CERT_DIR=$(abs_builddir) \
-    GSI_AUTHZ_CONF=$(abs_srcdir)/authz_test_callout.conf;
+    X509_USER_CERT=$(X509_USER_CERT) \
+    X509_USER_KEY=$(X509_USER_KEY) \
+    X509_CERT_DIR=$(X509_CERT_DIR) \
+    GSI_AUTHZ_CONF=$(GSI_AUTHZ_CONF);
 LOG_COMPILER = $(top_builddir)/libtool --mode=execute -dlopen libglobus_authz_test_callout.la
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)
 LDADD = $(PACKAGE_DEP_LIBS)
 
-authz_cred_test_LDFLAGS = -rpath $(abs_builddir)
+authz_cred_test_LDFLAGS = -rpath $(abs_builddir) -dlopen libglobus_authz_test_callout.la
 authz_cred_test_LDADD = ../libglobus_authz.la $(LDADD)
 authz_cred_test_SOURCES = authz_cred_test.c 
 
@@ -30,18 +40,18 @@ libglobus_authz_test_callout_la_LDFLAGS = \
         -rpath $(abs_builddir)
 
 testcred.key:
-	umask 077 ; openssl genrsa -out $@ 1024
+	umask 077 ; openssl genrsa 1024 > $@
 
 testcred.req: testcred.key
-	printf "NA\nNA\nNA\nNA\nNA\nNA\n$$(openssl rand -base64 6)\n\n\n\n" | openssl req -new -key $< -out $@
+	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< > $@ -config openssl.cnf
 
 testcred.cert: testcred.req testcred.key
-	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
+	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
 
 testcredlink: testcred.cert
 	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
 	rm -f "$$linkname"; \
-	ln -s testcred.cert "$$linkname" ; \
+	cp testcred.cert "$$linkname" ; \
 	echo "$$linkname" > $@
 
 CLEANFILES = testcred.key testcred.cert testcred.req

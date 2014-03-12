@@ -93,6 +93,12 @@ int test_globus_url(void)
     int ok;
     int result;
     globus_url_t  url;
+#if _WIN32
+#define BIN_SH "\\bin\\sh"
+#else
+#define BIN_SH "/bin/sh"
+#endif
+
     test_url_t test_urls[] =
     {
         /** @test
@@ -188,7 +194,7 @@ int test_globus_url(void)
             NULL,
             NULL,
             0,
-            "/bin/sh",
+            BIN_SH,
             NULL,
             NULL,
             NULL,
@@ -208,7 +214,7 @@ int test_globus_url(void)
             NULL,
             "localhost",
             0,
-            "/bin/sh",
+            BIN_SH,
             NULL,
             NULL,
             NULL,
@@ -228,7 +234,7 @@ int test_globus_url(void)
             NULL,
             "mcs.anl.gov",
             0,
-            "/bin/sh",
+            BIN_SH,
             NULL,
             NULL,
             NULL,
@@ -248,7 +254,7 @@ int test_globus_url(void)
             NULL,
             NULL,
             0,
-            "/bin/sh",
+            BIN_SH,
             NULL,
             NULL,
             NULL,
@@ -268,7 +274,7 @@ int test_globus_url(void)
             NULL,
             NULL,
             0,
-            "/bin/sh",
+            BIN_SH,
             NULL,
             NULL,
             NULL,

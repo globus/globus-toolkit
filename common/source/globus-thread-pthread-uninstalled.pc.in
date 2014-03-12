@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+abs_top_builddir=@abs_top_builddir@
+abs_top_srcdir=@abs_top_srcdir@
+dlopen=@PTHREAD_PREOPEN_UNINSTALLED@
+
+Name: globus-thread-pthreads
+Description: Globus Toolkit - Common Library Pthreads Bindings
+Version: @PACKAGE_VERSION@
+Libs.private: globus-common
+Cflags:

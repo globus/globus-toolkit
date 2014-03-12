@@ -17,6 +17,7 @@
 #include "gssapi.h"
 #include "globus_gsi_authz.h"
 #include <sys/types.h>
+#include "globus_preload.h"
 
 static void
 authtest_l_handle_init_callback(void *				cb_arg,
@@ -67,7 +68,9 @@ main(int argc, char **argv)
     char *                              identity;
     int                                 ok = -1;
     int                                 fail_count = 0;
+    OM_uint32                           d_maj, d_min, message_context;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     printf("1..11\n");
 
     /* module activation */
@@ -109,7 +112,22 @@ main(int argc, char **argv)
             NULL);
         if (GSS_ERROR(maj_stat))
         {
-            fprintf(stderr, "Unable to establish security context\n");
+            gss_buffer_desc status_string;
+
+            fprintf(stderr, "# Unable to establish security context: %s\n",
+                globus_error_print_friendly(globus_error_peek(min_stat)));
+            do
+            {
+                d_maj = gss_display_status(&d_min,
+                        maj_stat,
+                        GSS_C_GSS_CODE,
+                        GSS_C_NO_OID,
+                        &message_context,
+                        &status_string);
+                fprintf(stderr, "# %s", (char *) status_string.value);
+                gss_release_buffer(&d_min, &status_string);
+            }
+            while (d_maj & GSS_S_CONTINUE_NEEDED);
             exit(EXIT_FAILURE);
         }
         gss_release_buffer(&min_stat, &accept_token);

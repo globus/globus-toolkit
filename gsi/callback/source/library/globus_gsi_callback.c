@@ -826,6 +826,7 @@ globus_i_gsi_callback_cred_verify(
             }
             else
             {
+		printf("Error is %d\n", x509_context->error);
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,

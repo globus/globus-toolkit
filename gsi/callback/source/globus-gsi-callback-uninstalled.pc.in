@@ -9,5 +9,5 @@ Name: globus-gsi-callback
 Description: Globus Toolkit - Globus GSI Callback Library
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir}/library -lglobus_gsi_callback
+Libs: ${abs_top_builddir}/library/libglobus_gsi_callback.la
 Cflags: -I${abs_top_srcdir}/library

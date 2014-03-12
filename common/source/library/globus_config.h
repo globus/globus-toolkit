@@ -34,6 +34,9 @@
 #endif
 
 #ifdef __MINGW32__
+#ifndef HAVE_IN6_IS_ADDR_UNSPECIFIED 
+#define HAVE_IN6_IS_ADDR_UNSPECIFIED 1
+#endif
 #ifndef __USE_MINGW_ANSI_STDIO
 #define __USE_MINGW_ANSI_STDIO 1
 #endif

@@ -9,5 +9,5 @@ Name: globus-gass-server-ez
 Description: Globus Toolkit - Globus Gass Server_ez
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_gass_server_ez
+Libs: ${abs_top_builddir}/libglobus_gass_server_ez.la
 Cflags: -I${abs_top_srcdir}

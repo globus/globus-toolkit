@@ -9,5 +9,5 @@ Name: globus-io
 Description: Globus Toolkit - Uniform I/O interface to stream and datagram style communications
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_io
+Libs: ${abs_top_builddir}/libglobus_io.la
 Cflags: -I${abs_top_srcdir}
