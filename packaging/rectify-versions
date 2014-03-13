@@ -747,7 +747,7 @@ Print a prompt to enter the changelog for each package that is modified
 
 =item B<-git-changelog>
 
-Use CVS logs to guess changelog value. Looks for strings that contain
+Use GIT logs to guess changelog value. Looks for strings that contain
 a jira issue name at the beginning of the line since the last patch release
 of the Globus Toolkit.
 

@@ -18,8 +18,8 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.16
-Release:	2%{?dist}
+Version:	8.17
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Fri Jan 10 2014 Globus Toolkit <support@globus.org> - 8.17-1
+- Fix some bootstrapping issues
+
 * Thu Oct 10 2013 Globus Toolkit <support@globus.org> - 8.16-2
 - GT-446: Documentation built twice
 

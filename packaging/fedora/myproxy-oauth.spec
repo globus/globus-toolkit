@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.13
+Version:	0.14
 Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
@@ -107,6 +107,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Mon Jan 20 2014 Globus Toolkit <support@globus.org> - 0.14-1
+- move to globus repo
+
 * Wed Sep 04 2013 Globus Toolkit <support@globus.org> - 0.13-1
 - Fix regression on python path setting
 

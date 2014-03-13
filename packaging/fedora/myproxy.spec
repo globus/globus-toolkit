@@ -1,13 +1,13 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
 Version:	5.9
-Release:	8%{?dist}
+Release:	9%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
 License:        NCSA and BSD and ASL 2.0
 URL:            http://grid.ncsa.illinois.edu/myproxy/
-Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}.tar.gz
+Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}-gt5.2.tar.gz
 
 #Source1:        myproxy.init
 #Source2:        myproxy.sysconfig
@@ -469,6 +469,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Tue Jan 14 2014 Globus Toolkit <support@globus.org> - 5.9-9
+- Source0 URL fix
+
 * Wed May 08 2013 Globus Toolkit <support@globus.org> - 5.9-7
 - dependency: openldap2-devel for suse
 

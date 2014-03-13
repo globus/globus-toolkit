@@ -22,6 +22,8 @@
 #include <sys/types.h>
 #include <utime.h>
 
+static const char * GLOBUS_GRAM_SCRIPT_NO_CLIENT = "noclient";
+
 globus_xio_driver_t                     globus_i_gram_job_manager_popen_driver;
 globus_xio_stack_t                      globus_i_gram_job_manager_popen_stack;
 static uint64_t                         globus_l_gram_next_script_sequence = 0;
@@ -636,7 +638,9 @@ globus_l_gram_job_manager_script_read(
             globus_list_search_pred(
                     request->manager->scripts_per_client,
                     globus_l_match_script_client_addr,
-                    request->job_stats.client_address));
+                    request->job_stats.client_address 
+                        ? request->job_stats.client_address
+                        : (void *) GLOBUS_GRAM_SCRIPT_NO_CLIENT));
 
     globus_l_gram_job_manager_script_done(request->manager, scripts, script_handle);
     GlobusGramJobManagerUnlock(request->manager);
@@ -2361,7 +2365,9 @@ globus_l_gram_script_queue(
     tmp = globus_list_search_pred(
                 manager->scripts_per_client,
                 globus_l_match_script_client_addr,
-                context->request->job_stats.client_address);
+                context->request->job_stats.client_address
+                ? context->request->job_stats.client_address
+                : (void *) GLOBUS_GRAM_SCRIPT_NO_CLIENT);
 
     if (tmp == NULL)
     {
@@ -2372,7 +2378,10 @@ globus_l_gram_script_queue(
 
             goto scripts_malloc_failed;
         }
-        scripts->client_addr = strdup(context->request->job_stats.client_address);
+        scripts->client_addr = strdup(
+            context->request->job_stats.client_address
+            ? context->request->job_stats.client_address
+            : GLOBUS_GRAM_SCRIPT_NO_CLIENT);
         if (scripts->client_addr == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -2593,7 +2602,9 @@ globus_l_gram_script_open_callback(
                 globus_list_search_pred(
                         request->manager->scripts_per_client,
                         globus_l_match_script_client_addr,
-                        request->job_stats.client_address));
+                        request->job_stats.client_address
+                        ? request->job_stats.client_address
+                        : (void *) GLOBUS_GRAM_SCRIPT_NO_CLIENT));
         
         globus_xio_register_close(
                 handle,
@@ -2644,7 +2655,9 @@ globus_l_gram_script_register_read_and_write(
             globus_list_search_pred(
                 manager->scripts_per_client,
                 globus_l_match_script_client_addr,
-                request->job_stats.client_address));
+                request->job_stats.client_address
+                ? request->job_stats.client_address
+                : (void *) GLOBUS_GRAM_SCRIPT_NO_CLIENT));
 
     for (i = 0, total_iov_contents = 0; i < script_context->iovcnt; i++)
     {

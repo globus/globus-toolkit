@@ -192,6 +192,7 @@ globus_gram_job_manager_request_init(
     char *                              rsl,
     gss_cred_id_t                       delegated_credential,
     gss_ctx_id_t                        response_ctx,
+    const char *                        peer_address,
     globus_gsi_cred_handle_t            peer_cred,
     globus_bool_t                       reinit,
     char **                             old_job_contact,
@@ -734,6 +735,31 @@ globus_gram_job_manager_request_init(
         goto seg_event_queue_init_failed;
     }
 
+    if (r->job_stats.client_address == NULL && peer_address != NULL)
+    {
+        r->job_stats.client_address = strdup(peer_address);
+        if (r->job_stats.client_address == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto client_addr_strdup_failed;
+        }
+    }
+    if (r->job_stats.user_dn == NULL && peer_cred != NULL)
+    {
+        globus_result_t id_result;
+        char * id = NULL;
+
+        id_result = globus_gsi_cred_get_identity_name(
+                peer_cred,
+                &id);
+
+        if (id_result == GLOBUS_SUCCESS && id != NULL)
+        {
+            r->job_stats.user_dn = strdup(id);
+            OPENSSL_free(id);
+        }
+    }
     if (r->jm_restart == NULL)
     {
         rc = globus_gram_job_manager_state_file_write(r);
@@ -741,6 +767,7 @@ globus_gram_job_manager_request_init(
     
     if (rc != GLOBUS_SUCCESS)
     {
+client_addr_strdup_failed:
         globus_fifo_destroy(&r->seg_event_queue);
 seg_event_queue_init_failed:
         if (r->job_history_file)
@@ -999,6 +1026,7 @@ globus_gram_job_manager_request_load(
                 rsl,
                 cred,
                 *context,
+                peer_address,
                 peer_cred,
                 GLOBUS_FALSE,
                 old_job_contact,
