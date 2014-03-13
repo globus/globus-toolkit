@@ -96,11 +96,11 @@ AC_CONFIG_FILES([
 	scripts/Makefile
         seg/Makefile
         rvf/Makefile
-        globus-personal-gatekeeper
         globus-gram-job-manager.conf
         gram.logrotate
         Makefile
         version.h
-],
+])
+AC_CONFIG_FILES([globus-personal-gatekeeper],
     [chmod a+x globus-personal-gatekeeper])
 AC_OUTPUT

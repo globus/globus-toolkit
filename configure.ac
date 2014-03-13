@@ -29,17 +29,23 @@ expand_libtool_var()
     eval "value=\${$varname}"
     top_build_prefix=${top_build_prefix:-$(pwd)/}
     top_builddir=${top_builddir:-$(pwd)}
-    if test "${value#/}" != "${value}" ; then
-        top_srcdir=$(pwd)/${top_srcdir:-${srcdir}}
-    else
-        top_srcdir=${top_srcdir:-${srcdir}}
-    fi
+    for compilerarg in "-I" "-L"; do
+        if test x"${value#${compilerarg}/}" != x"${value}" ; then
+            top_srcdir=$(pwd)/${top_srcdir:-${srcdir}}
+        else
+            top_srcdir=${top_srcdir:-${srcdir}}
+        fi
+        if test "x${value#$compilerarg../}" != "x${value#$compilerarg}"; then
+            value="${compilerarg}$(pwd)/${value#$compilerarg}"
+        fi
+    done
     eval "echo $varname=$value"
 }
 eval `expand_libtool_var LIBLTDL`
 eval `expand_libtool_var LTDLDEPS`
+eval `expand_libtool_var INCLTDL`
 eval `expand_libtool_var LTDLINCL`
-export LIBLTDL LTDLDEPS LTDLINCL 
+export LIBLTDL LTDLDEPS LTDLINCL INCLTDL
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
@@ -248,9 +254,6 @@ dnl GT_PACKAGE([globus_xio_skeleton_driver], [xio/drivers/skeleton/source])
 GT_PACKAGE([globus_gass_server_ez],[gass/server_ez/source],
     [ globus_common  globus_gass_transfer  globus_gssapi_gsi 
       globus_gss_assist ], [gram5])
-GT_PACKAGE([globus_gram_client],[gram/client/source], 
-    [ globus_common  globus_gram_protocol  globus_io  globus_rsl
-      globus_gss_assist], [gram5])
 GT_PACKAGE([globus_xio_gridftp_driver],
     [gridftp/gridftp_driver/source],
     [ globus_common  globus_xio  globus_ftp_client  globus_xio_gsi_driver ],
@@ -277,6 +280,9 @@ GT_PACKAGE([globus_proxy_utils],[gsi/proxy/proxy_utils/source],
       globus_gsi_cert_utils globus_gsi_sysconfig globus_gsi_proxy_ssl
       globus_gsi_credential globus_gsi_callback globus_gsi_proxy_core
       globus_gss_assist ], [gsi])
+GT_PACKAGE([globus_gram_client],[gram/client/source], 
+    [ globus_common  globus_gram_protocol  globus_io  globus_rsl
+      globus_gss_assist], [gram5])
 GT_PACKAGE([globus_xioperf],[xio/xioperf/source],
     [ globus_common globus_xio ], [ccommonlibs])
 GT_PACKAGE([globus_gatekeeper],[gram/gatekeeper/source],

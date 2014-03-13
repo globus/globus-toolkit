@@ -28,8 +28,8 @@ use Test::More;
 my @tests;
 
 my $test = 'globus-io-tcp-test';
-my $server_prog = './globus_io_tcp_test_server.exe';
-my $client_prog = './globus_io_tcp_test_client.exe';
+my $server_prog = './globus_io_tcp_test_server';
+my $client_prog = './globus_io_tcp_test_client';
 my $valgrind="";
 
 if (exists $ENV{VALGRIND})
