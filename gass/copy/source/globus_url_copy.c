@@ -1091,7 +1091,7 @@ globus_l_guc_glob_list_cb(
     else
     {
         end_ndx = strlen(url_info.url_path) - 1;
-        if(url_info.url_path[end_ndx] == '/')
+        if(url_info.url_path[end_ndx] == '/' && end_ndx > 0)
         {
             url_info.url_path[end_ndx] = '\0';
             end_ch = '/';
