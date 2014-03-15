@@ -8,6 +8,7 @@ abs_top_srcdir=@abs_top_srcdir@
 Name: globus-io
 Description: Globus Toolkit - Uniform I/O interface to stream and datagram style communications
 Version: @PACKAGE_VERSION@
+Requires: globus-xio-gsi-driver >= 2
 Requires.private: @PACKAGE_DEPS@
 Libs: ${abs_top_builddir}/libglobus_io.la
 Cflags: -I${abs_top_srcdir}
