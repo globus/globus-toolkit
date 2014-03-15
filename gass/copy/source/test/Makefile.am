@@ -34,9 +34,11 @@ gridmap: testcred.cert
 if CYGPATH_W_DEFINED
 X509_CERT_DIR = $$($(CYGPATH_W) $(abs_builddir))
 GRIDMAP = $$($(CYGPATH_W) $(abs_builddir)/gridmap)
+CYGPATH_W_DEFINED=CYGPATH_W_DEFINED=1
 else
 X509_CERT_DIR = $(abs_builddir)
 GRIDMAP = $(abs_builddir)/gridmap
+CYGPATH_W_DEFINED=
 endif
 
 TEST_PATH = $(GRIDFTP_SERVER_PATH):$(abs_top_builddir):$${PATH}
@@ -46,7 +48,8 @@ TESTS_ENVIRONMENT = \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR=$(X509_CERT_DIR) \
     GRIDMAP=$(GRIDMAP) \
-    PATH="$(TEST_PATH)";
+    PATH="$(TEST_PATH)" \
+    $(CYGPATH_W_DEFINED);
 
 LOG_COMPILER = $(LIBTOOL) --mode=execute \
     ${GSI_DRIVER_LIBS} \

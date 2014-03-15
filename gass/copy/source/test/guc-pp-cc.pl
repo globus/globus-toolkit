@@ -23,6 +23,7 @@ use strict;
 use warnings;
 use Test::More;
 use Cwd;
+use URI;
 use IPC::Open3;
 use Symbol qw/gensym/;
 use Getopt::Long;
@@ -34,6 +35,7 @@ srand(1);
 
 my $subject = $ENV{FTP_TEST_SUBJECT};
 my $server_cs = $ENV{FTP_TEST_CONTACT};
+my $path_transform_with_cygpath_w = $ENV{CYGPATH_W_DEFINED};
 
 my @dc_opts;
 if ($subject)
@@ -73,6 +75,30 @@ my $dst_url = "${server_cs}${work_dir}/GL2/";
 my $test_count = 2 * scalar(@dc_opts) * scalar(@concur);
 plan tests => $test_count;
 
+sub transform_path
+{
+    my $in = shift;
+    my $out = $in;
+
+    if ($path_transform_with_cygpath_w)
+    {
+        if ($in =~ m/^\S+:/) {
+            my $inurl = URI->new($in);
+            my $cygpath_cmd;
+            $cygpath_cmd = "cygpath -m " . $inurl->path;
+            $out = `$cygpath_cmd`;
+            $out =~ s/\s*$//;
+            $out =~ s/://;
+            $inurl->path($out);
+            $out = $inurl->as_string;
+        } else {
+            $out = `cygpath -w $out`;
+            $out =~ s/\s*$//;
+        }
+    }
+    return $out;
+}
+
 SKIP: {
     skip "Missing URL or subject", $test_count unless($server_cs && $subject);
     my $i = 0;
@@ -83,11 +109,15 @@ SKIP: {
             my ($infd, $outfd, $errfd);
             my ($out, $err);
             my ($pid, $rc);
+            my @args = ("globus-url-copy", '-ipv6',
+                "-dbg", "-v",
+                "-pp", @{$cc}, @{$dc_opt},
+                "-cd", "-r",
+                transform_path($src_url), transform_path($dst_url));
             $errfd = gensym;
 
-            $pid = open3($infd, $outfd, $errfd, "globus-url-copy",
-                "-pp", @{$cc}, @{$dc_opt},
-                "-cd", "-r", $src_url, $dst_url);
+            print STDERR join(" ", "#", @args) . "\n";
+            $pid = open3($infd, $outfd, $errfd, @args);
             close($infd);
 
             waitpid($pid, 0);
