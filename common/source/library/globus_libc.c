@@ -2656,7 +2656,7 @@ globus_libc_addr_is_loopback(
             result = GLOBUS_TRUE;
         }
         break;
-#if defined(AF_INET6) && defined(IN6_IS_ADDR_LOOPBACK)
+#if defined(AF_INET6) && (defined(IN6_IS_ADDR_LOOPBACK) || _WIN32)
       case AF_INET6:
         if(IN6_IS_ADDR_LOOPBACK(&((struct sockaddr_in6 *) _addr)->sin6_addr) ||
             (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *) _addr)->sin6_addr) &&
@@ -2945,8 +2945,7 @@ globus_libc_contact_string_to_ints(
 #ifdef WIN32        
     int                                 rc;
     struct addrinfo                     hints;
-    struct addrinfo                     res;
-    struct addrinfo *                   pres;
+    struct addrinfo *                   pres = NULL;
     struct sockaddr_in6                 sockaddr6;
 #endif
     
@@ -2963,7 +2962,7 @@ globus_libc_contact_string_to_ints(
         {
             *(s++) = 0;
         }
-        /* (no inet_pton in windows) */
+        /* (no inet_pton in windows < vista) */
 #ifdef _WIN32
         if((addr4.s_addr = inet_addr(buf)) == INADDR_NONE)
         {
@@ -3002,17 +3001,14 @@ globus_libc_contact_string_to_ints(
             s = NULL;
         }
 
-        /* (no inet_pton in windows) */
-        /* ToDo: This code has not been tested */
+        /* (no inet_pton in windows < vista) */
 #ifdef WIN32
         memset(&hints,0,sizeof(hints));
-        memset(&res,0,sizeof(res));
         memset(&sockaddr6,0,sizeof(sockaddr6));
         hints.ai_family   = AF_INET6;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = IPPROTO_TCP;
-        res.ai_addr       = (struct sockaddr *) &sockaddr6;
-        pres              = &res;
+        pres              = NULL;
         sockaddr6.sin6_family = AF_INET6;
         rc = getaddrinfo(pbuf,      /* Node name             */
                          NULL,      /* Service Name          */
@@ -3022,7 +3018,12 @@ globus_libc_contact_string_to_ints(
         {
             goto error_parse;
         }
-        paddr = (unsigned char *) &sockaddr6.sin6_addr;
+        if (pres->ai_family != AF_INET6)
+        {
+            goto error_parse;
+        }
+        
+        paddr = (unsigned char *) &((struct sockaddr_in6*)pres->ai_addr)->sin6_addr;
 #else
 #ifdef AF_INET6
         if(inet_pton(AF_INET6, pbuf, &addr6) <= 0)
@@ -3049,6 +3050,13 @@ globus_libc_contact_string_to_ints(
     {
         host[i] = paddr[i];
     }
+#if _WIN32
+    if (pres)
+    {
+        freeaddrinfo(pres);
+    }
+#endif
+
     
     return GLOBUS_SUCCESS;
     
