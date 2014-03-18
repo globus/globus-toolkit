@@ -2238,7 +2238,7 @@ globus_url_string_hex_encode(
         e = encoded;
         while(*s)
         {
-            unsigned                    n = (unsigned) *s;
+            unsigned char               n = (unsigned char) *s;
 
             if(n <= 0x1F || n >= 0x7F || *s == '%' || (*enc && strchr(enc, n)))
             {
