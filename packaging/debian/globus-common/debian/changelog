@@ -1,3 +1,9 @@
+globus-common (14.11-1) unstable; urgency=low
+
+  * GT-497: globus_url_string_hex_encode crashes when input contains high ascii characters
+
+ -- Globus Toolkit <support@globus.org>  Tue, 18 Mar 2014 15:48:17 -0500
+
 globus-common (14.10-2) unstable; urgency=low
 
   * Bump globus-version to 5.2.5

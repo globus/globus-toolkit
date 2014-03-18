@@ -18,8 +18,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.10
-Release:	4g%{?dist}
+Version:	14.11
+Release:	1g%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -271,6 +271,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Mar 18 2014 Globus Toolkit <support@globus.org> - 14.11-1
+- GT-497: globus_url_string_hex_encode crashes when input contains high ascii characters
+
 * Mon Jul 08 2013 Globus Toolkit <support@globus.org> - 14.10-3
 - Incorrect %dir for license file
 
