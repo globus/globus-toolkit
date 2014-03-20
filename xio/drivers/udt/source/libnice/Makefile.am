@@ -1,4 +1,4 @@
-libnice_version = 0.1.4
+libnice_version = 0.1.5
 libnice_tarball = libnice-$(libnice_version).tar.gz
 libnice_tarball_url = http://nice.freedesktop.org/releases/$(libnice_tarball)
 
