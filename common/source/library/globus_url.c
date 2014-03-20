@@ -1532,23 +1532,21 @@ globusl_url_get_file_specific(const char **stringp,
     pos = 0;
 
     #ifdef WIN32
-    if ((*stringp)[pos] == '/')
-    {
-        (*stringp) += 1;
-    }
     /* This is something of a hack. Rather than rewire lower level routines it
        does a simple check for windows file syntax here and returns success */
        
     /* verify "c:\" type syntax */
-    if(isalnum((*stringp)[pos]) && 
-      (*stringp)[pos+1] == ':'  &&
-      ((*stringp)[pos+2] == '\\' || (*stringp)[pos+2] == '/'))
+    if(strlen((*stringp)+pos) > 3 &&
+        (*stringp)[pos] == '/' &&
+        isalnum((*stringp)[pos+1]) && 
+        (*stringp)[pos+2] == ':'  &&
+        ((*stringp)[pos+3] == '\\' || (*stringp)[pos+3] == '/'))
     {
         char *temp_path;
         size_t i;
-        temp_path = malloc(strlen(*stringp) + 1);
-        strcpy(temp_path,*stringp);
-        for(i = 0;i < strlen(temp_path);i++)
+        temp_path = malloc(strlen(*stringp));
+        strcpy(temp_path,(*stringp)+1);
+        for(i = 0; temp_path[i]; i++)
         {
             if(temp_path[i] == '/') temp_path[i] = '\\';
         }
