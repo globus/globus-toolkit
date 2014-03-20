@@ -89,7 +89,6 @@ extern int globus_libc_vsnprintf(char *s, size_t n, const char *format,
 
 /*
  * File I/O routines
- *  These functions are not supported on the windwos platform
  */
 #if !defined(_WIN32)
 #define globus_libc_open open
@@ -107,11 +106,6 @@ extern int globus_libc_vsnprintf(char *s, size_t n, const char *format,
 #define globus_libc_closedir closedir
 #define globus_libc_getpwuid_r getpwuid_r
 
-int
-globus_libc_readdir_r(
-    DIR *                           dirp,
-    struct dirent **                result);
-
 #else /* _WIN32 */
 
 extern
@@ -128,13 +122,18 @@ globus_libc_umask_win32(
 	            write(fd,iov[0].iov_base,iov[0].iov_len)
 #   define uid_t int
 #if defined(TARGET_ARCH_CYGWIN) || defined(TARGET_ARCH_MINGW32)
+#define globus_libc_opendir opendir
+#define globus_libc_telldir telldir
+#define globus_libc_seekdir seekdir
+#define globus_libc_rewinddir rewinddir
+#define globus_libc_closedir closedir
+#endif
+#endif /* _WIN32 */
 extern
 int
 globus_libc_readdir_r(
     DIR *                           dirp,
     struct dirent **                result);
-#endif
-#endif /* _WIN32 */
 
 /*
  * Memory allocation routines
