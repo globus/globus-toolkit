@@ -1,7 +1,7 @@
 AC_INIT([globus_toolkit], [5.3.0], [support@globus.org])
 export GLOBUS_VERSION=$VERSION
 syscmd([./update-dirt.sh])
-AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
+AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax subdir-objects])
 AC_CONFIG_HEADERS([ltdlconfig.h])
 LT_CONFIG_LTDL_DIR([libltdl])
 LT_INIT([dlopen win32-dll])
@@ -29,16 +29,14 @@ expand_libtool_var()
     eval "value=\${$varname}"
     top_build_prefix=${top_build_prefix:-$(pwd)/}
     top_builddir=${top_builddir:-$(pwd)}
-    for compilerarg in "-I" "-L"; do
-        if test x"${value#${compilerarg}/}" != x"${value}" ; then
-            top_srcdir=$(pwd)/${top_srcdir:-${srcdir}}
-        else
-            top_srcdir=${top_srcdir:-${srcdir}}
-        fi
-        if test "x${value#$compilerarg../}" != "x${value#$compilerarg}"; then
-            value="${compilerarg}$(pwd)/${value#$compilerarg}"
-        fi
-    done
+    if test "x${top_srcdir}" = "x"; then
+        top_srcdir="${srcdir}"
+    fi
+    if test x"${top_srcdir#/}" = x"${top_srcdir}"; then
+        top_srcdir="$(pwd)/${top_srcdir}"
+    else
+        top_srcdir="${top_srcdir}"
+    fi
     eval "echo $varname=$value"
 }
 eval `expand_libtool_var LIBLTDL`
@@ -377,40 +375,86 @@ EOF
 AC_SUBST_FILE(MAC_INSTALLER_PKG_REFS)
 AC_SUBST_FILE(MAC_INSTALLER_CHOICE_LINES)
 AC_SUBST_FILE(MAC_INSTALLER_PACKAGE_CHOICES)
-dnl Don't build globus-gram5-* on windows
-case "$host_os" in
-    *mingw*|*cygwin*)
-        default_bundles="m4_foreach([bundle], m4_split(GT_BUNDLES_MACRO),
-        [ifelse(m4_expand(m4_substr(bundle, 0, 6)),[gram5-],[],
-            ifelse(m4_expand(m4_substr(bundle, 0, 3)), [udt],[],[bundle ]))])"
-        ;;
-       *)
-        default_bundles="m4_foreach([bundle], m4_split(GT_BUNDLES_MACRO),
-            [ifelse(m4_expand(m4_substr(bundle, 0, 3)), [udt],[],[bundle ])])"
-        ;;
-esac
 
+m4_foreach([bundle], m4_split(GT_BUNDLES_MACRO),
+    [ifelse(
+        m4_expand(m4_substr(bundle, 0, 6)), [gram5-],dnl
+        [m4_append([GT_DISABLED_BUNDLES_MACRO], bundle, [ ])],
+        [ifelse(
+            m4_expand(m4_substr(bundle, 0, 3)), [udt],
+            [m4_append([GT_DISABLED_BUNDLES_MACRO], bundle, [ ])],dnl
+            [m4_append([GT_ENABLED_BUNDLES_MACRO], bundle, [ ])])])])
+
+enabled_buns="GT_ENABLED_BUNDLES_MACRO"
 m4_foreach([bundle],
-    m4_split(GT_BUNDLES_MACRO),
+    m4_split(GT_DISABLED_BUNDLES_MACRO),
     [
-    AC_ARG_ENABLE(bundle, AS_HELP_STRING([--enable-[]bundle], [Enable bundle]),
-        [if test "$enableval" = "yes"; then
+    AC_ARG_ENABLE(bundle, AS_HELP_STRING([--enable-]bundle, [Enable ]bundle),
+        [if test X"$enableval" = X"yes"; then
             skip=0
-            for name in $enabled_bundles; do
+            for name in $enabled_buns; do
                 if test "$name" = bundle ; then
                     skip=1
                     break
                 fi
             done
             if test "$skip" = 0; then
-                enabled_bundles="${enabled_bundles:+$enabled_bundles }bundle"
+                enabled_buns="${enabled_buns:+$enabled_buns }bundle"
+            fi
+        elif test X"$enableval" = X"no"; then
+            skip=0
+            for name in $disabled_buns; do
+                if test "$name" = bundle ; then
+                    skip=1
+                    break
+                fi
+            done
+            if test "$skip" = 0; then
+                disabled_buns="${disabled_buns:+$disabled_buns }bundle"
             fi
         fi])
 ])
-if test X"$enabled_bundles" = X; then
-    enabled_bundles="$default_bundles"
-fi
+m4_foreach([bundle],
+    m4_split(GT_ENABLED_BUNDLES_MACRO),
+    [
+    AC_ARG_ENABLE(bundle, AS_HELP_STRING([--disable-]bundle, [Disable ]bundle),
+        [if test X"$enableval" = X"yes"; then
+            skip=0
+            for name in $enabled_buns; do
+                if test "$name" = bundle ; then
+                    skip=1
+                    break
+                fi
+            done
+            if test "$skip" = 0; then
+                enabled_buns="${enabled_buns:+$enabled_buns }bundle"
+            fi
+        elif test X"$enableval" = X"no"; then
+            skip=0
+            for name in $disabled_buns; do
+                if test "$name" = bundle ; then
+                    skip=1
+                    break
+                fi
+            done
+            if test "$skip" = 0; then
+                disabled_buns="${disabled_buns:+$disabled_buns }bundle"
+            fi
+        fi])
+])
 
+final_enabled_bundles=""
+for en_name in "$enabled_buns"; do
+    for dis_name in "$disabled_buns"; do
+        skip=0
+        if test "$en_name" = "$dis_name"; then
+            skip=1
+        fi
+    done
+    if test "$skip" = 0; then
+        final_enabled_bundles="${final_enabled_bundles:+$final_enabled_bundles }$en_name"
+    fi
+done
 AC_SUBST_FILE(TARGETS_FILE)
 AC_SUBST(TOP_SUBDIRS)
 AC_SUBST(TOP_DIST_SUBDIRS)
@@ -426,7 +470,7 @@ AC_SUBST(GT_TARGETS_OSX_PKG)
 AC_SUBST(GT_PKGCONFIG_DIRS)
 AC_SUBST(GT_DOXYGEN_SUBDIRS)
 AC_SUBST(GT_ALL_STAMPS)
-AC_SUBST(GT_ENABLED_BUNDLES, ["$enabled_bundles"])
+AC_SUBST(GT_ENABLED_BUNDLES, ["$final_enabled_bundles"])
 AC_SUBST(GT_BUNDLES)
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Doxyfile])
