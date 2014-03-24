@@ -23,6 +23,8 @@ m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
+AM_CONDITIONAL([HOST_OSX], [case $host in *darwin*) true ;; *) false ;; esac]) 
+
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
 AC_ARG_WITH([static-udt],
@@ -101,9 +103,9 @@ if test X"$use_included_glib2" = X1; then
     UDT_DRIVER_PKG_CONFIG_PATH="${UDT_DRIVER_PKG_CONFIG_PATH}:${GLIB2_PKG_CONFIG_PATH}"
 
     if test X"$use_included_libffi" = "X"; then
-        PKG_CHECK_MODULES([LIBFFI], [libff-3.0], [], [use_included_libffi=1])
+        PKG_CHECK_MODULES([LIBFFI], [libffi >= 3.0], [], [use_included_libffi=1])
     fi
-    AC_CHECK_PROG([GETTEXT], [gettext])
+    AC_CHECK_PROGS([GETTEXT], [gettext])
     if test X"$GETTEXT" = X""; then
         use_included_gettext=1
     fi

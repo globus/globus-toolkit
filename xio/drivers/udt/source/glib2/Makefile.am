@@ -1,4 +1,4 @@
-glib2_short_version = 2.32
+glib2_short_version = 2.36
 glib2_version = $(glib2_short_version).4
 glib2_tarball = glib-$(glib2_version).tar.xz
 glib2_tarball_url = http://ftp.gnome.org/pub/gnome/sources/glib/$(glib2_short_version)/$(glib2_tarball)
@@ -13,6 +13,8 @@ glib2-unpack-stamp: $(glib2_tarball)
 	$(MKDIR_P) source
 if XZ_WORKS
 	$(XZ) -dc < $(glib2_tarball) | $(AMTAR) -xf- -C source --strip 1
+	rm -f source/gio/gnetworking.h || :
+	touch source/docs/reference/glib/Makefile.in source/docs/reference/gobject/Makefile.in source/docs/reference/gio/Makefile.in source/docs/reference/gio/gdbus-object-manager-example/Makefile.in
 else
 	echo "Unable to extract .xz archive. Please install xz" 1>&2; exit 1
 endif
