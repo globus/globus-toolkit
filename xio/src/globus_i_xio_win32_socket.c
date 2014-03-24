@@ -135,6 +135,11 @@ globus_l_xio_win32_socket_handle_read(
         globus_xio_operation_refresh_timeout(read_info->op);
     }
     
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
+        ("[%s] In globus_l_xio_win32_socket_handle_read fd=%lu, read_info->type=%d\n",
+             _xio_name,
+             (unsigned long)handle->socket, (int) read_info->type));
     switch(read_info->type)
     {
       case GLOBUS_I_XIO_SYSTEM_OP_ACCEPT:
@@ -149,7 +154,27 @@ globus_l_xio_win32_socket_handle_read(
                 
                 if(error != WSAECONNRESET && error != WSAEWOULDBLOCK)
                 {
-                    result = GlobusXIOErrorSystemError("accept", error);
+                    char errbuf[64];
+                    sprintf(errbuf, "accept, fd=%ld, error=%d",
+                        (long) handle->socket, error);
+                    result = GlobusXIOErrorSystemError(errbuf, error);
+                    GlobusXIOSystemDebugPrintf(
+                        GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
+                        ("[%s] Tried to accept new connection on fd=%lu, %s\n",
+                             _xio_name,
+                             (unsigned long)handle->socket, errbuf));
+
+                }
+                else
+                {
+                    char errbuf[64];
+                    sprintf(errbuf, "accept, fd=%ld, error=%d",
+                        (long) handle->socket, error);
+                    GlobusXIOSystemDebugPrintf(
+                        GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
+                        ("[%s] Tried to accept new connection on fd=%lu, %s\n",
+                             _xio_name,
+                             (unsigned long)handle->socket, errbuf));
                 }
             }
             else
@@ -164,8 +189,9 @@ globus_l_xio_win32_socket_handle_read(
                 read_info->nbytes++;
                 GlobusXIOSystemDebugPrintf(
                     GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
-                    ("[%s] Accepted new connection, fd=%lu\n",
-                         _xio_name, (unsigned long)new_fd));
+                    ("[%s] Accepted new connection on fd=%lu, fd=%lu\n",
+                         _xio_name,
+                         (unsigned long)handle->socket, (unsigned long)new_fd));
             }
         }
         break;
@@ -818,8 +844,8 @@ globus_xio_system_socket_destroy(
     
     GlobusXIOSystemDebugPrintf(
         GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
-        ("[%s] Unregistering event handle=%lu\n",
-            _xio_name, (unsigned long) handle->event));
+        ("[%s] Unregistering event handle=%lu for socket %ld\n",
+            _xio_name, (unsigned long) handle->event, (long) handle->socket));
             
     globus_i_xio_win32_event_unregister(handle->event_entry);
     globus_i_xio_win32_event_unlock(handle->event_entry);

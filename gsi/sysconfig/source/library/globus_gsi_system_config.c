@@ -7259,39 +7259,23 @@ globus_gsi_sysconfig_get_unique_proxy_filename(
 /* Home Directory e.g. C:\Documents and Settings\gaffaney */
 const char *win32_secure_path(void)
 {
-    char *                              home_drive = NULL;
-    char *                              home_path  = NULL;
-    char *                              tmp_path   = NULL;
-    char *                              temp_path  = NULL;
-    static char                         buffer[MAX_PATH];
-    
-    /* Collect environment all variables we might need */    
-    home_drive = getenv("HOMEDRIVE");
-    home_path  = getenv("HOMEPATH");
-    tmp_path   = getenv("TMP");
-    temp_path  = getenv("TEMP");
-    
-    /* Build Preferred Path */
-    if(home_drive && home_path) 
+    static char                         buffer[MAX_PATH+1] = {0};
+    int rc;
+
+    if (buffer[0] == 0)
     {
-        sprintf(buffer,"%s%s",home_drive,home_path);
-        return buffer;
+        rc = GetTempPath((DWORD) sizeof(buffer), buffer);
+
+        if (rc == 0)
+        {
+            strcpy(buffer, WIN32_FALLBACK_PATH);
+        }
+        else
+        {
+            buffer[strlen(buffer)-1] = 0;
+        }
     }
-    /* Use $TMP */      
-    else if(tmp_path) 
-    {
-        return tmp_path;
-    }
-    /* Use $TEMP */      
-    else if(temp_path) 
-    {
-        return temp_path;
-    }
-    /* Fallback, use c:\temp */
-    else
-    {
-        return WIN32_FALLBACK_PATH;
-    }
+    return buffer;
 }
 
 

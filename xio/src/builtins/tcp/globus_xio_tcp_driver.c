@@ -26,14 +26,7 @@
 #define EADDRINUSE              WSAEADDRINUSE
 #endif
 
-#ifdef HAVE_SOCKAPI_H
-#include <sockapi.h>
-#define SOMAXCONN 5
-#endif
-
-#ifndef TARGET_ARCH_NETOS
 #include <fcntl.h>
-#endif
 
 GlobusDebugDefine(GLOBUS_XIO_TCP);
 

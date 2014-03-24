@@ -1536,15 +1536,17 @@ globusl_url_get_file_specific(const char **stringp,
        does a simple check for windows file syntax here and returns success */
        
     /* verify "c:\" type syntax */
-    if(isalnum((*stringp)[pos]) && 
-      (*stringp)[pos+1] == ':'  &&
-      ((*stringp)[pos+2] == '\\' || (*stringp)[pos+2] == '/'))
+    if(strlen((*stringp)+pos) > 3 &&
+        (*stringp)[pos] == '/' &&
+        isalnum((*stringp)[pos+1]) && 
+        (*stringp)[pos+2] == ':'  &&
+        ((*stringp)[pos+3] == '\\' || (*stringp)[pos+3] == '/'))
     {
         char *temp_path;
         size_t i;
-        temp_path = malloc(strlen(*stringp) + 1);
-        strcpy(temp_path,*stringp);
-        for(i = 0;i < strlen(temp_path);i++)
+        temp_path = malloc(strlen(*stringp));
+        strcpy(temp_path,(*stringp)+1);
+        for(i = 0; temp_path[i]; i++)
         {
             if(temp_path[i] == '/') temp_path[i] = '\\';
         }
@@ -1592,7 +1594,7 @@ Description: Look for properly formatted file scheme-specific information:
 		/some/path
 		//hostname/some/path
 		(Note: only the second form is valid in the RFC definition
-		of file URLS; however, the first and is used in common
+		of file URLS; however, the first is used in common
 		practice)
 		loose restrictions on characters allowed for globbing purposes
 
@@ -1624,14 +1626,23 @@ globusl_url_get_file_specific_loose(const char **stringp,
 
 	pos = 0;
 	/* Parse host name */
+    #ifdef WIN32
+	while(isalnum((*stringp)[pos]) ||
+	      (*stringp)[pos] == '\\' ||
+	      (*stringp)[pos] == ':' ||
+	      (*stringp)[pos] == '-' ||
+	      (*stringp)[pos] == '.')
+    #else
 	while(isalnum((*stringp)[pos]) ||
 	      (*stringp)[pos] == '-' ||
 	      (*stringp)[pos] == '.')
-	{
-	    pos++;
-	} 
+    #endif
 
+    #ifdef WIN32
+	if(((*stringp)[pos] == '\\' || (*stringp)[pos] == '/') && pos != 0)
+    #else
 	if((*stringp)[pos] == '/' && pos != 0)
+    #endif
 	{
 	    rc = globusl_url_get_substring(*stringp, host, pos);
 	    (*stringp) += pos;
@@ -1664,6 +1675,37 @@ globusl_url_get_file_specific_loose(const char **stringp,
         rc = globusl_url_get_path_loose(stringp,
 			          path,
 				  GLOBUS_URL_SCHEME_FILE);
+#if _WIN32
+        if (rc == GLOBUS_SUCCESS)
+        {
+            size_t pathlen = strlen(*path);
+            size_t i;
+            /* If it's a file URL on Windows with a driver specifier,
+             * remove the leading /.
+             * Replace all "/" values with "\"
+             */
+            if ((pathlen > 3) &&
+                isalpha((*path)[1]) &&
+                (*path)[2] == ':')
+            {
+                size_t i;
+                memmove(*path, &(*path)[1], pathlen);
+                pathlen--;
+            }
+
+            for (i = 0; i < pathlen; i++)
+            {
+                if ((*path)[i] == '/')
+                {
+                    (*path)[i] = '\\';
+                }
+                else
+                {
+                    (*path)[i] = (*path)[i];
+                }
+            }
+        }
+#endif
     }
     return rc;
 }
