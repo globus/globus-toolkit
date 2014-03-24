@@ -11,14 +11,14 @@ Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{ve
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
-Requires:	globus-xio%{?_isa} >= >= 3
+Requires:	globus-xio%{?_isa} >= 3
 %if %{?fedora}%{!?fedora:0} >= 18
 Requires:       glib2%{?_isa} >= 2.32
 Requires:       libnice%{?_isa} >= 0.0.12
 %endif
 Requires:       libffi
 
-BuildRequires:	globus-xio-devel >= >= 3
+BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
 %if %{?fedora}%{!?fedora:0} >= 18
@@ -36,7 +36,7 @@ BuildRequires:  pkgconfig
 Summary:	Globus Toolkit - Globus XIO UDT Driver Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-xio-devel%{?_isa} >= >= 3
+Requires:	globus-xio-devel%{?_isa} >= 3
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
