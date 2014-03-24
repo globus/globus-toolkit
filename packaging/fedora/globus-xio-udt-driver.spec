@@ -12,18 +12,19 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-xio%{?_isa} >= >= 3
-Requires:       udt%{?_isa} >= 4
+%if %{?fedora}%{!?fedora:0} >= 18
 Requires:       glib2%{?_isa} >= 2.32
 Requires:       libnice%{?_isa} >= 0.0.12
+%endif
 Requires:       libffi
 
 BuildRequires:	globus-xio-devel >= >= 3
 BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
-BuildRequires:  udt-devel >= 4
-BuildRequires:  udt >= 4
+%if %{?fedora}%{!?fedora:0} >= 18
 BuildRequires:  glib2-devel >= 2.32
 BuildRequires:  libnice-devel >= 0.0.12
+%endif
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
