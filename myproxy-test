@@ -1516,6 +1516,31 @@ if (-x $gcc &&
   print "MyProxy Test 44 (myproxy.h): SKIPPED\n";
 }
 
+#
+# Test 45
+#
+$SAVED_LOGNAME = $ENV{'LOGNAME'};
+$ENV{'LOGNAME'} =  $ENV{'LOGNAME'} . "ruld9ocitegdatNigWaiwacWowd5blerUdCaxVanurs4OtNimEsDeicEgOakEkavTykEvenIpRipCarattAidcack3grirtigrimhuatwykCoth5QuicAtJawmAdutbi0QuekKabCugNelgAneuvCavNokdejnilevityixafyudGujBekIgDoadjel9shraruld9ocitegdatNigWaiwacWowd5blerUdCaxVanurs4OtNimEsDeicEgOakEkavTykEvenIpRipCarattAidcack3grirtigrimhuatwykCoth5QuicAtJawmAdutbi0QuekKabCugNelgAneuvCavNokdejnilevityixafyudGujBekIgDoadjel9shraruld9ocitegdatNigWaiwacWowd5blerUdCaxVanurs4OtNimEsDeicEgOakEkavTykEvenIpRipCarattAidcack3grirtigrimhuatwykCoth5QuicAtJawmAdutbi0QuekKabCugNelgAneuvCavNokdejnilevityixafyudGujBekIgDoadjel9shraruld9ocitegdatNigWaiwacWowd5blerUdCaxVanurs4OtNimEsDeicEgOakEkavTykEvenIpRipCarattAidcack3grirtigrimhuatwykCoth5QuicAtJawmAdutbi0QuekKabCugNelgAneuvCavNokdejnilevityixafyudGujBekIgDoadjel9shraruld9ocitegdatNigWaiwacWowd5blerUdCaxVanurs4OtNimEsDeicEgOakEkavTykEvenIpRipCarattAidcack3grirtigrimhuatwykCoth5QuicAtJawmAdutbi0QuekKabCugNelgAneuvCavNokdejnilevityixafyudGujBekIgDoadjel9shraruld9ocitegdatNigWaiwacWowd5blerUdCaxVanurs4OtNimEsDeicEgOakEkavTykEvenIpRipCarattAidcack3grirtigrimhuatwykCoth5QuicAtJawmAdutbi0QuekKabCugNelgAneuvCavNokdejnilevityixafyudGujBekIgDoadjel9shra";
+($exitstatus, $output) =
+    &runtest("myproxy-init -v -a -c 1 -t 1 -S", $passphrase . "\n");
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+        &runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
+                 $passphrase . "\n");
+}
+print "MyProxy Test 45 (verify long username handling): ";
+if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &verifyproxy("$tmpdir/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+$ENV{'LOGNAME'} = $SAVED_LOGNAME;
+
+
 
 #
 # COG tests

@@ -308,6 +308,8 @@ get_storage_locations(const char *username,
 		      char **lock_path)
 {
     int return_code = -1;
+    int long_username = 0;
+    int long_credname = 0;
     char *sterile_username = NULL;
     char *sterile_credname = NULL;
     const char *creds_suffix = ".creds";
@@ -323,10 +325,17 @@ get_storage_locations(const char *username,
         goto error;
     }
 
-    if (strchr(username, '/')) {
+    if (strlen(username) + 10 + strlen(storage_dir) > _POSIX_PATH_MAX) {
+        long_username = 1;
+    }
+
+    if (long_username || strchr(username, '/')) {
        sterile_username = strmd5(username, NULL);
-       if (sterile_username == NULL)
-	  goto error;
+
+       if (sterile_username == NULL) {
+           goto error;
+       }
+
     } else {
        sterile_username = mystrdup(username);
 
@@ -363,12 +372,30 @@ get_storage_locations(const char *username,
 			      "%s line %s", __FILE__, __LINE__);
 	    goto error;
     	}
+
     } else {
-	sterile_credname = mystrdup(credname);
-	if (sterile_credname == NULL) {
-	    goto error;
-	}
-	sterilize_string(sterile_credname);
+
+        if (strlen(username) +
+            strlen(credname) + 10 + strlen(storage_dir) > _POSIX_PATH_MAX) {
+            long_credname = 1;
+        }
+
+        if (long_credname || strchr(credname, '/')) {
+            sterile_credname = strmd5(credname, NULL);
+
+            if (sterile_credname == NULL) {
+                goto error;
+            }
+
+        } else {
+            sterile_credname = mystrdup(credname);
+
+            if (sterile_credname == NULL) {
+                goto error;
+            }
+       
+            sterilize_string(sterile_credname);
+        }
     
     	if (my_append(creds_path, storage_dir,
 				"/", sterile_username, "-",
