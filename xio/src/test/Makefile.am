@@ -44,8 +44,17 @@ check_SCRIPTS =                         \
 	unload-test.pl                  \
 	test-common.pl
 
+if CYGPATH_W_DEFINED
+TEST_DATA_DIR = $$($(CYGPATH_W) $(srcdir)/.)
+else
+TEST_DATA_DIR = $(srcdir)/.
+endif
+
 TESTS = $(check_SCRIPTS)
-TESTS_ENVIRONMENT = env XIO_TEST_OUPUT_DIR=test_output/$$$$ $(LIBTOOL) --mode=execute -dlopen drivers/libglobus_xio_test_drivers.la
+TESTS_ENVIRONMENT = \
+	export XIO_TEST_OUPUT_DIR=test_output/$$$$ \
+	       TEST_DATA_DIR=$(TEST_DATA_DIR) ;
+LOG_COMPILER = $(LIBTOOL) --mode=execute -dlopen drivers/libglobus_xio_test_drivers.la
 
 AM_CPPFLAGS = \
     -I$(top_srcdir) \
@@ -53,7 +62,9 @@ AM_CPPFLAGS = \
     -I$(srcdir)/drivers \
     -DGLOBUS_BUILTIN=1 $(PACKAGE_DEP_CFLAGS)
 AM_LDFLAGS = $(GPT_LDFLAGS)
-LDADD = $(PACKAGE_DEP_LIBS) ../libglobus_xio.la
+LDADD = $(PACKAGE_DEP_LIBS) \
+	-dlopen drivers/libglobus_xio_test_drivers.la \
+	../libglobus_xio.la
 
 framework_test_SOURCES =                \
 	test_common.h                   \
@@ -85,21 +96,9 @@ http_pingpong_test_SOURCES = http_pingpong_test.c $(HTTP_PERFORMANCE_Sources)
 http_timeout_test_SOURCES = http_timeout_test.c $(HTTP_COMMON_Sources)
 http_throughput_test_SOURCES = http_throughput_test.c $(HTTP_PERFORMANCE_Sources)
 
-test: TESTS.pl $(check_SCRIPTS)
-	chmod a+x $?
-	$(LIBTOOL) --mode=execute -dlopen drivers/libglobus_xio_test_drivers.la \
-        $<
-
-junit: TESTS-junit.pl $(check_SCRIPTS)
-	chmod a+x $?
-	$(LIBTOOL) --mode=execute -dlopen drivers/libglobus_xio_test_drivers.la \
-        $<
-
 clean-local:
 	rm -rf *timings.txt test_output
 
-EXTRA_DIST =                            \
-        $(check_SCRIPTS)               \
+EXTRA_DIST =                    \
+        $(check_SCRIPTS)        \
         $(noinst_DATA)
-
-.PHONY: test junit

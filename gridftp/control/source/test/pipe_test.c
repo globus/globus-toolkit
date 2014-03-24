@@ -21,7 +21,7 @@
 #include "globus_common.h"
 #include <string.h>
 #include "test_common.h"
-
+#include "globus_preload.h"
 
 #define TEST_ITERATIONS 10
 
@@ -329,6 +329,7 @@ main(
     int                                         rc;
     globus_ftp_control_server_t                 server;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     printf("1..1\n");
     for(ctr = 0; ctr < argc; ctr++)
     {

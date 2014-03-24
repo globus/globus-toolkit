@@ -9,5 +9,5 @@ Name: globus-gsi-proxy-ssl
 Description: Globus Toolkit - Globus GSI Proxy SSL Library
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir}/library -lglobus_proxy_ssl
+Libs: ${abs_top_builddir}/library/libglobus_proxy_ssl.la
 Cflags: -I${abs_top_srcdir} -I${abs_top_srcdir}/library

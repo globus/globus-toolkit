@@ -24,6 +24,8 @@
 #include "globus_io.h"
 #include <stdlib.h>
 
+#include "globus_preload.h"
+
 typedef struct
 {
     globus_mutex_t			mutex;
@@ -67,6 +69,8 @@ main(
     char 				reply_buffer[256];
     globus_size_t			written;
     globus_size_t			read_amt;
+
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_IO_MODULE);
@@ -146,7 +150,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         char *msg = globus_error_print_friendly(globus_error_peek(result));
-	globus_libc_fprintf(stderr, "Could not create listener: %s\n", msg);
+	globus_libc_fprintf(stderr, "# Could not create listener: %s\n", msg);
         free(msg);
 
 	goto error_exit;
@@ -162,14 +166,14 @@ main(
 
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("Could not register connect\n");
+	globus_libc_printf("# Could not register connect\n");
 	goto error_exit;
     }
 
     result = globus_io_tcp_listen(&listener);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("Could not listen for connections\n");
+	globus_libc_printf("# Could not listen for connections\n");
 	goto error_exit;
     }
     result = globus_io_tcp_accept(&listener,
@@ -179,13 +183,12 @@ main(
     {
 	if(strcasecmp(argv[1], "-callback") == 0)
 	{
-	    globus_libc_printf("ok\n");
 	    globus_module_deactivate_all();
 	    exit(0);
 	}
 	else
 	{
-	    globus_libc_printf("Could not accept connection\n");
+	    globus_libc_printf("# Could not accept connection\n");
 	    goto error_exit;
 	}
     }
@@ -199,7 +202,7 @@ main(
     result = globus_io_close(&listener);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("Could not close listener\n");
+	globus_libc_printf("# Could not close listener\n");
 	goto error_exit;
     }
 
@@ -209,13 +212,13 @@ main(
 		             &written);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("Could not write greeting\n");
+	globus_libc_printf("# Could not write greeting\n");
 	goto error_exit;
     }
     result = globus_io_close(&server_handle);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("Could not close server\n");
+	globus_libc_printf("# Could not close server\n");
 	goto error_exit;
     }
     result = globus_io_read(&client_handle,
@@ -231,24 +234,21 @@ main(
 
 	if(! globus_io_eof(err))
 	{
-	    globus_libc_printf("Could not read greeting\n");
+	    globus_libc_printf("# Could not read greeting\n");
 	    goto error_exit;
 	}
     }
     result = globus_io_close(&client_handle);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("Could not close client\n");
+	globus_libc_printf("# Could not close client\n");
 	goto error_exit;
     }
 
-    if(memcmp(greeting, reply_buffer, sizeof(greeting)) == 0)
+    if(!memcmp(greeting, reply_buffer, sizeof(greeting)) == 0)
     {
-	globus_libc_printf("ok\n");
-    }
-    else
-    {
-	globus_libc_printf("not ok");
+	result = GLOBUS_FAILURE;
+        goto error_exit;
     }
 
     globus_module_deactivate_all();
@@ -299,7 +299,7 @@ globus_l_io_authorization_test_connect_callback(
     monitor = (globus_l_io_authorization_test_monitor_t *) arg;
     if(result != GLOBUS_SUCCESS)
     { 
-        printf("%s\n", globus_object_printable_to_string(
+        printf("# %s\n", globus_object_printable_to_string(
                    globus_error_get(result)));
         exit(1);
     }

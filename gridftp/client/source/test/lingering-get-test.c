@@ -23,6 +23,7 @@
  * deactivation.
  */
 #include "globus_ftp_client.h"
+#include "globus_preload.h"
 
 static globus_mutex_t lock;
 static globus_cond_t cond;
@@ -60,6 +61,7 @@ int main(int argc,
     char *					dst;
     globus_ftp_client_handleattr_t		handle_attr;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
 
     globus_ftp_client_handleattr_init(&handle_attr);

@@ -306,8 +306,8 @@ globus_gsi_gssapi_test_send_hello(
     }
 
     while(send_token.length - written &&
-          (rc = write(fd, &((char *) send_token.value)[written],
-                      send_token.length - written)) > 0 &&
+          (rc = send(fd, &((char *) send_token.value)[written],
+                      send_token.length - written, 0)) > 0 &&
           (written += rc));
 
     if(rc < 0)
@@ -337,7 +337,7 @@ globus_gsi_gssapi_test_receive_hello(
     gss_buffer_desc                     recv_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc                     output_token = GSS_C_EMPTY_BUFFER;
     
-    while((rc = read(fd,&buffer[recv_token.length],128)) > 0 &&
+    while((rc = recv(fd,&buffer[recv_token.length],128,0)) > 0 &&
           (recv_token.length += rc));
 
     if(rc < 0)
@@ -459,9 +459,9 @@ get_token(
 
     while(num_read < 4)
     {
-        n_read = read(fd,
+        n_read = recv(fd,
                       token_length_buffer + num_read,
-                      4 - num_read);
+                      4 - num_read, 0);
 
         if(n_read < 0)
         {
@@ -504,9 +504,9 @@ get_token(
 
     while(num_read < *token_length)
     {
-        n_read = read(fd,
+        n_read = recv(fd,
                       *token + num_read,
-                      *token_length - num_read);
+                      *token_length - num_read, 0);
 
         if(n_read < 0)
         {
@@ -547,9 +547,9 @@ put_token(
 
     while(num_written < 4)
     {
-        n_written = write(fd,
+        n_written = send(fd,
                           token_length_buffer + num_written,
-                          4 - num_written);
+                          4 - num_written, 0);
         if(n_written < 0)
         {
             if(errno == EINTR)
@@ -571,9 +571,9 @@ put_token(
 
     while(num_written < token_length)
     {
-        n_written = write(fd,
+        n_written = send(fd,
                           token + num_written,
-                          token_length - num_written);
+                          token_length - num_written, 0);
         if(n_written < 0)
         {
             if(errno == EINTR)
@@ -684,7 +684,7 @@ accept_sec_context(
         {
             if (context != NULL)
             {
-                printf("    Failed to establish security context (accept).");
+                printf("    Failed to establish security context (accept).\n");
                 globus_gsi_gssapi_test_print_error(
                     stderr, major_status, minor_status);
                 gss_delete_sec_context(&minor_status2, context, GSS_C_NO_BUFFER);
@@ -801,7 +801,7 @@ init_sec_context(
 	
 	if (GSS_ERROR(major_status))
 	{
-	    printf("    Failed to establish security context (init).");
+	    printf("    Failed to establish security context (init).\n");
             globus_gsi_gssapi_test_print_error(
                 stderr, major_status, minor_status);
 

@@ -21,8 +21,9 @@
 
 #include <stdio.h>
 
+#include "globus_preload.h"
 
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 1
 
 typedef struct
 {
@@ -35,6 +36,8 @@ prod_data_t;
 
 int                     nproducers;
 int                     nconsumers;
+int                     nliveproducers;
+int                     nliveconsumers;
 
 globus_fifo_t                   queue;
 globus_mutex_t                  queue_mutex;
@@ -43,94 +46,34 @@ globus_cond_t                   queue_cond;
 globus_mutex_t                  common_mutex;
 globus_cond_t                   common_cond;
 
-globus_thread_key_t             thread_ids;
-globus_thread_once_t
-    thread_ids_initialized = GLOBUS_THREAD_ONCE_INIT;
-int                         thread_ids_destruct_cnt;
-
-
 /******************************************************************************
                Module specific functions
 ******************************************************************************/
-
-void
-thread_ids_destruct(
-    void *                      thread_arg)
-{
-    globus_mutex_lock(&common_mutex);
-    {
-        thread_ids_destruct_cnt++;
-    }
-    globus_mutex_unlock(&common_mutex);
-
-    if (DEBUG_LEVEL > 0)
-    {
-        printf("%04ld: thread_ids_destruct() - complete\n",
-               (long) thread_arg);
-    }
-}
-
-void
-thread_ids_init()
-{
-    thread_ids_destruct_cnt = 0;
-    globus_thread_key_create(&thread_ids, thread_ids_destruct);
-
-    if (DEBUG_LEVEL > 0)
-    {
-        printf("----: thread_ids_init() - complete\n");
-    }
-}
-
 long
-thread_id_get()
-{
-    long                        thread_id;
-
-    thread_id = (long) globus_thread_getspecific(thread_ids);
-
-    return thread_id;
-}
-
-
-void
 thread_id_assign()
 {
     static int                  cnt = 0;
     long                        thread_id;
 
-    globus_thread_once(&thread_ids_initialized,
-               thread_ids_init);
-
     globus_mutex_lock(&common_mutex);
     {
-    thread_id = cnt++;
+        thread_id = cnt++;
     }
     globus_mutex_unlock(&common_mutex);
-
-    globus_thread_setspecific(thread_ids, (void *) thread_id);
-
-    if (DEBUG_LEVEL > 0)
-    {
-        printf("%04ld: thread_id_assign() - complete\n",
-               thread_id_get());
-    }
+    return thread_id;
 }
 
 void
-wait_for_all()
+wait_for_all(long thread_id)
 {
     static int                  cnt_arrived = 0;
     static int                  cnt_leaving = 0;
-    long                        thread_id;
 
-    thread_id = thread_id_get();
-    
     globus_mutex_lock(&common_mutex);
     {
         while(cnt_leaving > 0)
         {
-            if (DEBUG_LEVEL > 0)
+            if (DEBUG_LEVEL > 1)
             {
                 printf("%04ld: wait_for_all() - waiting (next)\n",
                        thread_id);
@@ -143,7 +86,7 @@ wait_for_all()
 
         if (cnt_arrived  < nproducers + nconsumers + 1)
         {
-            if (DEBUG_LEVEL > 0)
+            if (DEBUG_LEVEL > 1)
             {
                 printf("%04ld: wait_for_all() - waiting (current)\n",
                        thread_id);
@@ -163,7 +106,7 @@ wait_for_all()
                 
                 globus_cond_broadcast(&common_cond);
                 
-                if (DEBUG_LEVEL > 0)
+                if (DEBUG_LEVEL > 1)
                 {
                     printf("%04ld: wait_for_all() - signalling (next)\n",
                            thread_id);
@@ -172,7 +115,7 @@ wait_for_all()
         }
         else
         {
-            if (DEBUG_LEVEL > 0)
+            if (DEBUG_LEVEL > 1)
             {
                 printf("%04ld: wait_for_all() - signalling (current)\n",
                        thread_id);
@@ -185,7 +128,7 @@ wait_for_all()
     }
     globus_mutex_unlock(&common_mutex);
 
-    if (DEBUG_LEVEL > 0)
+    if (DEBUG_LEVEL > 1)
     {
         printf("%04ld: wait_for_all() - exiting\n", thread_id);
     }
@@ -200,19 +143,18 @@ producer(
     prod_data_t                 data;
     long                        thread_id;
 
-    nitems = (long) nitems_arg;
+    nitems = (intptr_t) nitems_arg;
 
     globus_mutex_init(&data.mutex, (globus_mutexattr_t *) GLOBUS_NULL);
     globus_cond_init(&data.cond, (globus_condattr_t *) GLOBUS_NULL);
+    data.done = GLOBUS_FALSE;
 
-    thread_id_assign();
-    thread_id = thread_id_get();
+    thread_id = thread_id_assign();
     
-    wait_for_all();
+    wait_for_all(thread_id);
     
     for (i = 0; i < nitems ; i++)
     {
-        data.done = GLOBUS_FALSE;
 
         globus_mutex_lock(&queue_mutex);
         {
@@ -236,6 +178,7 @@ producer(
 
                 globus_cond_wait(&data.cond, &data.mutex);
             }
+            data.done = GLOBUS_FALSE;
         }
         globus_mutex_unlock(&data.mutex);
     }
@@ -243,7 +186,15 @@ producer(
     globus_cond_destroy(&data.cond);
     globus_mutex_destroy(&data.mutex);
 
-    wait_for_all();
+    wait_for_all(thread_id);
+
+    globus_mutex_lock(&common_mutex);
+    nliveproducers--;
+    if (nliveproducers == 0 && nliveconsumers == 0)
+    {
+        globus_cond_broadcast(&common_cond);
+    }
+    globus_mutex_unlock(&common_mutex);
 
     return NULL;
 }
@@ -257,12 +208,11 @@ consumer(
     prod_data_t *               data;
     long                        thread_id;
     
-    nitems = (long) nitems_arg;
+    nitems = (intptr_t) nitems_arg;
 
-    thread_id_assign();
-    thread_id = thread_id_get();
+    thread_id = thread_id_assign();
     
-    wait_for_all();
+    wait_for_all(thread_id);
     
     for (i = 0; i < nitems ; i++)
     {
@@ -287,12 +237,20 @@ consumer(
         {
             data->done = GLOBUS_TRUE;
 
-            globus_cond_signal(&data->cond);
+            globus_cond_broadcast(&data->cond);
         }
         globus_mutex_unlock(&data->mutex);
     }
 
-    wait_for_all();
+    wait_for_all(thread_id);
+
+    globus_mutex_lock(&common_mutex);
+    nliveconsumers--;
+    if (nliveproducers == 0 && nliveconsumers == 0)
+    {
+        globus_cond_broadcast(&common_cond);
+    }
+    globus_mutex_unlock(&common_mutex);
     
     return NULL;
 }
@@ -305,8 +263,7 @@ consumer(
  * consumed by the consumer threads.
  *
  * This test exercises globus_mutex_lock(), globus_mutex_unlock(),
- * globus_cond_wait(), globus_cond_signal(), globus_cond_broadcast(),
- * and globus_thread_yield()
+ * globus_cond_wait(), globus_cond_signal(), and globus_cond_broadcast()
  */
 int
 thread_test(int np, int nc, int ni)
@@ -316,11 +273,18 @@ thread_test(int np, int nc, int ni)
     long                    thread_id;
     globus_thread_t                             thread;
 
+    /*
+     * Assign a thread id to the main thread so that it's output is uniquely
+     * tagged.  Note: we do not use the return value of globus_thread_self()
+     * since it could be a pointer or a structure, the latter which is
+     * extremely hard to print without knowing the implementation details.
+     */
+    printf(" thread test begin\n");
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
 
-    nproducers = np;
-    nconsumers = nc;
+    nliveproducers = nproducers = np;
+    nliveconsumers = nconsumers = nc;
     nitems = ni;
 
     /*
@@ -336,16 +300,8 @@ thread_test(int np, int nc, int ni)
     globus_mutex_init(&common_mutex, (globus_mutexattr_t *) GLOBUS_NULL);
     globus_cond_init(&common_cond, (globus_condattr_t *) GLOBUS_NULL);
 
-    /*
-     * Assign a thread id to the main thread so that it's output is uniquely
-     * tagged.  Note: we do not use the return value of globus_thread_self()
-     * since it could be a pointer or a structure, the latter which is
-     * extremely hard to print without knowing the implementation details.
-     */
-    thread_id_assign();
+    thread_id = thread_id_assign();
 
-    thread_id = thread_id_get();
-    
     /*
      * Start producer and consumer threads
      */
@@ -406,7 +362,7 @@ thread_test(int np, int nc, int ni)
     /*
      * Wait for all threads to be started
      */
-    wait_for_all();
+    wait_for_all(thread_id);
 
     printf(" %04ld: main() - all threads started\n",
             thread_id);
@@ -414,24 +370,20 @@ thread_test(int np, int nc, int ni)
     /*
      * Wait for all threads to complete their work
      */
-    wait_for_all();
+    wait_for_all(thread_id);
 
     printf(" %04ld: main() - all threads have completed their work\n",
             thread_id);
-    
-    /*
-     * Wait for all thread id data to be destroyed
-     */
-    while (thread_ids_destruct_cnt < nproducers + nconsumers)
-    {
-        globus_thread_yield();
-    }
 
-    printf(" %04ld: main() - all threads terminated\n", thread_id);
     globus_mutex_lock(&common_mutex);
-    thread_ids_destruct_cnt  = 0;
-    globus_cond_destroy(&common_cond);
+    while (nliveconsumers > 0 || nliveproducers > 0)
+    {
+        globus_cond_wait(&common_cond, &common_mutex);
+    }
+    printf(" %04ld: main() - all threads terminated\n", thread_id);
     globus_mutex_unlock(&common_mutex);
+
+    globus_cond_destroy(&common_cond);
     globus_mutex_destroy(&common_mutex);
     
     globus_cond_destroy(&queue_cond);
@@ -450,7 +402,13 @@ main(
 {
     const char * thread_model = THREAD_MODEL;
     globus_bool_t no_threads = GLOBUS_FALSE;
+
+    LTDL_SET_PRELOADED_SYMBOLS();
     globus_thread_set_model(thread_model);
+
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+
     printf("1..4\n");
 
     no_threads = (thread_model == NULL || strcmp(thread_model, "none") == 0);

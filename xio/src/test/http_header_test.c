@@ -46,6 +46,10 @@
 #include "globus_xio_tcp_driver.h"
 #include "http_test_common.h"
 
+#ifdef _WIN32
+#include <getopt.h>
+#endif
+
 globus_xio_http_header_t *              test_headers;
 globus_size_t                           test_headers_length;
 int                                     done = 0;
@@ -264,7 +268,7 @@ read_test_file(
         rc = 3;
         goto error_exit;
     }
-    file = fopen(filename, "r");
+    file = fopen(filename, "rb");
 
     if (file == NULL)
     {

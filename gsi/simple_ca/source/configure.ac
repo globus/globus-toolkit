@@ -13,6 +13,8 @@ m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
+AC_CANONICAL_HOST
+
 grid_security_conf_tmpl="$srcdir/grid-security.conf.tmpl"
 AC_SUBST_FILE(grid_security_conf_tmpl)
 ca_signing_policy_tmpl="$srcdir/ca-signing-policy.tmpl"
@@ -38,9 +40,20 @@ EOF
 fi
 AC_MSG_RESULT($docbook_dtd_available)
 AC_SUBST(DOCBOOK_DTD)
-
-AC_SUBST([GLOBUS_COMMON_PATH], ["$(pkg-config --variable=path globus-common)"])
+GLOBUS_COMMON_PATH=
+PKG_CHECK_EXISTS([globus-common], [
+    GLOBUS_COMMON_PATH="$($PKG_CONFIG --variable=path globus-common)"])
+AC_SUBST([GLOBUS_COMMON_PATH])
 AM_CONDITIONAL([RUN_TESTS], [test "$GLOBUS_COMMON_PATH" != ""])
+AM_CONDITIONAL([CYGPATH_W_DEFINED], [
+    case $host in
+        *mingw32*)
+        test x"$CYGPATH_W" != x;
+        ;;
+        *)
+        false
+        ;;
+    esac])
 
 AC_MSG_CHECKING([docbook xsl])
 MAN_XSL=http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl

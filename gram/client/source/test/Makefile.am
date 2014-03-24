@@ -74,7 +74,7 @@ TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR=$(abs_builddir) \
-    PATH=$(GLOBUS_GRAM_JOB_MANAGER_PATH):$(PROXY_UTILS_PATH):$${PATH};
+    PATH=$(GLOBUS_GRAM_JOB_MANAGER_PATH):$(PROXY_UTILS_PATH):$(CERT_UTILS_PATH):$${PATH};
 LOG_COMPILER = $(srcdir)/gram-test-wrapper
 
 EXTRA_DIST = $(Scripts) $(Data) run-tests.pl.in \
@@ -105,7 +105,7 @@ testcred.cert: testcred.req testcred.key
 testcredlink: testcred.cert
 	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
 	rm -f "$$linkname"; \
-	ln -s testcred.cert "$$linkname"
+	cp testcred.cert "$$linkname"
 
 .PHONY: testcredlink junit
 

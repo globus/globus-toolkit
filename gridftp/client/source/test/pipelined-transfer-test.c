@@ -100,6 +100,7 @@ int main(int argc, char **argv)
     int                                         c;
     globus_l_gridftp_test_url_pairs_t           url_pairs;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
 
     globus_ftp_client_handleattr_init(&handle_attr);

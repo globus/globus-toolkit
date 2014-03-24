@@ -29,6 +29,12 @@ main(int argc, char *argv[])
     char                                formatString[256];
     char                                resultString[256];
     struct tm                           timeStruct;
+    int                                 skip_c99_formats = 0;
+
+#if __MINGW32__
+    skip_c99_formats = 1;
+#endif
+    setvbuf(stdout, NULL, _IONBF, 0);
 
     setlocale(LC_ALL, "C");
     printf("1..45\n");
@@ -86,22 +92,22 @@ main(int argc, char *argv[])
     printf(" Input date: %s\n", dateString);
     ok(globus_strptime(dateString, formatString, &timeStruct) != NULL,
         "globus_strptime_ws_century_year_variation");
-    ok(strftime(resultString, sizeof(resultString),
+    skip(skip_c99_formats, ok(strftime(resultString, sizeof(resultString),
         "%a %b %d %H:%M:%S %C %y", &timeStruct) > 0,
-        "reformat_century_year_variation");
-    ok(strcmp(resultString, dateString) == 0, "compare_century_year_variation");
+        "reformat_century_year_variation"));
+    skip(skip_c99_formats, ok(strcmp(resultString, dateString) == 0, "compare_century_year_variation"));
 
     strcpy(formatString, "%a %D %H:%M:%S");
     strcpy(dateString, "Sun 5/01/94 20:27:01");
     printf(" Input date: %s\n", dateString);
     ok(globus_strptime(dateString, formatString, &timeStruct) != NULL,
         "globus_strptime_date_variation");
-    ok(strftime(resultString, sizeof(resultString),
+    skip(skip_c99_formats, ok(strftime(resultString, sizeof(resultString),
         "%a %D %H:%M:%S", &timeStruct) > 0,
-        "reformat_date_variation");
+        "reformat_date_variation"));
     /* Hack to work around strftime adding a leading zero to the month */
     memmove(resultString+4, resultString+5, strlen(resultString+4));
-    ok(strcmp(resultString, dateString) == 0, "compare_date_variation");
+    skip(skip_c99_formats, ok(strcmp(resultString, dateString) == 0, "compare_date_variation"));
 
     strcpy(formatString, "%a %b %d %I:%M:%S %p %Y");
     strcpy(dateString, "Sun May 01 09:27:01 a.m. 1994");
@@ -138,20 +144,22 @@ main(int argc, char *argv[])
     strcpy(formatString, "%a %B %d %R %Y");
     strcpy(dateString, "Sun May 01 20:27 1994");
     printf(" Input date: %s\n", dateString);
-    ok(globus_strptime(dateString, formatString, &timeStruct) != NULL,
-       "globus_strptime_R_variation");
-    ok(strftime(resultString, sizeof(resultString),
-        formatString, &timeStruct) > 0, "reformat_R_variation");
-    ok(strcmp(resultString, dateString) == 0, "compare_R_variation");
+    skip(skip_c99_formats, ok(
+        globus_strptime(dateString, formatString, &timeStruct) != NULL,
+       "globus_strptime_R_variation"));
+    skip(skip_c99_formats, ok(strftime(resultString, sizeof(resultString),
+        formatString, &timeStruct) > 0, "reformat_R_variation"));
+    skip(skip_c99_formats, ok(
+        strcmp(resultString, dateString) == 0, "compare_R_variation"));
 
     strcpy(formatString, "%a %b %d %T %Y");
     strcpy(dateString, "Sun Jun 01 21:27:01 1994");
     printf(" Input date: %s\n", dateString);
     ok(globus_strptime(dateString, formatString, &timeStruct) != NULL,
         "globus_strptime_abbrev_month");
-    ok(strftime(resultString, sizeof(resultString),
-        formatString, &timeStruct) > 0, "reformat_abbrev_month");
-    ok(strcmp(resultString, dateString) == 0, "compare_abbrev_month");
+    skip(skip_c99_formats, ok(strftime(resultString, sizeof(resultString),
+        formatString, &timeStruct) > 0, "reformat_abbrev_month"));
+    skip(skip_c99_formats, ok(strcmp(resultString, dateString) == 0, "compare_abbrev_month"));
 
     strcpy(formatString, "%a %b %d %H:%M:%S %y");
     strcpy(dateString, "Sun May 01 20:27:01 94");
@@ -177,9 +185,9 @@ main(int argc, char *argv[])
     printf(" Input date: %s\n", dateString);
     ok(globus_strptime(dateString, formatString, &timeStruct) != NULL,
         "globus_strptime_time_only");
-    ok(strftime(resultString, sizeof(resultString),
-       formatString, &timeStruct) > 0, "reformat_time_only");
-    ok(strcmp(dateString, resultString) == 0, "compare_time_only");
+    skip(skip_c99_formats, ok(strftime(resultString, sizeof(resultString),
+       formatString, &timeStruct) > 0, "reformat_time_only"));
+    skip(skip_c99_formats, ok(strcmp(dateString, resultString) == 0, "compare_time_only"));
 
     /* date only */
     strcpy(formatString, "%a %b %d %y");

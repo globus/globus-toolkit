@@ -32,12 +32,12 @@ my $server_host = "localhost";
 my $server_port = 0;
 my $subject;
 
-my $server_args = "-no-fork -no-chdir -d 0 -p $server_port";
+my $server_args = "-no-fork -no-chdir -d 0 -auth-level 4 -p $server_port";
 
 chomp($subject = `openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert}`);
 $subject =~ s/^subject= *//;
 
-$server_pid = open(SERVER, "$server_prog $server_args |");
+$server_pid = open(SERVER, "$server_prog $server_args|");
  
 if($server_pid == -1)
 {
@@ -48,7 +48,7 @@ if($server_pid == -1)
 select((select(SERVER), $| = 1)[0]);
 $server_port = <SERVER>;
 $server_port =~ s/Server listening at .*?:(\d+)/\1/;
-chomp($server_port);
+$server_port =~ s/\s+$//;
 
 if($server_port !~ /\d+/)
 {

@@ -10,15 +10,33 @@ AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
 
+AC_SUBST([LIBLTDL])
+
 m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
+AM_CONDITIONAL([CYGPATH_W_DEFINED], [
+    case $host in
+        *mingw32*)
+        test x"$CYGPATH_W" != x;
+        ;;
+        *)
+        false
+        ;;
+    esac])
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
-GLOBUS_XIO_GSI_DRIVER_LIBDIR="$(pkg-config --variable=libdir globus-xio-gsi-driver)"
-AC_SUBST(GLOBUS_XIO_GSI_DRIVER_LIBDIR)
-AM_CONDITIONAL([GLOBUS_XIO_GSI_DRIVER_FOUND], [test "$GLOBUS_XIO_GSI_DRIVER" != ""])
+
+PKG_CHECK_EXISTS([globus-xio-gsi-driver >= 2], [
+    GSI_DRIVER_CFLAGS="$($PKG_CONFIG --cflags globus-xio-gsi-driver)"
+    GSI_DRIVER_LIBS="$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+if test x"$GSI_DRIVER_LIBS" = x; then
+    DLPREOPEN_FORCE="-dlpreopen force"
+fi
+AC_SUBST([GSI_DRIVER_CFLAGS])
+AC_SUBST([GSI_DRIVER_LIBS])
+AC_SUBST([DLPREOPEN_FORCE])
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
@@ -31,6 +49,7 @@ AC_CONFIG_FILES(
         test/Makefile
         Doxyfile
 	version.h
+	test/openssl.cnf
 )
 
 AC_OUTPUT

@@ -16,6 +16,7 @@
 
 #include "globus_gram_protocol.h"
 #include <string.h>
+#include "globus_preload.h"
 
 typedef struct
 {
@@ -68,6 +69,7 @@ int main()
     globus_gram_protocol_handle_t	handle;
     int					i;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     printf("1..1\n");
 
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);

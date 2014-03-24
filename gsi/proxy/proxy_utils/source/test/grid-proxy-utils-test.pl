@@ -4,9 +4,7 @@ use strict;
 use Test::More;
 use File::Temp;
 
-my ($proxy_fh, $proxy_file) = mkstemp( "/tmp/proxytest.XXXXXXXX" );
 my $valgrind="";
-my $bindir = "../programs";
 
 if (exists $ENV{VALGRIND})
 {
@@ -17,7 +15,8 @@ if (exists $ENV{VALGRIND})
     }
 }
 
-$ENV{X509_USER_PROXY}=$proxy_file;
+print "# PATH = $ENV{PATH}\n";
+print "# X509_CERT_DIR = $ENV{X509_CERT_DIR}\n";
 
 sub test_proxy
 {
@@ -29,18 +28,19 @@ sub test_proxy
     my $result = '';
     my $proxy_created = 1;
     my $type_determined = 1;
+    my $proxy_file = mktemp( "proxy-XXXXXXXX" );
 
-    $proxy_created = system("$valgrind $bindir/grid-proxy-init $proxy_format $proxy_type > /dev/null");
+    $ENV{X509_USER_PROXY}=$proxy_file;
 
-    if ($proxy_created == 0)
-    {
-        chomp($result = `$valgrind $bindir/grid-proxy-info -type`);
-        $type_determined = $?;
-    }
+    ok(system("$valgrind grid-proxy-init $proxy_format $proxy_type > /dev/null") == 0, "create_proxy $proxy_format $proxy_type");
 
-    ok($proxy_created==0 && $type_determined==0 && $result eq $expect,
-        $testname);
-    truncate($proxy_fh, 0);
+    $result = `$valgrind grid-proxy-info -type`;
+    ok($? == 0, "grid-proxy-info $proxy_format $proxy_type");
+    $result =~ s/\s*$//;
+
+    ok($result eq $expect, "grid-proxy-info type is $expect");
+
+    unlink($proxy_file);
 }
 
 my @tests = (
@@ -69,13 +69,9 @@ my @tests = (
         "rfc_independent_proxy_type"]
 );
 
-plan tests => scalar(@tests);
+plan tests => 3*scalar(@tests);
 
 foreach (@tests)
 {
     eval test_proxy($_);
-}
-
-END {
-    unlink($proxy_file);
 }

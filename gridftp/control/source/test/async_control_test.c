@@ -18,8 +18,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef _WIN32
 #include <netdb.h>
 #include <sys/socket.h>
+#endif
 
 void 
 connect_callback(

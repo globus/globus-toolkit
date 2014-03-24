@@ -14,6 +14,17 @@ m4_include(dirt.sh)
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
+AC_CANONICAL_HOST
+AM_CONDITIONAL([CYGPATH_W_DEFINED], [
+    case $host in
+        *mingw32*)
+        test x"$CYGPATH_W" != x;
+        ;;
+        *)
+        false
+        ;;
+    esac])
+
 AC_CHECK_HEADERS([netinet/tcp.h])
 PKG_CHECK_MODULES([GLOBUS_COMMON], $PACKAGE_DEPS)
 PACKAGE_DEP_CFLAGS="$GLOBUS_COMMON_CFLAGS"

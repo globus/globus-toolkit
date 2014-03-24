@@ -9,5 +9,5 @@ Name: globus-gram-job-manager-callout-error
 Description: Globus Toolkit - Globus GRAM Jobmanager Callout Errors
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_gram_job_manager_callout_error
+Libs: ${abs_top_builddir}/libglobus_gram_job_manager_callout_error.la
 Cflags: -I${abs_top_srcdir}

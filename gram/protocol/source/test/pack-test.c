@@ -18,6 +18,7 @@
 
 #include "globus_gram_protocol.h"
 #include <string.h>
+#include "globus_preload.h"
 
 const char * testname = NULL;
 
@@ -405,6 +406,7 @@ int main(int argc, char *argv[])
     int					rc;
     int					test_num = 0;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
     printf("1..6\n");
     rc = test1();
     printf("%s - %s\n", (rc == 0) ? "ok" : "not ok", testname);

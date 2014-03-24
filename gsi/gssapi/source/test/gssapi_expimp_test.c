@@ -54,11 +54,11 @@ main()
     int                                 rc = EXIT_SUCCESS;
     int                                 socks[2];
 
-    printf("1..1\n");
     /* ToDo: Make this run on windows */
 #   ifdef WIN32
-    printf("This Test Doesn't Run On Windows Yet\n");
-    exit(0);
+    printf("1..1\n");
+    printf("ok 1 # SKIP This Test Doesn't Run On Windows Yet\n");
+    exit(77);
 #   endif
 
     /* module activation */
@@ -102,6 +102,7 @@ main()
     }
     else if (pid > 0)
     {
+        printf("1..1\n");
 	arg = malloc(sizeof(struct context_arg));
         
 	arg->fd = socks[1];

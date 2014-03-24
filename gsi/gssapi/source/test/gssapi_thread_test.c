@@ -16,12 +16,14 @@
 
 #include "gssapi_test_utils.h"
 #include <sys/types.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #else
 #include <winsock2.h>
 #endif
+
+#include "globus_preload.h"
 
 #define NUM_CLIENTS 10
 #define ITERATIONS 10
@@ -31,10 +33,21 @@ struct thread_arg
     gss_cred_id_t                       credential;
     int                                 fd;
     globus_sockaddr_t *                 address;
+    socklen_t   			len;
 };
 
+#ifdef _WIN32
+#undef perror
+#define perror(m) do { \
+	int perror__wsaerr = WSAGetLastError(); \
+        printf(m ": %d\n", perror__wsaerr); \
+	} while (0)
+#endif
 
-static int                              thread_count = 0;
+static int                              client_thread_count = 0;
+static int                              server_thread_count = 0;
+static int                              pending_connects = 0;
+static int                              client_failed =0 ;
 static globus_mutex_t                   mutex;
 static globus_cond_t                    done;
 
@@ -62,16 +75,15 @@ main()
     int                                 ret;
     int                                 error;
 
-#ifdef _WIN32
-    globus_thread_set_model("windows");
-#else
-    globus_thread_set_model("pthread");
-#endif
+    LTDL_SET_PRELOADED_SYMBOLS();
+
+    globus_thread_set_model(THREAD_MODEL);
+
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
 
+    printf("1..%d\n", NUM_CLIENTS);
     /* initialize global mutex */
-
     globus_mutex_init(&mutex, NULL);
 
     /* and the condition variable */
@@ -81,30 +93,30 @@ main()
     /* setup listener */
     address.sin_family = AF_INET;
     address.sin_port = 0;
-    address.sin_addr.s_addr = INADDR_LOOPBACK;
+    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (listen_fd < 0)
+    if (listen_fd == 0)
     {
         perror("socket");
         exit(EXIT_FAILURE);
     }
     ret = bind(listen_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_in));
-    if (listen_fd < 0)
+    if (ret != 0)
     {
         perror("bind");
         exit(EXIT_FAILURE);
     }
 
     ret = getsockname(listen_fd, (struct sockaddr *) &connect_address, &connect_address_len);
-    if (ret < 0)
+    if (ret != 0)
     {
         perror("getsockname");
         exit(EXIT_FAILURE);
     }
 
-    ret = listen(listen_fd,NUM_CLIENTS*ITERATIONS);
-    if (ret < 0)
+    ret = listen(listen_fd, -1);
+    if (ret != 0)
     {
         perror("listen");
         exit(EXIT_FAILURE);
@@ -120,18 +132,18 @@ main()
     }
 
     /* start the clients here */
-
     for(i=0;i<NUM_CLIENTS;i++)
     {
 	arg = malloc(sizeof(struct thread_arg));
 
 	arg->address = &connect_address;
+	arg->len = connect_address_len;
 
 	arg->credential = credential;
 	
         globus_mutex_lock(&mutex);
         {
-            thread_count++;
+            client_thread_count++;
         }
         globus_mutex_unlock(&mutex);
 
@@ -140,38 +152,35 @@ main()
     
     /* accept connections */
 
-    for(i=0;i<NUM_CLIENTS*ITERATIONS;i++)
+    globus_mutex_lock(&mutex);
+    while (client_thread_count > 0)
     {
-	accept_fd = accept(listen_fd,NULL,0);
-
-	if(accept_fd < 0)
+        while (pending_connects > 0)
 	{
-	    abort();
-	}
+            accept_fd = accept(listen_fd,NULL,0);
+
+            if(accept_fd < 0)
+            {
+                perror("accept");
+                abort();
+            }
 	
-	arg = malloc(sizeof(struct thread_arg));
+            arg = malloc(sizeof(struct thread_arg));
 
-	arg->fd = accept_fd;
+            arg->fd = accept_fd;
+            arg->credential = credential;
 
-	arg->credential = credential;
-
-        globus_mutex_lock(&mutex);
-        {
-            thread_count++;
+            server_thread_count++;
+            pending_connects--;
+            globus_thread_create(&thread_handle,NULL,server_func,(void *) arg);
         }
-        globus_mutex_unlock(&mutex);
-                
-	globus_thread_create(&thread_handle,NULL,server_func,(void *) arg);
-    } 
+        globus_cond_wait(&done, &mutex);
+    }
 
     /* wait for last thread to terminate */
-    
-    globus_mutex_lock(&mutex);
+    while (server_thread_count > 0)
     {
-        while(thread_count != 0)
-        {
-            globus_cond_wait(&done, &mutex);
-        }
+        globus_cond_wait(&done, &mutex);
     }
     globus_mutex_unlock(&mutex);
 
@@ -194,7 +203,7 @@ main()
 
     globus_module_deactivate_all();
 
-    exit(0);
+    exit(client_failed);
 }
 
 
@@ -234,9 +243,9 @@ server_func(
 
     globus_mutex_lock(&mutex);
     {
-        thread_count--;
+        server_thread_count--;
         
-        if(!thread_count)
+        if(server_thread_count == 0)
         {
             globus_cond_signal(&done);
         }
@@ -261,23 +270,24 @@ client_func(
     int                                 connect_fd;
     int                                 result;
     int                                 i;
+    int                                 failed = 0;
     
     thread_args = (struct thread_arg *) arg;
 
     for(i=0;i<ITERATIONS;i++)
     {
+        globus_mutex_lock(&mutex);
+        pending_connects++;
+        globus_mutex_unlock(&mutex);
 	connect_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-	result = connect(connect_fd,
-			 (struct sockaddr *) thread_args->address,
-			 sizeof(struct sockaddr_in));
-
-	if(result != 0)
-	{
-            perror("connect");
-	    abort();
-	}
-
+        do
+        {
+            result = connect(connect_fd,
+                             (struct sockaddr *) thread_args->address,
+                             thread_args->len);
+        }
+        while (result != 0);
 
 	authenticated = globus_gsi_gssapi_test_authenticate(
 	    connect_fd,
@@ -290,9 +300,8 @@ client_func(
 	if(authenticated == GLOBUS_FALSE)
 	{
 	    fprintf(stderr, "CLIENT: Authentication failed\n");
+            failed = 1;
 	}
-	
-
     
 	globus_gsi_gssapi_test_cleanup(&context_handle,
 				       user_id,
@@ -302,14 +311,16 @@ client_func(
 	close(connect_fd);
     }
 
-
     free(thread_args);
 
     globus_mutex_lock(&mutex);
     {
-        thread_count--;
+        client_thread_count--;
+        client_failed += failed;
+
+        printf("%s\n", failed ? "not ok" : "ok");
         
-        if(!thread_count)
+        if(client_thread_count == 0)
         {
             globus_cond_signal(&done);
         }

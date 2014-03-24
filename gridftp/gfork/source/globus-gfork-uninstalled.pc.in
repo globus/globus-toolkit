@@ -9,6 +9,6 @@ Name: globus-gfork
 Description: Globus Toolkit - GFork
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_gfork
+Libs: ${abs_top_builddir}/libglobus_gfork.la
 Libs.private: 
 Cflags: -I${abs_top_srcdir} 

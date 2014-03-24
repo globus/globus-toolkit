@@ -13,37 +13,36 @@ LT_INIT([dlopen win32-dll])
 m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
+AC_CANONICAL_HOST
+AM_CONDITIONAL([CYGPATH_W_DEFINED], [
+    case $host in
+        *mingw32*)
+        test x"$CYGPATH_W" != x;
+        ;;
+        *)
+        false
+        ;;
+    esac])
 
-GSI_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-gsi-driver`
-GSI_DRIVER=""
-for ext in .la .so .dylib .a; do
-    if test -r $GSI_DRIVER_LIBDIR/libglobus_xio_gsi_driver${ext}; then
-        GSI_DRIVER=$GSI_DRIVER_LIBDIR/libglobus_xio_gsi_driver${ext} 
-        break
-    fi
-done
-
-AC_SUBST(GLOBUS_XIO_GSI_DRIVER, $GSI_DRIVER)
-
-PIPE_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-pipe-driver`
-PIPE_DRIVER=""
-for ext in .la .so .dylib .a; do
-    if test -r $PIPE_DRIVER_LIBDIR/libglobus_xio_pipe_driver${ext}; then
-        PIPE_DRIVER=$PIPE_DRIVER_LIBDIR/libglobus_xio_pipe_driver${ext} 
-        break
-    fi
-done
-
-AC_SUBST(GLOBUS_XIO_PIPE_DRIVER, $PIPE_DRIVER)
-
-GRIDFTP_SBINDIR=`pkg-config --variable=sbindir globus-gridftp-server`
-AC_SUBST(GRIDFTP_SBINDIR, $GRIDFTP_SBINDIR)
-AM_CONDITIONAL([GRIDFTP_TESTS],
-  [ test "$GSI_DRIVER" != "" && \
-    test "$PIPE_DRIVER" != "" && \
-    test -d "$GRIDFTP_SBINDIR"])
+GRIDFTP_SERVER_PATH=`pkg-config --variable=path globus-gridftp-server`
+AC_SUBST(GRIDFTP_SERVER_PATH)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+PKG_CHECK_EXISTS([globus-xio-gsi-driver >= 2], [
+    GSI_DRIVER_CFLAGS="$($PKG_CONFIG --cflags globus-xio-gsi-driver)"
+    GSI_DRIVER_LIBS="$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+if test x"$GSI_DRIVER_LIBS" = x; then
+    DLPREOPEN_FORCE="-dlpreopen force"
+fi
+PKG_CHECK_EXISTS([globus-xio-pipe-driver >= 2], [
+    PIPE_DRIVER_LIBS="$($PKG_CONFIG --variable=dlopen globus-xio-pipe-driver)"])
+if test x"$PIPE_DRIVER_LIBS" = x; then
+    DLPREOPEN_FORCE="-dlpreopen force"
+fi
+AC_SUBST([GSI_DRIVER_CFLAGS])
+AC_SUBST([GSI_DRIVER_LIBS])
+AC_SUBST([PIPE_DRIVER_LIBS])
+AC_SUBST([DLPREOPEN_FORCE])
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
@@ -55,5 +54,6 @@ AC_CONFIG_FILES(
         Makefile
         Doxyfile
         test/Makefile
-	version.h)
+	version.h
+        test/openssl.cnf)
 AC_OUTPUT

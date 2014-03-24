@@ -25,6 +25,10 @@
 
 #include "http_test_common.h"
 
+#ifdef _WIN32
+#include <getopt.h>
+#endif
+
 static globus_mutex_t                   lock;
 static globus_cond_t                    cond;
 

@@ -1916,7 +1916,11 @@ globus_result_t globus_gsi_cred_write_proxy(
      * certain that the file we open has never in its entire lifetime
      * had the world-readable bit set.  
      */
-    unlink(proxy_filename);
+#if _WIN32
+    /* Win32 API won't allow removing a read-only file */
+    chmod(proxy_filename, S_IRWXU);
+#endif
+    temp_proxy_fd = remove(proxy_filename);
 
     /* 
      * Now, we must open w/ O_EXCL to make certain that WE are 

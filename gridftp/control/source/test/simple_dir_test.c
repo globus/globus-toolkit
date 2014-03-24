@@ -16,9 +16,12 @@
 
 #include "globus_ftp_control_test.h"
 #include "globus_libc.h"
+
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
 
 #define TEST_ITERATIONS  8
 #define BUFFER_SIZE      2048 

@@ -73,6 +73,8 @@
 
 #include <signal.h>
 
+#include "globus_preload.h"
+
 static globus_cond_t                    globus_l_gfs_cond;
 static globus_mutex_t                   globus_l_gfs_mutex;
 static globus_bool_t                    globus_l_gfs_terminated = GLOBUS_FALSE;
@@ -1710,6 +1712,8 @@ main(
     globus_result_t                     result;
     GlobusGFSName(main);
 
+    LTDL_SET_PRELOADED_SYMBOLS();
+
   /* drop supplemental groups */
     if(getuid() == 0 && setgroups(0, NULL))
     {
@@ -1726,14 +1730,32 @@ main(
         return 2;
     }
     /* activate globus stuff */    
-    if((rc = globus_module_activate(GLOBUS_COMMON_MODULE)) != GLOBUS_SUCCESS ||
-        (rc = globus_module_activate(GLOBUS_XIO_MODULE)) != GLOBUS_SUCCESS ||
-        (rc = globus_module_activate(
-            GLOBUS_GRIDFTP_SERVER_MODULE)) != GLOBUS_SUCCESS ||
-        (rc = globus_module_activate(GLOBUS_USAGE_MODULE)) != GLOBUS_SUCCESS)
+    if((rc = globus_module_activate(GLOBUS_COMMON_MODULE)) != GLOBUS_SUCCESS)
     {
         fprintf(stderr,
-            "Error: Failed to initialize:\n%s",
+            "Error: Failed to initialize GLOBUS_COMMON:\n%s",
+            globus_error_print_friendly(globus_error_peek(rc)));
+        goto error_activate;
+    }
+    if ((rc = globus_module_activate(GLOBUS_XIO_MODULE)) != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+            "Error: Failed to initialize GLOBUS_XIO:\n%s",
+            globus_error_print_friendly(globus_error_peek(rc)));
+        goto error_activate;
+    }
+    if ((rc = globus_module_activate(
+            GLOBUS_GRIDFTP_SERVER_MODULE)) != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+            "Error: Failed to initialize GLOBUS_GRIDFTP_SERVER:\n%s",
+            globus_error_print_friendly(globus_error_peek(rc)));
+        goto error_activate;
+    }
+    if ((rc = globus_module_activate(GLOBUS_USAGE_MODULE)) != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+            "Error: Failed to initialize GLOBUS_USAGE_MODULE:\n%s",
             globus_error_print_friendly(globus_error_peek(rc)));
         goto error_activate;
     }

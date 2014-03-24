@@ -51,6 +51,10 @@
 #define CHUNKED  "chunked"
 #define IDENTITY "identity"
 
+#ifdef _WIN32
+#include <getopt.h>
+#endif
+
 
 static
 void
@@ -635,8 +639,8 @@ main(
     }
 
     globus_xio_stack_destroy(info->stack);
-    globus_xio_driver_unload(info->tcp_driver);
     globus_xio_driver_unload(info->http_driver);
+    globus_xio_driver_unload(info->tcp_driver);
 
     globus_module_deactivate_all();
 

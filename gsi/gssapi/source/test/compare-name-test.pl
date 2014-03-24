@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 
 my $input = "compare_name_test.txt";
-$input = "$ENV{srcdir}/$input" if $ENV{srcdir};
 
 my $valgrind = "";
 if (exists $ENV{VALGRIND})
@@ -12,4 +11,5 @@ if (exists $ENV{VALGRIND})
         $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
     }
 }
-exit(system("$valgrind ./compare-name-test $input"));
+system("$valgrind ./compare-name-test $input");
+exit($?>>8);

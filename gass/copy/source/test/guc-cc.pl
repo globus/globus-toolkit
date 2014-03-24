@@ -24,6 +24,7 @@ use warnings;
 use Test::More;
 use Cwd;
 use IPC::Open3;
+use URI;
 use Symbol qw/gensym/;
 use Getopt::Long;
 use File::Temp qw/ tempfile tempdir /;
@@ -34,6 +35,7 @@ srand(1);
 
 my $subject = $ENV{FTP_TEST_SUBJECT};
 my $server_cs = $ENV{FTP_TEST_CONTACT};
+my $path_transform_with_cygpath_w = $ENV{CYGPATH_W_DEFINED};
 
 my @mode = ([], ["-fast"], ["-p", "2"], ["-p", "4"], ["-stripe"],
     ["-stripe", "-p", "4"]);
@@ -78,6 +80,30 @@ for(my $i = 1; $i <= 10; $i++)
     }
 }
 
+sub transform_path
+{
+    my $in = shift;
+    my $out = $in;
+
+    if ($path_transform_with_cygpath_w)
+    {
+        if ($in =~ m/^\S+:/) {
+            my $inurl = URI->new($in);
+            my $cygpath_cmd;
+            $cygpath_cmd = "cygpath -m " . $inurl->path;
+            $out = `$cygpath_cmd`;
+            $out =~ s/\s*$//;
+            $out =~ s/://;
+            $inurl->path($out);
+            $out = $inurl->as_string;
+        } else {
+            $out = `cygpath -w $out`;
+            $out =~ s/\s*$//;
+        }
+    }
+    return $out;
+}
+
 my $test_count = 2*scalar(@mode)*scalar(@concur);
 plan tests => $test_count;
 
@@ -88,8 +114,8 @@ SKIP: {
         my $p=$_;
         my $server_port = $server_cs;
         $server_port =~ s/.*://;
-        my $dst_url = "${server_cs}${work_dir}/GL2/";
-        my $src_url = "${server_cs}${work_dir}/GL/";
+        my $dst_url = transform_path("${server_cs}${work_dir}/GL2/");
+        my $src_url = transform_path("${server_cs}${work_dir}/GL/");
 
         foreach my $cc (@concur)
         {
@@ -99,6 +125,7 @@ SKIP: {
             $errfd = gensym;
 
             $pid = open3($infd, $outfd, $errfd, "globus-url-copy",
+                '-ipv6',
                 @{$mode}, @{$cc}, @{$dc_opt},
                 "-cd", "-r", $src_url, $dst_url);
             close($infd);

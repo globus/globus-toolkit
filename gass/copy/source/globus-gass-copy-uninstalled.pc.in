@@ -9,5 +9,5 @@ Name: globus-gass-copy
 Description: Globus Toolkit - Globus Gass Copy
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_gass_copy
+Libs: ${abs_top_builddir}/libglobus_gass_copy.la
 Cflags: -I${abs_top_srcdir}

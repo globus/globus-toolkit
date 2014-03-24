@@ -7,9 +7,9 @@ use Test::More;
 use IO::Handle;
 
 use File::Temp;
-my $bindir = "../programs";
 
 my $valgrind="";
+my @cleanups;
 
 if (exists $ENV{VALGRIND})
 {
@@ -19,72 +19,84 @@ if (exists $ENV{VALGRIND})
         $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
     }
 }
-my $old_umask = umask(077);
-my ($proxy_fh, $proxy_file) = mkstemp( "/tmp/proxytest.XXXXXXXX" );
-$proxy_fh->autoflush(1);
-umask($old_umask);
 
-$ENV{X509_USER_PROXY} = $proxy_file;
-system("$valgrind $bindir/grid-proxy-init > /dev/null");
-open($proxy_fh, "+<$proxy_file");
-
-my $data = '';
-my %elements = {};
-
-while (<$proxy_fh>)
+sub create_proxy_elements
 {
-    if (/-----BEGIN CERTIFICATE-----/)
+    my $old_umask = umask(077);
+    my ($proxy_file) = mktemp( "proxytest.XXXXXXXX" );
+    umask($old_umask);
+
+    $ENV{X509_USER_PROXY} = $proxy_file;
+    system("$valgrind grid-proxy-init > /dev/null");
+    my $proxy_fh;
+    open($proxy_fh, "+<$proxy_file");
+
+    my $data = '';
+    my %elements = {};
+
+    while (<$proxy_fh>)
     {
-        $data = $_;
-    }
-    elsif (/-----END CERTIFICATE-----/)
-    {
-        $data .= $_;
-        if (!exists($elements{proxy_cert}))
+        s/\s*$//;
+        if (/-----BEGIN CERTIFICATE-----/)
         {
-            $elements{proxy_cert} = $data;
+            $data = "$_\n";
+        }
+        elsif (/-----END CERTIFICATE-----/)
+        {
+            $data .= "$_\n";
+            if (!exists($elements{proxy_cert}))
+            {
+                $elements{proxy_cert} = $data;
+            }
+            else
+            {
+                if (!exists($elements{id_cert}))
+                {
+                    $elements{id_cert} = '';
+                }
+
+                $elements{id_cert} .= $data;
+            }
+            $data = '';
+        }
+        elsif (/-----BEGIN RSA PRIVATE KEY-----/)
+        {
+            $data = "$_\n";
+        }
+        elsif (/-----END RSA PRIVATE KEY-----/)
+        {
+            $data .= "$_\n";
+            $elements{proxy_key} = $data;
+            $data = '';
+
+            $elements{'proxy_key.pkcs8'} = `openssl pkcs8 -in "$proxy_file" -outform PEM -topk8 -nocrypt`;
         }
         else
         {
-            if (!exists($elements{id_cert}))
-            {
-                $elements{id_cert} = '';
-            }
-
-            $elements{id_cert} .= $data;
+            $data .= "$_\n";
         }
-        $data = '';
     }
-    elsif (/-----BEGIN RSA PRIVATE KEY-----/)
-    {
-        $data = $_;
-    }
-    elsif (/-----END RSA PRIVATE KEY-----/)
-    {
-        $data .= $_;
-        $elements{proxy_key} = $data;
-        $data = '';
-
-        $elements{'proxy_key.pkcs8'} = `openssl pkcs8 -in "$proxy_file" -outform PEM -topk8 -nocrypt`;
-    }
-    else
-    {
-        $data .= $_;
-    }
+    return %elements;
 }
 
-sub test_proxy_order
+sub test_proxy_order($%)
 {
     my $order = shift;
+    my %elements = @_;
+    my $proxy_fh;
+    my $old_umask = umask(077);
+    my ($proxy_file) = mktemp( "proxytest.XXXXXXXX" );
 
-    truncate $proxy_fh, 0;
-    seek($proxy_fh, 0, 0);
+    umask($old_umask);
+    open($proxy_fh, ">$proxy_file");
+
     for my $element (split(/:/, $order))
     {
         print $proxy_fh $elements{$element};
+        close($proxy_fh);
     }
 
-    ok(system("$valgrind $bindir/grid-proxy-info > /dev/null 2>&1") == 0, "proxy order $order");
+    ok(system("$valgrind grid-proxy-info >/dev/null 2>&1") == 0, "proxy order $order");
 }
 
 my @permutations = qw(
@@ -99,11 +111,9 @@ push(@tests, map { $_ =~ s/proxy_key/proxy_key.pkcs8/; $_ } @permutations);
 
 plan tests => scalar(@tests);
 
+my %elements = create_proxy_elements();
+
 foreach (@tests)
 {
-    eval test_proxy_order($_);
-}
-
-END {
-    unlink($proxy_file);
+    eval test_proxy_order($_, %elements);
 }

@@ -19,6 +19,16 @@ PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 AC_SUBST(PKG_DEP_CFLAGS)
 AC_SUBST(PKG_DEP_LIBS)
 
+AM_CONDITIONAL([CYGPATH_W_DEFINED], [
+    case $host in
+        *mingw32*)
+        test x"$CYGPATH_W" != x;
+        ;;
+        *)
+        false
+        ;;
+    esac])
+
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
@@ -74,6 +84,7 @@ AC_CONFIG_FILES([
         Doxyfile
         programs/Makefile
         test/Makefile
+        test/openssl.cnf
         version.h])
 
 AC_CONFIG_FILES(

@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+abs_top_builddir=@abs_top_builddir@
+abs_top_srcdir=@abs_top_srcdir@
+dlopen=@WINDOWS_PREOPEN_UNINSTALLED@
+
+Name: globus-thread-windows
+Description: Globus Toolkit - Common Library Windows Bindings
+Version: @PACKAGE_VERSION@
+Libs.private: globus-common
+Cflags:

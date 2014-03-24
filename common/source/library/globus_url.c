@@ -1504,7 +1504,7 @@ globusl_url_get_file_specific(const char **stringp,
 	} 
 
     #ifdef WIN32
-	if((*stringp)[pos] == '\\' && pos != 0)
+	if(((*stringp)[pos] == '\\' || (*stringp)[pos] == '/') && pos != 0)
     #else
 	if((*stringp)[pos] == '/' && pos != 0)
     #endif

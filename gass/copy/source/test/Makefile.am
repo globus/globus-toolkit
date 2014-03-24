@@ -13,50 +13,47 @@ check_DATA =  \
         gridmap
 
 testcred.key:
-	umask 077; openssl genrsa -out $@ 1024
+	umask 077; openssl genrsa 1024 > $@
 
 testcred.req: testcred.key
-	printf "NA\nNA\nNA\nNA\nNA\n$$(openssl rand -base64 6)\n\n\n\n" | openssl req -new -key $< -out $@
+	printf "NA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< > $@ -config openssl.cnf
 
 testcred.cert: testcred.req testcred.key
-	umask 077; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
+	umask 077; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
 
 testcredlink: testcred.cert
 	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
 	rm -f "$$linkname"; \
-	ln -s testcred.cert "$$linkname"; \
+	cp testcred.cert "$$linkname"; \
         echo "$$linkname" > $@
 
 gridmap: testcred.cert
 	subject=`openssl x509 -subject -noout -in testcred.cert | sed -e 's/subject= *//'` ; \
         echo "\"$$subject\" `id -un`" > gridmap
 
+if CYGPATH_W_DEFINED
+X509_CERT_DIR = $$($(CYGPATH_W) $(abs_builddir))
+GRIDMAP = $$($(CYGPATH_W) $(abs_builddir)/gridmap)
+CYGPATH_W_DEFINED=CYGPATH_W_DEFINED=1
+else
+X509_CERT_DIR = $(abs_builddir)
+GRIDMAP = $(abs_builddir)/gridmap
+CYGPATH_W_DEFINED=
+endif
+
+TEST_PATH = $(GRIDFTP_SERVER_PATH):$(abs_top_builddir):$${PATH}
 TESTS = $(check_SCRIPTS)
 TESTS_ENVIRONMENT = \
-    export X509_USER_CERT=$(abs_builddir)/testcred.cert \
-    X509_USER_KEY=$(abs_builddir)/testcred.key \
-    X509_CERT_DIR=$(abs_builddir) \
-    GRIDMAP=$(abs_builddir)/gridmap \
-    PATH="$(GRIDFTP_SBINDIR):$(abs_top_builddir):$${PATH}"; \
-    for ext in .la .so .dylib .a; do \
-	driver="$(GSI_DRIVER_LIBDIR)/libglobus_xio_gsi_driver$${ext}"; \
-	if test -r "$${driver}"; then \
-	    export GSI_DRIVER_LOAD="-dlopen $${driver}"; \
-	    break; \
-	fi; \
-    done; \
-    for ext in .la .so .dylib .a; do \
-	driver="$(PIPE_DRIVER_LIBDIR)/libglobus_xio_pipe_driver$${ext}"; \
-	if test -r "$${driver}"; then \
-	    export PIPE_DRIVER_LOAD="-dlopen $${driver}"; \
-	    break; \
-	fi; \
-    done;
-    
+    export X509_USER_CERT=testcred.cert \
+    X509_USER_KEY=testcred.key \
+    X509_CERT_DIR=$(X509_CERT_DIR) \
+    GRIDMAP=$(GRIDMAP) \
+    PATH="$(TEST_PATH)" \
+    $(CYGPATH_W_DEFINED);
 
 LOG_COMPILER = $(LIBTOOL) --mode=execute \
-    $${GSI_DRIVER_LOAD} \
-    $${PIPE_DRIVER_LOAD} \
+    ${GSI_DRIVER_LIBS} \
+    ${PIPE_DRIVER_LIBS} \
     $(srcdir)/test-wrapper
 
 CLEANFILES = testcred.key testcred.cert testcred.req gridmap
@@ -64,4 +61,4 @@ clean-local:
 	if [ -f testcredlink ]; then \
             rm -f "$$(cat testcredlink)" testcredlink; \
         fi
-EXTRA_DIST = $(check_SCRIPTS) $(EXTRA_SCRIPTS)
+EXTRA_DIST = $(check_SCRIPTS) $(EXTRA_SCRIPTS) openssl.cnf

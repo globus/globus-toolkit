@@ -25,7 +25,8 @@ libglobus_gass_copy_la_LIBADD = $(PACKAGE_DEP_LIBS)
 
 globus_url_copy_SOURCES = globus_url_copy.c
 globus_url_copy_LDFLAGS = -export-dynamic
-globus_url_copy_LDADD = ./libglobus_gass_copy.la \
+globus_url_copy_LDADD = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) \
+                        ./libglobus_gass_copy.la \
 			$(PACKAGE_DEP_LIBS)
 
 if BUILD_MANPAGES

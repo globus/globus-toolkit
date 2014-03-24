@@ -1,4 +1,4 @@
-#! /usr/bin/env perl 
+#! /usr/bin/perl
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -68,7 +68,7 @@ sub correct_auth
         my $diffs = `diff $local_copy $tmpname | sed -e "s/^/# /"`;
         if($? != 0)
         {
-            $errors .= "\n# Differences between /etc/group and output.";
+            $errors .= "\n# Differences between $source_file and output.";
             $errors .= "$diffs";
         }
     }

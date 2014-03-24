@@ -24,6 +24,9 @@ AC_SUBST([GLOBUS_GRAM_JOB_MANAGER_PATH])
 PROXY_UTILS_PATH=$(pkg-config --variable=path globus-proxy-utils)
 AC_SUBST([PROXY_UTILS_PATH])
 
+CERT_UTILS_PATH=$(pkg-config --variable=path globus-gsi-cert-utils)
+AC_SUBST([CERT_UTILS_PATH])
+
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])

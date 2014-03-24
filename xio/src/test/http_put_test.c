@@ -51,6 +51,10 @@
 
 #include "http_test_common.h"
 
+#ifdef _WIN32
+#include <getopt.h>
+#endif
+
 int                                     done = 0;
 globus_byte_t *                         message_body;
 long                                    file_size;
@@ -367,7 +371,7 @@ globus_l_xio_test_read_file(
     int                                 rc;
     FILE *                              fp;
 
-    fp = fopen(filename, "r");
+    fp = fopen(filename, "rb");
 
     if (fp == NULL)
     {

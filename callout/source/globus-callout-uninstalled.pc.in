@@ -9,5 +9,5 @@ Name: globus-callout
 Description: Globus Toolkit - Globus Callout Library
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir}/library -lglobus_callout
+Libs: ${abs_top_builddir}/library/libglobus_callout.la
 Cflags: -I${abs_top_srcdir}/library

@@ -28,5 +28,6 @@ libglobus_xio_test_drivers_la_SOURCES = \
 libglobus_xio_test_drivers_la_LDFLAGS = \
 	$(PACKAGE_DEP_LIBS) \
 	-no-undefined -module \
+	-avoid-version \
 	-rpath $(libdir) \
 	$(top_builddir)/libglobus_xio.la

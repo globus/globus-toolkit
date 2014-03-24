@@ -21,15 +21,8 @@ Public functions for the Unnamed Timing Package (UTP).
 **********************************************************************/
 
 
-#ifdef RS6000
-/*
- * Stooopid IBM header files require this to get
- * the right stuff from <pwd.h>.
- */
-#ifndef _ALL_SOURCE
-#define _ALL_SOURCE
-#endif
-#endif
+
+#include "globus_common.h"
 
 #ifndef _WIN32
 #include <pwd.h>

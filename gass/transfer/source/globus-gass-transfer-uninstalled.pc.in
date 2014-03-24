@@ -9,5 +9,5 @@ Name: globus-gass-transfer
 Description: Globus Toolkit - Globus Gass Transfer
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir}/library -lglobus_gass_transfer
+Libs: ${abs_top_builddir}/library/libglobus_gass_transfer.la
 Cflags: -I${abs_top_srcdir}/library

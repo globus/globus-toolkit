@@ -3,10 +3,11 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 abs_top_srcdir=@abs_top_srcdir@
+abs_top_builddir=@abs_top_builddir@
 
 Name: globus-xio
 Description: Globus Toolkit - XIO Library
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L@abs_top_builddir@ -lglobus_xio
+Libs: ${abs_top_builddir}/libglobus_xio.la
 Cflags: -I${abs_top_srcdir} @XIO_BUILTIN_PC_INCLUDES@

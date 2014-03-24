@@ -247,7 +247,6 @@ globus_gass_copy_glob_expand_url(
 
     if(glob)
     {
-#ifndef TARGET_ARCH_WIN32
         switch (scheme_type)
         {
           case GLOBUS_URL_SCHEME_FTP:
@@ -257,8 +256,18 @@ globus_gass_copy_glob_expand_url(
             break;
             
           case GLOBUS_URL_SCHEME_FILE:
+#ifndef TARGET_ARCH_WIN32
             result = globus_l_gass_copy_glob_expand_file_url(info);
             break;
+#else
+            result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_GASS_COPY_MODULE,
+                    GLOBUS_NULL,
+                    "[%s]: Globbing not supported under Windows.",
+                    myname));
+            goto error;
+#endif
               
           default:
             result = globus_error_put(
@@ -270,15 +279,6 @@ globus_gass_copy_glob_expand_url(
             goto error;
             break;    
         }
-#else
-            result = globus_error_put(
-                globus_error_construct_string(
-                    GLOBUS_GASS_COPY_MODULE,
-                    GLOBUS_NULL,
-                    "[%s]: Globbing not supported under Windows.",
-                    myname));
-            goto error;
-#endif    
     }        
 
     globus_free(info->url);

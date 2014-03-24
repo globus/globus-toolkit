@@ -9,5 +9,5 @@ Name: globus-gass-cache
 Description: Globus Toolkit - Globus Gass Cache
 Version: @VERSION@
 Requires.private: @PACKAGE_DEPS@
-Libs: -L${abs_top_builddir} -lglobus_gass_cache
+Libs: ${abs_top_builddir}/libglobus_gass_cache.la
 Cflags: -I${abs_top_srcdir}

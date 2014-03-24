@@ -30,6 +30,7 @@ include_HEADERS = \
         globus_libc.h \
         globus_debug.h \
         globus_args.h \
+        globus_preload.h \
         globus_strptime.h \
         globus_thread_common.h \
         globus_thread_rw_mutex.h \
@@ -171,13 +172,13 @@ endif
 if BUILD_PTHREADS
 libglobus_thread_pthread_la_LIBADD = libglobus_common.la $(PTHREAD_LIBS)
 libglobus_thread_pthread_la_SOURCES = globus_thread_pthreads.c
-libglobus_thread_pthread_la_LDFLAGS = $(PACKAGE_DEP_LDFLAGS) -module -no-undefined
+libglobus_thread_pthread_la_LDFLAGS = $(PACKAGE_DEP_LDFLAGS) -module -no-undefined -avoid-version
 endif
 
 if BUILD_WINDOWS_THREADS
 libglobus_thread_windows_la_LIBADD = libglobus_common.la $(PACKAGE_DEP_LIBS)
 libglobus_thread_windows_la_SOURCES = globus_thread_windows.c globus_thread_windows.h
-libglobus_thread_windows_la_LDFLAGS = $(PACKAGE_DEP_LIBS) -module -no-undefined
+libglobus_thread_windows_la_LDFLAGS = $(PACKAGE_DEP_LIBS) -module -no-undefined -avoid-version
 endif
 
 EXTRA_DIST = \

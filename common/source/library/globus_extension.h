@@ -49,19 +49,11 @@ enum
  *     &local_version
  * };
  */
-#ifndef GLOBUS_BUILTIN
-#define GlobusExtensionDefineModule(name)                                   \
-    globus_module_descriptor_t globus_extension_module
-#define GlobusExtensionDeclareModule(name)                                  \
-    extern globus_module_descriptor_t globus_extension_module
-#define GlobusExtensionMyModule(name) &globus_extension_module
-#else
 #define GlobusExtensionDefineModule(name)                                   \
     globus_module_descriptor_t name##_module
 #define GlobusExtensionDeclareModule(name)                                  \
     extern globus_module_descriptor_t name##_module
 #define GlobusExtensionMyModule(name) &name##_module
-#endif
 
 /**
  * loads the shared library 'lib<b>extension_name</b>_<b>flavor</b>.so' from

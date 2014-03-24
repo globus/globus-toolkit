@@ -19,6 +19,7 @@
 #ifndef WIN32
 #include <arpa/inet.h>
 #endif
+#include "globus_preload.h"
 
 void test1(void);
 void test2(void);
@@ -95,9 +96,10 @@ main(int argc, char **argv)
 {
     int					rc;
     
+    LTDL_SET_PRELOADED_SYMBOLS();
+
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_IO_MODULE);
-    
 
 #if 1
     test1();				/* connect, read, write, read */

@@ -178,7 +178,7 @@ GSS_CALLCONV gss_export_cred(
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             3, (globus_i_gsi_gssapi_debug_fstream,
-                "Writing exported cred to: %s", proxy_filename));
+                "Writing exported cred to: %s\n", proxy_filename));
 
         local_result = globus_gsi_cred_write_proxy(cred_desc->cred_handle,
                                                    proxy_filename);

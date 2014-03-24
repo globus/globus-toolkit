@@ -93,6 +93,15 @@ test_hostname( char * value, void * parms, char ** error_msg )
 
     rc = getaddrinfo(value, NULL, NULL, &ai);
 
+    if (rc != 0)
+    {
+        const char * tmp_msg;
+        tmp_msg = gai_strerror(rc);
+        if (tmp_msg)
+        {
+            *error_msg = strdup(tmp_msg);
+        }
+    }
     if (ai)
     {
         freeaddrinfo(ai);

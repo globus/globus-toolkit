@@ -21,9 +21,10 @@
 #include "globus_common.h"
 #include <string.h>
 #include "test_common.h"
+#include "globus_preload.h"
 
 #define MAX_PLEVEL                              10
-#define TEST_ITEREATION                         4
+#define TEST_ITERATIONS                         4
 #define WRITE_CHUNK_COUNT                       32
 
 static globus_bool_t                            g_send_eof = GLOBUS_TRUE;
@@ -34,16 +35,16 @@ typedef void (*set_handle_mode_cb_t)(
 
 typedef struct data_test_info_s
 {
-    char                                        fname[512];
+    char                                        fname[L_tmpnam];
     FILE *                                      fin;
     FILE *                                      fout;
     ftp_test_monitor_t *                        monitor;
     int                                         bb_len;
 } data_test_info_t;
 
-static int                                      g_test_count = 0;
-static char *                                   g_test_file = GLOBUS_NULL;
-static char *                                   g_tmp_file = "/tmp/globus_ftp_control_data_test_tmp_file.tmp";
+static int                              g_test_count = 0;
+static char                             g_test_file[L_tmpnam] = {0};
+static char                             g_tmp_file[TEST_ITERATIONS][L_tmpnam] = {0};
 
 globus_result_t
 cache_test(
@@ -159,6 +160,15 @@ globus_result_t
 cache_multiparallel_test(
     set_handle_mode_cb_t                       mode_cb);
 
+int
+copy_file(
+    const char *                        source,
+    const char *                        dest);
+int
+diff(
+    const char *                        source,
+    const char *                        dest);
+
 void
 force_close_cb( 
     void *                                     user_arg,
@@ -185,11 +195,14 @@ main(
     globus_result_t                             res;
     int                                         ctr;
     int						rc;
+    int						i;
     int                                         plevel;
 
+    LTDL_SET_PRELOADED_SYMBOLS();
+    setbuf(stdout, NULL);
+    setbuf(stderr, NULL);
     printf("1..10\n");
 
-    g_test_file = argv[0];
     for(ctr = 0; ctr < argc; ctr++)
     {
         if(strcmp(argv[ctr], "--verbose") == 0)
@@ -204,16 +217,24 @@ main(
                 ctr++;
             }
         }
-        else if(strcmp(argv[ctr], "--file") == 0 && ctr + 1 <= argc)
+    }
+    {
+        FILE *f;
+        int i, r;
+
+        tmpnam(g_test_file);
+
+        f = fopen(g_test_file, "w");
+        for (i = 0; i < 10000; i++)
         {
-            g_test_file = argv[ctr + 1];
-            ctr++;
+            r = rand();
+            fwrite(&r, sizeof(int), 1, f);
         }
-        else if(strcmp(argv[ctr], "--tmp_file") == 0 && ctr + 1 <= argc)
-        {
-            g_tmp_file = argv[ctr + 1];
-            ctr++;
-        }
+        fclose(f);
+    }
+    for (i = 0; i < TEST_ITERATIONS; i++)
+    {
+        tmpnam(g_tmp_file[i]);
     }
 
     /*
@@ -430,14 +451,14 @@ big_buffer_test(
     test_info = (data_test_info_t *)
         globus_malloc(sizeof(data_test_info_t));
     test_info->monitor = &done_monitor;
-    strcpy(test_info->fname, g_tmp_file);
+    strcpy(test_info->fname, g_tmp_file[0]);
 
     res = globus_i_ftp_control_data_cc_init(&pasv_handle);
     test_result(res, "pasv handle init", __LINE__);
     res = globus_i_ftp_control_data_cc_init(&port_handle);
     test_result(res, "port handle init", __LINE__);
 
-    for(ctr = 0; ctr < TEST_ITEREATION; ctr++)
+    for(ctr = 0; ctr < TEST_ITERATIONS; ctr++)
     {
         done_monitor.done = GLOBUS_FALSE;
         done_monitor.count = 0;
@@ -544,7 +565,7 @@ reuse_handles_test(
     test_info = (data_test_info_t *)
         globus_malloc(sizeof(data_test_info_t));
     test_info->monitor = &done_monitor;
-    strcpy(test_info->fname, g_tmp_file);
+    strcpy(test_info->fname, g_tmp_file[0]);
 
     res = globus_i_ftp_control_data_cc_init(&pasv_handle);
     test_result(res, "pasv handle init", __LINE__);
@@ -560,7 +581,7 @@ reuse_handles_test(
     }
 
     connect_cb = connect_write_callback;
-    for(ctr = 0; ctr < TEST_ITEREATION * 2; ctr++)
+    for(ctr = 0; ctr < TEST_ITERATIONS * 2; ctr++)
     {
         done_monitor.done = GLOBUS_FALSE;
         done_monitor.count = 0;
@@ -612,7 +633,7 @@ reuse_handles_test(
         }
         globus_mutex_unlock(&done_monitor.mutex);
 
-        if(ctr == TEST_ITEREATION)
+        if(ctr == TEST_ITERATIONS)
         {
             verbose_printf(2,
                 "starting zero eof callback\n");
@@ -732,7 +753,7 @@ cache_multiparallel_test(
     test_info = (data_test_info_t *)
         globus_malloc(sizeof(data_test_info_t));
     test_info->monitor = &done_monitor;
-    strcpy(test_info->fname, g_tmp_file);
+    strcpy(test_info->fname, g_tmp_file[0]);
 
     res = globus_i_ftp_control_data_cc_init(&pasv_handle);
     test_result(res, "pasv handle init", __LINE__);
@@ -749,7 +770,7 @@ cache_multiparallel_test(
     for(ctr2 = 0; nsock_a[ctr2] != 0; ctr2++)
     {
         verbose_printf(2, "parallel level %d\n", nsock_a[ctr2]);
-//        for(ctr = 0; ctr < TEST_ITEREATION; ctr++)
+//        for(ctr = 0; ctr < TEST_ITERATIONS; ctr++)
         {
             mode_cb(&pasv_handle, nsock_a[ctr2]);
             mode_cb(&port_handle, nsock_a[ctr2]);
@@ -847,7 +868,7 @@ cache_test(
     test_info = (data_test_info_t *)
         globus_malloc(sizeof(data_test_info_t));
     test_info->monitor = &done_monitor;
-    strcpy(test_info->fname, g_tmp_file);
+    strcpy(test_info->fname, g_tmp_file[0]);
 
     res = globus_i_ftp_control_data_cc_init(&pasv_handle);
     test_result(res, "pasv handle init", __LINE__);
@@ -872,7 +893,7 @@ cache_test(
         test_result(res, "local_send_eof()", __LINE__);
     }
 
-    for(ctr = 0; ctr < TEST_ITEREATION; ctr++)
+    for(ctr = 0; ctr < TEST_ITERATIONS; ctr++)
     {
         done_monitor.done = GLOBUS_FALSE;
         done_monitor.count = 0;
@@ -975,24 +996,21 @@ transfer_test(
     globus_ftp_control_handle_t *           pasv_handle;
     ftp_test_monitor_t                      done_monitor;
     data_test_info_t *                      test_info;
-    data_test_info_t                        test_info_array[TEST_ITEREATION];
-    globus_ftp_control_handle_t             port_handle_array[TEST_ITEREATION];
-    globus_ftp_control_handle_t             pasv_handle_array[TEST_ITEREATION];
+    data_test_info_t                        test_info_array[TEST_ITERATIONS];
+    globus_ftp_control_handle_t             port_handle_array[TEST_ITERATIONS];
+    globus_ftp_control_handle_t             pasv_handle_array[TEST_ITERATIONS];
 
     ftp_test_monitor_init(&done_monitor);
 
     done_monitor.result = GLOBUS_SUCCESS;
-    for(ctr = 0; ctr < TEST_ITEREATION; ctr++)
+    for(ctr = 0; ctr < TEST_ITERATIONS; ctr++)
     {
         /*
          *  initialize test info structure
          */
         test_info = &test_info_array[ctr];
         test_info->monitor = &done_monitor;
-        strcpy(test_info->fname, g_tmp_file);
-        strcat(test_info->fname, ".   ");
-        sprintf(&test_info->fname[strlen(test_info->fname) - 3],
-                "%d", ctr);
+        strcpy(test_info->fname, g_tmp_file[ctr]);
         /*
          *  these will be freed in the final callback
          */
@@ -1045,7 +1063,7 @@ transfer_test(
     verbose_printf(3, "waiting for end\n");
     globus_mutex_lock(&done_monitor.mutex);
     {
-        while(done_monitor.count < (TEST_ITEREATION*2) && !done_monitor.done)
+        while(done_monitor.count < (TEST_ITERATIONS*2) && !done_monitor.done)
         {
             globus_cond_wait(&done_monitor.cond, &done_monitor.mutex);
         }
@@ -1055,7 +1073,7 @@ transfer_test(
     /*
      *  clean up
      */
-    for(ctr = 0; ctr < TEST_ITEREATION; ctr++)
+    for(ctr = 0; ctr < TEST_ITERATIONS; ctr++)
     {
         done_monitor.done = GLOBUS_FALSE;
         res = globus_ftp_control_data_force_close(
@@ -1132,10 +1150,9 @@ connect_read_big_buffer_callback(
     {
         char                             sys_cmd[1024];
 
-        sprintf(sys_cmd, "cp %s %s", g_test_file, test_info->fname);
-        system(sys_cmd);
+        copy_file(g_test_file, test_info->fname);
 
-        test_info->fout = fopen(test_info->fname, "r+");
+        test_info->fout = fopen(test_info->fname, "rb+");
 
         if(test_info->fout == GLOBUS_NULL)
         {
@@ -1190,7 +1207,7 @@ connect_read_callback(
 
     globus_mutex_lock(&test_info->monitor->mutex);
     {
-        test_info->fout = fopen(test_info->fname, "w");
+        test_info->fout = fopen(test_info->fname, "wb");
         if(test_info->fout == GLOBUS_NULL)
         {
             failure_end("fopen failed\n");
@@ -1260,10 +1277,9 @@ data_read_big_buffer_callback(
             fflush(test_info->fout);
             fclose(test_info->fout);
 
-            sprintf(sys_cmd, "diff %s %s", test_info->fname, g_test_file);
-            if(system(sys_cmd) != 0)
+            if (diff(test_info->fname, g_test_file) != 0)
             {
-                verbose_printf(1, "files are not the same\n");
+                verbose_printf(1, "files are not the same: %d\n", __LINE__);
                 test_info->monitor->done = GLOBUS_TRUE;
                 test_info->monitor->result = 
                       globus_error_put(GLOBUS_ERROR_NO_INFO);
@@ -1311,7 +1327,7 @@ connect_write_big_buffer_callback(
 
     globus_mutex_lock(&test_info->monitor->mutex);
     {
-        test_info->fin = fopen(g_test_file, "r");
+        test_info->fin = fopen(g_test_file, "rb");
         if(test_info->fin == GLOBUS_NULL)
         {
             failure_end("fopen failed\n");
@@ -1407,10 +1423,9 @@ data_read_callback(
             verbose_printf(3, "closing the out stream\n");
             fclose(test_info->fout);
 
-            sprintf(sys_cmd, "diff %s %s", test_info->fname, g_test_file);
-            if(system(sys_cmd) != 0)
+            if (diff(test_info->fname, g_test_file) != 0)
             {
-                verbose_printf(1, "files are not the same\n");
+                verbose_printf(1, "files are not the same: %d\n", __LINE__);
                 test_info->monitor->done = GLOBUS_TRUE;
                 test_info->monitor->result = 
                       globus_error_put(GLOBUS_ERROR_NO_INFO);
@@ -1475,7 +1490,7 @@ connect_write_callback(
 
     globus_mutex_lock(&test_info->monitor->mutex);
     {
-        test_info->fin = fopen(g_test_file, "r");
+        test_info->fin = fopen(g_test_file, "rb");
         if(test_info->fin == GLOBUS_NULL)
         {
             failure_end("fopen failed\n");
@@ -1560,7 +1575,7 @@ connect_write_zero_eof_callback(
 
     globus_mutex_lock(&test_info->monitor->mutex);
     {
-        test_info->fin = fopen(g_test_file, "r");
+        test_info->fin = fopen(g_test_file, "rb");
         if(test_info->fin == GLOBUS_NULL)
         {
             failure_end("fopen failed\n");
@@ -1680,4 +1695,131 @@ test_result(
             globus_object_printable_to_string(globus_error_get(res)));
         failure_end(msg);
     }
+}
+
+int
+copy_file(
+    const char *                        source,
+    const char *                        dest)
+{
+    FILE *sfp, *dfp;
+    unsigned char buf[BUFSIZ];
+    int rc = 0;
+
+    sfp = fopen(source, "rb");
+    if (sfp == NULL)
+    {
+        rc = errno;
+        goto failed_fopen_source;
+    }
+    dfp = fopen(dest, "wb");
+    if (dfp == NULL)
+    {
+        rc = errno;
+        goto failed_fopen_dest;
+    }
+
+    while (!(feof(sfp) || ferror(sfp) || ferror(dfp)))
+    {
+        size_t a, b;
+
+        a = fread(buf, 1, sizeof(buf), sfp);
+        if (a > 0)
+        {
+            b = 0;
+            do
+            {
+                b = fwrite(buf + b, 1, a-b, dfp);
+            }
+            while (b > 0 && b < a && (!ferror(dfp)));
+        }
+    }
+    if (ferror(sfp) || ferror(dfp))
+    {
+        rc = errno;
+
+        if (rc == 0)
+        {
+            rc = -1;
+        }
+    }
+
+    fclose(dfp);
+failed_fopen_dest:
+    fclose(sfp);
+failed_fopen_source:
+
+    return rc;
+}
+
+int
+diff(
+    const char *                        source,
+    const char *                        dest)
+{
+    FILE *sfp, *dfp;
+    unsigned char sbuf[BUFSIZ], dbuf[BUFSIZ];
+    int rc = 0;
+    size_t pos = 0;
+
+    sfp = fopen(source, "rb");
+    if (sfp == NULL)
+    {
+        rc = errno;
+        goto failed_fopen_source;
+    }
+    dfp = fopen(dest, "rb");
+    if (dfp == NULL)
+    {
+        rc = errno;
+        goto failed_fopen_dest;
+    }
+
+    while (!(feof(sfp) || ferror(sfp) || ferror(dfp)))
+    {
+        size_t a, b = 0;
+
+        a = fread(sbuf, 1, sizeof(sbuf), sfp);
+        if (a > 0)
+        {
+            do
+            {
+                b += fread(dbuf + b, 1, a-b, dfp);
+            } 
+            while (b > 0 && b < a && (!feof(dfp)) && (!ferror(dfp)));
+
+            if (a == b)
+            {
+                size_t i;
+                for (i = 0; i < a; i++)
+                {
+                    if (sbuf[i] != dbuf[i])
+                    {
+                        fprintf(stderr, "# Files differ at position %zd (%02x != %02x)\n",
+                            pos + i, (int) sbuf[i], (int) dbuf[i]);
+                        rc = 1;
+                        goto diff_failed;
+                    }
+                }
+                pos += a;
+            }
+        }
+    }
+    if (ferror(sfp) || ferror(dfp))
+    {
+        rc = errno;
+
+        if (rc == 0)
+        {
+            rc = -1;
+        }
+    }
+
+diff_failed:
+    fclose(dfp);
+failed_fopen_dest:
+    fclose(sfp);
+failed_fopen_source:
+
+    return rc;
 }

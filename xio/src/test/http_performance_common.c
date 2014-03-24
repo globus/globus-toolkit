@@ -818,16 +818,11 @@ fill_buffer(
     globus_byte_t *         buffer,
     int                     size)
 {
-    int                     fd;
-
-    /* if the process fails so what, this doesn't really matter */
-    fd = open("/dev/urandom", O_RDONLY);
-    if(fd <= 0)
+    globus_size_t           i;
+    for (i = 0; i < size; i++)
     {
-        return;
+        buffer[i] = (globus_byte_t) rand();
     }
-    read(fd, buffer, size);
-    close(fd);
 }
 
 int
