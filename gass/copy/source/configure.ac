@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gass_copy],[9.6],[http://jira.globus.org])
+AC_INIT([globus_gass_copy],[9.7],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [7])
@@ -25,6 +25,15 @@ AM_CONDITIONAL([CYGPATH_W_DEFINED], [
         ;;
     esac])
 
+AM_CONDITIONAL([MINGW32], [
+    case $host in 
+        *mingw32*)
+        true
+        ;;
+    *)
+        false
+        ;;
+esac])
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
 PKG_CHECK_EXISTS([globus-xio-gsi-driver >= 2], [

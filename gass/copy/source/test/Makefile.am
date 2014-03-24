@@ -1,10 +1,17 @@
 EXTRA_SCRIPTS = test-wrapper
 
-check_SCRIPTS = \
-        guc-cc.pl \
+check_SCRIPTS_skip =
+check_SCRIPTS_run = \
         guc-fw.pl \
         guc-pp-cc.pl \
         guc-stack.pl
+if MINGW32
+check_SCRIPTS_skip += guc-cc.pl
+else
+check_SCRIPTS_run += guc-cc.pl
+endif
+
+check_SCRIPTS = $(check_SCRIPTS_skip) $(check_SCRIPTS_run)
 
 check_DATA =  \
         testcred.key \
@@ -42,7 +49,7 @@ CYGPATH_W_DEFINED=
 endif
 
 TEST_PATH = $(GRIDFTP_SERVER_PATH):$(abs_top_builddir):$${PATH}
-TESTS = $(check_SCRIPTS)
+TESTS = $(check_SCRIPTS_run)
 TESTS_ENVIRONMENT = \
     export X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \

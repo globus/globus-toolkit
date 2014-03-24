@@ -20,6 +20,12 @@
 
 #ifndef TARGET_ARCH_WIN32
 #include <fnmatch.h>
+#else
+#define fnmatch(p,f,l) globus_l_win_fnmatch(p,f)
+static
+int globus_l_win_fnmatch(
+    const char * pattern,
+    const char * filename);
 #endif
 
 #ifndef MAXPATHLEN
@@ -192,7 +198,6 @@ globus_gass_copy_glob_expand_url(
     if(strcspn(path, "[]*?") == path_len)
     {        
         /* no globbing chars in path */
-#ifndef TARGET_ARCH_WIN32
         if(info->url[url_len - 1] == '/')
         {   
             info->url = (char *) globus_realloc(
@@ -202,7 +207,6 @@ globus_gass_copy_glob_expand_url(
             info->url[url_len] = '\0'; 
         }
         else
-#endif
         if(handle->always_stat_on_expand)
         {
             result = globus_gass_copy_stat(
@@ -256,18 +260,8 @@ globus_gass_copy_glob_expand_url(
             break;
             
           case GLOBUS_URL_SCHEME_FILE:
-#ifndef TARGET_ARCH_WIN32
             result = globus_l_gass_copy_glob_expand_file_url(info);
             break;
-#else
-            result = globus_error_put(
-                globus_error_construct_string(
-                    GLOBUS_GASS_COPY_MODULE,
-                    GLOBUS_NULL,
-                    "[%s]: Globbing not supported under Windows.",
-                    myname));
-            goto error;
-#endif
               
           default:
             result = globus_error_put(
@@ -396,7 +390,6 @@ globus_l_gass_copy_glob_expand_file_url(
             continue;
         } 
 
-#ifndef TARGET_ARCH_WIN32
         if(fnmatch(
             info->glob_pattern,
             dir_entry->d_name,
@@ -405,13 +398,15 @@ globus_l_gass_copy_glob_expand_file_url(
             globus_free(dir_entry);
             continue;
         }
-#endif
 
         snprintf(path, sizeof(path), 
             "%s/%s", parsed_url.url_path, dir_entry->d_name);
         path[MAXPATHLEN - 1] = '\0';
 #ifndef TARGET_ARCH_WIN32
         if(lstat(path, &stat_buf) != 0)
+#else
+        if(stat(path, &stat_buf) != 0)
+#endif
         {
             result = globus_error_put(
                 globus_error_construct_string(
@@ -423,10 +418,9 @@ globus_l_gass_copy_glob_expand_file_url(
             globus_free(dir_entry);
             continue;
         }
-#endif
 
         *symlink_target = '\0';
-#ifndef TARGET_ARCH_WIN32
+#ifdef S_ISLNK
         if(S_ISLNK(stat_buf.st_mode))
         {
             if(stat(path, &stat_buf) != 0)
@@ -1287,12 +1281,10 @@ globus_l_gass_copy_glob_parse_ftp_list(
         
         globus_l_gass_copy_urlencode(filename, &encoded_path);
         
-#ifndef TARGET_ARCH_WIN32
         if(fnmatch(
                info->glob_pattern,
                filename,
                0) == 0)
-#endif 
         {
             sprintf(
                 matched_url, 
@@ -1636,6 +1628,9 @@ globus_l_gass_copy_stat_file(
     
 #ifndef TARGET_ARCH_WIN32
     if(lstat(parsed_url.url_path, &stat_buf) != 0)
+#else
+    if(stat(parsed_url.url_path, &stat_buf) != 0)
+#endif
     {
         result = globus_error_put(
             globus_error_construct_string(
@@ -1646,10 +1641,9 @@ globus_l_gass_copy_stat_file(
                 parsed_url.url_path));
         goto error_stat;
     }
-#endif
 
     *symlink_target = '\0';
-#ifndef TARGET_ARCH_WIN32
+#ifdef S_ISLNK
     if(S_ISLNK(stat_buf.st_mode))
     {
         if(stat(parsed_url.url_path, &stat_buf) != 0)
@@ -2262,3 +2256,103 @@ error_exit:
     return result;
         
 }
+
+#ifdef _WIN32
+static
+int globus_l_win_fnmatch(
+    const char * pattern,
+    const char * filename)
+{
+    globus_list_t *possible_matches_filenames = NULL;
+    globus_list_t *possible_matches_patterns = NULL;
+    int matched = 0;
+    
+    globus_list_insert(&possible_matches_filenames, (void *) filename);
+    globus_list_insert(&possible_matches_patterns, (void *) pattern);
+
+    while (!globus_list_empty(possible_matches_filenames))
+    {
+        const char * filenamep;
+        const char * patternp;
+
+        filenamep = (const char *) globus_list_remove(
+                &possible_matches_filenames, possible_matches_filenames);
+        patternp = (const char *) globus_list_remove(
+                &possible_matches_patterns, possible_matches_patterns);
+
+        while (*patternp && *filenamep)
+        {
+            while (*patternp && *filenamep && 
+                    *patternp != '*' &&
+                    *patternp != '[' &&
+                    (*patternp == *filenamep ||
+                     *patternp == '?'))
+            {
+                patternp++;
+                filenamep++;
+            }
+            if (*patternp == '[' && *filenamep)
+            {
+                const char * start_of_class =  ++patternp;
+                const char * end_of_class = start_of_class;
+                const char * classp;
+                while (*end_of_class && *end_of_class != ']')
+                {
+                    end_of_class++;
+                }
+                for (classp = start_of_class; classp < end_of_class; classp++)
+                {
+                    if (*classp == *filenamep)
+                    {
+                        filenamep++;
+                        patternp = end_of_class + 1;
+                        break;
+                    }
+                }
+            }
+            else if (*patternp == '*' && *filenamep)
+            {
+                while (*patternp == '*')
+                {
+                    patternp++;
+                }
+                for (; *filenamep; filenamep++)
+                {
+                    globus_list_insert(&possible_matches_filenames,
+                            (void *) filenamep);
+                    globus_list_insert(&possible_matches_patterns,
+                            (void *) patternp);
+                    if (*filenamep == '/')
+                    {
+                        break;
+                    }
+                }
+                goto hit_wildcard;
+            }
+            else
+            {
+                /* No match */
+                break;
+            }
+        }
+        if (*patternp == 0 && *filenamep == 0)
+        {
+            matched = 1;
+            break;
+        }
+hit_wildcard:;
+    }
+    while (!globus_list_empty(possible_matches_filenames))
+    {
+        globus_list_remove(
+            &possible_matches_filenames, possible_matches_filenames);
+    }
+    while (!globus_list_empty(possible_matches_patterns))
+    {
+        globus_list_remove(
+                &possible_matches_patterns, possible_matches_patterns);
+    }
+    return matched;
+}
+/* win_fnmatch() */
+#endif

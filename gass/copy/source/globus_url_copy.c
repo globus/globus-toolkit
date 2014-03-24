@@ -49,7 +49,7 @@ CVS Information:
  */
 #include "globus_io.h"
 #include "version.h"  /* provides local_version */
-#ifdef WIN32
+#if defined(_WIN32)
 #include "openssl/applink.c"
 #endif
 
@@ -3396,7 +3396,6 @@ guc_l_convert_file_url(
 {
     char *                              tmp_ptr;
     char *                              tmp_path;
-    char *                              start_dir = NULL;
     globus_result_t                     result;
     char *                              dir_ptr = "";
 
@@ -3408,31 +3407,21 @@ guc_l_convert_file_url(
         return globus_libc_strdup(in_url);
     }
 
-    if(in_url[0] != '/')
+    result = GLOBUS_GSI_SYSCONFIG_MAKE_ABSOLUTE_PATH_FOR_FILENAME(in_url, &tmp_path);
+    if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_SYSCONFIG_GET_CURRENT_WORKING_DIR(&start_dir);
-        if(result != GLOBUS_SUCCESS)
-        {
-            /* just punt if the system call fails */
-            return globus_libc_strdup(in_url);
-        }
-        dir_ptr = start_dir;
-        tmp_path = globus_common_create_string("%s/%s", dir_ptr, in_url);
-    }
-    else
-    {
-        tmp_path = globus_libc_strdup(in_url);
+        /* just punt if the system call fails */
+        return globus_libc_strdup(in_url);
     }
     dir_ptr = globus_url_string_hex_encode(tmp_path, "");
     
-    tmp_ptr = globus_common_create_string("file://%s", dir_ptr);
+    /* In windows, absolute paths don't begin with / */
+    tmp_ptr = globus_common_create_string("file://%s%s",
+        dir_ptr[0] == '/' ? "" : "/", dir_ptr);
     
     globus_free(dir_ptr);
     globus_free(tmp_path);
     
-    if (start_dir)
-        globus_free(start_dir);
-
     return tmp_ptr;
 }
 

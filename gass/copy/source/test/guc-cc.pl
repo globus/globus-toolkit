@@ -31,8 +31,6 @@ use File::Temp qw/ tempfile tempdir /;
 use File::Copy;
 use File::Path qw/rmtree/;
 
-srand(1);
-
 my $subject = $ENV{FTP_TEST_SUBJECT};
 my $server_cs = $ENV{FTP_TEST_CONTACT};
 my $path_transform_with_cygpath_w = $ENV{CYGPATH_W_DEFINED};
@@ -122,12 +120,14 @@ SKIP: {
             my ($infd, $outfd, $errfd);
             my ($out, $err);
             my ($pid, $rc);
-            $errfd = gensym;
-
-            $pid = open3($infd, $outfd, $errfd, "globus-url-copy",
+            my @args = ("globus-url-copy",
                 '-ipv6',
                 @{$mode}, @{$cc}, @{$dc_opt},
                 "-cd", "-r", $src_url, $dst_url);
+            $errfd = gensym;
+
+            print STDERR "# Executing " . join (" ", @args) . "\n";
+            $pid = open3($infd, $outfd, $errfd, @args);
             close($infd);
 
             waitpid($pid, 0);
