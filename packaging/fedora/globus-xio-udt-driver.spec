@@ -86,11 +86,7 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-# This library is opened using lt_dlopenext, so the libtool archives
-# (.la files) can not be removed - fix the libdir...
-for lib in `find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la'` ; do
-  sed "s!^libdir=.*!libdir=\'%{_libdir}\'!" -i $lib
-done
+find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la'` -exec rm -v '{}' \;
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -99,13 +95,16 @@ rm -rf $RPM_BUILD_ROOT
 
 %postun -p /sbin/ldconfig
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_libdir}/libglobus*.so*
 
-%files -f package-devel.filelist devel
+%files devel
 %defattr(-,root,root,-)
+%{_includedir}/globus/*
+%{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
 * Wed Mar 05 2014 Globus Toolkit <support@globus.org> - 1.0-1
