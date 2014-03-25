@@ -86,7 +86,7 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la'` -exec rm -v '{}' \;
+find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
 %clean
 rm -rf $RPM_BUILD_ROOT
