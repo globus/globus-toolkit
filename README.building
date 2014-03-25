@@ -56,6 +56,7 @@ $ make dist
      VERSION: update version on first line and add entry to Version History
      pkgdata/pkg_data_src.gpt.in: update Aging_Version and VersionLabel
      myproxy.spec: update the Version line
+     configure.in: update AC_INIT
 
    Commit your changes to CVS.
 
