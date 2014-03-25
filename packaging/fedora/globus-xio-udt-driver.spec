@@ -28,6 +28,7 @@ BuildRequires:  gettext-devel
 BuildRequires:  xz
 BuildRequires:  curl
 BuildRequires:  zlib-devel
+%if %{?rhel}%{!?rhel:0} == 5
 BuildRequires:  python26
 %endif
 BuildRequires:  libffi-devel
