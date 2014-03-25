@@ -24,7 +24,12 @@ BuildRequires:	globus-common-devel >= 14
 %if %{?fedora}%{!?fedora:0} >= 18
 BuildRequires:  glib2-devel >= 2.32
 BuildRequires:  libnice-devel >= 0.0.12
+%else
+BuildRequires:  gettext-devel
+BuildRequires:  xz
+BuildRequires:  curl
 %endif
+BuildRequires:  libffi-devel
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
