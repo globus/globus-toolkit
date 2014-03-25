@@ -24,7 +24,11 @@ BuildRequires:	globus-common-devel >= 14
 BuildRequires:  glib2-devel >= 2.32
 BuildRequires:  libnice-devel >= 0.0.12
 %else
+%if 0%{?suse_version} > 0
+BuildRequires:  gettext-tools
+%else
 BuildRequires:  gettext-devel
+%endif
 BuildRequires:  xz
 BuildRequires:  curl
 BuildRequires:  zlib-devel
