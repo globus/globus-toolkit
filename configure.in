@@ -1,17 +1,23 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.80 $)
-AC_INIT(Makefile.am)
+AC_REVISION($Revision: 1.81 $)
+AC_INIT([myproxy],[5.9])
+AM_INIT_AUTOMAKE([foreign])
+LT_INIT([dlopen win32-dll])
 
-GLOBUS_INIT
-
-AM_PROG_LIBTOOL
 AC_PROG_LN_S
 
-dnl config header goes here
-
-dnl Initialize the automake rules the last argument
-AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+AC_ARG_WITH([flavor],
+    AS_HELP_STRING([--with-flavor=FLAVOR], [Build with Globus Flavor]),
+    [
+    GLOBUS_FLAVOR_NAME="$withval"
+    _GLOBUS_FLAVOR_NAME="_$withval"
+    ],
+    [GLOBUS_FLAVOR_NAME=""
+    _GLOBUS_FLAVOR_NAME=""
+    ])
+AC_SUBST(GLOBUS_FLAVOR_NAME)
+AC_SUBST(_GLOBUS_FLAVOR_NAME)
 
 dnl
 dnl Figure out which regular expression parser to use.
@@ -65,7 +71,12 @@ AC_CHECK_FUNCS(getopt_long)
 dnl
 dnl Check for socklen_t
 dnl
-AC_CHECK_TYPES(socklen_t)
+AC_CHECK_HEADERS([sys/socket.h])
+
+AC_CHECK_TYPES([socklen_t],[],[],AC_INCLUDES_DEFAULT[
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif])
 dnl
 dnl Check for facilitynames
 dnl
@@ -89,7 +100,7 @@ AC_SUBST(SYSLIBS)
 dnl
 dnl The following tests need/use GPT_LIBS
 dnl
-LIBS="$GPT_LIBS $LIBS"
+PKG_CHECK_MODULES([GLOBUS], [globus-gss-assist >= 3, globus-usage >= 3, globus-gss-assist >= 3, globus-gssapi-gsi >= 4, globus-common >= 0, globus-gsi-sysconfig >= 0], [], [AC_MSG_WARN([GLOBUS_PKG_ERRORS])])
 dnl
 dnl Check for libcrypto
 dnl
@@ -126,7 +137,7 @@ dnl
 dnl Check for SASL
 dnl
 AC_ARG_WITH(sasl2,
-	[ --with-sasl2=PATH        Build with SASL V2 support],
+    AS_HELP_STRING([--with-sasl2=PATH], [Build with SASL V2 support]),
 	[
 		if test "x$withval" = "xyes" ; then
 		   AC_MSG_ERROR([--with-sasl2 requires PATH argument])
@@ -155,7 +166,7 @@ dnl
 dnl Check for Kerberos
 dnl
 AC_ARG_WITH(kerberos5,
-       [ --with-kerberos5=PATH    Build with Kerberos V5 support],
+    AS_HELP_STRING([--with-kerberos5=PATH],[Build with Kerberos V5 support]),
        [
                if test "x$withval" = "xyes" ; then
                   AC_MSG_ERROR([--with-kerberos5 requires PATH argument])
@@ -194,7 +205,7 @@ dnl Check for OpenLDAP
 dnl
 
 AC_ARG_WITH(openldap,
-       [ --with-openldap=PATH    Build with OpenLDAP CA support],
+    AS_HELP_STRING([--with-openldap=PATH],[Build with OpenLDAP CA support]),
        [
                if test "x$withval" = "xyes" ; then
                   AC_MSG_ERROR([--with-openldap requires PATH argument])
@@ -236,7 +247,7 @@ dnl Check for VOMS libraries
 dnl
 
 AC_ARG_WITH(voms,
-	[ --with-voms=PATH	Build with VOMS support],
+    AS_HELP_STRING([--with-voms=PATH],[Build with VOMS support]),
 	[
 		if test "x$withval" = "xyes" ; then
 		   AC_MSG_ERROR([--with-voms requires PATH argument])
@@ -253,25 +264,9 @@ AC_ARG_WITH(voms,
 	]
 )
 
-LAC_DOXYGEN([" ../ "])
-
-GLOBUS_FINALIZE
-
-AC_OUTPUT(
-	pkgdata/Makefile
-	pkgdata/pkg_data_src.gpt
+AC_CONFIG_FILES([
 	Makefile
-	doxygen/Makefile
-	doxygen/Doxyfile
-	doxygen/Doxyfile-internal
 	web/Makefile
 	systemd/Makefile
-	man/Makefile
-	,
-	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data \
-	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
-	,
-	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
-	GLOBUS_LOCATION=$GLOBUS_LOCATION
-	GPT_LOCATION=$GPT_LOCATION
-)
+	man/Makefile])
+AC_OUTPUT
