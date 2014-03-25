@@ -28,6 +28,7 @@ BuildRequires:  libnice-devel >= 0.0.12
 BuildRequires:  gettext-devel
 BuildRequires:  xz
 BuildRequires:  curl
+BuildRequires:  zlib-devel
 %endif
 BuildRequires:  libffi-devel
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
