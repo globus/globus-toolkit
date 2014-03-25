@@ -19,7 +19,6 @@ Requires:       libnice%{?_isa} >= 0.0.12
 Requires:       libffi
 
 BuildRequires:	globus-xio-devel >= 3
-BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
 %if %{?fedora}%{!?fedora:0} >= 18
 BuildRequires:  glib2-devel >= 2.32
