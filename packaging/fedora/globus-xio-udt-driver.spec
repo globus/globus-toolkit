@@ -28,6 +28,7 @@ BuildRequires:  gettext-devel
 BuildRequires:  xz
 BuildRequires:  curl
 BuildRequires:  zlib-devel
+BuildRequires:  python26
 %endif
 BuildRequires:  libffi-devel
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
