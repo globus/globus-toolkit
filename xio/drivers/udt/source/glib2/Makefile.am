@@ -94,7 +94,8 @@ glib2-configure-stamp: glib2-unpack-stamp
 			fi ; \
 			;; \
 		*) \
-		    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$(LDFLAGS) $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)" --disable-dependency-tracking || exit 1; \
+		    glib_cflags="$$(echo $(CFLAGS) | sed -e 's/-march=i386/-march=i686/')" ; \
+		    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$$glib_cflags $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$(LDFLAGS) $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)" --disable-dependency-tracking || exit 1; \
 		    ;; \
 	esac;
 	touch $@
