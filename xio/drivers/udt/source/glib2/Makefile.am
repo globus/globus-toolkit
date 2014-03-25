@@ -44,7 +44,7 @@ endif
 			done ; \
 			    $(MKDIR_P) build/$(build_triplet); \
 			    cd build/$(build_triplet); \
-			    ../../source/configure --prefix=$(abs_builddir)/$(build_triplet) CFLAGS="$$other_flags" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$$other_ldflags $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --disable-dependency-tracking -q || exit 1; \
+			    ../../source/configure --prefix=$(abs_builddir)/$(build_triplet) --disable-compile-warnings CFLAGS="$$other_flags" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$$other_ldflags $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --disable-dependency-tracking -q || exit 1; \
 			    $(MAKE) $(AM_MAKEFLAGS) install ; \
 			;; \
 	esac;
@@ -83,19 +83,19 @@ glib2-configure-stamp: glib2-unpack-stamp
 			    fi; \
 			done ; \
 			if test "x$$arches" = "x"; then \
-			    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$(LDFLAGS) $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)" --disable-dependency-tracking -q || exit 1; \
+			    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static --disable-compile-warnings CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$(LDFLAGS) $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)" --disable-dependency-tracking -q || exit 1; \
 			else \
 			    for arch in $$arches; do \
 				$(MKDIR_P) build/$$arch; \
 				cd build/$$arch; \
-				../../source/configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="-arch $$arch $$other_flags $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="-arch $$arch $$other_ldflags $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$$arch-$(host_vendor)-$(host_os)" --disable-dependency-tracking -q || exit 1; \
+				../../source/configure --prefix=$(abs_builddir) --disable-shared --enable-static --disable-compile-warnings CFLAGS="-arch $$arch $$other_flags $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="-arch $$arch $$other_ldflags $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$$arch-$(host_vendor)-$(host_os)" --disable-dependency-tracking -q || exit 1; \
 				cd "$$OLDPWD"; \
 			    done; \
 			fi ; \
 			;; \
 		*) \
 		    glib_cflags="$$(echo $(CFLAGS) | sed -e 's/-march=i386/-march=i686/')" ; \
-		    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static CFLAGS="$$glib_cflags $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$(LDFLAGS) $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)" --disable-dependency-tracking || exit 1; \
+		    cd source && ./configure --prefix=$(abs_builddir) --disable-shared --enable-static --disable-compile-warnings CFLAGS="$$glib_cflags $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$(LDFLAGS) $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)" --disable-dependency-tracking || exit 1; \
 		    ;; \
 	esac;
 	touch $@
