@@ -59,7 +59,6 @@ gfs_dynbe_client_SOURCES = gfs_dynbe_client.c
 gfs_dynbe_client_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS)
 
 if BUILD_MANPAGES
-export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
 SUFFIXES = .xml .8
 
 .xml.8:
