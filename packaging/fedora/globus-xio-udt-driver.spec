@@ -80,6 +80,14 @@ autoreconf -if
 %endif
 
 
+%if 0%{?suse_version} > 0
+# SuSE 11 doesn't include libffi's pkg-config file, but the library
+# is available natively. LIBFFI_CFLAGS must be non-empty for autoconf to
+# detect it as set in the configure invocation in the glib2 source directory
+export LIBFFI_CFLAGS="-DGT6_UDT_DRIVER_SuSE_HACK"
+export LIBFFI_LIBS="-lffi"
+%endif
+
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
