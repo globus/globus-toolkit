@@ -168,7 +168,7 @@ OP_CONCATENATE             ("#")
 %%
 
 %{
-    globus_parse_state_t               *parse_state;
+    struct globus_parse_state_s        *parse_state;
     parse_state = globus_rslget_extra(yyscanner);
 %}
 

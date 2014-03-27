@@ -39,7 +39,7 @@ int globus_rslget_column  (yyscan_t yyscanner);
 #define GLOBUS_RSL_MIN(x,y) ((x) < (y) ? (x) : (y))
 
 void
-yyerror(YYLTYPE *loc, yyscan_t scanner, globus_parse_state_t *parse_state, char * yymsg);
+yyerror(YYLTYPE *loc, yyscan_t scanner, struct globus_parse_state_s *parse_state, char * yymsg);
 /* Provide our own function for reading input.  The default YY_INPUT
  * is overridden in globus_rsl_parser.l
  * from page 157 of Nutshell lex & yacc
@@ -51,7 +51,7 @@ yyerror(YYLTYPE *loc, yyscan_t scanner, globus_parse_state_t *parse_state, char 
 %locations
 %locations
 %parse-param { void * scanner }
-%parse-param { globus_parse_state_t * parse_state }
+%parse-param { struct globus_parse_state_s * parse_state }
 %lex-param { void * scanner }
 %debug
 
@@ -206,7 +206,7 @@ literal_string: RSL_STRING
 %%
 
 void
-yyerror(YYLTYPE * loc, yyscan_t scanner, globus_parse_state_t * parse_state, char * yymsg)
+yyerror(YYLTYPE * loc, yyscan_t scanner, struct globus_parse_state_s * parse_state, char * yymsg)
 {
     parse_state->error_structure =
        (globus_rsl_parse_error_t *) malloc(sizeof(globus_rsl_parse_error_t));
@@ -240,7 +240,7 @@ globus_rsl_t *globus_rsl_parse(char *buf)
 {
     globus_rsl_t *                      rsl = NULL;
     yyscan_t                            scanner;
-    globus_parse_state_t                parse_state = {0};
+    struct globus_parse_state_s                parse_state = {0};
 
 
     if (!buf)
@@ -277,7 +277,7 @@ null_buf:
 
 extern
 int
-globus_i_rsl_yyinput(globus_parse_state_t *parse_state, char *buf, yy_size_t *num_read, int max_size)
+globus_i_rsl_yyinput(struct globus_parse_state_s *parse_state, char *buf, yy_size_t *num_read, int max_size)
 {
 
     int n = GLOBUS_RSL_MIN(max_size,

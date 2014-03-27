@@ -110,7 +110,7 @@
 
 
 /* Copy the first part of user declarations.  */
-#line 1 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 1 "../../../../../gram/rsl/source/globus_rsl_parser.y"
 
 /*
  * Copyright 1999-2006 University of Chicago
@@ -152,7 +152,7 @@ int globus_rslget_column  (yyscan_t yyscanner);
 #define GLOBUS_RSL_MIN(x,y) ((x) < (y) ? (x) : (y))
 
 void
-yyerror(YYLTYPE *loc, yyscan_t scanner, globus_parse_state_t *parse_state, char * yymsg);
+yyerror(YYLTYPE *loc, yyscan_t scanner, struct globus_parse_state_s *parse_state, char * yymsg);
 /* Provide our own function for reading input.  The default YY_INPUT
  * is overridden in globus_rsl_parser.l
  * from page 157 of Nutshell lex & yacc
@@ -179,7 +179,7 @@ yyerror(YYLTYPE *loc, yyscan_t scanner, globus_parse_state_t *parse_state, char 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 61 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 61 "../../../../../gram/rsl/source/globus_rsl_parser.y"
 {
   int	               Int;
   char               * String;
@@ -744,7 +744,7 @@ do {									  \
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, void * scanner, globus_parse_state_t * parse_state)
+yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, void * scanner, struct globus_parse_state_s * parse_state)
 #else
 static void
 yy_symbol_value_print (yyoutput, yytype, yyvaluep, yylocationp, scanner, parse_state)
@@ -753,7 +753,7 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, yylocationp, scanner, parse_s
     YYSTYPE const * const yyvaluep;
     YYLTYPE const * const yylocationp;
     void * scanner;
-    globus_parse_state_t * parse_state;
+    struct globus_parse_state_s * parse_state;
 #endif
 {
   if (!yyvaluep)
@@ -782,7 +782,7 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, yylocationp, scanner, parse_s
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, void * scanner, globus_parse_state_t * parse_state)
+yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, void * scanner, struct globus_parse_state_s * parse_state)
 #else
 static void
 yy_symbol_print (yyoutput, yytype, yyvaluep, yylocationp, scanner, parse_state)
@@ -791,7 +791,7 @@ yy_symbol_print (yyoutput, yytype, yyvaluep, yylocationp, scanner, parse_state)
     YYSTYPE const * const yyvaluep;
     YYLTYPE const * const yylocationp;
     void * scanner;
-    globus_parse_state_t * parse_state;
+    struct globus_parse_state_s * parse_state;
 #endif
 {
   if (yytype < YYNTOKENS)
@@ -841,7 +841,7 @@ do {								\
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_reduce_print (YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule, void * scanner, globus_parse_state_t * parse_state)
+yy_reduce_print (YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule, void * scanner, struct globus_parse_state_s * parse_state)
 #else
 static void
 yy_reduce_print (yyvsp, yylsp, yyrule, scanner, parse_state)
@@ -849,7 +849,7 @@ yy_reduce_print (yyvsp, yylsp, yyrule, scanner, parse_state)
     YYLTYPE *yylsp;
     int yyrule;
     void * scanner;
-    globus_parse_state_t * parse_state;
+    struct globus_parse_state_s * parse_state;
 #endif
 {
   int yynrhs = yyr2[yyrule];
@@ -1122,7 +1122,7 @@ yysyntax_error (char *yyresult, int yystate, int yychar)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, YYLTYPE *yylocationp, void * scanner, globus_parse_state_t * parse_state)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, YYLTYPE *yylocationp, void * scanner, struct globus_parse_state_s * parse_state)
 #else
 static void
 yydestruct (yymsg, yytype, yyvaluep, yylocationp, scanner, parse_state)
@@ -1131,7 +1131,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, scanner, parse_state)
     YYSTYPE *yyvaluep;
     YYLTYPE *yylocationp;
     void * scanner;
-    globus_parse_state_t * parse_state;
+    struct globus_parse_state_s * parse_state;
 #endif
 {
   YYUSE (yyvaluep);
@@ -1162,7 +1162,7 @@ int yyparse ();
 #endif
 #else /* ! YYPARSE_PARAM */
 #if defined __STDC__ || defined __cplusplus
-int yyparse (void * scanner, globus_parse_state_t * parse_state);
+int yyparse (void * scanner, struct globus_parse_state_s * parse_state);
 #else
 int yyparse ();
 #endif
@@ -1191,12 +1191,12 @@ yyparse (YYPARSE_PARAM)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 int
-yyparse (void * scanner, globus_parse_state_t * parse_state)
+yyparse (void * scanner, struct globus_parse_state_s * parse_state)
 #else
 int
 yyparse (scanner, parse_state)
     void * scanner;
-    globus_parse_state_t * parse_state;
+    struct globus_parse_state_s * parse_state;
 #endif
 #endif
 {
@@ -1467,12 +1467,12 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 92 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 92 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { parse_state->rsl_spec = (yyvsp[(1) - (1)].RSL); }
     break;
 
   case 3:
-#line 97 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 97 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     {
       (yyval.RSL) = globus_rsl_make_boolean ((yyvsp[(1) - (2)].Int), (yyvsp[(2) - (2)].List));
       assert (((yyval.RSL))!=NULL);
@@ -1480,29 +1480,29 @@ yyreduce:
     break;
 
   case 4:
-#line 102 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 102 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { 
       (yyval.RSL) = (yyvsp[(1) - (1)].RSL);
     }
     break;
 
   case 5:
-#line 109 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 109 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.Int) = GLOBUS_RSL_MULTIREQ; }
     break;
 
   case 6:
-#line 110 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 110 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.Int) = GLOBUS_RSL_AND; }
     break;
 
   case 7:
-#line 111 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 111 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.Int) = GLOBUS_RSL_OR; }
     break;
 
   case 8:
-#line 117 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 117 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     {
       (yyval.List) = globus_list_cons ((void *) (yyvsp[(2) - (4)].RSL), (yyvsp[(4) - (4)].List));
       assert (((yyval.List))!=NULL);
@@ -1510,7 +1510,7 @@ yyreduce:
     break;
 
   case 9:
-#line 122 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 122 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     {
       (yyval.List) = globus_list_cons ((void *) (yyvsp[(2) - (3)].RSL), NULL);
       assert (((yyval.List))!=NULL);
@@ -1518,7 +1518,7 @@ yyreduce:
     break;
 
   case 10:
-#line 131 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 131 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     {
       (yyval.RSL) = globus_rsl_make_relation ((yyvsp[(2) - (3)].Int), (yyvsp[(1) - (3)].String), (yyvsp[(3) - (3)].RSLval));
       assert (((yyval.RSL))!=NULL);
@@ -1526,37 +1526,37 @@ yyreduce:
     break;
 
   case 11:
-#line 139 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 139 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.Int) = GLOBUS_RSL_EQ; }
     break;
 
   case 12:
-#line 140 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 140 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.Int) = GLOBUS_RSL_NEQ; }
     break;
 
   case 13:
-#line 141 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 141 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.Int) = GLOBUS_RSL_GT; }
     break;
 
   case 14:
-#line 142 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 142 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.Int) = GLOBUS_RSL_GTEQ; }
     break;
 
   case 15:
-#line 143 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 143 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.Int) = GLOBUS_RSL_LT; }
     break;
 
   case 16:
-#line 144 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 144 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.Int) = GLOBUS_RSL_LTEQ; }
     break;
 
   case 17:
-#line 149 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 149 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     {
       (yyval.RSLval) = globus_rsl_value_make_sequence ((yyvsp[(1) - (1)].List));
       assert (((yyval.RSLval))!=NULL);
@@ -1564,7 +1564,7 @@ yyreduce:
     break;
 
   case 18:
-#line 157 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 157 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     {
       (yyval.List) = globus_list_cons ((void *) (yyvsp[(1) - (2)].RSL), (yyvsp[(2) - (2)].List));
       assert (((yyval.List))!=NULL);
@@ -1572,7 +1572,7 @@ yyreduce:
     break;
 
   case 19:
-#line 162 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 162 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     {
       (yyval.List) = globus_list_cons ((void *) (yyvsp[(1) - (1)].RSL), NULL);
       assert (((yyval.List))!=NULL);
@@ -1580,19 +1580,19 @@ yyreduce:
     break;
 
   case 20:
-#line 171 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 171 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { 
       (yyval.RSLval) = (yyvsp[(2) - (3)].RSLval);
     }
     break;
 
   case 21:
-#line 174 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 174 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.RSLval) = (yyvsp[(1) - (1)].RSLval); }
     break;
 
   case 22:
-#line 180 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 180 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     {
       (yyval.RSLval) = globus_rsl_value_make_concatenation ((yyvsp[(1) - (3)].RSLval), (yyvsp[(3) - (3)].RSLval));
       assert (((yyval.RSLval))!=NULL);
@@ -1600,7 +1600,7 @@ yyreduce:
     break;
 
   case 23:
-#line 185 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 185 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { 
       (yyval.RSLval) = globus_rsl_value_make_literal ((yyvsp[(1) - (1)].String));
       assert (((yyval.RSLval))!=NULL);
@@ -1608,12 +1608,12 @@ yyreduce:
     break;
 
   case 24:
-#line 189 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 189 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.RSLval) = (yyvsp[(1) - (1)].RSLval); }
     break;
 
   case 25:
-#line 195 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 195 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     {
       (yyval.RSLval) = globus_rsl_value_make_variable ((yyvsp[(3) - (4)].RSLval));
       assert (((yyval.RSLval))!=NULL);
@@ -1621,7 +1621,7 @@ yyreduce:
     break;
 
   case 26:
-#line 202 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 202 "../../../../../gram/rsl/source/globus_rsl_parser.y"
     { (yyval.String) = (yyvsp[(1) - (1)].String);
     }
     break;
@@ -1848,11 +1848,11 @@ yyreturn:
 }
 
 
-#line 206 "../../../../gram/rsl/source/globus_rsl_parser.y"
+#line 206 "../../../../../gram/rsl/source/globus_rsl_parser.y"
 
 
 void
-yyerror(YYLTYPE * loc, yyscan_t scanner, globus_parse_state_t * parse_state, char * yymsg)
+yyerror(YYLTYPE * loc, yyscan_t scanner, struct globus_parse_state_s * parse_state, char * yymsg)
 {
     parse_state->error_structure =
        (globus_rsl_parse_error_t *) malloc(sizeof(globus_rsl_parse_error_t));
@@ -1886,7 +1886,7 @@ globus_rsl_t *globus_rsl_parse(char *buf)
 {
     globus_rsl_t *                      rsl = NULL;
     yyscan_t                            scanner;
-    globus_parse_state_t                parse_state = {0};
+    struct globus_parse_state_s                parse_state = {0};
 
 
     if (!buf)
@@ -1923,7 +1923,7 @@ null_buf:
 
 extern
 int
-globus_i_rsl_yyinput(globus_parse_state_t *parse_state, char *buf, yy_size_t *num_read, int max_size)
+globus_i_rsl_yyinput(struct globus_parse_state_s *parse_state, char *buf, yy_size_t *num_read, int max_size)
 {
 
     int n = GLOBUS_RSL_MIN(max_size,

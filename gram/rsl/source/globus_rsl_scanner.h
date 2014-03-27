@@ -339,7 +339,7 @@ extern int globus_rsllex \
 #undef YY_DECL
 #endif
 
-#line 464 "../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 464 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
 
 #line 345 "globus_rsl_scanner.h"
 #undef globus_rslIN_HEADER

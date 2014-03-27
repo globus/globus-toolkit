@@ -1,6 +1,6 @@
 Name:		globus-rsl
 %global _name %(tr - _ <<< %{name})
-Version:	10.3
+Version:	10.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Resource Specification Language Library
 

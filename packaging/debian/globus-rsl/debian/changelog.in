@@ -1,4 +1,4 @@
-globus-rsl (10.3-2+gt6.@distro@) @distro@; urgency=low
+globus-rsl (10.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes, Warning Cleanup
 
