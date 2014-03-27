@@ -1,0 +1,35 @@
+#! /bin/sh
+
+gsissh_version=5.7
+gsissh_bundle="gsi_openssh_bundle-${gsissh_version}-src.tar.gz"
+bundle_output="$(dirname "$0")/packaging/bundle-output"
+gsissh_bundle_file="${bundle_output}/${gsissh_bundle}"
+
+gsissh_tarball="gsi_openssh-${gsissh_version}-src.tar.gz"
+gsissh_url="http://sourceforge.net/projects/cilogon/files/gsissh/$gsissh_bundle"
+package_output="$(dirname "$0")/packaging/package-output"
+gsissh_package_file="${package_output}/${gsissh_tarball}"
+gsissh_sourcedir="$(dirname $0)/gsi_openssh/source"
+unpacked_file="${gsissh_sourcedir}/gsissh.unpacked" 
+
+(
+mkdir -p "${bundle_output}" "${package_output}" "${gsissh_sourcedir}"
+
+if [ ! -f "${gsissh_bundle_file}" ]; then
+    curl -Ls "${gsissh_url}" > "${gsissh_bundle_file}.tmp"
+    mv "${gsissh_bundle_file}.tmp" "${gsissh_bundle_file}"
+fi
+
+if [ ! -f "${gsissh_package_file}" ]; then
+    gzip -dc "${gsissh_bundle_file}" | tar -xf - "${gsissh_tarball}"
+    mv "${gsissh_tarball}" "${gsissh_package_file}"
+fi
+
+if [ ! -f "${unpacked_file}" ] || \
+   [ x$(cat "${unpacked_file}") != x"${gsissh_tarball}" ]; then
+    gzip -dc "${gsissh_package_file}" | \
+        tar --strip 2 -C "${gsissh_sourcedir}" -xf -
+    echo "${gsissh_tarball}" > "${unpacked_file}"
+fi
+) 1>&2
+echo "m4_define([gsissh_version], [${gsissh_version}])"
