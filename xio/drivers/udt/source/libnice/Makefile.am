@@ -17,7 +17,7 @@ libnice-configure-stamp: libnice-unpack-stamp
 	export PKG_CONFIG_PATH="$(PKG_CONFIG_PATH):$(GLIB2_PKG_CONFIG_PATH)"; \
 	case $(host_triplet) in \
 	    *mingw*) \
-	       EXTRA_CPPFLAGS=-D_SSIZE_T_=1; \
+	       EXTRA_CPPFLAGS="-D_SSIZE_T_=1 -DIN6_ARE_ADDR_EQUAL(a, b)=(memcmp(&(a)->s6_addr[0], &(b)->s6_addr[0], sizeof(struct in6_addr)) == 0)"; \
 	       ;; \
 	    *) \
 	       EXTRA_CPPFLAGS=; \
