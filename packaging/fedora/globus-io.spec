@@ -1,6 +1,6 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	10.5
+Version:	10.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
