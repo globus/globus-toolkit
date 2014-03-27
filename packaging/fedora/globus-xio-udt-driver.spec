@@ -1,6 +1,6 @@
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.2
+Version:	1.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 

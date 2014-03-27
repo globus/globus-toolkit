@@ -15,7 +15,15 @@ libnice-unpack-stamp: $(libnice_tarball)
 
 libnice-configure-stamp: libnice-unpack-stamp
 	export PKG_CONFIG_PATH="$(PKG_CONFIG_PATH):$(GLIB2_PKG_CONFIG_PATH)"; \
-        cd source && ./configure --prefix=$(abs_builddir) --disable-shared --disable-dependency-tracking --enable-static --enable-compile-warnings=no CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"
+	case $(host_triplet) in \
+	    *mingw*) \
+	       EXTRA_CPPFLAGS=-D_SSIZE_T_=1; \
+	       ;; \
+	    *) \
+	       EXTRA_CPPFLAGS=; \
+	       ;; \
+	esac; \
+        cd source && ./configure --prefix=$(abs_builddir) --disable-shared --disable-dependency-tracking --enable-static --enable-compile-warnings=no CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $${EXTRA_CPPFLAGS}" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"
 	touch $@
 
 if HOST_OSX
