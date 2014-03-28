@@ -1,3 +1,12 @@
+globus-xio (3.9-1) unstable; urgency=low
+
+  * GT-501: http driver threading issues
+  * GT-498: http driver auto reconnect persistent connections
+  * GT-498: http driver expect/continue support
+  * http driver crash and leak fixes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 28 Mar 2014 07:09:40 -0500
+
 globus-xio (3.8-1) unstable; urgency=low
 
   * Fix hang on large GETs

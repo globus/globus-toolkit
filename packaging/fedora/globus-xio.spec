@@ -12,14 +12,14 @@
 
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	3.8
+Version:	3.9
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.5/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -183,6 +183,12 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Mar 28 2014 Globus Toolkit <support@globus.org> - 3.9-1
+- GT-501: http driver threading issues
+- GT-498: http driver auto reconnect persistent connections
+- GT-498: http driver expect/continue support
+- http driver crash and leak fixes
+
 * Fri Dec 13 2013 Globus Toolkit <support@globus.org> - 3.8-1
 - Fix hang on large GETs
 
