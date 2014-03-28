@@ -1,3 +1,9 @@
+globus-ftp-control (4.8-1) unstable; urgency=low
+
+  * GT-496: GridFTP server frequently fails to log the remote IP address for transfers
+
+ -- Globus Toolkit <support@globus.org>  Fri, 28 Mar 2014 07:06:13 -0500
+
 globus-ftp-control (4.7-1) unstable; urgency=low
 
   * GT-428: Improve handling of hanging GridFTP server processes - prevent missing force_close callback

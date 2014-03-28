@@ -12,7 +12,7 @@
 
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	4.7
+Version:	4.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
@@ -191,6 +191,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Mar 28 2014 Globus Toolkit <support@globus.org> - 4.8-1
+- GT-496: GridFTP server frequently fails to log the remote IP address for transfers
+
 * Tue Oct 15 2013 Globus Toolkit <support@globus.org> - 4.7-1
 - GT-428: Improve handling of hanging GridFTP server processes - prevent missing force_close callback
 
