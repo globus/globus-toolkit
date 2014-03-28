@@ -3201,7 +3201,7 @@ globus_l_gfs_data_parse_restricted_paths(
                     }
                 }
                 
-                if(ent->alias[ent->alias_len - 1] == '/')
+                if(ent->alias_len > 1 && ent->alias[ent->alias_len - 1] == '/')
                 {
                     ent->alias[ent->alias_len - 1] = '\0';
                     ent->alias_len--;
