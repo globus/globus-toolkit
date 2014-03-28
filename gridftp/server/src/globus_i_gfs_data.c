@@ -791,6 +791,53 @@ globus_l_gfs_defaulthome()
     return home_dir;
 }
 
+/* Returns GLOBUS_SUCCESS if pwent passes various sanity checks
+ * for disabled accounts.  Returns an error globus_result_t otherwise.
+ * Assumes caller has checked value of pw (i.e. pw is not NULL).
+ */
+ 
+static
+globus_result_t
+globus_l_gfs_validate_pwent(
+    struct passwd *                     pw)
+{
+    struct stat                         statbuf;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_validate_pwent);
+    GlobusGFSDebugEnter();
+
+    /* shell exists? */
+    if(pw->pw_shell[0] == '\0' || stat(pw->pw_shell,&statbuf) != 0)
+    {
+        result = GlobusGFSErrorGeneric("shell does not exist");
+        goto err;
+    }
+
+    /* shell is a regular file? */
+    if(!S_ISREG(statbuf.st_mode))
+    {
+        GlobusGFSErrorGenericStr(result,
+            ("shell is not a regular file: %s", pw->pw_shell));
+        goto err;
+    }
+    
+    /* shell executable? */
+    if((statbuf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) == 0)
+    {
+        GlobusGFSErrorGenericStr(result,
+            ("shell is not executable: %s", pw->pw_shell));
+        goto err;
+    }
+
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+    
+err:
+    GlobusGFSDebugExitWithError();
+    return result;
+}
+
+
 void
 globus_l_gfs_data_brain_ready(
     void *                              user_arg)
@@ -3879,6 +3926,26 @@ globus_l_gfs_data_authorize(
         res = GlobusGFSErrorGeneric("Access denied by configuration.");
         goto pwent_error;
     }
+    
+    /* check that account is not disabled */
+    if(pwent && !globus_i_gfs_config_bool("allow_disabled_login"))
+    {
+        res = globus_l_gfs_validate_pwent(pwent);
+        if(res != GLOBUS_SUCCESS)
+        {
+            char *                     errmsg;
+            errmsg = globus_error_print_friendly(globus_error_peek(res));
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_ERR,
+                "Access denied for user '%s': %s\n", 
+                session_info->username, errmsg);
+            globus_free(errmsg);
+            res = GlobusGFSErrorGeneric(
+                "Access denied, user's system account is disabled.");
+            goto pwent_error;
+        }
+    }
+
 
     /* change process ids */
     if(!(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID))
