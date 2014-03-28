@@ -3287,6 +3287,80 @@ error_mem:
     return res;
 }
 
+/* check sharing_state_dir perms, return 0 if allowed, -1 if not. */
+static
+int
+globus_l_gfs_data_check_sharing_perms(
+    globus_l_gfs_data_session_t *       session_handle)
+{
+    struct stat                         statbuf;
+    int                                 rc = -1;
+    char *                              dir = session_handle->sharing_state_dir;
+
+    if(stat(dir, &statbuf) == 0)
+    {
+        /* case 1: personal state directory
+           owned by user; must have no group and world perms */
+        if(statbuf.st_uid == session_handle->uid)
+        {
+            if((statbuf.st_mode & 
+                (S_IRGRP | S_IXGRP | S_IWGRP | S_IROTH | S_IWOTH | S_IXOTH)) == 0)
+            {
+                rc = 0;
+            }
+            else
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_ERR,
+                    "Sharing error. Sharing state dir %s is owned by "
+                    "authenticated user but has group or world permissions.\n",
+                    dir);
+            }
+        }
+    
+        /* case 2: community state directory
+           world or group writable
+           not world or group readable
+           owned by root, must have sticky bit set. */
+        else if((statbuf.st_mode & (S_IWGRP | S_IWOTH)) != 0)
+        {
+            if(statbuf.st_uid == 0 && ((statbuf.st_mode & S_ISVTX) != 0) && 
+                ((statbuf.st_mode & (S_IRGRP | S_IROTH)) == 0))
+            {
+                rc = 0;
+            }
+            else
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_ERR,
+                    "Sharing error. Sharing state dir %s is group or "
+                    "world-writable; is not owned by root, is group or "
+                    "world readable, or does not have the sticky bit set.\n",
+                    dir);
+            }
+        }
+        /* permissions not supported */
+        else
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_ERR,
+                "Sharing error. Sharing state dir %s has unsafe ownership or "
+                "permissions.\n",
+                dir);
+        }
+    }
+    else
+    {
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_ERR,
+            "Sharing error. Sharing state dir %s doesn't exist or can't be "
+            "accessed.\n",
+            dir);
+    }
+    
+    return rc;
+}
+
 
 #define GLOBUS_SHARING_PREFIX ":globus-sharing:"
 
@@ -3882,6 +3956,8 @@ globus_l_gfs_data_authorize(
             char *                      share_path = NULL;
             char *                      tmp_restrict;
             globus_list_t *             tmp_list;
+            struct stat                 statbuf;
+
     
             share_file = globus_common_create_string(
                 "%s/share-%s",
@@ -3889,7 +3965,52 @@ globus_l_gfs_data_authorize(
                 op->session_handle->sharing_id);
 
             rc = access(share_file, F_OK);
-
+            
+            /* check share_file ownership and perms */
+            if(rc == 0 && stat(share_file, &statbuf) == 0)
+            {
+                /* ownership */
+                if(statbuf.st_uid != op->session_handle->uid)
+                {
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_ERR,
+                        "Sharing error. Share file %s not owned by "
+                        "authenticated user %s UID %d.\n",
+                        share_file, session_info->username,
+                        op->session_handle->uid);
+            
+                    rc = -1;
+                }
+                
+                /* regular file */
+                if(!S_ISREG(statbuf.st_mode))
+                {
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_ERR,
+                        "Sharing error. Share file %s is not a regular file.\n",
+                        share_file);
+            
+                    rc = -1;
+                }
+                
+                /* no group/world permissions */
+                if((statbuf.st_mode &
+                    (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH )) != 0)
+                {
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_ERR,
+                        "Sharing error. Share file %s has group or world permissions set.\n",
+                        share_file);
+            
+                    rc = -1;
+                }
+            }
+        
+            if(rc == 0)
+            {
+                rc = globus_l_gfs_data_check_sharing_perms(op->session_handle);
+            }
+            
             if(rc != 0)
             {
                 GlobusGFSErrorGenericStr(res,
@@ -3907,7 +4028,8 @@ globus_l_gfs_data_authorize(
             {
                 globus_gfs_log_message(
                     GLOBUS_GFS_LOG_ERR,
-                    "Sharing error.  Invalid share_path or problem parsing share file %s.\n",
+                    "Sharing error.  Invalid share_path or problem parsing "
+                    "share file %s.\n",
                     share_file);
                 GlobusGFSErrorGenericStr(res,
                     ("Sharing error for user '%s' from share id '%s'.",
@@ -5208,6 +5330,14 @@ globus_i_gfs_data_request_command(
                             mkdir(tmp_dir, 0700);
                             free(tmp_dir);
                         }
+                        
+                        if(globus_l_gfs_data_check_sharing_perms(op->session_handle) != 0)
+                        {
+                            result = GlobusGFSErrorGeneric(
+                                "Sharing state dir has invalid permissions.");
+                            goto share_create_error;
+                        }                            
+
                         sharingfd = 
                             open(share_file, O_WRONLY | O_CREAT, S_IRUSR);
                         if(sharingfd < 0)
@@ -5369,6 +5499,13 @@ share_delete_error:
                         mkdir(tmp_dir, 0700);
                         free(tmp_dir);
                     }
+                   
+                    if(globus_l_gfs_data_check_sharing_perms(op->session_handle) != 0)
+                    {
+                        result = GlobusGFSErrorGeneric(
+                            "Sharing state dir has invalid permissions.");
+                        goto share_test_error;
+                    }                            
                     
                     if(access(op->session_handle->sharing_state_dir, W_OK) == 0)
                     {
