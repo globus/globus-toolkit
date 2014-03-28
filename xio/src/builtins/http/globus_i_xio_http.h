@@ -700,6 +700,20 @@ globus_i_xio_http_write(
     int                                 iovec_count,
     globus_xio_operation_t              op);
 
+
+extern
+globus_result_t
+globus_l_xio_http_client_parse_response(
+    globus_i_xio_http_handle_t *        http_handle,
+    globus_bool_t *                     done);
+    
+void
+globus_l_xio_http_client_read_response_callback(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg);
+
 extern
 globus_result_t
 globus_i_xio_http_parse_residue(
