@@ -1641,7 +1641,9 @@ main(
             "Error: unable to drop supplemental group privileges.\n");
         return 1;
     }
-
+    /* seed for libraries (xio random port range) */
+    srand(time(NULL) * (getpid() + 1));
+    
     /* parse and set envs from config file before loading modules */
     rc = globus_i_gfs_config_init_envs(argc, argv);
     if(rc != 0)
