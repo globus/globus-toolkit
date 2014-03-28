@@ -1,3 +1,16 @@
+globus-gridftp-server (6.41-1) unstable; urgency=low
+
+  * GT-516: striped/split transfers continue after client disconnection
+  * GT-526: check if accounts are 'disabled' before allowing login
+  * GT-527: check permissions and ownership of sharing files and sharing state dir
+  * GT-528: fix corruption with SITE RESTRICT command
+  * GT-376: don't access data handle when it may be closing
+  * GT-498: HTTP auto reconnect persistent connections
+  * GT-498: HTTP expect/continue support
+  * GT-498: HTTP crash fixes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 28 Mar 2014 07:15:32 -0500
+
 globus-gridftp-server (6.40-1) unstable; urgency=low
 
   * GT-480: Implement GO plan for HTTP protocol support

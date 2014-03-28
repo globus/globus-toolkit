@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.40
+Version:	6.41
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.5/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -187,6 +187,16 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Mar 28 2014 Globus Toolkit <support@globus.org> - 6.41-1
+- GT-516: striped/split transfers continue after client disconnection
+- GT-526: check if accounts are 'disabled' before allowing login
+- GT-527: check permissions and ownership of sharing files and sharing state dir
+- GT-528: fix corruption with SITE RESTRICT command
+- GT-376: don't access data handle when it may be closing
+- GT-498: HTTP auto reconnect persistent connections
+- GT-498: HTTP expect/continue support
+- GT-498: HTTP crash fixes
+
 * Thu Dec 12 2013 Globus Toolkit <support@globus.org> - 6.40-1
 - GT-480: Implement GO plan for HTTP protocol support     
 
