@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_udt_driver],[1.3],[http://jira.globus.org])
+AC_INIT([globus_xio_udt_driver],[1.4],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -24,7 +24,23 @@ AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
 AM_CONDITIONAL([HOST_OSX], [case $host in *darwin*) true ;; *) false ;; esac]) 
+if test "x$GCC" = "xyes"; then
+    UDT_CXXFLAGS="-finline-functions -O3 -fno-strict-aliasing -fvisibility=hidden"
+else
+    UDT_CXXFLAGS=""
+fi
+case $host in
+    *mingw*)
+        CPPFLAGS="${CPPFLAGS} -DWINVER=0x0502"
+        UDT_LIBADD="-lws2_32 -liphlpapi -lm"
+        ;;
+    *)
+        UDT_LIBADD="-lpthread -lm"
+        ;;
+esac
 
+AC_SUBST(UDT_CXXFLAGS)
+AC_SUBST(UDT_LIBADD)
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
 AC_ARG_WITH([static-udt],
@@ -118,8 +134,8 @@ if test X"$use_included_libffi" = X1; then
 fi
 
 if test X"$use_included_udt" = X1; then
-    UDT_CPPFLAGS="-Iudt/include"
-    UDT_LDFLAGS="-Ludt/lib -ludt"
+    UDT_CPPFLAGS="-Iudt/udt4/src"
+    UDT_LDFLAGS="-Ludt -ludt"
     UDT_SUBDIR="udt"
     udt_has_bind2=yes
 else

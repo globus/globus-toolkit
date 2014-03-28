@@ -13,7 +13,10 @@
 #include "globus_xio_wrapblock.h"
 #include "globus_xio_udt_ref.h"
 #include "version.h"
-#include <arpa/inet.h>
+
+#ifndef _WIN32
+    #include <arpa/inet.h>
+#endif /* _WIN32 */
 
 #include <udt.h>
 

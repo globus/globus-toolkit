@@ -4,6 +4,8 @@ libnice_tarball_url = http://nice.freedesktop.org/releases/$(libnice_tarball)
 
 all-local: libnice
 
+EXTRA_DIST = globus_libnice_mingw.h
+
 $(libnice_tarball):
 	@$(DOWNLOAD_TO_STDOUT) $(libnice_tarball_url) > $(libnice_tarball).download; \
 	mv $(libnice_tarball).download $(libnice_tarball)
@@ -15,15 +17,15 @@ libnice-unpack-stamp: $(libnice_tarball)
 
 libnice-configure-stamp: libnice-unpack-stamp
 	export PKG_CONFIG_PATH="$(PKG_CONFIG_PATH):$(GLIB2_PKG_CONFIG_PATH)"; \
-	case $(host_triplet) in \
-	    *mingw*) \
-	       EXTRA_CPPFLAGS="-D_SSIZE_T_=1 -DIN6_ARE_ADDR_EQUAL(a, b)=(memcmp(&(a)->s6_addr[0], &(b)->s6_addr[0], sizeof(struct in6_addr)) == 0)"; \
-	       ;; \
-	    *) \
-	       EXTRA_CPPFLAGS=; \
-	       ;; \
-	esac; \
-        cd source && ./configure --prefix=$(abs_builddir) --disable-shared --disable-dependency-tracking --enable-static --enable-compile-warnings=no CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) $${EXTRA_CPPFLAGS}" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"
+        case $(host_os) in \
+            *mingw*) \
+                libtool_opts="--enable-shared --disable-static"; \
+                ;; \
+            *) \
+                libtool_opts="--disable-shared --enable-static"; \
+                ;; \
+        esac; \
+        cd source && ./configure --prefix=$(abs_builddir) $(libtool_opts) --disable-dependency-tracking --enable-compile-warnings=no CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) -include $(abs_srcdir)/globus_libnice_mingw.h" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"
 	touch $@
 
 if HOST_OSX
