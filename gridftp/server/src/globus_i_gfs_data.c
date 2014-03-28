@@ -12138,9 +12138,16 @@ globus_gridftp_server_get_optimal_concurrency(
     GlobusGFSName(globus_gridftp_server_get_optimal_concurrency);
     GlobusGFSDebugEnter();
 
-    if(!op->writing)
+    if(op->data_handle->http_handle)
     {
-        if(!op->data_handle->http_handle)
+        *count = 1;
+        return;
+    }
+    if(!op->writing)
+    {    
+        globus_mutex_lock(&op->session_handle->mutex);
+        if(op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE && 
+            op->data_handle->is_mine)
         {
             unsigned int num_streams;
             /* query number of currently connected streams and update
@@ -12153,16 +12160,15 @@ globus_gridftp_server_get_optimal_concurrency(
         }
         else
         {
-            *count = 1;
-            return;
+            op->data_handle->info.nstreams = 1;
         }
+        globus_mutex_unlock(&op->session_handle->mutex);
 
         if(op->data_handle->info.nstreams == 0)
         {
             op->data_handle->info.nstreams = 1;
         }
     }
-
     *count = op->data_handle->info.nstreams * op->stripe_count * 2;
 
     GlobusGFSDebugExit();
