@@ -2531,15 +2531,6 @@ globus_ftp_control_data_get_remote_hosts(
             count += globus_list_size(transfer_handle->stripes[ctr].all_conn_list);
         }
 
-        if(*addr_count < count)
-        {
-            res = globus_error_put(globus_error_construct_string(
-                      GLOBUS_FTP_CONTROL_MODULE,
-                      GLOBUS_NULL,
-                      _FCSL("Invalid Stripe index.")));
-            globus_mutex_unlock(&dc_handle->mutex);
-            return res;
-        }
         ndx = 0;
         for(ctr = 0; ctr < transfer_handle->stripe_count &&
                      ndx < *addr_count; ctr++)
