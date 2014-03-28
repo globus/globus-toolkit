@@ -45,9 +45,9 @@ check_SCRIPTS =                         \
 	test-common.pl
 
 if CYGPATH_W_DEFINED
-TEST_DATA_DIR = $$($(CYGPATH_W) $(srcdir)/.)
+TEST_DATA_DIR = $$($(CYGPATH_W) $(srcdir)/)
 else
-TEST_DATA_DIR = $(srcdir)/.
+TEST_DATA_DIR = $(srcdir)/
 endif
 
 TESTS = $(check_SCRIPTS)

@@ -1,4 +1,4 @@
-globus-xio (4.3-1+gt6.@distro@) @distro@; urgency=low
+globus-xio (4.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes, Warning Cleanup
 
