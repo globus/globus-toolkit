@@ -14,35 +14,17 @@ m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
-GSI_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-gsi-driver`
-GSI_DRIVER=""
-for ext in .la .so .dylib .a; do
-    if test -r $GSI_DRIVER_LIBDIR/libglobus_xio_gsi_driver${ext}; then
-        GSI_DRIVER=$GSI_DRIVER_LIBDIR/libglobus_xio_gsi_driver${ext} 
-        break
-    fi
-done
-
-AC_SUBST(GLOBUS_XIO_GSI_DRIVER, $GSI_DRIVER)
-
-PIPE_DRIVER_LIBDIR=`pkg-config --variable=libdir globus-xio-pipe-driver`
-PIPE_DRIVER=""
-for ext in .la .so .dylib .a; do
-    if test -r $PIPE_DRIVER_LIBDIR/libglobus_xio_pipe_driver${ext}; then
-        PIPE_DRIVER=$PIPE_DRIVER_LIBDIR/libglobus_xio_pipe_driver${ext} 
-        break
-    fi
-done
-
-AC_SUBST(GLOBUS_XIO_PIPE_DRIVER, $PIPE_DRIVER)
-
-GRIDFTP_SBINDIR=`pkg-config --variable=sbindir globus-gridftp-server`
-AC_SUBST(GRIDFTP_SBINDIR, $GRIDFTP_SBINDIR)
-AM_CONDITIONAL([GRIDFTP_TESTS],
-  [ test "$GSI_DRIVER" != "" && \
-    test "$PIPE_DRIVER" != "" && \
-    test -d "$GRIDFTP_SBINDIR"])
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+
+GSI_DRIVER_DLOPEN="`$PKG_CONFIG --variable=dlopen globus-xio-gsi-driver`"
+AC_SUBST(GSI_DRIVER_DLOPEN, $GSI_DRIVER_DLOPEN)
+
+PIPE_DRIVER_DLOPEN="`$PKG_CONFIG --variable=dlopen globus-xio-pipe-driver`"
+
+AC_SUBST(PIPE_DRIVER_DLOPEN, $PIPE_DRIVER_DLOPEN)
+
+GRIDFTP_PATH="`$PKG_CONFIG --variable=path globus-gridftp-server`"
+AC_SUBST(GRIDFTP_PATH, $GRIDFTP_PATH)
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 

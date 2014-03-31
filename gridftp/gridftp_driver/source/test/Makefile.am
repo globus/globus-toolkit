@@ -11,10 +11,10 @@ TESTS_ENVIRONMENT = \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR=$(abs_builddir) \
     GRIDMAP=$(abs_builddir)/gridmap \
-    PATH="$(GRIDFTP_SBINDIR):$(srcdir):$(abs_builddir):$${PATH}";
+    PATH="$(GRIDFTP_PATH):$(srcdir):$(abs_builddir):$${PATH}";
 LOG_COMPILER = $(LIBTOOL) --mode=execute \
-	-dlopen $(GLOBUS_XIO_GSI_DRIVER) \
-	-dlopen $(GLOBUS_XIO_PIPE_DRIVER) \
+	$(GSI_DRIVER_DLOPEN) \
+	$(PIPE_DRIVER_DLOPEN) \
 	-dlopen $(top_builddir)/libglobus_xio_gridftp_driver.la \
 	$(srcdir)/test-wrapper
 
