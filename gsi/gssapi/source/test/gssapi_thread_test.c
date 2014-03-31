@@ -278,6 +278,7 @@ client_func(
     {
         globus_mutex_lock(&mutex);
         pending_connects++;
+        globus_cond_signal(&done);
         globus_mutex_unlock(&mutex);
 	connect_fd = socket(AF_INET, SOCK_STREAM, 0);
 
