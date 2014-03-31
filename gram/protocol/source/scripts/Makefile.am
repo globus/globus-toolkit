@@ -19,7 +19,7 @@ SUFFIXES = .pm .html .3pm
 
 $(globusperl_DATA): create_protocol_constants.pl ../globus-gram-protocol-constants.sh
 	$(RM) $(globusperl_DATA)
-	-$(PERL) $< -perl \
+	-$(PERL) $(srcdir)/create_protocol_constants.pl -perl \
 		$(srcdir)/../globus-gram-protocol-constants.sh
 .pm.html:
 	pod2html --noindex $*.pm | \

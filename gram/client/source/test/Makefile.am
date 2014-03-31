@@ -96,10 +96,10 @@ LDADD = $(top_builddir)/libglobus_gram_client.la \
 testcred.key:
 	openssl genrsa -out $@ 1024 && chmod 0600 $@
 
-testcred.req: testcred.key
+.key.req:
 	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< -out $@
 
-testcred.cert: testcred.req testcred.key
+.req.cert:
 	openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
 
 testcredlink: testcred.cert
@@ -107,5 +107,6 @@ testcredlink: testcred.cert
 	rm -f "$$linkname"; \
 	cp testcred.cert "$$linkname"
 
-.PHONY: testcredlink junit
+.PHONY: junit
 
+SUFFIXES = .req .cert .key

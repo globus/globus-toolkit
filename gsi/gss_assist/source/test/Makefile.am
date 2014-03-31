@@ -49,10 +49,10 @@ TESTS_ENVIRONMENT = export \
 testcred.key:
 	umask 077 ; openssl genrsa 1024 > $@.tmp; mv $@.tmp $@
 
-testcred.req: testcred.key
+.key.req:
 	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< -config openssl.cnf > $@.tmp; mv $@.tmp $@
 
-testcred.cert: testcred.req testcred.key
+.req.cert:
 	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@.tmp; mv $@.tmp $@
 
 testcredlink: testcred.cert
@@ -78,3 +78,4 @@ gridmap_userok_SOURCES = gridmap_userok.c
 EXTRA_DIST = \
         $(check_DATA_DIST) \
         $(check_SCRIPTS)
+SUFFIXES = .key .req .cert

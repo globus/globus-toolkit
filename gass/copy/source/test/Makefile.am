@@ -22,10 +22,10 @@ check_DATA =  \
 testcred.key:
 	umask 077; openssl genrsa 1024 > $@
 
-testcred.req: testcred.key
+.key.req:
 	printf "NA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< > $@ -config openssl.cnf
 
-testcred.cert: testcred.req testcred.key
+.req.cert:
 	umask 077; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
 
 testcredlink: testcred.cert
@@ -63,6 +63,7 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute \
     ${PIPE_DRIVER_LIBS} \
     $(srcdir)/test-wrapper
 
+SUFFIXES = .key .req .cert
 CLEANFILES = testcred.key testcred.cert testcred.req gridmap
 clean-local:
 	if [ -f testcredlink ]; then \

@@ -172,7 +172,8 @@ endif
 if BUILD_PTHREADS
 libglobus_thread_pthread_la_LIBADD = libglobus_common.la $(PTHREAD_LIBS)
 libglobus_thread_pthread_la_SOURCES = globus_thread_pthreads.c
-libglobus_thread_pthread_la_LDFLAGS = $(PACKAGE_DEP_LDFLAGS) -module -no-undefined -avoid-version
+libglobus_thread_pthread_la_LDFLAGS = $(PACKAGE_DEP_LDFLAGS) $(PTHREAD_LDFLAGS) -module -no-undefined -avoid-version
+libglobus_thread_pthread_la_CFLAGS = $(CFLAGS) $(PTHREAD_CFLAGS)
 endif
 
 if BUILD_WINDOWS_THREADS

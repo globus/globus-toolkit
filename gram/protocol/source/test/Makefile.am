@@ -41,10 +41,10 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute $(GSI_DRIVER_LIBS) \
 testcred.key:
 	umask 077; openssl genrsa -out $@ 1024
 
-testcred.req: testcred.key
+.key.req:
 	printf "NA\nNA\nNA\nNA\nNA\n$$(openssl rand -base64 6)\n\n\n\n" | openssl req -new -key $< -out $@
 
-testcred.cert: testcred.req testcred.key
+.req.cert:
 	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
 
 testcredlink: testcred.cert
@@ -62,3 +62,4 @@ clean-local:
             rm -f $$(cat testcredlink) testcredlink; \
         fi
 	rm -f *.valgrind *.vxml
+SUFFIXES = .key .req .cert

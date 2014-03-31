@@ -18,7 +18,7 @@ libglobus_gass_server_ez_la_SOURCES = \
 
 globus_gass_server_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 globus_gass_server_SOURCES = globus_gass_server.c
-globus_gass_server_LDADD = ./libglobus_gass_server_ez.la $(PACKAGE_DEP_LIBS) 
+globus_gass_server_LDADD = libglobus_gass_server_ez.la $(PACKAGE_DEP_LIBS) 
 
 EXTRA_DIST = \
         dirt.sh \

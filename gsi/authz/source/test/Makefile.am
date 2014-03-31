@@ -42,10 +42,10 @@ libglobus_authz_test_callout_la_LDFLAGS = \
 testcred.key:
 	umask 077 ; openssl genrsa 1024 > $@
 
-testcred.req: testcred.key
+.key.req:
 	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< > $@ -config openssl.cnf
 
-testcred.cert: testcred.req testcred.key
+.req.cert:
 	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
 
 testcredlink: testcred.cert
@@ -62,3 +62,4 @@ clean-local:
         fi
 	
 EXTRA_DIST = authz_test_callout.conf
+SUFFIXES = .key .req .cert

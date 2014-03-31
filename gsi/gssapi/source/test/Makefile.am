@@ -134,10 +134,10 @@ nonterminated_export_cred_test_SOURCES = nonterminated_export_cred_test.c
 testcred.key:
 	umask 077; openssl genrsa 1024 > $@
 
-testcred.req: testcred.key
+.key.req:
 	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -config openssl.cnf -key $< > $@
 
-testcred.cert: testcred.req testcred.key
+.req.cert:
 	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
 
 testcredlink: testcred.cert
@@ -172,3 +172,5 @@ clean-local:
             done; \
         fi
 	rm -f copy_cases
+
+SUFFIXES = .key .req .cert 

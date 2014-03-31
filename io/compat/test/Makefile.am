@@ -18,10 +18,10 @@ check_DATA = \
 testcred.key:
 	umask 077; openssl genrsa -out $@ 1024
 
-testcred.req: testcred.key
+.key.req:
 	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< -out $@ -config openssl.cnf
 
-testcred.cert: testcred.req testcred.key
+.req.cert:
 	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
 
 testcredlink: testcred.cert
@@ -56,3 +56,4 @@ clean-local:
 	if test -f testcredlink; then \
 	    rm -f $$(cat testcredlink) testcredlink; \
 	fi
+SUFFIXES = .key .req .cert
