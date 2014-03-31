@@ -103,10 +103,10 @@ fi
 UDT_DRIVER_PKG_CONFIG_PATH="${PKG_CONFIG_PATH}"
 if test X"$use_included_nice" = X1; then
     LIBNICE_SUBDIR=libnice
-    LIBNICE_PKG_CONFIG_PATH="\$(abs_top_builddir)/\$(LIBNICE_SUBDIR)/lib/pkgconfig"
+    LIBNICE_PKG_CONFIG_PATH="\$(abs_top_builddir)/\$(LIBNICE_SUBDIR)/\$(prefix)/lib/pkgconfig"
     UDT_DRIVER_PKG_CONFIG_PATH="${UDT_DRIVER_PKG_CONFIG_PATH}:${LIBNICE_PKG_CONFIG_PATH}"
-    NICE_CFLAGS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --cflags nice)"
-    NICE_LIBS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --libs nice)"
+    NICE_CFLAGS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --define-variable=prefix=\"\$(abs_builddir)/libnice/\$(prefix)\" --cflags nice)"
+    NICE_LIBS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --define-variable=prefix=\"\$(abs_builddir)/libnice/\$(prefix)\" --libs nice)"
 
     if test X"$use_included_glib2" = "X"; then
         PKG_CHECK_MODULES([GLIB2], [glib-2.0 >= 2.13 gobject-2.0 >= 2.13 gthread-2.0 >= 2.13 gio-2.0 >= 2.13], [], [use_included_glib2=1])

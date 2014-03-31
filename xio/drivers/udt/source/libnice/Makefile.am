@@ -25,7 +25,7 @@ libnice-configure-stamp: libnice-unpack-stamp
                 libtool_opts="--disable-shared --enable-static"; \
                 ;; \
         esac; \
-        cd source && ./configure --prefix=$(abs_builddir) $(libtool_opts) --disable-dependency-tracking --enable-compile-warnings=no CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) -include $(abs_srcdir)/globus_libnice_mingw.h" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"
+        cd source && ./configure --prefix=$(prefix) $(libtool_opts) --disable-dependency-tracking --enable-compile-warnings=no CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) -include $(abs_srcdir)/globus_libnice_mingw.h" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"
 	touch $@
 
 if HOST_OSX
@@ -33,13 +33,11 @@ link_with_frameworks=LIBS="-framework CoreFoundation -framework Cocoa"
 endif
 libnice: libnice-configure-stamp
 	export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH); \
-	cd source && $(MAKE) $(link_with_frameworks) $(AM_MAKEFLAGS) install
+	cd source && $(MAKE) $(link_with_frameworks) $(AM_MAKEFLAGS) install DESTDIR=$(abs_builddir)
 	touch $@
 
-CLEANFILES = libnice libnice-configure-stamp
-DISTCLEANFILES = $(libnice_tarball) libnice-unpack-stamp
+CLEANFILES = libnice libnice-configure-stamp libnice-unpack-stamp
+DISTCLEANFILES = $(libnice_tarball) 
 
 clean-local:
-	test -d source && (cd source && $(MAKE) $(AM_MAKEFLAGS) distclean) || true
-distclean-local:
-	rm -rf source
+	rm -rf source $(abs_builddir)$(prefix)

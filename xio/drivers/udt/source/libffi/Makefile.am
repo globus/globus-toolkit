@@ -84,12 +84,28 @@ libffi: libffi-configure-stamp
 	esac;
 	touch $@
 
-CLEANFILES = libffi
-DISTCLEANFILES = $(libffi_tarball) libffi-configure-stamp libffi-unpack-stamp
+CLEANFILES = libffi libffi-unpack-stamp libffi-configure-stamp 
+DISTCLEANFILES = $(libffi_tarball)
 
 clean-local:
-	test -d source && (cd source && $(MAKE) $(AM_MAKEFLAGS) clean) || true
-	rm -rf lib share
-
-distclean-local:
-	rm -rf source
+	rm -rf source bin lib share
+	case $(host_os) in \
+		*darwin*) \
+			arches=""; \
+			next_arch=""; \
+			for flag in $(CFLAGS); do \
+			    if [ X"$$flag" = X"-arch" ]; then \
+				next_arch=1; \
+			    elif [ X"$$next_arch" = X1 ]; then \
+			        arches="$${arches:+$$arches }$$flag"; \
+				lipo_arches="$${lipo_arches:+$$lipo_arches }-arch $$flag $$flag/lib/libffi.a"; \
+			        next_arch=0; \
+			    else \
+				other_flags="$${other_flags:+$$other_flags }$$flag" ; \
+			    fi; \
+			done ; \
+			if test "x$$arches" != "x"; then \
+	                    rm -rf $$arches; \
+                        fi; \
+                        ;; \
+        esac
