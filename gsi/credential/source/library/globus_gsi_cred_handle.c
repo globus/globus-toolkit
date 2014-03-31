@@ -1407,7 +1407,7 @@ globus_gsi_cred_get_policies(
 #if OPENSSL_VERSION_NUMBER < 0x10000000L 
         sk_pop_free(*policies, free);
 #else
-        sk_OPENSSL_STRING_pop_free(*policies, free);
+        sk_OPENSSL_STRING_pop_free(*policies, (void (*) (char *)) free);
 #endif
     }
     *policies = NULL;
@@ -1464,7 +1464,7 @@ globus_gsi_cred_get_policy_languages(
         goto exit;
     }
 
-    if((*policy_languages = sk_new_null()) == NULL)
+    if((*policy_languages = sk_ASN1_OBJECT_new_null()) == NULL)
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,

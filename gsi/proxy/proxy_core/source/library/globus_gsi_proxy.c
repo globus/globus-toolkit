@@ -22,12 +22,6 @@
 #define PROXY_NAME                      "proxy"
 #define LIMITED_PROXY_NAME              "limited proxy"
 
-#if OPENSSL_VERSION_NUMBER < 0x0090801fL
-#define GT_SK_UNSHIT_CAST (char *)
-#else
-#define GT_SK_UNSHIT_CAST
-#endif
-
 #include "globus_i_gsi_proxy.h"
 #include "globus_gsi_proxy_constants.h"
 #include "version.h"
@@ -38,8 +32,10 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 #if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#define GT_SK_UNSHIFT_CAST (char *)
 #define GT_I2D_CAST (int (*)())
 #else
+#define GT_SK_UNSHIFT_CAST
 #define GT_I2D_CAST (i2d_of_void *)
 #endif
 
@@ -971,7 +967,7 @@ globus_gsi_proxy_resign_cert(
         goto done;
     }
 
-    sk_X509_unshift(issuer_cert_chain, GT_SK_UNSHIT_CAST issuer_cert);
+    sk_X509_unshift(issuer_cert_chain, GT_SK_UNSHIFT_CAST issuer_cert);
     issuer_cert = NULL;
     
     result = globus_gsi_cred_set_cert_chain(*resigned_credential,
