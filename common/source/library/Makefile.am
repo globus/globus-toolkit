@@ -160,7 +160,7 @@ libglobus_common_la_SOURCES = \
         globus_uuid.c \
         globus_uuid.h \
         globus_thread_none.c
-
+libglobus_common_la_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 libglobus_common_la_LDFLAGS = \
         -version-info ${MAJOR_VERSION}:${MINOR_VERSION}:${AGE_VERSION} \
         -no-undefined 
