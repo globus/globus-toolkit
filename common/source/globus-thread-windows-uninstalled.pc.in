@@ -9,5 +9,5 @@ dlopen=@WINDOWS_PREOPEN_UNINSTALLED@
 Name: globus-thread-windows
 Description: Globus Toolkit - Common Library Windows Bindings
 Version: @PACKAGE_VERSION@
-Libs.private: globus-common
+Libs.private: -lglobus_common
 Cflags:

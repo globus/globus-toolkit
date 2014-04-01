@@ -284,7 +284,7 @@ int main()
 
         if (result != GLOBUS_SUCCESS)
         {
-            fprintf(stderr, "\nLINE %d ERROR: \%s\n\n",
+            fprintf(stderr, "\nLINE %d ERROR: %s\n\n",
                    __LINE__,
                    globus_error_print_friendly(globus_error_peek(result)));
             rc = EXIT_FAILURE;
@@ -302,7 +302,7 @@ int main()
         result = globus_gsi_cred_get_cert_type(cred_handle, &type);
         if (result != GLOBUS_SUCCESS)
         {
-            fprintf(stderr, "\nLINE %d ERROR: \%s\n\n",
+            fprintf(stderr, "\nLINE %d ERROR: %s\n\n",
                    __LINE__,
                    globus_error_print_friendly(globus_error_peek(result)));
             rc = EXIT_FAILURE;

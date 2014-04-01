@@ -71,6 +71,7 @@ libglobus_memory_debug_la_LDFLAGS = \
         -version-info ${MAJOR_VERSION}:${MINOR_VERSION}:${AGE_VERSION} \
         -no-undefined 
 libglobus_memory_debug_la_DEPENDENCIES = libglobus_common.la
+libglobus_common_la_LDFLAGS = $(PTHREAD_LDFLAGS) $(LDFLAGS)
 libglobus_common_la_LIBADD = $(LT_LIBOBJS) $(PACKAGE_DEP_LIBS) $(LIBS)
 libglobus_common_la_SOURCES = \
         globus_args.c \

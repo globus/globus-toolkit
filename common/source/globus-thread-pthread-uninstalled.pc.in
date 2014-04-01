@@ -9,5 +9,6 @@ dlopen=@PTHREAD_PREOPEN_UNINSTALLED@
 Name: globus-thread-pthreads
 Description: Globus Toolkit - Common Library Pthreads Bindings
 Version: @PACKAGE_VERSION@
-Libs.private: globus-common
-Cflags:
+Libs: @PTHREAD_LDFLAGS@
+Libs.private: -lglobus_common @PTHREAD_LIBS@
+Cflags: @PTHREAD_CFLAGS@

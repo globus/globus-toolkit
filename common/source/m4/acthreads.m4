@@ -63,7 +63,7 @@ AC_DEFUN([LAC_THREADS_PTHREADS],
     AC_CHECK_HEADERS([pthread.h],
         AC_SEARCH_LIBS([pthread_create], [pthread], [have_pthreads=yes]))
     AC_CHECK_HEADERS([sched.h],
-        AC_SEARCH_LIBS([sched_yield], [pthread posix4], [have_sched_yield=yes]))
+        AC_SEARCH_LIBS([sched_yield], [pthread posix4 rt], [have_sched_yield=yes]))
     if test X"$ac_cv_search_pthread_create" != Xno && \
         test X"$ac_cv_search_pthread_create" != X"none required"; then
         pthread_libs="${pthread_libs} $ac_cv_search_pthread_create" 
