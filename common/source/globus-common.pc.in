@@ -8,6 +8,6 @@ thread_models=@thread_models@
 Name: globus-common
 Description: Globus Toolkit - Common Library
 Version: @PACKAGE_VERSION@
-Libs: @LDFLAGS@ @PTHREAD_LDFLAGS@ -L${libdir} -lglobus_common
+Libs: @LDFLAGS@ -L${libdir} -lglobus_common
 Libs.private: @LIBS@ 
-Cflags: @LARGEFILE_CFLAGS@ @CFLAGS@ @PTHREAD_CFLAGS@ -I${includedir}
+Cflags: @LARGEFILE_CFLAGS@ @CFLAGS@ -I${includedir}

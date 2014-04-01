@@ -88,9 +88,9 @@ AC_DEFUN([LAC_THREADS_PTHREADS],
         esac
         build_pthreads=yes
     fi
-    AC_SUBST([PTHREAD_CFLAGS], [$pthread_cflags])
-    AC_SUBST([PTHREAD_LDFLAGS], [$pthread_ldflags])
-    AC_SUBST([PTHREAD_LIBS], [$pthread_libs])
+    CFLAGS="${CFLAGS:+$CFLAGS }${pthread_cflags}"
+    LDFLAGS="${LDFLAGS:+$LDFLAGS }${pthread_ldflags}"
+    LIBS="${LIBS:+$LIBS }${pthread_libs}"
     if test "$build_pthreads" = "yes"; then
         PTHREAD_PREOPEN_UNINSTALLED="-dlopen '\${abs_top_builddir}/library/libglobus_thread_pthread.la'"
         AC_CONFIG_FILES([globus-thread-pthread-uninstalled.pc])

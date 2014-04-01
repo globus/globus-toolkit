@@ -11,6 +11,6 @@ thread_models=@thread_models@
 Name: globus-common
 Description: Globus Toolkit - Common Library
 Version: @PACKAGE_VERSION@
-Libs: @LDFLAGS@ @PTHREAD_LDFLAGS@ ${abs_top_builddir}/library/libglobus_common.la
+Libs: @LDFLAGS@ ${abs_top_builddir}/library/libglobus_common.la
 Libs.private: @LIBS@
-Cflags: @LARGEFILE_CFLAGS@ @CPPFLAGS@ @CFLAGS@ @PTHREAD_CFLAGS@ -I${abs_top_builddir} -I${abs_top_srcdir}/library
+Cflags: @LARGEFILE_CFLAGS@ @CPPFLAGS@ @CFLAGS@ -I${abs_top_builddir} -I${abs_top_srcdir}/library
