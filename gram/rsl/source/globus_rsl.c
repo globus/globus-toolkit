@@ -117,7 +117,7 @@ globus_l_rsl_deactivate(void)
  * - @ref globus_rsl_param
  * - @ref globus_rsl_print
  * - @ref globus_rsl_parse
- * - @ref globus_list
+ * - @ref globus_rsl_list
  */
 
 /**
