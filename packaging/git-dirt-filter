@@ -6,7 +6,6 @@ current_branch_id="$(awk "/$current_branch/ {print \$2}" < "$DIRT_BRANCH_DEF")"
 current_timestamp="$(git log -n 1 --pretty=format:%ct%n .)"
 
 dirtfile=$(basename "$2" .in)
-exec 3> $(dirname "$2")/$dirtfile
 
 case "$1" in 
     --smudge)
@@ -14,7 +13,12 @@ case "$1" in
             echo "$line" | \
             sed -e "s/DIRT_TIMESTAMP=.*/DIRT_TIMESTAMP=${current_timestamp:-0}/" \
                 -e "s/DIRT_BRANCH_ID=.*/DIRT_BRANCH_ID=${current_branch_id:-0}/"\
-                1>&3
+                1> "$dirtfile.new"
+            if [ -f "$dirtfile" ] && cmp -s "$dirtfile" "$dirtfile.new"; then
+                rm -f "$dirtfile".new
+            else
+                mv "$dirtfile.new" "$dirtfile"
+            fi
 
             echo "$line"
         done

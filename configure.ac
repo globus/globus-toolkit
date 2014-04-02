@@ -52,7 +52,7 @@ dnl Makefile with a dummy first macro created by the automatic var = @var@
 dnl that automake generates
 m4_define([TARGETS_MACRO],[
 ])
-# GT_PACKAGE(package, subdir, dependencies, bundle)
+# GT_PACKAGE(package, subdir, dependencies, bundle, is_xio_driver)
 m4_define([GT_PACKAGE],
 [
 m4_pushdef([AC_INIT],[$]2)dnl
@@ -113,6 +113,8 @@ $1-osx-pkg: \$($1-osx-pkg)
     m4_append([GT_PACKAGE_LIST], [$1], [ ])dnl
     m4_define($1[_VERSION], pkgver)
     m4_append($1[_BUNDLE], $4)
+    m4_append([GT_BUNDLES_]m4_translit([$4], [-], [_])[_XIO_DRIVERS],
+        [ifelse([$5],[1], [$1-stamp ],[])])
     m4_foreach([req], m4_split(m4_normalize($3)), [dnl
         m4_append(req[_REQUIRES], [choices]@<:@'org.globus.package.$1'@:>@[.selected], [ || ])])dnl
 ])dnl
@@ -164,7 +166,7 @@ GT_PACKAGE([globus_gssapi_error], [gsi/gssapi_error/source],
     [ globus_common  globus_gss_assist  globus_gssapi_gsi ], [gsi])
 GT_PACKAGE([globus_xio_gsi_driver],[xio/drivers/gsi],
     [ globus_xio  globus_gss_assist  globus_gssapi_error  
-      globus_gssapi_gsi  globus_common ], [ccommonlibs])
+      globus_gssapi_gsi  globus_common ], [ccommonlibs], 1)
 GT_PACKAGE([globus_io],[io/compat], 
     [ globus_common  globus_xio  globus_gss_assist  globus_gssapi_gsi  
       globus_xio_gsi_driver  globus_gssapi_error ], [ccommonlibs])
@@ -174,7 +176,7 @@ GT_PACKAGE([globus_ftp_control],[gridftp/control/source],
 GT_PACKAGE([globus_usage],[usage/c/sender/source],
     [globus_common globus_xio], [ccommonlibs])
 GT_PACKAGE([globus_xio_pipe_driver],[xio/drivers/pipe/source],
-    [globus_xio globus_common], [ccommonlibs])
+    [globus_xio globus_common], [ccommonlibs], 1)
 GT_PACKAGE([globus_gridftp_server_control],[gridftp/server-lib/src],
     [ globus_common  globus_xio  globus_xio_gsi_driver  globus_xio_pipe_driver
       globus_gss_assist  globus_gssapi_gsi  globus_gsi_openssl_error
@@ -185,17 +187,14 @@ GT_PACKAGE([globus_authz],[gsi/authz/source],
     [globus_common globus_callout globus_gssapi_gsi
     globus_authz_callout_error], [gsi])
 GT_PACKAGE([globus_xio_rate_driver],[xio/drivers/rate/source],
-    [globus_xio], [ccommonlibs])
+    [globus_xio], [ccommonlibs], 1)
 GT_PACKAGE([globus_xio_popen_driver],[xio/drivers/popen/source],
-    [globus_common globus_xio], [ccommonlibs])
-GT_PACKAGE([globus_xio_udt_driver],[xio/drivers/udt/source], [globus_common globus_xio], [udt])
+    [globus_common globus_xio], [ccommonlibs], 1)
+GT_PACKAGE([globus_xio_udt_driver],[xio/drivers/udt/source], [globus_common globus_xio], [udt], 1)
 GT_PACKAGE([globus_gridftp_server],[gridftp/server/src],
     [ globus_common  globus_xio  globus_xio_gsi_driver  globus_gfork
       globus_gridftp_server_control  globus_ftp_control  globus_authz
-      globus_usage  globus_gss_assist  globus_gsi_credential
-      dnl Fake dependencies to order gridftp after drivers so they can
-      dnl be staticallly linked in if needed
-      globus_xio_udt_driver globus_xio_rate_driver ],
+      globus_usage  globus_gss_assist  globus_gsi_credential ],
     [gridftp])
 GT_PACKAGE([globus_gram_protocol],[gram/protocol/source],
     [ globus_common globus_io globus_gssapi_gsi globus_gss_assist], [gram5])
@@ -258,7 +257,7 @@ GT_PACKAGE([globus_gass_server_ez],[gass/server_ez/source],
 GT_PACKAGE([globus_xio_gridftp_driver],
     [gridftp/gridftp_driver/source],
     [ globus_common  globus_xio  globus_ftp_client  globus_xio_gsi_driver ],
-    [gridftp])
+    [gridftp], 1)
 GT_PACKAGE([globus_gram_job_manager_fork],
     [gram/jobmanager/lrms/fork/source],
     [ globus_common  globus_xio  globus_scheduler_event_generator
@@ -331,7 +330,9 @@ TARGETS="TARGETS_MACRO m4_foreach([bundle],
     m4_split(GT_BUNDLES_MACRO),
     [
 bundle[-deps] =  m4_expand([GT_BUNDLES_]m4_translit(bundle,[-],[_])[_MACRO])
-bundle: \$(bundle[-deps])])"
+bundle: \$(bundle[-deps])
+bundle[-xio-drivers] = m4_expand([GT_BUNDLES_]m4_translit(bundle,[-],[_])[_XIO_DRIVERS])
+])"
 GT_BUNDLES="m4_normalize(GT_BUNDLES_MACRO)"
 AC_PATH_PROGS([DOXYGEN], [doxygen])
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
@@ -447,8 +448,9 @@ m4_foreach([bundle],
 ])
 
 final_enabled_bundles=""
-for en_name in "$enabled_buns"; do
-    for dis_name in "$disabled_buns"; do
+final_enabled_xio_drivers=""
+for en_name in ""$enabled_buns; do
+    for dis_name in ""$disabled_buns; do
         skip=0
         if test "$en_name" = "$dis_name"; then
             skip=1
@@ -456,6 +458,7 @@ for en_name in "$enabled_buns"; do
     done
     if test "$skip" = 0; then
         final_enabled_bundles="${final_enabled_bundles:+$final_enabled_bundles }$en_name"
+        final_enabled_xio_drivers="${final_enabled_xio_drivers:+$final_enabled_xio_drivers }\$(${en_name}-xio-drivers)"
     fi
 done
 AC_SUBST_FILE(TARGETS_FILE)
@@ -474,6 +477,7 @@ AC_SUBST(GT_PKGCONFIG_DIRS)
 AC_SUBST(GT_DOXYGEN_SUBDIRS)
 AC_SUBST(GT_ALL_STAMPS)
 AC_SUBST(GT_ENABLED_BUNDLES, ["$final_enabled_bundles"])
+AC_SUBST(GT_ENABLED_XIO_DRIVERS, ["$final_enabled_xio_drivers"])
 AC_SUBST(GT_BUNDLES)
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Doxyfile])
