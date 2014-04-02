@@ -166,5 +166,5 @@ libltdl-clean:
 	rm -f libltdl-stamp
 endif
 
-globus_gridftp_server-stamp: $(ENABLED_GLOBUS_XIO_DRIVERS)
+globus_gridftp_server-stamp: $(GT_ENABLED_XIO_DRIVERS)
 .PHONY: $(GT_TARGETS_ALL) $(GT_TARGETS_ONLY) $(GT_TARGETS_CLEAN) $(GT_TARGETS_INSTALL) $(GT_TARGETS_CHECK) $(GT_TARGETS_DISTCLEAN) $(GT_TARGETS_DIST) $(DOC_PHONY) $(GT_TARGETS_RPM) $(GT_TARGETS_DEB) $(GT_BUNDLES)
