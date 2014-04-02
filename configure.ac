@@ -192,7 +192,10 @@ GT_PACKAGE([globus_xio_udt_driver],[xio/drivers/udt/source], [globus_common glob
 GT_PACKAGE([globus_gridftp_server],[gridftp/server/src],
     [ globus_common  globus_xio  globus_xio_gsi_driver  globus_gfork
       globus_gridftp_server_control  globus_ftp_control  globus_authz
-      globus_usage  globus_gss_assist  globus_gsi_credential ],
+      globus_usage  globus_gss_assist  globus_gsi_credential
+      dnl Fake dependencies to order gridftp after drivers so they can
+      dnl be staticallly linked in if needed
+      globus_xio_udt_driver globus_xio_rate_driver ],
     [gridftp])
 GT_PACKAGE([globus_gram_protocol],[gram/protocol/source],
     [ globus_common globus_io globus_gssapi_gsi globus_gss_assist], [gram5])
