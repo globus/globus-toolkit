@@ -1320,7 +1320,7 @@ xio_l_gridftp_multicast_write(
                         {
                             result = globus_ftp_client_register_write(
                                 &ftp_handle->client_h,
-                                iovec[j].iov_base,
+                                (globus_byte_t *) iovec[j].iov_base,
                                 iovec[j].iov_len,
                                 offset,
                                 GLOBUS_FALSE,
