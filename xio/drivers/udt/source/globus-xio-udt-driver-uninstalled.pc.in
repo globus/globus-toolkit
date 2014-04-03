@@ -11,3 +11,4 @@ Description: Globus Toolkit - Globus XIO UDT Driver
 Version: @PACKAGE_VERSION@
 Requires.private: @PACKAGE_DEPS@
 Cflags: -I${abs_top_srcdir}
+Libs.private: -lstdc++
