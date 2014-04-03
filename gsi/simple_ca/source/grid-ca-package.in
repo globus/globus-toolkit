@@ -324,7 +324,7 @@ EOF
     echo /etc/grid-security/certificates 1> ${_srcdir}/debian/dirs
 
 
-    tar -c -f - ${_srcdir} | gzip > "${OLDPWD}/${_source_package_tarball}"
+    tar cf - ${_srcdir} | gzip > "${OLDPWD}/${_source_package_tarball}"
 
     cd "${OLDPWD}"
     rm -rf "${_pkgdir}"
@@ -506,7 +506,7 @@ EOF
     exec 1>&3
     exec 3>&-
 
-    tar -c -f - $(cat "${_filelist}") | gzip > "${OLDPWD}/${_binary_gpt_package}"
+    tar cf - $(cat "${_filelist}") | gzip > "${OLDPWD}/${_binary_gpt_package}"
 
     cd "${OLDPWD}"
     rm -rf "${_pkgdir}"
