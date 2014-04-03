@@ -166,7 +166,7 @@ SKIP: {
                 print STDERR "# stderr:\n$err" if $err;
             }
 
-            ok($rc == 0 && !$out, join(" ", "guc cc diff ", @{$mode}, @{$cc}));
+            ok($rc == 0, join(" ", "guc cc diff ", @{$mode}, @{$cc}));
             rmtree("$work_dir/GL2");
         }
     }

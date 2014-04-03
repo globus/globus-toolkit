@@ -153,7 +153,7 @@ SKIP: {
                 print STDERR "# stderr:\n$err" if $err;
             }
 
-            ok($rc == 0 && !$out, join(" ", "guc pp-cc $i diff ", @{$cc}, @{$dc_opt}[0..scalar(@$dc_opt)-3]));
+            ok($rc == 0, join(" ", "guc pp-cc $i diff ", @{$cc}, @{$dc_opt}[0..scalar(@$dc_opt)-3]));
             rmtree("$work_dir/GL2");
             $i++;
         }
