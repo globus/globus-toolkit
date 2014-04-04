@@ -82,6 +82,12 @@ globus_l_gfs_acl_kickout(
 {
     int                                 rc;
     globus_i_gfs_acl_handle_t *         acl_handle;
+    void *                              u_arg;
+    globus_result_t                     cached_res;
+    globus_gfs_acl_action_t             auth_action;
+    globus_gfs_acl_object_desc_t        auth_object;
+    globus_gfs_acl_cb_t                 callback;
+    globus_bool_t                       done = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_acl_kickout);
     GlobusGFSDebugEnter();
 
@@ -90,25 +96,36 @@ globus_l_gfs_acl_kickout(
     /* if done call the user callback */
     if(globus_list_empty(acl_handle->current_list))
     {
-        acl_handle->cb(
-            &acl_handle->auth_object,
-            acl_handle->auth_action,
-            acl_handle->user_arg,
-            acl_handle->cached_res);
-        globus_mutex_unlock(&acl_handle->mutex);
+        done = GLOBUS_TRUE;
     }
     else
     {
         rc = globus_l_gfs_acl_next(acl_handle, &acl_handle->cached_res);
         if(rc == GLOBUS_GFS_ACL_COMPLETE)
         {
-            acl_handle->cb(
-                &acl_handle->auth_object,
-                acl_handle->auth_action,
-                acl_handle->user_arg,
-                acl_handle->cached_res);
-            globus_mutex_unlock(&acl_handle->mutex);
+            done = GLOBUS_TRUE;
         }
+    }
+    
+    if(done)
+    {        
+        u_arg = acl_handle->user_arg;
+        cached_res = acl_handle->cached_res;
+        auth_action = acl_handle->auth_action;
+        memcpy(&auth_object, &acl_handle->auth_object, 
+            sizeof(globus_gfs_acl_object_desc_t));
+        acl_handle->auth_object.name = NULL;
+        callback = acl_handle->cb;
+        /* handle is no longer ours after unlock */
+        globus_mutex_unlock(&acl_handle->mutex);
+
+        callback(
+            &auth_object,
+            auth_action,
+            u_arg,
+            cached_res);
+        
+        globus_free(auth_object.name);
     }
     
     GlobusGFSDebugExit();
