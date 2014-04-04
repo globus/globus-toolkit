@@ -58,6 +58,21 @@ gfs_gfork_master_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS)
 gfs_dynbe_client_SOURCES = gfs_dynbe_client.c
 gfs_dynbe_client_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS)
 
+if LINK_WITH_CXX
+globus_gridftp_server_LINK = $(CXXLINK)
+gfs_gfork_master_LINK = $(CXXLINK)
+gfs_dynbe_client_LINK = $(CXXLINK)
+else
+globus_gridftp_server_LINK = $(LINK)
+gfs_gfork_master_LINK = $(LINK)
+gfs_dynbe_client_LINK = $(LINK)
+endif
+
+# Dummy targets to cause automake to include CXXLINK definition
+nodist_EXTRA_unused_SOURCES = unused.cxx
+unused_SOURCES = 
+EXTRA_PROGRAMS = unused
+
 if BUILD_MANPAGES
 SUFFIXES = .xml .8
 

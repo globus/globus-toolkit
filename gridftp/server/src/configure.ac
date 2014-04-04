@@ -9,6 +9,7 @@ AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-xio >= 3, globus-xio-gsi-
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
+AC_PROG_CC
 
 m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
@@ -26,14 +27,28 @@ AC_ARG_WITH([preloaded-modules],
 if test x"$preload_modules" != x; then
     preload_modules="$(echo $preload_modules | tr , ' ')"
     for module in $preload_modules; do
+        AC_MSG_CHECKING([for $module mode])
         PKG_CHECK_EXISTS([$module], [
-            preload_links="$preload_links $($PKG_CONFIG --variable=dlopen $module)"]
+            preload_links="$preload_links $($PKG_CONFIG --variable=dlopen $module)"
+            AC_MSG_RESULT([yes])],
+            [AC_MSG_RESULT([no])]
         )
+        if test x"$module" = x"globus-xio-udt-driver"; then
+            link_with_cxx=1
+        fi
     done
 fi
+
+AC_PROG_CXX
+
 if test x"$preload_links" = x; then
     preload_links="-dlpreopen force"
+    link_with_cxx=0
 fi
+if test "x$link_with_cxx" = x1; then
+    AC_MSG_NOTICE([Linking with C++])
+fi
+AM_CONDITIONAL([LINK_WITH_CXX], [test x"$link_with_cxx" = x1])
 AC_SUBST([preload_links])
 
 AC_MSG_CHECKING([builtin modules])
