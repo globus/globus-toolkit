@@ -18,7 +18,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.11
+Version:	14.12
 Release:	1g%{?dist}
 Summary:	Globus Toolkit - Common Library
 
@@ -271,6 +271,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Apr 04 2014 Globus Toolkit <support@globus.org> - 14.12-1
+- increase error cache
+
 * Tue Mar 18 2014 Globus Toolkit <support@globus.org> - 14.11-1
 - GT-497: globus_url_string_hex_encode crashes when input contains high ascii characters
 
