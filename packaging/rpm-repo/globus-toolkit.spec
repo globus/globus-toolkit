@@ -118,4 +118,4 @@ rm -f /etc/yum.repo.d/globus-toolkit-6-${repo}.repo
 %files
 %defattr(-,root,root,-)
 %{_sysconfdir}/pki/rpm-gpg/*
-%config %{_datadir}/*
+%{_datadir}/*
