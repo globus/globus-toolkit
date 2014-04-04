@@ -11936,7 +11936,7 @@ globus_gridftp_server_get_optimal_concurrency(
     if(!op->writing)
     {    
         globus_mutex_lock(&op->session_handle->mutex);
-        if(op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE && 
+        if(op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_INUSE && 
             op->data_handle->is_mine)
         {
         /* query number of currently connected streams and update
