@@ -1,3 +1,10 @@
+globus-gridftp-server (6.42-1) unstable; urgency=low
+
+  * fix thread hangs
+  * fix hang on stor
+
+ -- Globus Toolkit <support@globus.org>  Fri, 04 Apr 2014 14:31:29 -0500
+
 globus-gridftp-server (6.41-1) unstable; urgency=low
 
   * GT-516: striped/split transfers continue after client disconnection

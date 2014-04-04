@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.41
+Version:	6.42
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -187,6 +187,10 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Apr 04 2014 Globus Toolkit <support@globus.org> - 6.42-1
+- fix thread hangs
+- fix hang on stor
+
 * Fri Mar 28 2014 Globus Toolkit <support@globus.org> - 6.41-1
 - GT-516: striped/split transfers continue after client disconnection
 - GT-526: check if accounts are 'disabled' before allowing login
