@@ -31,6 +31,7 @@ int main()
     globus_result_t             result;
 
     LTDL_SET_PRELOADED_SYMBOLS();
+    printf("1..2\n");
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_CALLOUT_MODULE);
@@ -78,6 +79,7 @@ int main()
 
     globus_module_deactivate_all();
     
+    printf("ok 2 - callout_test\n");
     return 0;
 
  error_exit:
@@ -87,5 +89,6 @@ int main()
     
     globus_module_deactivate_all();
 
+    printf("not ok 2 - callout_test returned %d\n", (int) result);
     return 1;
 }

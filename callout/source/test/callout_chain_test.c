@@ -27,6 +27,7 @@ int main()
     globus_result_t             result;
 
     LTDL_SET_PRELOADED_SYMBOLS();
+    printf("1..4\n");
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_CALLOUT_MODULE);
@@ -84,15 +85,17 @@ int main()
     }
 
     globus_module_deactivate_all();
+    printf("ok 4 - callout_chain_test complete\n");
     
     return 0;
 
  error_exit:
 
-    fprintf(stderr,"ERROR: %s",
+    fprintf(stderr,"# ERROR: %s",
             globus_error_print_chain(globus_error_get(result)));
     
     globus_module_deactivate_all();
+    printf("not ok 4 - callout_chain_test complete\n");
 
     return 1;
 }
