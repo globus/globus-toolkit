@@ -640,6 +640,7 @@ globus_callout_register(
     }
     
     memset(datum,'\0',sizeof(globus_i_callout_data_t));
+    datum->mandatory = GLOBUS_TRUE;
 
     if((flavor_start = strrchr(library,'_')) &&
        (strstr(flavor_start, "32") || strstr(flavor_start, "64")))
