@@ -1,3 +1,10 @@
+globus-gridftp-server (6.43-1) unstable; urgency=low
+
+  * GT-530: fix overlapping event callout accesses, remove unecessary mutex
+  * GT-529: port_range config is not applied in inetd or sshftp mode
+
+ -- Globus Toolkit <support@globus.org>  Tue, 08 Apr 2014 16:48:47 -0500
+
 globus-gridftp-server (6.42-1) unstable; urgency=low
 
   * fix thread hangs
