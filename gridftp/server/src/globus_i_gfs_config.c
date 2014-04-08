@@ -498,7 +498,7 @@ static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_optio
 
 static globus_hashtable_t               option_table;
 static int                              globus_l_gfs_num_threads = -1;
-
+static globus_bool_t                    globus_l_gfs_port_range = GLOBUS_FALSE;
 
 /* for string options, setting with an int_val of 1 will free the old one */ 
 static
@@ -910,6 +910,34 @@ globus_l_gfs_config_load_envs_from_file(
                         setenv("GLOBUS_CALLBACK_POLLING_THREADS", valuebuf, 1);
                         globus_thread_set_model("pthread");
                     }
+                }
+            }
+            continue;
+        }
+        /* parse port_range option to apply it before xio activates */
+        if(!globus_l_gfs_port_range && *p == 'p' && 
+            (rc = sscanf(p, "%s", optionbuf)) == 1)
+        {
+            if(!strcmp(optionbuf, "port_range"))
+            {
+                p = p + strlen(optionbuf);
+                       
+                while(*p && isspace(*p))
+                {
+                    p++;
+                }
+                if(*p == '"')
+                {
+                    rc = sscanf(p, "\"%[^\"]\"", valuebuf);
+                }
+                else
+                {
+                    rc = sscanf(p, "%s", valuebuf);
+                }  
+                if(rc == 1)
+                {
+                    setenv("GLOBUS_TCP_PORT_RANGE", valuebuf, 1);
+                    setenv("GLOBUS_UDP_PORT_RANGE", valuebuf, 1);
                 }
             }
             continue;
@@ -2344,12 +2372,6 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("login_msg", 0, data);                
     }
     
-    if((value = globus_i_gfs_config_string("port_range")) != GLOBUS_NULL)
-    {
-        globus_libc_setenv("GLOBUS_TCP_PORT_RANGE", value, 1);
-        globus_libc_setenv("GLOBUS_UDP_PORT_RANGE", value, 1);
-    }
-
     value = globus_i_gfs_config_string("load_dsi_module");
     if(value != NULL)
     {
@@ -2720,11 +2742,15 @@ globus_i_gfs_config_init_envs(
             if(globus_l_gfs_num_threads > 0)
             {
                 setenv("GLOBUS_CALLBACK_POLLING_THREADS", 
-                    strdup(tmp_argv[arg_num + 1]), 1);
+                    tmp_argv[arg_num + 1], 1);
                 globus_thread_set_model("pthread");
             }
         }
-
+        else if(!strcmp(argp, "port-range") && tmp_argv[arg_num + 1])
+        {
+            /* save arg and set after file is loaded */
+            globus_l_gfs_port_range = tmp_argv[arg_num + 1];
+        }
     }
     
     if(base_str)
@@ -2764,6 +2790,12 @@ globus_i_gfs_config_init_envs(
     else if(!cmdline_config)
     {
         rc = globus_l_gfs_config_load_envs_from_file(global_config_file);
+    }
+    
+    if(globus_l_gfs_port_range)
+    {
+        setenv("GLOBUS_TCP_PORT_RANGE", globus_l_gfs_port_range, 1);
+        setenv("GLOBUS_UDP_PORT_RANGE", globus_l_gfs_port_range, 1);
     }
     
     if(local_config_file != NULL)
