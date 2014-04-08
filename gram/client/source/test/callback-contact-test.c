@@ -27,7 +27,7 @@ callback_func(
 /* add and remove a callback contact */
 static
 int
-test1()
+add_remove_callback_contact_test(void)
 {
     char * callback_contact;
     int rc;
@@ -58,7 +58,7 @@ test1()
 /* remove a bogus callback contact */
 static
 int 
-test2()
+remove_bogus_callback_contact(void)
 {
     int rc;
 
@@ -80,7 +80,7 @@ test2()
 /* create a few callback contacts, and remove them out of order */
 static
 int
-test3()
+remove_callback_contacts_out_of_order(void)
 {
     char *callback_contact[3];
     int rc;
@@ -140,7 +140,7 @@ test3()
  */
 static 
 int
-test4()
+deactivate_before_callback_disallow(void)
 {
     int rc;
     char * callback_contact;
@@ -173,36 +173,25 @@ int main(int argc, char *argv[])
     int test_num = 0;
     int not_ok = 0;
 
-    if(argc > 1)
-    {
-	test_num = atoi(argv[1]);
-    }
-    if(test_num == 0 || test_num == 1)
-    {
-	rc = test1();
-	printf("%sok\n", rc ? "not " : "");
-	not_ok |= rc;
-    }
+    rc = add_remove_callback_contact_test();
+    printf("%s %d - add_remove_callback_contact_test\n",
+            rc ? "not ok" : "ok", ++test_num);
+    not_ok |= rc;
 
-    if(test_num == 0 || test_num == 2)
-    {
-	rc = test2();
-	printf("%sok\n", rc ? "not " : "");
-	not_ok |= rc;
-    }
+    rc = remove_bogus_callback_contact();
+    printf("%s %d - remove_bogus_callback_contact\n",
+            rc ? "not ok" : "ok", ++test_num);
+    not_ok |= rc;
 
-    if(test_num == 0 || test_num == 3)
-    {
-	rc = test3();
-	printf("%sok\n", rc ? "not " : "");
-	not_ok |= rc;
-    }
-    if(test_num == 0 || test_num == 4)
-    {
-	rc = test4();
-	printf("%sok\n", rc ? "not " : "");
-	not_ok |= rc;
-    }
+    rc = remove_callback_contacts_out_of_order();
+    printf("%s %d - remove_callback_contacts_out_of_order\n",
+            rc ? "not ok" : "ok", ++test_num);
+    not_ok |= rc;
+
+    rc = deactivate_before_callback_disallow();
+    printf("%s %d - deactivate_before_callback_disallow\n",
+            rc ? "not ok" : "ok", ++test_num);
+    not_ok |= rc;
 
     return not_ok;
 }
