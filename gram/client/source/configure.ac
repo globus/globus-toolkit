@@ -16,8 +16,12 @@ AC_SUBST(DIRT_BRANCH_ID)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
-TEST_PACKAGE_DEPS="globus-gass-server-ez"
-PKG_CHECK_MODULES([TEST_PACKAGE_DEP], $TEST_PACKAGE_DEPS)
+AC_SUBST([GLOBUS_XIO_GSI_DLOPEN], ["$("$PKG_CONFIG" globus-xio-gsi-driver --variable=dlopen)"])
+if test "" = "$GLOBUS_XIO_GSI_DLOPEN"; then
+    PRELOAD_FORCE="-dlpreopen force"
+fi
+AC_SUBST([PRELOAD_FORCE])
+
 GLOBUS_GRAM_JOB_MANAGER_PATH=$(pkg-config --variable=path globus-gram-job-manager)
 AC_SUBST([GLOBUS_GRAM_JOB_MANAGER_PATH])
 
@@ -27,6 +31,18 @@ AC_SUBST([PROXY_UTILS_PATH])
 CERT_UTILS_PATH=$(pkg-config --variable=path globus-gsi-cert-utils)
 AC_SUBST([CERT_UTILS_PATH])
 
+AC_CANONICAL_HOST
+AC_CANONICAL_BUILD
+case $build:$host in
+    *cygwin*:*mingw*)
+        use_cygpath_w=yes
+        ;;
+    *)
+        use_cygpath_w=no
+        ;;
+esac
+AM_CONDITIONAL([USE_CYGPATH_W], [test yes = "$use_cygpath_w"])
+    
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
@@ -54,18 +70,5 @@ AC_CONFIG_FILES(
         test/Makefile
         Doxyfile
 	version.h)
-AC_CONFIG_FILES(
-        [test/register-ping-test.pl],
-        [chmod a+x test/register-ping-test.pl])
-
-AC_CONFIG_FILES(
-        [test/run-tests.pl],
-        [chmod a+x test/run-tests.pl])
-AC_CONFIG_FILES(
-        [test/failed-job-two-phase-commit.pl],
-        [chmod a+x test/failed-job-two-phase-commit.pl])
-AC_CONFIG_FILES(
-        [test/two-phase-commit-test.pl],
-        [chmod a+x test/two-phase-commit-test.pl])
 
 AC_OUTPUT

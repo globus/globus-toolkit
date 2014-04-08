@@ -15,11 +15,14 @@
  */
 
 #include "globus_gram_client.h"
+#include "globus_preload.h"
 
 int main(int argc, char *argv[])
 {
     int rc;
     int failed = 0;
+
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     printf("1..2\n");
     failed += rc = !(!globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE));
