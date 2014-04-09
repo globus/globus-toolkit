@@ -25,7 +25,7 @@ libnice-configure-stamp: libnice-unpack-stamp
                 libtool_opts="--disable-shared --enable-static"; \
                 ;; \
         esac; \
-        cd source && ./configure --prefix=$(prefix) $(libtool_opts) --disable-dependency-tracking --enable-compile-warnings=no CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) -include $(abs_srcdir)/globus_libnice_mingw.h" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"
+        cd source && ./configure --prefix=$(prefix) $${libtool_opts} --disable-dependency-tracking --enable-compile-warnings=no CFLAGS="$(CFLAGS) $(lt_prog_compiler_pic)" CPPFLAGS="$(CPPFLAGS) -include $(abs_srcdir)/globus_libnice_mingw.h" LDFLAGS="$(LDFLAGS)" CC="$(CC)" LD="$(LD)" --host="$(host_triplet)"
 	touch $@
 
 if HOST_OSX
@@ -39,5 +39,11 @@ libnice: libnice-configure-stamp
 CLEANFILES = libnice libnice-configure-stamp libnice-unpack-stamp
 DISTCLEANFILES = $(libnice_tarball) 
 
+install-local:
+	case $(host_os) in \
+            *mingw*) \
+                cd source && $(MAKE) $(AM_MAKEFLAGS) install DESTDIR=$(DESTDIR); \
+                ;; \
+        esac;
 clean-local:
 	rm -rf source $(abs_builddir)$(prefix)
