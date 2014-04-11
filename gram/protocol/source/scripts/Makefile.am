@@ -34,4 +34,8 @@ install-data-local: $(noinst_DATA)
 		$(INSTALL_DATA) $$manpage $(DESTDIR)$(MAN_DIR)/Globus::GRAM::`basename $$manpage`; \
 	done
 
+all-local:
+	$(MKDIR_P) Globus/GRAM
+	$(INSTALL) Error.pm JobSignal.pm JobState.pm Globus/GRAM
+
 MAINTAINERCLEANFILES = $(perldoc_DATA) $(noinst_DATA)

@@ -4,6 +4,7 @@ libdir=@libdir@
 includedir=@includedir@
 abs_top_srcdir=@abs_top_srcdir@
 abs_top_builddir=@abs_top_builddir@
+perl5lib=@abs_builddir@/scripts
 
 Name: globus-gram-protocol
 Description: Globus Toolkit - GRAM Protocol Library

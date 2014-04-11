@@ -14,6 +14,8 @@ m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
+AC_PROG_MKDIR_P
+
 AC_ARG_WITH([perlmoduledir],
 AC_HELP_STRING([--with-perlmoduledir=DIR],
 [perl module directory [[PREFIX/lib/perl]]]),
@@ -74,7 +76,9 @@ AC_CONFIG_FILES(
         globus-gram-job-manager-scripts-uninstalled.pc
         globus-gram-job-manager-scripts.pc
         JobDescription.pm
-        globus-job-manager-script.pl
-        globus-gatekeeper-admin
         Makefile)
+AC_CONFIG_FILES([globus-gatekeeper-admin],
+    [chmod a+x globus-gatekeeper-admin])
+AC_CONFIG_FILES([globus-job-manager-script.pl],
+    [chmod a+x globus-job-manager-script.pl])
 AC_OUTPUT

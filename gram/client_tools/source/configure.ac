@@ -16,6 +16,27 @@ AC_SUBST(DIRT_BRANCH_ID)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
+AC_SUBST([GLOBUS_XIO_GSI_DRIVER_DLOPEN], ["$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+
+if test -z "$GLOBUS_XIO_GSI_DRIVER_DLOPEN"; then
+    PREOPEN_FORCE="-dlpreopen force"
+fi
+AC_SUBST([PREOPEN_FORCE])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+
+case $build:$host in 
+    *cygwin*:*mingw*)
+        use_cygpath_w=true
+        ;;
+    *)
+        use_cygpath_w=false
+        ;;
+esac
+
+AM_CONDITIONAL([USE_CYGPATH_W], [test "$use_cygpath_w" = "true"])
+    
+
 AC_PATH_PROG(XSLTPROC, "xsltproc")
 AC_PATH_PROG(XMLLINT, "xmllint")
 AC_MSG_CHECKING([docbook dtd])

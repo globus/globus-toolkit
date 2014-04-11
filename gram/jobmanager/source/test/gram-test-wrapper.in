@@ -1,0 +1,86 @@
+#! /bin/sh
+
+export GLOBUS_USAGE_OPTOUT=1
+
+GATEKEEPER_PATH="@GATEKEEPER_PATH@"
+PATH="${PATH}${GATEKEEPER_PATH:+:$GATEKEEPER_PATH}"
+
+JOBMANAGER_PATH="@JOBMANAGER_PATH@"
+PATH="${PATH}${JOBMANAGER_PATH:+:$JOBMANAGER_PATH}"
+
+GRAM_CLIENT_TOOLS_PATH="@GRAM_CLIENT_TOOLS_PATH@"
+PATH="${PATH}${GRAM_CLIENT_TOOLS_PATH:+:$GRAM_CLIENT_TOOLS_PATH}"
+
+GASS_COPY_PATH="@GASS_COPY_PATH@"
+PATH="${PATH}${GASS_COPY_PATH:+:$GASS_COPY_PATH}"
+
+GASS_CACHE_PATH="@GASS_CACHE_PATH@"
+PATH="${PATH}${GASS_CACHE_PATH:+:$GASS_CACHE_PATH}"
+
+GRAM_JOB_MANAGER_SCRIPT_PATH="@GRAM_JOB_MANAGER_SCRIPT_PATH@"
+PATH="${PATH}${GRAM_JOB_MANAGER_SCRIPT_PATH:+:$GRAM_JOB_MANAGER_SCRIPT_PATH}"
+
+GSI_PROXY_UTILS_PATH="@GSI_PROXY_UTILS_PATH@"
+PATH="${PATH}${GSI_PROXY_UTILS_PATH:+:$GSI_PROXY_UTILS_PATH}"
+
+GSI_CERT_UTILS_PATH="@GSI_CERT_UTILS_PATH@"
+PATH="${PATH}${GSI_CERT_UTILS_PATH:+:$GSI_CERT_UTILS_PATH}"
+
+GRAM_JOB_MANAGER_SCRIPT_PERL5LIB="@GRAM_JOB_MANAGER_SCRIPT_PERL5LIB@"
+PERL5LIB="${PERL5LIB:+${PERL5LIB}${GRAM_JOB_MANAGER_SCRIPT_PERL5LIB:+:}}${GRAM_JOB_MANAGER_SCRIPT_PERL5LIB}"
+
+GRAM_JOB_MANAGER_FORK_PERL5LIB="@GRAM_JOB_MANAGER_FORK_PERL5LIB@"
+PERL5LIB="${PERL5LIB:+${PERL5LIB}${GRAM_JOB_MANAGER_FORK_PERL5LIB:+:}}${GRAM_JOB_MANAGER_FORK_PERL5LIB}"
+
+GRAM_PROTOCOL_PERL5LIB="@GRAM_PROTOCOL_PERL5LIB@"
+PERL5LIB="${PERL5LIB:+${PERL5LIB}${GRAM_PROTOCOL_PERL5LIB:+:}}${GRAM_PROTOCOL_PERL5LIB}"
+
+COMMON_PERL5LIB="@COMMON_PERL5LIB@"
+PERL5LIB="${PERL5LIB:+${PERL5LIB}${COMMON_PERL5LIB:+:}}${COMMON_PERL5LIB}"
+
+if [ -n "$PERL5LIB" ]; then
+    export PERL5LIB
+fi
+
+if [ -n "$CONTACT_STRING" ]; then
+    echo "#   Using existing GRAM service at $CONTACT_STRING"
+else
+
+    cleanup()
+    {
+        if [ -n "$contact" ]; then
+            globus-personal-gatekeeper -kill "$contact" > /dev/null 2>&1
+        fi
+    }
+
+    echo "#   Starting personal gatekeeper"
+    contact="$(globus-personal-gatekeeper -start | sed -e 's/GRAM contact: //')"
+
+    if [ "$?" != 0 ] || [ -z "$contact" ]; then
+        exit 99
+        globus-personal-gatekeeper -kill "$contact"
+    fi
+
+    trap cleanup EXIT
+    export CONTACT_STRING="$contact"
+fi
+
+# Perl scripts pass through, otherwise run the program under valgrind
+# conditionally
+if [ "${1##*.}" = "pl" ]; then
+    "$@"
+else
+    if [ -n "${VALGRIND}" ]; then
+        valgrind="${VALGRIND+valgrind --log-file=VALGRIND-$(basename $1).log}"
+        if [ -n "$VALGRIND_OPTIONS" ]; then
+            valgrind="${valgrind} ${VALGRIND_OPTIONS}"
+        fi
+        $valgrind "$@"
+    else
+        "$@"
+    fi
+fi
+
+rc=$?
+
+exit $rc

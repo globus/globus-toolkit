@@ -28,6 +28,11 @@ EXTRA_DIST = \
 
 CLEANFILES = jobmanager-fork-poll jobmanager-fork-seg
 
+all-local:
+	$(MKDIR_P) Globus/GRAM/JobManager
+	$(INSTALL) $(srcdir)/fork.pm Globus/GRAM/JobManager
+clean-local:
+	rm -rf Globus
 if SEG_ENABLED_COND
 install-data-local:
 	mkdir -p "$(DESTDIR)@globusstatedir@"

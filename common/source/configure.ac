@@ -15,6 +15,8 @@ AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
 AM_PROG_CC_C_O
 AC_PROG_CC_C99
+AC_PROG_MKDIR_P
+
 AC_CONFIG_HEADERS(config.h)
 
 m4_include([dirt.sh])

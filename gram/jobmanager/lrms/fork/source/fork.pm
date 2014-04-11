@@ -50,18 +50,28 @@ BEGIN
     my $config = new Globus::Core::Config(
         '${sysconfdir}/globus/globus-fork.conf');
 
-    $mpirun = $config->get_attribute("mpirun") || "no";
-    if ($mpirun ne "no" && ! -x $mpirun)
+    if ($config)
+    {
+        $mpirun = $config->get_attribute("mpirun") || "no";
+        if ($mpirun ne "no" && ! -x $mpirun)
+        {
+            $mpirun = "no";
+        }
+        $mpiexec = $config->get_attribute("mpiexec") || "no";
+        if ($mpiexec ne "no" && ! -x $mpiexec)
+        {
+            $mpiexec = "no";
+        }
+        $softenv_dir = $config->get_attribute("softenv_dir") || "";
+        $log_path = $config->get_attribute("log_path") || "/dev/null";
+    }
+    else
     {
         $mpirun = "no";
-    }
-    $mpiexec = $config->get_attribute("mpiexec") || "no";
-    if ($mpiexec ne "no" && ! -x $mpiexec)
-    {
         $mpiexec = "no";
+        $softenv_dir = "";
+        $log_path = "/dev/null";
     }
-    $softenv_dir = $config->get_attribute("softenv_dir") || "";
-    $log_path = $config->get_attribute("log_path") || "/dev/null";
 }
 
 sub new
@@ -225,6 +235,20 @@ sub submit
         push(@cmdline, @arguments);
     }
 
+    if ($description->use_fork_starter())
+    {
+        if (!-x $fork_starter)
+        {
+            for my $path_component (split(/:/, $ENV{PATH}))
+            {
+                if (-x "$path_component/globus-fork-starter") {
+                    $fork_starter ="$path_component/globus-fork-starter";
+                    last;
+                }
+            }
+        }
+    }
+
     if ($description->use_fork_starter() && -x $fork_starter)
     {
         if (!defined($starter_in) && !defined($starter_out))
@@ -342,6 +366,19 @@ sub submit
             }
         }
 
+        if ($is_grid_monitor) 
+        {
+            if (! -x $streamer)
+            {
+                for my $path_component (split(/:/, $ENV{PATH})) {
+                    if (-x "$path_component/$globus-gram-streamer")
+                    {
+                        $streamer = "$path_component/$globus-gram-streamer";
+                        last;
+                    }
+                }
+            }
+        }
         if ($is_grid_monitor && -x $streamer)
         {
             my $streamer_startup='';

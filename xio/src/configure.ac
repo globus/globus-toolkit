@@ -62,7 +62,12 @@ AC_SUBST(BUILTIN_EXTENSIONS_DEF)
 AC_SUBST(XIO_BUILTIN_PC_INCLUDES)
 
 AC_CONFIG_HEADERS(config.h)
+
 AC_CHECK_FUNCS(sysconf)
+AC_CHECK_FUNCS(readv)
+AC_CHECK_FUNCS(writev)
+AC_CHECK_FUNCS(recvmsg)
+AC_CHECK_FUNCS(sendmsg)
 
 if test "$exec_prefix" = NONE; then
     reset_exec_prefix_to_none=1

@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I .
 
-SUBDIRS = rvf scripts seg .
+SUBDIRS = rvf scripts seg . test
 
 validationdir = $(datadir)/globus/$(PACKAGE)
 globusconfigdir = ${sysconfdir}/globus
@@ -37,12 +37,22 @@ libglobus_gram_job_manager_la_SOURCES = \
 	globus_gram_job_manager_state_file.c \
 	globus_gram_job_manager_validate.c \
         globus_gram_job_manager_usagestats.c \
+        default_rvf.c \
         logging.c \
         startup_socket.c \
         tg_gateway.c
 
+BUILT_SOURCES = default_rvf.c
 globus_job_manager_SOURCES = main.c
 globus_job_manager_lock_test_SOURCES = lock_test.c
+
+default_rvf.c: $(srcdir)/globus-gram-job-manager.rvf
+	(echo "char globus_i_gram_default_rvf[] = \"\\"; \
+         sed -e 's/\\/\\\\/g' \
+             -e 's/"/\\"/g' \
+             -e 's/$$/\\n\\/' \
+            < $(srcdir)/globus-gram-job-manager.rvf; \
+         echo "\";") > default_rvf.c
 
 # Compiler flags
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) \

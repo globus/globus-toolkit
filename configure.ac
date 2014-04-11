@@ -224,13 +224,6 @@ GT_PACKAGE([globus_rsl],[gram/rsl/source], [globus_common], [gram5])
 GT_PACKAGE([globus_gram_job_manager_callout_error],
         [gram/jobmanager/callout_error],
         [globus_common], [gram5-server])
-GT_PACKAGE([globus_gram_job_manager],[gram/jobmanager/source],
-    [ globus_common  globus_gsi_credential  globus_gass_cache
-      globus_gass_transfer  globus_gram_protocol  globus_gssapi_gsi
-      globus_gss_assist  globus_gsi_sysconfig  globus_callout  globus_xio
-      globus_xio_popen_driver  globus_rsl
-      globus_gram_job_manager_callout_error globus_scheduler_event_generator
-      globus_usage ], [gram5-server])
 GT_PACKAGE([globus_xio_gridftp_multicast],
         [gridftp/server/multi/source],
         [ globus_xio  globus_ftp_client  globus_xio_gsi_driver ],
@@ -297,6 +290,13 @@ GT_PACKAGE([globus_gram_client_tools],[gram/client_tools/source],
     [ globus_common  globus_gram_client  globus_gram_protocol
       globus_gass_transfer  globus_gass_server_ez  globus_rsl
       globus_gss_assist ], [gram5])
+GT_PACKAGE([globus_gram_job_manager],[gram/jobmanager/source],
+    [ globus_common  globus_gsi_credential  globus_gass_cache
+      globus_gass_transfer  globus_gram_protocol  globus_gssapi_gsi
+      globus_gss_assist  globus_gsi_sysconfig  globus_callout  globus_xio
+      globus_xio_popen_driver  globus_rsl
+      globus_gram_job_manager_callout_error globus_scheduler_event_generator
+      globus_usage globus_gram_client_tools], [gram5-server])
 PKG_CONFIG_PATH="[${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}]GT_PKGCONFIG_DIRS_MACRO"
 export PKG_CONFIG_PATH
 dnl 

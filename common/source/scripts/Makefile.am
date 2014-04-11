@@ -17,6 +17,10 @@ bin_SCRIPTS = \
 globuscore_perlmoduledir = $(perlmoduledir)/Globus/Core
 globuscore_perlmodule_DATA = Config.pm Paths.pm
 
+all-local:
+	$(MKDIR_P) Globus/Core
+	$(INSTALL) $(srcdir)/Config.pm Paths.pm Globus/Core
+
 EXTRA_DIST = \
 	globus-args-parser-header \
 	globus-sh-tools.sh.in \

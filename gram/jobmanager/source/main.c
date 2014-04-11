@@ -757,6 +757,7 @@ globus_l_gram_job_manager_activate(void)
             &globus_i_gram_job_manager_popen_driver);
     if (result != GLOBUS_SUCCESS)
     {
+        rc = GLOBUS_FAILURE;
         goto destroy_file_stack;
     }
 

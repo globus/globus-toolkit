@@ -247,6 +247,13 @@ globus_gram_job_manager_validation_update(
             do_update = GLOBUS_TRUE;
         }
     }
+    if (! (manager->validation_file_exists[0] ||
+           manager->validation_file_exists[1] ||
+           manager->validation_file_exists[2] ||
+           manager->validation_file_exists[3]) )
+    {
+        do_update = 1;
+    }
 
     if (do_update)
     {
@@ -304,9 +311,20 @@ globus_gram_job_manager_validation_init(
 
     if(rc != GLOBUS_SUCCESS)
     {
+        manager->validation_file_exists[0] = GLOBUS_FALSE;
+        rc = globus_rvf_parse_string(
+                globus_i_gram_default_rvf, 
+                &manager->validation_records,
+                &manager->gt3_failure_message);
+    }
+    else
+    {
+        manager->validation_file_exists[0] = GLOBUS_TRUE;
+    }
+    if(rc != GLOBUS_SUCCESS)
+    {
         goto read_validation_failed;
     }
-    manager->validation_file_exists[0] = GLOBUS_TRUE;
 
     if(access(lrm_validation_filename, R_OK) == 0)
     {

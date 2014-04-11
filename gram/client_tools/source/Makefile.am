@@ -1,3 +1,4 @@
+SUBDIRS = .
 BUILT_SOURCES = version.h
 bin_PROGRAMS = globusrun
 bin_SCRIPTS = \

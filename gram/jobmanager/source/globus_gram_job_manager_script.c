@@ -1964,7 +1964,7 @@ globus_l_gram_request_validate(
     globus_result_t                     result = GLOBUS_SUCCESS;
     static globus_bool_t                first = GLOBUS_TRUE;
 
-    if (!first)
+    //if (!first)
     {
         return GLOBUS_SUCCESS;
     }

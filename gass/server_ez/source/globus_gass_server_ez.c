@@ -55,6 +55,7 @@ static globus_mutex_t globus_l_gass_server_ez_mutex;
 static globus_cond_t globus_l_gass_server_ez_cond;
 static globus_bool_t globus_l_gass_server_ez_activated = GLOBUS_FALSE;
 
+static const size_t MAX_DEFAULT_SIZE = 32*1024;
 /******************************************************************************
                           Module definition
 ******************************************************************************/
@@ -356,13 +357,8 @@ globus_l_gass_server_ez_register_accept_callback(
     globus_byte_t * buf;
     int amt;
     const char *flags;
-#if HAVE_FTELLO
-#define length_type off_t
-#else
-#define length_type long
-#define ftello ftell
-#endif
-    length_type length;
+    size_t length;
+    uintptr_t buffer_size;
 
     
     subjectname=globus_gass_transfer_request_get_subject(request);
@@ -462,14 +458,41 @@ globus_l_gass_server_ez_register_accept_callback(
             }
 	
 	    authorize:
-            globus_gass_transfer_authorize(request, 0);
 	    if(s->options & GLOBUS_GASS_SERVER_EZ_LINE_BUFFER)
 	    {
                 setvbuf(fp, NULL, _IOLBF, 0);
             }
+
+            rc = fstat(fileno(fp), &statstruct);
+            if (rc == 0)
+            {
+                if (statstruct.st_blksize > MAX_DEFAULT_SIZE)
+                {
+                    buffer_size = MAX_DEFAULT_SIZE;
+                }
+                else
+                {
+                    buffer_size = statstruct.st_blksize;
+                }
+            }
+            else
+            {
+                buffer_size = MAX_DEFAULT_SIZE;
+            }
+            buf = malloc(buffer_size);
+            if (!buf)
+            {
+                fclose(fp);
+                goto deny;
+            }
+            globus_gass_transfer_request_set_user_pointer(request,
+                    (void *) buffer_size);
+
+            globus_gass_transfer_authorize(request, 0);
+
             globus_gass_transfer_receive_bytes(request,
-                                               malloc(1024),
-                                               1024,
+                                               buf,
+                                               buffer_size,
                                                1,
                                                globus_l_gass_server_ez_put_callback,
                                                (void *) fp);
@@ -491,24 +514,14 @@ globus_l_gass_server_ez_register_accept_callback(
 	    if(stat(path, &statstruct)==0)
 	    {
                 fp = fopen(path, flags);
-                rc = fseek(fp, 0, SEEK_END);
-                if (rc < 0)
+
+                if (statstruct.st_size > SIZE_MAX)
                 {
                     length = GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN;
                 }
                 else
                 {
-                    length = ftello(fp);
-                    rc = fseek(fp, 0, SEEK_SET);
-                    if (rc < 0)
-                    {
-                        fclose(fp);
-                    }
-                    if (length == -1 || length > ((length_type) ((size_t) -1)))
-                    {
-                        length = GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN;
-                    }
-                    goto deny;
+                    length = statstruct.st_size;
                 }
 	    }
 	    else
@@ -518,14 +531,44 @@ globus_l_gass_server_ez_register_accept_callback(
 		goto reregister;
 	    }
 
-            buf = malloc(1024);
-            amt = fread(buf, 1, 1024, fp);
+            if (statstruct.st_blksize > statstruct.st_size)
+            {
+                if (statstruct.st_size > MAX_DEFAULT_SIZE)
+                {
+                    buffer_size = MAX_DEFAULT_SIZE;
+                }
+                else
+                {
+                    buffer_size = statstruct.st_size;
+                }
+            }
+            else
+            {
+                if (statstruct.st_blksize > MAX_DEFAULT_SIZE)
+                {
+                    buffer_size = MAX_DEFAULT_SIZE;
+                }
+                else
+                {
+                    buffer_size = statstruct.st_blksize;
+                }
+            }
+
+            buf = malloc(buffer_size);
+            if (!buf)
+            {
+                fclose(fp);
+                goto deny;
+            }
+            amt = fread(buf, 1, buffer_size, fp);
             if(amt == 0 && ferror(fp))
             {
                 free(buf);
                 fclose(fp);
                 goto deny;
             }
+            globus_gass_transfer_request_set_user_pointer(request,
+                    (void *) buffer_size);
             globus_gass_transfer_authorize(request, (size_t) length);
 
             globus_gass_transfer_send_bytes(request,
@@ -630,6 +673,8 @@ globus_l_gass_server_ez_put_callback(
 				    globus_bool_t       last_data)
 {
     FILE *fp;
+    uintptr_t blocksize = (uintptr_t)
+        globus_gass_transfer_request_get_user_pointer(request);
 
     fp = arg;
 
@@ -638,7 +683,7 @@ globus_l_gass_server_ez_put_callback(
     {
         globus_gass_transfer_receive_bytes(request,
                                            bytes,
-                                           1024,
+                                           (size_t) blocksize,
                                            1,
                                            globus_l_gass_server_ez_put_callback,
                                            arg);

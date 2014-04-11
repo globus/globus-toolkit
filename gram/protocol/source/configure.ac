@@ -14,16 +14,20 @@ m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
+AC_PROG_MKDIR_P
+
+AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
-AM_CONDITIONAL([CYGPATH_W_DEFINED], [
-    case $host in
-        *mingw32*)
-        test x"$CYGPATH_W" != x;
+
+case $build:$host in
+    *cygwin*:*mingw32*)
+        use_cygpath_w=yes
         ;;
-        *)
-        false
+    *)
+        use_cygpath_w=no
         ;;
-    esac])
+esac
+AM_CONDITIONAL([CYGPATH_W_DEFINED], [test yes = $use_cygpath_w])
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 PKG_CHECK_EXISTS([globus-xio-gsi-driver >= 2], [

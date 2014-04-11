@@ -1657,6 +1657,7 @@ char *
 globus_gram_prepare_log_string(
     const char *                        instr);
 
+extern char globus_i_gram_default_rvf[];
 EXTERN_C_END
 
 #endif /* GLOBUS_GRAM_JOB_MANAGER_INCLUDE */

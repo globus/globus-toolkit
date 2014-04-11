@@ -99,6 +99,13 @@ globus_rvf_parse_file(
     globus_list_t **                    out_attr_list,
     char **                             error_string);
 
+extern int
+globus_rvf_parse_string(
+    char *                              rvf_string,
+    globus_list_t **                    out_attr_list,
+    char **                             error_string);
+
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 

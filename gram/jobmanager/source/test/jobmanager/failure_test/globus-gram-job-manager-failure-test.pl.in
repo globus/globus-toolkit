@@ -1,0 +1,182 @@
+#! /usr/bin/perl
+
+use Globus::GRAM::Error;
+use Globus::Core::Paths;
+use IO::File;
+use File::Basename qw(dirname);
+use Test::More;
+
+my (@tests, @todo) = ();
+my $contact = $ENV{CONTACT_STRING};
+my $lrm = $ENV{CONTACT_LRM} if exists($ENV{CONTACT_LRM});
+my $testdatadir = $ENV{TEST_DATA_DIR};
+if (!$testdatadir)
+{
+    $testdatadir = dirname($0);
+}
+my $verbose = 0;
+
+my @test_rsls=qw(
+	error_bad_directory.rsl
+	error_evaluation_failed.rsl
+	error_executable_not_found.rsl
+	error_executable_permissions.rsl
+	error_invalid_cache2.rsl
+	error_invalid_cache.rsl
+	error_invalid_count.rsl
+	error_invalid_gram_myjob.rsl
+	error_invalid_jobtype.rsl
+	error_invalid_save_state.rsl
+	error_invalid_scratch.rsl
+	error_invalid_two_phase_commit.rsl
+	error_invalid_proxy_timeout.rsl
+	error_no_state_file.rsl
+	error_opening_stderr.rsl
+	error_opening_stderr2.rsl
+	error_opening_stdout.rsl
+	error_opening_stdout2.rsl
+	error_opening_stdout3.rsl
+	error_rsl_arguments.rsl
+	error_rsl_cache.rsl
+	error_rsl_directory.rsl
+	error_rsl_dryrun.rsl
+	error_rsl_environment1.rsl
+	error_rsl_environment2.rsl
+	error_rsl_evaluation_failed2.rsl
+	error_rsl_evaluation_failed.rsl
+	error_rsl_executable.rsl
+	error_rsl_file_stage_in2.rsl
+	error_rsl_file_stage_in3.rsl
+	error_rsl_file_stage_in.rsl
+	error_rsl_file_stage_in_shared2.rsl
+	error_rsl_file_stage_in_shared3.rsl
+	error_rsl_file_stage_in_shared.rsl
+	error_rsl_file_stage_out2.rsl
+	error_rsl_file_stage_out3.rsl
+	error_rsl_file_stage_out.rsl
+	error_rsl_jobtype.rsl
+	error_rsl_myjob.rsl
+	error_rsl_proxy_timeout.rsl
+	error_rsl_remote_io_url.rsl
+	error_rsl_restart.rsl
+	error_rsl_save_state.rsl
+	error_rsl_scratch.rsl
+	error_rsl_stderr.rsl
+	error_rsl_stderr2.rsl
+	error_rsl_stdin.rsl
+	error_rsl_stdout.rsl
+	error_rsl_stdout2.rsl
+	error_rsl_two_phase_commit.rsl
+	error_staging_executable.rsl
+	error_staging_stdin.rsl
+	error_stdin_not_found.rsl
+	error_undefined_executable.rsl
+);
+
+sub test_rsl
+{
+    my $rsl_file = shift;
+    my $file = new IO::File("$testdatadir/$rsl_file", '<');
+    my @all_rsl = <$file>;
+    my $error;
+    my $value;
+    my @error_list = ();
+    my @lrm_skip_list = ();
+    my $ok=0;
+
+    $value = $all_rsl[0];
+
+    chomp($value);
+
+    $value =~ s/\(\*\s*(.*)\s*\*\)/$1/;
+
+    foreach my $s (split(/\s+/, $value))
+    {
+        if ($s =~ m/^GLOBUS_GRAM_PROTOCOL_ERROR_/)
+        {
+            $s =~ s/GLOBUS_GRAM_PROTOCOL_ERROR_//;
+            push(@error_list, eval "Globus::GRAM::Error::$s()");
+        }
+        elsif ($s =~ m/LRM_SKIP:(.*)/)
+        {
+            push(@lrm_skip_list, $1);
+        }
+    }
+
+    SKIP: {
+        skip "Skipping test for $lrm", 1,
+            if (defined($lrm) && grep(/$lrm/, @lrm_skip_list));
+
+        ok(submit_rsl("$testdatadir/$rsl_file", @error_list)==0, $rsl_file);
+    }
+}
+
+sub submit_rsl
+{
+    my $rsl_file = shift;
+    my @error_list = @_;
+    my @args = ("globusrun", "-s", "-r", "$contact", "-f", $rsl_file);
+    my ($saveout, $saveerr);
+
+    open($saveout, ">&STDOUT");
+    open($saveerr, ">&STDERR");
+
+    open(STDOUT, ">/dev/null");
+    open(STDERR, ">/dev/null");
+    system(@args);
+
+    open(STDOUT, ">&", $saveout);
+    open(STDERR, ">&", $saveerr);
+
+    $rc = $? >> 8;
+
+    foreach (@error_list)
+    {
+        if ($_->value == $rc)
+        {
+            return 0
+        }
+    }
+    return 1;
+}
+
+foreach(@test_rsls)
+{
+    push(@tests, "test_rsl(\"$_\")");
+}
+
+if(@ARGV)
+{
+    my @doit;
+    $verbose = 1;
+
+    foreach(@ARGV)
+    {
+	if(/^(\d+)-(\d+)$/)
+	{
+	    foreach($1 .. $2)
+	    {
+	       push(@doit, $_);
+	    }
+	}
+	elsif(/^(\d+)$/)
+	{
+	    push(@doit, $1);
+	}
+    }
+    plan tests => scalar(@doit);
+
+    foreach (@doit)
+    {
+	eval "&$tests[$_-1]";
+    }
+}
+else
+{
+    plan tests => scalar(@tests), todo => \@todo;
+
+    foreach (@tests)
+    {
+	eval "&$_";
+    }
+}

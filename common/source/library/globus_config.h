@@ -23,62 +23,80 @@
 #define BUILD_DEBUG 1
 
 #ifdef __STDC__
-#ifndef HAVE_STDARG_H
-#define HAVE_STDARG_H
-#endif
+    #ifndef HAVE_STDARG_H
+        #define HAVE_STDARG_H
+    #endif
 #endif
 
 #ifdef _WIN32
-#define TARGET_ARCH_WIN32 1
-#define WINVER 0x0502
+    #define TARGET_ARCH_WIN32 1
+    #define WINVER 0x0502
 #endif
 
 #ifdef __MINGW32__
-#ifndef HAVE_IN6_IS_ADDR_UNSPECIFIED 
-#define HAVE_IN6_IS_ADDR_UNSPECIFIED 1
-#endif
-#ifndef __USE_MINGW_ANSI_STDIO
-#define __USE_MINGW_ANSI_STDIO 1
-#endif
-#ifndef _POSIX
-#define _POSIX 1
-#endif
-#define TARGET_ARCH_MINGW32
+    #ifndef HAVE_IN6_IS_ADDR_UNSPECIFIED 
+        #define HAVE_IN6_IS_ADDR_UNSPECIFIED 1
+    #endif
+    #ifndef __USE_MINGW_ANSI_STDIO
+        #define __USE_MINGW_ANSI_STDIO 1
+    #endif
+    #ifndef _POSIX
+        #define _POSIX 1
+    #endif
+    #define TARGET_ARCH_MINGW32
 #endif
 
 #ifdef __HOS_AIX__
-#define TARGET_ARCH_AIX 1
+    #define TARGET_ARCH_AIX 1
 #endif
 
 #ifdef __FreeBSD__
-#define TARGET_ARCH_FREEBSD 1
-#define TARGET_ARCH_BSD 1
+    #define TARGET_ARCH_FREEBSD 1
+    #define TARGET_ARCH_BSD 1
+#endif
+
+#ifdef __OpenBSD__
+    #define TARGET_ARCH_OPENBSD 1
+    #define TARGET_ARCH_BSD 1
 #endif
 
 #ifdef __CYGWIN__
-#define TARGET_ARCH_CYGWIN
+    #define TARGET_ARCH_CYGWIN
 #endif
 
 #ifdef __APPLE__
-#define TARGET_ARCH_DARWIN 1
-#define TARGET_ARCH_BSD 1
+    #define TARGET_ARCH_DARWIN 1
+    #define TARGET_ARCH_BSD 1
 #endif
 
 #ifdef sun
-#define TARGET_ARCH_SOLARIS 1
-#ifdef __i386
-#define TARGET_ARCH_X86 1
-#endif
-#ifdef __x86_64
-#define TARGET_ARCH_X86_64 1
-#endif
+    #define TARGET_ARCH_SOLARIS 1
+    #ifdef __i386
+        #define TARGET_ARCH_X86 1
+    #endif
+    #ifdef __x86_64
+        #define TARGET_ARCH_X86_64 1
+    #endif
 #endif
 
 #ifdef __hpux
-#define TARGET_ARCH_HPUX a
-#ifdef __ia64
-#define TARGET_ARCH_IA64 1
+    #define TARGET_ARCH_HPUX 1
+    #ifdef __ia64
+        #define TARGET_ARCH_IA64 1
+    #endif
 #endif
+
+#if defined(__linux__) || defined(linux) || defined(__linux)
+    #define TARGET_ARCH_LINUX 1
+    #if defined(__x86_64) || defined(__x86_64__)
+        #define TARGET_ARCH_X86 1
+    #elif defined(i386) || defined(__i386) || defined(__i386__)
+        #define TARGET_ARCH_X86_64 1
+    #elif defined(__ia64) || defined(__itanium__)
+        #define TARGET_ARCH_IA64 1
+    #elif defined(__sparc)
+        #define TARGET_ARCH_SPARC 1
+    #endif
 #endif
 
 #ifdef __GNUC__

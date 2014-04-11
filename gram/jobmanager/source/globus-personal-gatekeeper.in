@@ -487,14 +487,14 @@ cat > ${scratch}/gridmap <<EOF
 "${subject}" ${user}
 EOF
 
+job_manager_path="$(command -v globus-job-manager)"
+
 if [ $valgrind -eq 1 ]; then
     valgrind=`which valgrind`
     if [ $? -ne 0 ]; then
         echo "Error: can't find valgrind" 1>&2
         exit 1
     fi
-job_manager_path="$(command -v globus-job-manager)"
-
 cat > ${scratch}/jobmanager <<EOF
 stderr_log,local_cred - $valgrind valgrind --leak-check=full --leak-resolution=high --show-reachable=yes --log-file=${HOME}/valgrind.%p.log ${job_manager_path} -conf ${scratch}/jobmanager.conf
 EOF

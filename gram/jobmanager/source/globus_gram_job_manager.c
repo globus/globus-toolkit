@@ -3186,7 +3186,7 @@ globus_l_gram_script_attr_init(
     globus_result_t                     result;
     int                                 rc = GLOBUS_SUCCESS;
     char *                              pipe_cmd[8];
-    char *                              env[8];
+    char *                              env[11];
     int                                 i;
 
     result = globus_eval_path(
@@ -3198,6 +3198,49 @@ globus_l_gram_script_attr_init(
 
         goto script_path_malloc_failed;
     }
+    if (access(pipe_cmd[0], X_OK) != 0)
+    {
+        const char *path;
+        char *p, *pcopy, *tok;
+
+        path = getenv("PATH");
+        if (path == NULL)
+        {
+            goto skip_path_lookup;
+        }
+
+        p = malloc(strlen(path) + strlen("/globus-job-manager-script.pl"));
+        if (p == NULL)
+        {
+            goto skip_path_lookup;
+        }
+        pcopy = strdup(path);
+        if (pcopy == NULL)
+        {
+            free(p);
+            goto skip_path_lookup;
+        }
+
+        for (tok = strtok(pcopy, ":");
+             tok != NULL;
+             tok = strtok(NULL, ":"))
+        {
+            sprintf(p, "%s/globus-job-manager-script.pl", tok);
+            if (access(p, X_OK) == 0)
+            {
+                free(pipe_cmd[0]);
+                pipe_cmd[0] = p;
+                p = NULL;
+                break;
+            }
+        }
+        if (p != NULL)
+        {
+            free(p);
+        }
+        free(pcopy);
+    }
+skip_path_lookup:
     globus_gram_job_manager_log(
             NULL,
             GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
@@ -3241,6 +3284,82 @@ globus_l_gram_script_attr_init(
     env[i++] = globus_common_create_string(
             "PATH=%s",
             getenv("PATH"));
+    if (getenv("PERL5LIB"))
+    {
+        env[i++] = globus_common_create_string(
+                "PERL5LIB=%s",
+                getenv("PERL5LIB"));
+    }
+
+    #if (TARGET_ARCH_LINUX)
+    {
+        char * tmp_env = getenv("LD_LIBRARY_PATH");
+
+        if (tmp_env)
+        {
+            env[i++] = globus_common_create_string("LD_LIBRARY_PATH=%s",
+                tmp_env);
+        }
+    }
+    #elif (TARGET_ARCH_HPUX)
+    {
+        char * tmp_env = getenv("SHLIB_PATH");
+        if (tmp_env)
+        {
+            env[i++] = globus_common_create_string("SHLIB_PATH=%s",
+                tmp_env);
+        }
+        tmp_env = getenv("LD_LIBRARY_PATH");
+        if (tmp_env)
+        {
+            env[i++] = globus_common_create_string("LD_LIBRARY_PATH=%s",
+                tmp_env);
+        }
+    }
+    #elif (TARGET_ARCH_SOLARIS)
+    {
+        char * tmp_env = getenv("LD_LIBRARY_PATH");
+        if (tmp_env)
+        {
+            env[i++] = globus_common_create_string("LD_LIBRARY_PATH=%s",
+                tmp_env);
+        }
+        tmp_env = LD_LIBRARY_PATH_64;
+        if (tmp_env)
+        {
+            env[i++] = globus_common_create_string("LD_LIBRARY_PATH_64=%s",
+                tmp_env);
+        }
+    }
+    #elif (TARGET_ARCH_AIX)
+    {
+        char * tmp_env = getenv("LIBPATH");
+        if (tmp_env)
+        {
+            env[i++] = globus_common_create_string("LIBPATH=%s",
+                tmp_env);
+        }
+    }
+    #elif (TARGET_ARCH_DARWIN)
+    {
+        char * tmp_env = getenv("DYLD_LIBRARY_PATH");
+        if (tmp_env)
+        {
+            env[i++] = globus_common_create_string("DYLD_LIBRARY_PATH=%s",
+                tmp_env);
+        }
+    }
+    #elif (TARGET_ARCH_FREEBSD || TARGET_ARCH_OPENBSD)
+    {
+        char * tmp_env = getenv("DYLD_LIBRARY_PATH");
+        if (tmp_env)
+        {
+            env[i++] = globus_common_create_string("DYLD_LIBRARY_PATH=%s",
+                tmp_env);
+        }
+    }
+    #endif
+
     if (manager->config->x509_cert_dir)
     {
         env[i++] = globus_common_create_string(

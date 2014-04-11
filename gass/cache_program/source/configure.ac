@@ -33,9 +33,9 @@ AC_SUBST(perlmoduledir)
 AC_CONFIG_FILES(
         globus-gass-cache-program-uninstalled.pc
         globus-gass-cache-program.pc
-        globus-gass-cache
-        globus-gass-cache-destroy
-        globus-gass-cache-util.pl
         Makefile
 	version.h)
+AC_CONFIG_FILES([globus-gass-cache], [chmod a+x globus-gass-cache])
+AC_CONFIG_FILES([globus-gass-cache-destroy],  [chmod a+x globus-gass-cache-destroy])
+AC_CONFIG_FILES([globus-gass-cache-util.pl], [chmod a+x globus-gass-cache-util.pl])
 AC_OUTPUT

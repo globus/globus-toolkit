@@ -31,7 +31,14 @@ SUFFIXES = .pm .html
 
 MAINTAINERCLEANFILES = $(perldoc_DATA)
 
+all-local:
+	$(MKDIR_P) Globus/GRAM
+	$(INSTALL) JobDescription.pm Globus/GRAM
+	$(INSTALL) $(srcdir)/JobManager.pm Globus/GRAM
+	$(INSTALL) $(srcdir)/StdioMerger.pm Globus/GRAM
 
+clean-local:
+	rm -rf Globus
 if BUILD_MANPAGES
 SUFFIXES += .xml .8
 

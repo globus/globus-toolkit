@@ -63,9 +63,10 @@ globus_l_rvf_attr_match(
 %parse-param { void * scanner }
 %lex-param { void * scanner }
 %debug 
-%file-prefix "globus_i_rvf_"
-%name-prefix "globus_i_rvf_"
-%output "globus_i_rvf_parser.c"
+%file-prefix="globus_i_rvf_"
+%name-prefix="globus_i_rvf_"
+%output="globus_i_rvf_parser.c"
+
 
 %start validation_file
 
@@ -476,6 +477,7 @@ end_of_aspect:
 
 typedef struct globus_rvf_extra_s
 {
+    char * buf;
     char * path;
     char * err;
 } globus_rvf_extra_t;
@@ -489,7 +491,7 @@ globus_i_rvf_error(YYLTYPE * lloc, globus_list_t **output, void * scanner, char 
 
     extra->err = globus_common_create_string(
             "unable to parse %s at line %d (token starting with <<<%.15s>>>) %s",
-            extra->path,
+            extra->path ? extra->path : "string",
             globus_i_rvf_get_lineno(scanner),
             globus_i_rvf_get_text(scanner),
             str);
@@ -573,6 +575,7 @@ globus_rvf_parse_file(
         return rc;
     }
 
+    extra.buf = NULL;
     extra.path = path;
     extra.err = NULL;
 
@@ -599,3 +602,45 @@ globus_rvf_parse_file(
     return rc;
 }
 /* globus_rvf_parse_file() */
+
+/* Public API of the parser: pass in a path, return a list of
+ * rsl validation records. if an error occurs, returns a non-zero value
+ * and sets errstr
+ */
+int
+globus_rvf_parse_string(
+    char * buffer,
+    globus_list_t **out,
+    char ** errstr)
+{
+    void * scanner;
+    int rc;
+    globus_rvf_extra_t extra;
+    YY_BUFFER_STATE lexbuf;
+
+    extra.buf = buffer;
+    extra.path = NULL;
+    extra.err = NULL;
+
+    *errstr = NULL;
+
+    globus_i_rvf_lex_init(&scanner);
+    globus_i_rvf_set_extra(&extra, scanner);
+
+    globus_i_rvf_set_debug(globus_l_rvf_debug, scanner);
+    
+    lexbuf = globus_i_rvf__scan_string(buffer, scanner);
+
+    rc = globus_i_rvf_parse(out, scanner);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
+
+        *errstr = extra.err;
+    }
+    globus_i_rvf__delete_buffer(lexbuf, scanner);
+    globus_i_rvf_lex_destroy(scanner);
+
+    return rc;
+}
+/* globus_rvf_parse_string() */

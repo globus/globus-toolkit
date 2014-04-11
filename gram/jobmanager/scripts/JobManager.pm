@@ -21,9 +21,11 @@ use strict;
 
 package Globus::GRAM::JobManager;
 
-my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache-util";
-my $url_copy_pgm = "$Globus::Core::Paths::bindir/globus-url-copy";
-my $info_pgm = "$Globus::Core::Paths::bindir/grid-proxy-info";
+local %ENV;
+$ENV{PATH} = "$ENV{PATH}:${Globus::Core::Paths::bindir}";
+my $cache_pgm = "globus-gass-cache-util";
+my $url_copy_pgm = "globus-url-copy";
+my $info_pgm = "grid-proxy-info";
 
 =head1 NAME
 

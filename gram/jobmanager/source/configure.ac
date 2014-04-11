@@ -4,7 +4,9 @@ AC_INIT([globus_gram_job_manager],[14.4],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gsi-credential >= 5, globus-gass-cache >= 8, globus-gass-transfer >= 7, globus-gram-protocol >= 11, globus-gssapi-gsi >= 10, globus-gss-assist >= 8, globus-gsi-sysconfig >= 5, globus-callout >= 2, globus-xio >= 3, globus-xio-popen-driver >= 2, globus-rsl >= 9, globus-gram-job-manager-callout-error >= 2, globus-scheduler-event-generator >= 4, globus-usage >= 3, openssl >= 0.9.8"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gsi-credential >= 5, globus-gass-cache >= 8, globus-gass-transfer >= 7, globus-gram-protocol >= 11, globus-gssapi-gsi >= 10, globus-gss-assist >= 8, globus-gsi-sysconfig >= 5, globus-callout >= 2, globus-xio >= 3, globus-xio-popen-driver >= 2, globus-rsl >= 9, globus-gram-job-manager-callout-error >= 2, globus-scheduler-event-generator >= 4, globus-usage >= 3, openssl >= 0.9.8, globus-gram-client-tools >= 10"])
+
+AC_SUBST([CLIENT_TEST_PACKAGE_DEPS], ["globus-common >= 14, globus-gram-protocol >= 11, globus-io >= 9, globus-rsl >= 9, globus-gss-assist >= 8, globus-gram-client >= 3, globus-gass-server-ez >= 2"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
@@ -16,6 +18,40 @@ AC_SUBST(DIRT_BRANCH_ID)
 
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+PKG_CHECK_MODULES([CLIENT_TEST_PACKAGE_DEP], $CLIENT_TEST_PACKAGE_DEPS)
+
+AC_SUBST([GATEKEEPER_PATH], ["$($PKG_CONFIG --variable=path globus-gatekeeper)"]) 
+AC_SUBST([JOBMANAGER_PATH], ["$($PKG_CONFIG --variable=path globus-gram-job-manager)"]) 
+AC_SUBST([GRAM_CLIENT_TOOLS_PATH], ["$($PKG_CONFIG --variable=path globus-gram-client-tools)"]) 
+AC_SUBST([GASS_COPY_PATH], ["$($PKG_CONFIG --variable=path globus-gass-copy)"]) 
+AC_SUBST([GASS_CACHE_PATH], ["$($PKG_CONFIG --variable=path globus-gass-cache-program)"]) 
+AC_SUBST([GRAM_JOB_MANAGER_SCRIPT_PATH], ["$($PKG_CONFIG --variable=path globus-gram-job-manager-scripts)"]) 
+AC_SUBST([GRAM_JOB_MANAGER_SCRIPT_PERL5LIB], ["$($PKG_CONFIG --variable=perl5lib globus-gram-job-manager-scripts)"]) 
+AC_SUBST([GRAM_JOB_MANAGER_FORK_PERL5LIB], ["$($PKG_CONFIG --variable=perl5lib globus-gram-job-manager-fork)"])
+AC_SUBST([GRAM_PROTOCOL_PERL5LIB], ["$($PKG_CONFIG --variable=perl5lib globus-gram-protocol)"])
+AC_SUBST([COMMON_PERL5LIB], ["$($PKG_CONFIG --variable=perl5lib globus-common)"])
+AC_SUBST([GSI_PROXY_UTILS_PATH], ["$($PKG_CONFIG --variable=path globus-proxy-utils)"])
+AC_SUBST([GSI_CERT_UTILS_PATH], ["$($PKG_CONFIG --variable=path globus-gsi-cert-utils)"])
+AC_SUBST([GLOBUS_XIO_GSI_DRIVER_DLOPEN], ["$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+AC_SUBST([GLOBUS_XIO_POPEN_DRIVER_DLOPEN], ["$($PKG_CONFIG --variable=dlopen globus-xio-popen-driver)"])
+if test -z "$GLOBUS_XIO_GSI_DRIVER_DLOPEN"; then
+    PREOPEN_FORCE="-dlpreopen force"
+fi
+AC_SUBST([PREOPEN_FORCE])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+
+case $build:$host in 
+    *cygwin*:*mingw*)
+        use_cygpath_w=true
+        ;;
+    *)
+        use_cygpath_w=false
+        ;;
+esac
+
+AM_CONDITIONAL([USE_CYGPATH_W], [test "$use_cygpath_w" = "true"])
+    
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
@@ -94,8 +130,16 @@ AC_CONFIG_FILES([
 	globus-gram-job-manager-uninstalled.pc
 	globus-gram-job-manager.pc
 	scripts/Makefile
-        seg/Makefile
         rvf/Makefile
+        seg/Makefile
+        test/Makefile
+        test/client/Makefile
+        test/jobmanager/failure_test/Makefile
+        test/jobmanager/Makefile
+        test/jobmanager/rsl_size_test/Makefile
+        test/jobmanager/stdio_test/Makefile
+        test/jobmanager/submit_test/Makefile
+        test/jobmanager/user_test/Makefile
         globus-gram-job-manager.conf
         gram.logrotate
         Makefile
@@ -103,4 +147,15 @@ AC_CONFIG_FILES([
 ])
 AC_CONFIG_FILES([globus-personal-gatekeeper],
     [chmod a+x globus-personal-gatekeeper])
+AC_CONFIG_FILES(
+        [test/jobmanager/job-manager-script-test.pl], [chmod a+x test/jobmanager/job-manager-script-test.pl])
+AC_CONFIG_FILES(
+        [test/jobmanager/submit_test/globus-gram-job-manager-submit-test.pl], [chmod a+x test/jobmanager/submit_test/globus-gram-job-manager-submit-test.pl])
+AC_CONFIG_FILES(
+        [test/jobmanager/failure_test/globus-gram-job-manager-failure-test.pl], [chmod a+x test/jobmanager/failure_test/globus-gram-job-manager-failure-test.pl])
+AC_CONFIG_FILES(
+        [test/jobmanager/rsl_size_test/globus-gram-job-manager-rsl-size-test.pl], [chmod a+x test/jobmanager/rsl_size_test/globus-gram-job-manager-rsl-size-test.pl])
+AC_CONFIG_FILES(
+        [test/gram-test-wrapper],
+        [chmod a+x test/gram-test-wrapper])
 AC_OUTPUT

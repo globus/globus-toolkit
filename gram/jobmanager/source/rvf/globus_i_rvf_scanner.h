@@ -342,7 +342,7 @@ extern int globus_i_rvf_lex \
 #undef YY_DECL
 #endif
 
-#line 213 "../../../../../gram/jobmanager/source/rvf/globus_i_rvf_scanner.l"
+#line 213 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_scanner.l"
 
 #line 348 "globus_i_rvf_scanner.h"
 #undef globus_i_rvf_IN_HEADER

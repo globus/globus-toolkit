@@ -2,6 +2,8 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
+path=@abs_builddir@
+perl5lib=@abs_builddir@
 
 Name: globus-gram-job-manager-scripts
 Description: Globus Toolkit - GRAM Job ManagerScripts

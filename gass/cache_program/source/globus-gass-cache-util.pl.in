@@ -54,6 +54,7 @@ BEGIN {
     unshift(@INC, $perlmoduledir);
 }
 
+$ENV{PATH} = $ENV{PATH}.":$bindir:$sbindir";
 
 # Prototypes
 sub main( @ );
@@ -83,7 +84,7 @@ my $PerlOptions =<<END_OPTIONS;
 END_OPTIONS
 
 my $Program = $0;
-my $ProgramC = $bindir . '/globus-gass-cache-util';
+my $ProgramC = 'globus-gass-cache-util';
 my $Verbose = 0;
 
 
@@ -357,7 +358,7 @@ sub GassCacheListNormal ( )
     # *************************************************
     print "Scanning the global entries in $CacheInfo{GLOBAL_ROOT}\n" if( $Verbose );
     my %Global;
-    $Cmd = "$bindir/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{GLOBAL_ROOT} -name \"data*\" -print'";
+    $Cmd = "find $CacheInfo{GLOBAL_ROOT} -name \"data*\" -print";
     foreach my $FullPath (`$Cmd` )
     {
 	chomp $FullPath;
@@ -400,7 +401,7 @@ sub GassCacheListNormal ( )
     # ******************************************
     print "Scanning the local entries in $CacheInfo{LOCAL_ROOT}\n" if( $Verbose );
     my %Local;
-    $Cmd = "$bindir/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{LOCAL_ROOT} -name \"data*\" -print'";
+    $Cmd = "find $CacheInfo{LOCAL_ROOT} -name \"data*\" -print";
     foreach my $FullPath (`$Cmd` )
     {
 	chomp $FullPath;
@@ -719,7 +720,7 @@ sub GassCacheCleanupUrlNormal ( )
     # Scan through the local directory, now..
     my %Local;
     my $LocalCount = 0;
-    my $Cmd = "$bindir/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{LOCAL_ROOT} -inum $FullGlobalDataInode -print'";
+    my $Cmd = "find $CacheInfo{LOCAL_ROOT} -inum $FullGlobalDataInode -print";
     open( FIND, "$Cmd|" ) || die "Can't run '$Cmd'";
     print "Scanning the local entries in $CacheInfo{LOCAL_ROOT}\n"
 	if( $Verbose );
