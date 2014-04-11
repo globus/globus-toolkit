@@ -34,7 +34,7 @@ install-data-local: $(noinst_DATA)
 		$(INSTALL_DATA) $$manpage $(DESTDIR)$(MAN_DIR)/Globus::GRAM::`basename $$manpage`; \
 	done
 
-all-local:
+all-local: $(globusperl_DATA)
 	$(MKDIR_P) Globus/GRAM
 	$(INSTALL) Error.pm JobSignal.pm JobState.pm Globus/GRAM
 
