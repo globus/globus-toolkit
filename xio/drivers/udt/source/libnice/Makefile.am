@@ -39,7 +39,7 @@ libnice: libnice-configure-stamp
 CLEANFILES = libnice libnice-configure-stamp libnice-unpack-stamp
 DISTCLEANFILES = $(libnice_tarball) 
 
-install-local:
+install-exec-local:
 	case $(host_os) in \
             *mingw*) \
                 cd source && $(MAKE) $(AM_MAKEFLAGS) install DESTDIR=$(DESTDIR); \
