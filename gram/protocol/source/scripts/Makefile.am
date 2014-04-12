@@ -36,6 +36,11 @@ install-data-local: $(noinst_DATA)
 
 all-local: $(globusperl_DATA)
 	$(MKDIR_P) Globus/GRAM
-	$(INSTALL) Error.pm JobSignal.pm JobState.pm Globus/GRAM
+	for mod in Error.pm JobSignal.pm JobState.pm; do \
+            if [ ! -f "$$mod" ] && [ -f "$(srcdir)/$$mod" ]; then \
+                mod="$(srcdir)/$$mod"; \
+            fi; \
+            $(INSTALL) "$$mod" Globus/GRAM ; \
+        done;
 
 MAINTAINERCLEANFILES = $(perldoc_DATA) $(noinst_DATA)
