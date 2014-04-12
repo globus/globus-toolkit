@@ -464,21 +464,29 @@ globus_l_gass_server_ez_register_accept_callback(
             }
 
             rc = fstat(fileno(fp), &statstruct);
-            if (rc == 0)
-            {
-                if (statstruct.st_blksize > MAX_DEFAULT_SIZE)
-                {
-                    buffer_size = MAX_DEFAULT_SIZE;
-                }
-                else
-                {
-                    buffer_size = statstruct.st_blksize;
-                }
-            }
-            else
+            #ifdef _WIN32
             {
                 buffer_size = MAX_DEFAULT_SIZE;
             }
+            #else
+            {
+                if (rc == 0)
+                {
+                    if (statstruct.st_blksize > MAX_DEFAULT_SIZE)
+                    {
+                        buffer_size = MAX_DEFAULT_SIZE;
+                    }
+                    else
+                    {
+                        buffer_size = statstruct.st_blksize;
+                    }
+                }
+                else
+                {
+                    buffer_size = MAX_DEFAULT_SIZE;
+                }
+            }
+            #endif
             buf = malloc(buffer_size);
             if (!buf)
             {
@@ -531,7 +539,7 @@ globus_l_gass_server_ez_register_accept_callback(
 		goto reregister;
 	    }
 
-            if (statstruct.st_blksize > statstruct.st_size)
+            #ifdef _WIN32
             {
                 if (statstruct.st_size > MAX_DEFAULT_SIZE)
                 {
@@ -542,17 +550,32 @@ globus_l_gass_server_ez_register_accept_callback(
                     buffer_size = statstruct.st_size;
                 }
             }
-            else
+            #else
             {
-                if (statstruct.st_blksize > MAX_DEFAULT_SIZE)
+                if (statstruct.st_blksize > statstruct.st_size)
                 {
-                    buffer_size = MAX_DEFAULT_SIZE;
+                    if (statstruct.st_size > MAX_DEFAULT_SIZE)
+                    {
+                        buffer_size = MAX_DEFAULT_SIZE;
+                    }
+                    else
+                    {
+                        buffer_size = statstruct.st_size;
+                    }
                 }
                 else
                 {
-                    buffer_size = statstruct.st_blksize;
+                    if (statstruct.st_blksize > MAX_DEFAULT_SIZE)
+                    {
+                        buffer_size = MAX_DEFAULT_SIZE;
+                    }
+                    else
+                    {
+                        buffer_size = statstruct.st_blksize;
+                    }
                 }
             }
+            #endif
 
             buf = malloc(buffer_size);
             if (!buf)
