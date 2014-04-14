@@ -1,6 +1,8 @@
 AC_INIT([globus_toolkit], [5.3.0], [support@globus.org])
 export GLOBUS_VERSION=$VERSION
 syscmd([./update-dirt.sh])
+m4_expand(esyscmd([sh -x ./prep-myproxy]))
+m4_expand(esyscmd([sh -x ./prep-gsissh]))
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax subdir-objects])
 AC_CONFIG_HEADERS([ltdlconfig.h])
 LT_CONFIG_LTDL_DIR([libltdl])
@@ -55,9 +57,12 @@ m4_define([TARGETS_MACRO],[
 # GT_PACKAGE(package, subdir, dependencies, bundle, is_xio_driver)
 m4_define([GT_PACKAGE],
 [
+ifelse([$1], [myproxy], [m4_define([pkgver], myproxy_version)],
+    [ifelse([$1], [gsi_openssh], [m4_define([pkgver], gsissh_version)], [
 m4_pushdef([AC_INIT],[$]2)dnl
 m4_define([pkgver], m4_normalize(m4_esyscmd(grep AC[_]INIT [$2][/configure.ac])))dnl
 m4_popdef([AC_INIT])dnl
+])])
 m4_define([native_name], m4_translit([$1],[_],[-]))
 
     m4_append([TARGETS_MACRO],[dnl
@@ -286,6 +291,11 @@ GT_PACKAGE([globus_gass_cache_program],[gass/cache_program/source],
 GT_PACKAGE([globus_gram_job_manager_pbs],
     [gram/jobmanager/lrms/pbs/source],
     [globus_common globus_scheduler_event_generator], [gram5-pbs])
+GT_PACKAGE([myproxy],[myproxy/source],
+    [ globus_common globus_gss_assist globus_gssapi_gsi globus_proxy_utils
+      globus_usage ], [myproxy])
+GT_PACKAGE([gsi_openssh], [gsi_openssh/source], 
+    [globus_gss_assist globus_usage], [gsi-openssh])
 GT_PACKAGE([globus_gram_client_tools],[gram/client_tools/source],
     [ globus_common  globus_gram_client  globus_gram_protocol
       globus_gass_transfer  globus_gass_server_ez  globus_rsl

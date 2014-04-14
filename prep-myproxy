@@ -1,0 +1,30 @@
+#! /bin/sh
+
+myproxy_version=5.9
+myproxy_tarball="myproxy-${myproxy_version}-gt5.2.tar.gz"
+myproxy_url="http://sourceforge.net/projects/cilogon/files/myproxy/$myproxy_tarball"
+package_output="$(dirname "$0")/packaging/package-output"
+myproxy_package_file="${package_output}/${myproxy_tarball}"
+myproxy_sourcedir="$(dirname $0)/myproxy/source"
+unpacked_file="${myproxy_sourcedir}/myproxy.unpacked" 
+
+(
+mkdir -p "$package_output" "$myproxy_sourcedir"
+
+if [ ! -f "${myproxy_package_file}" ]; then
+    curl -Ls "$myproxy_url" > "${myproxy_package_file}.tmp" 
+    mv "${myproxy_package_file}.tmp" "${myproxy_package_file}" 
+fi
+
+if [ -f "${unpacked_file}" ] && \
+   [ x$(cat "${unpacked_file}") != x"${myproxy_tarball}" ]; then
+   rm -rf "${myproxy_sourcedir}"
+fi
+if [ ! -f "${unpacked_file}" ]; then
+    gzip -dc "${myproxy_package_file}" | \
+        tar --strip 1 -C "${myproxy_sourcedir}" -xf -
+    patch -d "${myproxy_sourcedir}" -p1 < myproxy.gt6.diff
+    echo "${myproxy_tarball}" > "${unpacked_file}"
+fi
+) 1>&2
+echo "m4_define([myproxy_version], [${myproxy_version}])"
