@@ -166,5 +166,18 @@ libltdl-clean:
 	rm -f libltdl-stamp
 endif
 
+# GSI-OpenSSH doesn't have a working "dist" makefile rule.
+# We'll preserve the output from the prep-gsissh and prep-myproxy so that
+# configuration will work without re-downloading the sources
+dist-hook:
+	$(MKDIR_P) $(distdir)/gsi_openssh \
+		$(distdir)/myproxy \
+		$(distdir)/packaging/bundle-output \
+		$(distdir)/packaging/package-output
+	$(INSTALL) -p $(srcdir)/prep-gsissh $(srcdir)/prep-myproxy $(distdir)
+	$(INSTALL) -p $(srcdir)/packaging/bundle-output/* $(distdir)/packaging/bundle-output
+	$(INSTALL) -p $(srcdir)/packaging/package-output/* $(distdir)/packaging/package-output
+	(cd $(distdir); ./prep-gsissh; ./prep-myproxy)
+
 globus_gridftp_server-stamp: $(GT_ENABLED_XIO_DRIVERS)
 .PHONY: $(GT_TARGETS_ALL) $(GT_TARGETS_ONLY) $(GT_TARGETS_CLEAN) $(GT_TARGETS_INSTALL) $(GT_TARGETS_CHECK) $(GT_TARGETS_DISTCLEAN) $(GT_TARGETS_DIST) $(DOC_PHONY) $(GT_TARGETS_RPM) $(GT_TARGETS_DEB) $(GT_BUNDLES)

@@ -27,4 +27,11 @@ if [ ! -f "${unpacked_file}" ]; then
     echo "${myproxy_tarball}" > "${unpacked_file}"
 fi
 ) 1>&2
-echo "m4_define([myproxy_version], [${myproxy_version}])"
+echo "m4_define([myproxy_version], [${myproxy_version}])" > myproxy/version.m4.new
+
+if [ ! -f myproxy/version.m4 ] || \
+   ! cmp -s myproxy/version.m4 myproxy/version.m4.new; then
+   mv myproxy/version.m4.new myproxy/version.m4 
+else
+   rm -f myproxy/version.m4.new 
+fi

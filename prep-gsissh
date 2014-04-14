@@ -32,4 +32,11 @@ if [ ! -f "${unpacked_file}" ] || \
     echo "${gsissh_tarball}" > "${unpacked_file}"
 fi
 ) 1>&2
-echo "m4_define([gsissh_version], [${gsissh_version}])"
+echo "m4_define([gsissh_version], [${gsissh_version}])" > gsi_openssh/version.m4.new
+
+if [ ! -f gsi_openssh/version.m4 ] || \
+   ! cmp -s gsi_openssh/version.m4 gsi_openssh/version.m4.new; then
+   mv gsi_openssh/version.m4.new gsi_openssh/version.m4 
+else
+   rm -f gsi_openssh/version.m4.new 
+fi

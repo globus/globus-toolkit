@@ -1,8 +1,12 @@
 AC_INIT([globus_toolkit], [5.3.0], [support@globus.org])
 export GLOBUS_VERSION=$VERSION
 syscmd([./update-dirt.sh])
-m4_expand(esyscmd([test -x ./prep-myproxy && sh -x ./prep-myproxy || true]))
-m4_expand(esyscmd([test -x ./prep-gsissh && sh -x ./prep-gsissh || true]))
+syscmd([test -x ./prep-myproxy && sh -x ./prep-myproxy || true])
+syscmd([test -x ./prep-gsissh && sh -x ./prep-gsissh || true])
+m4_include([myproxy/version.m4])
+m4_include([gsi_openssh/version.m4])
+AC_SUBST([MYPROXY_VERSION], [myproxy_version])
+AC_SUBST([GSI_OPENSSH_VERSION], [gsissh_version])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax subdir-objects])
 AC_CONFIG_HEADERS([ltdlconfig.h])
 LT_CONFIG_LTDL_DIR([libltdl])
@@ -98,7 +102,8 @@ $1-osx-pkg = osx/packages/$1-]pkgver[.pkg
 $1-osx-pkg: \$($1-osx-pkg)
 ])
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
-    m4_append([GT_SUBDIRS_MACRO], [$2], [ ])dnl
+    ifelse([$1], [gsi_openssh], [], [
+        m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])dnl
     m4_append_uniq([GT_BUNDLES_MACRO],[$4], [ ])dnl
     m4_append([GT_BUNDLES_]m4_translit($4,[-],[_])[_MACRO],[$1-stamp], [ ])dnl
     m4_append([GT_BUNDLE_PACKAGES]m4_translit($4,[-],[_]),[$1], [ ])dnl
