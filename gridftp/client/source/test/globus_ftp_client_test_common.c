@@ -246,6 +246,7 @@ test_parse_args(int argc,
 	    break;
 	}
     }
+    globus_ftp_client_operationattr_set_allow_ipv6(operation_attr, GLOBUS_TRUE);
     
     subject = getenv("GLOBUS_FTP_CLIENT_TEST_SUBJECT");
     if(subject)
