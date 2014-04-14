@@ -1,8 +1,8 @@
 AC_INIT([globus_toolkit], [5.3.0], [support@globus.org])
 export GLOBUS_VERSION=$VERSION
 syscmd([./update-dirt.sh])
-m4_expand(esyscmd([sh -x ./prep-myproxy]))
-m4_expand(esyscmd([sh -x ./prep-gsissh]))
+m4_expand(esyscmd([test -x ./prep-myproxy && sh -x ./prep-myproxy || true]))
+m4_expand(esyscmd([test -x ./prep-gsissh && sh -x ./prep-gsissh || true]))
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax subdir-objects])
 AC_CONFIG_HEADERS([ltdlconfig.h])
 LT_CONFIG_LTDL_DIR([libltdl])

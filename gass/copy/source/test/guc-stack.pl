@@ -93,7 +93,7 @@ SKIP: {
                 '-dcstack', 'gsi,tcp',
                 '-stripe', @{$dc_opt}, $src_url, $dst_url);
 
-        print STDERR join(" ", "#", @args);
+        print STDERR join(" ", "#", @args, "\n");
         $pid = open3($infd, $outfd, $errfd, @args);
 
         close($infd);
@@ -109,8 +109,8 @@ SKIP: {
             $out =~ s/^/# /mg if $out;
             $err =~ s/^/# /mg if $err;
 
-            print STDERR "# stdout:\n$out" if $out;
-            print STDERR "# stderr:\n$err" if $err;
+            print STDERR "# stdout:\n$out\n" if $out;
+            print STDERR "# stderr:\n$err\n" if $err;
         }
 
         ok($rc == 0, join(" ", "guc stack", @{$dc_opt}[0..scalar(@$dc_opt)-3],
