@@ -501,5 +501,6 @@ AC_CONFIG_FILES([osx/distribution.xml])
 AC_CONFIG_FILES([osx/scripts/postinstall], [chmod a+x osx/scripts/postinstall])
 
 AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
+AC_CONFIG_SUBDIRS(gsi_openssh/source)
 
 AC_OUTPUT
