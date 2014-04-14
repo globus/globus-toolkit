@@ -27,30 +27,21 @@ require 5.8.0;
 use vars qw(@tests);
 
 $ENV{GLOBUS_USAGE_OPTOUT} = "1";
+$ENV{FTP_TEST_FORCE_LOCAL} = "1";
 my $server_pid;
 my $server_prog = "globus-gridftp-server";
 my $server_host = "localhost";
-my $server_port = 0;
-my $server_nosec = "-auth-level 4";
 my $subject;
 
-my $server_args = "-no-fork -no-chdir -d 0 -hostname localhost -p $server_port $server_nosec";
+my $server_args = "-no-fork -no-chdir -d 0 -auth-level 4 -p 0";
 
 chomp($subject = `openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert}`);
 $subject =~ s/^subject= *//;
 
-my $server_dir;
-
-foreach $server_dir (split(/:/,$ENV{PATH})) {
-    if (-x "$server_dir/$server_prog") {
-        $server_prog = "$server_dir/$server_prog";
-        last;
-    }
-}
 print STDERR "#Subject is $subject\n";
 print STDERR "#PATH is $ENV{PATH}\n";
 print STDERR "#executing $server_prog $server_args\n";
-$server_pid = open(SERVER, "env $server_prog $server_args |");
+$server_pid = open(SERVER, "$server_prog $server_args |");
  
 if($server_pid == -1)
 {
@@ -59,7 +50,7 @@ if($server_pid == -1)
 }
 
 select((select(SERVER), $| = 1)[0]);
-$server_port = <SERVER>;
+my $server_port = <SERVER>;
 $server_port =~ s/Server listening at .*?:(\d+)/\1/;
 $server_port =~ s/\s*$//;
 
