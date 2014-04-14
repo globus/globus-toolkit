@@ -1,12 +1,14 @@
 Name:           globus-toolkit
 Version:        6
-Release:        1
+Release:        2
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
 URL:            http://toolki.globus.org/toolkit
 Source0:        RPM-GPG-KEY-Globus
-Source1:        globus-toolkit-6.repo.in
+Source1:        globus-toolkit-6-stable.repo.in
+Source2:        globus-toolkit-6-testing.repo.in
+Source3:        globus-toolkit-6-unstable.repo.in
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 Requires(post): yum-utils
@@ -62,7 +64,23 @@ for repo in $yum_repos ; do
         -e "s!@TESTING_SOURCEURL@!$testing_sourceurl!g" \
         -e "s!@UNSTABLE_BASEURL@!$unstable_baseurl!g" \
         -e "s!@UNSTABLE_SOURCEURL@!$unstable_sourceurl!g" \
-        < %{SOURCE1} > globus-toolkit-6-$repo.repo
+        < %{SOURCE1} > globus-toolkit-6-stable-$repo.repo
+    sed -e "s!@REPO@!$repo!g" \
+        -e "s!@STABLE_BASEURL@!$stable_baseurl!g" \
+        -e "s!@STABLE_SOURCEURL@!$stable_sourceurl!g" \
+        -e "s!@TESTING_BASEURL@!$testing_baseurl!g" \
+        -e "s!@TESTING_SOURCEURL@!$testing_sourceurl!g" \
+        -e "s!@UNSTABLE_BASEURL@!$unstable_baseurl!g" \
+        -e "s!@UNSTABLE_SOURCEURL@!$unstable_sourceurl!g" \
+        < %{SOURCE2} > globus-toolkit-6-testing-$repo.repo
+    sed -e "s!@REPO@!$repo!g" \
+        -e "s!@STABLE_BASEURL@!$stable_baseurl!g" \
+        -e "s!@STABLE_SOURCEURL@!$stable_sourceurl!g" \
+        -e "s!@TESTING_BASEURL@!$testing_baseurl!g" \
+        -e "s!@TESTING_SOURCEURL@!$testing_sourceurl!g" \
+        -e "s!@UNSTABLE_BASEURL@!$unstable_baseurl!g" \
+        -e "s!@UNSTABLE_SOURCEURL@!$unstable_sourceurl!g" \
+        < %{SOURCE3} > globus-toolkit-6-unstable-$repo.repo
 done
 
 %install
@@ -74,7 +92,11 @@ install -Dpm 644 %{SOURCE0} \
 
 for repo in $(cat yum_repos); do
     install -dm 755 $RPM_BUILD_ROOT%{_datadir}
-    install -pm 644 globus-toolkit-6-${repo}.repo \
+    install -pm 644 globus-toolkit-6-stable-${repo}.repo \
+      $RPM_BUILD_ROOT%{_datadir}
+    install -pm 644 globus-toolkit-6-testing-${repo}.repo \
+      $RPM_BUILD_ROOT%{_datadir}
+    install -pm 644 globus-toolkit-6-unstable-${repo}.repo \
       $RPM_BUILD_ROOT%{_datadir}
 done
 
@@ -97,7 +119,9 @@ case $(lsb_release -is):$(lsb_release -rs) in
 	echo "Unsupported repo" 1>&2
 	exit 1
 esac
-yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-${repo}.repo
+yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-stable-${repo}.repo
+yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-testing-${repo}.repo
+yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-unstable-${repo}.repo
 yum-config-manager --enable Globus-Toolkit-6-$repo > /dev/null
 
 %preun
@@ -113,7 +137,9 @@ case $(lsb_release -is):$(lsb_release -rs) in
 	exit 0
         ;;
 esac
-rm -f /etc/yum.repo.d/globus-toolkit-6-${repo}.repo
+rm -f /etc/yum.repo.d/globus-toolkit-6-stable-${repo}.repo
+rm -f /etc/yum.repo.d/globus-toolkit-6-testing-${repo}.repo
+rm -f /etc/yum.repo.d/globus-toolkit-6-unstable-${repo}.repo
 
 %files
 %defattr(-,root,root,-)

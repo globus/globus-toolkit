@@ -1,0 +1,15 @@
+[Globus-Toolkit-6-Unstable-@REPO@]
+name=Globus Toolkit 6 Unstable (@REPO@)
+baseurl=@UNSTABLE_BASEURL@
+failovermethod=priority
+enabled=0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
+
+[Globus-Toolkit-6-Unstable-Source-@REPO@]
+name=Globus Toolkit 6 Unstable (@REPO@) Source
+baseurl=@UNSTABLE_SOURCEURL@
+failovermethod=priority
+enabled=0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
