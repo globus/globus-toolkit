@@ -3324,7 +3324,7 @@ skip_path_lookup:
             env[i++] = globus_common_create_string("LD_LIBRARY_PATH=%s",
                 tmp_env);
         }
-        tmp_env = LD_LIBRARY_PATH_64;
+        tmp_env = getenv("LD_LIBRARY_PATH_64");
         if (tmp_env)
         {
             env[i++] = globus_common_create_string("LD_LIBRARY_PATH_64=%s",
@@ -3351,10 +3351,10 @@ skip_path_lookup:
     }
     #elif (TARGET_ARCH_FREEBSD || TARGET_ARCH_OPENBSD)
     {
-        char * tmp_env = getenv("DYLD_LIBRARY_PATH");
+        char * tmp_env = getenv("LD_LIBRARY_PATH");
         if (tmp_env)
         {
-            env[i++] = globus_common_create_string("DYLD_LIBRARY_PATH=%s",
+            env[i++] = globus_common_create_string("LD_LIBRARY_PATH=%s",
                 tmp_env);
         }
     }
