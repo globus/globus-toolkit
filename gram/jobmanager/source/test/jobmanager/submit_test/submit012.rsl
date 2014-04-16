@@ -1,2 +1,3 @@
+(* GLOBUS_LOCATION_REQUIRED *)
 &(executable = /bin/sh)
  (arguments  = -c 'if [ -d $GLOBUS_LOCATION ]; then echo 1; else echo 0; fi')

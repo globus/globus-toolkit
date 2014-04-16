@@ -48,6 +48,7 @@ sub test_rsl
     my $out_rsl_fp = new IO::File($additionalrslfile, '>');
     my $skiplist='';
     my @all_rsl;
+    my $globus_location_skip = 0;
     my @lrm_skip_list=();
 
     while(<$test_rsl_fp>)
@@ -78,12 +79,19 @@ sub test_rsl
             {
                 push(@lrm_skip_list, $1);
             }
+            if ($s =~ m/GLOBUS_LOCATION_REQUIRED/ && 
+                ((!$ENV{GLOBUS_LOCATION}) || (! -d $ENV{GLOBUS_LOCATION})))
+            {
+                $globus_location_skip = 1;
+            }
         }
     }
 
     SKIP: {
         skip "Skipping test for $lrm", 1,
             if (defined($lrm) && grep(/$lrm/, @lrm_skip_list));
+        skip "Skipping test because no GLOBUS_LOCATION", 1
+            if ($globus_location_skip != 0);
 
         if($verbose)
         {
