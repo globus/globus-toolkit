@@ -1,10 +1,10 @@
-Name:           globus-toolkit
+Name:           globus-toolkit-repo
 Version:        6
-Release:        2
+Release:        1
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
-URL:            http://toolki.globus.org/toolkit
+URL:            http://www.globus.org/toolkit
 Source0:        RPM-GPG-KEY-Globus
 Source1:        globus-toolkit-6-stable.repo.in
 Source2:        globus-toolkit-6-testing.repo.in
