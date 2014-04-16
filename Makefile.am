@@ -132,7 +132,7 @@ install-exec-local:
 	        export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; $(MAKE) $(AM_MAKEFLAGS) $${stamp_pkg}-install ; \
 	    fi; \
 	done
-EXTRA_DIST=doxygen/index.dox globus-vararg-enums-doxygen-filter.pl GLOBUS_LICENSE myproxy.gt6.diff
+EXTRA_DIST=doxygen/index.dox globus-vararg-enums-doxygen-filter.pl GLOBUS_LICENSE myproxy.gt6.diff gsi_openssh.gt6.diff
 
 if !HAVE_LTDL
 LTDL_CLEAN = libltdl-clean

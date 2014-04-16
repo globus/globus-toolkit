@@ -29,6 +29,7 @@ if [ ! -f "${unpacked_file}" ] || \
    [ x$(cat "${unpacked_file}") != x"${gsissh_tarball}" ]; then
     gzip -dc "${gsissh_package_file}" | \
         tar --strip 2 -C "${gsissh_sourcedir}" -xf -
+    patch -d "${gsissh_sourcedir}" -p1 < gsi_openssh.gt6.diff
     echo "${gsissh_tarball}" > "${unpacked_file}"
 fi
 ) 1>&2
