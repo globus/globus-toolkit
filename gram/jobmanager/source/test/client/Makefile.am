@@ -1,14 +1,11 @@
-Scripts = \
+check_SCRIPTS = \
+	failed-job-two-phase-commit.pl \
 	nonblocking-register-test.pl \
 	ping-test.pl \
-	register-test.pl \
-	register-callback-test.pl
-
-check_SCRIPTS = \
-	$(Scripts) \
-	two-phase-commit-test.pl \
+	register-callback-test.pl \
 	register-ping-test.pl \
-	failed-job-two-phase-commit.pl
+	register-test.pl \
+	two-phase-commit-test.pl
 
 check_PROGRAMS = \
         failed-job-two-phase-commit \
@@ -58,8 +55,6 @@ TESTS = \
         stdio-update-test \
         version-test
 
-check-local:
-	echo hello
 LDADD = $(GLOBUS_XIO_GSI_DRIVER_DLOPEN) $(PREOPEN_FORCE) $(CLIENT_TEST_PACKAGE_DEP_LIBS)
 AM_CPPFLAGS = $(CLIENT_TEST_PACKAGE_DEP_CFLAGS) -I$(top_srcdir)
 
@@ -82,4 +77,4 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute \
     $(GLOBUS_XIO_POPEN_DRIVER_DLOPEN) \
     ../gram-test-wrapper
 
-EXTRA_DIST = $(Scripts) $(Data) 
+EXTRA_DIST = $(check_SCRIPTS)
