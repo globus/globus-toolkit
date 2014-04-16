@@ -1,0 +1,13 @@
+#! /bin/sh
+
+codename=$(lsb_release -cs)
+data="/usr/share/globus-toolkit-repo/sources.list.d"
+list_d="/etc/apt/sources.list.d"
+
+for repo in stable testing unstable; do
+    list="globus-toolkit-6-${repo}-${codename}.list"
+    if [ -f "${list_d}/${list}" ] && \
+       cmp -s "${list_d}/${list}" "${data}/${list}"; then
+        rm "${list_d}/${list}"
+    fi
+done

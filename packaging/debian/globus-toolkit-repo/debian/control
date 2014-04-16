@@ -1,0 +1,15 @@
+Source: globus-toolkit-repo
+Section: net
+Priority: extra
+Maintainer: Globus Support <support@globus.org>
+Build-Depends: cdbs, debhelper (>= 7), autotools-dev
+Standards-Version: 3.7.3
+Homepage: http://www.globus.org/
+
+Package: globus-toolkit-repo
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Globus Binary Repository Package
+ This package contains the sources.list(5) file to access the official
+ Globus Toolkit repository, as well as tasksel(8) definitions for package
+ groups for the Globus Toolkit.
