@@ -1,6 +1,6 @@
 Name:		globus-gram-job-manager-callout-error
 %global _name %(tr - _ <<< %{name})
-Version:	3.1
+Version:	3.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GRAM Jobmanager Callout Errors
 
@@ -122,6 +122,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 3.2-1
+- Version bump for consistency
+
 * Fri Feb 14 2014 Globus Toolkit <support@globus.org> - 3.1-1
 - Packaging fixes
 

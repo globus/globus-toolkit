@@ -1,6 +1,6 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	10.3
+Version:	10.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -112,6 +112,9 @@ fi
 
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 10.4-1
+- Version bump for consistency
+
 * Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 10.3-1
 - Packaging fixes, Warning Cleanup
 

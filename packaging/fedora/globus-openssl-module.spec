@@ -1,7 +1,7 @@
 Name:		globus-openssl-module
 %global _name %(tr - _ <<< %{name})
-Version:	4.1
-Release:	2%{?dist}
+Version:	4.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper
 
 Group:		System Environment/Libraries
@@ -130,6 +130,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 4.2-1
+- Version bump for consistency
+
 * Mon Jan 27 2014 Globus Toolkit <support@globus.org> - 4.1-1
 - Add missing dependency
 

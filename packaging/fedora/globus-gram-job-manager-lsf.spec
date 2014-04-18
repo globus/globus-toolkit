@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-lsf
 %global _name %(tr - _ <<< %{name})
-Version:	2.2
+Version:	2.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
@@ -193,6 +193,9 @@ fi
 %{_libdir}/libglobus*
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 2.3-1
+- Version bump for consistency
+
 * Thu Feb 13 2014 Globus Toolkit <support@globus.org> - 2.2-1
 - Packaging Fixes
 

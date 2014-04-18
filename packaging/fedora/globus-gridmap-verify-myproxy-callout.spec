@@ -1,6 +1,6 @@
 Name:		globus-gridmap-verify-myproxy-callout
 %global _name %(tr - _ <<< %{name})
-Version:	2.2
+Version:	2.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus gridmap myproxy callout.
 
@@ -78,6 +78,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libglobus_*
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 2.3-1
+- Version bump for consistency
+
 * Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 2.2-1
 - Packaging fixes, Warning Cleanup
 

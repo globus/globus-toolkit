@@ -112,7 +112,7 @@ sub update_rpm($$)
         {
             $changelogindex = $index;
         }
-        elsif ($specline =~ m/(Requires:\s*(\S*)\s*)(>=\s* [0-9.]+)/)
+        elsif ($specline =~ m/(Requires:\s*(\S*)\s*)(>=\s*[0-9.]+)/)
         {
             # Kind of ugly here. What we do is see if the requirement package
             # name is a gpt dependency. We try some variations on the name

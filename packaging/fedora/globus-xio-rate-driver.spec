@@ -1,6 +1,6 @@
 Name:           globus-xio-rate-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.3
+Version:	1.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Rate Limiting Driver
 
@@ -11,10 +11,10 @@ Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{ve
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio%{?_isa} >= 0
-Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-common%{?_isa} >= 0
 
 BuildRequires:	globus-xio-devel >= 0
-BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-common-devel >= 0
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
@@ -95,6 +95,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 1.4-1
+- Version bump for consistency
+
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 1.3-2
+- Version bump for consistency
+
 * Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 1.3-1
 - Packaging fixes, Warning Cleanup
 

@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
-Version:	2.1
+Version:	2.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
@@ -209,6 +209,9 @@ fi
 %{_mandir}/man8/globus-fork-starter.8.gz
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 2.2-1
+- Version bump for consistency
+
 * Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 2.1-1
 - Packaging fixes, Warning Cleanup
 

@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-xio-gridftp-multicast
 _name = globus_xio_gridftp_multicast
-version = 1.1
+version = 1.2
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp

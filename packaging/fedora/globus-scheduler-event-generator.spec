@@ -1,6 +1,6 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	5.2
+Version:	5.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
@@ -196,6 +196,9 @@ fi
 %{_mandir}/man3/*
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 5.3-1
+- Version bump for consistency
+
 * Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 5.2-1
 - Packaging fixes, Warning Cleanup
 

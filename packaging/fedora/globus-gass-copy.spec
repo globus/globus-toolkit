@@ -1,6 +1,6 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	9.6
+Version:	9.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
@@ -164,6 +164,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 9.8-1
+- Version bump for consistency
+
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 9.7-1
+- Version bump for consistency
+
 * Tue Feb 25 2014 Globus Toolkit <support@globus.org> - 9.6-1
 - Packaging fixes
 

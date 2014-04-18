@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.5
+Version:	7.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -164,6 +164,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 7.6-1
+- Version bump for consistency
+
 * Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 7.4-1
 - Packaging fixes, Warning Cleanup
 

@@ -1,6 +1,6 @@
 Name:		globus-usage
 %global _name %(tr - _ <<< %{name})
-Version:	4.1
+Version:	4.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Usage Library
 
@@ -95,6 +95,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 4.2-1
+- Version bump for consistency
+
 * Wed Feb 12 2014 Globus Toolkit <support@globus.org> - 4.1-1
 - Packaging fixes
 

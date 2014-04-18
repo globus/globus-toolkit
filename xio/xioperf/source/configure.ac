@@ -1,5 +1,5 @@
 AC_PREREQ([2.60])
-AC_INIT([globus_xioperf], [4.1],[http://jira.globus.org])
+AC_INIT([globus_xioperf], [4.2],[http://jira.globus.org])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])

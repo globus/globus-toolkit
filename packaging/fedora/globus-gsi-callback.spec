@@ -1,7 +1,7 @@
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
-Version:	5.1
-Release:	2%{?dist}
+Version:	5.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
 Group:		System Environment/Libraries
@@ -134,6 +134,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 5.2-1
+- Version bump for consistency
+
 * Mon Feb 10 2014 Globus Toolkit <support@globus.org> - 5.1-1
 - Packaging fixes
 

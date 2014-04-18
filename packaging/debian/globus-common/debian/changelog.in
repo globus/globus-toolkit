@@ -1,3 +1,15 @@
+globus-common (15.16-1+gt6.@distro@) @distro@; urgency=low
+
+  * Version bump for consistency
+
+ -- Globus Toolkit <support@globus.org>  Fri, 18 Apr 2014 13:47:31 -0400
+
+globus-common (15.15-2+gt6.@distro@) @distro@; urgency=low
+
+  * Version bump for consistency
+
+ -- Globus Toolkit <support@globus.org>  Fri, 18 Apr 2014 13:39:58 -0400
+
 globus-common (15.15-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes, Warning Cleanup

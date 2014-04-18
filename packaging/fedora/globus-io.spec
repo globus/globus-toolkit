@@ -1,6 +1,6 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	10.6
+Version:	10.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
@@ -113,6 +113,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 10.7-1
+- Version bump for consistency
+
 * Mon Mar 03 2014 Globus Toolkit <support@globus.org> - 10.5-1
 - Packaging fixes
 

@@ -1,6 +1,6 @@
 Name:		globus-gass-transfer
 %global _name %(tr - _ <<< %{name})
-Version:	8.3
+Version:	8.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Transfer
 
@@ -128,6 +128,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 8.4-1
+- Version bump for consistency
+
 * Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 8.3-1
 - Packaging fixes, Warning Cleanup
 

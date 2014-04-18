@@ -1,6 +1,6 @@
 Name:		globus-gsi-proxy-core
 %global _name %(tr - _ <<< %{name})
-Version:	7.3
+Version:	7.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
 
@@ -144,6 +144,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 7.4-1
+- Version bump for consistency
+
 * Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 7.3-1
 - Packaging fixes, Warning Cleanup
 

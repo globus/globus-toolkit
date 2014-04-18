@@ -1,3 +1,15 @@
+globus-ftp-control (5.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Version bump for consistency
+
+ -- Globus Toolkit <support@globus.org>  Fri, 18 Apr 2014 13:47:29 -0400
+
+globus-ftp-control (5.6-2+gt6.@distro@) @distro@; urgency=low
+
+  * Version bump for consistency
+
+ -- Globus Toolkit <support@globus.org>  Fri, 18 Apr 2014 13:39:55 -0400
+
 globus-ftp-control (5.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes, Warning Cleanup

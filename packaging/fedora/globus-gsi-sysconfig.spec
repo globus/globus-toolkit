@@ -1,6 +1,6 @@
 Name:		globus-gsi-sysconfig
 %global _name %(tr - _ <<< %{name})
-Version:	6.2
+Version:	6.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
@@ -125,6 +125,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 6.4-1
+- Version bump for consistency
+
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 6.3-1
+- Version bump for consistency
+
 * Thu Feb 27 2014 Globus Toolkit <support@globus.org> - 6.2-1
 - Packaging fixes, Warning Cleanup
 

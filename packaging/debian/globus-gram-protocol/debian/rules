@@ -15,7 +15,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gram-protocol
 _name = globus_gram_protocol
-version = 12.6
+version = 12.7
 soname = 3
 
 INSTALLDIR = $(CURDIR)/debian/tmp

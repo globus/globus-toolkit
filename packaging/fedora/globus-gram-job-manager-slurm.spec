@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-slurm
 %global _name %(tr - _ <<< %{name})
-Version:	2.1
+Version:	2.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - SLURM Job Manager
 
@@ -156,6 +156,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 2.2-1
+- Version bump for consistency
+
 * Sat Feb 15 2014 Globus Toolkit <support@globus.org> - 2.1-1
 - Packaging fixes
 

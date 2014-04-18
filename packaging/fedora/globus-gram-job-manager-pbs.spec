@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
-Version:	2.1
+Version:	2.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
@@ -228,6 +228,9 @@ fi
 %{_mandir}/man3/*
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 2.2-1
+- Version bump for consistency
+
 * Tue Feb 11 2014 Globus Toolkit <support@globus.org> - 2.1-1
 - Add getline implementations for older or non-POSIX systems
 

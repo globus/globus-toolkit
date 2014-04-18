@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-scheduler-event-generator
 _name = globus_scheduler_event_generator
-version = 5.2
+version = 5.3
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp

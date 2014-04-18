@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
-Version:	2.1
+Version:	2.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
@@ -105,6 +105,9 @@ fi
 %{_datadir}/globus/globus_gram_job_manager/condor.rvf
 
 %changelog
+* Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 2.2-1
+- Version bump for consistency
+
 * Thu Feb 20 2014 Globus Toolkit <support@globus.org> - 2.1-1
 - Packaging fixes
 

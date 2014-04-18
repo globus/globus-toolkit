@@ -1,3 +1,15 @@
+globus-io (10.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Version bump for consistency
+
+ -- Globus Toolkit <support@globus.org>  Fri, 18 Apr 2014 13:47:32 -0400
+
+globus-io (10.6-2+gt6.@distro@) @distro@; urgency=low
+
+  * Version bump for consistency
+
+ -- Globus Toolkit <support@globus.org>  Fri, 18 Apr 2014 13:39:58 -0400
+
 globus-io (10.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes

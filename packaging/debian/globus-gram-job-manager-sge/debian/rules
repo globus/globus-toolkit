@@ -11,7 +11,7 @@ endif
 
 name = globus-gram-job-manager-sge
 _name = globus_gram_job_manager_sge
-version = 2.1
+version = 2.2
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
