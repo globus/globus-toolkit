@@ -2,7 +2,7 @@ AC_INIT([globus-toolkit-repo], [6])
 
 AM_INIT_AUTOMAKE([foreign])
 
-releases="squeeze,wheezy,lucid,precise,quantal,saucy"
+releases="squeeze,wheezy,lucid,precise,quantal,saucy,trusty"
 
 AC_ARG_WITH([releases],
     [AS_HELP_STRING([--with-releases=RELEASE,...],
