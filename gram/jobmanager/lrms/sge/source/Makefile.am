@@ -9,7 +9,7 @@ globussysconf_DATA = globus-sge.conf
 gridservices_DATA = jobmanager-sge-poll jobmanager-sge-seg
 gramperlmodule_DATA = sge.pm
 validation_DATA = sge.rvf
-doc_DATA = AUTHORS CREDITS LICENSE LICENSE.GTPL LICENSE.LGPL
+doc_DATA = AUTHORS CREDITS LICENSE GLOBUS_LICENSE LICENSE.LGPL
 
 AT=@
 jobmanager-sge-poll: jobmanager-sge-poll.in
