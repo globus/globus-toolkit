@@ -34,6 +34,10 @@
 /* Ensure C linkage.  */
 extern LT_DLSYM_CONST lt_dlsymlist lt__PROGRAM__LTX_preloaded_symbols[];
 
+#ifdef LTDL_SET_PRELOADED_SYMBOLS
+#undef LTDL_SET_PRELOADED_SYMBOLS
+#endif
+
 #define LTDL_SET_PRELOADED_SYMBOLS() \
         lt_dlpreload_default(lt_preloaded_symbols)
 #endif

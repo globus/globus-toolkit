@@ -24,7 +24,8 @@
 #include "globus_xio_stack_driver.h"
 #include "globus_xio_verify.h"
 #include "test_common.h"
-#include "ltdl.h"
+
+#include "globus_preload.h"
 
 #ifdef _WIN32
 #include <getopt.h>
