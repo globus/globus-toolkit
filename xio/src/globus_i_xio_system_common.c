@@ -15,6 +15,8 @@
  */
 
 #include "globus_i_xio_system_common.h"
+#include <unistd.h>
+#include <limits.h>
 
 #ifndef WIN32
 #define GlobusLXIOSystemWouldBlock(err)                                     \
@@ -29,6 +31,7 @@ GlobusDebugDefine(GLOBUS_XIO_SYSTEM);
 globus_memory_t                         globus_i_xio_system_op_info_memory;
 globus_memory_t                         globus_i_xio_system_iov_memory;
 static globus_bool_t                    globus_l_xio_system_memory_initialized;
+static int                              globus_l_xio_iov_max;
 
 int
 globus_i_xio_system_common_activate(void)
@@ -57,6 +60,38 @@ globus_i_xio_system_common_activate(void)
             10);
         globus_memory_init(
             &globus_i_xio_system_iov_memory, sizeof(struct iovec) * 10, 10);
+    }
+
+    globus_l_xio_iov_max = -1;
+
+#ifdef _SC_IOV_MAX
+    if (globus_l_xio_iov_max == -1)
+    {
+        /* If this returns -1, the limit might be indefinite if errno is
+         * unchanged, but that doesn't mean infinite. It's unclear what
+         * one is to do in that case
+         */
+        globus_l_xio_iov_max = sysconf(_SC_IOV_MAX);
+    }
+#endif
+
+#ifdef IOV_MAX
+    if (globus_l_xio_iov_max == -1)
+    {
+        globus_l_xio_iov_max = IOV_MAX;
+    }
+#endif
+
+#ifdef _XOPEN_IOV_MAX
+    if (globus_l_xio_iov_max == -1)
+    {
+       globus_l_xio_iov_max = _XOPEN_IOV_MAX;
+    }
+#endif
+
+    if (globus_l_xio_iov_max == -1)
+    {
+        globus_l_xio_iov_max = 16;
     }
 
     GlobusXIOSystemDebugExit();
@@ -159,7 +194,8 @@ globus_i_xio_system_try_readv(
     do
     {
 #ifdef HAVE_READV
-        rc = readv(fd, iov, (iovc > IOV_MAX) ? IOV_MAX : iovc);
+        rc = readv(fd, iov,
+                (iovc > globus_l_xio_iov_max) ? globus_l_xio_iov_max : iovc);
 #else
         rc = read(fd, iov[0].iov_base,iov[0].iov_len);
 #endif
@@ -375,7 +411,8 @@ globus_i_xio_system_try_recvmsg(
         globus_size_t                   orig_iovc;
 
         orig_iovc = msghdr->msg_iovlen;
-        msghdr->msg_iovlen = orig_iovc > IOV_MAX ? IOV_MAX : orig_iovc;
+        msghdr->msg_iovlen = (orig_iovc > globus_l_xio_iov_max)
+                ?  globus_l_xio_iov_max : orig_iovc;
 
         do
         {
@@ -521,7 +558,8 @@ globus_i_xio_system_try_writev(
     do
     {
 #ifdef HAVE_WRITEV
-        rc = writev(fd, iov, (iovc > IOV_MAX) ? IOV_MAX : iovc);
+        rc = writev(fd, iov, (iovc > globus_l_xio_iov_max)
+                ? globus_l_xio_iov_max : iovc);
 #else
         rc = write(fd, iov[0].iov_base, iov[0].iov_len);
 #endif
@@ -715,7 +753,8 @@ globus_i_xio_system_try_sendmsg(
         globus_size_t                   orig_iovc;
 
         orig_iovc = msghdr->msg_iovlen;
-        msghdr->msg_iovlen = orig_iovc > IOV_MAX ? IOV_MAX : orig_iovc;
+        msghdr->msg_iovlen = (orig_iovc > globus_l_xio_iov_max)
+                ? globus_l_xio_iov_max : orig_iovc;
 
         do
         {
