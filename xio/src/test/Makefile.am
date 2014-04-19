@@ -64,7 +64,8 @@ AM_CPPFLAGS = \
 AM_LDFLAGS = $(GPT_LDFLAGS)
 LDADD = $(PACKAGE_DEP_LIBS) \
 	-dlopen drivers/libglobus_xio_test_drivers.la \
-	../libglobus_xio.la
+	../libglobus_xio.la \
+        -lltdl
 
 framework_test_SOURCES =                \
 	test_common.h                   \

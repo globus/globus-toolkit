@@ -1,3 +1,9 @@
+globus-xio (4.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Test fixes
+
+ -- Globus Toolkit <support@globus.org>  Sat, 19 Apr 2014 15:02:44 -0400
+
 globus-xio (4.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Make sure IOV_MAX equivalent is figured out

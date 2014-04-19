@@ -1,7 +1,7 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	4.6
-Release:	3%{?dist}
+Version:	4.7
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
@@ -140,6 +140,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Sat Apr 19 2014 Globus Toolkit <support@globus.org> - 4.7-1
+- Test fixes
+
 * Sat Apr 19 2014 Globus Toolkit <support@globus.org> - 4.6-1
 - Make sure IOV_MAX equivalent is figured out
 
