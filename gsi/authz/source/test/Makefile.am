@@ -25,7 +25,7 @@ TESTS_ENVIRONMENT = export \
 LOG_COMPILER = $(top_builddir)/libtool --mode=execute -dlopen libglobus_authz_test_callout.la
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)
-LDADD = $(PACKAGE_DEP_LIBS)
+LDADD = $(PACKAGE_DEP_LIBS) -lltdl
 
 authz_cred_test_LDFLAGS = -rpath $(abs_builddir) -dlopen libglobus_authz_test_callout.la
 authz_cred_test_LDADD = ../libglobus_authz.la $(LDADD)
