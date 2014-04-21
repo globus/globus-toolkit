@@ -32,6 +32,11 @@ BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
+%if 0%{?suse_version} > 0
+BuildRequires: libtool
+%else
+BuildRequires: libtool-ltdl-devel
+%endif
 
 %package devel
 Summary:	Globus Toolkit - Globus authz library Development Files
