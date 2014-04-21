@@ -16,7 +16,7 @@
 
 #include "globus_callout.h"
 #include "globus_common.h"
-#include "ltdl.h"
+#include "globus_preload.h"
 
 #include <stdlib.h>
 #include <stdio.h>

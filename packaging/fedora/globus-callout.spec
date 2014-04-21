@@ -1,6 +1,6 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
-Version:	3.7
+Version:	3.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
@@ -130,6 +130,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Apr 21 2014 Globus Toolkit <support@globus.org> - 3.8-1
+- Test fixes
+
 * Mon Apr 21 2014 Globus Toolkit <support@globus.org> - 3.7-1
 - Test fixes
 
