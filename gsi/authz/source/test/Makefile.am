@@ -30,6 +30,7 @@ LDADD = $(PACKAGE_DEP_LIBS) -lltdl
 authz_cred_test_LDFLAGS = -rpath $(abs_builddir) -dlopen libglobus_authz_test_callout.la
 authz_cred_test_LDADD = ../libglobus_authz.la $(LDADD)
 authz_cred_test_SOURCES = authz_cred_test.c 
+authz_cred_test_DEPENDENCIES = libglobus_authz_test_callout.la
 
 libglobus_authz_test_callout_la_SOURCES = authz_test_callout.c
 libglobus_authz_test_callout_la_LIBADD = $(GPT_LIB_LINKS)

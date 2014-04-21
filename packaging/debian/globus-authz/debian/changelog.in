@@ -1,3 +1,9 @@
+globus-authz (3.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Test fixes
+
+ -- Globus Toolkit <support@globus.org>  Mon, 21 Apr 2014 11:51:42 -0400
+
 globus-authz (3.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Test fixes
