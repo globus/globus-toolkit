@@ -1,6 +1,6 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	10.7
+Version:	10.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
@@ -30,6 +30,11 @@ BuildRequires:	libtool >= 2.2
 BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
+%endif
+%if 0%{?suse_version} > 0
+BuildRequires: libtool
+%else
+BuildRequires: libtool-ltdl-devel
 %endif
 
 %package devel
@@ -113,6 +118,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Apr 21 2014 Globus Toolkit <support@globus.org> - 10.8-1
+- Test fixes
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 10.7-1
 - Version bump for consistency
 

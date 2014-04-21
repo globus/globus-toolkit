@@ -31,7 +31,7 @@ testcredlink: testcred.cert
 	echo "$$linkname" > $@
 
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS) $(GSI_DRIVER_CFLAGS)
-LDADD = ../libglobus_io.la $(PACKAGE_DEP_LIBS) $(GSI_DRIVER_LIBS) $(PREOPEN_FORCE)
+LDADD = ../libglobus_io.la $(PACKAGE_DEP_LIBS) $(GSI_DRIVER_LIBS) $(PREOPEN_FORCE) -lltdl
 
 if CYGPATH_W_DEFINED
 X509_CERT_DIR = $$($(CYGPATH_W) $(abs_builddir))
