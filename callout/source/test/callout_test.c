@@ -20,7 +20,7 @@
 #include "globus_common.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "ltdl.h"
+#include "globus_preload.h"
 
 
 int main()
