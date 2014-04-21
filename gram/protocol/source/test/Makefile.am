@@ -1,6 +1,6 @@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(PACKAGE_DEP_CFLAGS)
 LDADD = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) \
-    ../libglobus_gram_protocol.la $(PACKAGE_DEP_LIBS)
+    ../libglobus_gram_protocol.la $(PACKAGE_DEP_LIBS) -lltdl
 
 check_SCRIPTS = gram-protocol-test-wrapper 
 

@@ -2,7 +2,7 @@
 
 Name:		globus-gram-protocol
 %global _name %(tr - _ <<< %{name})
-Version:	12.7
+Version:	12.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Protocol Library
 
@@ -39,6 +39,11 @@ BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
+%if 0%{?suse_version} > 0
+BuildRequires: libtool
+%else
+BuildRequires: libtool-ltdl-devel
+%endif
 
 %package devel
 Summary:	Globus Toolkit - GRAM Protocol Library Development Files
@@ -153,6 +158,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Apr 21 2014 Globus Toolkit <support@globus.org> - 12.8-1
+- Test fixes
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 12.7-1
 - Version bump for consistency
 
