@@ -1,7 +1,7 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
 Version:	3.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries
@@ -12,10 +12,10 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
 
-%if 0%{?suse_version} == 0
-%if 0%{?rhel} == 0 || 0%{?rhel} > 4
-BuildRequires:	libtool-ltdl-devel >= 1
-%endif
+%if 0%{?suse_version} > 0
+BuildRequires: libtool
+%else
+BuildRequires: libtool-ltdl-devel
 %endif
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	doxygen
