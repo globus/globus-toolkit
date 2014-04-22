@@ -201,7 +201,7 @@ main(
     LTDL_SET_PRELOADED_SYMBOLS();
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
-    printf("1..10\n");
+    printf("1..11\n");
 
     for(ctr = 0; ctr < argc; ctr++)
     {

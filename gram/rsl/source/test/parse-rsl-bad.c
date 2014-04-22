@@ -20,7 +20,7 @@ int main()
 {
     int i;
     int not_ok = 0;
-    printf("1..%zd\n",sizeof(tests)/sizeof(tests[0]));  
+    printf("1..%zd\n",(sizeof(tests)/sizeof(tests[0]))-1);  
 
     for (i = 0; tests[i] != NULL; i++)
     {

@@ -173,6 +173,8 @@ int main(int argc, char *argv[])
     int test_num = 0;
     int not_ok = 0;
 
+    printf("1..4\n");
+
     rc = add_remove_callback_contact_test();
     printf("%s %d - add_remove_callback_contact_test\n",
             rc ? "not ok" : "ok", ++test_num);

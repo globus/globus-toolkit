@@ -1,3 +1,9 @@
+globus-callout (3.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Test fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 22 Apr 2014 15:46:54 -0400
+
 globus-callout (3.8-1+gt6.@distro@) @distro@; urgency=low
 
   * Test fixes

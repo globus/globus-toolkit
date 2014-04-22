@@ -16,12 +16,12 @@ check_LTLIBRARIES = libtest.la \
                    libchainb_test.la \
                    libchainc_test.la
 
-callout_test_LDADD = -dlopen libtest.la $(LDADD) -lltdl
+callout_test_LDADD = -dlopen libtest.la $(LDADD)
 callout_chain_test_LDADD = \
     -dlopen libtest.la \
     -dlopen libchaina_test.la \
     -dlopen libchainb_test.la \
-    -dlopen libchainc_test.la $(LDADD) -lltdl 
+    -dlopen libchainc_test.la $(LDADD)
 
 libtest_la_LDFLAGS = \
     -module \
