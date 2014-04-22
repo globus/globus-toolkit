@@ -1,3 +1,9 @@
+globus-resource-management-sdk (6.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * New for Globus Toolkit 6.0
+
+ -- Globus Toolkit <support@globus.org>  Tue, 22 April 2014 13:52:17 -0400
+
 globus-resource-management-sdk (0.0.0-3) unstable; urgency=low
 
   * Fix rsl and credential library dependencies

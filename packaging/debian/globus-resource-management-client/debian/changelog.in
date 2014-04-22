@@ -1,8 +1,8 @@
-globus-resource-management-client (0.0.0-2) unstable; urgency=low
+globus-resource-management-client (6.0-1+gt6.@distro@) @distro@; urgency=low
 
-  * Fix library dependencies
+  * New for Globus Toolkit 6.0
 
- -- Globus Toolkit <support@globus.org>  Sat, 03 August 2013 09:01:25 -0400
+ -- Globus Toolkit <support@globus.org>  Tue, 22 April 2014 13:51:55 -0400
 
 globus-resource-management-client (0.0.0) unstable; urgency=low
 
