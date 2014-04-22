@@ -88,6 +88,18 @@
         description="Job Management Server for PBS"
         start_selected="false"/>
     <choice
+        id="org.globus.bundle.gsi-openssh"
+        visible="false"
+        title="GSI OpenSSH"
+        description="GSI OpenSSH"
+        start_selected="true"/>
+    <choice
+        id="org.globus.bundle.myproxy"
+        visible="false"
+        title="MyProxy"
+        description="MyProxy"
+        start_selected="true"/>
+    <choice
         id="org.globus.bundle.udt"
         visible="false"
         title="Globus XIO UDT Driver"

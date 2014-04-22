@@ -1,6 +1,6 @@
 Name:		globus-gram5
 %global _name %(tr - _ <<< %{name})
-Version:	5.2.2
+Version:	6.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM5 Bundle
 
