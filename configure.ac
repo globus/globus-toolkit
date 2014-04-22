@@ -473,7 +473,7 @@ for en_name in ""$enabled_buns; do
         fi
     done
     if test "$skip" = 0; then
-        if test X"$en_name" = X"gsi_openssh"; then
+        if test X"$en_name" = X"gsi-openssh"; then
             gsi_openssh_enabled=yes
         fi
         final_enabled_bundles="${final_enabled_bundles:+$final_enabled_bundles }$en_name"
