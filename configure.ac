@@ -506,7 +506,7 @@ AC_CONFIG_FILES([osx/scripts/postinstall], [chmod a+x osx/scripts/postinstall])
 
 AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
 
-if test gsi_openssh_enabled = yes; then
+if test x"$gsi_openssh_enabled" = x"yes"; then
     AC_CONFIG_SUBDIRS(gsi_openssh/source)
 fi
 
