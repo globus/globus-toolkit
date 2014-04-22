@@ -464,6 +464,7 @@ m4_foreach([bundle],
 
 final_enabled_bundles=""
 final_enabled_xio_drivers=""
+gsi_openssh_enabled=no
 for en_name in ""$enabled_buns; do
     for dis_name in ""$disabled_buns; do
         skip=0
@@ -472,6 +473,9 @@ for en_name in ""$enabled_buns; do
         fi
     done
     if test "$skip" = 0; then
+        if test X"$en_name" = X"gsi_openssh"; then
+            gsi_openssh_enabled=yes
+        fi
         final_enabled_bundles="${final_enabled_bundles:+$final_enabled_bundles }$en_name"
         final_enabled_xio_drivers="${final_enabled_xio_drivers:+$final_enabled_xio_drivers }\$(${en_name}-xio-drivers)"
     fi
@@ -501,6 +505,9 @@ AC_CONFIG_FILES([osx/distribution.xml])
 AC_CONFIG_FILES([osx/scripts/postinstall], [chmod a+x osx/scripts/postinstall])
 
 AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
-AC_CONFIG_SUBDIRS(gsi_openssh/source)
+
+if test gsi_openssh_enabled = yes; then
+    AC_CONFIG_SUBDIRS(gsi_openssh/source)
+fi
 
 AC_OUTPUT
