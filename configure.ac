@@ -466,10 +466,11 @@ final_enabled_bundles=""
 final_enabled_xio_drivers=""
 gsi_openssh_enabled=no
 for en_name in ""$enabled_buns; do
+    skip=0
     for dis_name in ""$disabled_buns; do
-        skip=0
         if test "$en_name" = "$dis_name"; then
             skip=1
+            break
         fi
     done
     if test "$skip" = 0; then
