@@ -1,7 +1,7 @@
 Name:		globus-xio-pipe-driver
 %global _name %(tr - _ <<< %{name})
 Version:	3.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Pipe Driver
 
 Group:		System Environment/Libraries
@@ -83,7 +83,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
-%{_libdir}/libglobus*.so.*
+%{_libdir}/libglobus*.so*
 
 %files devel
 %defattr(-,root,root,-)
