@@ -34,7 +34,7 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 2
+%global gsi_openssh_rel 3
 %global gsi_openssh_ver 5.7
 
 %ifarch alpha ia64 ppc64 s390x sparc64 x86_64
@@ -157,6 +157,13 @@ BuildRequires: krb5-devel
 BuildRequires: globus-gss-assist-devel >= 8
 BuildRequires: globus-usage-devel >= 3
 BuildRequires: globus-common-progs >= 14
+BuildRequires: globus-gssapi-gsi-devel
+BuildRequires:  pkgconfig
+%if 0%{?suse_version} > 0
+BuildRequires: libtool
+%else
+BuildRequires: libtool-ltdl-devel
+%endif
 %endif
 
 %if %{libedit}
