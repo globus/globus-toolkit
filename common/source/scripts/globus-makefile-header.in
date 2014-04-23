@@ -107,7 +107,7 @@ sub main
 
     $cmd = "pkg-config --libs-only-L --libs-only-other " . join(" ", @pcs);
     print "GLOBUS_LDFLAGS = ". `$cmd`;
-    $cmd = "pkg-config --libs-only-l " . ($static?"--static ":"") .join(" ", @pcs);
+    $cmd = "pkg-config --libs-only-l --static "  .join(" ", @pcs);
     print "GLOBUS_PKG_LIBS = ". `$cmd`;
     print "GLOBUS_CC = \${CC}\n";
     print "GLOBUS_CPP = \${CPP}\n";
