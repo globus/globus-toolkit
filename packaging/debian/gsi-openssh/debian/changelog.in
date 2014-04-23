@@ -1,5 +1,11 @@
 gsi-openssh (5.7-1+gt6.@distro@) @distro@; urgency=low
 
+  * Fixes for GT6
+
+ -- Globus Toolkit <support@globus.org>  Wed, 23 April 2014 13:43:00 -0400
+
+gsi-openssh (5.7-1+gt6.@distro@) @distro@; urgency=low
+
   * update to 5.7
 
  -- Globus Toolkit <support@globus.org>  Fri, 24 January 2014 10:51:35 -0500
