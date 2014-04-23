@@ -1,4 +1,4 @@
-#! @GLOBUS_SH_PERL@
+#! /usr/bin/perl
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -47,12 +47,12 @@ my($args);
 
 if ( defined($help) )
 {
-    pod2usage(0);
+    usage(0);
 }
 
 if ( !defined($flavor) )
 {
-    pod2usage(1);
+    usage(1);
 }
 
 if ( @ARGV && ($ARGV[0] ne "") )
@@ -93,7 +93,7 @@ sub main
         $pc =~ s/_/-/g;
         push(@pcs, $pc);
         my $m = $pkg;
-        $m =~ tr/[a-z]/[A-Z]/;
+        $m =~ tr/[a-z]-/[A-Z]_/;
         chomp(my $v= `pkg-config --modversion $pc`);
         push(@ms, $m);
         print "$m = $v\n";
@@ -153,3 +153,8 @@ sub buildMultiArg
     return @out_arr;
 }
 
+sub usage
+{
+    print "Usage: $0 -pkg PACKAGE -flavor FLAVOR [-static]\n";
+    exit($_[0]);
+}
