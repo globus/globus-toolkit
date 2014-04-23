@@ -54,7 +54,7 @@ testcredlink: testcred.cert
 	echo "$$linkname" > $@
 
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
-test_ldadd = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) libtest_common.la ../libglobus_ftp_control.la $(PACKAGE_DEP_LIBS)
+test_ldadd = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) libtest_common.la ../libglobus_ftp_control.la $(PACKAGE_DEP_LIBS) -lltdl
 
 check_LTLIBRARIES = libtest_common.la
 libtest_common_la_SOURCES = connect_disconnect_test.c test_common.c test_common.h
