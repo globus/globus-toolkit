@@ -109,22 +109,22 @@ sub main
     print "GLOBUS_LDFLAGS = ". `$cmd`;
     $cmd = "pkg-config --libs-only-l " . ($static?"--static ":"") .join(" ", @pcs);
     print "GLOBUS_PKG_LIBS = ". `$cmd`;
-    print "GLOBUS_CC = \$(CC)\n";
-    print "GLOBUS_CPP = \$(CPP)\n";
+    print "GLOBUS_CC = \${CC}\n";
+    print "GLOBUS_CPP = \${CPP}\n";
     print "GLOBUS_FLAVOR_NAME = $flavor\n";
     print "GLOBUS_CPPFLAGS = $globus_includes\n";
-    print "GLOBUS_CXX = \$(CXX)\n";
-    print "GLOBUS_CXXCPP = \$(CXX) -E\n";
-    print "GLOBUS_CXXFLAGS = \$(CXXFLAGS) -E\n";
+    print "GLOBUS_CXX = \${CXX}\n";
+    print "GLOBUS_CXXCPP = \${CXX} -E\n";
+    print "GLOBUS_CXXFLAGS = \${CXXFLAGS} -E\n";
     print <<EOF;
-GLOBUS_F77 = \$(FC)
-GLOBUS_F77FLAGS = \$(FCFLAGS)
-GLOBUS_F90 = \$(FC)
-GLOBUS_F90FLAGS = \$(FCFLAGS)
-GLOBUS_AR = \$(AR)
-GLOBUS_ARFLAGS = \$(ARFLAGS)
-GLOBUS_RANLIB = \$(RANLIB)
-GLOBUS_NM = \$(NM)
+GLOBUS_F77 = \${FC}
+GLOBUS_F77FLAGS = \${FCFLAGS}
+GLOBUS_F90 = \${FC}
+GLOBUS_F90FLAGS = \${FCFLAGS}
+GLOBUS_AR = \${AR}
+GLOBUS_ARFLAGS = \${ARFLAGS}
+GLOBUS_RANLIB = \${RANLIB}
+GLOBUS_NM = \${NM}
 GLOBUS_OBJEXT = @OBJEXT@
 GLOBUS_EXEEXT = @EXEEXT@
 GLOBUS_OBJECT_MODE = 
@@ -134,7 +134,7 @@ GLOBUS_THREADS = none
 GLOBUS_DEBUG = yes
 GLOBUS_SH_PERL = @PERL@
 GLOBUS_SH = @SH@
-GLOBUS_LD = \$(CC)
+GLOBUS_LD = \${CC}
 EOF
 }
 
