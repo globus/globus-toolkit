@@ -11,12 +11,13 @@ check_PROGRAMS =                        \
         handle_create_from_url_test     \
 	http_throughput_test
 
-noinst_DATA =                           \
+check_DATA =                            \
 	headers				\
 	multi-line-header		\
 	long-headers			\
 	multi-headers			\
-	large-file
+	large-file                      \
+        test-common.pl
 
 check_SCRIPTS =                         \
 	basic-test.pl                   \
@@ -41,8 +42,7 @@ check_SCRIPTS =                         \
 	server2-test.pl                 \
 	block-barrier-test.pl           \
 	stack-test.pl                   \
-	unload-test.pl                  \
-	test-common.pl
+	unload-test.pl
 
 if CYGPATH_W_DEFINED
 TEST_DATA_DIR = $$($(CYGPATH_W) $(srcdir)/)
@@ -102,4 +102,4 @@ clean-local:
 
 EXTRA_DIST =                    \
         $(check_SCRIPTS)        \
-        $(noinst_DATA)
+        $(check_DATA)
