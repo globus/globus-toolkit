@@ -2,8 +2,8 @@
 
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
-Version:	3.2
-Release:	5%{?dist}
+Version:	4.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Auditing
 
 Group:		Applications/Internet
@@ -80,6 +80,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Thu Apr 24 2014 Globus Toolkit <support@globus.org> - 4.1-1
+- Packaging fixes
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.2-5
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

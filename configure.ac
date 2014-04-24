@@ -299,6 +299,9 @@ GT_PACKAGE([globus_gass_cache_program],[gass/cache_program/source],
 GT_PACKAGE([globus_gram_job_manager_pbs],
     [gram/jobmanager/lrms/pbs/source],
     [globus_common globus_scheduler_event_generator], [gram5-pbs])
+GT_PACKAGE([globus_gram_audit],
+    [gram/jobmanager/auditing/source],
+    [], [gram5-auditing])
 GT_PACKAGE([myproxy],[myproxy/source],
     [ globus_common globus_gss_assist globus_gssapi_gsi globus_proxy_utils
       globus_usage ], [myproxy])
