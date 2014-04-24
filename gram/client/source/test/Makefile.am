@@ -8,7 +8,7 @@ check_PROGRAMS = activate-test callback-contact-test
 TESTS = $(check_PROGRAMS)
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)
-LDADD =  $(GLOBUS_XIO_GSI_DLOPEN) $(PRELOAD_FORCE) ../libglobus_gram_client.la $(PACKAGE_DEP_LIBS)
+LDADD =  $(GLOBUS_XIO_GSI_DLOPEN) $(PRELOAD_FORCE) ../libglobus_gram_client.la $(PACKAGE_DEP_LIBS) -lltdl
 
 X509_USER_CERT = testcred.cert
 X509_USER_KEY = testcred.key
