@@ -1,7 +1,7 @@
 Name:           globus-xio-rate-driver
 %global _name %(tr - _ <<< %{name})
 Version:	1.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus XIO Rate Limiting Driver
 
 Group:		System Environment/Libraries
@@ -84,17 +84,19 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/libglobus*.so.*
+%{_libdir}/libglobus*.so*
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %files devel
 %defattr(-,root,root,-)
 %{_includedir}/globus/*
-%{_libdir}/libglobus*.so
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Apr 24 2014 Globus Toolkit <support@globus.org> - 1.4-2
+- Fix .so in filelist
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 1.4-1
 - Version bump for consistency
 
