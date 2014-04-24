@@ -1,3 +1,9 @@
+globus-gram-client (13.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Test fixes
+
+ -- Globus Toolkit <support@globus.org>  Thu, 24 Apr 2014 15:32:29 -0400
+
 globus-gram-client (13.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes

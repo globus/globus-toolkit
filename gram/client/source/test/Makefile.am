@@ -25,13 +25,14 @@ TESTS_ENVIRONMENT = export \
 LOG_COMPILER = $(LIBTOOL) --mode=execute $(GLOBUS_XIO_GSI_DLOPEN)
 
 testcred.key:
-	openssl genrsa -out $@ 1024 && chmod 0600 $@
+	umask 077; openssl genrsa 1024 > $@
 
 .key.req:
 	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< -out $@
 
 .req.cert:
-	openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
+	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
+
 
 .cert.link:
 	linkname="`openssl x509 -hash -noout -in $<`.0"; \
