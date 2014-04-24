@@ -1,7 +1,7 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
 Version:	6.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
@@ -46,6 +46,9 @@ BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
+BuildRequires:  perl-Test-Simple
+%endif
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
