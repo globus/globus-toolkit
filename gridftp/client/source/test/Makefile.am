@@ -82,7 +82,7 @@ check_PROGRAMS = \
 
 TESTS = $(check_SCRIPTS)
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
-LDADD = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) libglobus_ftp_client_test.la $(top_builddir)/libglobus_ftp_client.la $(PACKAGE_DEP_LIBS)
+LDADD = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) libglobus_ftp_client_test.la $(top_builddir)/libglobus_ftp_client.la $(PACKAGE_DEP_LIBS) -lltdl
 
 TEST_PATH = $(GRIDFTP_SERVER_PATH):$${PATH}
 if CYGPATH_W_DEFINED

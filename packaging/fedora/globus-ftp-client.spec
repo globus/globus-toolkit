@@ -1,6 +1,6 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.7
+Version:	8.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
@@ -34,6 +34,11 @@ BuildRequires:  libtool >= 2.2
 BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
+%endif
+%if 0%{?suse_version} > 0
+BuildRequires: libtool
+%else
+BuildRequires: libtool-ltdl-devel
 %endif
 
 %package devel
@@ -136,6 +141,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Apr 24 2014 Globus Toolkit <support@globus.org> - 8.8-1
+- Test fixes
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 8.7-1
 - Version bump for consistency
 
