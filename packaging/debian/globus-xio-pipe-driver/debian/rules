@@ -133,7 +133,6 @@ install: build-stamp
 	  debian/tmp$(_docdir)/lib$(name)-dev/GLOBUS_LICENSE \
 	  > debian/lib$(name)$(soname).install
 	ls -1 debian/tmp$(_includedir)/globus/*.h \
-	  debian/tmp$(_libdir)/*.so \
 	  debian/tmp$(_libdir)/pkgconfig/*.pc \
 	  > debian/lib$(name)-dev.install
 
