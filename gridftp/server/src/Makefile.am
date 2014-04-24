@@ -50,13 +50,13 @@ libglobus_gridftp_server_la_SOURCES =   \
 	globus_i_gfs_control.h
 
 globus_gridftp_server_SOURCES = globus_gridftp_server.c
-globus_gridftp_server_LDADD = libglobus_gridftp_server.la $(preload_links) $(PACKAGE_DEP_LIBS)
+globus_gridftp_server_LDADD = libglobus_gridftp_server.la $(preload_links) $(PACKAGE_DEP_LIBS) -lltdl
 
 gfs_gfork_master_SOURCES = gfs_gfork_master.c
-gfs_gfork_master_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS)
+gfs_gfork_master_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS) -lltdl
 
 gfs_dynbe_client_SOURCES = gfs_dynbe_client.c
-gfs_dynbe_client_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS)
+gfs_dynbe_client_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS) -lltdl
 
 if LINK_WITH_CXX
 globus_gridftp_server_LINK = $(CXXLINK)
