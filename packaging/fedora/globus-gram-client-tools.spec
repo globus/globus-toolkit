@@ -70,6 +70,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %{_bindir}/*
 %{_mandir}/man1/*
+%{_libdir}/pkgconfig/*.pc
 
 %changelog
 * Fri Apr 25 2014 Globus Toolkit <support@globus.org> - 11.3-1
