@@ -1,7 +1,6 @@
 check_SCRIPTS = globus-gram-job-manager-failure-test.pl
 
 check_DATA = \
-    error_bad_directory.rsl \
     error_evaluation_failed.rsl \
     error_executable_not_found.rsl \
     error_executable_permissions.rsl \
