@@ -18,7 +18,7 @@ use strict;
 use POSIX;
 use Test;
 
-my $test_exec = 'register-callback-test';
+my $test_exec = './register-callback-test';
 
 if ($ENV{CONTACT_STRING} eq "")
 {

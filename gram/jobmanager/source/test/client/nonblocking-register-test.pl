@@ -18,7 +18,7 @@ use strict;
 use POSIX;
 use Test;
 
-my $test_exec = 'nonblocking-register-test';
+my $test_exec = './nonblocking-register-test';
 
 if ($ENV{CONTACT_STRING} eq "")
 {

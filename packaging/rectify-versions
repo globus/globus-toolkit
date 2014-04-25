@@ -363,7 +363,7 @@ sub update_control
                     }
                 }
                 elsif ($dep =~
-                    m/^lib([a-z-]+)([0-9]+)?(-dev)(\s* \(>=\s*([0-9.]+)\))$/)
+                    m/^lib([a-z-]+)([0-9]+)?(-dev)(\s*\(>=\s*([0-9.]+)\))$/)
                 {
                     # Handle the library case (maybe with soname and -dev
                     # suffix)
