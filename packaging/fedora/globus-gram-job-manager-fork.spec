@@ -3,7 +3,7 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	2.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
@@ -202,9 +202,7 @@ fi
 %files setup-seg
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-fork-seg
-%{_libdir}/libglobus_seg_fork.so
-%{_libdir}/libglobus_seg_fork.so.1
-%{_libdir}/libglobus_seg_fork.so.1.0.5
+%{_libdir}/libglobus_seg_fork.so*
 %{_sbindir}/globus-fork-starter
 %{_mandir}/man8/globus-fork-starter.8.gz
 
