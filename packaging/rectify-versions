@@ -349,7 +349,7 @@ sub update_control
                         if ($dependency_pred =~ m/>=\s*([0-9\.]+)/)
                         {
                             my $newdep;
-                            $newdep = "$basename$suffix (>= "
+                            $newdep = "$basename$suffix ("
                                 . $pkgmeta->{DEPS}->{$basename}
                                 . ")";
 
