@@ -6,13 +6,13 @@ check_DATA = \
         testcred.link
 
 testcred.key:
-	openssl genrsa -out $@ 1024 && chmod 0600 $@
+	umask 077; openssl genrsa 1024 > $@
 
 .key.req:
-	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< -out $@
+	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -config openssl.cnf -key $< > $@
 
 .req.cert:
-	openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
+	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
 
 .cert.link:
 	linkname="`openssl x509 -hash -noout -in $<`.0"; \

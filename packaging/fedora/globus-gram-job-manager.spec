@@ -1,6 +1,6 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	14.10
+Version:	14.11
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Fri Apr 25 2014 Globus Toolkit <support@globus.org> - 14.11-1
+- Packaging fixes
+
 * Fri Apr 25 2014 Globus Toolkit <support@globus.org> - 14.10-1
 - Packaging fixes
 
