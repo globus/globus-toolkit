@@ -1,7 +1,7 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
 Version:	9.9
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
 Group:		System Environment/Libraries
@@ -42,6 +42,7 @@ BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
 %endif
+BuildRequires: perl(URI)
 %if 0%{?suse_version} > 0
 BuildRequires: libtool
 %else
