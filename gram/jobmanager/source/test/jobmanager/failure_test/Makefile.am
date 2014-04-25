@@ -1,6 +1,7 @@
 check_SCRIPTS = globus-gram-job-manager-failure-test.pl
 
 check_DATA = \
+    error_bad_directory.rsl \
     error_evaluation_failed.rsl \
     error_executable_not_found.rsl \
     error_executable_permissions.rsl \
@@ -96,4 +97,4 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute \
     $(GLOBUS_XIO_GSI_DRIVER_DLOPEN) \
     $(GLOBUS_XIO_POPEN_DRIVER_DLOPEN) \
     ../../gram-test-wrapper
-EXTRA_DIST = $(test_DATA) $(check_SCRIPTS)
+EXTRA_DIST = $(check_DATA) $(check_SCRIPTS)
