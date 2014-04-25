@@ -1,5 +1,7 @@
 SUBDIRS = .
 BUILT_SOURCES = version.h
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = globus-gram-client-tools.pc
 bin_PROGRAMS = globusrun
 bin_SCRIPTS = \
 	globus-job-run \
