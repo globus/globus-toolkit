@@ -113,6 +113,9 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 find ${RPM_BUILD_ROOT} -name 'libglobus*.la' -exec rm -vf '{}' \;
 
+%check
+make %{?_smp_mflags} check
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
