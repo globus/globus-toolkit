@@ -28,6 +28,11 @@ Requires:	perl(DBI)
 %if 0%{?suse_version} == 0
 Requires:	crontabs
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
