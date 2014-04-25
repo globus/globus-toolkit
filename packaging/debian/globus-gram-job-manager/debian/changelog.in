@@ -1,3 +1,15 @@
+globus-gram-job-manager (14.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 25 Apr 2014 15:53:17 -0400
+
+globus-gram-job-manager (14.8-2+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 25 Apr 2014 15:52:58 -0400
+
 globus-gram-job-manager (14.8-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes
