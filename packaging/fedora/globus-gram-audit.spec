@@ -72,11 +72,15 @@ if [ $1 -eq 1 ]; then
     || :
 fi
 
-%files -f package.filelist
+%files
 %defattr(-,root,root,-)
-%dir %{_datadir}/globus/packages/%{_name}
 %dir %{_localstatedir}/lib/globus/gram-audit
 %dir %{_docdir}/%{name}-%{version}
+%{_sbindir}/globus-gram-audit
+%{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_datadir}/globus/gram-audit/*
+%{_mandir}/man8/*
+%config(noreplace) %{_sysconfdir}/cron.hourly/globus-gram-audit.cron
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
