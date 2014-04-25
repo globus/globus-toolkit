@@ -47,6 +47,7 @@ BuildRequires:	libxml2-devel >= 2.6.11
 BuildRequires:	globus-gass-transfer-devel >= 7
 BuildRequires:	globus-gram-protocol-doc >= 11
 BuildRequires:	globus-common-doc >= 14
+BuildRequires:  globus-gram-client-tools >= 10
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
