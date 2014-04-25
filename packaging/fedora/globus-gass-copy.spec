@@ -1,6 +1,6 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	9.8
+Version:	9.9
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
@@ -41,6 +41,11 @@ BuildRequires:  libtool >= 2.2
 BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
+%endif
+%if 0%{?suse_version} > 0
+BuildRequires: libtool
+%else
+BuildRequires: libtool-ltdl-devel
 %endif
 
 %package progs
@@ -164,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Apr 24 2014 Globus Toolkit <support@globus.org> - 9.9-1
+- Packaging fixes
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 9.8-1
 - Version bump for consistency
 

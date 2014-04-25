@@ -27,7 +27,7 @@ globus_url_copy_SOURCES = globus_url_copy.c
 globus_url_copy_LDFLAGS = -export-dynamic
 globus_url_copy_LDADD = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) \
                         libglobus_gass_copy.la \
-			$(PACKAGE_DEP_LIBS)
+			$(PACKAGE_DEP_LIBS) -lltdl
 
 if BUILD_MANPAGES
 SUFFIXES = .xml .1
