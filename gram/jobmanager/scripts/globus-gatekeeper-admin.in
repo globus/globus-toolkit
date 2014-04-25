@@ -13,7 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-@GLOBUS_SCRIPT_INITIALIZER@
+prefix="${GLOBUS_LOCATION:-@prefix@}"
+exec_prefix="@exec_prefix@";
+sbindir="@sbindir@";
+bindir="@bindir@";
+datarootdir="@datarootdir@";
+datadir="@datadir@";
+libexecdir="@libexecdir@";
+sysconfdir="@sysconfdir@";
+sharedstatedir="@sharedstatedir@";
+localstatedir="@localstatedir@";
 
 enable=""
 disable=""
