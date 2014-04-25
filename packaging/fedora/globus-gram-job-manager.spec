@@ -61,6 +61,7 @@ BuildRequires:  globus-gram-job-manager-fork-setup-poll >= 0
 BuildRequires:  globus-gram-client-devel >= 0
 BuildRequires:	globus-gass-copy-progs >= 8
 BuildRequires:	globus-gass-server-ez-devel >= 0
+BuildRequires:	globus-proxy-utils >= 5
 
 %package doc
 Summary:	Globus Toolkit - GRAM Jobmanager Documentation Files
