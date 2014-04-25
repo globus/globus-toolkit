@@ -2,7 +2,8 @@ udt_version = 4.11
 udt_tarball = udt.sdk.$(udt_version).tar.gz
 udt_tarball_url = http://downloads.sourceforge.net/project/udt/udt/$(udt_version)/$(udt_tarball)
 
-noinst_LTLIBRARIES = libudt.la
+privlibdir = $(libdir)/globus
+privlib_LTLIBRARIES = libudt.la
 
 libudt_la_SOURCES = globus_udt_config.h
 nodist_libudt_la_SOURCES = \
@@ -15,7 +16,6 @@ nodist_libudt_la_SOURCES = \
     udt4/src/md5.cpp \
     udt4/src/channel.h \
     udt4/src/list.h \
-    udt4/src/Makefile \
     udt4/src/list.cpp \
     udt4/src/queue.h \
     udt4/src/api.h \
@@ -37,7 +37,7 @@ nodist_libudt_la_SOURCES = \
 libudt_la_CPPFLAGS = -include $(srcdir)/globus_udt_config.h $(CPPFLAGS)
 libudt_la_CXXFLAGS = $(UDT_CXXFLAGS)
 libudt_la_LIBADD = $(UDT_LIBADD)
-libudt_la_LDFLAGS = -rpath $(abs_builddir) -avoid-version -no-undefined
+libudt_la_LDFLAGS = -rpath $(privlibdir) -avoid-version -no-undefined
 
 BUILT_SOURCES = $(nodist_libudt_la_SOURCES)
 $(BUILT_SOURCES): udt-unpack-stamp
