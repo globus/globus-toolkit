@@ -56,6 +56,8 @@ BuildRequires:  libtool >= 2.2
 BuildRequires:  pkgconfig
 BuildRequires:  globus-gsi-cert-utils-progs >= 0
 BuildRequires:  globus-gatekeeper >= 0
+BuildRequires:  globus-gram-job-manager-scripts >= 0
+BuildRequires:  globus-gram-job-manager-fork-setup-poll >= 0
 
 %package doc
 Summary:	Globus Toolkit - GRAM Jobmanager Documentation Files
