@@ -1,7 +1,7 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
 Version:	14.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -59,6 +59,7 @@ BuildRequires:  globus-gatekeeper >= 0
 BuildRequires:  globus-gram-job-manager-scripts >= 0
 BuildRequires:  globus-gram-job-manager-fork-setup-poll >= 0
 BuildRequires:  globus-gram-client-devel >= 0
+BuildRequires:	globus-gass-copy-progs >= 8
 
 %package doc
 Summary:	Globus Toolkit - GRAM Jobmanager Documentation Files

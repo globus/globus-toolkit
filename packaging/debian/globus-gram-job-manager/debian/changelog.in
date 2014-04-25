@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.5-2+gt6.@distro@) @distro@; urgency=low
+
+  * Add test dependencies
+
+ -- Globus Toolkit <support@globus.org>  Fri, 25 April 2014 14:19:51 -0400
+
 globus-gram-job-manager (14.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Version bump for consistency
