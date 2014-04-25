@@ -9,7 +9,7 @@ testcred.key:
 	umask 077; openssl genrsa 1024 > $@
 
 .key.req:
-	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -config openssl.cnf -key $< > $@
+	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< > $@
 
 .req.cert:
 	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
