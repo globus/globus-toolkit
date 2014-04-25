@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 25 Apr 2014 14:34:54 -0400
+
 globus-gram-job-manager (14.5-2+gt6.@distro@) @distro@; urgency=low
 
   * Add test dependencies
