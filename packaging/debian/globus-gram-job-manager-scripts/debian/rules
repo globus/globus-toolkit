@@ -19,6 +19,7 @@ INSTALLDIR = $(CURDIR)/debian/tmp
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 _prefix = /usr
+_sysconfdir = /etc
 _bindir = $(_prefix)/bin
 _sbindir = $(_prefix)/sbin
 _includedir = $(_prefix)/include
@@ -44,6 +45,7 @@ configure-stamp: $(QUILT_STAMPFN)
  	   --host=$(DEB_HOST_GNU_TYPE) \
 	   --build=$(DEB_BUILD_GNU_TYPE) \
 	   --prefix=$(_prefix) \
+	   --sysconfdir='$(_sysconfdir)' \
 	   --docdir='$(_docdir)/$(name)' \
 	   --includedir='$(_includedir)/globus' \
 	   --datadir='$(_datadir)/globus' \
