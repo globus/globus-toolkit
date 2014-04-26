@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_udt_driver],[1.6],[http://jira.globus.org])
+AC_INIT([globus_xio_udt_driver],[1.7],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -93,7 +93,12 @@ PKG_PROG_PKG_CONFIG
 PKG_CONFIG="${PKG_CONFIG} --static"
 
 if test X"$use_included_udt" = "X"; then
-    AC_CHECK_HEADER([udt.h], [], [use_included_udt=1])
+    AC_CHECK_HEADER([udt.h])
+    AC_CHECK_HEADER([udt/udt.h])
+    if test x"$ac_cv_header_udt_h" = xno && \
+       test x"$ac_cvs_header_udt_udt_h" = xno; then
+       use_included_udt=1
+    fi
 fi
 
 if test X"$use_included_nice" = "X"; then

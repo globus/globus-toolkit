@@ -23,7 +23,11 @@
     #include <arpa/inet.h>
 #endif /* _WIN32 */
 
+#ifdef HAVE_UDT_H
 #include <udt.h>
+#elif HAVE_UDT_UDT_H
+#include <udt/udt.h>
+#endif
 
 #ifdef UDT_HAS_BIND2
 #define G_UDT_BIND UDT::bind2
