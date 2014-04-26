@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_udt_driver],[1.8],[http://jira.globus.org])
+AC_INIT([globus_xio_udt_driver],[1.9],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -147,7 +147,7 @@ else
     save_CXXFLAGS="$CXXFLAGS"
     save_LIBS="$LIBS"
     CXXFLAGS="$CXXFLAGS $UDT_CFLAGS"
-    LIBS="$UDT_LIBS $LIBS"
+    LIBS="${UDT_LIBS:--ludt} $LIBS"
 
     # udt 4.11 renamed the 2 parameter bind() function to bind2().
     AC_MSG_CHECKING([UDT bind2() function])
