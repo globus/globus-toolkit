@@ -1,3 +1,9 @@
+globus-xio-udt-driver (1.12-1+gt6.@distro@) @distro@; urgency=low
+
+  * Packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 25 Apr 2014 22:48:13 -0400
+
 globus-xio-udt-driver (1.11-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes
