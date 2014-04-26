@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_udt_driver],[1.12],[http://jira.globus.org])
+AC_INIT([globus_xio_udt_driver],[1.13],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -110,11 +110,11 @@ if test X"$use_included_nice" = X1; then
     LIBNICE_SUBDIR=libnice
     LIBNICE_PKG_CONFIG_PATH="\$(abs_top_builddir)/\$(LIBNICE_SUBDIR)\$(prefix)/lib/pkgconfig"
     UDT_DRIVER_PKG_CONFIG_PATH="${UDT_DRIVER_PKG_CONFIG_PATH}:${LIBNICE_PKG_CONFIG_PATH}"
-    NICE_CFLAGS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --define-variable=prefix=\"\$(abs_builddir)/libnice/\$(prefix)\" --cflags nice)"
-    NICE_LIBS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --define-variable=prefix=\"\$(abs_builddir)/libnice/\$(prefix)\" --libs nice)"
+    NICE_CFLAGS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --define-variable=prefix=\"\$(abs_builddir)/libnice\$(prefix)\" --cflags nice)"
+    NICE_LIBS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --define-variable=prefix=\"\$(abs_builddir)/libnice\$(prefix)\" --libs nice)"
 
     if test X"$use_included_glib2" = "X"; then
-        PKG_CHECK_MODULES([GLIB2], [glib-2.0 >= 2.13 gobject-2.0 >= 2.13 gthread-2.0 >= 2.13 gio-2.0 >= 2.13], [], [use_included_glib2=1])
+        PKG_CHECK_MODULES([GLIB2], [glib-2.0 >= 2.30 gobject-2.0 >= 2.30 gthread-2.0 >= 2.30 gio-2.0 >= 2.30], [], [use_included_glib2=1])
     fi
 fi
 
