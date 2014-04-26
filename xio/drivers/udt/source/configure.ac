@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_udt_driver],[1.9],[http://jira.globus.org])
+AC_INIT([globus_xio_udt_driver],[1.10],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -139,6 +139,7 @@ if test X"$use_included_libffi" = X1; then
 fi
 
 if test X"$use_included_udt" = X1; then
+    AC_DEFINE([HAVE_UDT_H], [1], [Define to 1 if you have udt.h])
     UDT_CPPFLAGS="-Iudt/udt4/src"
     UDT_LDFLAGS="-Ludt -ludt"
     UDT_SUBDIR="udt"
