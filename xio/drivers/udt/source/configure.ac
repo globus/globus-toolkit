@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_udt_driver],[1.7],[http://jira.globus.org])
+AC_INIT([globus_xio_udt_driver],[1.8],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -93,8 +93,8 @@ PKG_PROG_PKG_CONFIG
 PKG_CONFIG="${PKG_CONFIG} --static"
 
 if test X"$use_included_udt" = "X"; then
-    AC_CHECK_HEADER([udt.h])
-    AC_CHECK_HEADER([udt/udt.h])
+    AC_CHECK_HEADER([udt.h], [AC_DEFINE([HAVE_UDT_H], [1], [Define to 1 if you have udt.h])])
+    AC_CHECK_HEADER([udt/udt.h], [AC_DEFINE([HAVE_UDT_UDT_H], [1], [Define to 1 if you have udt/udt.h])])
     if test x"$ac_cv_header_udt_h" = xno && \
        test x"$ac_cvs_header_udt_udt_h" = xno; then
        use_included_udt=1
@@ -152,8 +152,13 @@ else
     # udt 4.11 renamed the 2 parameter bind() function to bind2().
     AC_MSG_CHECKING([UDT bind2() function])
     AC_COMPILE_IFELSE(
-        [AC_LANG_PROGRAM([#include "udt.h"],
-            [UDT::bind2(0,0);])],
+        [AC_LANG_PROGRAM([
+        #if HAVE_UDT_H
+        #include <udt.h>
+        #elif HAVE_UDT_UDT_H
+        #include <udt/udt.h>
+        #endif],
+        [UDT::bind2(0,0);])],
         [udt_has_bind2=yes],
         [udt_has_bind2=no])
     CXXFLAGS="$save_CXXFLAGS"
