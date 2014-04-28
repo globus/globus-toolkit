@@ -105,6 +105,13 @@
         title="Globus XIO UDT Driver"
         description="UDT Support for XIO"
         start_selected="false"/>
+    <choice
+        id="org.globus.bundle.gram5-auditing"
+        visible="false"
+        title="Globus GRAM5 Auditing"
+        description="GRAM5 Auditing"
+        start_selected="false"/>
+
 
     @MAC_INSTALLER_PACKAGE_CHOICES@
 
