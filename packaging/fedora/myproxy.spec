@@ -17,7 +17,7 @@ Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}-gt5.
 #newer though not that new. myproxy is the last software in
 #EPEL using the old vomsc.
 #Patch to go upstream myproxy though they are aware.
-#Patch0:         myproxy-vomsc-vomsapi.patch
+Patch0:         https://raw.githubusercontent.com/globus/globus-toolkit/globus_6_branch/myproxy.gt6.diff
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -61,7 +61,6 @@ BuildRequires: tex(fullpage.sty)
 %endif
 BuildRequires:      globus-proxy-utils >= 5
 BuildRequires:      globus-gsi-cert-utils-progs >= 8
-BuildRequires:      globus-core >= 8
 BuildRequires:      globus-common-devel >= 8
 BuildRequires:      globus-xio-devel >= 3
 BuildRequires:      globus-usage-devel >= 0
@@ -189,7 +188,7 @@ Package %{name}-doc contains the MyProxy documentation.
 
 %prep
 %setup -q
-#%patch0 -p1
+%patch0 -p1
 #cp -p %{SOURCE1} .
 #cp -p %{SOURCE2} .
 #cp -p %{SOURCE3} .
@@ -201,28 +200,18 @@ rm -f doxygen/Makefile.am
 rm -f pkgdata/Makefile.am
 rm -f globus_automake*
 
-for f in `find . -name Makefile.am` ; do
-  sed -e 's!^flavorinclude_HEADERS!include_HEADERS!' \
-      -e 's!\(lib[a-zA-Z_]*\)_$(GLOBUS_FLAVOR_NAME)\.la!\1.la!g' \
-      -e 's!^\(lib[a-zA-Z_]*\)___GLOBUS_FLAVOR_NAME__la_!\1_la_!' -i $f
-done
+autoreconf -if
 
-%{_datadir}/globus/globus-bootstrap.sh
-
-%if "%{?rhel}" == "4"
-%configure --with-flavor=%{flavor}  --enable-doxygen \
-                                    --with-voms=%{_usr} --without-openldap \
-                                    --with-kerberos5=%{_usr} --with-sasl2=%{_usr}
-%else
 %if 0%{?suse_version} > 0
-%configure --with-flavor=%{flavor}  --enable-doxygen --with-openldap=%{_usr} \
+%configure --enable-doxygen --with-openldap=%{_usr} \
                                     --without-voms \
-                                    --with-kerberos5=%{_usr} --with-sasl2=%{_usr}
+                                    --with-kerberos5=%{_usr} --with-sasl2=%{_usr} \
+				    --includedir=%{_usr}/include/globus
 %else
-%configure --with-flavor=%{flavor}  --enable-doxygen --with-openldap=%{_usr} \
+%configure --enable-doxygen --with-openldap=%{_usr} \
                                     --with-voms=%{_usr} \
-                                    --with-kerberos5=%{_usr} --with-sasl2=%{_usr}
-%endif
+                                    --with-kerberos5=%{_usr} --with-sasl2=%{_usr} \
+				    --includedir=%{_usr}/include/globus
 %endif
 make %{?_smp_mflags}
 
@@ -230,55 +219,27 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{name}/%{flavor}_dev.filelist
 
 # Remove static libraries (.a files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.a' -exec rm -v '{}' \;
-sed '/lib.*\.a$/d' -i $GLOBUSPACKAGEDIR/%{name}/%{flavor}_dev.filelist
 
 # No need for myproxy-server-setup since the rpm will perform
 # the needed setup
 rm $RPM_BUILD_ROOT%{_sbindir}/myproxy-server-setup
-sed '/myproxy-server-setup$/d' -i $GLOBUSPACKAGEDIR/%{name}/%{flavor}_pgm.filelist
-
-# Put documentation in Fedora defaults and alter GPT package lists.
-mkdir -p $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/extras
-%if 0%{?suse_version} == 0
-mv $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}/{refman.pdf,html} \
-    $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/.
-sed -i "s!/share/doc/%{name}/html/!/share/doc/%{name}-doc-%{version}/html/!" $GLOBUSPACKAGEDIR/%{name}/noflavor_doc.filelist
-sed -i "s!/share/doc/%{name}/refman.pdf!/share/doc/%{name}-doc-%{version}/refman.pdf!" $GLOBUSPACKAGEDIR/%{name}/noflavor_doc.filelist
-
-%else
-mv $RPM_BUILD_ROOT/%{_datadir}/doc/%{name}/{refman.pdf,html} \
-    $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/.
-sed -i "s!/share/doc/%{name}/html/!/share/doc/packages/%{name}-doc-%{version}/html/!" $GLOBUSPACKAGEDIR/%{name}/noflavor_doc.filelist
-sed -i "s!/share/doc/%{name}/refman.pdf!/share/doc/packages/%{name}-doc-%{version}/refman.pdf!" $GLOBUSPACKAGEDIR/%{name}/noflavor_doc.filelist
-
-%endif
 
 
 # We are going to zip the man pages later in the package so we need to
 # correct the gpt data in anticipation.
-sed -i "s!\(/share/man/.*\)!\1.gz!" $GLOBUSPACKAGEDIR/%{name}/noflavor_doc.filelist
 
+mkdir -p  $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/extras
 
 for FILE in login.html myproxy-accepted-credentials-mapapp myproxy-cert-checker myproxy-certificate-mapapp \
              myproxy-certreq-checker myproxy-crl.cron myproxy.cron myproxy-get-delegation.cgi \
              myproxy-get-trustroots.cron myproxy-passphrase-policy myproxy-revoke 
 do
-%if 0%{?suse_version} == 0
    mv $RPM_BUILD_ROOT%{_usr}/share/%{name}/$FILE \
       $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/extras/.
-   sed -i "s!%{name}/${FILE}!doc/%{name}-doc-%{version}/extras/${FILE}!" $GLOBUSPACKAGEDIR/%{name}/noflavor_data.filelist
-%else
-   mv $RPM_BUILD_ROOT%{_usr}/share/%{name}/$FILE \
-      $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/extras/.
-   sed -i "s!%{name}/${FILE}!doc/packages/%{name}-doc-%{version}/extras/${FILE}!" $GLOBUSPACKAGEDIR/%{name}/noflavor_data.filelist
-%endif
 done
 
 mkdir -p $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-%{version}
@@ -287,11 +248,9 @@ do
 %if 0%{?suse_version} == 0
   mv  $RPM_BUILD_ROOT%{_usr}/share/%{name}/$FILE \
       $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-%{version}/.
-  sed -i "s!%{name}/${FILE}!doc/%{name}-%{version}/${FILE}!" $GLOBUSPACKAGEDIR/%{name}/noflavor_data.filelist
 %else
   mv  $RPM_BUILD_ROOT%{_usr}/share/%{name}/$FILE \
       $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-%{version}/.
-  sed -i "s!%{name}/${FILE}!doc/packages/%{name}-%{version}/${FILE}!" $GLOBUSPACKAGEDIR/%{name}/noflavor_data.filelist
 %endif
 done
 
@@ -300,7 +259,6 @@ for FILE in etc.inetd.conf.modifications etc.init.d.myproxy.nonroot etc.services
             etc.xinetd.myproxy etc.init.d.myproxy
 do
   rm $RPM_BUILD_ROOT%{_usr}/share/%{name}/$FILE
-  sed -i "/share\/%{name}\/$FILE/d" $GLOBUSPACKAGEDIR/%{name}/noflavor_data.filelist
 done
 
 # Generate pkg-config file from GPT metadata
@@ -315,7 +273,6 @@ done
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}
 mv $RPM_BUILD_ROOT%{_datadir}/%{name}/myproxy-server.config \
    $RPM_BUILD_ROOT%{_sysconfdir}
-sed -i "/share\/%{name}\/myproxy-server.config/d" $GLOBUSPACKAGEDIR/%{name}/noflavor_data.filelist
 
 
 mkdir -p $RPM_BUILD_ROOT%{_initddir}
@@ -339,26 +296,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %check 
-# Check that the entries in gpt filelists are all present.
-GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
-for LIST in $GLOBUSPACKAGEDIR/%{name}/*.filelist
-do
-   for FILE in $(cat $LIST)
-   do
-      if [ ! -r $RPM_BUILD_ROOT%{_usr}$FILE ] ; then
-        echo "Check failed:"
-        echo "Filelist $LIST contains:"
-        echo "$FILE"
-        echo "which is not present at:"
-        echo $RPM_BUILD_ROOT%{_usr}$FILE 
-        exit 1
-      fi
-   done
-done
-
 PATH=.:$PATH ./myproxy-test -startserver -generatecerts
-
-
 
 %post libs -p /sbin/ldconfig
 %postun libs -p /sbin/ldconfig
@@ -408,7 +346,6 @@ fi
 
 %files libs
 %defattr(-,root,root,-)
-%{_datadir}/globus/packages/%{name}
 %{_libdir}/libmyproxy.so.*
 
 %files server
@@ -466,7 +403,6 @@ fi
 %{_includedir}/globus/myproxy_server.h
 %{_includedir}/globus/verror.h
 %{_libdir}/libmyproxy.so
-%{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
 * Tue Jan 14 2014 Globus Toolkit <support@globus.org> - 5.9-9
@@ -511,9 +447,6 @@ fi
 * Fri May 04 2012 Joseph Bester <bester@mcs.anl.gov> - 5.6-3
 - SLES 11 patches
 
-* Wed Mar 16 2012 Joseph Bester <bester@mcs.anl.gov> - 5.6-2
-- Package a few files that were not named in server package
-
 * Wed Feb 29 2012 Joseph Bester <bester@mcs.anl.gov> - 5.6-1
 - Updated to MyProxy 5.6
 
@@ -556,12 +489,6 @@ fi
 - New upstream 5.1
 - Remove globus-globus-usage-location.patch, now incoperated
   upstream.
-* Fri Dec 4 2009 Steve Traylen <steve.traylen@cern.ch> - 5.0-1
-- Add globus-globus-usage-location.patch
-  https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6897
-- Addition of globus-usage-devel to BR.
-- New upstream 5.0
-- Upstream source hosting changed from globus to sourceforge.
 * Fri Nov 13 2009 Steve Traylen <steve.traylen@cern.ch> - 4.9-6
 - Add requires globus-gsi-cert-utils-progs for grid-proxy-info
   to myproxy-admin package rhbz#536927
@@ -581,10 +508,6 @@ fi
 - Set _initddir for .el4 and .el5 building.
 * Mon Sep 21 2009 Steve Traylen <steve.traylen@cern.ch> -  4.8-2
 - Require version of voms with fixed ABI.
-* Sun Sep 10 2009 Steve Traylen <steve.traylen@cern.ch> -  4.8-1
-- Increase version to upstream 4.8
-- Remove  voms-header-location.patch since fixed upstream now.
-- Include directory /etc/grid-security/myproxy
 * Mon Jun 22 2009 Steve Traylen <steve.traylen@cern.ch> -  4.7-1
 - Initial version.
 
