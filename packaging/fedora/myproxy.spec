@@ -1,7 +1,7 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
 Version:	5.9
-Release:	9%{?dist}
+Release:	10%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -71,6 +71,12 @@ Requires:      globus-proxy-utils >= 5
 %if 0%{?suse_version} == 0
 Requires:      voms-clients
 %endif
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+BuildRequires:	automake >= 1.11
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	libtool >= 2.2
+%endif
+BuildRequires:  pkgconfig
 
 Obsoletes:     myproxy-client < 5.1-3
 Provides:      myproxy-client = %{version}-%{release}
