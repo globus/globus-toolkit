@@ -65,8 +65,10 @@ cat <<EOF > "${UNINSTALLER}"
 files="\$(pkgutil --volume "${TARGET_LOCATION}" --regexp --files='^org\.globus.*')"
 for file in \$files; do
     fp="\$(echo ${TARGET_LOCATION}/\$file | sed -e 's!//*!/!g')"
-    if [ -f "\${fp}" ] || [ -L "\${fp}" ]; then
-        rm -f "\${fp}";
+    if expr "\${fp}" : "$prefix" > /dev/null ; then
+        if [ -f "\${fp}" ] || [ -L "\${fp}" ]; then
+            rm -f "\${fp}";
+        fi
     fi
 done
 rm -f "${UNINSTALLER}"
