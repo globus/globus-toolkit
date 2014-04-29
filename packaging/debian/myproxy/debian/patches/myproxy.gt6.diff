@@ -1,5 +1,7 @@
---- a/Makefile.am
-+++ b/Makefile.am
+Index: myproxy/Makefile.am
+===================================================================
+--- myproxy.orig/Makefile.am	2014-04-29 12:48:43.000000000 -0400
++++ myproxy/Makefile.am	2014-04-29 12:50:10.040441000 -0400
 @@ -1,11 +1,5 @@
  ## Process this file with automake to produce Makefile.in
 -
@@ -60,14 +62,14 @@
  myproxy_store_LDFLAGS = $(GPT_LDFLAGS)
  
 -myproxy_store_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
-+myproxy_store_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la
++myproxy_store_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la $(LDADD)
  
  myproxy_retrieve_SOURCES = myproxy_get_credential.c
  
  myproxy_retrieve_LDFLAGS = $(GPT_LDFLAGS)
  
 -myproxy_retrieve_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
-+myproxy_retrieve_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la
++myproxy_retrieve_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la $(LDADD)
  
  myproxy_destroy_SOURCES = myproxy_destroy.c
  
@@ -94,14 +96,14 @@
  myproxy_get_delegation_LDFLAGS = $(GPT_LDFLAGS)
  
 -myproxy_get_delegation_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
-+myproxy_get_delegation_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la
++myproxy_get_delegation_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la $(LDADD)
  
  myproxy_logon_SOURCES = myproxy_get_delegation.c
  
  myproxy_logon_LDFLAGS = $(GPT_LDFLAGS)
  
 -myproxy_logon_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
-+myproxy_logon_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la
++myproxy_logon_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la $(LDADD)
  
  myproxy_change_pass_phrase_SOURCES = myproxy_cp.c
  
@@ -161,8 +163,10 @@
 -
 -include $(top_srcdir)/globus_automake_post
 -include $(top_srcdir)/globus_automake_post_top
---- a/configure.in
-+++ b/configure.in
+Index: myproxy/configure.in
+===================================================================
+--- myproxy.orig/configure.in	2014-04-29 12:48:43.000000000 -0400
++++ myproxy/configure.in	2014-04-29 12:48:43.000000000 -0400
 @@ -1,17 +1,23 @@
  dnl Process this file with autoconf to produce a configure script.
  
@@ -214,7 +218,7 @@
  dnl The following tests need/use GPT_LIBS
  dnl
 -LIBS="$GPT_LIBS $LIBS"
-+PKG_CHECK_MODULES([GLOBUS], [globus-gss-assist >= 3, globus-usage >= 3, globus-gss-assist >= 3, globus-gssapi-gsi >= 4, globus-common >= 0, globus-gsi-sysconfig >= 0], [], [AC_MSG_WARN([GLOBUS_PKG_ERRORS])])
++PKG_CHECK_MODULES([GLOBUS], [globus-gss-assist >= 3, globus-usage >= 3, globus-gss-assist >= 3, globus-gssapi-gsi >= 4, globus-common >= 0, globus-gsi-sysconfig >= 0, globus-gsi-cert-utils >= 0], [], [AC_MSG_WARN([GLOBUS_PKG_ERRORS])])
  dnl
  dnl Check for libcrypto
  dnl
