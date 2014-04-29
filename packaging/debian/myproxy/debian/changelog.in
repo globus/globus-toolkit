@@ -1,4 +1,4 @@
-myproxy (5.9-10+gt6.@distro@) @distro@; urgency=low
+myproxy (5.9-11+gt6.@distro@) @distro@; urgency=low
 
   * Version bump for consistency
 
