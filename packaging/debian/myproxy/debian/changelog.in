@@ -1,3 +1,9 @@
+myproxy (5.9-12+gt6.@distro@) @distro@; urgency=low
+
+  * Add libglobus-usage-dev dependency
+
+ -- Globus Toolkit <support@globus.org>  Tue, 29 April 2014 15:42:04 -0400
+
 myproxy (5.9-11+gt6.@distro@) @distro@; urgency=low
 
   * Version bump for consistency
