@@ -206,7 +206,10 @@ rm -f doxygen/Makefile.am
 rm -f pkgdata/Makefile.am
 rm -f globus_automake*
 
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+rm -rf autom4te.cache
 autoreconf -if
+%endif
 
 %if 0%{?suse_version} > 0
 %configure --enable-doxygen --with-openldap=%{_usr} \
