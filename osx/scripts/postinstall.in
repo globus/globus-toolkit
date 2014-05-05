@@ -1,6 +1,4 @@
 #! /bin/sh
-exec 2> /tmp/installog
-set -x
 
 SCRIPT_PATH="$0"
 PACKAGE_PATH="$1"
@@ -35,25 +33,78 @@ if [ "$TARGET_LOCATION" = "/" ]; then
 	$m
 	EOF
 else
-    if [ -f "$HOME/.profile" ]; then
-        profile_wo_globus="$(awk < "$HOME/.profile" "
-            /# BEGIN GLOBUS/ { skip=1; next; }
-            /# END GLOBUS/ { skip=0; next; }
-            skip == 1 { next; }
-            { print }
-        ")"
-    else
-        profile_wo_globus=""
+    user_shell="$(perl -e '@pw = getpwuid $< ; print $pw[8], "\n"')"
+    case "$user_shell" in 
+        /bin/bash|/bin/sh|/bin/ksh)
+            profile="${HOME}/.profile"
+            ;;
+        /bin/tcsh)
+            if [ -f "${HOME}/.tcshrc" ]; then
+                cshrc="${HOME}/.tcshrc"
+            elif [ -f "${HOME}/.cshrc" ]; then
+                cshrc="${HOME}/.cshrc"
+            else
+                cshrc="${HOME}/.tcshrc"
+            fi
+            ;;
+        /bin/zsh)
+            profile="${HOME}/.zprofile"
+            ;;
+        /bin/csh)
+            cshrc="${HOME}/.cshrc"
+            ;;
+    esac
+
+    if [ -n "${profile}" ]; then
+        if [ -f "${profile}" ]; then
+            profile_wo_globus="$(awk < "${profile}" "
+                /# BEGIN GLOBUS/ { skip=1; next; }
+                /# END GLOBUS/ { skip=0; next; }
+                skip == 1 { next; }
+                { print }
+            ")"
+        else
+            profile_wo_globus=""
+        fi
+        echo "$profile_wo_globus" > "${profile}.globus"
+        cat >> "${profile}.globus" <<-EOF
+	# BEGIN GLOBUS
+	PATH="\${PATH:+\$PATH:}${b}:${s}"
+	MANPATH="\${MANPATH:+\$MANPATH:}${m}"
+	# END GLOBUS
+	EOF
+        mv "${profile}" "${profile}.globus.save"
+        mv "${profile}.globus" "${profile}"
+    elif [ -n "${cshrc}" ]; then
+        if [ -f "${cshrc}" ]; then
+            cshrc_wo_globus="$(awk < "${cshrc}" "
+                /# BEGIN GLOBUS/ { skip=1; next; }
+                /# END GLOBUS/ { skip=0; next; }
+                skip == 1 { next; }
+                { print }
+            ")"
+        else
+            cshrc_wo_globus=""
+        fi
+        echo "${cshrc_wo_globus}" > "${cshrc}.globus"
+
+        cat >> "${cshrc}.globus" <<- EOF
+	# BEGIN GLOBUS
+	if ($?PATH) then
+	    setenv PATH "$PATH:${b}:${s}"
+	else
+	    setenv PATH "${b}:${s}"
+	endif
+	if ($?MANPATH) then
+	    setenv MANPATH "$MANPATH:${m}"
+	else
+	    setenv MANPATH "${m}"
+	endif
+	# END GLOBUS
+	EOF
+        mv "${cshrc}" "${cshrc}.globus.save"
+        mv "${cshrc}.globus" "${cshrc}"
     fi
-    echo "$profile_wo_globus" > "$HOME/.profile.globus"
-    cat >> "$HOME/.profile.globus" <<EOF
-# BEGIN GLOBUS
-PATH="\${PATH:+\$PATH:}${b}:${s}"
-MANPATH="\${MANPATH:+\$MANPATH:}${m}"
-# END GLOBUS
-EOF
-    mv "$HOME/.profile" "$HOME/.profile.globus.save"
-    mv "$HOME/.profile.globus" "$HOME/.profile" 
 fi
 
 launchctl setenv GLOBUS_LOCATION "${l}"
@@ -63,9 +114,10 @@ cat <<EOF > "${UNINSTALLER}"
 #! /bin/sh
 
 files="\$(pkgutil --volume "${TARGET_LOCATION}" --regexp --files='^org\.globus.*')"
+target_prefix="\$(echo "${TARGET_LOCATION}/$prefix" | sed -e 's!//*!/!g')"
 for file in \$files; do
     fp="\$(echo ${TARGET_LOCATION}/\$file | sed -e 's!//*!/!g')"
-    if expr "\${fp}" : "$prefix" > /dev/null ; then
+    if expr "\${fp}" : "\$target_prefix" > /dev/null ; then
         if [ -f "\${fp}" ] || [ -L "\${fp}" ]; then
             rm -f "\${fp}";
         fi
@@ -85,8 +137,30 @@ if [ "$TARGET_LOCATION" = "/" ]; then
 	EOF
 else
     cat <<-EOF >> "${UNINSTALLER}"
-	    if [ -f "\$HOME/.profile" ]; then
-	        profile_wo_globus="\$(awk < "$HOME/.profile" "
+	user_shell="\$(perl -e '@pw = getpwuid \$< ; print \$pw[8], "\n"')"
+	case "\$user_shell" in 
+	/bin/bash|/bin/sh|/bin/ksh)
+		profile="\${HOME}/.profile"
+		;;
+	/bin/tcsh)
+		if [ -f "\${HOME}/.tcshrc" ]; then
+			cshrc="\${HOME}/.tcshrc"
+		elif [ -f "\${HOME}/.cshrc" ]; then
+			cshrc="\${HOME}/.cshrc"
+		else
+			cshrc="\${HOME}/.tcshrc"
+		fi
+		;;
+	/bin/zsh)
+		profile="\${HOME}/.zprofile"
+		;;
+	/bin/csh)
+		cshrc="\${HOME}/.cshrc"
+		;;
+	esac
+	if [ -n "\${profile}" ]; then
+	    if [ -f "\${profile}" ]; then
+	        profile_wo_globus="\$(awk < "\${profile}" "
 	            /# BEGIN GLOBUS/ { skip=1; next; }
 	            /# END GLOBUS/ { skip=0; next; }
 	            skip == 1 { next; }
@@ -95,9 +169,24 @@ else
 	    else
 	        profile_wo_globus=""
 	    fi
-	    echo "\$profile_wo_globus" > "\$HOME/.profile.globus"
-	    mv "\$HOME/.profile" "\$HOME/.profile.globus.save"
-	    mv "\$HOME/.profile.globus" "\$HOME/.profile" 
+	    echo "\$profile_wo_globus" > "\${profile}.globus"
+	    mv "\${profile}" "\${profile}.globus.save"
+	    mv "\${profile}.globus" "\${profile}" 
+	elif [ -n "\${cshrc}" ]; then
+		if [ -f "\${cshrc}" ]; then
+			cshrc_wo_globus="\$(awk < "\${cshrc}" "
+			/# BEGIN GLOBUS/ { skip=1; next; }
+			/# END GLOBUS/ { skip=0; next; }
+			skip == 1 { next; }
+			{ print }
+			")"
+		else
+			cshrc_wo_globus=""
+		fi
+		echo "\${cshrc_wo_globus}" > "\${cshrc}.globus"
+		mv "${cshrc}" "${cshrc}.globus.save"
+		mv "${cshrc}.globus" "${cshrc}"
+	fi
 	EOF
 fi
 chmod a+x "${UNINSTALLER}"
