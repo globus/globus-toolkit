@@ -65,7 +65,8 @@ $(GT_TARGETS_OSX_PKG):
 		echo "Processing $$filename"; \
 		for lib in `otool -L "$$filename" | sed 1d | grep -E "$(libdir)|ltdl" | awk '{print $$1}'`; do \
 		    echo "Rewriting $$lib"; \
-		    install_name_tool -change "$$lib" "@loader_path/../lib/`basename $$lib`" $$filename; \
+                    libname="$$(echo "$$lib" | sed -e 's|//*|/|g' -e 's|${libdir}//*||')"; \
+		    install_name_tool -change "$$lib" "@loader_path/../lib/$$libname" $$filename; \
 	       	done; \
 		if basename $$filename | grep -vq '^lib'; then \
 		    install_name_tool -add_rpath "@loader_path/../lib" $$filename; \
