@@ -8,12 +8,31 @@ myproxy_package_file="${package_output}/${myproxy_tarball}"
 myproxy_sourcedir="$(dirname $0)/myproxy/source"
 unpacked_file="${myproxy_sourcedir}/myproxy.unpacked" 
 
+if command -v curl > /dev/null 2>&1; then
+    download()
+    {
+        curl -Ls "$1" > "${2}.tmp"
+        mv "${2}.tmp" "${2}"
+    }
+elif command -v wget > /dev/null 2>&1; then
+    download()
+    {
+        wget -q -O "${2}.tmp" "$1"
+        mv "${2}.tmp" "${2}"
+    }
+else
+    download()
+    {
+        echo "Can't download ${1}" 1>&2
+        exit 1
+    }
+fi
+
 (
 mkdir -p "$package_output" "$myproxy_sourcedir"
 
 if [ ! -f "${myproxy_package_file}" ]; then
-    curl -Ls "$myproxy_url" > "${myproxy_package_file}.tmp" 
-    mv "${myproxy_package_file}.tmp" "${myproxy_package_file}" 
+    download "$myproxy_url" "${myproxy_package_file}"
 fi
 
 if [ -f "${unpacked_file}" ] && \

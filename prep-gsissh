@@ -12,12 +12,31 @@ gsissh_package_file="${package_output}/${gsissh_tarball}"
 gsissh_sourcedir="$(dirname $0)/gsi_openssh/source"
 unpacked_file="${gsissh_sourcedir}/gsissh.unpacked" 
 
+if command -v curl > /dev/null 2>&1; then
+    download()
+    {
+        curl -Ls "$1" > "${2}.tmp"
+        mv "${2}.tmp" "${2}"
+    }
+elif command -v wget > /dev/null 2>&1; then
+    download()
+    {
+        wget -q -O "${2}.tmp" "$1"
+        mv "${2}.tmp" "${2}"
+    }
+else
+    download()
+    {
+        echo "Can't download ${1}" 1>&2
+        exit 1
+    }
+fi
+
 (
 mkdir -p "${bundle_output}" "${package_output}" "${gsissh_sourcedir}"
 
 if [ ! -f "${gsissh_bundle_file}" ]; then
-    curl -Ls "${gsissh_url}" > "${gsissh_bundle_file}.tmp"
-    mv "${gsissh_bundle_file}.tmp" "${gsissh_bundle_file}"
+    download "${gsissh_url}" "${gsissh_bundle_file}"
 fi
 
 if [ ! -f "${gsissh_package_file}" ]; then
