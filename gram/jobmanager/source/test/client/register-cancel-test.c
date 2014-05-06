@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Usage: %s resource-manager-contact\n", argv[0]);
         exit(1);
     }
+    printf("1..1\n");
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if(rc)
     {
