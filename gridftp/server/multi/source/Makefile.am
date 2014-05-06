@@ -11,8 +11,8 @@ libglobus_xio_gridftp_multicast_driver_la_LIBADD = $(PACKAGE_DEP_LIBS)
 libglobus_xio_gridftp_multicast_driver_la_SOURCES = \
 	globus_xio_gridftp_multicast_driver.c
 libglobus_xio_gridftp_multicast_driver_la_LDFLAGS = \
-	-version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
-        -no-undefined
+	-avoid-version \
+        -no-undefined \
 	-module -rpath $(libdir)
 
 EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
