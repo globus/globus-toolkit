@@ -1,3 +1,9 @@
+globus-xio-gridftp-driver (2.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Don't version dynamic module
+
+ -- Globus Toolkit <support@globus.org>  Tue, 06 May 2014 08:20:18 -0400
+
 globus-xio-gridftp-driver (2.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Version bump for consistency
