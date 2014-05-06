@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-xio-pipe-driver
 _name = globus_xio_pipe_driver
-version = 3.4
+version = 3.5
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp

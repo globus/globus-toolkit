@@ -1,7 +1,7 @@
 Name:		globus-xio-popen-driver
 %global _name %(tr - _ <<< %{name})
-Version:	3.2
-Release:	2%{?dist}
+Version:	3.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Pipe Open Driver
 
 Group:		System Environment/Libraries
@@ -95,6 +95,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue May 06 2014 Globus Toolkit <support@globus.org> - 3.3-1
+- Don't version dynamic module
+
 * Thu Apr 24 2014 Globus Toolkit <support@globus.org> - 3.2-2
 - Fix .so in filelist
 
