@@ -1,3 +1,9 @@
+globus-xio-rate-driver (1.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Don't version dynamic module
+
+ -- Globus Toolkit <support@globus.org>  Tue, 06 May 2014 08:28:31 -0400
+
 globus-xio-rate-driver (1.4-2+gt6.@distro@) @distro@; urgency=low
 
   * Fix filelist for unversioned .so
