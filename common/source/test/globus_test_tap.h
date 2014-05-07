@@ -10,7 +10,7 @@ static void ok(int predval, const char *fmt, ...)
 {
     static int testno=1;
     va_list ap;
-    printf("%s %d ", predval ? "ok" : "not ok", testno++);
+    printf("%s %d - ", predval ? "ok" : "not ok", testno++);
     va_start(ap, fmt);
     vprintf(fmt, ap);
     va_end(ap);
