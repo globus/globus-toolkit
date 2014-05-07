@@ -217,7 +217,7 @@ typedef struct timeval  globus_reltime_t;
                                                           \
         _ftime(&timebuffer);                            \
         (Abstime).tv_sec = timebuffer.time;               \
-        (Abstime).tv_nsec = (timebuffer.millitm * 1000);  \
+        (Abstime).tv_nsec = (timebuffer.millitm * 1000000);  \
     }
 #else
 #   define  GlobusTimeAbstimeGetCurrent(Abstime)          \
