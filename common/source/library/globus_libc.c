@@ -555,11 +555,40 @@ globus_libc_free_memory(
 int
 globus_libc_usleep(long usec)
 {
-	globus_libc_lock();
-	Sleep(usec/1000);
-	globus_libc_unlock();
+    LARGE_INTEGER start_time, end_time, current_time, ticks_sec;
+    DWORD_PTR oldmask = SetThreadAffinityMask(GetCurrentThread(), 0);
 
-	return 0;
+    /*
+     * Windows Sleep(dwMilliseconds) function operates at a fixed tick speed,
+     * which is * normally between 1ms and 15ms. From the documentation:
+     *
+     *     If dwMilliseconds is less than the resolution of the system clock,
+     *     the thread may sleep for less than the specified length of time. If
+     *     dwMilliseconds is greater than one tick but less than two, the wait
+     *     can be anywhere between one and two ticks, and so on.
+     *
+     * If we're sleeping for less than 15ms, we busy wait instead. We force
+     * processor affinity so that the ticks values are comparable between
+     * calls to QueryPerformanceCounter() on a multicore system.
+     */
+    QueryPerformanceCounter(&start_time);
+    QueryPerformanceFrequency(&ticks_sec);
+
+    end_time.QuadPart = start_time.QuadPart +
+        ((usec * ticks_sec.QuadPart) / 1000000);
+    if (usec > 15000)
+    {
+        Sleep(usec / 1000);
+    }
+    do
+    {
+        QueryPerformanceCounter(&current_time);
+    }
+    while (current_time.QuadPart < end_time.QuadPart);
+
+    SetThreadAffinityMask(GetCurrentThread(), oldmask);
+
+    return GLOBUS_SUCCESS;
 }
 
 int
