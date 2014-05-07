@@ -1,6 +1,6 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	14.13
+Version:	14.14
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Wed May 07 2014 Globus Toolkit <support@globus.org> - 14.14-1
+- Don't use default proxy if available
+
 * Tue May 06 2014 Globus Toolkit <support@globus.org> - 14.13-1
 - Add TAP prefix to test output
 

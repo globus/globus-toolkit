@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.14-1+gt6.@distro@) @distro@; urgency=low
+
+  * Don't use default proxy if available
+
+ -- Globus Toolkit <support@globus.org>  Wed, 07 May 2014 15:27:03 -0400
+
 globus-gram-job-manager (14.13-1+gt6.@distro@) @distro@; urgency=low
 
   * Add TAP prefix to test output

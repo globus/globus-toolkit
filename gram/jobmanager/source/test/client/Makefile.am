@@ -62,15 +62,18 @@ if USE_CYGPATH_W
 X509_USER_CERT = "$$($(CYGPATH_W) $(abs_top_builddir)/test/testcred.cert)"
 X509_USER_KEY = "$$($(CYGPATH_W) $(abs_top_builddir)/test/testcred.key)"
 X509_CERT_DIR = "$$($(CYGPATH_W) $(abs_top_builddir)/test)"
+X509_USER_PROXY = "$$($(CYGPATH_W) $(abs_top_builddir)/test/testcred.proxy)"
 else
 X509_USER_CERT = "$(abs_top_builddir)/test/testcred.cert"
 X509_USER_KEY = "$(abs_top_builddir)/test/testcred.key"
 X509_CERT_DIR = "$(abs_top_builddir)/test"
+X509_USER_PROXY = "$(abs_top_builddir)/test/testcred.proxy"
 endif
 
 TESTS_ENVIRONMENT = export \
     X509_USER_CERT=$(X509_USER_CERT) \
     X509_USER_KEY=$(X509_USER_KEY) \
+    X509_USER_PROXY=$(X509_USER_PROXY) \
     X509_CERT_DIR=$(X509_CERT_DIR) ;
 LOG_COMPILER = $(LIBTOOL) --mode=execute \
     $(GLOBUS_XIO_GSI_DRIVER_DLOPEN) \
