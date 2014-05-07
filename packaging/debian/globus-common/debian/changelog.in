@@ -1,3 +1,9 @@
+globus-common (15.21-1+gt6.@distro@) @distro@; urgency=low
+
+  * Time-related fixes on windows
+
+ -- Globus Toolkit <support@globus.org>  Wed, 07 May 2014 11:15:02 -0456
+
 globus-common (15.20-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes

@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.20
+Version:	15.21
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
@@ -208,6 +208,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Wed May 07 2014 Globus Toolkit <support@globus.org> - 15.21-1
+- Time-related fixes on windows
+
 * Wed Apr 23 2014 Globus Toolkit <support@globus.org> - 15.20-1
 - Packaging fixes
 
