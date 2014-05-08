@@ -1,6 +1,6 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	14.14
+Version:	14.15
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Thu May 08 2014 Globus Toolkit <support@globus.org> - 14.15-1
+- Create proxy
+
 * Wed May 07 2014 Globus Toolkit <support@globus.org> - 14.14-1
 - Don't use default proxy if available
 
