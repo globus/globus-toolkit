@@ -16,7 +16,7 @@
 
 /** @file globus_common_paths.c Install and deploy path discovery functions */
 
-#include "config.h"
+#include "globus_i_common_config.h"
 #include "globus_common.h"
 #include "globus_l_common_paths.h"
 

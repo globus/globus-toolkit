@@ -16,7 +16,7 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-#include "config.h"
+#include "globus_i_common_config.h"
 #include "globus_module.h"
 #include "globus_callback.h"
 #include "globus_i_callback.h"

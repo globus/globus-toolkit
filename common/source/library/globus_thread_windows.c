@@ -16,7 +16,7 @@
 
 /** @file globus_thread_windows.c Windows Threads Bindings */
 
-#include "config.h"
+#include "globus_i_common_config.h"
 #include "globus_thread.h"
 #include "globus_common_include.h"
 #include <windows.h>

@@ -42,6 +42,8 @@ sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 perlmoduledir="@perlmoduledir@"
 
+PATH=${bindir}:${sbindir}:${PATH}
+
 short_usage="${PROGRAM_NAME} [-help] [-version]"
 
 long_usage()
@@ -117,16 +119,16 @@ _hostname="${GLOBUS_HOSTNAME}"
 if [ -z "${GLOBUS_HOSTNAME}" ] ; then
 
   # Set the _fullname based upon Globus's hostname command
-  if [ -x "${sbindir}/globus-libc-hostname" ]; then
-    _fullname="`${sbindir}/globus-libc-hostname`"
+  if command -v "globus-libc-hostname" > /dev/null; then
+    _fullname="$(globus-libc-hostname)"
   fi
 
   # if failed to set, use the system's hostname command
-  if [ -z "${_fullname}" ] ; then
+  if [ -z "${_fullname}" ] && command -v "hostname" > /dev/null; then
     _fullname=`hostname`
   fi
 
-  _basename="`echo ${_fullname} | cut -d. -f1`"
+  _basename="${_fullname%%.*}"
  
   if [ "X$_fullname" = "X$_basename" -a ! -z "$GLOBUS_LOCALDOMAIN" ] ; then
     # Its not fully qualified

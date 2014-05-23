@@ -16,7 +16,7 @@
 
 /** @file globus_thread_pthreads.c POSIX Threads Bindings */
 
-#include "config.h"
+#include "globus_i_common_config.h"
 #include "globus_common.h"
 #include "globus_thread.h"
 #include "globus_thread_common.h"

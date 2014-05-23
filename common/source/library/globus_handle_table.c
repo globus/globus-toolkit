@@ -16,7 +16,7 @@
 
 /** @file globus_handle_table.c A reference-counting handle table structure */
 
-#include "config.h"
+#include "globus_i_common_config.h"
 #include "globus_handle_table.h"
 #include "globus_libc.h"
 

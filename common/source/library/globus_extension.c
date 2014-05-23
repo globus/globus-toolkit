@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "config.h"
+#include "globus_i_common_config.h"
 #include "globus_extension.h"
 #include "globus_debug.h"
 #include "globus_thread.h"

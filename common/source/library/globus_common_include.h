@@ -65,8 +65,6 @@ extern const char * _globus_func_name;
 #   include <sys/timeb.h>
 #   include <signal.h>
 #   include <malloc.h>
-#define setenv(var,val,ovw) (((ovw)||!getenv(var))?(putenv(globus_common_create_string("%s=%s",(var),(val)))):0)
-#define unsetenv(var) (putenv(globus_common_create_string("%s=",(var))))
 #else
 #   include <pwd.h>
 #   include <netdb.h>

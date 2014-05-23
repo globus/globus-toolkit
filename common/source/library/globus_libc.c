@@ -19,7 +19,7 @@
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
+#include "globus_i_common_config.h"
 #include "globus_common.h"
 
 #include <string.h>

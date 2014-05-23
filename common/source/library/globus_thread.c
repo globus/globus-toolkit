@@ -23,7 +23,7 @@
  * configured not to use threads.
  */
 
-#include "config.h"
+#include "globus_i_common_config.h"
 #include "globus_thread.h"
 #include "globus_common_include.h"
 #include <string.h>
