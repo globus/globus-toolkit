@@ -1,6 +1,7 @@
-globus-gatekeeper (10.5-1+gt6.@distro@) @distro@; urgency=low
+globus-gatekeeper (10.5-2+gt6.@distro@) @distro@; urgency=low
 
   * Use globus_libc_[un]setenv
+  * Fix path to initializer
 
  -- Globus Toolkit <support@globus.org>  Fri, 23 May 2014 12:11:26 -0400
 
