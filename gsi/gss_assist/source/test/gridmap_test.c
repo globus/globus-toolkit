@@ -156,7 +156,7 @@ int gridmap_bad_params_test(void)
     
     gridmap = create_file_path(gridmap_dir, "grid-mapfile");
 
-    rc = setenv("GRIDMAP", gridmap, 1);
+    rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
 
     if (rc != 0)
     {
@@ -197,7 +197,7 @@ userok_bad_params_test(void)
     
     gridmap = create_file_path(gridmap_dir, "grid-mapfile");
 
-    rc = setenv("GRIDMAP", gridmap, 1);
+    rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
 
     if (rc != 0)
     {
@@ -238,7 +238,7 @@ map_local_user_bad_params_test(void)
     
     gridmap = create_file_path(gridmap_dir, "grid-mapfile");
 
-    rc = setenv("GRIDMAP", gridmap, 1);
+    rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
 
     if (rc != 0)
     {
@@ -280,7 +280,7 @@ lookup_all_globusid_bad_params_test(void)
     
     gridmap = create_file_path(gridmap_dir, "grid-mapfile");
 
-    rc = setenv("GRIDMAP", gridmap, 1);
+    rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
 
     if (rc != 0)
     {
@@ -332,7 +332,7 @@ map_and_authorize_bad_params_test(void)
     gridmap = create_file_path(gridmap_dir, "grid-mapfile");
 
 
-    rc = setenv("GRIDMAP", gridmap, 1);
+    rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
 
     if (rc != 0)
     {
@@ -393,7 +393,7 @@ gridmap_test(void)
     for (i = 0, failed = 0; i < SIZEOF_ARRAY(tests); i++)
     {
         gridmap = create_file_path(gridmap_dir, tests[i].gridmap);
-        rc = setenv("GRIDMAP", gridmap, 1);
+        rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
             fprintf(stderr, "# Error setting GRIDMAP location\n");
@@ -467,7 +467,7 @@ userok_test(void)
         char *                          gridmap;
 
         gridmap = create_file_path(gridmap_dir, tests[i].gridmap);
-        rc = setenv("GRIDMAP", gridmap, 1);
+        rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
             fprintf(stderr, "# Error setting GRIDMAP location\n");
@@ -525,7 +525,7 @@ map_local_user_test(void)
         char *                          gridmap;
 
         gridmap = create_file_path(gridmap_dir, tests[i].gridmap);
-        rc = setenv("GRIDMAP", gridmap, 1);
+        rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
             fprintf(stderr, "# Error setting GRIDMAP location\n");
@@ -604,7 +604,7 @@ lookup_all_globusid_test(void)
         char *                          gridmap;
 
         gridmap = create_file_path(gridmap_dir, tests[i].gridmap);
-        rc = setenv("GRIDMAP", gridmap, 1);
+        rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
         if (rc != 0)
         {
             fprintf(stderr, "# Error setting GRIDMAP location\n");
@@ -723,7 +723,7 @@ long_line_test(void)
 
     gridmap = create_file_path(gridmap_dir, "gridmap.long_line");
 
-    rc = setenv("GRIDMAP", gridmap, 1);
+    rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
     if (rc != 0)
     {
         fprintf(stderr, "# Error setting GRIDMAP location\n");
@@ -771,7 +771,7 @@ blank_line_test(void)
 
     gridmap = create_file_path(gridmap_dir, "gridmap.blank_line");
 
-    rc = setenv("GRIDMAP", gridmap, 1);
+    rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
     if (rc != 0)
     {
         fprintf(stderr, "# Error setting GRIDMAP location\n");
