@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gatekeeper],[10.4],[http://jira.globus.org])
+AC_INIT([globus_gatekeeper],[10.5],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [2])
@@ -38,9 +38,6 @@ AC_HEADER_SYS_WAIT
 AC_CHECK_FUNCS(waitpid)
 AC_CHECK_FUNCS(wait3)
 AC_HEADER_STDC
-
-AC_REPLACE_FUNCS(setenv)
-AC_REPLACE_FUNCS(unsetenv)
 
 AC_ARG_WITH(initscript-config-path,
             AC_HELP_STRING([--with-initscript-config-path=PATH],

@@ -78,14 +78,6 @@
 #include <string.h>
 #endif
 
-#ifndef HAVE_SETENV
-extern int setenv();
-#endif
-
-#ifndef HAVE_UNSETENV
-extern void unsetenv();
-#endif
-
 #include "globus_gatekeeper_utils.h"
 #include "globus_gsi_system_config.h"
 
@@ -394,7 +386,7 @@ new_acct_file(void)
 	    notice3(LOG_ERR, "ERROR: cannot open accounting file '%s': %s",
 		acctpath, strerror(errno));
 
-	    unsetenv(acct_fd_var);
+	    globus_libc_unsetenv(acct_fd_var);
 	}
 	else
 	{
@@ -406,7 +398,7 @@ new_acct_file(void)
 
 	    sprintf(buf, "%d", acct_fd);
 
-	    setenv(acct_fd_var, buf, 1);
+	    globus_libc_setenv(acct_fd_var, buf, 1);
 
 	    notice4(0, "%s=%s (%s)", acct_fd_var, buf, acctpath);
 	}
@@ -724,7 +716,7 @@ main(int xargc,
         else if ((strcmp(argv[i], "-globusid") == 0)
                  && (i + 1 < argc))
         {
-            setenv("GLOBUSID", argv[i+1],1);
+            globus_libc_setenv("GLOBUSID", argv[i+1],1);
             i++;
         }
         else if ((strcmp(argv[i], "-gridmap") == 0)
@@ -852,7 +844,7 @@ main(int xargc,
 
     if (gatekeeperhome)
     {
-        setenv("GLOBUS_LOCATION", gatekeeperhome, 1);
+        globus_libc_setenv("GLOBUS_LOCATION", gatekeeperhome, 1);
         logdir = genfilename(gatekeeperhome, "var", NULL);
     }
     else if ((gatekeeperhome = getenv("GLOBUS_LOCATION")) != NULL)
@@ -879,7 +871,7 @@ main(int xargc,
 
     if (gatekeeper_uid == 0)
     {
-        unsetenv("X509_USER_PROXY");
+        globus_libc_unsetenv("X509_USER_PROXY");
     }
 
     if (gatekeeper_test)
@@ -899,29 +891,29 @@ main(int xargc,
 
     if (gridmap != NULL)
     {
-        setenv("GRIDMAP", gridmap, 1);
+        globus_libc_setenv("GRIDMAP", gridmap, 1);
     }
 
     if (x509_cert_dir)
     {
-        setenv("X509_CERT_DIR", x509_cert_dir, 1);
+        globus_libc_setenv("X509_CERT_DIR", x509_cert_dir, 1);
     }
     if (x509_user_proxy)
     {
-        setenv("X509_USER_PROXY", x509_user_proxy, 1);
+        globus_libc_setenv("X509_USER_PROXY", x509_user_proxy, 1);
     }
 
     if (x509_user_cert)
     {
-        setenv("X509_USER_CERT", x509_user_cert, 1);
+        globus_libc_setenv("X509_USER_CERT", x509_user_cert, 1);
     }
     if (x509_user_key)
     {
-        setenv("X509_USER_KEY", x509_user_key, 1);
+        globus_libc_setenv("X509_USER_KEY", x509_user_key, 1);
     }
     if (krb5flag) 
     {
-        setenv("GLOBUSKMAP", globuskmap, 1);
+        globus_libc_setenv("GLOBUSKMAP", globuskmap, 1);
     }
 
     if (run_from_inetd)
@@ -1057,7 +1049,7 @@ main(int xargc,
                     fqdn, daemon_port, globusid);
             if (!run_from_inetd)
                 printf("GRAM contact: %s\n", contact_string);
-            setenv("GLOBUS_GATEKEEPER_CONTACT_STRING",
+            globus_libc_setenv("GLOBUS_GATEKEEPER_CONTACT_STRING",
                    contact_string,
                    1);
      
@@ -1468,8 +1460,8 @@ static void doit()
 	    tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
 	    gatekeeper_pid & 0xFFFFFFFF, reqnr & 0xFFFFFFFF);
 
-	setenv(gk_jm_id_var, gatekeeper_jm_id, 1);
-	setenv("GATEKEEPER_PEER", peernum, 1);
+	globus_libc_setenv(gk_jm_id_var, gatekeeper_jm_id, 1);
+	globus_libc_setenv("GATEKEEPER_PEER", peernum, 1);
 
 	notice5(0, "%s %s for %s on %s", gk_jm_id_var, gatekeeper_jm_id,
 	    client_name, peernum);
@@ -1656,7 +1648,7 @@ static void doit()
             cp = strchr((char *)deleg_proxy_filename.value, '=');
             *cp = '\0';
             cp++;
-            setenv((char *)deleg_proxy_filename.value, cp, 1);
+            globus_libc_setenv((char *)deleg_proxy_filename.value, cp, 1);
             free(deleg_proxy_filename.value);
         }
         else
@@ -1779,20 +1771,20 @@ static void doit()
         failure2(FAILED_SERVER, "fcntl F_SETFD failed: %s", strerror(errno));
     }
 
-    setenv("GLOBUS_ID",client_name,1);
-    setenv("GRID_ID",client_name,1);
-    setenv("GRID_AUTH_METHOD","TO_FILLED_IN_LATER",1);
+    globus_libc_setenv("GLOBUS_ID",client_name,1);
+    globus_libc_setenv("GRID_ID",client_name,1);
+    globus_libc_setenv("GRID_AUTH_METHOD","TO_FILLED_IN_LATER",1);
 
     /*
      * Become the appropriate user
      */
     if (gatekeeper_uid == 0)
     {
-        setenv("USER",userid,1);
-        setenv("LOGNAME",userid,1);
-        setenv("LOGIN",userid,1);
-        setenv("HOME",pw->pw_dir,1);
-        setenv("SHELL",pw->pw_shell,1);
+        globus_libc_setenv("USER",userid,1);
+        globus_libc_setenv("LOGNAME",userid,1);
+        globus_libc_setenv("LOGIN",userid,1);
+        globus_libc_setenv("HOME",pw->pw_dir,1);
+        globus_libc_setenv("SHELL",pw->pw_shell,1);
     }
     /* 
      * Could set path, and other variables as well 
@@ -1801,11 +1793,11 @@ static void doit()
      * Leave the X509_CERT_DIR of trusted certs
      * for the user to use. 
      */
-    unsetenv("GRIDMAP"); /* unset it */
-    unsetenv("GLOBUSCERTDIR"); /* unset it */
-    unsetenv("GLOBUSKEYDIR"); /* unset it */
-    unsetenv("X509_USER_KEY"); /* unset it */
-    unsetenv("X509_USER_CERT"); /* unset it */
+    globus_libc_unsetenv("GRIDMAP"); /* unset it */
+    globus_libc_unsetenv("GLOBUSCERTDIR"); /* unset it */
+    globus_libc_unsetenv("GLOBUSKEYDIR"); /* unset it */
+    globus_libc_unsetenv("X509_USER_KEY"); /* unset it */
+    globus_libc_unsetenv("X509_USER_CERT"); /* unset it */
 
     /* 
      * If the gssapi_ssleay did delegation, promote the
@@ -1813,8 +1805,8 @@ static void doit()
      */
     if ((x509_delegate = getenv("X509_USER_DELEG_PROXY")))
     {
-        setenv("X509_USER_PROXY",strdup(x509_delegate),1);
-        unsetenv("X509_USER_DELEG_PROXY");
+        globus_libc_setenv("X509_USER_PROXY",strdup(x509_delegate),1);
+        globus_libc_unsetenv("X509_USER_DELEG_PROXY");
     }
 
     if (gatekeeper_uid == 0)
@@ -1849,7 +1841,7 @@ static void doit()
             setbuf(context_tmpfile,NULL);
             fcntl(fileno(context_tmpfile), F_SETFD, 0);
             sprintf(buf, "%d", fileno(context_tmpfile));
-            setenv("GRID_SECURITY_CONTEXT_FD", buf, 1);
+            globus_libc_setenv("GRID_SECURITY_CONTEXT_FD", buf, 1);
             notice2(0,"GRID_SECURITY_CONTEXT_FD=%s",buf);
         }
         else
@@ -1912,7 +1904,7 @@ static void doit()
             setbuf(http_body_file,NULL);
             fcntl(fileno(http_body_file), F_SETFD, 0);
             sprintf(buf, "%d", fileno(http_body_file));
-            setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
+            globus_libc_setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
             notice2(0,"GRID_SECURITY_HTTP_BODY_FD=%s",buf);
 
             fwrite(body,
@@ -1984,15 +1976,15 @@ static void doit()
             const char * host = "\r\nHost:";
             gss_buffer_set_t buffer_set;
 
-            setenv("REMOTE_ADDR", peernum, 1);
-            setenv("REQUEST_METHOD", "POST", 1);
-            setenv("SCRIPT_NAME", service_name, 1);
+            globus_libc_setenv("REMOTE_ADDR", peernum, 1);
+            globus_libc_setenv("REQUEST_METHOD", "POST", 1);
+            globus_libc_setenv("SCRIPT_NAME", service_name, 1);
 
             tmp = globus_common_create_string("%zu", body_length);
-            setenv("CONTENT_LENGTH", tmp, 1);
+            globus_libc_setenv("CONTENT_LENGTH", tmp, 1);
             notice2(0, "Set CONTENT_LENGTH=%s", tmp);
 
-            setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
+            globus_libc_setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
             notice(0, "Set GATEWAY_INTERFACE to CGI/1.1");
 
             /*
@@ -2037,10 +2029,10 @@ static void doit()
                             "%.*s",
                             bptr->length,
                             bptr->data);
-                    setenv(varname, pemtext, 1);
+                    globus_libc_setenv(varname, pemtext, 1);
                     if (i == 0)
                     {
-                        setenv("SSL_CLIENT_CERT_CHAIN0", pemtext, 1);
+                        globus_libc_setenv("SSL_CLIENT_CERT_CHAIN0", pemtext, 1);
                     }
                     (void) BIO_reset(b);
                 }
@@ -2059,12 +2051,12 @@ static void doit()
                 if (tmp && tmp2)
                 {
                     tmp = globus_common_create_string("%.*s", (int)(tmp2-tmp), tmp);
-                    setenv("SERVER_NAME", tmp, 1);
+                    globus_libc_setenv("SERVER_NAME", tmp, 1);
                     notice2(0, "Set SERVER_NAME to %s", tmp);
                 }
             }
             tmp = globus_common_create_string("%d", daemon_port);
-            setenv("SERVER_PORT", tmp, 1);
+            globus_libc_setenv("SERVER_PORT", tmp, 1);
             notice2(0, "Set SERVER_PORT to %s", tmp);
 
 

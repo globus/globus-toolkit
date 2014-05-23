@@ -72,6 +72,8 @@ Include header files
 #include "globus_config.h"
 #include "globus_gatekeeper_config.h"
 
+#include "globus_common.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
@@ -101,14 +103,6 @@ Include header files
 #else
 #define K5DCELIB "/usr/lib/libdce.a"
 #endif
-#endif
-
-#ifndef HAVE_SETENV
-extern int setenv();
-#endif
-
-#ifndef HAVE_UNSETENV
-extern void unsetenv();
 #endif
 
 #ifdef DEBUG
@@ -169,7 +163,7 @@ globus_gram_k5_kinit(char * globus_client,
   }
   while(stat(ccname+5,&stx) == 0);
 
-  setenv("KRB5CCNAME", ccname, 1);
+  globus_libc_setenv("KRB5CCNAME", ccname, 1);
 
 DEEDEBUG2("calling UTIL_exec: user: %s ",user);
 DEEDEBUG2("and uid %d\n",pw?pw->pw_uid:-111111);
@@ -311,7 +305,7 @@ main(int argc, char *argv[])
 
 
  done:
-    unsetenv("GLOBUSKMAP"); /* dont pass on */
+    globus_libc_unsetenv("GLOBUSKMAP"); /* dont pass on */
 
 	/* before continuing on, if we were run as root, 
 	 * we will get to user state.
