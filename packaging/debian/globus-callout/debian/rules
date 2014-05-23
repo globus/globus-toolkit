@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-callout
 _name = globus_callout
-version = 3.9
+version = 3.10
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp

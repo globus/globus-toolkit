@@ -918,7 +918,7 @@ globus_callout_call_type(
             {
                 if(save_env[i+1] == NULL)
                 {
-                    unsetenv(save_env[i]);
+                    globus_libc_unsetenv(save_env[i]);
                 }
                 else
                 {
