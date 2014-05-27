@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_openssl_module],[4.2],[http://jira.globus.org])
+AC_INIT([globus_openssl_module],[4.3],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [4])
@@ -69,7 +69,9 @@ AC_OUTPUT(
     version.h
     globus-openssl-module.pc
     globus-openssl-module-uninstalled.pc
-    globus-update-certificate-dir
     library/Makefile
     library/Doxyfile
 )
+AC_OUTPUT(
+    [globus-update-certificate-dir],
+    [chmod a+x globus-update-certificate-dir]) 

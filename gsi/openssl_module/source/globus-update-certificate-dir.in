@@ -1,17 +1,28 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
-@GLOBUS_PERL_INITIALIZER@
+my $prefix;
+my $datarootdir;
+my $datadir;
+
+BEGIN {
+    if (exists $ENV{GLOBUS_LOCATION}) {
+        $prefix = $ENV{GLOBUS_LOCATION};
+    } else {
+        $prefix = '@prefix@';
+    }
+    $datarootdir="@datarootdir@";
+    $datadir="@datadir@";
+}
 
 use strict;
 use Getopt::Long;
-use Globus::Core::Paths;
 
 my $ca_dir = undef;
 my $help = 0;
 my @ca_dir_options = (
         "$ENV{HOME}/.globus/certificates",
         "/etc/grid-security/certificates",
-        "$Globus::Core::Paths::datadir/certificates");
+        "$datadir/certificates");
 
 if (exists($ENV{X509_CERT_DIR}))
 {

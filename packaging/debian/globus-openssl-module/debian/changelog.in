@@ -1,3 +1,9 @@
+globus-openssl-module (4.3-1+gt6.@distro@) @distro@; urgency=low
+
+  * Don't require initializer
+
+ -- Globus Toolkit <support@globus.org>  Tue, 27 May 2014 10:32:59 -0400
+
 globus-openssl-module (4.2-1+gt6.@distro@) @distro@; urgency=low
 
   * Version bump for consistency
