@@ -1,6 +1,6 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	14.16
+Version:	14.17
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Tue May 27 2014 Globus Toolkit <support@globus.org> - 14.17-1
+- Fix path to scripts for tests
+
 * Thu May 08 2014 Globus Toolkit <support@globus.org> - 14.16-1
 - Unset proxy in tests
 

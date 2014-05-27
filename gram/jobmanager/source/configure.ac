@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_job_manager],[14.16],[http://jira.globus.org])
+AC_INIT([globus_gram_job_manager],[14.17],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -21,7 +21,7 @@ PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 PKG_CHECK_MODULES([CLIENT_TEST_PACKAGE_DEP], $CLIENT_TEST_PACKAGE_DEPS)
 
 AC_SUBST([GATEKEEPER_PATH], ["$($PKG_CONFIG --variable=path globus-gatekeeper)"]) 
-AC_SUBST([JOBMANAGER_PATH], ["$($PKG_CONFIG --variable=path globus-gram-job-manager)"]) 
+AC_SUBST([JOBMANAGER_PATH], ["$PWD"])
 AC_SUBST([GRAM_CLIENT_TOOLS_PATH], ["$($PKG_CONFIG --variable=path globus-gram-client-tools)"]) 
 AC_SUBST([GASS_COPY_PATH], ["$($PKG_CONFIG --variable=path globus-gass-copy)"]) 
 AC_SUBST([GASS_CACHE_PATH], ["$($PKG_CONFIG --variable=path globus-gass-cache-program)"]) 
