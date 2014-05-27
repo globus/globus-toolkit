@@ -49,6 +49,7 @@ if [ ! -f "${unpacked_file}" ] || \
     gzip -dc "${gsissh_package_file}" | \
         tar --strip 2 -C "${gsissh_sourcedir}" -xf -
     patch -d "${gsissh_sourcedir}" -p1 < gsi_openssh.gt6.diff
+    chmod a+x "${gsissh_sourcedir}/configure.gnu"
     echo "${gsissh_tarball}" > "${unpacked_file}"
 fi
 ) 1>&2
