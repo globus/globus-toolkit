@@ -1,3 +1,9 @@
+globus-gridftp-server (7.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Use package-named config.h
+
+ -- Globus Toolkit <support@globus.org>  Tue, 27 May 2014 08:49:40 -0400
+
 globus-gridftp-server (7.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes

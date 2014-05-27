@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gridftp_server],[7.7],[http://jira.globus.org])
+AC_INIT([globus_gridftp_server],[7.8],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -227,7 +227,7 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
                 test "$XSLTPROC" != "no" && \
                 test "$XMLLINT" != "no"])
 
-AC_CONFIG_HEADERS(config.h)
+AC_CONFIG_HEADERS(globus_i_gridftp_server_config.h)
 
 AC_CONFIG_FILES(
     globus-gridftp-server.pc

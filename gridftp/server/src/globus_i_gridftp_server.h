@@ -17,7 +17,7 @@
 #ifndef GLOBUS_I_GRIDFTP_SERVER_H
 #define GLOBUS_I_GRIDFTP_SERVER_H
 
-#include "config.h"
+#include "globus_i_gridftp_server_config.h"
 #include "globus_gridftp_server.h"
 #include "globus_gridftp_server_control.h"
 #include "globus_i_gfs_acl.h"

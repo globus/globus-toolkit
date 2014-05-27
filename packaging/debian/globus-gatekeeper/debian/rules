@@ -50,6 +50,7 @@ configure-stamp: $(QUILT_STAMPFN)
 	   --mandir='$${datadir}/man' \
 	   --infodir='$${datadir}/info' \
 	   --libdir='$(_libdir)' \
+           --libexecdir='$(_datadir)/globus' \
 	   --with-flavor=$(flavor) \
 	   --docdir='$${datadir}/doc/$(name)' \
 	   --disable-static \
