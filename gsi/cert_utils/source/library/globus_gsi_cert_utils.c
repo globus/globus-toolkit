@@ -35,7 +35,7 @@
 #include "openssl/x509v3.h"
 #include "openssl/pem.h"
 #include "version.h"
-#include "config.h"
+#include "globus_i_gsi_cert_utils_config.h"
 #include <ctype.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL

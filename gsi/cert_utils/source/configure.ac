@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gsi_cert_utils], [9.5],[http://jira.globus.org])
+AC_INIT([globus_gsi_cert_utils], [9.6],[http://jira.globus.org])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [9])
@@ -16,7 +16,7 @@ AC_SUBST(DIRT_BRANCH_ID)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], [$PACKAGE_DEPS])
 
-AC_CONFIG_HEADERS(config.h)
+AC_CONFIG_HEADERS(globus_i_gsi_cert_utils_config.h)
 
 AC_MSG_CHECKING(checking for time_t timezone in <time.h>)
 AC_TRY_COMPILE(
