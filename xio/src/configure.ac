@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio], [4.9], [http://jira.globus.org])
+AC_INIT([globus_xio], [4.10], [http://jira.globus.org])
 AC_SUBST(MAJOR_VERSION, [${PACKAGE_VERSION%%.*}])
 AC_SUBST(MINOR_VERSION, [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [4])
@@ -61,7 +61,7 @@ AC_SUBST(BUILTIN_EXTENSIONS_DEC)
 AC_SUBST(BUILTIN_EXTENSIONS_DEF)
 AC_SUBST(XIO_BUILTIN_PC_INCLUDES)
 
-AC_CONFIG_HEADERS(config.h)
+AC_CONFIG_HEADERS([globus_i_xio_config.h])
 
 AC_CHECK_FUNCS(sysconf)
 AC_CHECK_FUNCS(readv)

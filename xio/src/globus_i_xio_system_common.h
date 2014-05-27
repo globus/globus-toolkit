@@ -17,7 +17,7 @@
 #ifndef GLOBUS_I_XIO_SYSTEM_COMMON_INCLUDE
 #define GLOBUS_I_XIO_SYSTEM_COMMON_INCLUDE
 
-#include "config.h"
+#include "globus_i_xio_config.h"
 #include "globus_common.h"
 #include "globus_xio_system.h"
 #include "globus_xio_driver.h"

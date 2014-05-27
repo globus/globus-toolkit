@@ -1,3 +1,9 @@
+globus-xio (4.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * Use package-named config.h
+
+ -- Globus Toolkit <support@globus.org>  Tue, 27 May 2014 10:18:19 -0400
+
 globus-xio (4.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Packaging fixes

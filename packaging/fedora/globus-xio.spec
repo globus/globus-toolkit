@@ -1,6 +1,6 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	4.9
+Version:	4.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
@@ -140,6 +140,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Tue May 27 2014 Globus Toolkit <support@globus.org> - 4.10-1
+- Use package-named config.h
+
 * Thu Apr 24 2014 Globus Toolkit <support@globus.org> - 4.9-1
 - Packaging fixes
 

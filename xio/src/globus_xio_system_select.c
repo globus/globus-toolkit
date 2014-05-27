@@ -15,7 +15,7 @@
  */
 
 
-#include "config.h"
+#include "globus_i_xio_config.h"
 #include "globus_common.h"
 #ifndef TARGET_ARCH_WIN32
 #include "globus_xio_system.h"
