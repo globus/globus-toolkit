@@ -11,7 +11,7 @@ endif
 
 name = globus-gsi-callback
 _name = globus_gsi_callback
-version = 5.2
+version = 5.3
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp

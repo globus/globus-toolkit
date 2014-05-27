@@ -32,7 +32,7 @@ Description:
 #include "oldgaa_policy_evaluator.h"
 
 #include "oldgaa_utils.h"
-#include "config.h"
+#include "globus_i_gsi_callback_config.h"
 
 #include <string.h>	/* for strerror() */
 #include <stdio.h>
