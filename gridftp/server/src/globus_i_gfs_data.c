@@ -12978,7 +12978,7 @@ globus_l_gfs_data_http_transfer_cb(
     }
     
     globus_xio_close(op->data_handle->http_handle, NULL);
-    unsetenv("GLOBUS_GFS_EXTRA_CA_CERTS");
+    globus_libc_unsetenv("GLOBUS_GFS_EXTRA_CA_CERTS");
 
     if(reply->result != GLOBUS_SUCCESS || result != GLOBUS_SUCCESS)
     {
@@ -13283,11 +13283,11 @@ globus_i_gfs_data_http_init(
             globus_assert(result == GLOBUS_SUCCESS);
             if(!session_handle->http_config_called)
             {
-                setenv("GLOBUS_GFS_EXTRA_CA_CERTS", GFS_L_S3_ROOT_CA, 1);
+                globus_libc_setenv("GLOBUS_GFS_EXTRA_CA_CERTS", GFS_L_S3_ROOT_CA, 1);
             }
             else if(session_handle->http_ca_certs)
             {
-                setenv("GLOBUS_GFS_EXTRA_CA_CERTS", 
+                globus_libc_setenv("GLOBUS_GFS_EXTRA_CA_CERTS", 
                     session_handle->http_ca_certs, 1);
             }
         }
