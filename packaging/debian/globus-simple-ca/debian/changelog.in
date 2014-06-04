@@ -1,3 +1,9 @@
+globus-simple-ca (4.12-2+gt6.@distro@) @distro@; urgency=low
+
+  * Set sysconfdir to /etc
+
+ -- Globus Toolkit <support@globus.org>  Wed, 04 June 2014 13:44:41 -0400
+
 globus-simple-ca (4.12-1+gt6.@distro@) @distro@; urgency=low
 
   * Test fixes

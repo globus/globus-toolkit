@@ -25,6 +25,7 @@ _datadir = $(_prefix)/share
 _libexecdir = $(_datadir)/globus
 _mandir = $(_datadir)/man
 _docdir = $(_datadir)/doc
+_sysconfdir = /etc
 
 sed: sed-stamp
 	:
@@ -59,7 +60,8 @@ configure-stamp: sed-stamp
 	   --infodir='$${datadir}/info' \
 	   --docdir='$(_docdir)/$(name)' \
            --localstatedir=/var \
-           --libexecdir='$(_libexecdir)'
+           --libexecdir='$(_libexecdir)' \
+           --sysconfdir='$(_sysconfdir)'
 
 	touch $@
 
