@@ -1,3 +1,9 @@
+globus-gsi-cert-utils (9.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Handle bad CA choice better
+
+ -- Globus Toolkit <support@globus.org>  Wed, 04 Jun 2014 13:45:51 -0400
+
 globus-gsi-cert-utils (9.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Use package-named config.h

@@ -212,7 +212,7 @@ set_non_default_ca()
         echo -n "Enter the index number of the CA you want to sign your cert request: "
         read CA_CHOSEN_INDEX
     
-        if [ 0 -ge $CA_CHOSEN_INDEX ] || [ $index -le $CA_CHOSEN_INDEX ] ; then
+        if [ 0 -ge ${CA_CHOSEN_INDEX:-0} ] || [ $index -le ${CA_CHOSEN_INDEX:-0} ] ; then
             echo "${CA_CHOSEN_INDEX} is not a valid index!"
             exit 1
         fi

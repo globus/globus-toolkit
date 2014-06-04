@@ -1,6 +1,6 @@
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
-Version:	9.6
+Version:	9.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
@@ -161,6 +161,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jun 04 2014 Globus Toolkit <support@globus.org> - 9.7-1
+- Handle bad CA choice better
+
 * Tue May 27 2014 Globus Toolkit <support@globus.org> - 9.6-1
 - Use package-named config.h
 
