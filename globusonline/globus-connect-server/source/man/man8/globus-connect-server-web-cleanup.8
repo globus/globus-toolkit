@@ -1,12 +1,12 @@
-.TH globus-connect-multiuser-web-cleanup 8
+.TH globus-connect-server-web-cleanup 8
 .SH NAME
-globus-connect-multiuser-web-cleanup - Clean up MyProxy OAuth server configuration
+globus-connect-server-web-cleanup - Clean up MyProxy OAuth server configuration
 
 .SH SYNOPSIS
 .HP
-globus-connect-multiuser-web-cleanup [-h|--help]
+globus-connect-server-web-cleanup [-h|--help]
 .HP
-globus-connect-multiuser-web-cleanup
+globus-connect-server-web-cleanup
 .br
 {-c FILENAME|--config-file=FILENAME}
 .br
@@ -17,20 +17,20 @@ globus-connect-multiuser-web-cleanup
 .SH DESCRIPTION
 .P
 The
-.B globus-connect-multiuser-web-cleanup
+.B globus-connect-server-web-cleanup
 command deletes MyProxy OAuth service configuration previously created by
-running globus-connect-multiuser-web-setup. It deletes configuration files,
+running globus-connect-server-web-setup. It deletes configuration files,
 stops, and disables the MyProxy server.
 .P
 If the
 .B "-r PATH" or
 .B "--root=PATH"
 command-line option is used,
-.B globus-connect-multiuser-web-cleanup
+.B globus-connect-server-web-cleanup
 will delete MyProxy configuration in a subdirectory rooted at
 .I PATH
 instead of /. This means, for example, that
-.B globus-connect-multiuser-web-cleanup
+.B globus-connect-server-web-cleanup
 deletes MyProxy OAuth configuration files in
 .I PATH/etc/apache2
 or
@@ -47,7 +47,7 @@ Display help information
 Use configuration file
 .I FILENAME
 instead of
-.I /etc/globus-connect-multiuser.conf
+.I /etc/globus-connect-server.conf
 .HP
 .B "-v, --verbose"
 .br
@@ -58,7 +58,7 @@ Print more information about tasks
 Add
 .I PATH
 as the directory prefix for the configuration files that
-.B globus-connect-multiuser-web-cleanup
+.B globus-connect-server-web-cleanup
 writes
 
 .SH ENVIRONMENT
@@ -72,4 +72,4 @@ Default Globus user name
 Default Globus password
 
 .SH "SEE ALSO"
-.B "globus-connect-multiuser-web-setup(8)"
+.B "globus-connect-server-web-setup(8)"

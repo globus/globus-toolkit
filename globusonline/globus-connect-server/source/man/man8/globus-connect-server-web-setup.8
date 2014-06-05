@@ -1,12 +1,12 @@
-.TH globus-connect-multiuser-web-setup 8
+.TH globus-connect-server-web-setup 8
 .SH NAME
-globus-connect-multiuser-web-setup - Configure a MyProxy OAuth server to work with Globus
+globus-connect-server-web-setup - Configure a MyProxy OAuth server to work with Globus
 
 .SH SYNOPSIS
 .HP
-globus-connect-multiuser-web-setup [-h|--help]
+globus-connect-server-web-setup [-h|--help]
 .HP
-globus-connect-multiuser-web-setup
+globus-connect-server-web-setup
 .br
 {-c FILENAME|--config-file=FILENAME}
 .br
@@ -17,9 +17,9 @@ globus-connect-multiuser-web-setup
 .SH DESCRIPTION
 .P
 The
-.B globus-connect-multiuser-web-setup
+.B globus-connect-server-web-setup
 command generates a web configuration to run the MyProxy OAuth service in an
-apache web server based on the globus-connect-multiuser configuration file,
+apache web server based on the globus-connect-server configuration file,
 restarts the web server, and registers the Globus as a client to the
 MyProxy server.
 .P
@@ -27,11 +27,11 @@ If the
 .B "-r PATH"
 or
 .B "--root=PATH" command-line option is used,
-.B globus-connect-multiuser-web-setup
+.B globus-connect-server-web-setup
 will write its web configuration in a subdirectory rooted at
 .I PATH
 instead of /. This means, for example, that
-.B globus-connect-multiuser-web-setup
+.B globus-connect-server-web-setup
 writes apache configuration files in
 .I PATH/etc/apache2
 or
@@ -47,7 +47,7 @@ The following options are available:
 Use configuration file
 .I FILENAME
 instead of
-.I /etc/globus-connect-multiuser.conf
+.I /etc/globus-connect-server.conf
 .HP
 .B "-v, --verbose"
 .br
@@ -58,7 +58,7 @@ Print more information about tasks
 Add
 .I PATH
 as the directory prefix for the configuration files that
-.B globus-connect-multiuser-web-setup
+.B globus-connect-server-web-setup
 writes
 
 .SH ENVIRONMENT
@@ -72,4 +72,4 @@ Default Globus user name
 Default Globus password
 
 .SH "SEE ALSO"
-.B globus-connect-multiuser-web-cleanup(8)
+.B globus-connect-server-web-cleanup(8)

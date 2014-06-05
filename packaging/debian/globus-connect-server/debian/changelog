@@ -1,3 +1,9 @@
+globus-connect-server (3.0.5-1) unstable; urgency=low
+
+  * GT-537: GCS uses multiuser in config settings and doc
+
+ -- Globus Toolkit <support@globus.org>  Thu, 05 June 2014 10:11:16 -0400
+
 globus-connect-server (3.0.4-1) unstable; urgency=low
 
   * http://jira.globus.org/browse/GT-518

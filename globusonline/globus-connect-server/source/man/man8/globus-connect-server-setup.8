@@ -1,13 +1,13 @@
-.TH globus-connect-multiuser-setup 8
+.TH globus-connect-server-setup 8
 .SH NAME
 .P
-globus-connect-multiuser-setup - Configure a MyProxy, OAuth, and GridFTP server and create a Globus endpoint
+globus-connect-server-setup - Configure a MyProxy, OAuth, and GridFTP server and create a Globus endpoint
 
 .SH SYNOPSIS
 .HP
-globus-connect-multiuser-setup [-h|--help]
+globus-connect-server-setup [-h|--help]
 .HP
-globus-connect-multiuser-setup
+globus-connect-server-setup
 .br
 {-c FILENAME|--config-file=FILENAME}
 .br
@@ -20,12 +20,12 @@ globus-connect-multiuser-setup
 .SH DESCRIPTION
 .P
 The
-.B globus-connect-multiuser-setup
+.B globus-connect-server-setup
 command combines the functionality of
-.BR "globus-connect-multiuser-io-setup" ,
-.BR "globus-connect-multiuser-id-setup" ,
+.BR "globus-connect-server-io-setup" ,
+.BR "globus-connect-server-id-setup" ,
 and
-.B "globus-connect-multiuser-web-setup"
+.B "globus-connect-server-web-setup"
 to configure a system to act as a GridFTP server, MyProxy ID server, and OAuth
 server. It also registers the GridFTP server as a Globus endpoint.
 Depending on features enabled in the configuration file, this process will
@@ -42,10 +42,10 @@ If the
 or
 .B "--reset-endpoint"
 command-line option is used,
-.B globus-connect-multiuser-setup
+.B globus-connect-server-setup
 removes all other GridFTP servers associated with the endpoint before adding
 this server if the endpoint already exists. Otherwise,
-.B globus-connect-multiuser-setup
+.B globus-connect-server-setup
 adds this server to the list of servers associated with the endpoint.
 .P
 If the 
@@ -53,12 +53,12 @@ If the
 or
 .B "--root=PATH"
 command-line option is used,
-.B globus-connect-multiuser-setup
+.B globus-connect-server-setup
 will write its GridFTP and MyProxy configuration files and certificates in a
 subdirectory rooted at
 .I PATH
 instead of /. This means, for example, that
-.B globus-connect-multiuser-setup
+.B globus-connect-server-setup
 writes GridFTP configuration files in
 .IB "PATH/etc/gridftp.d" .
 .P
@@ -68,7 +68,7 @@ The following options are available:
 .HP
 .B "-c FILENAME, --config-file=FILENAME"
 .br
-Use configuration file FILENAME instead of /etc/globus-connect-multiuser.conf
+Use configuration file FILENAME instead of /etc/globus-connect-server.conf
 .HP
 .B "-v, --verbose"
 .br
@@ -77,7 +77,7 @@ Print more information about tasks
 .B "-r PATH, --root=PATH"
 .br
 Add PATH as the directory prefix for the configuration files that
-.B globus-connect-multiuser-io-setup
+.B globus-connect-server-io-setup
 writes
 .HP
 .B "-s, --reset-endpoint"
@@ -95,4 +95,4 @@ Default Globus user name
 Default Globus password
 
 .SH SEE ALSO
-.B globus-connect-multiuser-cleanup(8), globus-connect-multiuser-io-setup(8), globus-connect-multiuser-id-setup(8), globus-connect-multiuser-web-setup(8)
+.B globus-connect-server-cleanup(8), globus-connect-server-io-setup(8), globus-connect-server-id-setup(8), globus-connect-server-web-setup(8)

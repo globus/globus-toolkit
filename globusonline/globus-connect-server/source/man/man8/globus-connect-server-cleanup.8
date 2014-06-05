@@ -1,13 +1,13 @@
-.TH globus-connect-multiuser-cleanup 8
+.TH globus-connect-server-cleanup 8
 .SH NAME
 .P
-globus-connect-multiuser-cleanup - Remove GridFTP, MyProxy, and OAuth configuration and remove it from a Globus endpoint
+globus-connect-server-cleanup - Remove GridFTP, MyProxy, and OAuth configuration and remove it from a Globus endpoint
 
 .SH SYNOPSIS
 .HP
-globus-connect-multiuser-cleanup [-h|--help]
+globus-connect-server-cleanup [-h|--help]
 .HP
-globus-connect-multiuser-cleanup
+globus-connect-server-cleanup
 .br
 {-c FILENAME|--config-file=FILENAME}
 .br
@@ -20,10 +20,10 @@ globus-connect-multiuser-cleanup
 .SH DESCRIPTION
 .P
 The
-.B globus-connect-multiuser-cleanup
+.B globus-connect-server-cleanup
 command deletes the GridFTP, MyProxy and OAuth service configurations
 previously created by running
-.B globus-connect-multiuser-setup
+.B globus-connect-server-setup
 and removes the GridFTP server from a Globus endpoint. It deletes
 configuration files, stops, and disables the services.
 .P
@@ -32,9 +32,9 @@ If the
 or
 .B --delete-endpoint
 command-line option is used,
-.B globus-connect-multiuser-io-cleanup
+.B globus-connect-server-io-cleanup
 removes the endpoint named in the configuration file as well as cleaning up
-.BR "globus-connect-multiuser-setup" "-generated"
+.BR "globus-connect-server-setup" "-generated"
 configuration files.
 .P
 If the
@@ -42,12 +42,12 @@ If the
 or
 .B "--root=PATH"
 command-line option is used,
-.B globus-connect-multiuser-cleanup
+.B globus-connect-server-cleanup
 will write its GridFTP configuration and certificates in a subdirectory rooted
 at
 .I PATH
 instead of /. This means, for example, that
-.B globus-connect-multiuser-cleanup
+.B globus-connect-server-cleanup
 deletes GridFTP configuration files in
 .IR "PATH/etc/gridftp.d" .
 .P
@@ -62,7 +62,7 @@ Display help information
 Use configuration file
 .I FILENAME
 instead of
-.I "/etc/globus-connect-multiuser.conf"
+.I "/etc/globus-connect-server.conf"
 .HP
 .B "-v, --verbose"
 .br
@@ -73,7 +73,7 @@ Print more information about tasks
 Add
 .I PATH
 as the directory prefix for the configuration files that
-.B globus-connect-multiuser-io-cleanup
+.B globus-connect-server-io-cleanup
 writes.
 .HP
 .B "-d, --delete-endpoint"
@@ -91,4 +91,4 @@ Default Globus user name
 Default Globus password
 
 .SH SEE ALSO
-.BR "globus-connect-multiuser-setup(8)" ", " "globus-connect-multiuser-io-cleanup(8)" ", " "globus-connect-multiuser-id-cleanup(8)" ", " "globus-connect-multiuser-web-cleanup(8)"
+.BR "globus-connect-server-setup(8)" ", " "globus-connect-server-io-cleanup(8)" ", " "globus-connect-server-id-cleanup(8)" ", " "globus-connect-server-web-cleanup(8)"

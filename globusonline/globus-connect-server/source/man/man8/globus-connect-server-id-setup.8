@@ -1,13 +1,13 @@
-.TH globus-connect-multiuser-id-setup 8
+.TH globus-connect-server-id-setup 8
 
 .SH NAME
-globus-connect-multiuser-id-setup - Configure a MyProxy server for use with Globus 
+globus-connect-server-id-setup - Configure a MyProxy server for use with Globus 
 
 .SH SYNOPSIS
 .HP
-globus-connect-multiuser-id-setup [-h|--help]
+globus-connect-server-id-setup [-h|--help]
 .HP
-globus-connect-multiuser-id-setup
+globus-connect-server-id-setup
 .br
 {-c FILENAME|--config-file=FILENAME}
 .br
@@ -19,9 +19,9 @@ globus-connect-multiuser-id-setup
 .SH DESCRIPTION
 .P
 The
-.B globus-connect-multiuser-id-setup
+.B globus-connect-server-id-setup
 command generates MyProxy service
-configuration based on the globus-connect-multiuser configuration file, and
+configuration based on the globus-connect-server configuration file, and
 starts the MyProxy server. Depending on features enabled in the configuration
 file, this process will include fetching a service credential from the Globus
 Connect CA, writing MyProxy configuration files in the /etc/myproxy.d/
@@ -33,12 +33,12 @@ If the
 or
 .B "--root=PATH"
 command-line option is used,
-.B globus-connect-multiuser-id-setup
+.B globus-connect-server-id-setup
 will write its MyProxy configuration and certificates in a subdirectory rooted
 at
 .I PATH
 instead of /. This means, for example, that
-.B globus-connect-multiuser-id-setup
+.B globus-connect-server-id-setup
 writes MyProxy configuration files in
 .IR "PATH/etc/gridftp.d" .
 .P
@@ -53,7 +53,7 @@ Display help information
 Use configuration file
 .I FILENAME
 instead of
-.I /etc/globus-connect-multiuser.conf
+.I /etc/globus-connect-server.conf
 .HP
 .B "-v, --verbose"
 .br
@@ -64,7 +64,7 @@ Print more information about tasks
 Add
 .I PATH
 as the directory prefix for the configuration files that
-globus-connect-multiuser-id-setup writes
+globus-connect-server-id-setup writes
 
 .SH ENVIRONMENT
 .HP
@@ -76,4 +76,4 @@ Default Globus user name
 Default Globus password
 
 .SH "SEE ALSO"
-globus-connect-multiuser-id-cleanup(8)
+globus-connect-server-id-cleanup(8)

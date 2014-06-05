@@ -16,7 +16,7 @@
 
 libdir=""
 if [ "$libdir" != "" ]; then
-    PYTHONPATH="$libdir/globus-connect-multiuser${PYTHONPATH:+:$PYTHONPATH}"
+    PYTHONPATH="$libdir/globus-connect-server${PYTHONPATH:+:$PYTHONPATH}"
     export PYTHONPATH
 fi
-exec "@PYTHON@" -mglobus.connect.multiuser.cleanup "$@"
+exec "/usr/bin/python" -mglobus.connect.server.cleanup "$@"
