@@ -63,13 +63,13 @@ show_default() {
 
     for x in "$@"; do
         if test -f "${x}/$DEFAULTCAHASH.0"; then
-            DEFAULT_SUBJECT=`${SSL_EXEC} x509 -in ${x}/$DEFAULTCAHASH.0 -noout -subject | sed -e "s|subject= ||"`
+            DEFAULT_SUBJECT=`openssl x509 -in ${x}/$DEFAULTCAHASH.0 -noout -subject | sed -e "s|subject= ||"`
             echo
             echo "The default CA is: $DEFAULT_SUBJECT"
             echo "         Location: ${x}/$DEFAULTCAHASH.0"
             echo
-	    break
-	fi
+            break
+        fi
     done
 }
 
@@ -82,7 +82,7 @@ ca_list() {
     index=1
 
     for x in "$@"; do
-	cert_hashes=`get_hashes ${x}`
+        cert_hashes=`get_hashes ${x}`
         if test -n "${cert_hashes}"; then
  
         echo "Directory: ${x}"
@@ -91,7 +91,7 @@ ca_list() {
         for cert in ${cert_hashes}; do
             if test -r "${cert}" ; then 
                 eval "CA${index}=${cert}"
-                TEMP_SUBJECT=`${SSL_EXEC} x509 -in ${cert} -noout -subject`
+                TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
                 eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | sed -e \"s|subject= ||\"`\""
                 TEMP_HASH=`echo ${cert} | sed -e  "s|.*/\([^/]*\)\.0|\1|"`
                 eval "CA_HASH${index}=$TEMP_HASH"
@@ -166,19 +166,43 @@ globus_args_unrecognized_option()
 {
     globus_args_option_error $1 "unrecognized option"
     exit 1
-}	
+}
 
 readCommandLine () {
     # Expects $* from the shell invocation
 
     while [ "X$1" != "X" ]
     do
-        case $1 in
+        case "$1" in
             -\?|-h|-help|usage|--help|-usage|--usage)
                 long_usage
                 exit 0
                 ;;
-                
+            -version|--version)
+                if [ "X${PROGRAM_NAME}" != "X" -a \
+                     "X${PROGRAM_VERSION}" != "X" ]; then
+                    echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+                elif [ "X${PACKAGE}" != "X" -a \
+                    "X${VERSION}" != "X" ]; then
+                    echo "${PACKAGE}: ${VERSION}"
+                else
+                    echo "No version information available."
+                fi
+                exit 0
+                ;;
+            -versions|--versions)
+                __AT=@
+                if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+                     -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+                     "X${DIRT_TIMESTAMP}" != "X${__AT}DIRT_TIMESTAMP${__AT}" -a \
+                     "X${DIRT_BRANCH_ID}" != "X${__AT}DIRT_BRANCH_ID${__AT}" ];
+                then
+                    echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+                else
+                    echo "No DiRT information available."
+                fi
+                exit 0;
+                ;;
             -list|--list)
                 JUSTLIST=1
                 shift 
@@ -248,18 +272,11 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
-
-globus_source ${libexecdir}/globus-sh-tools.sh
+PATH=${bindir}:${sbindir}:${PATH}
 
 PROGRAM_NAME=`echo $0 | sed 's|.*/||g'`
 
-PROGRAM_VERSION=`echo '$Revision$'| sed -e 's|\\$||g' -e 's|Revision: \(.*\)|\1|'`
+PROGRAM_VERSION="@VERSION@"
 
 VERSION="@VERSION@"
 
@@ -270,15 +287,7 @@ DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 
 short_usage="$PROGRAM_NAME [-help] [ options ...]"
 
-. $libexecdir/globus-args-parser-header
-
-if test -x ${bindir}/openssl; then
-    SSL_EXEC=${bindir}/openssl
-else
-    SSL_EXEC="openssl"
-fi
-
-if ! ${SSL_EXEC} version > /dev/null 2> /dev/null; then
+if ! openssl version > /dev/null 2> /dev/null; then
     echo "Unable to locate openssl binary in $bindir or PATH" 1>&2
     exit 1
 fi
@@ -346,7 +355,7 @@ else
         echo 
         exit 1
     fi
-    TMP_SUBJECT=`${SSL_EXEC} x509 -in ${CA_CERT} -noout -subject`
+    TMP_SUBJECT=`openssl x509 -in ${CA_CERT} -noout -subject`
     CA_SUBJECT=`echo ${TMP_SUBJECT} | sed -e "s|subject= ||"`
 fi
 
@@ -365,7 +374,7 @@ echo
 echo "setting the default CA to: ${CA_SUBJECT}"
 echo
 
-NEW_DEFAULT_CA_HASH=`${SSL_EXEC} x509 -in ${CA_CERT} -noout -hash`
+NEW_DEFAULT_CA_HASH=`openssl x509 -in ${CA_CERT} -noout -hash`
 
 GRID_SECURITY_FILE=${CA_CERT_DIR}/grid-security.conf.${NEW_DEFAULT_CA_HASH}
 CA_SSL_HOST_CONFIG_FILE=${CA_CERT_DIR}/globus-host-ssl.conf.${NEW_DEFAULT_CA_HASH}
@@ -378,8 +387,7 @@ if [ -w ${GRID_SECURITY_FILE} ]; then
     echo "        ${secconfdir}/grid-security.conf"
     echo
     rm -f ${secconfdir}/grid-security.conf
-    ln -s ${GRID_SECURITY_FILE} \
-			  ${secconfdir}/grid-security.conf 
+    ln -s ${GRID_SECURITY_FILE} ${secconfdir}/grid-security.conf
 else
     error GRID_SECURITY_FILE
 fi
@@ -390,8 +398,7 @@ if [ -w ${CA_SSL_HOST_CONFIG_FILE} ]; then
     echo "        ${secconfdir}/globus-host-ssl.conf"
     echo
     rm -f ${secconfdir}/globus-host-ssl.conf
-    ln -s ${CA_SSL_HOST_CONFIG_FILE} \
-		          ${secconfdir}/globus-host-ssl.conf
+    ln -s ${CA_SSL_HOST_CONFIG_FILE} ${secconfdir}/globus-host-ssl.conf
 else
     error CA_SSL_HOST_CONFIG_FILE
 fi
@@ -402,8 +409,7 @@ if [ -w ${CA_SSL_USER_CONFIG_FILE} ]; then
     echo "        ${secconfdir}/globus-user-ssl.conf"
     echo
     rm -f ${secconfdir}/globus-user-ssl.conf
-    ln -s ${CA_SSL_USER_CONFIG_FILE} \
-	    	          ${secconfdir}/globus-user-ssl.conf
+    ln -s ${CA_SSL_USER_CONFIG_FILE} ${secconfdir}/globus-user-ssl.conf
 else
     error CA_SSL_USER_CONFIG_FILE
 fi
@@ -414,8 +420,7 @@ if [ -w ${DIRECTIONS_FILE} ]; then
     echo "        ${secconfdir}/directions"
     echo
     rm -f ${secconfdir}/directions
-    ln -s ${DIRECTIONS_FILE} \
-	    	          ${secconfdir}/directions
+    ln -s ${DIRECTIONS_FILE} ${secconfdir}/directions
 else
     if test -r ${secconfdir}/directions ; then
         echo "removing link ${secconfdir}/directions"

@@ -306,7 +306,7 @@ globus_args_unrecognized_option()
 {
     globus_args_option_error $1 "unrecognized option"
     exit 1
-}	
+}
 
 read_command_line () 
 {
