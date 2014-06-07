@@ -105,6 +105,7 @@ DOC_CLEAN += doc-clean
 
 doc: doc-stamp
 doc-stamp: Doxyfile doxygen/index.dox $(GT_ENABLED_BUNDLES)
+	rm -rf doc
 	@$(DOXYGEN)
 	@touch $@
 doc-clean:

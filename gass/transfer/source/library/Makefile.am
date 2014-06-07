@@ -31,6 +31,7 @@ if ENABLE_DOXYGEN
 DOC_STAMPS += doc-stamp
 
 doc-stamp: Doxyfile $(libglobus_gass_transfer_la_SOURCES)
+	rm -rf doc
 	$(DOXYGEN)
 	touch $@
 

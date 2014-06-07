@@ -39,6 +39,7 @@ if ENABLE_DOXYGEN
 DOC_STAMPS += doc-stamp
 
 doc-stamp: Doxyfile $(libglobus_scheduler_event_generator_la_SOURCES)
+	rm -rf doc
 	$(DOXYGEN)
 	touch $@
 

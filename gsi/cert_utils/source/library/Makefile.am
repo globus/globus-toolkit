@@ -24,6 +24,7 @@ if ENABLE_DOXYGEN
 DOC_STAMPS += doc-stamp
 
 doc-stamp: Doxyfile $(libglobus_gsi_cert_utils_la_SOURCES)
+	rm -rf doc
 	$(DOXYGEN)
 	touch $@
 

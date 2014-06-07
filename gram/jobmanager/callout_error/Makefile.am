@@ -19,6 +19,7 @@ if ENABLE_DOXYGEN
 DOC_STAMPS += doc-stamp
 
 doc-stamp: Doxyfile $(libglobus_gram_job_manager_callout_error_la_SOURCES)
+	rm -rf doc
 	$(DOXYGEN)
 	touch $@
 

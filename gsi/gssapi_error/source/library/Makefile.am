@@ -17,6 +17,7 @@ if ENABLE_DOXYGEN
 DOC_STAMPS += doc-stamp
 
 doc-stamp: Doxyfile $(libglobus_gssapi_error_la_SOURCES)
+	rm -rf doc
 	$(DOXYGEN)
 	touch $@
 

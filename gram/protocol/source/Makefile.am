@@ -45,6 +45,7 @@ if ENABLE_DOXYGEN
 DOC_STAMPS += doc-stamp
 
 doc-stamp: Doxyfile $(libglobus_gram_protocol_la_SOURCES) globus_gram_protocol.dox
+	rm -rf doc
 	$(DOXYGEN)
 	touch $@
 

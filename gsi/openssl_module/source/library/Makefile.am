@@ -14,6 +14,7 @@ if ENABLE_DOXYGEN
 DOC_STAMPS += doc-stamp
 
 doc-stamp: Doxyfile $(libglobus_openssl_la_SOURCES)
+	rm -rf doc
 	$(DOXYGEN)
 	touch $@
 
