@@ -43,11 +43,6 @@ install-data-local: $(DOC_STAMPS)
 		done ; \
 	fi
 
-dist-hook: $(DOC_STAMPS)
-	if test -d doc; then \
-		cp -R doc $(distdir)/doc ; \
-	fi ;
-
 EXTRA_DIST = dirt.sh $(doc_DATA)
 
 distuninstallcheck:
