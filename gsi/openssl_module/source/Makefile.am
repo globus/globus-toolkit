@@ -13,6 +13,7 @@ SUFFIXES = .xml .8
 .xml.8:
 	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd $< > /dev/null
 	$(XSLTPROC) --xinclude http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+MAINTAINERCLEANFILES = $(man_MANS)
 endif
 
 EXTRA_DIST = \
