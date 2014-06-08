@@ -36,10 +36,10 @@ if BUILD_MANPAGES
 SUFFIXES = .xml .1 .8
 
 .xml.8:
-	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd $< > /dev/null
-	PATH=$${PATH}:$(bindir) $(XSLTPROC) --stringparam version "$${GLOBUS_VERSION:-`globus-version 2> /dev/null || echo`}" --xinclude $(srcdir)/replace-version.xsl $<
+	$(XMLLINT) --nonet --xinclude --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
+	PATH=$${PATH}:$(bindir) $(XSLTPROC) --nonet --stringparam version "$${GLOBUS_VERSION:-`globus-version 2> /dev/null || echo`}" --xinclude $(srcdir)/replace-version.xsl $<
 .xml.1:
-	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd $< > /dev/null
-	PATH=$${PATH}:$(bindir) $(XSLTPROC) --stringparam version "$${GLOBUS_VERSION:-`globus-version 2> /dev/null || echo`}" --xinclude $(srcdir)/replace-version.xsl $<
+	$(XMLLINT) --nonet --xinclude --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
+	PATH=$${PATH}:$(bindir) $(XSLTPROC) --nonet --stringparam version "$${GLOBUS_VERSION:-`globus-version 2> /dev/null || echo`}" --xinclude $(srcdir)/replace-version.xsl $<
 MAINTAINERCLEANFILES = $(man_MANS)
 endif
