@@ -104,9 +104,9 @@ AC_ARG_WITH([reporting-file],
         [--with-reporting-file=PATH],
         [When the SEG is enabled, look in the reporting file at PATH for
          SEG events]),
-        [SEG_REPORTING_FILE="$withval"],
-        [SEG_REPORTING_FILE=""])
-AC_SUBST(SEG_REPORTING_FILE)
+        [SGE_REPORTING_FILE="$withval"],
+        [SGE_REPORTING_FILE=""])
+AC_SUBST(SGE_REPORTING_FILE)
         
 AC_ARG_WITH(seg,
         AC_HELP_STRING(
