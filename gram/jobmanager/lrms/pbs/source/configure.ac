@@ -107,10 +107,6 @@ AC_ARG_WITH(softenv-dir,
 
 AC_SUBST(SOFTENV_DIR)
 
-AC_PATH_PROGS([DOXYGEN], doxygen)
-
-AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
-
 xml_catalog_path="notset"
 AC_ARG_WITH(
     xml-catalog,
@@ -221,6 +217,5 @@ AC_CONFIG_FILES(
         Makefile
 	globus-pbs.conf
 	seg/Makefile
-	seg/Doxyfile
 	version.h)
 AC_OUTPUT
