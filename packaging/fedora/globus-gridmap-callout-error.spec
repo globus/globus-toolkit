@@ -1,6 +1,6 @@
 Name:		globus-gridmap-callout-error
 %global _name %(tr - _ <<< %{name})
-Version:	2.1
+Version:	2.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gridmap Callout Errors
 
@@ -122,6 +122,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 2.3-1
+- Merge changes from Mattias Ellert
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 2.1-1
 - Version bump for consistency
 

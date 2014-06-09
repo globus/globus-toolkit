@@ -4,14 +4,12 @@ globussysconfdir = ${sysconfdir}/globus
 gridservicesdir = ${sysconfdir}/grid-services/available
 gramperlmoduledir = ${perlmoduledir}/Globus/GRAM/JobManager
 validationdir = $(datadir)/globus/globus_gram_job_manager
-pkgconfdir = $(libdir)/pkgconfig
 
 globussysconf_DATA = globus-lsf.conf
 gridservices_DATA = jobmanager-lsf-poll jobmanager-lsf-seg
 gramperlmodule_DATA = lsf.pm
 validation_DATA = lsf.rvf
 doc_DATA = GLOBUS_LICENSE
-pkgconf_DATA = globus-gram-job-manager-lsf.pc
 
 AT=@
 jobmanager-lsf-poll: $(srcdir)/jobmanager-lsf-poll.in

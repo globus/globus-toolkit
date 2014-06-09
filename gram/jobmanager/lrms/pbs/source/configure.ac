@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_job_manager_pbs],[2.2],[http://jira.globus.org])
+AC_INIT([globus_gram_job_manager_pbs],[2.3],[https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -106,10 +106,6 @@ AC_ARG_WITH(softenv-dir,
    [SOFTENV_DIR=''])
 
 AC_SUBST(SOFTENV_DIR)
-
-AC_PATH_PROGS([DOXYGEN], doxygen)
-
-AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
 xml_catalog_path="notset"
 AC_ARG_WITH(
@@ -221,6 +217,5 @@ AC_CONFIG_FILES(
         Makefile
 	globus-pbs.conf
 	seg/Makefile
-	seg/Doxyfile
 	version.h)
 AC_OUTPUT

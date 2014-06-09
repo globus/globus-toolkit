@@ -194,6 +194,7 @@ if ENABLE_DOXYGEN
 DOC_STAMPS += doc-stamp
 
 doc-stamp: Doxyfile $(libglobus_common_la_SOURCES)
+	rm -rf doc
 	$(DOXYGEN)
 	touch $@
 

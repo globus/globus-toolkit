@@ -1,6 +1,6 @@
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
-Version:	13.6
+Version:	13.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
@@ -134,6 +134,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 13.7-1
+- Merge changes from Mattias Ellert
+
 * Thu Apr 24 2014 Globus Toolkit <support@globus.org> - 13.6-1
 - Test fixes
 

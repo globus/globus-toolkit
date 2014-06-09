@@ -1,6 +1,6 @@
 Name:		globus-openssl-module
 %global _name %(tr - _ <<< %{name})
-Version:	4.3
+Version:	4.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper
 
@@ -120,8 +120,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %{_libdir}/libglobus*.so.*
-%{_sbindir}/globus-update-certificate-dir
-%{_mandir}/man8/*
 
 %files devel
 %defattr(-,root,root,-)
@@ -136,6 +134,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 4.4-1
+- Merge changes from Mattias Ellert
+
 * Tue May 27 2014 Globus Toolkit <support@globus.org> - 4.3-1
 - Don't require initializer
 

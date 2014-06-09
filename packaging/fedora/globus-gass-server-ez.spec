@@ -1,6 +1,6 @@
 Name:		globus-gass-server-ez
 %global _name %(tr - _ <<< %{name})
-Version:	5.4
+Version:	5.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Server_ez
 
@@ -115,6 +115,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 5.5-1
+- Merge changes from Mattias Ellert
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 5.4-1
 - Version bump for consistency
 

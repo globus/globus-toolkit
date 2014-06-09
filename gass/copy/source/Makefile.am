@@ -35,7 +35,7 @@ SUFFIXES = .xml .1
 .xml.1:
 	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
 	$(XSLTPROC) --nonet $(MAN_XSL) $<
-CLEANFILES = $(man_MANS)
+MAINTAINERCLEANFILES = $(man_MANS)
 endif
 
 DOC_STAMPS =
@@ -43,6 +43,7 @@ if ENABLE_DOXYGEN
 DOC_STAMPS += doc-stamp
 
 doc-stamp: Doxyfile $(libglobus_gass_copy_la_SOURCES)
+	rm -rf doc
 	$(DOXYGEN)
 	touch $@
 
@@ -65,11 +66,6 @@ install-data-local: $(DOC_STAMPS)
 			$(INSTALL) -m 644 doc/$$f $(DESTDIR)$(docdir)/$$f ; \
 		done ; \
 	fi
-
-dist-hook: $(DOC_STAMPS)
-	if test -d doc; then \
-		cp -R doc $(distdir)/doc ; \
-	fi ;
 
 EXTRA_DIST = \
 	dirt.sh \

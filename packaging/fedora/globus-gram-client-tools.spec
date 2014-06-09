@@ -1,6 +1,6 @@
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
-Version:	11.3
+Version:	11.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
@@ -73,6 +73,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 11.4-1
+- Merge changes from Mattias Ellert
+
 * Fri Apr 25 2014 Globus Toolkit <support@globus.org> - 11.3-1
 - Packaging fixes
 

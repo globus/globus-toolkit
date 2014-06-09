@@ -1,6 +1,6 @@
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.13
+Version:	1.14
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
@@ -122,6 +122,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 1.14-1
+- Merge changes from Mattias Ellert
+
 * Sat Apr 26 2014 Globus Toolkit <support@globus.org> - 1.13-1
 - Packaging fixes
 

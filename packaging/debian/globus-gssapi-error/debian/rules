@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gssapi-error
 _name = globus_gssapi_error
-version = 5.2
+version = 5.3
 soname = 2
 
 INSTALLDIR = $(CURDIR)/debian/tmp

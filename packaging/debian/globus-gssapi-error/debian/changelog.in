@@ -1,3 +1,9 @@
+globus-gssapi-error (5.3-1+gt6.@distro@) @distro@; urgency=low
+
+  * Merge changes from Mattias Ellert
+
+ -- Globus Toolkit <support@globus.org>  Mon, 09 Jun 2014 14:39:40 -0400
+
 globus-gssapi-error (5.2-1+gt6.@distro@) @distro@; urgency=low
 
   * Version bump for consistency

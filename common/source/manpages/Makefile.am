@@ -18,5 +18,5 @@ SUFFIXES = .xml .1
 .xml.1:
 	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
 	$(XSLTPROC) --nonet $(MAN_XSL) $<
-CLEANFILES = $(man_MANS)
+MAINTAINERCLEANFILES = $(man_MANS)
 endif

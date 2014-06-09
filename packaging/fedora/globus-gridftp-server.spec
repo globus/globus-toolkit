@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.9
+Version:	7.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -169,6 +169,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 7.10-1
+- Merge changes from Mattias Ellert
+
 * Tue May 27 2014 Globus Toolkit <support@globus.org> - 7.9-1
 - Use globus_libc_unsetenv
 

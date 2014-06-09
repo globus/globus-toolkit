@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.22
+Version:	15.23
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
@@ -208,6 +208,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 15.23-1
+- Merge changes from Mattias Ellert
+
 * Fri May 23 2014 Globus Toolkit <support@globus.org> - 15.22-1
 - Use globus_libc_[un]setenv
 

@@ -1,10 +1,10 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_job_manager_lsf],[2.3],[http://jira.globus.org])
+AC_INIT([globus_gram_job_manager_lsf],[2.4],[https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-xio >= 3, globus-scheduler-event-generator >= 4, globus-gram-protocol >= 11"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-scheduler-event-generator >= 4"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])

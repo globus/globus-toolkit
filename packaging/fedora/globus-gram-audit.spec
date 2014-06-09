@@ -2,7 +2,7 @@
 
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
-Version:	4.1
+Version:	4.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Auditing
 
@@ -89,6 +89,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 4.2-1
+- Merge changes from Mattias Ellert
+
 * Thu Apr 24 2014 Globus Toolkit <support@globus.org> - 4.1-1
 - Packaging fixes
 

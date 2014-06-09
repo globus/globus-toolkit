@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
-Version:	2.2
+Version:	2.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
@@ -210,6 +210,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-sge-seg
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 2.3-1
+- Merge changes from Mattias Ellert
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 2.2-1
 - Version bump for consistency
 

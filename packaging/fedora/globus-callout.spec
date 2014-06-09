@@ -1,6 +1,6 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
-Version:	3.10
+Version:	3.11
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
@@ -130,6 +130,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 3.11-1
+- Merge changes from Mattias Ellert
+
 * Fri May 23 2014 Globus Toolkit <support@globus.org> - 3.10-1
 - Use globus_libc_unsetenv
 

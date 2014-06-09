@@ -133,7 +133,8 @@ globus_args_unrecognized_option()
 {
     globus_args_option_error $1 "unrecognized option"
     exit 1
-}	
+}
+
 if [ -n "$1" ]; then
     case "$1" in
         -help | -h | --help | -usage | --usage)

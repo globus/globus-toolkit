@@ -1,10 +1,10 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_job_manager_sge],[2.2],[http://jira.globus.org])
+AC_INIT([globus_gram_job_manager_sge],[2.3],[https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-xio >= 3, globus-scheduler-event-generator >= 4, globus-gram-protocol >= 11"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-scheduler-event-generator >= 4"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
@@ -104,9 +104,9 @@ AC_ARG_WITH([reporting-file],
         [--with-reporting-file=PATH],
         [When the SEG is enabled, look in the reporting file at PATH for
          SEG events]),
-        [SEG_REPORTING_FILE="$withval"],
-        [SEG_REPORTING_FILE=""])
-AC_SUBST(SEG_REPORTING_FILE)
+        [SGE_REPORTING_FILE="$withval"],
+        [SGE_REPORTING_FILE=""])
+AC_SUBST(SGE_REPORTING_FILE)
         
 AC_ARG_WITH(seg,
         AC_HELP_STRING(

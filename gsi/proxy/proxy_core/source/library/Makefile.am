@@ -24,6 +24,7 @@ if ENABLE_DOXYGEN
 DOC_STAMPS += doc-stamp
 
 doc-stamp: Doxyfile $(libglobus_gsi_proxy_core_la_SOURCES)
+	rm -rf doc
 	$(DOXYGEN)
 	touch $@
 
@@ -45,9 +46,4 @@ install-data-local: $(DOC_STAMPS)
 		for f in `(cd doc; find html -type f)`; do \
 			$(INSTALL) -m 644 doc/$$f $(DESTDIR)$(docdir)/$$f ; \
 		done ; \
-	fi
-
-dist-hook: $(DOC_STAMPS)
-	if test -d doc; then \
-		cp -R doc $(distdir)/doc ; \
 	fi

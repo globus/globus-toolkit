@@ -1,3 +1,9 @@
+globus-authz (3.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Merge changes from Mattias Ellert
+
+ -- Globus Toolkit <support@globus.org>  Mon, 09 Jun 2014 14:39:43 -0400
+
 globus-authz (3.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Test fixes
