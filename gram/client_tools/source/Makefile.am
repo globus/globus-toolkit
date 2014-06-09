@@ -11,7 +11,7 @@ bin_SCRIPTS = \
 	globus-job-get-output-helper \
 	globus-job-submit \
 	globus-job-cancel
-man1_MANS = globus-job-cancel.1 \
+man_MANS = globus-job-cancel.1 \
                 globus-job-clean.1 \
                 globus-job-get-output.1 \
                 globus-job-run.1  \
@@ -43,7 +43,7 @@ EXTRA_DIST = globus-job-run.in \
 	     globus-job-get-output.in \
 	     globus-job-get-output-helper \
 	     version.h.in \
-	     $(man1_MANS) \
+	     $(man_MANS) \
 	     $(MANUAL_SOURCE) \
 	     $(doc_DATA) \
 	     dirt.sh
@@ -54,7 +54,7 @@ SUFFIXES = .xml .1
 .xml.1:
 	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
 	$(XSLTPROC) --nonet $(MAN_XSL) $<
-CLEANFILES = $(man_MANS)
+MAINTAINERCLEANFILES = $(man_MANS)
 endif
 
 distuninstallcheck:

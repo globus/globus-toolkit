@@ -17,6 +17,7 @@ if ENABLE_DOXYGEN
 DOC_STAMPS += doc-stamp
 
 doc-stamp: Doxyfile $(libglobus_openssl_error_la_SOURCES)
+	rm -rf doc
 	$(DOXYGEN)
 	touch $@
 
@@ -39,8 +40,3 @@ install-data-local: $(DOC_STAMPS)
 			$(INSTALL) -m 644 doc/$$f $(DESTDIR)$(docdir)/$$f ; \
 		done ; \
 	fi
-
-dist-hook: $(DOC_STAMPS)
-	if test -d doc; then \
-		cp -R doc $(distdir)/doc ; \
-	fi ;

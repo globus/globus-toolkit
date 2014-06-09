@@ -1,3 +1,9 @@
+globus-xio-gridftp-driver (2.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Merge changes from Mattias Ellert
+
+ -- Globus Toolkit <support@globus.org>  Mon, 09 Jun 2014 14:39:38 -0400
+
 globus-xio-gridftp-driver (2.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Don't version dynamic module

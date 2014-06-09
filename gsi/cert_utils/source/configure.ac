@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gsi_cert_utils], [9.7],[http://jira.globus.org])
+AC_INIT([globus_gsi_cert_utils], [9.8],[https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [9])
@@ -127,5 +127,8 @@ AC_CONFIG_FILES(
 AC_CONFIG_FILES(
     [programs/grid-default-ca],
     [chmod a+x programs/grid-default-ca])
+AC_CONFIG_FILES(
+    [programs/globus-update-certificate-dir],
+    [chmod a+x programs/globus-update-certificate-dir])
 
 AC_OUTPUT

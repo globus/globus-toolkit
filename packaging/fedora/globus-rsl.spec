@@ -1,6 +1,6 @@
 Name:		globus-rsl
 %global _name %(tr - _ <<< %{name})
-Version:	10.6
+Version:	10.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Resource Specification Language Library
 
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 10.7-1
+- Merge changes from Mattias Ellert
+
 * Tue Apr 22 2014 Globus Toolkit <support@globus.org> - 10.6-1
 - Test fixes
 

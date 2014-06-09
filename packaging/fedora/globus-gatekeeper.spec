@@ -1,6 +1,6 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	10.5
+Version:	10.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -112,6 +112,9 @@ fi
 
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 10.6-1
+- Merge changes from Mattias Ellert
+
 * Fri May 23 2014 Globus Toolkit <support@globus.org> - 10.5-1
 - Use globus_libc_[un]setenv
 

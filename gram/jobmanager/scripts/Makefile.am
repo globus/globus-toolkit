@@ -45,7 +45,7 @@ SUFFIXES += .xml .8
 .xml.8:
 	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
 	$(XSLTPROC) --nonet $(MAN_XSL) $<
-CLEANFILES = $(man_MANS)
+MAINTAINERCLEANFILES += $(man_MANS)
 endif
 
 distuninstallcheck:

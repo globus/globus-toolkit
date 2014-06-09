@@ -22,8 +22,7 @@ $(globusperl_DATA): create_protocol_constants.pl ../globus-gram-protocol-constan
 	-$(PERL) $(srcdir)/create_protocol_constants.pl -perl \
 		$(srcdir)/../globus-gram-protocol-constants.sh
 .pm.html:
-	pod2html --noindex $*.pm | \
-	    sed -e 's,</HEAD>,<LINK REL="stylesheet" HREF="../../../../doxygen/globus.css"></HEAD>,' > $*.html
+	pod2html --noindex $< > $@
 
 .pm.3pm:
 	pod2man --section=3 $< > $@

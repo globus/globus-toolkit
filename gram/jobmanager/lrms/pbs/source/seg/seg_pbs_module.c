@@ -513,7 +513,9 @@ globus_l_pbs_read_callback(
             case EIO:           /* STREAMS-related */
             case EISDIR:        /* Can only happen when open for write to a dir
                                  */
+#ifdef ENOSR
             case ENOSR:         /* STREAMS-related */
+#endif
             case ENOSPC:        /* Can only happen when creating file */
             case ENXIO:         /* nonblocking write to a fifo with no reader */
             case EROFS:         /* write to readonly filesystem */

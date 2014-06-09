@@ -1,6 +1,6 @@
 Name:		globus-authz-callout-error
 %global _name %(tr - _ <<< %{name})
-Version:	3.2
+Version:	3.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus authz error library
 
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 3.3-1
+- Merge changes from Mattias Ellert
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 3.2-1
 - Version bump for consistency
 

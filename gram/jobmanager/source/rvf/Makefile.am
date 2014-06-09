@@ -25,3 +25,12 @@ EXTRA_DIST = globus-rvf-edit $(man_MANS) \
     globus_i_rvf_scanner.h \
     globus_i_rvf_parser.c \
     globus_i_rvf_parser.h
+
+if BUILD_MANPAGES
+SUFFIXES = .xml .8
+
+.xml.8:
+	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
+	$(XSLTPROC) --nonet $(MAN_XSL) $<
+MAINTAINERCLEANFILES = $(man_MANS)
+endif

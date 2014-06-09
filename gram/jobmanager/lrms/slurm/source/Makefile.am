@@ -1,4 +1,3 @@
-pkgconfigdir = $(libdir)/pkgconfig
 globussysconfdir = ${sysconfdir}/globus
 gridservicesdir = ${sysconfdir}/grid-services/available
 gramperlmoduledir = ${perlmoduledir}/Globus/GRAM/JobManager
@@ -9,7 +8,6 @@ gridservices_DATA = jobmanager-slurm-poll
 gramperlmodule_DATA = slurm.pm
 validation_DATA = slurm.rvf
 doc_DATA = LICENSE GLOBUS_LICENSE LICENSE.BSD
-pkgconfig_DATA = globus-gram-job-manager-slurm.pc
 
 AT=@
 jobmanager-slurm-poll: jobmanager-slurm.in
