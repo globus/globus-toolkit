@@ -84,9 +84,11 @@ AC_ARG_WITH([udt-lib],
     AS_HELP_STRING([--with-udt-lib=PATH],
         [Add -L@<:@PATH@:>@ to linker flags]),
     [if test "$withval" != yes; then
-        UDT_LDFLAGS="-L$withval"
-        UDT_LIBS="-ludt"
-     fi])
+        UDT_LDFLAGS="-L$withval -ludt"
+     else
+        UDT_LDFLAGS="-ludt"
+     fi],
+    [UDT_LDFLAGS="-ludt"])
 
 
 PKG_PROG_PKG_CONFIG
@@ -147,8 +149,8 @@ if test X"$use_included_udt" = X1; then
 else
     save_CXXFLAGS="$CXXFLAGS"
     save_LIBS="$LIBS"
-    CXXFLAGS="$CXXFLAGS $UDT_CFLAGS"
-    LIBS="${UDT_LIBS:--ludt} $LIBS"
+    CXXFLAGS="$CXXFLAGS $UDT_CPPFLAGS"
+    LIBS="$UDT_LDFLAGS $LIBS"
 
     # udt 4.11 renamed the 2 parameter bind() function to bind2().
     AC_MSG_CHECKING([UDT bind2() function])
