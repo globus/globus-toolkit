@@ -26,7 +26,7 @@ sub write_perl_modules
     my $module;
     my $basename;
 
-    foreach my $type (keys %{$types})
+    foreach my $type (sort keys %{$types})
     {
 	$module_name = $type;
 	$module_name =~ s/globus_gram_protocol_//;
@@ -194,7 +194,7 @@ sub write_c_header
 #define GLOBUS_GRAM_PROTOCOL_CONSTANTS_H
 
 EOF
-    foreach my $type (keys %{$types})
+    foreach my $type (sort keys %{$types})
     {
 	$break = "\n";
 	$basename = $type;
