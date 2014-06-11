@@ -4,7 +4,7 @@ AC_INIT([globus_gass_copy],[9.10],[https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [7])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-ftp-client >= 7, globus-ftp-control >= 4, globus-gsi-sysconfig >= 4, globus-gass-transfer >= 7, globus-io >= 8, globus-gssapi-gsi >= 9, globus-gssapi-error >= 4, openssl >= 0.9.8"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 15, globus-ftp-client >= 7, globus-ftp-control >= 4, globus-gsi-sysconfig >= 4, globus-gass-transfer >= 7, globus-io >= 8, globus-gssapi-gsi >= 9, globus-gssapi-error >= 4, openssl >= 0.9.8"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
