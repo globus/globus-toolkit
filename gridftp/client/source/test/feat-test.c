@@ -26,7 +26,7 @@ static globus_result_t                  result;
 void g_quick_exit(char *stage) 
 {
     globus_libc_printf( "\nThe following stage failed: %s\n", stage);
-    globus_libc_fprintf(stderr,globus_object_printable_to_string(globus_error_get(result)));
+    globus_libc_fprintf(stderr, "%s", globus_object_printable_to_string(globus_error_get(result)));
     printf("\nExiting.\n");
     exit(1);
 }
