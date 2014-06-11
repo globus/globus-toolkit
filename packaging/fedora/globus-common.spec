@@ -19,7 +19,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	14.12
-Release:	1g%{?dist}
+Release:	2g%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -68,7 +68,7 @@ BuildRequires:	tetex-latex
 %endif
 %endif
 
-%if %{?fedora}%{!?fedora:0} == 18
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires: tex(sectsty.sty)
 BuildRequires: tex(tocloft.sty)
 BuildRequires: tex(xtab.sty)
@@ -271,6 +271,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Jun 11 2014 Globus Toolkit <support@globus.org> - 14.12-2
+- LaTeX dependencies for RHEL 7
+
 * Fri Apr 04 2014 Globus Toolkit <support@globus.org> - 14.12-1
 - increase error cache
 
