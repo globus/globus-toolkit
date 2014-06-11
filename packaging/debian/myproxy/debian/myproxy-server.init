@@ -11,8 +11,8 @@
 # Required-Stop:  $local_fs $syslog
 # Should-Start:  $syslog
 # Should-Stop:  $network $syslog
-# Default-Stop:
-# Default-Start:
+# Default-Stop: 0 1 6
+# Default-Start: 2 3 4 5
 # Short-Description: Startup the MyProxy server daemon
 # Description: Server for X.509 Public Key Infrastructure (PKI) security credentials
 ### END INIT INFO
