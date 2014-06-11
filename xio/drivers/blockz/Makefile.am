@@ -2,7 +2,7 @@ SUBDIRS = pkgdata doxygen
 
 LIBZ_PATH=@LIBZ_PATH@
 
-flavorinclude_HEADERS = globus_xio_blockz.h
+include_HEADERS = globus_xio_blockz.h
 lib_LTLIBRARIES = libglobus_xio_blockz_driver.la
 
 AM_CPPFLAGS = $(GPT_INCLUDES) -I$(LIBZ_PATH)/include
