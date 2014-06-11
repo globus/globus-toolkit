@@ -1,7 +1,0 @@
-#! /bin/sh
-username=$1
-if [ X"$username" = X ]; then
-    exit 1
-fi
-echo "%(dn)s/CN=${username}"
-exit 0

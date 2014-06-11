@@ -1,3 +1,9 @@
+globus-gridftp-server-control (3.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Merge changes from Mattias Ellert
+
+ -- Globus Toolkit <support@globus.org>  Mon, 09 Jun 2014 14:39:45 -0400
+
 globus-gridftp-server-control (3.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Version bump for consistency

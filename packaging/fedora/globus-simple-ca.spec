@@ -2,7 +2,7 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	4.12
+Version:	4.13
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
@@ -113,6 +113,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 4.13-1
+- Merge changes from Mattias Ellert
+
 * Mon Apr 21 2014 Globus Toolkit <support@globus.org> - 4.12-1
 - Test fixes
 

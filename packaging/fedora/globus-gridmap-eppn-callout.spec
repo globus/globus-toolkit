@@ -1,6 +1,6 @@
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
-Version:	1.4
+Version:	1.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
@@ -79,6 +79,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 1.5-1
+- Merge changes from Mattias Ellert
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 1.4-1
 - Version bump for consistency
 

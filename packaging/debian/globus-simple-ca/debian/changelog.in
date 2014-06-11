@@ -1,3 +1,9 @@
+globus-simple-ca (4.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * Merge changes from Mattias Ellert
+
+ -- Globus Toolkit <support@globus.org>  Mon, 09 Jun 2014 14:39:41 -0400
+
 globus-simple-ca (4.12-2+gt6.@distro@) @distro@; urgency=low
 
   * Set sysconfdir to /etc

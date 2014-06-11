@@ -1,6 +1,6 @@
 Name:		globus-gfork
 %global _name %(tr - _ <<< %{name})
-Version:	4.4
+Version:	4.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GFork
 
@@ -124,6 +124,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/globus-gfork.pc
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 4.5-1
+- Merge changes from Mattias Ellert
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 4.4-1
 - Version bump for consistency
 

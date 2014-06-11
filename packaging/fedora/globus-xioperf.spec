@@ -1,6 +1,6 @@
 Name:		globus-xioperf
 %global _name %(tr - _ <<< %{name})
-Version:	4.2
+Version:	4.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - XIO Performance Tool
 
@@ -69,6 +69,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 4.3-1
+- Merge changes from Mattias Ellert
+
 * Fri Apr 18 2014 Globus Toolkit <support@globus.org> - 4.2-1
 - Version bump for consistency
 
