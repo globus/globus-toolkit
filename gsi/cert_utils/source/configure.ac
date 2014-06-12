@@ -65,6 +65,15 @@ AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != "no"])
 
+if test "X$GLOBUS_VERSION" = "X"; then
+    if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version; then
+        GLOBUS_VERSION="`${GLOBUS_LOCATION-/usr}/bin/globus-version`"
+    else
+        GLOBUS_VERSION="unknown"
+    fi
+fi
+AC_SUBST(GLOBUS_VERSION)
+
 AC_PATH_PROG(XSLTPROC, "xsltproc")
 AC_PATH_PROG(XMLLINT, "xmllint")
 AC_MSG_CHECKING([docbook dtd])

@@ -57,11 +57,14 @@ AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
-GLOBUS_TOOLKIT_VERSION="${GLOBUS_VERSION:-`test -x globus-version && globus-version`}"
-if test "x$GLOBUS_TOOLKIT_VERSION" = "x"; then
-    GLOBUS_TOOLKIT_VERSION="UNKNOWN"
+if test "X$GLOBUS_VERSION" = "X"; then
+    if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version; then
+        GLOBUS_VERSION="`${GLOBUS_LOCATION-/usr}/bin/globus-version`"
+    else
+        GLOBUS_VERSION="unknown"
+    fi
 fi
-AC_SUBST(GLOBUS_TOOLKIT_VERSION)
+AC_SUBST(GLOBUS_VERSION)
 
 AM_PATH_XML2
 if test "$ac_cv_have_libxml2" = "yes"; then

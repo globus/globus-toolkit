@@ -59,9 +59,17 @@ AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
-GLOBUS_TOOLKIT_ID=unknown
-if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version ; then
-    GLOBUS_TOOLKIT_ID="`${GLOBUS_LOCATION-/usr}/bin/globus-version -full`"
+AC_MSG_CHECKING([Toolkit version])
+if test "X$GLOBUS_TOOLKIT_ID" = "X"; then
+    if test "X$GLOBUS_VERSION" = "X"; then
+        if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version; then
+            GLOBUS_TOOLKIT_ID="`${GLOBUS_LOCATION-/usr}/bin/globus-version -full`"
+        else
+            GLOBUS_TOOLKIT_ID="unknown"
+        fi
+    else
+        GLOBUS_TOOLKIT_ID="Globus Toolkit $GLOBUS_VERSION"
+    fi
 fi
 AC_MSG_RESULT($GLOBUS_TOOLKIT_ID)
 AC_SUBST(GLOBUS_TOOLKIT_ID)
