@@ -44,7 +44,6 @@ GLOBUS_COMMON_PATH=
 PKG_CHECK_EXISTS([globus-common], [
     GLOBUS_COMMON_PATH="$($PKG_CONFIG --variable=path globus-common)"])
 AC_SUBST([GLOBUS_COMMON_PATH])
-AM_CONDITIONAL([RUN_TESTS], [test "$GLOBUS_COMMON_PATH" != ""])
 AM_CONDITIONAL([CYGPATH_W_DEFINED], [
     case $host in
         *mingw32*)
