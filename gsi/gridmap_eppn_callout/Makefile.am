@@ -8,7 +8,7 @@ pkgconfig_DATA = globus-gridmap-eppn-callout.pc
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) 
 
 libglobus_gridmap_eppn_callout_la_LDFLAGS = \
-        -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+        -avoid-version \
         -no-undefined \
         -module \
         -rpath $(libdir)

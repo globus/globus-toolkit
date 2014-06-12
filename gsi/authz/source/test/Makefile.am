@@ -37,8 +37,9 @@ libglobus_authz_test_callout_la_LIBADD = $(GPT_LIB_LINKS)
 
 libglobus_authz_test_callout_la_LDFLAGS = \
 	-module \
-        -no-undefined \
-        -rpath $(abs_builddir)
+	-no-undefined \
+	-avoid-version \
+	-rpath $(abs_builddir)
 
 testcred.key:
 	umask 077 ; openssl genrsa 1024 > $@
@@ -59,8 +60,8 @@ CLEANFILES = testcred.key testcred.cert testcred.req
 
 clean-local:
 	if test -f testcredlink; then \
-            rm -f $$(cat testcredlink) testcredlink; \
-        fi
-	
+	    rm -f $$(cat testcredlink) testcredlink; \
+	fi
+
 EXTRA_DIST = authz_test_callout.conf
 SUFFIXES = .key .req .cert

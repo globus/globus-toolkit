@@ -4,7 +4,7 @@ lib_LTLIBRARIES = libglobus_gridmap_verify_myproxy_callout.la
 
 libglobus_gridmap_verify_myproxy_callout_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 libglobus_gridmap_verify_myproxy_callout_la_LDFLAGS = \
-        -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+        -avoid-version \
         -no-undefined \
         -module \
         -rpath $(libdir)

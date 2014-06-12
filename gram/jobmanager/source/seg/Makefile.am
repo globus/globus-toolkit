@@ -9,5 +9,5 @@ AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) \
 lib_LTLIBRARIES = libglobus_seg_job_manager.la
 
 libglobus_seg_job_manager_la_SOURCES = seg_job_manager_module.c
-libglobus_seg_job_manager_la_LDFLAGS = -module -no-undefined
+libglobus_seg_job_manager_la_LDFLAGS = -module -no-undefined -avoid-version 
 libglobus_seg_job_manager_la_LIBADD = $(PACKAGE_DEP_LIBS)

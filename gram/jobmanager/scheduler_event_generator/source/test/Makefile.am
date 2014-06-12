@@ -30,6 +30,7 @@ libglobus_seg_timestamp_test_module_la_LIBADD = ../libglobus_scheduler_event_gen
 libglobus_seg_timestamp_test_module_la_LDFLAGS = $(AM_LDFLAGS) \
 	-module \
 	-no-undefined \
+	-avoid-version \
 	-rpath $(abs_builddir)
 
 seg_module_load_test_SOURCES = seg_module_load_test.c

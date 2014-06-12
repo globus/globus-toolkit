@@ -4,7 +4,7 @@ lib_LTLIBRARIES = libglobus_seg_lsf.la
 
 libglobus_seg_lsf_la_SOURCES = seg_lsf_module.c
 libglobus_seg_lsf_la_LDFLAGS = $(PACKAGE_DEP_CFLAGS) -module \
-        -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+        -avoid-version \
         -no-undefined
 libglobus_seg_lsf_la_LIBADD = $(PACKAGE_DEP_LIBS)
 

@@ -11,7 +11,7 @@ $(seglrms_DATA):
 libglobus_seg_fork_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -DGLOBUS_BUILTIN=1 -I..
 libglobus_seg_fork_la_LIBADD = $(PACKAGE_DEP_LIBS)
 libglobus_seg_fork_la_LDFLAGS = \
-        -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+        -avoid-version \
         -no-undefined \
         -module \
         -rpath $(libdir)
