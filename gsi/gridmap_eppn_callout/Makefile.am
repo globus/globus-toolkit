@@ -1,9 +1,6 @@
-pkgconfigdir = $(libdir)/pkgconfig
-
 doc_DATA = GLOBUS_LICENSE
 sysconf_DATA = gridmap_eppn_callout-gsi_authz.conf
 lib_LTLIBRARIES = libglobus_gridmap_eppn_callout.la
-pkgconfig_DATA = globus-gridmap-eppn-callout.pc
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) 
 

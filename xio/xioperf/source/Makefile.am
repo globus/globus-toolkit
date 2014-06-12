@@ -1,8 +1,5 @@
-pkgconfigdir = $(libdir)/pkgconfig
-
 bin_PROGRAMS = globus-xioperf
 doc_DATA = GLOBUS_LICENSE
-pkgconfig_DATA = globus-xioperf.pc
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 
