@@ -24,7 +24,7 @@ gfork_LDADD = libglobus_gfork.la $(PACKAGE_DEP_LIBS)
 
 EXTRA_PROGRAMS = gfork
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
 distuninstallcheck:
 	@:

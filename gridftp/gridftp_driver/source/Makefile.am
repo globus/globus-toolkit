@@ -44,7 +44,7 @@ install-data-local: $(DOC_STAMPS)
 		done ; \
 	fi
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA) \
+EXTRA_DIST = dirt.sh $(doc_DATA) \
     globus-vararg-enums-doxygen-filter.pl
 
 distuninstallcheck:

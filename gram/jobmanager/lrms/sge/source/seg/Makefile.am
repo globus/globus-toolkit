@@ -7,6 +7,8 @@ seglrms_DATA = sge
 $(seglrms_DATA):
 	touch $@
 
+CLEANFILES = $(seglrms_DATA)
+
 libglobus_seg_sge_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I.. -DGLOBUS_BUILTIN=1
 libglobus_seg_sge_la_SOURCES = seg_sge_module.c
 libglobus_seg_sge_la_LDFLAGS = \

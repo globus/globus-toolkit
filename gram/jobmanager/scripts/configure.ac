@@ -75,7 +75,6 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
 AC_CONFIG_FILES(
         globus-gram-job-manager-scripts-uninstalled.pc
         globus-gram-job-manager-scripts.pc
-        JobDescription.pm
         Makefile)
 AC_CONFIG_FILES([globus-gatekeeper-admin],
     [chmod a+x globus-gatekeeper-admin])

@@ -21,10 +21,8 @@ globus_gass_server_SOURCES = globus_gass_server.c
 globus_gass_server_LDADD = libglobus_gass_server_ez.la $(PACKAGE_DEP_LIBS) 
 
 EXTRA_DIST = \
-        dirt.sh \
-        globus-gass-server-shutdown.in \
-        $(doc_DATA) \
-        version.h.in
+	dirt.sh \
+	$(doc_DATA)
 
 distuninstallcheck:
 	@:

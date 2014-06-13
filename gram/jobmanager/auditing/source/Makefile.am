@@ -10,9 +10,7 @@ cron_SCRIPTS = globus-gram-audit.cron
 doc_DATA = GLOBUS_LICENSE
 
 EXTRA_DIST = \
-        globus-gram-audit.in \
         globus-gram-audit.xml \
-	gram-audit.conf.in \
         $(man_MANS) \
         $(doc_DATA)
 

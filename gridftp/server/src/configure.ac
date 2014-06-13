@@ -242,7 +242,6 @@ AC_CONFIG_FILES(
     globus-gridftp-server-enable-sshftp
     Makefile
     modules_makefiles
-    embed/Makefile
     modules/Makefile
     init/Makefile
     init/globus-gridftp-server

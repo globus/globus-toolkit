@@ -16,6 +16,8 @@ seglrms_DATA = lsf
 $(seglrms_DATA):
 	touch $@
 
+CLEANFILES = $(seglrms_DATA)
+
 if SEG_ENABLED_COND
 install-data-hook:
 	cd $(DESTDIR)$(seglrmsdir)/..; ln -sf available/lsf .

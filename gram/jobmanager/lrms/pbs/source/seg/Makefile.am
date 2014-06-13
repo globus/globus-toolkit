@@ -17,6 +17,7 @@ seglrms_DATA = pbs
 $(seglrms_DATA):
 	touch $@
 
+CLEANFILES = $(seglrms_DATA)
 
 if SEG_ENABLED_COND
 install-data-hook:

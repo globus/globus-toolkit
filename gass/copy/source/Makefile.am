@@ -69,7 +69,6 @@ install-data-local: $(DOC_STAMPS)
 
 EXTRA_DIST = \
 	dirt.sh \
-	version.h.in \
 	$(doc_DATA) \
         $(man_MANS) \
         globus-url-copy.xml

@@ -85,14 +85,7 @@ endif
 EXTRA_DIST = \
     dirt.sh \
     dsi_bones \
-    embed \
-    globus-gridftp-password.in \
-    globus-gridftp-server-enable-sshftp.in \
     globus-gridftp-server-setup-chroot \
-    version.h.in \
-    extensions.h.in \
-    gridftp.conf.default.in \
-    gridftp.gfork.default.in \
     $(doc_DATA) \
     $(man_MANS) \
     globus-gridftp-server.xml

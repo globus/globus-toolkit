@@ -23,7 +23,6 @@ jobmanager-pbs-seg: jobmanager-pbs-seg.in
 
 EXTRA_DIST = \
     dirt.sh \
-    globus-pbs.conf.in \
     pbs.pm \
     $(doc_DATA) \
     $(validation_DATA) \

@@ -12,7 +12,7 @@ libglobus_gridmap_verify_myproxy_callout_la_LIBADD = $(PACKAGE_DEP_LIBS)
 libglobus_gridmap_verify_myproxy_callout_la_SOURCES = \
 	globus_gridmap_verify_myproxy.c
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
 distuninstallcheck:
 	@:

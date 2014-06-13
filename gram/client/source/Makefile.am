@@ -19,9 +19,8 @@ libglobus_gram_client_la_SOURCES = \
 	globus_gram_client.h
 
 EXTRA_DIST = \
-        dirt.sh resource_manager_contact.dox \
-	$(doc_DATA) \
-	version.h.in
+	dirt.sh resource_manager_contact.dox \
+	$(doc_DATA)
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN

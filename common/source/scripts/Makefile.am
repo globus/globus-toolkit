@@ -23,11 +23,12 @@ all-local:
 	$(MKDIR_P) Globus/Core
 	$(INSTALL) $(srcdir)/Config.pm Paths.pm Globus/Core
 
+clean-local:
+	rm -rf Globus
+
+DISTCLEANFILES = globus-script-initializer.$(host_cpu)-$(host_vendor)-$(host_os)
+
 EXTRA_DIST = \
 	globus-args-parser-header \
-	globus-sh-tools.sh.in \
-	globus-sh-tools-vars.sh.in \
-	globus-hostname.in \
-	globus-makefile-header.in \
 	globus-vararg-enums-doxygen-filter.pl \
-	Config.pm Paths.pm.in globus-script-initializer.in
+	Config.pm

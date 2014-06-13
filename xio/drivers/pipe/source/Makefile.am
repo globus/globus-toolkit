@@ -13,7 +13,7 @@ libglobus_xio_pipe_driver_la_LDFLAGS = \
         -avoid-version \
         -module -rpath $(libdir)
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
 distuninstallcheck:
 	@:

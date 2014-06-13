@@ -22,7 +22,7 @@ libglobus_gridftp_server_control_la_SOURCES = \
     globus_gridftp_server_control_commands.c            \
     globus_xio_gssapi_ftp.c
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
 distuninstallcheck:
 	@:

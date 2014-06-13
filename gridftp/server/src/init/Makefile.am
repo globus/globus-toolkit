@@ -1,5 +1,3 @@
-EXTRA_DIST= globus-gridftp-server.in globus-gridftp-sshftp.in
-
 varlockdir = ${localstatedir}/lock
 varrundir = ${localstatedir}/run
 

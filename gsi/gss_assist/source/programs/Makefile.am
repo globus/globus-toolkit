@@ -8,9 +8,6 @@ man_MANS =  grid-mapfile-add-entry.8 \
             grid-mapfile-check-consistency.8
 
 EXTRA_DIST = $(man_MANS) \
-        grid-mapfile-add-entry.in \
-        grid-mapfile-delete-entry.in \
-        grid-mapfile-check-consistency.in \
         grid-mapfile-add-entry.xml \
         grid-mapfile-delete-entry.xml \
         grid-mapfile-check-consistency.xml \

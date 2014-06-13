@@ -32,7 +32,7 @@ globus_scheduler_event_generator_LDADD = \
 	libglobus_scheduler_event_generator.la \
 	$(PACKAGE_DEP_LIBS)
 
-EXTRA_DIST = dirt.sh version.h.in protocol.dox $(doc_DATA)
+EXTRA_DIST = dirt.sh protocol.dox $(doc_DATA)
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN

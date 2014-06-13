@@ -8,6 +8,8 @@ seglrms_DATA = fork
 $(seglrms_DATA):
 	touch $@
 
+CLEANFILES = $(seglrms_DATA)
+
 libglobus_seg_fork_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -DGLOBUS_BUILTIN=1 -I..
 libglobus_seg_fork_la_LIBADD = $(PACKAGE_DEP_LIBS)
 libglobus_seg_fork_la_LDFLAGS = \

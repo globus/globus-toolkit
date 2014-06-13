@@ -24,7 +24,6 @@ libglobus_ftp_control_la_SOURCES = \
 EXTRA_DIST = \
 	dirt.sh \
 	globus_gridftp_protocol_extensions.dox \
-	version.h.in \
 	$(doc_DATA)
 
 DOC_STAMPS =

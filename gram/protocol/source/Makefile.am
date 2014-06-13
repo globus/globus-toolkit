@@ -7,8 +7,7 @@ BUILT_SOURCES = globus_gram_protocol_constants.h
 
 EXTRA_DIST = globus-gram-protocol-constants.sh \
 	     globus_gram_protocol.dox \
-	     version.h.in \
-	     GLOBUS_LICENSE \
+	     $(doc_DATA) \
 	     dirt.sh
 include_HEADERS = \
 	globus_gram_protocol_constants.h \
@@ -20,9 +19,11 @@ lib_LTLIBRARIES = libglobus_gram_protocol.la
 pkgconfig_DATA = globus-gram-protocol.pc
 
 globus_gram_protocol_constants.h: globus-gram-protocol-constants.sh
-	$(RM) globus_gram_protocol_constants
+	$(RM) globus_gram_protocol_constants.h
 	$(PERL) $(srcdir)/scripts/create_protocol_constants.pl -header \
 		$(srcdir)/globus-gram-protocol-constants.sh
+
+MAINTAINERCLEANFILES: globus_gram_protocol_constants.h
 
 libglobus_gram_protocol_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 libglobus_gram_protocol_la_LDFLAGS = \

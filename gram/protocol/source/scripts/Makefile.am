@@ -42,4 +42,7 @@ all-local: $(globusperl_DATA)
             $(INSTALL) "$$mod" Globus/GRAM ; \
         done;
 
+clean-local:
+	rm -rf Globus
+
 MAINTAINERCLEANFILES = $(perldoc_DATA) $(noinst_DATA)

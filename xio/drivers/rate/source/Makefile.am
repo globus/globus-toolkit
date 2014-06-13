@@ -14,7 +14,7 @@ libglobus_xio_rate_driver_la_LDFLAGS = \
         -rpath $(libdir)
 libglobus_xio_rate_driver_la_SOURCES = globus_xio_rate_driver.c
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
 distuninstallcheck:
 	@:

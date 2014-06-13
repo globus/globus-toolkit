@@ -13,12 +13,8 @@ globus_gass_cache_util_LDADD = $(PACKAGE_DEP_LIBS)
 globus_gass_cache_util_SOURCES = globus_gass_cache.c
 
 EXTRA_DIST = \
-        dirt.sh \
-        globus-gass-cache.in \
-	globus-gass-cache-util.pl.in \
-	globus-gass-cache-destroy.in \
-	GLOBUS_LICENSE \
-	version.h.in
+	dirt.sh \
+	$(doc_DATA)
 
 distuninstallcheck:
 	@:

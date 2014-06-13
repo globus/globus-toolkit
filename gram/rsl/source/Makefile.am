@@ -34,8 +34,6 @@ libglobus_rsl_assist_la_LIBADD = libglobus_rsl.la $(PACKAGE_DEP_LIBS)
 EXTRA_DIST = \
         dirt.sh \
         globus_rsl_scanner.h \
-	GLOBUS_LICENSE \
-	version.h.in \
 	$(doc_DATA)
 
 DOC_STAMPS =

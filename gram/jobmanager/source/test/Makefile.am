@@ -22,7 +22,7 @@ testcred.key:
 
 CLEANFILES = testcred.key testcred.cert
 clean-local:
-	@if test [ -r testcred.link ]; then \
+	@if test -r testcred.link; then \
             rm -f $$(cat testcred.link) testcred.link ; \
         fi
 SUFFIXES = .req .cert .key .link

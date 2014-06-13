@@ -9,5 +9,3 @@ globus_redia_LDADD = ../library/libglobus_common.la $(AM_LIBADD)
 
 globus_libc_hostname_SOURCES = globus_libc_hostname.c
 globus_libc_hostname_LDADD = ../library/libglobus_common.la $(AM_LIBADD)
-
-EXTRA_DIST = globus-sh-exec.in globus-version.in

@@ -23,4 +23,4 @@ libglobus_xio_udt_driver_la_LDFLAGS = \
         -module -no-undefined -avoid-version -rpath $(libdir) \
         $(link_frameworks)
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA) empty.xz
+EXTRA_DIST = dirt.sh $(doc_DATA) empty.xz

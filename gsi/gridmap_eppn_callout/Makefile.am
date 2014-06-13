@@ -12,7 +12,7 @@ libglobus_gridmap_eppn_callout_la_LDFLAGS = \
 libglobus_gridmap_eppn_callout_la_LIBADD = $(PACKAGE_DEP_LIBS)
 libglobus_gridmap_eppn_callout_la_SOURCES = globus_gridmap_eppn.c
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
 distuninstallcheck:
 	@:

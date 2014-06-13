@@ -69,4 +69,4 @@ clean-local:
 	if [ -f testcredlink ]; then \
             rm -f "$$(cat testcredlink)" testcredlink; \
         fi
-EXTRA_DIST = $(check_SCRIPTS) $(EXTRA_SCRIPTS) openssl.cnf
+EXTRA_DIST = $(check_SCRIPTS) $(EXTRA_SCRIPTS)

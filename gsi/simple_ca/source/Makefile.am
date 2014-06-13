@@ -14,9 +14,6 @@ EXTRA_DIST = \
         grid-ca-ssl.conf.tmpl \
         grid-security.conf.tmpl \
         $(doc_DATA) \
-        grid-ca-sign.in \
-        grid-ca-create.in \
-        grid-ca-package.in \
         $(man_MANS) \
         $(MANUALS_SOURCE)
 

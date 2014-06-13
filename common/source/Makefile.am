@@ -16,7 +16,6 @@ libexec_SCRIPTS = build-aux/config.guess
 
 EXTRA_DIST = \
 	dirt.sh \
-	version.h.in \
 	globus_common.txt \
 	$(doc_DATA)
 

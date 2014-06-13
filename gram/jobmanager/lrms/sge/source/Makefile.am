@@ -24,7 +24,6 @@ jobmanager-sge-seg: jobmanager-sge-seg.in
 
 EXTRA_DIST = \
         dirt.sh \
-        globus-sge.conf.in \
         sge.pm \
         $(doc_DATA) \
         $(validation_DATA) \

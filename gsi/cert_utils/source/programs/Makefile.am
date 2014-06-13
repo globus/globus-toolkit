@@ -22,14 +22,7 @@ Admin_Scripts = \
 	grid-default-ca \
 	globus-update-certificate-dir
 
-Dist_Scripts = \
-        grid-cert-info.in \
-        grid-change-pass-phrase.in \
-        grid-cert-request.in \
-        grid-default-ca.in \
-        globus-update-certificate-dir.in
-
-EXTRA_DIST = $(Dist_Scripts) $(MANUALS_SOURCE) $(man_MANS) \
+EXTRA_DIST = $(MANUALS_SOURCE) $(man_MANS) \
     replace-version.xsl
 
 if BUILD_MANPAGES

@@ -11,5 +11,4 @@ install-data-local:
 	mkdir -p $(DESTDIR)$(varlockdir)
 	mkdir -p $(DESTDIR)$(varrundir)
 
-EXTRA_DIST = globus-gatekeeper-nolsb.in globus-gatekeeper-lsb.in
 CLEANFILES = globus-gatekeeper

@@ -6,8 +6,7 @@ doc_DATA = GLOBUS_LICENSE
 pkgconfig_DATA = globus-gsi-cert-utils.pc
 
 EXTRA_DIST = \
-        version.h \
-        dirt.sh \
+	dirt.sh \
 	$(doc_DATA)
 
 distuninstallcheck:
