@@ -1,7 +1,8 @@
 data_DATA = \
 	globus-user-env.sh \
 	globus-user-env.csh
-libexec_DATA = \
+libexecdatadir = $(libexecdir)
+libexecdata_DATA = \
 	globus-args-parser-header \
 	globus-sh-tools.sh \
 	globus-sh-tools-vars.sh \
