@@ -1,3 +1,9 @@
+gsi-openssh (5.7-1) unstable; urgency=low
+
+  * update to 5.7
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 June 2014 08:22:30 -0400
+
 gsi-openssh (5.6-1) unstable; urgency=low
 
   * update to 5.6
