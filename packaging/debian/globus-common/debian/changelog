@@ -1,3 +1,9 @@
+globus-common (14.12-2) unstable; urgency=low
+
+  * Separate libglobus_common dbg and common progs dbg packages
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 09:52:35 -0400
+
 globus-common (14.12-1) unstable; urgency=low
 
   * increase error cache

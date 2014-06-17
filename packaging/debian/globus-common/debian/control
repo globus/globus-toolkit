@@ -66,12 +66,27 @@ Description: Globus Toolkit - Common Library Documentation Files
  The libglobus-common-doc package contains:
  Common Library Documentation Files
 
-Package: globus-common-dbg
+Package: libglobus-common-dbg
 Section: debug
 Priority: extra
 Architecture: any
 Depends: libglobus-common0 (= ${binary:Version}) | globus-common-progs (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Common Library Debug Symbols
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-common-dbg package contains:
+ Common Library Debug Symbols
+
+Package: globus-common-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: globus-common-progs (= ${binary:Version}), ${misc:Depends}
+Description: Globus Toolkit - Common Progs Debug Symbols
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
  Globus Alliance and many others all over the world. A growing number
