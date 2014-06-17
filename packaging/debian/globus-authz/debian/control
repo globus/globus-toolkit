@@ -56,7 +56,7 @@ Package: globus-authz-dbg
 Section: oldlibs
 Priority: extra
 Architecture: all
-Depends: libglobus-authz-debug (= ${binary:Version})
+Depends: libglobus-authz-dbg (= ${binary:Version})
 Description: Globus Toolkit - Globus authz library Debug Symbols
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
