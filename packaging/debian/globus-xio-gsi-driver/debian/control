@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus XIO GSI Driver Documentation Files
  The libglobus-xio-gsi-driver-doc package contains:
  Globus XIO GSI Driver Documentation Files
 
-Package: globus-xio-gsi-driver-dbg
+Package: libglobus-xio-gsi-driver-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - Globus XIO GSI Driver Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-xio-gsi-driver-dbg package contains:
+ The libglobus-xio-gsi-driver-dbg package contains:
  Globus XIO GSI Driver Debug Symbols

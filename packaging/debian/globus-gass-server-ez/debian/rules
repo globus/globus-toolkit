@@ -153,7 +153,8 @@ binary-arch: install
 	dh_install --fail-missing
 	dh_installman
 	dh_link
-	dh_strip --dbg-package=globus-gass-server-ez-dbg
+	dh_strip -X/bin/ -X/sbin/ --dbg-package=libglobus-gass-server-ez-dbg
+	dh_strip -X/lib/ --dbg-package=globus-gass-server-ez-dbg
 	dh_compress
 	dh_fixperms
 	dh_perl

@@ -66,11 +66,26 @@ Description: Globus Toolkit - Globus Gass Copy Documentation Files
  The libglobus-gass-copy-doc package contains:
  Globus Gass Copy Documentation Files
 
+Package: libglobus-gass-copy-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: libglobus-gass-copy2 (= ${binary:Version})
+Description: Globus Toolkit - Globus Gass Copy Library Debug Symbols
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-gass-copy-dbg package contains:
+ Globus Gass Copy Library
+
 Package: globus-gass-copy-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libglobus-gass-copy2 (= ${binary:Version}) | globus-gass-copy-progs (= ${binary:Version}), ${misc:Depends}
+Depends: globus-gass-copy-progs (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Globus Gass Copy Debug Symbols
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
@@ -79,4 +94,4 @@ Description: Globus Toolkit - Globus Gass Copy Debug Symbols
  potential of grids for their cause.
  .
  The globus-gass-copy-dbg package contains:
- Globus Gass Copy Debug Symbols
+ Globus Gass Copy Program Debug Symbols

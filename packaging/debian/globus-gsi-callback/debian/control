@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus GSI Callback Library Documentation Files
  The libglobus-gsi-callback-doc package contains:
  Globus GSI Callback Library Documentation Files
 
-Package: globus-gsi-callback-dbg
+Package: libglobus-gsi-callback-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - Globus GSI Callback Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gsi-callback-dbg package contains:
+ The libglobus-gsi-callback-dbg package contains:
  Globus GSI Callback Library Debug Symbols

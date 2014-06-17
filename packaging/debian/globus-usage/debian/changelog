@@ -1,3 +1,9 @@
+globus-usage (3.1-5) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+
 globus-usage (3.1-4) unstable; urgency=low
 
   * GT 5.2.2 final

@@ -1,3 +1,9 @@
+globus-xio-gsi-driver (2.4-2) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 13:04:40 -0400
+
 globus-xio-gsi-driver (2.4-1) unstable; urgency=low
 
   * Remove reference to TCP as the underlying protocol.

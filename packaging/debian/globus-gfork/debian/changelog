@@ -1,3 +1,9 @@
+globus-gfork (3.2-3) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 10:35:56 -0400
+
 globus-gfork (3.2-2) unstable; urgency=low
 
   * GT 5.2.2 final

@@ -68,7 +68,7 @@ Description: Globus Toolkit - GridFTP Client Library Documentation Files
  The libglobus-ftp-client-doc package contains:
  GridFTP Client Library Documentation Files
 
-Package: globus-ftp-client-dbg
+Package: libglobus-ftp-client-dbg
 Section: debug
 Priority: extra
 Architecture: any

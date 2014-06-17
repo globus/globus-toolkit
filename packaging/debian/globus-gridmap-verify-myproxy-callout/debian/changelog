@@ -1,3 +1,9 @@
+globus-gridmap-verify-myproxy-callout (1.5-2) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 12:43:37 -0400
+
 globus-gridmap-verify-myproxy-callout (1.5-1) unstable; urgency=low
 
   * Update dependencies for new credential/assist functions

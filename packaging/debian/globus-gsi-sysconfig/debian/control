@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus GSI System Config Library Documentation Fil
  The libglobus-gsi-sysconfig-doc package contains:
  Globus GSI System Config Library Documentation Files
 
-Package: globus-gsi-sysconfig-dbg
+Package: libglobus-gsi-sysconfig-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - Globus GSI System Config Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gsi-sysconfig-dbg package contains:
+ The libglobus-gsi-sysconfig-dbg package contains:
  Globus GSI System Config Library Debug Symbols

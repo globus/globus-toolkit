@@ -1,3 +1,9 @@
+globus-xio-udt-driver (0.9-2) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 13:05:18 -0400
+
 globus-xio-udt-driver (0.9-1) unstable; urgency=low
 
   * Update build to check for bind2 in udt 4.11

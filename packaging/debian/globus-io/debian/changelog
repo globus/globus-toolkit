@@ -1,3 +1,9 @@
+globus-io (9.6-2) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 12:57:31 -0400
+
 globus-io (9.6-1) unstable; urgency=low
 
   * Fix some bootstrapping issues

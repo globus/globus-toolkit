@@ -1,8 +1,8 @@
-globus-xio-popen-driver (2.3-2) unstable; urgency=low
+globus-xio-popen-driver (2.3-3) unstable; urgency=low
 
-  * GT 5.2.2 final
+  * Rename dbg package
 
- -- Globus Toolkit <support@globus.org>  Mon, 16 Jul 2012 15:25:43 -0400
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 13:04:57 -0400
 
 globus-xio-popen-driver (2.3-1) unstable; urgency=low
 

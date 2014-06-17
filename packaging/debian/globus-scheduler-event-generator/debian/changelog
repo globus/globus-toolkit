@@ -1,3 +1,9 @@
+globus-scheduler-event-generator (4.7-2) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 13:01:12 -0400
+
 globus-scheduler-event-generator (4.7-1) unstable; urgency=low
 
   * GT-295: Missing dependency in globus_scheduler_event_generator debian native packages

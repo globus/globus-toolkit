@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus Gass Transfer Documentation Files
  The libglobus-gass-transfer-doc package contains:
  Globus Gass Transfer Documentation Files
 
-Package: globus-gass-transfer-dbg
+Package: libglobus-gass-transfer-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - Globus Gass Transfer Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gass-transfer-dbg package contains:
+ The libglobus-gass-transfer-dbg package contains:
  Globus Gass Transfer Debug Symbols

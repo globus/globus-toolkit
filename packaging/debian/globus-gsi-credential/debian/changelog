@@ -1,3 +1,9 @@
+globus-gsi-credential (6.0-2) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 12:47:16 -0400
+
 globus-gsi-credential (6.0-1) unstable; urgency=low
 
   * Update Major version for globus_gsi_cred_read_cert_buffer and globus_gsi_cred_verify_cert_chain_when

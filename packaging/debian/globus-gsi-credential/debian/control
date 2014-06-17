@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus GSI Credential Library Documentation Files
  The libglobus-gsi-credential-doc package contains:
  Globus GSI Credential Library Documentation Files
 
-Package: globus-gsi-credential-dbg
+Package: libglobus-gsi-credential-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - Globus GSI Credential Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gsi-credential-dbg package contains:
+ The libglobus-gsi-credential-dbg package contains:
  Globus GSI Credential Library Debug Symbols

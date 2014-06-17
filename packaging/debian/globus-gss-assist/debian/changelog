@@ -1,3 +1,9 @@
+globus-gss-assist (9.0-3) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 12:55:28 -0400
+
 globus-gss-assist (9.0-2) unstable; urgency=low
 
   * Fix dependency

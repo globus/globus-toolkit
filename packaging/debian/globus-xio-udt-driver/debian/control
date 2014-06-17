@@ -37,7 +37,7 @@ Description: Globus Toolkit - Globus XIO UDT Driver Development Files
  The libglobus-xio-udt-driver-dev package contains:
  Globus XIO UDT Driver Development Files
 
-Package: globus-xio-udt-driver-dbg
+Package: libglobus-xio-udt-driver-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -49,5 +49,5 @@ Description: Globus Toolkit - Globus XIO UDT Driver Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-xio-udt-driver-dbg package contains:
+ The libglobus-xio-udt-driver-dbg package contains:
  Globus XIO UDT Driver Debug Symbols

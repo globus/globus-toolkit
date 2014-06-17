@@ -51,11 +51,26 @@ Description: Globus Toolkit - Globus GridFTP Server Development Files
  The libglobus-gridftp-server-dev package contains:
  Globus GridFTP Server Development Files
 
+Package: libglobus-gridftp-server-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: libglobus-gridftp-server0 (= ${binary:Version})
+Description: Globus Toolkit - Globus GridFTP Server Library Debug Symbols
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The globus-gridftp-server-dbg package contains:
+ Globus GridFTP Server Library Debug Symbols
+
 Package: globus-gridftp-server-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libglobus-gridftp-server0 (= ${binary:Version}) | globus-gridftp-server-progs (= ${binary:Version}), ${misc:Depends}
+Depends: globus-gridftp-server-progs (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Globus GridFTP Server Debug Symbols
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

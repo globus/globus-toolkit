@@ -66,7 +66,7 @@ Description: Globus Toolkit - Globus OpenSSL Module Wrapper Documentation Files
  The libglobus-openssl-module-doc package contains:
  Globus OpenSSL Module Wrapper Documentation Files
 
-Package: globus-openssl-module-dbg
+Package: libglobus-openssl-module-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -78,5 +78,5 @@ Description: Globus Toolkit - Globus OpenSSL Module Wrapper Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-openssl-module-dbg package contains:
+ The libglobus-openssl-module-dbg package contains:
  Globus OpenSSL Module Wrapper Debug Symbols

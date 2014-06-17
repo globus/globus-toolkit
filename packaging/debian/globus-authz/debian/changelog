@@ -1,3 +1,9 @@
+globus-authz (2.2-3) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 10:11:19 -0400
+
 globus-authz (2.2-2) unstable; urgency=low
 
   * GT 5.2.2 final

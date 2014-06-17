@@ -1,3 +1,9 @@
+globus-ftp-client (7.6-2) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 10:09:58 -0400
+
 globus-ftp-client (7.6-1) unstable; urgency=low
 
   * GT-425: add environment variable to force IPV6 compatibility

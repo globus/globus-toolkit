@@ -49,7 +49,7 @@ Description: Globus Toolkit - Resource Specification Language Library Documentat
  The libglobus-rsl-doc package contains:
  Resource Specification Language Library Documentation Files
 
-Package: globus-rsl-dbg
+Package: libglobus-rsl-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -61,5 +61,5 @@ Description: Globus Toolkit - Resource Specification Language Library Debug Symb
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-rsl-dbg package contains:
+ The libglobus-rsl-dbg package contains:
  Resource Specification Language Library Debug Symbols

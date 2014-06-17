@@ -1,3 +1,9 @@
+globus-xio-pipe-driver (2.2-3) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 13:04:50 -0400
+
 globus-xio-pipe-driver (2.2-2) unstable; urgency=low
 
   * GT 5.2.2 final

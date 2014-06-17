@@ -1,3 +1,9 @@
+globus-openssl-module (3.3-2) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 12:58:20 -0400
+
 globus-openssl-module (3.3-1) unstable; urgency=low
 
   * Be more tolerant if a symlink fails

@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus XIO Framework Documentation Files
  The libglobus-xio-doc package contains:
  Globus XIO Framework Documentation Files
 
-Package: globus-xio-dbg
+Package: libglobus-xio-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - Globus XIO Framework Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-xio-dbg package contains:
+ The libglobus-xio-dbg package contains:
  Globus XIO Framework Debug Symbols

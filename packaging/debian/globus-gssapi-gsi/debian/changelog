@@ -1,3 +1,9 @@
+globus-gssapi-gsi (10.12-2) unstable; urgency=low
+
+  * Rename dbg package
+
+ -- Globus Toolkit <support@globus.org>  Tue, 17 June 2014 12:56:52 -0400
+
 globus-gssapi-gsi (10.12-1) unstable; urgency=low
 
   * Enable adding in memory CA cert to cert store

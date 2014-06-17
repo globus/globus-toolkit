@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus Callout Library Documentation Files
  The libglobus-callout-doc package contains:
  Globus Callout Library Documentation Files
 
-Package: globus-callout-dbg
+Package: libglobus-callout-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - Globus Callout Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-callout-dbg package contains:
+ The libglobus-callout-dbg package contains:
  Globus Callout Library Debug Symbols

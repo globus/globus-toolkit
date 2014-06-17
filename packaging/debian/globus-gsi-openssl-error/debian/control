@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus OpenSSL Error Handling Documentation Files
  The libglobus-gsi-openssl-error-doc package contains:
  Globus OpenSSL Error Handling Documentation Files
 
-Package: globus-gsi-openssl-error-dbg
+Package: libglobus-gsi-openssl-error-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - Globus OpenSSL Error Handling Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gsi-openssl-error-dbg package contains:
+ The libglobus-gsi-openssl-error-dbg package contains:
  Globus OpenSSL Error Handling Debug Symbols

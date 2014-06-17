@@ -67,11 +67,11 @@ Description: Globus Toolkit - GSSAPI Assist library Documentation Files
  The libglobus-gss-assist-doc package contains:
  GSSAPI Assist library Documentation Files
 
-Package: globus-gss-assist-dbg
+Package: libglobus-gss-assist-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libglobus-gss-assist3 (= ${binary:Version}) | globus-gss-assist-progs (= ${binary:Version}), ${misc:Depends}
+Depends: libglobus-gss-assist3 (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - GSSAPI Assist library Debug Symbols
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
@@ -79,5 +79,5 @@ Description: Globus Toolkit - GSSAPI Assist library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gss-assist-dbg package contains:
+ The libglobus-gss-assist-dbg package contains:
  GSSAPI Assist library Debug Symbols

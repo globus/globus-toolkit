@@ -99,11 +99,27 @@ Description: MyProxy Server Programs
  The myproxy-progs package contains:
  MyProxy Server Programs
 
+Package: libmyproxy-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: libmyproxy5 (= ${binary:Version})
+Description: MyProxy Debug Symbols
+ MyProxy is open source software for managing X.509 Public Key Infrastructure
+ (PKI) security credentials (certificates and private keys). MyProxy
+ combines an online credential repository with an online certificate
+ authority to allow users to securely obtain credentials when and where needed.
+ Users run myproxy-logon to authenticate and obtain credentials, including
+ trusted CA certificates and Certificate Revocation Lists (CRLs).
+ .
+ The libmyproxy-dbg package contains:
+ MyProxy Debug Symbols
+
 Package: myproxy-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: myproxy-progs (= ${binary:Version}) | myproxy-server (= ${binary:Version}) | libmyproxy5 (= ${binary:Version})
+Depends: myproxy-progs (= ${binary:Version}) | myproxy-server (= ${binary:Version})
 Description: MyProxy Debug Symbols
  MyProxy is open source software for managing X.509 Public Key Infrastructure
  (PKI) security credentials (certificates and private keys). MyProxy

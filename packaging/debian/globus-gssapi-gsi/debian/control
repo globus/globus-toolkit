@@ -52,7 +52,7 @@ Description: Globus Toolkit - GSSAPI library Documentation Files
  The libglobus-gssapi-gsi-doc package contains:
  GSSAPI library Documentation Files
 
-Package: globus-gssapi-gsi-dbg
+Package: libglobus-gssapi-gsi-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - GSSAPI library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gssapi-gsi-dbg package contains:
+ The libglobus-gssapi-gsi-dbg package contains:
  GSSAPI library Debug Symbols

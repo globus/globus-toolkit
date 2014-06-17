@@ -38,7 +38,7 @@ Description: Globus Toolkit - Usage Library Development Files
  The libglobus-usage-dev package contains:
  Usage Library Development Files
 
-Package: globus-usage-dbg
+Package: libglobus-usage-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -50,5 +50,5 @@ Description: Globus Toolkit - Usage Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-usage-dbg package contains:
+ The libglobus-usage-dbg package contains:
  Usage Library Debug Symbols

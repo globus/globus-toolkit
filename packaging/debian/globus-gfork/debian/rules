@@ -166,7 +166,8 @@ binary-arch: install
 	dh_install --fail-missing
 	dh_installman
 	dh_link
-	dh_strip --dbg-package=globus-gfork-dbg
+	dh_strip -X/sbin/ -X/bin/ --dbg-package=libglobus-gfork-dbg
+	dh_strip -X/lib/ --dbg-package=globus-gfork-dbg
 	dh_compress
 	dh_fixperms
 	dh_perl

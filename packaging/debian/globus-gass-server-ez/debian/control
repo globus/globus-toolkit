@@ -51,11 +51,26 @@ Description: Globus Toolkit - Globus Gass Server_ez Development Files
  The libglobus-gass-server-ez-dev package contains:
  Globus Gass Server_ez Development Files
 
+Package: libglobus-gass-server-ez-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: libglobus-gass-server-ez2 (= ${binary:Version})
+Description: Globus Toolkit - Globus Gass Server_ez Library Debug Symbols
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-gass-server-ez-dbg package contains:
+ Globus Gass Server_ez Library Debug Symbols
+
 Package: globus-gass-server-ez-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libglobus-gass-server-ez2 (= ${binary:Version}) | globus-gass-server-ez-progs (= ${binary:Version}), ${misc:Depends}
+Depends: globus-gass-server-ez-progs (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Globus Gass Server_ez Debug Symbols
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

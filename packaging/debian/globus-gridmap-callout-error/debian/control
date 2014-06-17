@@ -49,7 +49,7 @@ Description: Globus Toolkit - Globus Gridmap Callout Errors Documentation Files
  The libglobus-gridmap-callout-error-doc package contains:
  Globus Gridmap Callout Errors Documentation Files
 
-Package: globus-gridmap-callout-error-dbg
+Package: libglobus-gridmap-callout-error-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -61,5 +61,5 @@ Description: Globus Toolkit - Globus Gridmap Callout Errors Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gridmap-callout-error-dbg package contains:
+ The libglobus-gridmap-callout-error-dbg package contains:
  Globus Gridmap Callout Errors Debug Symbols

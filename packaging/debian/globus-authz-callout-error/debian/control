@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus authz error library Documentation Files
  The libglobus-authz-callout-error-doc package contains:
  Globus authz error library (used by globus authz callouts) Documentation Files
 
-Package: globus-authz-callout-error-dbg
+Package: libglobus-authz-callout-error-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - Globus authz error library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-authz-callout-error-dbg package contains:
+ The libglobus-authz-callout-error-dbg package contains:
  Globus authz error library (used by globus authz callouts) Debug Symbols
