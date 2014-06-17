@@ -52,6 +52,21 @@ Description: Globus Toolkit - Globus authz library Documentation Files
  The libglobus-authz-doc package contains:
  Globus authz library Documentation Files
 
+Package: globus-authz-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-authz-debug (= ${binary:Version})
+Description: Globus Toolkit - Globus authz library Debug Symbols
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-authz-dbg package contains:
+ Globus authz library Debug Symbols
+
 Package: libglobus-authz-dbg
 Section: debug
 Priority: extra
