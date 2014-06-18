@@ -63,3 +63,11 @@ Description: Globus Toolkit - Resource Specification Language Library Debug Symb
  .
  The libglobus-rsl-dbg package contains:
  Resource Specification Language Library Debug Symbols
+
+Package: globus-rsl-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-rsl-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

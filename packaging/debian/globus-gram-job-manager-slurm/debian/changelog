@@ -1,3 +1,9 @@
+globus-gram-job-manager-slurm (1.2-2) unstable; urgency=low
+
+  * update cleanup rule
+
+ -- Globus Toolkit <support@globus.org>  Wed, 18 June 2014 10:55:08 -0400
+
 globus-gram-job-manager-slurm (1.2-1) unstable; urgency=low
 
   * update description

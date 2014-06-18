@@ -51,3 +51,11 @@ Description: Globus Toolkit - Globus XIO Pipe Open Driver Debug Symbols
  .
  The libglobus-xio-popen-driver-dbg package contains:
  Globus XIO Pipe Open Driver Debug Symbols
+
+Package: globus-xio-popen-driver-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-xio-popen-driver-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

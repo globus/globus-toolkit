@@ -63,3 +63,11 @@ Description: Globus Toolkit - Globus Gridmap Callout Errors Debug Symbols
  .
  The libglobus-gridmap-callout-error-dbg package contains:
  Globus Gridmap Callout Errors Debug Symbols
+
+Package: globus-gridmap-callout-error-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: globus-gridmap-callout-error-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

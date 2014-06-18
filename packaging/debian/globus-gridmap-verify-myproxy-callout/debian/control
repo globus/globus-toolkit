@@ -48,3 +48,11 @@ Description: Globus Toolkit - Globus Gridmap MyProxy Callout Debug Symbols
  .
  The libglobus-gridmap-verify-myproxy-callout-dbg package contains:
  Globus Gridmap MyProxy Callout Debug Symbols
+
+Package: globus-gridmap-verify-myproxy-callout-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-gridmap-verify-myproxy-callout-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

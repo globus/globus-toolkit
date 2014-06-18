@@ -1,3 +1,9 @@
+globus-gatekeeper (9.16-2) unstable; urgency=low
+
+  * Update cleanup rule
+
+ -- Globus Toolkit <support@globus.org>  Wed, 18 June 2014 10:42:34 -0400
+
 globus-gatekeeper (9.16-1) unstable; urgency=low
 
   * Fix some bootstrapping issues

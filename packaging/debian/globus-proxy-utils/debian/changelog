@@ -1,3 +1,9 @@
+globus-proxy-utils (5.2-2) unstable; urgency=low
+
+  * update cleanup rule
+
+ -- Globus Toolkit <support@globus.org>  Wed, 18 June 2014 11:02:28 -0400
+
 globus-proxy-utils (5.2-1) unstable; urgency=low
 
   * GT-387: grid-proxy-init -pwstdin reads too many characters

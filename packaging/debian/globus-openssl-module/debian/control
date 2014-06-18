@@ -80,3 +80,11 @@ Description: Globus Toolkit - Globus OpenSSL Module Wrapper Debug Symbols
  .
  The libglobus-openssl-module-dbg package contains:
  Globus OpenSSL Module Wrapper Debug Symbols
+
+Package: globus-openssl-module-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-openssl-module-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

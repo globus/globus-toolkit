@@ -51,3 +51,11 @@ Description: Globus Toolkit - Globus Gass Cache Debug Symbols
  .
  The libglobus-gass-cache-dbg package contains:
  Globus Gass Cache Debug Symbols
+
+Package: globus-gass-cache-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-gass-cache-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

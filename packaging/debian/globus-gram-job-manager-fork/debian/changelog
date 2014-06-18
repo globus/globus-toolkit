@@ -1,3 +1,9 @@
+globus-gram-job-manager-fork (1.5-5) unstable; urgency=low
+
+  * update cleanup rule
+
+ -- Globus Toolkit <support@globus.org>  Wed, 18 June 2014 10:53:55 -0400
+
 globus-gram-job-manager-fork (1.5-4) unstable; urgency=low
 
   * *-setup-seg depends on globus-scheduler-event-generator-progs

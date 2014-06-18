@@ -80,5 +80,13 @@ Description: Globus Toolkit - GridFTP Client Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-ftp-client-dbg package contains:
+ The libglobus-ftp-client-dbg package contains:
  GridFTP Client Library Debug Symbols
+
+Package: globus-ftp-client-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-ftp-client-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

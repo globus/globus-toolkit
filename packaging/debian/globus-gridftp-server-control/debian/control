@@ -51,3 +51,11 @@ Description: Globus Toolkit - Globus GridFTP Server Library Debug Symbols
  .
  The libglobus-gridftp-server-control-dbg package contains:
  Globus GridFTP Server Library Debug Symbols
+
+Package: globus-gridftp-server-control-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-gridftp-server-control-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

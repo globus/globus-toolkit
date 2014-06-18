@@ -51,3 +51,11 @@ Description: Globus Toolkit - Globus Pipe Driver Debug Symbols
  .
  The libglobus-xio-pipe-driver-dbg package contains:
  Globus Pipe Driver Debug Symbols
+
+Package: globus-xio-pipe-driver-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-xio-pipe-driver-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

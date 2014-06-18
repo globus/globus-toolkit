@@ -66,3 +66,11 @@ Description: Globus Toolkit - GRAM Client Library Debug Symbols
  .
  The libglobus-gram-client-dbg package contains:
  GRAM Client Library Debug Symbols
+
+Package: globus-gram-client-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-gram-client-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

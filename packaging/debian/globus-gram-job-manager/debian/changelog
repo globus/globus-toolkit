@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.54-2) unstable; urgency=low
+
+  * update cleanup rule
+
+ -- Globus Toolkit <support@globus.org>  Wed, 18 June 2014 10:55:32 -0400
+
 globus-gram-job-manager (13.54-1) unstable; urgency=low
 
   * GT-520: Job Manager Segfault

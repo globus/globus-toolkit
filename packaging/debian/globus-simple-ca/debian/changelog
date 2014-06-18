@@ -1,3 +1,9 @@
+globus-simple-ca (3.5-2) unstable; urgency=low
+
+  * update cleanup rule
+
+ -- Globus Toolkit <support@globus.org>  Wed, 18 June 2014 11:02:55 -0400
+
 globus-simple-ca (3.5-1) unstable; urgency=low
 
   * GT-405: Non-portable use of echo in shell script

@@ -52,3 +52,11 @@ Description: Globus Toolkit - Usage Library Debug Symbols
  .
  The libglobus-usage-dbg package contains:
  Usage Library Debug Symbols
+
+Package: globus-usage-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-usage-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

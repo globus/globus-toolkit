@@ -66,3 +66,11 @@ Description: Globus Toolkit - Globus GSI System Config Library Debug Symbols
  .
  The libglobus-gsi-sysconfig-dbg package contains:
  Globus GSI System Config Library Debug Symbols
+
+Package: globus-gsi-sysconfig-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-gsi-sysconfig-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

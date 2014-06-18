@@ -67,6 +67,14 @@ Description: Globus Toolkit - GSSAPI Assist library Documentation Files
  The libglobus-gss-assist-doc package contains:
  GSSAPI Assist library Documentation Files
 
+Package: globus-gss-assist-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-gss-assist-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.
+
 Package: libglobus-gss-assist-dbg
 Section: debug
 Priority: extra

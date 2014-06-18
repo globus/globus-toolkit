@@ -52,7 +52,7 @@ Description: Globus Toolkit - GRAM Protocol Library Documentation Files
  The libglobus-gram-protocol-doc package contains:
  GRAM Protocol Library Documentation Files
 
-Package: globus-gram-protocol-dbg
+Package: libglobus-gram-protocol-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,13 @@ Description: Globus Toolkit - GRAM Protocol Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gram-protocol-dbg package contains:
+ The libglobus-gram-protocol-dbg package contains:
  GRAM Protocol Library Debug Symbols
+
+Package: globus-gram-protocol-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-gram-protocol-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus GRAM Jobmanager Callout Errors Documentatio
  The libglobus-gram-job-manager-callout-error-doc package contains:
  Globus GRAM Jobmanager Callout Errors Documentation Files
 
-Package: globus-gram-job-manager-callout-error-dbg
+Package: libglobus-gram-job-manager-callout-error-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,13 @@ Description: Globus Toolkit - Globus GRAM Jobmanager Callout Errors Debug Symbol
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gram-job-manager-callout-error-dbg package contains:
+ The libglobus-gram-job-manager-callout-error-dbg package contains:
  Globus GRAM Jobmanager Callout Errors Debug Symbols
+
+Package: globus-gram-job-manager-callout-error-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-gram-job-manager-callout-error-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

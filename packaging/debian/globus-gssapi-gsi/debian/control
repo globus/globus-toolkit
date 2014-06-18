@@ -66,3 +66,11 @@ Description: Globus Toolkit - GSSAPI library Debug Symbols
  .
  The libglobus-gssapi-gsi-dbg package contains:
  GSSAPI library Debug Symbols
+
+Package: globus-gssapi-gsi-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-gssapi-gsi-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

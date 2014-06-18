@@ -1,3 +1,9 @@
+globus-gram-job-manager-scripts (5.0-2) unstable; urgency=low
+
+  * update cleanup rule
+
+ -- Globus Toolkit <support@globus.org>  Wed, 18 June 2014 10:54:49 -0400
+
 globus-gram-job-manager-scripts (5.0-1) unstable; urgency=low
 
   * Add new features for slurm lrm implementation

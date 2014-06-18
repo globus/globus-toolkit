@@ -66,3 +66,11 @@ Description: Globus Toolkit - Globus GSI Proxy SSL Library Debug Symbols
  .
  The libglobus-gsi-proxy-ssl-dbg package contains:
  Globus GSI Proxy SSL Library Debug Symbols
+
+Package: globus-gsi-proxy-ssl-dbg
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: libglobus-gsi-proxy-ssl-dbg (= ${binary:Version})
+Description: transitional dummy package
+ This is a transitional dummy package. It can safely be removed.

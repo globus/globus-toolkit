@@ -66,3 +66,18 @@ Description: Globus Toolkit - GridFTP Control Library Debug Symbols
  .
  The libglobus-ftp-control-dbg package contains:
  GridFTP Control Library Debug Symbols
+
+Package: globus-ftp-control-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: libglobus-ftp-control-dbg (= ${binary:Version})
+Description: Globus Toolkit - GridFTP Control Library Debug Symbols
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-ftp-control-dbg package contains:
+ GridFTP Control Library Debug Symbols
