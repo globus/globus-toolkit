@@ -71,7 +71,7 @@ else
     export CONTACT_STRING="$contact"
 fi
 
-grid-proxy-destroy || true 
+grid-proxy-destroy 2>/dev/null || true 
 
 # Perl scripts pass through, otherwise run the program under valgrind
 # conditionally
