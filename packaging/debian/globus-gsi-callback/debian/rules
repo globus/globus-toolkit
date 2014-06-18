@@ -158,7 +158,7 @@ binary-arch: install
 	dh_install --fail-missing
 	dh_installman
 	dh_link
-	dh_strip --dbg-package=globus-gsi-callback-dbg
+	dh_strip --dbg-package=lib$(name)-dbg
 	dh_compress -X .tag
 	dh_fixperms
 	dh_perl

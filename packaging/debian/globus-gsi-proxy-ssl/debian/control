@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus GSI Proxy SSL Library Documentation Files
  The libglobus-gsi-proxy-ssl-doc package contains:
  Globus GSI Proxy SSL Library Documentation Files
 
-Package: globus-gsi-proxy-ssl-dbg
+Package: libglobus-gsi-proxy-ssl-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - Globus GSI Proxy SSL Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gsi-proxy-ssl-dbg package contains:
+ The libglobus-gsi-proxy-ssl-dbg package contains:
  Globus GSI Proxy SSL Library Debug Symbols

@@ -1,3 +1,9 @@
+globus-scheduler-event-generator (5.4-2+gt6.@distro@) @distro@; urgency=low
+
+  * Rename dbg packages
+
+ -- Globus Toolkit <support@globus.org>  Wed, 18 Jun 2014 14:38:43 -0400
+
 globus-scheduler-event-generator (5.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge changes from Mattias Ellert

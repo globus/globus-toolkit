@@ -68,7 +68,7 @@ Description: Globus Toolkit - GridFTP Client Programs
  The libglobus-ftp-client2 package contains:
  GridFTP Client Programs
 
-Package: globus-ftp-client-dbg
+Package: libglobus-ftp-client-dbg
 Section: debug
 Priority: extra
 Architecture: any

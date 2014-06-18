@@ -145,7 +145,8 @@ binary-arch: install
 	dh_install --fail-missing
 	dh_installman
 	dh_link
-	dh_strip --dbg-package=globus-gass-copy-dbg
+	dh_strip -X/sbin/ -X/bin/ --dbg-package=libglobus-gass-copy-dbg
+	dh_strip -X/lib/ --dbg-package=globus-gass-copy-dbg
 	dh_compress -X .tag
 	dh_fixperms
 	dh_perl

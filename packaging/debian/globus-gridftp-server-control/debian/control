@@ -37,7 +37,7 @@ Description: Globus Toolkit - Globus GridFTP Server Library Development Files
  The libglobus-gridftp-server-control-dev package contains:
  Globus GridFTP Server Library Development Files
 
-Package: globus-gridftp-server-control-dbg
+Package: libglobus-gridftp-server-control-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -49,5 +49,5 @@ Description: Globus Toolkit - Globus GridFTP Server Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gridftp-server-control-dbg package contains:
+ The libglobus-gridftp-server-control-dbg package contains:
  Globus GridFTP Server Library Debug Symbols

@@ -52,7 +52,7 @@ Description: Globus Toolkit - Globus Gass Cache Documentation Files
  The libglobus-gass-cache-doc package contains:
  Globus Gass Cache Documentation Files
 
-Package: globus-gass-cache-dbg
+Package: libglobus-gass-cache-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - Globus Gass Cache Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gass-cache-dbg package contains:
+ The libglobus-gass-cache-dbg package contains:
  Globus Gass Cache Debug Symbols

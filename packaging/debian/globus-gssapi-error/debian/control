@@ -52,7 +52,7 @@ Description: Globus Toolkit - GSSAPI Error Library Documentation Files
  The libglobus-gssapi-error-doc package contains:
  GSSAPI Error Library Documentation Files
 
-Package: globus-gssapi-error-dbg
+Package: libglobus-gssapi-error-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - GSSAPI Error Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gssapi-error-dbg package contains:
+ The libglobus-gssapi-error-dbg package contains:
  GSSAPI Error Library Debug Symbols

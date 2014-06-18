@@ -156,7 +156,7 @@ binary-arch: install
 	dh_install --fail-missing
 	dh_installman
 	dh_link
-	dh_strip --dbg-package=globus-authz-dbg
+	dh_strip --dbg-package=libglobus-authz-dbg
 	dh_compress -X .tag
 	dh_fixperms
 	dh_perl
