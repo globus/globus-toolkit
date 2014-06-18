@@ -20,20 +20,58 @@ AC_SUBST(DIRT_BRANCH_ID)
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 PKG_CHECK_MODULES([CLIENT_TEST_PACKAGE_DEP], $CLIENT_TEST_PACKAGE_DEPS)
 
-AC_SUBST([GATEKEEPER_PATH], ["$($PKG_CONFIG --variable=path globus-gatekeeper)"]) 
 AC_SUBST([JOBMANAGER_PATH], ["$PWD"])
-AC_SUBST([GRAM_CLIENT_TOOLS_PATH], ["$($PKG_CONFIG --variable=path globus-gram-client-tools)"]) 
-AC_SUBST([GASS_COPY_PATH], ["$($PKG_CONFIG --variable=path globus-gass-copy)"]) 
-AC_SUBST([GASS_CACHE_PATH], ["$($PKG_CONFIG --variable=path globus-gass-cache-program)"]) 
-AC_SUBST([GRAM_JOB_MANAGER_SCRIPT_PATH], ["$($PKG_CONFIG --variable=path globus-gram-job-manager-scripts)"]) 
-AC_SUBST([GRAM_JOB_MANAGER_SCRIPT_PERL5LIB], ["$($PKG_CONFIG --variable=perl5lib globus-gram-job-manager-scripts)"]) 
-AC_SUBST([GRAM_JOB_MANAGER_FORK_PERL5LIB], ["$($PKG_CONFIG --variable=perl5lib globus-gram-job-manager-fork)"])
-AC_SUBST([GRAM_PROTOCOL_PERL5LIB], ["$($PKG_CONFIG --variable=perl5lib globus-gram-protocol)"])
-AC_SUBST([COMMON_PERL5LIB], ["$($PKG_CONFIG --variable=perl5lib globus-common)"])
-AC_SUBST([GSI_PROXY_UTILS_PATH], ["$($PKG_CONFIG --variable=path globus-proxy-utils)"])
-AC_SUBST([GSI_CERT_UTILS_PATH], ["$($PKG_CONFIG --variable=path globus-gsi-cert-utils)"])
-AC_SUBST([GLOBUS_XIO_GSI_DRIVER_DLOPEN], ["$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
-AC_SUBST([GLOBUS_XIO_POPEN_DRIVER_DLOPEN], ["$($PKG_CONFIG --variable=dlopen globus-xio-popen-driver)"])
+
+PKG_CHECK_EXISTS([globus-gatekeeper], [
+    GATEKEEPER_PATH="$($PKG_CONFIG --variable=path globus-gatekeeper)"])
+AC_SUBST([GATEKEEPER_PATH])
+
+PKG_CHECK_EXISTS([globus-gram-client-tools], [
+    GRAM_CLIENT_TOOLS_PATH="$($PKG_CONFIG --variable=path globus-gram-client-tools)"])
+AC_SUBST([GRAM_CLIENT_TOOLS_PATH])
+
+PKG_CHECK_EXISTS([globus-gass-copy], [
+    GASS_COPY_PATH="$($PKG_CONFIG --variable=path globus-gass-copy)"])
+AC_SUBST([GASS_COPY_PATH])
+
+PKG_CHECK_EXISTS([globus-gass-cache-program], [
+    GASS_CACHE_PATH="$($PKG_CONFIG --variable=path globus-gass-cache-program)"])
+AC_SUBST([GASS_CACHE_PATH])
+
+PKG_CHECK_EXISTS([globus-gram-job-manager-scripts], [
+    GRAM_JOB_MANAGER_SCRIPT_PATH="$($PKG_CONFIG --variable=path globus-gram-job-manager-scripts)"
+    GRAM_JOB_MANAGER_SCRIPT_PERL5LIB="$($PKG_CONFIG --variable=perl5lib globus-gram-job-manager-scripts)"])
+AC_SUBST([GRAM_JOB_MANAGER_SCRIPT_PATH])
+AC_SUBST([GRAM_JOB_MANAGER_SCRIPT_PERL5LIB])
+
+PKG_CHECK_EXISTS([globus-gram-job-manager-fork], [
+    GRAM_JOB_MANAGER_FORK_PERL5LIB="$($PKG_CONFIG --variable=perl5lib globus-gram-job-manager-fork)"])
+AC_SUBST([GRAM_JOB_MANAGER_FORK_PERL5LIB])
+
+PKG_CHECK_EXISTS([globus-gram-protocol], [
+    GRAM_PROTOCOL_PERL5LIB="$($PKG_CONFIG --variable=perl5lib globus-gram-protocol)"])
+AC_SUBST([GRAM_PROTOCOL_PERL5LIB])
+
+PKG_CHECK_EXISTS([globus-common], [
+    COMMON_PERL5LIB="$($PKG_CONFIG --variable=perl5lib globus-common)"])
+AC_SUBST([COMMON_PERL5LIB])
+
+PKG_CHECK_EXISTS([globus-proxy-utils], [
+    GSI_PROXY_UTILS_PATH="$($PKG_CONFIG --variable=path globus-proxy-utils)"])
+AC_SUBST([GSI_PROXY_UTILS_PATH])
+
+PKG_CHECK_EXISTS([globus-gsi-cert-utils], [
+    GSI_CERT_UTILS_PATH="$($PKG_CONFIG --variable=path globus-gsi-cert-utils)"])
+AC_SUBST([GSI_CERT_UTILS_PATH])
+
+PKG_CHECK_EXISTS([globus-xio-gsi-driver], [
+    GLOBUS_XIO_GSI_DRIVER_DLOPEN="$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+AC_SUBST([GLOBUS_XIO_GSI_DRIVER_DLOPEN])
+
+PKG_CHECK_EXISTS([globus-xio-popen-driver], [
+    GLOBUS_XIO_POPEN_DRIVER_DLOPEN="$($PKG_CONFIG --variable=dlopen globus-xio-popen-driver)"])
+AC_SUBST([GLOBUS_XIO_POPEN_DRIVER_DLOPEN])
+
 if test -z "$GLOBUS_XIO_GSI_DRIVER_DLOPEN"; then
     PREOPEN_FORCE="-dlpreopen force"
 fi

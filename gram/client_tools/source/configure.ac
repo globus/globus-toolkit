@@ -16,7 +16,9 @@ AC_SUBST(DIRT_BRANCH_ID)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
-AC_SUBST([GLOBUS_XIO_GSI_DRIVER_DLOPEN], ["$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+PKG_CHECK_EXISTS([globus-xio-gsi-driver >= 2], [
+    GLOBUS_XIO_GSI_DRIVER_DLOPEN="$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+AC_SUBST([GLOBUS_XIO_GSI_DRIVER_DLOPEN])
 
 if test -z "$GLOBUS_XIO_GSI_DRIVER_DLOPEN"; then
     PREOPEN_FORCE="-dlpreopen force"

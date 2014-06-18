@@ -16,15 +16,17 @@ AC_SUBST(DIRT_BRANCH_ID)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
-GSI_DRIVER_DLOPEN="`$PKG_CONFIG --variable=dlopen globus-xio-gsi-driver`"
-AC_SUBST(GSI_DRIVER_DLOPEN, $GSI_DRIVER_DLOPEN)
+PKG_CHECK_EXISTS([globus-xio-gsi-driver], [
+    GSI_DRIVER_DLOPEN="$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+AC_SUBST([GSI_DRIVER_DLOPEN])
 
-PIPE_DRIVER_DLOPEN="`$PKG_CONFIG --variable=dlopen globus-xio-pipe-driver`"
+PKG_CHECK_EXISTS([globus-xio-pipe-driver], [
+    PIPE_DRIVER_DLOPEN="$($PKG_CONFIG --variable=dlopen globus-xio-pipe-driver)"])
+AC_SUBST([PIPE_DRIVER_DLOPEN])
 
-AC_SUBST(PIPE_DRIVER_DLOPEN, $PIPE_DRIVER_DLOPEN)
-
-GRIDFTP_PATH="`$PKG_CONFIG --variable=path globus-gridftp-server`"
-AC_SUBST(GRIDFTP_PATH, $GRIDFTP_PATH)
+PKG_CHECK_EXISTS([globus-gridftp-server], [
+    GRIDFTP_PATH="$($PKG_CONFIG --variable=path globus-gridftp-server)"])
+AC_SUBST(GRIDFTP_PATH)
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 

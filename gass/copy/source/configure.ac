@@ -52,7 +52,8 @@ AC_SUBST([GSI_DRIVER_LIBS])
 AC_SUBST([PIPE_DRIVER_LIBS])
 AC_SUBST([DLPREOPEN_FORCE])
 
-GRIDFTP_SERVER_PATH=`$PKG_CONFIG --variable=path globus-gridftp-server`
+PKG_CHECK_EXISTS([globus-gridftp-server], [
+    GRIDFTP_SERVER_PATH="$($PKG_CONFIG --variable=path globus-gridftp-server)"])
 AC_SUBST([GRIDFTP_SERVER_PATH])
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
