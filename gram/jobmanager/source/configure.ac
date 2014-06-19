@@ -171,6 +171,7 @@ AC_CONFIG_FILES([
 	globus-gram-job-manager-uninstalled.pc
 	globus-gram-job-manager.pc
 	scripts/Makefile
+	rvf/globus-rvf-edit
         rvf/Makefile
         seg/Makefile
         test/Makefile

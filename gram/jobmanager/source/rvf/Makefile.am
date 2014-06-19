@@ -18,7 +18,7 @@ globus_rvf_check_LDADD = \
 	libglobus_rvf.la $(PACKAGE_DEP_LIBS)
 
 
-EXTRA_DIST = globus-rvf-edit $(man_MANS) \
+EXTRA_DIST = $(man_MANS) \
     globus-rvf-edit.xml \
     globus-rvf-check.xml \
     globus_i_rvf_scanner.c \
