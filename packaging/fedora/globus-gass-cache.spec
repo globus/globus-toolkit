@@ -1,7 +1,7 @@
 Name:		globus-gass-cache
 %global _name %(tr - _ <<< %{name})
 Version:	9.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gass Cache
 
 Group:		System Environment/Libraries
@@ -15,6 +15,11 @@ Requires:	globus-common%{?_isa} >= 14
 
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	openssl-devel
+BuildRequires:	doxygen
+BuildRequires:	graphviz
+%if "%{?rhel}" == "5"
+BuildRequires:	graphviz-gd
+%endif
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
