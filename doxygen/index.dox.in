@@ -28,7 +28,10 @@
  * - @ref globus_xio
  *
  * @section gram_section GRAM
+ * - @ref globus_gram_client
+ * - @ref globus_rsl
  * - @ref globus_gram_protocol
+ * - @ref globus_gram_job_manager_callout_error
  * - @ref globus_scheduler_event_generator_api
  * - @ref globus_gass_cache
  * - @ref globus_gass_transfer
