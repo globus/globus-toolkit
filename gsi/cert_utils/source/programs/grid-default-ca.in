@@ -261,16 +261,11 @@ EOF
 
 prefix="${GLOBUS_LOCATION-@prefix@}"
 exec_prefix="@exec_prefix@"
-sbindir="@sbindir@"
 bindir="@bindir@"
-libdir="@libdir@"
-includedir="@includedir@"
+sbindir="@sbindir@"
 datarootdir="@datarootdir@"
 datadir="@datadir@"
-libexecdir="@libexecdir@"
 sysconfdir="@sysconfdir@"
-sharedstatedir="@sharedstatedir@"
-localstatedir="@localstatedir@"
 
 PATH=${bindir}:${sbindir}:${PATH}
 
