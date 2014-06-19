@@ -29,9 +29,14 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup globus_gram_job_manager_callout_error Globus GRAM Job Manager Callout Error
+ * The globus_gram_jobmanager_callout_error API defines error object types to
+ * return error conditions from GRAM authorization callouts.
+ */
 /** 
  * @defgroup globus_gram_jobmanager_callout_error_activation Activation
- *
+ * @ingroup globus_gram_job_manager_callout_error 
  * Globus GRAM Jobmanager Callout Error API uses standard Globus module
  * activation and deactivation.  Before any Globus GRAM Jobmanager Callout
  * Error API functions are called, the following function must be called:
@@ -71,6 +76,7 @@ globus_module_descriptor_t              globus_i_gram_jobmanager_callout_error_m
 
 /**
  * @defgroup globus_gram_jobmanager_callout_error_datatypes Datatypes
+ * @ingroup globus_gram_job_manager_callout_error 
  */
 
 /**
