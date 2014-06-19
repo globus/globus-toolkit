@@ -1,3 +1,9 @@
+globus-io (10.10-2+gt6.@distro@) @distro@; urgency=low
+
+  * Rename dbg packages
+
+ -- Globus Toolkit <support@globus.org>  Wed, 18 Jun 2014 14:38:45 -0400
+
 globus-io (10.10-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge changes from Mattias Ellert

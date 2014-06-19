@@ -20,7 +20,7 @@ Description: Globus Toolkit - Globus Gridmap EPPN Callout
  The libglobus-gridmap-eppn-callout0 package contains:
  Globus Gridmap EPPN Callout
 
-Package: globus-gridmap-eppn-callout-dbg
+Package: libglobus-gridmap-eppn-callout-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -32,5 +32,5 @@ Description: Globus Toolkit - Globus Gridmap EPPN Callout Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gridmap-eppn-callout-dbg package contains:
+ The libglobus-gridmap-eppn-callout-dbg package contains:
  Globus Gridmap EPPN Callout Debug Symbols

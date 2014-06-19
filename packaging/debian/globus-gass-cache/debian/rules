@@ -143,7 +143,7 @@ binary-arch: install
 	dh_install --fail-missing
 	dh_installman
 	dh_link
-	dh_strip --dbg-package=globus-gass-cache-dbg
+	dh_strip --dbg-package=libglobus-gass-cache-dbg
 	dh_compress
 	dh_fixperms
 	dh_perl

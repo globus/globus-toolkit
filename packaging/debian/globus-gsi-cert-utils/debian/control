@@ -66,7 +66,7 @@ Description: Globus Toolkit - Globus GSI Cert Utils Library Documentation Files
  The libglobus-gsi-cert-utils-doc package contains:
  Globus GSI Cert Utils Library Documentation Files
 
-Package: globus-gsi-cert-utils-dbg
+Package: libglobus-gsi-cert-utils-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -78,5 +78,5 @@ Description: Globus Toolkit - Globus GSI Cert Utils Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gsi-cert-utils-dbg package contains:
+ The libglobus-gsi-cert-utils-dbg package contains:
  Globus GSI Cert Utils Library Debug Symbols

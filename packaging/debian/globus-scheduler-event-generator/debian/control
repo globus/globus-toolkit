@@ -66,11 +66,26 @@ Description: Globus Toolkit - Scheduler Event Generator Documentation Files
  The libglobus-scheduler-event-generator-doc package contains:
  Scheduler Event Generator Documentation Files
 
+Package: libglobus-scheduler-event-generator-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: libglobus-scheduler-event-generator0 (= ${binary:Version}), ${misc:Depends}
+Description: Globus Toolkit - Scheduler Event Generator Debug Symbols
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-scheduler-event-generator-dbg package contains:
+ Scheduler Event Generator Debug Symbols
+
 Package: globus-scheduler-event-generator-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libglobus-scheduler-event-generator0 (= ${binary:Version}) | globus-scheduler-event-generator-progs (= ${binary:Version}), ${misc:Depends}
+Depends: globus-scheduler-event-generator-progs (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Scheduler Event Generator Debug Symbols
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

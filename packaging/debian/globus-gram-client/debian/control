@@ -52,7 +52,7 @@ Description: Globus Toolkit - GRAM Client Library Documentation Files
  The libglobus-gram-client-doc package contains:
  GRAM Client Library Documentation Files
 
-Package: globus-gram-client-dbg
+Package: libglobus-gram-client-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -64,5 +64,5 @@ Description: Globus Toolkit - GRAM Client Library Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gram-client-dbg package contains:
+ The libglobus-gram-client-dbg package contains:
  GRAM Client Library Debug Symbols

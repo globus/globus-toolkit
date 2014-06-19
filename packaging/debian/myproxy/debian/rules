@@ -209,6 +209,8 @@ binary-arch: install
 	dh_installinit
 	dh_installman
 	dh_link
+	dh_strip -X/bin/ -X/sbin/ --dbg-package=lib$(name)-dbg
+	dh_strip -X/lib/ --dbg-package=$(name)-dbg
 	dh_strip --dbg-package=myproxy-dbg
 	dh_compress -X .tag
 	dh_fixperms

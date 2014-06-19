@@ -20,7 +20,7 @@ Description: Globus Toolkit - Globus Gridmap MyProxy Callout
  The libglobus-gridmap-verify-myproxy-callout0 package contains:
  Globus Gridmap MyProxy Callout
 
-Package: globus-gridmap-verify-myproxy-callout-dbg
+Package: libglobus-gridmap-verify-myproxy-callout-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -32,5 +32,5 @@ Description: Globus Toolkit - Globus Gridmap MyProxy Callout Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gridmap-verify-myproxy-callout-dbg package contains:
+ The libglobus-gridmap-verify-myproxy-callout-dbg package contains:
  Globus Gridmap MyProxy Callout Debug Symbols

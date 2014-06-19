@@ -53,7 +53,7 @@ Description: Globus Toolkit - uniform I/O interface Development Files
  uniform I/O interface to stream and datagram style communications
  Documentation Files
 
-Package: globus-io-dbg
+Package: libglobus-io-dbg
 Section: debug
 Priority: extra
 Architecture: any
@@ -65,6 +65,6 @@ Description: Globus Toolkit - uniform I/O interface Debug Symbols
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-io-dbg package contains:
+ The libglobus-io-dbg package contains:
  uniform I/O interface to stream and datagram style communications
  Debug Symbols
