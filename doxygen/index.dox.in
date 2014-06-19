@@ -1,10 +1,11 @@
 /**
  * @mainpage Globus Toolkit API Documentation @VERSION@
  *
- * @section Common Runtime Libraries
- * - @ref globus_common
- * - @ref globus_callout
- * - @ref globus_xio
+ * @section gridftp_section GridFTP
+ * - @ref globus_gass_copy
+ * - @ref globus_ftp_client_api
+ * - @ref globus_ftp_control
+ * - @ref globus_xio_gridftp_driver
  *
  * @section gsic_section GSI C
  * - @ref globus_gsi_gssapi
@@ -21,7 +22,14 @@
  * - @ref globus_gsi_proxy_ssl_api
  * - @ref globus_gsi_sysconfig
  *
+ * @section ccommonlibs Common Runtime Libraries
+ * - @ref globus_common
+ * - @ref globus_callout
+ * - @ref globus_xio
+ *
  * @section gram_section GRAM
  * - @ref globus_gram_protocol
  * - @ref globus_scheduler_event_generator_api
+ * - @ref globus_gass_cache
+ * - @ref globus_gass_transfer
  */
