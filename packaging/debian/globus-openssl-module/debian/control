@@ -9,20 +9,6 @@ Vcs-Browser: http://svn.nordugrid.org/trac/packaging/browser/debian/globus-opens
 Vcs-Svn: http://svn.nordugrid.org/repos/packaging/debian/globus-openssl-module
 Homepage: http://www.globus.org/
 
-Package: globus-openssl-module-progs
-Section: net
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}
-Description: Globus Toolkit - Globus OpenSSL Module Wrapper
- The Globus Toolkit is an open source software toolkit used for
- building Grid systems and applications. It is being developed by the
- Globus Alliance and many others all over the world. A growing number
- of projects and companies are using the Globus Toolkit to unlock the
- potential of grids for their cause.
- .
- The libglobus-openssl-module0 package contains:
- Globus OpenSSL Module Wrapper-related Programs
-
 Package: libglobus-openssl-module0
 Section: libs
 Architecture: any
