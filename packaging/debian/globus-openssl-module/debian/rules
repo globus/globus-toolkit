@@ -131,10 +131,6 @@ install: build-stamp
 	  debian/tmp$(_docdir)/lib$(name)-dev/GLOBUS_LICENSE \
 	  > debian/lib$(name)$(soname).install
 	ls -1 \
-	  debian/tmp$(_sbindir)/* \
-	  debian/tmp$(_mandir)/man8/* \
-	  > debian/$(name)-progs.install
-	ls -1 \
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*.* \
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*/* \
 	  debian/tmp$(_mandir)/man3/globus*.3 \
