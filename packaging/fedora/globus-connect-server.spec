@@ -1,5 +1,5 @@
 Name:           globus-connect-server
-Version:        3.0.5
+Version:        3.0.6
 Release:        1%{?dist}
 Summary:        Globus Connect Server
 %global _name %(tr - _ <<< %{name})
@@ -209,6 +209,9 @@ if [ -f %{_sysconfdir}/globus-connect-multiuser.conf ]; then
 fi
 
 %changelog
+* Mon Jun 23 2014 Globus Toolkit <support@globus.org> 3.0.6-1
+- Improve diagnostics when IdentityMethod = OAuth and [OAuth] section doesn't contain a server name
+
 * Thu Jun 05 2014 Globus Toolkit <support@globus.org> 3.0.5-1
 - GT-537: GCS uses multiuser in config settings and doc
 

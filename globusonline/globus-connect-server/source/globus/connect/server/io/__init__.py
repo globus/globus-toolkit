@@ -559,7 +559,7 @@ server
                 self.conf.IDENTITY_METHOD_OAUTH:
             oauth_server = self.conf.get_oauth_server()
             if oauth_server is None:
-                raise Exception("Configured to use OAuth, but no OAuth server defined")
+                raise Exception("ERROR: [Security] configuration uses OAuth as IdentityProvider, but no Server defined in the [OAuth] configuration")
         elif self.conf.get_security_identity_method() == \
                 self.conf.IDENTITY_METHOD_CILOGON:
             oauth_server = "cilogon.org"
@@ -575,7 +575,7 @@ server
             myproxy_dn = gcmu.to_unicode(myproxy_dn)
         if oauth_server is not None:
             if ":" in oauth_server:
-                raise Exception("[OAuth] Server value must be a public host name only")
+                raise Exception("ERROR: [OAuth] Server value must be a public host name only")
             oauth_server = gcmu.to_unicode(oauth_server)
 
         new_gridftp_server = {
