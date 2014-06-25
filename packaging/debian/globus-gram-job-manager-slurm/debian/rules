@@ -106,8 +106,6 @@ install: build-stamp
 
 	$(MAKE) install DESTDIR=$(INSTALLDIR)
 
-	# Remove pkgconfig (.pc file)
-	find $(INSTALLDIR)$(_libdir) -name '*.pc' -exec rm -v '{}' \;
 	# Remove libtool archives (.la files)
 	find $(INSTALLDIR)$(_libdir) -name 'lib*.la' -exec rm -v '{}' \;
 	# Remove jobmanager-slurm file

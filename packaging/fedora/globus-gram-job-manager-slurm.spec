@@ -3,7 +3,7 @@
 Name:		globus-gram-job-manager-slurm
 %global _name %(tr - _ <<< %{name})
 Version:	2.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - SLURM Job Manager
 
 Group:		Applications/Internet
@@ -34,15 +34,6 @@ BuildRequires:  libtool >= 2.2
 %endif
 BuildArch:      noarch
 
-%package doc
-Summary:	Globus Toolkit - SLURM Job Manager Documentation Files
-Group:		Documentation
-%if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
-BuildArch:      noarch
-%endif
-
-Requires:	%{name} = %{version}-%{release}
-
 %package setup-poll
 Summary:        Globus Toolkit - SLURM Job Manager Setup Files
 Group:		Applications/Internet
@@ -64,15 +55,6 @@ using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name} package contains:
 SLURM Job Manager 
-
-%description doc
-The Globus Toolkit is an open source software toolkit used for building Grid
-systems and applications. It is being developed by the Globus Alliance and
-many others all over the world. A growing number of projects and companies are
-using the Globus Toolkit to unlock the potential of grids for their cause.
-
-The %{name}-doc package contains:
-SLURM Job Manager Documentation Files
 
 %description setup-poll
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -144,7 +126,6 @@ fi
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/*LICENSE*
 %config(noreplace) %{_sysconfdir}/globus/globus-slurm.conf
-%{_libdir}/pkgconfig/*.pc
 %{_datadir}/globus/globus_gram_job_manager/slurm.rvf
 
 
@@ -152,10 +133,10 @@ fi
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-slurm-poll
 
-%files doc
-%defattr(-,root,root,-)
-
 %changelog
+* Wed Jun 25 2014 Globus Toolkit <support@globus.org> - 2.3-2
+- Remove .pc file from package
+
 * Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 2.3-1
 - Merge changes from Mattias Ellert
 
