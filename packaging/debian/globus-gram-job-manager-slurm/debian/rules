@@ -106,8 +106,6 @@ install: build-stamp
 
 	$(MAKE) install DESTDIR=$(INSTALLDIR)
 
-	# Remove libtool archives (.la files)
-	find $(INSTALLDIR)$(_libdir) -name 'lib*.la' -exec rm -v '{}' \;
 	# Remove jobmanager-slurm file
 	rm $(INSTALLDIR)/$(_sysconfdir)/grid-services/jobmanager-slurm
 
