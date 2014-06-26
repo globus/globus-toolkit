@@ -56,7 +56,7 @@ Description: Globus Connect Server Installation Tool
 
 Package: globus-connect-server-common
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, python, python-support, globus-openssl-module-progs
+Depends: ${shlibs:Depends}, ${misc:Depends}, python, python-support, globus-openssl-module-progs | globus-gsi-cert-utils
 Replaces: globus-connect-multiuser-common (<< 2.0.60-1)
 Breaks: globus-connect-multiuser-common (<< 2.0.60-1)
 Description: Globus Connect Server Installation Tool
