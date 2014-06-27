@@ -1,3 +1,9 @@
+globus-connect-server (3.0.4-3) unstable; urgency=low
+
+  * Rebuild with dependency change
+
+ -- Globus Toolkit <support@globus.org>  Fri, 27 June 2014 08:05:21 -0400
+
 globus-connect-server (3.0.4-2) unstable; urgency=low
 
   * Change dependency for globus-update-certificate-dir
