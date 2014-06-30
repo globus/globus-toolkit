@@ -38,7 +38,7 @@ SSHD=/usr/sbin/gsisshd
 RSA1_KEY=/etc/gsissh/ssh_host_key
 RSA_KEY=/etc/gsissh/ssh_host_rsa_key
 DSA_KEY=/etc/gsissh/ssh_host_dsa_key
-ECDSA_KEY=$sysconfdir/ssh_host_ecdsa_key
+ECDSA_KEY=/etc/gsissh/ssh_host_ecdsa_key
 PID_FILE=/var/run/gsisshd.pid
 
 # pull in default settings
@@ -104,7 +104,7 @@ do_dsa_keygen() {
 do_ecdsa_keygen() {
 	if [ ! -s $ECDSA_KEY ]; then
 		rm -f $ECDSA_KEY
-		if test ! -f $ECDSA_KEY && $KEYGEN -q -t eecdsa -f $ECDSA_KEY -C '' -N '' >&/dev/null; then
+		if test ! -f $ECDSA_KEY && $KEYGEN -q -t ecdsa -f $ECDSA_KEY -C '' -N '' >&/dev/null; then
 			chmod 600 $ECDSA_KEY
 			chmod 644 $ECDSA_KEY.pub
 			if [ -x /sbin/restorecon ]; then
@@ -142,6 +142,7 @@ start()
 		if [ "x${AUTOCREATE_SERVER_KEYS}" != xRSAONLY ]; then
 			do_rsa1_keygen
 			do_dsa_keygen
+			do_ecdsa_keygen
 		fi
 	 fi
 

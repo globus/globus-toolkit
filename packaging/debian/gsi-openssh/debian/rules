@@ -120,6 +120,10 @@ cleanup:
 
 	rm -rf autom4te.cache
 	rm -rf config.log
+	rm -rf cat/*
+	rm -rf config.h.in
+	rm -rf configure
+	rm -rf gpt_build_tmp.sh
 
 	rm -rf doxygen/doc
 
@@ -169,6 +173,7 @@ binary-arch: install
 	dh_perl
 	dh_makeshlibs
 	dh_installdeb
+	dh_shlibdeps
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb

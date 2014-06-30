@@ -1,3 +1,9 @@
+gsi-openssh (5.7-2) unstable; urgency=low
+
+  * https://globus.atlassian.net/browse/GT-492
+
+ -- Globus Toolkit <support@globus.org>  Mon, 30 June 2014 13:45:09 -0400
+
 gsi-openssh (5.7-1) unstable; urgency=low
 
   * update to 5.7
