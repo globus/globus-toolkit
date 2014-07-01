@@ -67,14 +67,14 @@ sub is_endpoint_public($)
     return $json->{public};
 }
 
-sub is_default_dir($$)
+sub default_dir($)
 {
-    my ($endpoint, $dir) = @_;
+    my ($endpoint) = @_;
     my $json;
 
     $json = $api->get_endpoint($endpoint);
 
-    return $json->{default_directory} eq $dir;
+    return $json->{default_directory};
 }
 
 sub cleanup($)
@@ -120,7 +120,7 @@ ok(is_endpoint_public($endpoint_name), "is_endpoint_public");
 
 # Test Step #3:
 # Check that endpoint's DefaultDirectory attribute is /tmp
-ok(is_default_dir($endpoint_name, "/tmp"), "is_default_dir_tmp");
+like(default_dir($endpoint_name), qr(^/tmp/*$), "is_default_dir_tmp");
 
 # Test Step #4
 # Set up server with (Public=False, DefaultDirectory="/tmp")
@@ -132,7 +132,7 @@ ok(!is_endpoint_public($endpoint_name), "is_endpoint_non_public");
 
 # Test Step #6:
 # Check that endpoint's DefaultDirectory attribute is /tmp
-ok(is_default_dir($endpoint_name, "/tmp"), "is_default_dir_still_tmp");
+like(default_dir($endpoint_name), qr(^/tmp/*$), "is_default_dir_still_tmp");
 
 # Test Step #7
 # Set up server with (Public=False, DefaultDirectory="/home")
@@ -144,7 +144,7 @@ ok(!is_endpoint_public($endpoint_name), "is_endpoint_still_non_public");
 
 # Test Step #9:
 # Check that endpoint's DefaultDirectory attribute is /home
-ok(is_default_dir($endpoint_name, "/home"), "is_default_dir_home");
+like(default_dir($endpoint_name), qr(^/home/*$), "is_default_dir_home");
 
 # Test Step #10:
 # Set up server with (Public=True, DefaultDirectory="/tmp")
@@ -157,7 +157,7 @@ ok(is_endpoint_public($endpoint_name), "is_endpoint_public_again");
 
 # Test Step #12:
 # Check that endpoint's DefaultDirectory attribute is "/tmp"
-ok(is_default_dir($endpoint_name, "/tmp"), "is_default_dir_back_to_tmp");
+like(default_dir($endpoint_name), qr(^/tmp/*$), "is_default_dir_back_to_tmp");
 
 # Clean up the services
 cleanup($endpoint_name);
