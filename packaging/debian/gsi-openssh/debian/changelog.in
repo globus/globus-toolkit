@@ -1,3 +1,9 @@
+gsi-openssh (5.7-2+gt6.@distro@) @distro@; urgency=low
+
+  * https://globus.atlassian.net/browse/GT-492
+
+ -- Globus Toolkit <support@globus.org>  Mon, 30 June 2014 13:34:35 -0400
+
 gsi-openssh (5.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Fixes for GT6

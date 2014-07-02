@@ -1,0 +1,11 @@
+setup_sshd_user() {
+        if ! getent passwd sshd >/dev/null; then
+                adduser --quiet --system --no-create-home --home /var/run/sshd --shell /usr/sbin/nologin sshd
+        fi
+}
+
+if [ "$action" = configure ]; then
+        setup_sshd_user
+fi
+
+#DEBHELPER#
