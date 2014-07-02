@@ -33,7 +33,7 @@ globus_object_cache_init (globus_object_cache_t * cache)
 			 globus_hashtable_voidp_keyeq);
   globus_fifo_init (&(cache->handles));
 
-  cache->capacity_limit = 65;
+  cache->capacity_limit = 512;
   cache->entry_count = 0;
 }
 

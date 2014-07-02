@@ -791,15 +791,42 @@ globus_i_xio_http_parse_residue(
                           
                 }
                 break;
+            case GLOBUS_XIO_HTTP_STATUS_LINE:
+                result = globus_l_xio_http_client_parse_response(http_handle, &done);
+                if (result != GLOBUS_SUCCESS)
+                {
+                    goto finish;
+                }
+                if(!done)
+                {
+                    result = globus_i_xio_http_clean_read_buffer(http_handle);
+
+                    if (result != GLOBUS_SUCCESS)
+                    {
+                        goto finish;
+                    }
+                
+                    result = globus_xio_driver_pass_read(
+                            http_handle->response_read_operation,
+                            &http_handle->read_iovec,
+                            1,
+                            1,
+                            globus_l_xio_http_client_read_response_callback,
+                            http_handle);
+                
+                    if (result != GLOBUS_SUCCESS)
+                    {
+                        goto finish;
+                    }
+                }
+                break;
+
             case GLOBUS_XIO_HTTP_PRE_REQUEST_LINE:
                 globus_assert(http_handle->parse_state
                         != GLOBUS_XIO_HTTP_PRE_REQUEST_LINE);
             case GLOBUS_XIO_HTTP_REQUEST_LINE:
                 globus_assert(http_handle->parse_state
                         != GLOBUS_XIO_HTTP_REQUEST_LINE);
-            case GLOBUS_XIO_HTTP_STATUS_LINE:
-                globus_assert(http_handle->parse_state
-                        != GLOBUS_XIO_HTTP_STATUS_LINE);
             case GLOBUS_XIO_HTTP_HEADERS:
                 globus_assert(http_handle->parse_state
                         != GLOBUS_XIO_HTTP_HEADERS);
@@ -1656,13 +1683,24 @@ globus_i_xio_http_write_callback(
     http_handle->write_operation.driver_handle = NULL;
     http_handle->write_operation.nbytes = 0;
     http_handle->write_operation.wait_for = 0;
-    if (result != GLOBUS_SUCCESS && http_handle->reopen_in_progress)
+    if (result != GLOBUS_SUCCESS)
     {
         globus_object_t *               err;
 
         err = globus_error_get(result);
-
-        result = GlobusXIOHttpErrorPersistentConnectionDropped(err);
+        
+        if(http_handle->reopen_in_progress)
+        {
+            http_handle->pending_error = 
+                GlobusXIOHTTPErrorObjPersistentConnectionDropped(err);
+        }
+        else
+        {
+            http_handle->pending_error = err;
+        }
+        http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
+        result = globus_error_put(
+            globus_object_copy(http_handle->pending_error));
     }
 
     globus_mutex_unlock(&http_handle->mutex);
