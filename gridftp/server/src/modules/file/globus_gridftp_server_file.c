@@ -1258,7 +1258,12 @@ globus_l_gfs_file_truncate(
         goto error;
     }
 
-    if(fstat(fd, &sbuf) != 0)
+#ifdef WIN32
+    rc = stat(pathname, &sbuf);    
+#else
+    rc = fstat(fd, &sbuf);
+#endif    
+    if(rc != 0)
     {
         result = GlobusGFSErrorSystemError("stat", errno);
         goto error_close;

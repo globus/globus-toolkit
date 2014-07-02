@@ -834,7 +834,6 @@ err:
     return result;
 }
 
-
 void
 globus_l_gfs_data_brain_ready(
     void *                              user_arg)
@@ -1887,10 +1886,10 @@ globus_i_gfs_kv_getval(
                 
                 if(urldecode)
                 {
-                globus_url_string_hex_decode(tmp_val);
+                    globus_url_string_hex_decode(tmp_val);
+                }
             }
         }
-    }
     }
     
     return tmp_val;
@@ -3486,6 +3485,7 @@ globus_l_gfs_data_check_sharing_perms(
            world or group writable
            not world or group readable
            owned by root, must have sticky bit set. */
+#ifndef WIN32
         else if((statbuf.st_mode & (S_IWGRP | S_IWOTH)) != 0)
         {
             if(statbuf.st_uid == 0 && ((statbuf.st_mode & S_ISVTX) != 0) && 
@@ -3503,6 +3503,7 @@ globus_l_gfs_data_check_sharing_perms(
                     dir);
             }
         }
+#endif
         /* permissions not supported */
         else
         {
@@ -4634,7 +4635,7 @@ globus_i_gfs_data_init()
             globus_gfs_config_set_bool("allow_udt", GLOBUS_FALSE);
         }
     }
-
+    
     GlobusGFSDebugExit();
 }
 
@@ -5463,12 +5464,12 @@ globus_i_gfs_data_request_command(
                         "Invalid arguments for CREATE. Missing PATH.");
                     goto share_create_error;
                 }
-                        
+                
                 share_file = globus_common_create_string(
                     "%s/share-%s",
                     op->session_handle->sharing_state_dir,
                     share_id);
-                        
+                
                 /* check if path will be accessible */
                 if(result == GLOBUS_SUCCESS)
                 {
@@ -5546,14 +5547,24 @@ globus_i_gfs_data_request_command(
                         {
                             char * tmp_content;
                             char * tmp_enc;
-                            
+#ifdef WIN32                            
+                            if(isalpha(share_path[0]) && share_path[1] == ':')
+                            {
+                                share_path[1] = share_path[0];
+                                share_path[0] = '/';
+                                if(share_path[2] == '/' && share_path[3] == 0)
+                                {
+                                    share_path[2] = 0;
+                                }
+                            }
+#endif
                             tmp_enc = globus_url_string_hex_encode(share_path, "\"");
                             
                             tmp_content = globus_common_create_string( 
                                 "#\n# This file is required in order to enable GridFTP file sharing.\n"
                                 "# If you remove this file, file sharing will no longer work.\n#\n\n"
                                 "share_path \"%s\"\n", tmp_enc);
-                                rc = write(sharingfd, tmp_content, strlen(tmp_content));
+                            rc = write(sharingfd, tmp_content, strlen(tmp_content));
                             if(rc < 0)
                             {
                                 result = GlobusGFSErrorSystemError(

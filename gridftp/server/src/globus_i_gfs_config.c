@@ -75,12 +75,6 @@
 #define PATH_MAX 4096
 #endif
 
-#ifdef TARGET_ARCH_WIN32
-#define GFS_THREAD_MODEL "windows"
-#else
-#define GFS_THREAD_MODEL "pthread"
-#endif
-
 typedef enum
 {
     GLOBUS_L_GFS_CONFIG_BOOL,
@@ -962,7 +956,7 @@ globus_l_gfs_config_load_envs_from_file(
                     if(globus_l_gfs_num_threads > 0)
                     {
                         setenv("GLOBUS_CALLBACK_POLLING_THREADS", valuebuf, 1);
-                        globus_thread_set_model(GFS_THREAD_MODEL);
+                        globus_thread_set_model("pthread");
                     }
                 }
             }
@@ -2194,14 +2188,16 @@ globus_l_gfs_config_adjust_path(
     GlobusGFSName(globus_l_gfs_config_adjust_path);
     GlobusGFSDebugEnter();
 
+#ifndef WIN32
     val = globus_i_gfs_config_string(opt_name);
-    
+
     if(val && *val != '/' && *val != '$')
     {
         base_path = globus_i_gfs_config_string("config_base_path");
         new_val = globus_common_create_string("%s/%s", base_path, val);
         globus_l_gfs_config_set(opt_name, free_old, new_val);
     }
+#endif
 
     GlobusGFSDebugExit();
 }
@@ -2429,7 +2425,7 @@ globus_l_gfs_config_misc()
         rc = globus_l_config_loadfile(value, &data);
         globus_l_gfs_config_set("login_msg", 0, data);                
     }
-    
+
     value = globus_i_gfs_config_string("load_dsi_module");
     if(value != NULL)
     {
@@ -2801,7 +2797,7 @@ globus_i_gfs_config_init_envs(
             {
                 setenv("GLOBUS_CALLBACK_POLLING_THREADS", 
                     tmp_argv[arg_num + 1], 1);
-                globus_thread_set_model(GFS_THREAD_MODEL);
+                globus_thread_set_model("pthread");
             }
         }
         else if(!strcmp(argp, "port-range") && tmp_argv[arg_num + 1])
