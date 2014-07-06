@@ -497,11 +497,6 @@ globus_l_gfs_data_end_read_kickout(
 
 static
 void
-globus_l_gfs_data_fc_kickout(
-    void *                              user_arg);
-
-static
-void
 globus_l_gfs_data_abort_fc_cb(
     void *                              callback_arg,
     globus_ftp_control_handle_t *       ftp_handle,
@@ -563,7 +558,8 @@ globus_i_gfs_data_http_get(
     char *                              path,
     char *                              request,
     globus_off_t                        offset,
-    globus_off_t                        length);
+    globus_off_t                        length,
+    globus_bool_t                       do_retry);
 
 globus_result_t
 globus_i_gfs_data_http_put(
@@ -571,7 +567,8 @@ globus_i_gfs_data_http_put(
     char *                              path,
     char *                              request,
     globus_off_t                        offset,
-    globus_off_t                        length);
+    globus_off_t                        length,
+    globus_bool_t                       do_retry);
 
 globus_result_t
 globus_i_gfs_data_http_parse_args(
@@ -789,6 +786,52 @@ globus_l_gfs_defaulthome()
 #endif
 
     return home_dir;
+}
+
+/* Returns GLOBUS_SUCCESS if pwent passes various sanity checks
+ * for disabled accounts.  Returns an error globus_result_t otherwise.
+ * Assumes caller has checked value of pw (i.e. pw is not NULL).
+ */
+ 
+static
+globus_result_t
+globus_l_gfs_validate_pwent(
+    struct passwd *                     pw)
+{
+    struct stat                         statbuf;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_validate_pwent);
+    GlobusGFSDebugEnter();
+
+    /* shell exists? */
+    if(pw->pw_shell[0] == '\0' || stat(pw->pw_shell,&statbuf) != 0)
+    {
+        result = GlobusGFSErrorGeneric("shell does not exist");
+        goto err;
+    }
+
+    /* shell is a regular file? */
+    if(!S_ISREG(statbuf.st_mode))
+    {
+        GlobusGFSErrorGenericStr(result,
+            ("shell is not a regular file: %s", pw->pw_shell));
+        goto err;
+    }
+    
+    /* shell executable? */
+    if((statbuf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) == 0)
+    {
+        GlobusGFSErrorGenericStr(result,
+            ("shell is not executable: %s", pw->pw_shell));
+        goto err;
+    }
+
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+    
+err:
+    GlobusGFSDebugExitWithError();
+    return result;
 }
 
 void
@@ -1843,10 +1886,10 @@ globus_i_gfs_kv_getval(
                 
                 if(urldecode)
                 {
-                globus_url_string_hex_decode(tmp_val);
+                    globus_url_string_hex_decode(tmp_val);
+                }
             }
         }
-    }
     }
     
     return tmp_val;
@@ -1866,7 +1909,6 @@ globus_i_gfs_kv_replaceval(
     int                                 keylen;
     char *                              new_kvstring = NULL;
     char                                save;
-    char *                              ptr;
     char *                              enc_val;
     globus_bool_t                       done = GLOBUS_FALSE;
         
@@ -2898,7 +2940,6 @@ globus_l_gfs_data_update_restricted_paths_symlinks(
     globus_list_t *                     new_list = NULL;
     globus_l_gfs_alias_ent_t *          alias_ent;
     globus_bool_t                       resort = GLOBUS_FALSE;
-    char *                              var_path;
     GlobusGFSName(globus_l_gfs_data_update_restricted_paths);
     GlobusGFSDebugEnter();
     
@@ -3126,7 +3167,6 @@ globus_l_gfs_data_parse_restricted_paths(
         {
             if(is_virtual)
             {   
-                char *                  true_path;
                 char *                  tmp_path;
                 
                 if(ent->realpath)
@@ -3159,7 +3199,7 @@ globus_l_gfs_data_parse_restricted_paths(
                     }
                 }
                 
-                if(ent->alias[ent->alias_len - 1] == '/')
+                if(ent->alias_len > 1 && ent->alias[ent->alias_len - 1] == '/')
                 {
                     ent->alias[ent->alias_len - 1] = '\0';
                     ent->alias_len--;
@@ -3408,6 +3448,82 @@ error_mem:
 
     GlobusGFSDebugExitWithError();
     return res;
+}
+
+/* check sharing_state_dir perms, return 0 if allowed, -1 if not. */
+static
+int
+globus_l_gfs_data_check_sharing_perms(
+    globus_l_gfs_data_session_t *       session_handle)
+{
+    struct stat                         statbuf;
+    int                                 rc = -1;
+    char *                              dir = session_handle->sharing_state_dir;
+
+    if(stat(dir, &statbuf) == 0)
+    {
+        /* case 1: personal state directory
+           owned by user; must have no group and world perms */
+        if(statbuf.st_uid == session_handle->uid)
+        {
+            if((statbuf.st_mode & 
+                (S_IRGRP | S_IXGRP | S_IWGRP | S_IROTH | S_IWOTH | S_IXOTH)) == 0)
+            {
+                rc = 0;
+            }
+            else
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_ERR,
+                    "Sharing error. Sharing state dir %s is owned by "
+                    "authenticated user but has group or world permissions.\n",
+                    dir);
+            }
+        }
+    
+        /* case 2: community state directory
+           world or group writable
+           not world or group readable
+           owned by root, must have sticky bit set. */
+#ifndef WIN32
+        else if((statbuf.st_mode & (S_IWGRP | S_IWOTH)) != 0)
+        {
+            if(statbuf.st_uid == 0 && ((statbuf.st_mode & S_ISVTX) != 0) && 
+                ((statbuf.st_mode & (S_IRGRP | S_IROTH)) == 0))
+            {
+                rc = 0;
+            }
+            else
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_ERR,
+                    "Sharing error. Sharing state dir %s is group or "
+                    "world-writable; is not owned by root, is group or "
+                    "world readable, or does not have the sticky bit set.\n",
+                    dir);
+            }
+        }
+#endif
+        /* permissions not supported */
+        else
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_ERR,
+                "Sharing error. Sharing state dir %s has unsafe ownership or "
+                "permissions.\n",
+                dir);
+        }
+    }
+    else
+    {
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_ERR,
+            "Sharing error. Sharing state dir %s doesn't exist or can't be "
+            "accessed.\n",
+            dir);
+    }
+    
+    return rc;
 }
 
 
@@ -3879,6 +3995,26 @@ globus_l_gfs_data_authorize(
         res = GlobusGFSErrorGeneric("Access denied by configuration.");
         goto pwent_error;
     }
+    
+    /* check that account is not disabled */
+    if(pwent && !globus_i_gfs_config_bool("allow_disabled_login"))
+    {
+        res = globus_l_gfs_validate_pwent(pwent);
+        if(res != GLOBUS_SUCCESS)
+        {
+            char *                     errmsg;
+            errmsg = globus_error_print_friendly(globus_error_peek(res));
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_ERR,
+                "Access denied for user '%s': %s\n", 
+                session_info->username, errmsg);
+            globus_free(errmsg);
+            res = GlobusGFSErrorGeneric(
+                "Access denied, user's system account is disabled.");
+            goto pwent_error;
+        }
+    }
+
 
     /* change process ids */
     if(!(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID))
@@ -3995,6 +4131,8 @@ globus_l_gfs_data_authorize(
             char *                      share_path = NULL;
             char *                      tmp_restrict;
             globus_list_t *             tmp_list;
+            struct stat                 statbuf;
+
     
             share_file = globus_common_create_string(
                 "%s/share-%s",
@@ -4002,7 +4140,52 @@ globus_l_gfs_data_authorize(
                 op->session_handle->sharing_id);
 
             rc = access(share_file, F_OK);
-
+            
+            /* check share_file ownership and perms */
+            if(rc == 0 && stat(share_file, &statbuf) == 0)
+            {
+                /* ownership */
+                if(statbuf.st_uid != op->session_handle->uid)
+                {
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_ERR,
+                        "Sharing error. Share file %s not owned by "
+                        "authenticated user %s UID %d.\n",
+                        share_file, session_info->username,
+                        op->session_handle->uid);
+            
+                    rc = -1;
+                }
+                
+                /* regular file */
+                if(!S_ISREG(statbuf.st_mode))
+                {
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_ERR,
+                        "Sharing error. Share file %s is not a regular file.\n",
+                        share_file);
+            
+                    rc = -1;
+                }
+                
+                /* no group/world permissions */
+                if((statbuf.st_mode &
+                    (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH )) != 0)
+                {
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_ERR,
+                        "Sharing error. Share file %s has group or world permissions set.\n",
+                        share_file);
+            
+                    rc = -1;
+                }
+            }
+        
+            if(rc == 0)
+            {
+                rc = globus_l_gfs_data_check_sharing_perms(op->session_handle);
+            }
+            
             if(rc != 0)
             {
                 GlobusGFSErrorGenericStr(res,
@@ -4020,7 +4203,8 @@ globus_l_gfs_data_authorize(
             {
                 globus_gfs_log_message(
                     GLOBUS_GFS_LOG_ERR,
-                    "Sharing error.  Invalid share_path or problem parsing share file %s.\n",
+                    "Sharing error.  Invalid share_path or problem parsing "
+                    "share file %s.\n",
                     share_file);
                 GlobusGFSErrorGenericStr(res,
                     ("Sharing error for user '%s' from share id '%s'.",
@@ -4451,7 +4635,7 @@ globus_i_gfs_data_init()
             globus_gfs_config_set_bool("allow_udt", GLOBUS_FALSE);
         }
     }
-
+    
     GlobusGFSDebugExit();
 }
 
@@ -5145,7 +5329,7 @@ globus_i_gfs_data_request_command(
             if(result == GLOBUS_SUCCESS)
             {
                 result = globus_i_gfs_data_http_put(
-                    op, path, request, offset, length);
+                    op, path, request, offset, length, GLOBUS_TRUE);
             }
             if(result != GLOBUS_SUCCESS)
             {
@@ -5167,7 +5351,7 @@ globus_i_gfs_data_request_command(
             if(result == GLOBUS_SUCCESS)
             {
                 result = globus_i_gfs_data_http_get(
-                    op, path, request, offset, length);
+                    op, path, request, offset, length, GLOBUS_TRUE);
             }
             if(result != GLOBUS_SUCCESS)
             {
@@ -5280,12 +5464,12 @@ globus_i_gfs_data_request_command(
                         "Invalid arguments for CREATE. Missing PATH.");
                     goto share_create_error;
                 }
-                        
+                
                 share_file = globus_common_create_string(
                     "%s/share-%s",
                     op->session_handle->sharing_state_dir,
                     share_id);
-                        
+                
                 /* check if path will be accessible */
                 if(result == GLOBUS_SUCCESS)
                 {
@@ -5344,6 +5528,14 @@ globus_i_gfs_data_request_command(
                             mkdir(tmp_dir, 0700);
                             free(tmp_dir);
                         }
+                        
+                        if(globus_l_gfs_data_check_sharing_perms(op->session_handle) != 0)
+                        {
+                            result = GlobusGFSErrorGeneric(
+                                "Sharing state dir has invalid permissions.");
+                            goto share_create_error;
+                        }                            
+
                         sharingfd = 
                             open(share_file, O_WRONLY | O_CREAT, S_IRUSR);
                         if(sharingfd < 0)
@@ -5355,14 +5547,24 @@ globus_i_gfs_data_request_command(
                         {
                             char * tmp_content;
                             char * tmp_enc;
-                            
+#ifdef WIN32                            
+                            if(isalpha(share_path[0]) && share_path[1] == ':')
+                            {
+                                share_path[1] = share_path[0];
+                                share_path[0] = '/';
+                                if(share_path[2] == '/' && share_path[3] == 0)
+                                {
+                                    share_path[2] = 0;
+                                }
+                            }
+#endif
                             tmp_enc = globus_url_string_hex_encode(share_path, "\"");
                             
                             tmp_content = globus_common_create_string( 
                                 "#\n# This file is required in order to enable GridFTP file sharing.\n"
                                 "# If you remove this file, file sharing will no longer work.\n#\n\n"
                                 "share_path \"%s\"\n", tmp_enc);
-                                rc = write(sharingfd, tmp_content, strlen(tmp_content));
+                            rc = write(sharingfd, tmp_content, strlen(tmp_content));
                             if(rc < 0)
                             {
                                 result = GlobusGFSErrorSystemError(
@@ -5505,6 +5707,13 @@ share_delete_error:
                         mkdir(tmp_dir, 0700);
                         free(tmp_dir);
                     }
+                   
+                    if(globus_l_gfs_data_check_sharing_perms(op->session_handle) != 0)
+                    {
+                        result = GlobusGFSErrorGeneric(
+                            "Sharing state dir has invalid permissions.");
+                        goto share_test_error;
+                    }                            
                     
                     if(access(op->session_handle->sharing_state_dir, W_OK) == 0)
                     {
@@ -6257,34 +6466,6 @@ error_data:
 error_alloc:
     GlobusGFSDebugExitWithError();
     return result;
-}
-
-static
-void
-globus_l_gfs_data_fc_kickout(
-    void *                              user_arg)
-{
-    globus_l_gfs_data_operation_t *     op;
-    globus_result_t                     result;
-    GlobusGFSName(globus_l_gfs_data_fc_kickout);
-    GlobusGFSDebugEnter();
-
-    op = (globus_l_gfs_data_operation_t *) user_arg;
-
-    GlobusGFSDebugInfo("globus_ftp_control_data_force_close");
-    result = globus_ftp_control_data_force_close(
-        &op->data_handle->data_channel,
-        globus_l_gfs_data_abort_fc_cb,
-        op);
-    if(result != GLOBUS_SUCCESS)
-    {
-        GlobusGFSDebugInfo("force_close failed");
-        globus_callback_register_oneshot(
-            NULL,
-            NULL,
-            globus_l_gfs_data_abort_kickout,
-            op);
-    }
 }
 
 static
@@ -9000,7 +9181,6 @@ globus_l_gfs_data_end_transfer_kickout(
         int                                 status_code;
         char *                              reason_phrase;
         char *                              err_str;
-        char *                              tmp_err_str;
         char *                              header_str;
         globus_hashtable_t                  header_table = NULL;
         globus_bool_t                       eof = 0;
@@ -9025,7 +9205,6 @@ globus_l_gfs_data_end_transfer_kickout(
         eof = globus_xio_error_is_eof(result);
         if(eof)
         {
-            globus_object_free(globus_error_get(result));
             result = GLOBUS_SUCCESS;
         }
         if(result != GLOBUS_SUCCESS)
@@ -9068,7 +9247,6 @@ globus_l_gfs_data_end_transfer_kickout(
                 eof = globus_xio_error_is_eof(result);
                 if(eof)
                 {
-                    globus_object_free(globus_error_get(result));
                     result = GLOBUS_SUCCESS;
                 }
                 if(result != GLOBUS_SUCCESS)
@@ -9126,7 +9304,6 @@ globus_l_gfs_data_end_transfer_kickout(
                 eof = globus_xio_error_is_eof(result);
                 if(eof)
                 {
-                    globus_object_free(globus_error_get(result));
                     result = GLOBUS_SUCCESS;
                 }
                 if(result != GLOBUS_SUCCESS)
@@ -10284,7 +10461,7 @@ globus_l_gfs_data_start_abort(
                 globus_callback_register_oneshot(
                     NULL,
                     NULL,
-                    globus_l_gfs_data_fc_kickout,
+                    globus_l_gfs_data_abort_kickout,
                     op);
             }
             op->state = GLOBUS_L_GFS_DATA_ABORT_CLOSING;
@@ -11967,9 +12144,16 @@ globus_gridftp_server_get_optimal_concurrency(
     GlobusGFSName(globus_gridftp_server_get_optimal_concurrency);
     GlobusGFSDebugEnter();
 
-    if(!op->writing)
+    if(op->data_handle->http_handle)
     {
-        if(!op->data_handle->http_handle)
+        *count = 1;
+        return;
+    }
+    if(!op->writing)
+    {    
+        globus_mutex_lock(&op->session_handle->mutex);
+        if(op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_INUSE && 
+            op->data_handle->is_mine)
         {
             unsigned int num_streams;
             /* query number of currently connected streams and update
@@ -11982,16 +12166,15 @@ globus_gridftp_server_get_optimal_concurrency(
         }
         else
         {
-            *count = 1;
-            return;
+            op->data_handle->info.nstreams = 1;
         }
+        globus_mutex_unlock(&op->session_handle->mutex);
 
         if(op->data_handle->info.nstreams == 0)
         {
             op->data_handle->info.nstreams = 1;
         }
     }
-
     *count = op->data_handle->info.nstreams * op->stripe_count * 2;
 
     GlobusGFSDebugExit();
@@ -12852,9 +13035,7 @@ globus_i_gfs_data_http_read_cb(
     
     eof = globus_xio_error_is_eof(result);
     if(eof)
-    {
-        globus_object_free(globus_error_get(result));
-        
+    {        
         if(bounce_info->op->bytes_transferred < 
             bounce_info->op->data_handle->http_length)
         {
@@ -13482,7 +13663,8 @@ globus_i_gfs_data_http_get(
     char *                              path,
     char *                              request,
     globus_off_t                        offset,
-    globus_off_t                        length)
+    globus_off_t                        length,
+    globus_bool_t                       do_retry)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     char *                              err_str;
@@ -13504,6 +13686,7 @@ globus_i_gfs_data_http_get(
     char *                              method;
     int                                 http_ver;
     globus_bool_t                       eof;
+    globus_bool_t                       retry = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_data_http_get);
     GlobusGFSDebugEnter();
     
@@ -13558,36 +13741,39 @@ globus_i_gfs_data_http_get(
             goto response_exit;
         }
     }
-        
-    result = globus_xio_attr_cntl(
-            attr,
-            op->session_handle->http_driver,
-            GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_HEADER,
-            "Transfer-Encoding",
-            "identity");
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto response_exit;
-    }
-/*
-    result = globus_xio_attr_cntl(
-            attr,
-            op->session_handle->http_driver,
-            GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_HEADER,
-            "Connection",
-            "keep-alive");
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto response_exit;
-    }
-*/
+
     result = globus_xio_open(handle, url, attr);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("HTTP connection", result);
-        goto response_exit;
+        retry = do_retry && (globus_error_get_type(globus_error_peek(result)) ==
+                    GLOBUS_XIO_HTTP_ERROR_PERSISTENT_CONNECTION_DROPPED);
+            
+        if(!retry)
+        {        
+            result = GlobusGFSErrorWrapFailed("HTTP connection", result);
+            goto response_exit;
+        }
     }
+    if(retry)
+    {
+        op->session_handle->http_handle = NULL;
+        globus_xio_driver_unload(op->session_handle->http_driver);
+        op->session_handle->http_driver = NULL;
+        if(op->session_handle->https_stack)
+        {
+            globus_xio_stack_destroy(op->session_handle->https_stack);
+            op->session_handle->https_stack = NULL;
+        }
+        if(op->session_handle->http_stack)
+        {
+            globus_xio_stack_destroy(op->session_handle->http_stack);
+            op->session_handle->http_stack = NULL;
+        }
 
+        return globus_i_gfs_data_http_get(
+            op, path, request, offset, length, GLOBUS_FALSE);
+    }
+        
     /* read response, no data */
     result = globus_xio_read(
             handle,
@@ -13599,9 +13785,35 @@ globus_i_gfs_data_http_get(
     eof = globus_xio_error_is_eof(result);
     if(eof)
     {
-        globus_object_free(globus_error_get(result));
-        result = GLOBUS_SUCCESS;
+        retry = do_retry && (globus_error_get_type(globus_error_peek(result)) ==
+                    GLOBUS_XIO_HTTP_ERROR_PERSISTENT_CONNECTION_DROPPED);
+        if(!retry)
+        {
+            result = GLOBUS_SUCCESS;
+        }
     }
+    
+    if(retry)
+    {
+        globus_xio_close(op->session_handle->http_handle, NULL);
+        op->session_handle->http_handle = NULL;
+        globus_xio_driver_unload(op->session_handle->http_driver);
+        op->session_handle->http_driver = NULL;
+        if(op->session_handle->https_stack)
+        {
+            globus_xio_stack_destroy(op->session_handle->https_stack);
+            op->session_handle->https_stack = NULL;
+        }
+        if(op->session_handle->http_stack)
+        {
+            globus_xio_stack_destroy(op->session_handle->http_stack);
+            op->session_handle->http_stack = NULL;
+        }
+
+        return globus_i_gfs_data_http_get(
+            op, path, request, offset, length, GLOBUS_FALSE);
+    }
+    
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("Before getting response, HTTP connection", result);
@@ -13645,7 +13857,6 @@ globus_i_gfs_data_http_get(
             eof = globus_xio_error_is_eof(result);
             if(eof)
             {
-                globus_object_free(globus_error_get(result));
                 result = GLOBUS_SUCCESS;
             }
             if(result != GLOBUS_SUCCESS)
@@ -13690,8 +13901,7 @@ globus_i_gfs_data_http_get(
     }        
     
     
-    
-    
+    /* set up internal file recv request */    
     recv_info = (globus_gfs_transfer_info_t *)
         globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
     recv_info->alloc_size = length;
@@ -13754,7 +13964,8 @@ globus_i_gfs_data_http_put(
     char *                              path,
     char *                              request,
     globus_off_t                        offset,
-    globus_off_t                        length)
+    globus_off_t                        length,
+    globus_bool_t                       do_retry)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     char *                              err_str;
@@ -13763,6 +13974,8 @@ globus_i_gfs_data_http_put(
     globus_xio_http_header_t *          headers;
     globus_xio_data_descriptor_t        descriptor;
     globus_xio_handle_t                 handle;
+    globus_byte_t                       buffer[1];
+    globus_bool_t                       eof;
     int                                 status_code;
     char *                              reason_phrase;
     globus_xio_attr_t                   attr;
@@ -13774,7 +13987,7 @@ globus_i_gfs_data_http_put(
     globus_hashtable_t                  header_table = NULL;
     char *                              method;
     int                                 http_ver;
-    globus_l_gfs_data_http_bounce_t *   bounce;
+    globus_bool_t                       retry = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_data_http_put);
     GlobusGFSDebugEnter();
     
@@ -13829,6 +14042,8 @@ globus_i_gfs_data_http_put(
             goto response_exit;
         }
     }
+
+
     result = globus_xio_attr_cntl(
             attr,
             op->session_handle->http_driver,
@@ -13840,26 +14055,153 @@ globus_i_gfs_data_http_put(
         goto response_exit;
     }
 
-/*
-    result = globus_xio_attr_cntl(
-            attr,
-            op->session_handle->http_driver,
-            GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_HEADER,
-            "Connection",
-            "keep-alive");
-    if(result != GLOBUS_SUCCESS)
+    /* expect spec is unclear on content-length=0, makes 0 byte puts even
+     * more unstable than they already are */
+    if(length > 0)
     {
-        goto response_exit;
+        result = globus_xio_attr_cntl(
+                attr,
+                op->session_handle->http_driver,
+                GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_HEADER,
+                "Expect",
+                "100-continue");
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto response_exit;
+        }
     }
-*/
+    
     result = globus_xio_open(handle, url, attr);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("HTTP connection", result);
         goto response_exit;
     }
-    
 
+    if(length > 0)
+    {
+        /* read response, no data */
+        result = globus_xio_read(
+                handle,
+                buffer,
+                0,
+                0,
+                NULL,
+                descriptor);
+        eof = globus_xio_error_is_eof(result);
+        if(eof)
+        {
+            retry = do_retry && (globus_error_get_type(globus_error_peek(result)) ==
+                        GLOBUS_XIO_HTTP_ERROR_PERSISTENT_CONNECTION_DROPPED);
+            if(!retry)
+            {
+                result = GLOBUS_SUCCESS;
+            }
+        }
+        
+        if(retry)
+        {
+            globus_xio_close(op->session_handle->http_handle, NULL);
+            op->session_handle->http_handle = NULL;
+            globus_xio_driver_unload(op->session_handle->http_driver);
+            op->session_handle->http_driver = NULL;
+            if(op->session_handle->https_stack)
+            {
+                globus_xio_stack_destroy(op->session_handle->https_stack);
+                op->session_handle->https_stack = NULL;
+            }
+            if(op->session_handle->http_stack)
+            {
+                globus_xio_stack_destroy(op->session_handle->http_stack);
+                op->session_handle->http_stack = NULL;
+            }
+            return globus_i_gfs_data_http_put(
+                op, path, request, offset, length, GLOBUS_FALSE);
+        }
+    
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed("Before getting response, HTTP connection", result);
+            goto open_exit;
+        }
+
+        /* check response */
+        result = globus_xio_data_descriptor_cntl(
+                descriptor,
+                op->session_handle->http_driver,
+                GLOBUS_XIO_HTTP_GET_RESPONSE,
+                &status_code,
+                &reason_phrase,
+                NULL,
+                &header_table);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed("HTTP PUT attempt", result);
+            goto open_exit;
+        }
+        else if(status_code > 299)
+        {
+            globus_byte_t *                 body_buffer;
+            globus_size_t                   buflen = 64*1024;
+            globus_size_t                   body_nbytes;
+            globus_size_t                   total_nbytes = 0;
+            globus_bool_t                   eof;
+            globus_size_t                   waitfor = 0;
+    
+            body_buffer = malloc(buflen+1);
+            do
+            {
+                body_nbytes = 0;
+                result = globus_xio_read(
+                    handle,
+                    body_buffer+total_nbytes,
+                    buflen-total_nbytes,
+                    waitfor,
+                    &body_nbytes,
+                    NULL);
+                eof = globus_xio_error_is_eof(result);
+                if(eof)
+                {
+                    result = GLOBUS_SUCCESS;
+                }
+                if(result != GLOBUS_SUCCESS)
+                {
+                    result = GLOBUS_SUCCESS;
+                    eof = GLOBUS_TRUE;
+                }
+                total_nbytes += body_nbytes;
+    
+                if(body_nbytes == 0 || total_nbytes == buflen)
+                {
+                    eof = GLOBUS_TRUE;
+                }
+                else
+                {
+                    waitfor = GLOBUS_MIN(1024, buflen-total_nbytes);
+                }           
+            } while(!eof);
+            
+            body_buffer[total_nbytes] = '\0';
+            globus_i_gfs_data_http_print_response(
+                status_code, &header_table, body_buffer, &header_str);
+    
+            err_str = globus_common_create_string(
+                "HTTP PUT failed with \"%03d %s\"\n%s",
+                status_code,
+                reason_phrase,
+                header_str);
+    
+            result = GlobusGFSErrorGeneric(err_str);
+                
+            globus_free(err_str);
+            globus_free(header_str);
+            globus_free(body_buffer);
+    
+            goto open_exit;
+        }
+    }
+
+    /* set up internal file send request */
     send_info = (globus_gfs_transfer_info_t *)
         globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
     globus_range_list_init(&send_info->range_list);
@@ -13906,7 +14248,8 @@ globus_i_gfs_data_http_put(
    
     
     return GLOBUS_SUCCESS;
-                
+
+open_exit:          
 response_exit:
     GlobusGFSDebugExit();
     return result;

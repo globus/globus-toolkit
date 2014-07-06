@@ -1,3 +1,9 @@
+globus-gram-job-manager-slurm (2.3-3+gt6.@distro@) @distro@; urgency=low
+
+  * Skip check for .pc and .la files
+
+ -- Globus Toolkit <support@globus.org>  Wed, 25 June 2014 13:28:09 -0400
+
 globus-gram-job-manager-slurm (2.3-2+gt6.@distro@) @distro@; urgency=low
 
   * Rename dbg packages

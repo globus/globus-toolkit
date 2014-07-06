@@ -85,7 +85,6 @@ typedef struct globus_i_gfs_acl_handle_s
     globus_gfs_acl_action_t             auth_action;
     globus_gfs_acl_object_desc_t        auth_object;
     globus_gfs_acl_info_t               acl_info;
-    globus_mutex_t                      mutex;
 } globus_i_gfs_acl_handle_t;
 
 

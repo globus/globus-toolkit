@@ -75,12 +75,6 @@
 #define PATH_MAX 4096
 #endif
 
-#ifdef TARGET_ARCH_WIN32
-#define GFS_THREAD_MODEL "windows"
-#else
-#define GFS_THREAD_MODEL "pthread"
-#endif
-
 typedef enum
 {
     GLOBUS_L_GFS_CONFIG_BOOL,
@@ -225,6 +219,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Follows normal path restriction semantics.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"allow_root", "allow_root", NULL, "allow-root", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow clients to be mapped to the root account.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"allow_disabled_login", "allow_disabled_login", NULL, "allow-disabled-login", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Do not check if a user's system account is disabled before allowing login.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"pw_file", "pw_file", NULL, "password-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Enable clear text access and authenticate users against this /etc/passwd formatted file.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"connections_max", "connections_max", NULL, "connections-max", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
@@ -550,7 +546,7 @@ static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_optio
 
 static globus_hashtable_t               option_table;
 static int                              globus_l_gfs_num_threads = -1;
-
+static globus_bool_t                    globus_l_gfs_port_range = GLOBUS_FALSE;
 
 /* for string options, setting with an int_val of 1 will free the old one */ 
 static
@@ -960,8 +956,36 @@ globus_l_gfs_config_load_envs_from_file(
                     if(globus_l_gfs_num_threads > 0)
                     {
                         setenv("GLOBUS_CALLBACK_POLLING_THREADS", valuebuf, 1);
-                        globus_thread_set_model(GFS_THREAD_MODEL);
+                        globus_thread_set_model("pthread");
                     }
+                }
+            }
+            continue;
+        }
+        /* parse port_range option to apply it before xio activates */
+        if(!globus_l_gfs_port_range && *p == 'p' && 
+            (rc = sscanf(p, "%s", optionbuf)) == 1)
+        {
+            if(!strcmp(optionbuf, "port_range"))
+            {
+                p = p + strlen(optionbuf);
+                       
+                while(*p && isspace(*p))
+                {
+                    p++;
+                }
+                if(*p == '"')
+                {
+                    rc = sscanf(p, "\"%[^\"]\"", valuebuf);
+                }
+                else
+                {
+                    rc = sscanf(p, "%s", valuebuf);
+                }  
+                if(rc == 1)
+                {
+                    setenv("GLOBUS_TCP_PORT_RANGE", valuebuf, 1);
+                    setenv("GLOBUS_UDP_PORT_RANGE", valuebuf, 1);
                 }
             }
             continue;
@@ -2164,14 +2188,16 @@ globus_l_gfs_config_adjust_path(
     GlobusGFSName(globus_l_gfs_config_adjust_path);
     GlobusGFSDebugEnter();
 
+#ifndef WIN32
     val = globus_i_gfs_config_string(opt_name);
-    
+
     if(val && *val != '/' && *val != '$')
     {
         base_path = globus_i_gfs_config_string("config_base_path");
         new_val = globus_common_create_string("%s/%s", base_path, val);
         globus_l_gfs_config_set(opt_name, free_old, new_val);
     }
+#endif
 
     GlobusGFSDebugExit();
 }
@@ -2398,13 +2424,6 @@ globus_l_gfs_config_misc()
     {
         rc = globus_l_config_loadfile(value, &data);
         globus_l_gfs_config_set("login_msg", 0, data);                
-    }
-
-
-    if((value = globus_i_gfs_config_string("port_range")) != GLOBUS_NULL)
-    {
-        globus_libc_setenv("GLOBUS_TCP_PORT_RANGE", value, 1);
-        globus_libc_setenv("GLOBUS_UDP_PORT_RANGE", value, 1);
     }
 
     value = globus_i_gfs_config_string("load_dsi_module");
@@ -2777,11 +2796,15 @@ globus_i_gfs_config_init_envs(
             if(globus_l_gfs_num_threads > 0)
             {
                 setenv("GLOBUS_CALLBACK_POLLING_THREADS", 
-                    strdup(tmp_argv[arg_num + 1]), 1);
-                globus_thread_set_model(GFS_THREAD_MODEL);
+                    tmp_argv[arg_num + 1], 1);
+                globus_thread_set_model("pthread");
             }
         }
-
+        else if(!strcmp(argp, "port-range") && tmp_argv[arg_num + 1])
+        {
+            /* save arg and set after file is loaded */
+            globus_l_gfs_port_range = tmp_argv[arg_num + 1];
+        }
     }
     
     if(base_str)
@@ -2821,6 +2844,12 @@ globus_i_gfs_config_init_envs(
     else if(!cmdline_config)
     {
         rc = globus_l_gfs_config_load_envs_from_file(global_config_file);
+    }
+    
+    if(globus_l_gfs_port_range)
+    {
+        setenv("GLOBUS_TCP_PORT_RANGE", globus_l_gfs_port_range, 1);
+        setenv("GLOBUS_UDP_PORT_RANGE", globus_l_gfs_port_range, 1);
     }
     
     if(local_config_file != NULL)

@@ -31,20 +31,6 @@ globus_l_xio_http_client_write_request_callback(
     void *                              user_arg);
 
 static
-void
-globus_l_xio_http_client_read_response_callback(
-    globus_xio_operation_t              op,
-    globus_result_t                     result,
-    globus_size_t                       nbytes,
-    void *                              user_arg);
-
-static
-globus_result_t
-globus_l_xio_http_client_parse_response(
-    globus_i_xio_http_handle_t *        http_handle,
-    globus_bool_t *                     done);
-
-static
 globus_result_t
 globus_l_xio_http_cleanup_cancel(
     globus_i_xio_http_handle_t *        http_handle);
@@ -677,7 +663,7 @@ error_exit:
  *
  * @return void
  */
-static
+
 void
 globus_l_xio_http_client_read_response_callback(
     globus_xio_operation_t              op,
@@ -698,7 +684,7 @@ globus_l_xio_http_client_read_response_callback(
     globus_mutex_lock(&http_handle->mutex);
     if (result != GLOBUS_SUCCESS)
     {
-        if (!http_handle->reopen_in_progress && globus_xio_error_is_eof(result))
+        if (globus_xio_error_is_eof(result) && nbytes > 0 )
         {
             eof = GLOBUS_TRUE;
             result = GLOBUS_SUCCESS;
@@ -723,11 +709,24 @@ globus_l_xio_http_client_read_response_callback(
             }
             if (http_handle->reopen_in_progress)
             {
-                response_error = GlobusXIOHTTPErrorObjPersistentConnectionDropped(response_error);
+                globus_object_t * err;
+                err = GlobusXIOHTTPErrorObjPersistentConnectionDropped(response_error);
+                response_error = err;
             }
-            http_handle->pending_error = response_error;
+            http_handle->pending_error = globus_object_copy(response_error);
             http_handle->parse_state = GLOBUS_XIO_HTTP_EOF;
             http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
+            
+            /* Set metadata on this read to contain the response info */
+            descriptor = globus_xio_operation_get_data_descriptor(op, GLOBUS_TRUE);
+            if (descriptor != NULL)
+            {
+                globus_i_xio_http_response_destroy(&descriptor->response);
+                result = globus_i_xio_http_response_copy(
+                        &descriptor->response,
+                        &http_handle->response_info);
+            }
+    
             /* don't go to error exit yet because we may need to clean up
              * the cancel info
              */
@@ -737,7 +736,7 @@ globus_l_xio_http_client_read_response_callback(
             }
         }
     }
-
+    http_handle->reopen_in_progress = GLOBUS_FALSE;
     http_handle->read_buffer_valid += nbytes;
 
     /* Parsed response line and headers (but don't bother if it was canceled. */
@@ -824,9 +823,13 @@ globus_l_xio_http_client_read_response_callback(
         }
     }
 
-    globus_xio_driver_operation_destroy(http_handle->response_read_operation);
-    http_handle->response_read_operation = NULL;
-
+    if(http_handle->response_info.status_code > 199 || 
+        http_handle->response_info.status_code < 100)
+    {
+        globus_xio_driver_operation_destroy(http_handle->response_read_operation);
+        http_handle->response_read_operation = NULL;
+    }
+        
     globus_mutex_unlock(&http_handle->mutex);
 
     if (finish_read)
@@ -955,7 +958,6 @@ error_exit:
  * @retval GLOBUS_XIO_ERROR_MEMORY
  *     Parsing failed because of memory constraints.
  */
-static
 globus_result_t
 globus_l_xio_http_client_parse_response(
     globus_i_xio_http_handle_t *        http_handle,
@@ -1021,7 +1023,7 @@ globus_l_xio_http_client_parse_response(
 
             goto error_exit;
         }
-
+       
         current_offset += parsed;
 
         /* Reason Phrase */
@@ -1046,7 +1048,14 @@ globus_l_xio_http_client_parse_response(
         http_handle->parse_state = GLOBUS_XIO_HTTP_HEADERS;
     }
 
-    return globus_i_xio_http_header_parse(http_handle, done);
+    result = globus_i_xio_http_header_parse(http_handle, done);
+
+    if(http_handle->response_info.status_code == 100)
+    {
+        http_handle->parse_state = GLOBUS_XIO_HTTP_STATUS_LINE;
+    }
+    
+    return result;
 
 error_exit:
     parsed = current_offset - ((char *) http_handle->read_buffer.iov_base

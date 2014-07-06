@@ -40,7 +40,7 @@ Description: GSI OpenSSH Clients
 Package: gsi-openssh-server
 Section: net
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: gsi-openssh (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: GSI OpenSSH Server
  OpenSSH is a free version of SSH (Secure SHell), a program for logging
  into and executing commands on a remote machine. This package contains

@@ -361,6 +361,7 @@ globus_l_gfs_get_full_path(
     }
     
 #ifdef WIN32
+#define WIN_CHARS_NOT_ALLOWED ":*?\"<>|"
     tmp_path = in_path;
     while(*tmp_path)
     {
@@ -370,6 +371,13 @@ globus_l_gfs_get_full_path(
         }
         tmp_path++;
     }
+    if(strcspn(in_path, WIN_CHARS_NOT_ALLOWED) != strlen(in_path))
+    {
+        result = GlobusGFSErrorGeneric(
+            "A filename cannot contain any of the following characters: "
+            "\\ / : * ? \" < > |");
+            goto done;  
+    }          
 #endif
  
     if(*in_path == '/')
