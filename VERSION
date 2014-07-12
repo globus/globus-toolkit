@@ -5,7 +5,10 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v6.0 Xxx 2014
-  - handle very long usernames (avoiding ENAMETOOLONG)
+  - handle very long usernames (avoiding ENAMETOOLONG) by creating
+    hashed filename in MyProxy repository when username or credname is
+    longer than 80 characters - can be overridden by
+    MYPROXY_CREDS_MAX_NAMELEN environment variable
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7275)
   - use unbuffered I/O on stdin read of passwords
     (http://jira.globus.org/browse/GT-387)

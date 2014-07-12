@@ -18,6 +18,7 @@
  */
 
 static char *storage_dir = NULL;
+static int max_namelen = -1;
 
 /**********************************************************************
  *
@@ -256,7 +257,15 @@ check_storage_directory()
         verror_put_string("permissions on %s must be 0700", storage_dir);
         goto error;
     }
-    
+
+    if (max_namelen == -1) {
+        if (getenv("MYPROXY_CREDS_MAX_NAMELEN")) {
+            max_namelen = atoi(getenv("MYPROXY_CREDS_MAX_NAMELEN"));
+        } else {
+            max_namelen = MYPROXY_CREDS_MAX_NAMELEN;
+        }
+    }
+
     /* Success */
     return_code = 0;
     
@@ -325,7 +334,7 @@ get_storage_locations(const char *username,
         goto error;
     }
 
-    if (strlen(username) + 10 + strlen(storage_dir) > _POSIX_PATH_MAX) {
+    if (strlen(username) > max_namelen) {
         long_username = 1;
     }
 
@@ -375,8 +384,7 @@ get_storage_locations(const char *username,
 
     } else {
 
-        if (strlen(username) +
-            strlen(credname) + 10 + strlen(storage_dir) > _POSIX_PATH_MAX) {
+        if (strlen(credname) > max_namelen) {
             long_credname = 1;
         }
 
