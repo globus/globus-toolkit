@@ -91,6 +91,7 @@ include_HEADERS= \
 	myproxy_server.h \
 	verror.h
 
+ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = $(GLOBUS_CFLAGS)
 LDADD = $(GLOBUS_LIBS)
 
@@ -221,7 +222,7 @@ EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
                myproxy-cert-checker myproxy-certreq-checker \
                myproxy.init myproxy.sysconfig \
                README.Fedora \
-               myproxy.spec
+               myproxy.spec pkg_data_src.gpt
 
 myproxy-admin-addservice: myproxy-admin-adduser
 	$(LN_S) myproxy-admin-adduser myproxy-admin-addservice
