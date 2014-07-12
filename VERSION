@@ -19,6 +19,7 @@ v6.0 Xxx 2014
   - create files in certificate_out_dir with 0600 mode
   - check for out of bounds lifetime values (integer overflows)
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7263)
+  - remove Pubcookie support in myproxy-server
 
 v5.9 Jul 2012
   - fix a memory error in myproxy-logon --voms

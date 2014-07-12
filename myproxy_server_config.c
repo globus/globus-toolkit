@@ -109,8 +109,6 @@ static struct config_directives our_conf[] = {
 	{"ca_ldap_uid_attribute", 1, 1},
 	{"ca_ldap_dn_attribute", 1, 1},
 	{"ca_ldap_start_tls", 1, 1},
-	{"pubcookie_granting_cert", 1, 1},
-	{"pubcookie_app_server_key", 1, 1},
 	{"accepted_credentials_mapfile", 1, 1},
 	{"accepted_credentials_mapapp", 1, 1},
 	{"check_multiple_credentials", 1, 1},
@@ -278,8 +276,6 @@ clear_server_context(myproxy_server_context_t *context)
     free_ptr(&context->ca_ldap_uid_attribute);
     free_ptr(&context->ca_ldap_dn_attribute);
     context->ca_ldap_start_tls = 0;
-    free_ptr(&context->pubcookie_cert);
-    free_ptr(&context->pubcookie_key);
     free_ptr(&context->accepted_credentials_mapfile);
     free_ptr(&context->accepted_credentials_mapapp);
     context->check_multiple_credentials = 0;
@@ -625,14 +621,6 @@ line_parse_callback(void *context_arg,
             (strcmp(tokens[1], "1"))) {
             context->ca_ldap_start_tls = 1;
         }
-    }
-
-    /* pubcookie stuff */
-    else if (strcmp(directive, "pubcookie_granting_cert") == 0) {
-	context->pubcookie_cert = strdup(tokens[1]);
-    }
-    else if (strcmp(directive, "pubcookie_app_server_key") == 0) {
-	context->pubcookie_key = strdup(tokens[1]);
     }
 
     /* added by Terry Fleury to support web portal security */
@@ -1175,16 +1163,6 @@ check_config(myproxy_server_context_t *context)
 	    verror_put_errno(errno);
 	    rval = -1;
     }
-    }
-    if (context->pubcookie_cert) {
-	if (access(context->pubcookie_cert, R_OK) < 0) {
-	    verror_put_string("pubcookie_cert %s unreadable",
-			      context->pubcookie_cert);
-	    verror_put_errno(errno);
-	    rval = -1;
-	} else {
-	    myproxy_log("Pubcookie support enabled");
-	}
     }
     if (context->accepted_credentials_mapfile) {
         if (access(context->accepted_credentials_mapfile, R_OK) < 0) {

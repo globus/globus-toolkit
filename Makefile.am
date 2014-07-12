@@ -49,7 +49,6 @@ LibSources= \
 	plugin_common.c \
 	plugin_common.h \
 	port_getopt.h \
-	pubcookie.h \
 	safe_id_range_list.c \
 	safe_id_range_list.h \
 	safe_is_path_trusted.c \
@@ -199,7 +198,7 @@ myproxy_admin_change_pass_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la
 
 pkgdata_DATA = README INSTALL myproxy-server.config \
                LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
-               LICENSE.safefile LICENSE.pubcookie LICENSE.globus \
+               LICENSE.safefile LICENSE.globus \
                VERSION PROTOCOL \
                etc.services.modifications etc.inetd.conf.modifications \
                myproxy.cron myproxy-crl.cron myproxy-get-trustroots.cron \
@@ -210,7 +209,7 @@ pkgdata_DATA = README INSTALL myproxy-server.config \
                myproxy-cert-checker myproxy-certreq-checker
 
 EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
-               LICENSE.safefile LICENSE.pubcookie LICENSE.globus \
+               LICENSE.safefile LICENSE.globus \
                VERSION PROTOCOL \
                myproxy-server.config \
                etc.services.modifications etc.inetd.conf.modifications \
