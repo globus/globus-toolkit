@@ -16,19 +16,6 @@ command (replacing gcc32dbg with the flavor of your choice):
 You'll need GSI user credentials to run the MyProxy clients and host
 credentials to run the myproxy-server.
 
-Second, you need special versions of the GNU autotools for working
-with GPT:
-
-  $ cvs -d \
-    :pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages \
-    co autotools
-  $ cd autotools
-  $ ./install-autotools $GLOBUS_LOCATION
-
-This will install special versions of autoheader, automake, autoconf,
-etc., into $GLOBUS_LOCATION/bin.  These special autotools must be in
-your $PATH when you run the commands below.
-
 To build in a CVS workspace (replacing gcc32dbg with the flavor of
 your Globus Toolkit installation):
 $ ./bootstrap
@@ -59,11 +46,6 @@ $ make dist
      configure.in: update AC_INIT
 
    Commit your changes to CVS.
-
-2. Make sure you're using the special autotools in $GLOBUS_LOCATION:
-
-    $ which autoconf
-    $GLOBUS_LOCATION/bin/autoconf
 
 3. Build a source package.
 
