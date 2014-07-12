@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2011-09-05" "MyProxy" "MyProxy"
+.TH myproxy-server.config 5 "2014-07-12" "MyProxy" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -882,16 +882,11 @@ be reported by specifying a different tag set. The last 3 tags I, u and U above 
 more meant for a local collector that a site might like to deploy since they could be
 construed as private information. The special string "all" denotes all tags.
 
-By default, Usage Metrics reporting is sent to "usage-stats.cilogon.org:4810".
+By default, Usage Metrics reporting is disabled.
 This can be made explicit by specifying "default" (all by itself) for the target
 specification as in:
 
 usage_stats_target "default"
-
-If
-.B usage_stats_target
-is not specified, a comma-separated list of targets (without any tags specified)
-if specified in the environment variable GLOBUS_USAGE_TARGETS will be used.
 
 .SH REGULAR EXPRESSIONS
 For matching distinguished names (DNs) in access control policies,

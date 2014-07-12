@@ -29,8 +29,6 @@
 struct myproxy_socket_attrs_s;
 struct myproxy_server_context_s;
 
-#define CILOGON_COLLECTOR "usage-stats.cilogon.org:4810"
-
 globus_result_t
 myproxy_usage_stats_init(struct myproxy_server_context_s *context);
 

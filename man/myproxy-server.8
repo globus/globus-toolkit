@@ -1,4 +1,4 @@
-.TH myproxy-server 8 "2009-12-1" "MyProxy" "MyProxy"
+.TH myproxy-server 8 "2014-07-12" "MyProxy" "MyProxy"
 .SH NAME
 myproxy-server \- store credentials in an online repository
 .SH SYNOPSIS
@@ -100,14 +100,6 @@ file and the credential storage directory.
 .B GLOBUS_USAGE_OPTOUT
 Setting this environment variable to "1" will disable the reporting
 of usage metrics.
-.TP
-.B GLOBUS_USAGE_TARGETS
-If usage_stats_target is not specified in
-.BR myproxy-server.config (5),
-a comma-separated list of targets (without any tags specified) if
-specified in the environment variable
-.B GLOBUS_USAGE_TARGETS
-will be used.
 .TP
 .B LD_LIBRARY_PATH
 The MyProxy server is typically linked dynamically with Globus

@@ -70,7 +70,9 @@ myproxy_usage_stats_init(myproxy_server_context_t *context)
     globus_list_t *                     list = NULL;
     myproxy_usage_ent_t *               usage_ent = NULL;
 
-    if (context->disable_usage_stats)
+    if (context->disable_usage_stats ||
+        !context->usage_stats_target ||
+        !strcasecmp(context->usage_stats_target, "default"))
 	return GLOBUS_SUCCESS;
 
     result = globus_module_activate(GLOBUS_USAGE_MODULE);
@@ -80,11 +82,7 @@ myproxy_usage_stats_init(myproxy_server_context_t *context)
            return result;
     }
 
-    if (!context->usage_stats_target ||
-        !strcasecmp(context->usage_stats_target, "default"))
-        target_str = strdup(CILOGON_COLLECTOR);
-    else
-        target_str = strdup(context->usage_stats_target);
+    target_str = strdup(context->usage_stats_target);
 
     if (target_str == NULL)
     {
