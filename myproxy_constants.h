@@ -22,7 +22,9 @@
 
 #define MYPROXY_DEFAULT_CLOCK_SKEW     300     /* 5 minutes */
 
-#define MYPROXY_CREDS_MAX_NAMELEN      80
+#define MYPROXY_CREDS_MAX_NAMELEN      80      /* longer names are
+                                                  hashed when used in
+                                                  filenames */
 
 /* myproxy client protocol information */
 /* beware no string below may be a suffix of another */
