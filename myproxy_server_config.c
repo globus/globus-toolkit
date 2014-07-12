@@ -252,7 +252,7 @@ clear_server_context(myproxy_server_context_t *context)
     free_ptr(&context->certificate_issuer_program);
     free_ptr(&context->certificate_issuer_cert);
     free_ptr(&context->certificate_issuer_key);
-    context->certificate_hashalg = EVP_sha1();
+    context->certificate_hashalg = EVP_sha256();
     free_ptr(&context->certificate_request_checker);
     free_ptr(&context->certificate_issuer_checker);
     free_ptr(&context->certificate_issuer_key_passphrase);

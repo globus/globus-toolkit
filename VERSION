@@ -8,6 +8,7 @@ v6.0 Xxx 2014
   - disable usage stats collection by default
   - make myproxy-server's credential repository storage directory
     optional and run in "CA only" mode if no valid storage directory
+  - update default for certificate_issuer_hashalg from sha1 to sha256  
   - handle very long usernames (avoiding ENAMETOOLONG) by creating
     hashed filename in MyProxy repository when username or credname is
     longer than 80 characters - can be overridden by
