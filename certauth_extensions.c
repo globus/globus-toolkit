@@ -1236,6 +1236,13 @@ handle_certificate(unsigned char            *input_buffer,
 
 }
 
+int is_certificate_authority_configured(myproxy_server_context_t
+                                        *context) {
+    return (context->certificate_issuer_program ||
+            context->certificate_issuer_cert);
+}
+
+
 void get_certificate_authority(myproxy_socket_attrs_t   *server_attrs, 
 			       myproxy_creds_t          *creds,
 			       myproxy_request_t        *client_request,

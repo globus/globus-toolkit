@@ -168,6 +168,7 @@ void check_and_store_credentials(const char              path[],
 static int debug = 0;
 static int readconfig = 1;      /* do we need to read config file? */
 static int cleanshutdown = 0;   /* should we shutdown? */
+static int caonly = 0;          /* CA-only mode */
 static int startup_pipe[2];
 static int listenfd = -1;
 
@@ -259,9 +260,15 @@ main(int argc, char *argv[])
    
     /* Make sure all's well with the storage directory. */
     if (myproxy_check_storage_dir() == -1) {
-	myproxy_log_verror();
-	myproxy_log("Exiting.  Please fix errors with storage directory and restart.");
-	exit(1);
+        myproxy_log_verror();
+        if (is_certificate_authority_configured(server_context)) {
+            myproxy_log("No valid storage directory found. Running in CA-only mode.");
+            verror_clear();
+            caonly = 1;
+        } else {
+            myproxy_log("Exiting.  Please fix errors with storage directory and restart.");
+            exit(1);
+        }
     }
 
     if(server_context->certificate_openssl_engine_id) {
@@ -706,7 +713,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY: 
 
-	if (!myproxy_creds_exist(client_request->username,
+	if (caonly ||
+        !myproxy_creds_exist(client_request->username,
 				 client_request->credname)) {
 	    use_ca_callout = 1;
 	}
@@ -1818,10 +1826,27 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    myproxy_creds_t creds = { 0 };
    char  *userdn = NULL;
 
+   if (caonly) {
+       switch (client_request->command_type) {
+       case MYPROXY_GET_PROXY:
+       case MYPROXY_GET_TRUSTROOTS:
+           break;
+       default:
+           verror_put_string("command not supported by MyProxy CA");
+           respond_with_error_and_die(attrs, verror_get_string(), context);
+       }
+   }
+
    if (client_request->command_type != MYPROXY_GET_TRUSTROOTS)
    {
-       credentials_exist = myproxy_creds_exist(client_request->username,
-                                               client_request->credname);
+       if (caonly) {
+           credentials_exist = 0;
+       } else {
+           credentials_exist =
+               myproxy_creds_exist(client_request->username,
+                                   client_request->credname);
+       }
+
        if (credentials_exist == -1) {
            myproxy_log_verror();
            verror_put_string("Error checking credential existence");

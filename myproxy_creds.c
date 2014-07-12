@@ -18,6 +18,7 @@
  */
 
 static char *storage_dir = NULL;
+static int searched_for_storage_dir = 0;
 static int max_namelen = -1;
 
 /**********************************************************************
@@ -134,11 +135,60 @@ check_storage_directory_safety()
     return 0;                   /* just warn for now */
 }
 
+static int
+locate_storage_directory()
+{
+    struct stat statbuf = {0}; /* initialize with 0s */
+    int return_code = -1;
+    char *gl_storage_dir = NULL;
+
+    if (storage_dir == NULL) {
+        char *GL;
+        searched_for_storage_dir = 1;
+        GL = getenv("GLOBUS_LOCATION");
+        if (stat("/var/lib/myproxy", &statbuf) == 0) {
+            storage_dir = mystrdup("/var/lib/myproxy");
+            if (!storage_dir) goto error;
+        }
+        /* if /var/lib/myproxy doesn't exist, look for /var/myproxy */
+        if (storage_dir == NULL && stat("/var/myproxy", &statbuf) == 0) {
+            storage_dir = mystrdup("/var/myproxy");
+            if (!storage_dir) goto error;
+        }
+        /* if /var/myproxy doesn't exist, look for $GL/var/myproxy */
+        if (storage_dir == NULL && GL != NULL) {
+            gl_storage_dir =
+                (char *)malloc(strlen(GL)+strlen("/var/myproxy")+1);
+            if (!gl_storage_dir) {
+                verror_put_errno(errno);
+                verror_put_string("malloc() failed");
+                goto error;
+            }
+            sprintf(gl_storage_dir, "%s/var/myproxy", GL);
+            if (stat(gl_storage_dir, &statbuf) == 0) {
+                storage_dir = gl_storage_dir;
+                gl_storage_dir = NULL;
+            }
+        }
+        if (storage_dir == NULL) {
+            verror_put_string("did not find a storage directory");
+            if (!GL) verror_put_string("GLOBUS_LOCATION not set");
+            goto error;
+        }
+    }
+
+    return 0;
+
+ error:
+    if (gl_storage_dir) free(gl_storage_dir);
+    return return_code;
+}
+
 /*
  * check_storage_directory()
  *
  * Check for existance and permissions on storage directory.
- * Create storage directory if it doesn't exist.
+ * Do not create storage directory if it doesn't exist.
  *
  * Returns 0 if ok, -1 on error.
  */
@@ -147,89 +197,24 @@ check_storage_directory()
 {
     struct stat statbuf = {0}; /* initialize with 0s */
     int return_code = -1;
-    char *gl_storage_dir = NULL;
 	struct passwd *pw = NULL;
+    static int firsttime = 1;
 
-    if (storage_dir == NULL) { /* Choose a default storage directory */
-	char *GL;
-	GL = getenv("GLOBUS_LOCATION");
-	if (stat("/var/lib/myproxy", &statbuf) == 0) {
-	    storage_dir = mystrdup("/var/lib/myproxy");
-	    if (!storage_dir) goto error;
-	}
-	/* if /var/lib/myproxy doesn't exist, look for /var/myproxy */
-	if (storage_dir == NULL && stat("/var/myproxy", &statbuf) == 0) {
-	    storage_dir = mystrdup("/var/myproxy");
-	    if (!storage_dir) goto error;
-	}
-	/* if /var/myproxy doesn't exist, look for $GL/var/myproxy */
-	if (storage_dir == NULL && GL != NULL) {
-	    gl_storage_dir =
-		(char *)malloc(strlen(GL)+strlen("/var/myproxy")+1);
-	    if (!gl_storage_dir) {
-		verror_put_errno(errno);
-		verror_put_string("malloc() failed");
-		goto error;
-	    }
-	    sprintf(gl_storage_dir, "%s/var/myproxy", GL);
-	    if (stat(gl_storage_dir, &statbuf) == 0) {
-		storage_dir = gl_storage_dir;
-		gl_storage_dir = NULL;
-	    }
-	}
-	/* if none exist, try creating one */
-	if (storage_dir == NULL) {
-	    if (mkdir("/var/lib/myproxy", 0700) == 0) {
-		storage_dir = mystrdup("/var/lib/myproxy");
-		if (stat("/var/lib/myproxy", &statbuf) == -1) {
-		    verror_put_errno(errno);
-		    verror_put_string("could not stat directory /var/lib/myproxy");
-		    goto error;
-		}
-	    } else if (mkdir("/var/myproxy", 0700) == 0) {
-		storage_dir = mystrdup("/var/myproxy");
-		if (stat("/var/myproxy", &statbuf) == -1) {
-		    verror_put_errno(errno);
-		    verror_put_string("could not stat directory /var/myproxy");
-		    goto error;
-		}
-	    } else if (gl_storage_dir) {
-		sprintf(gl_storage_dir, "%s/var", GL);
-		if (mkdir(gl_storage_dir, 0755) < 0 && errno != EEXIST) {
-		    verror_put_errno(errno);
-		    verror_put_string("mkdir(%s) failed", gl_storage_dir);
-		    goto error;
-		}
-		sprintf(gl_storage_dir, "%s/var/myproxy", GL);
-		if (mkdir(gl_storage_dir, 0700) < 0) {
-		    verror_put_errno(errno);
-		    verror_put_string("mkdir(%s) failed", gl_storage_dir);
-		    goto error;
-		}
-		storage_dir = gl_storage_dir;
-		gl_storage_dir = NULL;
-		if (stat(storage_dir, &statbuf) == -1) {
-		    verror_put_errno(errno);
-		    verror_put_string("could not stat directory %s",
-				      storage_dir);
-		    goto error;
-		}
-	    }
-	}
-	if (storage_dir == NULL) {
-	    verror_put_string("failed to find or create a storage directory");
-	    if (!GL) verror_put_string("GLOBUS_LOCATION not set");
+    if (storage_dir == NULL && !searched_for_storage_dir) {
+        locate_storage_directory();
+        searched_for_storage_dir = 1;
+    }
+
+    if (storage_dir == NULL) {
+	    verror_put_errno(ENOENT);
 	    goto error;
-	}
-	myproxy_log("using storage directory %s", storage_dir);
-    check_storage_directory_safety(); /* just check once for now */
-    } else { /* storage directory already chosen; just check it */
+    }
+
 	if (stat(storage_dir, &statbuf) == -1) {
 	    verror_put_errno(errno);
 	    verror_put_string("could not stat directory %s", storage_dir);
 	    goto error;
 	}
-    }
     
     if (!S_ISDIR(statbuf.st_mode))
     {
@@ -238,22 +223,21 @@ check_storage_directory()
     }
     
     /* Make sure it's owned by me */
-    if (statbuf.st_uid != geteuid())
-    {
-	pw = getpwuid(geteuid());
-	if (pw) {
-	    verror_put_string("%s not owned by %s", storage_dir, pw->pw_name);
-	} else {
-	    verror_put_string("%s not owned by uid %d", storage_dir,
-			      geteuid());
-	}
+    if (statbuf.st_uid != geteuid()) {
+        pw = getpwuid(geteuid());
+        if (pw) {
+            verror_put_string("%s not owned by %s",
+                              storage_dir, pw->pw_name);
+        } else {
+            verror_put_string("%s not owned by uid %d",
+                              storage_dir, geteuid());
+        }
         goto error;
     }
     
     /* Make sure it's not readable or writable by anyone else */
     if ((statbuf.st_mode & S_IRWXG) ||
-        (statbuf.st_mode & S_IRWXO))
-    {
+        (statbuf.st_mode & S_IRWXO)) {
         verror_put_string("permissions on %s must be 0700", storage_dir);
         goto error;
     }
@@ -266,11 +250,16 @@ check_storage_directory()
         }
     }
 
+    if (firsttime) { /* just once */
+        check_storage_directory_safety();
+        myproxy_log("using storage directory %s", storage_dir);
+        firsttime = 0;
+    }
+
     /* Success */
     return_code = 0;
     
   error:
-    if (gl_storage_dir) free(gl_storage_dir);
     return return_code;
 }
 
@@ -1746,6 +1735,7 @@ int myproxy_set_storage_dir(const char *dir)
 	storage_dir = NULL;
     }
     storage_dir=strdup(dir);
+    searched_for_storage_dir = 0;
     if (!storage_dir) {
 	verror_put_errno(errno);
 	verror_put_string("strdup() failed");

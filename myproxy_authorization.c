@@ -39,6 +39,7 @@ auth_passwd_get_status(struct myproxy_creds *creds, char *client_name,
     
     if (myproxy_creds_exist(creds->username, creds->credname) == 1 &&
 	myproxy_creds_encrypted(creds) == 1) {
+	verror_clear();
 	return AUTHORIZEMETHOD_REQUIRED;
     }
 
@@ -380,7 +381,7 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
    /* 1. Gather some initial information. */
    exist = myproxy_creds_exist(creds->username, creds->credname);
    if (exist < 0) {
-       return 0;
+       exist = 0; verror_clear(); /* may be in CA-only mode */
    }
    if (exist) {
        encrypted = myproxy_creds_encrypted(creds);
