@@ -70,10 +70,14 @@ myproxy_usage_stats_init(myproxy_server_context_t *context)
     globus_list_t *                     list = NULL;
     myproxy_usage_ent_t *               usage_ent = NULL;
 
-    if (context->disable_usage_stats ||
-        !context->usage_stats_target ||
-        !strcasecmp(context->usage_stats_target, "default"))
-	return GLOBUS_SUCCESS;
+    if (!context->usage_stats_target ||
+        !strcasecmp(context->usage_stats_target, "default")) {
+        context->disable_usage_stats = 1; /* disabled by default */
+    }
+
+    if (context->disable_usage_stats) {
+        return GLOBUS_SUCCESS;
+    }
 
     result = globus_module_activate(GLOBUS_USAGE_MODULE);
     if (result != GLOBUS_SUCCESS)
