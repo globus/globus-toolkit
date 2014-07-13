@@ -71,6 +71,23 @@ MyProxy Credential Management Service
 </Source_Dependencies>
 
 <With_Flavors ColocateLibraries="no" build="yes" />
+
+<Build_Instructions>
+
+<Build_Step>
+export GLOBUS_FLAVOR_NAME=FLAVOR_GPTMACRO
+CFG="--prefix=INSTALLDIR_GPTMACRO --with-flavor=FLAVOR_GPTMACRO --with-gpt"
+if test "STATIC_LINK_GPTMACRO" = "yes"; then 
+  CFG="$CFG --enable-static --disable-shared"
+fi
+./configure $CFG</Build_Step>
+
+<Build_Step>MAKE_GPTMACRO </Build_Step>
+
+<Build_Step>MAKE_GPTMACRO install</Build_Step>
+
+</Build_Instructions>
+
 <Build_Environment>
 <cflags>@GPT_CFLAGS@</cflags>
 <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>

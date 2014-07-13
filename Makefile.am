@@ -221,7 +221,7 @@ EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
                myproxy-cert-checker myproxy-certreq-checker \
                myproxy.init myproxy.sysconfig \
                README.Fedora \
-               myproxy.spec pkg_data_src.gpt
+               myproxy.spec pkgdata/pkg_data_src.gpt.in
 
 myproxy-admin-addservice: myproxy-admin-adduser
 	$(LN_S) myproxy-admin-adduser myproxy-admin-addservice
