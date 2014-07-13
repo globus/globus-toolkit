@@ -13,7 +13,7 @@ credentials to run the myproxy-server.
 To build in a CVS workspace (replacing gcc32dbg with the flavor of
 your Globus Toolkit installation):
 $ ./bootstrap
-$ ./configure --with-flavor=gcc32dbg
+$ ./configure --with-gpt --with-flavor=gcc64dbg
 $ make
 
 Don't use threaded (thr) flavors.
@@ -44,13 +44,13 @@ $ make dist
 3. Build a source package.
 
      $ ./bootstrap
-     $ ./configure --with-flavor=gcc32dbg
+     $ ./configure --with-gpt --with-flavor=gcc64dbg
      $ make dist
 
 4. Verify that the source package builds against supported versions of
    the Globus Toolkit.  It should build without warnings.
 
-     $ gpt-build -force -verbose myproxy-*.tar.gz gcc32dbg
+     $ gpt-build -force -verbose myproxy-*.tar.gz gcc64dbg
 
    For instructions on submitting test builds to the UW NMI system,
    see nmi/README.  The results of all test builds, including
