@@ -1,7 +1,7 @@
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
 Version:	13.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
 Group:		System Environment/Libraries
@@ -108,6 +108,9 @@ make install DESTDIR=$RPM_BUILD_ROOT
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
+%check
+make %{?_smp_mflags} check
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -134,6 +137,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 23 2014 Globus Toolkit <support@globus.org> - 13.7-2
+- Add %check to build
+
 * Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 13.7-1
 - Merge changes from Mattias Ellert
 
