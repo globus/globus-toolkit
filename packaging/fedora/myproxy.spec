@@ -1,13 +1,13 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	5.9
-Release:	10%{?dist}
+Version:	6.0rc1
+Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
 License:        NCSA and BSD and ASL 2.0
 URL:            http://grid.ncsa.illinois.edu/myproxy/
-Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}-gt5.2.tar.gz
+Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}.tar.gz
 
 #Source1:        myproxy.init
 #Source2:        myproxy.sysconfig
@@ -17,7 +17,7 @@ Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}-gt5.
 #newer though not that new. myproxy is the last software in
 #EPEL using the old vomsc.
 #Patch to go upstream myproxy though they are aware.
-Patch0:         https://raw.githubusercontent.com/globus/globus-toolkit/globus_6_branch/myproxy.gt6.diff
+#Patch0:         https://raw.githubusercontent.com/globus/globus-toolkit/globus_6_branch/myproxy.gt6.diff
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -193,8 +193,8 @@ Package %{name}-doc contains the MyProxy documentation.
 
 
 %prep
-%setup -q
-%patch0 -p1
+%setup -q -n myproxy-6.0
+#%patch0 -p1
 #cp -p %{SOURCE1} .
 #cp -p %{SOURCE2} .
 #cp -p %{SOURCE3} .
@@ -204,7 +204,6 @@ Package %{name}-doc contains the MyProxy documentation.
 rm -f doxygen/Doxyfile*
 rm -f doxygen/Makefile.am
 rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 rm -rf autom4te.cache
@@ -414,6 +413,9 @@ fi
 %{_libdir}/libmyproxy.so
 
 %changelog
+* Thu Jul 24 2014 Globus Toolkit <support@globus.org> - 5.10rc1-1
+- Update to 6.0rc1
+
 * Tue Jan 14 2014 Globus Toolkit <support@globus.org> - 5.9-9
 - Source0 URL fix
 

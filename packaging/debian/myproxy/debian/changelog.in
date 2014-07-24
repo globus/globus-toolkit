@@ -1,3 +1,9 @@
+myproxy (6.0rc1-1+gt6.@distro@) @distro@; urgency=low
+
+  * upgrade to 6.0rc1
+
+ -- Globus Toolkit <support@globus.org>  Thu, 24 July 2014 12:49:15 -0400
+
 myproxy (5.9-15+gt6.@distro@) @distro@; urgency=low
 
   * Rename dbg packages

@@ -1,7 +1,7 @@
 #! /bin/sh
 
-myproxy_version=5.9
-myproxy_tarball="myproxy-${myproxy_version}-gt5.2.tar.gz"
+myproxy_version=6.0rc1
+myproxy_tarball="myproxy-${myproxy_version}.tar.gz"
 myproxy_url="http://sourceforge.net/projects/cilogon/files/myproxy/$myproxy_tarball"
 package_output="$(dirname "$0")/packaging/package-output"
 myproxy_package_file="${package_output}/${myproxy_tarball}"
@@ -42,7 +42,6 @@ fi
 if [ ! -f "${unpacked_file}" ]; then
     gzip -dc "${myproxy_package_file}" | \
         tar --strip 1 -C "${myproxy_sourcedir}" -xf -
-    patch -d "${myproxy_sourcedir}" -p1 < myproxy.gt6.diff
     echo "${myproxy_tarball}" > "${unpacked_file}"
 fi
 ) 1>&2

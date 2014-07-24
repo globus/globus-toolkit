@@ -1,6 +1,6 @@
 Name: myproxy
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/myproxy-5.9.tar.gz
+Source: http://sourceforge.net/projects/cilogon/files/myproxy/myproxy-6.0rc1.tar.gz/download
 Upstream-Authors: MyProxy Team http://myproxy.ncsa.uiuc.edu/
 
 Files: *
