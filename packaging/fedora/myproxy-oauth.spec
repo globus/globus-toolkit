@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
 Version:	0.14
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
@@ -15,7 +15,9 @@ BuildArch:      noarch
 
 Requires(pre): shadow-utils
 Requires:	pyOpenSSL
+%if 0%{?suse} == 0
 Requires:       mod_ssl
+%endif
 Requires:       mod_wsgi
 %if 0%{?rhel} != 0
 Requires:       python-crypto
@@ -25,10 +27,11 @@ Requires:       python-wsgiref
 Requires:       python-json
 Requires:       python-hashlib
 Requires:       python-ssl
-%else
 %endif
 Requires:       python-httplib2
+%if %{rhel} < 7
 Requires:       python-sqlite2
+%endif
 %else
 Requires:       python-crypto >= 2.2
 Requires:       python-httplib2
@@ -107,6 +110,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Fri Jul 25 2014 Globus Toolkit <support@globus.org> - 0.14-2
+- EL7 doesn't require python-sqlite2
+
 * Mon Jan 20 2014 Globus Toolkit <support@globus.org> - 0.14-1
 - move to globus repo
 

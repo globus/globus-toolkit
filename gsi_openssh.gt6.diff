@@ -60843,7 +60843,7 @@ index fd324f6..ff6657a 100644
  # Print summary of options
 diff --git a/configure.gnu b/configure.gnu
 new file mode 100755
-index 0000000..9fab7f4
+index 0000000..ea6b5db
 --- /dev/null
 +++ b/configure.gnu
 @@ -0,0 +1,7 @@
@@ -60853,7 +60853,7 @@ index 0000000..9fab7f4
 +PATH="${PATH}${globus_common_path:+:$globus_common_path}"
 +srcdir="$(dirname $0)"
 +
-+exec "${srcdir}/configure" ${1:+"$@"} --with-gsi=yes --sysconfdir="\${prefix}/etc/gsissh"
++exec "${srcdir}/configure" ${1:+"$@"} --with-gsi=yes --sysconfdir="\${prefix}/etc/gsissh" --with-privsep-path="\${prefix}/var/empty"
 diff --git a/contrib/win32/openssh/libopenbsdcompat/libopenbsdcompat.vcproj b/contrib/win32/openssh/libopenbsdcompat/libopenbsdcompat.vcproj
 new file mode 100644
 index 0000000..ee214dc
@@ -104255,7 +104255,7 @@ index 0000000..7381446
 +
 +#endif /* RUNTIME_LIBPAM */
 diff --git a/pathnames.c b/pathnames.c
-index 7d1826f..6594748 100644
+index 7d1826f..663e477 100644
 --- a/pathnames.c
 +++ b/pathnames.c
 @@ -9,7 +9,9 @@
@@ -104268,7 +104268,7 @@ index 7d1826f..6594748 100644
  #define SSHDIR "/etc/ssh"
  #define VARDIR "/var"
  #define VARRUN "/var/run"
-@@ -86,14 +88,40 @@ init_pathnames()
+@@ -86,14 +88,48 @@ init_pathnames()
              sshdir = NULL;
          }
      }
@@ -104276,6 +104276,14 @@ index 7d1826f..6594748 100644
      if (!sshdir) {
          sshdir = strdup(GSISSHDIR);
          if (access(sshdir, X_OK) < 0) {
++            logit("%s not found.", sshdir);
++            free(sshdir);
++            sshdir = NULL;
++        }
++    }
++    if (!sshdir) {
++        sshdir = compose2(gl, GSISSHDIR);
++        if (access(sshdir, X_OK) < 0) {
              fatal("%s not found.", sshdir);
          }
      }
@@ -104309,7 +104317,7 @@ index 7d1826f..6594748 100644
      _PATH_SSH_SYSTEM_HOSTFILE	= compose2(sshdir, "/ssh_known_hosts");
      _PATH_SSH_SYSTEM_HOSTFILE2	= compose2(sshdir, "/ssh_known_hosts2");
      _PATH_SERVER_CONFIG_FILE	= compose2(sshdir, "/sshd_config");
-@@ -111,6 +139,9 @@ init_pathnames()
+@@ -111,6 +147,9 @@ init_pathnames()
      _PATH_SSH_KEY_SIGN		= compose2(libexec, "/ssh-keysign");
      _PATH_SSH_PKCS11_HELPER = compose2(libexec, "/ssh-pkcs11-helper");
      _PATH_SFTP_SERVER		= compose2(libexec, "/sftp-server");

@@ -132,6 +132,7 @@ $1-osx-pkg: \$($1-osx-pkg)
         m4_append(req[_REQUIRES], [choices]@<:@'org.globus.package.$1'@:>@[.selected], [ || ])])dnl
 ])dnl
 
+PKG_PROG_PKG_CONFIG([0.22])
 
 GT_PACKAGE(
     [globus_common], [common/source],[libltdl],[ccommonlibs])
