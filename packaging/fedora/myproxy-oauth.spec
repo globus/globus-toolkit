@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
 Version:	0.14
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
@@ -75,7 +75,7 @@ exec /usr/bin/env PYTHONPATH="$pythonpath" python /usr/share/%{name}/myproxy-oau
 EOF
 chmod a+x $RPM_BUILD_ROOT%{_sbindir}/myproxy-oauth-setup
 mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
-%if 0%{?fedora} >= 18
+%if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
 cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth-2.4 \
    $RPM_BUILD_ROOT/etc/httpd/conf.d/wsgi-myproxy-oauth.conf 
 %else
@@ -110,6 +110,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Tue Jul 29 2014 Globus Toolkit <support@globus.org> - 0.14-3
+- EL7 requires Apache 2.4 configuration file
+
 * Fri Jul 25 2014 Globus Toolkit <support@globus.org> - 0.14-2
 - EL7 doesn't require python-sqlite2
 
