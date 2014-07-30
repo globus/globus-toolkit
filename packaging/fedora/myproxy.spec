@@ -1,7 +1,7 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.0rc1
-Release:	2%{?dist}
+Version:	6.0rc2
+Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -413,6 +413,9 @@ fi
 %{_libdir}/libmyproxy.so
 
 %changelog
+* Wed Jul 30 2014 Globus Toolkit <support@globus.org> - 5.10rc2-1
+- Update to myproxy-6.0rc2.tar.gz
+
 * Fri Jul 25 2014 Globus Toolkit <support@globus.org> - 5.10rc1-2
 - SLES 11 doesn't list chkconfig as a capability
 

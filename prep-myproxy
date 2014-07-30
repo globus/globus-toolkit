@@ -1,6 +1,6 @@
 #! /bin/sh
 
-myproxy_version=6.0rc1
+myproxy_version=6.0rc2
 myproxy_tarball="myproxy-${myproxy_version}.tar.gz"
 myproxy_url="http://sourceforge.net/projects/cilogon/files/myproxy/$myproxy_tarball"
 package_output="$(dirname "$0")/packaging/package-output"
