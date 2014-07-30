@@ -1,7 +1,7 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
 Version:	6.0rc3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -24,7 +24,6 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  globus-gss-assist-devel >= 3
 BuildRequires:  globus-usage-devel >= 0
 BuildRequires:  pam-devel
-BuildRequires:  graphviz
 %if 0%{?suse_version} == 0
 BuildRequires:  voms-devel >= 1.9.12.1
 %endif
@@ -36,29 +35,7 @@ BuildRequires:  openldap2-devel
 BuildRequires:  openldap-devel >= 2.3
 %endif
 %endif
-BuildRequires:  doxygen
 
-%if "%{?rhel}" == "5"
-BuildRequires: graphviz-gd
-%endif
-
-%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
-BuildRequires:  tex(latex)
-%else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
-BuildRequires:  tetex-latex
-%endif
-%endif
-
-%if %{?fedora}%{!?fedora:0} == 18
-BuildRequires: tex(sectsty.sty)
-BuildRequires: tex(tocloft.sty)
-BuildRequires: tex(xtab.sty)
-BuildRequires: tex(multirow.sty)
-BuildRequires: tex(fullpage.sty)
-%endif
 BuildRequires:      globus-proxy-utils >= 5
 BuildRequires:      globus-gsi-cert-utils-progs >= 8
 BuildRequires:      globus-common-devel >= 8
@@ -201,8 +178,6 @@ Package %{name}-doc contains the MyProxy documentation.
 
 
 %build
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
 rm -f pkgdata/Makefile.am
 
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
@@ -211,13 +186,13 @@ autoreconf -if
 %endif
 
 %if 0%{?suse_version} > 0
-%configure --enable-doxygen --with-openldap=%{_usr} \
+%configure --with-openldap=%{_usr} \
                                     --without-voms \
                                     --with-kerberos5=%{_usr} --with-sasl2=%{_usr} \
 				    --includedir=%{_usr}/include/globus \
                                     CPPFLAGS=-DHAVE_GSSAPI_H=1
 %else
-%configure --enable-doxygen --with-openldap=%{_usr} \
+%configure --with-openldap=%{_usr} \
                                     --with-voms=%{_usr} \
                                     --with-kerberos5=%{_usr} --with-sasl2=%{_usr} \
 				    --includedir=%{_usr}/include/globus
@@ -414,6 +389,9 @@ fi
 %{_libdir}/libmyproxy.so
 
 %changelog
+* Wed Jul 30 2014 Globus Toolkit <support@globus.org> - 5.10rc3-2
+- Remove unused doxygen/LaTeX dependencies
+
 * Wed Jul 30 2014 Globus Toolkit <support@globus.org> - 5.10rc3-1
 - Update to myproxy-6.0rc3.tar.gz
 - Predefine HAVE_GSSAPI_H on SuSE
