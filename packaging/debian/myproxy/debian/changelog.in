@@ -1,3 +1,9 @@
+myproxy (6.0rc3-1+gt6.@distro@) @distro@; urgency=low
+
+  * upgrade to 6.0rc3
+
+ -- Globus Toolkit <support@globus.org>  Wed, 30 July 2014 14:06:08 -0400
+
 myproxy (6.0rc2-1+gt6.@distro@) @distro@; urgency=low
 
   * upgrade to 6.0rc2

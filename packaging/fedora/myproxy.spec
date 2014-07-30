@@ -1,6 +1,6 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.0rc2
+Version:	6.0rc3
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -214,7 +214,8 @@ autoreconf -if
 %configure --enable-doxygen --with-openldap=%{_usr} \
                                     --without-voms \
                                     --with-kerberos5=%{_usr} --with-sasl2=%{_usr} \
-				    --includedir=%{_usr}/include/globus
+				    --includedir=%{_usr}/include/globus \
+                                    CPPFLAGS=-DHAVE_GSSAPI_H=1
 %else
 %configure --enable-doxygen --with-openldap=%{_usr} \
                                     --with-voms=%{_usr} \
@@ -413,6 +414,10 @@ fi
 %{_libdir}/libmyproxy.so
 
 %changelog
+* Wed Jul 30 2014 Globus Toolkit <support@globus.org> - 5.10rc3-1
+- Update to myproxy-6.0rc3.tar.gz
+- Predefine HAVE_GSSAPI_H on SuSE
+
 * Wed Jul 30 2014 Globus Toolkit <support@globus.org> - 5.10rc2-1
 - Update to myproxy-6.0rc2.tar.gz
 
