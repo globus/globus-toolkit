@@ -135,13 +135,13 @@ myproxy_store_SOURCES = myproxy_store.c
 
 myproxy_store_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_store_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la
+myproxy_store_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la $(LDADD)
 
 myproxy_retrieve_SOURCES = myproxy_get_credential.c
 
 myproxy_retrieve_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_retrieve_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la
+myproxy_retrieve_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la $(LDADD)
 
 myproxy_destroy_SOURCES = myproxy_destroy.c
 
@@ -152,7 +152,7 @@ myproxy_destroy_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la
 myproxy_server_SOURCES = myproxy_server.c myproxy_usage.c
 myproxy_server_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_server_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la
+myproxy_server_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la $(LDADD)
 
 myproxy_get_trustroots_SOURCES = myproxy_get_trustroots.c
 
@@ -164,13 +164,13 @@ myproxy_get_delegation_SOURCES = myproxy_get_delegation.c
 
 myproxy_get_delegation_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_get_delegation_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la
+myproxy_get_delegation_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la $(LDADD)
 
 myproxy_logon_SOURCES = myproxy_get_delegation.c
 
 myproxy_logon_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_logon_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la
+myproxy_logon_LDADD = ./libmyproxy$(_GLOBUS_FLAVOR_NAME).la $(LDADD)
 
 myproxy_change_pass_phrase_SOURCES = myproxy_cp.c
 
