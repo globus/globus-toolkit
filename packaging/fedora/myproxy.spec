@@ -35,6 +35,9 @@ BuildRequires:  openldap2-devel
 BuildRequires:  openldap-devel >= 2.3
 %endif
 %endif
+%if "%{?suse_version}" != "0"
+BuildRequires:      krb5-devel >= 1
+%endif
 
 BuildRequires:      globus-proxy-utils >= 5
 BuildRequires:      globus-gsi-cert-utils-progs >= 8
@@ -189,8 +192,7 @@ autoreconf -if
 %configure --with-openldap=%{_usr} \
                                     --without-voms \
                                     --with-kerberos5=%{_usr} --with-sasl2=%{_usr} \
-				    --includedir=%{_usr}/include/globus \
-                                    CPPFLAGS=-DHAVE_GSSAPI_H=1
+				    --includedir=%{_usr}/include/globus
 %else
 %configure --with-openldap=%{_usr} \
                                     --with-voms=%{_usr} \
@@ -389,6 +391,9 @@ fi
 %{_libdir}/libmyproxy.so
 
 %changelog
+* Wed Jul 30 2014 Globus Toolkit <support@globus.org> - 5.10rc3-3
+- Add dependency on krb5-devel for SuSE, revert predefining HAVE_GSSAPI_H
+
 * Wed Jul 30 2014 Globus Toolkit <support@globus.org> - 5.10rc3-2
 - Remove unused doxygen/LaTeX dependencies
 
