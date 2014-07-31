@@ -106,7 +106,8 @@ $1-osx-pkg: \$($1-osx-pkg)
 ])
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
     ifelse([$1], [gsi_openssh], [], [
-        m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])dnl
+        ifelse([$1], [myproxy], [], [
+            m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])])dnl
     m4_append_uniq([GT_BUNDLES_MACRO],[$4], [ ])dnl
     m4_append([GT_BUNDLES_]m4_translit($4,[-],[_])[_MACRO],[$1-stamp], [ ])dnl
     m4_append([GT_BUNDLE_PACKAGES]m4_translit($4,[-],[_]),[$1], [ ])dnl
@@ -473,6 +474,7 @@ m4_foreach([bundle],
 final_enabled_bundles=""
 final_enabled_xio_drivers=""
 gsi_openssh_enabled=no
+myproxy_enabled=no
 for en_name in ""$enabled_buns; do
     skip=0
     for dis_name in ""$disabled_buns; do
@@ -484,6 +486,8 @@ for en_name in ""$enabled_buns; do
     if test "$skip" = 0; then
         if test X"$en_name" = X"gsi-openssh"; then
             gsi_openssh_enabled=yes
+        elif test X"$en_name" = X"myproxy"; then
+            myproxy_enabled=yes
         fi
         final_enabled_bundles="${final_enabled_bundles:+$final_enabled_bundles }$en_name"
         final_enabled_xio_drivers="${final_enabled_xio_drivers:+$final_enabled_xio_drivers }\$(${en_name}-xio-drivers)"
@@ -517,6 +521,9 @@ AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
 
 if test x"$gsi_openssh_enabled" = x"yes"; then
     AC_CONFIG_SUBDIRS(gsi_openssh/source)
+fi
+if test x"$myproxy_enabled" = x"yes"; then
+    AC_CONFIG_SUBDIRS(myproxy/source)
 fi
 
 AC_OUTPUT
