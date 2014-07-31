@@ -219,7 +219,7 @@ EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
                myproxy-certificate-mapapp myproxy-revoke \
                myproxy-accepted-credentials-mapapp \
                myproxy-cert-checker myproxy-certreq-checker \
-               myproxy.init myproxy.sysconfig \
+               myproxy.init myproxy.init.sles myproxy.sysconfig \
                README.Fedora \
                myproxy.spec pkgdata/pkg_data_src.gpt.in m4/myproxy.m4
 
