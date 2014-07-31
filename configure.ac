@@ -132,8 +132,6 @@ $1-osx-pkg: \$($1-osx-pkg)
         m4_append(req[_REQUIRES], [choices]@<:@'org.globus.package.$1'@:>@[.selected], [ || ])])dnl
 ])dnl
 
-PKG_PROG_PKG_CONFIG([0.22])
-
 GT_PACKAGE(
     [globus_common], [common/source],[libltdl],[ccommonlibs])
 GT_PACKAGE(
@@ -321,6 +319,9 @@ GT_PACKAGE([globus_gram_job_manager],[gram/jobmanager/source],
       globus_usage globus_gram_client_tools], [gram5-server])
 PKG_CONFIG_PATH="[${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}]GT_PKGCONFIG_DIRS_MACRO"
 export PKG_CONFIG_PATH
+
+dnl PKG_PROG_PKG_CONFIG([0.22])
+
 dnl 
 if test "$HAVE_LTDL" = 1; then
     TOP_SUBDIRS="."
