@@ -23,10 +23,32 @@ import json
 import os
 import random
 import socket
+import urllib
 from subprocess import Popen, PIPE
 import sys
 
 from myproxyoauth.database import db_session, Admin, Client
+
+def public_name():
+    """
+    Try to guess the public host name of this machine. If this is
+    on a machine which is able to access ec2 metadata, it will use
+    that; otherwise socket.getfqdn()
+    """
+    url = 'http://169.254.169.254/latest/meta-data/public-hostname'
+    value = None
+    try:
+        socket.setdefaulttimeout(3.0)
+        value = urllib.urlopen(url).read()
+    except IOError:
+        pass
+
+    if value is not None and "404 - Not Found" in value:
+        value = None
+
+    if value is None:
+        value = socket.getfqdn()
+    return value
 
 """
 Register Globus Online as an OAuth client with this MyProxy OAuth Delegation
@@ -48,7 +70,7 @@ def configure(username=None, pwstdin=False, oauth_server=None, myproxy_server=No
     else:
         password = getpass.getpass("Globus Online Password: ")
 
-    default_hostname = socket.gethostname()
+    default_hostname = public_name()
 
     if oauth_server is None:
         print "OAuth Server [%s]: " % (default_hostname),
