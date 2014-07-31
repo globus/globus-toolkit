@@ -108,6 +108,7 @@ cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth \
    $RPM_BUILD_ROOT/etc/httpd/conf.d/wsgi-myproxy-oauth.conf 
 %endif
 %endif
+%endif
 
 mkdir -p "$RPM_BUILD_ROOT/var/lib/myproxy-oauth"
 
