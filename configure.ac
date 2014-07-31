@@ -1,4 +1,4 @@
-AC_INIT([globus_toolkit], [6.0.alpha3], [https://globus.atlassian.net/])
+AC_INIT([globus_toolkit], [6.0.beta1], [https://globus.atlassian.net/])
 m4_define([short_version], [m4_substr(AC_PACKAGE_VERSION, [0],
     m4_index(AC_PACKAGE_VERSION, [.]))])
 AC_PREFIX_DEFAULT([/usr/local/globus-]short_version)
