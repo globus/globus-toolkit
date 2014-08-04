@@ -1,7 +1,7 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
 Version:	6.0rc3
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -266,7 +266,7 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 %if 0%{?suse_version} == 0
 install  -m 755 myproxy.init $RPM_BUILD_ROOT%{_initddir}/myproxy-server
 %else
-cat <<EOF > $RPM_BUILD_ROOT%{_initddir}/myproxy-server
+cat <<'EOF' > $RPM_BUILD_ROOT%{_initddir}/myproxy-server
 #!/bin/sh
 #
 # myproxy-server - Server for X.509 Public Key Infrastructure (PKI) security credentials
@@ -514,6 +514,9 @@ fi
 %{_libdir}/libmyproxy.so
 
 %changelog
+* Mon Aug 04 2014 Globus Toolkit <support@globus.org> - 5.10rc3-5
+- Quote suse init script
+
 * Fri Aug 01 2014 Globus Toolkit <support@globus.org> - 5.10rc3-4
 - Add different init script for suse
 
