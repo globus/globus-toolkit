@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
 Version:	0.15
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
@@ -117,13 +117,12 @@ getent group myproxyoauth >/dev/null || groupadd -r myproxyoauth
 getent passwd myproxyoauth >/dev/null || \
     useradd -r -g myproxyoauth -d /usr/share/myproxy-oauth -s /sbin/nologin \
         -c "MyProxy Oauth Daemon" myproxyoauth
-        exit 0
 
 %if 0%{?suse_version} != 0
 mkdir -p /srv/www/run
 %endif
 
-
+exit 0
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -137,6 +136,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Mon Aug 04 2014 Globus Toolkit <support@globus.org> - 0.15-2
+- Fix error in scriptlet to create wsgi socket dir on SLES 11
+
 * Thu Jul 31 2014 Globus Toolkit <support@globus.org> - 0.15-1
 - Update to 0.15 for EC2-public hostname awareness
 - Create wsgi socket dir on SLES 11
