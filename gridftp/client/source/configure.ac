@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_ftp_client],[8.9],[https://globus.atlassian.net/])
+AC_INIT([globus_ftp_client],[8.10],[https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [6])
@@ -24,6 +24,15 @@ AM_CONDITIONAL([CYGPATH_W_DEFINED], [
         ;;
     esac])
 
+AM_CONDITIONAL([TARGET_MINGW], [
+    case $host in
+        *mingw*)
+            true
+            ;;
+        *)
+            false
+            ;;
+    esac])
 GRIDFTP_SERVER_PATH=`pkg-config --variable=path globus-gridftp-server`
 AC_SUBST(GRIDFTP_SERVER_PATH)
 
