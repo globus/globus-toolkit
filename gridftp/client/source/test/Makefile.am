@@ -16,7 +16,6 @@ check_SCRIPTS = \
 	plugin-test.pl \
 	get-test.pl \
 	caching-get-test.pl \
-	put-test.pl \
 	size-test.pl \
 	transfer-test.pl \
 	caching-transfer-test.pl \

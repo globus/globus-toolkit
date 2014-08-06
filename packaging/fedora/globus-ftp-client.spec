@@ -1,6 +1,6 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.10
+Version:	8.11
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
@@ -141,6 +141,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Aug 06 2014 Globus Toolkit <support@globus.org> - 8.11-1
+- Skip put-test.pl on mingw
+
 * Tue Aug 05 2014 Globus Toolkit <support@globus.org> - 8.10-1
 - Skip put-test.pl on mingw
 
