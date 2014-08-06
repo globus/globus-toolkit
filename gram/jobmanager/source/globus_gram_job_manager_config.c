@@ -342,11 +342,12 @@ globus_gram_job_manager_config_init(
         else if ((strcmp(argv[i], "-globus-job-dir") == 0)
                  && (i + 1 < argc))
         {
+            char * tmp_user_name = getenv("LOGNAME");
 	    config->job_dir_home =
                 globus_common_create_string(
                     "%s/%s",
                     argv[++i],
-                    strdup(getenv("USER")));
+                    tmp_user_name ? tmp_user_name : "USER");
 
             if (config->job_dir_home == NULL)
             {
