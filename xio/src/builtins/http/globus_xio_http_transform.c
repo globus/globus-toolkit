@@ -655,7 +655,7 @@ globus_i_xio_http_parse_residue(
     globus_i_xio_http_header_info_t *   headers;
     globus_size_t                       nbytes;
     globus_bool_t                       done;
-    globus_size_t                       max_content = 0;
+    globus_off_t                        max_content = 0;
     GlobusXIOName(globus_i_xio_http_parse_residue);
 
     *registered_again = GLOBUS_FALSE;

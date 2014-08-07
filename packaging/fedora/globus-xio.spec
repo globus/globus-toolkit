@@ -140,6 +140,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Thu Aug 07 2014 Globus Toolkit <support@globus.org> - 4.12-1
+- GT-546: HTTP transfers larger than 4GB fail 
+
 * Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 4.11-1
 - Merge changes from Mattias Ellert
 

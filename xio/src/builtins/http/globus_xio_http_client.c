@@ -336,9 +336,8 @@ globus_i_xio_http_client_write_request(
                     free_iovecs_exit);
 
             size_buffer = globus_common_create_string(
-                    "%lu\r\n",
-                    (unsigned long) 
-                            http_handle->request_info.headers.content_length);
+                    "%"GLOBUS_OFF_T_FORMAT"\r\n",
+                     http_handle->request_info.headers.content_length);
             
             if (size_buffer == NULL)
             {

@@ -343,10 +343,8 @@ globus_i_xio_http_server_write_response(
                         free_iovecs_error);
 
                 size_buffer = globus_common_create_string(
-                        "%lu\r\n",
-                        (unsigned long)
-                            http_handle->response_info.headers.content_length);
-
+                        "%"GLOBUS_OFF_T_FORMAT"\r\n",
+                         http_handle->request_info.headers.content_length);
                 if (size_buffer == NULL)
                 {
                     result = GlobusXIOErrorMemory("iovec.iov_base");
