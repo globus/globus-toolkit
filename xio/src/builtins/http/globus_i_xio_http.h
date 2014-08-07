@@ -191,7 +191,7 @@ typedef struct
     /**
      * Content-Length header's value, if present
      */
-    globus_size_t                       content_length;
+    globus_off_t                        content_length;
     /**
      * Transfer-Encoding header's value, if present.
      */

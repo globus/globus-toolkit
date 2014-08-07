@@ -170,7 +170,7 @@ globus_i_xio_http_header_info_set_header(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_xio_http_header_t *          header;
     int                                 rc;
-    unsigned long                       length;
+    globus_off_t                        length;
     globus_bool_t                       store;
     GlobusXIOName(globus_l_xio_http_header_set);
 
@@ -178,8 +178,7 @@ globus_i_xio_http_header_info_set_header(
     /* Special cases for entity-body handling headers */
     if (strcasecmp(header_name, "Content-Length") == 0)
     {
-        rc = sscanf(header_value, "%lu", &length);
-
+        rc = globus_libc_scan_off_t(header_value, &length, NULL);
         if (rc < 1)
         {
             result = GlobusXIOHttpErrorInvalidHeader(header_name, header_value);

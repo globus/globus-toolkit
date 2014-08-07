@@ -12,7 +12,7 @@
 
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	3.9
+Version:	3.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
@@ -183,6 +183,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Aug 07 2014 Globus Toolkit <support@globus.org> - 3.10-1
+- GT-546: HTTP transfers larger than 4GB fail 
+
 * Fri Mar 28 2014 Globus Toolkit <support@globus.org> - 3.9-1
 - GT-501: http driver threading issues
 - GT-498: http driver auto reconnect persistent connections

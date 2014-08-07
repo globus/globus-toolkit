@@ -1,3 +1,9 @@
+globus-xio (3.10-1) unstable; urgency=low
+   
+  * GT-546: HTTP transfers larger than 4GB fail
+
+ -- Globus Toolkit <support@globus.org>  Thu, 07 Aug 2014 12:12:13 -0500
+
 globus-xio (3.9-2) unstable; urgency=low
 
   * Rename dbg package
