@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.14
-Release:	1%{?dist}
+Version:	0.15
+Release:	2%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
@@ -15,9 +15,18 @@ BuildArch:      noarch
 
 Requires(pre): shadow-utils
 Requires:	pyOpenSSL
+
+%if 0%{?suse_version} == 0
 Requires:       mod_ssl
 Requires:       mod_wsgi
-%if 0%{?rhel} != 0
+%else
+# Available from http://download.opensuse.org/repositories/Apache/SLE_11_SP3/Apache.repo
+Requires:       apache2 >= 2.4
+# Available from http://download.opensuse.org/repositories/Apache:/Modules/Apache_SLE_11_SP3/Apache:Modules.repo
+Requires:       apache2-mod_wsgi
+%endif
+
+%if 0%{?rhel} != 0 
 Requires:       python-crypto
 Requires:       m2crypto
 %if %{rhel} < 6
@@ -25,13 +34,20 @@ Requires:       python-wsgiref
 Requires:       python-json
 Requires:       python-hashlib
 Requires:       python-ssl
-%else
 %endif
 Requires:       python-httplib2
+%if %{rhel} < 7
 Requires:       python-sqlite2
+%endif
+%else
+%if 0%{?suse_version} > 0
+Requires:       python-crypto
+Requires:       python-m2crypto
+Requires:       python-httplib2
 %else
 Requires:       python-crypto >= 2.2
 Requires:       python-httplib2
+%endif
 %endif
 %if 0%{?rhel} == 05
 Conflicts:      mod_python
@@ -71,17 +87,26 @@ fi
 exec /usr/bin/env PYTHONPATH="$pythonpath" python /usr/share/%{name}/myproxy-oauth-setup "\$@"
 EOF
 chmod a+x $RPM_BUILD_ROOT%{_sbindir}/myproxy-oauth-setup
+%if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
 mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
-%if 0%{?fedora} >= 18
 cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth-2.4 \
    $RPM_BUILD_ROOT/etc/httpd/conf.d/wsgi-myproxy-oauth.conf 
 %else
 %if 0%{?rhel} == 05
+mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
 cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth-epel5 \
    $RPM_BUILD_ROOT/etc/httpd/conf.d/wsgi-myproxy-oauth.conf 
 %else
+%if 0%{?suse_version} > 0
+mkdir -p $RPM_BUILD_ROOT/etc/apache2/conf.d
+cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth-2.4 \
+   $RPM_BUILD_ROOT/etc/apache2/conf.d/wsgi-myproxy-oauth.conf 
+
+%else
+mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
 cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth \
    $RPM_BUILD_ROOT/etc/httpd/conf.d/wsgi-myproxy-oauth.conf 
+%endif
 %endif
 %endif
 
@@ -92,8 +117,12 @@ getent group myproxyoauth >/dev/null || groupadd -r myproxyoauth
 getent passwd myproxyoauth >/dev/null || \
     useradd -r -g myproxyoauth -d /usr/share/myproxy-oauth -s /sbin/nologin \
         -c "MyProxy Oauth Daemon" myproxyoauth
-        exit 0
 
+%if 0%{?suse_version} != 0
+mkdir -p /srv/www/run
+%endif
+
+exit 0
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -101,12 +130,25 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc %{_docdir}/%{name}/README.txt
 %doc %{_docdir}/%{name}/apache/*
-%config(noreplace) /etc/httpd/conf.d/wsgi-myproxy-oauth.conf
+%config(noreplace) /etc/*/conf.d/wsgi-myproxy-oauth.conf
 %dir %attr(0700,myproxyoauth,myproxyoauth) /var/lib/myproxy-oauth
 /usr/share/%{name}
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Mon Aug 04 2014 Globus Toolkit <support@globus.org> - 0.15-2
+- Fix error in scriptlet to create wsgi socket dir on SLES 11
+
+* Thu Jul 31 2014 Globus Toolkit <support@globus.org> - 0.15-1
+- Update to 0.15 for EC2-public hostname awareness
+- Create wsgi socket dir on SLES 11
+
+* Tue Jul 29 2014 Globus Toolkit <support@globus.org> - 0.14-3
+- EL7 requires Apache 2.4 configuration file
+
+* Fri Jul 25 2014 Globus Toolkit <support@globus.org> - 0.14-2
+- EL7 doesn't require python-sqlite2
+
 * Mon Jan 20 2014 Globus Toolkit <support@globus.org> - 0.14-1
 - move to globus repo
 

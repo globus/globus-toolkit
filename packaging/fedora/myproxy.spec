@@ -1,13 +1,13 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	5.9
-Release:	10%{?dist}
+Version:	6.0rc3
+Release:	5%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
 License:        NCSA and BSD and ASL 2.0
 URL:            http://grid.ncsa.illinois.edu/myproxy/
-Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}-gt5.2.tar.gz
+Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}.tar.gz
 
 #Source1:        myproxy.init
 #Source2:        myproxy.sysconfig
@@ -17,14 +17,13 @@ Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}-gt5.
 #newer though not that new. myproxy is the last software in
 #EPEL using the old vomsc.
 #Patch to go upstream myproxy though they are aware.
-Patch0:         https://raw.githubusercontent.com/globus/globus-toolkit/globus_6_branch/myproxy.gt6.diff
+#Patch0:         https://raw.githubusercontent.com/globus/globus-toolkit/globus_6_branch/myproxy.gt6.diff
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  globus-gss-assist-devel >= 3
 BuildRequires:  globus-usage-devel >= 0
 BuildRequires:  pam-devel
-BuildRequires:  graphviz
 %if 0%{?suse_version} == 0
 BuildRequires:  voms-devel >= 1.9.12.1
 %endif
@@ -36,29 +35,10 @@ BuildRequires:  openldap2-devel
 BuildRequires:  openldap-devel >= 2.3
 %endif
 %endif
-BuildRequires:  doxygen
-
-%if "%{?rhel}" == "5"
-BuildRequires: graphviz-gd
+%if "%{?suse_version}" != "0"
+BuildRequires:      krb5-devel >= 1
 %endif
 
-%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
-BuildRequires:  tex(latex)
-%else
-%if 0%{?suse_version} > 0
-BuildRequires:  texlive-latex
-%else
-BuildRequires:  tetex-latex
-%endif
-%endif
-
-%if %{?fedora}%{!?fedora:0} == 18
-BuildRequires: tex(sectsty.sty)
-BuildRequires: tex(tocloft.sty)
-BuildRequires: tex(xtab.sty)
-BuildRequires: tex(multirow.sty)
-BuildRequires: tex(fullpage.sty)
-%endif
 BuildRequires:      globus-proxy-utils >= 5
 BuildRequires:      globus-gsi-cert-utils-progs >= 8
 BuildRequires:      globus-common-devel >= 8
@@ -128,9 +108,9 @@ Package %{name}-devel contains development files for MyProxy.
 
 %package server
 Requires(pre):    shadow-utils
+%if 0%{?suse_version} == 0
 Requires(post):   chkconfig
 Requires(preun):  chkconfig
-%if 0%{?suse_version} == 0
 Requires(preun):  initscripts
 Requires(postun): initscripts
 %else
@@ -193,18 +173,15 @@ Package %{name}-doc contains the MyProxy documentation.
 
 
 %prep
-%setup -q
-%patch0 -p1
+%setup -q -n myproxy-6.0
+#%patch0 -p1
 #cp -p %{SOURCE1} .
 #cp -p %{SOURCE2} .
 #cp -p %{SOURCE3} .
 
 
 %build
-rm -f doxygen/Doxyfile*
-rm -f doxygen/Makefile.am
 rm -f pkgdata/Makefile.am
-rm -f globus_automake*
 
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 rm -rf autom4te.cache
@@ -212,12 +189,12 @@ autoreconf -if
 %endif
 
 %if 0%{?suse_version} > 0
-%configure --enable-doxygen --with-openldap=%{_usr} \
+%configure --with-openldap=%{_usr} \
                                     --without-voms \
                                     --with-kerberos5=%{_usr} --with-sasl2=%{_usr} \
 				    --includedir=%{_usr}/include/globus
 %else
-%configure --enable-doxygen --with-openldap=%{_usr} \
+%configure --with-openldap=%{_usr} \
                                     --with-voms=%{_usr} \
                                     --with-kerberos5=%{_usr} --with-sasl2=%{_usr} \
 				    --includedir=%{_usr}/include/globus
@@ -286,7 +263,130 @@ mv $RPM_BUILD_ROOT%{_datadir}/%{name}/myproxy-server.config \
 
 mkdir -p $RPM_BUILD_ROOT%{_initddir}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
+%if 0%{?suse_version} == 0
 install  -m 755 myproxy.init $RPM_BUILD_ROOT%{_initddir}/myproxy-server
+%else
+cat <<'EOF' > $RPM_BUILD_ROOT%{_initddir}/myproxy-server
+#!/bin/sh
+#
+# myproxy-server - Server for X.509 Public Key Infrastructure (PKI) security credentials
+#
+# chkconfig: - 55 25
+# description:  Server for X.509 Public Key Infrastructure (PKI) security credentials
+#
+### BEGIN INIT INFO
+# Provides: myproxy-server
+# Required-Start:  $local_fs $network $syslog
+# Required-Stop:  $local_fs $syslog
+# Should-Start:  $syslog
+# Should-Stop:  $network $syslog
+# Default-Stop: 0 1 6
+# Default-Start: 2 3 4 5
+# Short-Description: Startup the MyProxy server daemon
+# Description: Server for X.509 Public Key Infrastructure (PKI) security credentials
+### END INIT INFO
+
+# Source function library.
+. /lib/lsb/init-functions
+
+exec="/usr/sbin/myproxy-server"
+prog=$(basename $exec)
+
+# Defaults
+MYPROXY_USER=myproxy
+MYPROXY_OPTIONS="-s /var/lib/myproxy"
+X509_USER_CERT=/etc/grid-security/myproxy/hostcert.pem
+X509_USER_KEY=/etc/grid-security/myproxy/hostkey.pem
+export X509_USER_CERT
+export X509_USER_KEY
+PIDFILE=/var/run/myproxy.pid
+
+# Override defaults here.
+[ -e /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
+
+# Start/Stop the myproxy daemon as user $MYPROXY_USER
+# Is there a better LSB idiom for this?
+if [ "$(id -u)" = 0 ]; then
+    userexist="$(getent passwd "$MYPROXY_USER" | cut -d: -f3)"
+    if [ "$userexist" != "" ] && [ "$userexist" != 0 ]; then
+        exec su "$MYPROXY_USER" -s /bin/sh -c "$0 ${1+"$@"}"
+    fi
+fi
+
+# A few sanity checks 
+if [ "$1" != "status" ]; then
+	[ ! -f $X509_USER_KEY ]  && log_failure_msg "$prog: No hostkey file"  && exit 0
+	[ ! -r $X509_USER_KEY ]  && log_failure_msg "$prog: Unable to read hostkey file $X509_USER_KEY"  && exit 0
+	[ ! -r $X509_USER_CERT ] && log_failure_msg "$prog: No hostcert file" && exit 0
+	[ ! -r $X509_USER_CERT ] && log_failure_msg "$prog: Unable to read hostcert file" && exit 0
+fi
+
+start() {
+    pidofproc $prog > /dev/null && log_warning_msg "$prog already running" && exit 0
+    cd /
+    X509_USER_CERT=$X509_USER_CERT X509_USER_KEY=$X509_USER_KEY start_daemon -p $PIDFILE "$exec" ${MYPROXY_OPTIONS}
+    retval="$?"
+    if [ "$retval" -eq 0 ]; then
+	log_success_msg "Started $prog"
+	pidofproc "$exec" > "$PIDFILE"
+    else
+	log_failure_msg "Error starting $prog"
+    fi
+    return $retval
+}
+
+stop() {
+    killproc -p $PIDFILE "$exec"
+    retval=$?
+    if [ "$retval" -eq 0 ]; then
+        log_success_msg "Stopped $prog"
+    else
+        log_success_msg "Error stopping $prog"
+    fi
+    return $retval
+}
+
+restart() {
+    stop
+    start
+}
+
+case "$1" in
+    start|stop|restart)
+        $1
+        ;;
+    force-reload)
+        restart
+        ;;
+    status)
+        pidofproc -p $PIDFILE $prog > /dev/null
+	result="$?"
+	if [ "$result" -eq 0 ]; then
+	    log_success_msg "$prog is running"
+	else
+	    log_failure_msg "$prog is not running"
+	fi
+	exit $result
+        ;;
+    try-restart|condrestart)
+        if pidofproc -p $PIDFILE $prog >/dev/null ; then
+            restart
+        fi
+	;;
+    reload)
+        # If config can be reloaded without restarting, implement it here,
+        # remove the "exit", and add "reload" to the usage message below.
+        # For example:
+        pidofproc -p $PIDFILE $prog >/dev/null || exit 3
+        killproc -p $PIDFILE $prog -HUP
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|reload|try-restart|force-reload}"
+        exit 2
+esac
+EOF
+chmod 755 $RPM_BUILD_ROOT%{_initddir}/myproxy-server
+%endif
 install  -m 644 myproxy.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/myproxy-server
 cat >> $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/myproxy-server <<'EOF'
 for myproxy_conf in "%{_sysconfdir}/myproxy.d"/*; do
@@ -414,6 +514,31 @@ fi
 %{_libdir}/libmyproxy.so
 
 %changelog
+* Mon Aug 04 2014 Globus Toolkit <support@globus.org> - 5.10rc3-5
+- Quote suse init script
+
+* Fri Aug 01 2014 Globus Toolkit <support@globus.org> - 5.10rc3-4
+- Add different init script for suse
+
+* Wed Jul 30 2014 Globus Toolkit <support@globus.org> - 5.10rc3-3
+- Add dependency on krb5-devel for SuSE, revert predefining HAVE_GSSAPI_H
+
+* Wed Jul 30 2014 Globus Toolkit <support@globus.org> - 5.10rc3-2
+- Remove unused doxygen/LaTeX dependencies
+
+* Wed Jul 30 2014 Globus Toolkit <support@globus.org> - 5.10rc3-1
+- Update to myproxy-6.0rc3.tar.gz
+- Predefine HAVE_GSSAPI_H on SuSE
+
+* Wed Jul 30 2014 Globus Toolkit <support@globus.org> - 5.10rc2-1
+- Update to myproxy-6.0rc2.tar.gz
+
+* Fri Jul 25 2014 Globus Toolkit <support@globus.org> - 5.10rc1-2
+- SLES 11 doesn't list chkconfig as a capability
+
+* Thu Jul 24 2014 Globus Toolkit <support@globus.org> - 5.10rc1-1
+- Update to 6.0rc1
+
 * Tue Jan 14 2014 Globus Toolkit <support@globus.org> - 5.9-9
 - Source0 URL fix
 

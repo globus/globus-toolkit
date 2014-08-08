@@ -7,7 +7,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	15.23
-Release:	1%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -66,7 +66,14 @@ Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 Summary:	Globus Toolkit - Common Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
+%if 0%{?suse_version} == 0
+%if 0%{?rhel} > 4 || 0%{?rhel} == 0
+Requires:	libtool-ltdl-devel
+%endif
+%endif
+%if 0%{?rhel} > 4 || 0%{?rhel} == 0
 Obsoletes:	globus-libtool-devel%{?_isa}
+%endif
 #		Obsolete dropped packages from Globus Toolkit 4.2.1
 Obsoletes:	globus-core
 Obsoletes:	globus-data-conversion-devel
@@ -208,6 +215,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Jul 25 2014 Globus Toolkit <support@globus.org> - 15.23-3
+- Adjust -devel dependency on ltdl-devel to exclude SuSE
+
+* Wed Jul 23 2014 Globus Toolkit <support@globus.org> - 15.23-2
+- Add -devel dependency on ltdl-devel
+
 * Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 15.23-1
 - Merge changes from Mattias Ellert
 

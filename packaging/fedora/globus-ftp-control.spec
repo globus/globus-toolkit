@@ -1,7 +1,7 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
 Version:	5.10
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
 Group:		System Environment/Libraries
@@ -108,6 +108,9 @@ make install DESTDIR=$RPM_BUILD_ROOT
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
+%check
+make %{?_smp_mflags} check
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -134,6 +137,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 23 2014 Globus Toolkit <support@globus.org> - 5.10-2
+- Add make check step
+
 * Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 5.10-1
 - Merge changes from Mattias Ellert
 

@@ -1,4 +1,4 @@
-AC_INIT([globus_toolkit], [6.0.alpha3], [https://globus.atlassian.net/])
+AC_INIT([globus_toolkit], [6.0.beta1], [https://globus.atlassian.net/])
 m4_define([short_version], [m4_substr(AC_PACKAGE_VERSION, [0],
     m4_index(AC_PACKAGE_VERSION, [.]))])
 AC_PREFIX_DEFAULT([/usr/local/globus-]short_version)
@@ -106,7 +106,8 @@ $1-osx-pkg: \$($1-osx-pkg)
 ])
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
     ifelse([$1], [gsi_openssh], [], [
-        m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])dnl
+        ifelse([$1], [myproxy], [], [
+            m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])])dnl
     m4_append_uniq([GT_BUNDLES_MACRO],[$4], [ ])dnl
     m4_append([GT_BUNDLES_]m4_translit($4,[-],[_])[_MACRO],[$1-stamp], [ ])dnl
     m4_append([GT_BUNDLE_PACKAGES]m4_translit($4,[-],[_]),[$1], [ ])dnl
@@ -131,7 +132,6 @@ $1-osx-pkg: \$($1-osx-pkg)
     m4_foreach([req], m4_split(m4_normalize($3)), [dnl
         m4_append(req[_REQUIRES], [choices]@<:@'org.globus.package.$1'@:>@[.selected], [ || ])])dnl
 ])dnl
-
 
 GT_PACKAGE(
     [globus_common], [common/source],[libltdl],[ccommonlibs])
@@ -320,6 +320,9 @@ GT_PACKAGE([globus_gram_job_manager],[gram/jobmanager/source],
       globus_usage globus_gram_client_tools], [gram5-server])
 PKG_CONFIG_PATH="[${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}]GT_PKGCONFIG_DIRS_MACRO"
 export PKG_CONFIG_PATH
+
+dnl PKG_PROG_PKG_CONFIG([0.22])
+
 dnl 
 if test "$HAVE_LTDL" = 1; then
     TOP_SUBDIRS="."
@@ -471,6 +474,7 @@ m4_foreach([bundle],
 final_enabled_bundles=""
 final_enabled_xio_drivers=""
 gsi_openssh_enabled=no
+myproxy_enabled=no
 for en_name in ""$enabled_buns; do
     skip=0
     for dis_name in ""$disabled_buns; do
@@ -482,6 +486,8 @@ for en_name in ""$enabled_buns; do
     if test "$skip" = 0; then
         if test X"$en_name" = X"gsi-openssh"; then
             gsi_openssh_enabled=yes
+        elif test X"$en_name" = X"myproxy"; then
+            myproxy_enabled=yes
         fi
         final_enabled_bundles="${final_enabled_bundles:+$final_enabled_bundles }$en_name"
         final_enabled_xio_drivers="${final_enabled_xio_drivers:+$final_enabled_xio_drivers }\$(${en_name}-xio-drivers)"
@@ -515,6 +521,9 @@ AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
 
 if test x"$gsi_openssh_enabled" = x"yes"; then
     AC_CONFIG_SUBDIRS(gsi_openssh/source)
+fi
+if test x"$myproxy_enabled" = x"yes"; then
+    AC_CONFIG_SUBDIRS(myproxy/source)
 fi
 
 AC_OUTPUT

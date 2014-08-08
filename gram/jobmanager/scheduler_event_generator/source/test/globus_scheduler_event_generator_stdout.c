@@ -347,7 +347,7 @@ globus_l_seg_stdout_deactivate(void)
     {
         while (globus_l_seg_shutdown == 1)
         {
-            globus_cond_wait(&globus_l_seg_mutex, &globus_l_seg_cond);
+            globus_cond_wait(&globus_l_seg_cond, &globus_l_seg_mutex);
         }
     }
     globus_fifo_destroy(&globus_l_seg_buffers);

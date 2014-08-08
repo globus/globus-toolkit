@@ -1,6 +1,6 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	14.18
+Version:	14.19
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Wed Aug 06 2014 Globus Toolkit <support@globus.org> - 14.19-1
+- Fix crash when non-standard USER environment variable is not set
+
 * Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 14.18-1
 - Merge changes from Mattias Ellert
 

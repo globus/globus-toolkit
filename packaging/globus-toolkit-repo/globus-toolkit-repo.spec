@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        1
+Release:        2
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -39,6 +39,14 @@ el6_testing_baseurl="${repo_root}/testing/rpm/el/6/\$basearch/"
 el6_testing_sourceurl="${repo_root}/testing/rpm/el/6/SRPMS/"
 el6_unstable_baseurl="${unstable_root}/el/6/\$basearch/"
 el6_unstable_sourceurl="${unstable_root}/el/6/SRPMS/"
+
+yum_repos="${yum_repos:+$yum_repos }el7"
+el7_stable_baseurl="${repo_root}/stable/rpm/el/7/\$basearch/"
+el7_stable_sourceurl="${repo_root}/stable/rpm/el/7/SRPMS/"
+el7_testing_baseurl="${repo_root}/testing/rpm/el/7/\$basearch/"
+el7_testing_sourceurl="${repo_root}/testing/rpm/el/7/SRPMS/"
+el7_unstable_baseurl="${unstable_root}/el/7/\$basearch/"
+el7_unstable_sourceurl="${unstable_root}/el/7/SRPMS/"
 
 yum_repos="${yum_repos:+$yum_repos }fedora"
 fedora_stable_baseurl="${repo_root}/stable/rpm/fedora/\$releasever/\$basearch/"
@@ -112,6 +120,9 @@ case $(lsb_release -is):$(lsb_release -rs) in
     CentOS:6* | Scientific*:6* | RedHat*:6* )
         repo=el6
         ;;
+    CentOS:7* | Scientific*:7* | RedHat*:7* )
+        repo=el7
+        ;;
     Fedora*:*)
         repo=fedora
         ;;
@@ -132,6 +143,9 @@ case $(lsb_release -is):$(lsb_release -rs) in
     CentOS:6* | Scientific*:6* | RedHat*:6* )
         repo=el6
         ;;
+    CentOS:7* | Scientific*:7* | RedHat*:7* )
+        repo=el7
+        ;;
     Fedora*:*)
         repo=fedora
 	exit 0
@@ -145,3 +159,7 @@ rm -f /etc/yum.repo.d/globus-toolkit-6-unstable-${repo}.repo
 %defattr(-,root,root,-)
 %{_sysconfdir}/pki/rpm-gpg/*
 %{_datadir}/*
+
+%changelog
+* Tue Jul 22 2014 Globus Toolkit <support@globus.org> - 6-2
+- Add EL7 to repo list

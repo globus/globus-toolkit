@@ -1,3 +1,15 @@
+globus-ftp-client (8.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * Skip put-test.pl on mingw
+
+ -- Globus Toolkit <support@globus.org>  Wed, 06 Aug 2014 07:35:42 -0400
+
+globus-ftp-client (8.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * Skip put-test.pl on mingw
+
+ -- Globus Toolkit <support@globus.org>  Tue, 05 Aug 2014 13:39:53 -0400
+
 globus-ftp-client (8.9-2+gt6.@distro@) @distro@; urgency=low
 
   * Rename dbg packages
