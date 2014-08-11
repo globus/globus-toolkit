@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        2
+Release:        3
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -142,13 +142,13 @@ case $(lsb_release -is):$(lsb_release -rs) in
     Fedora*:*)
         repo=fedora
         ;;
-	*)
     SUSE*:11*)
         repo=sles11
         ;;
     *)
 	echo "Unsupported repo" 1>&2
 	exit 1
+        ;;
 esac
 
 if [ "$repo" != "sles11" ]; then
@@ -157,9 +157,9 @@ if [ "$repo" != "sles11" ]; then
     yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-unstable-${repo}.repo
     yum-config-manager --enable Globus-Toolkit-6-$repo > /dev/null
 else
-    zypper ar file://%{_datadir}/globus-toolkit-6-stable-${repo}.repo
-    zypper ar -d file://%{_datadir}/globus-toolkit-6-testing-${repo}.repo
-    zypper ar -d file://%{_datadir}/globus-toolkit-6-unstable-${repo}.repo
+    zypper ar %{_datadir}/globus-toolkit-6-stable-${repo}.repo
+    zypper ar -d %{_datadir}/globus-toolkit-6-testing-${repo}.repo
+    zypper ar -d %{_datadir}/globus-toolkit-6-unstable-${repo}.repo
 fi
 
 %preun
@@ -175,7 +175,6 @@ case $(lsb_release -is):$(lsb_release -rs) in
         ;;
     Fedora*:*)
         repo=fedora
-	exit 0
         ;;
     SUSE*:11*)
         repo=sles11
