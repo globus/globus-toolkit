@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        5
+Release:        6
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -85,7 +85,7 @@ for repo in $pkg_repos ; do
         -e "s!@TESTING_SOURCEURL@!$testing_sourceurl!g" \
         -e "s!@UNSTABLE_BASEURL@!$unstable_baseurl!g" \
         -e "s!@UNSTABLE_SOURCEURL@!$unstable_sourceurl!g" \
-        -e "s!@REPO_TYPE@!$repo_type!g" \
+        -e "s!@REPO_TYPE@!${repo_type:+type=$repo_type}!g" \
         < %{SOURCE1} > globus-toolkit-6-stable-$repo.repo
     sed -e "s!@REPO@!$repo!g" \
         -e "s!@STABLE_BASEURL@!$stable_baseurl!g" \
@@ -94,7 +94,7 @@ for repo in $pkg_repos ; do
         -e "s!@TESTING_SOURCEURL@!$testing_sourceurl!g" \
         -e "s!@UNSTABLE_BASEURL@!$unstable_baseurl!g" \
         -e "s!@UNSTABLE_SOURCEURL@!$unstable_sourceurl!g" \
-        -e "s!@REPO_TYPE@!$repo_type!g" \
+        -e "s!@REPO_TYPE@!${repo_type:+type=$repo_type}!g" \
         < %{SOURCE2} > globus-toolkit-6-testing-$repo.repo
     sed -e "s!@REPO@!$repo!g" \
         -e "s!@STABLE_BASEURL@!$stable_baseurl!g" \
@@ -103,7 +103,7 @@ for repo in $pkg_repos ; do
         -e "s!@TESTING_SOURCEURL@!$testing_sourceurl!g" \
         -e "s!@UNSTABLE_BASEURL@!$unstable_baseurl!g" \
         -e "s!@UNSTABLE_SOURCEURL@!$unstable_sourceurl!g" \
-        -e "s!@REPO_TYPE@!$repo_type!g" \
+        -e "s!@REPO_TYPE@!${repo_type:+type=$repo_type}!g" \
         < %{SOURCE3} > globus-toolkit-6-unstable-$repo.repo
 done
 
@@ -209,6 +209,9 @@ fi
 %{_datadir}/*
 
 %changelog
+* Mon Aug 11 2014 Globus Toolkit <support@globus.org> - 6-6
+- Fix "type" line
+
 * Mon Aug 11 2014 Globus Toolkit <support@globus.org> - 6-5
 - Avoid rpm import deadlock
 
