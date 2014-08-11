@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        4
+Release:        5
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -128,7 +128,8 @@ done
 rm -rf $RPM_BUILD_ROOT
 
 %post
-rpm --import %{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
+# Can't do this here, as it deadlocks on SUSE
+# rpm --import %{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
 case $(lsb_release -is):$(lsb_release -rs) in
     CentOS:5* | Scientific*:5* | RedHat*:5* )
         repo=el5
@@ -208,6 +209,9 @@ fi
 %{_datadir}/*
 
 %changelog
+* Mon Aug 11 2014 Globus Toolkit <support@globus.org> - 6-5
+- Avoid rpm import deadlock
+
 * Mon Aug 11 2014 Globus Toolkit <support@globus.org> - 6-4
 - Don't require yum-utils
 
