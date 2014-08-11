@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        3
+Release:        4
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -11,8 +11,8 @@ Source2:        globus-toolkit-6-testing.repo.in
 Source3:        globus-toolkit-6-unstable.repo.in
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
-Requires(post): yum-utils
-Requires(preun): yum-utils
+#Requires(post): yum-utils
+#Requires(preun): yum-utils
 
 %description
 This package installs the Globus yum repository configuration and GPG key for
@@ -151,15 +151,21 @@ case $(lsb_release -is):$(lsb_release -rs) in
         ;;
 esac
 
-if [ "$repo" != "sles11" ]; then
+if command -v zypper > /dev/null; then
+    zypper ar %{_datadir}/globus-toolkit-6-stable-${repo}.repo
+    zypper ar -d %{_datadir}/globus-toolkit-6-testing-${repo}.repo
+    zypper ar -d %{_datadir}/globus-toolkit-6-unstable-${repo}.repo
+elif command -v yum-config-manager > /dev/null; then
     yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-stable-${repo}.repo
     yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-testing-${repo}.repo
     yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-unstable-${repo}.repo
     yum-config-manager --enable Globus-Toolkit-6-$repo > /dev/null
+elif [ -d /etc/yum.repos.d ] ; then
+    sed -i 's/enabled=0/' < %{_datadir}/globus-toolkit-6-stable-${repo}.repo > /etc/yum.repos.d/globus-toolkit-6-stable-${repo}.repo 
+    cp %{_datadir}/globus-toolkit-6-testing-${repo}.repo /etc/yum.repos.d
+    cp %{_datadir}/globus-toolkit-6-unstable-${repo}.repo /etc/yum.repos.d
 else
-    zypper ar %{_datadir}/globus-toolkit-6-stable-${repo}.repo
-    zypper ar -d %{_datadir}/globus-toolkit-6-testing-${repo}.repo
-    zypper ar -d %{_datadir}/globus-toolkit-6-unstable-${repo}.repo
+    echo "Copy the Globus Repository Definition from %{_datadir} to your system's repo configuration"
 fi
 
 %preun
@@ -178,18 +184,23 @@ case $(lsb_release -is):$(lsb_release -rs) in
         ;;
     SUSE*:11*)
         repo=sles11
-        for reponame in Globus-Toolkit-6 \
-                        Globus-Toolkit-6-Testing \
-                        Globus-Toolkit-6-Unstable; do
-            zypper rr ${reponame}-${repo}
-            zypper rr ${reponame}-Source-${repo}
-        done
-        exit 0
         ;;
 esac
-rm -f /etc/yum.repo.d/globus-toolkit-6-stable-${repo}.repo
-rm -f /etc/yum.repo.d/globus-toolkit-6-testing-${repo}.repo
-rm -f /etc/yum.repo.d/globus-toolkit-6-unstable-${repo}.repo
+
+if command -v zypper > /dev/null; then
+    for reponame in Globus-Toolkit-6 \
+                    Globus-Toolkit-6-Testing \
+                    Globus-Toolkit-6-Unstable; do
+        zypper rr ${reponame}-${repo}
+        zypper rr ${reponame}-Source-${repo}
+    done
+elif [ -d /etc/yum.repos.d ]; then
+    rm -f /etc/yum.repos.d/globus-toolkit-6-stable-${repo}.repo
+    rm -f /etc/yum.repos.d/globus-toolkit-6-testing-${repo}.repo
+    rm -f /etc/yum.repos.d/globus-toolkit-6-unstable-${repo}.repo
+else
+    echo "Remove the Globus Repository defintion from your system configuration"
+fi
 
 %files
 %defattr(-,root,root,-)
@@ -197,6 +208,9 @@ rm -f /etc/yum.repo.d/globus-toolkit-6-unstable-${repo}.repo
 %{_datadir}/*
 
 %changelog
+* Mon Aug 11 2014 Globus Toolkit <support@globus.org> - 6-4
+- Don't require yum-utils
+
 * Mon Aug 11 2014 Globus Toolkit <support@globus.org> - 6-3
 - Add SLES11 to repo list
 
