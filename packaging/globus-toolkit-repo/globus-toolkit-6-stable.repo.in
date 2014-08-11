@@ -5,6 +5,7 @@ failovermethod=priority
 enabled=0
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
+@REPO_TYPE@
 
 [Globus-Toolkit-6-Source-@REPO@]
 name=Globus Toolkit 6 (@REPO@)
@@ -13,3 +14,4 @@ failovermethod=priority
 enabled=0
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
+@REPO_TYPE@
