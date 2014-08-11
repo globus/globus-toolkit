@@ -1,6 +1,6 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	4.11
+Version:	4.12
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 

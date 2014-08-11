@@ -1,4 +1,4 @@
-globus-xio (3.10-1+gt6.@distro@) @distro@; urgency=low
+globus-xio (4.12-1+gt6.@distro@) @distro@; urgency=low
    
   * GT-546: HTTP transfers larger than 4GB fail
 
