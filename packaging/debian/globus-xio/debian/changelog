@@ -1,3 +1,9 @@
+globus-xio (3.11-1) unstable; urgency=low
+
+  * GT-546 fix
+
+ -- Globus Toolkit <support@globus.org>  Tue, 12 Aug 2014 11:26:55 -0500
+
 globus-xio (3.10-1) unstable; urgency=low
    
   * GT-546: HTTP transfers larger than 4GB fail
