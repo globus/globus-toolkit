@@ -1,6 +1,6 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	4.12
+Version:	4.13
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
@@ -140,6 +140,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Mon Aug 11 2014 Globus Toolkit <support@globus.org> - 4.13-1
+- Fix regression caused by GT-546 fix
+
 * Thu Aug 07 2014 Globus Toolkit <support@globus.org> - 4.12-1
 - GT-546: HTTP transfers larger than 4GB fail 
 

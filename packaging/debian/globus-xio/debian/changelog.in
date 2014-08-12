@@ -1,3 +1,9 @@
+globus-xio (4.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix regression caused by GT-546 fix
+
+ -- Globus Toolkit <support@globus.org>  Mon, 11 Aug 2014 20:14:43 -0400
+
 globus-xio (4.12-1+gt6.@distro@) @distro@; urgency=low
    
   * GT-546: HTTP transfers larger than 4GB fail
