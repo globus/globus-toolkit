@@ -142,7 +142,7 @@ sub read_package_list {
 sub bootstrap {
     my @sorted_package_names = @_;
     my $topsrcdir=cwd();
-    chdir($packagemap{'globus_core'});
+    chdir("$checkout_top_dir/$packagemap{'globus_core'}");
     print "cwd is ". cwd()."\n";
     print "pkg is globus_core--- $ENV{'GPT_LOCATION'} is GPT LOCATION\n";
     system("./bootstrap");
