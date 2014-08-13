@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        6
+Release:        7
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -209,6 +209,9 @@ fi
 %{_datadir}/*
 
 %changelog
+* Wed Aug 13 2014 Globus Toolkit <support@globus.org> - 6-7
+- Add priority to repositories
+
 * Mon Aug 11 2014 Globus Toolkit <support@globus.org> - 6-6
 - Fix "type" line
 
