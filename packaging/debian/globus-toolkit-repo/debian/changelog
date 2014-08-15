@@ -1,3 +1,9 @@
+globus-toolkit-repo (6.0.2-1) unstable; urgency=low
+
+  * Move unstable repo to www.globus.org
+
+ -- Globus Toolkit <support@globus.org>  Fri, 15 August 2014 09:17:29 -0400
+
 globus-toolkit-repo (6.0.1-2) unstable; urgency=low
 
   * Add jenkins build server key

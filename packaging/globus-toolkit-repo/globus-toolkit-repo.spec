@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        7
+Release:        8
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -23,7 +23,7 @@ Globus Toolkit 6.
 
 %build
 repo_root='http://www.globus.org/ftppub/gt6'
-unstable_root='http://builds.globus.org/repo6/rpm'
+unstable_root='http://www.globus.org/ftppub/gt6/unstable/rpm'
 pkg_repos="${pkg_repos:+$pkg_repos }el5"
 el5_stable_baseurl="${repo_root}/stable/rpm/el/5/\$basearch/"
 el5_stable_sourceurl="${repo_root}/stable/rpm/el/5/SRPMS/"
@@ -209,6 +209,9 @@ fi
 %{_datadir}/*
 
 %changelog
+* Fri Aug 15 2014 Globus Toolkit <support@globus.org> - 6-8
+- Move unstable repo to www.globus.org
+
 * Wed Aug 13 2014 Globus Toolkit <support@globus.org> - 6-7
 - Add priority to repositories
 

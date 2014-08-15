@@ -1,5 +1,5 @@
 # Unstable Repository contains packages that have passed automatic
 # Build and perhaps automatic tests, but haven't been verified by users nor
 # documented
-# deb http://builds.globus.org/repo6/deb @RELEASE@ contrib
-# deb-src http://builds.globus.org/repo6/deb @RELEASE@ contrib
+# deb http://toolkit.globus.org/ftppub/gt6/unstable/deb @RELEASE@ contrib
+# deb-src http://toolkit.globus.org/ftppub/gt6/unstable/deb @RELEASE@ contrib
