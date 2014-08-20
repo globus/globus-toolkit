@@ -1,6 +1,7 @@
 Name: globus-scheduler-event-generator
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www-unix.globus.org/ftppub/gt4/4.2.1/installers/src/gt4.2.1-all-source-installer.tar.bz2
+Source: http://www.globus.org/ftppub/gt6/packages/globus_scheduler_event_generator-5.5.tar.gz
+
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 
 Files: *

@@ -1,6 +1,7 @@
 Name: globus-gridftp-server-control
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/globus_gridftp_server_control-2.7.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server_control-3.5.tar.gz
+
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 
 Files: *

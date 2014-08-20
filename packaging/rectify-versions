@@ -23,6 +23,7 @@ my $dryrun = 0;
 my $update;
 my $help;
 my %packagelist = ();
+my $package_root = "http://www.globus.org/ftppub/gt6/packages";
 
 sub parse_package
 {
@@ -52,8 +53,13 @@ sub parse_package
 
     my $soname = int($values{PACKAGE_VERSION}) - int($values{AGE_VERSION});
 
+    if ($native_name eq 'myproxy') {
+        $soname = 0; 
+    }
+
     return {
         PACKAGE_DIR => $package_dir,
+        TARBALL => $values{PACKAGE_NAME} . "-" . $values{PACKAGE_VERSION} . ".tar.gz",
         NATIVE_NAME => $native_name,
         VERSION => $values{PACKAGE_VERSION},
         SONAME => $soname,
@@ -111,6 +117,17 @@ sub update_rpm($$)
         elsif ($specline =~ m/\%changelog/)
         {
             $changelogindex = $index;
+        }
+        elsif ($specline =~ m!Source:\s*http://(.*)/([^/]*)!)
+        {
+            if ($1 =~ m/www.globus.org/) {
+                my $oldsrc = $2;
+                my $newsrc = $package_root . "/" . $package->{TARBALL};
+                if ($oldsrc ne $newsrc) {
+                    $ARRAY[$index] = "Source:\t$newsrc\n";
+                    $specfile_changed = 1;
+                }
+            }
         }
         elsif ($specline =~ m/(Requires:\s*(\S*)\s*)(>=\s*[0-9.]+)/)
         {
@@ -249,6 +266,7 @@ sub update_debian($$)
 
     $changed |= update_rules($pkgmeta);
     $changed |= update_control($pkgmeta, $allpkgmeta);
+    $changed |= update_copyright($pkgmeta, $allpkgmeta);
     $changed |= check_if_version_is_different($pkgmeta);
     $changed |= check_if_debian_metadata_changed($pkgmeta);
     update_changelog($pkgmeta) if ($changed);
@@ -485,6 +503,55 @@ sub update_control
         close($fd);
         if ($stage) {
             system("git add $controlpath");
+        }
+    }
+    return $changed;
+}
+
+sub update_copyright
+{
+    my ($pkgmeta, $allpkgmeta) = @_;
+    my $crpath = "$topdir/debian/$pkgmeta->{NATIVE_NAME}/debian/copyright";
+    my $changed = 0;
+    my $fd;
+    my @old_cr;
+    my $in_description = 0;
+
+    open($fd, "<$crpath") || return 0;
+    @old_cr=<$fd>;
+    close($fd);
+
+    for my $line (@old_cr)
+    {
+        chomp($line);
+        if ($line =~ m/^Source:/)
+        {
+            my $oldsource;
+            my $newsource;
+            ($_, $oldsource) = split(/:\s*/, $line, 2);
+            $newsource = $oldsource;
+            if ($oldsource =~ m!http://www(-unix)?.globus.org!) {
+                $newsource = $package_root . "/" . $pkgmeta->{TARBALL};
+            }
+
+            if ($newsource ne $oldsource)
+            {
+                print "changed source URL in $line\n" if ($verbose);
+                $changed = 1;
+                $line = "Source: $newsource\n";
+            }
+        }
+    }
+    if ($changed)
+    {
+        open($fd, ">$crpath") || return 0;
+        for my $line (@old_cr)
+        {
+            print $fd "$line\n";
+        }
+        close($fd);
+        if ($stage) {
+            system("git add $crpath");
         }
     }
     return $changed;

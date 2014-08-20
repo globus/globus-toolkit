@@ -1,13 +1,13 @@
 Name:		globus-gsi-openssl-error
 %global _name %(tr - _ <<< %{name})
 Version:	3.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gsi_openssl_error-3.3.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -133,6 +133,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 3.3-2
+- Fix Source path
+
 * Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 3.3-1
 - Merge changes from Mattias Ellert
 

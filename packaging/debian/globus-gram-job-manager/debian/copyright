@@ -1,6 +1,7 @@
 Name: globus-gram-job-manager
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/globus_gram_job_manager-13.51.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager-14.19.tar.gz
+
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 
 Files: *

@@ -1,13 +1,13 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
 Version:	10.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:         http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gatekeeper-10.6.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -112,6 +112,9 @@ fi
 
 
 %changelog
+* Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 10.6-2
+- Fix Source path
+
 * Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 10.6-1
 - Merge changes from Mattias Ellert
 

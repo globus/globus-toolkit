@@ -2,14 +2,14 @@
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
 Version:	6.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
 Group:		Applications/Internet
 BuildArch:	noarch
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_scripts-6.4.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common-progs >= 14
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 6.4-2
+- Fix Source path
+
 * Mon Jun 09 2014 Globus Toolkit <support@globus.org> - 6.4-1
 - Merge changes from Mattias Ellert
 

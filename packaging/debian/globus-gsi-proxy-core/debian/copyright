@@ -1,6 +1,7 @@
 Name: globus-gsi-proxy-core
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/globus_gsi_proxy_core-6.2.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_gsi_proxy_core-7.5.tar.gz
+
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 
 Files: *

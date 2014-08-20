@@ -1,13 +1,13 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
 Version:	14.19
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager-14.19.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 14.19-2
+- Fix Source path
+
 * Wed Aug 06 2014 Globus Toolkit <support@globus.org> - 14.19-1
 - Fix crash when non-standard USER environment variable is not set
 
