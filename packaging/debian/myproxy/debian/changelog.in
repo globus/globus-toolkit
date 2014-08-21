@@ -1,8 +1,8 @@
-myproxy (6.0-1) @distro@; urgency=low
+myproxy (6.0rc3-2+gt6.@distro@)) @distro@; urgency=low
 
   * Fix Source path
 
- -- Globus Toolkit <support@globus.org>  Wed, 20 Aug 2014 15:42:40 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 21 August 2014 08:22:35 -0400
 
 myproxy (6.0rc3-1+gt6.@distro@) @distro@; urgency=low
 
