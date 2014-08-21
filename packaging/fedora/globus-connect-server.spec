@@ -1,5 +1,5 @@
 Name:           globus-connect-server
-Version:        3.0.6
+Version:        3.0.7
 Release:        1%{?dist}
 Summary:        Globus Connect Server
 %global _name %(tr - _ <<< %{name})
@@ -19,6 +19,8 @@ BuildArch:      noarch
 %else
 %global python  python
 %endif
+
+BuildRequires:  %{python}
 
 Requires:       globus-connect-server-common = %{version}
 Requires:       globus-connect-server-io = %{version}
@@ -209,6 +211,9 @@ if [ -f %{_sysconfdir}/globus-connect-multiuser.conf ]; then
 fi
 
 %changelog
+* Thu Aug 21 2014 Globus Toolkit <support@globus.org> 3.0.7-1
+- Backport changes from GT6 branch: Fixes for CentOS 7, SLES 11, Ubuntu 14.04
+
 * Mon Jun 23 2014 Globus Toolkit <support@globus.org> 3.0.6-1
 - Improve diagnostics when IdentityMethod = OAuth and [OAuth] section doesn't contain a server name
 

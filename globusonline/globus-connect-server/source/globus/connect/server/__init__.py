@@ -817,10 +817,11 @@ class GCMU(object):
         (name, ver, id) = platform.linux_distribution()
         args = ["/etc/init.d/" + self.service, "stop"]
 
-        if name == 'CentOS' \
+        if name.startswith('CentOS') \
                 or name == 'RedHat' \
                 or name.startswith("Scientific") \
-                or name == 'Fedora':
+                or name == 'Fedora' \
+                or name.startswith("SUSE"):
             args = ["/sbin/service", self.service, "stop"]
         elif name == 'Ubuntu' or name == 'Debian':
             args = ["/usr/sbin/service", self.service, "stop"]
@@ -834,10 +835,11 @@ class GCMU(object):
         (name, ver, id) = platform.linux_distribution()
         args = ["/etc/init.d/" + self.service, "restart"]
 
-        if name == 'CentOS' \
+        if name.startswith('CentOS') \
                 or name == 'RedHat' \
                 or name.startswith("Scientific") \
-                or name == 'Fedora':
+                or name == 'Fedora' \
+                or name.startswith("SUSE"):
             args = ["/sbin/service", self.service, "restart"]
         elif name == 'Ubuntu' or name == 'Debian':
             args = ["/usr/sbin/service", self.service, "restart"]
