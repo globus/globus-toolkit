@@ -50,7 +50,7 @@ BuildRequires:  doxygen
 BuildRequires: graphviz-gd
 %endif
 
-%if 0%{?suse_version} != "0"
+%if 0%{?suse_version} != 0
 BuildRequires:      krb5-devel >= 1
 %endif
 
