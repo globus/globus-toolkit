@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        8
+Release:        9
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -11,8 +11,8 @@ Source2:        globus-toolkit-6-testing.repo.in
 Source3:        globus-toolkit-6-unstable.repo.in
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
-#Requires(post): yum-utils
-#Requires(preun): yum-utils
+Requires(post): lsb
+Requires(preun): lsb
 
 %description
 This package installs the Globus yum repository configuration and GPG key for
@@ -209,6 +209,9 @@ fi
 %{_datadir}/*
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 6-9
+- Add pre/post dependency on lsb
+
 * Fri Aug 15 2014 Globus Toolkit <support@globus.org> - 6-8
 - Move unstable repo to www.globus.org
 
