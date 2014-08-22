@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.9
-Release:	9%{?dist}
+Release:	10%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
