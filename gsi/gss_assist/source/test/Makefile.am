@@ -61,7 +61,10 @@ testcredlink: testcred.cert
 	cp testcred.cert "$$linkname"; \
 	echo "$$linkname" > $@
 
-CLEAN_FILES = testcred.req testcred.key testcred.cert
+CLEANFILES = testcred.req testcred.key testcred.cert \
+	exported_accept_context exported_init_context \
+	gridmap.script-test gridmap.script-test.old
+
 clean-local:
 	@if [ -f testcredlink ]; then \
 	    rm -f `cat testcredlink` testcredlink; \

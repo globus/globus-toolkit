@@ -26,6 +26,6 @@ junit:
 
 
 EXTRA_DIST = $(Scripts) $(Data)
-DISTCLEANFILES = \
+CLEANFILES = \
         globus_openssl_error_test.log.stdout \
         globus_openssl_error_test.log.stderr

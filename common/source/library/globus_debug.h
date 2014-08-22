@@ -22,7 +22,9 @@
 #include "globus_common_include.h"
 #include "globus_time.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef BUILD_DEBUG
 
@@ -230,6 +232,8 @@ globus_debug_init(
 
 #endif
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_DEBUG_H */

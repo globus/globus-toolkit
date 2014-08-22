@@ -1,21 +1,21 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.11
-Release:	2%{?dist}
+Version:	8.12
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_client-8.11.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_client-8.12.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
-Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-common%{?_isa} >= >= 15
 Requires:	globus-ftp-control%{?_isa} >= 4
 
 BuildRequires:	globus-xio-popen-driver-devel >= 2
-BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-common-devel >= >= 15
 BuildRequires:	globus-ftp-control-devel >= 4
 BuildRequires:	globus-ftp-control-doc >= 4
 BuildRequires:	globus-gridftp-server-progs
@@ -46,7 +46,7 @@ Summary:	Globus Toolkit - GridFTP Client Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-xio-popen-driver-devel%{?_isa}
-Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-common-devel%{?_isa} >= >= 15
 Requires:	globus-ftp-control-devel%{?_isa} >= 4
 
 %package doc
@@ -141,6 +141,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 8.12-1
+- Merge fixes from ellert-globus_6_branch
+
 * Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 8.11-2
 - Fix Source path
 

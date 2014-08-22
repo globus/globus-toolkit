@@ -11,7 +11,7 @@ endif
 
 name = globus-gram-client-tools
 _name = globus_gram_client_tools
-version = 11.4
+version = 11.5
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)

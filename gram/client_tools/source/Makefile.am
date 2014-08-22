@@ -1,7 +1,5 @@
 SUBDIRS = .
-BUILT_SOURCES = version.h
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = globus-gram-client-tools.pc
+
 bin_PROGRAMS = globusrun
 bin_SCRIPTS = \
 	globus-job-run \
@@ -20,7 +18,7 @@ man_MANS = globus-job-cancel.1 \
                 globusrun.1
 doc_DATA = GLOBUS_LICENSE
 
-globusrun_SOURCES = globusrun.c version.h
+globusrun_SOURCES = globusrun.c
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 globusrun_LDADD = $(PACKAGE_DEP_LIBS)
@@ -37,12 +35,7 @@ MANUAL_SOURCE = globus-job-cancel.xml \
 
 # EXTRA_DIST is used to include files in
 # a source distribution that automake fails to detect.
-EXTRA_DIST = globus-job-run.in \
-	     globus-job-status.in \
-	     globus-job-clean.in \
-	     globus-job-get-output.in \
-	     globus-job-get-output-helper \
-	     version.h.in \
+EXTRA_DIST = globus-job-get-output-helper \
 	     $(man_MANS) \
 	     $(MANUAL_SOURCE) \
 	     $(doc_DATA) \

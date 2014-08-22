@@ -16,10 +16,8 @@ jobmanager-slurm-poll: jobmanager-slurm.in
 
 EXTRA_DIST = \
         dirt.sh \
-        globus-slurm.conf.in \
         slurm.pm \
         $(doc_DATA) \
-        $(validation_DATA) \
         jobmanager-slurm.in
 
 CLEANFILES = jobmanager-slurm-poll

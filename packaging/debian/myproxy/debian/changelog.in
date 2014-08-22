@@ -1,3 +1,9 @@
+myproxy (6.0-1) @distro@; urgency=low
+
+  * Merge fixes from ellert-globus_6_branch
+
+ -- Globus Toolkit <support@globus.org>  Fri, 22 Aug 2014 16:29:29 -0400
+
 myproxy (6.0rc3-2+gt6.@distro@)) @distro@; urgency=low
 
   * Fix Source path

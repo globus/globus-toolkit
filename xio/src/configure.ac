@@ -1,6 +1,7 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio], [4.13], [https://globus.atlassian.net/])
+AC_INIT([globus_xio], [4.14], [https://globus.atlassian.net/])
+AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST(MAJOR_VERSION, [${PACKAGE_VERSION%%.*}])
 AC_SUBST(MINOR_VERSION, [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [4])
@@ -50,8 +51,8 @@ for builtin in $XIO_BUILTIN_DIRS_MACRO; do
       lib_name="builtins/${builtin}/libglobus_xio_${builtin}_driver.la"
       XIO_BUILTIN_LIBS="$XIO_BUILTIN_LIBS $lib_name"
     
-      BUILTIN_EXTENSIONS_DEC="${BUILTIN_EXTENSIONS_DEC}GlobusXIODeclareModule(${builtin}); "
-      BUILTIN_EXTENSIONS_DEF="$BUILTIN_EXTENSIONS_DEF {GlobusXIOExtensionName(${builtin}), GlobusXIOMyModule(${builtin})},"
+      BUILTIN_EXTENSIONS_DEC="${BUILTIN_EXTENSIONS_DEC} GlobusXIODeclareModule(${builtin});"
+      BUILTIN_EXTENSIONS_DEF="${BUILTIN_EXTENSIONS_DEF} {GlobusXIOExtensionName(${builtin}), GlobusXIOMyModule(${builtin})},"
 done
 AC_MSG_RESULT([$XIO_BUILTIN_DIRS])
 

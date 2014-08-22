@@ -22,7 +22,6 @@ jobmanager-lsf-seg: $(srcdir)/jobmanager-lsf-seg.in
 
 EXTRA_DIST = \
         dirt.sh \
-        globus-lsf.conf.in \
         lsf.pm \
         $(doc_DATA) \
         $(validation_DATA) \

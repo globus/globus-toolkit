@@ -15,7 +15,7 @@ libglobus_xio_gridftp_multicast_driver_la_LDFLAGS = \
         -no-undefined \
 	-module -rpath $(libdir)
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
 distuninstallcheck:
 	@:

@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2014 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@
 #include "globus_common.h"
 #include "globus_gram_protocol.h"
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 typedef enum
@@ -89,8 +89,9 @@ void
 globus_scheduler_event_destroy(
     globus_scheduler_event_t *          event);
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-EXTERN_C_END
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* GLOBUS_SCHEDULER_EVENT_GENERATOR_APP_H */

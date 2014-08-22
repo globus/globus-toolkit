@@ -25,17 +25,9 @@ Public declarations for the Unnamed Timing Package (UTP).
 
 #include "globus_common.h"
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 /**********************************************************************
 Publicly-accessible functions.
@@ -111,6 +103,8 @@ extern globus_module_descriptor_t	globus_i_utp_module;
 #define GLOBUS_UTP_MODULE (&globus_i_utp_module)
 
 
-EXTERN_C_END
-#endif /* #ifndef GLOBUS_UTP_INCLUDE */
+#ifdef __cplusplus
+}
+#endif
 
+#endif /* #ifndef GLOBUS_UTP_INCLUDE */

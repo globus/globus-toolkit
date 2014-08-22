@@ -18,5 +18,3 @@ TESTS_ENVIRONMENT = export \
     X509_USER_KEY=$(X509_USER_KEY) \
     X509_CERT_DIR=$(X509_CERT_DIR) ;
 LOG_COMPILER = $(abs_top_builddir)/test/gram-test-wrapper
-
-EXTRA_DIST = $(check_SCRIPTS)

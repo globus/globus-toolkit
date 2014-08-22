@@ -104255,20 +104255,19 @@ index 0000000..7381446
 +
 +#endif /* RUNTIME_LIBPAM */
 diff --git a/pathnames.c b/pathnames.c
-index 7d1826f..663e477 100644
+index 7d1826f..deb4305 100644
 --- a/pathnames.c
 +++ b/pathnames.c
-@@ -9,7 +9,9 @@
+@@ -9,7 +9,7 @@
  #define USRDIR "/usr"
  #define BINDIR "/bin"
  #define LIBEXEC "/libexec"
-+#ifndef GSISSHDIR
- #define GSISSHDIR "/etc/gsissh"
-+#endif
+-#define GSISSHDIR "/etc/gsissh"
++#define DEFAULT_GSISSHDIR "/etc/gsissh"
  #define SSHDIR "/etc/ssh"
  #define VARDIR "/var"
  #define VARRUN "/var/run"
-@@ -86,14 +88,48 @@ init_pathnames()
+@@ -86,14 +86,69 @@ init_pathnames()
              sshdir = NULL;
          }
      }
@@ -104276,17 +104275,39 @@ index 7d1826f..663e477 100644
      if (!sshdir) {
          sshdir = strdup(GSISSHDIR);
          if (access(sshdir, X_OK) < 0) {
+-            fatal("%s not found.", sshdir);
++            logit("%s not found.", sshdir);
++            free(sshdir);
++            sshdir = NULL;
++        }
++    }
++    if ((!sshdir) && gl) {
++        sshdir = compose2(gl, GSISSHDIR);
++        if (access(sshdir, X_OK) < 0) {
 +            logit("%s not found.", sshdir);
 +            free(sshdir);
 +            sshdir = NULL;
 +        }
 +    }
 +    if (!sshdir) {
-+        sshdir = compose2(gl, GSISSHDIR);
++        sshdir = strdup(DEFAULT_GSISSHDIR);
 +        if (access(sshdir, X_OK) < 0) {
-             fatal("%s not found.", sshdir);
++            logit("%s not found.", sshdir);
++            free(sshdir);
++            sshdir = NULL;
          }
      }
++    if ((!sshdir) && gl) {
++        sshdir = compose2(gl, DEFAULT_GSISSHDIR);
++        if (access(sshdir, X_OK) < 0) {
++            logit("%s not found.", sshdir);
++            free(sshdir);
++            sshdir = NULL;
++        }
++    }
++    if (!sshdir) {
++        fatal("%s not found.", sshdir);
++    }
 +#endif
  
      /* lots of one time memory leaks here */
@@ -104317,7 +104338,7 @@ index 7d1826f..663e477 100644
      _PATH_SSH_SYSTEM_HOSTFILE	= compose2(sshdir, "/ssh_known_hosts");
      _PATH_SSH_SYSTEM_HOSTFILE2	= compose2(sshdir, "/ssh_known_hosts2");
      _PATH_SERVER_CONFIG_FILE	= compose2(sshdir, "/sshd_config");
-@@ -111,6 +147,9 @@ init_pathnames()
+@@ -111,6 +166,9 @@ init_pathnames()
      _PATH_SSH_KEY_SIGN		= compose2(libexec, "/ssh-keysign");
      _PATH_SSH_PKCS11_HELPER = compose2(libexec, "/ssh-pkcs11-helper");
      _PATH_SFTP_SERVER		= compose2(libexec, "/sftp-server");

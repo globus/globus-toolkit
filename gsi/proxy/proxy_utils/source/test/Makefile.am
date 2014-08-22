@@ -35,7 +35,7 @@ testcredlink: testcred.cert
 	cp testcred.cert "$$linkname"; \
 	echo "$$linkname" > $@
 
-CLEANFILES = testcred.cert testcred.key testcred.req
+CLEANFILES = testcred.cert testcred.key testcred.req proxytest.*
 clean-local:
 	if test -f testcredlink; then \
 	    rm -f $$(cat testcredlink) testcredlink; \

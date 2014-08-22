@@ -98,7 +98,9 @@
 #include "globus_options.h"
 #include "globus_states.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* most network-related functions (getpeername, getsockname,...) have
    an int* as argument, except AIX which uses size_t*. This will
@@ -172,5 +174,8 @@ globus_common_get_attribute_from_config_file( char *   deploy_path,
 					      char *   attribute,
 					      char **  value );
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* GLOBUS_INCLUDE_GLOBUS_COMMON_H */

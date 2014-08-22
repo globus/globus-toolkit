@@ -32,23 +32,10 @@ Description:
 #endif
 #endif
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-EXTERN_C_BEGIN
-
-
-/**********************************************************************
-                             Include header files
-**********************************************************************/
- 
 #ifndef NO_GLOBUS_CONFIG_H
 #include "globus_config.h"
 #endif
@@ -581,9 +568,8 @@ oldgaa_error_code
 oldgaa_release_sec_attrb(uint32             *minor_status,
                       oldgaa_sec_attrb_ptr   *attributes);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _OLDGAA_API_H_ */
-
-
-

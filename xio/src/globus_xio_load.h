@@ -20,7 +20,9 @@
 #include "globus_xio_types.h"
 #include "globus_common.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern globus_extension_registry_t      globus_i_xio_driver_registry;
 #define GLOBUS_XIO_DRIVER_REGISTRY &globus_i_xio_driver_registry
@@ -107,6 +109,8 @@ globus_i_xio_load_init(void);
 int
 globus_i_xio_load_destroy(void);
     
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

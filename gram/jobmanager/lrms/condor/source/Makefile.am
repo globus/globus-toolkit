@@ -27,9 +27,8 @@ EXTRA_DIST = \
         dirt.sh \
         condor.pm \
         condor.rvf \
-        globus-condor.conf.in \
         jobmanager-condor.in \
-	GLOBUS_LICENSE
+        $(doc_DATA)
 
 CLEANFILES = jobmanager-condor
 

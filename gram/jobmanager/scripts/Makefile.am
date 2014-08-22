@@ -15,10 +15,7 @@ BUILT_SOURCES = JobDescription.pm
 # Files which we want to put in the source package
 EXTRA_DIST = \
         dirt.sh \
-        globus-job-manager-script.pl.in \
-        JobDescription.pm.in \
-        JobManager.pm \
-        StdioMerger.pm \
+        $(globusperl_DATA) \
         $(perldoc_DATA) \
         globus-gatekeeper-admin.xml \
         globus-gatekeeper-admin.8 \

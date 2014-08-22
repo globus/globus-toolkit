@@ -54,8 +54,6 @@ EXTRA_DIST = \
         globus_i_xio_win32_mode.c \
         globus_i_xio_win32_socket.c \
         dirt.sh \
-        version.h.in \
-        extensions.h.in \
         $(doc_DATA)
 
 DOC_STAMPS =

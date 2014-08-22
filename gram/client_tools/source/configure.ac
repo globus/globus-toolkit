@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_client_tools],[11.4],[https://globus.atlassian.net/])
+AC_INIT([globus_gram_client_tools],[11.5],[https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -16,7 +16,9 @@ AC_SUBST(DIRT_BRANCH_ID)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
-AC_SUBST([GLOBUS_XIO_GSI_DRIVER_DLOPEN], ["$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+PKG_CHECK_EXISTS([globus-xio-gsi-driver >= 2], [
+    GLOBUS_XIO_GSI_DRIVER_DLOPEN="$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+AC_SUBST([GLOBUS_XIO_GSI_DRIVER_DLOPEN])
 
 if test -z "$GLOBUS_XIO_GSI_DRIVER_DLOPEN"; then
     PREOPEN_FORCE="-dlpreopen force"

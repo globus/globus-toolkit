@@ -1,6 +1,7 @@
 Name: globus-gsi-callback
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt6/packages/globus_gsi_callback-5.4.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_gsi_callback-5.5.tar.gz
+
 
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 

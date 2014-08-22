@@ -31,4 +31,4 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute \
     $(GLOBUS_XIO_POPEN_DRIVER_DLOPEN) \
     ../../gram-test-wrapper
 
-EXTRA_DIST = $(check_SCRIPTS) $(check_DATA)
+EXTRA_DIST = $(check_DATA)

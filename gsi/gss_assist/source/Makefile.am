@@ -34,7 +34,6 @@ libglobus_gss_assist_la_SOURCES = \
 	set_sec_context_opts.c 
 
 EXTRA_DIST = \
-       version.h.in \
        dirt.sh \
        $(doc_DATA)
 

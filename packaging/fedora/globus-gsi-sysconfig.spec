@@ -1,20 +1,20 @@
 Name:		globus-gsi-sysconfig
 %global _name %(tr - _ <<< %{name})
-Version:	6.6
-Release:	2%{?dist}
+Version:	6.7
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gsi_sysconfig-6.6.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gsi_sysconfig-6.7.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-common%{?_isa} >= >= 15
 Requires:	globus-openssl-module%{?_isa} >= 3
 Requires:	globus-gsi-openssl-error%{?_isa} >= 2
 
-BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-common-devel >= >= 15
 BuildRequires:	globus-openssl-module-devel >= 3
 BuildRequires:	globus-gsi-openssl-error-devel >= 2
 BuildRequires:	doxygen
@@ -33,7 +33,7 @@ BuildRequires:  pkgconfig
 Summary:	Globus Toolkit - Globus GSI System Config Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-common-devel%{?_isa} >= >= 15
 Requires:	globus-openssl-module-devel%{?_isa} >= 3
 Requires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
 
@@ -125,6 +125,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 6.7-1
+- Merge fixes from ellert-globus_6_branch
+
 * Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 6.6-2
 - Fix Source path
 

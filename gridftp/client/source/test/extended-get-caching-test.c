@@ -182,6 +182,7 @@ int main(int argc,
 	if(result != GLOBUS_SUCCESS)
 	{
 	    fprintf(stderr,
+		    "%s",
 		    globus_object_printable_to_string(
 			globus_error_get(result)));
 	    done = GLOBUS_TRUE;

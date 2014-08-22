@@ -17,7 +17,7 @@ libglobus_gass_cache_la_SOURCES = \
 	globus_i_gass_cache.h \
 	globus_i_gass_cache_config.h
 
-EXTRA_DIST = version.h.in dirt.sh $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN

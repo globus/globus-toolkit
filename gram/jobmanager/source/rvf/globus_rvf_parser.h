@@ -1,8 +1,5 @@
-#ifndef GLOBUS_RVF_PARSER_H
-#define GLOBUS_RVF_PARSER_H 1
-
 /*
- * Copyright 1999-2012 University of Chicago
+ * Copyright 1999-2014 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +14,14 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_RVF_PARSER_H
+#define GLOBUS_RVF_PARSER_H 1
+
 #include "globus_common.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
@@ -109,6 +111,8 @@ globus_rvf_parse_string(
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_RVF_PARSER_H */

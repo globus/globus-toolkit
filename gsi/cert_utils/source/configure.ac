@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gsi_cert_utils], [9.8],[https://globus.atlassian.net/])
+AC_INIT([globus_gsi_cert_utils], [9.9],[https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [9])
@@ -64,6 +64,15 @@ AC_CHECK_FUNCS(timegm)
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != "no"])
+
+if test "X$GLOBUS_VERSION" = "X"; then
+    if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version; then
+        GLOBUS_VERSION="`${GLOBUS_LOCATION-/usr}/bin/globus-version`"
+    else
+        GLOBUS_VERSION="unknown"
+    fi
+fi
+AC_SUBST(GLOBUS_VERSION)
 
 AC_PATH_PROG(XSLTPROC, "xsltproc")
 AC_PATH_PROG(XMLLINT, "xmllint")

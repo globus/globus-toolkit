@@ -1,10 +1,10 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gridftp_server],[7.10],[https://globus.atlassian.net/])
+AC_INIT([globus_gridftp_server],[7.11],[https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-xio >= 3, globus-xio-gsi-driver >= 2, globus-gfork >= 3, globus-gridftp-server-control >= 2, globus-ftp-control >= 4, globus-authz >= 2, globus-usage >= 3, globus-gssapi-gsi >= 11, globus-gss-assist >= 9, globus-gsi-credential >= 6, openssl >= 0.9.8"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 15, globus-xio >= 3, globus-xio-gsi-driver >= 2, globus-gfork >= 3, globus-gridftp-server-control >= 2, globus-ftp-control >= 4, globus-authz >= 2, globus-usage >= 3, globus-gssapi-gsi >= 10, globus-gss-assist >= 9, globus-gsi-credential >= 6, openssl >= 0.9.8"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
@@ -101,10 +101,16 @@ AC_C_BIGENDIAN
 AC_PATH_PROGS(PERL, perl perl5)
 
 AC_MSG_CHECKING([Toolkit version])
-GLOBUS_TOOLKIT_ID=${GLOBUS_TOOLKIT-unknown}
-if test ${GLOBUS_TOOLKIT_ID} = unknown && \
-   test -x ${GLOBUS_LOCATION}/bin/globus-version ; then
-    GLOBUS_TOOLKIT_ID="`${GLOBUS_LOCATION:-/usr}/bin/globus-version -full`"
+if test "X$GLOBUS_TOOLKIT_ID" = "X"; then
+    if test "X$GLOBUS_VERSION" = "X"; then
+        if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version; then
+            GLOBUS_TOOLKIT_ID="`${GLOBUS_LOCATION-/usr}/bin/globus-version -full`"
+        else
+            GLOBUS_TOOLKIT_ID="unknown"
+        fi
+    else
+        GLOBUS_TOOLKIT_ID="Globus Toolkit $GLOBUS_VERSION"
+    fi
 fi
 AC_MSG_RESULT($GLOBUS_TOOLKIT_ID)
 AC_SUBST(GLOBUS_TOOLKIT_ID)
@@ -236,7 +242,6 @@ AC_CONFIG_FILES(
     globus-gridftp-server-enable-sshftp
     Makefile
     modules_makefiles
-    embed/Makefile
     modules/Makefile
     init/Makefile
     init/globus-gridftp-server

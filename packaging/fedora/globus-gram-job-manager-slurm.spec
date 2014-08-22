@@ -2,14 +2,14 @@
 
 Name:		globus-gram-job-manager-slurm
 %global _name %(tr - _ <<< %{name})
-Version:	2.3
-Release:	3%{?dist}
+Version:	2.4
+Release:	1%{?dist}
 Summary:	Globus Toolkit - SLURM Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_slurm-2.3.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_slurm-2.4.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:       globus-gram-job-manager-scripts >= 5
@@ -134,6 +134,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-slurm-poll
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 2.4-1
+- Merge fixes from ellert-globus_6_branch
+
 * Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 2.3-3
 - Fix Source path
 

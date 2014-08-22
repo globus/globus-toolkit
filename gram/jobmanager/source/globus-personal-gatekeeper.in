@@ -487,7 +487,11 @@ cat > ${scratch}/gridmap <<EOF
 "${subject}" ${user}
 EOF
 
-job_manager_path="$(command -v globus-job-manager)"
+if [ x"$JOBMANAGER_PATH" = x ]; then
+    job_manager_path="$(command -v globus-job-manager)"
+else
+    job_manager_path="$JOBMANAGER_PATH/globus-job-manager"
+fi
 
 if [ $valgrind -eq 1 ]; then
     valgrind=`which valgrind`

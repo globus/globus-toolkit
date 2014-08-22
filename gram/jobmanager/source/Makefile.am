@@ -37,12 +37,12 @@ libglobus_gram_job_manager_la_SOURCES = \
 	globus_gram_job_manager_state_file.c \
 	globus_gram_job_manager_validate.c \
         globus_gram_job_manager_usagestats.c \
-        default_rvf.c \
         logging.c \
         startup_socket.c \
         tg_gateway.c
+nodist_libglobus_gram_job_manager_la_SOURCES = \
+        default_rvf.c
 
-BUILT_SOURCES = default_rvf.c
 globus_job_manager_SOURCES = main.c
 globus_job_manager_lock_test_SOURCES = lock_test.c
 
@@ -79,11 +79,8 @@ MANUAL_SOURCE = globus-personal-gatekeeper.xml \
 
 # Files which we want to put in the source package
 EXTRA_DIST = dirt.sh \
-             globus-personal-gatekeeper.in \
 	     $(validation_DATA) \
-	     version.h.in \
 	     configuration.dox \
-	     globus_gram_job_manager_rsl.dox \
 	     globus_gram_job_manager_script_interface.dox \
 	     globus_gram_job_manager_script_tutorial.dox \
 	     globus_job_manager_rsl_validation.dox \
@@ -93,11 +90,7 @@ EXTRA_DIST = dirt.sh \
 	     $(doc_DATA) \
 	     main.dox \
 	     dirt.sh \
-	     globus-gram-job-manager.conf.in \
-             gram.logrotate.in \
              libxml.m4
-
-all: $(BUILT_SOURCES)
 
 globus_gram_job_manager_rsl.dox: globus-gram-job-manager.rvf
 	perl $(top_srcdir)/scripts/create_rsl_documentation.pl < $< > $@
@@ -114,7 +107,7 @@ install-data-hook:
 	mkdir -p $(DESTDIR)$(sysconfdir)/globus/gram
 
 CLEANFILES = \
-    globus-personal-gatekeeper \
+    default_rvf.c \
     globus_gram_job_manager_rsl.dox
 
 if BUILD_MANPAGES

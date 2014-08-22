@@ -4,7 +4,7 @@ lib_LTLIBRARIES = libglobus_seg_pbs.la
 
 libglobus_seg_pbs_la_SOURCES = seg_pbs_module.c
 libglobus_seg_pbs_la_LDFLAGS = \
-        -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
+        -avoid-version \
         -no-undefined \
         -module
 libglobus_seg_pbs_la_LIBADD = $(LTLIBOBJS) $(PACKAGE_DEP_LIBS)
@@ -17,6 +17,7 @@ seglrms_DATA = pbs
 $(seglrms_DATA):
 	touch $@
 
+CLEANFILES = $(seglrms_DATA)
 
 if SEG_ENABLED_COND
 install-data-hook:

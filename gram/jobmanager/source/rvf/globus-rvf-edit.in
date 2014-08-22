@@ -15,9 +15,15 @@
 # limitations under the License.
 #
 
-. ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer
+prefix="${GLOBUS_LOCATION-@prefix@}"
+exec_prefix="@exec_prefix@"
+sbindir="@sbindir@"
+bindir="@bindir@"
+sysconfdir="@sysconfdir@"
 
-checker="${sbindir}/globus-rvf-check"
+PATH=${bindir}:${sbindir}:${PATH}
+
+checker="globus-rvf-check"
 
 usage()
 {
@@ -55,7 +61,7 @@ if [ -z "$path" ]; then
     exit 1
 fi
 
-if [ ! -x "$checker" ]; then
+if ! command -v "$checker" > /dev/null; then
     echo "Configuration error: Missing $checker" 1>&2
     exit 1
 fi

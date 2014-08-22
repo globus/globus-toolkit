@@ -21,7 +21,7 @@ libglobus_io_la_SOURCES = \
 	globus_io_error_hierarchy.h \
 	globus_io_xio_compat.c
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN

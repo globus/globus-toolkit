@@ -24,7 +24,9 @@
 #include "globus_common.h"
 #include "globus_xio_types.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_XIO_SYSTEM_MODULE (&globus_i_xio_system_module)
 extern globus_module_descriptor_t       globus_i_xio_system_module;
@@ -362,6 +364,8 @@ globus_xio_system_socket_close(
 
 #endif
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

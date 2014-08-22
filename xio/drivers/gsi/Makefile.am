@@ -15,7 +15,7 @@ libglobus_xio_gsi_driver_la_LDFLAGS = \
         -module \
         -no-undefined
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA) globus-vararg-enums-doxygen-filter.pl
+EXTRA_DIST = dirt.sh $(doc_DATA) globus-vararg-enums-doxygen-filter.pl
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN

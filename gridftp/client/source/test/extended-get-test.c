@@ -176,7 +176,7 @@ int main(int argc,
 				   0);
     if(result != GLOBUS_SUCCESS)
     {
-	fprintf(stderr, globus_object_printable_to_string(globus_error_get(result)));
+	fprintf(stderr, "%s", globus_object_printable_to_string(globus_error_get(result)));
 	done = GLOBUS_TRUE;
 	error = GLOBUS_TRUE;
     }

@@ -23,7 +23,6 @@
 #ifndef GLOBUS_L_GASS_TRANSFER_HTTP_H
 #define GLOBUS_L_GASS_TRANSFER_HTTP_H
 
-EXTERN_C_BEGIN
 #ifdef __cplusplus
 extern "C" {
 #endif

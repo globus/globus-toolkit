@@ -151,7 +151,7 @@ EXTRA_DIST = \
         $(check_SCRIPTS) \
         gssapi-test-wrapper
 
-CLEANFILES = testcred.key testcred.cert testcred.req
+CLEANFILES = testcred.key testcred.cert testcred.req cert_chain.txt
 
 copy_cases:
 	if [ "$(VPATH)" != "" ]; then \

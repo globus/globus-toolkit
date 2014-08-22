@@ -1,6 +1,7 @@
 Name: globus-xio-rate-driver
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt6/packages/globus_xio_rate_driver-1.6.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_xio_rate_driver-1.7.tar.gz
+
 
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 

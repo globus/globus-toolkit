@@ -23,4 +23,4 @@ globus_version_t local_version =
     @DIRT_BRANCH_ID@
 };
 
-static const char flavor[] = "@GLOBUS_FLAVOR_NAME@";
+static const char flavor[] = GLOBUS_FLAVOR_NAME;

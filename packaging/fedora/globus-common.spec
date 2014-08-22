@@ -6,14 +6,14 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.23
-Release:	4%{?dist}
+Version:	15.24
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_common-15.23.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_common-15.24.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 #		Obsolete dropped packages from Globus Toolkit 4.2.1
@@ -215,6 +215,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 15.24-1
+- Merge fixes from ellert-globus_6_branch
+
 * Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 15.23-4
 - Fix Source path
 

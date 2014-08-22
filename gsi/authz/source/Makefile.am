@@ -19,7 +19,7 @@ libglobus_authz_la_SOURCES = \
 	globus_gsi_authz_constants.h \
 	globus_i_gsi_authz.h
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN

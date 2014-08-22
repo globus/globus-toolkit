@@ -14,7 +14,7 @@ libglobus_gsi_authz_callout_error_la_SOURCES = \
 	globus_gsi_authz_callout_error.h \
 	globus_gsi_authz_callout_error.c
 
-EXTRA_DIST = dirt.sh version.h.in $(doc_DATA)
+EXTRA_DIST = dirt.sh $(doc_DATA)
 
 
 DOC_STAMPS =

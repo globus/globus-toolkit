@@ -1,13 +1,13 @@
 Name:		globus-gass-server-ez
 %global _name %(tr - _ <<< %{name})
-Version:	5.5
-Release:	2%{?dist}
+Version:	5.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Server_ez
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gass_server_ez-5.5.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gass_server_ez-5.6.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -115,6 +115,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 5.6-1
+- Merge fixes from ellert-globus_6_branch
+
 * Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 5.5-2
 - Fix Source path
 

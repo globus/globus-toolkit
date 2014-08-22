@@ -2,14 +2,14 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	4.13
-Release:	2%{?dist}
+Version:	4.14
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_simple_ca-4.13.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_simple_ca-4.14.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   globus-common
 Requires:   globus-common-progs
@@ -113,6 +113,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 4.14-1
+- Merge fixes from ellert-globus_6_branch
+
 * Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 4.13-2
 - Fix Source path
 

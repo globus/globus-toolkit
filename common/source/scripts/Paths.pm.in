@@ -21,7 +21,6 @@ require Exporter;
 @EXPORT = qw($exec_prefix $prefix
              $sbindir $bindir
              $libexecdir $includedir
-             $flavorincludedir
              $datarootdir
              $mandir
              $datadir $sysconfdir $sharedstatedir
@@ -67,7 +66,6 @@ $libexecdir = "@libexecdir@";
 $sysconfdir = "@sysconfdir@";
 $sharedstatedir = "@sharedstatedir@";
 $localstatedir = "@localstatedir@";
-$flavorincludedir = "@flavorincludedir@";
 $perlmoduledir = "@perlmoduledir@";
 
 1;

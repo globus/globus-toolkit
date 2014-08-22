@@ -22,16 +22,9 @@
 
 prefix="${GLOBUS_LOCATION-@prefix@}"
 exec_prefix="@exec_prefix@"
-sbindir="@sbindir@"
 bindir="@bindir@"
-libdir="@libdir@"
-includedir="@includedir@"
-datarootdir="@datarootdir@"
-datadir="@datadir@"
-libexecdir="@libexecdir@"
+sbindir="@sbindir@"
 sysconfdir="@sysconfdir@"
-sharedstatedir="@sharedstatedir@"
-localstatedir="@localstatedir@"
 
 PATH="${bindir}:${sbindir}:${PATH}"
 

@@ -1,6 +1,7 @@
 Name: globus-proxy-utils
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt6/packages/globus_proxy_utils-6.7.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_proxy_utils-6.8.tar.gz
+
 
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 
