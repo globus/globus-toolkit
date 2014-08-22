@@ -17,6 +17,7 @@
 
 use strict;
 use HTML::Form;
+use IO::Socket::SSL;
 use JSON;
 use LWP;
 use POSIX;
@@ -29,7 +30,7 @@ my $base_url;
 my $instance = $ENV{GLOBUS_INSTANCE} || "Production";
 my $go_user = $ENV{GLOBUS_USER};
 my $go_password = $ENV{GLOBUS_PASSWORD};
-my $ua = LWP::UserAgent->new(ssl_opts => { verify_hostname => 0 });
+my $ua = LWP::UserAgent->new(ssl_opts => { verify_hostname => 0, SSL_verify_mode => 'SSL_VERIFY_NONE' });
 $ua->cookie_jar( {} );
 
 my $access_token;

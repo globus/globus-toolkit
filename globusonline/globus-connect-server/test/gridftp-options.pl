@@ -135,7 +135,7 @@ sub endpoint_exists($)
     my $endpoint_name = shift;
     my $json = $api->get_endpoint($endpoint_name);
 
-    return $json->{DATA_TYPE} ne 'error';
+    return $json->{DATA_TYPE} ne 'error' && $json->{code} !~ m/^ClientError/;
 }
 
 sub cleanup($)

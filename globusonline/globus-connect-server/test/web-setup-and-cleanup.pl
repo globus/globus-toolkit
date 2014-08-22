@@ -15,23 +15,19 @@
 # limitations under the License.
 #
 
-BEGIN
-{
-    $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = "0";
-}
-
 END {$?=0}
 
 use strict;
 use File::Path;
 use File::Temp;
+use IO::Socket::SSL;
 use IPC::Open3;
 use Test::More;
 use LWP;
 
 # Prepare
 my $config_file = "test-web.conf";
-my $ua = LWP::UserAgent->new();
+my $ua = LWP::UserAgent->new(ssl_opts => { verify_hostname => 0, SSL_verify_mode => 'SSL_VERIFY_NONE' });
 
 sub diagsystem(@)
 {
