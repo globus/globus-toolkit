@@ -1,6 +1,7 @@
 Name: globus-ftp-client
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/globus_ftp_client-7.4.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_ftp_client-8.11.tar.gz
+
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 
 Files: *

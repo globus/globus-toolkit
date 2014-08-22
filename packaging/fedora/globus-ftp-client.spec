@@ -1,13 +1,13 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
 Version:	8.11
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_client-8.11.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
@@ -141,6 +141,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 8.11-2
+- Fix Source path
+
 * Wed Aug 06 2014 Globus Toolkit <support@globus.org> - 8.11-1
 - Skip put-test.pl on mingw
 

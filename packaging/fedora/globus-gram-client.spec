@@ -1,13 +1,13 @@
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
 Version:	13.7
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/testing/packages/src/%{_name}-%{version}.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_client-13.7.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -137,6 +137,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 13.7-3
+- Fix Source path
+
 * Wed Jul 23 2014 Globus Toolkit <support@globus.org> - 13.7-2
 - Add %check to build
 

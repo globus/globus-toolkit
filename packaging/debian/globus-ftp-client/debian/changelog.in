@@ -1,3 +1,9 @@
+globus-ftp-client (8.11-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix Source path
+
+ -- Globus Toolkit <support@globus.org>  Wed, 20 Aug 2014 15:42:39 -0400
+
 globus-ftp-client (8.11-1+gt6.@distro@) @distro@; urgency=low
 
   * Skip put-test.pl on mingw
