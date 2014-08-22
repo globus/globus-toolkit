@@ -50,6 +50,11 @@ BuildRequires:  doxygen
 BuildRequires: graphviz-gd
 %endif
 
+%if 0%{?suse_version} != "0"
+BuildRequires:      krb5-devel >= 1
+%endif
+
+
 %if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  tex(latex)
 %else
@@ -131,9 +136,9 @@ Package %{name}-devel contains development files for MyProxy.
 
 %package server
 Requires(pre):    shadow-utils
+%if 0%{?suse_version} == 0
 Requires(post):   chkconfig
 Requires(preun):  chkconfig
-%if 0%{?suse_version} == 0
 Requires(preun):  initscripts
 Requires(postun): initscripts
 %else
@@ -328,7 +333,130 @@ sed -i "/share\/%{name}\/myproxy-server.config/d" $GLOBUSPACKAGEDIR/%{name}/nofl
 
 mkdir -p $RPM_BUILD_ROOT%{_initddir}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
+%if 0%{?suse_version} == 0
 install  -m 755 myproxy.init $RPM_BUILD_ROOT%{_initddir}/myproxy-server
+%else
+cat <<'EOF' > $RPM_BUILD_ROOT%{_initddir}/myproxy-server
+#!/bin/sh
+#
+# myproxy-server - Server for X.509 Public Key Infrastructure (PKI) security credentials
+#
+# chkconfig: - 55 25
+# description:  Server for X.509 Public Key Infrastructure (PKI) security credentials
+#
+### BEGIN INIT INFO
+# Provides: myproxy-server
+# Required-Start:  $local_fs $network $syslog
+# Required-Stop:  $local_fs $syslog
+# Should-Start:  $syslog
+# Should-Stop:  $network $syslog
+# Default-Stop: 0 1 6
+# Default-Start: 2 3 4 5
+# Short-Description: Startup the MyProxy server daemon
+# Description: Server for X.509 Public Key Infrastructure (PKI) security credentials
+### END INIT INFO
+
+# Source function library.
+. /lib/lsb/init-functions
+
+exec="/usr/sbin/myproxy-server"
+prog=$(basename $exec)
+
+# Defaults
+MYPROXY_USER=myproxy
+MYPROXY_OPTIONS="-s /var/lib/myproxy"
+X509_USER_CERT=/etc/grid-security/myproxy/hostcert.pem
+X509_USER_KEY=/etc/grid-security/myproxy/hostkey.pem
+export X509_USER_CERT
+export X509_USER_KEY
+PIDFILE=/var/run/myproxy.pid
+
+# Override defaults here.
+[ -e /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
+
+# Start/Stop the myproxy daemon as user $MYPROXY_USER
+# Is there a better LSB idiom for this?
+if [ "$(id -u)" = 0 ]; then
+    userexist="$(getent passwd "$MYPROXY_USER" | cut -d: -f3)"
+    if [ "$userexist" != "" ] && [ "$userexist" != 0 ]; then
+        exec su "$MYPROXY_USER" -s /bin/sh -c "$0 ${1+"$@"}"
+    fi
+fi
+
+# A few sanity checks 
+if [ "$1" != "status" ]; then
+        [ ! -f $X509_USER_KEY ]  && log_failure_msg "$prog: No hostkey file"  && exit 0
+        [ ! -r $X509_USER_KEY ]  && log_failure_msg "$prog: Unable to read hostkey file $X509_USER_KEY"  && exit 0
+        [ ! -r $X509_USER_CERT ] && log_failure_msg "$prog: No hostcert file" && exit 0
+        [ ! -r $X509_USER_CERT ] && log_failure_msg "$prog: Unable to read hostcert file" && exit 0
+fi
+
+start() {
+    pidofproc $prog > /dev/null && log_warning_msg "$prog already running" && exit 0
+    cd /
+    X509_USER_CERT=$X509_USER_CERT X509_USER_KEY=$X509_USER_KEY start_daemon -p $PIDFILE "$exec" ${MYPROXY_OPTIONS}
+    retval="$?"
+    if [ "$retval" -eq 0 ]; then
+        log_success_msg "Started $prog"
+        pidofproc "$exec" > "$PIDFILE"
+    else
+        log_failure_msg "Error starting $prog"
+    fi
+    return $retval
+}
+
+stop() {
+    killproc -p $PIDFILE "$exec"
+    retval=$?
+    if [ "$retval" -eq 0 ]; then
+        log_success_msg "Stopped $prog"
+    else
+        log_success_msg "Error stopping $prog"
+    fi
+    return $retval
+}
+
+restart() {
+    stop
+    start
+}
+
+case "$1" in
+    start|stop|restart)
+        $1
+        ;;
+    force-reload)
+        restart
+        ;;
+    status)
+        pidofproc -p $PIDFILE $prog > /dev/null
+        result="$?"
+        if [ "$result" -eq 0 ]; then
+            log_success_msg "$prog is running"
+        else
+            log_failure_msg "$prog is not running"
+        fi
+        exit $result
+        ;;
+    try-restart|condrestart)
+        if pidofproc -p $PIDFILE $prog >/dev/null ; then
+            restart
+        fi
+        ;;
+    reload)
+        # If config can be reloaded without restarting, implement it here,
+        # remove the "exit", and add "reload" to the usage message below.
+        # For example:
+        pidofproc -p $PIDFILE $prog >/dev/null || exit 3
+        killproc -p $PIDFILE $prog -HUP
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|reload|try-restart|force-reload}"
+        exit 2
+esac
+EOF
+chmod 755 $RPM_BUILD_ROOT%{_initddir}/myproxy-server
+%endif
 install  -m 644 myproxy.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/myproxy-server
 cat >> $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/myproxy-server <<'EOF'
 for myproxy_conf in "%{_sysconfdir}/myproxy.d"/*; do
@@ -477,6 +605,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 5.9-10
+- SuSE 11 package fixes
+
 * Tue Jan 14 2014 Globus Toolkit <support@globus.org> - 5.9-9
 - Source0 URL fix
 
