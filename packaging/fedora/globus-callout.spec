@@ -1,13 +1,13 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
-Version:	3.11
-Release:	2%{?dist}
+Version:	3.12
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_callout-3.11.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_callout-3.12.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -130,6 +130,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 3.12-1
+- Merge fixes from ellert-globus_6_branch
+
 * Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 3.11-2
 - Fix Source path
 

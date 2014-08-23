@@ -1,13 +1,13 @@
 Name:           globus-xio-rate-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.6
-Release:	2%{?dist}
+Version:	1.7
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Rate Limiting Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio_rate_driver-1.6.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio_rate_driver-1.7.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio%{?_isa} >= 0
@@ -94,6 +94,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 1.7-1
+- Merge fixes from ellert-globus_6_branch
+
 * Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 1.6-2
 - Fix Source path
 

@@ -19,7 +19,9 @@
 
 #include "globus_xio.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 globus_bool_t
 globus_xio_get_env_pair(
@@ -512,6 +514,8 @@ globus_xio_contact_copy(
         }                                                                   \
     } while(0)
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -3,7 +3,9 @@
 
 #include "globus_xio.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef globus_result_t
 (*globus_xio_wrapblock_open_func_t)(
@@ -46,6 +48,8 @@ globus_xio_wrapblock_init(
     globus_xio_wrapblock_write_func_t   write,
     globus_xio_wrapblock_accept_func_t  accept);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

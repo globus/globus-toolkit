@@ -11,7 +11,7 @@ endif
 
 name = globus-gram-job-manager-slurm
 _name = globus_gram_job_manager_slurm
-version = 2.3
+version = 2.4
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)

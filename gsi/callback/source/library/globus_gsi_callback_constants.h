@@ -22,24 +22,12 @@
  * @file globus_gsi_callback_constants.h
  * Globus GSI Callback
  * @author Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
+#ifdef __cplusplus
+extern "C" {
 #endif
-
-EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_gsi_callback_constants GSI Callback Constants
@@ -97,7 +85,9 @@ typedef enum
  */
 #define GLOBUS_GSI_CALLBACK_VERIFY_DEPTH 100
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_GSI_CALLBACK_CONSTANTS_H */
 

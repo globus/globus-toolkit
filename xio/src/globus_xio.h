@@ -22,7 +22,9 @@
 #include "globus_xio_util.h"
 #include "globus_xio_load.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
@@ -1058,6 +1060,8 @@ globus_xio_handle_create_from_url(
     globus_xio_attr_t               attr,
     char *                          param_string);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

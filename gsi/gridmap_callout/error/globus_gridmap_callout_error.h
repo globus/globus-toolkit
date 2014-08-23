@@ -18,27 +18,15 @@
 /**
  * @file globus_gridmap_callout_error.h
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 
 #ifndef GLOBUS_GRIDMAP_CALLOUT_ERROR_H
 #define GLOBUS_GRIDMAP_CALLOUT_ERROR_H
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
+#ifdef __cplusplus
+extern "C" {
 #endif
-
-EXTERN_C_BEGIN
 
 #include "globus_common.h"
 #include "globus_error_gssapi.h"
@@ -138,6 +126,8 @@ extern char * globus_i_gridmap_callout_error_strings[];
             "%s",                                                                  \
             globus_i_gridmap_callout_error_strings[GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR]))
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

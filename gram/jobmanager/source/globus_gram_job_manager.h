@@ -15,16 +15,7 @@
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * Description:
- *   This header contains the exported interface of the Job Management.
- *
- * CVS Information:
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
- */
+
 #ifndef GLOBUS_GRAM_JOB_MANAGER_INCLUDE
 #define GLOBUS_GRAM_JOB_MANAGER_INCLUDE
 
@@ -39,7 +30,9 @@
 
 #define GLOBUS_GRAM_AUTHZ_CALLOUT_TYPE "globus_gram_jobmanager_authz"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_GRAM_JOB_MANAGER_EXPIRATION_ATTR "expiration"
 
@@ -1658,7 +1651,10 @@ globus_gram_prepare_log_string(
     const char *                        instr);
 
 extern char globus_i_gram_default_rvf[];
-EXTERN_C_END
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_GRAM_JOB_MANAGER_INCLUDE */
 #endif /* ! GLOBUS_DONT_DOCUMENT_INTERNAL */

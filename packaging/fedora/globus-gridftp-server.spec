@@ -1,16 +1,16 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.10
-Release:	2%{?dist}
+Version:	7.11
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.10.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.11.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-common%{?_isa} >= >= 15
 Requires:	globus-gridftp-server-control%{?_isa} >= 2
 Requires:	globus-usage%{?_isa} >= 3
 Requires:	globus-xio%{?_isa} >= 3
@@ -28,7 +28,7 @@ BuildRequires:	globus-authz-devel >= 2
 BuildRequires:	globus-gfork-devel >= 3
 BuildRequires:	globus-ftp-control-devel >= 4
 BuildRequires:	globus-gss-assist-devel >= 9
-BuildRequires:  globus-common-progs >= 14
+BuildRequires:  globus-common-progs >= >= 15
 BuildRequires:	globus-gsi-credential-devel >= 6
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:  automake >= 1.11
@@ -169,6 +169,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 7.11-1
+- Merge fixes from ellert-globus_6_branch
+
 * Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 7.10-2
 - Fix Source path
 

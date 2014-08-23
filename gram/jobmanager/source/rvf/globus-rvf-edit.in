@@ -23,7 +23,7 @@ sysconfdir="@sysconfdir@"
 
 PATH=${bindir}:${sbindir}:${PATH}
 
-checker="${sbindir}/globus-rvf-check"
+checker="globus-rvf-check"
 
 usage()
 {
@@ -61,7 +61,7 @@ if [ -z "$path" ]; then
     exit 1
 fi
 
-if [ ! -x "$checker" ]; then
+if ! command -v "$checker" > /dev/null; then
     echo "Configuration error: Missing $checker" 1>&2
     exit 1
 fi

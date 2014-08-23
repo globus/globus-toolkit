@@ -25,7 +25,9 @@
 #include "globus_xio_util.h"
 #include <stdarg.h>
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /************************************************************************
  *                      attribute macros
@@ -1537,6 +1539,8 @@ globus_xio_string_cntl_string_list(
     globus_xio_driver_attr_cntl_t       cntl_func);
 
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_XIO_DRIVER_H */

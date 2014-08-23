@@ -14,28 +14,18 @@
  * limitations under the License.
  */
 
-/**********************************************************************
- globus_oldgaa-utils.h:
+/**
+ * @file globus_oldgaa-utils.h
+ *
+ * This header file used internally by the Globus-OLDGAA routines
+ */
 
-Description:
-	This header file used internally by theGlobus-OLDGAA routines
-**********************************************************************/
+#ifndef GLOBUS_OLDGAA_UTILS_H
+#define GLOBUS_OLDGAA_UTILS_H
 
-#ifndef _GLOBUS_OLDGAA_UTILS_H
-#define _GLOBUS_OLDGAA_UTILS_H
-
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
+#ifdef __cplusplus
+extern "C" {
 #endif
-
-EXTERN_C_BEGIN
-
 
 /**********************************************************************
                              Include header files
@@ -174,6 +164,8 @@ oldgaa_globus_get_trusted_ca_list(oldgaa_sec_attrb_ptr *attributes,
                                oldgaa_policy_ptr     policy_handle,
                                oldgaa_rights_ptr     rights);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* _GLOBUS_OLDGAA_UTILS_H */
+#endif /* GLOBUS_OLDGAA_UTILS_H */

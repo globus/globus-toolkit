@@ -18,30 +18,18 @@
 /**
  * @file globus_i_error_gssapi.h
  * Globus Gssapi Error
- *
- * $RCSfile$
- * $Revision$
- * $Date $
  */
+
+#ifndef GLOBUS_I_INCLUDE_GSSAPI_ERROR_H
+#define GLOBUS_I_INCLUDE_GSSAPI_ERROR_H
 
 #include "globus_common.h"
 #include "gssapi.h"
 #include "globus_error_gssapi.h"
 
-#ifndef GLOBUS_I_INCLUDE_GSSAPI_ERROR_H
-#define GLOBUS_I_INCLUDE_GSSAPI_ERROR_H
-
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 /**
  * GSSAPI Error object instance data definition
@@ -66,7 +54,9 @@ typedef struct globus_l_gssapi_error_data_s
 }
 globus_l_gssapi_error_data_t;
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_I_INCLUDE_GSSAPI_ERROR_H */
 

@@ -1,6 +1,7 @@
 Name: globus-callout
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt6/packages/globus_callout-3.11.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_callout-3.12.tar.gz
+
 
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 

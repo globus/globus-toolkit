@@ -19,7 +19,9 @@
 
 #include "globus_common.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_USAGE_MODULE             &globus_i_usage_stats_module
 extern globus_module_descriptor_t       globus_i_usage_stats_module;
@@ -63,6 +65,8 @@ globus_usage_stats_send_array(
     char **                             key_array,
     char **                             value_array);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

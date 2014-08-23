@@ -19,7 +19,9 @@
 
 #include "globus_common.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_XIO_QUERY ((globus_xio_driver_t) 0x01)
 
@@ -241,7 +243,8 @@ typedef struct globus_xio_driver_list_ent_s
     globus_bool_t                       loaded;
 }globus_xio_driver_list_ent_t;
 
-EXTERN_C_END
-
+#ifdef __cplusplus
+}
 #endif
 
+#endif

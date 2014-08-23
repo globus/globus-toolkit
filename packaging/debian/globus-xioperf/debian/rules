@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-xioperf
 _name = globus_xioperf
-version = 4.3
+version = 4.4
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)

@@ -25,17 +25,9 @@
 
 #include "globus_ftp_client.h"
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 /** Module descriptor
  */
@@ -120,7 +112,10 @@ globus_ftp_client_test_restart_plugin_set_restart_point(
     globus_ftp_client_plugin_t *			plugin,
     globus_ftp_client_test_restart_plugin_when_t	when,
     globus_reltime_t *					timeout);
-EXTERN_C_END
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_INCLUDE_FTP_CLIENT_TEST_RESTART_PLUGIN_H */
 

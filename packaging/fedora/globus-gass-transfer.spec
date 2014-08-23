@@ -1,13 +1,13 @@
 Name:		globus-gass-transfer
 %global _name %(tr - _ <<< %{name})
-Version:	8.6
-Release:	2%{?dist}
+Version:	8.7
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Transfer
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gass_transfer-8.6.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gass_transfer-8.7.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -128,6 +128,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 8.7-1
+- Merge fixes from ellert-globus_6_branch
+
 * Wed Aug 20 2014 Globus Toolkit <support@globus.org> - 8.6-2
 - Fix Source path
 

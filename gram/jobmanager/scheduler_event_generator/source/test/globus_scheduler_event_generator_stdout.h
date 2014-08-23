@@ -18,8 +18,8 @@
 
 #include "globus_common.h"
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 extern globus_module_descriptor_t
@@ -34,8 +34,8 @@ globus_scheduler_event_generator_stdout_handler(
     void *                              arg,
     globus_scheduler_event_t *          event);
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-EXTERN_C_END
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* GLOBUS_SCHEDULER_EVENT_GENERATOR_H */

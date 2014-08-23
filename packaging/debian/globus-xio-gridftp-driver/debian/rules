@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-xio-gridftp-driver
 _name = globus_xio_gridftp_driver
-version = 2.6
+version = 2.7
 soname = 1
 
 INSTALLDIR = $(CURDIR)/debian/tmp

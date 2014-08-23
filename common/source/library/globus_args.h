@@ -19,10 +19,12 @@
 #ifndef GLOBUS_ARGS_H
 #define GLOBUS_ARGS_H
 
-EXTERN_C_BEGIN
-
 #include "globus_module.h"
 #include "globus_list.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GLOBUS_ARGS_HELP        -2  /* for -help and -usage */
 #define GLOBUS_ARGS_VERSION     -3  /* for -version and -versions */
@@ -232,6 +234,8 @@ globus_args_bytestr_to_num(
     const char *                        str,
     globus_off_t *                      out);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ifndef GLOBUS_ARGS_H */

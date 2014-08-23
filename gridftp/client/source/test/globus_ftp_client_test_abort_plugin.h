@@ -25,17 +25,9 @@
 
 #include "globus_ftp_client.h"
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 /** Module descriptor
  */
@@ -110,6 +102,9 @@ globus_result_t
 globus_ftp_client_test_abort_plugin_set_abort_counter(
     globus_ftp_client_plugin_t *			plugin,
     int *						counter);
-EXTERN_C_END
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GLOBUS_INCLUDE_FTP_CLIENT_TEST_ABORT_PLUGIN_H */
