@@ -10,11 +10,11 @@ URL:		http://www.globus.org/
 Source:	http://www.globus.org/ftppub/gt6/packages/globus_gsi_sysconfig-6.7.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common%{?_isa} >= >= 15
+Requires:	globus-common%{?_isa} >= 15
 Requires:	globus-openssl-module%{?_isa} >= 3
 Requires:	globus-gsi-openssl-error%{?_isa} >= 2
 
-BuildRequires:	globus-common-devel >= >= 15
+BuildRequires:	globus-common-devel >= 15
 BuildRequires:	globus-openssl-module-devel >= 3
 BuildRequires:	globus-gsi-openssl-error-devel >= 2
 BuildRequires:	doxygen
@@ -33,7 +33,7 @@ BuildRequires:  pkgconfig
 Summary:	Globus Toolkit - Globus GSI System Config Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-common-devel%{?_isa} >= >= 15
+Requires:	globus-common-devel%{?_isa} >= 15
 Requires:	globus-openssl-module-devel%{?_isa} >= 3
 Requires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
 

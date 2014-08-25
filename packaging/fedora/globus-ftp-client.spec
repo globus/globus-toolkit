@@ -11,11 +11,11 @@ Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_client-8.12.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
-Requires:	globus-common%{?_isa} >= >= 15
+Requires:	globus-common%{?_isa} >= 15
 Requires:	globus-ftp-control%{?_isa} >= 4
 
 BuildRequires:	globus-xio-popen-driver-devel >= 2
-BuildRequires:	globus-common-devel >= >= 15
+BuildRequires:	globus-common-devel >= 15
 BuildRequires:	globus-ftp-control-devel >= 4
 BuildRequires:	globus-ftp-control-doc >= 4
 BuildRequires:	globus-gridftp-server-progs
@@ -46,7 +46,7 @@ Summary:	Globus Toolkit - GridFTP Client Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-xio-popen-driver-devel%{?_isa}
-Requires:	globus-common-devel%{?_isa} >= >= 15
+Requires:	globus-common-devel%{?_isa} >= 15
 Requires:	globus-ftp-control-devel%{?_isa} >= 4
 
 %package doc

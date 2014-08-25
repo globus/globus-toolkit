@@ -10,7 +10,7 @@ URL:		http://www.globus.org/
 Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager-14.20.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common >= >= 15
+Requires:	globus-common >= 15
 Requires:	globus-scheduler-event-generator%{?_isa} >= 4
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
 Requires:	globus-xio%{?_isa} >= 3
@@ -39,7 +39,7 @@ BuildRequires:	globus-gsi-sysconfig-devel >= 5
 BuildRequires:	globus-callout-devel >= 2
 BuildRequires:	globus-gram-job-manager-callout-error-devel >= 2
 BuildRequires:	globus-gram-protocol-devel >= 11
-BuildRequires:	globus-common-devel >= >= 15
+BuildRequires:	globus-common-devel >= 15
 BuildRequires:	globus-usage-devel >= 3
 BuildRequires:	globus-rsl-devel >= 9
 BuildRequires:	globus-gass-cache-devel >= 8

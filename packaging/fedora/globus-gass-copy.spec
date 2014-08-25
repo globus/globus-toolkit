@@ -10,16 +10,16 @@ URL:		http://www.globus.org/
 Source:	http://www.globus.org/ftppub/gt6/packages/globus_gass_copy-9.11.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common%{?_isa} >= >= 15
+Requires:	globus-common%{?_isa} >= 15
 Requires:	globus-ftp-client%{?_isa} >= 7
-Requires:	globus-common%{?_isa} >= >= 15
+Requires:	globus-common%{?_isa} >= 15
 Requires:	globus-gssapi-gsi%{?_isa} >= 9
 Requires:	globus-io%{?_isa} >= 8
 Requires:	globus-gass-transfer%{?_isa} >= 7
 Requires:	globus-ftp-control%{?_isa} >= 4
 
 BuildRequires:	globus-ftp-client-devel >= 7
-BuildRequires:	globus-common-devel >= >= 15
+BuildRequires:	globus-common-devel >= 15
 BuildRequires:	globus-gssapi-gsi-devel >= 9
 BuildRequires:	globus-io-devel >= 8
 BuildRequires:	globus-gass-transfer-devel >= 7
@@ -59,7 +59,7 @@ Summary:	Globus Toolkit - Globus Gass Copy Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-ftp-client-devel%{?_isa} >= 7
-Requires:	globus-common-devel%{?_isa} >= >= 15
+Requires:	globus-common-devel%{?_isa} >= 15
 Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
 Requires:	globus-io-devel%{?_isa} >= 8
 Requires:	globus-gass-transfer-devel%{?_isa} >= 7
