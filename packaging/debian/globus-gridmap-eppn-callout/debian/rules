@@ -113,8 +113,6 @@ install: build-stamp
 
 	# Remove libtool archives (.la files)
 	find $(INSTALLDIR)$(_libdir) -name 'lib*.la' -exec rm -v '{}' \;
-	# Remove pkgconfig file (.pc)
-	find $(INSTALLDIR)$(_libdir) -name '*.pc' -exec rm -v '{}' \;
 	# Generate package filelists
 	ls -1 \
 	  debian/tmp$(_sysconfdir)/*.conf \

@@ -76,7 +76,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %config(noreplace) %{_sysconfdir}/gridmap_eppn_callout-gsi_authz.conf
 %{_libdir}/libglobus*
-%{_libdir}/pkgconfig/*.pc
 
 %changelog
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 1.6-1
