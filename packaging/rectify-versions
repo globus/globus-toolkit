@@ -163,7 +163,7 @@ sub update_rpm($$)
             if ($requirever ne $old_requirever)
             {
                 print "Updating version $requirement from $old_requirever to $requirever\n" if ($verbose);
-                $specline =~ s/(Requires:\s*\S+\s*>=\s*)[0-9.]+/$1$requirever/;
+                $specline =~ s/(Requires:\s*\S+\s*)>=\s*[0-9.]+/$1$requirever/;
                 $ARRAY[$index] = $specline;
                 $specfile_changed = 1;
             }
