@@ -30,7 +30,7 @@ MAINTAINERCLEANFILES = $(perldoc_DATA)
 
 all-local:
 	$(MKDIR_P) Globus/GRAM
-	$(INSTALL) JobDescription.pm Globus/GRAM
+	$(INSTALL) $(srcdir)/JobDescription.pm Globus/GRAM
 	$(INSTALL) $(srcdir)/JobManager.pm Globus/GRAM
 	$(INSTALL) $(srcdir)/StdioMerger.pm Globus/GRAM
 

@@ -1,7 +1,7 @@
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	6.5
+Version:	6.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
@@ -9,7 +9,7 @@ Group:		Applications/Internet
 BuildArch:	noarch
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_scripts-6.5.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_scripts-6.6.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common-progs >= 14
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Aug 25 2014 Globus Toolkit <support@globus.org> - 6.6-1
+- Fix install rule when building from shadow dir
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 6.5-1
 - Merge fixes from ellert-globus_6_branch
 

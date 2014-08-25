@@ -1,3 +1,9 @@
+globus-gram-job-manager-scripts (6.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix install rule when building from shadow dir
+
+ -- Globus Toolkit <support@globus.org>  Mon, 25 Aug 2014 08:27:44 -0400
+
 globus-gram-job-manager-scripts (6.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch
