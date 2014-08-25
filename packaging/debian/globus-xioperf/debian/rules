@@ -112,7 +112,6 @@ install: build-stamp
 	ls -1 \
 	  debian/tmp$(_bindir)/* \
 	  debian/tmp$(_docdir)/$(name)/GLOBUS_LICENSE \
-	  debian/tmp$(_libdir)/pkgconfig/* \
 	  > debian/$(name).install
 
 binary-indep:

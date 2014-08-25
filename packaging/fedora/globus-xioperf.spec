@@ -66,7 +66,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %{_bindir}/%{name}
-%{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 4.4-1
