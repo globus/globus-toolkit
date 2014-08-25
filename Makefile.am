@@ -13,8 +13,6 @@ $(GT_TARGETS_INSTALL):
 	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) install
 $(GT_TARGETS_CHECK):
 	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) check
-$(GT_TARGETS_DISTCLEAN):
-	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) distclean
 $(GT_TARGETS_DIST):
 	@$(MKDIR_P) package-output
 	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && MAKEFLAGS= $(MAKE) $(AM_MAKEFLAGS) dist
@@ -165,7 +163,7 @@ endif
 
 if !HAVE_LTDL
 libltdl-clean:
-	PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd libltdl; $(MAKE) $(AM_MAKEFLAGS) clean
+	PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; if [ -f libltdl/Makefile ]; then cd libltdl; $(MAKE) $(AM_MAKEFLAGS) clean; fi
 	rm -f libltdl-stamp
 endif
 
