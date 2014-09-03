@@ -135,7 +135,6 @@ AC_CONFIG_FILES(
         globus-gram-job-manager-lsf.pc
         globus-lsf.conf
         Makefile
-        seg/Doxyfile
         seg/Makefile
 	version.h)
 AC_OUTPUT
