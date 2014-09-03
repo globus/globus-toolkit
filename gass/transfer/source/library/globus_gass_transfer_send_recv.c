@@ -16,18 +16,11 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- *
- * @file globus_gass_transfer_send_recv.c Send/Receive Data
+ * @file globus_gass_transfer_send_recv.c
+ * @brief Send/Receive Data
  *
  * This module implements the send and receive functionality of the
  * GASS transfer library.
- *  
- * CVS Information: 
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 #endif
 

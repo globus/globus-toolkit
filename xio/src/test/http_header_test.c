@@ -15,7 +15,8 @@
  */
 
 /**
- * @file http_header_test.c HTTP Header test
+ * @file http_header_test.c
+ * @brief HTTP Header test
  *
  * Test that clients can send arbitrary HTTP headers to servers, and servers
  * can send arbitrary HTTP headers to clients.

@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gram_protocol.c GRAM Protocol
+ * @file globus_gram_protocol.c
+ * @brief GRAM Protocol
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 #include "globus_i_gram_protocol.h"
 #include "version.h"
 

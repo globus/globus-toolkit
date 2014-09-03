@@ -16,16 +16,10 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gass_transfer.c GASS transfer module descriptor
+ * @file globus_gass_transfer.c
+ * @brief GASS transfer module descriptor
  *
  * This module implements the GASS transfer module descriptor
- *
- * CVS Information:
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 #endif
 

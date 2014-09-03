@@ -21,9 +21,13 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_authz_callout_error.h"
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_authz.c Globus Authorization API
+ * @file globus_gsi_authz.c
+ * @brief Globus Authorization API
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 static int globus_l_gsi_authz_activate(void);
 static int globus_l_gsi_authz_deactivate(void);
 
@@ -219,7 +223,7 @@ static int globus_l_gsi_authz_activate(void)
 
 /**
  * Module deactivation
- ***/
+ */
 static int globus_l_gsi_authz_deactivate(void)
 {
     /* deactivate any module used by the implementation */

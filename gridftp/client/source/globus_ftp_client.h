@@ -19,6 +19,7 @@
 
 /**
  * @file globus_ftp_client.h
+ * @brief GridFTP Client
  */
 
 #ifndef GLOBUS_GLOBAL_DOCUMENT_SET
@@ -147,7 +148,7 @@ typedef enum
 globus_ftp_client_restart_type_t;
 
 /**
- * Stream mode restart marker
+ * @brief Stream mode restart marker
  * @ingroup globus_ftp_client_restart_markers
  * @internal
  *
@@ -178,7 +179,7 @@ typedef struct
 globus_ftp_client_restart_stream_t;
 
 /**
- * Extended block mode restart marker
+ * @brief Extended block mode restart marker
  * @ingroup globus_ftp_client_restart_markers
  * @internal
  *
@@ -204,7 +205,7 @@ typedef struct
 globus_ftp_client_restart_extended_block_t;
 
 /**
- * Restart marker.
+ * @brief Restart marker.
  * @ingroup globus_ftp_client_restart_marker
  *
  * This structure is may be either a stream mode transfer offset,
@@ -225,7 +226,7 @@ typedef union
 globus_ftp_client_restart_marker_t;
 
 /**
- * FTP Client Handle.
+ * @brief FTP Client Handle.
  * @ingroup globus_ftp_client_handle
  *
  * An FTP client handle is used to associate state with a group of
@@ -241,7 +242,7 @@ globus_ftp_client_restart_marker_t;
 typedef struct globus_i_ftp_client_handle_t * globus_ftp_client_handle_t;
 
 /**
- * FTP Client plugin
+ * @brief FTP Client plugin
  * @ingroup globus_ftp_client_plugins
  *
  * An FTP Client plugin is used to add restart, monitoring,
@@ -317,7 +318,7 @@ typedef void (*globus_ftp_client_data_callback_t) (
     globus_bool_t				eof);
 
 /**
- * Operation Attributes.
+ * @brief Operation Attributes.
  * @ingroup globus_ftp_client_operationattr
  *
  * FTP Client attributes are used to control the parameters needed to
@@ -333,7 +334,7 @@ typedef struct globus_i_ftp_client_operationattr_t *
 globus_ftp_client_operationattr_t;
 
 /**
- * Handle Attributes.
+ * @brief Handle Attributes.
  * @ingroup globus_ftp_client_handleattr
  *
  * Handle attributes are used to control the caching behavior of the
@@ -1248,8 +1249,9 @@ typedef enum
 }
 globus_ftp_client_probed_feature_t;
 /**
- * Feature Handle
+ * @brief Feature Handle
  * @ingroup globus_ftp_client_operations
+ *
  * Handle used to associate state with feature operations.
  * @see globus_ftp_client_feat,
  *      globus_ftp_client_features_init,

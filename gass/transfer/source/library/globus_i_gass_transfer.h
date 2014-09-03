@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_i_gass_transfer.h
+ * @brief GASS transfer internal interface
  *
  * This header defines the internal interface of the GASS transfer library
  */
@@ -215,3 +218,5 @@ globus_i_gass_transfer_deactivate_callback(
 #endif
 
 #endif /* GLOBUS_I_GASS_TRANSFER_H */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

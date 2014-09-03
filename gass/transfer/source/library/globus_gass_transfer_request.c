@@ -17,15 +17,10 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gass_transfer_request.c
+ * @brief GASS Transfer Request
  *
  * This module implements the request structure accessors for the
  * GASS transfer library 
- *
- * CVS Information:
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 #endif
 

@@ -17,8 +17,9 @@
 #ifndef GLOBUS_GASS_COPY_H
 #define GLOBUS_GASS_COPY_H
 
- /** 
- * @file globus_gass_copy.h GASS Copy Library 
+/**
+ * @file globus_gass_copy.h
+ * @brief GASS Copy Library
  */
  
 #ifndef GLOBUS_GLOBAL_DOCUMENT_SET
@@ -585,7 +586,7 @@ typedef enum {
 } globus_gass_copy_glob_entry_t;
 
 /**
- * Glob expanded entry information
+ * @brief Glob expanded entry information
  * @ingroup globus_gass_copy
  */
 typedef struct 

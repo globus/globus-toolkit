@@ -21,10 +21,6 @@
 /**
  * @file globus_i_gsi_gss_utils.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 

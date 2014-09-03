@@ -19,6 +19,7 @@
 
 /**
  * @file globus_gsi_gss_constants.h
+ * @brief Globus GSI GSS constants
  * @author Sam Lang, Sam Meder
  */
 

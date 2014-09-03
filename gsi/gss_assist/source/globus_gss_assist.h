@@ -19,7 +19,7 @@
 
 /**
  * @file globus_gss_assist.h
- * GSS Assist Header
+ * @brief GSS Assist Header
  */
  
 #include "gssapi.h"

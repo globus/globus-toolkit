@@ -19,6 +19,7 @@
 
 /**
  * @file globus_gsi_callback.h
+ * @brief Globus GSI Callback
  * @author Sam Lang
  * @author Sam Meder
  */

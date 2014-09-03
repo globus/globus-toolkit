@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_libc.c Thread-safe libc functions, largely obsolete */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_libc.c
+ * @brief Thread-safe libc functions, largely obsolete
+ */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /******************************************************************************
 			     Include header files

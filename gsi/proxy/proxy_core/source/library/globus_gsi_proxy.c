@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_proxy.c GSI Proxy Implementation
+ * @file globus_gsi_proxy.c
+ * @brief GSI Proxy Implementation
  * @author Sam Lang, Sam Meder
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #define PROXY_NAME                      "proxy"
 #define LIMITED_PROXY_NAME              "limited proxy"

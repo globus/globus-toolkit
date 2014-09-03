@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_ftp_control_client.c Client-side FTP Control API
+ * @file globus_ftp_control_client.c
+ * @brief Client-side FTP Control API
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"

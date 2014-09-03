@@ -17,7 +17,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_cert_utils_constants.h
- * Globus GSI Cert Utils
+ * @brief Globus GSI Cert Utils
  * @author Sam Meder, Sam Lang
  */
 #endif

@@ -17,13 +17,9 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_cert_utils.c
+ * @brief Globus GSI Cert Utils Library
  * @author Sam Lang
  * @author Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
- *
  */
 #endif
 

@@ -19,6 +19,7 @@
 
 /**
  * @file globus_gsi_system_config.h
+ * @brief Globus GSI System Config Library
  * @author Sam Lang, Sam Meder
  */
 

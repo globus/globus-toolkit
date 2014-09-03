@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_system_config.c
+ * @brief Globus GSI System Config Library
  * @author Sam Lang, Sam Meder
  */
+#endif
 
 #include "globus_common.h"
 #include "globus_gsi_system_config.h"

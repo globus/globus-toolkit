@@ -19,10 +19,10 @@
 
 /** 
  * @file globus_fifo.h
+ * @brief Globus FIFO
  *
  * This file defines the globus_fifo_t type
  * useful for queuing arbitrary data (via void-pointer)
- *
  */
 
 /**

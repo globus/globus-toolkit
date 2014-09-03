@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file off_t_test.c Test of globus_off_t */
+/**
+ * @file off_t_test.c
+ * @brief Test of globus_off_t
+ */
+
 #include "globus_common.h"
 
 /**

@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_ftp_control.c Globus FTP Control API
+ * @file globus_ftp_control.c
+ * @brief Globus FTP Control API
  */
 
 #include "globus_ftp_control.h"
@@ -367,3 +370,4 @@ globus_ftp_control_layout_copy(
     return GLOBUS_SUCCESS;
 }
 
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

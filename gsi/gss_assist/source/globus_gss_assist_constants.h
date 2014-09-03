@@ -19,7 +19,7 @@
 
 /**
  * @file globus_gss_assist_constants.h
- * Globus GSI GSS Assist Library
+ * @brief Globus GSI GSS Assist Library
  * @author Sam Lang, Sam Meder
  */
 

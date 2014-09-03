@@ -17,7 +17,8 @@
 #ifndef GLOBUS_XIO_TCP_DRIVER_INCLUDE
 #define GLOBUS_XIO_TCP_DRIVER_INCLUDE
 /**
- * @file globus_xio_tcp_driver.h Header file for XIO TCP Driver
+ * @file globus_xio_tcp_driver.h
+ * @brief Header file for XIO TCP Driver
  */
 #include "globus_xio_system.h"
 

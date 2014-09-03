@@ -18,7 +18,8 @@
 #define GLOBUS_XIO_GRIDFTP_DRIVER_H
 
 /**
- * @file globus_xio_gridftp_driver.h XIO GRIDFTP Client Driver
+ * @file globus_xio_gridftp_driver.h
+ * @brief XIO GRIDFTP Client Driver
  */
 
 #include "globus_xio_system.h"

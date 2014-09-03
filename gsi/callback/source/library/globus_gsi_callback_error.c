@@ -17,12 +17,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_callback_error.c
- * Globus GSI Callback
+ * @brief Globus GSI Callback
  * @author Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 

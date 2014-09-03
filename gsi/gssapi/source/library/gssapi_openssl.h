@@ -19,6 +19,7 @@
 
 /**
  * @file gssapi_openssl.h
+ * @brief GSS API OpenSSL
  * @author Sam Lang, Sam Meder
  */
 

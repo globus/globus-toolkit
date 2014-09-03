@@ -18,7 +18,8 @@
 #define GLOBUS_FTP_CLIENT_RESTART_MARKER_PLUGIN_H
 
 /**
- * @file globus_ftp_client_restart_marker_plugin.h GridFTP Restart Marker Plugin Implementation
+ * @file globus_ftp_client_restart_marker_plugin.h
+ * @brief GridFTP Restart Marker Plugin Implementation
  */
 
 /**

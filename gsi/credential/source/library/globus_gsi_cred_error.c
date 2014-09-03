@@ -17,12 +17,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_cred_error.c
- * Globus GSI Credential Library
+ * @brief Globus GSI Credential Library
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 

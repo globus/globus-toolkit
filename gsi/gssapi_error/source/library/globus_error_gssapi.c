@@ -17,10 +17,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_error_gssapi.c
- *
- * $RCSfile$
- * $Revision$
- * $Date$
+ * @brief Globus Error GSS API
  */
 #endif
 

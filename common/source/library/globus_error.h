@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_error.h Globus Error Handling */
+/**
+ * @file globus_error.h
+ * @brief Globus Error Handling
+ */
 
 #ifndef GLOBUS_ERROR_H
 #define GLOBUS_ERROR_H

@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_ftp_client_throughput_plugin.c GridFTP Throughput Performance Plugin Implementation
+ * @file globus_ftp_client_throughput_plugin.c
+ * @brief GridFTP Throughput Performance Plugin Implementation
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_ftp_client_throughput_plugin.h"
 #include "globus_ftp_client_perf_plugin.h"

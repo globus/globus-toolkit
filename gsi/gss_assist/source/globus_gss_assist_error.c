@@ -15,7 +15,8 @@
  */
 
 /**
- * @file gss_assist/source/globus_gss_assist_error.c GSS Assist Error Handling
+ * @file gss_assist/source/globus_gss_assist_error.c
+ * @brief GSS Assist Error Handling
  * @author Sam Lang, Sam Meder
  */
 

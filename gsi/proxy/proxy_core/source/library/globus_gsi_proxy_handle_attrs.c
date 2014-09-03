@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_proxy_handle_attrs.c GSI Proxy Handle Attributes
+ * @file globus_gsi_proxy_handle_attrs.c
+ * @brief GSI Proxy Handle Attributes
  */
+#endif
 
 #include "globus_i_gsi_proxy.h"
 #include <errno.h>

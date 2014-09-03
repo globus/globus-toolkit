@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_url_test.c Tests for the Globus URL parser */
+/**
+ * @file globus_url_test.c
+ * @brief Tests for the Globus URL parser
+ */
 
 #include "globus_common.h"
 #include <stdio.h>

@@ -16,7 +16,11 @@
 
 #ifndef GLOBUS_GSI_PROXY_CONSTANTS_H
 #define GLOBUS_GSI_PROXY_CONSTANTS_H
-/** @file globus_gsi_proxy_constants.h GSI Proxy Constants */
+
+/**
+ * @file globus_gsi_proxy_constants.h
+ * @brief GSI Proxy Constants
+ */
 
 #ifdef __cplusplus
 extern "C" {

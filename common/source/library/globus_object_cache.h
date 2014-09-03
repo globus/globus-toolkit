@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_object_cache.h Object Cache */
+/**
+ * @file globus_object_cache.h
+ * @brief Object Cache
+ */
 
 #ifndef GLOBUS_OBJECT_CACHE_H
 #define GLOBUS_OBJECT_CACHE_H

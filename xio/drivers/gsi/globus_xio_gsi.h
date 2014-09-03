@@ -19,6 +19,7 @@
 
 /**
  * @file globus_xio_gsi.h
+ * @brief XIO GSI Driver
  * @author Sam Meder
  */
 

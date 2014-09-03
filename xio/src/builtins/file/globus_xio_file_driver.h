@@ -17,7 +17,8 @@
 #ifndef GLOBUS_XIO_FILE_DRIVER_H
 #define GLOBUS_XIO_FILE_DRIVER_H
 /**
- * @file globus_xio_file_driver.h XIO File Driver
+ * @file globus_xio_file_driver.h
+ * @brief XIO File Driver
  */
 #include "globus_xio_system.h"
 

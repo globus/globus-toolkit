@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_i_thread.h Internal Macros for Globus threads library */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_i_thread.h
+ * @brief Internal Macros for Globus threads library
+ */
 
 #if !defined(GLOBUS_I_THREAD_H)
 #define GLOBUS_I_THREAD_H 1
@@ -91,3 +96,4 @@ int globus_i_thread_ignore_sigpipe(void);
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_I_THREAD */
 
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

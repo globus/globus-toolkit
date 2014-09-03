@@ -23,6 +23,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_xio_http.c
+ * @brief Globus XIO HTTP Driver
  */
 
 /**

@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_gram_protocol_pack.c Message Packing
+ * @file globus_gram_protocol_pack.c
+ * @brief Message Packing
  */
 #include "globus_i_gram_protocol.h"
 #include <string.h>
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static
 globus_size_t
 globus_l_gram_protocol_quote_string(

@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_io_xio_compat.c Globus I/O Emulation */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_io_xio_compat.c
+ * @brief Globus I/O Emulation
+ */
 
 #include "globus_io.h"
 #ifndef TARGET_ARCH_WIN32
@@ -5338,4 +5343,4 @@ error:
     return result;
 }
 
-
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

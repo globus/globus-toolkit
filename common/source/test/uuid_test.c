@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file uuid_test.c UUID Test */
+/**
+ * @file uuid_test.c
+ * @brief UUID Test
+ */
+
 #include "globus_common.h"
 #include "globus_test_tap.h"
 

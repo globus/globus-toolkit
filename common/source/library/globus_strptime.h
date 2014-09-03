@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_strptime.h strptime */
+/**
+ * @file globus_strptime.h
+ * @brief strptime
+ */
 
 #ifndef GLOBUS_STRPTIME_H
 #define GLOBUS_STRPTIME_H 1

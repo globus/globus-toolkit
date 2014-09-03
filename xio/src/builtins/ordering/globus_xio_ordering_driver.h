@@ -18,7 +18,8 @@
 #define GLOBUS_XIO_ORDERING_DRIVER_H
 
 /**
- * @file globus_xio_ordering_driver.h XIO ORDERING Driver
+ * @file globus_xio_ordering_driver.h
+ * @brief XIO ORDERING Driver
  */
 
 #include "globus_common.h"

@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_states.h State Machine */
+/**
+ * @file globus_states.h
+ * @brief State Machine
+ */
 
 #if !defined(GLOBUS_STATES_H)
 #define GLOBUS_STATES_H 1

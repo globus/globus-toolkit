@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_handle_table.h Handle Table for Reference Counting Data */
+/**
+ * @file globus_handle_table.h
+ * @brief Handle Table for Reference Counting Data
+ */
 
 /**
  * @defgroup globus_handle_table Handle Table for Reference Counting Data

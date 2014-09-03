@@ -15,15 +15,11 @@
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_i_error_generic.c
- * Globus Generic Error
- *
- * $RCSfile$
- * $Revision$
- * $Date $
+ * @brief Globus Generic Error
  */
-
 
 #include "globus_i_error_generic.h"
 #include "globus_libc.h"

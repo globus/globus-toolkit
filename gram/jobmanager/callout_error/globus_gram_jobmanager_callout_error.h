@@ -16,6 +16,7 @@
 
 /**
  * @file globus_gram_jobmanager_callout_error.h
+ * @brief Globus GRAM Job Manager Callout Error
  * @author Sam Meder
  */
 

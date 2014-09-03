@@ -18,7 +18,8 @@
 #define GLOBUS_FTP_CLIENT_THROUGHPUT_PLUGIN_H
 
 /**
- * @file globus_ftp_client_throughput_plugin.h GridFTP Throughput Performance Plugin Implementation
+ * @file globus_ftp_client_throughput_plugin.h
+ * @brief GridFTP Throughput Performance Plugin Implementation
  */
 
 /**

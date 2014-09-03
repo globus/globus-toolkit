@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_gram_protocol_io.c I/O Functions
+ * @file globus_gram_protocol_io.c
+ * @brief I/O Functions
  */
+
 #include "globus_i_gram_protocol.h"
 
 #include <string.h>
-
-#ifndef DOXYGEN
 
 static int
 globus_l_gram_protocol_setup_accept_attr(

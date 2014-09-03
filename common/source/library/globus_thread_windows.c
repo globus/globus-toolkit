@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_thread_windows.c Windows Threads Bindings */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_thread_windows.c
+ * @brief Windows Threads Bindings
+ */
 
 #include "globus_i_common_config.h"
 #include "globus_thread.h"
@@ -1016,3 +1021,4 @@ globus_l_winthread_get_impl(void)
     return &globus_l_winthread_impl;
 }
 
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_module.c Module Activation and Deactivation */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_module.c
+ * @brief Module Activation and Deactivation
+ */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /******************************************************************************
 			     Include header files

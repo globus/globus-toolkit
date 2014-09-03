@@ -18,12 +18,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gridmap_callout.c
- * Globus Gridmap Callout
+ * @brief Globus Gridmap Callout
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 
 #include "globus_common.h"

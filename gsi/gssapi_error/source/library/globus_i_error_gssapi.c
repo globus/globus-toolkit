@@ -15,15 +15,11 @@
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_i_error_gssapi.c
- * Globus Generic Error
- *
- * $RCSfile$
- * $Revision$
- * $Date $
+ * @brief Globus Generic Error
  */
-
 
 #include "globus_i_error_gssapi.h"
 #include <string.h>

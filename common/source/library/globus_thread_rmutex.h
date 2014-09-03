@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_thread_rmutex.h Recursive Mutex */
+/**
+ * @file globus_thread_rmutex.h
+ * @brief Recursive Mutex
+ */
 
 #ifndef GLOBUS_THREAD_RMUTEX_H
 #define GLOBUS_THREAD_RMUTEX_H

@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_i_gsi_proxy.h Globus GSI Proxy Library Internals
+ * @file globus_i_gsi_proxy.h
+ * @brief Globus GSI Proxy Library Internals
  * @author Sam Meder, Sam Lang
  */
 
@@ -185,7 +188,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
  */
 
 /**
- * GSI Proxy handle attributes implementation
+ * @brief GSI Proxy handle attributes implementation
  * @ingroup globus_gsi_proxy_handle
  * @internal
  *
@@ -224,7 +227,7 @@ typedef struct globus_l_gsi_proxy_handle_attrs_s
 } globus_i_gsi_proxy_handle_attrs_t;
 
 /**
- * GSI Proxy handle implementation
+ * @brief GSI Proxy handle implementation
  * @ingroup globus_gsi_proxy_handle
  * @internal
  *
@@ -308,3 +311,5 @@ globus_i_gsi_proxy_error_chain_result(
 #endif
 
 #endif /* GLOBUS_I_GSI_PROXY_H */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

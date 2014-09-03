@@ -15,7 +15,8 @@
  */
 
 /**
- * @file http_post_test.c HTTP Echo Test
+ * @file http_post_test.c
+ * @brief HTTP Echo Test
  *
  * Test that clients can send and receive HTTP message bodies.
  *

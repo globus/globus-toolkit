@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_tilde_expand.h Home Directory ~ expansion */
+/**
+ * @file globus_tilde_expand.h
+ * @brief Home Directory ~ expansion
+ */
 
 #ifndef GLOBUS_TILDE_EXPAND_H
 #define GLOBUS_TILDE_EXPAND_H 1

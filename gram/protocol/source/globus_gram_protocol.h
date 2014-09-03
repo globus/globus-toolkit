@@ -18,8 +18,10 @@
 #define GLOBUS_GRAM_PROTOCOL_H
 
 /**
- * @file globus_gram_protocol.h GRAM Protocol API
+ * @file globus_gram_protocol.h
+ * @brief GRAM Protocol API
  */
+
 #ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
  * @mainpage Globus GRAM Protocol

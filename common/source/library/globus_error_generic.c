@@ -17,12 +17,9 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_error_generic.c
- *
- * $RCSfile$
- * $Revision$
- * $Date$
+ * @brief Globus Error API
  */
-#endif
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_object.h"
 #include "globus_module.h"

@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_thread_pthreads.c POSIX Threads Bindings */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_thread_pthreads.c
+ * @brief POSIX Threads Bindings
+ */
 
 #include "globus_i_common_config.h"
 #include "globus_common.h"
@@ -893,3 +898,5 @@ globus_l_pthread_get_impl(void)
     return &globus_l_pthread_impl;
 }
 #endif /* _POSIX_THREADS */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

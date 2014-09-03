@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_gsi_proxy.h Globus GSI Proxy API */
+/**
+ * @file globus_gsi_proxy.h
+ * @brief Globus GSI Proxy API
+ */
 
 #ifndef GLOBUS_GLOBUS_GSI_PROXY_H
 #define GLOBUS_GLOBUS_GSI_PROXY_H

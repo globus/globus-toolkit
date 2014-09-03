@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file hash_test.c Hashtable Test Cases*/
+/**
+ * @file hash_test.c
+ * @brief Hashtable Test Cases
+ */
 
 #include "globus_common.h"
 #include "globus_test_tap.h"

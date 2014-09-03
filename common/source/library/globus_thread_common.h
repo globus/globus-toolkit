@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-/*
- * @file globus_thread_common.h Common Thread Interface
+/**
+ * @file globus_thread_common.h
+ * @brief Common Thread Interface
  */
 
 #ifndef GLOBUS_THREAD_COMMON_H

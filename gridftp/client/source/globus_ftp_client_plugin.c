@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_ftp_client_plugin.c Plugin Implementation
+ * @file globus_ftp_client_plugin.c
+ * @brief Plugin Implementation
  */
 
 #include "globus_i_ftp_client.h"
 
 #include <string.h>
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #define PLUGIN_SUPPORTS_OP(op,plugin) \
    (((op) == GLOBUS_FTP_CLIENT_GET && (plugin)->get_func) \
     || ((op) == GLOBUS_FTP_CLIENT_PUT && (plugin)->put_func) \

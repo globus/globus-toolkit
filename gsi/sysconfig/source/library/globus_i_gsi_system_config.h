@@ -18,7 +18,7 @@
 /**
  * @file globus_i_gsi_system_config.h
  * @internal
- * Globus GSI Credential System Configuration Files
+ * @brief Globus GSI Credential System Configuration Files
  * @author Sam Meder, Sam Lang
  */
 

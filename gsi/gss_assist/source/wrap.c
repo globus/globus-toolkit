@@ -15,7 +15,8 @@
  */
 
 /**
- * @file gss_assist/source/wrap.c Wrap GSSAPI buffers
+ * @file gss_assist/source/wrap.c
+ * @brief Wrap GSSAPI buffers
  * @author Sam Lang, Sam Meder
  */
 

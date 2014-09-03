@@ -16,6 +16,7 @@
 
 /**
  * @file globus_openssl.h
+ * @brief Globus OpenSSL Module
  */
 
 #ifndef GLOBUS_INCLUDE_GLOBUS_OPENSSL_H

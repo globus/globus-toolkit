@@ -16,7 +16,7 @@
 
 /**
  * @file gssapi/source/library/accept_sec_context.c
- * Globus GSI GSS-API gss_accept_sec_context
+ * @brief Globus GSI GSS-API gss_accept_sec_context
  * @author Sam Meder, Sam Lang
  */
 

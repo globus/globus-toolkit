@@ -17,7 +17,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_i_error_gssapi.h
- * Globus Gssapi Error
+ * @brief Globus Gssapi Error
  */
 
 #ifndef GLOBUS_I_INCLUDE_GSSAPI_ERROR_H

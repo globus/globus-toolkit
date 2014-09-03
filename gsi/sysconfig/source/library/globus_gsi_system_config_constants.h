@@ -17,12 +17,11 @@
 #ifndef GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H
 #define GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_system_config_constants.h
+ * @brief Globus GSI System Config Library
  * @author Sam Lang, Sam Meder
  */
-#endif
 
 #ifdef __cplusplus
 extern "C" {

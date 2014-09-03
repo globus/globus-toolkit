@@ -15,7 +15,8 @@
  */
 
 /**
- * @file gss_assist/source/gridmap.c GSS Assist Gridmap Functions
+ * @file gss_assist/source/gridmap.c
+ * @brief GSS Assist Gridmap Functions
  */
 
 #include "globus_i_gss_assist.h"

@@ -18,7 +18,8 @@
 #define GLOBUS_FTP_CLIENT_THROUGHPUT_NL_PLUGIN_H
 
 /**
- * @file globus_ftp_client_throughput_nl_plugin.h GridFTP Netlogger Throughput Plugin
+ * @file globus_ftp_client_throughput_nl_plugin.h
+ * @brief GridFTP Netlogger Throughput Plugin
  */
 
 /**
