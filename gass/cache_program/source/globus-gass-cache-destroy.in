@@ -28,7 +28,7 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-PATH="${bindir}:${sbindir}:${PATH}
+PATH="${bindir}:${sbindir}:${PATH}"
 
 # defaults list of machine to clean
 TARGETS=${HOME}/.globus/my-contacts
@@ -83,7 +83,7 @@ case "${TARGET_MACH}" in
     *)
         RESULT=`echo "" | globusrun -s -r "${TARGET_MACH}"  "&(environment=(CACHE_SLEEP_TIME 60))(executable=/bin/sh)(library_path=\\$(GLOBUS_LOCATION)/lib)(arguments=\\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
         ;;
-fi
+esac
 
 THIS_STATUS=$?
 if [ $THIS_STATUS -ne 0 ]
