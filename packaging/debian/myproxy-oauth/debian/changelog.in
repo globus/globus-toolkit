@@ -1,3 +1,9 @@
+myproxy-oauth (0.15-3+gt6.@distro@) @distro@; urgency=low
+
+  * Change section from unknown to net
+
+ -- Globus Toolkit <support@globus.org>  Wed, 03 September 2014 21:35:18 -0400
+
 myproxy-oauth (0.15-2+gt6.@distro@) @distro@; urgency=low
 
   * Handle Ubuntu 14.04 apache2 configuation layout
