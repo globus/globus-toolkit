@@ -6,14 +6,14 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.24
-Release:	2%{?dist}
+Version:	15.25
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_common-15.24.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_common-15.25.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 #		Obsolete dropped packages from Globus Toolkit 4.2.1
@@ -149,12 +149,6 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
-%if "%{?globus_version}" != ""
-GLOBUS_VERSION=%{globus_version}
-%else
-GLOBUS_VERSION=6.0
-%endif
-export GLOBUS_VERSION
 %configure \
            --disable-static %{backwardcompat} \
            --docdir=%{_docdir}/%{name}-%{version} \
@@ -215,6 +209,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Sep 05 2014 Globus Toolkit <support@globus.org> - 15.25-1
+- Set GLOBUS_VERSION in bootstrap
+
 * Fri Sep 05 2014 Globus Toolkit <support@globus.org> - 15.24-2
 - GT 6.0
 

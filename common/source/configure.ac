@@ -1,5 +1,5 @@
 AC_PREREQ([2.60])
-AC_INIT([globus_common], [15.24], [https://globus.atlassian.net/])
+AC_INIT([globus_common], [15.25], [https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -102,22 +102,7 @@ CPPFLAGS="$gtsave_CPPFLAGS"
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
-if test "X$GLOBUS_VERSION" = "X"; then
-    if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version; then
-        GLOBUS_VERSION="`${GLOBUS_LOCATION-/usr}/bin/globus-version`"
-        if test X"$GLOBUS_VERSIONNAME" = "X" ; then
-            GLOBUS_VERSION_FULL="`${GLOBUS_LOCATION-/usr}/bin/globus-version -full`"
-            GLOBUS_VERSIONNAME="`echo $GLOBUS_VERSION_FULL | sed "s/ $GLOBUS_VERSION//"`"
-        fi
-    else
-        GLOBUS_VERSION="$DIRT_TIMESTAMP-$DIRT_BRANCH_ID"
-    fi
-fi
-
-if test X"$GLOBUS_VERSIONNAME" = "X" ; then
-    GLOBUS_VERSIONNAME="Globus Toolkit"
-fi
-
+m4_include(globus_version)
 AC_SUBST(GLOBUS_VERSION)
 AC_SUBST(GLOBUS_VERSIONNAME)
 

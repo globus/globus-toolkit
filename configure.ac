@@ -1,4 +1,4 @@
-AC_INIT([globus_toolkit], [6.0.beta2], [https://globus.atlassian.net/])
+AC_INIT([globus_toolkit], [6.0], [https://globus.atlassian.net/])
 m4_define([short_version], [m4_substr(AC_PACKAGE_VERSION, [0],
     m4_index(AC_PACKAGE_VERSION, [.]))])
 AC_PREFIX_DEFAULT([/usr/local/globus-]short_version)
@@ -6,6 +6,7 @@ export GLOBUS_VERSION=$VERSION
 syscmd([./update-dirt.sh])
 syscmd([test -x ./prep-myproxy && sh -x ./prep-myproxy || true])
 syscmd([test -x ./prep-gsissh && sh -x ./prep-gsissh || true])
+syscmd([test -x ./write-globus-version && sh -x ./write-globus-version ]AC_PACKAGE_VERSION [ || true])
 m4_include([myproxy/version.m4])
 m4_include([gsi_openssh/version.m4])
 AC_SUBST([MYPROXY_VERSION], [myproxy_version])

@@ -12,9 +12,8 @@ endif
 include /usr/share/quilt/quilt.make
 
 name = globus-common
-version = 15.24
+version = 15.25
 soname = 0
-toolkit_version = 6.0
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
@@ -58,7 +57,7 @@ configure-stamp: sed-stamp
 	    cp -f /usr/share/misc/$$f build-aux/$$f ; \
 	  fi ; \
 	done
-	GLOBUS_VERSION=$(toolkit_version) ./configure \
+	./configure \
  	   --host=$(DEB_HOST_GNU_TYPE) \
 	   --prefix=$(_prefix) \
 	   --build=$(DEB_BUILD_GNU_TYPE) \
