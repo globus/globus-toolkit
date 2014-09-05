@@ -7,7 +7,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	15.24
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -152,7 +152,7 @@ autoreconf -if
 %if "%{?globus_version}" != ""
 GLOBUS_VERSION=%{globus_version}
 %else
-GLOBUS_VERSION=5.2.5
+GLOBUS_VERSION=6.0
 %endif
 export GLOBUS_VERSION
 %configure \
@@ -215,6 +215,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Sep 05 2014 Globus Toolkit <support@globus.org> - 15.24-2
+- GT 6.0
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 15.24-1
 - Merge fixes from ellert-globus_6_branch
 
