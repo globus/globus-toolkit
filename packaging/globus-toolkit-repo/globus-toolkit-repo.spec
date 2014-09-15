@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        9
+Release:        10
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -11,6 +11,7 @@ Source2:        globus-toolkit-6-testing.repo.in
 Source3:        globus-toolkit-6-unstable.repo.in
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
+Provides:       globus-connect-server-repo
 Requires(post): lsb
 Requires(preun): lsb
 
@@ -209,6 +210,9 @@ fi
 %{_datadir}/*
 
 %changelog
+* Mon Sep 15 2014 Globus Toolkit <support@globus.org> - 6-10
+- Add Provides alias for globus-connect-server-repo
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 6-9
 - Add pre/post dependency on lsb
 
