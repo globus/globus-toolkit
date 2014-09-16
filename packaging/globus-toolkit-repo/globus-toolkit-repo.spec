@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        10
+Release:        11
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -163,7 +163,7 @@ elif command -v yum-config-manager > /dev/null; then
     yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-unstable-${repo}.repo
     yum-config-manager --enable Globus-Toolkit-6-$repo > /dev/null
 elif [ -d /etc/yum.repos.d ] ; then
-    sed -i 's/enabled=0/' < %{_datadir}/globus-toolkit-6-stable-${repo}.repo > /etc/yum.repos.d/globus-toolkit-6-stable-${repo}.repo 
+    sed -i 's/enabled=0/enabled=1/' < %{_datadir}/globus-toolkit-6-stable-${repo}.repo > /etc/yum.repos.d/globus-toolkit-6-stable-${repo}.repo 
     cp %{_datadir}/globus-toolkit-6-testing-${repo}.repo /etc/yum.repos.d
     cp %{_datadir}/globus-toolkit-6-unstable-${repo}.repo /etc/yum.repos.d
 else
@@ -210,6 +210,9 @@ fi
 %{_datadir}/*
 
 %changelog
+* Tue Sep 16 2014 Globus Toolkit <support@globus.org> - 6-11
+- Fix sed substitution to enable stable when yum-utils are not present
+
 * Mon Sep 15 2014 Globus Toolkit <support@globus.org> - 6-10
 - Add Provides alias for globus-connect-server-repo
 
