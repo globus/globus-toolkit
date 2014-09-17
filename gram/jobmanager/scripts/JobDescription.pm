@@ -394,6 +394,9 @@ sub environment
     } else {
         my %preset = ( %ENV ); # as meager as it may be
 
+        # PATH is no longer in the present environment, now that we don't use xinetd
+        $result{"PATH"} = "/bin:/usr/bin";
+
         # no previous knowledge, need to read the file
         my $fn = "/var/lib/osg/osg-job-environment.conf";
         if ( open( INFO, "<$fn" ) ) {
