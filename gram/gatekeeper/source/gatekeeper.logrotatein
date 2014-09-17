@@ -6,7 +6,5 @@
     nocreate
     rotate 4
     sharedscripts
-    postrotate
-        /usr/bin/killall -USR1 globus-gatekeeper 2> /dev/null || true
-    endscript
+    copytruncate
 }
