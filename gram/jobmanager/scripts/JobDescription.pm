@@ -325,6 +325,136 @@ To test for existence of a value:
 
 =cut
 
+sub trim($$) {
+    local($_) = shift;     # the value
+    my $preset = shift;    # hash ref
+    
+    my $ch = substr($_,0,1);
+    if ( $ch eq '"' ) {
+        # value in dquotes
+        $_ = substr($_,1,-1);
+    } elsif ( $ch eq '\'' ) {
+        # value in squotes, no substitutions
+        return substr($_,1,-1);
+    } else {
+        # unquoted value, trim whitespaces
+        s/^\s+//;
+        s/\s+$//;
+    }
+    
+    if ( ref($preset) eq 'HASH' ) {
+        # substitute $VAR variables, or keep $VAR
+        s/\$(\w+)/(exists $preset->{$1} ? $preset->{$1} : "\$$1")/egx;
+        
+        # substitute ${VAR} variables, or keep ${VAR}
+        s/\$\{([^}]+)\}/(exists $preset->{$1} ? $preset->{$1} : "\${$1}")/egx;
+    }
+    
+    # done
+    return $_;
+}
+
+# Simple helper function to process a single line from one of the OSG
+# attributes files into a key-value pair.  Returns (undef, undef) if the
+# line is not valid.
+sub parse_osg_attributes_line {
+    $_ = shift;
+    
+    s/[\r\n]*$//;  # safe chomp
+    s/\#.*$//;     # remove comments
+    s/^\s+//;      # remove initial whitespace
+    s/\s+$//;      # remove trailing whitespace
+    
+    # Reject lines that are empty, begin with 'export', or lack '='
+    if (($_ eq '') or m/^export/ or (index($_, '=') == -1)) {
+        return (undef, undef);
+    }
+    
+    # split into only two parts at the first equals sign
+    # $k will become the variable name, and $v the raw value
+    return split(/=/, $_, 2); 
+}
+
+# We override the autohandler for environment so we can tack on 
+# stuff from osg-attributes.conf
+sub environment
+{
+    my $self = shift;
+    local(*INFO);
+    
+    # return if missing, part 1
+    return ( wantarray ? () : undef ) unless ref $self;
+    
+    # slurp gridinfo file
+    my %result = ();       # map key to value
+    if ( exists $self->{'_osg_info'} && 
+         ref($self->{'_osg_info'}) eq 'HASH' ) {
+        # use instance knowledge - avoid reading the file again
+        %result = %{ $self->{'_osg_info'} };
+    } else {
+        my %preset = ( %ENV ); # as meager as it may be
+
+        # no previous knowledge, need to read the file
+        my $fn = "/var/lib/osg/osg-job-environment.conf";
+        if ( open( INFO, "<$fn" ) ) {
+            my ($k,$v);
+            while ( <INFO> ) {
+                ($k,$v) = parse_osg_attributes_line($_);
+                next unless defined $k;
+                
+                # substitute and unquote the value, remember it
+                $result{$k} = $preset{$k} = trim( $v, \%preset );
+            }
+            close INFO;
+        }
+        # Now do the same thing for the "local" file
+        my $local_fn = "/var/lib/osg/osg-local-job-environment.conf";
+        if ( open( INFO, "<$local_fn" ) ) {
+            my ($k,$v);
+            while ( <INFO> ) {
+                ($k,$v) = parse_osg_attributes_line($_);
+                next unless defined $k;
+                
+                # substitute and unquote the value, remember it
+                $result{$k} = $preset{$k} = trim( $v, \%preset );
+            }
+            close INFO;
+        }
+        
+        # remember for next invocation in this instance
+        # Note: If the file was unreadible, this is negative caching. 
+        $self->{'_osg_info'} = { %result };
+    }
+    
+    # return if missing, part 2
+    # this has been rewritten to not include job environments, if missing
+    # we still need to return the osg-attributes environment, though. 
+    if ( exists $self->{environment} ) {
+        # merge with job/user environment (higher prio)
+        foreach ( @{$self->{environment}} ) {
+            $result{$_->[0]} = $_->[1];
+        }
+    }
+    
+    # make weird GT format from merged hash
+    my @result = ();
+    foreach my $key ( keys %result ) {
+        push( @result, [ $key, $result{$key} ] );
+    }
+    
+    # return in a way requested by caller
+    if ( wantarray ) {
+        return @result;
+    } else {
+        if ( @result == 1 && ! ref($result[0]) ) {
+            return $result[0];
+        } else {
+            return undef;
+        }
+    }
+}
+
+
 sub AUTOLOAD
 {
     use vars qw($AUTOLOAD);
@@ -335,6 +465,8 @@ sub AUTOLOAD
     $name =~ s/_//g;
     $name = lc($name);
 
+    goto &environment
+    if $name eq "environment";
 
     if((! ref($self)) ||(! exists($self->{$name})))
     {
