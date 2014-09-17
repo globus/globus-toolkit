@@ -558,6 +558,34 @@ sub submit
                 Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
         }
     }
+    my @xcount = $description->xcount();
+    if(@xcount)
+    {   
+        $self->log("xcount = " . scalar(@xcount));
+        foreach my $this_xcount (@xcount)
+        {   
+            $self->log("xcount = " . $this_xcount);
+            $rc = print SCRIPT_FILE "request_cpus=$this_xcount \n";
+            if (!$rc)
+                {
+                    return $self->respond_with_failure_extension(
+                    "print: $script_filename: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+                }
+        }   
+    }
+
+    if($description->min_memory() ne '')
+    {
+        my $memory_request = $description->min_memory();
+        $rc = print SCRIPT_FILE "request_memory=" . $memory_request . "\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $script_filename: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
+    }
 
     my $WhenToTransferOutput = $description->whentotransferoutput();
     if (defined($WhenToTransferOutput))

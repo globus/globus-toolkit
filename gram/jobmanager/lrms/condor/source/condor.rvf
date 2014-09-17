@@ -17,3 +17,8 @@ Description: "To use a different condor OpSys than the default for job
               if it's defined there, otherwise the condor system default."
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
+
+Attribute: xcount
+Description: "To specify the number of cores for a job"
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
