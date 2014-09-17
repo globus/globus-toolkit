@@ -545,6 +545,18 @@ sub submit
             "print: $script_filename: $!",
             Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
     }       
+    # default max_wall_time can be specified in globus-gram-job-manager.rvf
+    if($description->max_wall_time() ne '')
+    {
+        my $max_wall_time = $description->max_wall_time() ;
+        $rc = print SCRIPT_FILE "PeriodicRemove= (JobStatus == 2) && ( (time() - EnteredCurrentStatus) > (" . $max_wall_time . " * 60))\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $script_filename: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
+    }
 
     my $shouldtransferfiles = $description->shouldtransferfiles();
     if (defined($shouldtransferfiles))
