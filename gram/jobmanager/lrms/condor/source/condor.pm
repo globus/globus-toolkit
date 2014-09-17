@@ -28,6 +28,10 @@ use Globus::Core::Paths;
 use Globus::Core::Config;
 use IPC::Open3;
 
+# Load OSG group accounting module, if possible
+eval { require Globus::GRAM::JobManager::condor_accounting_groups };
+our $accounting_groups_callout = ! $@; # Don't make callout if we couldn't load module
+
 
 package Globus::GRAM::JobManager::condor;
 
@@ -325,6 +329,11 @@ sub submit
 	$submit_attrs_string = '';
     }
 
+    my $group;
+    if ($accounting_groups_callout) {
+       $group = Globus::GRAM::JobManager::condor_accounting_groups::obtain_condor_group(\@environment, $self);
+    }
+
     # Create script for condor submission
     $script_filename = $self->job_dir() . '/scheduler_condor_submit_script';
 
@@ -411,6 +420,18 @@ sub submit
             "print: $script_filename: $!",
             Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
     }
+
+    if ($accounting_groups_callout && $group) {
+        $name = getpwuid($>);
+        $rc = print SCRIPT_FILE "+AccountingGroup = \"$group.$name\"\n" if $group;
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $script_filename: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
+    }
+
     if($rank ne '')
     {
 	$rc = print SCRIPT_FILE "$rank\n";
