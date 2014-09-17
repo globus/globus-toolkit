@@ -37,7 +37,7 @@ globus_io_attr_t			globus_i_gram_protocol_default_attr;
 int					globus_i_gram_protocol_num_connects;
 int                                     globus_i_gram_protocol_max_concurrency;
 globus_gram_protocol_handle_t		globus_i_gram_protocol_handle;
-const int GLOBUS_GRAM_PROTOCOL_DEFAULT_MAX_CONCURRENCY = 10;
+const int GLOBUS_GRAM_PROTOCOL_DEFAULT_MAX_CONCURRENCY = 50;
 
 static int globus_l_gram_protocol_activate(void);
 static int globus_l_gram_protocol_deactivate(void);
