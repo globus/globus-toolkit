@@ -33,7 +33,7 @@ package Globus::GRAM::JobManager::condor;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($condor_submit, $condor_rm, $condor_config);
+my ($condor_submit, $condor_rm, $condor_config, $isNFSLite);
 
 BEGIN
 {
@@ -53,6 +53,8 @@ BEGIN
     {
         $ENV{CONDOR_CONFIG} = $condor_config;
     }
+
+    $isNFSLite = 0;
 }
 
 sub new
@@ -65,6 +67,23 @@ sub new
     my $stdout = $description->stdout();
     my $stderr = $description->stderr();
     my $globus_condor_conf = "$Globus::Core::Paths::sysconfdir/globus-condor.conf";
+
+    if (-r $globus_condor_conf)
+    {   
+        local(*FH);
+        
+        if (open(FH, "<$globus_condor_conf"))
+        {   
+            while(<FH>) {
+                chomp;
+                if (m/^isNFSLite=([0-9]*)$/) {
+                    $isNFSLite = int($1);
+                    last;
+                }
+            }
+            close(FH);
+        }
+    }
 
     if (! exists($self->{condor_logfile}))
     {
@@ -122,6 +141,7 @@ sub submit
     my $status;
     my ($condor_submit_out, $condor_submit_err);
     my $rc;
+    my $scratch_isset = 0; # Flag if the SCRATCH_DIRECTORY environment variable is set indicating likely GRAM job
 
     # Reject jobs that want streaming, if so configured
     if ( $description->streamingrequested() &&
@@ -204,6 +224,45 @@ sub submit
             return Globus::GRAM::Error::RSL_ENVIRONMENT();
         }
     }
+
+    # NFS lite start
+    if ($isNFSLite && !$isManagedFork) {
+
+        my $osg_grid = '';
+        my $use_osg_grid = 1;
+    
+        map {
+            if ($_->[0] eq "OSG_GRID") {
+                $osg_grid =  $_->[1]; 
+            } elsif ($_->[0] eq "OSG_DONT_USE_OSG_GRID_FOR_GL") {
+                $use_osg_grid = 0;
+            } elsif ($_->[0] eq "LOGNAME") {
+                $logname =  $_->[1];
+            } elsif ($_->[0] eq "SCRATCH_DIRECTORY") {
+                $scratch_isset = 1;
+                $scratch_directory =  $_->[1]; 
+                $_->[1] = '$_CONDOR_SCRATCH_DIR';
+            } elsif ($_->[0] eq "X509_USER_PROXY") {
+                $_->[0] = "CHANGED_X509"; 
+            }
+        } @environment;
+    
+        if ($scratch_isset) {
+            # Remote_InitialDir apparently suppresses the setting of the SCRATCH_DIRECTORY env variable
+            push(@environment,["MY_INITIAL_DIR",'$_CONDOR_SCRATCH_DIR']);
+        }
+        elsif ( $description->directory() =~ m/.+$logname/xms ) {
+            # If the directory ends with the logname it might be a globus-job-run job
+            # so take control of the initial_dir
+            push(@environment,["MY_INITIAL_DIR",'$_CONDOR_SCRATCH_DIR'] );
+        }
+        else {
+            # assume that remote_initialdir is set and the submitter knows what they are
+            # doing.
+            push(@environment,["MY_INITIAL_DIR",$description->directory()] );
+        }
+    }       
+    # NFS Lite End
 
     $environment_string = join(';',
                                map {$_->[0] . "=" . $_->[1]} @environment);
@@ -414,6 +473,36 @@ sub submit
             "print: $script_filename: $!",
             Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
     }
+    # NFS Lite mode
+    if ($isNFSLite && !$isManagedFork) {
+        print SCRIPT_FILE "should_transfer_files = YES\n";
+        print SCRIPT_FILE "when_to_transfer_output = ON_EXIT\n";
+        print SCRIPT_FILE "transfer_output = true\n";
+        # GRAM Files to transfer to the worker node
+        # Only do this if we are dealing with a GRAM job that has set up a scratch area
+        # otherwise we assume it is a globus-job-run or the users is using remote_initialdir
+	if ( $scratch_isset ) {
+            my $sdir; my @flist;
+            opendir($sdir,$scratch_directory);
+            my @sfiles = grep { !/^\./} readdir($sdir);
+            close $sdir;
+
+            print SCRIPT_FILE "transfer_input_files = ";
+	  SFILE:
+	    foreach $f ( @sfiles ) {
+		$f =~ s{\/\/}{\/}g;
+		$f = $scratch_directory . "/" . $f;
+		next SFILE if $f eq $description->executable();
+		next SFILE if $f eq $description->stdin();
+		next SFILE if $f eq $description->stdout();
+                push (@flist,"$f");
+            }
+            print SCRIPT_FILE join(",",@flist);
+            print SCRIPT_FILE "\n";
+        }
+    }
+    # End NFS Lite Mode
+
     $rc = print SCRIPT_FILE "#Extra attributes specified by client\n";
     if (!$rc)
     {
@@ -428,6 +517,13 @@ sub submit
             "print: $script_filename: $!",
             Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
     }
+    $rc = print SCRIPT_FILE "X509UserProxy = $ENV{X509_USER_PROXY}\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }       
 
     my $shouldtransferfiles = $description->shouldtransferfiles();
     if (defined($shouldtransferfiles))
