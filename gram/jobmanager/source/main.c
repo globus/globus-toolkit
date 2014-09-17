@@ -83,6 +83,7 @@ main(
     char **                             argv)
 {
     int                                 rc;
+    int                                 rc2 = GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
     globus_gram_job_manager_config_t    config;
     globus_gram_job_manager_t           manager;
     char *                              sleeptime_str;
@@ -382,6 +383,17 @@ main(
                     http_body_fd = -1;
                 }
 
+                /* Load existing jobs.  Once we call startup_socket,
+                 * we have to be ready to accept jobs at any point.  If a
+                 * restart command is processed before the jobs finish loading,
+                 * we'll give Condor-G the wrong code when two-phase commits are
+                 * requested.
+                 * We only handle errors later on, once we know we have the
+                 * socket.
+                 */
+                rc2 = globus_gram_job_manager_request_load_all(
+                        &manager);
+
                 rc = globus_gram_job_manager_startup_socket_init(
                         &manager,
                         &manager.active_job_manager_handle,
@@ -424,12 +436,7 @@ main(
 
             located_active_jm = GLOBUS_TRUE;
 
-            /* Load existing jobs. The show must go on if this fails, unless it
-             * fails with a misconfiguration error
-             */
-            rc = globus_gram_job_manager_request_load_all(
-                    &manager);
-            if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED)
+            if (rc2 == GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED)
             {
                 if (forked_starter > 0)
                 {
