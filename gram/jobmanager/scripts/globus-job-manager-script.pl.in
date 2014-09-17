@@ -67,6 +67,9 @@ use Getopt::Long;
 use Globus::GRAM::Error;
 use Globus::GRAM::JobDescription;
 
+eval "require Globus::GRAM::JobManagerGratia"; # Gratia patch to save DN/FQAN on submit
+my $gratia_callout = $@?0:1; # Don't make the callout if the file is not there.
+
 my($manager_name, $argument_file, $command, $help);
 
 GetOptions('manager-name|m=s' => \$manager_name,
@@ -222,6 +225,11 @@ sub run_command
     else
     {
         $manager->respond($result);
+        # Save cert information for Gratia accounting if appropriate.
+        if ($gratia_callout and ($cmd eq 'submit') and (exists $result->{JOB_ID})) {
+            Globus::GRAM::JobManagerGratia::gratia_save_cert_info($manager, $result->{JOB_ID});
+        }
+
     }
 FILTERED:
     if ($command eq 'interactive')
