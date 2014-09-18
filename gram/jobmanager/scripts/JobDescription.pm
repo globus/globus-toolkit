@@ -434,22 +434,26 @@ sub environment
     # we still need to return the osg-attributes environment, though. 
     if ( exists $self->{environment} ) {
         # merge with job/user environment (higher prio)
-        foreach ( @{$self->{environment}} ) {
-            $result{$_->[0]} = $_->[1];
+        foreach my $t ( @{$self->{environment}} ) {
+            if(ref($t) && scalar(@$t) == 2) {
+                if (exists $result{$t->[0]}) {
+                    delete($result{$t->[0]});
+                }
+            }
         }
     }
     
-    # make weird GT format from merged hash
-    my @result = ();
+    # Add our non-overridden variables to the environment list
     foreach my $key ( keys %result ) {
-        push( @result, [ $key, $result{$key} ] );
+        push( @{$self->{environment}}, [ $key, $result{$key} ] );
     }
     
     # return in a way requested by caller
     if ( wantarray ) {
-        return @result;
+        return @{$self->{environment}};
     } else {
-        if ( @result == 1 && ! ref($result[0]) ) {
+        my @result = @{$self->{environment}};
+        if ( @{$self->{environment}} == 1 && ! ref(${@{$self->environment}}[0]) ) {
             return $result[0];
         } else {
             return undef;
