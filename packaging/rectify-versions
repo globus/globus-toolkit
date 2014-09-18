@@ -538,7 +538,7 @@ sub update_copyright
             {
                 print "changed source URL in $line\n" if ($verbose);
                 $changed = 1;
-                $line = "Source: $newsource\n";
+                $line = "Source: $newsource";
             }
         }
     }
