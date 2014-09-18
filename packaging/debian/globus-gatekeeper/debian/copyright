@@ -1,6 +1,7 @@
 Name: globus-gatekeeper
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt6/packages/globus_gatekeeper-10.7.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_gatekeeper-10.8.tar.gz
+
 
 
 Upstream-Authors: The Globus Alliance - http://www.globus.org/

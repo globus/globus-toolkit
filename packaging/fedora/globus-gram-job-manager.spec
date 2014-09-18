@@ -1,13 +1,13 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	14.20
+Version:	14.21
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager-14.20.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager-14.21.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 15
@@ -143,6 +143,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Thu Sep 18 2014 Globus Toolkit <support@globus.org> - 14.21-1
+- GT-455: Incorporate OSG patches
+- GT-456: OSG patch "load_requests_before_activating_socket.patch" for globus-gram-job-manager
+- GT-466: OSG patch "logrotate-copytruncate-jobmanager.patch" for globus-gram-job-manager
+- Fix test crash with odd dns responder
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 14.20-1
 - Merge fixes from ellert-globus_6_branch
 

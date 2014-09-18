@@ -1,6 +1,7 @@
 Name: globus-gram-protocol
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt6/packages/globus_gram_protocol-12.10.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_gram_protocol-12.11.tar.gz
+
 
 
 Upstream-Authors: The Globus Alliance - http://www.globus.org/

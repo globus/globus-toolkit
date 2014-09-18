@@ -1,7 +1,7 @@
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	6.6
+Version:	6.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
@@ -9,7 +9,7 @@ Group:		Applications/Internet
 BuildArch:	noarch
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_scripts-6.6.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_scripts-6.7.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common-progs >= 14
@@ -100,6 +100,13 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Sep 18 2014 Globus Toolkit <support@globus.org> - 6.7-1
+- GT-455: Incorporate OSG patches
+- GT-463: OSG patch "osg-path.patch" for globus-gram-job-manager-scripts
+- GT-467: OSG patch "gratia.patch" for globus-gram-job-manager-scripts
+- GT-468: OSG patch "osg-environment.patch" for globus-gram-job-manager-scripts
+- Don't modify environment values that are already set when merging OSG-specific values
+
 * Mon Aug 25 2014 Globus Toolkit <support@globus.org> - 6.6-1
 - Fix install rule when building from shadow dir
 

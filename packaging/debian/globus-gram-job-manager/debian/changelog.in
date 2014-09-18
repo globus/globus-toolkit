@@ -1,3 +1,12 @@
+globus-gram-job-manager (14.21-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-455: Incorporate OSG patches
+  * GT-456: OSG patch "load_requests_before_activating_socket.patch" for globus-gram-job-manager
+  * GT-466: OSG patch "logrotate-copytruncate-jobmanager.patch" for globus-gram-job-manager
+  * Fix test crash with odd dns responder
+
+ -- Globus Toolkit <support@globus.org>  Thu, 18 Sep 2014 15:46:29 -0400
+
 globus-gram-job-manager (14.20-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

@@ -1,3 +1,13 @@
+globus-gram-job-manager-condor (2.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-455: Incorporate OSG patches
+  * GT-457: OSG patch "nfslite.patch" for globus-gram-job-manager-condor
+  * GT-458: OSG patch "groupacct.patch" for globus-gram-job-manager-condor
+  * GT-459: OSG patch "669-xcount.patch" for globus-gram-job-manager-condor
+  * GT-460: OSG patch "717-max-walltime.patch" for globus-gram-job-manager-condor
+
+ -- Globus Toolkit <support@globus.org>  Thu, 18 Sep 2014 15:58:37 -0400
+
 globus-gram-job-manager-condor (2.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

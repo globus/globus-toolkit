@@ -1,3 +1,10 @@
+globus-gatekeeper (10.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-455: Incorporate OSG patches
+  * GT-465: OSG patch "gatekeeper-logrotate-copytruncate.patch" for globus-gatekeeper
+
+ -- Globus Toolkit <support@globus.org>  Thu, 18 Sep 2014 16:02:19 -0400
+
 globus-gatekeeper (10.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

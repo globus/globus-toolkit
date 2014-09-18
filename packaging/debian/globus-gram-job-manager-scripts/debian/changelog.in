@@ -1,3 +1,13 @@
+globus-gram-job-manager-scripts (6.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-455: Incorporate OSG patches
+  * GT-463: OSG patch "osg-path.patch" for globus-gram-job-manager-scripts
+  * GT-467: OSG patch "gratia.patch" for globus-gram-job-manager-scripts
+  * GT-468: OSG patch "osg-environment.patch" for globus-gram-job-manager-scripts
+  * Don't modify environment values that are already set when merging OSG-specific values
+
+ -- Globus Toolkit <support@globus.org>  Thu, 18 Sep 2014 15:51:43 -0400
+
 globus-gram-job-manager-scripts (6.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix install rule when building from shadow dir
