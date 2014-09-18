@@ -120,6 +120,9 @@ version_test(void)
             ("globus_gram_client_get_jobmanager_version() failed: %d (%s)",
             rc,
             globus_gram_protocol_error_string(rc)));
+    test_assert(
+            extensions != NULL,
+            ("globus_gram_client_get_jobmanager_version() returned empty extensions"));
     extension = globus_hashtable_lookup(&extensions, "toolkit-version");
     test_assert(
             extension != NULL,

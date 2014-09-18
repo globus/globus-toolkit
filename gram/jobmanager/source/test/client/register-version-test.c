@@ -58,7 +58,8 @@ info_callback(
 
     globus_mutex_lock(&m->mutex);
     m->done = GLOBUS_TRUE;
-    if (globus_hashtable_lookup(&job_info->extensions, "version") != NULL &&
+    if (job_info->extensions != NULL &&
+        globus_hashtable_lookup(&job_info->extensions, "version") != NULL &&
         globus_hashtable_lookup(&job_info->extensions, "toolkit-version") != NULL)
     {
         m->versions_present = GLOBUS_TRUE;
