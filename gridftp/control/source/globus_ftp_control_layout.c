@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_ftp_control_layout.c
+ * @brief FTP Control Layout
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_ftp_control.h"
 #include <string.h>

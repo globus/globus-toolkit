@@ -15,7 +15,8 @@
  */
 
 /**
- * @file gss_assist/source/globus_gss_assist_module.c GSS Assist Module Descriptor
+ * @file gss_assist/source/globus_gss_assist_module.c
+ * @brief GSS Assist Module Descriptor
  * @author Sam Lang, Sam Meder
  */
 

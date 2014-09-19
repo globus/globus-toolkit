@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_ftp_client_perf_plugin.c GridFTP Performance Marker Plugin Implementation
+ * @file globus_ftp_client_perf_plugin.c
+ * @brief GridFTP Performance Marker Plugin Implementation
  */
 
 #include "globus_ftp_client_perf_plugin.h"
@@ -26,7 +29,6 @@
 #include <ctype.h>
 #include "version.h"
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /* for 'get' mode (in seconds) */
 #define MIN_CB_INTERVAL 1
 

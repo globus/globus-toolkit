@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file memory_test.c Test case for globus_memory_t */
+/**
+ * @file memory_test.c
+ * @brief Test case for globus_memory_t
+ */
+
 #include "globus_common.h"
 #include "globus_thread_common.h"
 

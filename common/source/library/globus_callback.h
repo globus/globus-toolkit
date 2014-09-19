@@ -18,7 +18,8 @@
 #define GLOBUS_CALLBACK_H
 
 /**
- * @file globus_callback.h Globus Callback API
+ * @file globus_callback.h
+ * @brief Globus Callback API
  */
 
 /**

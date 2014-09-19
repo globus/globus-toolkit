@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file timedwait_test.c globus_cond_timedwait() tests */
+/**
+ * @file timedwait_test.c
+ * @brief globus_cond_timedwait() tests
+ */
+
 #include "globus_common.h"
 #include "globus_test_tap.h"
 

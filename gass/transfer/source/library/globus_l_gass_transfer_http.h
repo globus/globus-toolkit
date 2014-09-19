@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_l_gass_transfer_http.h
- * @details
- *  This header defines the prototypes for the local functions in the
- *  http protocol module source file
+ * @brief http protocol module
+ *
+ * This header defines the prototypes for the local functions in the
+ * http protocol module source file
  */
 #ifndef GLOBUS_L_GASS_TRANSFER_HTTP_H
 #define GLOBUS_L_GASS_TRANSFER_HTTP_H
@@ -646,3 +649,5 @@ globus_l_gass_transfer_http_listener_close(
 #endif
 
 #endif /* GLOBUS_L_GASS_TRANSFER_HTTP_H */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

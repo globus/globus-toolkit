@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-/** @file globus_gass_server_ez.h GASS Server Convenience API
- * @details
+/**
+ * @file globus_gass_server_ez.h
+ * @brief GASS Server Convenience API
+ *
  *  Simple wrappers around globus_gass_transfer API for server functionality.
  *  Implements the following:
- *  -   Write access to local files, with optional line buffering
+ *  - Write access to local files, with optional line buffering
  *  - Write access to stdout and stderr
  *  - Shutdown callback, so client can stop the server
  */

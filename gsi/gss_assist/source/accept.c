@@ -15,7 +15,8 @@
  */
 
 /**
- * @file gss_assist/source/accept.c GSSAPI Accept Function Implementations
+ * @file gss_assist/source/accept.c
+ * @brief GSSAPI Accept Function Implementations
  * @author Sam Lang, Sam Meder
  */
 

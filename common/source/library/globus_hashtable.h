@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-
-/** @file globus_hashtable.h Hash Table */
+/**
+ * @file globus_hashtable.h
+ * @brief Hash Table
+ */
 
 #ifndef GLOBUS_HASHTABLE_H
 #define GLOBUS_HASHTABLE_H

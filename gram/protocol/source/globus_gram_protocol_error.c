@@ -18,9 +18,13 @@
 #include "globus_i_gram_protocol.h"
 #include "globus_gram_protocol_constants.h"
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gram_protocol_error.c GRAM Protocol Error Strings
+ * @file globus_gram_protocol_error.c
+ * @brief GRAM Protocol Error Strings
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 /**
  * @defgroup globus_gram_protocol_error_messages Error Messages
  * @ingroup globus_gram_protocol_functions

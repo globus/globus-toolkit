@@ -19,6 +19,7 @@
 
 /**
  * @file globus_error_openssl.h
+ * @brief Globus Generic Error
  */
 #ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**

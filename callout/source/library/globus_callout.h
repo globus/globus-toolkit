@@ -19,7 +19,7 @@
 
 /**
  * @file globus_callout.h
- * Globus Callout Infrastructure
+ * @brief Globus Callout Infrastructure
  * @author Sam Meder
  */
 

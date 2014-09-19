@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_ftp_client_exists.c
+ * @brief Existence check
  */
 
 #include "globus_i_ftp_client.h"
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 #define GLOBUS_L_FTP_CLIENT_EXIST_BUFFER_LENGTH 4096
 

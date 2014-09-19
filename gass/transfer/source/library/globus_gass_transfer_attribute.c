@@ -16,16 +16,11 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gass_transfer_server.c Request and Listener Attributes
+ * @file globus_gass_transfer_server.c
+ * @brief Request and Listener Attributes
  *
  * This module implements the globus gass request and transfer attribute
  * accessors
- *
- * CVS Information:
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 #endif
 

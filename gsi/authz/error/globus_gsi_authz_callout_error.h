@@ -19,6 +19,7 @@
 
 /**
  * @file globus_gsi_authz_callout_error.h
+ * @brief GSI Authorization Callout Error API
  */
 
 #include "globus_common.h"

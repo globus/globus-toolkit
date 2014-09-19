@@ -4,7 +4,7 @@ AC_INIT([globus_gridmap_verify_myproxy_callout],[2.5],[https://globus.atlassian.
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [2])
-AC_SUBST([PACKAGE_DEPS], ["globus-gsi-sysconfig >= 1, globus-gssapi-gsi >= 4, globus-gss-assist >= 3, globus-gridmap-callout-error >= 0, globus-gsi-credential >= 6"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gsi-sysconfig >= 5, globus-gssapi-gsi >= 9, globus-gss-assist >= 8, globus-gridmap-callout-error >= 0, globus-gsi-credential >= 6, globus-gssapi-error >= 4, openssl >= 0.9.8"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])

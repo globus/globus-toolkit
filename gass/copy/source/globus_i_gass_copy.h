@@ -17,8 +17,11 @@
 #ifndef GLOBUS_I_GASS_COPY_H
 #define GLOBUS_I_GASS_COPY_H
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_i_gass_copy.h Globus GASS Copy Library Internals
+ * @file globus_i_gass_copy.h Globus GASS
+ * @brief Copy Library Internals
  */
 
 #include "globus_gass_copy.h"
@@ -250,5 +253,7 @@ globus_i_gass_copy_state_new(
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #endif /* GLOBUS_I_GASS_COPY_H */

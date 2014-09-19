@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file gass/cache/source/globus_gass_cache.c */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gass_cache.c
+ * @brief GASS Cache API
+ */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
  * @addtogroup globus_gass_cache

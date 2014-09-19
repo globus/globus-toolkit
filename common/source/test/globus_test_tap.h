@@ -1,7 +1,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-/** @file globus_test_tap.h Test Anything Protocol implementation */
+/**
+ * @file globus_test_tap.h
+ * @brief Test Anything Protocol implementation
+ */
 
 static int total = 0;
 static int failed = 0;

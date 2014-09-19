@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_ftp_client_debug_plugin.c GridFTP Debugging Plugin Implementation
+ * @file globus_ftp_client_debug_plugin.c
+ * @brief GridFTP Debugging Plugin Implementation
  */
 
 #include "globus_ftp_client_debug_plugin.h"
@@ -24,7 +27,6 @@
 #include <string.h>
 #include "version.h"
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /* Module specific macros */
 #define GLOBUS_L_FTP_CLIENT_DEBUG_PLUGIN_NAME "globus_ftp_client_debug_plugin"
 

@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_thread_none.c Non-threaded stubs for the Globus Threads interface */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_thread_none.c
+ * @brief Non-threaded stubs for the Globus Threads interface
+ */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /******************************************************************************
                              Include header files

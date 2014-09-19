@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_i_gram_protocol.h GRAM Protocol Internals
+ * @file globus_i_gram_protocol.h
  * @brief GRAM Protocol Internals
  */
 
@@ -171,3 +173,5 @@ extern globus_thread_key_t              globus_i_gram_protocol_error_key;
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

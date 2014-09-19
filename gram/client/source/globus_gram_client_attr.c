@@ -16,13 +16,8 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gram_client_attr.h Attribute Functions
- *
- * CVS Information:
- *    $Source$
- * $Date$
- * $Revision$
- * $Author$
+ * @file globus_gram_client_attr.h
+ * @brief Attribute Functions
  */
 #endif
 

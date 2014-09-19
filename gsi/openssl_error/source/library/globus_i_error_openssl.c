@@ -17,12 +17,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_i_error_openssl.c
- * Globus Generic Error
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- * 
+ * @brief Globus Generic Error
  * @author Sam Lang
  */
 

@@ -15,13 +15,11 @@
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_gram_jobmanager_callout_error.c
+ * @brief Globus GRAM Job Manager Callout Error
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 
 #include "globus_gram_jobmanager_callout_error.h"

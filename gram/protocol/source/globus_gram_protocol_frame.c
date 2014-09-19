@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_gram_protocol_frame.c Message Framing
+ * @file globus_gram_protocol_frame.c
+ * @brief Message Framing
  */
 
 #include "globus_i_gram_protocol.h"
 #include <string.h>
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static
 char *
 globus_l_gram_protocol_lookup_reason(

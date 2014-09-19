@@ -16,17 +16,11 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gass_transfer_server.c GASS Server
+ * @file globus_gass_transfer_server.c
+ * @brief GASS Server
  * 
  * This module implements the gass server functionality of the GASS
  * transfer library
- *
- * CVS Information:
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 #endif
 

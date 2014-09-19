@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_gsi_system_config_error.c
- * Globus GSI System Config Library
+ * @brief Globus GSI System Config Library
  * @author Sam Lang, Sam Meder
  */
 
@@ -24,7 +26,6 @@
 #include "globus_i_gsi_system_config.h"
 #include "globus_gsi_system_config_constants.h"
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 char * 
 globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 {

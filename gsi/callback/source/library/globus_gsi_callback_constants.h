@@ -17,13 +17,11 @@
 #ifndef GLOBUS_GSI_CALLBACK_CONSTANTS_H
 #define GLOBUS_GSI_CALLBACK_CONSTANTS_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_callback_constants.h
- * Globus GSI Callback
+ * @brief Globus GSI Callback
  * @author Sam Meder, Sam Lang
  */
-#endif
 
 #ifdef __cplusplus
 extern "C" {

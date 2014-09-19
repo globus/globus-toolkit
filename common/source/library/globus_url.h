@@ -18,7 +18,8 @@
 #define GLOBUS_URL_H
 
 /**
- * @file globus_url.h URL Parsing
+ * @file globus_url.h
+ * @brief URL Parsing
  */
 
 /**
@@ -36,7 +37,7 @@ extern "C" {
 
 /* Supported URL Schemes */
 /**
- * URL Schemes.
+ * @brief URL Schemes.
  * @ingroup globus_url
  *
  * The Globus URL library supports a set of URL schemes (protocols). This
@@ -76,7 +77,7 @@ typedef enum
 */
 
 /**
- * Parsed URLs.
+ * @brief Parsed URLs.
  * @ingroup globus_url
  *
  * This structure contains the fields which were parsed from an string

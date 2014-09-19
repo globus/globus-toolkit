@@ -16,7 +16,7 @@
 
 /**
  * @file grid_proxy_destroy.c
- * Globus GSI Proxy Utils
+ * @brief Globus GSI Proxy Utils
  * @author Sam Lang, Sam Meder
  */
 

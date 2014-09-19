@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_ftp_control_data.c FTP Data Connection Configuration and Management
+ * @file globus_ftp_control_data.c
+ * @brief FTP Data Connection Configuration and Management
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
 #include <string.h>

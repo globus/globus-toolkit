@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-/*
- * @file globus_thread.c Globus Threading Abstraction
- *
- * @details
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_thread.c
+ * @brief Globus Threading Abstraction
  *
  * Stubs for the Globus threads package, to be used when Globus has been
  * configured not to use threads.
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_i_common_config.h"
 #include "globus_thread.h"

@@ -18,6 +18,7 @@
 #define GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_H
 /**
  * @file globus_ftp_client_debug_plugin.h
+ * @brief GridFTP Debugging Plugin Implementation
  */
 
 /**

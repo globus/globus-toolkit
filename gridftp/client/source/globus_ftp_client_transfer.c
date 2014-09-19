@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_ftp_client_transfer.c
+ * @brief GridFTP Client Transfer
  */
 
 #include "globus_i_ftp_client.h"
 
 #include <string.h>		/* strstr(), strncmp() */
 #include <ctype.h>		/* isupper() */
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 #define CRLF "\r\n"
 

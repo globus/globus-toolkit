@@ -21,12 +21,11 @@
 
 /**
  * @file globus_i_error_errno.h
- * Globus Errno Error
+ * @brief Globus Errno Error
  */
 
 #include "globus_common_include.h"
 
-
-#endif /* GLOBUS_I_INCLUDE_ERRNO_ERROR_H */
-
 #endif /* GLOBUS_I_ERROR_ERRNO_H */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -16,16 +16,11 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gass_transfer_http.c http/https Protocol Module Implementation
+ * @file globus_gass_transfer_http.c
+ * @brief http/https Protocol Module Implementation
  *
  * This module implements the http and https URL schemes for the GASS transfer
  * library
- *
- * CVS Information:
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 #endif
 

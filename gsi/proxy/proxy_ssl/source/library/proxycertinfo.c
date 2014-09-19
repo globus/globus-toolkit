@@ -17,11 +17,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file proxycertinfo.c
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- * $Author$
+ * @brief Proxy Certificate Info
  */
 #endif
 

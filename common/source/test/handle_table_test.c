@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-/** @file handle_table_test.c
- * Test the globus_handle_table_t data type
- *
+/**
+ * @file handle_table_test.c
+ * @brief Test the globus_handle_table_t data type
  * @author Michael Lebman
- *
  */
 
 #include "globus_common.h"

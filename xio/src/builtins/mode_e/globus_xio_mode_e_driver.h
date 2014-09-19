@@ -18,7 +18,8 @@
 #define GLOBUS_XIO_MODE_E_DRIVER_H
 
 /**
- * @file globus_xio_mode_e_driver.h XIO MODE_E Driver
+ * @file globus_xio_mode_e_driver.h
+ * @brief XIO MODE_E Driver
  */
 
 #include "globus_common.h"

@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_proxy_handle.c
+ * @brief @brief GSI Proxy Handle
  * @author Sam Meder, Sam Lang
  */
-
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #define GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(_LENGTH_) \
     globus_error_put(globus_error_wrap_errno_error( \

@@ -16,7 +16,7 @@
 
 /**
  * @file gssapi/source/library/compare_name.c
- * Globus GSI GSS-API gss_compare_name
+ * @brief Globus GSI GSS-API gss_compare_name
  * @author Sam Meder, Sam Lang
  */
 

@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_callout.c
- * Globus Callout Infrastructure
+ * @brief Globus Callout Infrastructure
  * @author Sam Meder
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_common.h"
 #include "globus_callout_constants.h"
@@ -1057,4 +1059,4 @@ globus_l_callout_library_table_element_free(
     return;
 }
 
-#endif
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

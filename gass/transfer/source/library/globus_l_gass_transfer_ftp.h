@@ -16,9 +16,10 @@
 
 /**
  * @file globus_l_gass_transfer_ftp.h
+ * @brief ftp protocol module
  *
- *  This header defines the prototypes for the local functions in the
- *  ftp protocol module source file
+ * This header defines the prototypes for the local functions in the
+ * ftp protocol module source file
  */
 #ifndef GLOBUS_L_GASS_TRANSFER_FTP_H
 #define GLOBUS_L_GASS_TRANSFER_FTP_H

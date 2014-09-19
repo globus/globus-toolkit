@@ -18,8 +18,10 @@
 #define GLOBUS_GSI_AUTHZ_H 1
 
 /**
- * @file globus_gsi_authz.h GSI Authorization API
+ * @file globus_gsi_authz.h
+ * @brief GSI Authorization API
  */
+
 #include "globus_common.h"
 #include "gssapi.h"
 

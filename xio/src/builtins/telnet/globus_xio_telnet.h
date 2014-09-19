@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file globus_xio_telnet.h XIO Telnet Driver */
+/**
+ * @file globus_xio_telnet.h
+ * @brief XIO Telnet Driver
+ */
+
 #if !defined GLOBUS_XIO_TELNET_H
 #define GLOBUS_XIO_TELNET_H 1
 

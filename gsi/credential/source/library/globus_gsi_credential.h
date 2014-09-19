@@ -16,7 +16,7 @@
 
 /**
  * @file globus_gsi_credential.h
- * Globus GSI Credential Library
+ * @brief Globus GSI Credential Library
  * @author Sam Lang, Sam Meder
 */
 

@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file globus_config.h */
+/**
+ * @file globus_config.h
+ * @brief Globus Platform Configuration
+ */
+
 #include <stdint.h>
 #include <limits.h>
 

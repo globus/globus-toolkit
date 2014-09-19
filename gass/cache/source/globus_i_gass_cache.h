@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-/** @file globus_i_gass_cache.h
- *
- * Internal header file for globus_gass_cache.
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_i_gass_cache.h
+ * @brief Internal header file for globus_gass_cache.
  */
 #include "globus_symboltable.h"
 
@@ -212,3 +214,4 @@ globus_i_gass_cache_t;
 									      
 #endif
 
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

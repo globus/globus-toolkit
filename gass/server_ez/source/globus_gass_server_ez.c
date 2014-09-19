@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-/** @file globus_gass_server_ez.c
- *
- *  Simple File Server Library Implementation using GASS Transfer API
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_gass_server_ez.c
+ * @brief Simple File Server Library Implementation using GASS Transfer API
  */
 
 /******************************************************************************
@@ -864,3 +866,5 @@ globus_l_gass_server_ez_deactivate(void)
 
     return rc;
 } /* globus_l_gass_server_ez_deactivate() */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

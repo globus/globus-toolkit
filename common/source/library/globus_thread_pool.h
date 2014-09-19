@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_thread_pool.h Thread Pooling */
+/**
+ * @file globus_thread_pool.h
+ * @brief Thread Pooling
+ */
 
 /**
  * @defgroup globus_thread_pool Thread Pooling

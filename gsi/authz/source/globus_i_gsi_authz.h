@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-/** @file globus_i_gsi_authz.h
- * GSI Authorization Internal Functions and Macros
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_i_gsi_authz.h
+ * @brief GSI Authorization Internal Functions and Macros
  */
+
 #include "globus_common.h"
 #include "globus_module.h"
 #include "globus_callback.h"
@@ -137,3 +141,5 @@ typedef struct globus_l_gsi_authz_cb_arg_s
     void *                              arg;
     globus_gsi_authz_cb_t		callback;
 } globus_l_gsi_authz_cb_arg_t;
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

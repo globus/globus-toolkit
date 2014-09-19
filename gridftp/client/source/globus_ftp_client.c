@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_ftp_client.c GridFTP Client
+ * @file globus_ftp_client.c
+ * @brief GridFTP Client
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_i_ftp_client.h"
 #include "version.h"

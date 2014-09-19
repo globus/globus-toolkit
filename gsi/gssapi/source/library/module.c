@@ -16,7 +16,7 @@
 
 /**
  * @file gssapi/source/library/module.c
- * GSSAPI module activation code
+ * @brief GSSAPI module activation code
  */
 
 #include "gssapi.h"

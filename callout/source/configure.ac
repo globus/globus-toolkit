@@ -4,7 +4,7 @@ AC_INIT([globus_callout], [3.12], [https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [3])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 15"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])

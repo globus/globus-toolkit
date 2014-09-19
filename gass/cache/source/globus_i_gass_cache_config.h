@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_i_gass_cache_config.h
- * Generic config file utility. Could be used elsewhere.
+ * @brief Generic config file utility. Could be used elsewhere.
  */
 
 #ifndef GLOBUS_I_GASS_CACHE_CONFIG_H
@@ -129,3 +131,4 @@ globus_l_gass_cache_config_save(globus_l_gass_cache_config_t *config,
 
 #endif /* GLOBUS_I_GASS_CACHE_CONFIG_H */
 
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

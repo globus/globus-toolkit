@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_list.c Linked List Implementation */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_list.c
+ * @brief Linked List Implementation
+ */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_common_include.h"
 #include "globus_list.h"

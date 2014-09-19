@@ -18,7 +18,7 @@
 /**
  * @file globus_gram_client.c
  * 
- * Resource Managemant Client APIs
+ * @brief Resource Managemant Client APIs
  * 
  * This file contains the GRAM Client API functions.
  * This API provides functions for submitting a job request to a GRAM resource,

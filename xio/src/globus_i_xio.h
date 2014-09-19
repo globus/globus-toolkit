@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 #if !defined(GLOBUS_I_XIO_H)
 #define GLOBUS_I_XIO_H 1
 
@@ -526,8 +528,10 @@ typedef struct globus_i_xio_op_entry_s
 #define _op_server_timeout_cb           type_u.server_s.timeout_cb
 
 /**
- * Information about the what thread is being blocked by a callback. In the
- * non-threaded case, this will be the callback_depth, otherwise the thread_id
+ * @brief Information about the what thread is being blocked by a callback.
+ *
+ * In the non-threaded case, this will be the callback_depth, otherwise
+ * the thread_id
  */
 typedef union
 {
@@ -912,3 +916,5 @@ extern globus_mutex_t                   globus_i_xio_mutex;
 extern globus_cond_t                    globus_i_xio_cond;
 
 #endif /* GLOBUS_I_XIO_H */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

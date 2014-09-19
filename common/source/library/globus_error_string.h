@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** @file globus_error_string.h Error Object Containing a String */
+
+/**
+ * @file globus_error_string.h
+ * @brief Error Object Containing a String
+ */
+
 #ifndef GLOBUS_ERROR_STRING_H
 #define GLOBUS_ERROR_STRING_H
 

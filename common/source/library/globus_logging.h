@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_logging.h Debug Logging */
+/**
+ * @file globus_logging.h
+ * @brief Debug Logging
+ */
 
 #ifndef GLOBUS_LOGGING_H
 #define GLOBUS_LOGGING_H 1

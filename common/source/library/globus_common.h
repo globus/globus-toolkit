@@ -16,7 +16,8 @@
  */
 
 /**
- * @file globus_common.h Headers common to all of Globus
+ * @file globus_common.h
+ * @brief Headers common to all of Globus
  */
 
 #if !defined(GLOBUS_INCLUDE_GLOBUS_COMMON_H)

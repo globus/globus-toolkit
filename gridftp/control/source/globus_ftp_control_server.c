@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_ftp_control_server.c FTP Server-side Control Connection Management
+ * @file globus_ftp_control_server.c
+ * @brief FTP Server-side Control Connection Management
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"

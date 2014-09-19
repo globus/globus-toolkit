@@ -16,14 +16,10 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gass_transfer_client.c Client Interface
+ * @file globus_gass_transfer_client.c
+ * @brief Client Interface
  *
  * This module implements the client interface to the GASS transfer library
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 #endif
 

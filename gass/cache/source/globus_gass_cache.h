@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_gass_cache.h GASS Cache API */
+/**
+ * @file globus_gass_cache.h
+ * @brief GASS Cache API
+ */
 
 #ifndef GLOBUS_GASS_CACHE_H
 #define GLOBUS_GASS_CACHE_H

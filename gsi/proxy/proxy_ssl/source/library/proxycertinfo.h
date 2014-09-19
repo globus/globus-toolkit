@@ -19,7 +19,7 @@
 
 /**
  * @file proxycertinfo.h
- * 
+ * @brief Proxy Certificate Info
  * @author Sam Meder
  * @author Sam Lang
  */

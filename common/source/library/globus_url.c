@@ -16,7 +16,8 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_url.c Globus URL parsing utility functions
+ * @file globus_url.c
+ * @brief Globus URL parsing utility functions
  *
  * Parses URLs of the form
  * @code
@@ -27,7 +28,7 @@
  * <scheme>://<scheme-specific-part>
  * @endcode
  */
-#endif
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_url.h"
 #include "globus_libc.h"
@@ -82,7 +83,7 @@ static int globusl_url_issafe(char x);
 static int globusl_url_isextra(char x);
 static int globusl_url_isscheme_special(char x);
 static int globusl_url_isglob(char x);
-#endif
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
  * Parse a string containing a URL into a globus_url_t
