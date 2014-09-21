@@ -206,9 +206,7 @@ int globus_utp_init(unsigned numTimers, int mode)
 #endif
 
 	if (globus_libc_gethostname(hostnameBuff, MAXHOSTNAMELEN)) {
-	    /* globus_utp_warn("globus_utp_init: gethostname() failed; system error is "
-		         "\"%s\"", sys_errlist[errno]); */
-		return 1;
+	    memset(hostnameBuff, '\0', MAXHOSTNAMELEN);
 	}
 	globus_utp_set_attribute("%s", "hostname", hostnameBuff);
 
