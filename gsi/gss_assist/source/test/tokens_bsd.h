@@ -15,7 +15,7 @@
  */
 
 /**
- * @file gss_assist/source/tokens_f.c
+ * @file tokens_bsd.h
  * @author Sam Lang, Sam Meder
  */
 

@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gssapi/source/library/import_name.c
+ * @file import_name.c
  * @author Sam Lang, Sam Meder
  */
+#endif
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"

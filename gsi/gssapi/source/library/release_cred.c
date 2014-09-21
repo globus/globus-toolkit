@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gssapi/source/library/release_cred.c
+ * @file release_cred.c
  * @author Sam Meder, Sam Lang
  */
+#endif
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"

@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gssapi/source/library/duplicate_name.c
+ * @file duplicate_name.c
  * @author Sam Meder
  */
+#endif
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"

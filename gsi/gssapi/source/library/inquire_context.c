@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gssapi/source/library/inquire_context.c
+ * @file inquire_context.c
  * @author Sam Lang, Sam Meder
  */
 
 #include "gssapi.h"
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
+#endif
 
 /**
  * @brief Inquire Context

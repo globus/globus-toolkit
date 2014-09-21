@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gss_assist/source/accept.c
+ * @file accept.c
  * @brief GSSAPI Accept Function Implementations
  * @author Sam Lang, Sam Meder
  */
+#endif
 
 #include "globus_i_gss_assist.h"
 #include "gssapi.h"

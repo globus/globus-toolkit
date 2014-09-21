@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gssapi/source/library/module.c
+ * @file module.c
  * @brief GSSAPI module activation code
  */
+#endif
 
 #include "gssapi.h"
 #include "version.h"

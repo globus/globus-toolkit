@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gss_assist/source/gridmap.c
+ * @file gridmap.c
  * @brief GSS Assist Gridmap Functions
  */
+#endif
 
 #include "globus_i_gss_assist.h"
 #include "globus_gsi_system_config.h"

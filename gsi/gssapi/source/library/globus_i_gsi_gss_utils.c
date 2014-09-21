@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file gssapi/source/library/globus_i_gsi_gss_utils.c
+ * @file globus_i_gsi_gss_utils.c
  * @author Sam Lang, Sam Meder
  */
 
@@ -40,7 +42,6 @@
 extern int                              globus_i_gsi_gssapi_debug_level;
 extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @defgroup globus_i_gsi_gss_utils Globus GSSAPI Internals
  *

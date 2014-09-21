@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gss_assist/source/hostname.c
+ * @file hostname.c
  * @author Sam Meder
  */
+#endif
 
 #include "globus_i_gss_assist.h"
 
