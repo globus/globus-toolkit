@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gssapi/source/library/oid_functions.c
+ * @file oid_functions.c
  * @author Sam Lang, Sam Meder
  */
+#endif
 
 #include "gssapi.h"
 #include "gssapi_openssl.h"

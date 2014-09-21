@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gssapi/source/library/inquire_names_for_mech.c
+ * @file inquire_names_for_mech.c
  */
+#endif
+
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 

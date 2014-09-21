@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gssapi/source/library/inquire_cred.c
+ * @file inquire_cred.c
  * @author Sam Lang, Sam Meder
  */
+#endif
 
 #include "gssapi.h"
 #include "gssapi_openssl.h"

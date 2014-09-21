@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gssapi/source/library/accept_sec_context.c
+ * @file accept_sec_context.c
  * @brief Globus GSI GSS-API gss_accept_sec_context
  * @author Sam Meder, Sam Lang
  */
+#endif
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"

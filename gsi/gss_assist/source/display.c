@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gss_assist/source/display.c
+ * @file display.c
  * @author Sam Lang, Sam Meder
  */
+#endif
 
 #include "gssapi.h"
 #include "globus_i_gss_assist.h"

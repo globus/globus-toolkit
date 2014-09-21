@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file gssapi/source/library/verify_mic.c
+ * @file verify_mic.c
  * @author Sam Lang, Sam Meder
  */
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /* borrowed from OpenSSLs s3_enc.c
  */

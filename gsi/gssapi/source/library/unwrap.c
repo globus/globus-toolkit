@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
-* @file gssapi/source/library/unwrap.c
-* @author Sam Lang, Sam Meder
-*/
+ * @file unwrap.c
+ * @author Sam Lang, Sam Meder
+ */
+#endif
 
 #include "gssapi.h"
 #include "globus_i_gsi_gss_utils.h"
