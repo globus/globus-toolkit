@@ -330,7 +330,7 @@ globus_l_xio_test_server_request_callback(
         if (info->transfer_encoding != NULL)
         {
             response_headers[header_cnt].name = "Transfer-Encoding";
-            response_headers[header_cnt].name = info->transfer_encoding;
+            response_headers[header_cnt].value = info->transfer_encoding;
 
             header_cnt++;
         }
