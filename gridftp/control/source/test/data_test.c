@@ -455,8 +455,11 @@ big_buffer_test(
 
     res = globus_i_ftp_control_data_cc_init(&pasv_handle);
     test_result(res, "pasv handle init", __LINE__);
+    globus_io_attr_set_tcp_interface(&pasv_handle.dc_handle.io_attr, "localhost");
+
     res = globus_i_ftp_control_data_cc_init(&port_handle);
     test_result(res, "port handle init", __LINE__);
+    globus_io_attr_set_tcp_interface(&port_handle.dc_handle.io_attr, "localhost");
 
     for(ctr = 0; ctr < TEST_ITERATIONS; ctr++)
     {
@@ -569,8 +572,11 @@ reuse_handles_test(
 
     res = globus_i_ftp_control_data_cc_init(&pasv_handle);
     test_result(res, "pasv handle init", __LINE__);
+    globus_io_attr_set_tcp_interface(&pasv_handle.dc_handle.io_attr, "localhost");
+
     res = globus_i_ftp_control_data_cc_init(&port_handle);
     test_result(res, "port handle init", __LINE__);
+    globus_io_attr_set_tcp_interface(&port_handle.dc_handle.io_attr, "localhost");
 
     if(!g_send_eof)
     {
@@ -757,8 +763,11 @@ cache_multiparallel_test(
 
     res = globus_i_ftp_control_data_cc_init(&pasv_handle);
     test_result(res, "pasv handle init", __LINE__);
+    globus_io_attr_set_tcp_interface(&pasv_handle.dc_handle.io_attr, "localhost");
+
     res = globus_i_ftp_control_data_cc_init(&port_handle);
     test_result(res, "port handle init", __LINE__);
+    globus_io_attr_set_tcp_interface(&port_handle.dc_handle.io_attr, "localhost");
 
     host_port.port = 0;
     globus_ftp_control_host_port_init(&host_port, "localhost", 0);
@@ -872,8 +881,11 @@ cache_test(
 
     res = globus_i_ftp_control_data_cc_init(&pasv_handle);
     test_result(res, "pasv handle init", __LINE__);
+    globus_io_attr_set_tcp_interface(&pasv_handle.dc_handle.io_attr, "localhost");
+
     res = globus_i_ftp_control_data_cc_init(&port_handle);
     test_result(res, "port handle init", __LINE__);
+    globus_io_attr_set_tcp_interface(&port_handle.dc_handle.io_attr, "localhost");
 
     host_port.port = 0;
     globus_ftp_control_host_port_init(&host_port, "localhost", 0);
@@ -1019,9 +1031,11 @@ transfer_test(
 
         res = globus_i_ftp_control_data_cc_init(pasv_handle);
         test_result(res, "pasv handle init", __LINE__);
+        globus_io_attr_set_tcp_interface(&pasv_handle->dc_handle.io_attr, "localhost");
      
         res = globus_i_ftp_control_data_cc_init(port_handle);
         test_result(res, "port handle init", __LINE__);
+        globus_io_attr_set_tcp_interface(&port_handle->dc_handle.io_attr, "localhost");
 
         /*
          * local_port/pasv()
