@@ -1,7 +1,7 @@
 Source: globus-gridmap-callout
 Priority: optional
 Maintainer: Globus Toolkit <support@globus.org>
-Build-Depends: debhelper (>= 5), autotools-dev, doxygen, pkg-config, libglobus-common-dev (>= 14), libglobus-gssapi-gsi-dev (>= 4), libglobus-gss-assist-dev (>= 3), libglobus-gridmap-callout-error (>= 0), libglobus-gsi-credential (>= 0)
+Build-Depends: debhelper (>= 5), autotools-dev, doxygen, pkg-config, libglobus-common-dev (>= 14), libglobus-gssapi-gsi-dev (>= 4), libglobus-gss-assist-dev (>= 3), libglobus-gridmap-callout-error-dev (>= 2), libglobus-gsi-credential-dev (>= 6)
 Standards-Version: 3.8.4
 Section: net
 Homepage: http://www.globus.org/toolkit
