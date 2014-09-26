@@ -33,18 +33,18 @@
  * gss_init_delegation function.
  *
  * @param minor_status
- *        The minor status returned by this function. This paramter
+ *        The minor status returned by this function. This parameter
  *        will be 0 upon success.
  * @param context_handle
  *        The security context over which the credential is
  *        delegated. 
  * @param extension_oids
- *        A set of extension oids corresponding to buffers in the
- *        extension_buffers paramter below. May be
+ *        A set of extension OIDs corresponding to buffers in the
+ *        extension_buffers parameter below. May be
  *        GSS_C_NO_BUFFER_SET. Currently not used.
  * @param extension_buffers
- *        A set of extension buffers corresponding to oids in the
- *        extension_oids paramter above. May be
+ *        A set of extension buffers corresponding to OIDs in the
+ *        extension_oids parameter above. May be
  *        GSS_C_NO_BUFFER_SET. Currently not used. 
  * @param input_token
  *        The token that was produced by a prior call to
@@ -55,7 +55,7 @@
  *        results in tokens that aren't wrapped.
  * @param time_req
  *        The requested period of validity (seconds) of the delegated
- *        credential. Currently a noop.
+ *        credential. Currently a NO-OP.
  * @param time_rec
  *        This parameter will contain the received period of validity
  *        of the delegated credential upon success. May be NULL.
@@ -68,11 +68,10 @@
  * @param output_token
  *        A token that should be passed to gss_init_delegation if the
  *        return value is GSS_S_CONTINUE_NEEDED.
- * @return
- *        GSS_S_COMPLETE upon successful completion
- *        GSS_S_CONTINUE_NEEDED if the function needs to be called
- *                              again.
- *        GSS_S_FAILURE upon failure
+ * @retval GSS_S_COMPLETE Successful completion
+ * @retval GSS_S_CONTINUE_NEEDED
+ *        The function needs to be called again.
+ * @retval GSS_S_FAILURE Failure
  */
 OM_uint32
 GSS_CALLCONV gss_accept_delegation(

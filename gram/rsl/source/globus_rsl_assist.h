@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_rsl_assist.h RSL Utility Functions */
+/**
+ * @file globus_rsl_assist.h
+ * @brief RSL Utility Functions
+ */
 
 #ifndef GLOBUS_RSL_ASSIST_H
 #define GLOBUS_RSL_ASSIST_H

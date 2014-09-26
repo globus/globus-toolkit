@@ -1,13 +1,13 @@
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
-Version:	9.9
+Version:	9.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gsi_cert_utils-9.9.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gsi_cert_utils-9.10.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
@@ -161,6 +161,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Sep 24 2014 Globus Toolkit <support@globus.org> - 9.10-1
+- Include more manpages for API
+- Doxygen markup fixes
+- Fix dependency version
+- Fix typos and clarify some documentation
+- Quiet some autoconf/automake warnings
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 9.9-1
 - Merge fixes from ellert-globus_6_branch
 

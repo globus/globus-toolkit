@@ -16,7 +16,7 @@
 
 /**
  * @file globus_gsi_cert_utils.h
- * Globus GSI Cert Utils Library
+ * @brief Globus GSI Cert Utils Library
  * @author Sam Lang
  * @author Sam Meder
  */

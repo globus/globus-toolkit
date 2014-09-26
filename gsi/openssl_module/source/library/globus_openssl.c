@@ -17,6 +17,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_openssl.c
+ * @brief Globus OpenSSL Module
  * @author Sam Meder
  */
 

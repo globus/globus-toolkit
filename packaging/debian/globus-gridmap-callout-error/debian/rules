@@ -11,7 +11,7 @@ endif
 
 name = globus-gridmap-callout-error
 _name = globus_gridmap_callout_error
-version = 2.3
+version = 2.4
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp

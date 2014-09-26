@@ -202,23 +202,23 @@ globus_i_gsi_gssapi_error_chain_result(
 
 globus_result_t
 globus_i_gsi_gssapi_error_join_chains_result(
-    globus_result_t                     outter_error,
+    globus_result_t                     outer_error,
     globus_result_t                     inner_error)
 {
     globus_result_t                     result;
     globus_object_t *                   result_error_obj = NULL;
-    globus_object_t *                   outter_error_obj = NULL;
+    globus_object_t *                   outer_error_obj = NULL;
     globus_object_t *                   inner_error_obj = NULL;
     globus_object_t *                   temp_error_obj = NULL;
     static char *                       _function_name_ =
         "globus_i_gsi_gssapi_error_join_chains";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-    outter_error_obj = globus_error_get(outter_error);
+    outer_error_obj = globus_error_get(outer_error);
     inner_error_obj = globus_error_get(inner_error);
-    if(outter_error_obj && inner_error_obj)
+    if(outer_error_obj && inner_error_obj)
     {
-        temp_error_obj = outter_error_obj;
+        temp_error_obj = outer_error_obj;
         while(globus_error_get_cause(temp_error_obj))
         {
             temp_error_obj = globus_error_get_cause(temp_error_obj);
@@ -227,7 +227,7 @@ globus_i_gsi_gssapi_error_join_chains_result(
         temp_error_obj = globus_error_initialize_base(temp_error_obj,
                                                       globus_error_get_source(temp_error_obj),
                                                       inner_error_obj);
-        result_error_obj = outter_error_obj;
+        result_error_obj = outer_error_obj;
     }
     else if(inner_error_obj)
     {
@@ -243,7 +243,7 @@ globus_i_gsi_gssapi_error_join_chains_result(
                 __FILE__,
                 _function_name_,
                 __LINE__, 
-                "Couldn't join inner and outter error chains");
+                "Couldn't join inner and outer error chains");
     }
 
     result = globus_error_put(result_error_obj);

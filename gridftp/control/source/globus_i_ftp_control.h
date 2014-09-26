@@ -158,7 +158,7 @@ globus_i_ftp_control_get_connection_info(
     unsigned short *                            remote_port);
 
 /*
- *  internal function defintions
+ *  internal function definitions
  */
 globus_result_t
 globus_i_ftp_parallelism_copy(

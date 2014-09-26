@@ -1,480 +1,441 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
-    <!ENTITY cmdname "globusrun">
-    <!ENTITY cmd "<command>globusrun</command>">
-    <!ENTITY jm "<command>globus-job-manager</command>">
-]>
-<!-- Canonical version of this document lives in 
-cvs.globus.org:/home/globdev/CVS/globus-packages gram_client_tools/source/manual.xml
--->
-
-
-<refentry id="gram5-cmd-globusrun">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+<refentry lang="en">
+<refentryinfo>
+    <title>GLOBUSRUN(1)</title>
+</refentryinfo>
 <refmeta>
-<refentrytitle>&cmdname;</refentrytitle>
+<refentrytitle>globusrun</refentrytitle>
 <manvolnum>1</manvolnum>
-<refmiscinfo class="author">University of Chicago</refmiscinfo>
+<refmiscinfo class="source">University of Chicago</refmiscinfo>
+<refmiscinfo class="manual">Globus Toolkit Manual</refmiscinfo>
 </refmeta>
-
 <refnamediv>
-<refname>&cmdname;</refname>
-<refpurpose>Execute and manage jobs via GRAM</refpurpose>
+    <refname>globusrun</refname>
+    <refpurpose>Execute and manage jobs via GRAM</refpurpose>
 </refnamediv>
-<refsynopsisdiv>
-<cmdsynopsis>
-&cmd;
-<arg>-help</arg>
-<arg>-usage</arg>
-<arg>-version</arg>
-<arg>-versions</arg>
-</cmdsynopsis>
-
-<cmdsynopsis>
-&cmd;
-<group choice="req">
-    <arg choice="plain">-p</arg>
-    <arg choice="plain">-parse</arg>
-</group>
-<sbr/>
-<group choice="req">
-    <group choice="plain">
-        <arg choice="plain">-f <replaceable>RSL_FILENAME</replaceable></arg>
-        <arg choice="plain">-file <replaceable>RSL_FILENAME</replaceable></arg>
-    </group>
-    <arg choice="plain">RSL_SPECIFICATION</arg>
-</group>
-</cmdsynopsis>
-
-<cmdsynopsis>
-&cmd;
-<arg>-n</arg>
-<arg>-no-interrupt</arg>
-<sbr/>
-<group choice="req">
-    <arg choice="plain">-r <replaceable>RESOURCE_CONTACT</replaceable></arg>
-    <arg choice="plain">-resource <replaceable>RESOURCE_CONTACT</replaceable></arg>
-</group>
-<sbr/>
-<group choice="req">
-    <group choice="plain">
-        <arg choice="plain">-a</arg>
-        <arg choice="plain">-authenticate-only</arg>
-    </group>
-</group>
-</cmdsynopsis>
-<cmdsynopsis>
-&cmd;
-<arg>-n</arg>
-<arg>-no-interrupt</arg>
-<sbr/>
-<group choice="req">
-    <arg choice="plain">-r <replaceable>RESOURCE_CONTACT</replaceable></arg>
-    <arg choice="plain">-resource <replaceable>RESOURCE_CONTACT</replaceable></arg>
-</group>
-<sbr/>
-<group choice="req">
-        <arg choice="plain">-j</arg>
-        <arg choice="plain">-jobmanager-version</arg>
-</group>
-</cmdsynopsis>
-
-<cmdsynopsis>
-&cmd;
-<arg>-n</arg>
-<arg>-no-interrupt</arg>
-<group choice="req">
-    <arg choice="plain">-k</arg>
-    <arg choice="plain">-kill</arg>
-</group>
-<arg choice="req"><replaceable>JOB_ID</replaceable></arg>
-</cmdsynopsis>
-
-<cmdsynopsis>
-&cmd;
-<arg>-n</arg>
-<arg>-no-interrupt</arg>
-<arg>-full-proxy</arg>
-<arg>-D</arg>
-<group choice="req">
-    <arg choice="plain">-y</arg>
-    <arg choice="plain">-refresh-proxy</arg>
-</group>
-<arg choice="req"><replaceable>JOB_ID</replaceable></arg>
-</cmdsynopsis>
-
-<cmdsynopsis>
-&cmd;
-<group choice="req">
-    <arg choice="plain">-status</arg>
-</group>
-<arg choice="req"><replaceable>JOB_ID</replaceable></arg>
-</cmdsynopsis>
-
-<cmdsynopsis>
-&cmd;
-<arg>-q</arg>
-<arg>-quiet</arg>
-<arg>-o</arg>
-<arg>-output-enable</arg>
-<arg>-s</arg>
-<arg>-server</arg>
-<arg>-w</arg>
-<arg>-write-allow</arg>
-<arg>-n</arg>
-<arg>-no-interrupt</arg>
-<arg>-b</arg>
-<arg>-batch</arg>
-<arg>-F</arg>
-<arg>-fast-batch</arg>
-<arg>-full-proxy</arg>
-<arg>-D</arg>
-<arg>-d</arg>
-<arg>-dryrun</arg>
-<sbr/>
-<group choice="req">
-    <arg choice="plain">-r <replaceable>RESOURCE_CONTACT</replaceable></arg>
-    <arg choice="plain">-resource <replaceable>RESOURCE_CONTACT</replaceable></arg>
-</group>
-<sbr/>
-<group choice="req">
-    <group choice="plain">
-        <arg choice="plain">-f <replaceable>RSL_FILENAME</replaceable></arg>
-        <arg choice="plain">-file <replaceable>RSL_FILENAME</replaceable></arg>
-    </group>
-    <arg choice="plain">RSL_SPECIFICATION</arg>
-</group>
-</cmdsynopsis>
-
+<refsynopsisdiv id="globusrun-SYNOPSIS">
+<simpara><emphasis role="strong">globusrun</emphasis> [-help | -usage | -version -versions ]</simpara>
+<simpara><emphasis role="strong">globusrun</emphasis> [-p | -parse] { -f <emphasis>FILENAME</emphasis> | -file <emphasis>FILENAME</emphasis> | <emphasis>RSL</emphasis> }</simpara>
+<simpara><emphasis role="strong">globusrun</emphasis> [OPTIONS] {-r <emphasis>RESOURCE</emphasis>| -resource <emphasis>RESOURCE</emphasis>} { -a | -authenticate-only }</simpara>
+<simpara><emphasis role="strong">globusrun</emphasis> [OPTIONS] {-r <emphasis>RESOURCE</emphasis>| -resource <emphasis>RESOURCE</emphasis>} { -j | -jobmanager-version }</simpara>
+<simpara><emphasis role="strong">globusrun</emphasis> [OPTIONS] {-k | -kill } <emphasis>JOBID</emphasis></simpara>
+<simpara><emphasis role="strong">globusrun</emphasis> [OPTIONS] [ -full-proxy | -D ] { -y | -refresh-proxy } <emphasis>JOBID</emphasis></simpara>
+<simpara><emphasis role="strong">globusrun</emphasis> [OPTIONS] -status <emphasis>JOBID</emphasis></simpara>
+<simpara><emphasis role="strong">globusrun</emphasis> [OPTIONS] { -r <emphasis>RESOURCE</emphasis> | -resource <emphasis>RESOURCE</emphasis> } { -f <emphasis>FILENAME</emphasis> | -file <emphasis>FILENAME</emphasis> | <emphasis>RSL</emphasis>}</simpara>
 </refsynopsisdiv>
-
-<refsect1><title>Description</title>
-<para>
-The &cmd; program for submits and manages jobs run on a local or remote job
-host. The jobs are controlled by the &jm;
-program which interfaces with a local resource manager that schedules and 
-executes the job.
-</para>
-
-<para>
-The &cmd; program can be run in a number of different modes chosen by
-command-line options.
-</para>
-
-<para>
-When <option>-help</option>, <option>-usage</option>,
-<option>-version</option>, or <option>-versions</option> command-line options
-are used, &cmd; will print out diagnostic information and then exit.
-</para>
-
-<para>
-When the <option>-p</option> or <option>-parse</option> command-line option
-is present, &cmd; will verify the syntax of the RSL specification and then
-terminate. If the syntax is valid, &cmd; will print out the string
-"<literal>RSL Parsed Successfully...</literal>" and exit with a zero exit code;
+<refsect1 id="globusrun-DESCRIPTION">
+<title>DESCRIPTION</title>
+<simpara>The <emphasis role="strong">globusrun</emphasis> program for submits and manages jobs run on a local or remote
+job host. The jobs are controlled by the <emphasis role="strong">globus-job-manager</emphasis>
+program which interfaces with a local resource manager that schedules and
+executes the job.</simpara>
+<simpara>The <emphasis role="strong">globusrun</emphasis> program can be run in a number of different modes chosen by
+command-line options.</simpara>
+<simpara>When <emphasis>-help</emphasis>, <emphasis>-usage</emphasis>, <emphasis>-version</emphasis>, or <emphasis>-versions</emphasis> command-line options
+are used, <emphasis role="strong">globusrun</emphasis> will print out diagnostic information and then exit.</simpara>
+<simpara>When the <emphasis>-p</emphasis> or <emphasis>-parse</emphasis> command-line option
+is present, <emphasis role="strong">globusrun</emphasis> will verify the syntax of the RSL specification and then
+terminate. If the syntax is valid, <emphasis role="strong">globusrun</emphasis> will print out the string
+<literal>RSL Parsed Successfully...</literal> and exit with a zero exit code;
 otherwise, it will print an error message and terminate with a non-zero exit
-code.
-</para>
-
-<para>
-When the <option>-a</option> or <option>-authenticate-only</option>
-command-line option is present, &cmd; will verify that the service named
-by <replaceable>RESOURCE_CONTACT</replaceable> exists and the client's
+code.</simpara>
+<simpara>When the <emphasis>-a</emphasis> or <emphasis>-authenticate-only</emphasis> command-line option is present,
+<emphasis role="strong">globusrun</emphasis> will verify that the service named
+by <emphasis>RESOURCE</emphasis> exists and the client&#8217;s
 credentials are granted permission to access that service. If authentication
-is successful, &cmd; will display the string "<literal>GRAM Authentication test
-successful</literal>" and exit with a zero exit code; otherwise it will print
-an explanation of the problem and will with a non-zero exit code.
-</para>
-
-<para>
-When the <option>-j</option> or <option>-jobmanager-version</option>
-command-line option is present, &cmd; will attempt to determine the software
-version that the service named by
-<replaceable>RESOURCE_CONTACT</replaceable> is running. If successful, it will
+is successful, <emphasis role="strong">globusrun</emphasis> will display the string
+<literal>GRAM Authentication test successful</literal> and exit with a zero exit code; otherwise
+it will print an explanation of the problem and will with a non-zero exit code.</simpara>
+<simpara>When the <emphasis>-j</emphasis> or <emphasis>-jobmanager-version</emphasis> command-line option is present,
+<emphasis role="strong">globusrun</emphasis> will attempt to determine the software
+version that the service named by <emphasis>RESOURCE</emphasis> is running. If successful, it will
 display both the Toolkit version and the Job Manager package version and exit
 with a zero exit code; otherwise, it will print an explanation of the problem
-and exit with a non-zero exit code.
-</para>
-
-<para>
-When the <option>-k</option> or <option>-kill</option>
-command-line option is present, &cmd; will attempt to terminate the
-job named by <replaceable>JOB_ID</replaceable>. If successful, &cmd; will
+and exit with a non-zero exit code.</simpara>
+<simpara>When the <emphasis>-k</emphasis> or <emphasis>-kill</emphasis> command-line option is present, <emphasis role="strong">globusrun</emphasis> will
+attempt to terminate the job named by <emphasis>JOB_ID</emphasis>. If
+successful, <emphasis role="strong">globusrun</emphasis> will exit with zero; otherwise it will display an
+explanation of the problem and exit with a non-zero exit code.</simpara>
+<simpara>When the <emphasis>-y</emphasis> or <emphasis>-refresh-proxy</emphasis> command-line option is present, <emphasis role="strong">globusrun</emphasis>
+will attempt to delegate a new X.509 proxy to the job manager which is managing
+the job named by <emphasis>JOBID</emphasis>. If successful, <emphasis role="strong">globusrun</emphasis> will
 exit with zero; otherwise it will display an explanation of the problem and
-exit with a non-zero exit code.
-</para>
-
-<para>
-When the <option>-y</option> or <option>-refresh-proxy</option>
-command-line option is present, &cmd; will attempt to delegate a new
-X.509 proxy to the job manager which is managing the job named by
-<replaceable>JOB_ID</replaceable>. If successful, &cmd; will
-exit with zero; otherwise it will display an explanation of the problem and
-exit with a non-zero exit code. This behavior can be modified by the 
-<option>-full-proxy</option> or <option>-D</option> command-line options
-to enable full proxy delegation. The default is limited proxy delegation.
-</para>
-
-<para>
-When the <option>-status</option> command-line option is present, &cmd; will
+exit with a non-zero exit code. This behavior can be modified by the
+<emphasis>-full-proxy</emphasis> or <emphasis>-D</emphasis> command-line options
+to enable full proxy delegation. The default is limited proxy delegation.</simpara>
+<simpara>When the <emphasis>-status</emphasis> command-line option is present, <emphasis role="strong">globusrun</emphasis> will
 attempt to determine the current state of the job. If successful, the state
-will be printed to standard output and &cmd; will exit with a zero exit code;
-otherwise, a description of the error will be displayed and it will exit
-with a non-zero exit code.
-</para>
-
-<para>
-Otherwise, &cmd; will submit the job to a GRAM service. By default, &cmd;
-waits until the job has terminated or failed before exiting, displaying
-information about job state changes and at exit time, the job exit code if it
-is provided by the GRAM service.
-</para>
-
-<para>
-The &cmd; program can also function as a <application>GASS</application> file
-server to allow the &jm; program to stage files to and from the machine on
-which &cmd; is executed to the GRAM service node. This behavior is controlled
-by the <option>-s</option>, <option>-o</option>, and <option>-w</option>
-command-line options.
-</para>
-
-<para>
-Jobs submitted by &cmd; can be monitored interactively or detached. To have
-&cmd; detach from the GRAM service after submitting the job, use the
-<option>-b</option> or <option>-F</option> command-line options.
-</para>
+will be printed to standard output and <emphasis role="strong">globusrun</emphasis> will exit with a zero exit
+code; otherwise, a description of the error will be displayed and it will exit
+with a non-zero exit code.</simpara>
+<simpara>Otherwise, <emphasis role="strong">globusrun</emphasis> will submit the job to a GRAM service. By default,
+<emphasis role="strong">globusrun</emphasis> waits until the job has terminated or failed before exiting,
+displaying information about job state changes and at exit time, the job exit
+code if it is provided by the GRAM service.</simpara>
+<simpara>The <emphasis role="strong">globusrun</emphasis> program can also function as a <emphasis role="strong">GASS</emphasis> file server to allow the
+<emphasis role="strong">globus-job-manager</emphasis> program to stage files to and from the machine on which
+<emphasis role="strong">globusrun</emphasis> is executed to the GRAM service node. This behavior is controlled
+by the <emphasis>-s</emphasis>, <emphasis>-o</emphasis>, and <emphasis>-w</emphasis> command-line options.</simpara>
+<simpara>Jobs submitted by <emphasis role="strong">globusrun</emphasis> can be monitored interactively or detached. To
+have <emphasis role="strong">globusrun</emphasis> detach from the GRAM service after submitting the job, use the
+<emphasis>-b</emphasis> or <emphasis>-F</emphasis> command-line options.</simpara>
 </refsect1>
-
-<refsect1>
-<title>Options</title>
-
-<para>
-The full set of options to &cmd; consist of:
-
+<refsect1 id="globusrun-OPTIONS">
+<title>OPTIONS</title>
 <variablelist>
-    <varlistentry>
-        <term><option>-help</option></term>
-        <listitem><simpara>Display a help message to standard error and
-        exit.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-usage</option></term>
-        <listitem><simpara>Display a one-line usage summary to standard error
-        and exit.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-version</option></term>
-        <listitem><simpara>Display the software version of
-        &cmd; to standard error and exit.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-versions</option></term>
-        <listitem><simpara>Display the software version of all modules used by
-        &cmd; (including DiRT information) to standard error and then
-        exit.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-p</option></term>
-        <term><option>-parse</option></term>
-        <listitem><simpara>Do a parse check on the job specification and print
-        diagnostics. If a parse error occurs, &cmd; exits with a non-zero exit
-        code.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-f <replaceable>RSL_FILENAME</replaceable></option></term>
-        <term><option>-file
-        <replaceable>RSL_FILENAME</replaceable></option></term>
-        <listitem><simpara>Read job specification from the file named by
-        <replaceable>RSL_FILENAME</replaceable>.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-n</option></term>
-        <term><option>-no-interrupt</option></term>
-        <listitem><simpara>Disable handling of the <literal>SIGINT</literal>
-        signal, so that the interrupt character (typically 
-        <keycombo><keycap>Control</keycap><keycap>C</keycap></keycombo>) causes
-        &cmd; to terminate without canceling the job.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-r <replaceable>RESOURCE_CONTACT</replaceable></option></term>
-        <term><option>-resource <replaceable>RESOURCE_CONTACT</replaceable></option></term>
-        <listitem><para>Submit the request to the resource specified by
-        <replaceable>RESOURCE_CONTACT</replaceable>. A resource may be specified
-        in the following ways:
-        <itemizedlist>
-            <listitem><simpara><replaceable>HOST</replaceable></simpara></listitem>
-            <listitem><simpara><replaceable>HOST</replaceable>:<replaceable>PORT</replaceable></simpara></listitem>
-            <listitem><simpara><replaceable>HOST</replaceable>:<replaceable>PORT</replaceable>/<replaceable>SERVICE</replaceable></simpara></listitem>
-            <listitem><simpara><replaceable>HOST</replaceable>/<replaceable>SERVICE</replaceable></simpara></listitem>
-            <listitem><simpara><replaceable>HOST</replaceable>:/<replaceable>SERVICE</replaceable></simpara></listitem>
-            <listitem><simpara><replaceable>HOST</replaceable>::<replaceable>SUBJECT</replaceable></simpara></listitem>
-            <listitem><simpara><replaceable>HOST</replaceable>:<replaceable>PORT</replaceable>:<replaceable>SUBJECT</replaceable></simpara></listitem>
-            <listitem><simpara><replaceable>HOST</replaceable>/<replaceable>SERVICE</replaceable>:<replaceable>SUBJECT</replaceable></simpara></listitem>
-            <listitem><simpara><replaceable>HOST</replaceable>:/<replaceable>SERVICE</replaceable>:<replaceable>SUBJECT</replaceable></simpara></listitem>
-            <listitem><simpara><replaceable>HOST</replaceable>:<replaceable>PORT</replaceable>/<replaceable>SERVICE</replaceable>:<replaceable>SUBJECT</replaceable></simpara></listitem>
-        </itemizedlist>
-        </para>
-        <para>
-        If any of <replaceable>PORT</replaceable>,
-        <replaceable>SERVICE</replaceable>, or
-        <replaceable>SUBJECT</replaceable> is omitted, the defaults of
-        <literal>2811</literal>, <literal>jobmanager</literal>, and
-        <literal>host@</literal><replaceable>HOST</replaceable> are used
-        respectively.
-        </para></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term>-j</term>
-        <term>-jobmanager-version</term>
-        <listitem><simpara>Print the software version being run by the service
-        running at
-        <replaceable>RESOURCE_CONTACT</replaceable>.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-k <replaceable>JOB_ID</replaceable></option></term>
-        <term><option>-kill <replaceable>JOB_ID</replaceable></option></term>
-        <listitem><simpara>Kill the job named by
-        <replaceable>JOB_ID</replaceable></simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-D</option></term>
-        <term><option>-full-proxy</option></term>
-        <listitem><simpara>Delegate a full impersonation proxy to the service.
-        By default, a limited proxy is delegated when
-        needed.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-y</option></term>
-        <term><option>-refresh-proxy</option></term>
-        <listitem><simpara>Delegate a new proxy to the service processing
-        <replaceable>JOB_ID</replaceable>.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-status</option></term>
-        <listitem><simpara>Display the current status of the job named by
-        <replaceable>JOB_ID</replaceable>.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-q</option></term>
-        <term><option>-quiet</option></term>
-        <listitem><simpara>Do not display job state change or exit code
-        information.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-o</option></term>
-        <term><option>-output-enable</option></term>
-        <listitem><simpara>Start a GASS server within the &cmd; application
-        that allows access to its standard output and standard error streams
-        only. Also, augment the <replaceable>RSL_SPECIFICATION</replaceable>
-        with a definition of the <varname>GLOBUSRUN_GASS_URL</varname> RSL
-        substitution and add <literal>stdout</literal> and
-        <literal>stderr</literal> clauses which redirect the output and error
-        streams of the job to the output and error streams of the interactive
-        &cmd; command. If this is specified, then &cmd; acts as though the
-        <option>-q</option> were also specified.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-s</option></term>
-        <term><option>-server</option></term>
-        <listitem><simpara>Start a GASS server within the &cmd; application
-        that allows access to its standard output and standard error streams
-        for writing and any file local the the &cmd; invocation for reading.
-        Also, augment the <replaceable>RSL_SPECIFICATION</replaceable>
-        with a definition of the <varname>GLOBUSRUN_GASS_URL</varname> RSL
-        substitution and add <literal>stdout</literal> and
-        <literal>stderr</literal> clauses which redirect the output and error
-        streams of the job to the output and error streams of the interactive
-        &cmd; command. If this is specified, then &cmd; acts as though the
-        <option>-q</option> were also specified.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-w</option></term>
-        <term><option>-write-allow</option></term>
-        <listitem><simpara>Start a GASS server within the &cmd; application
-        that allows access to its standard output and standard error streams
-        for writing and any file local the the &cmd; invocation for reading or
-        writing.  Also, augment the <replaceable>RSL_SPECIFICATION</replaceable>
-        with a definition of the <varname>GLOBUSRUN_GASS_URL</varname> RSL
-        substitution and add <literal>stdout</literal> and
-        <literal>stderr</literal> clauses which redirect the output and error
-        streams of the job to the output and error streams of the interactive
-        &cmd; command. If this is specified, then &cmd; acts as though the
-        <option>-q</option> were also specified.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-b</option></term>
-        <term><option>-batch</option></term>
-        <listitem><simpara>Terminate after submitting the job to the GRAM
-        service. The &cmd; program will exit after the job hits any of the
-        following states: <literal>PENDING</literal>,
-        <literal>ACTIVE</literal>,
-        <literal>FAILED</literal>, or
-        <literal>DONE</literal>. The GASS-related options can be used
-        to stage input files, but standard output, standard error, and file
-        staging after the job completes will not be processed.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-F</option></term>
-        <term><option>-fast-batch</option></term>
-        <listitem><simpara>Terminate after submitting the job to the GRAM
-        service. The &cmd; program will exit after it receives a reply from
-        the service. The <replaceable>JOB_ID</replaceable> will be displayed
-        to standard output before terminating so that the job can be checked
-        with the <option>-status</option> command-line option or modified by
-        the <option>-refresh-proxy</option> or <option>-kill</option>
-        command-line options.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-d</option></term>
-        <term><option>-dryrun</option></term>
-        <listitem><simpara>Submit the job with the <literal>dryrun</literal>
-        attribute set to true. When this is done, the job manager will prepare
-        to start the job but start short of submitting it to the service. This
-        can be used to detect problems with the
-        <replaceable>RSL_SPECIFICATION</replaceable>.</simpara></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-help</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display a help message to standard error and exit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-usage</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display a one-line usage summary to standard error and exit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-version</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the software version of <emphasis role="strong">globusrun</emphasis> to standard error and exit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-versions</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the software version of all modules used by <emphasis role="strong">globusrun</emphasis> (including
+    DiRT information) to standard error and then exit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-p, -parse</emphasis>
+</term>
+<listitem>
+<simpara>
+    Do a parse check on the job specification and print diagnostics. If a parse
+    error occurs, <emphasis role="strong">globusrun</emphasis> exits with a non-zero exit code.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-f FILENAME, -file FILENAME</emphasis>
+</term>
+<listitem>
+<simpara>
+    Read job specification from the file named by <emphasis>FILENAME</emphasis>
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-n, -no-interrupt</emphasis>
+</term>
+<listitem>
+<simpara>
+    Disable handling of the <literal>SIGINT</literal> signal, so that the interrupt character
+    (typically Control-C causes <emphasis role="strong">globusrun</emphasis> to terminate without canceling the
+    job.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-r RESOURCE</emphasis>
+</term>
+<listitem>
+<simpara>
+    Submit the request to the resource specified by <emphasis>RESOURCE</emphasis>. A resource may
+    be specified in the following ways:
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<emphasis>HOST</emphasis>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<emphasis>HOST</emphasis><literal>:</literal><emphasis>PORT</emphasis>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<emphasis>HOST</emphasis><literal>:</literal><emphasis>PORT</emphasis>/<emphasis>SERVICE</emphasis>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<emphasis>HOST</emphasis><literal>/</literal><emphasis>SERVICE</emphasis>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<emphasis>HOST</emphasis><literal>:/</literal><emphasis>SERVICE</emphasis>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<emphasis>HOST</emphasis><literal>::</literal><emphasis>SUBJECT</emphasis>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<emphasis>HOST</emphasis><literal>:</literal><emphasis>PORT</emphasis><literal>:</literal><emphasis>SUBJECT</emphasis>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<emphasis>HOST</emphasis><literal>/</literal><emphasis>SERVICE</emphasis><literal>:</literal><emphasis>SUBJECT</emphasis>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<emphasis>HOST</emphasis><literal>:/</literal><emphasis>SERVICE</emphasis><literal>:</literal><emphasis>SUBJECT</emphasis>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<emphasis>HOST</emphasis><literal>:</literal><emphasis>PORT</emphasis><literal>/</literal><emphasis>SERVICE</emphasis><literal>:</literal><emphasis>SUBJECT</emphasis>
+If any of <emphasis>PORT</emphasis>, <emphasis>SERVICE</emphasis>, or <emphasis>SUBJECT</emphasis> is omitted, the defaults of <literal>2811</literal>,
+<literal>jobmanager</literal>, and <literal>host@</literal><emphasis>HOST</emphasis> are used respectively.
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-j, -jobmanager-version</emphasis>
+</term>
+<listitem>
+<simpara>
+    Print the software version being run by the service running at
+    <emphasis>RESOURCE</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-k <emphasis>JOBID</emphasis>, -kill <emphasis>JOBID</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Kill the job named by <emphasis>JOBID</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-D, -full-proxy</emphasis>
+</term>
+<listitem>
+<simpara>
+    Delegate a full impersonation proxy to the service.  By default, a limited
+    proxy is delegated when needed.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
-</refsect1>
-
-<refsect1><title>Environment</title>
-<para>
-If the following variables affect the execution of <command>globusrun</command>
-
+<simpara><emphasis role="strong">-y, -refresh-proxy</emphasis>:
+    Delegate a new proxy to the service processing JOBID.</simpara>
 <variablelist>
-    <varlistentry>
-        <term><envar>X509_USER_PROXY</envar></term>
-        <listitem><simpara>Path to proxy credential.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><envar>X509_CERT_DIR</envar></term>
-        <listitem><simpara>Path to trusted certificate directory.</simpara></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-status</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the current status of the job named by JOBID.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-q, -quiet</emphasis>
+</term>
+<listitem>
+<simpara>
+    Do not display job state change or exit code information.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-o, -output-enable</emphasis>
+</term>
+<listitem>
+<simpara>
+    Start a GASS server within the <emphasis role="strong">globusrun</emphasis> application that allows access
+    to its standard output and standard error streams only. Also, augment the
+    <emphasis>RSL</emphasis> with a definition of the <literal>GLOBUSRUN_GASS_URL</literal> RSL substitution and
+    add <literal>stdout</literal> and <literal>stderr</literal> clauses which redirect the output and error
+    streams of the job to the output and error streams of the interactive
+    <emphasis role="strong">globusrun</emphasis> command. If this is specified, then <emphasis role="strong">globusrun</emphasis> acts as though
+    the <emphasis>-q</emphasis> were also specified.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-s, -server</emphasis>
+</term>
+<listitem>
+<simpara>
+    Start a GASS server within the <emphasis role="strong">globusrun</emphasis> application that allows access
+    to its standard output and standard error streams for writing and any file
+    local the the <emphasis role="strong">globusrun</emphasis> invocation for reading.  Also, augment the
+    <emphasis>RSL</emphasis> with a definition of the <literal>GLOBUSRUN_GASS_URL</literal> RSL substitution and
+    add <literal>stdout</literal> and <literal>stderr</literal> clauses which redirect the output and error
+    streams of the job to the output and error streams of the interactive
+    <emphasis role="strong">globusrun</emphasis> command. If this is specified, then <emphasis role="strong">globusrun</emphasis> acts as though
+    the <emphasis>-q</emphasis> were also specified.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-w, -write-allow</emphasis>
+</term>
+<listitem>
+<simpara>
+    Start a GASS server within the <emphasis role="strong">globusrun</emphasis> application that allows access
+    to its standard output and standard error streams for writing and any file
+    local the the <emphasis role="strong">globusrun</emphasis> invocation for reading or writing.  Also, augment
+    the <emphasis>RSL</emphasis> with a definition of the <literal>GLOBUSRUN_GASS_URL</literal> RSL
+    substitution and add <literal>stdout</literal> and <literal>stderr</literal> clauses which redirect the
+    output and error streams of the job to the output and error streams of the
+    interactive <emphasis role="strong">globusrun</emphasis> command. If this is specified, then <emphasis role="strong">globusrun</emphasis>
+    acts as though the <emphasis>-q</emphasis> were also specified.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-b, -batch</emphasis>
+</term>
+<listitem>
+<simpara>
+    Terminate after submitting the job to the GRAM service.  The GASS-related
+    options can be used to stage input files, but standard output, standard
+    error, and file staging after the job completes will not be processed.
+    The <emphasis role="strong">globusrun</emphasis> program will exit after the job hits any of the following
+    states:
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<literal>PENDING</literal>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<literal>ACTIVE</literal>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<literal>FAILED</literal>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<literal>DONE</literal>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-F, -fast-batch</emphasis>
+</term>
+<listitem>
+<simpara>
+    Terminate after submitting the job to the GRAM service. The <emphasis role="strong">globusrun</emphasis>
+    program will exit after it receives a reply from the service. The
+    <emphasis>JOBID</emphasis> will be displayed to standard output before terminating so that the
+    job can be checked with the <emphasis>-status</emphasis> command-line option or
+    modified by the <emphasis>-refresh-proxy</emphasis> or <emphasis>-kill</emphasis> command-line options.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-d, -dryrun</emphasis>
+</term>
+<listitem>
+<simpara>
+    Submit the job with the <literal>dryrun</literal> attribute set to true. When this is done,
+    the job manager will prepare to start the job but start short of submitting
+    it to the service. This can be used to detect problems with the <emphasis>RSL</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
 </refsect1>
-
-<refsect1><title>Bugs</title>
-<para>
-The &cmd; program assumes any failure to contact the job means the
+<refsect1 id="globusrun-ENVIRONMENT">
+<title>ENVIRONMENT</title>
+<simpara>The following variables affect the execution of <emphasis role="strong">globusrun</emphasis></simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_USER_PROXY</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to proxy credential.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_CERT_DIR</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to trusted certificate directory.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="globusrun-BUGS">
+<title>BUGS</title>
+<simpara>The <emphasis role="strong">globusrun</emphasis> program assumes any failure to contact the job means the
 job has terminated. In fact, this may be due to the
-&jm; program exiting after all jobs it is
+<emphasis role="strong">globus-job-manager</emphasis> program exiting after all jobs it is
 managing have reached the <literal>DONE</literal> or <literal>FAILED</literal>
 states. In order to reliably detect job termination, the
-<literal>two_phase</literal> RSL attribute should be used.
-</para>
+<literal>two_phase</literal> RSL attribute should be used.</simpara>
 </refsect1>
-
-<refsect1><title>See Also</title>
-<para>
-<citerefentry><refentrytitle>globus-job-submit</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-<citerefentry><refentrytitle>globus-job-run</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-<citerefentry><refentrytitle>globus-job-clean</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-<citerefentry><refentrytitle>globus-job-get-output</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-<citerefentry><refentrytitle>globus-job-cancel</refentrytitle><manvolnum>1</manvolnum></citerefentry>
-</para>
-
-
+<refsect1 id="globusrun-SEEALSO">
+<title>SEE ALSO</title>
+<simpara><emphasis role="strong">globus-job-submit</emphasis>(1), <emphasis role="strong">globus-job-run</emphasis>(1), <emphasis role="strong">globus-job-clean</emphasis>(1), <emphasis role="strong">globus-job-get-output</emphasis>(1), <emphasis role="strong">globus-job-cancel</emphasis>(1)</simpara>
 </refsect1>
-
+<refsect1 id="globusrun-AUTHOR">
+<title>AUTHOR</title>
+<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
+</refsect1>
 </refentry>

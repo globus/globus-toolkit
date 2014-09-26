@@ -18,7 +18,8 @@
 #define GLOBUS_GSI_AUTHZ_CONSTANTS_H
 
 /**
- * @file globus_gsi_authz_constants.h Globus GSI Authorization Library Constants
+ * @file globus_gsi_authz_constants.h
+ * @brief Globus GSI Authorization Library Constants
  */
 
 /**

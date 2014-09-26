@@ -17,7 +17,8 @@
 #ifndef GLOBUS_XIO_FILE_DRIVER_H
 #define GLOBUS_XIO_FILE_DRIVER_H
 /**
- * @file globus_xio_file_driver.h XIO File Driver
+ * @file globus_xio_file_driver.h
+ * @brief XIO File Driver
  */
 #include "globus_xio_system.h"
 
@@ -84,12 +85,12 @@ extern "C" {
  * You may either use GLOBUS_XIO_FILE_SEEK or GLOBUS_XIO_SEEK to position the
  * file pointer before each read or write or you can specify the
  * desired offset on a data descriptor with the xio cmd,
- * GLOBUS_XIO_DD_SET_OFFSET.  simultaneous reading and writing is only
+ * GLOBUS_XIO_DD_SET_OFFSET.  Simultaneous reading and writing is only
  * predictable if the data descriptor method is used.
  */
  
 /**
- * @defgroup globus_xio_file_driver_envs Env Variables
+ * @defgroup globus_xio_file_driver_envs Environment Variables
  * @ingroup globus_xio_file_driver
  * 
  * The file driver uses the following environment variables
@@ -231,7 +232,7 @@ typedef enum
     /** GlobusVarArgEnum(attr)
      * Set the file handle to use.
      * @ingroup globus_xio_file_driver_cntls
-     * Do not open a new file, use this preopened handle instead.
+     * Do not open a new file, use this pre-opened handle instead.
      * 
      * @param handle
      *      Use this handle (fd or HANDLE) for the file.
@@ -253,7 +254,7 @@ typedef enum
     
     /** GlobusVarArgEnum(attr, handle)
      * Enable true blocking io when making globus_xio_read/write() calls.
-     * Note: use with caution.  you can deadlock an entire app with this.
+     * Note: use with caution.  You can deadlock an entire app with this.
      * @ingroup globus_xio_file_driver_cntls
      * 
      * @param use_blocking_io
@@ -336,7 +337,7 @@ typedef enum
  * @see GLOBUS_XIO_FILE_SET_MODE
  * 
  * NOTE: for Win32, you only have a choice between read-only and read-write.
- * If the chosen mode does not specify writability, the file will be read only
+ * If the chosen mode does not specify writing, the file will be read only
  */
 typedef enum
 {
@@ -378,7 +379,7 @@ typedef enum
     GLOBUS_XIO_FILE_SEEK_SET            = SEEK_SET,
     /** set the file pointer at current position + offset */
     GLOBUS_XIO_FILE_SEEK_CUR            = SEEK_CUR,
-    /** set the file pointer at size of file + offest */ 
+    /** set the file pointer at size of file + offset */ 
     GLOBUS_XIO_FILE_SEEK_END            = SEEK_END
 } globus_xio_file_whence_t;
 

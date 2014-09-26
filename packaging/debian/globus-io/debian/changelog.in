@@ -1,3 +1,10 @@
+globus-io (10.12-1+gt6.@distro@) @distro@; urgency=low
+
+  * Drop empty documentation from globus_io package
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Sep 2014 14:19:08 -0400
+
 globus-io (10.11-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

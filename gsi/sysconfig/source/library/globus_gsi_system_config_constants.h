@@ -17,19 +17,18 @@
 #ifndef GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H
 #define GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_system_config_constants.h
+ * @brief Globus GSI System Config Library
  * @author Sam Lang, Sam Meder
  */
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * @defgroup globus_gsi_sysconfig_datatypes Datatypes
+ * @defgroup globus_gsi_sysconfig_datatypes Data Types
  * @ingroup globus_gsi_sysconfig
  */
 
@@ -61,7 +60,7 @@ typedef enum
     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_DELEG_FILENAME = 9,
     /** Unable to generate a list of CA certificate filenames */
     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CA_CERT_FILENAMES = 10,
-    /** Error while dircovering the current working directory */
+    /** Error while discovering the current working directory */
     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CWD = 11,
     /** Failed to remove all proxy files */
     GLOBUS_GSI_SYSCONFIG_ERROR_REMOVING_OWNED_FILES = 12,
@@ -97,7 +96,7 @@ typedef enum
     GLOBUS_GSI_SYSCONFIG_ERROR_FILE_HAS_CHANGED = 27,
     /** Failed to locate the authorization callout library configuration file */
     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME = 28,
-    /** Failed to locate the gaa configuration file */
+    /** Failed to locate the GAA configuration file */
     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_GAA_FILENAME = 29,
     /** File is not a directory */
     GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_DIR = 30,

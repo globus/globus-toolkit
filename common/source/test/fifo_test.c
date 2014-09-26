@@ -15,9 +15,9 @@
  */
 
 /**
- * @file fifo_test.c Test the globus_fifo_t implementation
+ * @file fifo_test.c
+ * @brief Test the globus_fifo_t implementation
  * @author Michael Lebman
- *
  */
 
 #include "globus_common.h"

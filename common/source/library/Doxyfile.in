@@ -13,5 +13,5 @@ GENERATE_DEPRECATEDLIST= YES
 INPUT                  = @top_srcdir@
 RECURSIVE              = YES
 QUIET                  = YES
-EXCLUDE_PATTERNS       = version.h
-PREDEFINED             = DOXYGEN GLOBUS_DONT_DOCUMENT_INTERNAL
+EXCLUDE_PATTERNS       = version.h test
+PREDEFINED             = GLOBUS_DONT_DOCUMENT_INTERNAL DOXYGEN

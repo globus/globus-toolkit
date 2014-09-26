@@ -1,3 +1,10 @@
+globus-gram-job-manager-callout-error (3.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix some Doxygen issues
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Mon, 22 Sep 2014 16:02:47 -0400
+
 globus-gram-job-manager-callout-error (3.4-3+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

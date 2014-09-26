@@ -16,14 +16,10 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gass_transfer_client.c Client Interface
+ * @file globus_gass_transfer_client.c
+ * @brief Client Interface
  *
  * This module implements the client interface to the GASS transfer library
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 #endif
 
@@ -50,7 +46,7 @@ globus_l_gass_transfer_monitor_callback(
  * @ingroup globus_gass_transfer_client
  *
  * This function initiates a new "get" request of the file named by @a url.
- * The entire file will be transfered from the server if the file exists and
+ * The entire file will be transferred from the server if the file exists and
  * user is authorized to do so. This function does not block; instead, the
  * user's callback function will be called once the GASS library has
  * determined whether the file can be retrieved or not.
@@ -141,7 +137,7 @@ globus_gass_transfer_register_get(
  * @ingroup globus_gass_transfer_client
  *
  * This function initiates a new "get" request of the file named by @a url.
- * The entire file will be transfered from the server if the file exists and
+ * The entire file will be transferred from the server if the file exists and
  * user is authorized to do so. This function blocks until the 
  * GASS library has determined whether the file may be retrievied by the
  * caller, may not because it is a referral to another URL or URLs, or
@@ -223,7 +219,7 @@ globus_gass_transfer_get(
  * @ingroup globus_gass_transfer_client
  *
  * This function initiates a new "put" request of the file named by @a url.
- * The entire file will be transfered to the server if the 
+ * The entire file will be transferred to the server if the 
  * user is authorized to do so. This function does not block; instead, the
  * user's callback function will be called once the GASS library has
  * determined whether the file may be stored or not.
@@ -322,7 +318,7 @@ globus_gass_transfer_register_put(
  * @ingroup globus_gass_transfer_client
  *
  * This function initiates a new "put" request of the file named by @a url.
- * The entire file will be transfered to the server if the 
+ * The entire file will be transferred to the server if the 
  * user is authorized to do so. This function blocks until the 
  * GASS library has determined whether the file may be retrieved by the
  * caller, may not because it is a referral to another URL or URLs, or
@@ -409,7 +405,7 @@ globus_gass_transfer_put(
  * @ingroup globus_gass_transfer_client
  *
  * This function initiates a new "append" request of the file named by @a url.
- * The entire file will be transfered to the server if the 
+ * The entire file will be transferred to the server if the 
  * user is authorized to do so. This function does not block; instead, the
  * user's callback function will be called once the GASS library has
  * determined whether the file may be stored or not.
@@ -509,7 +505,7 @@ globus_gass_transfer_register_append(
  * @ingroup globus_gass_transfer_client
  *
  * This function initiates a new "append" request of the file named by @a url.
- * The entire file will be transfered to the server if the 
+ * The entire file will be transferred to the server if the 
  * user is authorized to do so.  This function blocks until the 
  * GASS library has determined whether the file may be retrieved by the
  * caller, may not because it is a referral to another URL or URLs, or

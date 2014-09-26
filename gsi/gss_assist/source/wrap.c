@@ -15,7 +15,8 @@
  */
 
 /**
- * @file gss_assist/source/wrap.c Wrap GSSAPI buffers
+ * @file gss_assist/source/wrap.c
+ * @brief Wrap GSSAPI buffers
  * @author Sam Lang, Sam Meder
  */
 
@@ -50,8 +51,8 @@
  *        file handle to write error message to.
  *
  * @return
- *        GSS_S_COMPLETE on sucess
- *        Other gss errors on failure.  
+ *        GSS_S_COMPLETE on success
+ *        Other GSSAPI errors on failure.  
  *
  * @see gss_wrap()
  */

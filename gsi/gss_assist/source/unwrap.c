@@ -15,7 +15,8 @@
  */
 
 /**
- * @file gss_assist/source/unwrap.c Unwrap Tokens
+ * @file gss_assist/source/unwrap.c
+ * @brief Unwrap Tokens
  * @author Sam Lang, Sam Meder
  */
 

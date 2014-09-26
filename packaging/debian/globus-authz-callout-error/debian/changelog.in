@@ -1,3 +1,12 @@
+globus-authz-callout-error (3.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Doxygen markup fixes
+  * Include more manpages for API
+  * Fix typos in error strings
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Tue, 23 Sep 2014 16:01:36 -0400
+
 globus-authz-callout-error (3.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

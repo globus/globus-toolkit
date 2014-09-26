@@ -436,7 +436,7 @@ globus_gram_job_manager_validation_destroy(
  * manager and/or scheduler.
  *
  * As a side effect, the RSL will be modified to include any missing RSL
- * paramaters which have default values defined in one of the validation
+ * parameters which have default values defined in one of the validation
  * files.
  *
  * @param request

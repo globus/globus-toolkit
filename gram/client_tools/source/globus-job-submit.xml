@@ -1,326 +1,318 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
-<!-- Canonical version of this document lives in 
-$Header$
--->
-
-<refentry id="gram5-cmd-globus-job-submit">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+<refentry lang="en">
+<refentryinfo>
+    <title>GLOBUS-JOB-SUBMIT(1)</title>
+</refentryinfo>
 <refmeta>
 <refentrytitle>globus-job-submit</refentrytitle>
 <manvolnum>1</manvolnum>
-<refmiscinfo class="author">University of Chicago</refmiscinfo>
+<refmiscinfo class="source">University of Chicago</refmiscinfo>
+<refmiscinfo class="manual">Globus Toolkit Manual</refmiscinfo>
 </refmeta>
-
 <refnamediv>
-<refname>globus-job-submit</refname>
-<refpurpose>Submit a batch job using GRAM</refpurpose>
+    <refname>globus-job-submit</refname>
+    <refpurpose>Submit a batch job using GRAM</refpurpose>
 </refnamediv>
-<refsynopsisdiv>
-<cmdsynopsis>
-<command>globus-job-submit</command>
-<arg>-dumprsl</arg>
-<arg>-dryrun</arg>
-<arg>-verify</arg>
-<sbr/>
-<arg>-file <replaceable>ARGUMENT_FILE</replaceable></arg>
-<sbr/>
-<arg choice="plain"><replaceable>SERVICE_CONTACT</replaceable></arg>
-<sbr/>
-<group>
-    <arg choice="plain">-np <replaceable>PROCESSES</replaceable></arg>
-    <arg choice="plain">-count <replaceable>PROCESSES</replaceable></arg>
-</group>
-<sbr/>
-<group>
-    <arg choice="plain">-m <replaceable>MAX_TIME</replaceable></arg>
-    <arg choice="plain">-maxtime <replaceable>MAX_TIME</replaceable></arg>
-</group>
-<sbr/>
-<group>
-    <arg choice="plain">-p <replaceable>PROJECT</replaceable></arg>
-    <arg choice="plain">-project <replaceable>PROJECT</replaceable></arg>
-</group>
-<sbr/>
-<group>
-    <arg choice="plain">-q <replaceable>QUEUE</replaceable></arg>
-    <arg choice="plain">-queue <replaceable>QUEUE</replaceable></arg>
-</group>
-<sbr/>
-<group>
-    <arg choice="plain">-d <replaceable>DIRECTORY</replaceable></arg>
-    <arg choice="plain">-directory <replaceable>DIRECTORY</replaceable></arg>
-</group>
-<group rep="repeat" choice="plain">
-    <arg>-env <replaceable>NAME</replaceable>=<replaceable>VALUE</replaceable></arg>
-</group>
-<sbr/>
-<arg>-stdin
-    <group>
-        <arg choice="plain">-l</arg>
-        <arg choice="plain">-s</arg>
-    </group>
-    <replaceable>STDIN_FILE</replaceable>
-</arg>
-<arg>-stdout
-    <group>
-        <arg choice="plain">-l</arg>
-        <arg choice="plain">-s</arg>
-    </group>
-    <replaceable>STDOUT_FILE</replaceable>
-</arg>
-<arg>-stderr
-    <group>
-        <arg choice="plain">-l</arg>
-        <arg choice="plain">-s</arg>
-    </group>
-    <replaceable>STDERR_FILE</replaceable>
-</arg>
-<sbr/>
-<arg>-x <replaceable>RSL_CLAUSE</replaceable></arg>
-<sbr/>
-<group>
-    <arg choice="plain">-l</arg>
-    <arg choice="plain">-s</arg>
-</group>
-<arg choice="plain"><replaceable>EXECUTABLE</replaceable></arg>
-<arg rep="repeat">ARGUMENT</arg>
-</cmdsynopsis>
-<cmdsynopsis>
-<command>globus-job-submit</command>
-<arg>-help</arg>
-<arg>-usage</arg>
-<arg>-version</arg>
-<arg>-versions</arg>
-</cmdsynopsis>
+<refsynopsisdiv id="globus-job-submit-SYNOPSIS">
+<simpara><emphasis role="strong">globus-job-submit</emphasis> [-dumprsl|-dryrun|-verify] [-file ARGUMENT_FILE] <emphasis>SERVICE-CONTACT</emphasis> [OPTIONS] <emphasis>EXECUTABLE</emphasis> <emphasis>ARGUMENT&#8230;</emphasis></simpara>
+<simpara><emphasis role="strong">globus-job-submit</emphasis> [-help | -usage | -version | -versions]</simpara>
 </refsynopsisdiv>
-
-<refsect1><title>Description</title>
-<para>
-The <command>globus-job-submit</command> program constructs a job description
-from
-its command-line options and then submits the job to the GRAM service running
-at <replaceable>SERVICE_CONTACT</replaceable>. The executable and arguments to
-the executable are provided on the command-line after all other options.
-Note that the <option>-dumprsl</option>, <option>-dryrun</option>,
-<option>-verify</option>, and <option>-file</option> command-line options must
-occur before the first non-option argument, the
-<replaceable>SERVICE_CONTACT</replaceable>.
-</para>
-
-<para>
-The <command>globus-job-submit</command> provides similar functionality to 
-<command>globusrun</command> in that it allows batch submission of GRAM
-jobs. However, unlike <command>globusrun</command>, it uses command-line
-parameters to define the job instead of RSL expressions.
-</para>
-
-<para>
-To retrieve the output and error streams of the job, use the program
-<command>globus-job-get-output</command>.  To reclaim resources used
+<refsect1 id="globus-job-submit-DESCRIPTION">
+<title>DESCRIPTION</title>
+<simpara>The <emphasis role="strong">globus-job-submit</emphasis> program constructs a job description from its
+command-line options and then submits the job to the GRAM service running at
+<emphasis>SERVICE_CONTACT</emphasis>. The executable and arguments to the executable are provided
+on the command-line after all other options.  Note that the <emphasis>-dumprsl</emphasis>,
+<emphasis>-dryrun</emphasis>, <emphasis>-verify</emphasis>, and <emphasis>-file</emphasis> command-line options must occur before the
+first non-option argument, the <emphasis>SERVICE_CONTACT</emphasis>.</simpara>
+<simpara>The <emphasis role="strong">globus-job-submit</emphasis> provides similar functionality to
+<emphasis role="strong">globusrun</emphasis> in that it allows batch submission of GRAM
+jobs. However, unlike <emphasis role="strong">globusrun</emphasis>, it uses command-line
+parameters to define the job instead of RSL expressions.</simpara>
+<simpara>To retrieve the output and error streams of the job, use the program
+<emphasis role="strong">globus-job-get-output</emphasis>.  To reclaim resources used
 by the job by deleting cached files and job state, use the program
-<command>globus-job-clean</command>. To cancel a batch job submitted by
-<command>globus-job-submit</command>, use the program
-<command>globus-job-cancel</command>.
-</para>
-
+<emphasis role="strong">globus-job-clean</emphasis>. To cancel a batch job submitted by
+<emphasis role="strong">globus-job-submit</emphasis>, use the program
+<emphasis role="strong">globus-job-cancel</emphasis>.</simpara>
 </refsect1>
-
-<refsect1><title>Options</title>
-<para>
-The full set of options to <command>globus-job-submit</command> are:
-
+<refsect1 id="globus-job-submit-OPTIONS">
+<title>OPTIONS</title>
+<simpara>The full set of options to <emphasis role="strong">globus-job-submit</emphasis> are:</simpara>
 <variablelist>
-    <varlistentry>
-        <term><option>-help</option></term>
-        <term><option>-usage</option></term>
-        <listitem><simpara>Display a help message to standard error and
-        exit.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-version</option></term>
-        <listitem><simpara>Display the software version of the
-                <command>globus-job-submit</command> program to
-                standard output.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-versions</option></term>
-        <listitem><simpara>Display the software version of the
-        <command>globus-job-submit</command> program including DiRT
-        information to standard output.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-dumprsl</option></term>
-        <listitem><simpara>Translate the command-line options to
-        <command>globus-job-submit</command> into an RSL expression
-        that can be used with tools such as
-        <command>globusrun</command>.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-dryrun</option></term>
-        <listitem><simpara>Submit the job request to the GRAM service
-        with the <literal>dryrun</literal> option enabled. When this
-        option is used, the GRAM service prepares to execute the job
-        but stops before submitting the job to the LRM. This can be
-        used to diagnose some problems such as missing files.
-        </simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-verify</option></term>
-        <listitem><simpara>Submit the job request to the GRAM service
-        with the <literal>dryrun</literal> option enabled and then
-        without it enabled if the dryrun is
-        successful.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-file <replaceable>ARGUMENT_FILE</replaceable></option></term>
-        <listitem><simpara>Read additional command-line options from
-        <replaceable>ARGUMENT_FILE</replaceable>.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-np <replaceable>PROCESSES</replaceable></option></term>
-        <term><option>-count <replaceable>PROCESSES</replaceable></option></term>
-        <listitem><simpara>Start <replaceable>PROCESSES</replaceable>
-        instances of the executable as a single job.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-m <replaceable>MAX_TIME</replaceable></option></term>
-        <term><option>-maxtime <replaceable>MAX_TIME</replaceable></option></term>
-        <listitem><simpara>Schedule the job to run for a maximum of
-        <replaceable>MAX_TIME</replaceable> minutes.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-p <replaceable>PROJECT</replaceable></option></term>
-        <term><option>-project <replaceable>PROJECT</replaceable></option></term>
-        <listitem><simpara>Request that the job use the allocation
-        <replaceable>PROJECT</replaceable> when submitting the job
-        to the LRM.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-q <replaceable>QUEUE</replaceable></option></term>
-        <term><option>-queue <replaceable>QUEUE</replaceable></option></term>
-        <listitem><simpara>Request that the job be submitted to the
-        LRM using the named <replaceable>QUEUE</replaceable>.
-        </simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-d <replaceable>DIRECTORY</replaceable></option></term>
-        <term><option>-directory <replaceable>DIRECTORY</replaceable></option></term>
-        <listitem><simpara>Run the job in the directory named by 
-        <replaceable>DIRECTORY</replaceable>. Input and output files
-        will be interpreted relative to this directory. This directory
-        must exist on the file system on the LRM-managed
-        resource. If not specified, the job will run in the home
-        directory of the user the job is running as.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-env <replaceable>NAME</replaceable>=<replaceable>VALUE</replaceable></option></term>
-        <listitem><simpara>Define an environment variable named by 
-        <replaceable>NAME</replaceable> with the value
-        <replaceable>VALUE</replaceable> in the job environment. This
-        option may be specified multiple times to define multiple 
-        environment variables.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-stdin [-l | -s] <replaceable>STDIN_FILE</replaceable></option></term>
-        <listitem><simpara>Use the file named by
-        <replaceable>STDIN_FILE</replaceable> as the standard input
-        of the job. If the <option>-l</option> option is specified,
-        then this file is interpreted to be on a file system local
-        to the LRM. If the <option>-s</option> option is specified,
-        then this file is interpreted to be on the file system where
-        <command>globus-job-submit</command> is being executed, and the
-        file will be staged via GASS. If neither is specified, the
-        local behavior is assumed.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-stdout [-l | -s] <replaceable>STDOUT_FILE</replaceable></option></term>
-        <listitem><simpara>Use the file named by
-        <replaceable>STDOUT_FILE</replaceable> as the destination for
-        the standard output of the job. If the <option>-l</option>
-        option is specified, then this file is interpreted to be on a
-        file system local to the LRM. If the <option>-s</option> option
-        is specified, then this file is interpreted to be on the file
-        system where <command>globus-job-submit</command> is being
-        executed, and the file will be staged via GASS. If neither is
-        specified, the local behavior is assumed.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-stderr [-l | -s] <replaceable>STDERR_FILE</replaceable></option></term>
-        <listitem><simpara>Use the file named by
-        <replaceable>STDERR_FILE</replaceable> as the destination for
-        the standard error of the job. If the <option>-l</option>
-        option is specified, then this file is interpreted to be on a
-        file system local to the LRM. If the <option>-s</option> option
-        is specified, then this file is interpreted to be on the file
-        system where <command>globus-job-submit</command> is being
-        executed, and the file will be staged via GASS. If neither is
-        specified, the local behavior is assumed.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-x <replaceable>RSL_CLAUSE</replaceable></option></term>
-        <listitem><simpara>Add a set of custom RSL attributes described
-        by <replaceable>RSL_CLAUSE</replaceable> to the job
-        description. The clause must be an RSL conjunction and may
-        contain one or more attributes. This can be used to include
-        attributes which can not be defined by other command-line
-        options of <command>globus-job-submit</command>.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-l</option></term>
-        <listitem><simpara>When included outside the context of
-        <option>-stdin</option>, <option>-stdout</option>, or
-        <option>-stderr</option> command-line options,
-        <option>-l</option> option alters the
-        interpretation of the executable path. If the
-        <option>-l</option> option is specified, then the executable is
-        interpreted to be on a file system local to the LRM.</simpara>
-        </listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-s</option></term>
-        <listitem><simpara>When included outside the context of
-        <option>-stdin</option>, <option>-stdout</option>, or
-        <option>-stderr</option> command-line options,
-        <option>-l</option> option alters the
-        interpretation of the executable path. If the <option>-s</option>
-        option is specified, then the executable is
-        interpreted to be on the file system where
-        <command>globus-job-run</command> is being executed, and the
-        file will be staged via GASS. If neither is
-        specified, the local behavior is assumed.</simpara></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-help, -usage</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display a help message to standard error and exit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-version</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the software version of the <emphasis role="strong">globus-job-submit</emphasis> program to standard
+    output.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-versions</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the software version of the <emphasis role="strong">globus-job-submit</emphasis> program including
+    DiRT information to standard output.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-dumprsl</emphasis>
+</term>
+<listitem>
+<simpara>
+    Translate the command-line options to <emphasis role="strong">globus-job-submit</emphasis> into an RSL
+    expression that can be used with tools such as
+    <emphasis role="strong">globusrun</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-dryrun</emphasis>
+</term>
+<listitem>
+<simpara>
+    Submit the job request to the GRAM service with the <literal>dryrun</literal> option
+    enabled. When this option is used, the GRAM service prepares to execute the
+    job but stops before submitting the job to the LRM. This can be used to
+    diagnose some problems such as missing files.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-verify</emphasis>
+</term>
+<listitem>
+<simpara>
+    Submit the job request to the GRAM service with the <literal>dryrun</literal> option enabled
+    and then without it enabled if the dryrun is
+    successful.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-file <emphasis>ARGUMENT_FILE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Read additional command-line options from <emphasis>ARGUMENT_FILE</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-np <emphasis>PROCESSES</emphasis>, -count <emphasis>PROCESSES</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Start <emphasis>PROCESSES</emphasis> instances of the executable as a single
+    job.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-m <emphasis>MAX_TIME</emphasis>, -maxtime <emphasis>MAX_TIME</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Schedule the job to run for a maximum of <emphasis>MAX_TIME</emphasis> minutes.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-p <emphasis>PROJECT</emphasis>, -project <emphasis>PROJECT</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Request that the job use the allocation <emphasis>PROJECT</emphasis> when submitting the job
+    to the LRM.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-q <emphasis>QUEUE</emphasis>, -queue <emphasis>QUEUE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Request that the job be submitted to the LRM using the named <emphasis>QUEUE</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-d <emphasis>DIRECTORY</emphasis>, -directory <emphasis>DIRECTORY</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Run the job in the directory named by <emphasis>DIRECTORY</emphasis>. Input and output files
+    will be interpreted relative to this directory. This directory must exist
+    on the file system on the LRM-managed resource. If not specified, the job
+    will run in the home directory of the user the job is running
+    as.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-env <emphasis>NAME</emphasis>=<emphasis>VALUE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Define an environment variable named by <emphasis>NAME</emphasis> with the value <emphasis>VALUE</emphasis> in
+    the job environment. This option may be specified multiple times to define
+    multiple environment variables.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-stdin [-l | -s] <emphasis>STDIN_FILE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Use the file named by <emphasis>STDIN_FILE</emphasis> as the standard input of the job. If the
+    <emphasis>-l</emphasis> option is specified, then this file is interpreted to be on a file
+    system local to the LRM. If the <emphasis>-s</emphasis> option is specified, then this file is
+    interpreted to be on the file system where <emphasis role="strong">globus-job-submit</emphasis> is being
+    executed, and the file will be staged via GASS. If neither is specified,
+    the local behavior is assumed.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-stdout [-l | -s] <emphasis>STDOUT_FILE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Use the file named by <emphasis>STDOUT_FILE</emphasis> as the destination for the standard
+    output of the job. If the <emphasis>-l</emphasis> option is specified, then this file is
+    interpreted to be on a file system local to the LRM. If the <emphasis>-s</emphasis> option is
+    specified, then this file is interpreted to be on the file system where
+    <emphasis role="strong">globus-job-submit</emphasis> is being executed, and the file will be staged via
+    GASS. If neither is specified, the local behavior is
+    assumed.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-stderr [-l | -s] <emphasis>STDERR_FILE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Use the file named by <emphasis>STDERR_FILE</emphasis> as the destination for the standard
+    error of the job. If the <emphasis>-l</emphasis> option is specified, then this file is
+    interpreted to be on a file system local to the LRM. If the <emphasis>-s</emphasis> option is
+    specified, then this file is interpreted to be on the file system where
+    <emphasis role="strong">globus-job-submit</emphasis> is being executed, and the file will be staged via
+    GASS. If neither is specified, the local behavior is
+    assumed.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-x <emphasis>RSL_CLAUSE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Add a set of custom RSL attributes described by <emphasis>RSL_CLAUSE</emphasis> to the job
+    description. The clause must be an RSL conjunction and may contain one or
+    more attributes. This can be used to include attributes which can not be
+    defined by other command-line options of <emphasis role="strong">globus-job-submit</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-l</emphasis>
+</term>
+<listitem>
+<simpara>
+    When included outside the context of <emphasis>-stdin</emphasis>, <emphasis>-stdout</emphasis>, or <emphasis>-stderr</emphasis>
+    command-line options, <emphasis>-l</emphasis> option alters the interpretation of the
+    executable path. If the <emphasis>-l</emphasis> option is specified, then the executable is
+    interpreted to be on a file system local to the LRM.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-s</emphasis>
+</term>
+<listitem>
+<simpara>
+    When included outside the context of <emphasis>-stdin</emphasis>, <emphasis>-stdout</emphasis>, or <emphasis>-stderr</emphasis>
+    command-line options, <emphasis>-l</emphasis> option alters the interpretation of the
+    executable path. If the <emphasis>-s</emphasis> option is specified, then the executable is
+    interpreted to be on the file system where <emphasis role="strong">globus-job-run</emphasis> is being
+    executed, and the file will be staged via GASS. If neither is specified,
+    the local behavior is assumed.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
 </refsect1>
-
-<refsect1><title>ENVIRONMENT</title>
-<para>
-If the following variables affect the execution of
-<command>globus-job-submit</command>.
-
+<refsect1 id="globus-job-submit-ENVIRONMENT">
+<title>ENVIRONMENT</title>
+<simpara>If the following variables affect the execution of <emphasis role="strong">globus-job-submit</emphasis>.</simpara>
 <variablelist>
-    <varlistentry>
-        <term><envar>X509_USER_PROXY</envar></term>
-        <listitem><simpara>Path to proxy credential.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><envar>X509_CERT_DIR</envar></term>
-        <listitem><simpara>Path to trusted certificate
-        directory.</simpara></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_USER_PROXY</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to proxy credential.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_CERT_DIR</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to trusted certificate directory.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
 </refsect1>
-
-<refsect1><title>See Also</title>
-<para>
-<citerefentry><refentrytitle>globusrun</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-<citerefentry><refentrytitle>globus-job-run</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-<citerefentry><refentrytitle>globus-job-clean</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-<citerefentry><refentrytitle>globus-job-get-output</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-<citerefentry><refentrytitle>globus-job-cancel</refentrytitle><manvolnum>1</manvolnum></citerefentry>
-</para>
+<refsect1 id="globus-job-submit-SEEALSO">
+<title>SEE ALSO</title>
+<simpara>globusrun(1), globus-job-run(1), globus-job-clean(1), globus-job-get-output(1),
+globus-job-cancel(1)</simpara>
 </refsect1>
-
+<refsect1 id="_author">
+<title>AUTHOR</title>
+<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
+</refsect1>
 </refentry>

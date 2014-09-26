@@ -1,0 +1,136 @@
+GLOBUS-JOB-RUN(1)
+=================
+:doctype:      manpage
+:man source:   University of Chicago
+:man manual:   Globus Toolkit Manual
+
+NAME
+----
+globus-job-run - Execute a job using GRAM
+
+[[globus-job-run-SYNOPSIS]]
+SYNOPSIS
+--------
+*globus-job-run* [-dumprsl|-dryrun|-verify] [-file ARGUMENT_FILE] 'SERVICE-CONTACT' [OPTIONS] 'EXECUTABLE' 'ARGUMENT...'
+
+*globus-job-run* [-help | -usage | -version | -versions]
+
+[[globus-job-run-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *globus-job-run* program constructs a job description from
+its command-line options and then submits the job to the GRAM service running
+at 'SERVICE_CONTACT'. The executable and arguments to
+the executable are provided on the command-line after all other options.
+Note that the '-dumprsl', '-dryrun',
+'-verify', and '-file' command-line options must
+occur before the first non-option argument, the
+'SERVICE_CONTACT'.
+
+The *globus-job-run* provides similar functionality to 
+*globusrun* in that it allows interactive start-up of GRAM
+jobs. However, unlike *globusrun*, it uses command-line
+parameters to define the job instead of RSL expressions.
+
+
+[[globus-job-run-OPTIONS]]
+OPTIONS
+-------
+The full set of options to *globus-job-run* are:
+
+*-help, -usage*::
+    Display a help message to standard error and exit.
+*-version*::
+    Display the software version of the *globus-job-run* program to standard
+    output.
+*-version*::
+    Display the software version of the *globus-job-run* program including DiRT
+    information to standard output.
+*-dumprsl*::
+    Translate the command-line options to *globus-job-run* into an RSL
+    expression that can be used with tools such as *globusrun*.
+*-dryrun*::
+    Submit the job request to the GRAM service with the +dryrun+ option
+    enabled. When this option is used, the GRAM service prepares to execute the
+    job but stops before submitting the job to the LRM. This can be used to
+    diagnose some problems such as missing files.
+*-verify*::
+    Submit the job request to the GRAM service with the +dryrun+ option enabled
+    and then without it enabled if the dryrun is
+    successful.
+*-file 'ARGUMENT_FILE'*::
+    Read additional command-line options from 'ARGUMENT_FILE'.
+*-np 'PROCESSES', -count 'PROCESSES'*::
+    Start 'PROCESSES' instances of the executable as a single
+    job.
+*-m 'MAX_TIME', -maxtime 'MAX_TIME'*::
+    Schedule the job to run for a maximum of 'MAX_TIME'
+    minutes.
+*-p 'PROJECT', -project 'PROJECT'*::
+    Request that the job use the allocation 'PROJECT' when submitting the job
+    to the LRM.
+*-q 'QUEUE', -queue 'QUEUE'*::
+    Request that the job be submitted to the LRM using the named 'QUEUE'.
+*-d 'DIRECTORY', -directory 'DIRECTORY'*::
+    Run the job in the directory named by 'DIRECTORY'. Input and output files
+    will be interpreted relative to this directory. This directory must exist
+    on the file system on the LRM-managed resource. If not specified, the job
+    will run in the home directory of the user the job is running
+    as.
+*-env 'NAME'='VALUE'*::
+    Define an environment variable named by 'NAME' with the value 'VALUE' in
+    the job environment. This option may be specified multiple times to define
+    multiple environment variables.
+*-stdin [-l | -s] 'STDIN_FILE'*::
+    Use the file named by 'STDIN_FILE' as the standard input of the job. If the
+    '-l' option is specified, then this file is interpreted to be on a file
+    system local to the LRM. If the '-s' option is specified, then this file is
+    interpreted to be on the file system where *globus-job-run* is being
+    executed, and the file will be staged via GASS. If neither is specified,
+    the local behavior is assumed.
+*-stdout [-l | -s] 'STDOUT_FILE'*::
+    Use the file named by 'STDOUT_FILE' as the destination for the standard
+    output of the job. If the '-l' option is specified, then this file is
+    interpreted to be on a file system local to the LRM. If the
+    '-s' option is specified, then this file is interpreted to be on the file
+    system where *globus-job-run* is being executed, and the file will be
+    staged via GASS. If neither is specified, the local behavior is assumed.
+*-stderr [-l | -s] 'STDERR_FILE'*::
+    Use the file named by 'STDERR_FILE' as the destination for the standard
+    error of the job. If the '-l' option is specified, then this file is
+    interpreted to be on a file system local to the LRM. If the '-s' option is
+    specified, then this file is interpreted to be on the file system where
+    *globus-job-run* is being executed, and the file will be staged via GASS.
+    If neither is specified, the local behavior is assumed.
+*-x 'RSL_CLAUSE'*::
+    Add a set of custom RSL attributes described by 'RSL_CLAUSE' to the job
+    description. The clause must be an RSL conjunction and may contain one or
+    more attributes. This can be used to include attributes which can not be
+    defined by other command-line options of
+    *globus-job-run*.
+*-l, -s*::
+    When included outside the context of '-stdin', '-stdout', or '-stderr'
+    command-line options, '-l' option alters the interpretation of the
+    executable path. If the '-l' option is specified, then the executable is
+    interpreted to be on a file system local to the LRM.
+
+[[globus-job-run-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following variables affect the execution of *globus-job-run*:
+
+*X509_USER_PROXY*::
+    Path to proxy credential.
+*X509_CERT_DIR*::
+    Path to trusted certificate directory.
+
+[[globus-job-run-SEEALSO]]
+SEE ALSO
+--------
+globusrun(1), globus-job-submit(1), globus-job-clean(1),
+globus-job-get-output(1), globus-job-cancel(1)
+
+[[globus-job-run-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

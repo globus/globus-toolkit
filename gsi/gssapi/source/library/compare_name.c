@@ -16,7 +16,7 @@
 
 /**
  * @file gssapi/source/library/compare_name.c
- * Globus GSI GSS-API gss_compare_name
+ * @brief Globus GSI GSSAPI gss_compare_name
  * @author Sam Meder, Sam Lang
  */
 
@@ -170,7 +170,7 @@ gss_l_get_oid_type(
  * @ingroup globus_gsi_gssapi
  * @details
  * Compare two names. GSSAPI names in this implementation
- * are pointers to x509 names. 
+ * are pointers to X.509 names. 
  *
  * @param minor_status
  *        currently is always set to GLOBUS_SUCCESS

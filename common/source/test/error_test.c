@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file error_test.c Error Object Tests */
+/**
+ * @file error_test.c
+ * @brief Error Object Tests
+ */
 
 #include "globus_common.h"
 #include "globus_test_tap.h"

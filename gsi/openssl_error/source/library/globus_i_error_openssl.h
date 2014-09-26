@@ -20,8 +20,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_i_error_openssl.h
- * Globus Generic Error
- *
+ * @brief Globus Generic Error
  * @author Sam Lang
  */
 

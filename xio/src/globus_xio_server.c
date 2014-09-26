@@ -1566,7 +1566,7 @@ globus_l_xio_decode_hex(
     *d = 0;
 }
 
-/**
+/*
  * if enc is NULL, no encoding will be done, string will just be duplicated.
  * If it is non-NULL (but possibly empty) all characters in the
  * string, the '%', and 01-1F and 7F-FF will be encoded with the %hh method.
@@ -1621,7 +1621,7 @@ globus_l_xio_encode_hex(
     return encoded;
 }
 
-/**
+/*
  *
  * -unparsed (up till end)
  * 
@@ -1949,7 +1949,7 @@ error_format:
  */
 #define GLOBUS_L_XIO_LAYOUT_SIZE        20
 
-/**
+/*
  * if an element within encode_chars is NULL, no encoding will be done for that
  * element.  If it is non-NULL (but possibly empty) all characters in the
  * string, the '%', and 00-1F and 7F-FF will be encoded with the %hh method.   

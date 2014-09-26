@@ -2252,7 +2252,7 @@ globus_l_xio_gsi_read(
 
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            (_XIOSL("[%s:%d] Transfered previously read/unwrapped bytes: %d\n"),
+            (_XIOSL("[%s:%d] Transferred previously read/unwrapped bytes: %d\n"),
              _xio_name, handle->connection_id, bytes_read));
     }
 
@@ -2313,7 +2313,7 @@ globus_l_xio_gsi_read(
 
                 GlobusXIOGSIDebugPrintf(
                     GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-                    (_XIOSL("[%s:%d] Transfered previously read/wrapped bytes: %d\n"),
+                    (_XIOSL("[%s:%d] Transferred previously read/wrapped bytes: %d\n"),
                      _xio_name, handle->connection_id, bytes_read));
                 
                 handle->bytes_returned += bytes_read;
@@ -2358,7 +2358,7 @@ globus_l_xio_gsi_read(
 
     GlobusXIOGSIDebugPrintf(
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-        (_XIOSL("[%s:%d] Total bytes transfered: %d\n"),
+        (_XIOSL("[%s:%d] Total bytes transferred: %d\n"),
          _xio_name, handle->connection_id, handle->bytes_returned));
 
     if(handle->result_obj && wait_for > 0)
@@ -3329,7 +3329,7 @@ globus_l_xio_gsi_cntl(
     switch(cmd)
     {
       case GLOBUS_XIO_GSI_SET_CREDENTIAL:
-        /** this is bad, but is needed to support old globus io code.
+        /* this is bad, but is needed to support old globus io code.
          * ideally, we would have locks and ensure there are no pending ops
          * when this is called
          */

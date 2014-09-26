@@ -16,15 +16,17 @@
 
 /**
  * @file globus_gass_transfer_proto.h
+ * @brief GASS Transfer Protocol Interface
  *
  * This header defines the GASS protocol module library interface
  */
 
 /**
  * @brief Protocol Implementation API
+ *
  * @defgroup globus_gass_transfer_protocol Protocol Modules
  * @ingroup globus_gass_transfer
- * @details
+ *
  * The GASS Protocol Module API is designed to make it possible to
  * extend the GASS client and server APIs to support additional protocols
  * without making any changes to the core of the GASS implementation. GASS
@@ -360,9 +362,9 @@ typedef void
 
 /**
  * @struct globus_gass_transfer_request_proto_s
- * Protocol module request handling structure.
- * @ingroup globus_gass_transfer_protocol
+ * @brief Protocol module request handling structure.
  *
+ * @ingroup globus_gass_transfer_protocol
  * This structure is created by a GASS transfer protocol module to
  * handle a particular request. It is created in response to a
  * @link globus_gass_transfer_listener_proto_s::accept
@@ -423,7 +425,7 @@ struct globus_gass_transfer_request_proto_s
 
 /**
  * @struct globus_gass_transfer_listener_proto_s
- * Protocol module listener handling structure.
+ * @brief Protocol module listener handling structure.
  * @ingroup globus_gass_transfer_protocol
  */
 struct globus_gass_transfer_listener_proto_s
@@ -440,7 +442,7 @@ struct globus_gass_transfer_listener_proto_s
 
 /**
  * @struct globus_gass_transfer_proto_descriptor_t
- * Protocol module descriptor structure.
+ * @brief Protocol module descriptor structure.
  *
  * @ingroup globus_gass_transfer_protocol
  * @see globus_gass_transfer_proto_register_protocol(),

@@ -143,7 +143,7 @@ globus_rmutex_unlock(
 {
     globus_mutex_lock(&rmutex->mutex);
     {
-        /* I dont fail here because this is being used with libtool and it
+        /* I don't fail here because this is being used with libtool and it
          * unlocks a mutex that was never locked
          */
         if(rmutex->level > 0)

@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_handle_table.c A reference-counting handle table structure */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_handle_table.c
+ * @brief A reference-counting handle table structure
+ */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_i_common_config.h"
 #include "globus_handle_table.h"

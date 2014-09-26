@@ -1,0 +1,87 @@
+'\" t
+.\"     Title: globus-scheduler-event-generator
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/23/2014
+.\"    Manual: Globus Toolkit
+.\"    Source: globus-scheduler-event-generator.txt
+.\"  Language: English
+.\"
+.TH "GLOBUS\-SCHEDULER\-E" "8" "09/23/2014" "globus\-scheduler\-event\-gene" "Globus Toolkit"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+globus-scheduler-event-generator \- Process job state change events
+.SH "SYNOPSIS"
+.sp
+\fBglobus\-scheduler\-event\-generator\fR \-h
+.sp
+\fBglobus\-scheduler\-event\-generator\fR \-s \fILRM_NAME\fR [OPTIONS]
+.SH "DESCRIPTION"
+.sp
+The \fBglobus\-scheduler\-event\-generator\fR (SEG) is a program which uses local resource manager\-specific monitoring modules to generate job state change events\&. At the SEG level, the state change events correspond to changes in any jobs which are managed by the scheduler, even if they do not correspond to jobs initiated by the GRAM5 Service\&. These state change events are propagated to the Job State Monitor\&.
+.sp
+Depending on scheduler\-specific requirements, the SEG may need to run with privileges to enable it to obtain scheduler event notifications\&. As such, one SEG runs per scheduler resource\&. For example, on a host which provides access to both PBS and fork jobs, two SEGs, running at (potentially) different privilege levels will be running\&.
+.sp
+When executed, the SEG is able to start issuing events from some time in the past\&. The SEG will, in general, not require any persistent state between invocations\&. One SEG instance exists for any particular scheduled resource instance (one for all homogeneous PBS queues, one for all fork jobs, etc)\&.
+.sp
+The SEG is implemented in an executable called the \fBglobus\-scheduler\-event\-generator\fR, located in the Globus Toolkit\(cqs sbin directory\&.
+.sp
+When begun, it loads the LRM\-specific module based on the \fILRM_NAME\fR parameter, and then defers to it for most functionality\&. When it detects an error writing to stdout or reading stdin, it terminates\&. The LRM\-specific code uses the SEG API to emit events to the GRAM5 service\&.
+.SH "OPTIONS"
+.PP
+\fB\-h\fR
+.RS 4
+Display a help message and exit\&.
+.RE
+.PP
+\fB\-s \fR\fB\fILRM_NAME\fR\fR
+.RS 4
+Load the LRM\-specific module for
+\fILRM_NAME\fR\&. This is translated to loading the dynamic library libglobus_seg_\(cqLRM_NAME\*(Aq\&.
+.RE
+.PP
+\fB\-t \fR\fB\fITIMESTAMP\fR\fR
+.RS 4
+Process events starting at
+\fITIMESTAMP\fR\&. This is the only way to get the globus\-scheduler\-event\-generator to process events that occur before the process begins\&. If not specified, it will generate events from the current timestamp only\&.
+.RE
+.PP
+*\-d \fIDIRECTORY\fR
+.RS 4
+Write job state change events to files in
+\fIDIRECTORY\fR, named by the day that the event occurred (DIRECTORY/YYYYMMDD); if not specified, the events will be written to standard output\&.
+.RE
+.PP
+\fB\-b\fR
+.RS 4
+Run in the background\&. This only works if the
+\fB\-d\fR
+option above is used\&.
+.RE
+.PP
+\fB\-p \fR\fB\fIPIDFILE\fR\fR
+.RS 4
+Write the process id of the globus\-scheduler\-event\-generator to
+\fIPIDFILE\fR\&.
+.RE
+.SH "AUTHOR"
+.sp
+Copyright (c) 1999\-2014 University of Chicago

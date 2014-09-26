@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS=-I m4
 pkgconfigdir = $(libdir)/pkgconfig
 
 include_HEADERS = globus_xio_gsi.h

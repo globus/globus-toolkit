@@ -24,11 +24,14 @@
  *   RSL parse trees or strings.
  */
 
-/*
- * @file globus_rsl_assist.c RSL Help Functions
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_rsl_assist.c
+ * @brief RSL Help Functions
  *
  * @ref globus_rsl_assist
  */
+#endif /*GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_common.h"
 #include "globus_rsl_assist.h"

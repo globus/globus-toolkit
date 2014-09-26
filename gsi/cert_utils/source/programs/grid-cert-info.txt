@@ -1,0 +1,105 @@
+GRID-CERT-INFO(1)
+=================
+:doctype:       manpage
+:man source:    University of Chicago
+:man manual:    Globus Toolkit
+
+NAME
+----
+grid-cert-info - Display information about a certificate
+
+[[grid-cert-info-SYNOPSIS]]
+SYNOPSIS
+--------
+*grid-cert-info* '-help' | '-usage' | '-version' | '-versions'
+
+*grid-cert-info* OPTIONS
+
+[[grid-cert-info-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *grid-cert-info* program displays information contained within a
+certificate file. By default it shows a text representation of the entire
+certificate.  Specific facts about the certificate can be shown instead by
+using command-line options. If any of those options are used, then the default
+display is suppressed. This can be added to the output by using the '-all'
+command-line option.
+
+If multiple display options are included on the command-line, the facts
+related to those will be displayed on separate lines in the order that
+they occur. If an option is specified multiple time, that fact will
+be displayed multiple times.
+
+[[grid-cert-info-OPTIONS]]
+OPTIONS
+-------
+The full set of command-line options to *grid-cert-info* are:
+
+*-help, -usage*::
+    Display the command-line options to *grid-cert-info* and exit.
+*-version, -versions*::
+    Display the version number of the *grid-cert-info* command. The second form
+    includes more details.
+*-file 'CERTIFICATE-FILE'*::
+    Display information about the first certificate contained in the file named
+    by 'CERTIFICATE-FILE' instead of the default user certificate.
+*-rfc2253*::
+    Display X.509 distinguished names using the string representation defined
+    in RFC 2253 instead of the default OpenSSL 'oneline' format.
+*-all*::
+    Display the text representation of the entire certificate in addition to
+    any other facts requested by command-line options. This is the default if
+    no fact-specific command-line options are used.
+*-subject, -s*::
+    Display the subject name of the X.509 certificate.
+*-issuer, -i*::
+    Display the issuer name of the X.509 certificate.
+*-issuerhash, -ih*::
+    Display the default hash of the issuer name of the X.509 certificate. This
+    can be used to locate which CA certificate in the trusted certificate
+    directory issued the certificate being inspected.
+*-startdate, -sd*::
+    Display a string representation of the date and time when the certificate
+    is valid from. This is displayed in the format used by the OpenSSL
+    *x509* command.
+*-enddate, -ed*::
+    Display a string representation of the date and time when the certificate
+    is valid until. This is displayed in the format used by the OpenSSL
+    *x509* command.
+
+[[grid-cert-info-EXAMPLES]]
+EXAMPLES
+--------
+Display the validity times for the default certificate
+    
+    % grid-cert-info -sd -ed
+    Aug 31 12:33:47 2009 GMT
+    Aug 31 12:33:47 2010 GMT
+
+Display the same information about a different certificate specified on the
+command-line
+    
+    % grid-cert-info -sd -ed -f /etc/grid-security/hostcert.pem
+    Jan 21 12:24:48 2003 GMT
+    Jul 15 11:30:57 2020 GMT
+
+Display the subject of a certificate in both the default and the RFC 2253
+forms.
+    
+    % grid-cert-info -subject
+    /DC=org/DC=example/DC=grid/CN=Joe User
+    % grid-cert-info -subject -rfc2253
+    CN=Joe User,DC=grid,DC=example,DC=org
+
+[[grid-cert-info-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following environment variables affect the execution of *grid-cert-info*:
+
+*X509_USER_CERT*::
+    Path to the default certificate file to inspect.
+
+[[grid-cert-info-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

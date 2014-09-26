@@ -934,7 +934,7 @@ write_data_callback(
     else
     {
         globus_io_close(&get_put_info->handle);
-        printf("the file has been transfered\n");
+        printf("the file has been transferred\n");
         globus_mutex_lock(&data_mutex);
         {
             data_done = GLOBUS_TRUE;

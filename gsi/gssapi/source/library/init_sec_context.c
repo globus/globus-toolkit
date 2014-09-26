@@ -321,7 +321,7 @@ GSS_CALLCONV gss_init_sec_context(
 
         /* 
          * IF we are talking to a real SSL server,
-         * we dont want to do delegation, so we are done
+         * we don't want to do delegation, so we are done
          */
 
         if (context->req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
@@ -331,7 +331,7 @@ GSS_CALLCONV gss_init_sec_context(
         }
             
         /*
-         * If we have completed the handshake, but dont
+         * If we have completed the handshake, but don't
          * have any more data to send, we can send the flag
          * now. i.e. fall through without break,
          * Otherwise, we will wait for the null byte

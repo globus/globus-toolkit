@@ -1,0 +1,85 @@
+GLOBUS-JOB-GET-OUTPUT(1)
+========================
+:doctype:      manpage
+:man source:   University of Chicago
+:man manual:   Globus Toolkit Manual
+
+NAME
+----
+globus-job-get-output - Retrieve the output and error streams from a GRAM job
+
+[[globus-job-get-output-SYNOPSIS]]
+SYNOPSIS
+--------
+*globus-job-get-output* [ -r 'RESOURCE' | -resource 'RESOURCE' ] [OPTIONS] 'JOBID'
+
+*globus-job-get-output* [-help | -usage | -version | -versions ]
+
+[[globus-job-get-output-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *globus-job-get-output* program retrieves the output and error streams of
+the job named by 'JOBID'. By default, *globus-job-get-output* will retrieve all
+output and error data from the job and display them to its own output and error
+streams. Other behavior can be controlled by using command-line options.
+The data retrieval is implemented by submitting another job which
+simply displays the contents of the first job's output and error streams.
+By default this retrieval job is submitted to the
+default GRAM resource running on the same host as the job. This behavior can be
+controlled by specifying a particular resource manager contact string as the
+'RESOURCE' parameter to the '-r' or '-resource' option.
+
+[[globus-job-get-output-OPTIONS]]
+OPTIONS
+-------
+*-help, -usage*::
+    Display a help message to standard error and exit.
+
+*-version*::
+    Display the software version of the *globus-job-get-output* program to
+    standard output.
+
+*-versions*::
+    Display the software version of the *globus-job-get-output* program
+    including DiRT information to standard output.
+
+*-resource 'RESOURCE', -r 'RESOURCE'*::
+    Submit the retrieval job to the resource named by 'RESOURCE' instead of the
+    default GRAM service on the same host as the job contact.
+
+*-out*::
+    Retrieve only the standard output stream of the job. The default is to
+    retrieve both standard output and standard error.
+
+*-err*::
+    Retrieve only the standard error stream of the job. The default is to
+    retrieve both standard output and standard error.
+
+*-tail 'LINES', -t 'LINES'*::
+    Print only the last 'LINES' count lines of output from the data streams
+    being retrieved. By default, the entire output and error file data is
+    retrieved. This option can not be used along with the '-f' or '-follow'
+    options.
+
+*-follow 'LINES', -f 'LINES'*::
+    Print the last 'LINES' count lines of output from the data streams being
+    retrieved and then wait until canceled, printing any subsequent job output
+    that occurs. By default, the entire output and error file data is
+    retrieved. This option can not be used along with the '-t' or '-tail'
+    options.
+
+[[globus-job-get-output-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following variables affect the execution of *globus-job-get-output*.
+
+*X509_USER_PROXY*::
+    Path to proxy credential.
+
+*X509_CERT_DIR*::
+    Path to trusted certificate directory.
+
+[[globus-job-get-output-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

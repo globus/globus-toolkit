@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_print.h Error Message Printing */
+/**
+ * @file globus_print.h
+ * @brief Error Message Printing
+ */
 
 #if !defined(GLOBUS_PRINT_H)
 #define GLOBUS_PRINT_H 1

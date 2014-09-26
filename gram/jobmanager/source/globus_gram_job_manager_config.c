@@ -122,7 +122,7 @@ globus_gram_job_manager_config_init(
         }
         rewind(fp);
 
-        newbuf = (char *) malloc(length+1);  /* dont free */
+        newbuf = (char *) malloc(length+1);  /* don't free */
         i = fread(newbuf, 1, length, fp);
         if (i < 0)
         {

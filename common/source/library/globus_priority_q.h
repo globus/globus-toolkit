@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_priority_q.h Priority Queue */
+/**
+ * @file globus_priority_q.h
+ * @brief Priority Queue
+ */
 
 #ifndef GLOBUS_PRIORITY_Q_H
 #define GLOBUS_PRIORITY_Q_H

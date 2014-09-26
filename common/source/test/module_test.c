@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file module_test.c Module Tests */
+/**
+ * @file module_test.c
+ * @brief Module Tests
+ */
+
 #include "globus_common.h"
 #include "globus_test_tap.h"
 

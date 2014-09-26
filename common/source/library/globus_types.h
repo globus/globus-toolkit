@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-/** @file globus_types.h Common Primitive Types
- *  Defines the macros and typedefs common to all globus_common
- *  components.
+/**
+ * @file globus_types.h
+ * @brief Common Primitive Types
+ *
+ * Defines the macros and typedefs common to all globus_common components.
  */
+
 #if !defined(GLOBUS_TYPES_H)
 #define GLOBUS_TYPES_H 1
 

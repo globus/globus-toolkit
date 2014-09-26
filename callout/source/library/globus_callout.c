@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_callout.c
- * Globus Callout Infrastructure
+ * @brief Globus Callout Infrastructure
  * @author Sam Meder
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_common.h"
 #include "globus_callout_constants.h"
@@ -155,19 +157,15 @@ globus_l_callout_deactivate(void)
 }
 
 /**
- * @name Initialize Handle
- */
-/*@{*/
-/**
  * Initialize a Globus Callout Handle
  * @ingroup globus_callout_handle
  *
  * @param handle
  *        Pointer to the handle that is to be initialized
  * @return
- *        GLOBUS_SUCCESS if successful
- *        A Globus error object on failure:
- *            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE
+ *    This function returns GLOBUS_SUCCESS or a globus_result_t referring
+ *    to an error object of one of the  following types
+ * @retval GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE Hashtable initialization failed
  */
 globus_result_t
 globus_callout_handle_init(
@@ -222,12 +220,7 @@ globus_callout_handle_init(
     
     return result;
 }/*globus_callout_handle_init*/
-/*@}*/
 
-/**
- * @name Destroy Handle
- */
-/*@{*/
 /**
  * Destroy a Globus Callout Handle
  * @ingroup globus_callout_handle
@@ -262,39 +255,36 @@ globus_callout_handle_destroy(
 
     return result;
 }/*globus_callout_handle_destroy*/
-/*@}*/
 
-/**
- * @name Configure Callouts
- */
-/*@{*/
 /**
  * Read callout configuration from file.
  * @ingroup globus_callout_config
  *
  * This function read a configuration file with the following format:
- *    - Anything after a '#' is assumed to be a comment
+ *    - Anything after a <i>#</i> is assumed to be a comment
  *    - Blanks lines are ignored
  *    - Lines specifying callouts have the format
- *      abstract type           library         symbol
- *      where "abstract type" denotes the type of callout,
- *      e.g. globus_gram_jobmanager_authz, "library" denotes the library the
- *      callout can be found in and "symbol" denotes the function name of the
- *      callout. The library argument can be specified in two forms, libfoo or
- *      libfoo_<flavor>. When using the former version the current flavor will
- *      automatically be added to the library name. 
+ @verbatim
+        abstract type           library         symbol
+ @endverbatim
+ *      where <i>abstract type</i> denotes the type of callout,
+ *      e.g. globus_gram_jobmanager_authz, <i>library</i> denotes the library
+ *      the callout can be found in and <i>symbol</i> denotes the function name
+ *      of the callout. The library argument can be specified in two forms,
+ *      libfoo or libfoo_<i>flavor</i>. When using the former version the
+ *      current flavor will automatically be added to the library name if
+ *      needed. 
  *
  * @param handle
  *        The handle that is to be configured
  * @param filename
  *        The file to read configuration from
  * @return
- *        GLOBUS_SUCCESS
- *        A Globus error object on failure:
- *            GLOBUS_CALLOUT_ERROR_OPENING_CONF_FILE
- *            GLOBUS_CALLOUT_ERROR_PARSING_CONF_FILE
- *            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE
- *            GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY
+ *    This function returns GLOBUS_SUCCESS or a globus_result_t referring
+ *    to an error object of one of the  following types
+ * @retval GLOBUS_CALLOUT_ERROR_OPENING_CONF_FILE Error opening filename
+ * @retval GLOBUS_CALLOUT_ERROR_PARSING_CONF_FILE Error parsing file
+ * @retval GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY Out of memory
  */
 globus_result_t
 globus_callout_read_config(
@@ -559,14 +549,6 @@ globus_callout_read_config(
             }
             existing_datum->next = datum;
         }
-        else if(rc < 0)
-        {
-            GLOBUS_CALLOUT_ERROR_RESULT(
-                result,
-                GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE,
-                ("globus_hashtable_insert retuned %d", rc));
-            goto error_exit;
-        }
     }
 
     fclose(conf_file);
@@ -605,10 +587,9 @@ globus_callout_read_config(
  * @param symbol
  *        The symbol (ie function name) for the callout
  * @return
- *        GLOBUS_SUCCESS
- *        A Globus error object on failure:
- *            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE
- *            GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY
+ *    This function returns GLOBUS_SUCCESS or a globus_result_t referring
+ *    to an error object of one of the following types
+ * @retval GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY Out of memory
  */
 globus_result_t
 globus_callout_register(
@@ -695,14 +676,6 @@ globus_callout_register(
         }
         existing_datum->next = datum;
     }
-    else if(rc < 0)
-    {
-        GLOBUS_CALLOUT_ERROR_RESULT(
-            result,
-            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE,
-            ("globus_hashtable_insert retuned %d", rc));
-        goto error_exit;
-    }
     
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
 
@@ -719,13 +692,7 @@ globus_callout_register(
  
     return result;
 }/*globus_callout_register*/
-/*@}*/
 
-
-/**
- * @name Invoking Callouts
- */
-/*@{*/
 /**
  * Call a callout of specified abstract type
  * @ingroup globus_callout_call
@@ -740,13 +707,13 @@ globus_callout_register(
  * @param type
  *        The abstract type of the callout that is to be invoked
  * @return
- *        GLOBUS_SUCCESS
- *        A Globus error object on failure:
- *            GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED
- *            GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR
- *            GLOBUS_CALLOUT_ERROR_WITH_DL
- *            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE
- *            GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY
+ *    This function returns GLOBUS_SUCCESS or a globus_result_t referring
+ *    to an error object of one of the following types
+ * @retval GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED Callout type not registered
+ * @retval GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR Callout function error
+ * @retval GLOBUS_CALLOUT_ERROR_WITH_DL Error with dlopen or dlsym
+ * @retval GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE Error caching dlopen handle
+ * @retval GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY Out of memory
  */
 globus_result_t
 globus_callout_call_type(
@@ -831,7 +798,7 @@ globus_callout_call_type(
             *dlhandle = lt_dlopenext(current_datum->file);
             if(*dlhandle == NULL)
             {
-                /* older libtools dont search the extensions correctly */
+                /* older libtools don't search the extensions correctly */
                 snprintf(library, 1024, "%s" MY_LIB_EXT, current_datum->file);
                 library[1023] = 0;
                 *dlhandle = lt_dlopenext(library);
@@ -852,7 +819,7 @@ globus_callout_call_type(
                     *dlhandle = lt_dlopenext(file);
                     if(*dlhandle == NULL)
                     {
-                        /* older libtools dont search the extensions correctly */
+                        /* older libtools don't search the extensions correctly */
                         snprintf(library, 1024, "%s" MY_LIB_EXT, file);
                         library[1023] = 0;
                         *dlhandle = lt_dlopenext(library);
@@ -976,7 +943,6 @@ globus_callout_call_type(
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
     return result;
 }/*globus_callout_call_type*/
-/*@}*/
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -1057,4 +1023,4 @@ globus_l_callout_library_table_element_free(
     return;
 }
 
-#endif
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/** @file globus_io_xio_compat.c Globus I/O Emulation */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 #include "globus_io.h"
 #ifndef TARGET_ARCH_WIN32
@@ -2588,7 +2588,7 @@ error_register:
     return result;
 }
 
-/** 
+/*
  * attr passed on create_listener will always be applied.
  * this attr will also be applied, except that it can't change whether or not
  * gsi is used and other things that need to be set before a socket is accepted
@@ -5338,4 +5338,4 @@ error:
     return result;
 }
 
-
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

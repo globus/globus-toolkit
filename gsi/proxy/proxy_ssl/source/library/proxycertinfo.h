@@ -19,7 +19,7 @@
 
 /**
  * @file proxycertinfo.h
- * 
+ * @brief Proxy Certificate Info
  * @author Sam Meder
  * @author Sam Lang
  */
@@ -35,12 +35,12 @@
  *
  * The globus_gsi_proxy_ssl library provides the ability
  * to create a PROXYCERTINFO extension for inclusion in
- * an X509 certificate.  The current specification for the
+ * an X.509 certificate.  The current specification for the
  * extension is described in
  * <a href="http://www.ietf.org/rfc/rfc3820.txt">RFC 3820</a>.
  * 
- * The library conforms to the ASN1 implementation in
- * the OPENSSL library (0.9.6, formerly SSLeay), and provides
+ * The library conforms to the ASN.1 implementation in
+ * the OpenSSL library, and provides
  * an interface to convert from a DER encoded PROXYCERTINFO
  * to its internal structure and vice-versa.
  *

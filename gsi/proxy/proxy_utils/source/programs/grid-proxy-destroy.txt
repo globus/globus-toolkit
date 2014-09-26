@@ -1,0 +1,72 @@
+GRID-PROXY-DESTROY(1)
+=====================
+:doctype:      manpage
+:man source:   University of Chicago
+:man manual:   Globus Toolkit
+
+NAME
+----
+grid-proxy-destroy - Destroy the default proxy certificate
+
+[[grid-proxy-destroy-SYNOPSIS]]
+SYNOPSIS
+--------
+grid-proxy-destroy -help | -usage | -version
+
+grid-proxy-destroy [-debug] [-dryrun] [-default] [-- FILENAME ...]
+
+[[grid-proxy-destroy-DESCRIPTION]]
+DESCRIPTION
+-----------
+The grid-proxy-destroy program removes X.509 proxy files from the local
+filesystem.  It overwrites the data in the files and removes the files from the
+filesystem. By default, it removes the current user's default proxy (either
++/tmp/x509up_u'UID'+ where 'UID' is the current POSIX user id, or
+the file pointed to by the +X509_USER_PROXY+ environment
+variable) unless a list of proxy file paths are included as part of
+the command line.
+
+Use the *--* command-line option to separate a
+list of proxy paths from command line options if the proxy file
+begins with the *-* character.
+
+[[grid-proxy-destroy-OPTIONS]]
+OPTIONS
+-------
+The full list of command-line options to *grid-proxy-destroy* are:
+
+*-help, -usage*::
+    Display the command-line options to *grid-proxy-destroy*.
+*-version*::
+    Display the version number of the *grid-proxy-destroy* command.
+*-debug*::
+    Display verbose error messages.
+*-dryrun*::
+    Do not remove the proxy, but display the path of the files that would have
+    been removed, or the directory where they would have been removed from if
+    the '-all' command-line option is used.
+*-default*::
+    Remove the default proxy in addition to the files included on the
+    command-line. Only needed if other paths are included on the
+    command-line.
+*-all*::
+    Remove the default proxy and all delegated proxies in the temporary file
+    directory.
+
+[[grid-proxy-destroy-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following environment variables affect the execution of grid-proxy-destroy:
+
+*X509_USER_PROXY*::
+    Path to the default user proxy.
+
+[[grid-proxy-destroy-SEEALSO]]
+SEE ALSO
+--------
+grid-proxy-init(1), grid-proxy-info(1)
+
+[[grid-proxy-destroy-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

@@ -1,3 +1,12 @@
+globus-xio (4.15-1+gt6.@distro@) @distro@; urgency=low
+
+  * Use consistent PREDEFINED in all Doxyfiles
+  * Doxygen markup fixes
+  * Fix typos and clarify some documentation
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Sep 2014 15:08:08 -0400
+
 globus-xio (4.14-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

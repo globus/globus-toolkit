@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS=-I m4
 bin_SCRIPTS = \
 	globus-gass-cache \
 	globus-gass-cache-destroy

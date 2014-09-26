@@ -18,7 +18,8 @@
 #define GLOBUS_XIO_GRIDFTP_DRIVER_H
 
 /**
- * @file globus_xio_gridftp_driver.h XIO GRIDFTP Client Driver
+ * @file globus_xio_gridftp_driver.h
+ * @brief XIO GRIDFTP Client Driver
  */
 
 #include "globus_xio_system.h"
@@ -42,13 +43,13 @@
  * An XIO handle with the gridftp client driver can be created with 
  * globus_xio_handle_create() 
  *
- * The gridftp client driver makes use of globus ftp client library. 
+ * The GridFTP client driver makes use of globus ftp client library. 
  * globus_xio_register_open() call creates a new ftp client handle (unless 
  * one is set on the attr passed), establishes connection with the 
- * gridftp server. The contact string must contain the scheme, host name,
+ * GridFTP server. The contact string must contain the scheme, host name,
  * and the resource, optionally it might contain port and subject also.
  *
- * When the XIO handle is closed, the gridftp driver will destroy its internal
+ * When the XIO handle is closed, the GridFTP driver will destroy its internal
  * resources and the ftp client handle (unless this handle was set on an attr).
  */
 
@@ -83,7 +84,7 @@
  * @addtogroup globus_xio_gridftp_driver
  * @section globus_xio_gridftp_driver_cntls Attributes and Cntls
  *
- * Gridftp driver specific attrs and cntls.
+ * GridFTP driver specific attrs and cntls.
  *
  * @see globus_xio_attr_cntl ()
  *
@@ -117,11 +118,11 @@
 typedef enum
 {
     /**
-     * Indicates that an error occured in the attribute control
+     * Indicates that an error occurred in the attribute control
      */
     GLOBUS_XIO_GRIDFTP_ERROR_ATTR,
     /**
-     * Indicates that a seek has been called while there is an outstanding io
+     * Indicates that a seek has been called while there is an outstanding I/O
      */
     GLOBUS_XIO_GRIDFTP_ERROR_SEEK,
     /**
@@ -202,7 +203,7 @@ typedef enum
      *
      * @param ftp_handle_out
      *      The ftp client handle pointer will be stored here. If none is set,
-     *      GLOBUS_NULL will be set.
+     *      NULL will be set.
      */
     /* globus_ftp_client_handle_t **	ftp_handle_out */
     GLOBUS_XIO_GRIDFTP_GET_HANDLE,
@@ -275,7 +276,7 @@ typedef enum
 
     /** GlobusVarArgEnum(attr)
      * Enable or disable partial transfer (associate a transfer with each 
-     * read/write) on the gridftp handle.
+     * read/write) on the GridFTP handle.
      * @ingroup gridftp_driver_cntls
      *
      * @param partial_xfer
@@ -361,7 +362,7 @@ typedef enum
     GLOBUS_XIO_GRIDFTP_GET_MODE,
 
     /** GlobusVarArgEnum(attr)
-     * Set the authentication information used to authenticate with the gridftp
+     * Set the authentication information used to authenticate with the GridFTP
      * server
      * @ingroup gridftp_driver_cntls
      *
@@ -369,17 +370,17 @@ typedef enum
      *      The credential to use for authenticating with a GridFTP server.
      *      This may be GSS_C_NO_CREDENTIAL to use the default credential.
      * @param user
-     *      The user name to send to the gridftp server. When doing a gsiftp 
+     *      The user name to send to the GridFTP server. When doing a GSI 
      *      transfer, this may be set to NULL, and the default gridmap entry 
      *      for the user's GSI identity will be used
      * @param password
-     *      The password to send to the gridftp server. When doing a gsiftp 
+     *      The password to send to the GridFTP server. When doing a GSI 
      *      transfer, this may be set to NULL. 
      * @param account
      *      The account to use for the data transfer.
      * @param subject
-     *      The subject name of the gridftp server. This is only used when 
-     *      doing a gsiftp transfer, and then only when the security subject 
+     *      The subject name of the GridFTP server. This is only used when 
+     *      doing a GSI transfer, and then only when the security subject 
      *      name does not match the hostname of the server (ie, when the server
      *      is being run by a user). 
      */
@@ -413,7 +414,7 @@ typedef enum
     GLOBUS_XIO_GRIDFTP_GET_AUTH,
 
     /** GlobusVarArgEnum(attr)
-     * Set the mode of authentication to be performed on gridftp data channels.
+     * Set the mode of authentication to be performed on GridFTP data channels.
      * @ingroup gridftp_driver_cntls
      *
      * @param dcau_mode

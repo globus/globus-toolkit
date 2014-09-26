@@ -1,7 +1,7 @@
 Name:		globus-gssapi-error
 %global _name %(tr - _ <<< %{name})
 Version:	5.3
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - GSSAPI Error Library
 
 Group:		System Environment/Libraries
@@ -125,6 +125,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 25 2014 Globus Toolkit <support@globus.org> - 5.3-4
+- Include more manpages for API
+- Doxygen markup fixes
+- Fix typos and clarify some documentation
+- Quiet some autoconf/automake warnings
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 5.3-3
 - Merge fixes from ellert-globus_6_branch
 

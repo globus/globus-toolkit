@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-/** @file globus_i_xio_http.h XIO HTTP Driver Internals */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_i_xio_http.h
+ * @brief XIO HTTP Driver Internals
+ */
+
 #ifndef GLOBUS_I_XIO_HTTP_H
 #define GLOBUS_I_XIO_HTTP_H 1
 
 #include "globus_xio.h"
 #include "globus_xio_driver.h"
 #include "globus_xio_http.h"
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 enum { GLOBUS_XIO_HTTP_CHUNK_SIZE = 4000 };
 
@@ -831,6 +835,6 @@ GlobusXIODeclareModule(http);
             __LINE__, \
             "Persistent connection dropped")
 
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-
 #endif /* GLOBUS_I_XIO_HTTP_H */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

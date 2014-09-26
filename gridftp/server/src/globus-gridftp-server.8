@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: globus-gridftp-server
 .\"    Author: 
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 02/09/2012
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 09/23/2014
 .\"    Manual: Globus Tookit
 .\"    Source: The Globus Alliance
 .\"  Language: English
 .\"
-.TH "GLOBUS\-GRIDFTP\-SER" "8" "02/09/2012" "The Globus Alliance" "Globus Tookit"
+.TH "GLOBUS\-GRIDFTP\-SER" "8" "09/23/2014" "The Globus Alliance" "Globus Tookit"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -29,817 +38,503 @@ The
 \fBglobus\-gridftp\-server\fR
 program is a ftp server with support for GridFTP protocol extensions, including strong authentication, parallel data transfers, and parallel data layouts\&.
 .PP
-The list below contains the command\-line options for the server, and also the name of the configuration file entry that implements that option\&. Note that any boolean flag can be negated on the command line by preceding the specified option with
-\-no\-
-or
-\-n\&. Example:
-\-no\-fork
-or
-\-nf\&.
+The list below contains the command\-line options for the server, and also the name of the configuration file entry that implements that option\&. Note that any boolean option can be negated on the command line by preceding the specified option with \*(Aq\-no\-\*(Aq or \*(Aq\-n\*(Aq\&. example: \-no\-cas or \-nf\&.
 .SH "INFORMATIONAL OPTIONS"
 .PP
-\fB\-h \fR, \fB\-help \fR
+\fB\-h\fR, \fB\-help\fR
 .RS 4
-Show usage information and exit\&. This option can also be set in the configuration file as
-help\&.
+Show usage information and exit\&. This option can also be set in the configuration file as help\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
-\fB\-hh \fR, \fB\-longhelp \fR
+\fB\-hh\fR, \fB\-longhelp\fR
 .RS 4
-Show more usage information and exit\&. This option can also be set in the configuration file as
-longhelp\&.
+Show more usage information and exit\&. This option can also be set in the configuration file as longhelp\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
-\fB\-v \fR, \fB\-version \fR
+\fB\-v\fR, \fB\-version\fR
 .RS 4
-Show version information for the server and exit\&. This option can also be set in the configuration file as
-version\&.
+Show version information for the server and exit\&. This option can also be set in the configuration file as version\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
-\fB\-V \fR, \fB\-versions \fR
+\fB\-V\fR, \fB\-versions\fR
 .RS 4
-Show version information for all loaded globus libraries and exit\&. This option can also be set in the configuration file as
-versions\&.
+Show version information for all loaded globus libraries and exit\&. This option can also be set in the configuration file as versions\&. The default value of this option is
+FALSE\&.
 .RE
 .SH "MODES OF OPERATION"
 .PP
-\fB\-i \fR, \fB\-inetd \fR
+\fB\-i\fR, \fB\-inetd\fR
 .RS 4
-Run under an inetd service\&. This option can also be set in the configuration file as
-inetd\&.
+Run under an inetd service\&. This option can also be set in the configuration file as inetd\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
-\fB\-s \fR, \fB\-daemon \fR
+\fB\-s\fR, \fB\-daemon\fR
 .RS 4
-Run as a daemon\&. All connections will fork off a new process and setuid if allowed\&. This option can also be set in the configuration file as
-daemon\&.
+Run as a daemon\&. All connections will fork off a new process and setuid if allowed\&. This option can also be set in the configuration file as daemon\&. The default value of this option is
+TRUE\&.
 .RE
 .PP
-\fB\-S \fR, \fB\-detach \fR
+\fB\-S\fR, \fB\-detach\fR
 .RS 4
-Run as a background daemon detached from any controlling terminals\&. This option can also be set in the configuration file as
-detach\&.
+Run as a background daemon detached from any controlling terminals\&. This option can also be set in the configuration file as detach\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
-\fB\-ssh \fR
+\fB\-ssh\fR
 .RS 4
-Run over a connected ssh session\&. This option can also be set in the configuration file as
-ssh\&.
+Run over a connected ssh session\&. This option can also be set in the configuration file as ssh\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-exec string\fR
 .RS 4
-For statically compiled or non\-GLOBUS_LOCATION standard binary locations, specify the full path of the server binary here\&. Only needed when run in daemon mode\&. This option can also be set in the configuration file as
-exec\&.
+For statically compiled or non\-GLOBUS_LOCATION standard binary locations, specify the full path of the server binary here\&. Only needed when run in daemon mode\&. This option can also be set in the configuration file as exec\&.
 .RE
 .PP
-\fB\-chdir \fR
+\fB\-chdir\fR
 .RS 4
-Change directory when the server starts\&. This will change directory to the dir specified by the chdir_to option\&. This option can also be set in the configuration file as
-chdir\&.
+Change directory when the server starts\&. This will change directory to the dir specified by the chdir_to option\&. This option can also be set in the configuration file as chdir\&. The default value of this option is
+TRUE\&.
 .RE
 .PP
 \fB\-chdir\-to string\fR
 .RS 4
-Directory to chdir to after starting\&. Will use / if not set\&. This option can also be set in the configuration file as
-chdir_to\&.
+Directory to chdir to after starting\&. Will use / if not set\&. Note that this is the directory of the process, not the client\*(Aqs home directory\&. This option can also be set in the configuration file as chdir_to\&.
 .RE
 .PP
-\fB\-f \fR, \fB\-fork \fR
+\fB\-threads number\fR
 .RS 4
-Server will fork for each new connection\&. Disabling this option is only recommended when debugging\&. Note that non\-forked servers running as \'root\' will only accept a single connection, and then exit\&. This option can also be set in the configuration file as
-fork\&.
+Enable threaded operation and set the number of threads\&. The default is 0, which is non\-threaded\&. When threading is required, a thread count of 1 or 2 should be sufficient\&. This option can also be set in the configuration file as threads\&.
 .RE
 .PP
-\fB\-1 \fR, \fB\-single \fR
+\fB\-f\fR, \fB\-fork\fR
 .RS 4
-Exit after a single connection\&. This option can also be set in the configuration file as
-single\&.
+Server will fork for each new connection\&. Disabling this option is only recommended when debugging\&. Note that non\-forked servers running as \*(Aqroot\*(Aq will only accept a single connection, and then exit\&. This option can also be set in the configuration file as fork\&. The default value of this option is
+TRUE\&.
+.RE
+.PP
+\fB\-1\fR, \fB\-single\fR
+.RS 4
+Exit after a single connection\&. This option can also be set in the configuration file as single\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-chroot\-path string\fR
 .RS 4
-Path to become the new root after authentication\&. This path must contain a valid certificate structure, /etc/passwd, and /etc/groups\&. The command globus\-gridftp\-server\-setup\-chroot can help create a suitable directory structure\&. This option can also be set in the configuration file as
-chroot_path\&.
+Path to become the new root after authentication\&. This path must contain a valid certificate structure, /etc/passwd, and /etc/group\&. The command globus\-gridftp\-server\-setup\-chroot can help create a suitable directory structure\&. This option can also be set in the configuration file as chroot_path\&.
 .RE
 .SH "AUTHENTICATION, AUTHORIZATION, AND SECURITY OPTIONS"
 .PP
 \fB\-auth\-level number\fR
 .RS 4
-Add levels together to use more than one\&.
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-0 = Disables all authorization checks\&.
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-1 = Authorize identity\&.
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-2 = Authorize all file/resource accesses\&.
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-4 = Disable changing process uid to authenticated user (no setuid) \-\- DO NOT use this when process is started as root\&.
-.RE
-.RS 4
-.sp
-If not set, uses level 2 for front ends and level 1 for data nodes\&. Note that levels 2 and 4 imply level 1 as well\&. This option can also be set in the configuration file as
-auth_level\&.
+Add levels together to use more than one\&. 0 = Disables all authorization checks\&. 1 = Authorize identity\&. 2 = Authorize all file/resource accesses\&. 4 = Disable changing process uid to authenticated user (no setuid) \-\- DO NOT use this when process is started as root\&. If not set uses level 2 for front ends and level 1 for data nodes\&. Note that levels 2 and 4 imply level 1 as well\&. This option can also be set in the configuration file as auth_level\&.
 .RE
 .PP
 \fB\-ipc\-allow\-from string\fR
 .RS 4
-Only allow connections from these source ip addresses\&. Specify a comma separated list of ip address fragments\&. A match is any ip address that starts with the specified fragment\&. Example: \'192\&.168\&.1\&.\' will match and allow a connection from 192\&.168\&.1\&.45\&. Note that if this option is used any address not specifically allowed will be denied\&. This option can also be set in the configuration file as
-ipc_allow_from\&.
+Only allow connections from these source ip addresses\&. Specify a comma separated list of ip address fragments\&. A match is any ip address that starts with the specified fragment\&. Example: \*(Aq192\&.168\&.1\&.\*(Aq will match and allow a connection from 192\&.168\&.1\&.45\&. Note that if this option is used any address not specifically allowed will be denied\&. This option can also be set in the configuration file as ipc_allow_from\&.
 .RE
 .PP
 \fB\-ipc\-deny\-from string\fR
 .RS 4
-Deny connections from these source ip addresses\&. Specify a comma separated list of ip address fragments\&. A match is any ip address that starts with the specified fragment\&. Example: \'192\&.168\&.2\&.\' will match and deny a connection from 192\&.168\&.2\&.45\&. This option can also be set in the configuration file as
-ipc_deny_from\&.
+Deny connections from these source ip addresses\&. Specify a comma separated list of ip address fragments\&. A match is any ip address that starts with the specified fragment\&. Example: \*(Aq192\&.168\&.2\&.\*(Aq will match and deny a connection from 192\&.168\&.2\&.45\&. This option can also be set in the configuration file as ipc_deny_from\&.
 .RE
 .PP
 \fB\-allow\-from string\fR
 .RS 4
-Only allow connections from these source ip addresses\&. Specify a comma separated list of ip address fragments\&. A match is any ip address that starts with the specified fragment\&. Example: \'192\&.168\&.1\&.\' will match and allow a connection from 192\&.168\&.1\&.45\&. Note that if this option is used any address not specifically allowed will be denied\&. This option can also be set in the configuration file as
-allow_from\&.
+Only allow connections from these source ip addresses\&. Specify a comma separated list of ip address fragments\&. A match is any ip address that starts with the specified fragment\&. Example: \*(Aq192\&.168\&.1\&.\*(Aq will match and allow a connection from 192\&.168\&.1\&.45\&. Note that if this option is used any address not specifically allowed will be denied\&. This option can also be set in the configuration file as allow_from\&.
 .RE
 .PP
 \fB\-deny\-from string\fR
 .RS 4
-Deny connections from these source ip addresses\&. Specify a comma separated list of ip address fragments\&. A match is any ip address that starts with the specified fragment\&. Example: \'192\&.168\&.2\&.\' will match and deny a connection from 192\&.168\&.2\&.45\&. This option can also be set in the configuration file as
-deny_from\&.
+Deny connections from these source ip addresses\&. Specify a comma separated list of ip address fragments\&. A match is any ip address that starts with the specified fragment\&. Example: \*(Aq192\&.168\&.2\&.\*(Aq will match and deny a connection from 192\&.168\&.2\&.45\&. This option can also be set in the configuration file as deny_from\&.
 .RE
 .PP
-\fB\-si \fR, \fB\-secure\-ipc \fR
+\fB\-si\fR, \fB\-secure\-ipc\fR
 .RS 4
-Use GSI security on ipc channel\&. This option can also be set in the configuration file as
-secure_ipc\&.
+Use GSI security on ipc channel\&. This option can also be set in the configuration file as secure_ipc\&. The default value of this option is
+TRUE\&.
 .RE
 .PP
 \fB\-ia string\fR, \fB\-ipc\-auth\-mode string\fR
 .RS 4
-Set GSI authorization mode for the ipc connection\&. Options are: none, host, self or subject:[subject]\&. This option can also be set in the configuration file as
-ipc_auth_mode\&.
+Set GSI authorization mode for the ipc connection\&. Options are: none, host, self or subject:[subject]\&. This option can also be set in the configuration file as ipc_auth_mode\&. The default value of this option is
+host\&.
 .RE
 .PP
-\fB\-aa \fR, \fB\-allow\-anonymous \fR
+\fB\-aa\fR, \fB\-allow\-anonymous\fR
 .RS 4
-Allow clear text anonymous access\&. If server is running as root anonymous_user must also be set\&. Disables ipc security\&. This option can also be set in the configuration file as
-allow_anonymous\&.
+Allow clear text anonymous access\&. If server is running as root anonymous_user must also be set\&. Disables ipc security\&. This option can also be set in the configuration file as allow_anonymous\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-anonymous\-names\-allowed string\fR
 .RS 4
-Comma separated list of names to treat as anonymous users when allowing anonymous access\&. If not set, the default names of \'anonymous\' and \'ftp\' will be allowed\&. Use \'*\' to allow any username\&. This option can also be set in the configuration file as
-anonymous_names_allowed\&.
+Comma separated list of names to treat as anonymous users when allowing anonymous access\&. If not set, the default names of \*(Aqanonymous\*(Aq and \*(Aqftp\*(Aq will be allowed\&. Use \*(Aq*\*(Aq to allow any username\&. This option can also be set in the configuration file as anonymous_names_allowed\&.
 .RE
 .PP
 \fB\-anonymous\-user string\fR
 .RS 4
-User to setuid to for an anonymous connection\&. Only applies when running as root\&. This option can also be set in the configuration file as
-anonymous_user\&.
+User to setuid to for an anonymous connection\&. Only applies when running as root\&. This option can also be set in the configuration file as anonymous_user\&.
 .RE
 .PP
 \fB\-anonymous\-group string\fR
 .RS 4
-Group to setgid to for an anonymous connection\&. If unset, the default group of anonymous_user will be used\&. This option can also be set in the configuration file as
-anonymous_group\&.
+Group to setgid to for an anonymous connection\&. If unset, the default group of anonymous_user will be used\&. This option can also be set in the configuration file as anonymous_group\&.
 .RE
 .PP
-\fB\-allow\-root \fR
+\fB\-sharing\-dn string\fR
 .RS 4
-Allow clients to be mapped to the root account\&. This option can also be set in the configuration file as
-allow_root\&.
+Allow sharing when using the supplied DN\&. A client connected with these credentials will be able to access any user for which sharing is enabled\&. This option can also be set in the configuration file as sharing_dn\&.
+.RE
+.PP
+\fB\-sharing\-state\-dir string\fR
+.RS 4
+Full path to a directory that will contain files used by GridFTP to control sharing access for individual local accounts\&. The special variables \*(Aq$HOME\*(Aq and \*(Aq$USER\*(Aq can be used to create a dynamic path that is unique to each local account\&. This pathmust be writable by the associated account\&. The default path is \*(Aq$HOME/\&.globus/sharing/\*(Aq\&. This must refer to a path on the filesystem, not a path that is only accessible via a DSI plugin\&. This option can also be set in the configuration file as sharing_state_dir\&.
+.RE
+.PP
+\fB\-sharing\-control\fR
+.RS 4
+Allow a local user account to control its own sharing access via special GridFTP client commands\&. The user account must have filesystem write access to the sharing state dir\&. This option can also be set in the configuration file as sharing_control\&. The default value of this option is
+TRUE\&.
+.RE
+.PP
+\fB\-sharing\-rp string\fR
+.RS 4
+Sharing specific path restrictions\&. This completely replaces the normal path restrictions (\-rp) when an account is being shared by a sharing\-dn login\&.Follows normal path restriction semantics\&. This option can also be set in the configuration file as sharing_rp\&.
+.RE
+.PP
+\fB\-allow\-root\fR
+.RS 4
+Allow clients to be mapped to the root account\&. This option can also be set in the configuration file as allow_root\&. The default value of this option is
+FALSE\&.
+.RE
+.PP
+\fB\-allow\-disabled\-login\fR
+.RS 4
+Do not check if a user\*(Aqs system account is disabled before allowing login\&. This option can also be set in the configuration file as allow_disabled_login\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-password\-file string\fR
 .RS 4
-Enable clear text access and authenticate users against this /etc/passwd formatted file\&. This option can also be set in the configuration file as
-pw_file\&.
+Enable clear text access and authenticate users against this /etc/passwd formatted file\&. This option can also be set in the configuration file as pw_file\&.
 .RE
 .PP
 \fB\-connections\-max number\fR
 .RS 4
-Maximum concurrent connections allowed\&. Only applies when running in daemon mode\&. Unlimited if not set\&. This option can also be set in the configuration file as
-connections_max\&.
+Maximum concurrent connections allowed\&. Only applies when running in daemon mode\&. Unlimited if not set\&. This option can also be set in the configuration file as connections_max\&.
 .RE
 .PP
-\fB\-connections\-disabled \fR
+\fB\-connections\-disabled\fR
 .RS 4
-Disable all new connections\&. Does not affect ongoing connections\&. This would have be set in the configuration file and then the server issued a SIGHUP in order to reload that config\&. This option can also be set in the configuration file as
-connections_disabled\&.
+Disable all new connections\&. For daemon mode, issue a SIGHUP to the server process after changing the config file in order to not affect ongoing connections\&. This option can also be set in the configuration file as connections_disabled\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-offline\-msg string\fR
 .RS 4
-Custom message to be displayed to clients when the server is offline via the connections_disabled or connections_max = 0 options\&. This option can also be set in the configuration file as
-offline_msg\&.
+Custom message to be displayed to clients when the server is offline via the connections_disabled or connections_max = 0 options\&. This option can also be set in the configuration file as offline_msg\&.
 .RE
 .PP
 \fB\-disable\-command\-list string\fR
 .RS 4
-A comma separated list of client commands that will be disabled\&. This option can also be set in the configuration file as
-disable_command_list\&.
+A comma separated list of client commands that will be disabled\&. This option can also be set in the configuration file as disable_command_list\&.
 .RE
 .PP
-\fB\-authz\-callouts \fR, \fB\-cas \fR
+\fB\-authz\-callouts\fR, \fB\-cas\fR
 .RS 4
-Enable the GSI authorization callout framework, for callouts such as CAS\&. This option can also be set in the configuration file as
-cas\&.
+Enable the GSI authorization callout framework, for callouts such as CAS\&. This option can also be set in the configuration file as cas\&. The default value of this option is
+TRUE\&.
+.RE
+.PP
+\fB\-use\-home\-dirs\fR
+.RS 4
+Set the starting directory to the authenticated users home dir\&. Disabling this is the same as setting \*(Aq\-home\-dir /\*(Aq\&. This option can also be set in the configuration file as use_home_dirs\&. The default value of this option is
+TRUE\&.
+.RE
+.PP
+\fB\-home\-dir string\fR
+.RS 4
+Set a path to override the system defined home/starting directory for authenticated users\&. The special variable strings \*(Aq$USER\*(Aq and \*(Aq$HOME\*(Aq may be used\&. The authenticated username will be substituted for $USER, and the user\*(Aqs real home dir will be substituted for $HOME\&. Be sure to escape the $ character if using these on the command line\&. This option can also be set in the configuration file as home_dir\&.
 .RE
 .PP
 \fB\-rp string\fR, \fB\-restrict\-paths string\fR
 .RS 4
-A comma separated list of full paths that clients may access\&. Each path may be prefixed by R and/or W, denoting read or write access, otherwise full access is granted\&. If a given path is a directory, all contents and subdirectories will be given the same access\&. Order of paths does not matter \-\- the permissions on the longest matching path will apply\&. The special character \'~\' will be replaced by the authenticated user\'s home directory\&. Note that if the authenticated user\'s home directory is not accessible, the home directory and starting path will be set to \'/\'\&. By default all paths are allowed, and access control is handled by the OS\&. This option can also be set in the configuration file as
-restrict_paths\&.
+A comma separated list of full paths that clients may access\&. Each path may be prefixed by R and/or W, denoting read or write access, otherwise full access is granted\&. If a given path is a directory, all contents and subdirectories will be given the same access\&. Order of paths does not matter \-\- the permissions on the longest matching path will apply\&. The special character \*(Aq~\*(Aq will be replaced by the authenticated user\*(Aqs home directory, or the \-home\-dir option, if used\&. Note that if the home directory is not accessible, ~ will be set to \*(Aq/\*(Aq\&. By default all paths are allowed, and access control is handled by the OS\&. In a striped or split process configuration, this should be set on both the frontend and data nodes\&. This option can also be set in the configuration file as restrict_paths\&.
 .RE
 .PP
-\fB\-rp\-follow\-symlinks \fR
+\fB\-rp\-follow\-symlinks\fR
 .RS 4
-Allow following symlinks that lead to restricted paths\&. This option can also be set in the configuration file as
-rp_follow_symlinks\&.
+Do not verify that a symlink points to an allowed path before following\&. By default, symlinks are followed only when they point to an allowed path\&. By enabling this option, symlinks will be followed even if they point to a path that is otherwise restricted\&. This option can also be set in the configuration file as rp_follow_symlinks\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-em string\fR, \fB\-acl string\fR
 .RS 4
-A comma separated list of ACL or event modules to load\&. This option can also be set in the configuration file as
-acl\&.
+A comma separated list of ACL or event modules to load\&. This option can also be set in the configuration file as acl\&.
 .RE
 .SH "LOGGING OPTIONS"
 .PP
 \fB\-d string\fR, \fB\-log\-level string\fR
 .RS 4
-Log level\&. A comma separated list of levels from: \'ERROR, WARN, INFO, TRANSFER, DUMP, ALL\'\&. TRANSFER includes the same statistics that are sent to the separate transfer log when \-log\-transfer is used\&. Example: error,warn,info\&. You may also specify a numeric level of 1\-255\&. The default level is ERROR\&. This option can also be set in the configuration file as
-log_level\&.
+Log level\&. A comma separated list of levels from: \*(AqERROR, WARN, INFO, TRANSFER, DUMP, ALL\*(Aq\&. TRANSFER includes the same statistics that are sent to the separate transfer log when \-log\-transfer is used\&. Example: error,warn,info\&. You may also specify a numeric level of 1\-255\&. The default level is ERROR\&. This option can also be set in the configuration file as log_level\&. The default value of this option is
+ERROR\&.
 .RE
 .PP
 \fB\-log\-module string\fR
 .RS 4
-globus_logging module that will be loaded\&. If not set, the default \'stdio\' module will be used, and the logfile options apply\&. Built in modules are \'stdio\' and \'syslog\'\&. Log module options may be set by specifying module:opt1=val1:opt2=val2\&. Available options for the built in modules are \'interval\' and \'buffer\', for buffer flush interval and buffer size, respectively\&. The default options are a 64k buffer size and a 5 second flush interval\&. A 0 second flush interval will disable periodic flushing, and the buffer will only flush when it is full\&. A value of 0 for buffer will disable buffering and all messages will be written immediately\&. Example: \-log\-module stdio:buffer=4096:interval=10\&. This option can also be set in the configuration file as
-log_module\&.
+globus_logging module that will be loaded\&. If not set, the default \*(Aqstdio\*(Aq module will be used, and the logfile options apply\&. Built in modules are \*(Aqstdio\*(Aq and \*(Aqsyslog\*(Aq\&. Log module options may be set by specifying module:opt1=val1:opt2=val2\&. Available options for the built in modules are \*(Aqinterval\*(Aq and \*(Aqbuffer\*(Aq, for buffer flush interval and buffer size, respectively\&. The default options are a 64k buffer size and a 5 second flush interval\&. A 0 second flush interval will disable periodic flushing, and the buffer will only flush when it is full\&. A value of 0 for buffer will disable buffering and all messages will be written immediately\&. Example: \-log\-module stdio:buffer=4096:interval=10 This option can also be set in the configuration file as log_module\&.
 .RE
 .PP
 \fB\-l string\fR, \fB\-logfile string\fR
 .RS 4
-Path of a single file to log all activity to\&. If neither this option or log_unique is set, logs will be written to stderr unless the execution mode is detached or inetd, in which case logging will be disabled\&. This option can also be set in the configuration file as
-log_single\&.
+Path of a single file to log all activity to\&. If neither this option or log_unique is set, logs will be written to stderr unless the execution mode is detached or inetd, in which case logging will be disabled\&. This option can also be set in the configuration file as log_single\&.
 .RE
 .PP
 \fB\-L string\fR, \fB\-logdir string\fR
 .RS 4
-Partial path to which \'gridftp\&.(pid)\&.log\' will be appended to construct the log filename\&. Example: \-L /var/log/gridftp/ will create a separate log ( /var/log/gridftp/gridftp\&.xxxx\&.log ) for each process (which is normally each new client session)\&. If neither this option or log_single is set, logs will be written to stderr unless the execution mode is detached or inetd, in which case logging will be disabled\&. This option can also be set in the configuration file as
-log_unique\&.
+Partial path to which \*(Aqgridftp\&.(pid)\&.log\*(Aq will be appended to construct the log filename\&. Example: \-L /var/log/gridftp/ will create a separate log ( /var/log/gridftp/gridftp\&.xxxx\&.log ) for each process (which is normally each new client session)\&. If neither this option or log_single is set, logs will be written to stderr unless the execution mode is detached or inetd, in which case logging will be disabled\&. This option can also be set in the configuration file as log_unique\&.
 .RE
 .PP
 \fB\-Z string\fR, \fB\-log\-transfer string\fR
 .RS 4
-Log netlogger style info for each transfer into this file\&. You may also use the log\-level of TRANSFER to include this info in the standard log\&. This option can also be set in the configuration file as
-log_transfer\&.
+Log netlogger style info for each transfer into this file\&. You may also use the log\-level of TRANSFER to include this info in the standard log\&. This option can also be set in the configuration file as log_transfer\&.
 .RE
 .PP
 \fB\-log\-filemode string\fR
 .RS 4
-File access permissions of log files\&. Should be an octal number such as 0644\&. This option can also be set in the configuration file as
-log_filemode\&.
+File access permissions of log files\&. Should be an octal number such as 0644\&. This option can also be set in the configuration file as log_filemode\&.
 .RE
 .PP
-\fB\-disable\-usage\-stats \fR
+\fB\-disable\-usage\-stats\fR
 .RS 4
-Disable transmission of per\-transfer usage statistics\&. See the Usage Statistics section in the online documentation for more information\&. This option can also be set in the configuration file as
-disable_usage_stats\&.
+Disable transmission of per\-transfer usage statistics\&. See the Usage Statistics section in the online documentation for more information\&. This option can also be set in the configuration file as disable_usage_stats\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-usage\-stats\-target string\fR
 .RS 4
-Comma separated list of contact strings (host:port) for usage statistics receivers\&. The usage stats sent to a particular receiver may be customized by configuring it with a taglist (host:port!taglist) The taglist is a list of characters that each correspond to a usage stats tag\&. When this option is unset, stats are reported to usage\-stats\&.globus\&.org:4810\&. If you set your own receiver, and wish to continue reporting to the Globus receiver, you will need to add it manually\&. The list of available tags follow\&. Tags marked * are reported by default\&.
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(e) START \- start time of transfer
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(E) END \- end time of transfer
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(v) VER \- version string of gridftp server
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(b) BUFFER \- tcp buffer size used for transfer
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(B) BLOCK \- disk blocksize used for transfer
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(N) NBYTES \- number of bytes transferred
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(s) STREAMS \- number of parallel streams used
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(S) STRIPES \- number of stripes used
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(t) TYPE \- transfer command: RETR, STOR, LIST, etc
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(c) CODE \- ftp result code (226 = success, 5xx = fail)
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(D) DSI \- DSI module in use
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(A) EM \- event modules in use
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(T) SCHEME \- ftp, gsiftp, sshftp, etc\&. (client supplied)
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(a) APP \- guc, rft, generic library app, etc\&. (client supplied)
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-*(V) APPVER \- version string of above\&. (client supplied)
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-(f) FILE \- name of file/data transferred
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-(i) CLIENTIP \- ip address of host running client (control channel)
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-(I) DATAIP \- ip address of source/dest host of data (data channel)
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-(u) USER \- local user name the transfer was performed as
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-(d) USERDN \- DN that was mapped to user id
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-(C) CONFID \- ID defined by \-usage\-stats\-id config option
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-(U) SESSID \- unique id that can be used to match transfers in a session and transfers across source/dest of a third party transfer\&. (client supplied) \&.
-.RE
-.RS 4
-This option can also be set in the configuration file as
-usage_stats_target\&.
+Comma separated list of contact strings (host:port) for usage statistics receivers\&. The usage stats sent to a particular receiver may be customized by configuring it with a taglist (host:port!taglist) The taglist is a list of characters that each correspond to a usage stats tag\&. When this option is unset, stats are reported to usage\-stats\&.globus\&.org:4810\&. If you set your own receiver, and wish to continue reporting to the Globus receiver, you will need to add it manually\&. The list of available tags follow\&. Tags marked * are reported by default\&. *(e) START \- start time of transfer *(E) END \- end time of transfer *(v) VER \- version string of GridFTP server *(b) BUFFER \- tcp buffer size used for transfer *(B) BLOCK \- disk blocksize used for transfer *(N) NBYTES \- number of bytes transferred *(s) STREAMS \- number of parallel streams used *(S) STRIPES \- number of stripes used *(t) TYPE \- transfer command: RETR, STOR, LIST, etc *(c) CODE \- ftp result code (226 = success, 5xx = fail) *(D) DSI \- DSI module in use *(A) EM \- event modules in use *(T) SCHEME \- ftp, gsiftp, sshftp, etc\&. (client supplied) *(a) APP \- guc, rft, generic library app, etc\&. (client supplied) *(V) APPVER \- version string of above\&. (client supplied) (f) FILE \- name of file/data transferred (i) CLIENTIP \- ip address of host running client (control channel) (I) DATAIP \- ip address of source/dest host of data (data channel) (u) USER \- local user name the transfer was performed as (d) USERDN \- DN that was mapped to user id (C) CONFID \- ID defined by \-usage\-stats\-id config option (U) SESSID \- unique id that can be used to match transfers in a session and transfers across source/dest of a third party transfer\&. (client supplied) This option can also be set in the configuration file as usage_stats_target\&.
 .RE
 .PP
 \fB\-usage\-stats\-id string\fR
 .RS 4
-Identifying tag to include in usage statistics data\&. This option can also be set in the configuration file as
-usage_stats_id\&.
+Identifying tag to include in usage statistics data\&. If this is set and usage\-stats\-target is unset, CONFID will be added to the default usage stats data\&. This option can also be set in the configuration file as usage_stats_id\&.
 .RE
 .SH "SINGLE AND STRIPED REMOTE DATA NODE OPTIONS"
 .PP
 \fB\-r string\fR, \fB\-remote\-nodes string\fR
 .RS 4
-Comma separated list of remote node contact strings\&. This option can also be set in the configuration file as
-remote_nodes\&.
+Comma separated list of remote node contact strings\&. This option can also be set in the configuration file as remote_nodes\&.
 .RE
 .PP
-\fB\-dn \fR, \fB\-data\-node \fR
+\fB\-hybrid\fR
 .RS 4
-This server is a backend data node\&. This option can also be set in the configuration file as
-data_node\&.
+When a server is configured for striped operation with the \*(Aqremote_nodes\*(Aq option, both a frontend and backend process are started even if the client does not request multiple stripes\&. This option will start backend processes only when striped operation is requested by the client, while servicing non\-striped requests with a single frontend process\&. This option can also be set in the configuration file as hybrid\&. The default value of this option is
+FALSE\&.
+.RE
+.PP
+\fB\-dn\fR, \fB\-data\-node\fR
+.RS 4
+This server is a backend data node\&. This option can also be set in the configuration file as data_node\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-sbs number\fR, \fB\-stripe\-blocksize number\fR
 .RS 4
-Size in bytes of sequential data that each stripe will transfer\&. This option can also be set in the configuration file as
-stripe_blocksize\&.
+Size in bytes of sequential data that each stripe will transfer\&. This option can also be set in the configuration file as stripe_blocksize\&. The default value of this option is
+1048576\&.
 .RE
 .PP
 \fB\-stripe\-count number\fR
 .RS 4
-Number of number stripes to use per transfer when this server controls that number\&. If remote nodes are statically configured (via \-r or remote_nodes), this will be set to that number of nodes, otherwise the default is 1\&. This option can also be set in the configuration file as
-stripe_count\&.
+Number of number stripes to use per transfer when this server controls that number\&. If remote nodes are statically configured (via \-r or remote_nodes), this will be set to that number of nodes, otherwise the default is 1\&. This option can also be set in the configuration file as stripe_count\&.
 .RE
 .PP
 \fB\-sl number\fR, \fB\-stripe\-layout number\fR
 .RS 4
-Stripe layout\&.
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-1 = Partitioned
-.RE
-.sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-2 = Blocked
-.RE
-.RS 4
-.sp
-This option can also be set in the configuration file as
-stripe_layout\&.
+Stripe layout\&. 1 = Partitioned, 2 = Blocked\&. This option can also be set in the configuration file as stripe_layout\&. The default value of this option is
+2\&.
 .RE
 .PP
-\fB\-stripe\-blocksize\-locked \fR
+\fB\-stripe\-blocksize\-locked\fR
 .RS 4
-Do not allow client to override stripe blocksize with the OPTS RETR command\&. This option can also be set in the configuration file as
-stripe_blocksize_locked\&.
+Do not allow client to override stripe blocksize with the OPTS RETR command This option can also be set in the configuration file as stripe_blocksize_locked\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
-\fB\-stripe\-layout\-locked \fR
+\fB\-stripe\-layout\-locked\fR
 .RS 4
-Do not allow client to override stripe layout with the OPTS RETR command\&. This option can also be set in the configuration file as
-stripe_layout_locked\&.
+Do not allow client to override stripe layout with the OPTS RETR command This option can also be set in the configuration file as stripe_layout_locked\&. The default value of this option is
+FALSE\&.
 .RE
 .SH "DISK OPTIONS"
 .PP
 \fB\-bs number\fR, \fB\-blocksize number\fR
 .RS 4
-Size in bytes of data blocks to read from disk before posting to the network\&. This option can also be set in the configuration file as
-blocksize\&.
+Size in bytes of data blocks to read from disk before posting to the network\&. This option can also be set in the configuration file as blocksize\&. The default value of this option is
+262144\&.
 .RE
 .PP
-\fB\-sync\-writes \fR
+\fB\-sync\-writes\fR
 .RS 4
-Flush disk writes before sending a restart marker\&. This attempts to ensure that the range specified in the restart marker has actually been committed to disk\&. This option will probably impact performance, and may result in different behavior on different storage systems\&. See the manpage for sync() for more information\&. This option can also be set in the configuration file as
-sync_writes\&.
-.RE
-.PP
-\fB\-use\-home\-dirs \fR
-.RS 4
-Set the startup directory to the authenticated users home dir\&. This option can also be set in the configuration file as
-use_home_dirs\&.
+Flush disk writes before sending a restart marker\&. This attempts to ensure that the range specified in the restart marker has actually been committed to disk\&. This option will probably impact performance, and may result in different behavior on different storage systems\&. See the manpage for sync() for more information\&. This option can also be set in the configuration file as sync_writes\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-perms string\fR
 .RS 4
-Set the default permissions for created files\&. Should be an octal number such as 0644\&. The default is 0644\&. Note: If umask is set it will affect this setting \-\- i\&.e\&. if the umask is 0002 and this setting is 0666, the resulting files will be created with permissions of 0664\&. \&. This option can also be set in the configuration file as
-perms\&.
+Set the default permissions for created files\&. Should be an octal number such as 0644\&. The default is 0644\&. Note: If umask is set it will affect this setting \-\- i\&.e\&. if the umask is 0002 and this setting is 0666, the resulting files will be created with permissions of 0664\&. This option can also be set in the configuration file as perms\&.
 .RE
 .PP
 \fB\-file\-timeout number\fR
 .RS 4
-Timeout in seconds for all disk accesses\&. A value of 0 disables the timeout\&. This option can also be set in the configuration file as
-file_timeout\&.
+Timeout in seconds for all disk accesses\&. A value of 0 disables the timeout\&. This option can also be set in the configuration file as file_timeout\&.
 .RE
 .SH "NETWORK OPTIONS"
 .PP
 \fB\-p number\fR, \fB\-port number\fR
 .RS 4
-Port on which a frontend will listen for client control channel connections, or on which a data node will listen for connections from a frontend\&. If not set a random port will be chosen and printed via the logging mechanism\&. This option can also be set in the configuration file as
-port\&.
+Port on which a frontend will listen for client control channel connections, or on which a data node will listen for connections from a frontend\&. If not set a random port will be chosen and printed via the logging mechanism\&. This option can also be set in the configuration file as port\&.
 .RE
 .PP
 \fB\-control\-interface string\fR
 .RS 4
-Hostname or IP address of the interface to listen for control connections on\&. If not set will listen on all interfaces\&. This option can also be set in the configuration file as
-control_interface\&.
+Hostname or IP address of the interface to listen for control connections on\&. If not set will listen on all interfaces\&. This option can also be set in the configuration file as control_interface\&.
 .RE
 .PP
 \fB\-data\-interface string\fR
 .RS 4
-Hostname or IP address of the interface to use for data connections\&. If not set will use the current control interface\&. This option can also be set in the configuration file as
-data_interface\&.
+Hostname or IP address of the interface to use for data connections\&. If not set will use the current control interface\&. This option can also be set in the configuration file as data_interface\&.
 .RE
 .PP
 \fB\-ipc\-interface string\fR
 .RS 4
-Hostname or IP address of the interface to use for ipc connections\&. If not set will listen on all interfaces\&. This option can also be set in the configuration file as
-ipc_interface\&.
+Hostname or IP address of the interface to use for ipc connections\&. If not set will listen on all interfaces\&. This option can also be set in the configuration file as ipc_interface\&.
 .RE
 .PP
 \fB\-hostname string\fR
 .RS 4
-Effectively sets the above control_interface, data_interface and ipc_interface options\&. This option can also be set in the configuration file as
-hostname\&.
+Effectively sets the above control_interface, data_interface and ipc_interface options\&. This option can also be set in the configuration file as hostname\&.
 .RE
 .PP
 \fB\-ipc\-port number\fR
 .RS 4
-Port on which the frontend will listen for data node connections\&. This option can also be set in the configuration file as
-ipc_port\&.
+Port on which the frontend will listen for data node connections\&. This option can also be set in the configuration file as ipc_port\&.
 .RE
 .PP
 \fB\-control\-preauth\-timeout number\fR
 .RS 4
-Time in seconds to allow a client to remain connected to the control channel without activity before authenticating\&. This option can also be set in the configuration file as
-control_preauth_timeout\&.
+Time in seconds to allow a client to remain connected to the control channel without activity before authenticating\&. This option can also be set in the configuration file as control_preauth_timeout\&. The default value of this option is
+120\&.
 .RE
 .PP
 \fB\-control\-idle\-timeout number\fR
 .RS 4
-Time in seconds to allow a client to remain connected to the control channel without activity\&. This option can also be set in the configuration file as
-control_idle_timeout\&.
+Time in seconds to allow a client to remain connected to the control channel without activity\&. This option can also be set in the configuration file as control_idle_timeout\&. The default value of this option is
+600\&.
 .RE
 .PP
 \fB\-ipc\-idle\-timeout number\fR
 .RS 4
-Idle time in seconds before an unused ipc connection will close\&. This option can also be set in the configuration file as
-ipc_idle_timeout\&.
+Idle time in seconds before an unused ipc connection will close\&. This option can also be set in the configuration file as ipc_idle_timeout\&. The default value of this option is
+900\&.
 .RE
 .PP
 \fB\-ipc\-connect\-timeout number\fR
 .RS 4
-Time in seconds before canceling an attempted ipc connection\&. This option can also be set in the configuration file as
-ipc_connect_timeout\&.
+Time in seconds before canceling an attempted ipc connection\&. This option can also be set in the configuration file as ipc_connect_timeout\&. The default value of this option is
+60\&.
+.RE
+.PP
+\fB\-allow\-udt\fR
+.RS 4
+Enable protocol support for UDT with NAT traversal if the udt driver is available\&. Requires threads\&. This option can also be set in the configuration file as allow_udt\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-port\-range string\fR
 .RS 4
-Port range to use for incoming connections\&. The format is "startport,endport"\&. This, along with \-data\-interface, can be used to enable operation behind a firewall and/or when NAT is involved\&. This is the same as setting the environment variable GLOBUS_TCP_PORT_RANGE\&. This option can also be set in the configuration file as
-port_range\&.
+Port range to use for incoming connections\&. The format is "startport,endport"\&. This, along with \-data\-interface, can be used to enable operation behind a firewall and/or when NAT is involved\&. This is the same as setting the environment variable GLOBUS_TCP_PORT_RANGE\&. This option can also be set in the configuration file as port_range\&.
 .RE
 .SH "USER MESSAGES"
 .PP
 \fB\-banner string\fR
 .RS 4
-Message to display to the client before authentication\&. This option can also be set in the configuration file as
-banner\&.
+Message to display to the client before authentication\&. This option can also be set in the configuration file as banner\&.
 .RE
 .PP
 \fB\-banner\-file string\fR
 .RS 4
-File to read banner message from\&. This option can also be set in the configuration file as
-banner_file\&.
+File to read banner message from\&. This option can also be set in the configuration file as banner_file\&.
 .RE
 .PP
-\fB\-banner\-terse \fR
+\fB\-banner\-terse\fR
 .RS 4
-When this is set, the minimum allowed banner message will be displayed to unauthenticated clients\&. This option can also be set in the configuration file as
-banner_terse\&.
+When this is set, the minimum allowed banner message will be displayed to unauthenticated clients\&. This option can also be set in the configuration file as banner_terse\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
-\fB\-banner\-append \fR
+\fB\-banner\-append\fR
 .RS 4
-When this is set, the message set in the \'banner\' or \'banner_file\' option will be appended to the default banner message rather than replacing it\&. This option can also be set in the configuration file as
-banner_append\&.
+When this is set, the message set in the \*(Aqbanner\*(Aq or \*(Aqbanner_file\*(Aq option will be appended to the default banner message rather than replacing it\&. This option can also be set in the configuration file as banner_append\&. The default value of this option is
+FALSE\&.
+.RE
+.PP
+\fB\-version\-tag string\fR
+.RS 4
+Add an identifying string to the existing toolkit version\&. This is displayed in the default banner message, the SITE VERSION command, and usage stats\&. This option can also be set in the configuration file as version_tag\&.
 .RE
 .PP
 \fB\-login\-msg string\fR
 .RS 4
-Message to display to the client after authentication\&. This option can also be set in the configuration file as
-login_msg\&.
+Message to display to the client after authentication\&. This option can also be set in the configuration file as login_msg\&.
 .RE
 .PP
 \fB\-login\-msg\-file string\fR
 .RS 4
-File to read login message from\&. This option can also be set in the configuration file as
-login_msg_file\&.
+File to read login message from\&. This option can also be set in the configuration file as login_msg_file\&.
 .RE
 .SH "MODULE OPTIONS"
 .PP
 \fB\-dsi string\fR
 .RS 4
-Data Storage Interface module to load\&. file and remote modules are defined by the server\&. If not set, the file module is loaded, unless the \'remote\' option is specified, in which case the remote module is loaded\&. An additional configuration string can be passed to the DSI using the format [module name]:[configuration string] to this option\&. The format of the configuration string is defined by the DSI being loaded\&. This option can also be set in the configuration file as
-load_dsi_module\&.
+Data Storage Interface module to load\&. File and remote modules are defined by the server\&. If not set, the file module is loaded, unless the \*(Aqremote\*(Aq option is specified, in which case the remote module is loaded\&. An additional configuration string can be passed to the DSI using the format [module name]:[configuration string] to this option\&. The format of the configuration string is defined by the DSI being loaded\&. This option can also be set in the configuration file as load_dsi_module\&.
 .RE
 .PP
 \fB\-allowed\-modules string\fR
 .RS 4
-Comma separated list of ERET/ESTO modules to allow, and optionally specify an alias for\&. Example: module1,alias2:module2,module3 (module2 will be loaded when a client asks for alias2)\&. This option can also be set in the configuration file as
-allowed_modules\&.
+Comma separated list of ERET/ESTO modules to allow, and optionally specify an alias for\&. Example: module1,alias2:module2,module3 (module2 will be loaded when a client asks for alias2)\&. This option can also be set in the configuration file as allowed_modules\&.
 .RE
 .PP
 \fB\-dc\-whitelist string\fR
 .RS 4
-A comma separated list of drivers allowed on the network stack\&. This option can also be set in the configuration file as
-dc_whitelist\&.
+A comma separated list of drivers allowed on the network stack\&. This option can also be set in the configuration file as dc_whitelist\&.
 .RE
 .PP
 \fB\-fs\-whitelist string\fR
 .RS 4
-A comma separated list of drivers allowed on the disk stack\&. This option can also be set in the configuration file as
-fs_whitelist\&.
+A comma separated list of drivers allowed on the disk stack\&. This option can also be set in the configuration file as fs_whitelist\&.
 .RE
 .PP
 \fB\-popen\-whitelist string\fR
 .RS 4
-A comma separated list of programs that the popen driver is allowed to execute, when used on the network or disk stack\&. An alias may also be specified, so that a client does not need to specify the full path\&. Format is [alias:]prog,[alias:]prog\&. example: /bin/gzip,tar:/bin/tar\&. This option can also be set in the configuration file as
-popen_whitelist\&.
+A comma separated list of programs that the popen driver is allowed to execute, when used on the network or disk stack\&. An alias may also be specified, so that a client does not need to specify the full path\&. Format is [alias:]prog,[alias:]prog\&. example: /bin/gzip,tar:/bin/tar This option can also be set in the configuration file as popen_whitelist\&.
 .RE
 .PP
 \fB\-dc\-default string\fR
 .RS 4
-A comma separated list of XIO drivers and options representing the default network stack\&. Format is of each driver entry is driver1[:opt1=val1;opt2=val2;\&.\&.\&.]\&. The bottom of the stack, the transport driver, is always first\&. This option can also be set in the configuration file as
-dc_default\&.
+A comma separated list of XIO drivers and options representing the default network stack\&. Format is of each driver entry is driver1[:opt1=val1;opt2=val2;\&.\&.\&.]\&. The bottom of the stack, the transport driver, is always first\&. This option can also be set in the configuration file as dc_default\&.
 .RE
 .PP
 \fB\-fs\-default string\fR
 .RS 4
-A comma separated list of XIO drivers and options representing the default disk stack\&. Format is of each driver entry is driver1[:opt1=val1;opt2=val2;\&.\&.\&.]\&. The bottom of the stack, the transport driver, is always first\&. This option can also be set in the configuration file as
-fs_default\&.
+A comma separated list of XIO drivers and options representing the default disk stack\&. Format is of each driver entry is driver1[:opt1=val1;opt2=val2;\&.\&.\&.]\&. The bottom of the stack, the transport driver, is always first\&. This option can also be set in the configuration file as fs_default\&.
 .RE
 .SH "OTHER"
 .PP
@@ -850,26 +545,23 @@ Path to main configuration file that should be loaded\&. Otherwise will attempt 
 .PP
 \fB\-C string\fR
 .RS 4
-Path to directory holding configuration files that should be loaded\&. Files will be loaded in alphabetical order, and in the event of duplcate parameters the last loaded file will take precedence\&. Note that the main configurationfile, if one exists, will always be loaded last\&. This option can also be set in the configuration file as
-config_dir\&.
+Path to directory holding configuration files that should be loaded\&. Files will be loaded in alphabetical order, and in the event of duplicate parameters the last loaded file will take precedence\&. Note that the main configurationfile, if one exists, will always be loaded last\&. This option can also be set in the configuration file as config_dir\&.
 .RE
 .PP
 \fB\-config\-base\-path string\fR
 .RS 4
-Base path to use when config and log path options are not full paths\&. By default this is the current directory when the process is started\&. This option can also be set in the configuration file as
-config_base_path\&.
+Base path to use when config and log path options are not full paths\&. By default this is the current directory when the process is started\&. This option can also be set in the configuration file as config_base_path\&.
 .RE
 .PP
-\fB\-debug \fR
+\fB\-debug\fR
 .RS 4
-Sets options that make server easier to debug\&. Forces no\-fork, no\-chdir, and allows core dumps on bad signals instead of exiting cleanly\&. Not recommended for production servers\&. Note that non\-forked servers running as \'root\' will only accept a single connection, and then exit\&. This option can also be set in the configuration file as
-debug\&.
+Sets options that make server easier to debug\&. Forces no\-fork, no\-chdir, and allows core dumps on bad signals instead of exiting cleanly\&. Not recommended for production servers\&. Note that non\-forked servers running as \*(Aqroot\*(Aq will only accept a single connection, and then exit\&. This option can also be set in the configuration file as debug\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-pidfile string\fR
 .RS 4
-Write PID of the GridFTP server to this path\&. May contain variable references to ${localstatedir}\&. This option can also be set in the configuration file as
-pidfile\&.
+Write PID of the GridFTP server to this path\&. May contain variable references to ${localstatedir} This option can also be set in the configuration file as pidfile\&.
 .RE
 .SH "EXIT STATUS"
 .PP

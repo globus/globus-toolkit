@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "globus_config.h"
+
 static
 globus_version_t local_version = 
 {
@@ -23,18 +25,4 @@ globus_version_t local_version =
     @DIRT_BRANCH_ID@
 };
 
-#define bittostr(x) str(x)
-#define str(x) #x
-
-#include <limits.h>
-#include <stdint.h>
-
-#if LONG_MAX == INT32_MAX
-#define FLAVOR_BITS 32
-#elif LONG_MAX == INT64_MAX
-#define FLAVOR_BITS 64
-#else
-#error "Unknown flavor bits"
-#endif
-
-static const char flavor[] = "cc" bittostr(FLAVOR_BITS);
+static const char flavor[] = GLOBUS_FLAVOR_NAME;

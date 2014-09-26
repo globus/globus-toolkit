@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS=-I m4
 pkgconfdir = $(libdir)/pkgconfig
 
 include_HEADERS = globus_gfork.h

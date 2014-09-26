@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 
-/** @file globus_i_xio_http_responses.h HTTP Response Codes */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_i_xio_http_responses.h
+ * @brief HTTP Response Codes
+ */
+
 static
 const char *
 globus_l_http_descriptions[] = {
@@ -59,3 +65,5 @@ globus_l_http_descriptions[] = {
     "504", "Gateway Time-out",
     "505", "HTTP Version not supported"
 };
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

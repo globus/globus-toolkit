@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-io
 _name = globus_io
-version = 10.11
+version = 10.12
 soname = 3
 
 INSTALLDIR = $(CURDIR)/debian/tmp
@@ -128,18 +128,11 @@ install: build-stamp
 
 	# Remove libtool archives (.la files)
 	find $(INSTALLDIR)$(_libdir) -name 'lib*.la' -exec rm -v '{}' \;
-	# Remove doxygen installdox if present
-	rm -f debian/tmp$(_docdir)/lib$(name)-dev/html/installdox
 	# Generate package filelists
 	ls -1 \
 	  debian/tmp$(_libdir)/libglobus*.so.* \
 	  debian/tmp$(_docdir)/lib$(name)-dev/GLOBUS_LICENSE \
 	  > debian/lib$(name)$(soname).install
-	ls -1 \
-	  debian/tmp$(_docdir)/lib$(name)-dev/html/*.* \
-	  debian/tmp$(_docdir)/lib$(name)-dev/html/*/* \
-	  debian/tmp$(_mandir)/man3/[Gg][Ll][Oo][Bb][Uu][Ss]*.3 \
-	  > debian/lib$(name)-doc.install
 	ls -1 debian/tmp$(_includedir)/globus/*.h \
 	  debian/tmp$(_libdir)/*.so \
 	  debian/tmp$(_libdir)/pkgconfig/*.pc \

@@ -1,82 +1,101 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
-    <!ENTITY cmdname "globus-update-certificate-dir">
-    <!ENTITY cmd "<command>globus-update-certificate-dir</command>">
-]>
-<!-- Canonical version of this document lives in 
-$Header$
--->
-
-
-<refentry>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+<refentry lang="en">
+<refentryinfo>
+    <title>GLOBUS-UPDATE-CERTIFICATE-DIR(8)</title>
+</refentryinfo>
 <refmeta>
-<refentrytitle>&cmdname;</refentrytitle>
+<refentrytitle>globus-update-certificate-dir</refentrytitle>
 <manvolnum>8</manvolnum>
-<refmiscinfo class="author">University of Chicago</refmiscinfo>
+<refmiscinfo class="source">University of Chicago</refmiscinfo>
+<refmiscinfo class="manual">Globus Toolkit</refmiscinfo>
 </refmeta>
-
 <refnamediv>
-<refname>&cmdname;</refname>
-<refpurpose>Update symlinks in the trusted CA directory</refpurpose>
+    <refname>globus-update-certificate-dir</refname>
+    <refpurpose>Update symlinks in the trusted CA directory</refpurpose>
 </refnamediv>
-<refsynopsisdiv>
-<cmdsynopsis>
-&cmd;
-<arg>-help</arg>
-<arg>-d <replaceable>DIRECTORY</replaceable></arg>
-</cmdsynopsis>
+<refsynopsisdiv id="globus-update-certificate-dir-SYNOPSIS">
+<simpara><emphasis role="strong">globus-update-certificate-dir</emphasis> -help</simpara>
+<simpara><emphasis role="strong">globus-update-certificate-dir</emphasis> [-d <emphasis>DIRECTORY</emphasis>]</simpara>
 </refsynopsisdiv>
-
-<refsect1><title>Description</title>
-<para>
-The &cmd; program creates symlinks between files (CA certificates, certificate
-revocation lists, signing policy, and certificate request configuration files)
-using the certificate hash the installed version of OpenSSL uses. OpenSSL
-1.0.0 uses a different name hashing algorithm than previous versions, so 
-CA distributions created with older versions of OpenSSL might not be able
-to locate trusted CAs and related files. Running &cmd; against a
-trusted CA directory will add symlinks to the files to the hash if needed.
-</para>
-
-<para>
-The full set of command-line options to
-&cmd; consists of:
-
-<variablelist>
-    <varlistentry>
-        <term><option>-help</option></term>
-        <listitem><simpara>Display a help message to standard output and exit</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-d <replaceable>DIRECTORY</replaceable></option></term>
-        <listitem><simpara>Create links in the trusted CA directory
-        <replaceable>DIRECTORY</replaceable> instead of using the default 
-        search path.</simpara></listitem>
-    </varlistentry>
-</variablelist>
-</para>
+<refsect1 id="globus-update-certificate-dir-DESCRIPTION">
+<title>DESCRIPTION</title>
+<simpara>The <emphasis role="strong">globus-update-certificate-dir</emphasis> program creates symlinks between
+files (CA certificates, certificate revocation lists, signing policy, and
+certificate request configuration files) using the certificate hash the
+installed version of OpenSSL uses. OpenSSL 1.0.0 uses a different name hashing
+algorithm than previous versions, so CA distributions created with older
+versions of OpenSSL might not be able to locate trusted CAs and related files.
+Running <emphasis role="strong">globus-update-certificate-dir</emphasis> against a trusted CA directory will
+add symlinks to the files to the hash if needed.</simpara>
 </refsect1>
-
-<refsect1><title>Environment</title>
-<para>
-If the following variables affect the execution of &cmd;
-
+<refsect1 id="globus-update-certificate-dir-OPTIONS">
+<title>OPTIONS</title>
 <variablelist>
-    <varlistentry>
-        <term><envar>X509_CERT_DIR</envar></term>
-        <listitem><simpara>Default trusted certificate directory.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><envar>HOME</envar></term>
-        <listitem><simpara>Path to the current user's home directory.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><envar>GLOBUS_LOCATION</envar></term>
-        <listitem><simpara>Path to the Globus installation.</simpara></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-help</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display a help message to standard output and exit
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-d <emphasis>DIRECTORY</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Create links in the trusted CA directory <emphasis>DIRECTORY</emphasis> instead of using the
+    default search path.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
 </refsect1>
-
+<refsect1 id="globus-update-certificate-dir-ENVIRONMENT">
+<title>ENVIRONMENT</title>
+<simpara>The following variables affect the execution of
+<emphasis role="strong">globus-update-certificate-dir</emphasis>:</simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_CERT_DIR</emphasis>
+</term>
+<listitem>
+<simpara>
+    Default trusted certificate directory.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">HOME</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to the current user&#8217;s home directory.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">GLOBUS_LOCATION</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to the Globus installation.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="globus-update-certificate-dir-AUTHOR">
+<title>AUTHOR</title>
+<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
+</refsect1>
 </refentry>

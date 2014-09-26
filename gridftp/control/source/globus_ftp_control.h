@@ -15,7 +15,8 @@
  */
 
 /**
- * @file globus_ftp_control.h GridFTP Control Connection API 
+ * @file globus_ftp_control.h
+ * @brief GridFTP Control Connection API
  */
 
 #ifndef GLOBUS_INCLUDE_FTP_CONTROL_H
@@ -127,7 +128,7 @@ typedef enum globus_ftp_control_dcau_mode_e
 } globus_ftp_control_dcau_mode_t;
 
 /**
- * control dcau subject authentication type
+ * @brief Control DCAU subject authentication type
  */
 typedef struct globus_ftp_control_dcau_subject_s
 {
@@ -150,7 +151,7 @@ typedef enum globus_ftp_control_striping_mode_e
 } globus_ftp_control_striping_mode_t;
 
 /**
- * control striping round robin attribute structure
+ * @brief Control striping round robin attribute structure
  */
 typedef struct globus_ftp_control_round_robin_s
 {
@@ -165,7 +166,7 @@ typedef struct globus_ftp_control_partitioned_s
 } globus_ftp_control_partitioned_t;
 
 /**
- * control dcau union
+ * @brief Control DCAU union
  */
 typedef union globus_ftp_control_dcau_u
 {
@@ -203,7 +204,7 @@ typedef enum
 } globus_ftp_control_delay_passive_t;
 
 /**
- * control striping attribute union
+ * @brief Control striping attribute union
  */
 typedef union globus_ftp_control_layout_u
 {
@@ -238,7 +239,7 @@ typedef enum globus_ftp_control_parallelism_mode_e
 } globus_ftp_control_parallelism_mode_t;
 
 /*  
- *  The base class for all parrallel types.  Subtypes
+ *  The base class for all parallel types.  Subtypes
  *  must first define all types in this structure.
  */
 typedef struct globus_i_ftp_parallelism_base_s
@@ -254,7 +255,7 @@ typedef struct globus_ftp_parallelism_fixed_s
 } globus_ftp_parallelism_fixed_t;
 
 /** 
- *  control parallelism attribute structure  
+ * @brief Control parallelism attribute structure  
  */
 typedef union globus_ftp_control_parallelism_u
 {
@@ -270,7 +271,7 @@ typedef struct globus_ftp_control_host_port_s
     
     /*
      * if ipv6 is not enabled, the following param will be assumed to be 4
-     * when passed as an in-paramater. otherwise it must indicate the correct
+     * when passed as an in-parameter. otherwise it must indicate the correct
      * len.
      * 
      * for out-parameters, the following will _always_ be 4 unless ipv6 is
@@ -345,14 +346,18 @@ typedef enum globus_ftp_control_tcpbuffer_mode_e
     GLOBUS_FTP_CONTROL_TCPBUFFER_AUTOMATIC
 } globus_ftp_control_tcpbuffer_mode_t;
 
-/** Don't change the TCP buffer/window size from the system default */
+/**
+ * @brief Don't change the TCP buffer/window size from the system default
+  */
 typedef struct
 {
     globus_ftp_control_tcpbuffer_mode_t	mode;
 }
 globus_ftp_control_tcpbuffer_default_t;
 
-/** Set the TCP buffer/window size to a fixed value */
+/**
+ * @brief Set the TCP buffer/window size to a fixed value
+ */
 typedef struct
 {
     globus_ftp_control_tcpbuffer_mode_t	mode;
@@ -360,7 +365,9 @@ typedef struct
 }
 globus_ftp_control_tcpbuffer_fixed_t;
 
-/** Automatically set the TCP buffer/window size */
+/**
+ * @brief Automatically set the TCP buffer/window size
+ */
 typedef struct globus_ftp_control_tcpbuffer_automatic_s
 {
     globus_ftp_control_tcpbuffer_mode_t	mode;
@@ -369,8 +376,9 @@ typedef struct globus_ftp_control_tcpbuffer_automatic_s
     unsigned int				maximum_size;
 } globus_ftp_control_tcpbuffer_automatic_t;
 
-/** control tcpbuffer attribute structure */
-
+/**
+ * @brief Control tcpbuffer attribute structure
+ */
 typedef union globus_ftp_control_tcpbuffer_t
 {
     globus_ftp_control_tcpbuffer_mode_t	        mode;
@@ -380,7 +388,7 @@ typedef union globus_ftp_control_tcpbuffer_t
 } globus_ftp_control_tcpbuffer_t;
 
 /*
- *  each strip can have multiple paralell conections to 
+ *  each strip can have multiple parallel connections to
  *  the same host
  */
 
@@ -465,7 +473,7 @@ typedef enum globus_ftp_control_command_code_e
 
 
 /**
- *  Authentication Values.
+ *  @brief Authentication Values.
  *
  *  This structure is populated and passed back to the user via
  *  the globus_ftp_control_auth_callback_t().  It contains the
@@ -587,7 +595,7 @@ typedef void (*globus_ftp_control_command_callback_t)(
  *
  *  A function with this signature is registered by calling
  *  globus_ftp_control_accept().  It is called when the authentication
- *  protocal has completed. Based on the auth_result, the server
+ *  protocol has completed. Based on the auth_result, the server
  *  implementor should determine authorization and then send the appropriate
  *  response using globus_ftp_control_send_response(), indicating
  *  to the client whether authorization was successful or not.
@@ -1488,12 +1496,6 @@ globus_result_t
 globus_ftp_control_command_destroy(
     globus_ftp_control_command_t *           command);
 
-/*globus_result_t
-globus_ftp_i_control_create_command_<port,pasv,spor,spas,etc>(
-    globus_ftp_control_command_t *           command);
-
-*/
-
 /**
  * @defgroup globus_ftp_control_data GridFTP Data Connections
  * @brief Data Connections
@@ -1690,7 +1692,7 @@ globus_ftp_control_data_read_all(
     globus_ftp_control_data_callback_t          callback,
     void *                                      callback_arg);
 
-/* this has only been tested enough for the client library and gridftp server
+/* this has only been tested enough for the client library and GridFTP server
  * it is very likely to not work for general usage
  */
 globus_result_t
@@ -1699,7 +1701,7 @@ globus_ftp_control_ipv6_allow(
     globus_bool_t                               allow);
 
 /*
- *  internal function defintions
+ *  internal function definitions
  */
 globus_result_t
 globus_i_ftp_parallelism_copy(

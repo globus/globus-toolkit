@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: globus-job-get-output
-.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 03/18/2010
-.\"    Manual: GRAM5 Commands
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/25/2014
+.\"    Manual: Globus Toolkit Manual
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUS\-JOB\-GET\-OU" "1" "03/18/2010" "University of Chicago" "GRAM5 Commands"
+.TH "GLOBUS\-JOB\-GET\-OU" "1" "09/25/2014" "University of Chicago" "Globus Toolkit Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -21,33 +30,16 @@
 .SH "NAME"
 globus-job-get-output \- Retrieve the output and error streams from a GRAM job
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-job\-get\-output\fR\ 'u
-\fBglobus\-job\-get\-output\fR [\-r\ \fIRESOURCE\fR | \-resource\ \fIRESOURCE\fR]
-.br
-[\-out | \-err] [\-t\ \fILINES\fR | \-tail\ \fILINES\fR] [\-follow\ \fILINES\fR | \-f\ \fILINES\fR] \fIJOBID\fR
-.HP \w'\fBglobus\-job\-get\-output\fR\ 'u
-\fBglobus\-job\-get\-output\fR [\-help] [\-usage] [\-version] [\-versions]
+.sp
+\fBglobus\-job\-get\-output\fR [ \-r \fIRESOURCE\fR | \-resource \fIRESOURCE\fR ] [OPTIONS] \fIJOBID\fR
+.sp
+\fBglobus\-job\-get\-output\fR [\-help | \-usage | \-version | \-versions ]
 .SH "DESCRIPTION"
-.PP
-The
-\fBglobus\-job\-get\-output\fR
-program retrieves the output and error streams of the job named by
-\fIJOBID\fR\&. By default,
-\fBglobus\-job\-get\-output\fR
-will retrieve all output and error data from the job and display them to its own output and error streams\&. Other behavior can be controlled by using command\-line options\&. The data retrieval is implemented by submitting another job which simply displays the contents of the first job\'s output and error streams\&. By default this retrieval job is submitted to the default GRAM resource running on the same host as the job\&. This behavior can be controlled by specifying a particular resource manager contact string as the
-\fIRESOURCE\fR
-parameter to the
-\fB\-r\fR
-or
-\fB\-resource\fR
-option\&.
+.sp
+The \fBglobus\-job\-get\-output\fR program retrieves the output and error streams of the job named by \fIJOBID\fR\&. By default, \fBglobus\-job\-get\-output\fR will retrieve all output and error data from the job and display them to its own output and error streams\&. Other behavior can be controlled by using command\-line options\&. The data retrieval is implemented by submitting another job which simply displays the contents of the first job\(cqs output and error streams\&. By default this retrieval job is submitted to the default GRAM resource running on the same host as the job\&. This behavior can be controlled by specifying a particular resource manager contact string as the \fIRESOURCE\fR parameter to the \fI\-r\fR or \fI\-resource\fR option\&.
 .SH "OPTIONS"
 .PP
-The full set of options to
-\fBglobus\-job\-get\-output\fR
-are:
-.PP
-\fB\-help\fR, \fB\-usage\fR
+\fB\-help, \-usage\fR
 .RS 4
 Display a help message to standard error and exit\&.
 .RE
@@ -59,14 +51,14 @@ Display the software version of the
 program to standard output\&.
 .RE
 .PP
-\fB\-version\fR
+\fB\-versions\fR
 .RS 4
 Display the software version of the
 \fBglobus\-job\-get\-output\fR
 program including DiRT information to standard output\&.
 .RE
 .PP
-\fB\-resource \fR\fB\fIRESOURCE\fR\fR, \fB\-r \fR\fB\fIRESOURCE\fR\fR
+\fB\-resource \fR\fB\fIRESOURCE\fR\fR\fB, \-r \fR\fB\fIRESOURCE\fR\fR
 .RS 4
 Submit the retrieval job to the resource named by
 \fIRESOURCE\fR
@@ -83,31 +75,30 @@ Retrieve only the standard output stream of the job\&. The default is to retriev
 Retrieve only the standard error stream of the job\&. The default is to retrieve both standard output and standard error\&.
 .RE
 .PP
-\fB\-tail \fR\fB\fILINES\fR\fR, \fB\-t \fR\fB\fILINES\fR\fR
+\fB\-tail \fR\fB\fILINES\fR\fR\fB, \-t \fR\fB\fILINES\fR\fR
 .RS 4
 Print only the last
 \fILINES\fR
 count lines of output from the data streams being retrieved\&. By default, the entire output and error file data is retrieved\&. This option can not be used along with the
-\fB\-f\fR
+\fI\-f\fR
 or
-\fB\-follow\fR
+\fI\-follow\fR
 options\&.
 .RE
 .PP
-\fB\-follow \fR\fB\fILINES\fR\fR, \fB\-f \fR\fB\fILINES\fR\fR
+\fB\-follow \fR\fB\fILINES\fR\fR\fB, \-f \fR\fB\fILINES\fR\fR
 .RS 4
 Print the last
 \fILINES\fR
 count lines of output from the data streams being retrieved and then wait until canceled, printing any subsequent job output that occurs\&. By default, the entire output and error file data is retrieved\&. This option can not be used along with the
-\fB\-t\fR
+\fI\-t\fR
 or
-\fB\-tail\fR
+\fI\-tail\fR
 options\&.
 .RE
 .SH "ENVIRONMENT"
-.PP
-If the following variables affect the execution of
-\fBglobus\-job\-get\-output\fR\&.
+.sp
+The following variables affect the execution of \fBglobus\-job\-get\-output\fR\&.
 .PP
 \fBX509_USER_PROXY\fR
 .RS 4
@@ -118,3 +109,6 @@ Path to proxy credential\&.
 .RS 4
 Path to trusted certificate directory\&.
 .RE
+.SH "AUTHOR"
+.sp
+Copyright \(co 1999\-2014 University of Chicago

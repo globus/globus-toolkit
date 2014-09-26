@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS=-I m4
+
 pkgconfigdir = $(libdir)/pkgconfig
 
 doc_DATA = GLOBUS_LICENSE

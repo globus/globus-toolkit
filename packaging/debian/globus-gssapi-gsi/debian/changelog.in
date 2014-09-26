@@ -1,3 +1,13 @@
+globus-gssapi-gsi (11.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * Include more manpages for API
+  * Use consistent PREDEFINED in all Doxyfiles
+  * Fix dependency version
+  * Fix typos and clarify some documentation
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Sep 2014 10:50:57 -0400
+
 globus-gssapi-gsi (11.12-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

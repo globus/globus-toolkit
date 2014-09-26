@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS=-I m4
 pkgconfigdir = $(libdir)/pkgconfig
 
 SUBDIRS = library

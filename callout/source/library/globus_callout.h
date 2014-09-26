@@ -19,7 +19,7 @@
 
 /**
  * @file globus_callout.h
- * Globus Callout Infrastructure
+ * @brief Globus Callout Infrastructure
  * @author Sam Meder
  */
 
@@ -47,18 +47,20 @@ extern "C" {
  *
  * - It provides a function for reading callout configuration files. Files are
  *   assumed to have the following format:
- *    - Anything after a '#' is assumed to be a comment
+ *    - Anything after a <tt>#</tt> is assumed to be a comment
  *    - Blanks lines are ignored
  *    - Lines specifying callouts have the format
- *      abstract type           library         symbol
- *      where "abstract type" denotes the type of callout,
- *      e.g. globus_gram_jobmanager_authz, "library" denotes the library the
- *      callout can be found in and "symbol" denotes the function name of the
- *      callout.
+ @verbatim
+       abstract type           library         symbol
+ @endverbatim
+ *      where <i>abstract type</i> denotes the type of callout,
+ *      e.g. globus_gram_jobmanager_authz, <i>library</i> denotes the library
+ *      the callout can be found in and <i>symbol</i> denotes the function name
+ *      of the callout.
  * - It provides a API function for registering callouts
  * - All callouts are assumed to have the function signature
  *   globus_result_t callout_func(va_list ap)
- * - It provides a function for calling a callout given a abstract type. If
+ * - It provides a function for calling a callout given an abstract type. If
  *   multiple callouts are defined for the same abstract type then all callouts
  *   for the abstract type will be called. Implementers should not rely on any
  *   correlation between the order of configuration and the order of invocation
@@ -67,12 +69,20 @@ extern "C" {
  * Any program that uses Globus Callout functions must include
  * the globus_callout.h header
  *
+ * Function Categories
+ * - @ref globus_callout_activation
+ * - @ref globus_callout_handle
+ * - @ref globus_callout_config 
+ * - @ref globus_callout_call 
+ * - @ref globus_callout_constants
  */
 
 /** 
  * @defgroup globus_callout_activation Activation
  * @ingroup globus_callout
+ * @brief Callback API Activation
  *
+ * @details
  * Globus Callout API uses standard Globus module activation and
  * deactivation.  Before any Globus Callout API functions are called, the
  * following function must be called:
@@ -129,8 +139,9 @@ typedef globus_result_t (*globus_callout_function_t)(
  * @defgroup globus_callout_handle Callout Handle Operations
  * @ingroup globus_callout
  *
- * Initialize and Destory a Globus Callout Handle structure.
+ * @brief Manage a Globus Callout Handle structure
  *
+ * @details
  * This section defines operations for initializing and destroying Globus
  * Callout Handle structure.
  */
@@ -146,8 +157,9 @@ globus_callout_handle_destroy(
  * @defgroup globus_callout_config Callout Configuration
  * @ingroup globus_callout
  *
- * Functions for registering callouts.
+ * @brief Register callouts
  *
+ * @details
  * This section defines operations for registering callouts. Callouts may be
  * registered either through a configuration file or through calls to
  * globus_callout_register. 
@@ -168,8 +180,9 @@ globus_callout_register(
  * @defgroup globus_callout_call Callout Invocation
  * @ingroup globus_callout
  *
- * Functions for invoking callouts.
+ * @brief Invoke callouts
  *
+ * @details
  * This section defines a operation for invoking callouts by their abstract
  * type. 
  */

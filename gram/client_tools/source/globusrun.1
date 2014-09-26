@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: globusrun
-.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 03/18/2010
-.\"    Manual: GRAM5 Commands
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/25/2014
+.\"    Manual: Globus Toolkit Manual
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUSRUN" "1" "03/18/2010" "University of Chicago" "GRAM5 Commands"
+.TH "GLOBUSRUN" "1" "09/25/2014" "University of Chicago" "Globus Toolkit Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -21,157 +30,48 @@
 .SH "NAME"
 globusrun \- Execute and manage jobs via GRAM
 .SH "SYNOPSIS"
-.HP \w'\fBglobusrun\fR\ 'u
-\fBglobusrun\fR [\-help] [\-usage] [\-version] [\-versions]
-.HP \w'\fBglobusrun\fR\ 'u
-\fBglobusrun\fR {\-p | \-parse}
-.br
-{\-f\ \fIRSL_FILENAME\fR | \-file\ \fIRSL_FILENAME\fR  | RSL_SPECIFICATION}
-.HP \w'\fBglobusrun\fR\ 'u
-\fBglobusrun\fR [\-n] [\-no\-interrupt]
-.br
-{\-r\ \fIRESOURCE_CONTACT\fR | \-resource\ \fIRESOURCE_CONTACT\fR}
-.br
-{\-a | \-authenticate\-only }
-.HP \w'\fBglobusrun\fR\ 'u
-\fBglobusrun\fR [\-n] [\-no\-interrupt]
-.br
-{\-r\ \fIRESOURCE_CONTACT\fR | \-resource\ \fIRESOURCE_CONTACT\fR}
-.br
-{\-j | \-jobmanager\-version}
-.HP \w'\fBglobusrun\fR\ 'u
-\fBglobusrun\fR [\-n] [\-no\-interrupt] {\-k | \-kill} {\fIJOB_ID\fR}
-.HP \w'\fBglobusrun\fR\ 'u
-\fBglobusrun\fR [\-n] [\-no\-interrupt] [\-full\-proxy] [\-D] {\-y | \-refresh\-proxy} {\fIJOB_ID\fR}
-.HP \w'\fBglobusrun\fR\ 'u
-\fBglobusrun\fR {\-status} {\fIJOB_ID\fR}
-.HP \w'\fBglobusrun\fR\ 'u
-\fBglobusrun\fR [\-q] [\-quiet] [\-o] [\-output\-enable] [\-s] [\-server] [\-w] [\-write\-allow] [\-n] [\-no\-interrupt] [\-b] [\-batch] [\-F] [\-fast\-batch] [\-full\-proxy] [\-D] [\-d] [\-dryrun]
-.br
-{\-r\ \fIRESOURCE_CONTACT\fR | \-resource\ \fIRESOURCE_CONTACT\fR}
-.br
-{\-f\ \fIRSL_FILENAME\fR | \-file\ \fIRSL_FILENAME\fR  | RSL_SPECIFICATION}
+.sp
+\fBglobusrun\fR [\-help | \-usage | \-version \-versions ]
+.sp
+\fBglobusrun\fR [\-p | \-parse] { \-f \fIFILENAME\fR | \-file \fIFILENAME\fR | \fIRSL\fR }
+.sp
+\fBglobusrun\fR [OPTIONS] {\-r \fIRESOURCE\fR| \-resource \fIRESOURCE\fR} { \-a | \-authenticate\-only }
+.sp
+\fBglobusrun\fR [OPTIONS] {\-r \fIRESOURCE\fR| \-resource \fIRESOURCE\fR} { \-j | \-jobmanager\-version }
+.sp
+\fBglobusrun\fR [OPTIONS] {\-k | \-kill } \fIJOBID\fR
+.sp
+\fBglobusrun\fR [OPTIONS] [ \-full\-proxy | \-D ] { \-y | \-refresh\-proxy } \fIJOBID\fR
+.sp
+\fBglobusrun\fR [OPTIONS] \-status \fIJOBID\fR
+.sp
+\fBglobusrun\fR [OPTIONS] { \-r \fIRESOURCE\fR | \-resource \fIRESOURCE\fR } { \-f \fIFILENAME\fR | \-file \fIFILENAME\fR | \fIRSL\fR}
 .SH "DESCRIPTION"
-.PP
-The
-\fBglobusrun\fR
-program for submits and manages jobs run on a local or remote job host\&. The jobs are controlled by the
-\fBglobus\-job\-manager\fR
-program which interfaces with a local resource manager that schedules and executes the job\&.
-.PP
-The
-\fBglobusrun\fR
-program can be run in a number of different modes chosen by command\-line options\&.
-.PP
-When
-\fB\-help\fR,
-\fB\-usage\fR,
-\fB\-version\fR, or
-\fB\-versions\fR
-command\-line options are used,
-\fBglobusrun\fR
-will print out diagnostic information and then exit\&.
-.PP
-When the
-\fB\-p\fR
-or
-\fB\-parse\fR
-command\-line option is present,
-\fBglobusrun\fR
-will verify the syntax of the RSL specification and then terminate\&. If the syntax is valid,
-\fBglobusrun\fR
-will print out the string "RSL Parsed Successfully\&.\&.\&." and exit with a zero exit code; otherwise, it will print an error message and terminate with a non\-zero exit code\&.
-.PP
-When the
-\fB\-a\fR
-or
-\fB\-authenticate\-only\fR
-command\-line option is present,
-\fBglobusrun\fR
-will verify that the service named by
-\fIRESOURCE_CONTACT\fR
-exists and the client\'s credentials are granted permission to access that service\&. If authentication is successful,
-\fBglobusrun\fR
-will display the string "GRAM Authentication test successful" and exit with a zero exit code; otherwise it will print an explanation of the problem and will with a non\-zero exit code\&.
-.PP
-When the
-\fB\-j\fR
-or
-\fB\-jobmanager\-version\fR
-command\-line option is present,
-\fBglobusrun\fR
-will attempt to determine the software version that the service named by
-\fIRESOURCE_CONTACT\fR
-is running\&. If successful, it will display both the Toolkit version and the Job Manager package version and exit with a zero exit code; otherwise, it will print an explanation of the problem and exit with a non\-zero exit code\&.
-.PP
-When the
-\fB\-k\fR
-or
-\fB\-kill\fR
-command\-line option is present,
-\fBglobusrun\fR
-will attempt to terminate the job named by
-\fIJOB_ID\fR\&. If successful,
-\fBglobusrun\fR
-will exit with zero; otherwise it will display an explanation of the problem and exit with a non\-zero exit code\&.
-.PP
-When the
-\fB\-y\fR
-or
-\fB\-refresh\-proxy\fR
-command\-line option is present,
-\fBglobusrun\fR
-will attempt to delegate a new X\&.509 proxy to the job manager which is managing the job named by
-\fIJOB_ID\fR\&. If successful,
-\fBglobusrun\fR
-will exit with zero; otherwise it will display an explanation of the problem and exit with a non\-zero exit code\&. This behavior can be modified by the
-\fB\-full\-proxy\fR
-or
-\fB\-D\fR
-command\-line options to enable full proxy delegation\&. The default is limited proxy delegation\&.
-.PP
-When the
-\fB\-status\fR
-command\-line option is present,
-\fBglobusrun\fR
-will attempt to determine the current state of the job\&. If successful, the state will be printed to standard output and
-\fBglobusrun\fR
-will exit with a zero exit code; otherwise, a description of the error will be displayed and it will exit with a non\-zero exit code\&.
-.PP
-Otherwise,
-\fBglobusrun\fR
-will submit the job to a GRAM service\&. By default,
-\fBglobusrun\fR
-waits until the job has terminated or failed before exiting, displaying information about job state changes and at exit time, the job exit code if it is provided by the GRAM service\&.
-.PP
-The
-\fBglobusrun\fR
-program can also function as a
-GASS
-file server to allow the
-\fBglobus\-job\-manager\fR
-program to stage files to and from the machine on which
-\fBglobusrun\fR
-is executed to the GRAM service node\&. This behavior is controlled by the
-\fB\-s\fR,
-\fB\-o\fR, and
-\fB\-w\fR
-command\-line options\&.
-.PP
-Jobs submitted by
-\fBglobusrun\fR
-can be monitored interactively or detached\&. To have
-\fBglobusrun\fR
-detach from the GRAM service after submitting the job, use the
-\fB\-b\fR
-or
-\fB\-F\fR
-command\-line options\&.
+.sp
+The \fBglobusrun\fR program for submits and manages jobs run on a local or remote job host\&. The jobs are controlled by the \fBglobus\-job\-manager\fR program which interfaces with a local resource manager that schedules and executes the job\&.
+.sp
+The \fBglobusrun\fR program can be run in a number of different modes chosen by command\-line options\&.
+.sp
+When \fI\-help\fR, \fI\-usage\fR, \fI\-version\fR, or \fI\-versions\fR command\-line options are used, \fBglobusrun\fR will print out diagnostic information and then exit\&.
+.sp
+When the \fI\-p\fR or \fI\-parse\fR command\-line option is present, \fBglobusrun\fR will verify the syntax of the RSL specification and then terminate\&. If the syntax is valid, \fBglobusrun\fR will print out the string RSL Parsed Successfully\&.\&.\&. and exit with a zero exit code; otherwise, it will print an error message and terminate with a non\-zero exit code\&.
+.sp
+When the \fI\-a\fR or \fI\-authenticate\-only\fR command\-line option is present, \fBglobusrun\fR will verify that the service named by \fIRESOURCE\fR exists and the client\(cqs credentials are granted permission to access that service\&. If authentication is successful, \fBglobusrun\fR will display the string GRAM Authentication test successful and exit with a zero exit code; otherwise it will print an explanation of the problem and will with a non\-zero exit code\&.
+.sp
+When the \fI\-j\fR or \fI\-jobmanager\-version\fR command\-line option is present, \fBglobusrun\fR will attempt to determine the software version that the service named by \fIRESOURCE\fR is running\&. If successful, it will display both the Toolkit version and the Job Manager package version and exit with a zero exit code; otherwise, it will print an explanation of the problem and exit with a non\-zero exit code\&.
+.sp
+When the \fI\-k\fR or \fI\-kill\fR command\-line option is present, \fBglobusrun\fR will attempt to terminate the job named by \fIJOB_ID\fR\&. If successful, \fBglobusrun\fR will exit with zero; otherwise it will display an explanation of the problem and exit with a non\-zero exit code\&.
+.sp
+When the \fI\-y\fR or \fI\-refresh\-proxy\fR command\-line option is present, \fBglobusrun\fR will attempt to delegate a new X\&.509 proxy to the job manager which is managing the job named by \fIJOBID\fR\&. If successful, \fBglobusrun\fR will exit with zero; otherwise it will display an explanation of the problem and exit with a non\-zero exit code\&. This behavior can be modified by the \fI\-full\-proxy\fR or \fI\-D\fR command\-line options to enable full proxy delegation\&. The default is limited proxy delegation\&.
+.sp
+When the \fI\-status\fR command\-line option is present, \fBglobusrun\fR will attempt to determine the current state of the job\&. If successful, the state will be printed to standard output and \fBglobusrun\fR will exit with a zero exit code; otherwise, a description of the error will be displayed and it will exit with a non\-zero exit code\&.
+.sp
+Otherwise, \fBglobusrun\fR will submit the job to a GRAM service\&. By default, \fBglobusrun\fR waits until the job has terminated or failed before exiting, displaying information about job state changes and at exit time, the job exit code if it is provided by the GRAM service\&.
+.sp
+The \fBglobusrun\fR program can also function as a \fBGASS\fR file server to allow the \fBglobus\-job\-manager\fR program to stage files to and from the machine on which \fBglobusrun\fR is executed to the GRAM service node\&. This behavior is controlled by the \fI\-s\fR, \fI\-o\fR, and \fI\-w\fR command\-line options\&.
+.sp
+Jobs submitted by \fBglobusrun\fR can be monitored interactively or detached\&. To have \fBglobusrun\fR detach from the GRAM service after submitting the job, use the \fI\-b\fR or \fI\-F\fR command\-line options\&.
 .SH "OPTIONS"
-.PP
-The full set of options to
-\fBglobusrun\fR
-consist of:
 .PP
 \fB\-help\fR
 .RS 4
@@ -197,33 +97,32 @@ Display the software version of all modules used by
 (including DiRT information) to standard error and then exit\&.
 .RE
 .PP
-\fB\-p\fR, \fB\-parse\fR
+\fB\-p, \-parse\fR
 .RS 4
 Do a parse check on the job specification and print diagnostics\&. If a parse error occurs,
 \fBglobusrun\fR
 exits with a non\-zero exit code\&.
 .RE
 .PP
-\fB\-f \fR\fB\fIRSL_FILENAME\fR\fR, \fB\-file \fR\fB\fIRSL_FILENAME\fR\fR
+\fB\-f FILENAME, \-file FILENAME\fR
 .RS 4
 Read job specification from the file named by
-\fIRSL_FILENAME\fR\&.
+\fIFILENAME\fR
 .RE
 .PP
-\fB\-n\fR, \fB\-no\-interrupt\fR
+\fB\-n, \-no\-interrupt\fR
 .RS 4
 Disable handling of the
 SIGINT
-signal, so that the interrupt character (typically
-Control+C) causes
+signal, so that the interrupt character (typically Control\-C causes
 \fBglobusrun\fR
 to terminate without canceling the job\&.
 .RE
 .PP
-\fB\-r \fR\fB\fIRESOURCE_CONTACT\fR\fR, \fB\-resource \fR\fB\fIRESOURCE_CONTACT\fR\fR
+\fB\-r RESOURCE\fR
 .RS 4
 Submit the request to the resource specified by
-\fIRESOURCE_CONTACT\fR\&. A resource may be specified in the following ways:
+\fIRESOURCE\fR\&. A resource may be specified in the following ways:
 .sp
 .RS 4
 .ie n \{\
@@ -333,9 +232,6 @@ Submit the request to the resource specified by
 .IP \(bu 2.3
 .\}
 \fIHOST\fR:\fIPORT\fR/\fISERVICE\fR:\fISUBJECT\fR
-.RE
-.RS 4
-.sp
 If any of
 \fIPORT\fR,
 \fISERVICE\fR, or
@@ -346,49 +242,45 @@ jobmanager, and
 host@\fIHOST\fR
 are used respectively\&.
 .RE
+.RE
 .PP
-\-j, \-jobmanager\-version
+\fB\-j, \-jobmanager\-version\fR
 .RS 4
 Print the software version being run by the service running at
-\fIRESOURCE_CONTACT\fR\&.
+\fIRESOURCE\fR\&.
 .RE
 .PP
-\fB\-k \fR\fB\fIJOB_ID\fR\fR, \fB\-kill \fR\fB\fIJOB_ID\fR\fR
+\fB\-k \fR\fB\fIJOBID\fR\fR\fB, \-kill \fR\fB\fIJOBID\fR\fR
 .RS 4
 Kill the job named by
-\fIJOB_ID\fR
+\fIJOBID\fR\&.
 .RE
 .PP
-\fB\-D\fR, \fB\-full\-proxy\fR
+\fB\-D, \-full\-proxy\fR
 .RS 4
 Delegate a full impersonation proxy to the service\&. By default, a limited proxy is delegated when needed\&.
 .RE
-.PP
-\fB\-y\fR, \fB\-refresh\-proxy\fR
-.RS 4
-Delegate a new proxy to the service processing
-\fIJOB_ID\fR\&.
-.RE
+.sp
+\fB\-y, \-refresh\-proxy\fR: Delegate a new proxy to the service processing JOBID\&.
 .PP
 \fB\-status\fR
 .RS 4
-Display the current status of the job named by
-\fIJOB_ID\fR\&.
+Display the current status of the job named by JOBID\&.
 .RE
 .PP
-\fB\-q\fR, \fB\-quiet\fR
+\fB\-q, \-quiet\fR
 .RS 4
 Do not display job state change or exit code information\&.
 .RE
 .PP
-\fB\-o\fR, \fB\-output\-enable\fR
+\fB\-o, \-output\-enable\fR
 .RS 4
 Start a GASS server within the
 \fBglobusrun\fR
 application that allows access to its standard output and standard error streams only\&. Also, augment the
-\fIRSL_SPECIFICATION\fR
+\fIRSL\fR
 with a definition of the
-\fIGLOBUSRUN_GASS_URL\fR
+GLOBUSRUN_GASS_URL
 RSL substitution and add
 stdout
 and
@@ -398,20 +290,20 @@ clauses which redirect the output and error streams of the job to the output and
 command\&. If this is specified, then
 \fBglobusrun\fR
 acts as though the
-\fB\-q\fR
+\fI\-q\fR
 were also specified\&.
 .RE
 .PP
-\fB\-s\fR, \fB\-server\fR
+\fB\-s, \-server\fR
 .RS 4
 Start a GASS server within the
 \fBglobusrun\fR
 application that allows access to its standard output and standard error streams for writing and any file local the the
 \fBglobusrun\fR
 invocation for reading\&. Also, augment the
-\fIRSL_SPECIFICATION\fR
+\fIRSL\fR
 with a definition of the
-\fIGLOBUSRUN_GASS_URL\fR
+GLOBUSRUN_GASS_URL
 RSL substitution and add
 stdout
 and
@@ -421,20 +313,20 @@ clauses which redirect the output and error streams of the job to the output and
 command\&. If this is specified, then
 \fBglobusrun\fR
 acts as though the
-\fB\-q\fR
+\fI\-q\fR
 were also specified\&.
 .RE
 .PP
-\fB\-w\fR, \fB\-write\-allow\fR
+\fB\-w, \-write\-allow\fR
 .RS 4
 Start a GASS server within the
 \fBglobusrun\fR
 application that allows access to its standard output and standard error streams for writing and any file local the the
 \fBglobusrun\fR
 invocation for reading or writing\&. Also, augment the
-\fIRSL_SPECIFICATION\fR
+\fIRSL\fR
 with a definition of the
-\fIGLOBUSRUN_GASS_URL\fR
+GLOBUSRUN_GASS_URL
 RSL substitution and add
 stdout
 and
@@ -444,47 +336,86 @@ clauses which redirect the output and error streams of the job to the output and
 command\&. If this is specified, then
 \fBglobusrun\fR
 acts as though the
-\fB\-q\fR
+\fI\-q\fR
 were also specified\&.
 .RE
 .PP
-\fB\-b\fR, \fB\-batch\fR
+\fB\-b, \-batch\fR
 .RS 4
-Terminate after submitting the job to the GRAM service\&. The
+Terminate after submitting the job to the GRAM service\&. The GASS\-related options can be used to stage input files, but standard output, standard error, and file staging after the job completes will not be processed\&. The
 \fBglobusrun\fR
 program will exit after the job hits any of the following states:
-PENDING,
-ACTIVE,
-FAILED, or
-DONE\&. The GASS\-related options can be used to stage input files, but standard output, standard error, and file staging after the job completes will not be processed\&.
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+PENDING
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+ACTIVE
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+FAILED
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+DONE
+.RE
 .RE
 .PP
-\fB\-F\fR, \fB\-fast\-batch\fR
+\fB\-F, \-fast\-batch\fR
 .RS 4
 Terminate after submitting the job to the GRAM service\&. The
 \fBglobusrun\fR
 program will exit after it receives a reply from the service\&. The
-\fIJOB_ID\fR
+\fIJOBID\fR
 will be displayed to standard output before terminating so that the job can be checked with the
-\fB\-status\fR
+\fI\-status\fR
 command\-line option or modified by the
-\fB\-refresh\-proxy\fR
+\fI\-refresh\-proxy\fR
 or
-\fB\-kill\fR
+\fI\-kill\fR
 command\-line options\&.
 .RE
 .PP
-\fB\-d\fR, \fB\-dryrun\fR
+\fB\-d, \-dryrun\fR
 .RS 4
 Submit the job with the
 dryrun
 attribute set to true\&. When this is done, the job manager will prepare to start the job but start short of submitting it to the service\&. This can be used to detect problems with the
-\fIRSL_SPECIFICATION\fR\&.
+\fIRSL\fR\&.
 .RE
 .SH "ENVIRONMENT"
-.PP
-If the following variables affect the execution of
-\fBglobusrun\fR
+.sp
+The following variables affect the execution of \fBglobusrun\fR
 .PP
 \fBX509_USER_PROXY\fR
 .RS 4
@@ -496,23 +427,11 @@ Path to proxy credential\&.
 Path to trusted certificate directory\&.
 .RE
 .SH "BUGS"
-.PP
-The
-\fBglobusrun\fR
-program assumes any failure to contact the job means the job has terminated\&. In fact, this may be due to the
-\fBglobus\-job\-manager\fR
-program exiting after all jobs it is managing have reached the
-DONE
-or
-FAILED
-states\&. In order to reliably detect job termination, the
-two_phase
-RSL attribute should be used\&.
+.sp
+The \fBglobusrun\fR program assumes any failure to contact the job means the job has terminated\&. In fact, this may be due to the \fBglobus\-job\-manager\fR program exiting after all jobs it is managing have reached the DONE or FAILED states\&. In order to reliably detect job termination, the two_phase RSL attribute should be used\&.
 .SH "SEE ALSO"
-.PP
-
-\fBglobus-job-submit\fR(1),
-\fBglobus-job-run\fR(1),
-\fBglobus-job-clean\fR(1),
-\fBglobus-job-get-output\fR(1),
-\fBglobus-job-cancel\fR(1)
+.sp
+\fBglobus\-job\-submit\fR(1), \fBglobus\-job\-run\fR(1), \fBglobus\-job\-clean\fR(1), \fBglobus\-job\-get\-output\fR(1), \fBglobus\-job\-cancel\fR(1)
+.SH "AUTHOR"
+.sp
+Copyright \(co 1999\-2014 University of Chicago

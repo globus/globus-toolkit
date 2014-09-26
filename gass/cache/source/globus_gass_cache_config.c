@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-/** @file globus_gass_cache_config.c
- *  Internal utlity functions for extracting GASS cache configuration
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_gass_cache_config.c
+ * @brief Internal utlity functions for extracting GASS cache configuration
  *  information.
  */
 
@@ -213,3 +216,4 @@ globus_l_gass_cache_config_get(globus_l_gass_cache_config_t *config,
     return globus_hashtable_lookup(&config->table, key);
 }
 
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

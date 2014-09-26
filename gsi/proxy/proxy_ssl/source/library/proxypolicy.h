@@ -20,7 +20,7 @@
 
 /**
  * @file proxypolicy.h
- *
+ * @brief Proxy Policy
  * @author Sam Meder
  * @author Sam Lang
  */

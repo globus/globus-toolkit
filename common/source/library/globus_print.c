@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_print.c Error- and status-reporting functions */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_print.c
+ * @brief Error- and status-reporting functions
+ */
 
 #include "globus_common_include.h"
 #include "globus_print.h"
@@ -287,3 +292,5 @@ globus_panic(
     GLOBUS_DUMP_STACK();
     abort();
 }
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

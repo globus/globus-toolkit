@@ -1,3 +1,14 @@
+globus-callout (3.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * Doxygen markup fixes
+  * Use consistent flavor tags
+  * Use mixed case man page install for all packages
+  * Use consistent PREDEFINED in all Doxyfiles
+  * Fix dependency version
+  * Fix typos and clarify some documentation
+
+ -- Globus Toolkit <support@globus.org>  Mon, 22 Sep 2014 10:26:11 -0400
+
 globus-callout (3.12-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

@@ -19,7 +19,7 @@
 
 /**
  * @file globus_gss_assist.h
- * GSS Assist Header
+ * @brief GSS Assist Header
  */
  
 #include "gssapi.h"
@@ -105,7 +105,7 @@ globus_module_descriptor_t              globus_i_gsi_gss_assist_module;
 #define GLOBUS_GSS_ASSIST_TOKEN_EOF			3
 #define GLOBUS_GSS_ASSIST_TOKEN_NOT_FOUND		4
 
-/* for kerberos v5.1.0.5 compatability we need this */
+/* for kerberos v5.1.0.5 compatibility we need this */
 #ifndef GSS_C_NO_NAME
 #define GSS_C_NO_NAME ((gss_name_t *) 0)
 #define GSS_ASSIST_KRB5_HACK
@@ -127,7 +127,7 @@ typedef struct globus_gss_assist_ex_st
  * @brief Send and Receive Security Tokens
  * @details
  * The functions in this section are used to send and receive
- * GSSAPI tokens using verious methods.
+ * GSSAPI tokens using various methods.
  * These are used by the @ref globus_gss_assist_context functions.
  */
 extern int
@@ -316,7 +316,7 @@ globus_gss_assist_get_unwrap(
     FILE *                              fperr);
 
 /*
- * globus_gss_assist_will_handle_restrictions - used to tell openssl
+ * globus_gss_assist_will_handle_restrictions - used to tell OpenSSL
  * that the application will deal with the restrictions extension
  */
 OM_uint32

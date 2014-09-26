@@ -25,7 +25,7 @@ globus_gsi_authz_callout_error_strings[GLOBUS_GSI_AUTHZ_CALLOUT_ERROR_LAST] =
     /* 2 */   "Configuration Error",
     /* 3 */   "System Error",
     /* 4 */   "Credentials Error",
-    /* 5 */   "A invalid paramater was detected"
+    /* 5 */   "A invalid parameter was detected"
 };
 
 static int

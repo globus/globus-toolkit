@@ -1,13 +1,13 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	5.6
+Version:	5.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_scheduler_event_generator-5.6.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_scheduler_event_generator-5.7.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gram-protocol%{?_isa} >= 11
@@ -182,6 +182,7 @@ fi
 %config(noreplace) /etc/sysconfig/%{name}
 %{_sysconfdir}/init.d/%{name}
 %{_sbindir}/*
+%{_mandir}/man8/*
 
 %files devel
 %defattr(-,root,root,-)
@@ -196,6 +197,13 @@ fi
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 23 2014 Globus Toolkit <support@globus.org> - 5.7-1
+- Use mixed case man page install for all packages
+- Doxygen markup fixes
+- Fix broken globus-scheduler-event-generator-admin script
+- Add documentation for globus-scheduler-event-generator and globus-scheduler-event-generator-admin
+- Quiet some autoconf/automake warnings
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 5.6-1
 - Merge fixes from ellert-globus_6_branch
 

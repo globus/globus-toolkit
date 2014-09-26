@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_libc.h Thread-safe libc macros, function prototypes */
+/**
+ * @file globus_libc.h
+ * @brief Thread-safe libc macros, function prototypes
+ */
 
 #ifndef GLOBUS_LIBC_H
 #define GLOBUS_LIBC_H 1

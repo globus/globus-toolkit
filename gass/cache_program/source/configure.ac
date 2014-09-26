@@ -1,6 +1,7 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gass_cache_program],[6.4],[https://globus.atlassian.net/])
+AC_INIT([globus_gass_cache_program],[6.5],[https://globus.atlassian.net/])
+AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])

@@ -15,7 +15,9 @@
  */
 
 /**
- * @file globus_gram_client.h GRAM Client API
+ * @file globus_gram_client.h
+ * @brief GRAM Client API
+ *
  * @details
  * This header file contains the exported client interface of 
  * the Resource Allocation Management System.

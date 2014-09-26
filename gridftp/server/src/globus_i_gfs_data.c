@@ -6310,7 +6310,7 @@ globus_l_gfs_data_handle_init(
                 goto error_control;
             }
         }
-        /* if they dont use it all */
+        /* if they don't use it all */
         else
         {
             globus_gfs_config_set_int(

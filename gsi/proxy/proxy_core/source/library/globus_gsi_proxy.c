@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_proxy.c GSI Proxy Implementation
+ * @file globus_gsi_proxy.c
+ * @brief GSI Proxy Implementation
  * @author Sam Lang, Sam Meder
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #define PROXY_NAME                      "proxy"
 #define LIMITED_PROXY_NAME              "limited proxy"
@@ -192,7 +195,7 @@ globus_l_gsi_proxy_deactivate(void)
  * @details
  * Create a proxy credential request
  *
- * This function creates a proxy credential request, ie. a unsigned 
+ * This function creates a proxy credential request, an unsigned 
  * certificate and the corresponding private key, based on the handle
  * that is passed in.
  * The public part of the request is written to the BIO supplied in
@@ -291,7 +294,7 @@ globus_gsi_proxy_create_req(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509_REQ,
-            (_PCSL("Could not set version of X509 request in proxy handle")));
+            (_PCSL("Could not set version of X.509 request in proxy handle")));
         goto error_exit;
     }
 
@@ -300,7 +303,7 @@ globus_gsi_proxy_create_req(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509_REQ,
-            (_PCSL("Couldn't set public key of X509 request in proxy handle")));
+            (_PCSL("Couldn't set public key of X.509 request in proxy handle")));
         goto error_exit;
     }
 
@@ -1010,10 +1013,10 @@ globus_gsi_proxy_resign_cert(
  * Sign a proxy certificate request
  *
  * This function signs the public part of a proxy credential request,
- * i.e. the unsigned certificate, previously read by inquire req using
- * the supplied issuer_credential. This operation will add a
- * ProxyCertInfo extension to the proxy certificate if values
- * contained in the extension are specified in the handle.
+ * i.e. the unsigned certificate, previously read by
+ * globus_gsi_proxy_inquire_req using the supplied issuer_credential. This
+ * operation will add a ProxyCertInfo extension to the proxy certificate if
+ * values contained in the extension are specified in the handle.
  * The resulting signed certificate is written to the output_bio.
  *
  * @param handle
@@ -1097,7 +1100,7 @@ globus_gsi_proxy_sign_req(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
-            (_PCSL("Error converting X509 proxy cert from internal "
+            (_PCSL("Error converting X.509 proxy cert from internal "
              "to DER encoded form")));
         goto done;
     }
@@ -1349,7 +1352,7 @@ globus_l_gsi_proxy_sign_key(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
-                (_PCSL("Couldn't create X509 extension list "
+                (_PCSL("Couldn't create X.509 extension list "
                  "to hold PROXYCERTINFO extension")));
             goto done;
         }
@@ -1448,7 +1451,7 @@ globus_l_gsi_proxy_sign_key(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
-                (_PCSL("Couldn't add X509 extension to new proxy cert")));
+                (_PCSL("Couldn't add X.509 extension to new proxy cert")));
             goto done;
         }
     }
@@ -1480,7 +1483,7 @@ globus_l_gsi_proxy_sign_key(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
-                (_PCSL("Couldn't get keyUsage extension form issuer cert")));
+                (_PCSL("Couldn't get keyUsage extension from issuer cert")));
             goto done;            
         }
         
@@ -1576,7 +1579,7 @@ globus_l_gsi_proxy_sign_key(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
-                (_PCSL("Couldn't add X509 keyUsage extension to new proxy cert")));
+                (_PCSL("Couldn't add X.509 keyUsage extension to new proxy cert")));
             X509_EXTENSION_free(extension);
             goto done;
         }
@@ -1612,7 +1615,7 @@ globus_l_gsi_proxy_sign_key(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
-                (_PCSL("Couldn't add X509 extendedKeyUsage extension to new proxy cert")));
+                (_PCSL("Couldn't add X.509 extendedKeyUsage extension to new proxy cert")));
             goto done;
         }
     }
@@ -1644,7 +1647,7 @@ globus_l_gsi_proxy_sign_key(
                 GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
-                    (_PCSL("Couldn't add X509 extension to new proxy cert")));
+                    (_PCSL("Couldn't add X.509 extension to new proxy cert")));
                 goto done;
             }        
         }
@@ -1703,7 +1706,7 @@ globus_l_gsi_proxy_sign_key(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
-            (_PCSL("Couldn't set pubkey of X509 cert")));
+            (_PCSL("Couldn't set pubkey of X.509 cert")));
         goto done;
     }
 
@@ -1727,7 +1730,7 @@ globus_l_gsi_proxy_sign_key(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("The signing algorithm used by the ceritificate cannot "
+            (_PCSL("The signing algorithm used by the certificate cannot "
             " be used to sign a proxy.")));
         goto done;
     }
@@ -2145,7 +2148,7 @@ globus_gsi_proxy_assemble_cred(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
-            (_PCSL("Couldn't convert X509 proxy cert from "
+            (_PCSL("Couldn't convert X.509 proxy cert from "
              "DER encoded to internal form")));
         goto done;
     }
@@ -2207,7 +2210,7 @@ globus_gsi_proxy_assemble_cred(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509,
-                (_PCSL("Can't read DER encoded X509 cert from BIO")));
+                (_PCSL("Can't read DER encoded X.509 cert from BIO")));
             goto free_cred_handle;
         }
         
@@ -2345,7 +2348,7 @@ globus_i_gsi_proxy_set_pc_times(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509,
-                (_PCSL("Error adjusting X509 proxy cert's expiration time")));
+                (_PCSL("Error adjusting X.509 proxy cert's expiration time")));
             goto free_pc_notafter;
         }
     }
@@ -2355,7 +2358,7 @@ globus_i_gsi_proxy_set_pc_times(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
-            (_PCSL("Error setting X509 proxy cert's expiration")));
+            (_PCSL("Error setting X.509 proxy certificate's expiration")));
         goto free_pc_notafter;
     }
 
@@ -2452,7 +2455,7 @@ globus_i_gsi_proxy_set_subject(
  * Determines the type of proxy to sign based on the requested type and
  * the issuing certificate. Error if we are asked to sign a different format
  * (GSI2 vs GSI3 vs RFC) than the issuer or if the restrictions are invalid
- * (Limited signing non-limited, etc)
+ * (Limited signing non-limited, etc.)
  * In this patch, we also allow support for default proxy types:
  * - if format is unspecified, use issuer format (if that is unspecified, use
  *   RFC)
@@ -2660,7 +2663,7 @@ globus_l_gsi_proxy_determine_type(
         goto exit;
     }
     /**
-     * Finally, verify that we're not trying to use a restriced or independent
+     * Finally, verify that we're not trying to use a restricted or independent
      * proxy with the legacy proxy format
      */
     if (GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(requested_cert_type) &&

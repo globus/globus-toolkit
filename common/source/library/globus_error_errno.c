@@ -17,12 +17,9 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_error_errno.c
- *
- * $RCSfile$
- * $Revision$
- * $Date$
+ * @brief Globus Errno Error API
  */
-#endif
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_error_errno.h"
 #include "globus_i_error_generic.h"
@@ -45,7 +42,7 @@
  *        Pointer to the originating module.
  * @param base_cause
  *        The error object causing the error. If this is the original
- *        error, this paramater may be NULL.
+ *        error, this parameter may be NULL.
  * @param system_errno
  *        The system errno.
  * @return
@@ -94,7 +91,7 @@ globus_error_construct_errno_error(
  *        Pointer to the originating module.
  * @param base_cause
  *        The error object causing the error. If this is the original
- *        error this paramater may be NULL.
+ *        error this parameter may be NULL.
  * @param system_errno
  *        The system errno.
  * @return

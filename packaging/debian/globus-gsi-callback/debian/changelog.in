@@ -1,3 +1,12 @@
+globus-gsi-callback (5.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Doxygen markup fixes
+  * Include more manpages for API
+  * Fix dependency version
+  * Fix typos and clarify some documentation
+
+ -- Globus Toolkit <support@globus.org>  Wed, 24 Sep 2014 10:12:08 -0400
+
 globus-gsi-callback (5.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

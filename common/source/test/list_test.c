@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file list_test.c Globus List Test Cases*/
+/**
+ * @file list_test.c
+ * @brief Globus List Test Cases
+ */
+
 #include "globus_common.h"
 #include "globus_test_tap.h"
 

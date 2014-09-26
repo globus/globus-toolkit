@@ -77,6 +77,9 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
                 test "$XSLTPROC" != "no" && \
                 test "$XMLLINT" != "no"])
 
+AC_PATH_PROG(A2X, [a2x.py], [no])
+AM_CONDITIONAL([HAVE_A2X], [test "$A2X" != "no"])
+
 AC_CONFIG_FILES(
         [globus-simple-ca-undefined.pc
         globus-simple-ca.pc

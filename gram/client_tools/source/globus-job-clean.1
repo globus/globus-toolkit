@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: globus-job-clean
-.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 03/18/2010
-.\"    Manual: GRAM5 Commands
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/25/2014
+.\"    Manual: Globus Toolkit Manual
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUS\-JOB\-CLEAN" "1" "03/18/2010" "University of Chicago" "GRAM5 Commands"
+.TH "GLOBUS\-JOB\-CLEAN" "1" "09/25/2014" "University of Chicago" "Globus Toolkit Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -21,38 +30,18 @@
 .SH "NAME"
 globus-job-clean \- Cancel and clean up a GRAM batch job
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-job\-clean\fR\ 'u
-\fBglobus\-job\-clean\fR [\-r\ \fIRESOURCE\fR | \-resource\ \fIRESOURCE\fR]
-.br
-[\-f | \-force] [\-q | \-quiet] \fIJOBID\fR
-.HP \w'\fBglobus\-job\-clean\fR\ 'u
-\fBglobus\-job\-clean\fR [\-help] [\-usage] [\-version] [\-versions]
+.sp
+\fBglobus\-job\-clean\fR [OPTIONS] \fIJOBID\fR
+.sp
+\fBglobus\-job\-clean\fR [ \-help | \-usage | \-version | \-versions ]
 .SH "DESCRIPTION"
-.PP
-The
-\fBglobus\-job\-clean\fR
-program cancels the job named by
-\fIJOBID\fR
-if it is still running, and then removes any cached files on the GRAM service node related to that job\&. In order to do the file clean up, it submits a job which removes the cache files\&. By default this cleanup job is submitted to the default GRAM resource running on the same host as the job\&. This behavior can be controlled by specifying a resource manager contact string as the parameter to the
-\fB\-r\fR
-or
-\fB\-resource\fR
-option\&.
-.PP
-By default,
-\fBglobus\-job\-clean\fR
-prompts the user prior to canceling the job\&. This behavior can be overridden by specifying the
-\fB\-f\fR
-or
-\fB\-force\fR
-command\-line options\&.
+.sp
+The \fBglobus\-job\-clean\fR program cancels the job named by \fIJOBID\fR if it is still running, and then removes any cached files on the GRAM service node related to that job\&. In order to do the file clean up, it submits a job which removes the cache files\&. By default this cleanup job is submitted to the default GRAM resource running on the same host as the job\&. This behavior can be controlled by specifying a resource manager contact string as the parameter to the \fI\-r\fR or \fI\-resource\fR option\&.
+.sp
+By default, \fBglobus\-job\-clean\fR prompts the user prior to canceling the job\&. This behavior can be overridden by specifying the \fI\-f\fR or \fI\-force\fR command\-line options\&.
 .SH "OPTIONS"
 .PP
-The full set of options to
-\fBglobus\-job\-clean\fR
-are:
-.PP
-\fB\-help\fR, \fB\-usage\fR
+\fB\-help, \-usage\fR
 .RS 4
 Display a help message to standard error and exit\&.
 .RE
@@ -64,34 +53,33 @@ Display the software version of the
 program to standard output\&.
 .RE
 .PP
-\fB\-version\fR
+\fB\-versions\fR
 .RS 4
 Display the software version of the
 \fBglobus\-job\-clean\fR
 program including DiRT information to standard output\&.
 .RE
 .PP
-\fB\-resource \fR\fB\fIRESOURCE\fR\fR, \fB\-r \fR\fB\fIRESOURCE\fR\fR
+\fB\-resource \fR\fB\fIRESOURCE\fR\fR\fB, \-resource \fR\fB\fIRESOURCE\fR\fR
 .RS 4
 Submit the clean\-up job to the resource named by
 \fIRESOURCE\fR
 instead of the default GRAM service on the same host as the job contact\&.
 .RE
 .PP
-\fB\-force\fR, \fB\-f\fR
+\fB\-force, \-f\fR
 .RS 4
 Do not prompt to confirm job cancel and clean\-up\&.
 .RE
 .PP
-\fB\-quiet\fR, \fB\-q\fR
+\fB\-quiet, \-q\fR
 .RS 4
 Do not print diagnostics for succesful clean\-up\&. Implies
-\fB\-f\fR
+\fI\-f\fR\&.
 .RE
 .SH "ENVIRONMENT"
-.PP
-If the following variables affect the execution of
-\fBglobus\-job\-clean\fR\&.
+.sp
+The following variables affect the execution of \fBglobus\-job\-clean\fR\&.
 .PP
 \fBX509_USER_PROXY\fR
 .RS 4
@@ -102,3 +90,6 @@ Path to proxy credential\&.
 .RS 4
 Path to trusted certificate directory\&.
 .RE
+.SH "AUTHOR"
+.sp
+Copyright \(co 1999\-2014 University of Chicago

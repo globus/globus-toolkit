@@ -16,17 +16,11 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gass_transfer_referral.c Referral structure accessors.
+ * @file globus_gass_transfer_referral.c
+ * @brief Referral structure accessors.
  *
  * This module implements the referral accessors for the GASS transfer
  * library
- *
- * CVS Information:
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 #endif
 

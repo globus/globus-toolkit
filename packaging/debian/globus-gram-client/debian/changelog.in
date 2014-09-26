@@ -1,3 +1,11 @@
+globus-gram-client (13.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Include more manpages for API
+  * Fix some Doxygen issues
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Mon, 22 Sep 2014 15:58:10 -0400
+
 globus-gram-client (13.8-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

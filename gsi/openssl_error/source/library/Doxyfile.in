@@ -13,3 +13,4 @@ GENERATE_DEPRECATEDLIST= NO
 QUIET                  = YES
 INPUT                  = @srcdir@
 EXCLUDE_PATTERNS       = version.h
+PREDEFINED             = GLOBUS_DONT_DOCUMENT_INTERNAL DOXYGEN

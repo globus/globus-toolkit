@@ -44,14 +44,13 @@
  * gss_release_buffer_set.
  *
  * @param minor_status
- *        The minor status returned by this function. This paramter
+ *        The minor status returned by this function. This parameter
  *        will be 0 upon success.
  * @param buffer_set
  *        Pointer to a buffer set structure.
  * 
- * @return
- *        GSS_S_COMPLETE upon success
- *        GSS_S_FAILURE failure
+ * @retval GSS_S_COMPLETE Success
+ * @retval GSS_S_FAILURE Failure
  *
  * @see gss_add_buffer_set_member
  * @see gss_release_buffer_set
@@ -105,21 +104,20 @@ GSS_CALLCONV gss_create_empty_buffer_set(
  * @brief Add a buffer to a buffer set
  * @ingroup globus_gsi_gssapi_buffer_set
  * @details
- * This function allocates a new gss_buffer_t, intializes it with the
+ * This function allocates a new gss_buffer_t, initializes it with the
  * values in the member_buffer parameter.
  *
  *
  * @param minor_status
- *        The minor status returned by this function. This paramter
+ *        The minor status returned by this function. This parameter
  *        will be 0 upon success.
  * @param member_buffer
  *        Buffer to insert into the buffer set.
  * @param buffer_set
  *        Pointer to a initialized buffer set structure.
  * 
- * @return
- *        GSS_S_COMPLETE upon success
- *        GSS_S_FAILURE failure
+ * @retval GSS_S_COMPLETE Success
+ * @retval GSS_S_FAILURE Failure
  *
  * @see gss_create_empty_buffer_set
  * @see gss_release_buffer_set
@@ -207,15 +205,14 @@ GSS_CALLCONV gss_add_buffer_set_member(
  * buffers int the buffer set.
  *
  * @param minor_status
- *        The minor status returned by this function. This paramter
+ *        The minor status returned by this function. This parameter
  *        will be 0 upon success.
  * @param buffer_set
  *        Pointer to a buffer set structure. This pointer will point
  *        at a NULL value upon return.
  * 
- * @return
- *        GSS_S_COMPLETE upon success
- *        GSS_S_FAILURE failure
+ * @retval GSS_S_COMPLETE Success
+ * @retval GSS_S_FAILURE Failure
  *
  * @see gss_create_empty_buffer_set
  * @see gss_add_buffer_set_member

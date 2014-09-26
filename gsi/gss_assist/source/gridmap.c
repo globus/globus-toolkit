@@ -15,7 +15,8 @@
  */
 
 /**
- * @file gss_assist/source/gridmap.c GSS Assist Gridmap Functions
+ * @file gss_assist/source/gridmap.c
+ * @brief GSS Assist Gridmap Functions
  */
 
 #include "globus_i_gss_assist.h"
@@ -36,11 +37,11 @@ typedef struct _gridmap_line_s {
 #define QUOTING_CHARS			"\""
 #define ESCAPING_CHARS			"\\"
 #define COMMENT_CHARS			"#"
-/* Characters seperating user ids in the gridmap file */
+/* Characters separating user ids in the gridmap file */
 #define USERID_SEP_CHARS		","
 /*
  * Characters that terminate a user id in the gridmap file. This
- * is a combination of whitespace and seperators.
+ * is a combination of whitespace and separators.
  */
 #define USERID_TERMINATOR_CHARS		USERID_SEP_CHARS WHITESPACE_CHARS
 
@@ -53,7 +54,7 @@ typedef struct _gridmap_line_s {
 
 /*
  * Number of user id slots to allocate at a time
- * Arbitraty value, but must be >= 2.
+ * Arbitrary value, but must be >= 2.
  */
 #define USERID_CHUNK_SIZE		4
 
@@ -292,7 +293,7 @@ gridmapdir_newlease(char *     encodedglobusidp,
 
      while ((gridmapdirentry = readdir(gridmapdirstream)) != NULL)
      {
-       /* we dont want any files that dont look like acceptable usernames */
+       /* we don't want any files that don't look like acceptable usernames */
        if ((*(gridmapdirentry->d_name) == '%') || 
            (strcmp(gridmapdirentry->d_name, "root") == 0))   continue;
        else if (*(gridmapdirentry->d_name) == '.')           continue;
@@ -305,7 +306,7 @@ gridmapdir_newlease(char *     encodedglobusidp,
        sprintf(userfilename, "%s/%s", gridmapdir, gridmapdirentry->d_name);
        stat(userfilename, &statbuf);
        
-       if (statbuf.st_nlink == 1) /* this one isnt leased yet */
+       if (statbuf.st_nlink == 1) /* this one isn't leased yet */
        {   
            ret = link(userfilename, encodedfilename);
            free(userfilename);
@@ -741,7 +742,7 @@ globus_gss_assist_userok(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-            (_GASL("The gridmap is malformated.  No user id's could be be found.")));
+            (_GASL("The gridmap is malformed.  No user id's could be be found.")));
         goto exit;
     }
 
@@ -765,7 +766,7 @@ globus_gss_assist_userok(
     GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
         result,
         GLOBUS_GSI_GSS_ASSIST_ERROR_USER_ID_DOESNT_MATCH,
-        (_GASL("The user id: %s, doesn't match the the DN: %s, in the "
+        (_GASL("The user id: %s, doesn't match the DN: %s, in the "
          "gridmap file: %s"),
          globusid,
          userid,
@@ -1072,7 +1073,7 @@ globus_i_gss_assist_gridmap_find_dn(
  * @param local_user
  *        the name to search for
  * @param gline
- *        the resulting gridmap_line_t contianing the user and DN information
+ *        the resulting gridmap_line_t containing the user and DN information
  *
  * @return
  *        0 on success, otherwise an error object identifier is returned.
@@ -1170,7 +1171,7 @@ globus_i_gss_assist_gridmap_find_local_user(
             if(strcmp(local_user, *useridp) == 0)
             {
                 /* check all names, but only stop looking if we match a 
-                 * default name.  save the first nondefault match til 
+                 * default name.  Save the first non-default match until 
                  * we've checked all the defaults */
                 if(*useridp == gline_tmp->user_ids[0])
                 {
@@ -1224,6 +1225,7 @@ globus_i_gss_assist_gridmap_find_local_user(
     return result;
 }
 /* gridmap_find_local_user() */
+
 /**
  * @ingroup globus_i_gsi_gss_assist
  * 
@@ -1366,7 +1368,7 @@ globus_i_gss_assist_gridmap_parse_line(
     line = dn_end + 1;
     line += strspn(line, WHITESPACE_CHARS);
 
-    /* Parse list of unix user ID seperated by USERID_SEP_CHARS */
+    /* Parse list of unix user ID separated by USERID_SEP_CHARS */
     while (*line != NUL)
     {
 	int					userid_len;
@@ -1470,6 +1472,7 @@ globus_i_gss_assist_gridmap_parse_line(
     return result;
 } 
 /* gridmap_parse_line() */
+
 /**
  * @ingroup globus_i_gsi_gss_assist
  * Frees all memory allocated to a gridmap_line_t structure.
@@ -1690,7 +1693,7 @@ globus_i_gss_assist_gridmap_parse_globusid(
  * into an integer.
  *
  * @param xdigit
- *        character contianing the hexidecimal digit
+ *        character containing the hexadecimal digit
  *
  * @return
  *        the value in the xdigit, or -1 if error

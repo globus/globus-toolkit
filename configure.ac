@@ -1,4 +1,4 @@
-AC_INIT([globus_toolkit], [6.0], [https://globus.atlassian.net/])
+AC_INIT([globus_toolkit], [6.1alpha1], [https://globus.atlassian.net/])
 m4_define([short_version], [m4_substr(AC_PACKAGE_VERSION, [0],
     m4_index(AC_PACKAGE_VERSION, [.]))])
 AC_PREFIX_DEFAULT([/usr/local/globus-]short_version)
@@ -255,6 +255,9 @@ GT_PACKAGE([globus_gram_job_manager_slurm],
 GT_PACKAGE([globus_gridmap_callout_error],
         [gsi/gridmap_callout/error], [globus_common globus_gssapi_error],
         [gsi])
+GT_PACKAGE([globus_gridmap_callout], [gsi/gridmap_callout/source],
+    [ globus_common globus_gssapi_gsi globus_gss_assist
+      globus_gridmap_callout_error globus_gsi_credential ], [gsi])
 dnl GT_PACKAGE([globus_xio_skeleton_driver], [xio/drivers/skeleton/source])
 GT_PACKAGE([globus_gass_server_ez],[gass/server_ez/source],
     [ globus_common  globus_gass_transfer  globus_gssapi_gsi 

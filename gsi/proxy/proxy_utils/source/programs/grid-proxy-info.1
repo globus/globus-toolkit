@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: grid-proxy-info
-.\"    Author: University of Chicago
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 04/25/2011
-.\"    Manual: Globus Commands
-.\"    Source: Globus Toolkit 5.0.2
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/25/2014
+.\"    Manual: Globus Toolkit
+.\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GRID\-PROXY\-INFO" "1" "04/25/2011" "Globus Toolkit 5.0.2" "Globus Commands"
+.TH "GRID\-PROXY\-INFO" "1" "09/25/2014" "University of Chicago" "Globus Toolkit"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -21,62 +30,22 @@
 .SH "NAME"
 grid-proxy-info \- Display information about a proxy certificate
 .SH "SYNOPSIS"
-.HP \w'\fBgrid\-proxy\-info\fR\ 'u
-\fBgrid\-proxy\-info\fR [\-help] [\-usage] [\-version]
-.HP \w'\fBgrid\-proxy\-info\fR\ 'u
-\fBgrid\-proxy\-info\fR [[\-subject] | [\-s]]
-.br
-[[\-issuer] | [\-i]]
-.br
-[\-identity] [\-type] [\-timeleft] [\-strength] [\-all] [\-text] [\-path] [\-rfc2253]
-.br
-[{\-exists | \-e}
-.br
-[[\-valid\ \fIHOURS\fR:\fIMINUTES\fR] | [\-v\ \fIHOURS\fR:\fIMINUTES\fR]]
-.br
-[[\-hours\ \fIHOURS\fR] | [\-h\ \fIHOURS\fR]]
-.br
-[[\-bits\ \fIBITS\fR] | [\-b\ \fIBITS\fR]]]
+.sp
+\fBgrid\-proxy\-info\fR \-help | \-usage | \-version
+.sp
+\fBgrid\-proxy\-info\fR \-e | \-exists [\-valid \fIHOURS:MINUTES\fR | \-v \fIHOURS:MINUTES\fR] [\-hours \fIHOURS\fR | \-h \fIHOURS\fR] [\-bits \fIBITS\fR | \-b \fIBITS\fR]
+.sp
+\fBgrid\-proxy\-info\fR [OPTIONS]
 .SH "DESCRIPTION"
+.sp
+The \fBgrid\-proxy\-info\fR program extracts information from an X\&.509 proxy certificates, and optionally displays or returns an exit code based on that information\&.
+.sp
+The default mode of operation is to print the following facts about the current user\(cqs default proxy: subject, issuer, identity, type, strength, path, and time left\&. If the command\-line option \fI\-exists\fR or \fI\-e\fR is included in the command\-line, nothing is printed unless one of the print options is specified\&. Instead, \fBgrid\-proxy\-info\fR determines if a valid proxy exists and, if so, exits with the exit code 0; if a proxy does not exist or is not valid, \fBgrid\-proxy\-info\fR exits with the exit code 1\&. Additional validity criteria can be added by using the \fI\-valid\fR, \fI\-v\fR, \fI\-hours\fR, \fI\-h\fR, \fI\-bits\fR, or \fI\-b\fR command\-line options\&. If used, these options must occur \fBafter\fR the \fI\-e\fR or \fI\-exists\fR command\-line options\&. Those options are only valid if one of the \fI\-e\fR or \fI\-exists\fR command\-line options is used\&.
+.SH "OPTIONS"
+.sp
+The complete set of command\-line options to \fBgrid\-proxy\-info\fR are:
 .PP
-The
-\fBgrid\-proxy\-info\fR
-program extracts information from an X\&.509 proxy certificates, and optionally displays or returns an exit code based on that information\&.
-.PP
-The default mode of operation is to print the following facts about the current user\'s default proxy: subject, issuer, identity, type, strength, path, and time left\&. If the command\-line option
-\fB\-exists\fR
-or
-\fB\-e\fR
-is included in the command\-line, nothing is printed unless one of the print options is specified\&. Instead,
-\fBgrid\-proxy\-info\fR
-determines if a valid proxy exists and, if so, exits with the exit code
-0; if a proxy does not exist or is not valid,
-\fBgrid\-proxy\-info\fR
-exits with the exit code
-1\&. Additional validity criteria can be added by using the
-\fB\-valid\fR,
-\fB\-v\fR,
-\fB\-hours\fR,
-\fB\-h\fR,
-\fB\-bits\fR, or
-\fB\-b\fR
-command\-line options\&. If used, these options must occur
-\fIafter\fR
-the
-\fB\-e\fR
-or
-\fB\-exists\fR
-command\-line options\&. Those options are only valid if one of the
-\fB\-e\fR
-or
-\fB\-exists\fR
-command\-line options is used\&.
-.PP
-The complete set of command\-line options to
-\fBgrid\-proxy\-info\fR
-are:
-.PP
-\fB\-help\fR, \fB\-usage\fR
+\fB\-help, \-usage\fR
 .RS 4
 Display the command\-line options to
 \fBgrid\-proxy\-info\fR\&.
@@ -86,7 +55,7 @@ Display the command\-line options to
 .RS 4
 Display the version number of the
 \fBgrid\-proxy\-info\fR
-command
+command\&.
 .RE
 .PP
 \fB\-debug\fR
@@ -94,32 +63,32 @@ command
 Display verbose error messages\&.
 .RE
 .PP
-\fB\-file \fR\fB\fIPROXYFILE\fR\fR, \fB\-f \fR\fB\fIPROXYFILE\fR\fR
+\fB\-file \fR\fB\fIPROXYFILE\fR\fR\fB, \-f \fR\fB\fIPROXYFILE\fR\fR
 .RS 4
 Read the proxy located in the file
 \fIPROXYFILE\fR
 instead of using the default proxy\&.
 .RE
 .PP
-\fB\-subject\fR, \fB\-s\fR
+\fB\-subject, \-s\fR
 .RS 4
-Display the proxy certificate\'s subject distinguished name\&.
+Display the proxy certificate\(cqs subject distinguished name\&.
 .RE
 .PP
-\fB\-issuer\fR, \fB\-i\fR
+\fB\-issuer, \-i\fR
 .RS 4
-Display the proxy certificate issuer\'s distinguished name\&.
+Display the proxy certificate issuer\(cqs distinguished name\&.
 .RE
 .PP
 \fB\-identity\fR
 .RS 4
-Display the proxy certificate\'s identity\&. For non\-independent proxies, the identity is the subject of the certificate which issued the first proxy in the proxy chain\&.
+Display the proxy certificate\(cqs identity\&. For non\-independent proxies, the identity is the subject of the certificate which issued the first proxy in the proxy chain\&.
 .RE
 .PP
 \fB\-type\fR
 .RS 4
 Display the type of proxy certificate\&. The type string includes the format ("legacy", "draft", or RFC 3280 compliant), identity type ("impersonation" or "independent"), and policy ("limited" or "full")\&. See
-\fBgrid-proxy-init\fR(1)
+\fBgrid\-proxy\-init(1)\fR
 for information about how to create different types of proxies\&.
 .RE
 .PP
@@ -136,9 +105,9 @@ Display the strength (in bits) of the key associated with the proxy certificate\
 \fB\-all\fR
 .RS 4
 Display the default information for the proxy when also using the
-\fB\-e\fR
+\fI\-e\fR
 or
-\fB\-exists\fR
+\fI\-exists\fR
 command\-line option\&.
 .RE
 .PP
@@ -157,14 +126,14 @@ Display the path to the file containing the default proxy certificate\&.
 Display distinguished names for the subject, issuer, and identity using the string representation described in RFC 2253, instead of the legacy format\&.
 .RE
 .PP
-\fB\-exists\fR, \fB\-e\fR
+\fB\-exists, \-e\fR
 .RS 4
 Perform an existence and validity check for the proxy\&. If a valid proxy exists and matches the criteria described by other command\-line options (if any), exit with 0; otherwise, exit with 1\&. This option must be before other validity check predicate in the command\-line options\&. If this option is specified, the output of the default facts about the proxy is disabled\&. Use the
-\fB\-all\fR
+\fI\-all\fR
 option to have the information displayed as well as the exit code set\&.
 .RE
 .PP
-\fB\-valid \fR\fB\fIHOURS\fR\fR\fB:\fR\fB\fIMINUTES\fR\fR, \fB\-v \fR\fB\fIHOURS\fR\fR\fB:\fR\fB\fIMINUTES\fR\fR, \fB\-hours \fR\fB\fIHOURS\fR\fR, \fB\-h \fR\fB\fIHOURS\fR\fR
+\fB\-valid \fR\fB\fIHOURS:MINUTES\fR\fR\fB, \-v \fR\fB\fIHOURS:MINUTES\fR\fR\fB, \-hours \fR\fB\fIHOURS\fR\fR\fB, \-h \fR\fB\fIHOURS\fR\fR
 .RS 4
 Check that the proxy certificate is valid for at least
 \fIHOURS\fR
@@ -176,25 +145,23 @@ will exit with exit code
 1\&.
 .RE
 .PP
-\fB\-bits \fR\fB\fIBITS\fR\fR, \fB\-b \fR\fB\fIBITS\fR\fR
+\fB\-bits \fR\fB\fIBITS\fR\fR\fB, \-b \fR\fB\fIBITS\fR\fR
 .RS 4
 Check that the proxy certificate key strength is at least
 \fIBITS\fR
 bits\&.
 .RE
-.SH "ENVIRONMENT VARIABLES"
-.PP
-The following environment variables affect the execution of
-\fBgrid\-proxy\-info\fR:
+.SH "ENVIRONMENT"
+.sp
+The following environment variables affect the execution of \fBgrid\-proxy\-info\fR:
 .PP
 \fBX509_USER_PROXY\fR
 .RS 4
 Path to the default user proxy\&.
 .RE
 .SH "SEE ALSO"
-.PP
-\fBgrid-proxy-init\fR(1),
-\fBgrid-proxy-destroy\fR(1)
+.sp
+grid\-proxy\-init(1), grid\-proxy\-destroy(1)
 .SH "AUTHOR"
-.PP
-\fBUniversity of Chicago\fR
+.sp
+Copyright \(co 1999\-2014 University of Chicago

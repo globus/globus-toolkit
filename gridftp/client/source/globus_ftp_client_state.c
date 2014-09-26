@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_ftp_client_state.c
- * Globus FTP Client Library State Machine
+ * @brief Globus FTP Client Library State Machine
  */
 
 #include "globus_i_ftp_client.h"
@@ -24,8 +26,6 @@
 #include <string.h>		/* strstr(), strncmp() */
 #include <ctype.h>		/* isupper() */
 #include <time.h>
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 #define CRLF "\r\n"
 

@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+<refentry lang="en">
+<refentryinfo>
+    <title>GRID-PROXY-INIT(1)</title>
+</refentryinfo>
+<refmeta>
+<refentrytitle>grid-proxy-init</refentrytitle>
+<manvolnum>1</manvolnum>
+<refmiscinfo class="source">University of Chicago</refmiscinfo>
+<refmiscinfo class="manual">Globus Toolkit</refmiscinfo>
+</refmeta>
+<refnamediv>
+    <refname>grid-proxy-init</refname>
+    <refpurpose>Generate a new proxy certificate</refpurpose>
+</refnamediv>
+<refsynopsisdiv id="grid-proxy-init-SYNOPSIS">
+<simpara><emphasis role="strong">grid-proxy-init</emphasis> -help | -usage | -version</simpara>
+<simpara><emphasis role="strong">grid-proxy-init</emphasis> [OPTIONS]</simpara>
+</refsynopsisdiv>
+<refsect1 id="grid-proxy-init-DESCRIPTION">
+<title>DESCRIPTION</title>
+<simpara>The <emphasis role="strong">grid-proxy-init</emphasis> program generates X.509 proxy certificates derived from
+the currently available certificate files.  By default, this command generates
+a &lt;ulink url="http://www.ietf.org/rfc/rfc3820.txt"&gt;RFC 3820&lt;/ulink&gt; Proxy
+Certificate with a 1024 bit key, valid for 12 hours, in a file named
+<literal>/tmp/x509up_u&#8217;UID'</literal>.  Command-line options and environment variables can
+modify the format, strength, lifetime, and location of the generated proxy
+certificate.</simpara>
+<simpara>X.509 proxy certificates are short-lived certificates, signed usually by a
+user&#8217;s identity certificate or another proxy certificate. The key associated
+with a proxy certificate is unencrypted, so applications can authenticate using
+a proxy identity without providing a pass phrase.</simpara>
+<simpara>Proxy certificates provide a convenient alternative to constantly entering
+passwords, but are also less secure than the user&#8217;s normal security credential.
+Therefore, they should always be user-readable only (this is enforced by the
+GSI libraries), and should be deleted after they are no longer needed.</simpara>
+<simpara>This version of <emphasis role="strong">grid-proxy-init</emphasis> supports three different proxy formats: the
+old proxy format used in early releases of the Globus Toolkit up to version
+2.4.x, an IETF draft version of X.509 Proxy Certificate profile used in Globus
+Toolkit 3.0.x and 3.2.x, and the RFC 3820 profile used in Globus Toolkit
+Version 4.0.x and 4.2.x. By default, this version of <emphasis role="strong">grid-proxy-init</emphasis> creates
+an RFC 3820 compliant proxy. To create a proxy compatible with older versions
+of the Globus Toolkit, use the <emphasis>-old</emphasis> or <emphasis>-draft</emphasis> command-line options.</simpara>
+</refsect1>
+<refsect1 id="grid-proxy-init-OPTIONS">
+<title>OPTIONS</title>
+<simpara>The full set of command-line options to <emphasis role="strong">grid-proxy-init</emphasis> are:</simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">-help, -usage</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the command-line options to <emphasis role="strong">grid-proxy-init</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-version</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the version number of the <emphasis role="strong">grid-proxy-init</emphasis> command.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-debug</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display information about the path to the certificate and key used to
+    generate the proxy certificate, the path to the trusted certificate
+    directory, and verbose error messages.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-q</emphasis>
+</term>
+<listitem>
+<simpara>
+    Suppress all output from <emphasis role="strong">grid-proxy-init</emphasis> except for pass phrase prompts.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-verify</emphasis>
+</term>
+<listitem>
+<simpara>
+    Perform certificate chain validity checks on the generated proxy.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-valid <emphasis>HOURS:MINUTES</emphasis>, -hours <emphasis>HOURS</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Create a certificate that is valid for <emphasis>HOURS</emphasis> hours and <emphasis>MINUTES</emphasis> minutes.
+    If not specified, the default of twelve hours is used.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-cert <emphasis>CERTFILE</emphasis>, -key <emphasis>KEYFILE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Create a proxy certificate signed by the certificate located in
+    <emphasis>CERTFILE</emphasis> using the key located in <emphasis>KEYFILE</emphasis>. If not specified the default
+    certificate and key will be used. This overrides the values of environment
+    variables described below.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-certdir <emphasis>CERTDIR</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Search <emphasis>CERTDIR</emphasis> for trusted certificates if verifying the proxy
+    certificate. If not specified, the default trusted certificate search path
+    is used. This overrides the value of the <literal>X509_CERT_DIR</literal>
+    environment variable.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-out <emphasis>PROXYPATH</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Write the generated proxy certificate file to <emphasis>PROXYPATH</emphasis> instead of the
+    default path of <literal>/tmp/x509up_u&#8217;UID'</literal>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-bits <emphasis>BITS</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    When creating the proxy certificate, use a <emphasis>BITS</emphasis> bit key instead of the
+    default 1024-bit keys.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-policy <emphasis>POLICYFILE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Add the certificate policy data described in <emphasis>POLICYFILE</emphasis> as the
+    ProxyCertInfo X.509 extension to the generated proxy
+    certificate.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-pl <emphasis>POLICY-OID</emphasis>, -policy-language <emphasis>POLICY-OID</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Set the policy language identifier of the policy data specified by the
+    <emphasis>-policy</emphasis> command-line option to the OID specified by the <emphasis>POLICY-OID</emphasis>
+    string.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-path-length <emphasis>MAXIMUM</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Set the maximum length of the chain of proxies that can be created by the
+    generated proxy to <emphasis>MAXIMUM</emphasis>. If not set, the default of an unlimited proxy
+    chain length is used.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-pwstdin</emphasis>
+</term>
+<listitem>
+<simpara>
+    Read the private key&#8217;s pass phrase from standard input instead of reading
+    input from the controlling tty. This is useful when scripting
+    <emphasis role="strong">grid-proxy-init</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-limited</emphasis>
+</term>
+<listitem>
+<simpara>
+    Create a limited proxy. Limited proxies are generally refused by
+    process-creating services, but may be used to authorize with other
+    services.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-independent</emphasis>
+</term>
+<listitem>
+<simpara>
+    Create an independent proxy. An independent proxy is not treated as an
+    impersonation proxy but as a separate identity for authorization
+    purposes.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-draft</emphasis>
+</term>
+<listitem>
+<simpara>
+    Create a IETF draft proxy instead of the default RFC 3280-compliant proxy.
+    This type of proxy uses a non-standard proxy policy identifier. This might
+    be useful for authenticating with older versions of the Globus
+    Toolkit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-old</emphasis>
+</term>
+<listitem>
+<simpara>
+    Create a legacy proxy instead of the default RFC 3280-compliant proxy. This
+    type of proxy uses a non-standard method of indicating that the certificate
+    is a proxy and whether it is limited.  This might be useful for
+    authenticating with older versions of the Globus
+    Toolkit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-rfc</emphasis>
+</term>
+<listitem>
+<simpara>
+    Create an RFC 3820-compliant proxy certificate. This is the default for
+    this version of <emphasis role="strong">grid-proxy-init</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="grid-proxy-init-EXAMPLES">
+<title>EXAMPLES</title>
+<simpara>To create a proxy with the default lifetime and format, run the
+<emphasis role="strong">grid-proxy-init</emphasis> program with no arguments. For example:</simpara>
+<literallayout class="monospaced">% grid-proxy-init
+Your identity: /DC=org/DC=example/CN=Joe User
+Enter GRID pass phrase for this identity: XXXXXXX
+Creating proxy .................................. Done
+Your proxy is valid until: Thu Mar 18 03:48:05 2010</literallayout>
+<simpara>To create a stronger proxy that lasts for only 8 hours, use the
+<emphasis>-hours</emphasis> and <emphasis>-bits</emphasis> command-line options to <emphasis role="strong">grid-proxy-init</emphasis>. For example:</simpara>
+<literallayout class="monospaced">% grid-proxy-init -hours 8 -bits 4096
+Your identity: /DC=org/DC=example/CN=Joe User
+Enter GRID pass phrase for this identity: XXXXXXX
+Creating proxy .................................. Done
+Your proxy is valid until: Thu Mar 17 23:48:05 2010</literallayout>
+</refsect1>
+<refsect1 id="grid-proxy-init-ENVIRONMENT">
+<title>ENVIRONMENT</title>
+<simpara>The following environment variables affect the execution of <emphasis role="strong">grid-proxy-init</emphasis>:</simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_USER_CERT</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to the certificate to use as issuer of the new proxy.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_USER_KEY</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to the key to use to sign the new proxy.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_CERT_DIR</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to the directory containing trusted certificates and signing
+    policies.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="grid-proxy-init-FILES">
+<title>FILES</title>
+<simpara>The following files affect the execution of <emphasis role="strong">grid-proxy-init</emphasis>:</simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">$HOME/.globus/usercert.pem</emphasis>
+</term>
+<listitem>
+<simpara>
+    Default path to the certificate to use as issuer of the new
+    proxy.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">$HOME/.globus/userkey.pem</emphasis>
+</term>
+<listitem>
+<simpara>
+    Default path to the key to use to sign the new proxy.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="grid-proxy-init-COMPATIBILITY">
+<title>COMPATIBILITY</title>
+<simpara>For more information about proxy certificate types and their compatibility in
+GT, see <ulink url="http://dev.globus.org/wiki/Security/ProxyCertTypes">http://dev.globus.org/wiki/Security/ProxyCertTypes</ulink></simpara>
+</refsect1>
+<refsect1 id="grid-proxy-init-SEEALSO">
+<title>SEE ALSO</title>
+<simpara>grid-proxy-destroy(1), grid-proxy-info(1)</simpara>
+</refsect1>
+<refsect1 id="grid-proxy-init-AUTHOR">
+<title>AUTHOR</title>
+<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
+</refsect1>
+</refentry>

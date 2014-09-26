@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef _GLOBUS_GSI_CALLBACK_H_
-#define _GLOBUS_GSI_CALLBACK_H_
+#ifndef GLOBUS_GSI_CALLBACK_H
+#define GLOBUS_GSI_CALLBACK_H
 
 /**
  * @file globus_gsi_callback.h
+ * @brief Globus GSI Callback
  * @author Sam Lang
  * @author Sam Meder
  */
@@ -293,4 +294,4 @@ globus_gsi_callback_set_allow_missing_signing_policy(
 }
 #endif
 
-#endif /* _GLOBUS_GSI_CALLBACK_H_ */
+#endif /* GLOBUS_GSI_CALLBACK_H */

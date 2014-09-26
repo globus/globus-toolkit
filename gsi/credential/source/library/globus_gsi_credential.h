@@ -16,7 +16,7 @@
 
 /**
  * @file globus_gsi_credential.h
- * Globus GSI Credential Library
+ * @brief Globus GSI Credential Library
  * @author Sam Lang, Sam Meder
 */
 
@@ -109,7 +109,7 @@ globus_module_descriptor_t              globus_i_gsi_credential_module;
  * Create/Destroy/Modify a GSI Credential Handle.
  *
  * Within the Globus GSI Credential Library, all credential operations 
- * require a handle parameter.  Currenlty only one operation may be
+ * require a handle parameter.  Currently only one operation may be
  * in progress at once per credential handle.
  *
  * This section defines operations to create, modify and destroy GSI

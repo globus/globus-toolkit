@@ -19,6 +19,7 @@
 
 /**
  * @file globus_ftp_client_plugin.h
+ * @brief Plugin Implementation
  */
 
 /**

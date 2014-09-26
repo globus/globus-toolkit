@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_gass_copy.c Globus GASS Copy Implementation
+ * @file globus_gass_copy.c
+ * @brief Globus GASS Copy Implementation
  */
 
 #include "globus_gass_copy.h"
 #include "version.h"
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static int globus_l_gass_copy_activate(void);
 
 static int globus_l_gass_copy_deactivate(void);

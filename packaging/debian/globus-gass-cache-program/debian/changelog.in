@@ -1,3 +1,10 @@
+globus-gass-cache-program (6.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix bad shell syntax
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Mon, 22 Sep 2014 15:33:57 -0400
+
 globus-gass-cache-program (6.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

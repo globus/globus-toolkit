@@ -175,7 +175,7 @@ GSS_CALLCONV gss_import_sec_context(
      * have them setup so the client does not know
      * we have started over. 
      * This is more the a renegociate, as the client does not
-     * know we have transfered the context to another process. 
+     * know we have transferred the context to another process. 
      */ 
 
     RAND_add((unsigned char *) &Time, sizeof(Time),

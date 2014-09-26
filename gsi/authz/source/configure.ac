@@ -1,10 +1,11 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_authz],[3.9],[https://globus.atlassian.net/])
+AC_INIT([globus_authz],[3.10],[https://globus.atlassian.net/])
+AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [3])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-callout >= 2, globus-gssapi-gsi >= 9, globus-authz-callout-error >= 2"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-callout >= 2, globus-gssapi-gsi >= 9, globus-authz-callout-error >= 2, globus-gsi-sysconfig >= 5"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])

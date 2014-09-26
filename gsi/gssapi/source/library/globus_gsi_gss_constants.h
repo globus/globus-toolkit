@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef _GLOBUS_GSI_GSSAPI_CONSTANTS_H_
-#define _GLOBUS_GSI_GSSAPI_CONSTANTS_H_
+#ifndef GLOBUS_GSI_GSSAPI_CONSTANTS_H
+#define GLOBUS_GSI_GSSAPI_CONSTANTS_H
 
 /**
  * @file globus_gsi_gss_constants.h
+ * @brief Globus GSI GSS constants
  * @author Sam Lang, Sam Meder
  */
 
@@ -153,4 +154,4 @@ typedef enum
 #define GSS_SSL_MESSAGE_DIGEST_PADDING  12
 #define GSS_SSL3_WRITE_SEQUENCE_SIZE    8
 
-#endif
+#endif /* GLOBUS_GSI_GSSAPI_CONSTANTS_H */

@@ -188,7 +188,8 @@ sub write_c_header
  */
 
 /**
- * \@file globus_gram_protocol_constants.h Protocol Constants
+ * \@file globus_gram_protocol_constants.h
+ * \@brief Protocol Constants
  */
 #ifndef GLOBUS_GRAM_PROTOCOL_CONSTANTS_H
 #define GLOBUS_GRAM_PROTOCOL_CONSTANTS_H

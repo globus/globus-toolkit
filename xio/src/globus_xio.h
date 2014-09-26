@@ -59,7 +59,7 @@ extern "C" {
  * \addtogroup GLOBUS_XIO_API_ASSIST 
  * 
  *  \section globus_xio_stack_construction Stack Construction
- *  The driver stack that is used for a given xio handle is constructed
+ *  The driver stack that is used for a given XIO handle is constructed
  *  using a globus_xio_stack_t.  Each driver is loaded by name 
  *  and pushed onto a stack.
  * 
@@ -123,7 +123,7 @@ extern "C" {
     globus_xio_server_accept(&xio_handle, server_handle);
     \endcode
  * 
- *  once a handle is intialized the user can call globus_xio_open()
+ *  once a handle is initialized the user can call globus_xio_open()
  *  to begin the open process.
  */
 
@@ -133,7 +133,7 @@ extern "C" {
  *  \section globus_xio_timeouts Timeouts
  *  A user can set a timeout value for any io operation.  Each IO 
  *  operation (open close read write) can have its own timeout value.
- *  If no timeout is set the operation will be allowed to infinitly
+ *  If no timeout is set the operation will be allowed to infinitely
  *  block.
  *
  *  When time expires the outstanding operation is canceled.  If the
@@ -143,8 +143,8 @@ extern "C" {
  *  registered for the operation as well, but it will come with an error
  *  indicating that it has been canceled.
  *
- *  It is possiblie that part of an io operation will complete before
- *  the timeout expires.  In this case the opperation can still be 
+ *  It is possible that part of an I/O operation will complete before
+ *  the timeout expires.  In this case the operation can still be 
  *  canceled.  The user will receive there IO callback with and 
  *  error set and the length value appropriately set to indicate how
  *  much of the operation completed.
@@ -152,7 +152,7 @@ extern "C" {
 /**
  * @addtogroup GLOBUS_XIO_API_ASSIST
  *
- *  \section data_descriptor Data Desciptor
+ *  \section data_descriptor Data Descriptor
  *  The data descriptor ADT gives the user a means of attaching/extracting
  *  meta data to a read or write operation.\n
  *  Things like offset, out of band message, and other driver specific
@@ -180,9 +180,10 @@ extern "C" {
  *
  *  \section user_attributes User Attributes
  *  Globus XIO uses a single attribute object for all of its functions.
- *  Attributes give an the user an extenable mechanism to alter default
- *  values which control parameters in an operation.\n
- *  In most of the globus xio user api functions a user passes an 
+ *  Attributes give the user an extensible mechanism to alter default
+ *  values which control parameters in an operation.
+ *
+ *  In most of the Globus XIO user API functions a user passes an 
  *  attribute as a parameter.  In many cases the user may ignore the
  *  attribute parameter and just pass in NULL.  However at times the user
  *  will wish to tweak the operation.  The attribute structure is used for
@@ -190,8 +191,8 @@ extern "C" {
  *
  *  There are only three attribute functions. @ref globus_xio_attr_init 
  *  @ref globus_xio_attr_cntl and @ref globus_xio_attr_destroy.  The
- *  init and destroy functions are very simple and require little explaination.
- *  Before an attribute can be used it must be intialized, and to clean up all
+ *  init and destroy functions are very simple and require little explanation.
+ *  Before an attribute can be used it must be initialized, and to clean up all
  *  memory associated with it the user must call destroy on it.
  *
  *  The function @ref globus_xio_attr_cntl manipulates values in the
@@ -200,7 +201,7 @@ extern "C" {
 
 /**
  *  \ingroup GLOBUS_XIO_API
- *  Intialize a globus xio attribute.
+ *  Initialize a Globus XIO attribute.
  *
  *  @param attr
  *         upon return from this function this out parameter will be 
@@ -218,10 +219,10 @@ globus_xio_attr_init(
  *
  *  This function provides a means to access the attr structure.  What
  *  exactly this function does is determined by the value in the parameter
- *  cmd and the value of the patameter driver.  When the driver parameter
- *  is NULL it indicates that this function applies to general globus xio
+ *  cmd and the value of the parameter driver.  When the driver parameter
+ *  is NULL it indicates that this function applies to general Globus XIO
  *  values.  If it is not NULL it indicates that the function will effect 
- *  driver specific values.  Each driver is resonsible for defining its own
+ *  driver specific values.  Each driver is responsible for defining its own
  *  enumeration of values for cmd and the var args associated with that 
  *  command.  
  *
@@ -231,7 +232,7 @@ globus_xio_attr_init(
  *  @param driver
  *          This parameter indicates which driver the user would like
  *          to perform the requested operation.  If this parameter is 
- *          NULL this request will be scoped to general attribure functions.
+ *          NULL this request will be scoped to general attribute functions.
  *
  *  @param cmd
  *         an enum that determines what specific operation the user is 
@@ -312,9 +313,9 @@ globus_result_t
 globus_xio_stack_destroy(
     globus_xio_stack_t                  stack);
 
-/*************************************************************************
+/*-------------------------------------------------------------------------
  *  server 
- ************************************************************************/
+ *-----------------------------------------------------------------------*/
 /**
  *  @ingroup GLOBUS_XIO_API
  *  Callback signature for accept.
@@ -368,8 +369,8 @@ typedef void
  *         will point to a valid server object.
  *
  *  @param server_attr
- *         an attributre structure used to alter the default server 
- *         intialization.  This will mostly be used in a driver specific manner.
+ *         an attribute structure used to alter the default server 
+ *         initialization.  This will mostly be used in a driver specific manner.
  *         can be NULL.
  *
  *  @param stack
@@ -391,7 +392,7 @@ globus_xio_server_create(
  *         An initialized server handle created with globus_xio_server_create()
  *
  *  @param contact_string
- *         an out varibale.  Will point to a newly allocated string on success.
+ *         an out variable.  Will point to a newly allocated string on success.
  *         must be freed by the caller.
  */
 globus_result_t
@@ -424,7 +425,7 @@ globus_xio_server_close(
  *  @ingroup GLOBUS_XIO_API
  *  Touch driver specific information in a server object.
  *
- *  This function allows the user to comunicate directly with a driver
+ *  This function allows the user to communicate directly with a driver
  *  in association with a server object.  The driver defines what operations
  *  can be preformed.
  */
@@ -439,7 +440,7 @@ globus_xio_server_cntl(
  *  @ingroup GLOBUS_XIO_API
  *  Accept a connection
  *
- *  This function will accept a connetion on the given server object
+ *  This function will accept a connection on the given server object
  *  and the parameter out_handle will be valid if the function returns
  *  successfully.
  */
@@ -465,7 +466,7 @@ globus_xio_server_register_accept(
  *  @ingroup GLOBUS_XIO_API
  *  Initialize a handle for client opens
  *
- *  This funtion will initialize a handle for active opens (client side 
+ *  This function will initialize a handle for active opens (client side 
  *  connections).
  * 
  */
@@ -491,14 +492,14 @@ globus_xio_handle_create(
  *         requested.
  *
  *  @param type
- *         The type of opperation that timed out:
+ *         The type of operation that timed out:
  *         GLOBUS_XIO_OPERATION_OPEN
  *         GLOBUS_XIO_OPERATION_CLOSE
  *         GLOBUS_XIO_OPERATION_READ
  *         GLOBUS_XIO_OPERATION_WRITE
  *
  *  @param arg
- *         A user arg threaded throw to the callback.
+ *         A user arg threaded through to the callback.
  */
 
 typedef globus_bool_t
@@ -522,11 +523,11 @@ typedef globus_bool_t
  *  @ingroup GLOBUS_XIO_API
  *
  *  @param data_desc
- *         An out parameter.  The data descriptor to be intialized.
+ *         An out parameter.  The data descriptor to be initialized.
  *
  *  @param handle
  *         The handle this data descriptor will be used with.  This
- *         parametter is require in order to optimize the code 
+ *         parameter is require in order to optimize the code 
  *         handling the data descriptors use.
  */
 globus_result_t
@@ -546,7 +547,7 @@ globus_xio_data_descriptor_destroy(
  *  Touch driver specific data in data descriptors
  *  @ingroup GLOBUS_XIO_API
  * 
- *  This function allows the user to comunicate directly with a driver
+ *  This function allows the user to communicate directly with a driver
  *  in association with a data descriptors.  The driver defines what operations
  *  can be preformed.
  */
@@ -576,10 +577,10 @@ typedef void (*globus_xio_callback_t)(
  *  globus_xio_data_callback_t 
  *  @ingroup GLOBUS_XIO_API
  *
- *  This callback is used for asychronous operations that send or receive
+ *  This callback is used for asynchronous operations that send or receive
  *  data.
  *
- *  on eof, result_t will be of type GLOBUS_XIO_ERROR_EOF
+ *  On EOF, result_t will be of type GLOBUS_XIO_ERROR_EOF
  */
 typedef void (*globus_xio_data_callback_t)(
     globus_xio_handle_t                 handle, 
@@ -594,10 +595,10 @@ typedef void (*globus_xio_data_callback_t)(
  *  globus_xio_iovec_callback_t 
  *  @ingroup GLOBUS_XIO_API
  *
- *  This callback is used for asychronous operations that send or receive
- *  data with an ivec structure.
+ *  This callback is used for asynchronous operations that send or receive
+ *  data with an iovec structure.
  *
- *  on eof, result_t will be of type GLOBUS_XIO_ERROR_EOF
+ *  On EOF, result_t will be of type GLOBUS_XIO_ERROR_EOF
  */
 typedef void (*globus_xio_iovec_callback_t)(
     globus_xio_handle_t                 handle,
@@ -612,7 +613,7 @@ typedef void (*globus_xio_iovec_callback_t)(
  *  @ingroup GLOBUS_XIO_API
  *  Touch driver specific information in a handle object.
  *
- *  This function allows the user to comunicate directly with a driver
+ *  This function allows the user to communicate directly with a driver
  *  in association with a handle object.  The driver defines what operations
  *  can be preformed.
  * 
@@ -636,8 +637,8 @@ globus_xio_handle_cntl(
  * 
  * No operation can be preformed on a handle until it is initialized 
  * and then opened.  If 
- * an already open handle used the information contaned in that handle
- * will be destoyed.
+ * an already open handle used the information contained in that handle
+ * will be destroyed.
  * 
  * @param handle
  *     The handle created with @ref globus_xio_handle_create() or 
@@ -655,7 +656,7 @@ globus_xio_handle_cntl(
  * @param contact_string
  *     An url describing the resource.  NULL is allowed.
  *     Drivers interpret the various parts
- *     of this url as descibed in their documentation.  An alternative
+ *     of this url as described in their documentation.  An alternative
  *     form is also supported:  if contact_string does not specify a scheme
  *     (e.g. http://) and it contains a ':', it will be parsed as a host:port
  *     pair.  if it does not contain a ':', it will be parsed as the path
@@ -677,7 +678,7 @@ globus_xio_handle_cntl(
  *          \<hostname\> | \<dotted quad\> | "[" \<ipv6 address\> "]"
  *    </pre>
  *
- *    Except for use as the above delimeters, the following special characters
+ *    Except for use as the above delimiters, the following special characters
  *    MUST be encoded with the \%HH format where H == hex char.
  *    
  *    <pre>
@@ -830,7 +831,7 @@ globus_xio_server_cancel_accept(
  *  Close a handle
  *  @ingroup GLOBUS_XIO_API
  * 
- *  This functions servers as a destoy for the handle.  As soon as the
+ *  This functions servers as a destroy for the handle.  As soon as the
  *  operations completes (the callback is called).  The handle is
  *  destroyed.
  *
@@ -868,19 +869,19 @@ globus_xio_close(
  *  Signals are not implemented in the first release.
  *  =================================================
  *
- *  Signals in globus xio give the user a means of requesting 
+ *  Signals in Globus XIO give the user a means of requesting 
  *  notification when given things in the system change.  
  *
  *  For example:
  *  It may be useful for the user of globus_xio to know when/if the 
  *  optimal post buffer size changes.  The optimal post buffer size is
- *  a value that tells the user the best posible length of a buffer to 
- *  post for an io operation.  This value is mutable and can be changed
+ *  a value that tells the user the best possible length of a buffer to 
+ *  post for an I/O operation.  This value is mutable and can be changed
  *  by events internal to globus_xio of which the user is unaware.
  *  The signal API allows the user to register for notification of when
  *  this value changes.
  *
- *  GlobusXIO enumerates the signal types for which the user can register.  
+ *  Globus XIO enumerates the signal types for which the user can register.  
  *  One of these types is GLOBUS_XIO_DRIVER_SPECIFIC.  This type allows
  *  the user to catch driver specific signals.  A driver specific signal
  *  example could be when the TCP window size changes.  Only a TCP driver
@@ -910,7 +911,7 @@ enum globus_xio_signal_type_t
  *         The handle associated with the event.
  * 
  *  @param signal_type
- *         The type of signal that occured.
+ *         The type of signal that occurred.
  *
  *  @param driver
  *         The driver that caused this event.  If it is not a driver
@@ -924,7 +925,7 @@ typedef void
  *  Register a signal listener.
  *  @ingroup GLOBUS_XIO_API
  *
- *  Reqest notification when event change in the system relating
+ *  Request notification when event change in the system relating
  *  to a given handle.
  *
  *  @param handle
@@ -940,7 +941,7 @@ typedef void
  *         must be called once for every driver of interest.
  *
  *  @param callback
- *         The funciton to be called when the given events occur.
+ *         The function to be called when the given events occur.
  *
  *  @param user_arg
  *         A user pointed threaded through to the callback.
@@ -955,7 +956,7 @@ globus_xio_handle_register_signal_handler(
  *  Register a signal listener.
  *  @ingroup GLOBUS_XIO_API
  *
- *  Reqest notification when event change in the system relating
+ *  Request notification when event change in the system relating
  *  to a given factory.
  *
  *  @param factory
@@ -971,7 +972,7 @@ globus_xio_handle_register_signal_handler(
  *         must be called once for every driver of interest.
  *
  *  @param callback
- *         The funciton to be called when the given events occur.
+ *         The function to be called when the given events occur.
  *
  *  @param user_arg
  *         A user pointed threaded through to the callback.

@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: globus-job-run
-.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 03/18/2010
-.\"    Manual: GRAM5 Commands
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/25/2014
+.\"    Manual: Globus Toolkit Manual
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUS\-JOB\-RUN" "1" "03/18/2010" "University of Chicago" "GRAM5 Commands"
+.TH "GLOBUS\-JOB\-RUN" "1" "09/25/2014" "University of Chicago" "Globus Toolkit Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -21,56 +30,20 @@
 .SH "NAME"
 globus-job-run \- Execute a job using GRAM
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-job\-run\fR\ 'u
-\fBglobus\-job\-run\fR [\-dumprsl] [\-dryrun] [\-verify]
-.br
-[\-file\ \fIARGUMENT_FILE\fR]
-.br
-\fISERVICE_CONTACT\fR
-.br
-[\-np\ \fIPROCESSES\fR | \-count\ \fIPROCESSES\fR]
-.br
-[\-m\ \fIMAX_TIME\fR | \-maxtime\ \fIMAX_TIME\fR]
-.br
-[\-p\ \fIPROJECT\fR | \-project\ \fIPROJECT\fR]
-.br
-[\-q\ \fIQUEUE\fR | \-queue\ \fIQUEUE\fR]
-.br
-[\-d\ \fIDIRECTORY\fR | \-directory\ \fIDIRECTORY\fR] [\-env\ \fINAME\fR=\fIVALUE\fR]... 
-.br
-[\-stdin\ [\-l\ |\ \-s]\ \fISTDIN_FILE\fR] [\-stdout\ [\-l\ |\ \-s]\ \fISTDOUT_FILE\fR] [\-stderr\ [\-l\ |\ \-s]\ \fISTDERR_FILE\fR]
-.br
-[\-x\ \fIRSL_CLAUSE\fR]
-.br
-[\-l | \-s] \fIEXECUTABLE\fR [ARGUMENT...]
-.HP \w'\fBglobus\-job\-run\fR\ 'u
-\fBglobus\-job\-run\fR [\-help] [\-usage] [\-version] [\-versions]
+.sp
+\fBglobus\-job\-run\fR [\-dumprsl|\-dryrun|\-verify] [\-file ARGUMENT_FILE] \fISERVICE\-CONTACT\fR [OPTIONS] \fIEXECUTABLE\fR \fIARGUMENT\&...\fR
+.sp
+\fBglobus\-job\-run\fR [\-help | \-usage | \-version | \-versions]
 .SH "DESCRIPTION"
-.PP
-The
-\fBglobus\-job\-run\fR
-program constructs a job description from its command\-line options and then submits the job to the GRAM service running at
-\fISERVICE_CONTACT\fR\&. The executable and arguments to the executable are provided on the command\-line after all other options\&. Note that the
-\fB\-dumprsl\fR,
-\fB\-dryrun\fR,
-\fB\-verify\fR, and
-\fB\-file\fR
-command\-line options must occur before the first non\-option argument, the
-\fISERVICE_CONTACT\fR\&.
-.PP
-The
-\fBglobus\-job\-run\fR
-provides similar functionality to
-\fBglobusrun\fR
-in that it allows interactive start\-up of GRAM jobs\&. However, unlike
-\fBglobusrun\fR, it uses command\-line parameters to define the job instead of RSL expressions\&.
+.sp
+The \fBglobus\-job\-run\fR program constructs a job description from its command\-line options and then submits the job to the GRAM service running at \fISERVICE_CONTACT\fR\&. The executable and arguments to the executable are provided on the command\-line after all other options\&. Note that the \fI\-dumprsl\fR, \fI\-dryrun\fR, \fI\-verify\fR, and \fI\-file\fR command\-line options must occur before the first non\-option argument, the \fISERVICE_CONTACT\fR\&.
+.sp
+The \fBglobus\-job\-run\fR provides similar functionality to \fBglobusrun\fR in that it allows interactive start\-up of GRAM jobs\&. However, unlike \fBglobusrun\fR, it uses command\-line parameters to define the job instead of RSL expressions\&.
 .SH "OPTIONS"
+.sp
+The full set of options to \fBglobus\-job\-run\fR are:
 .PP
-The full set of options to
-\fBglobus\-job\-run\fR
-are:
-.PP
-\fB\-help\fR, \fB\-usage\fR
+\fB\-help, \-usage\fR
 .RS 4
 Display a help message to standard error and exit\&.
 .RE
@@ -117,34 +90,34 @@ Read additional command\-line options from
 \fIARGUMENT_FILE\fR\&.
 .RE
 .PP
-\fB\-np \fR\fB\fIPROCESSES\fR\fR, \fB\-count \fR\fB\fIPROCESSES\fR\fR
+\fB\-np \fR\fB\fIPROCESSES\fR\fR\fB, \-count \fR\fB\fIPROCESSES\fR\fR
 .RS 4
 Start
 \fIPROCESSES\fR
 instances of the executable as a single job\&.
 .RE
 .PP
-\fB\-m \fR\fB\fIMAX_TIME\fR\fR, \fB\-maxtime \fR\fB\fIMAX_TIME\fR\fR
+\fB\-m \fR\fB\fIMAX_TIME\fR\fR\fB, \-maxtime \fR\fB\fIMAX_TIME\fR\fR
 .RS 4
 Schedule the job to run for a maximum of
 \fIMAX_TIME\fR
 minutes\&.
 .RE
 .PP
-\fB\-p \fR\fB\fIPROJECT\fR\fR, \fB\-project \fR\fB\fIPROJECT\fR\fR
+\fB\-p \fR\fB\fIPROJECT\fR\fR\fB, \-project \fR\fB\fIPROJECT\fR\fR
 .RS 4
 Request that the job use the allocation
 \fIPROJECT\fR
 when submitting the job to the LRM\&.
 .RE
 .PP
-\fB\-q \fR\fB\fIQUEUE\fR\fR, \fB\-queue \fR\fB\fIQUEUE\fR\fR
+\fB\-q \fR\fB\fIQUEUE\fR\fR\fB, \-queue \fR\fB\fIQUEUE\fR\fR
 .RS 4
 Request that the job be submitted to the LRM using the named
 \fIQUEUE\fR\&.
 .RE
 .PP
-\fB\-d \fR\fB\fIDIRECTORY\fR\fR, \fB\-directory \fR\fB\fIDIRECTORY\fR\fR
+\fB\-d \fR\fB\fIDIRECTORY\fR\fR\fB, \-directory \fR\fB\fIDIRECTORY\fR\fR
 .RS 4
 Run the job in the directory named by
 \fIDIRECTORY\fR\&. Input and output files will be interpreted relative to this directory\&. This directory must exist on the file system on the LRM\-managed resource\&. If not specified, the job will run in the home directory of the user the job is running as\&.
@@ -164,9 +137,9 @@ in the job environment\&. This option may be specified multiple times to define 
 Use the file named by
 \fISTDIN_FILE\fR
 as the standard input of the job\&. If the
-\fB\-l\fR
+\fI\-l\fR
 option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the
-\fB\-s\fR
+\fI\-s\fR
 option is specified, then this file is interpreted to be on the file system where
 \fBglobus\-job\-run\fR
 is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
@@ -177,9 +150,9 @@ is being executed, and the file will be staged via GASS\&. If neither is specifi
 Use the file named by
 \fISTDOUT_FILE\fR
 as the destination for the standard output of the job\&. If the
-\fB\-l\fR
+\fI\-l\fR
 option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the
-\fB\-s\fR
+\fI\-s\fR
 option is specified, then this file is interpreted to be on the file system where
 \fBglobus\-job\-run\fR
 is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
@@ -190,9 +163,9 @@ is being executed, and the file will be staged via GASS\&. If neither is specifi
 Use the file named by
 \fISTDERR_FILE\fR
 as the destination for the standard error of the job\&. If the
-\fB\-l\fR
+\fI\-l\fR
 option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the
-\fB\-s\fR
+\fI\-s\fR
 option is specified, then this file is interpreted to be on the file system where
 \fBglobus\-job\-run\fR
 is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
@@ -206,37 +179,21 @@ to the job description\&. The clause must be an RSL conjunction and may contain 
 \fBglobus\-job\-run\fR\&.
 .RE
 .PP
-\fB\-l\fR
+\fB\-l, \-s\fR
 .RS 4
 When included outside the context of
-\fB\-stdin\fR,
-\fB\-stdout\fR, or
-\fB\-stderr\fR
+\fI\-stdin\fR,
+\fI\-stdout\fR, or
+\fI\-stderr\fR
 command\-line options,
-\fB\-l\fR
+\fI\-l\fR
 option alters the interpretation of the executable path\&. If the
-\fB\-l\fR
+\fI\-l\fR
 option is specified, then the executable is interpreted to be on a file system local to the LRM\&.
 .RE
-.PP
-\fB\-s\fR
-.RS 4
-When included outside the context of
-\fB\-stdin\fR,
-\fB\-stdout\fR, or
-\fB\-stderr\fR
-command\-line options,
-\fB\-l\fR
-option alters the interpretation of the executable path\&. If the
-\fB\-s\fR
-option is specified, then the executable is interpreted to be on the file system where
-\fBglobus\-job\-run\fR
-is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
-.RE
 .SH "ENVIRONMENT"
-.PP
-If the following variables affect the execution of
-\fBglobus\-job\-run\fR\&.
+.sp
+The following variables affect the execution of \fBglobus\-job\-run\fR:
 .PP
 \fBX509_USER_PROXY\fR
 .RS 4
@@ -248,10 +205,8 @@ Path to proxy credential\&.
 Path to trusted certificate directory\&.
 .RE
 .SH "SEE ALSO"
-.PP
-
-\fBglobusrun\fR(1),
-\fBglobus-job-submit\fR(1),
-\fBglobus-job-clean\fR(1),
-\fBglobus-job-get-output\fR(1),
-\fBglobus-job-cancel\fR(1)
+.sp
+globusrun(1), globus\-job\-submit(1), globus\-job\-clean(1), globus\-job\-get\-output(1), globus\-job\-cancel(1)
+.SH "AUTHOR"
+.sp
+Copyright \(co 1999\-2014 University of Chicago

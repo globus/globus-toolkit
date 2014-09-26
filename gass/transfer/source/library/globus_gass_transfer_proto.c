@@ -16,16 +16,10 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gass_transfer_proto.c Protocol module interface.
+ * @file globus_gass_transfer_proto.c
+ * @brief Protocol module interface.
  *
  * This module implements the GASS transfer protocol module library
- *
- * CVS Information:
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 

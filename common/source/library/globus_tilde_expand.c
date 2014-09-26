@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_tilde_expand.c Expand ~ or ~user in path strings */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_tilde_expand.c
+ * @brief Expand ~ or ~user in path strings
+ */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
  
 /******************************************************************************
                              Include header files

@@ -2922,7 +2922,7 @@ globus_l_gfs_ipc_close(
         case GLOBUS_GFS_IPC_STATE_CLOSING_ERROR:
         case GLOBUS_GFS_IPC_STATE_CLOSING:
             globus_assert(
-                0 && "You already closed this, dont call it again");
+                0 && "You already closed this, don't call it again");
             break;
 
         case GLOBUS_GFS_IPC_STATE_OPENING:

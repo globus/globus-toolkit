@@ -1,3 +1,12 @@
+globus-gsi-proxy-ssl (5.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Include more manpages for API
+  * Doxygen markup fixes
+  * Fix typos and clarify some documentation
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Sep 2014 12:16:45 -0400
+
 globus-gsi-proxy-ssl (5.6-4+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

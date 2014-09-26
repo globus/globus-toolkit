@@ -17,10 +17,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_error_gssapi.c
- *
- * $RCSfile$
- * $Revision$
- * $Date$
+ * @brief Globus Error GSS API
  */
 #endif
 
@@ -28,18 +25,16 @@
 #include <string.h>
 
 /**
- * @name Construct Error
- */
-/*@{*/
-/**
- * Allocate and initialize an error of type GLOBUS_ERROR_TYPE_GSSAPI
+ * @brief Construct Error
  * @ingroup globus_gssapi_error_object
+ * @details
+ * Allocate and initialize an error of type GLOBUS_ERROR_TYPE_GSSAPI
  *
  * @param base_source
  *        Pointer to the originating module.
  * @param base_cause
  *        The error object causing the error. If this is the original
- *        error, this paramater may be NULL.
+ *        error, this parameter may be NULL.
  * @param major_status
  *        The GSSAPI major status
  * @param minor_status
@@ -75,16 +70,13 @@ globus_error_construct_gssapi_error(
 
     return error;
 }/* globus_error_construct_gssapi_error() */
-/*@}*/
 
 /**
- * @name Initialize Error
- */
-/*@{*/
-/**
+ * @brief Initialize Error
+ * @ingroup globus_gssapi_error_object 
+ * @details
  * Initialize a previously allocated error of type
  * GLOBUS_ERROR_TYPE_GSSAPI
- * @ingroup globus_gssapi_error_object 
  *
  * @param error
  *        The previously allocated error object.
@@ -92,7 +84,7 @@ globus_error_construct_gssapi_error(
  *        Pointer to the originating module.
  * @param base_cause
  *        The error object causing the error. If this is the original
- *        error this paramater may be NULL.
+ *        error this parameter may be NULL.
  * @param major_status
  *        The GSSAPI major status
  * @param minor_status
@@ -157,15 +149,12 @@ globus_error_initialize_gssapi_error(
     
     return globus_error_initialize_base(error, base_source, base_cause);
 }/* globus_error_initialize_gssapi_error() */
-/*@}*/
 
 /**
- * @name Get Major Status
- */
-/*@{*/
-/**
- * Retrieve the major status from a gssapi error object.
+ * @brief Get Major Status
  * @ingroup globus_gssapi_error_accessor  
+ * @details
+ * Retrieve the major status from a GSSAPI error object.
  *
  * @param error
  *        The error from which to retrieve the major status
@@ -179,15 +168,12 @@ globus_error_gssapi_get_major_status(
     return ((globus_l_gssapi_error_data_t *)
             globus_object_get_local_instance_data(error))->major_status;
 }/* globus_error_gssapi_get_major_status */
-/*@}*/
 
 /**
- * @name Set Major Status
- */
-/*@{*/
-/**
- * Set the major status in a gssapi error object.
+ * @brief Set Major Status
  * @ingroup globus_gssapi_error_accessor  
+ * @details
+ * Set the major status in a GSSAPI error object.
  *
  * @param error
  *        The error object for which to set the major status
@@ -204,15 +190,12 @@ globus_error_gssapi_set_major_status(
     ((globus_l_gssapi_error_data_t *)
      globus_object_get_local_instance_data(error))->major_status = major_status;
 }/* globus_error_gssapi_set_major_status */
-/*@}*/
 
 /**
- * @name Get Minor Status
- */
-/*@{*/
-/**
- * Retrieve the minor status from a gssapi error object.
+ * @brief Get Minor Status
  * @ingroup globus_gssapi_error_accessor  
+ * @details
+ * Retrieve the minor status from a gssapi error object.
  *
  * @param error
  *        The error from which to retrieve the minor status
@@ -242,16 +225,14 @@ globus_error_gssapi_get_minor_status(
     
     return 0;
 }
-/*@}*/
+/* globus_error_gssapi_get_minor_status() */
 
 /**
- * @name Error Match
- */
-/*@{*/
-/**
+ * @brief Error Match
+ * @ingroup globus_gssapi_error_utility  
+ * @details
  * Check whether the error originated from a specific module and
  * match a specific major status.
- * @ingroup globus_gssapi_error_utility  
  *
  * This function checks whether the error or any of it's causative
  * errors originated from a specific module and contains a specific
@@ -265,10 +246,8 @@ globus_error_gssapi_get_minor_status(
  *        The module descriptor to check for
  * @param major_status
  *        The major status to check for
- * @return
- *        GLOBUS_TRUE - the error matched the module and major status
- *        GLOBUS_FALSE - the error failed to match the module and
- *        major status
+ * @retval GLOBUS_TRUE The error matched the module and major status
+ * @retval GLOBUS_FALSE The error failed to match the module and major status
  */
 globus_bool_t
 globus_error_gssapi_match(
@@ -307,18 +286,15 @@ globus_error_gssapi_match(
             module,
             major_status);
     }
-}/* globus_error_gssapi_match */
-/*@}*/
-
+}
+/* globus_error_gssapi_match */
 
 /**
- * @name Wrap GSSAPI Error
- */
-/*@{*/
-/**
+ * @brief Wrap GSSAPI Error
+ * @ingroup globus_gssapi_error_utility  
+ * @details
  * Allocate and initialize an error of type GLOBUS_ERROR_TYPE_GLOBUS
  * which contains a causal error of type GLOBUS_ERROR_TYPE_GSSAPI.
- * @ingroup globus_gssapi_error_utility  
  *
  * @param base_source
  *        Pointer to the originating module.
@@ -396,9 +372,5 @@ globus_error_wrap_gssapi_error(
     
     return error;
     
-}/* globus_error_wrap_gssapi_error */
-/*@}*/
-
-
-
-
+}
+/* globus_error_wrap_gssapi_error */

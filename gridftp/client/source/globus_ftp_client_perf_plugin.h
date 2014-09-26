@@ -18,7 +18,8 @@
 #define GLOBUS_FTP_CLIENT_PERF_PLUGIN_H
 
 /**
- * @file globus_ftp_client_perf_plugin.h GridFTP Performance Marker Plugin Implementation
+ * @file globus_ftp_client_perf_plugin.h
+ * @brief GridFTP Performance Marker Plugin Implementation
  */
 
 /**
@@ -119,7 +120,7 @@ typedef void (*globus_ftp_client_perf_plugin_begin_cb_t)(
  * @param num_stripes total number of stripes involved in this transfer
  *
  * @param nbytes
- *        the total bytes transfered on this stripe
+ *        the total bytes transferred on this stripe
  *
  * @return
  *        - n/a

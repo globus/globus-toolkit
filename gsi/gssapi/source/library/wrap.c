@@ -38,8 +38,6 @@
  * @param qop_req
  * @param req_output_size
  * @param max_input_size
- *
- * @return
  */
 OM_uint32 
 GSS_CALLCONV gss_wrap_size_limit(
@@ -72,9 +70,9 @@ GSS_CALLCONV gss_wrap_size_limit(
     }
     
     /* This may not be correct as SSL is vague about
-     * the max size, and there is even a mircsoft hack as well!
+     * the max size, and there is even a Microsoft hack as well!
      * DEE this may need work. SSL adds 
-     * 1024 as overhead for ecnryption and compression. 
+     * 1024 as overhead for encryption and compression. 
      * These appear to be over kill, so our max size may be
      * very low. 
      */
@@ -112,12 +110,12 @@ GSS_CALLCONV gss_wrap_size_limit(
  * @brief Wrap
  * @ingroup globus_gsi_gssapi
  * @details 
- * Wrap a message for integretry and protection.
+ * Wrap a message for integrity and protection.
  * We do this using the SSLv3 routines, by writing to the
  * SSL bio, and pulling off the buffer from the back 
  * of the write BIO.  But we can't do everything SSL 
  * might want, such as control messages, or segment the messages
- * here, since we are forced to using the gssapi tokens,
+ * here, since we are forced to using the GSSAPI tokens,
  * and can not communicate directly with our peer. 
  * So there maybe some failures which would work with true
  * SSL. 
@@ -335,7 +333,7 @@ GSS_CALLCONV gss_wrap(
  * @brief Seal
  * @ingroup globus_gsi_gssapi
  * @details
- * Obsolete variant of gss_wrap for V1 compatability
+ * Obsolete variant of gss_wrap for V1 compatibility
  *
  * @param minor_status
  * @param context_handle

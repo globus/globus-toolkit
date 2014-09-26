@@ -26,7 +26,7 @@ extern gss_OID gss_nt_service_name;
 
 /**
  * @ingroup globus_gss_assist_context
- * Initialize a gssapi security connection. Used by the client.  
+ * Initialize a GSSAPI security connection. Used by the client.  
  * The context_handle is returned, and there is one for each
  * connection.  This routine will take cake of the looping
  * and token processing, using the supplied get_token and
@@ -35,7 +35,7 @@ extern gss_OID gss_nt_service_name;
  * @param minor_status
  *        GSSAPI return code.  The new minor_status is a globus_result_t
  *        cast to an OM_uint32.  If the call was successful, the minor
- *        status is equivalant to GLOBUS_SUCCESS.  Otherwise, it is a
+ *        status is equivalent to GLOBUS_SUCCESS.  Otherwise, it is a
  *        globus error object ID that can be passed to globus_error_get
  *        to get the error object.  The error object needs to be freed
  *        with globus_object_free.
@@ -44,7 +44,7 @@ extern gss_OID gss_nt_service_name;
  * @param context_handle
  *        pointer to returned context. 
  * @param target_name_char
- *        char string repersentation of the
+ *        char string representation of the
  *        server to be contacted. 
  * @param req_flags
  *        request flags, such as GSS_C_DELEG_FLAG for delegation
@@ -53,7 +53,7 @@ extern gss_OID gss_nt_service_name;
  *        Pointer to which services are available after
  *        the connection is established. Maybe NULL if not wanted. 
  *
- * The Follwing are particular to this assist routine:
+ * The following are particular to this assist routine:
  *
  * @param token_status
  *        the assist routine's get/send token status 
@@ -137,7 +137,7 @@ globus_gss_assist_init_sec_context(
           
             /* 
              * A gss_nt_service_name is of the form service@FQDN
-             * At least the Globus gssapi, and the Kerberos gssapi 
+             * At least the Globus GSSAPI, and the Kerberos GSSAPI 
              * use the same form. We will check for 
              * two special forms here: host@FQDN and ftp@FQDN
              * This could be another parameter to the gss_assist
@@ -297,7 +297,7 @@ globus_gss_assist_init_sec_context(
  * @param context_handle
  *        pointer to returned context. 
  * @param target_name_char
- *        char string repersentation of the
+ *        char string representation of the
  *        server to be contacted. 
  * @param req_flags
  *        request flags, such as GSS_C_DELEG_FLAG for delegation

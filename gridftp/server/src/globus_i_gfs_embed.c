@@ -438,7 +438,7 @@ globus_l_gfs_open_new_server(
     GlobusGFSName(globus_l_gfs_open_new_server);
     GlobusGFSDebugEnter();
     
-    /* dont need the handle here, will get it in callback too */
+    /* don't need the handle here, will get it in callback too */
     result = globus_xio_register_open(
         xio_handle,
         NULL,

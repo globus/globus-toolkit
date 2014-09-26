@@ -17,12 +17,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_cred_error.c
- * Globus GSI Credential Library
+ * @brief Globus GSI Credential Library
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 
@@ -233,7 +229,7 @@ globus_i_gsi_cred_error_join_chains_result(
                 __FILE__,
                 _function_name_,
                 __LINE__,
-                "Couldn't join inner and outter error chains");
+                "Couldn't join inner and outer error chains");
     }
 
     result = globus_error_put(result_error_obj);

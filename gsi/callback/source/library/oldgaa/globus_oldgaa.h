@@ -21,8 +21,8 @@
 Description:
 	This header file used internally by the oldgaa routines
 **********************************************************************/
-#ifndef _OLDGAA_API_H
-#define _OLDGAA_API_H_
+#ifndef OLDGAA_API_H
+#define OLDGAA_API_H
 
 #ifdef WIN32
 #undef HAVE_SYS_TIME_H
@@ -572,4 +572,4 @@ oldgaa_release_sec_attrb(uint32             *minor_status,
 }
 #endif
 
-#endif /* _OLDGAA_API_H_ */
+#endif /* OLDGAA_API_H */

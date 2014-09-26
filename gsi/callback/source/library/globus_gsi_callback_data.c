@@ -17,12 +17,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_callback_data.c
- * Globus GSI Callback Data
+ * @brief Globus GSI Callback Data
  * @author Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 
@@ -32,12 +28,10 @@
 #include "openssl/x509.h"
 
 /**
- * @name Initializing and destroying a callback data structure
- */
-/* @{ */
-/**
- * This function initializes a globus_gsi_callback_data_t.
+ * @brief Initialize a callback data structure
  * @ingroup globus_gsi_callback_data
+ * @details
+ * This function initializes a globus_gsi_callback_data_t.
  *
  * @param callback_data
  *        Reference to the structure to be initialized
@@ -99,6 +93,8 @@ globus_gsi_callback_data_init(
 }
 
 /**
+ * @brief Initialize a callback data structure
+ * @details
  * This function destroys a globus_gsi_callback_data_t.
  * @ingroup globus_gsi_callback_data
  *
@@ -144,16 +140,12 @@ globus_gsi_callback_data_destroy(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }   
-/* @} */
-
 
 /**
- * @name Copying a callback data structure
- */
-/* @{ */
-/**
- * This function copies a globus_gsi_callback_data_t.
+ * @brief Copy a callback data structure
  * @ingroup globus_gsi_callback_data
+ * @details
+ * This function copies a globus_gsi_callback_data_t.
  *
  * @param source
  *        The structure to be copied
@@ -231,15 +223,12 @@ globus_gsi_callback_data_copy(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Getting and setting the certificate chain depth
- */
-/* @{ */
-/**
- * This function returns the certificate chain depth
+ * @brief Getting the certificate chain depth
  * @ingroup globus_gsi_callback_data
+ * @details
+ * This function returns the certificate chain depth.
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to retrieve the depth from
@@ -289,8 +278,10 @@ globus_gsi_callback_get_cert_depth(
 }
 
 /**
- * This function sets the certificate chain depth
+ * @brief Set the certificate chain depth
  * @ingroup globus_gsi_callback_data
+ * @details
+ * This function sets the certificate chain depth
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to retrieve the depth from
@@ -327,15 +318,12 @@ globus_gsi_callback_set_cert_depth(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Getting and setting the "proxy chain" depth
- */
-/* @{ */
-/**
- * This function returns the number of proxies in the certificate chain.
+ * @brief Get the "proxy chain" depth
  * @ingroup globus_gsi_callback_data
+ * @details
+ * This function returns the number of proxies in the certificate chain.
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to retrieve the depth from
@@ -385,8 +373,10 @@ globus_gsi_callback_get_proxy_depth(
 }
 
 /**
- * This function sets the number of proxies in the certificate chain.
+ * @brief Set the "proxy chain" depth
  * @ingroup globus_gsi_callback_data
+ * @details
+ * This function sets the number of proxies in the certificate chain.
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to retrieve the depth from
@@ -423,16 +413,13 @@ globus_gsi_callback_set_proxy_depth(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Getting and setting the certificate type
- */
-/* @{ */
-/**
+ * @brief Get the certificate type
+ * @ingroup globus_gsi_callback_data
+ * @details
  * This function returns the certificate type of the certificate currently
  * being processed
- * @ingroup globus_gsi_callback_data
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to retrieve the certificate type from
@@ -481,9 +468,11 @@ globus_gsi_callback_get_cert_type(
 }
 
 /**
+ * @brief Set the certificate type
+ * @ingroup globus_gsi_callback_data
+ * @details
  * This function sets the certificate type of the certificate currently being
  * processed
- * @ingroup globus_gsi_callback_data
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to set the certificate type on
@@ -521,19 +510,16 @@ globus_gsi_callback_set_cert_type(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Getting and setting the certificate chain
- */
-/* @{ */
-/**
+ * @brief Get the certificate chain
+ * @ingroup globus_gsi_callback_data
+ * @details
  * This function returns the certificate chain associated with the callback
  * data.
- * @ingroup globus_gsi_callback_data
  *
  * @param callback_data
- *        The globus_gsi_callback_data_t to retreive the certificate chain
+ *        The globus_gsi_callback_data_t to retrieve the certificate chain
  *        from.
  * @param cert_chain
  *        Contains the certificate chain upon successful return
@@ -595,9 +581,11 @@ globus_gsi_callback_get_cert_chain(
 }
 
 /**
+ * @brief Set the certificate chain
+ * @ingroup globus_gsi_callback_data
+ * @details
  * This function sets the certificate chain associated with the callback
  * data.
- * @ingroup globus_gsi_callback_data
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to set the certificate chain
@@ -656,17 +644,14 @@ globus_gsi_callback_set_cert_chain(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Getting and setting the limited proxy handling setting
- */
-/* @{ */
-/**
+ * @brief Get the limited proxy handling setting
  * @ingroup globus_gsi_callback_data
+ * @details
  * This function gets the value of the limited proxy handling setting. This
  * setting determines whether path validation will accept limited proxies that
- * have been further delegated, ie certificate chains with a limited proxy
+ * have been further delegated, i.e. certificate chains with a limited proxy
  * followed by further proxies. 
  *
  * @param callback_data
@@ -718,10 +703,12 @@ globus_gsi_callback_get_multiple_limited_proxy_ok(
 }
 
 /**
+ * @brief Set the limited proxy handling setting
  * @ingroup globus_gsi_callback_data
+ * @details
  * This function sets the value of the limited proxy handling setting. This
  * setting determines whether path validation will accept limited proxies that
- * have been further delegated, ie certificate chains with a limited proxy
+ * have been further delegated, i.e. certificate chains with a limited proxy
  * followed by further proxies. 
  *
  * @param callback_data
@@ -760,16 +747,13 @@ globus_gsi_callback_set_multiple_limited_proxy_ok(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Getting and setting a set of X.509 extension OIDs.
- */
-/* @{ */
-/**
+ * @brief Get X.509 extension OIDs.
+ * @ingroup globus_gsi_callback_data
+ * @details
  * This function gets a list of X.509 extension OIDs that may be used by the
  * extensions callback to allow or disallow certain extensions.   
- * @ingroup globus_gsi_callback_data
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to get the array of extension OIDs
@@ -818,9 +802,11 @@ globus_gsi_callback_get_extension_oids(
 }
 
 /**
+ * @brief Set X.509 extension OIDs.
+ * @ingroup globus_gsi_callback_data
+ * @details
  * This function sets a list of X.509 extension OIDs that may be used by the
  * extensions callback to allow or disallow certain extensions.
- * @ingroup globus_gsi_callback_data
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to get the array of extension OIDs
@@ -858,16 +844,13 @@ globus_gsi_callback_set_extension_oids(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Getting and setting the trusted certificate directory
- */
-/* @{ */
-/**
+ * @brief Get the trusted certificate directory
+ * @ingroup globus_gsi_callback_data
+ * @details
  * This function gets the trusted certificate directory from the callback
  * data.
- * @ingroup globus_gsi_callback_data
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to get the trusted certificates
@@ -917,9 +900,11 @@ globus_gsi_callback_get_cert_dir(
 }
 
 /**
+ * @brief Set the trusted certificate directory
+ * @ingroup globus_gsi_callback_data
+ * @details
  * This function sets the trusted certificate directory on the callback
  * data.
- * @ingroup globus_gsi_callback_data
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to set the trusted certificates
@@ -964,15 +949,12 @@ globus_gsi_callback_set_cert_dir(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Getting and setting the callback to be called for unknown X.509 extensions
- */
-/* @{ */
-/**
- * This function gets the callback that is called for unknown X.509 extensions
+ * @brief Get the unknown X.509 extension callback
  * @ingroup globus_gsi_callback_data
+ * @details
+ * This function gets the callback that is called for unknown X.509 extensions
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to get the callback information from
@@ -1020,8 +1002,10 @@ globus_gsi_callback_get_extension_cb(
 }
 
 /**
- * This function sets the callback that is called for unknown X.509 extensions
+ * Set the unknown X.509 extension callback
  * @ingroup globus_gsi_callback_data
+ * @details
+ * This function sets the callback that is called for unknown X.509 extensions.
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to set the callback information on
@@ -1058,16 +1042,12 @@ globus_gsi_callback_set_extension_cb(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
-
 
 /**
- * @name Getting and setting the error status
- */
-/* @{ */
-/**
- * This function gets the error status stored in the callback data.
+ * @brief Get error status
  * @ingroup globus_gsi_callback_data
+ * @details
+ * This function gets the error status stored in the callback data.
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to get the error from
@@ -1105,8 +1085,10 @@ globus_gsi_callback_get_error(
 }
 
 /**
- * This function sets the error status stored in the callback data.
+ * @brief Set error status
  * @ingroup globus_gsi_callback_data
+ * @details
+ * This function sets the error status stored in the callback data.
  *
  * @param callback_data
  *        The globus_gsi_callback_data_t to set the error on
@@ -1143,14 +1125,11 @@ globus_gsi_callback_set_error(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Getting and setting the check self-signed policy flag
- */
-/* @{ */
-/**
+ * @brief Get the self-signed policy checking flag
  * @ingroup globus_gsi_callback_data
+ * @details
  * This function gets the value of the "check policy for self-signed
  * certificates flag" in the callback data. If this is set than the CA signing
  * policy for a self-signed certificate must include a policy line that allows
@@ -1193,7 +1172,9 @@ globus_gsi_callback_get_check_policy_for_self_signed_certs(
 }
 
 /**
+ * @brief Set the self-signed policy checking flag
  * @ingroup globus_gsi_callback_data
+ * @details
  * This function sets the value of the "check policy for self-signed
  * certificates flag" in the callback data. If this is set than the CA signing
  * policy for a self-signed certificate must include a policy line that allows
@@ -1235,14 +1216,11 @@ globus_gsi_callback_set_check_policy_for_self_signed_certs(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Getting and setting the allow missing signing policy flag
- */
-/* @{ */
-/**
+ * @brief Get the "allow missing signing policy" flag
  * @ingroup globus_gsi_callback_data
+ * @details
  * This function gets the value of the "allow missing signing policy" flag
  * in the callback data. If this is TRUE then the CA signing
  * policy need not be present.
@@ -1284,7 +1262,9 @@ globus_gsi_callback_get_allow_missing_signing_policy(
 }
 
 /**
+ * @brief Set the "allow missing signing policy" flag
  * @ingroup globus_gsi_callback_data
+ * @details
  * This function sets the value of the "allow missing signing policy" flag
  * in the callback data. If this is TRUE then the CA signing
  * policy need not be present.
@@ -1325,4 +1305,3 @@ globus_gsi_callback_set_allow_missing_signing_policy(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */

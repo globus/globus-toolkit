@@ -28,8 +28,7 @@
  * @details 
  * @param minor_status
  * @param buffer
- *
- * @return
+ * @retval GSS_S_COMPLETE Success
  */
 OM_uint32 
 GSS_CALLCONV gss_release_buffer(

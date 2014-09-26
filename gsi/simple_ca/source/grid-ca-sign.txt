@@ -1,0 +1,98 @@
+GRID-CA-SIGN(1)
+===============
+:doctype:      manpage
+:man source:   University of Chicago
+:man manual:   Globus Toolkit Manual
+
+NAME
+----
+grid-ca-sign - Sign a certificate with a SimpleCA for use on a grid
+
+[[grid-ca-sign-SYNOPSIS]]
+SYNOPSIS
+--------
+*grid-ca-sign* -in 'REQUEST' -out 'CERTIFICATE' [OPTIONS]
+
+*grid-ca-sign* [ -help | -h | -usage | -version | -versions ]
+
+[[grid-ca-sign-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *grid-ca-sign* program signs a certificate based on a request file with a CA
+certificate created by *grid-ca-create*. The new
+certificate is written to a file. If the CA has already signed a
+certificate with the same subject name as contained in the certificate
+request, it will refuse to sign the new request unless the
+'-force' option is provided on the command-line.
+
+If run as a privileged user, *grid-ca-sign* uses the CA certificate and
+configuration located in +${localstatedir}/lib/globus/simple_ca+ to
+sign the certificate. For a non-privileged user, *grid-ca-sign* uses the CA
+certificate and configuration located in +$HOME/.globus/simpleCA+. The
+*grid-ca-sign* program an use a different CA configuration and certificate by
+using the '-dir' option.
+
+[[grid-ca-sign-OPTIONS]]
+OPTIONS
+-------
+The full set of command-line options to *grid-ca-sign* follows. In addition to
+these, unknown options will be passed to the *openssl* command when creating
+the self-signed certificate. 
+
+*-help, -h, -usage*::
+    Display the command-line options to *grid-ca-sign* and exit.
+
+*-version, -versions*::
+    Display the version number of the *grid-ca-sign* command. The second form
+    includes details about the package containing *grid-ca-sign*.
+
+*-in 'REQUEST'*::
+    Sign the request contained in the 'REQUEST' file.
+
+*-out 'CERTIFICATE'*::
+    Write the signed request to the 'CERTIFICATE' file.
+
+*-force*::
+    Revoke any previously issued certificate with the same subject name as in
+    the certificate request and issue a new certificate. Otherwise,
+    *grid-ca-sign* will refuse to sign the request.
+
+*-dir 'DIRECTORY'*::
+    Sign the certificate using the Simple CA certificate and configuration
+    located in 'DIRECTORY' instead of the default.
+
+*-openssl-help*::
+    Print the command-line options available for the *openssl ca*
+    command.
+
+[[grid-ca-sign-EXAMPLES]]
+EXAMPLES
+--------
+Sign a certificate request using the simple CA in +$HOME/SimpleCA'+
+    
+    % *grid-ca-sign* \
+        -in usercert_request.pem \
+        -out usercert.pem \
+        -dir $HOME/SimpleCA
+
+    To sign the request please enter the password for the CA key: 
+
+    The new signed certificate is at: /home/juser/.globus/simpleCA/newcerts/01.pem
+
+[[grid-ca-sign-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following environment variables affect the execution of *grid-ca-sign*:
+
+`GLOBUS_LOCATION`::
+    Non-standard installation path of the Globus Toolkit.
+
+[[grid-ca-sign-SEEALSO]]
+SEE ALSO
+--------
+grid-cert-request(1), grid-ca-create(1), grid-default-ca(1), grid-ca-package(1)
+
+[[grid-ca-sign-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

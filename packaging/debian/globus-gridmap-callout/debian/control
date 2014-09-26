@@ -1,0 +1,36 @@
+Source: globus-gridmap-callout
+Priority: optional
+Maintainer: Globus Toolkit <support@globus.org>
+Build-Depends: debhelper (>= 5), autotools-dev, doxygen, pkg-config, libglobus-common-dev (>= 14), libglobus-gssapi-gsi-dev (>= 4), libglobus-gss-assist-dev (>= 3), libglobus-gridmap-callout-error (>= 0), libglobus-gsi-credential (>= 0)
+Standards-Version: 3.8.4
+Section: net
+Homepage: http://www.globus.org/toolkit
+
+Package: libglobus-gridmap-callout
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Globus Toolkit - Globus Gridmap Callout
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-gridmap-callout package contains:
+ Globus Gridmap Callout
+
+Package: libglobus-gridmap-callout-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: libglobus-gridmap-callout-1 (= ${binary:Version}), ${misc:Depends}
+Description: Globus Toolkit - Globus Gridmap Callout Debug Symbols
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-gridmap-verify-myproxy-callout-dbg package contains:
+ Globus Gridmap Callout Debug Symbols

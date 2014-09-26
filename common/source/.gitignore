@@ -16,6 +16,7 @@ config.status
 configure
 ltmain.sh
 globus_common-*.tar.gz
+globus_version
 version.h
 *.lo
 *.la

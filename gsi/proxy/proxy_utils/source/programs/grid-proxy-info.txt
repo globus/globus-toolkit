@@ -1,0 +1,119 @@
+GRID-PROXY-INFO(1)
+==================
+:doctype:      manpage
+:man source:   University of Chicago
+:man manual:   Globus Toolkit
+
+NAME
+----
+grid-proxy-info - Display information about a proxy certificate
+
+[[grid-proxy-info-SYNOPSIS]]
+SYNOPSIS
+--------
+*grid-proxy-info* -help | -usage | -version
+
+*grid-proxy-info* -e | -exists [-valid 'HOURS:MINUTES' | -v 'HOURS:MINUTES'] [-hours 'HOURS' | -h 'HOURS'] [-bits 'BITS' | -b 'BITS']
+
+*grid-proxy-info* [OPTIONS]
+
+[[grid-proxy-info-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *grid-proxy-info* program extracts information from an X.509 proxy
+certificates, and optionally displays or returns an exit code based on that
+information.
+
+The default mode of operation is to print the following facts about the current
+user's default proxy: subject, issuer, identity, type, strength, path, and time
+left.  If the command-line option '-exists' or
+'-e' is included in the command-line, nothing is printed unless
+one of the print options is specified. Instead, *grid-proxy-info* determines if
+a valid proxy exists and, if so, exits with the exit code `0`;
+if a proxy does not exist or is not valid, *grid-proxy-info* exits with the
+exit code `1`.  Additional validity criteria can be added
+by using the '-valid', '-v', '-hours', '-h', '-bits', or '-b' command-line
+options. If used, these options must occur *after* the '-e' or
+'-exists' command-line options. Those options are only valid
+if one of the '-e' or '-exists' command-line
+options is used.
+
+[[grid-proxy-info-OPTIONS]]
+OPTIONS
+-------
+The complete set of command-line options to *grid-proxy-info* are:
+
+*-help, -usage*::
+    Display the command-line options to *grid-proxy-info*.
+*-version*::
+    Display the version number of the *grid-proxy-info* command.
+*-debug*::
+    Display verbose error messages.
+*-file 'PROXYFILE', -f 'PROXYFILE'*::
+    Read the proxy located in the file 'PROXYFILE' instead of using the default
+    proxy.
+*-subject, -s*::
+    Display the proxy certificate's subject distinguished name.
+*-issuer, -i*::
+    Display the proxy certificate issuer's distinguished name.
+*-identity*::
+    Display the proxy certificate's identity.  For non-independent proxies, the
+    identity is the subject of the certificate which issued the first proxy in
+    the proxy chain.
+*-type*::
+    Display the type of proxy certificate. The type string includes the format
+    ("legacy", "draft", or RFC 3280 compliant), identity type ("impersonation"
+    or "independent"), and policy ("limited" or "full"). See
+    *grid-proxy-init(1)* for information about how to create different types of
+    proxies.
+*-timeleft*::
+    Display the number of seconds remaining until the proxy certificate
+    expires.
+*-strength*::
+    Display the strength (in bits) of the key associated with the proxy
+    certificate.
+*-all*::
+    Display the default information for the proxy when also using the
+    '-e' or '-exists' command-line option.
+*-text*::
+    Display the proxy certificate contents to standard output, including policy
+    information, issuer, public key, and modulus.
+*-path*::
+    Display the path to the file containing the default proxy certificate.
+*-rfc2253*::
+    Display distinguished names for the subject, issuer, and identity using the
+    string representation described in RFC 2253, instead of the legacy
+    format.
+*-exists, -e*::
+    Perform an existence and validity check for the proxy. If a valid proxy
+    exists and matches the criteria described by other command-line options (if
+    any), exit with 0; otherwise, exit with 1. This option must be before other
+    validity check predicate in the command-line options. If this option is
+    specified, the output of the default facts about the proxy is disabled. Use
+    the '-all' option to have the information displayed as well as the exit
+    code set.
+*-valid 'HOURS:MINUTES', -v 'HOURS:MINUTES', -hours 'HOURS', -h 'HOURS'*::
+    Check that the proxy certificate is valid for at least 'HOURS' hours and
+    'MINUTES' minutes. If it is not, *grid-proxy-info* will exit with exit code
+    `1`.
+*-bits 'BITS', -b 'BITS'*::
+    Check that the proxy certificate key strength is at least 'BITS'
+    bits.
+
+[[grid-proxy-info-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following environment variables affect the execution of *grid-proxy-info*:
+
+*X509_USER_PROXY*::
+    Path to the default user proxy.
+
+[[grid-proxy-info-SEEALSO]]
+SEE ALSO
+--------
+grid-proxy-init(1), grid-proxy-destroy(1)
+
+[[grid-proxy-info-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

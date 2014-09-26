@@ -17,12 +17,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_callback.c
- * Globus GSI Callback
+ * @brief Globus GSI Callback
  * @author Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 
@@ -247,13 +243,11 @@ globus_l_gsi_callback_openssl_dup(
 #endif
 
 /**
- * @name Get callback data index from X509_STORE
- */
-/* @{ */
-/**
+ * @brief Get callback data index from X509_STORE
+ * @ingroup globus_gsi_callback_functions
+ * @details
  * Retrieve or create the index for our callback data structure in the
  * X509_STORE.
- * @ingroup globus_gsi_callback_functions
  *
  * @param index
  *        Will contain the index upon return
@@ -296,16 +290,13 @@ globus_gsi_callback_get_X509_STORE_callback_data_index(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Get callback data index from SSL structure
- */
-/* @{ */
-/**
+ * @brief Get callback data index from SSL structure
+ * @ingroup globus_gsi_callback_functions
+ * @details
  * Retrieve or create the index for our callback data structure in the
  * SSL structure.
- * @ingroup globus_gsi_callback_functions
  *
  * @param index
  *        Will contain the index upon return
@@ -347,14 +338,11 @@ globus_gsi_callback_get_SSL_callback_data_index(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Certificate verify wrapper
- */
-/* @{ */
-/**
+ * @brief Certificate verify wrapper
  * @ingroup globus_gsi_callback_functions
+ * @details
  * This function wraps the OpenSSL certificate verification callback for the
  * purpose of a replacing the standard issuer check with one that deals with
  * proxy certificates. Should be used with SSL_CTX_set_cert_verify_callback()
@@ -406,14 +394,11 @@ globus_gsi_callback_X509_verify_cert(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Independent path validation callback.
- */
-/* @{ */
-/**
+ * @brief Independent path validation callback.
  * @ingroup globus_gsi_callback_functions
+ * @details
  * This function provides a path validation callback for validation outside of
  * a SSL session. It should be used in X509_STORE_set_verify_cb_func().
  *
@@ -483,14 +468,11 @@ int globus_gsi_callback_create_proxy_callback(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return verify_result;
 }
-/* @} */
 
 /**
- * @name SSL path validation callback.
- */
-/* @{ */
-/**
+ * @brief SSL path validation callback.
  * @ingroup globus_gsi_callback_functions
+ * @details
  * This function provides a path validation callback for the validation part of
  * establishing a SSL session. It handles proxy certificates, X509 Extensions
  * and CRL checking. It should be used in SSL_CTX_set_verify().
@@ -570,14 +552,11 @@ int globus_gsi_callback_handshake_callback(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return verify_result;
 }
-/* @} */
 
 /**
- * @name OpenSSL X509_check_issued() wrapper
- */
-/* @{ */
-/**
+ * @brief OpenSSL X509_check_issued() wrapper
  * @ingroup globus_gsi_callback_functions
+ * @details
  * This function wraps the OpenSSL X509_check_issued() call and catches the
  * error caused by the fact that a proxy certificate issuer may not have to
  * have the correct KeyUsage fields set.
@@ -641,7 +620,6 @@ int globus_gsi_callback_check_issued(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return return_code;
 }
-/* @} */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 

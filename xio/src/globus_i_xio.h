@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 #if !defined(GLOBUS_I_XIO_H)
 #define GLOBUS_I_XIO_H 1
 
@@ -422,7 +424,7 @@ typedef struct globus_i_xio_handle_s
 /*
  *  represents an entry in the array of open handles.
  *
- *  each entry is maped to a driver in the stack
+ *  each entry is mapped to a driver in the stack
  */
 typedef struct globus_i_xio_context_entry_s
 {
@@ -471,7 +473,7 @@ typedef struct globus_i_xio_context_s
 #define _op_ent_fake_iovec              type_u.handle_s.fake_iovec
 
 /*
- *  represents a entry in an array of operations.  each entry
+ *  represents a entry in an array of operations.  Each entry
  *  is mapped to a driver at the same index.
  */
 typedef struct globus_i_xio_op_entry_s
@@ -526,8 +528,10 @@ typedef struct globus_i_xio_op_entry_s
 #define _op_server_timeout_cb           type_u.server_s.timeout_cb
 
 /**
- * Information about the what thread is being blocked by a callback. In the
- * non-threaded case, this will be the callback_depth, otherwise the thread_id
+ * @brief Information about the what thread is being blocked by a callback.
+ *
+ * In the non-threaded case, this will be the callback_depth, otherwise
+ * the thread_id
  */
 typedef union
 {
@@ -575,7 +579,7 @@ typedef struct globus_i_xio_op_s
 
             globus_size_t               nbytes;
 
-            /* convience pointer, really owned by handle */
+            /* convenience pointer, really owned by handle */
             globus_i_xio_context_t *    context;
             /* data descriptor */
             globus_size_t               wait_for;
@@ -596,7 +600,7 @@ typedef struct globus_i_xio_op_s
     /* reference count for destruction */
     int                                 ref;
 
-    /* members for cancelation */
+    /* members for cancellation */
     globus_xio_driver_cancel_callback_t cancel_cb;
     void *                              cancel_arg;
     int                                 canceled;
@@ -607,7 +611,7 @@ typedef struct globus_i_xio_op_s
     globus_i_xio_blocked_thread_t       blocked_thread;
     globus_bool_t                       finished_delayed;
 
-    /* just stash away the cred to open so that the driver can interigate
+    /* just stash away the cred to open so that the driver can interrogate
         it.  */
     gss_cred_id_t                       user_open_cred;
     char *                              user_open_sbj;
@@ -912,3 +916,5 @@ extern globus_mutex_t                   globus_i_xio_mutex;
 extern globus_cond_t                    globus_i_xio_cond;
 
 #endif /* GLOBUS_I_XIO_H */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

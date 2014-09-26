@@ -1217,7 +1217,7 @@ error_canceled:
     return handled_it;
 }
 
-/**
+/*
  * one of these fds is bad, lock down the fdset and check them all
  * --- assumed to be called with cancel lock held after a select
  */
@@ -1388,7 +1388,7 @@ globus_l_xio_system_poll(
                     globus_l_xio_system_bad_apple();
                 }
                 
-                /**
+                /*
                  * can't really do anything about other errors
                  * so, set ready fds to known state in case there are things
                  * to be canceled
@@ -1933,7 +1933,7 @@ globus_l_xio_system_read(
         globus_size_t                   nbytes = *u_nbytes;
         globus_size_t                   total = nbytes;
         
-        /**
+        /*
          * XXX this is not thread safe... both reads and writes are mucking
          * with blocking status.
          * worst case, we read 0 bytes in the loop below, return, and xio
@@ -2083,7 +2083,7 @@ globus_l_xio_system_write(
         globus_size_t                   nbytes = *u_nbytes;
         globus_size_t                   total = nbytes;
         
-        /**
+        /*
          * XXX this is not thread safe... both reads and writes are mucking
          * with blocking status
          */

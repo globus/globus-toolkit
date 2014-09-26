@@ -41,7 +41,7 @@
  *  
  * Creates an ASN1_METHOD structure, which contains
  * pointers to routines that convert any PROXYPOLICY
- * structure to its associated ASN1 DER encoded form
+ * structure to its associated ASN.1 DER encoded form
  * and vice-versa.
  *
  * @return the ASN1_METHOD object
@@ -177,7 +177,7 @@ int PROXYPOLICY_print(
 /**
  * @ingroup proxypolicy
  *
- * Prints the PROXYPOLICY to the file stream FILE*
+ * Prints the PROXYPOLICY to the FILE * stream
  *
  * @param fp the FILE* stream to print to
  * @param policy the PROXYPOLICY to print

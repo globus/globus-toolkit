@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/** @file globus_io.h Globus I/O emulation */
 #ifndef GLOBUS_GLOBUS_IO_H
 #define GLOBUS_GLOBUS_IO_H
 

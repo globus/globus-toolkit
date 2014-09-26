@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2014 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,48 +32,6 @@ globus_l_directory_write_event_handler(
     void *                              arg,
     const globus_scheduler_event_t *    event);
 
-/**
- * @page globus_scheduler_event_generator Globus Scheduler Event Generator
- *
- * The Scheduler Event Generator (SEG) is a program which uses
- * scheduler-specific monitoring modules to generate job state
- * change events. At the SEG level, the state change events correspond to 
- * changes in any jobs which are managed by the scheduler, even if they do
- * not correspond to jobs initiated by the Managed Job Service. These state
- * change events are propagated to the Job State Monitor.
- *
- * Depending on scheduler-specific requirements, the SEG may need to run with 
- * priviledges to enable it to obtain scheduler event
- * notifications. As such, one SEG runs per scheduler resource. For example,
- * on a host which provides access to both PBS and fork jobs, two SEGs, running
- * at (potentially) different privilege levels will be running.
- *
- * When executed, the SEG is able to start issuing events from some
- * time in the past. The SEG will, in general, not require any persistent
- * state between invocations. One SEG instance exists for any particular
- * scheduled resource instance (one for all homogeneous PBS queues, one for
- * all fork jobs, etc).
- *
- * The SEG is implemented in an executable called the
- * globus-scheduler-event-generator, located in the Globus Toolkit's libexec
- * directory. It is invoked with the following command line:
- * 
- * @code
- *     globus-scheduler-event-generator -s SCHEDULER NAME [-t TIMESTAMP]
- * @endcode
- *     
- * It produces events in the format described in the
- * @ref seg_protocol "SEG Protocol" section of this document on the standard
- * output of the process.
- * 
- * When begun, it loads the scheduler module for the scheduler named on the
- * command line and then defers to it for most functionality. When it detects
- * an error writing to stdout or reading stdin, it terminates. The scheduler
- * specific code uses the SEG API to emit events to the JSM.
- *
- * Scheduler implementations use the @ref globus_scheduler_event_generator_api
- * to send messages to the JSM.
- */
 static
 void
 globus_l_fault_handler(

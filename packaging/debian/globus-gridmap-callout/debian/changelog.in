@@ -1,0 +1,5 @@
+globus-gridmap-callout (1.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Package globus-gridmap-callout
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 September 2014 08:21:42 -0400

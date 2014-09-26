@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_ftp_control.c Globus FTP Control API
+ * @file globus_ftp_control.c
+ * @brief Globus FTP Control API
  */
 
 #include "globus_ftp_control.h"
@@ -46,8 +49,8 @@ globus_module_descriptor_t globus_i_ftp_control_module =
 /**
  * Debugging level
  *
- * 1 thru 3 enable debug output for control channel
- * 4 thru 6 enable debug output for control and data channel
+ * 1 through 3 enable debug output for control channel
+ * 4 through 6 enable debug output for control and data channel
  */
 int globus_i_ftp_control_debug_level = 0;
 
@@ -182,7 +185,7 @@ globus_i_ftp_parallelism_copy(
         dest_parallelism->base.size = 1;
     }
 
-    /* TODO check src_parallelism for vaid members */
+    /* TODO check src_parallelism for valid members */
     return GLOBUS_SUCCESS;
 }
 
@@ -314,7 +317,7 @@ globus_ftp_control_host_port_get_host(
     /* this api doesnt let me play nice with people that arent aware of the new
      * hostlen field in host_port.  since i have tried to assume 4 wherever
      * ipv6 is not allowed, I will assume 4 unless the len is actually 16.
-     * this is in the hopes that it is not likely for a random unitialized int
+     * this is in the hopes that it is not likely for a random uninitialized int
      * to be 16
      */
     str = globus_libc_ints_to_contact_string(
@@ -367,3 +370,4 @@ globus_ftp_control_layout_copy(
     return GLOBUS_SUCCESS;
 }
 
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

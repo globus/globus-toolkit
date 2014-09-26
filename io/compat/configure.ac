@@ -1,6 +1,7 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_io],[10.11],[https://globus.atlassian.net/])
+AC_INIT([globus_io],[10.12],[https://globus.atlassian.net/])
+AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [7])
@@ -38,16 +39,11 @@ AC_SUBST([GSI_DRIVER_CFLAGS])
 AC_SUBST([GSI_DRIVER_LIBS])
 AC_SUBST([DLPREOPEN_FORCE])
 
-AC_PATH_PROGS([DOXYGEN], doxygen)
-
-AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
-
 AC_CONFIG_FILES(
         globus-io.pc
         globus-io-uninstalled.pc
 	Makefile
         test/Makefile
-        Doxyfile
 	version.h
 	test/openssl.cnf
 )

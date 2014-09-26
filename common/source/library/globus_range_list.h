@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_range_list.h Byte Range List */
+/**
+ * @file globus_range_list.h
+ * @brief Byte Range List
+ */
 
 #ifndef GLOBUS_RANGE_LIST_H
 #define GLOBUS_RANGE_LIST_H

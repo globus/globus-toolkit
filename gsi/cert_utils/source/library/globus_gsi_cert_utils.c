@@ -17,13 +17,9 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_cert_utils.c
+ * @brief Globus GSI Cert Utils Library
  * @author Sam Lang
  * @author Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
- *
  */
 #endif
 
@@ -142,11 +138,9 @@ globus_l_gsi_cert_utils_deactivate(void)
 #endif
 
 /**
- * @name Convert ASN1_UTCTIME to time_t
+ * @brief Convert ASN1_UTCTIME to time_t
  * @ingroup globus_gsi_cert_utils
- */
-/* @{ */
-/**
+ * @details
  * Convert a ASN1_UTCTIME structure to a time_t
  *
  * @param ctm
@@ -251,14 +245,11 @@ globus_gsi_cert_utils_make_time(
 
     return result;
 }
-/* @} */
 
 /**
- * @name Get the X509 certificate type (EEC, CA, proxy type, etc.)
+ * @brief Get the X509 certificate type
  * @ingroup globus_gsi_cert_utils
- */
-/* @{ */
-/**
+ * @details
  * Determine the type of the given X509 certificate For the list of possible
  * values returned, see globus_gsi_cert_utils_cert_type_t.
  *
@@ -562,14 +553,11 @@ globus_gsi_cert_utils_get_cert_type(
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Get the certificate name
+ * @brief Get the certificate name
  * @ingroup globus_gsi_cert_utils
- */
-/* @{ */
-/**
+ * @details
  * Get the X509_NAME from a subject string.
  * OpenSSL doesn't provide this function, probably because
  * it shouldn't be used.  If you are getting an X509_NAME from
@@ -751,14 +739,11 @@ globus_gsi_cert_utils_get_x509_name(
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Get the base certificate name
+ * @brief Get the base certificate name from a certificate chain
  * @ingroup globus_gsi_cert_utils
- */
-/* @{ */
-/**
+ * @details
  * Get the base name of a proxy certificate.  Given an X509 name, strip
  * off the proxy related /CN components to get the base name of the
  * certificate's subject
@@ -828,11 +813,12 @@ globus_gsi_cert_utils_get_base_name(
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
     return GLOBUS_SUCCESS;
 }
-/* @} */
 
 /**
- * Get the end-entity certificate associated with a certificate chain
+ * @brief Get the end-entity certificate from a certificate chain
  * @ingroup globus_gsi_cert_utils
+ * @details
+ * Get the end-entity certificate associated with a certificate chain
  *
  * @param cert_chain
  *    Certificate chain to inspect.
@@ -882,9 +868,11 @@ globus_gsi_cert_utils_get_eec(
 /* globus_gsi_cert_utils_get_eec() */
 
 /**
+ * @brief Get the identity certificate from a certificate chain
+ * @ingroup globus_gsi_cert_utils
+ * @details
  * Get the identity-providing certificate associated with a certificate chain.
  * This may be an independent proxy or a end-entity certificate.
- * @ingroup globus_gsi_cert_utils
  *
  * @param cert_chain
  *    Certificate chain to inspect.
@@ -1047,4 +1035,3 @@ globus_i_gsi_cert_utils_dn_cmp(
         return result;
     }
 }
-

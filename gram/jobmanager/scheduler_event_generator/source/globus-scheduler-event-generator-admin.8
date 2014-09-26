@@ -1,0 +1,75 @@
+'\" t
+.\"     Title: globus-scheduler-event-generator-admin
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/23/2014
+.\"    Manual: Globus Toolkit
+.\"    Source: globus-scheduler-event-generator-admin.txt
+.\"  Language: English
+.\"
+.TH "GLOBUS\-SCHEDULER\-E" "8" "09/23/2014" "globus\-scheduler\-event\-gene" "Globus Toolkit"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+globus-scheduler-event-generator-admin \- Enable globus\-scheduler\-event\-generator services
+.SH "SYNOPSIS"
+.sp
+\fBglobus\-scheduler\-event\-generator\-admin\fR OPTIONS
+.SH "DESCRIPTION"
+.sp
+The \fBglobus\-scheduler\-event\-generator\-admin\fR program enables or disables the \fBglobus\-scheduler\-event\-generator\fR for a particular local resource manager\&. It can also be used to list available local resource managers\&.
+.SH "OPTIONS"
+.PP
+\fB\-h\fR
+.RS 4
+Display a help message and exit\&.
+.RE
+.PP
+\fB\-e \fR\fB\fISERVICE\fR\fR
+.RS 4
+Enable the globus\-scheduler\-event\-generator for
+\fISERVICE\fR, such as
+pbs
+or
+sge\&.
+.RE
+.PP
+\fB\-d \fR\fB\fISERVICE\fR\fR
+.RS 4
+Enable the globus\-scheduler\-event\-generator for
+\fISERVICE\fR, such as
+pbs
+or
+sge\&.
+.RE
+.PP
+*\-n \fINAME\fR
+.RS 4
+When used with the \-l option below, only list services which match
+\fINAME\fR\&.
+.RE
+.PP
+\fB\-l\fR
+.RS 4
+List the all the available LRM services and whether they are enabled\&.
+.RE
+.SH "AUTHOR"
+.sp
+Copyright (c) 1999\-2014 University of Chicago

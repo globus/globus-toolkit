@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-/************************************************************************
+/*-**********************************************************************
  *                      attribute macros
  ***********************************************************************/
 #define GlobusIXIOAttrGetDS(_out_ds, _in_attr, _in_driver)                  \
@@ -62,7 +62,7 @@ do                                                                          \
     }                                                                       \
 } while(0)
     
-/*******************************************************************
+/*-*****************************************************************
  *                      driver interface
  ******************************************************************/
 /**
@@ -95,13 +95,13 @@ do                                                                          \
  *     must be at the bottom of the stack.  A transform driver is defined
  *     by its lack of passing an operation to the next driver in the stack.
  *     This type of driver does not rely on globus_xio for further completion
- *     of an operation, rather it is self sufficent in this task.
+ *     of an operation, rather it is self sufficient in this task.
  *     </dd>
  *
  *     <dt><tt>Transform driver:</tt></dt>
  *     <dd>
- *     A tranform driver is any intermediate driver in the stack.  These 
- *     drivers are indentified by there reliance on the driver stack to
+ *     A transform driver is any intermediate driver in the stack.  These 
+ *     drivers are identified by their reliance on the driver stack to
  *     complete the operation.  These drivers must pass the operation
  *     down the stack because they cannot complete it themselves.  An
  *     example of a transform driver would be a gsi driver.  This driver
@@ -112,12 +112,12 @@ do                                                                          \
  *  </dl>
  *
  *  @section driver_api Driver API 
- *  The globus xio driver api is a set of functions and interfaces
- *  to allow a developer to create a backend driver for globus_xio.
+ *  The Globus XIO Driver API is a set of functions and interfaces
+ *  to allow a developer to create a back-end driver for globus_xio.
  *  To create a driver the user must implement all of the interface
  *  functions in the driver specification.
  *  There are also a set of functions provide to assist the driver
- *  author in implemention.
+ *  author in implementation.
  *
  *    @subsection driver_api_quickstart Quick Start
  *    For basic driver needs, the user will have to pay attention to a
@@ -150,7 +150,7 @@ do                                                                          \
  *        <dd>
  *        This structure provides the driver with information about the
  *        driver stack  It is mainly used for creating driver_handle as a
- *        parameter to lobus_xio_driver_open()..
+ *        parameter to globus_xio_driver_open().
  *        </dd>
  *    </dl>
  * 
@@ -179,9 +179,9 @@ do                                                                          \
  *           </dd>
  *
  *           <dt><tt>Read/Write</tt></dt>
- *           <dd>The read or write interface funcion is called.  It receives
+ *           <dd>The read or write interface function is called.  It receives
  *           a operation as a parameter.  The driver then calls the 
- *           approriate pass operation and waits for the callback.  When
+ *           appropriate pass operation and waits for the callback.  When
  *           the callback is received the driver calls finished_operation
  *           passing in the operation structure it received in the callback
  *           </dd>
@@ -203,7 +203,7 @@ do                                                                          \
  *   @addtogroup globus_xio_driver
  *
  *   @section advanced_driver_programming Advanced Driver Programming
- *   The typical driver implementatin is describe above.  However globus_xio
+ *   The typical driver implementation is describe above.  However globus_xio
  *   allows driver authors to do more advanced things.  Some of these things
  *   will be explored here.
  *
@@ -215,21 +215,21 @@ do                                                                          \
  *   function.  So if a driver wishes to read ahead it does the following:
  *
  *   \li it creats an operation by calling globus_xio_driver_create_operation()
- *   and passing it the driver_handle it is intereesting in using.
+ *   and passing it the driver_handle it is interested in using.
  *
  *   \li call globus_xio_driver_read() using this operations.  When the read
  *   callback is received the driver may call finished_operation() on the
- *   op it receives (this ultimitely results in very little, since this 
+ *   op it receives (this ultimately results in very little, since this 
  *   operation was started by this driver, but it is good practice and will
  *   free up resources that would otherwise leak).
  *
  *   \li Now when the user finally does receive a read interface call from
- *   globus_xio it can imediately finish it using the operation it just
+ *   globus_xio it can immediately finish it using the operation it just
  *   received as a parameter and updating the iovec structure to represent 
- *   the read that already occured.
+ *   the read that already occurred.
  *   </dd>
  *
- *   <dt><tt>Preopening Handles</tt></dt>
+ *   <dt><tt>Pre-Opening Handles</tt></dt>
  *   <dd>
  *   Once the driver has received a globus_xio_driver_stack_t it can 
  *   open a driver_handle.  The globus_xio_driver_stack_t comes in the
@@ -299,7 +299,7 @@ typedef void
  *
  * @param op
  *         The operation structure associated with the read or write
- *         operation request.  The driver should call the approriate
+ *         operation request.  The driver should call the appropriate
  *         finished operation when it receives this operation.
  *
  * @param result
@@ -400,7 +400,7 @@ typedef globus_result_t
  *  get or set information in an attr.
  *
  *  The cmd parameter determines what functionality the user is requesting.
- *  The driver is resonsible for providing documentation to the user on
+ *  The driver is responsible for providing documentation to the user on
  *  all the possible values that cmd can be.
  *
  *  @param driver_attr
@@ -425,7 +425,7 @@ typedef globus_result_t
  *  Initialize a server object
  *
  *  The driver developer should implement this function if their driver
- *  handles server operations (pasive opens).  In the tcp driver this 
+ *  handles server operations (passive opens).  In the tcp driver this 
  *  function should create a listener.
  *
  *  @param op
@@ -493,8 +493,8 @@ globus_xio_driver_pass_server_init(
  *         The server that the driver should clean up.
  *
  *  @param driver_server
- *         The reference to the iunternal server that is being declaired
- *         invaild with this function call.
+ *         The reference to the internal server that is being declared
+ *         invalid with this function call.
  */
 typedef globus_result_t
 (*globus_xio_driver_server_destroy_t)(
@@ -506,7 +506,7 @@ typedef globus_result_t
  *
  *  The driver developer should implement this function if their driver 
  *  handles server operations.  Once the accept operation completes, the
- *  connection is established.  The user still has an opertunity to
+ *  connection is established.  The user still has an opportunity to
  *  open the link or destroy it.  They can query the link for 
  *  additional information on which to base the decision to open.
  *
@@ -515,7 +515,7 @@ typedef globus_result_t
  *         accepted.
  *
  *  @param op
- *         The requested operation.  When the driver is finished acepting
+ *         The requested operation.  When the driver is finished accepting
  *         the server connection it uses this structure to signal globus_xio 
  *         that it has completed the operation.
  */
@@ -546,7 +546,7 @@ typedef void
  *
  *  This function should be called to signal globus_xio that it has 
  *  completed the accept operation requested of it.  It will free up 
- *  resources associated with the accept_op and potientially cause xio
+ *  resources associated with the accept_op and potentially cause xio
  *  to pop the signal up the driver stack.
  *
  *  @param op
@@ -625,13 +625,13 @@ typedef globus_result_t
  *
  *  @param driver_link
  *         Comes from server accept.  Used to link an accepted connection to
- *         an xio handle.  xio will destroy this object upon the return of
+ *         an xio handle.  XIO will destroy this object upon the return of
  *         this interface call.
  *
  *  @param driver_attr
  *         A attribute describing how to open.  This points to a piece of 
  *         memory created by the globus_xio_driver_driver_attr_init_t
- *         interface funstion.
+ *         interface function.
  *
  *  @param contact_info
  *         Contains information about the requested resource.  Its members
@@ -669,7 +669,7 @@ typedef globus_result_t
  *
  *  This function will pass an open request down the driver stack.
  *  Upon completion of the open operation globus_xio will call the @a cb 
- *  function,  at which point the handle structure will be intialized
+ *  function,  at which point the handle structure will be initialized
  *  and available for use.
  *
  *  As soon as the function returns the handle is valid for creating 
@@ -686,7 +686,7 @@ typedef globus_result_t
  *         passed in on the open interface.
  * 
  *  @param cb
- *         The function to be called wehn the open operation is complete.
+ *         The function to be called when the open operation is complete.
  *
  *  @param user_arg
  *         a user pointer that will be threaded through to the callback.
@@ -704,12 +704,12 @@ globus_xio_driver_pass_open(
  *
  *  This function should be called to signal globus_xio that it has 
  *  completed the open operation requested of it.  It will free up 
- *  resources associated with the op and potientially cause xio
+ *  resources associated with the op and potentially cause xio
  *  to pop the signal up the driver stack.
  *
  *  @param driver_handle
  *          The driver specific handle pointer that will be passed to 
- *          future interface funstion calls.
+ *          future interface function calls.
  *
  *  @param op
  *          The requested open operation that has completed.
@@ -769,8 +769,8 @@ globus_xio_driver_operation_cancel(
  *  @ingroup globus_xio_driver_programming
  *
  *  If the operation is blocking the driver developer may be able to make
- *  certian optimizations.  The function returns true if the given operation
- *  was created via a user call to a blocking funciton.
+ *  certain optimizations.  The function returns true if the given operation
+ *  was created via a user call to a blocking function.
  */
 globus_bool_t
 globus_xio_driver_operation_is_blocking(
@@ -807,7 +807,7 @@ globus_xio_driver_merge_handle(
  *  @ingroup globus_xio_driver_programming
  *
  *  This is called when a user requests to close a handle.  The driver 
- *  implemntor should clean up all resources connected to there driver handle
+ *  implementor should clean up all resources connected to there driver handle
  *  when this function is called.
  *
  *  @param driver_specific_handle
@@ -815,7 +815,7 @@ globus_xio_driver_merge_handle(
  *
  *  @param driver_attr
  *         A driver specific attr which may be used to alter how a close
- *         is performed (e,g, caching drivers)
+ *         is performed (e.g. caching drivers)
  * 
  *  @param op
  *         The requested operation.  When the driver is finished closing
@@ -834,7 +834,7 @@ typedef globus_result_t
  *  @ingroup globus_xio_driver_programming
  *
  *  This function will pass a close request down the driver stack.  Upon
- *  completion of the close operation globus_xio will call the funciton
+ *  completion of the close operation globus_xio will call the function
  *  pointed to by the cb argument.
  *
  *  @param op
@@ -894,10 +894,10 @@ globus_xio_driver_finished_close(
  *         The number if entries in the io vector.
  *
  *  @param op
- *         The requested operation.  When the driver is finished fullfilling
+ *         The requested operation.  When the driver is finished fulfilling
  *         the requested read operation it must use this structure to 
  *         signal globus_xio that the operation is completed.  This is done
- *         by calling globus_xio_driver_finished_operation()..
+ *         by calling globus_xio_driver_finished_operation().
  */
 typedef globus_result_t
 (*globus_xio_driver_read_t)(
@@ -913,8 +913,8 @@ typedef globus_result_t
  *  This function passes a read operation down the driver stack.  After
  *  this function is called the op structure is no longer valid.  However
  *  when the driver stack finishes servicing the read request it will 
- *  pass a new operation structure in the funciton pointed to by cb.
- *  Finishe read can be called on the new operation received.
+ *  pass a new operation structure in the function pointed to by cb.
+ *  Finish read can be called on the new operation received.
  *
  *  @param op
  *         The operation structure representing this requested io
@@ -927,8 +927,8 @@ typedef globus_result_t
  *         The number of iovecs in the array.
  *
  *  @param wait_for
- *         The minimum number of bytes to read before returning... if a driver
- *         has no specifc requirement, he should use the user's request...
+ *         The minimum number of bytes to read before returning. if a driver
+ *         has no specifc requirement, he should use the user's request
  *         available via GlobusXIOOperationMinimumRead(op)
  *  @param cb
  *         The function to be called when the operation request is 
@@ -978,14 +978,14 @@ globus_xio_driver_finished_read(
  * read interface call or the pass_read callback).
  * 
  * Typical use for this would be to hold a driver specific lock and call this
- * when an internal eof has been received.  The read operation this is called
- * on behalf of must be finished with an eof error or the results are
+ * when an internal EOF has been received.  The read operation this is called
+ * on behalf of must be finished with an EOF error or the results are
  * undefined.
  * 
- * In general, you should not have an eof flag in your driver.  Use this call
+ * In general, you should not have an EOF flag in your driver.  Use this call
  * and globus_xio_driver_eof_received() instead.  This is necessary to support
- * xio's automatic eof resetting.  If your driver absolutely can not be read
- * after an eof has been set, then you will need your own eof flag.
+ * XIO's automatic EOF resetting.  If your driver absolutely can not be read
+ * after an EOF has been set, then you will need your own EOF flag.
  * 
  * This call will typically only be used just before a finished_read() call.
  * 
@@ -1007,8 +1007,8 @@ globus_xio_driver_set_eof_received(
  * 
  * Typical use for this would be to hold a driver specific lock (the same one
  * used when calling globus_xio_driver_set_eof_received()) and call this to
- * see if an eof has been received. If so, the operation should immediately be
- * finished with an eof error (do not _return_ an eof error).
+ * see if an EOF has been received. If so, the operation should immediately be
+ * finished with an EOF error (do not _return_ an EOF error).
  * 
  * This call will typically only be used in the read interface call.
  * 
@@ -1017,7 +1017,7 @@ globus_xio_driver_set_eof_received(
  *      operation.
  * 
  * @return
- *      GLOBUS_TRUE if eof received, GLOBUS_FALSE otherwise.
+ *      GLOBUS_TRUE if EOF received, GLOBUS_FALSE otherwise.
  */
 globus_bool_t
 globus_xio_driver_eof_received(
@@ -1035,7 +1035,7 @@ globus_xio_driver_eof_received(
  *  there driver to complete write operations.
  *
  *  @param driver_handle
- *          The driver handle to which data should be writen.
+ *          The driver handle to which data should be written.
  *
  *  @param iovec
  *         An io vector pointing to the buffers to be written.
@@ -1044,10 +1044,10 @@ globus_xio_driver_eof_received(
  *         The number if entries in the io vector.
  *
  *  @param op
- *         The requested operation.  When the driver is finished fullfilling
+ *         The requested operation.  When the driver is finished fulfilling
  *         the requested read operation it must use this structure to 
  *         signal globus_xio that the operation is completed.  This is done
- *         by calling globus_xio_driver_finished_operation()..
+ *         by calling globus_xio_driver_finished_operation().
  */
 typedef globus_result_t
 (*globus_xio_driver_write_t)(
@@ -1063,7 +1063,7 @@ typedef globus_result_t
  *  This function passes a write operation down the driver stack.  After
  *  this function is called the op structure is no longer valid.  However
  *  when the driver stack finishes servicing the write request it will 
- *  pass a new operation structure in the funciton pointed to by cb.
+ *  pass a new operation structure in the function pointed to by cb.
  *  Finished write can be called on the new operation received.
  *
  *  @param op
@@ -1077,8 +1077,8 @@ typedef globus_result_t
  *         The number of iovecs in the array.
  *
  *  @param wait_for
- *         The minimum number of bytes to write before returning... if a driver
- *         has no specifc requirement, he should use the user's request...
+ *         The minimum number of bytes to write before returning. If a driver
+ *         has no specific requirement, he should use the user's request
  *         available via GlobusXIOOperationMinimumWrite(op)
  * 
  *  @param cb
@@ -1131,7 +1131,7 @@ globus_xio_driver_finished_write(
  *  by this driver and passed on to drivers lower on the stack and an
  *  operation that came in on the interface function (that has seen the top
  *  half of the stack) and joins them together.  The purpose of this function
- *  is to join data descriptors that were prestaged and cached with those
+ *  is to join data descriptors that were pre-staged and cached with those
  *  that have later come in at the users request.  See the read ahead doc
  *  for more information.
  *
@@ -1141,7 +1141,7 @@ globus_xio_driver_finished_write(
  *  @param bottom_op
  *         The operation that has seen the bottom part of the driver stack.
  *  
- *  (result is always success in this case.. if there is an error, use the
+ *  (result is always success in this case. if there is an error, use the
  * other finish() call)
  */
 globus_result_t
@@ -1158,11 +1158,11 @@ globus_xio_driver_merge_operation(
  *  @ingroup globus_xio
  *
  *  globus_xio uses data descriptors to associate meta data with the 
- *  data being writen or the data read.
+ *  data being written or the data read.
  *
  *  Data descriptors flow into the drivers read and write interface
  *  functions by way of the operation structure.  If the driver is
- *  interested in viewing the data decriptor it can request it from
+ *  interested in viewing the data descriptor it can request it from
  *  the operation structure via a call to 
  *  globus_xio_driver_operation_get_data_descriptor() and it can view
  *  any driver specific data descriptor via a call to
@@ -1170,7 +1170,7 @@ globus_xio_driver_merge_operation(
  *  can modify values in the data descriptor by setting values before
  *  passing the request down the stack.  Several functions are available
  *  to modify the data descriptors.  There is no need to "set()" the 
- *  data descriptors back into the operation.  The functions for manipluating
+ *  data descriptors back into the operation.  The functions for manipulating
  *  the values in a DD affect the values xio has directly.
  *
  *  Data descriptors flow back to the driver in the callbacks for
@@ -1182,13 +1182,13 @@ globus_xio_driver_merge_operation(
  *
  *  Passing in a data descriptor:
  *    A data descriptor is first created by the globus_xio user.  The user 
- *    can add driver specific data descriptors to it.  Once the usre has
+ *    can add driver specific data descriptors to it.  Once the user has
  *    created and set the attributes on its data descriptor to their liking
  *    they pass it into a globus_xio data operation (either read or write).
  *    When the data descriptor is passed on globus_xio will make an internal
  *    copy of it.  It does this by first coping the user the level
- *    data descriptor and then walkinging through the list of driver specific
- *    data descriptor contianed in to and requesting the the driver make 
+ *    data descriptor and then walking through the list of driver specific
+ *    data descriptor contained in to and requesting the driver make 
  *    a copy of the driver specific data descriptor.  If ever a driver
  *    specific data descriptor is NULL globus_xio need not call into its
  *    drivers dd_copy function.  If ever the user level data descriptor is
@@ -1196,14 +1196,14 @@ globus_xio_driver_merge_operation(
  *    all.  
  *
  *  A data descriptor coming back up the stack
- *    Once an io operation reachs the transport driver (the bottom of the
+ *    Once an io operation reaches the transport driver (the bottom of the
  *    stack) it takes on a slightly different role.  On the way in it
  *    is describing what is requested to be done with the data, on the way
  *    out it is describing what has actually been done.  Once the transport
  *    driver performs the operation it should adjust the data descriptor
  *    to reflect what has actually happened (few drivers will need to worry
  *    about this).  Each driver on the way up can adjust the data 
- *    descriptor and its driver specific data decriptor.  When xio reachs the
+ *    descriptor and its driver specific data descriptor.  When XIO reaches
  *    the top of the stack it calls a user callback.  When that callback 
  *    returns all memory associated with the data descriptor is cleaned up.
  *    The interface function globus_xio_driver_data_descriptor_free() is
@@ -1397,8 +1397,8 @@ typedef struct globus_xio_string_cntl_table_s
  *  @ingroup globus_xio_driver
  *
  *  A driver can choose to expose parameters as in a string form.  Providing
- *  this feature makes dynamicly setting driver specific options much easier.
- *  a user can then load the driverby name and set specific options by name
+ *  this feature makes dynamically setting driver specific options much easier.
+ *  a user can then load the driver by name and set specific options by name
  *  all at runtime with no object module references.  For example, a TCP driver
  *  can be loaded with the string: tcp, and the options can be set with:
  *
@@ -1410,10 +1410,10 @@ typedef struct globus_xio_string_cntl_table_s
  *  array is 1 options.  There are 3 members of each array entry: key, cmd, and
  *  parse function.  The key is a string that defines what option is to be set.
  *  In the above example string "port" would be 1 key.  cmd tells the driver what
- *  cntl is associated with the key.  In otherwords, once the string is parsed out
+ *  cntl is associated with the key.  In other words, once the string is parsed out
  *  what driver specific control must be called to set the requested option.  For
  *  more information on controls see @ref globus_xio_attr_cntl.  The final value
- *  in the array entry is the parsing function.  The pasing function takes the 
+ *  in the array entry is the parsing function.  The parsing function takes the 
  *  value of the key=value portion of the string and parses it into data types.
  *  once parsed globus_xio_attr_cntl is called and thus the option is set.  There are 
  *  many available parsing functions but the developer is free to right their own

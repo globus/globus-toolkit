@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-/** @file globus_common_include.h Include System Headers */
 /**
- *  Defines the macros and typedefs common to all globus_common
- *  components.
+ * @file globus_common_include.h
+ * @brief Include System Headers
+ *
+ * Defines the macros and typedefs common to all globus_common components.
  */
 #if !defined(GLOBUS_COMMON_INCLUDE_H)
 #define GLOBUS_COMMON_INCLUDE_H 1

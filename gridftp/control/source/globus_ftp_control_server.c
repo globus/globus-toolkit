@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_ftp_control_server.c FTP Server-side Control Connection Management
+ * @file globus_ftp_control_server.c
+ * @brief FTP Server-side Control Connection Management
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
@@ -147,7 +150,7 @@ const char * globus_i_ftp_server_334_reply=
  * @brief Initialize a GridFTP server handle
  * @ingroup globus_ftp_control_server
  * @details
- * This function will set up (i.e. intialize all mutexes and
+ * This function will set up (i.e. initialize all mutexes and
  * variables) a globus ftp server handle. It will also enter the
  * handle in a list used by the module activation/deactivation functions. 
  *
@@ -192,14 +195,14 @@ globus_ftp_control_server_handle_init(
  * @brief Destroy a GridFTP server handle
  * @ingroup globus_ftp_control_server
  * @details
- * This function will free up all dynamicly allocated  memory
+ * This function will free up all dynamically allocated  memory
  * associated with a given  globus ftp server handle. It will also
  * remove the handle from a list used by the module activation/deactivation
  * functions. This function should only be called after a call to
  * globus_ftp_control_server_stop.
  *
  * @param handle
- *        The handle to destory.
+ *        The handle to destroy.
  * @return
  *        - success
  *        - invalid handle
@@ -451,7 +454,7 @@ globus_l_ftp_control_listen_cb(
  * @details
  * This function initializes a command structure based on a null
  * terminated string representing one line of input from the
- * client. The command structure is used as a convience to determine 
+ * client. The command structure is used as a convenience to determine 
  * what command the client issued.  This function parses a command
  * string sent by a client and populates the command argument
  * appropriately. In the GSSAPI case it will also decode and unwrap
@@ -954,7 +957,7 @@ globus_l_ftp_control_stop_server_cb(
  * @param callback_arg
  *        The user argument passed to the callback.
  *
- * @note This functions assumes the the server and control handles
+ * @note This functions assumes the server and control handles
  *       have been initialized prior to calling this function.
  */
 globus_result_t
@@ -1169,7 +1172,7 @@ globus_l_ftp_control_accept_cb(
  *         and send responses to the client.]
  * @param auth_requirements
  *         This structure represents the authentication requirements that
- *         the user has for a given connection.  For example GSIFTP
+ *         the user has for a given connection.  For example GridFTP
  *         user name, password, and account.
  * @param callback
  *         The function called when the client authentication has been
@@ -1179,7 +1182,7 @@ globus_l_ftp_control_accept_cb(
  *
  * @note It is up to the user of this function to send the reply to
  *       the last command of the authentication sequence.
- * @note This functions assumes the the server and control handles
+ * @note This functions assumes the server and control handles
  *       have been initialized prior to calling this function.
  */
 globus_result_t
@@ -2582,7 +2585,7 @@ error_auth_destroy:
  * @brief Send a GridFTP response
  * @ingroup globus_ftp_control_server
  * @details
- * This function sends a GSIFTP formatted response to the client.  
+ * This function sends a GridFTP formatted response to the client.  
  * When a command callback is received the user calls this function 
  * to respond to the clients request.
  *
@@ -3108,10 +3111,10 @@ decode_error:
 
 /**
  * Internal helper function which gss wraps, base 64 encodes and puts
- * a 635 in front of the suplied response
+ * a 635 in front of the supplied response
  * 
  * Internal helper function which gss wraps, base 64 encodes and puts
- * a 635 in front of the suplied response
+ * a 635 in front of the supplied response
  *
  * @param reply
  *        A string representing the response to encode.

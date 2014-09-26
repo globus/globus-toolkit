@@ -47,8 +47,6 @@ globus_gssapi_gsi {
 	gss_inquire_sec_context_by_oid;
 	gss_inquire_cred_by_oid;
 	gss_set_sec_context_option;
-	gss_set_group;
-	gss_get_group;
 	GSS_C_NT_USER_NAME;
 	GSS_C_NT_MACHINE_UID_NAME;
 	GSS_C_NT_STRING_UID_NAME;

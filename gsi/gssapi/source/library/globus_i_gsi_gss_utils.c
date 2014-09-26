@@ -64,9 +64,8 @@ extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
  *        Target name.
  * @param input
  *        Source name.
- * @return
- *        GSS_S_COMPLETE - successful copy
- *        GSS_F_FAILURE - failed to copy
+ * @retval GSS_S_COMPLETE Success
+ * @retval GSS_F_FAILURE Failed to copy
  */
 OM_uint32 
 globus_i_gsi_gss_copy_name_to_name(

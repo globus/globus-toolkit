@@ -14,5 +14,5 @@ RECURSIVE              = YES
 QUIET                  = YES
 INPUT                  = @top_srcdir@
 INPUT_FILTER           = @top_srcdir@/globus-vararg-enums-doxygen-filter.pl
-EXCLUDE_PATTERNS       = version.h
-PREDEFINED             = GLOBUS_DONT_DOCUMENT_INTERNAL
+EXCLUDE_PATTERNS       = version.h test
+PREDEFINED             = GLOBUS_DONT_DOCUMENT_INTERNAL DOXYGEN

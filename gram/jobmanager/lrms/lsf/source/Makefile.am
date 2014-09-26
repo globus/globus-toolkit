@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS=-I m4
 SUBDIRS = seg
 
 globussysconfdir = ${sysconfdir}/globus

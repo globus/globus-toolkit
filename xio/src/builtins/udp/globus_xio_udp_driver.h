@@ -17,7 +17,8 @@
 #ifndef GLOBUS_XIO_UDP_DRIVER_H
 #define GLOBUS_XIO_UDP_DRIVER_H
 /**
- * @file globus_xio_udp_driver.h XIO UDP Driver
+ * @file globus_xio_udp_driver.h
+ * @brief XIO UDP Driver
  */
 
 #include "globus_xio_system.h"

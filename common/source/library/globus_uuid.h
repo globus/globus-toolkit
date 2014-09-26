@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file globus_uuid.h Globus UUID Generator */
+/**
+ * @file globus_uuid.h
+ * @brief Globus UUID Generator
+ */
+
 /**
  * @defgroup globus_uuid Globus UUID Generator
  * @ingroup globus_common

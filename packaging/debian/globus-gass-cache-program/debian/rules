@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gass-cache-program
 _name = globus_gass_cache_program
-version = 6.4
+version = 6.5
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)

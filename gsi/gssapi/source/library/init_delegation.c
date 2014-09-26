@@ -36,7 +36,7 @@
  * gss_accept_delegation function.
  *
  * @param minor_status
- *        The minor status returned by this function. This paramter
+ *        The minor status returned by this function. This parameter
  *        will be 0 upon success.
  * @param context_handle
  *        The security context over which the credential is
@@ -49,13 +49,13 @@
  *        The desired security mechanism. Currently not used. May be
  *        GSS_C_NO_OID. 
  * @param extension_oids
- *        A set of extension oids corresponding to buffers in the
+ *        A set of extension OIDs corresponding to buffers in the
  *        extension_buffers parameter below. The extensions specified
  *        will be added to the delegated credential. May be
  *        GSS_C_NO_BUFFER_SET. 
  * @param extension_buffers
- *        A set of extension buffers corresponding to oids in the
- *        extension_oids paramter above. May be
+ *        A set of extension buffers corresponding to OIDs in the
+ *        extension_oids parameter above. May be
  *        GSS_C_NO_BUFFER_SET.
  * @param input_token
  *        The token that was produced by a prior call to
@@ -77,11 +77,9 @@
  * @param output_token
  *        A token that should be passed to gss_accept_delegation if the
  *        return value is GSS_S_CONTINUE_NEEDED.
- * @return
- *        GSS_S_COMPLETE upon successful completion
- *        GSS_S_CONTINUE_NEEDED if the function needs to be called
- *                              again.
- *        GSS_S_FAILURE upon failure
+ * @retval GSS_S_COMPLETE Success
+ * @retval GSS_S_CONTINUE_NEEDED This function needs to be called again.
+ * @retval GSS_S_FAILURE upon failure
  */
 OM_uint32
 GSS_CALLCONV gss_init_delegation(

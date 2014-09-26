@@ -649,7 +649,7 @@ globus_l_gfs_default_brain_select_nodes(
     if(min_count < 1)
     {
         result = globus_error_put(GlobusGFSErrorObjParameter("min_count"));
-        goto error_paramater;
+        goto error_parameter;
     }
 
     globus_gfs_log_message(
@@ -772,10 +772,10 @@ error_short:
     globus_free(node_array);
 error:
     globus_mutex_unlock(&globus_l_brain_mutex);
-error_paramater:
+error_parameter:
     globus_gfs_log_message(
         GLOBUS_GFS_LOG_WARN,
-        "No nodes given because paramater error: %d: %d: %s\n", 
+        "No nodes given because parameter error: %d: %d: %s\n", 
         min_count, count,
         globus_error_print_friendly(globus_error_peek(result)));
     return result;

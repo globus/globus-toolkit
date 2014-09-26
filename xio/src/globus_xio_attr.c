@@ -1521,6 +1521,3 @@ globus_xio_string_cntl_string_list(
     
     return result;
 }
-
-
-

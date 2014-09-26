@@ -1,13 +1,13 @@
 Name:		globus-gram-job-manager-callout-error
 %global _name %(tr - _ <<< %{name})
-Version:	3.4
-Release:	3%{?dist}
+Version:	3.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GRAM Jobmanager Callout Errors
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_callout_error-3.4.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_callout_error-3.5.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -122,6 +122,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Sep 22 2014 Globus Toolkit <support@globus.org> - 3.5-1
+- Fix some Doxygen issues
+- Quiet some autoconf/automake warnings
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 3.4-3
 - Merge fixes from ellert-globus_6_branch
 

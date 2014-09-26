@@ -15,11 +15,11 @@
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_i_error_errno.c
- * Globus Generic Error
+ * @brief Globus Generic Error
  */
-
 
 #include "globus_error_errno.h"
 #include "globus_libc.h"

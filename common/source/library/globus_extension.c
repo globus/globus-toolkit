@@ -216,7 +216,7 @@ error_dlinit:
 /**
  * called locked 
  * 
- * dont call until ref goes to 0 or proxy deavtivate is called
+ * don't call until ref goes to 0 or proxy deavtivate is called
  * (circumventing my deactivate procedure)
  */
 static
@@ -374,7 +374,7 @@ globus_l_extension_dlopen(
     dlhandle = lt_dlopenext(library);
     if(!dlhandle)
     {
-        /* older libtools dont search the extensions correctly */
+        /* older libtools don't search the extensions correctly */
         snprintf(library, 1024, "lib%s" MY_LIB_EXT, name);
         library[1023] = 0;
         dlhandle = lt_dlopenext(library);
@@ -391,7 +391,7 @@ globus_l_extension_dlopen(
 
         if(!dlhandle)
         {
-            /* older libtools dont search the extensions correctly */
+            /* older libtools don't search the extensions correctly */
             snprintf(library, 1024, "lib%s_%s" MY_LIB_EXT, name,
                 GLOBUS_FLAVOR_NAME);
             library[1023] = 0;

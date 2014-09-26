@@ -1,13 +1,13 @@
 Name:		globus-authz-callout-error
 %global _name %(tr - _ <<< %{name})
-Version:	3.4
+Version:	3.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus authz error library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_authz_callout_error-3.4.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_authz_callout_error-3.5.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -123,6 +123,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Tue Sep 23 2014 Globus Toolkit <support@globus.org> - 3.5-1
+- Doxygen markup fixes
+- Include more manpages for API
+- Fix typos in error strings
+- Quiet some autoconf/automake warnings
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 3.4-1
 - Merge fixes from ellert-globus_6_branch
 

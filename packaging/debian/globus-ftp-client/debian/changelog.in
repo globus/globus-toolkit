@@ -1,3 +1,13 @@
+globus-ftp-client (8.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * Include more manpages for API
+  * Fix some Doxygen issues
+  * Fix dependency
+  * Quiet some autoconf/automake warnings
+  * Use mixed case man page install for all packages
+
+ -- Globus Toolkit <support@globus.org>  Tue, 23 Sep 2014 12:20:22 -0400
+
 globus-ftp-client (8.12-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

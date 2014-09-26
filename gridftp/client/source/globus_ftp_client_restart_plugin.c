@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_ftp_client_restart_plugin.c GridFTP Restart Plugin Implementation
+ * @file globus_ftp_client_restart_plugin.c
+ * @brief GridFTP Restart Plugin Implementation
  */
 
 #include "globus_i_ftp_client.h"
@@ -25,7 +28,6 @@
 #include <string.h>
 #include "version.h"
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #define GLOBUS_L_FTP_CLIENT_RESTART_PLUGIN_NAME "globus_ftp_client_restart_plugin"
 
 #define GLOBUS_L_FTP_CLIENT_RESTART_PLUGIN_RETURN(plugin) \
@@ -1217,7 +1219,7 @@ void globus_l_ftp_client_restart_plugin_response(
             return;
         }
 
-        /* parse out bytes transfered */
+        /* parse out bytes transferred */
         tmp_ptr = strstr(buffer, "Stripe Bytes Transferred:");
         if(tmp_ptr == NULL)
         {

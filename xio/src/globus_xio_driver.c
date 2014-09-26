@@ -925,7 +925,7 @@ globus_l_xio_driver_open_op_kickout(
     GlobusXIODebugInternalExit();
 }
 
-/**************************************************************************
+/*-************************************************************************
  *                  context driver api funcitons
  *                  ----------------------------
  *************************************************************************/
@@ -998,7 +998,7 @@ globus_i_xio_context_create(
     return xio_context;
 }
 
-/**************************************************************************
+/*-************************************************************************
  *                  macro wrapper functions
  *                  -----------------------
  *
@@ -1877,7 +1877,7 @@ globus_xio_driver_eof_received(
     return received;
 }
 
-/***************************************************************************
+/*-*************************************************************************
  *                      driver setup functions
  *                      ----------------------
  **************************************************************************/
@@ -2134,7 +2134,7 @@ globus_xio_operation_refresh_timeout(
     op->progress = GLOBUS_TRUE;
 }
 
-/** returns true if operation already canceled */
+/* returns true if operation already canceled */
 globus_bool_t
 globus_xio_operation_enable_cancel(
     globus_xio_operation_t              op,

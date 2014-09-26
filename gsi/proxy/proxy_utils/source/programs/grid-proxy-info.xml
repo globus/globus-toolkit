@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+<refentry lang="en">
+<refentryinfo>
+    <title>GRID-PROXY-INFO(1)</title>
+</refentryinfo>
+<refmeta>
+<refentrytitle>grid-proxy-info</refentrytitle>
+<manvolnum>1</manvolnum>
+<refmiscinfo class="source">University of Chicago</refmiscinfo>
+<refmiscinfo class="manual">Globus Toolkit</refmiscinfo>
+</refmeta>
+<refnamediv>
+    <refname>grid-proxy-info</refname>
+    <refpurpose>Display information about a proxy certificate</refpurpose>
+</refnamediv>
+<refsynopsisdiv id="grid-proxy-info-SYNOPSIS">
+<simpara><emphasis role="strong">grid-proxy-info</emphasis> -help | -usage | -version</simpara>
+<simpara><emphasis role="strong">grid-proxy-info</emphasis> -e | -exists [-valid <emphasis>HOURS:MINUTES</emphasis> | -v <emphasis>HOURS:MINUTES</emphasis>] [-hours <emphasis>HOURS</emphasis> | -h <emphasis>HOURS</emphasis>] [-bits <emphasis>BITS</emphasis> | -b <emphasis>BITS</emphasis>]</simpara>
+<simpara><emphasis role="strong">grid-proxy-info</emphasis> [OPTIONS]</simpara>
+</refsynopsisdiv>
+<refsect1 id="grid-proxy-info-DESCRIPTION">
+<title>DESCRIPTION</title>
+<simpara>The <emphasis role="strong">grid-proxy-info</emphasis> program extracts information from an X.509 proxy
+certificates, and optionally displays or returns an exit code based on that
+information.</simpara>
+<simpara>The default mode of operation is to print the following facts about the current
+user&#8217;s default proxy: subject, issuer, identity, type, strength, path, and time
+left.  If the command-line option <emphasis>-exists</emphasis> or
+<emphasis>-e</emphasis> is included in the command-line, nothing is printed unless
+one of the print options is specified. Instead, <emphasis role="strong">grid-proxy-info</emphasis> determines if
+a valid proxy exists and, if so, exits with the exit code <literal>0</literal>;
+if a proxy does not exist or is not valid, <emphasis role="strong">grid-proxy-info</emphasis> exits with the
+exit code <literal>1</literal>.  Additional validity criteria can be added
+by using the <emphasis>-valid</emphasis>, <emphasis>-v</emphasis>, <emphasis>-hours</emphasis>, <emphasis>-h</emphasis>, <emphasis>-bits</emphasis>, or <emphasis>-b</emphasis> command-line
+options. If used, these options must occur <emphasis role="strong">after</emphasis> the <emphasis>-e</emphasis> or
+<emphasis>-exists</emphasis> command-line options. Those options are only valid
+if one of the <emphasis>-e</emphasis> or <emphasis>-exists</emphasis> command-line
+options is used.</simpara>
+</refsect1>
+<refsect1 id="grid-proxy-info-OPTIONS">
+<title>OPTIONS</title>
+<simpara>The complete set of command-line options to <emphasis role="strong">grid-proxy-info</emphasis> are:</simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">-help, -usage</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the command-line options to <emphasis role="strong">grid-proxy-info</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-version</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the version number of the <emphasis role="strong">grid-proxy-info</emphasis> command.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-debug</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display verbose error messages.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-file <emphasis>PROXYFILE</emphasis>, -f <emphasis>PROXYFILE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Read the proxy located in the file <emphasis>PROXYFILE</emphasis> instead of using the default
+    proxy.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-subject, -s</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the proxy certificate&#8217;s subject distinguished name.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-issuer, -i</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the proxy certificate issuer&#8217;s distinguished name.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-identity</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the proxy certificate&#8217;s identity.  For non-independent proxies, the
+    identity is the subject of the certificate which issued the first proxy in
+    the proxy chain.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-type</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the type of proxy certificate. The type string includes the format
+    ("legacy", "draft", or RFC 3280 compliant), identity type ("impersonation"
+    or "independent"), and policy ("limited" or "full"). See
+    <emphasis role="strong">grid-proxy-init(1)</emphasis> for information about how to create different types of
+    proxies.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-timeleft</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the number of seconds remaining until the proxy certificate
+    expires.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-strength</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the strength (in bits) of the key associated with the proxy
+    certificate.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-all</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the default information for the proxy when also using the
+    <emphasis>-e</emphasis> or <emphasis>-exists</emphasis> command-line option.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-text</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the proxy certificate contents to standard output, including policy
+    information, issuer, public key, and modulus.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-path</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the path to the file containing the default proxy certificate.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-rfc2253</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display distinguished names for the subject, issuer, and identity using the
+    string representation described in RFC 2253, instead of the legacy
+    format.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-exists, -e</emphasis>
+</term>
+<listitem>
+<simpara>
+    Perform an existence and validity check for the proxy. If a valid proxy
+    exists and matches the criteria described by other command-line options (if
+    any), exit with 0; otherwise, exit with 1. This option must be before other
+    validity check predicate in the command-line options. If this option is
+    specified, the output of the default facts about the proxy is disabled. Use
+    the <emphasis>-all</emphasis> option to have the information displayed as well as the exit
+    code set.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-valid <emphasis>HOURS:MINUTES</emphasis>, -v <emphasis>HOURS:MINUTES</emphasis>, -hours <emphasis>HOURS</emphasis>, -h <emphasis>HOURS</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Check that the proxy certificate is valid for at least <emphasis>HOURS</emphasis> hours and
+    <emphasis>MINUTES</emphasis> minutes. If it is not, <emphasis role="strong">grid-proxy-info</emphasis> will exit with exit code
+    <literal>1</literal>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-bits <emphasis>BITS</emphasis>, -b <emphasis>BITS</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Check that the proxy certificate key strength is at least <emphasis>BITS</emphasis>
+    bits.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="grid-proxy-info-ENVIRONMENT">
+<title>ENVIRONMENT</title>
+<simpara>The following environment variables affect the execution of <emphasis role="strong">grid-proxy-info</emphasis>:</simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_USER_PROXY</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to the default user proxy.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="grid-proxy-info-SEEALSO">
+<title>SEE ALSO</title>
+<simpara>grid-proxy-init(1), grid-proxy-destroy(1)</simpara>
+</refsect1>
+<refsect1 id="grid-proxy-info-AUTHOR">
+<title>AUTHOR</title>
+<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
+</refsect1>
+</refentry>

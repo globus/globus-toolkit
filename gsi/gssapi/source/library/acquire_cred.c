@@ -31,7 +31,7 @@
  * @ingroup globus_gsi_gssapi
  * @details
  * GSSAPI routine to acquire the local credential.  
- * See the latest IETF draft/RFC on the GSS C bindings.
+ * See the latest IETF draft/RFC on the GSSAPI C bindings.
  *
  * Gets the local credentials.  The proxy_init_cred does most of the
  * work of setting up the SSL_ctx, getting the user's cert, key, etc. 

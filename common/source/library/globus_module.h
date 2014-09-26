@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_module.h Reference Counting Module Activation and Deactivation */
+/**
+ * @file globus_module.h
+ * @brief Reference Counting Module Activation and Deactivation
+ */
 
 #if !defined(GLOBUS_MODULE_H)
 #define GLOBUS_MODULE_H 1

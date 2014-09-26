@@ -924,7 +924,7 @@ globus_l_xio_file_init(
     
     GlobusXIOFileDebugEnter();
     
-    /* I dont support any driver options, so I'll ignore the ap */
+    /* I don't support any driver options, so I'll ignore the ap */
     
     result = globus_xio_driver_init(&driver, "file", GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)

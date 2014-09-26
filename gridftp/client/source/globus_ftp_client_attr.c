@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_ftp_client_attr.c Operation and handle attribute manipulation.
+ * @file globus_ftp_client_attr.c
+ * @brief Operation and handle attribute manipulation.
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_i_ftp_client.h"
 #include "globus_error_string.h"
@@ -2066,7 +2069,7 @@ error_exit:
  * @ingroup globus_ftp_client_operationattr
  *
  * This attribute allows the user to control the layout of a file
- * being transfered to a striped Grid-FTP server. The striping layout
+ * being transferred to a striped Grid-FTP server. The striping layout
  * defines what regions of a file will be stored on each stripe of a
  * multiple-striped ftp server.
  *

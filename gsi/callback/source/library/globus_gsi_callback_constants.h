@@ -17,13 +17,11 @@
 #ifndef GLOBUS_GSI_CALLBACK_CONSTANTS_H
 #define GLOBUS_GSI_CALLBACK_CONSTANTS_H
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_callback_constants.h
- * Globus GSI Callback
+ * @brief Globus GSI Callback
  * @author Sam Meder, Sam Lang
  */
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,7 +42,7 @@ typedef enum
     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED = 1,
     /** The certificate is not yet valid */
     GLOBUS_GSI_CALLBACK_ERROR_CERT_NOT_YET_VALID = 2,
-    /** Unable to discover a local trusted CA for a given ceritficate */
+    /** Unable to discover a local trusted CA for a given certificate */
     GLOBUS_GSI_CALLBACK_ERROR_CANT_GET_LOCAL_CA_CERT = 3,
     /** The certificate has expired */
     GLOBUS_GSI_CALLBACK_ERROR_CERT_HAS_EXPIRED = 4,
@@ -56,7 +54,7 @@ typedef enum
     GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL = 7,
     /** The certificate has been revoked */
     GLOBUS_GSI_CALLBACK_ERROR_REVOKED_CERT = 8,
-    /** The cert chain contains both legacy on rfc compliant proxies */
+    /** The cert chain contains both legacy on RFC compliant proxies */
     GLOBUS_GSI_CALLBACK_ERROR_MIXING_DIFFERENT_PROXY_TYPES = 9,
     /** Could not verify certificate chain against the signing policy for the issuing CA */
     GLOBUS_GSI_CALLBACK_ERROR_WITH_SIGNING_POLICY = 10,

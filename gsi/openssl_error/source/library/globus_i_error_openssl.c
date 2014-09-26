@@ -17,12 +17,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_i_error_openssl.c
- * Globus Generic Error
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- * 
+ * @brief Globus Generic Error
  * @author Sam Lang
  */
 
@@ -32,12 +27,10 @@
 
 
 /**
- * @name Copy Error Data
- */
-/*@{*/
-/**
- * Copy the instance data of a Globus OpenSSL Error object.
+ * @brief Copy Error Data
+ * @details
  * @ingroup globus_openssl_error_object 
+ * Copy the instance data of a Globus OpenSSL Error object.
  * 
  * @param src
  *        The source instance data
@@ -74,15 +67,12 @@ globus_l_error_copy_openssl(
             
     return;
 }/* globus_l_error_copy_openssl */
-/*@}*/
 
 /**
- * @name Free Error Data
- */
-/*@{*/
-/**
- * Free the instance data of a Globus OpenSSL Error object.
+ * @brief Free Error Data
  * @ingroup globus_openssl_error_object 
+ * @details
+ * Free the instance data of a Globus OpenSSL Error object.
  * 
  * @param data
  *        The instance data
@@ -95,21 +85,19 @@ globus_l_error_free_openssl(
     void *                              data)
 {
     globus_i_openssl_error_handle_destroy((globus_openssl_error_handle_t)data);
-}/* globus_l_error_free_openssl */
-/*@}*/
+}
+/* globus_l_error_free_openssl */
 
 /**
- * @name Print Error Data
- */
-/*@{*/
-/**
- * Return an allocated string of the openssl error from the instance data
+ * @brief Print Error Data
  * @ingroup globus_openssl_error_object 
+ * @details
+ * Return an allocated string of the OpenSSL error from the instance data
  * 
  * @param error
  *        The error object to retrieve the data from.
  * @return
- *        String containing the openssl error if it exists, NULL
+ *        String containing the OpenSSL error if it exists, NULL
  *        otherwise.
  */
 static
@@ -168,7 +156,6 @@ globus_l_error_openssl_printable(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error_string;
 }/* globus_l_error_openssl_printable */
-/*@}*/
 
 
 /**
@@ -183,15 +170,13 @@ const globus_object_type_t GLOBUS_ERROR_TYPE_OPENSSL_DEFINITION
 
 
 /**
- * Initialize OpenSSL Error Handle
+ * @brief Initialize OpenSSL Error Handle
  * @ingroup globus_openssl_error_object
- */
-/* @{ */
-/**
+ * @details
  * Initialize an OpenSSL error handle 
  *
  * @return
- *         A newly allocated openssl error handle
+ *         A newly allocated OpenSSL error handle
  */
 globus_openssl_error_handle_t
 globus_i_openssl_error_handle_init(void)
@@ -208,14 +193,11 @@ globus_i_openssl_error_handle_init(void)
 
     return new_handle;
 }
-/* @} */
 
 /**
- * Destroy OpenSSL Error Handle
+ * @brief Destroy OpenSSL Error Handle
  * @ingroup globus_openssl_error_object
- */
-/* @{ */
-/**
+ * @details
  * Destroy an OpenSSL error handle object
  *
  * @param handle
@@ -245,6 +227,4 @@ globus_i_openssl_error_handle_destroy(
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
 }
-/* @} */
-
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

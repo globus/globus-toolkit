@@ -18,7 +18,8 @@
 #define GLOBUS_FTP_CLIENT_THROUGHPUT_NL_PLUGIN_H
 
 /**
- * @file globus_ftp_client_throughput_nl_plugin.h GridFTP Netlogger Throughput Plugin
+ * @file globus_ftp_client_throughput_nl_plugin.h
+ * @brief GridFTP Netlogger Throughput Plugin
  */
 
 /**
@@ -35,7 +36,7 @@
  *
  * - URL.SOURCE   &lt;string&gt;  Source url of transfer
  * - URL.DEST     &lt;string&gt;  Dest url of transfer
- * - BYTES        &lt;int&gt;     Total bytes transfered thus far
+ * - BYTES        &lt;int&gt;     Total bytes transferred thus far
  * - BW.CURRENT   &lt;float&gt;   Current (instantaneous) bandwidth
  * - BW.AVG       &lt;float&gt;   Average (instantaneous) bandwidth
  *
@@ -45,7 +46,7 @@
  * - URL.SOURCE   &lt;string&gt;  Source url of transfer
  * - URL.DEST     &lt;string&gt;  Dest url of transfer
  * - INDEX        &lt;int&gt;     The stripe index the event applies to
- * - BYTES        &lt;int&gt;     Total bytes transfered thus far on this stripe
+ * - BYTES        &lt;int&gt;     Total bytes transferred thus far on this stripe
  * - BW.CURRENT   &lt;float&gt;   Current (instantaneous) bandwidth on this stripe
  * - BW.AVG       &lt;float&gt;   Average (instantaneous) bandwidth on this stripe
  *

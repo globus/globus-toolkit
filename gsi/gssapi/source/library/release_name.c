@@ -32,9 +32,9 @@
  *        The minor status result - this is a globus_result_t
  *        cast to a (OM_uint32 *).
  * @param name_P
- *        The gss name to be released
- * @return
- *        The major status - GSS_S_COMPLETE or GSS_S_FAILURE
+ *        The GSSAPI name to be released
+ * @retval GSS_S_COMPLETE Success
+ * @retval GSS_S_FAILURE Failure
  */
 OM_uint32 
 GSS_CALLCONV gss_release_name(

@@ -16,6 +16,7 @@
 
 /**
  * @file globus_gass_transfer.h
+ * @brief GASS transfer
  */
 
 #ifndef GLOBUS_GASS_TRANSFER_H
@@ -37,7 +38,7 @@ extern "C" {
 /**
  * @defgroup globus_gass_transfer GASS Transfer API
  * @brief GASS Transfer API
- * @details
+ *
  * The GASS Transfer API is the core part of the GASS
  * (Global Access to Secondary Storage) component of the Globus Toolkit.
  * The purpose of GASS is to provide a simple way to enable grid applications
@@ -104,8 +105,7 @@ extern globus_module_descriptor_t		globus_i_gass_transfer_module;
 /**
  * @struct globus_gass_transfer_request_t
  * @ingroup globus_gass_transfer_request
- *
- * Request handle.
+ * @brief Request handle.
  *
  * A request handle is associated with each file transfer operation. The
  * same structure is used for both client- and server- side requests. For
@@ -328,9 +328,10 @@ typedef void
 /* Client Interface */
 /**
  * @brief GASS Transfer Client Operations
+ *
  * @defgroup globus_gass_transfer_client Client-Initiated Operations
  * @ingroup globus_gass_transfer
- * @details
+ *
  * One mode of using the GASS Transfer API is to initiate
  * file transfers. The operations supported by the GASS Transfer API
  * are file get, put, and append. These operations are provided for
@@ -393,9 +394,10 @@ globus_gass_transfer_append(
 
 /**
  * @brief GASS Server Implementation
+ *
  * @defgroup globus_gass_transfer_server Implementing Servers
  * @ingroup globus_gass_transfer
- * @details
+ *
  * Another mode of using the GASS Transfer API is to implement
  * data servers. The primary difference between the client and
  * server parts of the GASS Transfer API are how requests are generated.
@@ -554,9 +556,10 @@ globus_gass_transfer_fail(
     void *					user_arg);
 /**
  * @brief GASS Referrals
+ *
  * @defgroup globus_gass_transfer_referral Referrals
  * @ingroup globus_gass_transfer
- * @details
+ *
  * The GASS Transfer API supports referring URL requests to alternate
  * URLs via referrals. Referrals are essentially pointers to another
  * URL or URLs which contain the same file as the original location which
@@ -595,9 +598,10 @@ globus_gass_transfer_referral_destroy(
 /* Request Accessors */
 /**
  * @brief Request Handles
+ *
  * @defgroup globus_gass_transfer_request Request Handles
  * @ingroup globus_gass_transfer
- * @details
+ *
  * Request handles are used by the GASS Transfer API to associate
  * operations with a single file transfer request. Specifically,
  * they are used to register multiple byte range buffers with
@@ -685,7 +689,7 @@ globus_gass_transfer_request_set_type(
 /**
  * @defgroup globus_gass_transfer_requestattr Request Attributes
  * @ingroup globus_gass_transfer
- * @details
+ *
  * The GASS Transfer library uses Globus objects to provide an
  * extensible way of creating protocol-specific attributes.
  */

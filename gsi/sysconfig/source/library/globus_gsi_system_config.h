@@ -19,6 +19,7 @@
 
 /**
  * @file globus_gsi_system_config.h
+ * @brief Globus GSI System Config Library
  * @author Sam Lang, Sam Meder
  */
 
@@ -43,7 +44,7 @@ extern "C" {
  * @defgroup globus_gsi_sysconfig Globus GSI System Config API
  *
  * This API provides helper functions for detecting installation and
- * environment specific settings applicabale to GSI. It also servers as a
+ * environment specific settings applicable to GSI. It also servers as a
  * abstraction layer for OS specific programming details. The public interface
  * for this library consists of the GLOBUS_GSI_SYSCONFIG_* macros that point at
  * the resolve to platform specific functions. <b>You should never use the
@@ -58,11 +59,9 @@ extern "C" {
  * @defgroup globus_gsi_system_config_defines Defines
  * @ingroup globus_gsi_sysconfig
  *
- * These precompiler defines allow for a platform (ie Win32 vs UNIX)
+ * These preprocessor defines allow for a platform (ie Win32 vs UNIX)
  * independent API.
- *
  */
-
 
 /**
  * @defgroup globus_gsi_sysconfig_unix Functions for UNIX platforms
@@ -71,7 +70,6 @@ extern "C" {
  * These functions implement the UNIX version of the Globus GSI System
  * Configuration API. <b>They should never be called directly, please use the
  * provided platform independent defines.</b>
- *
  */
 
 /**
@@ -81,7 +79,6 @@ extern "C" {
  * These functions implement the Win32 version of the Globus GSI System
  * Configuration API. <b>They should never be called directly, please use the
  * provided platform independent defines.</b>
- *
  */
 
 /**
@@ -104,13 +101,11 @@ extern "C" {
 /**
  * @defgroup globus_i_gsi_system_config_win32 Internal Globus Credential
  * System Config API for Win32 platforms
- *
  */
 
 /**
  * @defgroup globus_i_gsi_system_config_unix Internal Globus Credential
  * System Config API for Unix platforms
- *
  */
 #endif
 
@@ -142,7 +137,6 @@ extern "C" {
  *
  * This function should be called once for each time Globus GSI System
  * Configuration API was activated. 
- *
  */
 
 /** Module descriptor

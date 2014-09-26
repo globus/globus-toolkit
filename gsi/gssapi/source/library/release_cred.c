@@ -23,10 +23,10 @@
 #include "globus_i_gsi_gss_utils.h"
 
 /**
- * @brief GSS Release Cred
+ * @brief Release Credential
  * @ingroup globus_gsi_gssapi
  * @details
- * Release the GSS cred handle
+ * Release the GSSAPI credential handle
  *
  * @param minor_status
  *        The minor status result - this is a globus_result_t
@@ -34,8 +34,7 @@
  *        use:  globus_error_get((globus_result_t) *minor_status)  
  * @param cred_handle_P
  *        The gss cred handle to be released 
- * @return
- *        The major status - GSS_S_COMPLETE or GSS_S_FAILURE
+ * @retval GSS_S_COMPLETE Success
  */
 OM_uint32 
 GSS_CALLCONV gss_release_cred(

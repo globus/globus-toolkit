@@ -1,13 +1,13 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	10.11
+Version:	10.12
 Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_io-10.11.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_io-10.12.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -92,7 +92,6 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-rm -rvf $RPM_BUILD_ROOT%{_docdir}/%{name}-%{version}/html
 rm -rvf $RPM_BUILD_ROOT%{_mandir}
 
 %check
@@ -118,6 +117,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Sep 25 2014 Globus Toolkit <support@globus.org> - 10.12-1
+- Drop empty documentation from globus_io package
+- Quiet some autoconf/automake warnings
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 10.11-1
 - Merge fixes from ellert-globus_6_branch
 

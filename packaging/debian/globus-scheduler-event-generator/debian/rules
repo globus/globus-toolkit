@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-scheduler-event-generator
 _name = globus_scheduler_event_generator
-version = 5.6
+version = 5.7
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp
@@ -133,6 +133,7 @@ install: build-stamp
 	  debian/tmp$(_sbindir)/* \
 	  debian/tmp$(_sysconfdir)/default/$(name) \
 	  debian/tmp$(_sysconfdir)/init.d/$(name) \
+	  debian/tmp$(_mandir)/man8/globus*.8 \
 	  > debian/$(name)-progs.install
 	ls -1 \
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*.* \

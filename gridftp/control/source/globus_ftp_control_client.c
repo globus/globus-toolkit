@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_ftp_control_client.c Client-side FTP Control API
+ * @file globus_ftp_control_client.c
+ * @brief Client-side FTP Control API
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
@@ -115,7 +118,7 @@ globus_l_ftp_control_queue_element_init(
  * @brief Initialize a globus ftp handle
  * @ingroup globus_ftp_control_client
  * @details
- * This function will set up (i.e. intialize all mutexes and
+ * This function will set up (i.e. initialize all mutexes and
  * variables) a globus ftp handle. It will also enter the handle in a
  * list used by the module activation/deactivation functions. 
  *
@@ -215,14 +218,14 @@ globus_ftp_control_handle_init(
  * @brief Destroy a globus ftp handle
  * @ingroup globus_ftp_control_client
  * @details
- * This function will free up all dynamicly allocated  memory
+ * This function will free up all dynamically allocated  memory
  * associated with a given  globus ftp handle. It will also remove the
  * handle from a list used by the module activation/deactivation
  * functions. This function should only be called after a call to
  * either globus_ftp_control_force_close or globus_ftp_control_quit.  
  *
  * @param handle
- *        The handle to destory.
+ *        The handle to destroy.
  * @return
  *        - success
  *        - invalid handle
@@ -1110,7 +1113,7 @@ globus_l_ftp_control_check_final_line_fast(
  *        context of the control connection. 
  *
  * @return 
- *        - -1 if an error occured
+ *        - -1 if an error occurred
  *        - 0 if no complete reply was found
  *        - a index into the response_buffer, indicating the end of
  *          the reply
@@ -1369,7 +1372,7 @@ globus_l_ftp_control_end_of_reply(
  * Internal helper function which creates and initializes a response
  * structure 
  * 
- * This is a internal helper function allocates memory for a reponse
+ * This is a internal helper function allocates memory for a response
  * structure and a buffer contained within that structure. It also
  * initializes other values in the structure to default values.
  *
@@ -1515,7 +1518,7 @@ globus_ftp_control_response_copy(
  * @ingroup globus_ftp_control_client
  * @details
  * This will perform the authentication handshake with the FTP
- * server. depending on which parameters are non-NULL, the
+ * server. Depending on which parameters are non-NULL, the
  * authentication may involve GSSAPI credentials, a username, a
  * password, and an account name.
  *
@@ -1524,7 +1527,7 @@ globus_ftp_control_response_copy(
  *       - gsswrap control messages for integrity or confidentiality
  *
  * @param handle
- *        A pointer to a unauthenticated GSIFTP control handle. In the 
+ *        A pointer to a unauthenticated GridFTP control handle. In the 
  *        case of GSS authentication the GSS security context is stored in
  *        this structure.
  * @param auth_info
@@ -1800,7 +1803,7 @@ error:
  * will be automatically gss wrapped/unwrapped.
  *
  * @param handle
- *        A pointer to a GSIFTP control handle. The command described by
+ *        A pointer to a GridFTP control handle. The command described by
  *        the cmdspec is issued to the server over the control channel
  *        associated with this handle.
  * @param cmdspec
@@ -2230,7 +2233,7 @@ return_error:
  * has been sent will fail with a "no transfer in progress" error.
  *
  * @param handle
- *        A pointer to a GSIFTP control handle. The ABORT command 
+ *        A pointer to a GridFTP control handle. The ABORT command 
  *        is issued to the server over the control channel
  *        associated with this handle.
  * @param callback
@@ -2502,7 +2505,7 @@ return_error:
  * This function is used to close the control channel to the FTP server.
  * There should be no transfer commands in progress when this is called.
  * Once the final response callback passed to this function is invoked,
- * the control handle can no longer be used for any gsiftp control
+ * the control handle can no longer be used for any GridFTP control
  * operations.
  *
  * @note Need to further define behavior for when a QUIT happens
@@ -2513,7 +2516,7 @@ return_error:
  * fashion from another callback.
  *
  * @param handle
- *        A pointer to a GSIFTP control handle. The quit message is
+ *        A pointer to a GridFTP control handle. The quit message is
  *        issued to the server over the control channel
  *        associated with this handle.
  * @param callback
@@ -2632,7 +2635,7 @@ return_error:
  *        The control handle associated with the session
  * @param error
  *        A error object containing information about any errors that
- *        occured. 
+ *        occurred. 
  * @param ftp_response
  *        A struct containing information about the ftp reply to the
  *        command that was sent.
@@ -2732,7 +2735,7 @@ globus_l_ftp_control_send_cmd_cb(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
 		        "No possible GSI subject.  If using a non TCP "
-		        "protocol and GSI you must specifiy a subject.");
+		        "protocol and GSI you must specify a subject.");
                     goto return_error;
                 }
                 
@@ -3142,7 +3145,7 @@ globus_l_ftp_control_send_cmd_cb(
 		    1<<30,
 		    &max_input_size[1]);
 
-            /* establish a max of 1M.. this is only necessary because some
+            /* establish a max of 1M. This is only necessary because some
              * naive implementations will attempt to allocate this entire
              * buffer all at once (read: wuftp)
              */
@@ -3560,7 +3563,7 @@ globus_l_ftp_control_close_cb(
  *
  * This function is used to close the control channel to the FTP server.
  * Once the final response callback passed to this function is invoked,
- * the control handle can no longer be used for any gsiftp control
+ * the control handle can no longer be used for any GridFTP control
  * operations.
  *
  * @note Since this function waits until all other callbacks are completed
@@ -3568,7 +3571,7 @@ globus_l_ftp_control_close_cb(
  * fashion from another callback.
  *
  * @param handle
- *        A pointer to a GSIFTP control handle. The quit message is
+ *        A pointer to a GridFTP control handle. The quit message is
  *        issued to the server over the control channel
  *        associated with this handle.
  * @param callback
@@ -3796,7 +3799,7 @@ globus_i_ftp_control_auth_info_init(
  * @param account
  *        The account for the user name/password
  * @param subject
- *        The gss api subject name
+ *        The GSSAPI subject name
  * @return 
  *        - Error object 
  *        - GLOBUS_SUCCESS
@@ -3863,7 +3866,7 @@ globus_ftp_control_auth_info_init(
  *        The second authentication structure 
  * @return 
  *        - 0 if the structures are equal
- *        - !0 if the structures differ or an error occured
+ *        - !0 if the structures differ or an error occurred
  *
  */
 int
@@ -4104,14 +4107,14 @@ static char pad = '=';
  * "length" bytes of the given in-buffer and writes the result to the
  * out-buffer . This function assumes that the out-buffer is large
  * enough to contain the encoded in-buffer. The length of the encoded
- * inbuffer is returned through the length parameter.
+ * inbuf is returned through the length parameter.
  *
  * @param inbuf
  *        The input buffer to encode
  * @param outbuf
  *        The buffer in which the encoded input buffer is stored
  * @param length
- *        Initially the length of the input. Used to return the lenght
+ *        Initially the length of the input. Used to return the length
  *        of the output.
  *
  * @return 
@@ -4173,7 +4176,7 @@ globus_i_ftp_control_radix_encode(
  * This is a internal helper function base64 decodes the given
  * in-buffer and writes the result to the out-buffer . This function
  * assumes that the out-buffer is large enough to contain the decoded
- * in-buffer. The length of the decoded inbuffer is returned through
+ * in-buffer. The length of the decoded inbuf is returned through
  * the length parameter. 
  *
  * @param inbuf
@@ -4181,7 +4184,7 @@ globus_i_ftp_control_radix_encode(
  * @param outbuf
  *        The buffer in which the decoded input buffer is stored
  * @param length
- *        Used to return the lenght of the output.
+ *        Used to return the length of the output.
  *
  * @return 
  *        - Error Object
@@ -4289,9 +4292,6 @@ globus_i_ftp_control_radix_decode(
  * Internal helper function which gss wraps, base 64 encodes and puts
  * a MIC in front of the encoded string
  * 
- * Internal helper function which gss wraps, base 64 encodes and puts
- * a MIC in front of the encoded string
- *
  * @param cc_handle
  *        A control connection handle.
  * @param cmd

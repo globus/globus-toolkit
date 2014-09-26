@@ -11,7 +11,7 @@ endif
 
 name = globus-authz-callout-error
 _name = globus_authz_callout_error
-version = 3.4
+version = 3.5
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp

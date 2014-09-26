@@ -1018,7 +1018,7 @@ globus_l_gfs_open_new_server(
     }
     else
     {
-        /* dont need the handle here, will get it in callback too */
+        /* don't need the handle here, will get it in callback too */
         result = globus_xio_register_open(
             handle,
             NULL,

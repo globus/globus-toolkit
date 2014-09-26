@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef _GLOBUS_I_CALLOUT_H_
-#define _GLOBUS_I_CALLOUT_H_
+#ifndef GLOBUS_I_CALLOUT_H
+#define GLOBUS_I_CALLOUT_H
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
  * @file globus_i_callout.h
- * Globus Callout Infrastructure
+ * @brief Globus Callout Infrastructure
  * @author Sam Meder
  */
 
@@ -204,7 +206,7 @@ globus_i_callout_error_chain_result(
 
 
 /**
- * Globus Callout Implementation
+ * @brief Globus Callout Implementation
  * @ingroup globus_callout
  * @internal
  *
@@ -228,4 +230,6 @@ typedef struct globus_i_callout_data_s
     globus_bool_t                       mandatory;
 } globus_i_callout_data_t;
 
-#endif
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
+#endif /* GLOBUS_I_CALLOUT_H */

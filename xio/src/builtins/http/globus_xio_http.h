@@ -18,7 +18,8 @@
 #define GLOBUS_XIO_DRIVER_HTTP_H 1
 
 /**
- * @file globus_xio_http.h Globus XIO HTTP Driver Header
+ * @file globus_xio_http.h
+ * @brief Globus XIO HTTP Driver Header
  */
 #include "globus_xio.h"
 
@@ -121,7 +122,7 @@ extern "C" {
  */
 
 /**
- * HTTP Header
+ * @brief HTTP Header
  * @ingroup globus_xio_http_driver
  */
 typedef struct

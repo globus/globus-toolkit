@@ -1,130 +1,135 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
-    <!ENTITY cmdname "globus-job-clean">
-    <!ENTITY cmd "<command>globus-job-clean</command>">
-]>
-<!-- Canonical version of this document lives in 
-$Header$
--->
-
-<refentry id="gram5-cmd-globus-job-clean">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+<refentry lang="en">
+<refentryinfo>
+    <title>GLOBUS-JOB-CLEAN(1)</title>
+</refentryinfo>
 <refmeta>
-<refentrytitle>&cmdname;</refentrytitle>
+<refentrytitle>globus-job-clean</refentrytitle>
 <manvolnum>1</manvolnum>
-<refmiscinfo class="author">University of Chicago</refmiscinfo>
+<refmiscinfo class="source">University of Chicago</refmiscinfo>
+<refmiscinfo class="manual">Globus Toolkit Manual</refmiscinfo>
 </refmeta>
-
 <refnamediv>
-<refname>&cmdname;</refname>
-<refpurpose>Cancel and clean up a GRAM batch job</refpurpose>
+    <refname>globus-job-clean</refname>
+    <refpurpose>Cancel and clean up a GRAM batch job</refpurpose>
 </refnamediv>
-<refsynopsisdiv>
-<cmdsynopsis>
-&cmd;
-<group>
-    <arg choice="plain">-r <replaceable>RESOURCE</replaceable></arg>
-    <arg choice="plain">-resource <replaceable>RESOURCE</replaceable></arg>
-</group>
-<sbr/>
-<group>
-    <arg choice="plain">-f</arg>
-    <arg choice="plain">-force</arg>
-</group>
-<group>
-    <arg choice="plain">-q</arg>
-    <arg choice="plain">-quiet</arg>
-</group>
-<arg choice="plain"><replaceable>JOBID</replaceable></arg>
-</cmdsynopsis>
-<cmdsynopsis>
-&cmd;
-<arg>-help</arg>
-<arg>-usage</arg>
-<arg>-version</arg>
-<arg>-versions</arg>
-</cmdsynopsis>
+<refsynopsisdiv id="globus-job-clean-SYNOPSIS">
+<simpara><emphasis role="strong">globus-job-clean</emphasis> [OPTIONS] <emphasis>JOBID</emphasis></simpara>
+<simpara><emphasis role="strong">globus-job-clean</emphasis> [ -help | -usage | -version | -versions ]</simpara>
 </refsynopsisdiv>
-
-<refsect1><title>Description</title>
-<para>
-The &cmd; program cancels the job named by <replaceable>JOBID</replaceable> if
+<refsect1 id="globus-job-clean-DESCRIPTION">
+<title>DESCRIPTION</title>
+<simpara>The <emphasis role="strong">globus-job-clean</emphasis> program cancels the job named by <emphasis>JOBID</emphasis> if
 it is still running, and then removes any cached files on the GRAM service node
 related to that job. In order to do the file clean up, it submits a job which
 removes the cache files. By default this cleanup job is submitted to the
 default GRAM resource running on the same host as the job. This behavior can be
 controlled by specifying a resource manager contact string as the parameter to
-the <option>-r</option> or <option>-resource</option> option.
-</para>
-
-<para>
-By default, &cmd; prompts the user prior to canceling the job.  This behavior
-can be overridden by specifying the <option>-f</option> or
-<option>-force</option> command-line options.
-
-</para>
+the <emphasis>-r</emphasis> or <emphasis>-resource</emphasis> option.</simpara>
+<simpara>By default, <emphasis role="strong">globus-job-clean</emphasis> prompts the user prior to canceling the job.
+This behavior can be overridden by specifying the <emphasis>-f</emphasis> or
+<emphasis>-force</emphasis> command-line options.</simpara>
 </refsect1>
-
-<refsect1><title>Options</title>
-<para>
-The full set of options to &cmd; are:
-
+<refsect1 id="globus-job-clean-OPTIONS">
+<title>OPTIONS</title>
 <variablelist>
-    <varlistentry>
-        <term><option>-help</option></term>
-        <term><option>-usage</option></term>
-        <listitem><simpara>Display a help message to standard error and
-        exit.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-version</option></term>
-        <listitem><simpara>Display the software version of the
-                &cmd; program to
-                standard output.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-version</option></term>
-        <listitem><simpara>Display the software version of the
-        &cmd; program including DiRT
-        information to standard output.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-resource <replaceable>RESOURCE</replaceable></option></term>
-        <term><option>-r <replaceable>RESOURCE</replaceable></option></term>
-        <listitem><simpara>Submit the clean-up job to the resource named by
-        <replaceable>RESOURCE</replaceable> instead of the default GRAM service
-        on the same host as the job contact.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-force</option></term>
-        <term><option>-f</option></term>
-        <listitem><simpara>Do not prompt to confirm job cancel and
-        clean-up.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-quiet</option></term>
-        <term><option>-q</option></term>
-        <listitem><simpara>Do not print diagnostics for succesful clean-up.
-        Implies <option>-f</option></simpara></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-help, -usage</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display a help message to standard error and exit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-version</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the software version of the <emphasis role="strong">globus-job-clean</emphasis> program to standard
+    output.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-versions</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the software version of the <emphasis role="strong">globus-job-clean</emphasis> program including
+    DiRT information to standard output.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-resource <emphasis>RESOURCE</emphasis>, -resource <emphasis>RESOURCE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Submit the clean-up job to the resource named by <emphasis>RESOURCE</emphasis> instead of the
+    default GRAM service on the same host as the job
+    contact.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-force, -f</emphasis>
+</term>
+<listitem>
+<simpara>
+    Do not prompt to confirm job cancel and clean-up.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-quiet, -q</emphasis>
+</term>
+<listitem>
+<simpara>
+    Do not print diagnostics for succesful clean-up.  Implies <emphasis>-f</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
 </refsect1>
-
-<refsect1><title>ENVIRONMENT</title>
-<para>
-If the following variables affect the execution of &cmd;.
-
+<refsect1 id="globus-job-clean-ENVIRONMENT">
+<title>ENVIRONMENT</title>
+<simpara>The following variables affect the execution of <emphasis role="strong">globus-job-clean</emphasis>.</simpara>
 <variablelist>
-    <varlistentry>
-        <term><envar>X509_USER_PROXY</envar></term>
-        <listitem><simpara>Path to proxy credential.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><envar>X509_CERT_DIR</envar></term>
-        <listitem><simpara>Path to trusted certificate directory.</simpara></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_USER_PROXY</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to proxy credential.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_CERT_DIR</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to trusted certificate directory.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
+</refsect1>
+<refsect1 id="globus-job-clean-AUTHOR">
+<title>AUTHOR</title>
+<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
 </refsect1>
 </refentry>

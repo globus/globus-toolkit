@@ -15,8 +15,9 @@
  */
 
 /**
- * @file globus_oldgaa-utils.h
- *
+ * @file globus_oldgaa_utils.h
+ * @brief Old GAA Utils
+ * @details
  * This header file used internally by the Globus-OLDGAA routines
  */
 

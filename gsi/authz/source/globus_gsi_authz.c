@@ -21,9 +21,13 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_authz_callout_error.h"
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_authz.c Globus Authorization API
+ * @file globus_gsi_authz.c
+ * @brief Globus Authorization API
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 static int globus_l_gsi_authz_activate(void);
 static int globus_l_gsi_authz_deactivate(void);
 
@@ -219,7 +223,7 @@ static int globus_l_gsi_authz_activate(void)
 
 /**
  * Module deactivation
- ***/
+ */
 static int globus_l_gsi_authz_deactivate(void)
 {
     /* deactivate any module used by the implementation */
@@ -279,7 +283,8 @@ static void callback_wrapper(
  * @brief Initialize an authorization handle
  * @ingroup globus_gsi_authz
  * @details
- * Initialize an authorization handle by calling the AUTHZ_HANDLE_INIT 
+ * Initialize an authorization handle by calling the
+ * GLOBUS_GSI_AUTHZ_HANDLE_INIT 
  * function named in the authorization configuration file. The parameters
  * to this function are passed to the authorization callout. Once the
  * initialization is complete, the callback function is called, with
@@ -514,7 +519,7 @@ globus_gsi_authorize(
  * @ingroup globus_gsi_authz
  * @details
  * Cancel an authorization decision by calling the
- * GLOBUS_GSI_AUTHORIZE_CANCEL function named in the authorization
+ * GLOBUS_GSI_AUTHZ_CANCEL function named in the authorization
  * configuration file. 
  * 
  * @param handle
@@ -550,7 +555,8 @@ globus_gsi_cancel_authz(
  * @brief Destroy an authz handle
  * @ingroup globus_gsi_authz
  * @details
- * Initialize an authorization handle by calling the AUTHZ_HANDLE_DESTROY
+ * Initialize an authorization handle by calling the
+ * GLOBUS_GSI_AUTHZ_HANDLE_DESTROY
  * function named in the authorization configuration file. Once the
  * initialization is complete, the callback function is called, with
  * the result and the callback_arg passed to it.
@@ -642,9 +648,11 @@ globus_gsi_authz_handle_destroy(
 /*globus_gsi_authz_handle_destroy*/
 
 /**
- * @a Query for authorization identity
+ * @brief Query for authorization identity
  * @ingroup globus_gsi_authz
  * @details
+ * Query for authorization identity by calling the
+ * GLOBUS_GSI_GET_AUTHORIZATION_IDENTITY callout.
  * @param handle
  *        The handle that is to be used for the identity check.
  * @param identity_ptr
@@ -669,7 +677,7 @@ globus_gsi_authz_get_authorization_identity(
 {
 
     /* call authz system callout to get the authorization identity */
-    /* the callout type is "GLOBUS_GSI_AUTHZ_GET_AUTHORIZATION_IDENTITY" */
+    /* the callout type is "GLOBUS_GSI_GET_AUTHORIZATION_IDENTITY" */
     /* arguments are: globus_gsi_authz_handle_t * handle,
        		      char **identity_ptr,
                       globus_gsi_authz_cb_t callback,

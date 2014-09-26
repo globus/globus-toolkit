@@ -17,11 +17,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file proxycertinfo.c
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- * $Author$
+ * @brief Proxy Certificate Info
  */
 #endif
 
@@ -48,12 +44,12 @@
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
 /** 
  * Define the functions required for 
- * manipulating a PROXYCERTINFO and its ASN1 form. 
+ * manipulating a PROXYCERTINFO and its ASN.1 form. 
  * @ingroup proxycertinfo
  * 
  * Creates an ASN1_METHOD structure, which contains
  * pointers to routines that convert any PROXYCERTINFO
- * structure to its associated ASN1 DER encoded form
+ * structure to its associated ASN.1 DER encoded form
  * and vice-versa.
 *
  * @return the ASN1_METHOD object
@@ -165,7 +161,7 @@ int PROXYCERTINFO_cmp(
 /**
  * @ingroup proxycertinfo
  *
- * print the PROXYCERTINFO structure to stdout
+ * Print the PROXYCERTINFO structure to stdout
  *
  * @param bp the BIO to print to
  * @param cert_info the PROXYCERTINFO to print
@@ -193,7 +189,7 @@ int PROXYCERTINFO_print(
 /**
  * @ingroup proxycertinfo
  *
- * print the PROXYCERTINFO structure to the
+ * Print the PROXYCERTINFO structure to the
  * specified file stream
  *
  * @param fp the file stream (FILE *) to print to
@@ -276,11 +272,11 @@ PROXYPOLICY * PROXYCERTINFO_get_policy(
 /**
  * @ingroup proxycertinfo
  *
- * Sets the path length of the PROXYCERTINFO. The path length specifices 
+ * Sets the path length of the PROXYCERTINFO. The path length specifies 
  * the maximum depth of the path of the Proxy Certificates that
  * can be signed by an End Entity Certificate (EEC) or Proxy Certificate.
  *
- * Since this is an optional field in its ASN1 coded representation,
+ * Since this is an optional field in its ASN.1 coded representation,
  * it can be set to NULL through this function - which means
  * that it won't be included in the encoding.
  *

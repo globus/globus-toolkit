@@ -30,11 +30,14 @@
  *
  * @param minor_status
  *        The minor status result - this is a globus_result_t
- *        cast to a OM_uint32.  The 
+ *        cast to a OM_uint32.
  * @param context_handle_P
  *        The context handle to be deleted
  * @param output_token
- *        The 
+ *        A token created upon destroying the context. If non-empty, this
+ *        should be sent to the peer of the context to indicate that the
+ *        context is closed.
+ * @return This function always returns GSS_S_COMPLETE
  */
 OM_uint32 
 GSS_CALLCONV gss_delete_sec_context(

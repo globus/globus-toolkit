@@ -16,7 +16,7 @@
 
 /**
  * @file gssapi/source/library/accept_sec_context.c
- * Globus GSI GSS-API gss_accept_sec_context
+ * @brief Globus GSI GSS-API gss_accept_sec_context
  * @author Sam Meder, Sam Lang
  */
 
@@ -270,7 +270,7 @@ GSS_CALLCONV gss_accept_sec_context(
 #           endif
             /* 
              * IF we are talking to a real SSL client,
-             * we dont want to do delegation, so we are done
+             * we don't want to do delegation, so we are done
              */
             if (context->req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
             {
@@ -280,7 +280,7 @@ GSS_CALLCONV gss_accept_sec_context(
         
             /* 
              * To keep the gss exchange going, if we received
-             * the last token but dont have a token to send
+             * the last token but don't have a token to send
              * we need to send a null So peek at what we might send
              */
             if (BIO_pending(context->gss_wbio) == 0)

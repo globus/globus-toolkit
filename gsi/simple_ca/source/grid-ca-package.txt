@@ -1,0 +1,96 @@
+GRID-CA-PACKAGE(1)
+==================
+:doctype:      manpage
+:man source:   University of Chicago
+:man manual:   Globus Toolkit Manual
+
+NAME
+----
+grid-ca-package - Prepare a CA certificate, configuration, and policy for distribution
+
+[[grid-ca-package-SYNOPSIS]]
+SYNOPSIS
+--------
+*grid-ca-sign* [-ca 'HASH'] [-g] [-b] [-r] [-d]
+
+*grid-ca-sign* [ -help| -h| -usage| -version| -versions ]
+
+[[grid-ca-package-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *grid-ca-sign* utility creates a tarball containing an RPM spec file and
+the files needed to use a CA with grid tools. It optionally will also
+create a GPT package for distributing a CA.
+
+By default, the *grid-ca-sign* utility displays a list of installed grid CA and
+prompts for which CA to package. It then creates a tarball containing the CA
+certificate, signing policy, CA configuration files, and an spec script to
+generate a binary RPM package containing the CA. If the CA hash is known prior
+to running *grid-ca-sign*, it may provided as an argument to the
+'-ca' parameter to avoid prompting.
+
+In addition to generating a spec script and tarball, *grid-ca-sign* creates a
+GPT package if either the '-g' or '-b' options
+are used on the command-line. These packages may be used to distribute a CA and
+configuration to systems which do not support RPM packages.
+
+The *grid-ca-sign* utility writes the package tarballs to the current working
+directory.
+
+[[grid-ca-package-OPTIONS]]
+OPTIONS
+-------
+The full set of command-line options to *grid-ca-sign* follows:
+
+*-help, -h, -usage*::
+    Display the command-line options to *grid-ca-sign* and
+    exit.
+*-version, -versions*::
+    Display the version number of the *grid-ca-sign* command. The second form
+    includes more details.
+*-ca 'CA'*::
+    Use the CA whose name matches the hash string 'CA'. When invoked with this
+    option, *grid-ca-sign* runs non-interactively.
+*-g*::
+    Create a GPT binary package in addition to the RPM script tarball. This
+    package may be installed on other systems using the
+    *gpt-install* program.
+*-b*::
+    Create a GPT binary package with GPT metadata located in the path expected
+    by GPT 3.2 (used in Globus 2.0.0-5.0.x) instead of
+    +${datadir}/globus/packages+ as used in Globus 5.2.x. This option
+    overrides the '-g' command-line option.
+*-r*::
+    Create a binary RPM package for the CA. This option currently only works on
+    RPM-based distributions.
+*-d*::
+    Create a binary Debian package for the CA.  This option currently only
+    works on Debian-based distributions.
+
+[[grid-ca-package-EXAMPLES]]
+EXAMPLES
+--------
+Package a Simple CA with hash +0146c503+.
+
+    % grid-ca-sign -ca 0146c503
+
+    Creating RPM source tarball... done
+    globus_simple_ca_0146c503.tar.gz
+
+[[grid-ca-package-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following environment variables affect the execution of *grid-ca-sign*:
+
+`GLOBUS_LOCATION`::
+    Non-standard installation path of the Globus Toolkit.
+
+[[grid-ca-package-SEEALSO]]
+SEE ALSO
+--------
+grid-cert-request(1), grid-ca-sign(1), grid-default-ca(1), grid-ca-create(1)
+
+[[grid-ca-package-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

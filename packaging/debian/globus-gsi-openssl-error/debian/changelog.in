@@ -1,3 +1,13 @@
+globus-gsi-openssl-error (3.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Include more manpages for API
+  * Use consistent PREDEFINED in all Doxyfiles
+  * Doxygen markup fixes
+  * Fix typos and clarify some documentation
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Sep 2014 11:51:14 -0400
+
 globus-gsi-openssl-error (3.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

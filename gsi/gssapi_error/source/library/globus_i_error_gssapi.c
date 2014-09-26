@@ -15,27 +15,21 @@
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_i_error_gssapi.c
- * Globus Generic Error
- *
- * $RCSfile$
- * $Revision$
- * $Date $
+ * @brief Globus Generic Error
  */
-
 
 #include "globus_i_error_gssapi.h"
 #include <string.h>
 #include "globus_gss_assist.h"
 
 /**
- * @name Copy Error Data
- */
-/*@{*/
-/**
- * Copy the instance data of a Globus GSSAPI Error object.
+ * @brief Copy Error Data
  * @ingroup globus_gssapi_error_object 
+ * @details
+ * Copy the instance data of a Globus GSSAPI Error object.
  * 
  * @param src
  *        The source instance data
@@ -66,16 +60,14 @@ globus_l_error_copy_gssapi(
     }
     
     *dst = copy;
-}/* globus_l_error_copy_gssapi */
-/*@}*/
+}
+/* globus_l_error_copy_gssapi */
 
 /**
- * @name Free Error Data
- */
-/*@{*/
-/**
- * Free the instance data of a Globus GSSAPI Error object.
+ * @brief Free Error Data
  * @ingroup globus_gssapi_error_object 
+ * @details
+ * Free the instance data of a Globus GSSAPI Error object.
  * 
  * @param data
  *        The instance data
@@ -89,15 +81,12 @@ globus_l_error_free_gssapi(
 {
     globus_libc_free(data);
 }/* globus_l_error_free_gssapi */
-/*@}*/
 
 /**
- * @name Print Error Data
- */
-/*@{*/
-/**
- * Return a copy of the short description from the instance data
+ * @brief Print Error Data
  * @ingroup globus_gssapi_error_object 
+ * @details
+ * Return a copy of the short description from the instance data
  * 
  * @param error
  *        The error object to retrieve the data from.
@@ -179,7 +168,6 @@ globus_l_error_gssapi_printable(
     
     return msg;
 }/* globus_l_error_gssapi_printable */
-/*@}*/
 
 /**
  * Error type static initializer.
@@ -192,7 +180,3 @@ const globus_object_type_t GLOBUS_ERROR_TYPE_GSSAPI_DEFINITION
     globus_l_error_gssapi_printable);
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-
-
-
-

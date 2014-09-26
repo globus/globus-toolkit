@@ -29,7 +29,7 @@
  *
  * @param minor_status 
  *        GSSAPI return code.  This is a Globus Error code (or GLOBUS_SUCCESS)
- *        cast to a OM_uint32 pointer.  If an erro has occurred, the resulting
+ *        cast to a OM_uint32 pointer.  If an error has occurred, the resulting
  *        error (from calling globus_error_get on this variable) needs to
  *        be freed by the caller
  * @param context_handle
@@ -89,7 +89,7 @@ globus_gss_assist_import_sec_context(
                 local_result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_IMPORTING_CONTEXT,
                 (_GASL("Environment variable GRID_SECURITY_CONTEXT_FD set to "
-                 "invalid valie")));
+                 "invalid value")));
             *minor_status = (OM_uint32) local_result;
             goto err;
         }

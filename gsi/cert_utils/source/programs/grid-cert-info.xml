@@ -1,213 +1,191 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
-    <!ENTITY cmdname "grid-cert-info">
-    <!ENTITY cmd "<command>grid-cert-info</command>">
-]>
-<!-- Canonical version of this document lives in 
-$Header$
--->
-
-<refentry id="grid-cert-info" xreflabel="grid-cert-info">
-  <refentryinfo>
-    <corpauthor>University of Chicago</corpauthor>
-  </refentryinfo>
-  <refmeta>
-    <refentrytitle>&cmdname;</refentrytitle>
-    <manvolnum>1</manvolnum>
-    <refmiscinfo class="source">Globus Toolkit</refmiscinfo>
-    <refmiscinfo class="version"><replaceable role="entity">version</replaceable></refmiscinfo>
-  </refmeta>
-  <refnamediv>
-    <refname>&cmdname;</refname>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+<refentry lang="en">
+<refentryinfo>
+    <title>GRID-CERT-INFO(1)</title>
+</refentryinfo>
+<refmeta>
+<refentrytitle>grid-cert-info</refentrytitle>
+<manvolnum>1</manvolnum>
+<refmiscinfo class="source">University of Chicago</refmiscinfo>
+<refmiscinfo class="manual">Globus Toolkit</refmiscinfo>
+</refmeta>
+<refnamediv>
+    <refname>grid-cert-info</refname>
     <refpurpose>Display information about a certificate</refpurpose>
-  </refnamediv>
-  <refsynopsisdiv>
-    <cmdsynopsis>
-      &cmd;
-      <arg>-help</arg>
-      <arg>-usage</arg>
-      <arg>-version</arg>
-      <arg>-versions</arg>
-    </cmdsynopsis>
-    <cmdsynopsis>
-      &cmd;
-      <arg>-file <replaceable>CERTIFICATE-FILE</replaceable></arg>
-      <arg>-rfc2253</arg>
-      <arg>-all</arg>
-      <sbr/>
-      <group choice="plain">
-          <arg>-subject</arg>
-          <arg>-s</arg>
-      </group>
-      <sbr/>
-      <group choice="plain">
-          <arg>-issuer</arg>
-          <arg>-i</arg>
-      </group>
-      <sbr/>
-      <group choice="plain">
-          <arg>-issuerhash</arg>
-          <arg>-ih</arg>
-      </group>
-      <sbr/>
-      <group choice="plain">
-          <arg>-startdate</arg>
-          <arg>-sd</arg>
-      </group>
-      <sbr/>
-      <group choice="plain">
-          <arg>-endate</arg>
-          <arg>-ed</arg>
-      </group>
-    </cmdsynopsis>
-  </refsynopsisdiv>
-  <refsect1>
-    <title>Description</title>
-    <para>
-    The &cmd; program displays information contained within a certificate
-    file. By default it shows a text representation of the entire certificate.
-    Specific facts about the certificate can be shown instead by using
-    command-line options. If any of those options are used, then the default
-    display is suppressed. This can be added to the output by using the
-    <option>-all</option> command-line option.
-    </para>
-
-    <para>
-    If multiple display options are included on the command-line, the facts
-    related to those will be displayed on separate lines in the order that
-    they occur. If an option is specified multiple time, that fact will
-    be displayed multiple times.
-    </para>
-
-    <para>
-    The full set of command-line options to &cmd; are:
-
-    <variablelist>
-        <varlistentry>
-            <term><option>-help</option></term>
-            <term><option>-usage</option></term>
-            <listitem><simpara>Display the command-line options to 
-            &cmd; and exit.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-version</option></term>
-            <term><option>-versions</option></term>
-            <listitem><simpara>Display the version number of the &cmd;
-            command. The second form includes more
-            details.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-file <replaceable>CERTIFICATE-FILE</replaceable></option></term>
-            <listitem><simpara>Display information about the first certificate
-            contained in the file named by
-            <replaceable>CERTIFICATE-FILE</replaceable> instead of the
-            default user certificate.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-rfc2253</option></term>
-            <listitem><simpara>Display X.509 distinguished names using the 
-            string representation defined in RFC 2253 instead of the
-            default OpenSSL oneline format.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-all</option></term>
-            <listitem><simpara>Display the text representation of the
-            entire certificate in addition to any other facts requested
-            by command-line options. This is the default if no fact-specific
-            command-line options are used.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-subject</option></term>
-            <term><option>-s</option></term>
-            <listitem><simpara>Display the subject name of the X.509
-            certificate.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-issuer</option></term>
-            <term><option>-i</option></term>
-            <listitem><simpara>Display the issuer name of the X.509
-            certificate.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-issuerhash</option></term>
-            <term><option>-ih</option></term>
-            <listitem><simpara>Display the default hash of the issuer name of
-            the X.509 certificate. This can be used to locate which CA
-            certificate in the trusted certificate directory issued the
-            certifcate being inspected.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-startdate</option></term>
-            <term><option>-sd</option></term>
-            <listitem><simpara>Display a string representation of the date
-            and time when the certificate is valid from. This is displayed
-            in the format used by the OpenSSL <command>x509</command>
-            command.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-enddate</option></term>
-            <term><option>-dd</option></term>
-            <listitem><simpara>Display a string representation of the date
-            and time when the certificate is valid until. This is displayed
-            in the format used by the OpenSSL <command>x509</command>
-            command.</simpara></listitem>
-        </varlistentry>
-    </variablelist>
-
-    </para>
-  </refsect1>
-
-  <refsect1>
-    <title>Examples</title>
-    <para>Display the validity times for the default certificate
-    
-    <screen><prompt>% </prompt>&cmd; <option>-sd</option> <option>-ed</option>
-<computeroutput>Aug 31 12:33:47 2009 GMT
-Aug 31 12:33:47 2010 GMT</computeroutput></screen>
-    </para>
-
-    <para>Display the same information about a different certificate specified
-    on the command-line
-    
-    <screen><prompt>% </prompt>&cmd; <option>-sd</option> <option>-ed</option> <option>-f /etc/grid-security/hostcert.pem</option>
-<computeroutput>Jan 21 12:24:48 2003 GMT
-Jul 15 11:30:57 2020 GMT</computeroutput></screen>
-    </para>
-
-    <para>Display the subject of a certificate in both the default and the
-    RFC 2253 forms.
-    
-    <screen><prompt>% </prompt>&cmd; <option>-subject</option>
-<computeroutput>/DC=org/DC=example/DC=grid/CN=Joe User</computeroutput>
-<prompt>% </prompt>&cmd; <option>-subject</option> <option>-rfc2253</option>
-<computeroutput>CN=Joe User,DC=grid,DC=example,DC=org</computeroutput></screen>
-    </para>
-
-
-  </refsect1>
-
-  <refsect1>
-    <title>Environment Variables</title>
-
-    <para>
-    The following environment variables affect the execution of &cmd;:
-    <variablelist>
-        <varlistentry>
-            <term><envar>X509_USER_CERT</envar></term>
-            <listitem><simpara>Path to the default certificate
-            file to inspect.</simpara></listitem>
-        </varlistentry>
-    </variablelist>
-    </para>
-  </refsect1>
+</refnamediv>
+<refsynopsisdiv id="grid-cert-info-SYNOPSIS">
+<simpara><emphasis role="strong">grid-cert-info</emphasis> <emphasis>-help</emphasis> | <emphasis>-usage</emphasis> | <emphasis>-version</emphasis> | <emphasis>-versions</emphasis></simpara>
+<simpara><emphasis role="strong">grid-cert-info</emphasis> OPTIONS</simpara>
+</refsynopsisdiv>
+<refsect1 id="grid-cert-info-DESCRIPTION">
+<title>DESCRIPTION</title>
+<simpara>The <emphasis role="strong">grid-cert-info</emphasis> program displays information contained within a
+certificate file. By default it shows a text representation of the entire
+certificate.  Specific facts about the certificate can be shown instead by
+using command-line options. If any of those options are used, then the default
+display is suppressed. This can be added to the output by using the <emphasis>-all</emphasis>
+command-line option.</simpara>
+<simpara>If multiple display options are included on the command-line, the facts
+related to those will be displayed on separate lines in the order that
+they occur. If an option is specified multiple time, that fact will
+be displayed multiple times.</simpara>
+</refsect1>
+<refsect1 id="grid-cert-info-OPTIONS">
+<title>OPTIONS</title>
+<simpara>The full set of command-line options to <emphasis role="strong">grid-cert-info</emphasis> are:</simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">-help, -usage</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the command-line options to <emphasis role="strong">grid-cert-info</emphasis> and exit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-version, -versions</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the version number of the <emphasis role="strong">grid-cert-info</emphasis> command. The second form
+    includes more details.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-file <emphasis>CERTIFICATE-FILE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Display information about the first certificate contained in the file named
+    by <emphasis>CERTIFICATE-FILE</emphasis> instead of the default user certificate.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-rfc2253</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display X.509 distinguished names using the string representation defined
+    in RFC 2253 instead of the default OpenSSL <emphasis>oneline</emphasis> format.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-all</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the text representation of the entire certificate in addition to
+    any other facts requested by command-line options. This is the default if
+    no fact-specific command-line options are used.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-subject, -s</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the subject name of the X.509 certificate.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-issuer, -i</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the issuer name of the X.509 certificate.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-issuerhash, -ih</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the default hash of the issuer name of the X.509 certificate. This
+    can be used to locate which CA certificate in the trusted certificate
+    directory issued the certificate being inspected.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-startdate, -sd</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display a string representation of the date and time when the certificate
+    is valid from. This is displayed in the format used by the OpenSSL
+    <emphasis role="strong">x509</emphasis> command.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-enddate, -ed</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display a string representation of the date and time when the certificate
+    is valid until. This is displayed in the format used by the OpenSSL
+    <emphasis role="strong">x509</emphasis> command.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="grid-cert-info-EXAMPLES">
+<title>EXAMPLES</title>
+<simpara>Display the validity times for the default certificate</simpara>
+<literallayout class="monospaced">% grid-cert-info -sd -ed
+Aug 31 12:33:47 2009 GMT
+Aug 31 12:33:47 2010 GMT</literallayout>
+<simpara>Display the same information about a different certificate specified on the
+command-line</simpara>
+<literallayout class="monospaced">% grid-cert-info -sd -ed -f /etc/grid-security/hostcert.pem
+Jan 21 12:24:48 2003 GMT
+Jul 15 11:30:57 2020 GMT</literallayout>
+<simpara>Display the subject of a certificate in both the default and the RFC 2253
+forms.</simpara>
+<literallayout class="monospaced">% grid-cert-info -subject
+/DC=org/DC=example/DC=grid/CN=Joe User
+% grid-cert-info -subject -rfc2253
+CN=Joe User,DC=grid,DC=example,DC=org</literallayout>
+</refsect1>
+<refsect1 id="grid-cert-info-ENVIRONMENT">
+<title>ENVIRONMENT</title>
+<simpara>The following environment variables affect the execution of <emphasis role="strong">grid-cert-info</emphasis>:</simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_USER_CERT</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to the default certificate file to inspect.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="grid-cert-info-AUTHOR">
+<title>AUTHOR</title>
+<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
+</refsect1>
 </refentry>

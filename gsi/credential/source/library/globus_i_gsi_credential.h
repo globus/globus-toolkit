@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file globus_i_gsi_credential.h Globus GSI Credential Library Internals
+ * @file globus_i_gsi_credential.h
+ * @brief Globus GSI Credential Library Internals
  * @author Sam Lang, Sam Meder
  */
 
@@ -176,7 +179,7 @@ extern FILE *                           globus_i_gsi_cred_debug_fstream;
 extern char *                    globus_l_gsi_cred_error_strings[];
 
 /**
- * GSI Credential handle attributes implementation
+ * @brief GSI Credential handle attributes implementation
  * @ingroup globus_gsi_credential_handle
  * @internal
  *
@@ -190,7 +193,7 @@ typedef struct globus_l_gsi_cred_handle_attrs_s
 } globus_i_gsi_cred_handle_attrs_t;
 
 /**
- * GSI Credential handle implementation
+ * @brief GSI Credential handle implementation
  * @ingroup globus_gsi_credential_handle
  * @internal
  *
@@ -208,7 +211,7 @@ typedef struct globus_l_gsi_cred_handle_s
     STACK_OF(X509) *                    cert_chain;
     /** The immutable attributes of the credential handle */
     globus_gsi_cred_handle_attrs_t      attrs;
-    /** The amout of time the credential is valid for */
+    /** The amount of time the credential is valid for */
     time_t                              goodtill;
 } globus_i_gsi_cred_handle_t;
 
@@ -266,3 +269,5 @@ globus_i_gsi_cred_error_join_chains_result(
 #endif
 
 #endif /* GLOBUS_I_GSI_CREDENTIAL_H */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

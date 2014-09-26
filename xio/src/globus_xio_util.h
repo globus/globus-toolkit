@@ -85,7 +85,7 @@ globus_xio_contact_copy(
     globus_xio_contact_t *              dst,
     const globus_xio_contact_t *        src);
 
-/**
+/*
  * Utility macros
  */
 

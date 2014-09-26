@@ -1,13 +1,13 @@
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	3.5
+Version:	3.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio_gsi_driver-3.5.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio_gsi_driver-3.6.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gssapi-error%{?_isa} >= 4
@@ -129,6 +129,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 25 2014 Globus Toolkit <support@globus.org> - 3.6-1
+- Doxygen markup fixes
+- Fix typos and clarify some documentation
+- Quiet some autoconf/automake warnings
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 3.5-1
 - Merge fixes from ellert-globus_6_branch
 

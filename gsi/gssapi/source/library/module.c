@@ -16,7 +16,7 @@
 
 /**
  * @file gssapi/source/library/module.c
- * GSSAPI module activation code
+ * @brief GSSAPI module activation code
  */
 
 #include "gssapi.h"
@@ -28,21 +28,23 @@ static int globus_l_gsi_gssapi_activate(void);
 static int globus_l_gsi_gssapi_deactivate(void);
 
 /**
- * Debugging level
- *
+ * @brief Debugging level
+ * @details
  * Currently this isn't terribly well defined. The idea is that 0 is no
  * debugging output, and 9 is a whole lot.
  */
 int                                     globus_i_gsi_gssapi_debug_level;
 
 /**
- * Debugging Log File
- *
+ * @brief Debugging Log File
+ * @details
  * Debugging output gets written to this file
  */
 FILE *                                  globus_i_gsi_gssapi_debug_fstream;
 
 /**
+ * @brief Force TLSv1
+ * @details
  * Optionally force use of TLSv1 if GLOBUS_GSSAPI_FORCE_TLS is defined
  * in the environment.
  */

@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_ftp_control_data.c FTP Data Connection Configuration and Management
+ * @file globus_ftp_control_data.c
+ * @brief FTP Data Connection Configuration and Management
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
 #include <string.h>
@@ -128,7 +132,7 @@ typedef struct globus_ftp_data_connection_s
 } globus_ftp_data_connection_t;
 
 /*
- *  each strip can have multiple paralell conections to
+ *  each strip can have multiple parallel connections to
  *  the same host
  */
 typedef struct globus_ftp_data_stripe_s
@@ -1711,7 +1715,7 @@ globus_l_ftp_control_data_stream_connect_direction(
         err = globus_error_construct_string(
                       GLOBUS_FTP_CONTROL_MODULE,
                       GLOBUS_NULL,
-          _FCSL("[%s]:%s(): requesting parrallelism in stream mode is not valid."),
+          _FCSL("[%s]:%s(): requesting parallelism in stream mode is not valid."),
                       GLOBUS_FTP_CONTROL_MODULE->module_name,
                       my_name);
         globus_error_put(err);
@@ -1869,18 +1873,18 @@ globus_ftp_control_data_add_channels(
  * Sends an EOF message to each stripe along an open data connection.
  *
  * @param handle
- *        A pointer to a FTP control handle.  This handle contains the
- *        the state for a conneciton.
+ *        A pointer to a FTP control handle.  This handle contains 
+ *        the state for a connection.
  * @param  count[]
  *        This array of integers should contain an integer that
  *        will be added to the current parallel data connection count on
  *        each stripe.  The order of the integers corresponds to each
  *        stripe in the same order as what was returned from local_port().
  *
- *        An eof message must be sent to all receiving hosts in a transfer.
+ *        An EOF message must be sent to all receiving hosts in a transfer.
  *        The message contains the total number of data connections used
  *        by each stripe.  Many stripes may be sending to a single receiver
- *        but only one eof message may be sent.  The count parameter allows
+ *        but only one EOF message may be sent.  The count parameter allows
  *        the user to pass in the total number of data connections used by all
  *        other hosts.  The local values are added to the passed in values
  *        and then sent to the receiver.
@@ -2017,7 +2021,7 @@ globus_ftp_control_data_send_eof(
 
 
         /*
-         *  if we are not sending eof we still need to send an eod message
+         *  if we are not sending EOF we still need to send an EOD message
          */
         if(!eof_message)
         {
@@ -4947,7 +4951,7 @@ globus_l_ftp_control_data_eb_write(
         err = globus_error_construct_string(
                   GLOBUS_FTP_CONTROL_MODULE,
                   GLOBUS_NULL,
-         _FCSL("[%s]:%s() : cannot register a zero length message unless you are signifing eof."),
+         _FCSL("[%s]:%s() : cannot register a zero length message unless you are signifying eof."),
                   GLOBUS_FTP_CONTROL_MODULE->module_name,
                   my_name);
         return globus_error_put(err);
@@ -5003,7 +5007,7 @@ globus_l_ftp_control_data_eb_write(
 
     /*
      *  if eof has been registered we must add a final message to
-     *  all stripe queues that eof has been hit.  for effiency if the
+     *  all stripe queues that eof has been hit.  For efficiency if the
      *  queue is not empty turn eof on in it last message.
      *
      *  each callback has a reference for each stripe it was registered
@@ -5056,7 +5060,7 @@ globus_l_ftp_control_data_eb_write(
             }
             /*
              * inc reference on eof callback, x for the number of stripes
-             * it was broken accross and 1 for eof
+             * it was broken across and 1 for eof
              */
             globus_handle_table_increment_reference(
                 &transfer_handle->handle_table,
@@ -5384,7 +5388,7 @@ globus_X_ftp_control_local_layout(
         return globus_error_put(globus_error_construct_string(
                    GLOBUS_FTP_CONTROL_MODULE,
                    GLOBUS_NULL,
-                   _FCSL("[%s]:%s() : Enqueue string has invalid format.  Must be of the form: StripedLayout=<name>;[parameteres]"),
+                   _FCSL("[%s]:%s() : Enqueue string has invalid format.  Must be of the form: StripedLayout=<name>;[parameters]"),
                    GLOBUS_FTP_CONTROL_MODULE->module_name,
                    myname));
 
@@ -5397,7 +5401,7 @@ globus_X_ftp_control_local_layout(
         return globus_error_put(globus_error_construct_string(
                    GLOBUS_FTP_CONTROL_MODULE,
                    GLOBUS_NULL,
-                   _FCSL("[%s]:%s() : Enqueue string has invalid format.  Must be of the form: StripedLayout=<name>;[parameteres]"),
+                   _FCSL("[%s]:%s() : Enqueue string has invalid format.  Must be of the form: StripedLayout=<name>;[parameters]"),
                    GLOBUS_FTP_CONTROL_MODULE->module_name,
                    myname));
     }
@@ -5479,7 +5483,7 @@ globus_X_ftp_control_local_layout(
  * @param callback
  *        The user function to be called when all references to data_info
  *        are released.  This occurs after all data registered for write
- *        from globus_ftp_control_data_write_stripe have occured and the
+ *        from globus_ftp_control_data_write_stripe have occurred and the
  *        user calls globus_ftp_control_release_data_info().  The callback
  *        is passed all of the arguments passed to this function with the
  *        exception of data_info.
@@ -5782,11 +5786,11 @@ exit:
  * @ingroup globus_ftp_control_data
  * @details
  * This function allows the user to register the write of ftp data on
- * a specfic stripe.  This function can only be called fromed an enqueue
+ * a specific stripe.  This function can only be called from an enqueue
  * function callback.  This function should be used only by the implementor
- * of an enqueue funciton.  It should be viewed as unstable and used used
+ * of an enqueue function.  It should be viewed as unstable and used used
  * only by advanced users.  This is the only function in the library that
- * the enqueue function implemtor is allowed from the enqueue callback.
+ * the enqueue function implementor is allowed from the enqueue callback.
  *
  * @param handle
  *        A pointer to a FTP control handle. The handle contains
@@ -5933,7 +5937,7 @@ globus_i_ftp_control_data_write_stripe(
         err = globus_error_construct_string(
                   GLOBUS_FTP_CONTROL_MODULE,
                   GLOBUS_NULL,
-         _FCSL("[%s]:%s() : cannot register a zero length message unless you are signifing eof."),
+         _FCSL("[%s]:%s() : cannot register a zero length message unless you are signifying eof."),
                   GLOBUS_FTP_CONTROL_MODULE->module_name,
                   myname);
         return globus_error_put(err);
@@ -6076,7 +6080,7 @@ globus_l_ftp_data_stripe_poll(
         if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
         {
             /*
-             *  i can do this since this function is only called
+             *  I can do this since this function is only called
              *  internally
              */
             result = globus_error_put(GLOBUS_ERROR_NO_INFO);
@@ -6504,7 +6508,7 @@ globus_l_ftp_data_eb_poll(
                     /*
                      *  set the entries offset to the offset on the
                      *  data_conn.
-                     *  If use is requesting more bytes than are availuable
+                     *  If use is requesting more bytes than are available
                      *  on this connection set the length to bytes_ready
                      */
                     entry->whos_my_daddy = data_conn;
@@ -6527,7 +6531,7 @@ globus_l_ftp_data_eb_poll(
                     globus_assert(res == GLOBUS_SUCCESS);
                 }
                 /*
-                 *  if we have not hit EOF and there are no availuable data
+                 *  if we have not hit EOF and there are no available data
                  *  connections
                  */
                 else
@@ -6544,7 +6548,7 @@ globus_l_ftp_data_eb_poll(
 /*
  *  globus_l_ftp_control_data_register_eof()
  *  ----------------------------------------
- *  build and resister an eof message.  decrement the number of
+ *  build and resister an eof message.  Decrement the number of
  *  connections on the current stripe.
  */
 globus_result_t
@@ -6559,7 +6563,7 @@ globus_l_ftp_control_data_register_eof(
     globus_assert(stripe->eof_sent == GLOBUS_FALSE);
     if(stripe->eof_sent)
     {
-        /* i can do this because I only use this internally */
+        /* I can do this because I only use this internally */
         return globus_error_put(GLOBUS_ERROR_NO_INFO);
     }
 
@@ -6597,8 +6601,8 @@ globus_l_ftp_control_data_register_eof(
 /*
  *  globus_l_ftp_control_data_register_eod()
  *  ----------------------------------------
- *  creates and registeres a empty EOD message on the
- *  given connection.  decrements the connection count.
+ *  creates and registers a empty EOD message on the
+ *  given connection.  Decrements the connection count.
  */
 globus_result_t
 globus_l_ftp_control_data_register_eod(
@@ -6636,10 +6640,10 @@ globus_l_ftp_control_data_register_eod(
 }
 
 /*
- *  this function is kicked out when eof is not automatically sent.
+ *  this function is kicked out when EOF is not automatically sent.
  *  When not automatically sent we need to leave a final data connection
- *  open for sending the eof message.  This function will call the users
- *  callback if all reference to the eof function are gone.
+ *  open for sending the EOF message.  This function will call the users
+ *  callback if all reference to the EOF function are gone.
  *
  *  This function works like a dummy _eod callback.
  */
@@ -6713,8 +6717,8 @@ globus_l_ftp_control_send_data_kickout(
     }
 
     /*
-     *  call the send eof callback.  This is done to insure that it
-     *  is called after the eof callback
+     *  call the send EOF callback.  This is done to insure that it
+     *  is called after the EOF callback
      */
     if(send_eof_ent != GLOBUS_NULL)
     {
@@ -6884,7 +6888,7 @@ globus_l_ftp_control_io_close_kickout(
 /*
  *  globus_l_ftp_control_stripes_destroy()
  *  --------------------------------------
- *  destory all structures and connections associated with a stripe
+ *  destroy all structures and connections associated with a stripe
  *  close all data connections on a given stripe
  *  this should be called locked
  */
@@ -6904,14 +6908,14 @@ globus_l_ftp_control_stripes_destroy(
     if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING ||
        dc_handle->transfer_handle == GLOBUS_NULL)
     {
-        /* I can do this because i only use it internally */
+        /* I can do this because I only use it internally */
         return;
     }
 
     transfer_handle = dc_handle->transfer_handle;
     dc_handle->state = GLOBUS_FTP_DATA_STATE_CLOSING;
     /*
-     *  orphine transfer handle
+     *  orphan transfer handle
      */
     dc_handle->transfer_handle = GLOBUS_NULL;
 
@@ -7049,7 +7053,7 @@ globus_l_ftp_control_data_adjust_connection(
 
     /*
      *  only the writer connects
-     *  do not adjuest parrallel level if stripe set to eof
+     *  do not adjust parallel level if stripe set to EOF
      */
     if(dc_handle->state != GLOBUS_FTP_DATA_STATE_CONNECT_WRITE ||
        stripe->eof)
@@ -7250,7 +7254,7 @@ globus_l_ftp_control_command_kickout(
     {
         dc_handle->state = GLOBUS_FTP_DATA_STATE_EOF;
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
-        /* purge any callbacks registered before eof was sent */
+        /* purge any callbacks registered before EOF was sent */
         if(poll)
         {
             globus_l_ftp_data_stripe_poll(dc_handle);
@@ -7484,7 +7488,7 @@ globus_l_ftp_control_close_kickout(
     dc_handle = (globus_i_ftp_dc_handle_t *)user_args;
     GlobusFTPControlDataTestMagic(dc_handle);
     /*
-     *  transfer_handle has been orphined at this point.
+     *  transfer_handle has been orphaned at this point.
      *  However, since this function is a result of a call to force_close
      *  its reference to control_handle should still be valid.
      */
@@ -7511,7 +7515,7 @@ globus_l_ftp_control_close_kickout(
 /*
  *  globus_i_ftp_control_data_cc_destroy()
  *  --------------------------------------
- *  if the handle is in the proper state destory it.  Otherwise return
+ *  if the handle is in the proper state destroy it.  Otherwise return
  *  failure.
  */
 globus_result_t
@@ -7561,7 +7565,7 @@ globus_i_ftp_control_data_cc_destroy(
             err = globus_error_construct_string(
                       GLOBUS_FTP_CONTROL_MODULE,
                       GLOBUS_NULL,
-              _FCSL("globus_i_ftp_control_data_cc_destroy(): handle has oustanding references."));
+              _FCSL("globus_i_ftp_control_data_cc_destroy(): handle has outstanding references."));
             res = globus_error_put(err);
         }
     }
@@ -7574,7 +7578,7 @@ globus_i_ftp_control_data_cc_destroy(
  * @brief Close data connections
  * @ingroup globus_ftp_control_data
  * @details
- * Forces an imediate close of all data connections.
+ * Forces an immediate close of all data connections.
  *
  *  @param control_handle
  *         The globus_ftp_control_handle that is have its data
@@ -7664,7 +7668,7 @@ globus_ftp_control_data_force_close(
             err = globus_error_construct_string(
                       GLOBUS_FTP_CONTROL_MODULE,
                       GLOBUS_NULL,
-          _FCSL("Data connection has been closed due to a call to globus_ftp_control_data_force_close(), or by deactiviting the module."));
+          _FCSL("Data connection has been closed due to a call to globus_ftp_control_data_force_close(), or by deactivating the module."));
 
             res = globus_i_ftp_control_data_force_close(
                       dc_handle,
@@ -8073,8 +8077,8 @@ globus_l_ftp_stream_listen_callback(
 
         /*
          *  result will be not be SUCCESS if the listen failed or
-         *  if it was prematurly closed.  ie, the user called force
-         *  close before a the callback happened
+         *  if it was prematurely closed.  ie, the user called force
+         *  close before a callback happened
          */
         if(result != GLOBUS_SUCCESS)
         {
@@ -8275,7 +8279,7 @@ globus_l_ftp_stream_accept_connect_callback(
             globus_list_search(stripe->outstanding_conn_list,(void*)data_conn));
 
         /*
-         *  if an error occured the accept was either canceld or
+         *  if an error occurred the accept was either canceled or
          *  failed.
          */
         if(result != GLOBUS_SUCCESS)
@@ -8306,7 +8310,7 @@ globus_l_ftp_stream_accept_connect_callback(
    _FCSL("connection closed before a data connection request was made"));
 
             /*
-             * since globus io makes no guarentee on order of
+             * since globus io makes no guarantee on order of
              * cancel callbacks we free this structure here.
              */
             if(data_conn->free_me)
@@ -8339,7 +8343,7 @@ globus_l_ftp_stream_accept_connect_callback(
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    /* call the conenct callback */
+    /* call the connect callback */
     if(callback != GLOBUS_NULL)
     {
         callback(user_arg, control_handle, stripe_ndx, GLOBUS_FALSE, error);
@@ -8357,7 +8361,7 @@ globus_l_ftp_stream_accept_connect_callback(
             poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
         /*
-         * since conncet came back dec ref
+         * since connect came back dec ref
          */
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         /*
@@ -8432,7 +8436,7 @@ globus_l_ftp_stream_write_callback(
         offset = data_conn->offset;
         data_conn->offset += entry->length;
 
-        /* if an error occured get it and set eof to true */
+        /* if an error occurred get it and set EOF to true */
         if(result != GLOBUS_SUCCESS)
         {
             error = globus_error_get(result);
@@ -8594,7 +8598,7 @@ globus_l_ftp_stream_read_callback(
             error = globus_error_get(result);
             type = globus_object_get_type(error);
 
-            /* if it is eof do not pas the user back an error */
+            /* if it is EOF do not pass the user back an error */
             if(globus_io_eof(error))
             {
                 globus_object_free(error);
@@ -8658,7 +8662,7 @@ globus_l_ftp_stream_read_callback(
                 {
                     globus_fifo_enqueue(&stripe->free_conn_q, data_conn);
                     /*
-                     * register a read of 1 byte over to prompt eof
+                     * register a read of 1 byte over to prompt EOF
                      */
                     res = globus_l_ftp_control_data_stream_read_write(
                               dc_handle,
@@ -8736,12 +8740,12 @@ globus_l_ftp_stream_read_callback(
  *  called when a connection request is made, or when the listener
  *  is closed
  *
- *  reregister the listener unless CLOSING or an error occured
+ *  reregister the listener unless CLOSING or an error occurred
  *
  *  QUESTION:
- *  do we want the connect callback called everytime there is a
+ *  do we want the connect callback called every time there is a
  *  connection made or only the first time.  If it is every time
- *  we need to not set the callback areg of the reregistered data
+ *  we need to not set the callback arg of the reregistered data
  *  conn to GLOBUS_NULL and find a way to deal with the CLOSING state
  */
 void
@@ -8843,7 +8847,7 @@ globus_l_ftp_eb_listen_callback(
             {
                /*
                 *  re-register the listen
-                *  see QUESTION above about conncetion callbacks
+                *  see QUESTION above about connection callbacks
                 */
                 transfer_handle->ref++;
                 DATA_CONN_MALLOC(data_conn2, stripe, GLOBUS_NULL, GLOBUS_NULL);
@@ -8859,7 +8863,7 @@ globus_l_ftp_eb_listen_callback(
             }
         }
         /* this will happen if we got a force_close after the connect_read but
-         * before this callback.  just continue with an error */
+         * before this callback.  Just continue with an error */
         else if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
         {
             error =  globus_error_construct_string(
@@ -8888,7 +8892,7 @@ globus_l_ftp_eb_listen_callback(
 
     /*
      *  if there was an error call the connect callback and decrement
-     *  the refernce count that the callback had.
+     *  the reference count that the callback had.
      */
     if(callback != GLOBUS_NULL)
     {
@@ -8962,7 +8966,7 @@ globus_l_ftp_eb_accept_callback(
             globus_list_search(stripe->outstanding_conn_list, data_conn));
         /*
          *  The result may be != SUCCESS for 1 of 2 reasons.
-         *     connection was closed resulting in a cancel callbcak
+         *     connection was closed resulting in a cancel callback
          *        call the user callback with an error
          *     accept failed
          *        tear down the stripe and call the user callback
@@ -8981,7 +8985,7 @@ globus_l_ftp_eb_accept_callback(
             }
 
             /*
-             *  TODO: ?: if a big buffer ois registered kickout its callback
+             *  TODO: ?: if a big buffer is registered kickout its callback
              */
         }
         /*
@@ -8997,7 +9001,7 @@ globus_l_ftp_eb_accept_callback(
    _FCSL("connection closed before a data connection request was made"));
 
             /*
-             * since globus io makes no guarentee on order of
+             * since globus io makes no guarantee on order of
              * cancel callbacks we free this structure here.
              */
             if(data_conn->free_me)
@@ -9028,7 +9032,7 @@ globus_l_ftp_eb_accept_callback(
             eb_header = (globus_l_ftp_eb_header_t *)
                           globus_malloc(sizeof(globus_l_ftp_eb_header_t));
 
-            /* count activae connections and total connections */
+            /* count active connections and total connections */
             data_conn->bytes_ready = 0;
 
             res = globus_io_register_read(
@@ -9057,8 +9061,8 @@ globus_l_ftp_eb_accept_callback(
 
 
     /*
-     *  notify the user that a connection has been esstablished,
-     *  then decerement the reference that the callback had.
+     *  notify the user that a connection has been established,
+     *  then decrement the reference that the callback had.
      */
     if(callback != GLOBUS_NULL)
     {
@@ -9621,7 +9625,7 @@ globus_l_ftp_eb_connect_callback(
             globus_list_search(stripe->outstanding_conn_list, data_conn));
         /*
          *  if closing at this point we call the user callback with
-         *  an error indicationg that the connection ack was never read
+         *  an error indicating that the connection ack was never read
          */
         if(result != GLOBUS_SUCCESS)
         {
@@ -9640,7 +9644,7 @@ globus_l_ftp_eb_connect_callback(
             }
             /*
              *  if the user requested the close the stripes had
-             *  already been registered for tearn down.
+             *  already been registered for tear down.
              */
             else
             {
@@ -9661,8 +9665,8 @@ globus_l_ftp_eb_connect_callback(
             if(stripe->eof)
             {
                 /*
-                 *  get the eof entry struture and decrement its reference.
-                 *  If it is the final refernce call the uses callback.
+                 *  get the eof entry structure and decrement its reference.
+                 *  If it is the final reference call the uses callback.
                  */
                 eof_cb_ent = globus_handle_table_lookup(
                                  &transfer_handle->handle_table,
@@ -9687,7 +9691,7 @@ globus_l_ftp_eb_connect_callback(
    _FCSL("connection closed before a data connection request was made"));
 
             /*
-             * since globus io makes no guarentee on order of
+             * since globus io makes no guarantee on order of
              * cancel callbacks we free this structure here.
              */
             if(data_conn->free_me)
@@ -9700,7 +9704,7 @@ globus_l_ftp_eb_connect_callback(
             }
         }
         /*
-         *  if we connected succesfully
+         *  if we connected successfully
          */
         else
         {
@@ -9762,7 +9766,7 @@ globus_l_ftp_eb_connect_callback(
     globus_mutex_lock(&dc_handle->mutex);
     {
         /*
-         * since conncet came back dec ref
+         * since connect came back dec ref
          */
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         globus_assert(poll || (callback == NULL && eof_callback == NULL));
@@ -9838,7 +9842,7 @@ globus_l_ftp_eb_write_callback(
         globus_assert(eb_header->descriptor == 0);
 
         /*
-         *  if there was error or we have been prematurly closed
+         *  if there was error or we have been prematurely closed
          *  just rip the sucker down.
          */
         if(result != GLOBUS_SUCCESS)
@@ -9857,7 +9861,7 @@ globus_l_ftp_eb_write_callback(
                 error = globus_error_construct_string(
                        GLOBUS_FTP_CONTROL_MODULE,
                        error,
-                       _FCSL("connection prematurly closed"));
+                       _FCSL("connection prematurely closed"));
             }
             eof = GLOBUS_TRUE;
         }
@@ -9895,7 +9899,7 @@ globus_l_ftp_eb_write_callback(
                  * if we are not sending eof automatically then
                  * send eod on all but the last connection.
                  * the last connection is needed for sending
-                 * the EOF message accross.
+                 * the EOF message across.
                  */
                 else
                 {
@@ -10041,7 +10045,7 @@ globus_l_ftp_eb_write_callback(
         transfer_handle->eof_cb_ent = GLOBUS_NULL;
     }
     /*
-     * for nonautomatic eof sends
+     * for non-automatic EOF sends
      */
     if(send_eof_ent != GLOBUS_NULL)
     {
@@ -10181,7 +10185,7 @@ globus_l_ftp_eb_send_eof_callback(
                 error = globus_error_construct_string(
                        GLOBUS_FTP_CONTROL_MODULE,
                        GLOBUS_NULL,
-                       _FCSL("connection prematurly closed"));
+                       _FCSL("connection prematurely closed"));
             }
         }
         else
@@ -10203,7 +10207,7 @@ globus_l_ftp_eb_send_eof_callback(
              *  if data_write(eof = 1) callback has happened we
              *  can kick out this callback other wise we cache the
              *  send_eof_ent and call its callback after the data_write
-             *  eof has occured.
+             *  eof has occurred.
              */
             if(dc_handle->state == GLOBUS_FTP_DATA_STATE_SEND_EOF)
             {
@@ -10298,7 +10302,7 @@ globus_l_ftp_eb_eof_eod_callback(
         if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
         {
         }
-        /* if an error occured */
+        /* if an error occurred */
         else if(result != GLOBUS_SUCCESS)
         {
             error = globus_error_get(result);
@@ -10315,7 +10319,7 @@ globus_l_ftp_eb_eof_eod_callback(
                 error = globus_error_construct_string(
                        GLOBUS_FTP_CONTROL_MODULE,
                        GLOBUS_NULL,
-                       _FCSL("connection prematurly closed"));
+                       _FCSL("connection prematurely closed"));
             }
         }
         else
@@ -10344,8 +10348,8 @@ globus_l_ftp_eb_eof_eod_callback(
         }
 
         /*
-         *  get the eof entry struture and decrement its reference.
-         *  If it is the final refernce call the uses callback.
+         *  get the eof entry structure and decrement its reference.
+         *  If it is the final reference call the uses callback.
          */
         eof_cb_ent = globus_handle_table_lookup(
                          &transfer_handle->handle_table,

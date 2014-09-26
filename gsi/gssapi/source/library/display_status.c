@@ -26,8 +26,8 @@
 /**
  * @brief Display Status
  * @ingroup globus_gsi_gssapi
- * Calls the SSLeay error print routines to produce a printable
- * message. This may need some work, as the SSLeay error messages 
+ * Calls the OpenSSL error print routines to produce a printable
+ * message. This may need some work, as the OpenSSL error messages 
  * are more of a trace, and my not be the best for the user. 
  * Also don't take advantage of being called in a loop. 
  *
@@ -88,8 +88,7 @@ GSS_CALLCONV gss_display_status(
             break;
         
         case GSS_S_BAD_NAME:
-            reason = "Service or hostname could "
-                "not be understood";
+            reason = "Service or hostname could not be understood";
             break;
         
         case GSS_S_UNAUTHORIZED:

@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_proxy_handle.c
+ * @brief @brief GSI Proxy Handle
  * @author Sam Meder, Sam Lang
  */
-
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #define GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(_LENGTH_) \
     globus_error_put(globus_error_wrap_errno_error( \
@@ -822,9 +824,9 @@ globus_gsi_proxy_handle_get_policy(
  * @brief Add X.509 Extensions
  * @ingroup globus_gsi_proxy_handle
  * @details
- * Add an X509 extension to the GSI Proxy handle to be added to certificate
+ * Add an X.509 extension to the GSI Proxy handle to be added to certificate
  *
- * This function adds a X509 extension to the proxy certificate.
+ * This function adds a X.509 extension to the proxy certificate.
  *
  * @param handle
  *        The handle for the proxy to which the extension should be added.
@@ -835,8 +837,8 @@ globus_gsi_proxy_handle_get_policy(
  *        GLOBUS_SUCCESS if the addition was successful, otherwise an
  *        error is returned.
  *
- * @see globus_gsi_proxy_hande_get_extensions()
- * @see globus_gsi_proxy_hande_set_extensions()
+ * @see globus_gsi_proxy_handle_get_extensions()
+ * @see globus_gsi_proxy_handle_set_extensions()
  */
 globus_result_t
 globus_gsi_proxy_handle_add_extension(
@@ -874,7 +876,7 @@ globus_gsi_proxy_handle_add_extension(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-                (_PCSL("Failed to allocation new X509 Extension stack: %s"), _function_name_));
+                (_PCSL("Failed to allocation new X.509 Extension stack: %s"), _function_name_));
             goto exit;
         }
     }
@@ -894,9 +896,9 @@ globus_gsi_proxy_handle_add_extension(
  * @brief Set X.509 Extensions
  * @ingroup globus_gsi_proxy_handle
  * @details
- * Set the X509 extensions from a GSI Proxy handle
+ * Set the X.509 extensions from a GSI Proxy handle
  *
- * This function sets the X509 extensions for a proxy certificate.
+ * This function sets the X.509 extensions for a proxy certificate.
  *
  * @param handle
  *        The handle for the proxy from which the extension should be set.
@@ -907,8 +909,8 @@ globus_gsi_proxy_handle_add_extension(
  *        GLOBUS_SUCCESS if the addition was successful, otherwise an
  *        error is returned.
  *
- * @see globus_gsi_proxy_hande_add_extension()
- * @see globus_gsi_proxy_hande_get_extensions()
+ * @see globus_gsi_proxy_handle_add_extension()
+ * @see globus_gsi_proxy_handle_get_extensions()
  */
 globus_result_t
 globus_gsi_proxy_handle_set_extensions(
@@ -948,7 +950,7 @@ globus_gsi_proxy_handle_set_extensions(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-                (_PCSL("Failed to duplicate X509 Extension stack: %s"), _function_name_));
+                (_PCSL("Failed to duplicate X.509 Extension stack: %s"), _function_name_));
             goto exit;
         }
     }
@@ -966,9 +968,9 @@ globus_gsi_proxy_handle_set_extensions(
  * @brief Get X.509 Extensions
  * @ingroup globus_gsi_proxy_handle
  * @details
- * Get the X509 extensions from a GSI Proxy handle
+ * Get the X.509 extensions from a GSI Proxy handle
  *
- * This function returns the X509 extensions from the proxy certificate.
+ * This function returns the X.509 extensions from the proxy certificate.
  *
  * @param handle
  *        The handle for the proxy from which the extensions should be
@@ -982,8 +984,8 @@ globus_gsi_proxy_handle_set_extensions(
  *        GLOBUS_SUCCESS if the retrieval was successful, otherwise an
  *        error is returned.
  *
- * @see globus_gsi_proxy_hande_add_extension()
- * @see globus_gsi_proxy_hande_set_extensions()
+ * @see globus_gsi_proxy_handle_add_extension()
+ * @see globus_gsi_proxy_handle_set_extensions()
  */
 globus_result_t
 globus_gsi_proxy_handle_get_extensions(
@@ -1019,7 +1021,7 @@ globus_gsi_proxy_handle_get_extensions(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("Failed to duplicate X509 Extension stack: %s"), _function_name_));
+            (_PCSL("Failed to duplicate X.509 Extension stack: %s"), _function_name_));
         goto exit;
     }
 
@@ -1364,11 +1366,9 @@ globus_gsi_proxy_handle_get_proxy_cert_info(
  *        The handle for which to set the proxy cert info extension.
  * @param pci
  *        The proxy cert info extension to set.
- * @return
- *        GLOBUS_SUCCESS upon success
- *        GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE if handle is invalid
- *        GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO if the pci
- *        pointer is invalid or if the set failed.
+ * @retval GLOBUS_SUCCESS Success
+ * @retval GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE Handle is invalid
+ * @retval GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO pci pointer is invalid or if the set failed.
  */
 globus_result_t
 globus_gsi_proxy_handle_set_proxy_cert_info(
@@ -1426,10 +1426,9 @@ globus_gsi_proxy_handle_set_proxy_cert_info(
  * @param signing_algorithm
  *        signing algorithm of the proxy handle
  * 
- * @result
+ * @retval
  *        GLOBUS_SUCCESS unless an error occurred, in which case, 
  *        a globus error object ID is returned
- *        GLOBUS_SUCCESS
  */
 globus_result_t
 globus_gsi_proxy_handle_get_signing_algorithm(

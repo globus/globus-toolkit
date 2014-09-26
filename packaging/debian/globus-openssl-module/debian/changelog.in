@@ -1,3 +1,12 @@
+globus-openssl-module (4.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Include more manpages for API
+  * Use consistent PREDEFINED in all Doxyfiles
+  * Doxygen markup fixes
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Sep 2014 11:53:45 -0400
+
 globus-openssl-module (4.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

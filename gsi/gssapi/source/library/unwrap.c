@@ -32,7 +32,7 @@
  * received and wraped by wrap.c
  *
  * Return the data from the wrapped buffer. There may also
- * be errors, such as integraty errors. 
+ * be errors, such as integrity errors. 
  * Since we can not communicate directly with our peer,
  * we can not do everything SSL could, i.e. return a token
  * for example. 
@@ -43,8 +43,6 @@
  * @param output_message_buffer
  * @param conf_state
  * @param qop_state
- * 
- * @return
  */
 OM_uint32 
 GSS_CALLCONV gss_unwrap(
@@ -331,11 +329,11 @@ GSS_CALLCONV gss_unwrap(
  * @brief Unseal
  * @ingroup globus_gsi_gssapi
  * @details
- * Obsolete variant of gss_wrap for V1 compatability 
+ * Obsolete variant of gss_wrap for V1 compatibility 
  * allow for non 32 bit integer in qop_state.
  *
  * Return the data from the wrapped buffer. There may also
- * be errors, such as integraty errors. 
+ * be errors, such as integrity errors. 
  * Since we can not communicate directly with our peer,
  * we can not do everything SSL could, i.e. return a token
  * for example. 
@@ -346,8 +344,6 @@ GSS_CALLCONV gss_unwrap(
  * @param output_message_buffer
  * @param conf_state
  * @param qop_state
- *
- * @return
  */
 OM_uint32 
 GSS_CALLCONV gss_unseal(

@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file globus_extension.h Globus Extension Modules */
+/**
+ * @file globus_extension.h
+ * @brief Globus Extension Modules
+ */
+
 #ifndef GLOBUS_EXTENSION_H
 #define GLOBUS_EXTENSION_H
 

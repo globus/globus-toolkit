@@ -1,6 +1,7 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_openssl_module],[4.5],[https://globus.atlassian.net/])
+AC_INIT([globus_openssl_module],[4.6],[https://globus.atlassian.net/])
+AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [4])

@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS=-I m4
 SUBDIRS = init config . test
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -9,8 +10,13 @@ include_HEADERS = \
 lib_LTLIBRARIES = libglobus_scheduler_event_generator.la
 sbin_PROGRAMS = globus-scheduler-event-generator
 sbin_SCRIPTS = globus-scheduler-event-generator-admin
-doc_DATA = GLOBUS_LICENSE
+doc_DATA = GLOBUS_LICENSE \
+        globus-scheduler-event-generator.txt \
+        globus-scheduler-event-generator-admin.txt
 pkgconfig_DATA = globus-scheduler-event-generator.pc
+man_MANS = \
+        globus-scheduler-event-generator.8 \
+        globus-scheduler-event-generator-admin.8
 
 libglobus_scheduler_event_generator_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 libglobus_scheduler_event_generator_la_LIBADD = $(PACKAGE_DEP_LIBS)
@@ -32,7 +38,7 @@ globus_scheduler_event_generator_LDADD = \
 	libglobus_scheduler_event_generator.la \
 	$(PACKAGE_DEP_LIBS)
 
-EXTRA_DIST = dirt.sh protocol.dox $(doc_DATA)
+EXTRA_DIST = dirt.sh protocol.dox $(doc_DATA) $(man_MANS)
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN
@@ -41,6 +47,7 @@ DOC_STAMPS += doc-stamp
 doc-stamp: Doxyfile $(libglobus_scheduler_event_generator_la_SOURCES)
 	rm -rf doc
 	$(DOXYGEN)
+	rm -f doc/man/man3/globus_scheduler_event_generator.3
 	touch $@
 
 clean-local:
@@ -52,7 +59,7 @@ all-local: $(DOC_STAMPS)
 install-data-local: $(DOC_STAMPS)
 	if test -d doc/man/man3; then \
 		install -d -m 755 $(DESTDIR)$(mandir)/man3; \
-	        $(INSTALL) -m 644 doc/man/man3/globus*.3 $(DESTDIR)$(mandir)/man3 ; \
+	        $(INSTALL) -m 644 doc/man/man3/[Gg][Ll][Oo][Bb][Uu][Ss]*.3 $(DESTDIR)$(mandir)/man3 ; \
         fi
 	if test -d doc/html; then \
 		for dir in `(cd doc; find html -type d)`; do \

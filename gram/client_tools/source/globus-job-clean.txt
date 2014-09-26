@@ -1,0 +1,72 @@
+GLOBUS-JOB-CLEAN(1)
+===================
+:doctype:      manpage
+:man source:   University of Chicago
+:man manual:   Globus Toolkit Manual
+
+NAME
+----
+globus-job-clean - Cancel and clean up a GRAM batch job
+
+[[globus-job-clean-SYNOPSIS]]
+SYNOPSIS
+--------
+*globus-job-clean* [OPTIONS] 'JOBID'
+
+*globus-job-clean* [ -help | -usage | -version | -versions ]
+
+[[globus-job-clean-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *globus-job-clean* program cancels the job named by 'JOBID' if
+it is still running, and then removes any cached files on the GRAM service node
+related to that job. In order to do the file clean up, it submits a job which
+removes the cache files. By default this cleanup job is submitted to the
+default GRAM resource running on the same host as the job. This behavior can be
+controlled by specifying a resource manager contact string as the parameter to
+the '-r' or '-resource' option.
+
+By default, *globus-job-clean* prompts the user prior to canceling the job.
+This behavior can be overridden by specifying the '-f' or
+'-force' command-line options.
+
+[[globus-job-clean-OPTIONS]]
+OPTIONS
+-------
+*-help, -usage*::
+    Display a help message to standard error and exit.
+
+*-version*::
+    Display the software version of the *globus-job-clean* program to standard
+    output.
+
+*-versions*::
+    Display the software version of the *globus-job-clean* program including
+    DiRT information to standard output.
+
+*-resource 'RESOURCE', -resource 'RESOURCE'*::
+    Submit the clean-up job to the resource named by 'RESOURCE' instead of the
+    default GRAM service on the same host as the job
+    contact.
+
+*-force, -f*::
+    Do not prompt to confirm job cancel and clean-up.
+
+*-quiet, -q*::
+    Do not print diagnostics for succesful clean-up.  Implies '-f'.
+
+[[globus-job-clean-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following variables affect the execution of *globus-job-clean*.
+
+*X509_USER_PROXY*::
+    Path to proxy credential.
+
+*X509_CERT_DIR*::
+    Path to trusted certificate directory.
+
+[[globus-job-clean-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

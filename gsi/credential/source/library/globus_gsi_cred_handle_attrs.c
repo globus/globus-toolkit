@@ -17,11 +17,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_cred_handle_attrs.c
+ * @brief Globus GSI Credential Library
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 
@@ -44,11 +41,9 @@
                 GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]))
 
 /**
- * @name Credential Handle Attributes Initialization and Destruction
- */
-/* @{ */
-/**
+ * @brief Initialize credential handle attributes
  * @ingroup globus_gsi_cred_handle_attrs
+ * @details
  * Initializes the immutable Credential Handle Attributes
  * The handle attributes are initialized as follows:
  *
@@ -58,7 +53,7 @@
  * @param handle_attrs
  *        the attributes to be initialized
  * @return
- *        GLOBUS_SUCESS if initialization was successful,
+ *        GLOBUS_SUCCESS if initialization was successful,
  *        otherwise an error is returned
  */
 globus_result_t 
@@ -112,10 +107,12 @@ globus_gsi_cred_handle_attrs_init(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* globus_gsi_cred_handle_attrs_init */
+/* globus_gsi_cred_handle_attrs_init() */
 
 /**
+ * @brief Destroy credential handle attributes
  * @ingroup globus_gsi_cred_handle_attrs
+ * @details
  * Destroy the Credential Handle Attributes.  This function
  * does some cleanup and deallocation of the handle attributes.
  * 
@@ -125,7 +122,8 @@ globus_gsi_cred_handle_attrs_init(
  * @return 
  *        GLOBUS_SUCCESS
  */
-globus_result_t globus_gsi_cred_handle_attrs_destroy(
+globus_result_t
+globus_gsi_cred_handle_attrs_destroy(
     globus_gsi_cred_handle_attrs_t     handle_attrs)
 {
     static char *                       _function_name_ =
@@ -147,14 +145,12 @@ globus_result_t globus_gsi_cred_handle_attrs_destroy(
     
     return GLOBUS_SUCCESS;
 }
-/* @} */
+/* globus_gsi_cred_handle_attrs_destroy() */
 
 /**
- * @name Copy Credential Handle Attributes
- */
-/* @{ */
-/**
+ * @brief Copy credential handle attributes
  * @ingroup globus_gsi_cred_handle_attrs
+ * @details
  * Copy the Credential Handle Attributes. 
  *
  * @param source
@@ -227,15 +223,12 @@ globus_gsi_cred_handle_attrs_copy(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* globus_gsi_cred_handle_attrs_copy */
-/* @} */
+/* globus_gsi_cred_handle_attrs_copy() */
     
 /** 
- * @name Seting and Getting the CA Cert Dir
- */
-/* @{ */
-/**
+ * @brief Set the CA certificate directory
  * @ingroup globus_gsi_cred_handle_attrs
+ * @details
  * Set the Trusted CA Certificate Directory Location
  *
  * @param handle_attrs
@@ -276,10 +269,13 @@ globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* globus_gsi_cred_handle_attrs_set_ca_cert_dir() */
 
 /** 
- * Get the trusted ca cert directory
+ * @brief Get the CA certificate directory
  * @ingroup globus_gsi_cred_handle_attrs
+ * @details
+ * Get the trusted CA certificate directory
  *
  * @param handle_attrs
  *        the credential handle attributes to get the trusted ca cert 
@@ -336,14 +332,12 @@ globus_gsi_cred_handle_attrs_get_ca_cert_dir(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_handle_attrs_get_ca_cert_dir() */
 
 /**
- * @name Setting and Getting the Search Order
- */
-/* @{ */
-/**
+ * @brief Set the search order
  * @ingroup globus_gsi_cred_handle_attrs
+ * @details
  * Set the search order for finding a user certificate.  The
  * default value is {SERVICE, HOST, PROXY, USER}
  *
@@ -357,7 +351,8 @@ globus_gsi_cred_handle_attrs_get_ca_cert_dir(
  * @return 
  *        GLOBUS_SUCCESS unless handle_attrs is null
  */
-globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
+globus_result_t
+globus_gsi_cred_handle_attrs_set_search_order(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     globus_gsi_cred_type_t              search_order[])
 {
@@ -402,9 +397,12 @@ globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* globus_gsi_cred_handle_attrs_set_search_order() */
 
 /**
+ * @brief Get the search order
  * @ingroup globus_gsi_cred_handle_attrs
+ * @details
  * Get the search order of the handle attributes
  *
  * @param handle_attrs
@@ -414,7 +412,8 @@ globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
  * @return
  *        GLOBUS_SUCCESS unless handle_attrs is null
  */
-globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
+globus_result_t
+globus_gsi_cred_handle_attrs_get_search_order(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     globus_gsi_cred_type_t **           search_order)
 {
@@ -468,4 +467,4 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_handle_attrs_get_search_order() */

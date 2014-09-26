@@ -1,0 +1,55 @@
+GLOBUS-UPDATE-CERTIFICATE-DIR(8)
+================================
+:doctype:       manpage
+:man source:    University of Chicago
+:man manual:    Globus Toolkit
+
+NAME
+----
+globus-update-certificate-dir - Update symlinks in the trusted CA directory
+
+[[globus-update-certificate-dir-SYNOPSIS]]
+SYNOPSIS
+--------
+*globus-update-certificate-dir* -help
+
+*globus-update-certificate-dir* [-d 'DIRECTORY']
+
+[[globus-update-certificate-dir-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *globus-update-certificate-dir* program creates symlinks between
+files (CA certificates, certificate revocation lists, signing policy, and
+certificate request configuration files) using the certificate hash the
+installed version of OpenSSL uses. OpenSSL 1.0.0 uses a different name hashing
+algorithm than previous versions, so CA distributions created with older
+versions of OpenSSL might not be able to locate trusted CAs and related files.
+Running *globus-update-certificate-dir* against a trusted CA directory will
+add symlinks to the files to the hash if needed.
+
+[[globus-update-certificate-dir-OPTIONS]]
+OPTIONS
+-------
+*-help*::
+    Display a help message to standard output and exit
+*-d 'DIRECTORY'*::
+    Create links in the trusted CA directory 'DIRECTORY' instead of using the
+    default search path.
+
+[[globus-update-certificate-dir-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following variables affect the execution of
+*globus-update-certificate-dir*:
+
+*X509_CERT_DIR*::
+    Default trusted certificate directory.
+*HOME*::
+    Path to the current user's home directory.
+*GLOBUS_LOCATION*::
+    Path to the Globus installation.
+
+[[globus-update-certificate-dir-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

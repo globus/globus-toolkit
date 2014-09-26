@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_args.h Command-line Argument Parser */
+/**
+ * @file globus_args.h
+ * @brief Command-line Argument Parser
+ */
 
 #ifndef GLOBUS_ARGS_H
 #define GLOBUS_ARGS_H

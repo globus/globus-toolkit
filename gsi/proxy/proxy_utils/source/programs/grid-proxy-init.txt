@@ -1,0 +1,181 @@
+GRID-PROXY-INIT(1)
+==================
+:doctype:      manpage
+:man source:   University of Chicago
+:man manual:   Globus Toolkit
+
+NAME
+----
+grid-proxy-init - Generate a new proxy certificate
+
+[[grid-proxy-init-SYNOPSIS]]
+SYNOPSIS
+--------
+*grid-proxy-init* -help | -usage | -version
+
+*grid-proxy-init* [OPTIONS]
+
+[[grid-proxy-init-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *grid-proxy-init* program generates X.509 proxy certificates derived from
+the currently available certificate files.  By default, this command generates
+a <ulink url="http://www.ietf.org/rfc/rfc3820.txt">RFC 3820</ulink> Proxy
+Certificate with a 1024 bit key, valid for 12 hours, in a file named
++/tmp/x509up_u'UID'+.  Command-line options and environment variables can
+modify the format, strength, lifetime, and location of the generated proxy
+certificate.
+
+X.509 proxy certificates are short-lived certificates, signed usually by a
+user's identity certificate or another proxy certificate. The key associated
+with a proxy certificate is unencrypted, so applications can authenticate using
+a proxy identity without providing a pass phrase.
+
+Proxy certificates provide a convenient alternative to constantly entering
+passwords, but are also less secure than the user's normal security credential.
+Therefore, they should always be user-readable only (this is enforced by the
+GSI libraries), and should be deleted after they are no longer needed.
+
+This version of *grid-proxy-init* supports three different proxy formats: the
+old proxy format used in early releases of the Globus Toolkit up to version
+2.4.x, an IETF draft version of X.509 Proxy Certificate profile used in Globus
+Toolkit 3.0.x and 3.2.x, and the RFC 3820 profile used in Globus Toolkit
+Version 4.0.x and 4.2.x. By default, this version of *grid-proxy-init* creates
+an RFC 3820 compliant proxy. To create a proxy compatible with older versions
+of the Globus Toolkit, use the '-old' or '-draft' command-line options.
+
+[[grid-proxy-init-OPTIONS]]
+OPTIONS
+-------
+The full set of command-line options to *grid-proxy-init* are:
+
+*-help, -usage*::
+    Display the command-line options to *grid-proxy-init*.
+*-version*::
+    Display the version number of the *grid-proxy-init* command.
+*-debug*::
+    Display information about the path to the certificate and key used to
+    generate the proxy certificate, the path to the trusted certificate
+    directory, and verbose error messages.
+*-q*::
+    Suppress all output from *grid-proxy-init* except for pass phrase prompts.
+*-verify*::
+    Perform certificate chain validity checks on the generated proxy.
+*-valid 'HOURS:MINUTES', -hours 'HOURS'*::
+    Create a certificate that is valid for 'HOURS' hours and 'MINUTES' minutes.
+    If not specified, the default of twelve hours is used.
+*-cert 'CERTFILE', -key 'KEYFILE'*::
+    Create a proxy certificate signed by the certificate located in
+    'CERTFILE' using the key located in 'KEYFILE'. If not specified the default
+    certificate and key will be used. This overrides the values of environment
+    variables described below.
+*-certdir 'CERTDIR'*::
+    Search 'CERTDIR' for trusted certificates if verifying the proxy
+    certificate. If not specified, the default trusted certificate search path
+    is used. This overrides the value of the `X509_CERT_DIR`
+    environment variable.
+*-out 'PROXYPATH'*::
+    Write the generated proxy certificate file to 'PROXYPATH' instead of the
+    default path of +/tmp/x509up_u'UID'+.
+*-bits 'BITS'*::
+    When creating the proxy certificate, use a 'BITS' bit key instead of the
+    default 1024-bit keys.
+*-policy 'POLICYFILE'*::
+    Add the certificate policy data described in 'POLICYFILE' as the
+    ProxyCertInfo X.509 extension to the generated proxy
+    certificate.
+*-pl 'POLICY-OID', -policy-language 'POLICY-OID'*::
+    Set the policy language identifier of the policy data specified by the
+    '-policy' command-line option to the OID specified by the 'POLICY-OID'
+    string.
+*-path-length 'MAXIMUM'*::
+    Set the maximum length of the chain of proxies that can be created by the
+    generated proxy to 'MAXIMUM'. If not set, the default of an unlimited proxy
+    chain length is used.
+*-pwstdin*::
+    Read the private key's pass phrase from standard input instead of reading
+    input from the controlling tty. This is useful when scripting
+    *grid-proxy-init*.
+*-limited*::
+    Create a limited proxy. Limited proxies are generally refused by
+    process-creating services, but may be used to authorize with other
+    services.
+*-independent*::
+    Create an independent proxy. An independent proxy is not treated as an
+    impersonation proxy but as a separate identity for authorization
+    purposes.
+*-draft*::
+    Create a IETF draft proxy instead of the default RFC 3280-compliant proxy.
+    This type of proxy uses a non-standard proxy policy identifier. This might
+    be useful for authenticating with older versions of the Globus
+    Toolkit.
+*-old*::
+    Create a legacy proxy instead of the default RFC 3280-compliant proxy. This
+    type of proxy uses a non-standard method of indicating that the certificate
+    is a proxy and whether it is limited.  This might be useful for
+    authenticating with older versions of the Globus
+    Toolkit.
+*-rfc*::
+    Create an RFC 3820-compliant proxy certificate. This is the default for
+    this version of *grid-proxy-init*.
+
+[[grid-proxy-init-EXAMPLES]]
+EXAMPLES
+--------
+To create a proxy with the default lifetime and format, run the
+*grid-proxy-init* program with no arguments. For example:
+    
+    % grid-proxy-init
+    Your identity: /DC=org/DC=example/CN=Joe User
+    Enter GRID pass phrase for this identity: XXXXXXX
+    Creating proxy .................................. Done
+    Your proxy is valid until: Thu Mar 18 03:48:05 2010
+    
+To create a stronger proxy that lasts for only 8 hours, use the
+'-hours' and '-bits' command-line options to *grid-proxy-init*. For example:
+    
+    % grid-proxy-init -hours 8 -bits 4096
+    Your identity: /DC=org/DC=example/CN=Joe User
+    Enter GRID pass phrase for this identity: XXXXXXX
+    Creating proxy .................................. Done
+    Your proxy is valid until: Thu Mar 17 23:48:05 2010
+
+[[grid-proxy-init-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following environment variables affect the execution of *grid-proxy-init*:
+
+*X509_USER_CERT*::
+    Path to the certificate to use as issuer of the new proxy.
+*X509_USER_KEY*::
+    Path to the key to use to sign the new proxy.
+*X509_CERT_DIR*::
+    Path to the directory containing trusted certificates and signing
+    policies.
+
+[[grid-proxy-init-FILES]]
+FILES
+-----
+The following files affect the execution of *grid-proxy-init*:
+
+*$HOME/.globus/usercert.pem*::
+    Default path to the certificate to use as issuer of the new
+    proxy.
+*$HOME/.globus/userkey.pem*::
+    Default path to the key to use to sign the new proxy.
+
+[[grid-proxy-init-COMPATIBILITY]]
+COMPATIBILITY
+-------------
+For more information about proxy certificate types and their compatibility in
+GT, see http://dev.globus.org/wiki/Security/ProxyCertTypes
+
+[[grid-proxy-init-SEEALSO]]
+SEE ALSO
+--------
+grid-proxy-destroy(1), grid-proxy-info(1)
+
+[[grid-proxy-init-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

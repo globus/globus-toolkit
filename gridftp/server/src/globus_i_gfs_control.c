@@ -3439,7 +3439,7 @@ globus_l_gfs_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         3,
         3,
-        "SITE SETNETSTACK <sp> comma seperated list of xio drivers for the data channel",
+        "SITE SETNETSTACK <sp> comma separated list of xio drivers for the data channel",
         instance);
     if(result != GLOBUS_SUCCESS)
     {
@@ -3452,7 +3452,7 @@ globus_l_gfs_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         3,
         3,
-        "SITE SETDISKSTACK <sp> comma seperated list of xio drivers for the disk channel",
+        "SITE SETDISKSTACK <sp> comma separated list of xio drivers for the disk channel",
         instance);
     if(result != GLOBUS_SUCCESS)
     {

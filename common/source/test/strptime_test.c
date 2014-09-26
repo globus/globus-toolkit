@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file strptime_test.c Test the functionality in globus_strptime.c */
+/**
+ * @file strptime_test.c
+ * @brief Test the functionality in globus_strptime.c
+ */
 
 #include "globus_common.h"
 #include "globus_test_tap.h"

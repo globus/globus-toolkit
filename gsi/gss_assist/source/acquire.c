@@ -58,8 +58,8 @@ static char * oid_names[] = {
  *        This needs to be passed to many gss routines. 
  *
  * @return
- *        GSS_S_COMPLETE on sucess
- *        Other GSS return codes 
+ *        GSS_S_COMPLETE on success
+ *        Other GSSAPI return codes 
  */
 OM_uint32
 globus_gss_assist_acquire_cred(
@@ -79,13 +79,13 @@ globus_gss_assist_acquire_cred(
  * @ingroup globus_gss_assist_credential
  * Called once at the start of the process, to 
  * obtain the credentials the process is running under. 
- * All the parameters of the gss_acquire_cred,
+ * All the parameters of the gss_acquire_cred(),
  * except the desired_name is a string of the form:
  * [type:]name. This will be imported with the type.
  *
  * @return 
- *         GSS_S_COMPLETE on sucess
- *         Other GSS return codes 
+ *         GSS_S_COMPLETE on success
+ *         Other GSSPI return codes 
  *
  * @see globus_gss_acquire_cred
  */

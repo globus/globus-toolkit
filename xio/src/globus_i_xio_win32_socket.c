@@ -586,7 +586,7 @@ globus_l_xio_win32_socket_register_read(
         }
         
         read_info->state = GLOBUS_I_XIO_SYSTEM_OP_PENDING;
-        /* if select() functionality requested, only handle after we recieve
+        /* if select() functionality requested, only handle after we receive
          * read event
          */
         if(read_info->waitforbytes > 0 || handle->ready_events & FD_READ)
@@ -688,7 +688,7 @@ globus_l_xio_win32_socket_register_write(
         }
         
         write_info->state = GLOBUS_I_XIO_SYSTEM_OP_PENDING;
-        /* if select() functionality requested, only handle after we recieve
+        /* if select() functionality requested, only handle after we receive
          * write event
          * 
          * also dont call for connect operations.  waitforbytes == 0 in this

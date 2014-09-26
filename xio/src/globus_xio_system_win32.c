@@ -273,7 +273,7 @@ globus_l_xio_win32_event_remove(
     globus_l_xio_win32_event_thread_t * thread,
     globus_l_xio_win32_event_entry_t *  entry);
 
-/**
+/*
  * this returns -1 or the prior index of the entry replacing this one
  */
 static
@@ -346,7 +346,7 @@ globus_l_xio_win32_event_thread(
             }
             else if(!globus_list_empty(thread->pending_posts))
             {
-                /**
+                /*
                  * dispatch all pending posts
                  */
                 globus_l_xio_win32_event_entry_t * consumed;
@@ -371,7 +371,7 @@ globus_l_xio_win32_event_thread(
             }
             else
             {
-                /**
+                /*
                  * dispatch consumed event and check rest with 0 timeout
                  * The added complexity here ensures we don't starve anyone
                  */
@@ -384,7 +384,7 @@ globus_l_xio_win32_event_thread(
                         
                     if(replacement < 0 || replacement >= count)
                     {
-                        /**
+                        /*
                          * either wasn't removed or the replacement is
                          * outside the range I am processing in this iteration
                          * 
@@ -394,7 +394,7 @@ globus_l_xio_win32_event_thread(
                     }
                     else
                     {
-                        /**
+                        /*
                          * replacement is in my range, reduce count and
                          * maintain current index.
                          */
@@ -750,7 +750,7 @@ globus_i_xio_win32_event_register(
     
     if(do_wakeup)
     {
-        /**
+        /*
          * I do this outside the lock to avoid immediate contention in the
          * thead.  This leaves the possibility that the thread is gone
          * before this call, resulting in segv.  However, this is only

@@ -19,7 +19,7 @@
 
 /**
  * @file globus_callout_constants.h
- * Globus Callout Infrastructure
+ * @brief Globus Callout Infrastructure
  * @author Sam Meder
  */
 
@@ -28,8 +28,9 @@ extern "C" {
 #endif
 
 /**
- * @defgroup globus_callout_constants Globus Callout Constants
+ * @defgroup globus_callout_constants Callout Constants
  * @ingroup globus_callout
+ * @brief Constants
  */
 
 /**

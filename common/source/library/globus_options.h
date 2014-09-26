@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_options.h Command-Line Options Parser */
+/**
+ * @file globus_options.h
+ * @brief Command-Line Options Parser
+ */
 
 #ifndef GLOBUS_OPTIONS_H
 #define GLOBUS_OPTIONS_H 1

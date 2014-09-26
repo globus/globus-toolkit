@@ -1,6 +1,7 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_proxy_utils],[6.8],[https://globus.atlassian.net/])
+AC_INIT([globus_proxy_utils],[6.9],[https://globus.atlassian.net/])
+AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -58,6 +59,10 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
                 test "$docbook_dtd_available" != "no" && \
                 test "$XSLTPROC" != "no" && \
                 test "$XMLLINT" != "no"])
+
+AC_PATH_PROG(A2X, [a2x.py], [no])
+AM_CONDITIONAL([HAVE_A2X], [test "$A2X" != "no"])
+
 AC_CONFIG_FILES(
         globus-proxy-utils-uninstalled.pc
         globus-proxy-utils.pc

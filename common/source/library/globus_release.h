@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_release.h Relase Information */
+/**
+ * @file globus_release.h
+ * @brief Relase Information
+ */
 
 #ifndef GLOBUS_RELEASE_H
 #define GLOBUS_RELEASE_H

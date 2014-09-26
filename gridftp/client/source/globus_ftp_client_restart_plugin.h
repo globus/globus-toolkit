@@ -19,6 +19,7 @@
 
 /**
  * @file globus_ftp_client_restart_plugin.h
+ * @brief GridFTP Restart Plugin Implementation
  */
 
 /**

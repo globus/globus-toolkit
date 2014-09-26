@@ -30,7 +30,7 @@
  * @brief Display Name
  * @ingroup globus_gsi_gssapi
  * @details
- * Produces a single line version of the internal x509 name
+ * Produces a single line version of the internal X.509 name
  *
  * @param minor_status 
  * @param input_name_P

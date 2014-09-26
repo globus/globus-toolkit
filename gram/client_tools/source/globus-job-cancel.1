@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: globus-job-cancel
-.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 03/18/2010
-.\"    Manual: GRAM5 Commands
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/25/2014
+.\"    Manual: Globus Toolkit Manual
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUS\-JOB\-CANCEL" "1" "03/18/2010" "University of Chicago" "GRAM5 Commands"
+.TH "GLOBUS\-JOB\-CANCEL" "1" "09/25/2014" "University of Chicago" "Globus Toolkit Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -21,65 +30,45 @@
 .SH "NAME"
 globus-job-cancel \- Cancel a GRAM batch job
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-job\-cancel\fR\ 'u
+.sp
 \fBglobus\-job\-cancel\fR [\-f | \-force] [\-q | \-quiet] \fIJOBID\fR
-.HP \w'\fBglobus\-job\-cancel\fR\ 'u
-\fBglobus\-job\-cancel\fR [\-help] [\-usage] [\-version] [\-versions]
+.sp
+\fBglobus\-job\-cancel\fR [\-help | \-usage ] [ \-version | \-versions ]
 .SH "DESCRIPTION"
-.PP
-The
-\fBglobus\-job\-cancel\fR
-program cancels the job named by
-\fIJOBID\fR\&. Any cached files associated with the job will remain until
-\fBglobus\-job\-clean\fR
-is executed for the job\&.
-.PP
-By default,
-\fBglobus\-job\-cancel\fR
-prompts the user prior to canceling the job\&. This behavior can be overridden by specifying the
-\fB\-f\fR
-or
-\fB\-force\fR
-command\-line options\&.
+.sp
+The globus\-job\-cancel(1) program cancels the job named by \fIJOBID\fR\&. Any cached files associated with the job will remain until globus\-job\-clean(1) is executed for the job\&.
+.sp
+By default, globus\-job\-cancel prompts the user prior to canceling the job\&. This behavior can be overridden by specifying the \fI\-f\fR or \fI\-force\fR command\-line options\&.
 .SH "OPTIONS"
 .PP
-The full set of options to
-\fBglobus\-job\-cancel\fR
-are:
-.PP
-\fB\-help\fR, \fB\-usage\fR
+\fB\-help, \-usage\fR
 .RS 4
 Display a help message to standard error and exit\&.
 .RE
 .PP
 \fB\-version\fR
 .RS 4
-Display the software version of the
-\fBglobus\-job\-cancel\fR
-program to standard output\&.
+Display the software version of the globus\-job\-cancel program to standard output\&.
 .RE
 .PP
-\fB\-version\fR
+\fB\-versions\fR
 .RS 4
-Display the software version of the
-\fBglobus\-job\-cancel\fR
-program including DiRT information to standard output\&.
+Display the software version of the globus\-job\-cancel program including DiRT information to standard output\&.
 .RE
 .PP
-\fB\-force\fR, \fB\-f\fR
+\fB\-force, \-f\fR
 .RS 4
 Do not prompt to confirm job cancel and clean\-up\&.
 .RE
 .PP
-\fB\-quiet\fR, \fB\-q\fR
+\fB\-quiet, \-q\fR
 .RS 4
 Do not print diagnostics for succesful cancel\&. Implies
-\fB\-f\fR
+\fI\-f\fR\&.
 .RE
 .SH "ENVIRONMENT"
-.PP
-If the following variables affect the execution of
-\fBglobus\-job\-cancel\fR\&.
+.sp
+If the following variables affect the execution of globus\-job\-cancel\&.
 .PP
 \fBX509_USER_PROXY\fR
 .RS 4
@@ -90,3 +79,6 @@ Path to proxy credential\&.
 .RS 4
 Path to trusted certificate directory\&.
 .RE
+.SH "AUTHOR"
+.sp
+Copyright \(co 1999\-2014 University of Chicago

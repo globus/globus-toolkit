@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_thread_common.c Thread Model-Indepent Functions */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_thread_common.c
+ * @brief Thread Model-Indepent Functions
+ */
 
 /******************************************************************************
 			     Include header files
@@ -471,4 +476,4 @@ globus_i_thread_ignore_sigpipe(void)
 
 #endif
 
-
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

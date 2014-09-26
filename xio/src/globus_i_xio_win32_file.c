@@ -50,7 +50,7 @@
  *
  *
  * This implementation is based on #2
- * NOTE: cancelation of file i/o will not be supported at this time because
+ * NOTE: cancellation of file i/o will not be supported at this time because
  * CancelIo does not discriminate between read or write operations.
  *
  * Blocking io of overlapped handles is implemented by queuing asynchronous

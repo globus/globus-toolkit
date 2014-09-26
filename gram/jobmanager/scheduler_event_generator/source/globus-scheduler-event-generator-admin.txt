@@ -1,0 +1,42 @@
+GLOBUS-SCHEDULER-EVENT-GENERATOR-ADMIN(8)
+=========================================
+:doctype:       manpage
+:man source:    globus-scheduler-event-generator-admin.txt
+:man manual:    Globus Toolkit
+
+NAME
+----
+globus-scheduler-event-generator-admin - Enable globus-scheduler-event-generator services
+
+[[globus-scheduler-event-generator-admin-SYNOPSIS]]
+SYNOPSIS
+--------
+*globus-scheduler-event-generator-admin* OPTIONS
+
+[[globus-scheduler-event-generator-admin-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *globus-scheduler-event-generator-admin* program enables or disables
+the *globus-scheduler-event-generator* for a particular local resource manager.
+It can also be used to list available local resource managers.
+
+[[globus-scheduler-event-generator-author-admin-OPTIONS]]
+OPTIONS
+-------
+*-h*::
+    Display a help message and exit.
+*-e 'SERVICE'*::
+    Enable the globus-scheduler-event-generator for 'SERVICE', such as
+    +pbs+ or +sge+.
+*-d 'SERVICE'*::
+    Enable the globus-scheduler-event-generator for 'SERVICE', such as
+    +pbs+ or +sge+.
+*-n 'NAME'::
+    When used with the -l option below, only list services which match 'NAME'.
+*-l*::
+    List the all the available LRM services and whether they are enabled.
+
+[[globus-scheduler-event-generator-author-admin-AUTHOR]]
+AUTHOR
+------
+Copyright (c) 1999-2014 University of Chicago

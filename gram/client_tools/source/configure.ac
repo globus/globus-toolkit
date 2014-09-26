@@ -1,6 +1,7 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_client_tools],[11.5],[https://globus.atlassian.net/])
+AC_INIT([globus_gram_client_tools],[11.6],[https://globus.atlassian.net/])
+AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -80,6 +81,10 @@ AM_CONDITIONAL(BUILD_MANPAGES, [
                 test "$docbook_dtd_available" != "no" && \
                 test "$XSLTPROC" != "no" && \
                 test "$XMLLINT" != "no"])
+
+AC_PATH_PROG(A2X, [a2x.py], [no])
+AM_CONDITIONAL([HAVE_A2X], [test "$A2X" != "no"])
+
 AC_CONFIG_FILES(
         [globus-gram-client-tools-uninstalled.pc
         globus-gram-client-tools.pc

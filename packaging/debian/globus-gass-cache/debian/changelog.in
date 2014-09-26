@@ -1,3 +1,11 @@
+globus-gass-cache (9.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Include more manpages for API
+  * Fix some Doxygen issues
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Mon, 22 Sep 2014 15:24:03 -0400
+
 globus-gass-cache (9.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

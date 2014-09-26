@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gsi_proxy_handle_attrs.c GSI Proxy Handle Attributes
+ * @file globus_gsi_proxy_handle_attrs.c
+ * @brief GSI Proxy Handle Attributes
  */
+#endif
 
 #include "globus_i_gsi_proxy.h"
 #include <errno.h>
@@ -48,7 +51,7 @@
  * For most purposes, these attributes should primarily
  * be used by the proxy handle. 
  *
- * Currently, no attibute values are initialized.
+ * Currently, no attribute values are initialized.
  *
  * @param handle_attrs
  *        The handle attributes structure to be initialized
@@ -106,7 +109,7 @@ globus_gsi_proxy_handle_attrs_init(
 /* globus_gsi_proxy_handle_init() */
 
 /**
- * @brief Initialize Attributes
+ * @brief Destroy attributes
  * @ingroup globus_gsi_proxy_handle_attrs
  * @details
  * Destroy the GSI Proxy handle attributes
@@ -265,7 +268,7 @@ globus_gsi_proxy_handle_attrs_get_init_prime(
 }
 
 /**
- * @name Set Signing Algorithm
+ * @brief Set Signing Algorithm
  * @ingroup globus_gsi_proxy_handle_attrs
  * @details
  * Sets the Signing Algorithm to be used to sign
@@ -314,7 +317,7 @@ globus_gsi_proxy_handle_attrs_set_signing_algorithm(
 }
 
 /**
- * @name Get Signing Algorithm
+ * @brief Get Signing Algorithm
  * @ingroup globus_gsi_proxy_handle_attrs
  * @details
  * Gets the Signing Algorithm to used to sign
@@ -476,7 +479,7 @@ globus_gsi_proxy_handle_attrs_get_key_gen_callback(
 {
     globus_result_t                     result;
     static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_get_clock_skew_allowable";
+        "globus_gsi_proxy_handle_attrs_get_key_gen_callback";
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -521,7 +524,7 @@ globus_gsi_proxy_handle_attrs_set_key_gen_callback(
 {
     globus_result_t                     result;
     static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_set_clock_skew_allowable";
+        "globus_gsi_proxy_handle_attrs_set_key_gen_callback";
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 

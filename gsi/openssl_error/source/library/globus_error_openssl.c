@@ -17,12 +17,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_error_openssl.c
+ * @brief Globus Generic Error
  * @author Sam Lang
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
- *
  */
 #endif
 
@@ -136,11 +132,11 @@ globus_l_gsi_openssl_error_deactivate(void)
 
 /**
  * @ingroup globus_openssl_error_object
- * Get the openssl error code which represents the openssl error
- * from the openssl error handle
+ * Get the OpenSSL error code which represents the OpenSSL error
+ * from the OpenSSL error handle
  *
  * @param handle
- *        The openssl error handle
+ *        The OpenSSL error handle
  * @return
  *        The error code
  */
@@ -168,11 +164,11 @@ globus_openssl_error_handle_get_error_code(
 
 /**
  * @ingroup globus_openssl_error_object
- * Get the openssl error data which contains additional data about the error
- * from the openssl error handle 
+ * Get the OpenSSL error data which contains additional data about the error
+ * from the OpenSSL error handle 
  *
  * @param handle
- *        The openssl error handle
+ *        The OpenSSL error handle
  * @return
  *        The error data
  */
@@ -201,10 +197,10 @@ globus_openssl_error_handle_get_data(
 }
 /**
  * @ingroup globus_openssl_error_object
- * Get the openssl error data flags from the openssl error handle
+ * Get the OpenSSL error data flags from the OpenSSL error handle
  *
  * @param handle
- *        The openssl error handle
+ *        The OpenSSL error handle
  * @return
  *        The error data flags
  */
@@ -234,11 +230,11 @@ globus_openssl_error_handle_get_data_flags(
 
 /**
  * @ingroup globus_openssl_error_object
- * Get the filename where the openssl error occurred
- *  from the openssl error handle
+ * Get the filename where the OpenSSL error occurred
+ * from the OpenSSL error handle
  *
  * @param handle
- *        The openssl error handle
+ *        The OpenSSL error handle
  * @return
  *        The filename
  */
@@ -268,13 +264,13 @@ globus_openssl_error_handle_get_filename(
 
 /**
  * @ingroup globus_openssl_error_object
- * Get the linenumber on which the openssl error occurred
- * from the openssl error handle
+ * Get the line number on which the OpenSSL error occurred
+ * from the OpenSSL error handle
  *
  * @param handle
- *        The openssl error handle
+ *        The OpenSSL error handle
  * @return
- *        The linenumber
+ *        The line number
  */
 int
 globus_openssl_error_handle_get_linenumber(
@@ -302,11 +298,11 @@ globus_openssl_error_handle_get_linenumber(
 
 /**
  * @ingroup globus_openssl_error_object
- * Get the library name where the openssl error occurred in
- * from the openssl error handle
+ * Get the library name where the OpenSSL error occurred in
+ * from the OpenSSL error handle
  *
  * @param handle
- *        The openssl error handle
+ *        The OpenSSL error handle
  * @return
  *        The library name
  */
@@ -337,11 +333,11 @@ globus_openssl_error_handle_get_library(
 
 /**
  * @ingroup globus_openssl_error_object
- * Get the function name where the openssl error occurred 
- * from the openssl error handle
+ * Get the function name where the OpenSSL error occurred 
+ * from the OpenSSL error handle
  *
  * @param handle
- *        The openssl error handle
+ *        The OpenSSL error handle
  * @return
  *        The function name
  */
@@ -371,13 +367,13 @@ done:
 
 /**
  * @ingroup globus_openssl_error_object
- * Get the reason string which caused the openssl error 
- * from the openssl error handle
+ * Get the reason string which caused the OpenSSL error 
+ * from the OpenSSL error handle
  *
  * @param handle
- *        The openssl error handle
+ *        The OpenSSL error handle
  * @return
- *        The reson string
+ *        The reason string
  */
 const char *
 globus_openssl_error_handle_get_reason(
@@ -408,14 +404,14 @@ done:
  * Allocate and initialize an error of type GLOBUS_ERROR_TYPE_OPENSSL
  * This function, combined with globus_error_initialize_openssl_error()
  * will recursively generate globus error objects (of type globus_object_t)
- * from the errors on openssl's static error stack.  The errors will
+ * from the errors on OpenSSL's static error stack.  The errors will
  * be chained in a causal fashion to provide a path to the root cause
  * of the actual error.  
  *
- * NOTE:  the static stack openssl implements for its errors currently
+ * NOTE:  the static stack OpenSSL implements for its errors currently
  * only supports at most 16 errors, so if more are added, the errors
  * that were added first will be wiped out.  If 16 errors are counted
- * in the chain of openssl errors, its possible that some errors
+ * in the chain of OpenSSL errors, its possible that some errors
  * (including the original error) are missing.
  *
  * @param base_source
@@ -423,9 +419,9 @@ done:
  * @param base_cause
  *        The error object causing the error.  This parameter should
  *        be NULL in nearly all cases, as the root cause of an error
- *        will most likely be in the openssl code itself.  The 
+ *        will most likely be in the OpenSSL code itself.  The 
  *        actual cause of the error is determined from the static 
- *        stack of openssl errors.
+ *        stack of OpenSSL errors.
  *
  * @return
  *        The resulting error object. It is the user's responsibility
@@ -494,11 +490,11 @@ globus_error_construct_openssl_error(
  *        Pointer to the originating module.
  * @param base_cause
  *        The error object causing the error. If this is the original
- *        error this paramater may be NULL.
+ *        error this parameter may be NULL.
  * @param openssl_error_handle
- *        The openssl error handle associated with this error, this
+ *        The OpenSSL error handle associated with this error, this
  *        parameter should already be initialized to contain the
- *        openssl error code associated with the error.
+ *        OpenSSL error code associated with the error.
  * @return
  *        The resulting error object. You may have to call
  *        globus_error_put() on this object before passing it on.
@@ -530,7 +526,7 @@ globus_error_initialize_openssl_error(
  *        The globus object that represents the error
  *
  * @return
- *        The filename where the openssl error occurred
+ *        The filename where the OpenSSL error occurred
  */
 const char *
 globus_error_openssl_error_get_filename(
@@ -571,13 +567,13 @@ done:
 
 
 /**
- * Get the OpenSSL linenumber where the error occurred 
+ * Get the OpenSSL line number where the error occurred 
  *
  * @param error
  *        The globus object that represents the error
  *
  * @return
- *        The linenumber where the openssl error occurred
+ *        The line number where the OpenSSL error occurred
  */
 int
 globus_error_openssl_error_get_linenumber(
@@ -617,13 +613,13 @@ done:
 }
 
 /**
- * Get the OpenSSL libraray the error occurred in
+ * Get the OpenSSL library the error occurred in
  *
  * @param error
  *        The globus object that represents the error
  *
  * @return 
- *        The library name where the openssl error occurred
+ *        The library name where the OpenSSL error occurred
  */
 const char *
 globus_error_openssl_error_get_library(
@@ -669,7 +665,7 @@ done:
  *        The globus object that represents the error
  *
  * @return 
- *        The function name where the openssl error occurred
+ *        The function name where the OpenSSL error occurred
  */
 const char *
 globus_error_openssl_error_get_function(
@@ -715,7 +711,7 @@ globus_error_openssl_error_get_function(
  *        The globus object that represents the error
  *
  * @return
- *        The reason for the openssl error
+ *        The reason for the OpenSSL error
  */
 const char *
 globus_error_openssl_error_get_reason(
@@ -761,7 +757,7 @@ done:
  *        The globus object that represents the error
  *
  * @return
- *        The error data for the openssl error
+ *        The error data for the OpenSSL error
  */
 const char *
 globus_error_openssl_error_get_data(
@@ -807,7 +803,7 @@ done:
  *        The globus object that represents the error
  *
  * @return
- *        The error data flags for the openssl error
+ *        The error data flags for the OpenSSL error
  */
 int
 globus_error_openssl_error_get_data_flags(
@@ -864,9 +860,8 @@ done:
  *        The function to check for
  * @param reason
  *        The type to check for
- * @return
- *        GLOBUS_TRUE - the error matched 
- *        GLOBUS_FALSE - the error failed to match 
+ * @retval GLOBUS_TRUE Error matched 
+ * @retval GLOBUS_FALSE Error failed to match 
  */
 globus_bool_t
 globus_error_match_openssl_error(
@@ -918,15 +913,15 @@ globus_error_match_openssl_error(
  * error. 
  * @ingroup globus_openssl_error_utility
  *
- * This function gets all the openssl errors
+ * This function gets all the OpenSSL errors
  * from the error list, and chains them using the globus
  * error string object.  The resulting globus error object
- * is a wrapper to the openssl error at the end of the chain.
+ * is a wrapper to the OpenSSL error at the end of the chain.
  *
  * @param base_source
  *        The module that the error was generated from
  * @param error_type
- *        The type of error encapsulating the openssl error
+ *        The type of error encapsulating the OpenSSL error
  * @param source_file
  *        Name of file.  Use __FILE__
  * @param source_func
@@ -936,7 +931,7 @@ globus_error_match_openssl_error(
  *        Line number.  Use __LINE__
  * @param format
  *        format string for the description of the error entry
- *        point where the openssl error occurred, should be followed
+ *        point where the OpenSSL error occurred, should be followed
  *        by parameters to fill the format string (like in printf).
  * @return 
  *        The globus error object.  A globus_result_t

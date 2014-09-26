@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-/**
- * @file grid_proxy_destroy.c
- * Globus GSI Proxy Utils
- * @author Sam Lang, Sam Meder
- */
-
 #include "globus_common.h"
 #include "globus_error.h"
 #include "globus_gsi_cert_utils.h"

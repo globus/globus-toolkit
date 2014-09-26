@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file globus_list.h Linked List */
+/**
+ * @file globus_list.h
+ * @brief Linked List
+ */
+
 /**
  * @defgroup globus_list Linked List
  * @ingroup globus_common

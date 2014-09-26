@@ -1,0 +1,117 @@
+GRID-DEFAULT-CA(8)
+====================
+:doctype:       manpage
+:man source:    University of Chicago
+:man manual:    Globus Toolkit
+
+NAME
+----
+grid-default-ca - Select default CA for certificate requests
+
+[[grid-default-ca-SYNOPSIS]]
+SYNOPSIS
+--------
+*grid-default-ca* -help | -h | -usage | -u | -version | -versions
+
+*grid-default-ca* [-ca 'CA-HASH' | -list ] [OPTIONS]
+
+[[grid-default-ca-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *grid-default-ca* program sets the default certificate authority to use when
+the *grid-cert-request* script is run. The CA's certificate, configuration, and
+signing policy must be installed in the trusted certificate directory to be
+able to request certificates from that CA. Note that some CAs have different
+policies and use other tools to handle certificate requests. Please consult
+your CA's support staff if you unsure. The *grid-default-ca* is designed to
+work with CAs implemented using the *globus_simple_ca* package.
+
+By default, the *grid-default-ca* program displays a list of installed CA
+certificates and the prompts the user for which one to set as the default. If
+invoked with the '-list' command-line option, *grid-default-ca* will print the
+list and not prompt nor set the default CA. If invoked with the
+'-ca' option, it will not list or prompt, but set the default CA
+to the one with the hash that matches the 'CA-HASH'
+argument to that option. If *grid-default-ca* is used to set the default CA,
+the caller of this program must have write permissions to the trusted
+certificate directory.
+
+The *grid-default-ca* program sets the CA in the one of the grid security
+directories.  It looks in the directory named by the
++GRID_SECURITY_DIR+ environment, the +X509_CERT_DIR+ environment,
++/etc/grid-security+ and +$GLOBUS_LOCATION/share/certificates+.
+
+[[grid-default-ca-OPTIONS]]
+OPTIONS
+-------
+The full set of command-line options to *grid-default-ca* are:
+
+*-help, -h, -usage, -u*::
+    Display the command-line options to *grid-default-ca* and
+    exit.
+*-version, -versions*::
+    Display the version number of the *grid-default-ca* command. The second
+    form includes more details.
+*-dir 'CA-DIRECTORY'*::
+    Use the trusted certificate directory named by
+    'CA-DIRECTORY' instead of the default.
+*-list*::
+    Instead of changing the default CA, print out a list of all available CA
+    certificates in the trusted certificate directory.
+*-ca 'CA-HASH'*::
+    Set the default CA without displaying the list of choices or prompting. The
+    CA file named by 'CA-HASH' must exist.
+
+[[grid-default-ca-EXAMPLES]]
+EXAMPLES
+--------
+List the contents of the trusted certificate directory that contain
+the string Example:
+    
+    % grid-default-ca | grep Example
+    15) cd1186ff -  /DC=org/DC=Example/DC=Grid/CN=Example CA
+
+Choose that CA as the default:
+    
+    % grid-default-ca -ca cd1186ff
+    setting the default CA to: /DC=org/DC=Example/DC=Grid/CN=Example CA
+    linking /etc/grid-security/certificates/grid-security.conf.cd1186ff to
+            /etc/grid-security/certificates/grid-security.conf
+    linking /etc/grid-security/certificates/grid-host-ssl.conf.cd1186ff  to
+            /etc/grid-security/certificates/grid-host-ssl.conf
+    linking /etc/grid-security/certificates/grid-user-ssl.conf.cd1186ff  to
+            /etc/grid-security/certificates/grid-user-ssl.conf
+    ...done.
+
+[[grid-default-ca-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following environment variables affect the execution of *grid-default-ca*:
+*GRID_SECURITY_DIRECTORY*::
+    Path to the default trusted certificate directory.
+*X509_CERT_DIR*::
+    Path to the default trusted certificate directory.
+*GLOBUS_LOCATION*::
+    Path to the Globus Toolkit installation directory.
+
+[[grid-default-ca-BUGS]]
+BUGS
+----
+The *grid-default-ca* program displays CAs from all of the directories in its
+search list; however, *grid-cert-request* only uses the first 
+which contains a grid security configuration.
+
+The *grid-default-ca* program may display the same CA multiple times if it is
+located in multiple directories in its search path. However, it does not
+provide any information about which one would actually be used by the
+*grid-cert-request* command.
+
+[[grid-default-ca-SEEALSO]]
+SEE ALSO
+--------
+grid-cert-request(1)
+
+[[grid-default-ca-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

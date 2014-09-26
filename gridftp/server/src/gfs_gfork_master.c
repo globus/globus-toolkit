@@ -1634,7 +1634,7 @@ gfs_l_gfork_backend_timer(
     result = globus_xio_handle_create(&xio_handle, g_stack);
     if(result != GLOBUS_SUCCESS)
     {
-        /* log nasty error, but dont exit */
+        /* log nasty error, but don't exit */
         goto error_create;
     }
 
@@ -1648,7 +1648,7 @@ gfs_l_gfork_backend_timer(
         NULL);
     if(result != GLOBUS_SUCCESS)
     {
-        /* log nasty error, but dont exit */
+        /* log nasty error, but don't exit */
         goto error_open;
     }
     globus_xio_attr_destroy(xio_attr);
@@ -2142,7 +2142,7 @@ globus_options_entry_t                   gfork_l_opts_table[] =
         1, gfs_l_gfork_opts_port},
     {"stripe-count", "s", NULL, "<int>",
         "The max number of stripes to give to each server."
-        "  0 is all avaiable.",
+        "  0 is all available.",
         1, gfs_l_gfork_opts_stripe_count},
     {"logfile", "l", NULL, "<path>",
         "Path to the logfile.",

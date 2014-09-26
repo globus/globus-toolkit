@@ -21,10 +21,6 @@
 /**
  * @file globus_i_gsi_gss_utils.c
  * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 
@@ -345,7 +341,7 @@ globus_i_gsi_gssapi_error_chain_result(
 
 globus_result_t
 globus_i_gsi_gssapi_error_join_chains_result(
-    globus_result_t                     outter_error,
+    globus_result_t                     outer_error,
     globus_result_t                     inner_error);
 
 OM_uint32

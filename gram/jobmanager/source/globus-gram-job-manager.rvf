@@ -190,7 +190,7 @@ ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: remote_io_url
 Description: "Writes the given value (a URL base string) to a file, and adds
-	      the path to that file to the environment throught the
+	      the path to that file to the environment through the
 	      GLOBUS_REMOTE_IO_URL environment variable. If this is specified
 	      as part of a job restart RSL, the job manager will update the
 	      file's contents. This is intended for jobs that want to access

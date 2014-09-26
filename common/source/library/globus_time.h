@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-/** @file globus_time.h Time Types and Macros */
+/**
+ * @file globus_time.h
+ * @brief Time Types and Macros
+ */
+
 #if !defined(GLOBUS_TIME_H)
 #define      GLOBUS_TIME_H
 

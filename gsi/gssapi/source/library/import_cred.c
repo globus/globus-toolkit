@@ -36,17 +36,17 @@
  * application to checkpoint delegated credentials.  
  *
  * @param minor_status
- *        The minor status returned by this function. This paramter
+ *        The minor status returned by this function. This parameter
  *        will be 0 upon success.
  * @param output_cred_handle
- *        Upon success, this paramter will contain the imported
+ *        Upon success, this parameter will contain the imported
  *        credential. When no longer needed this credential should be
  *        freed using gss_release_cred().
  * @param desired_mech
- *        This paramter may be used to specify the desired security
+ *        This parameter may be used to specify the desired security
  *        mechanism. May be GSS_C_NO_OID.
  * @param option_req
- *        This paramater indicates which option_req value was used to
+ *        This parameter indicates which option_req value was used to
  *        produce the import_buffer.
  * @param import_buffer
  *        A buffer produced by gss_export_credential().
@@ -56,12 +56,10 @@
  * @param time_rec
  *        This parameter will contain the received period of validity
  *        of the imported credential upon success. May be NULL.
- * @return
- *        GSS_S_COMPLETE         upon successful completion
- *        GSS_S_BAD_MECH         if the requested security mechanism
- *                               is unavailable
- *        GSS_S_DEFECTIVE_TOKEN  if the import_buffer is defective
- *        GSS_S_FAILURE          upon general failure
+ * @retval GSS_S_COMPLETE Success
+ * @retval GSS_S_BAD_MECH Requested security mechanism is unavailable
+ * @retval GSS_S_DEFECTIVE_TOKEN import_buffer is defective
+ * @retval GSS_S_FAILURE General failure
  */
 OM_uint32 
 GSS_CALLCONV gss_import_cred(

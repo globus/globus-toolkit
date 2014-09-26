@@ -15,7 +15,8 @@
  */
 
 /**
- * @file http_put_test.c HTTP Put Test
+ * @file http_put_test.c
+ * @brief HTTP Put Test
  *
  * Test that clients can send HTTP message bodies.
  *

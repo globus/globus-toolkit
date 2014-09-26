@@ -15,13 +15,11 @@
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_gridmap_callout_error.c
+ * @brief Globus Gridmap Callout Error
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 
 #include "globus_gridmap_callout_error.h"

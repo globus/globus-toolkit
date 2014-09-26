@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-/** @file globus_common_paths.c Install and deploy path discovery functions */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_common_paths.c
+ * @brief Install and deploy path discovery functions
+ */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_i_common_config.h"
 #include "globus_common.h"

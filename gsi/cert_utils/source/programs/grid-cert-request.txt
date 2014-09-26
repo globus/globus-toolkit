@@ -1,0 +1,209 @@
+GRID-CERT-REQUEST(1)
+====================
+:doctype:       manpage
+:man source:    University of Chicago
+:man manual:    Globus Toolkit
+
+NAME
+----
+grid-cert-request - Generate a X.509 certificate request and corresponding private key
+
+[[grid-cert-request-SYNOPSIS]]
+SYNOPSIS
+--------
+*grid-cert-request* -help | -h | -? | -usage | -version-versions
+
+*grid-cert-request* [OPTIONS]
+
+[[grid-cert-request-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *grid-cert-request* program generates an X.509 Certificate Request and
+corresponding private key for the specified name, host, or service. It is
+intended to be used with a CA implemented using the
+*globus_simple_ca* package.
+
+The default behavior of *grid-cert-request* is to generate a certificate
+request and private key for the user running the command. The subject name is
+derived from the gecos information in the local system's password database,
+unless the '-commonname', '-cn', or '-host' command-line options are used.
+
+By default, *grid-cert-request* writes user certificate requests and keys to
+the +$HOME/.globus+ directory, and host and service certificate requests and
+keys to +/etc/grid-security+. This can be overridden by using the 
+'-dir' command-line option.
+
+[[grid-cert-request-OPTIONS]]
+OPTIONS
+-------
+The full set of command-line options to *grid-cert-request* are:
+
+*-help, -h, -?, -usage*::
+    Display the command-line options to *grid-cert-request* and
+    exit.
+*-version, -versions*::
+    Display the version number of the *grid-cert-request* command. The second
+    form includes more details.
+*-cn 'NAME', -commonname 'NAME'*::
+Create a certificate request with the common name component of the subject set
+to 'NAME'. This is used to create user identity
+certificates.
+*-dir 'DIRECTORY'*::
+    Write the certificate request and key to files in the directory specified
+    by 'DIRECTORY'.
+*-prefix 'PREFIX'*::
+    Use the string 'PREFIX' as the base name of the certificate,
+    certificate_request, and key files instead of the default. For a user
+    certificate request, this would mean creating files
+    +$HOME/.globus/'PREFIX'cert_request.pem+, +$HOME/.globus/'PREFIX'cert.pem+,
+    and +$HOME/.globus/'PREFIX'key.pem+.
+*-ca 'CA-HASH'*::
+    Use the certificate request configuration for the CA with the name hash
+    'CA-HASH' instead of the default CA chosen by running
+    *grid-default-ca*.
+*-verbose*::
+    Keep the output from the OpenSSL certificate request command visible after
+    it completes, instead of clearing the screen.
+*-interactive, -int*::
+    Prompt for each component of the subject name of the request, instead of
+    generating the common name from other command-line options. Note that CAs
+    may not sign certificates for subject names that don't match their signing
+    policies.
+*-force*::
+    Overwrite any existing certificate request and private key with a new
+    one.
+*-nopw, -nodes, -nopassphrase*::
+    Create an unencrypted private key for the certificate instead of prompting
+    for a passphrase. This is the default behavior for host or service
+    certificates, but not recommended for user certificates.
+*-host 'FQDN'*::
+    Create a certificate request for use on a particular host. This option also
+    causes the private key associated with the certificate request to be
+    unencrypted. The 'FQDN' argument to this option should be the fully
+    qualified domain name of the host that will use this certificate. The
+    subject name of the certificate will be derived from the 'FQDN' and the
+    service option if specified by the '-service' command-line
+    option. If the host for the certificate has multiple names, then use either
+    the '-dns' or '-ip' command-line options to add alternate names or
+    addresses to the certificates.
+*-service 'SERVICE'*::
+    Create a certificate request for a particular service on a host. The
+    subject name of the certificate will be derived from the 'FQDN' passed as
+    the argument to the '-host' command-line option and the 'SERVICE' string.
+*-dns 'FQDN,...'*::
+    Create a certificate request containing a +subjectAltName+ extension
+    containing one or more host names. This is used when a certificate may be
+    used by multiple virtual servers or if a host has different names when
+    contacted within or outside a private network. Multiple DNS names can be
+    included in the extension by separating then with a
+    comma.
+*-ip 'IP-ADDRESS,...'*::
+    Create a certificate request containing a +subjectAltName+
+    extension containing the IP addresses named by the 'IP-ADDRESS' strings.
+    This is used when a certificate may be used by services listening on
+    multiple networks. Multiple IP addresses can be included in the extension
+    by separating then with a comma.
+
+[[grid-cert-request-EXAMPLES]]
+EXAMPLES
+--------
+Create a user certificate request:
+    % *grid-cert-request*
+    A certificate request and private key is being created.
+    You will be asked to enter a PEM pass phrase.
+    This pass phrase is akin to your account password, 
+    and is used to protect your key file.
+    If you forget your pass phrase, you will need to
+    obtain a new certificate.
+    A private key and a certificate request has been generated with the subject:
+
+    /O=org/OU=example/OU=grid/CN=Joe User
+
+    If the CN=Joe User is not appropriate, rerun this
+    script with the -force -cn "Common Name" options.
+
+    Your private key is stored in /home/juser/.globus/userkey.pem
+    Your request is stored in /home/juser/.globus/usercert_request.pem
+
+    Please e-mail the request to the Example CA ca@grid.example.org
+    You may use a command similar to the following:
+
+      cat /home/juser/.globus/usercert_request.pem | mail ca@grid.example.org
+
+    Only use the above if this machine can send AND receive e-mail. if not, please
+    mail using some other method.
+
+    Your certificate will be mailed to you within two working days.
+If you receive no response, contact Example CA at ca@grid.example.org
+
+Create a host certificate for a host with two names.
+
+    % *grid-cert-request -host grid.example.org -dns grid.example.org,grid-internal.example.org*
+    A private host key and a certificate request has been generated
+    with the subject:
+
+    /O=org/OU=example/OU=grid/CN=host/grid.example.org
+
+    ----------------------------------------------------------
+
+    The private key is stored in /etc/grid-security/hostkey.pem
+    The request is stored in /etc/grid-security/hostcert_request.pem
+
+    Please e-mail the request to the Example CA ca@grid.example.org
+    You may use a command similar to the following:
+
+     cat /etc/grid-security/hostcert_request.pem | mail ca@grid.example.org
+
+    Only use the above if this machine can send AND receive e-mail. if not, please
+    mail using some other method.
+
+    Your certificate will be mailed to you within two working days.
+    If you receive no response, contact Example CA at
+    ca@grid.example.org
+
+[[grid-cert-request-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following environment variables affect the execution of
+*grid-cert-request*:
+
+*X509_CERT_DIR*::
+    Path to the directory containing SSL configuration files for generating
+    certificate requests.
+*GRID_SECURITY_DIR*::
+    Path to the directory containing SSL configuration files for generating
+    certificate requests. This value is used if +X509_CERT_DIR+ is
+    not set.
+*GLOBUS_LOCATION*::
+    Path to the directory containing the Globus Toolkit. This is searched if
+    neither the +X509_CERT_DIR+ nor the +GRID_SECURITY_DIR+ environment
+    variables are set.
+
+[[grid-cert-request-FILES]]
+FILES
+-----
+*$HOME/.globus/usercert_request.pem*::
+    Default path to write a user certificate request.
+*$HOME/.globus/usercert.pem*::
+    Default path to write a user certificate.
+*$HOME/.globus/userkey.pem*::
+    Default path to write a user private key.
+*/etc/grid-security/hostcert_request.pem*::
+    Default path to write a host certificate request.
+*/etc/grid-security/hostcert.pem*::
+    Default path to write a host certificate.
+*/etc/grid-security/hostkey.pem*::
+    Default path to write a host private key.
+*'TRUSTED-CERT-DIR'/globus-user-ssl.conf, 'TRUSTED-CERT-DIR'/globus-user-ssl.conf.'CA-HASH'*::
+    SSL configuration file for requesting a user certificate. The first form is
+    the default location, the second form is used when the '-ca' command-line
+    option is specified.
+*'TRUSTED-CERT-DIR'/globus-host-ssl.conf, 'TRUSTED-CERT-DIR'/globus-host-ssl.conf.'CA-HASH'*::
+    SSL configuration file for requesting a host or service certificate. The
+    first form is the default location, the second form is used when the '-ca'
+    command-line option is specified.
+
+[[grid-cert-request-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

@@ -334,6 +334,7 @@ sub load_gridmap_file ( $ )
 		      if (exists ($$href{$key}) ) 
 		      {
 		  	     $duplicate_counter++;
+                             $$href{$key} .= ",$value";
 		  	     print "\nERROR: Found duplicate entry: " . $buffer . "\n";
 		      } 
 		      else 

@@ -18,12 +18,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gridmap_callout.c
- * Globus Gridmap Callout
+ * @brief Globus Gridmap Callout
  * @author Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 
 #include "globus_common.h"
@@ -36,25 +32,21 @@
 
 #endif
 
-
+#ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
  * @mainpage Globus Gridmap Callout
+ * @copydoc globus_gridmap_callout
  */
-
+#endif
 
 /**
  * @defgroup globus_gridmap_callout Globus Gridmap Callout
  */
 
-
 /**
- * Globus Gridmap Callout Function
+ * @brief Globus Gridmap Callout Function
  * @ingroup globus_gridmap_callout
- */
-/* @{ */
-/**
- * Gridmap Authorization Callout Function
- *
+ * @details
  * This function provides a gridmap lookup in callout form.
  *
  * @param ap
@@ -80,7 +72,7 @@
  *
  * @return
  *        GLOBUS_SUCCESS upon success
- *        A globus result structure upon failure (needs to be defined better)
+ *        A globus result_t structure upon failure (needs to be defined better)
  */
 globus_result_t
 globus_gridmap_callout(
@@ -254,7 +246,4 @@ globus_gridmap_callout(
     
     return result;
 }
-/* @} */
-
-
-
+/* globus_gridmap_callout() */

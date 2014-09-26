@@ -21,7 +21,7 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-/* borrowed from OpenSSL's s3_enc.c
+/* borrowed from OpenSSLs s3_enc.c
  */
 static unsigned char ssl3_pad_1[48]={
 	0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36,
@@ -255,7 +255,7 @@ GSS_CALLCONV gss_verify_mic(
     }
 
     /*
-     * Now test for consistance with the MIC
+     * Now test for consistency with the MIC
      */    
     token_value = token_buffer->value;
     
@@ -315,7 +315,7 @@ exit:
  * @brief Verify
  * @ingroup globus_gsi_gssapi
  * @details
- * Obsolete variant of gss_verify for V1 compatability 
+ * Obsolete variant of gss_verify for V1 compatibility 
  * Check a MIC of the date
  *
  * @param minor_status

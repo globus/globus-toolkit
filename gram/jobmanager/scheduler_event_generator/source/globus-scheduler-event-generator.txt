@@ -1,0 +1,74 @@
+GLOBUS-SCHEDULER-EVENT-GENERATOR(8)
+===================================
+:doctype:       manpage
+:man source:    globus-scheduler-event-generator.txt
+:man manual:    Globus Toolkit
+
+NAME
+----
+globus-scheduler-event-generator - Process job state change events
+
+[[globus-scheduler-event-generator-SYNOPSIS]]
+SYNOPSIS
+--------
+*globus-scheduler-event-generator* -h
+
+*globus-scheduler-event-generator* -s 'LRM_NAME' [OPTIONS]
+
+[[globus-scheduler-event-generator-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *globus-scheduler-event-generator* (SEG) is a program which uses
+local resource manager-specific monitoring modules to generate job state
+change events. At the SEG level, the state change events correspond to 
+changes in any jobs which are managed by the scheduler, even if they do
+not correspond to jobs initiated by the GRAM5 Service. These state
+change events are propagated to the Job State Monitor.
+
+Depending on scheduler-specific requirements, the SEG may need to run with 
+privileges to enable it to obtain scheduler event
+notifications. As such, one SEG runs per scheduler resource. For example,
+on a host which provides access to both PBS and fork jobs, two SEGs, running
+at (potentially) different privilege levels will be running.
+
+When executed, the SEG is able to start issuing events from some
+time in the past. The SEG will, in general, not require any persistent
+state between invocations. One SEG instance exists for any particular
+scheduled resource instance (one for all homogeneous PBS queues, one for
+all fork jobs, etc).
+
+The SEG is implemented in an executable called the
+*globus-scheduler-event-generator*, located in the Globus Toolkit's
++sbin+ directory. 
+
+When begun, it loads the LRM-specific module based on the 'LRM_NAME' parameter,
+and then defers to it for most functionality. When it detects
+an error writing to stdout or reading stdin, it terminates. The LRM-specific
+code uses the SEG API to emit events to the GRAM5 service.
+
+[[globus-scheduler-event-generator-author-OPTIONS]]
+OPTIONS
+-------
+*-h*::
+    Display a help message and exit.
+*-s 'LRM_NAME'*::
+    Load the LRM-specific module for 'LRM_NAME'. This is translated to
+    loading the dynamic library libglobus_seg_'LRM_NAME'.
+*-t 'TIMESTAMP'*::
+    Process events starting at 'TIMESTAMP'. This is the only way to get the
+    globus-scheduler-event-generator to process events that occur before
+    the process begins. If not specified, it will generate events from the
+    current timestamp only.
+*-d 'DIRECTORY'::
+    Write job state change events to files in 'DIRECTORY', named by the day
+    that the event occurred (+DIRECTORY/YYYYMMDD+); if not specified, the
+    events will be written to standard output.
+*-b*::
+    Run in the background. This only works if the *-d* option above is used.
+*-p 'PIDFILE'*::
+    Write the process id of the globus-scheduler-event-generator to 'PIDFILE'.
+
+[[globus-scheduler-event-generator-author-AUTHOR]]
+AUTHOR
+------
+Copyright (c) 1999-2014 University of Chicago

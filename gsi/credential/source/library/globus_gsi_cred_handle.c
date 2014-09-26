@@ -43,11 +43,9 @@
         _LENGTH_))
 
 /**
- * @name Initializing and Destroying a Handle
- */
-/* @{ */
-/**
+ * @brief Initialize a Handle
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Initializes a credential handle to be used credential
  * handling functions.  Takes a set of handle attributes
  * that are immutable to the handle.  The handle attributes
@@ -134,8 +132,10 @@ globus_gsi_cred_handle_init(
 /* globus_gsi_cred_handle_init */
 
 /**
- * Destroys the credential handle
+ * @brief Destroy the credential handle
  * @ingroup globus_gsi_cred_handle
+ * @details
+ * Destroys the credential handle
  *
  * @param handle
  *        The credential handle to be destroyed
@@ -178,14 +178,11 @@ globus_gsi_cred_handle_destroy(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_cred_handle_destroy */
-/* @} */
 
 /**
- * @name Copying a Handle
- */
-/* @{ */
-/**
+ * @brief Copy a handle
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Copies a credential handle.
  *
  * @param source
@@ -289,15 +286,12 @@ globus_gsi_cred_handle_copy(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
         
 /**
- * @name Getting the Handle Attributes
- */
-/* @{ */
-/**
+ * @brief Get the handle attributes
  * @ingroup globus_gsi_cred_handle
- * This function retreives a copy of the credential handle attributes
+ * @details
+ * This function retrieves a copy of the credential handle attributes
  *
  * @param handle
  *        The credential handle to retrieve the attributes from
@@ -352,15 +346,13 @@ globus_gsi_cred_get_handle_attrs(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_handle_attrs() */
 
 /**
- * @name Getting the Credential Expiration
- */
-/* @{ */
-/**
+ * @brief Get credential expiration
  * @ingroup globus_gsi_cred_handle
- * This function retreives the expiration time of the credential contained
+ * @details
+ * This function retrieves the expiration time of the credential contained
  * in the handle
  *
  * @param cred_handle
@@ -401,15 +393,13 @@ globus_gsi_cred_get_goodtill(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* }@ */
+/* globus_gsi_cred_get_goodtill() */
 
 /**
- * @name Getting the Credential Lifetime
- */
-/* @{ */
-/**
+ * @brief Get credential lifetime
  * @ingroup globus_gsi_cred_handle
- * This function retreives the lifetime of the credential contained
+ * @details
+ * This function retrieves the lifetime of the credential contained
  * in a handle
  *
  * @param cred_handle
@@ -457,15 +447,13 @@ globus_gsi_cred_get_lifetime(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* }@ */
+/* globus_gsi_cred_get_lifetime() */
 
 /**
- * @name Getting the Credential Strength
- */
-/* @{ */
-/**
+ * @brief Get credential strength
  * @ingroup globus_gsi_cred_handle
- * This function retreives the key strength of the credential contained
+ * @details
+ * This function retrieves the key strength of the credential contained
  * in a handle
  *
  * @param cred_handle
@@ -547,11 +535,9 @@ globus_gsi_cred_get_key_bits(
 
 
 /**
- * @name Setting and Getting the Certificate
- */
-/* @{ */
-/**
+ * @brief Set the credential's certificate
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Set the Credential's Certificate.  The X509 cert
  * that is passed in should be a valid X509 certificate
  * object
@@ -622,7 +608,9 @@ globus_gsi_cred_set_cert(
 }
 
 /**
+ * @brief Get the credential's certificate
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Get the certificate of a credential 
  *
  * @param handle
@@ -674,15 +662,12 @@ globus_gsi_cred_get_cert(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Setting and Getting the Credential Key
- */
-/* @{ */
-/**
+ * @brief Set the credential's private key
  * @ingroup globus_gsi_cred_handle
- * Set the private key of the credential handle
+ * @details
+ * Set the private key of the credential handle.
  *
  * @param handle
  *        The handle on which to set the key.
@@ -762,10 +747,13 @@ globus_gsi_cred_set_key(
 
     return result;
 }    
+/* globus_gsi_cred_set_key() */
 
 /**
- * Get the credential handle's private key
+ * @brief Get the credential's private key
  * @ingroup globus_gsi_cred_handle
+ * @details
+ * Get the credential handle's private key
  *
  * @param handle
  *        The credential handle containing the private key to get
@@ -840,14 +828,12 @@ globus_gsi_cred_get_key(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_key() */
     
 /**
- * @name Setting and Getting the Certificate Chain
- */
-/* @{ */
-/**
+ * @brief Set the certificate chain
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Set the certificate chain of the credential handle
  *
  * @param handle
@@ -943,8 +929,10 @@ globus_gsi_cred_set_cert_chain(
 }
 
 /**
- * Get the certificate chain of the credential handle
+ * @brief Get the certificate chain
  * @ingroup globus_gsi_cred_handle
+ * @details
+ * Get the certificate chain of the credential handle
  *
  * @param handle
  *        The credential handle containing the certificate
@@ -1019,14 +1007,12 @@ globus_gsi_cred_get_cert_chain(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_cert_chain() */
 
 /**
- * @name Get Cred Cert X509 Subject Name object
- */
-/* @{ */
-/**
+ * @brief Get credential subject name
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Get the credential handle's certificate subject name
  *
  * @param handle
@@ -1038,13 +1024,14 @@ globus_gsi_cred_get_cert_chain(
  * @return 
  *        GLOBUS_SUCCESS if no error, a error object id otherwise
  */
-globus_result_t globus_gsi_cred_get_X509_subject_name(
+globus_result_t
+globus_gsi_cred_get_X509_subject_name(
     globus_gsi_cred_handle_t            handle,
     X509_NAME **                        subject_name)
 {
     globus_result_t                     result;
     static char *                       _function_name_ =
-        "globus_gsi_cred_get_subject_name";
+        "globus_gsi_cred_get_X509_subject_name";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
@@ -1084,15 +1071,13 @@ globus_result_t globus_gsi_cred_get_X509_subject_name(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_subject_name() */
 
 /**
- * @name Get X509 Identity Name
- */
-/* @{ */
-/**
+ * @brief Get X.509 identity
  * @ingroup globus_gsi_cred_handle
- * Get the identity's X509 subject name from the credential handle
+ * @details
+ * Get the identity's X.509 subject name from the credential handle
  *
  * @param handle
  *        The credential handle containing the certificate to
@@ -1104,7 +1089,8 @@ globus_result_t globus_gsi_cred_get_X509_subject_name(
  *        GLOBUS_SUCCESS if no error, otherwise an error object
  *        identifier is returned
  */
-globus_result_t globus_gsi_cred_get_X509_identity_name(
+globus_result_t
+globus_gsi_cred_get_X509_identity_name(
     globus_gsi_cred_handle_t            handle,
     X509_NAME **                        identity_name)
 {
@@ -1175,14 +1161,12 @@ globus_result_t globus_gsi_cred_get_X509_identity_name(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_X509_identity_name() */
 
 /**
- * @name Get Cred Cert Subject Name
- */
-/* @{ */
-/**
+ * @brief Get credential subject name
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Get the credential handle's certificate subject name
  *
  * @param handle
@@ -1190,11 +1174,12 @@ globus_result_t globus_gsi_cred_get_X509_identity_name(
  *        to get the subject name of
  * @param subject_name
  *        The subject name as a string.  This should be freed
- *        using free() when the user is finished with it
+ *        using OPENSSL_free() when the user is finished with it
  * @return 
  *        GLOBUS_SUCCESS if no error, a error object id otherwise
  */
-globus_result_t globus_gsi_cred_get_subject_name(
+globus_result_t
+globus_gsi_cred_get_subject_name(
     globus_gsi_cred_handle_t            handle,
     char **                             subject_name)
 {
@@ -1239,14 +1224,12 @@ globus_result_t globus_gsi_cred_get_subject_name(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_subject_name() */
 
 /**
- * @name Get Policies from Cert Chain 
- */
-/* @{ */
-/**
+ * @brief Get certificate chain policies
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Get the Policies from the Cert Chain in the handle.  The policies
  * will be null-terminated as they are added to the handle.
  * If a policy for a cert in the chain doesn't exist, the string
@@ -1422,15 +1405,13 @@ globus_gsi_cred_get_policies(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_policies() */
 
 
 /**
- * @name Get Policy Languages from Cert Chain 
- */
-/* @{ */
-/**
+ * @brief Get certificate chain policy languages
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Get the policy languages from the cert chain in the handle.
  *
  * @param handle
@@ -1541,14 +1522,12 @@ globus_gsi_cred_get_policy_languages(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_policy_languages() */
 
 /**
- * @name Get Cred Cert X509 Issuer Name object
- */
-/* @{ */
-/**
+ * @brief Get credential issuer name object
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Get the credential handle's certificate issuer name
  *
  * @param handle
@@ -1560,7 +1539,8 @@ globus_gsi_cred_get_policy_languages(
  * @return 
  *        GLOBUS_SUCCESS if no error, a error object id otherwise
  */
-globus_result_t globus_gsi_cred_get_X509_issuer_name(
+globus_result_t
+globus_gsi_cred_get_X509_issuer_name(
     globus_gsi_cred_handle_t            handle,
     X509_NAME **                        issuer_name)
 {
@@ -1606,14 +1586,12 @@ globus_result_t globus_gsi_cred_get_X509_issuer_name(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_X509_issuer_name() */
 
 /**
- * @name Get Issuer Name
- */
-/* @{ */
-/**
+ * @brief Get issuer name
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Get the issuer's subject name from the credential handle
  *
  * @param handle
@@ -1626,7 +1604,8 @@ globus_result_t globus_gsi_cred_get_X509_issuer_name(
  *        GLOBUS_SUCCESS if no error, otherwise an error object
  *        identifier is returned
  */
-globus_result_t globus_gsi_cred_get_issuer_name(
+globus_result_t
+globus_gsi_cred_get_issuer_name(
     globus_gsi_cred_handle_t            handle,
     char **                             issuer_name)
 {
@@ -1654,7 +1633,7 @@ globus_result_t globus_gsi_cred_get_issuer_name(
         goto error_exit;
     }
     
-    /* ToDo: This logic needs fixing. The issuer_name is passed up and is
+    /* TODO: This logic needs fixing. The issuer_name is passed up and is
              freed by the caller - but it must be freed with OPENSSL_free(), 
              not free() and the caller cant be expected to know that */
     if((*issuer_name = X509_NAME_oneline(
@@ -1674,14 +1653,12 @@ globus_result_t globus_gsi_cred_get_issuer_name(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_issuer_name() */
 
 /**
- * @name Get Identity Name
- */
-/* @{ */
-/**
+ * @brief Get identity name
  * @ingroup globus_gsi_cred_handle
+ * @details
  * Get the identity's subject name from the credential handle
  *
  * @param handle
@@ -1694,7 +1671,8 @@ globus_result_t globus_gsi_cred_get_issuer_name(
  *        GLOBUS_SUCCESS if no error, otherwise an error object
  *        identifier is returned
  */
-globus_result_t globus_gsi_cred_get_identity_name(
+globus_result_t
+globus_gsi_cred_get_identity_name(
     globus_gsi_cred_handle_t            handle,
     char **                             identity_name)
 {
@@ -1756,15 +1734,13 @@ globus_result_t globus_gsi_cred_get_identity_name(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_identity_name() */
 
 /**
- * @name Credential validation functions
- */
-/* @{ */
-/**
+ * @brief Verify credential
  * @ingroup globus_gsi_cred_handle
- * This function performs path valiadtion on the certificate chain contained in
+ * @details
+ * This function performs path validation on the certificate chain contained in
  * the credential handle.
  *
  * @param cred_handle
@@ -1901,10 +1877,13 @@ globus_gsi_cred_verify_cert_chain(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* globus_gsi_cred_verify_cert_chain() */
 
 /**
+ * @brief Verify credential at a specific time
  * @ingroup globus_gsi_cred_handle
- * This function performs path valiadtion on the certificate chain contained in
+ * @details
+ * This function performs path validation on the certificate chain contained in
  * the credential handle.  Expiration checks are done at the time given.
  *
  * @param cred_handle
@@ -2103,9 +2082,12 @@ globus_gsi_cred_verify_cert_chain_when(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* globus_gsi_cred_verify_cert_chain_when() */
 
 /**
+ * @brief Verify a credential
  * @ingroup globus_gsi_cred_handle
+ * @details
  * This function checks that the certificate is signed by the public key
  * of the issuer cert (the first cert in the chain). Note that this function
  * DOES NOT check the private key or the public of the certificate, as
@@ -2168,16 +2150,14 @@ globus_gsi_cred_verify(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_verify() */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
- * @name Good Till
- */
-/* @{ */
-/**
+ * @brief Get time until expiration
  * @ingroup globus_gsi_cred_operations
+ * @details
  * Get the amount of time this credential is good for (time at
  * which it expires.  Each of the certs in the cert chain as well
  * as the cert associated with the cred are checked.  Whichever
@@ -2247,6 +2227,5 @@ globus_i_gsi_cred_goodtill(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
-
+/* globus_i_gsi_cred_goodtill() */
 #endif

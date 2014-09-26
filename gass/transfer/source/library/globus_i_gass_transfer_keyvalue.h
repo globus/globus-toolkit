@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_i_gass_transfer_keyvalue.h
- *
+ * @brief GASS Transfer Key Value
  */
+
 #ifndef GLOBUS_GASS_TRANSFER_KEYVALUE_H
 #define GLOBUS_GASS_TRANSFER_KEYVALUE_H
 
@@ -59,3 +62,5 @@ globus_i_gass_transfer_keyvalue_destroy(
 #endif
 
 #endif /* GLOBUS_GASS_INCLUDE_GLOBUS_GASS_TRANSFER_KEYVALUE_H */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

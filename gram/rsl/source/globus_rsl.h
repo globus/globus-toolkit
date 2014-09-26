@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_rsl.h Globus RSL Parsing */
+/**
+ * @file globus_rsl.h
+ * @brief Globus RSL Parsing
+ */
 
 #ifndef GLOBUS_RSL_H
 #define GLOBUS_RSL_H

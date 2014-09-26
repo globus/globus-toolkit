@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_symboltable.h Lightweight Chaining Symboltable */
+/**
+ * @file globus_symboltable.h
+ * @brief Lightweight Chaining Symboltable
+ */
 
 #ifndef GLOBUS_SYMBOLTABLE_H
 #define GLOBUS_SYMBOLTABLE_H

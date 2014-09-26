@@ -1,13 +1,13 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.12
+Version:	8.13
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_client-8.12.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_client-8.13.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
@@ -141,6 +141,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 23 2014 Globus Toolkit <support@globus.org> - 8.13-1
+- Include more manpages for API
+- Fix some Doxygen issues
+- Fix dependency
+- Quiet some autoconf/automake warnings
+- Use mixed case man page install for all packages
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 8.12-1
 - Merge fixes from ellert-globus_6_branch
 

@@ -25,10 +25,10 @@
 #include <stdlib.h>
 
 /**
- * @brief Token Get File Descriptor
+ * @brief Get token from a FILE *
  * @ingroup globus_gss_assist_tokens
  * @details
- * Use a open file discriptor to get a token.  This function
+ * Use a open FILE handle to get a token.  This function
  * provides parameter types that allow it to be passed to
  * @ref globus_gss_assist_init_sec_context and 
  * @ref globus_gss_assist_accept_sec_context
@@ -120,7 +120,7 @@ globus_gss_assist_token_get_fd(
                        |   ((unsigned int) int_buf[4]) );
         }
         
-        /* If we are using the globus_ssleay, with 
+        /* If we are using the Globus GSSAPI, with 
          * international version, we may be using the 
          * "26" type, where the length is really the hash 
          * length, and there is a hash, 8 byte seq andi
@@ -220,10 +220,10 @@ globus_gss_assist_token_get_fd(
 /* globus_gss_assist_token_get_fd() */
 
 /**
- * @brief Token Send File Descriptor
+ * @brief Send token via a FILE *
  * @ingroup globus_gss_assist_tokens
  * @details
- * Write a token to the open file descriptor.  Will write it with a 4 byte
+ * Write a token to the open FILE handle.  Will write it with a 4 byte
  * length.  This function provides parameter types that allow 
  * it to be passed to
  * @ref globus_gss_assist_init_sec_context and 
@@ -264,11 +264,11 @@ globus_gss_assist_token_send_fd(
 /* globus_gss_assist_token_send_fd */
 
 /**
- * @brief Token Send File Descriptor Without Length
+ * @brief Send token to a FILE *
  * @ingroup globus_gss_assist_tokens
  * @details
- * Write a token to the open file descripter. 
- * Will write it without a length. so as to 
+ * Write a token to the open FILE. This function will write it without a
+ * length, so that the FILE stream only contains GSSAPI tokens.
  */
 int
 globus_gss_assist_token_send_fd_without_length(
@@ -293,11 +293,11 @@ globus_gss_assist_token_send_fd_without_length(
 /* globus_gss_assist_token_send_fd_without_length() */
 
 /**
- * @brief Token Send File Descriptor Flag EX
+ * @brief Send a token to a FILE *
  * @ingroup globus_gss_assist_tokens
  * @details
- * Write a token to the open file descripter. 
- * will look at the flag to determine if the length field need
+ * Write a token to the open FILE *. This function 
+ * will look at the flag to determine if the length field needs
  * to be written.
  *
  * @param exp

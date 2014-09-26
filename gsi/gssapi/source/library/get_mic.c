@@ -238,7 +238,7 @@ GSS_CALLCONV gss_get_mic(
  * @brief Sign
  * @ingroup globus_gsi_gssapi
  * @details
- * Deprecated.  Does the same thing as gss_get_mic for V1 compatability.
+ * Deprecated.  Does the same thing as gss_get_mic for V1 compatibility.
  *
  * @param minor_status
  * @param context_handle

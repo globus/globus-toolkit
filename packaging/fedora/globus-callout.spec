@@ -1,23 +1,23 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
-Version:	3.12
+Version:	3.13
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_callout-3.12.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_callout-3.13.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-common%{?_isa} >= 15
 
 %if 0%{?suse_version} > 0
 BuildRequires: libtool
 %else
 BuildRequires: libtool-ltdl-devel
 %endif
-BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-common-devel >= 15
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -37,7 +37,7 @@ BuildRequires:  perl-Test-Simple
 Summary:	Globus Toolkit - Globus Callout Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-common-devel%{?_isa} >= 15
 
 %package doc
 Summary:	Globus Toolkit - Globus Callout Library Documentation Files
@@ -130,6 +130,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Sep 22 2014 Globus Toolkit <support@globus.org> - 3.13-1
+- Doxygen markup fixes
+- Use consistent flavor tags
+- Use mixed case man page install for all packages
+- Use consistent PREDEFINED in all Doxyfiles
+- Fix dependency version
+- Fix typos and clarify some documentation
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 3.12-1
 - Merge fixes from ellert-globus_6_branch
 

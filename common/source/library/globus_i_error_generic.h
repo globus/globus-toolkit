@@ -19,7 +19,10 @@
 #ifndef GLOBUS_I_ERROR_GENERIC_H
 #define GLOBUS_I_ERROR_GENERIC_H
 
-/** @file globus_i_error_generic.h Globus Generic Error */
+/**
+ * @file globus_i_error_generic.h
+ * @brief Globus Generic Error
+ */
 
 #include "globus_common_include.h"
 

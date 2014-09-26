@@ -1340,7 +1340,7 @@ globus_callback_adjust_period_threads(
             
             if(callback_info->running_count == 0)
             {
-                /* decr my reference to this since I dont 
+                /* decr my reference to this since I don't 
                  * have control of it anymore  -- this is safe to do within space's
                  * lock since user still holds one ref
                  */

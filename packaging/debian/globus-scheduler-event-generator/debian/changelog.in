@@ -1,3 +1,13 @@
+globus-scheduler-event-generator (5.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Use mixed case man page install for all packages
+  * Doxygen markup fixes
+  * Fix broken globus-scheduler-event-generator-admin script
+  * Add documentation for globus-scheduler-event-generator and globus-scheduler-event-generator-admin
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Tue, 23 Sep 2014 11:10:37 -0400
+
 globus-scheduler-event-generator (5.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

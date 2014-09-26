@@ -1,146 +1,192 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
-<!-- Canonical version of this document lives in 
-$Header$
--->
-
-<refentry id="gram5-cmd-globus-job-status">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+<refentry lang="en">
+<refentryinfo>
+    <title>GLOBUS-JOB-STATUS(1)</title>
+</refentryinfo>
 <refmeta>
 <refentrytitle>globus-job-status</refentrytitle>
 <manvolnum>1</manvolnum>
-<refmiscinfo class="author">University of Chicago</refmiscinfo>
+<refmiscinfo class="source">University of Chicago</refmiscinfo>
+<refmiscinfo class="manual">Globus Toolkit Manual</refmiscinfo>
 </refmeta>
-
 <refnamediv>
-<refname>globus-job-status</refname>
-<refpurpose>Check the status of a GRAM5 job</refpurpose>
+    <refname>globus-job-status</refname>
+    <refpurpose>Check the status of a GRAM5 job</refpurpose>
 </refnamediv>
-<refsynopsisdiv>
-<cmdsynopsis>
-<command>globus-job-status</command>
-<arg choice="plain"><replaceable>JOBID</replaceable></arg>
-</cmdsynopsis>
-<cmdsynopsis>
-<command>globus-job-status</command>
-<arg>-help</arg>
-<arg>-usage</arg>
-<arg>-version</arg>
-<arg>-versions</arg>
-</cmdsynopsis>
+<refsynopsisdiv id="globus-job-status-SYNOPSIS">
+<simpara><emphasis role="strong">globus-job-status</emphasis> <emphasis>JOBID</emphasis></simpara>
+<simpara><emphasis role="strong">globus-job-status</emphasis> -help | -usage | -version | -versions</simpara>
 </refsynopsisdiv>
-
-<refsect1><title>Description</title>
-<para>
-The <command>globus-job-status</command> program checks the status of a GRAM
-job by sending a status request to the job manager contact for that job
-specifed by the <replaceable>JOBID</replaceable> parameter. If
-successful, it will print the job status to standard output. The states 
-supported by <command>globus-job-status</command> are:
-
+<refsect1 id="globus-job-status-DESCRIPTION">
+<title>DESCRIPTION</title>
+<simpara>The <emphasis role="strong">globus-job-status</emphasis> program checks the status of a GRAM job by sending a
+status request to the job manager contact for that job specified by the <emphasis>JOBID</emphasis>
+parameter. If successful, it will print the job status to standard output. The
+states supported by <emphasis role="strong">globus-job-status</emphasis> are:</simpara>
 <variablelist>
-    <varlistentry>
-        <term>PENDING</term>
-        <listitem>
-            <para>The job has been submitted to the LRM but has not yet
-            begun execution.</para>
-        </listitem>
-    </varlistentry>
-    <varlistentry>
-        <term>ACTIVE</term>
-        <listitem><para>The job has begun execution.</para></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term>FAILED</term>
-        <listitem><para>The job has failed.</para></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term>SUSPENDED</term>
-        <listitem><para>The job is currently suspended by the
-        LRM.</para></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term>DONE</term>
-        <listitem><para>The job has completed.</para></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term>UNSUBMITTED</term>
-        <listitem><para>The job has been accepted by GRAM, but not yet
-        submitted to the LRM.</para></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term>STAGE_IN</term>
-        <listitem><para>The job has been accepted by GRAM and is
-        currently staging files prior to being submitted to the
-        LRM.</para></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term>STAGE_OUT</term>
-        <listitem><para>The job has completed execution and is
-        currently staging files from the service node to other http,
-        GASS, or GridFTP servers.</para></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">PENDING</emphasis>
+</term>
+<listitem>
+<simpara>
+    The job has been submitted to the LRM but has not yet begun execution.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">ACTIVE</emphasis>
+</term>
+<listitem>
+<simpara>
+    The job has begun execution.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">FAILED</emphasis>
+</term>
+<listitem>
+<simpara>
+    The job has failed.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">SUSPENDED</emphasis>
+</term>
+<listitem>
+<simpara>
+    The job is currently suspended by the LRM.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">DONE</emphasis>
+</term>
+<listitem>
+<simpara>
+    The job has completed.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">UNSUBMITTED</emphasis>
+</term>
+<listitem>
+<simpara>
+    The job has been accepted by GRAM, but not yet submitted to the LRM.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">STAGE_IN</emphasis>
+</term>
+<listitem>
+<simpara>
+    The job has been accepted by GRAM and is currently staging files prior to
+    being submitted to the LRM.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">STAGE_OUT</emphasis>
+</term>
+<listitem>
+<simpara>
+    The job has completed execution and is currently staging files from the
+    service node to other http, GASS, or GridFTP servers.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
 </refsect1>
-
-<refsect1><title>Options</title>
-<para>
-The full set of options to <command>globus-job-status</command> are:
-
+<refsect1 id="globus-job-status-OPTIONS">
+<title>OPTIONS</title>
+<simpara>The full set of options to <emphasis role="strong">globus-job-status</emphasis> are:</simpara>
 <variablelist>
-    <varlistentry>
-        <term><option>-help</option></term>
-        <term><option>-usage</option></term>
-        <listitem><simpara>Display a help message to standard error and
-        exit.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-version</option></term>
-        <listitem><simpara>Display the software version of the
-                <command>globus-job-status</command> program to
-                standard output.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><option>-versions</option></term>
-        <listitem><simpara>Display the software version of the
-        <command>globus-job-status</command> program including DiRT
-        information to standard output.</simpara></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-help, -usage</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display a help message to standard error and exit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-version</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the software version of the <emphasis role="strong">globus-job-status</emphasis> program to standard
+    output.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-versions</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the software version of the <emphasis role="strong">globus-job-status</emphasis> program including
+    DiRT information to standard output.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
 </refsect1>
-
-<refsect1><title>ENVIRONMENT</title>
-<para>
-If the following variables affect the execution of
-<command>globus-job-status</command>.
-
+<refsect1 id="globus-job-status-ENVIRONMENT">
+<title>ENVIRONMENT</title>
+<simpara>If the following variables affect the execution of <emphasis role="strong">globus-job-status</emphasis>.</simpara>
 <variablelist>
-    <varlistentry>
-        <term>X509_USER_PROXY</term>
-        <listitem><simpara>Path to proxy credential.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term>X509_CERT_DIR</term>
-        <listitem><simpara>Path to trusted certificate directory.</simpara></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_USER_PROXY</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to proxy credential.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_CERT_DIR</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to trusted certificate directory.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
 </refsect1>
-
-<refsect1><title>Bugs</title>
-<para>
-The <command>globus-job-status</command> program can not distinguish between
-the case of the job manager terminating for any reason and the job being in the
-<literal>DONE</literal> state.
-</para>
+<refsect1 id="globus-job-status-BUGS">
+<title>BUGS</title>
+<simpara>The <emphasis role="strong">globus-job-status</emphasis> program can not distinguish between the case of the job
+manager terminating for any reason and the job being in the
+<literal>DONE</literal> state.</simpara>
 </refsect1>
-
-<refsect1><title>See Also</title>
-<para>
-<citerefentry><refentrytitle>globusrun</refentrytitle><manvolnum>1</manvolnum></citerefentry>
-</para>
+<refsect1 id="globus-job-status-SEEALSO">
+<title>SEE ALSO</title>
+<simpara>globusrun(1)</simpara>
 </refsect1>
-
+<refsect1 id="globus-job-status-AUTHOR">
+<title>AUTHOR</title>
+<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
+</refsect1>
 </refentry>

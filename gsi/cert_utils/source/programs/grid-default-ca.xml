@@ -1,200 +1,152 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
-    <!ENTITY cmdname "grid-default-ca">
-    <!ENTITY cmd "<command>grid-default-ca</command>">
-]>
-<!-- Canonical version of this document lives in 
-$Header$
--->
-
-<refentry id="grid-default-ca" xreflabel="grid-default-ca">
-  <refentryinfo>
-    <corpauthor>University of Chicago</corpauthor>
-  </refentryinfo>
-  <refmeta>
-    <refentrytitle>&cmdname;</refentrytitle>
-    <manvolnum>8</manvolnum>
-    <refmiscinfo class="source">Globus Toolkit</refmiscinfo>
-    <refmiscinfo class="version"><replaceable role="entity">version</replaceable></refmiscinfo>
-  </refmeta>
-  <refnamediv>
-    <refname>&cmdname;</refname>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+<refentry lang="en">
+<refentryinfo>
+    <title>GRID-DEFAULT-CA(8)</title>
+</refentryinfo>
+<refmeta>
+<refentrytitle>grid-default-ca</refentrytitle>
+<manvolnum>8</manvolnum>
+<refmiscinfo class="source">University of Chicago</refmiscinfo>
+<refmiscinfo class="manual">Globus Toolkit</refmiscinfo>
+</refmeta>
+<refnamediv>
+    <refname>grid-default-ca</refname>
     <refpurpose>Select default CA for certificate requests</refpurpose>
-  </refnamediv>
-  <refsynopsisdiv>
-    <cmdsynopsis>
-      &cmd;
-      <arg>-help</arg>
-      <arg>-h</arg>
-      <arg>-usage</arg>
-      <arg>-u</arg>
-      <arg>-version</arg>
-      <arg>-versions</arg>
-    </cmdsynopsis>
-    <cmdsynopsis>
-      &cmd;
-      <arg choice="plain">-list</arg>
-      <arg>-dir <replaceable>CA-DIRECTORY</replaceable></arg>
-    </cmdsynopsis>
-    <cmdsynopsis>
-      &cmd;
-      <arg>-ca <replaceable>CA-HASH</replaceable></arg>
-      <arg>-dir <replaceable>CA-DIRECTORY</replaceable></arg>
-    </cmdsynopsis>
-  </refsynopsisdiv>
-  <refsect1>
-    <title>Description</title>
-    <para>
-    The &cmd; program sets the default certificate authority to use when
-    the <command>grid-cert-request</command> script is run. The CA's
-    certificate, configuration, and signing policy must be installed in the
-    trusted certificate directory to be able to request certificates from
-    that CA. Note that some CAs have different policies and use other tools
-    to handle certificate requests. Please consult your CA's support
-    staff if you unsure. The &cmd; is designed to work with CAs implemented
-    using the <application>globus_simple_ca</application> package.
-    </para>
-
-    <para>
-    By default, the &cmd; program displays a list of installed CA certificates
-    and the prompts the user for which one to set as the default. If invoked
-    with the <option>-list</option> command-line option, &cmd; will print
-    the list and not prompt nor set the default CA. If invoked with the
-    <option>-ca</option> option, it will not list or prompt, but set the
-    default CA to the one with the hash that matches the
-    <replaceable>CA-HASH</replaceable> argument to that option. If
-    &cmd; is used to set the default CA, the caller of this program must have
-    write permissions to the trusted certificate directory.
-    </para>
-
-    <para>
-    The &cmd; program sets the CA in the one of the grid security directories.
-    It looks in the directory named by the <envar>GRID_SECURITY_DIR</envar>
-    environment, the <envar>X509_CERT_DIR</envar>,
-    <filename>/etc/grid-security</filename>, and
-    <filename><envar>$GLOBUS_LOCATION</envar>/share/certificates</filename>.
-    </para>
-
-    <para>
-    The full set of command-line options to &cmd; are:
-
-    <variablelist>
-        <varlistentry>
-            <term><option>-help</option></term>
-            <term><option>-h</option></term>
-            <term><option>-usage</option></term>
-            <term><option>-u</option></term>
-            <listitem><simpara>Display the command-line options to 
-            &cmd; and exit.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-version</option></term>
-            <term><option>-versions</option></term>
-            <listitem><simpara>Display the version number of the &cmd;
-            command. The second form includes more
-            details.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-dir <replaceable>CA-DIRECTORY</replaceable></option></term>
-            <listitem><simpara>Use the trusted certificate directory named
-            by <replaceable>CA-DIRECTORY</replaceable> instead of the
-            default.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-list</option></term>
-            <listitem><simpara>Instead of changing the default CA, print out
-            a list of all available CA certificates in the trusted certificate
-            directory</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-ca <replaceable>CA-HASH</replaceable></option></term>
-            <listitem><simpara>Set the default CA without displaying the
-            list of choices or prompting. The CA file named by
-            <replaceable>CA-HASH</replaceable> must exist.</simpara>
-            </listitem>
-        </varlistentry>
-    </variablelist>
-
-    </para>
-  </refsect1>
-
-  <refsect1>
-    <title>Examples</title>
-    <para>List the contents of the trusted certificate directory that contain
-    the string Example:
-    
-    <screen><prompt>% </prompt>&cmd; | <command>grep Example</command>
-<computeroutput>15) cd1186ff -  /DC=org/DC=Example/DC=Grid/CN=Example CA</computeroutput></screen>
-    </para>
-
-    <para>Choose that CA as the default:
-    
-    <screen><prompt>% </prompt>&cmd; <option>-ca cd1186ff</option>
-<computeroutput>
+</refnamediv>
+<refsynopsisdiv id="grid-default-ca-SYNOPSIS">
+<simpara><emphasis role="strong">grid-default-ca</emphasis> -help | -h | -usage | -u | -version | -versions</simpara>
+<simpara><emphasis role="strong">grid-default-ca</emphasis> [-ca <emphasis>CA-HASH</emphasis> | -list ] [OPTIONS]</simpara>
+</refsynopsisdiv>
+<refsect1 id="grid-default-ca-DESCRIPTION">
+<title>DESCRIPTION</title>
+<simpara>The <emphasis role="strong">grid-default-ca</emphasis> program sets the default certificate authority to use when
+the <emphasis role="strong">grid-cert-request</emphasis> script is run. The CA&#8217;s certificate, configuration, and
+signing policy must be installed in the trusted certificate directory to be
+able to request certificates from that CA. Note that some CAs have different
+policies and use other tools to handle certificate requests. Please consult
+your CA&#8217;s support staff if you unsure. The <emphasis role="strong">grid-default-ca</emphasis> is designed to
+work with CAs implemented using the <emphasis role="strong">globus_simple_ca</emphasis> package.</simpara>
+<simpara>By default, the <emphasis role="strong">grid-default-ca</emphasis> program displays a list of installed CA
+certificates and the prompts the user for which one to set as the default. If
+invoked with the <emphasis>-list</emphasis> command-line option, <emphasis role="strong">grid-default-ca</emphasis> will print the
+list and not prompt nor set the default CA. If invoked with the
+<emphasis>-ca</emphasis> option, it will not list or prompt, but set the default CA
+to the one with the hash that matches the <emphasis>CA-HASH</emphasis>
+argument to that option. If <emphasis role="strong">grid-default-ca</emphasis> is used to set the default CA,
+the caller of this program must have write permissions to the trusted
+certificate directory.</simpara>
+<simpara>The <emphasis role="strong">grid-default-ca</emphasis> program sets the CA in the one of the grid security
+directories.  It looks in the directory named by the
+<literal>GRID_SECURITY_DIR</literal> environment, the <literal>X509_CERT_DIR</literal> environment,
+<literal>/etc/grid-security</literal> and <literal>$GLOBUS_LOCATION/share/certificates</literal>.</simpara>
+</refsect1>
+<refsect1 id="grid-default-ca-OPTIONS">
+<title>OPTIONS</title>
+<simpara>The full set of command-line options to <emphasis role="strong">grid-default-ca</emphasis> are:</simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">-help, -h, -usage, -u</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the command-line options to <emphasis role="strong">grid-default-ca</emphasis> and
+    exit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-version, -versions</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the version number of the <emphasis role="strong">grid-default-ca</emphasis> command. The second
+    form includes more details.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-dir <emphasis>CA-DIRECTORY</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Use the trusted certificate directory named by
+    <emphasis>CA-DIRECTORY</emphasis> instead of the default.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-list</emphasis>
+</term>
+<listitem>
+<simpara>
+    Instead of changing the default CA, print out a list of all available CA
+    certificates in the trusted certificate directory.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-ca <emphasis>CA-HASH</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Set the default CA without displaying the list of choices or prompting. The
+    CA file named by <emphasis>CA-HASH</emphasis> must exist.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="grid-default-ca-EXAMPLES">
+<title>EXAMPLES</title>
+<simpara>List the contents of the trusted certificate directory that contain
+the string Example:</simpara>
+<literallayout class="monospaced">% grid-default-ca | grep Example
+15) cd1186ff -  /DC=org/DC=Example/DC=Grid/CN=Example CA</literallayout>
+<simpara>Choose that CA as the default:</simpara>
+<literallayout class="monospaced">% grid-default-ca -ca cd1186ff
 setting the default CA to: /DC=org/DC=Example/DC=Grid/CN=Example CA
-
 linking /etc/grid-security/certificates/grid-security.conf.cd1186ff to
         /etc/grid-security/certificates/grid-security.conf
-
 linking /etc/grid-security/certificates/grid-host-ssl.conf.cd1186ff  to
         /etc/grid-security/certificates/grid-host-ssl.conf
-
 linking /etc/grid-security/certificates/grid-user-ssl.conf.cd1186ff  to
         /etc/grid-security/certificates/grid-user-ssl.conf
-
-...done.</computeroutput></screen>
-    </para>
-  </refsect1>
-
-  <refsect1>
-    <title>Environment Variables</title>
-
-    <para>
-    The following environment variables affect the execution of &cmd;:
-    <variablelist>
-        <varlistentry>
-            <term><envar>GRID_SECURITY_DIRECTORY</envar></term>
-            <listitem><simpara>Path to the default trusted certificate
-            directory.</simpara></listitem>
-        </varlistentry>
-        <varlistentry>
-            <term><envar>X509_CERT_DIR</envar></term>
-            <listitem><simpara>Path to the default trusted certificate
-            directory.</simpara></listitem>
-        </varlistentry>
-        <varlistentry>
-            <term><envar>GLOBUS_LOCATION</envar></term>
-            <listitem><simpara>Path to the Globus Toolkit installation
-            directory.</simpara></listitem>
-        </varlistentry>
-    </variablelist>
-    </para>
-  </refsect1>
-
-  <refsect1>
-    <title>Bugs</title>
-    <para>
-    The &cmd; program displays CAs from all of the directories in its search
-    list; however, <command>grid-cert-request</command> only uses the first 
-    which contains a grid security configuration.
-    </para>
-    <para>
-    The &cmd; program may display the same CA multiple times if it is located
-    in multiple directories in its search path. However, it does not provide
-    any information about which one would actually be used by the 
-    <command>grid-cert-request</command> command.
-    </para>
-  </refsect1>
-
-  <refsect1>
-    <title>See Also</title>
-    <para>
-        <citerefentry><refentrytitle>grid-cert-request</refentrytitle><manvolnum>1</manvolnum></citerefentry>
-    </para>
-  </refsect1>
+...done.</literallayout>
+</refsect1>
+<refsect1 id="grid-default-ca-ENVIRONMENT">
+<title>ENVIRONMENT</title>
+<simpara>The following environment variables affect the execution of <emphasis role="strong">grid-default-ca</emphasis>:
+<emphasis role="strong">GRID_SECURITY_DIRECTORY</emphasis>::
+    Path to the default trusted certificate directory.
+<emphasis role="strong">X509_CERT_DIR</emphasis>::
+    Path to the default trusted certificate directory.
+<emphasis role="strong">GLOBUS_LOCATION</emphasis>::
+    Path to the Globus Toolkit installation directory.</simpara>
+</refsect1>
+<refsect1 id="grid-default-ca-BUGS">
+<title>BUGS</title>
+<simpara>The <emphasis role="strong">grid-default-ca</emphasis> program displays CAs from all of the directories in its
+search list; however, <emphasis role="strong">grid-cert-request</emphasis> only uses the first
+which contains a grid security configuration.</simpara>
+<simpara>The <emphasis role="strong">grid-default-ca</emphasis> program may display the same CA multiple times if it is
+located in multiple directories in its search path. However, it does not
+provide any information about which one would actually be used by the
+<emphasis role="strong">grid-cert-request</emphasis> command.</simpara>
+</refsect1>
+<refsect1 id="grid-default-ca-SEEALSO">
+<title>SEE ALSO</title>
+<simpara>grid-cert-request(1)</simpara>
+</refsect1>
+<refsect1 id="grid-default-ca-AUTHOR">
+<title>AUTHOR</title>
+<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
+</refsect1>
 </refentry>

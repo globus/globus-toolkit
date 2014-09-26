@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file thread_test.c Globus Thread Test */
+/**
+ * @file thread_test.c
+ * @brief Globus Thread Test
+ */
 
 #include "globus_common.h"
 #include "globus_test_tap.h"

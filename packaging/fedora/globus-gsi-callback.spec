@@ -1,13 +1,13 @@
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
-Version:	5.5
+Version:	5.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gsi_callback-5.5.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gsi_callback-5.6.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-openssl-module%{?_isa} >= 3
@@ -134,6 +134,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Sep 24 2014 Globus Toolkit <support@globus.org> - 5.6-1
+- Doxygen markup fixes
+- Include more manpages for API
+- Fix dependency version
+- Fix typos and clarify some documentation
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 5.5-1
 - Merge fixes from ellert-globus_6_branch
 

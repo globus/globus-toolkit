@@ -15,7 +15,8 @@
  */
 
 /**
- * @file http_get_test.c HTTP Get Test
+ * @file http_get_test.c
+ * @brief HTTP Get Test
  *
  * Test that clients can receive HTTP message bodies.
  *

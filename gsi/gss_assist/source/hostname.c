@@ -153,7 +153,7 @@ globus_gss_assist_authorization_host_name(
     
     /*
      * To work around the GSI GSSAPI library being case sensitive
-     * convert the hostname to lower case as noone seems to
+     * convert the hostname to lower case as no one seems to
      * request uppercase name certificates.
      */
 	    

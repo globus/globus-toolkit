@@ -30,7 +30,7 @@
  * @brief Duplicate Name
  * @ingroup globus_gsi_gssapi
  * @details
- * Copy a GSS name.
+ * Copy a GSSAPI name.
  *
  * @param minor_status
  * @param src_name

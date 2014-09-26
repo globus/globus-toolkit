@@ -1,3 +1,12 @@
+globus-gsi-sysconfig (6.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Include more manpages for API
+  * Doxygen markup fixes
+  * Fix typos and clarify some documentation
+  * Quiet some autoconf/automake warnings
+
+ -- Globus Toolkit <support@globus.org>  Thu, 25 Sep 2014 14:10:32 -0400
+
 globus-gsi-sysconfig (6.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

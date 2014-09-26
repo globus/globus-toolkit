@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file globus_debug.h
+ * @brief Debugging Routines
+ */
 
-/** @file globus_debug.h Debugging Routines */
 #ifndef GLOBUS_DEBUG_H
 #define GLOBUS_DEBUG_H
 
@@ -184,7 +187,7 @@ globus_debug_init(
     (globus_i_##module_name##_debug_handle.timestamp_levels & (level))
 
 /* most likely wrap this with your own macro,
- * so you dont need to pass module_name all the time
+ * so you don't need to pass module_name all the time
  * 'message' needs to be wrapped with parens and contains a format and
  * possibly var args
  */

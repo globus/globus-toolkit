@@ -17,12 +17,9 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_error_generic.c
- *
- * $RCSfile$
- * $Revision$
- * $Date$
+ * @brief Globus Error API
  */
-#endif
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #include "globus_object.h"
 #include "globus_module.h"
@@ -61,7 +58,7 @@ typedef struct
  *        Pointer to the originating module.
  * @param base_cause
  *        The error object causing the error. If this is the original
- *        error this paramater may be NULL.
+ *        error this parameter may be NULL.
  * @param type
  *        The error type. We may reserve part of this namespace for
  *        common errors. Errors not in this space are assumed to be
@@ -130,7 +127,7 @@ globus_error_construct_error(
  *        Pointer to the originating module.
  * @param base_cause
  *        The error object causing the error. If this is the original
- *        error this paramater may be NULL.
+ *        error this parameter may be NULL.
  * @param type
  *        The error type. We may reserve part of this namespace for
  *        common errors. Errors not in this space are assumed to be
@@ -203,7 +200,7 @@ globus_error_v_construct_error(
  *        Pointer to the originating module.
  * @param base_cause
  *        The error object causing the error. If this is the original
- *        error this paramater may be NULL.
+ *        error this parameter may be NULL.
  * @param type
  *        The error type. We may reserve part of this namespace for
  *        common errors. Errors not in this space are assumed to be

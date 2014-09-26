@@ -1,20 +1,20 @@
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
-Version:	1.6
+Version:	1.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridmap_eppn_callout-1.6.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridmap_eppn_callout-1.7.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
-BuildRequires:	globus-gsi-sysconfig-devel >= 1
-BuildRequires:	globus-gss-assist-devel >= 3
+BuildRequires:	globus-gsi-sysconfig-devel >= 5
+BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-gridmap-callout-error-devel
-BuildRequires:	globus-gssapi-gsi-devel >= 4
+BuildRequires:	globus-gssapi-gsi-devel >= 9
 BuildRequires:	globus-gsi-credential-devel >= 6
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:  automake >= 1.11
@@ -78,6 +78,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libglobus*
 
 %changelog
+* Thu Sep 25 2014 Globus Toolkit <support@globus.org> - 1.7-1
+- Fix dependency version
+- Quiet some autoconf/automake warnings
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 1.6-1
 - Merge fixes from ellert-globus_6_branch
 

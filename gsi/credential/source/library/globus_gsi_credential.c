@@ -179,12 +179,10 @@ globus_l_gsi_cred_subject_cmp(
 #endif
 
 /**
- * @name Read Credential
- */
-/* @{ */
-/**
+ * @brief Read a credential
  * @ingroup globus_gsi_cred_operations
- * Read a Credential from a filesystem location. The credential
+ * @details
+ * Read a credential from a filesystem location. The credential
  * to read will be determined by the search order specified in the handle
  * attributes.  
  * @param handle
@@ -209,7 +207,8 @@ globus_l_gsi_cred_subject_cmp(
  *        attributes' search order.
  *
  */
-globus_result_t globus_gsi_cred_read(
+globus_result_t
+globus_gsi_cred_read(
     globus_gsi_cred_handle_t            handle,
     X509_NAME *                         desired_subject)
 {
@@ -817,14 +816,12 @@ globus_result_t globus_gsi_cred_read(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_read() */
 
 /**
- * @name Reading Proxy Credentials
- */
-/* @{ */
-/**
+ * @brief Read proxy credential
  * @ingroup globus_gsi_cred_operations
+ * @details
  * Read a proxy from a PEM file.
  *
  * @param handle
@@ -836,7 +833,8 @@ globus_result_t globus_gsi_cred_read(
  * @return
  *        GLOBUS_SUCCESS or an error object identifier
  */
-globus_result_t globus_gsi_cred_read_proxy(
+globus_result_t
+globus_gsi_cred_read_proxy(
     globus_gsi_cred_handle_t            handle,
     const char *                        proxy_filename)
 {
@@ -887,14 +885,17 @@ globus_result_t globus_gsi_cred_read_proxy(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* globus_gsi_cred_read_proxy() */
 
 /**
+ * @brief Read proxy credential from a BIO
  * @ingroup globus_gsi_cred_operations
+ * @details
  * Read a Proxy Credential from a BIO stream and set the 
  * credential handle to represent the read credential.
  * The values read from the stream, in order, will be
  * the signed certificate, the private key, 
- * and the certificate chain
+ * and the certificate chain.
  *
  * @param handle
  *        The credential handle to set.  The credential
@@ -1123,14 +1124,12 @@ globus_gsi_cred_read_proxy_bio(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_read_proxy_bio() */
 
 /**
- * @name Read Key
- */
-/* @{ */
-/**
+ * @brief Read a private key
  * @ingroup globus_gsi_cred_operations
+ * @details
  * Read a key from a PEM file.
  *
  * @param handle
@@ -1214,17 +1213,14 @@ globus_gsi_cred_read_key(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_read_key() */
 
 /**
- * @name Read Cert and chain from file
- */
-/* @{ */
-/**
+ * @brief Read a certificate chain from a file
  * @ingroup globus_gsi_cred_operations
+ * @details
  * Read a cert from a file.  Cert should be in PEM format.  Will also
  * read additional certificates as chain if present.
-
  *
  * @param handle
  *        the handle to set based on the certificate that is read
@@ -1234,7 +1230,8 @@ globus_gsi_cred_read_key(
  * @return
  *        GLOBUS_SUCCESS or an error object identifier
  */
-globus_result_t globus_gsi_cred_read_cert(
+globus_result_t
+globus_gsi_cred_read_cert(
     globus_gsi_cred_handle_t            handle,
     char *                              cert_filename)
 {
@@ -1275,13 +1272,12 @@ globus_result_t globus_gsi_cred_read_cert(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* globus_gsi_cred_read_cert() */
 
 /**
- * @name Read Cert and chain from BIO stream
- */
-/* @{ */
-/**
+ * @brief Read a certificate chain from a BIO
  * @ingroup globus_gsi_cred_operations
+ * @details
  * Read a cert from a BIO.  Cert should be in PEM format.  Will also
  * read additional certificates as chain if present.
  *
@@ -1293,7 +1289,8 @@ globus_result_t globus_gsi_cred_read_cert(
  * @return
  *        GLOBUS_SUCCESS or an error object identifier
  */
-globus_result_t globus_gsi_cred_read_cert_bio(
+globus_result_t
+globus_gsi_cred_read_cert_bio(
     globus_gsi_cred_handle_t            handle,
     BIO *                               bio)
 {
@@ -1393,17 +1390,15 @@ globus_result_t globus_gsi_cred_read_cert_bio(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_read_cert_bio() */
 
 
 /**
- * @name Read Cert and chain from a buffer
- */
-/* @{ */
-/**
+ * @brief Read certificate chain from a buffer
  * @ingroup globus_gsi_cred_operations
+ * @details
  * Read a cert from a buffer.  Cert should be in PEM format.  Will also
- * read additional certificates as chain if present.  Any paramter besides
+ * read additional certificates as chain if present.  Any parameter besides
  * pem_buf may be NULL.
  *
  * @param pem_buf
@@ -1531,16 +1526,14 @@ error:
     
     return result;
 }
-/* @} */
+/* globus_gsi_cred_read_cert_buffer() */
 
 
 /**
- * @name Read Cert & Key in PKCS12 Format
- */
-/* @{ */
-/**
+ * @brief Read certificate and key from a PKCS12 file
  * @ingroup globus_gsi_cred_operations
- * Read a cert & key from a file. The file should be in PKCS12 format.
+ * @details
+ * Read a cert and key from a file. The file should be in PKCS12 format.
  *
  * @param handle
  *        the handle to populate with the read credential
@@ -1550,7 +1543,8 @@ error:
  * @return
  *        GLOBUS_SUCCESS or an error object identifier
  */
-globus_result_t globus_gsi_cred_read_pkcs12(
+globus_result_t
+globus_gsi_cred_read_pkcs12(
     globus_gsi_cred_handle_t            handle,
     char *                              pkcs12_filename)
 {
@@ -1778,14 +1772,12 @@ globus_result_t globus_gsi_cred_read_pkcs12(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_read_pkcs12() */
 
 /**
- * @name Write Credential
- */
-/* @{ */
-/**
+ * @brief Write Credential
  * @ingroup globus_gsi_cred_operations
+ * @details
  * Write out a credential to a BIO.  The credential parameters written,
  * in order, are the signed certificate, the RSA private key,
  * and the certificate chain (a set of X509 certificates).
@@ -1799,7 +1791,8 @@ globus_result_t globus_gsi_cred_read_pkcs12(
  *        GLOBUS_SUCCESS unless an error occurred, in which
  *        case an error object ID is returned.
  */
-globus_result_t globus_gsi_cred_write(
+globus_result_t
+globus_gsi_cred_write(
     globus_gsi_cred_handle_t            handle,
     BIO *                               bio)
 {
@@ -1866,9 +1859,12 @@ globus_result_t globus_gsi_cred_write(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }    
+/* globus_gsi_cred_write() */
     
 /**
+ * @brief Write a proxy credential
  * @ingroup globus_gsi_cred_operations
+ * @details
  * Write out a credential to a file.  The credential parameters written,
  * in order, are the signed certificate, the RSA private key,
  * and the certificate chain (a set of X509 certificates).
@@ -1882,7 +1878,8 @@ globus_result_t globus_gsi_cred_write(
  *        GLOBUS_SUCCESS unless an error occurred, in which
  *        case an error object ID is returned.
  */
-globus_result_t globus_gsi_cred_write_proxy(
+globus_result_t
+globus_gsi_cred_write_proxy(
     globus_gsi_cred_handle_t            handle,
     char *                              proxy_filename)
 {
@@ -1996,14 +1993,12 @@ globus_result_t globus_gsi_cred_write_proxy(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }    
-/* @} */
+/* globus_gsi_cred_write_proxy() */
 
 /**
- * @name Get the X509 certificate type (EEC, CA, proxy type, etc.)
- */
-/* @{ */
-/**
+ * @brief Get the X.509 certificate type
  * @ingroup globus_gsi_cred_operations
+ * @details
  * Determine the type of the given X509 certificate For the list of possible
  * values returned, see globus_gsi_cert_utils_cert_type_t.
  *
@@ -2036,16 +2031,14 @@ globus_gsi_cred_get_cert_type(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_gsi_cred_get_cert_type() */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
- * @name Get PROXYCERTINFO Struct
- */
-/* @{ */
-/** 
+ * @brief Get PROXYCERTINFO Struct
  * @ingroup globus_i_gsi_cred
+ * @details
  * Get the PROXYCERTINFO struct from the X509 struct.
  * The PROXYCERTINFO struct that gets set must be freed
  * with a call to PROXYCERTINFO_free.
@@ -2138,7 +2131,7 @@ globus_i_gsi_cred_get_proxycertinfo(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+/* globus_i_gsi_cred_get_proxycertinfo() */
 
 int
 globus_i_gsi_cred_password_callback_no_prompt(

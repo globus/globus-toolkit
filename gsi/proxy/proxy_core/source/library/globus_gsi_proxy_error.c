@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-/** @file globus_gsi_proxy_error.c GSI Proxy Error Handling */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+/**
+ * @file globus_gsi_proxy_error.c
+ * @brief GSI Proxy Error Handling
+ */
 
 #include "globus_i_gsi_proxy.h"
 #include "globus_gsi_proxy_constants.h"
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 static char * 
 globus_l_gsi_proxy_error_strings[GLOBUS_GSI_PROXY_ERROR_LAST] =
@@ -28,14 +31,14 @@ globus_l_gsi_proxy_error_strings[GLOBUS_GSI_PROXY_ERROR_LAST] =
 /* 0 */   "Success",
 /* 1 */   "Error with the proxy handle",
 /* 2 */   "Error with the proxy handle attributes",
-/* 3 */   "Error with ASN1 proxycertinfo structure",
-/* 4 */   "Error with ASN1 proxypolicy structure",
+/* 3 */   "Error with ASN.1 proxycertinfo structure",
+/* 4 */   "Error with ASN.1 proxypolicy structure",
 /* 5 */   "Error with proxy path length",
-/* 6 */   "Error with X509 request structure",
-/* 7 */   "Error with X509 structure",
-/* 8 */   "Error with X509 extensions",
+/* 6 */   "Error with X.509 request structure",
+/* 7 */   "Error with X.509 structure",
+/* 8 */   "Error with X.509 extensions",
 /* 9 */   "Error with private key",
-/* 10 */  "Error with openssl's BIO handle",
+/* 10 */  "Error with OpenSSL's BIO handle",
 /* 11 */  "Error with credential",
 /* 12 */  "Error with credential handle",
 /* 13 */  "Error with credential handle attributes",

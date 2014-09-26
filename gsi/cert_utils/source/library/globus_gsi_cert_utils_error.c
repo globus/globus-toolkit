@@ -17,12 +17,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_cert_utils_error.c
- * Globus GSI Cert Utils Library
+ * @brief Globus GSI Cert Utils Library
  * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
  */
 #endif
 
@@ -38,8 +34,8 @@ globus_l_gsi_cert_utils_error_strings[GLOBUS_GSI_CERT_UTILS_ERROR_LAST] =
 /* 0 */   "Success",
 /* 1 */   "Error getting name entry of subject",
 /* 2 */   "Error copying subject name of cert",
-/* 3 */   "Error getting the Common Name of the cert's subject",
-/* 4 */   "Error adding Common Name to the cert's subject",
+/* 3 */   "Error getting the Common Name of the certificate's subject",
+/* 4 */   "Error adding Common Name to the certificate's subject",
 /* 5 */   "Out of memory",
 /* 6 */   "Error parsing subject name",
 /* 7 */   "Proxy does not comply with proxy certificate standard"

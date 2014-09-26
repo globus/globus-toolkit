@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS=-I m4
 SUBDIRS = .
 
 bin_PROGRAMS = globusrun
@@ -24,7 +25,15 @@ AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 globusrun_LDADD = $(PACKAGE_DEP_LIBS)
 
 
-MANUAL_SOURCE = globus-job-cancel.xml \
+MANUAL_SOURCE = globus-job-cancel.txt \
+                globus-job-clean.txt \
+                globus-job-get-output.txt \
+                globus-job-get-output-helper.txt \
+                globus-job-run.txt \
+                globus-job-status.txt \
+                globus-job-submit.txt \
+                globusrun.txt \
+                globus-job-cancel.xml \
                 globus-job-clean.xml \
                 globus-job-get-output.xml \
                 globus-job-get-output-helper.xml \
@@ -44,9 +53,15 @@ EXTRA_DIST = globus-job-get-output-helper \
 if BUILD_MANPAGES
 SUFFIXES = .xml .1
 
+if HAVE_A2X
+SUFFIXES += .txt
+.txt.xml:
+	$(A2X) -f docbook -d manpage $<
+endif
+
 .xml.1:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) $<
+	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) `test -f $< && echo $< || echo $(srcdir)/$<` > /dev/null
+	$(XSLTPROC) --nonet $(MAN_XSL) `test -f $< && echo $< || echo $(srcdir)/$<`
 MAINTAINERCLEANFILES = $(man_MANS)
 endif
 

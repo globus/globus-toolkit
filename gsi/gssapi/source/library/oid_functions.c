@@ -55,8 +55,8 @@ static gss_OID_desc  GSS_C_NT_EXPORT_NAME_desc =
 gss_OID GSS_C_NT_EXPORT_NAME = &GSS_C_NT_EXPORT_NAME_desc;
 
 /*
- * for backwards compatability, also define the V1 constant OID
- * pointing the V2 OIDs. This is done mostly for DLL compatability
+ * for backwards compatibility, also define the V1 constant OID
+ * pointing the V2 OIDs. This is done mostly for DLL compatibility
  */
 
 gss_OID gss_nt_user_name =        &GSS_C_NT_USER_NAME_desc;
@@ -119,9 +119,8 @@ gss_OID_desc * gss_nt_x509 = &gss_nt_x509_oid;
  * @param member_oid
  * @param oid_set
  *
- * @return
- *         GSS_S_COMPLETE indicates successful completion 
- *         GSS_S_FAILURE indicates that the operation failed 
+ * @retval GSS_S_COMPLETE Success
+ * @retval GSS_S_FAILURE Operation failed 
  */
 OM_uint32
 GSS_CALLCONV gss_add_oid_set_member(
@@ -199,9 +198,8 @@ free_set_exit:
  * @param minor_status
  * @param oid_set
  *
- * @return
- *         GSS_S_COMPLETE indicates successful completion 
- *         GSS_S_FAILURE indicates that the operation failed 
+ * @retval GSS_S_COMPLETE Success
+ * @retval GSS_S_FAILURE Operation failed 
  */
 OM_uint32
 GSS_CALLCONV gss_create_empty_oid_set(
@@ -254,8 +252,6 @@ GSS_CALLCONV gss_create_empty_oid_set(
  *
  * @param minor_status
  * @param mech_set
- *
- * @return
  */
 OM_uint32 
 GSS_CALLCONV gss_indicate_mechs(
@@ -326,7 +322,7 @@ GSS_CALLCONV gss_indicate_mechs(
  * @param minor_status
  * @param mech_set
  *
- * @return
+ * @retval GSS_S_COMPLETE Success
  */
 OM_uint32 
 GSS_CALLCONV gss_release_oid_set(
@@ -373,9 +369,8 @@ GSS_CALLCONV gss_release_oid_set(
  * @param set
  * @param present
  *
- * @return
- *         GSS_S_COMPLETE indicates successful completion 
- *         GSS_S_FAILURE indicates that the operation failed 
+ * @retval GSS_S_COMPLETE Success
+ * @retval GSS_S_FAILURE Operation failed 
  */
 OM_uint32 
 GSS_CALLCONV gss_test_oid_set_member(	

@@ -21,8 +21,8 @@
 Description:
 	This header file used internally by the oldgaa routines
 **********************************************************************/
-#ifndef _OLDGAA_UTILS_H
-#define _OLDGAA_UTILS_H_
+#ifndef OLDGAA_UTILS_H
+#define OLDGAA_UTILS_H
 #define MAX_STRING_SIZE  1024
 #define QUOTING	         '\"'
 #define WHITESPACE       ' '
@@ -105,4 +105,4 @@ oldgaa_regex_matches_string(const char * const  string,
 char **
 oldgaa_parse_regex(char * str);
 
-#endif /* _OLDGAA_UTILS_H_ */
+#endif /* OLDGAA_UTILS_H */

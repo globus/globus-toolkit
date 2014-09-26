@@ -929,7 +929,7 @@ globus_l_xio_mode_e_cancel_cb(
                  * requestor->xio_handle would be NULL if cancel was called 
                  * after enable_cancel is called in read/write and before the 
                  * lock is required in read/write. In that case an xio 
-                 * operation would not have been initiated. So I dont do 
+                 * operation would not have been initiated. So I don't do 
                  * anything here.
                  */
                 if (requestor->xio_handle)
@@ -2445,7 +2445,7 @@ globus_l_xio_mode_e_write_cb(
             globus_byte_t               descriptor;
             /* 
              * I'll get this cb with eod_sent == TRUE for one connection alone
-             * and I send EOF (if need be) on this connection alone. If I dont
+             * and I send EOF (if need be) on this connection alone. If I don't
              * need to send EOF and eods_sent == connection_count, I need to 
              * finish the write (that had SEND_EOD set on dd)
              */
@@ -2621,7 +2621,7 @@ globus_l_xio_mode_e_write_header_cb(
                 /* 
                  * handle->eod_offset also has same value. if i have to finish
                  * in eod_cb, connection_handle->outstanding_data_offset cant
-                 * be used coz i dont know which connection_handle is 
+                 * be used coz i don't know which connection_handle is 
                  * associated with the user_write (that had SEND_EOD set).
                  */
                 offset = connection_handle->outstanding_data_offset;
@@ -3000,7 +3000,7 @@ globus_l_xio_mode_e_write_eod_cb(
      */
     if (header->descriptor & GLOBUS_XIO_MODE_E_DATA_DESCRIPTOR_CLOSE)
     {
-        /* I dont register_close, if user has canceled the close already */
+        /* I don't register_close, if user has canceled the close already */
         if (!globus_error_match(
                 globus_error_peek(result), 
                 GLOBUS_XIO_MODULE, 

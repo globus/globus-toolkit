@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @file globus_callout_error.c
- * Globus Callout Infrastructure
+ * @brief Globus Callout Infrastructure
  * @author Sam Meder
  */
 
 #include "globus_callout_constants.h"
 #include "globus_i_callout.h"
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 char * 
 globus_l_callout_error_strings[GLOBUS_CALLOUT_ERROR_LAST] =

@@ -15,7 +15,8 @@
  */
 
 /**
- * @file gss_assist/source/accept.c GSSAPI Accept Function Implementations
+ * @file gss_assist/source/accept.c
+ * @brief GSSAPI Accept Function Implementations
  * @author Sam Lang, Sam Meder
  */
 
@@ -31,31 +32,31 @@
  * is called by the gram_gatekeeper. It isolates 
  * the GSSAPI from the rest of the gram code. 
  *
- * Initialize a gssapi security connection. Used by the server.  
+ * Initialize a GSSAPI security connection. Used by the server.  
  * The context_handle is returned, and there is one for each
  * connection.  This routine will take cake of the looping
  * and token processing, using the supplied get_token and
  * send_token routines. 
  *
  * @param minor_status
- *        gssapi return code
+ *        GSSAPI return code
  * @param context_handle
  *        pointer to returned context. 
  * @param cred_handle
  *        the cred handle obtained by acquire_cred.
  * @param src_name_char
- *        Pointer to char string repersentation of the
+ *        Pointer to char string representation of the
  *        client which contacted the server. Maybe NULL if not wanted.  
  *        Should be freed when done. 
  * @param ret_flags
  *        Pointer to which services are available after
  *        the connection is established. Maybe NULL if not wanted. 
  *        We will also use this to pass in flags to the globus
- *        version of gssapi_ssleay
+ *        version of GSSAPI
  * @param user_to_user_flag
  *        Pointer to flag to be set if
  *        the src_name is the same as our name. 
- *        (Follwing are particular to this assist routine)
+ *        (Following are particular to this assist routine)
  * @param token_status
  *        assist routine get/send token status
  * @param delegated_cred_handle
@@ -70,8 +71,8 @@
  * @param gss_assist_send_context
  *        first arg for the send token routine
  * @return
- *        GSS_S_COMPLETE on sucess
- *        Other gss errors on failure.
+ *        GSS_S_COMPLETE on success
+ *        Other GSSAPI errors on failure.
  */
 OM_uint32
 globus_gss_assist_accept_sec_context(
@@ -272,20 +273,20 @@ globus_gss_assist_accept_sec_context(
  * the calling application is responsible for doing the I/O directly.
  *
  * @param minor_status
- *        gssapi return code
+ *        GSSAPI return code
  * @param context_handle
  *        pointer to returned context. 
  * @param cred_handle
  *        the cred handle obtained by acquire_cred.
  * @param src_name_char
- *        Pointer to char string repersentation of the
+ *        Pointer to char string representation of the
  *        client which contacted the server. Maybe NULL if not wanted.  
  *        Should be freed when done. 
  * @param ret_flags 
  *        Pointer to which services are available after
  *        the connection is established. Maybe NULL if not wanted. 
- *        We will also use this to pass in flags to the globus
- *        version of gssapi_ssleay
+ *        We will also use this to pass in flags to the Globus
+ *        version of GSSAPI
  * @param user_to_user_flag
  *        Pointer to flag to be set if
  *        the src_name is the same as our name. 
@@ -298,7 +299,7 @@ globus_gss_assist_accept_sec_context(
  *        with a pointer to a allocated block of memory. If
  *        non-NULL the contents of this block should be written
  *        to the peer where they will be fed into the
- *        gss_assist_init_sec_context_async() function.
+ *        globus_gss_assist_init_sec_context_async() function.
  * @param output_buffer_lenp
  *        pointer to an integer which will be filled
  *        in with the length of the allocated output buffer
@@ -314,7 +315,7 @@ globus_gss_assist_accept_sec_context(
  *        GSS_S_CONTINUE_NEEDED when *output_bufferp should be sent to the
  *        peer and a new input_buffer read and this function called again.
  *
- *        Other gss errors on failure.
+ *        Other GSSAPI errors on failure.
  */
 OM_uint32
 globus_gss_assist_accept_sec_context_async(
@@ -362,7 +363,7 @@ globus_gss_assist_accept_sec_context_async(
 
     /* This will not work if the context handle has been initialized
        before the first call. Don't know how to fix it since I can't
-       access fields in the handle outside the GSS API. - Sam
+       access fields in the handle outside the GSSAPI. - Sam
     */
     
     if(*context_handle == GSS_C_NO_CONTEXT)

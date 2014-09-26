@@ -19,6 +19,7 @@
 
 /**
  * @file globus_xio_gsi.h
+ * @brief XIO GSI Driver
  * @author Sam Meder
  */
 
@@ -52,15 +53,14 @@ extern "C" {
  * If the handle is created with
  * globus_xio_server_register_accept (), the
  * globus_xio_register_open () call will proceed to accept a GSSAPI
- * security context. Upon successful completion of the open, ie after
- * the open callback has been called, the application may
+ * security context. Upon successful completion of the open (after
+ * the open callback has been called) the application may
  * proceed to read or write data associated with the GSI session.
  *
  * If the handle is created with globus_xio_handle_create (), then
  * the XIO handle will implement the client-side (init) of the GSSAPI call
  * sequence and establish a security context with the accepting side indicated
  * by the contact_string passed to globus_xio_register_open ().
- *
  */
  
 /**
@@ -86,10 +86,10 @@ extern "C" {
  * cleans up the internal resources associated with the http server
  * and calls close on the listener.
  *
- * All accepted handles inherit all gsi specific attributes set in the attr to
+ * All accepted handles inherit all GSI-specific attributes set in the attr to
  * globus_xio_server_create(), but can be overridden with the attr to 
  * globus_xio_register_open(). Furthermore, accepted handles will use the
- * GSSAPI accept security context call unless explicitly overriden during the
+ * GSSAPI accept security context call unless explicitly overridden during the
  * globus_xio_register_open() call (
  * GLOBUS_XIO_GSI_FORCE_SERVER_MODE).
  */
@@ -123,7 +123,7 @@ extern "C" {
  * @section globus_xio_gsi_driver_errors_sect Error Types
  * 
  * The GSI driver uses mostly GSSAPI calls, so it generally just wraps the
- * underlying GSSAPI errors or uses generic xio errors.
+ * underlying GSSAPI errors or uses generic XIO errors.
  * 
  * @see globus_xio_driver_error_match ()
  * @see globus_error_gssapi_match ()
@@ -137,7 +137,7 @@ extern "C" {
 typedef enum
 {
     /** Indicates that the established context does not meet the required
-     * protecetion level
+     * protection level
      */
     GLOBUS_XIO_GSI_ERROR_INVALID_PROTECTION_LEVEL,
     /** Wraps a GSSAPI error */
@@ -152,7 +152,7 @@ typedef enum
     GLOBUS_XIO_GSI_ERROR_EMPTY_HOST_NAME,
     /** Indicates that the peer is not authorized */       
     GLOBUS_XIO_GSI_AUTHORIZATION_FAILED,
-    /** Indicates the the token being read is too big. Usually happens
+    /** Indicates the token being read is too big. Usually happens
      *  when someone tries to establish a non secure session with a
      *  endpoint that expects security*/
     GLOBUS_XIO_GSI_ERROR_TOKEN_TOO_BIG
@@ -180,7 +180,7 @@ typedef enum
      *
      * @param credential
      *      The credential to set. The credential structure
-     *      needs to remain valid for the lifetime of any xio datastructure it
+     *      needs to remain valid for the lifetime of any XIO data structure it
      *      is used by. 
      * @note If this is called with the handle_cntl, there must be no
      *       outstanding operations on the handle.
@@ -196,7 +196,7 @@ typedef enum
      *      The credential that is currently set. This will only
      *      return a credential if a credential was explicitly set prior to
      *      this call. It will not return any credential automatically acquired
-     *      during context initizalization. 
+     *      during context initialization. 
      */
     /* gss_cred_id_t *                  credential */
     GLOBUS_XIO_GSI_GET_CREDENTIAL,
@@ -319,7 +319,7 @@ typedef enum
      * @param wrap_mode
      *      The wrapping mode to use
      */
-    /* globus_boolean_t                 wrap_mode*/
+    /* globus_bool_t                 wrap_mode*/
     GLOBUS_XIO_GSI_SET_WRAP_MODE,
 
     /** GlobusVarArgEnum(attr)
@@ -332,7 +332,7 @@ typedef enum
      * @param wrap_mode
      *      The wrapping mode currently in use.
      */
-    /* globus_boolean_t *               wrap_mode*/
+    /* globus_bool_t *               wrap_mode*/
     GLOBUS_XIO_GSI_GET_WRAP_MODE,
 
     /** GlobusVarArgEnum(attr)
@@ -451,7 +451,7 @@ typedef enum
      * @param credential
      *      The GSS credential to delegate
      * @param restriction_oids
-     *      The OIDS for X.509 extensions to embed in the delegated
+     *      The OIDs for X.509 extensions to embed in the delegated
      *      credential
      * @param restriction_buffers
      *      The corresponding bodies for the X.509 extensions

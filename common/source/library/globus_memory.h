@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-/** @file globus_memory.h Memory Pool */
+/**
+ * @file globus_memory.h
+ * @brief Memory Pool
+ */
 
 #if !defined(GLOBUS_MEMORY_H)
 #define GLOBUS_MEMORY_H 

@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_i_ftp_client.h Globus FTP Client Library Internals
+ * @file globus_i_ftp_client.h
+ * @brief Globus FTP Client Library Internals
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #ifndef GLOBUS_I_FTP_CLIENT_H
 #define GLOBUS_I_FTP_CLIENT_H
@@ -123,7 +126,7 @@ do { \
  */
 
 /**
- * The globus_i_ftp_client_operationattr_t is a pointer to this structure type.
+ * @brief The globus_i_ftp_client_operationattr_t is a pointer to this structure type.
  */
 typedef struct globus_i_ftp_client_operationattr_t
 {
@@ -161,7 +164,7 @@ typedef struct globus_i_ftp_client_operationattr_t
 globus_i_ftp_client_operationattr_t;
 
 /**
- * Byte range report.
+ * @brief Byte range report.
  * @ingroup globus_ftp_client_operationattr
  *
  * This structure contains information about a single extent of data
@@ -184,7 +187,7 @@ typedef struct
 globus_i_ftp_client_range_t;
 
 /**
- * Handle attributes.
+ * @brief Handle attributes.
  * @ingroup globus_ftp_client_handleattr
  */
 typedef struct globus_i_ftp_client_handleattr_t
@@ -411,7 +414,7 @@ typedef struct globus_i_ftp_client_url_ent_s
 
 
 /**
- * FTP server features we are interested in. 
+ * @brief FTP server features we are interested in. 
  *
  * Upon a new connection, we will attempt to probe via the SITE HELP
  * and FEAT commands which the server supports. If we can't determine
@@ -473,7 +476,7 @@ char *
 globus_i_ftp_client_find_ssh_client_program();
 
 /**
- * Data connection caching information.
+ * @brief Data connection caching information.
  * @ingroup globus_ftp_client_handle
  * @internal
  *
@@ -505,7 +508,7 @@ typedef struct
 globus_i_ftp_client_data_target_t;
 
 /**
- * FTP Client handle implementation
+ * @brief FTP Client handle implementation
  * @ingroup globus_ftp_client_handle
  * @internal
  *
@@ -669,7 +672,7 @@ typedef struct globus_i_ftp_client_handle_t
 globus_i_ftp_client_handle_t;
 
 /** 
- * FTP Connection State.
+ * @brief FTP Connection State.
  *
  * This type is used to store information about an active FTP control
  * connection. This information includes the FTP control handle, the
@@ -735,7 +738,7 @@ typedef struct globus_i_ftp_client_target_s
 } globus_i_ftp_client_target_t;
 
 /**
- * URL caching support structure.
+ * @brief URL caching support structure.
  *
  * This structure is used to implement the cache of URLs. When a
  * target is needed, the client library first checks the handle's
@@ -765,7 +768,7 @@ typedef struct
 globus_i_ftp_client_cache_entry_t;
 
 /**
- * Restart information management.
+ * @brief Restart information management.
  */
 typedef struct globus_i_ftp_client_restart_s
 {
@@ -780,7 +783,7 @@ typedef struct globus_i_ftp_client_restart_s
 globus_i_ftp_client_restart_t;
 
 /**
- * FTP Client Plugin.
+ * @brief FTP Client Plugin.
  * @ingroup globus_ftp_client_plugins
  *
  * Each plugin implementation should define a method for initializing

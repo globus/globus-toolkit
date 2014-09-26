@@ -1849,7 +1849,7 @@ globus_l_callback_signal_handler(
             
             if(globus_l_callback_restart_info)
             {
-                /* just in case I missed somebody, dont let them take anymore
+                /* just in case I missed somebody, don't let them take anymore
                  * time
                  */
                 globus_l_callback_restart_info->time_stop = 

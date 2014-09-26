@@ -38,21 +38,6 @@ Description: Globus Toolkit - uniform I/O interface Development Files
  uniform I/O interface to stream and datagram style communications
  Development Files
 
-Package: libglobus-io-doc
-Section: doc
-Architecture: any
-Depends: libglobus-io-dev (= ${binary:Version}), ${misc:Depends}
-Description: Globus Toolkit - uniform I/O interface Development Files
- The Globus Toolkit is an open source software toolkit used for
- building Grid systems and applications. It is being developed by the
- Globus Alliance and many others all over the world. A growing number
- of projects and companies are using the Globus Toolkit to unlock the
- potential of grids for their cause.
- .
- The libglobus-gsi-credential-doc package contains:
- uniform I/O interface to stream and datagram style communications
- Documentation Files
-
 Package: libglobus-io-dbg
 Section: debug
 Priority: extra

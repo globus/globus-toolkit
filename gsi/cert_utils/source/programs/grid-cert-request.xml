@@ -1,405 +1,396 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
-    <!ENTITY cmdname "grid-cert-request">
-    <!ENTITY cmd "<command>grid-cert-request</command>">
-]>
-<!-- Canonical version of this document lives in 
-$Header$
--->
-
-<refentry id="grid-cert-request" xreflabel="grid-cert-request">
-  <refentryinfo>
-    <corpauthor>University of Chicago</corpauthor>
-  </refentryinfo>
-  <refmeta>
-    <refentrytitle>&cmdname;</refentrytitle>
-    <manvolnum>1</manvolnum>
-    <refmiscinfo class="source">Globus Toolkit</refmiscinfo>
-    <refmiscinfo class="version"><replaceable role="entity">version</replaceable></refmiscinfo>
-  </refmeta>
-  <refnamediv>
-    <refname>&cmdname;</refname>
-    <refpurpose>Generate a X.509 certificate request and corresponding private
-    key</refpurpose>
-  </refnamediv>
-  <refsynopsisdiv>
-    <cmdsynopsis>
-      &cmd;
-      <arg>-help</arg>
-      <arg>-h</arg>
-      <arg>-?</arg>
-      <arg>-usage</arg>
-      <sbr/>
-      <arg>-version</arg>
-      <arg>-versions</arg>
-    </cmdsynopsis>
-    <cmdsynopsis>
-      &cmd;
-      <group>
-          <arg choice="plain">-cn <replaceable>NAME</replaceable></arg>
-          <arg choice="plain">-commonname <replaceable>NAME</replaceable></arg>
-      </group>
-      <sbr/>
-      <arg>-dir <replaceable>DIRECTORY</replaceable></arg>
-      <arg>-prefix <replaceable>PREFIX</replaceable></arg>
-      <sbr/>
-      <group choice="opt">
-          <arg choice="plain">-nopw</arg>
-          <arg choice="plain">-nodes</arg>
-          <arg choice="plain">-nopassphrase</arg>
-      </group>
-      <sbr/>
-      <group choice="opt">
-          <arg choice="plain">-nopw</arg>
-          <arg choice="plain">-nodes</arg>
-          <arg choice="plain">-nopassphrase</arg>
-      </group>
-      <sbr/>
-      <arg>-ca <arg><replaceable>HASH</replaceable></arg></arg>
-      <arg>-verbose</arg>
-      <group choice="opt">
-          <arg choice="plain">-interactive</arg>
-          <arg choice="plain">-int</arg>
-      </group>
-      <arg>-force</arg>
-    </cmdsynopsis>
-    <cmdsynopsis>
-      &cmd;
-      <arg choice="plain">-host <replaceable>FQDN</replaceable></arg>
-      <arg>-service <replaceable>SERVICE</replaceable></arg>
-      <arg rep="repeat">-dns <replaceable>FQDN</replaceable></arg>
-      <arg rep="repeat">-ip <replaceable>IP-ADDRESS</replaceable></arg>
-      <sbr/>
-      <arg>-dir <replaceable>DIRECTORY</replaceable></arg>
-      <arg>-prefix <replaceable>PREFIX</replaceable></arg>
-      <sbr/>
-      <arg>-ca <arg><replaceable>HASH</replaceable></arg></arg>
-      <arg>-verbose</arg>
-      <group choice="opt">
-          <arg choice="plain">-interactive</arg>
-          <arg choice="plain">-int</arg>
-      </group>
-      <arg>-force</arg>
-    </cmdsynopsis>
-  </refsynopsisdiv>
-  <refsect1>
-    <title>Description</title>
-    <para>
-    The &cmd; program generates an X.509 Certificate Request and corresponding
-    private key for the specified name, host, or service. It is intended to be
-    used with a CA implemented using the
-    <application>globus_simple_ca</application> package.
-    </para>
-
-    <para>
-    The default behavior of &cmd; is to generate a certificate request and
-    private key for the user running the command. The subject name is 
-    derived from the gecos information in the local system's password database,
-    unless the <option>-commonname</option>, <option>-cn</option>, or
-    <option>-host</option> command-line options are used.
-    </para>
-
-    <para>
-    By default, &cmd; writes user certificate requests and keys to the
-    <filename><envar>$HOME</envar>/.globus</filename> directory, and host
-    and service certificate requests and keys to
-    <filename>/etc/grid-security</filename>. This can be overridden by using
-    the <option>-dir</option> command-line option.
-    </para>
-
-    <para>
-    The full set of command-line options to &cmd; are:
-
-    <variablelist>
-        <varlistentry>
-            <term><option>-help</option></term>
-            <term><option>-h</option></term>
-            <term><option>-?</option></term>
-            <term><option>-usage</option></term>
-            <listitem><simpara>Display the command-line options to 
-            &cmd; and exit.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-version</option></term>
-            <term><option>-versions</option></term>
-            <listitem><simpara>Display the version number of the &cmd;
-            command. The second form includes more
-            details.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-cn <replaceable>NAME</replaceable></option></term>
-            <term><option>-commonname <replaceable>NAME</replaceable></option></term>
-            <listitem><simpara>Create a certificate request with the
-            common name component of the subject set to
-            <replaceable>NAME</replaceable>. This is used to create user
-            identity certificates.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-dir <replaceable>DIRECTORY</replaceable></option></term>
-            <listitem><simpara>Write the certificate request and key to
-            files in the directory specified by <replaceable>DIRECTORY</replaceable>.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-prefix <replaceable>PREFIX</replaceable></option></term>
-            <listitem><simpara>Use the string <replaceable>PREFIX</replaceable>
-            as the base name of the certificate, certificate_request, and key
-            files instead of the default. For a user certificate request,
-            this would mean creating files
-            <filename><envar>$HOME</envar>/.globus/<replaceable>PREFIX</replaceable>cert_request.pem</filename>,
-            <filename><envar>$HOME</envar>/.globus/<replaceable>PREFIX</replaceable>cert.pem</filename>, and
-            <filename><envar>$HOME</envar>/.globus/<replaceable>PREFIX</replaceable>key.pem</filename>.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-ca <replaceable>CA-HASH</replaceable></option></term>
-            <listitem><simpara>Use the certificate request configuration for
-            the CA with the name hash <replaceable>CA-HASH</replaceable> instead
-            of the default CA chosen by running
-            <command>grid-default-ca</command>. </simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-verbose</option></term>
-            <listitem><simpara>Keep the output from the OpenSSL certificate
-            request command visible after it completes, instead of clearing the
-            screen.. </simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-interactive</option></term>
-            <term><option>-int</option></term>
-            <listitem><simpara>Prompt for each component of the subject
-            name of the request, instead of generating the common name
-            from other command-line options. Note that CAs may not
-            sign certificates for subject names that don't match their signing
-            policies.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-force</option></term>
-            <listitem><simpara>Overwrite any existing certificate request and
-            private key with a new one.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-nopw</option></term>
-            <term><option>-nodes</option></term>
-            <term><option>-nopassphrase</option></term>
-            <listitem><simpara>Create an unencrypted private key for the
-            certificate instead of prompting for a passphrase. This is the
-            default behavior for host or service certificates, but not 
-            recommended for user certificates.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-host <replaceable>FQDN</replaceable></option></term>
-            <listitem><simpara>Create a certificate request for use on a
-            particular host. This option also causes the private key assoicated
-            with the certificate request to be unencrypted. The
-            <replaceable>FQDN</replaceable> argument to this
-            option should be the fully qualified domain name of the host that
-            will use this certificate. The subject name of the certificate
-            will be derived from the <replaceable>FQDN</replaceable> and the
-            service option if specified by the <option>-service</option>
-            command-line option. If the host for the certificate has multiple
-            names, then use either the <option>-dns</option> or
-            <option>-ip</option> command-line options to add alternate names or
-            addresses to the certificates.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-service <replaceable>SERVICE</replaceable></option></term>
-            <listitem><simpara>Create a certificate request for a particular
-            service on a host. The subject name of the certificate will be 
-            derived from the <replaceable>FQDN</replaceable> passed as the
-            argument to the <option>-host</option> command-line option and the
-            <replaceable>SERVICE</replaceable> string.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-dns <replaceable>FQDN,...</replaceable></option></term>
-            <listitem><simpara>Create a certificate request containing
-            a <literal>subjectAltName</literal> extension containing one or
-            more host names. This is used when a certificate may be used by
-            multiple virtual servers or if a host has different names when
-            contacted within or outside a private network. Multiple
-            DNS names can be included in the extension by separating then
-            with a comma.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><option>-ip <replaceable>IP-ADDRESS,...</replaceable></option></term>
-            <listitem><simpara>Create a certificate request containing
-            a <literal>subjectAltName</literal> extension containing the
-            IP addresses named by the <replaceable>IP-ADDRESS</replaceable>
-            strings. This is used when a certificate may be used by
-            services listening on multiple networks. Multiple IP addresses
-            can be included in the extension by separating then with a
-            comma.</simpara></listitem>
-        </varlistentry>
-    </variablelist>
-
-    </para>
-  </refsect1>
-
-  <refsect1>
-    <title>Examples</title>
-    <para>Create a user certificate request:
-    <screen><prompt>% </prompt> &cmd;
-<computeroutput>A certificate request and private key is being created.
-You will be asked to enter a PEM pass phrase.
-This pass phrase is akin to your account password, 
-and is used to protect your key file.
-If you forget your pass phrase, you will need to
-obtain a new certificate.
-A private key and a certificate request has been generated with the subject:
-
-/O=org/OU=example/OU=grid/CN=Joe User
-
-If the CN=Joe User is not appropriate, rerun this
-script with the -force -cn "Common Name" options.
-
-Your private key is stored in /home/juser/.globus/userkey.pem
-Your request is stored in /home/juser/.globus/usercert_request.pem
-
-Please e-mail the request to the Example CA ca@grid.example.org
-You may use a command similar to the following:
-
-  cat /home/juser/.globus/usercert_request.pem | mail ca@grid.example.org
-
-Only use the above if this machine can send AND receive e-mail. if not, please
-mail using some other method.
-
-Your certificate will be mailed to you within two working days.
-If you receive no response, contact Example CA at ca@grid.example.org</computeroutput></screen>
-    </para>
-
-    <para>Create a host certificate for a host with two names.
-
-    <screen><prompt>% </prompt> &cmd; <option>-host grid.example.org</option> <option>-dns grid.example.org,grid-internal.example.org</option>
-<computeroutput>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+<refentry lang="en">
+<refentryinfo>
+    <title>GRID-CERT-REQUEST(1)</title>
+</refentryinfo>
+<refmeta>
+<refentrytitle>grid-cert-request</refentrytitle>
+<manvolnum>1</manvolnum>
+<refmiscinfo class="source">University of Chicago</refmiscinfo>
+<refmiscinfo class="manual">Globus Toolkit</refmiscinfo>
+</refmeta>
+<refnamediv>
+    <refname>grid-cert-request</refname>
+    <refpurpose>Generate a X.509 certificate request and corresponding private key</refpurpose>
+</refnamediv>
+<refsynopsisdiv id="grid-cert-request-SYNOPSIS">
+<simpara><emphasis role="strong">grid-cert-request</emphasis> -help | -h | -? | -usage | -version-versions</simpara>
+<simpara><emphasis role="strong">grid-cert-request</emphasis> [OPTIONS]</simpara>
+</refsynopsisdiv>
+<refsect1 id="grid-cert-request-DESCRIPTION">
+<title>DESCRIPTION</title>
+<simpara>The <emphasis role="strong">grid-cert-request</emphasis> program generates an X.509 Certificate Request and
+corresponding private key for the specified name, host, or service. It is
+intended to be used with a CA implemented using the
+<emphasis role="strong">globus_simple_ca</emphasis> package.</simpara>
+<simpara>The default behavior of <emphasis role="strong">grid-cert-request</emphasis> is to generate a certificate
+request and private key for the user running the command. The subject name is
+derived from the gecos information in the local system&#8217;s password database,
+unless the <emphasis>-commonname</emphasis>, <emphasis>-cn</emphasis>, or <emphasis>-host</emphasis> command-line options are used.</simpara>
+<simpara>By default, <emphasis role="strong">grid-cert-request</emphasis> writes user certificate requests and keys to
+the <literal>$HOME/.globus</literal> directory, and host and service certificate requests and
+keys to <literal>/etc/grid-security</literal>. This can be overridden by using the
+<emphasis>-dir</emphasis> command-line option.</simpara>
+</refsect1>
+<refsect1 id="grid-cert-request-OPTIONS">
+<title>OPTIONS</title>
+<simpara>The full set of command-line options to <emphasis role="strong">grid-cert-request</emphasis> are:</simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">-help, -h, -?, -usage</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the command-line options to <emphasis role="strong">grid-cert-request</emphasis> and
+    exit.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-version, -versions</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display the version number of the <emphasis role="strong">grid-cert-request</emphasis> command. The second
+    form includes more details.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-cn <emphasis>NAME</emphasis>, -commonname <emphasis>NAME</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+Create a certificate request with the common name component of the subject set
+to <emphasis>NAME</emphasis>. This is used to create user identity
+certificates.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-dir <emphasis>DIRECTORY</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Write the certificate request and key to files in the directory specified
+    by <emphasis>DIRECTORY</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-prefix <emphasis>PREFIX</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Use the string <emphasis>PREFIX</emphasis> as the base name of the certificate,
+    certificate_request, and key files instead of the default. For a user
+    certificate request, this would mean creating files
+    <literal>$HOME/.globus/'PREFIX&#8217;cert_request.pem</literal>, <literal>$HOME/.globus/'PREFIX&#8217;cert.pem</literal>,
+    and <literal>$HOME/.globus/'PREFIX&#8217;key.pem</literal>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-ca <emphasis>CA-HASH</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Use the certificate request configuration for the CA with the name hash
+    <emphasis>CA-HASH</emphasis> instead of the default CA chosen by running
+    <emphasis role="strong">grid-default-ca</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-verbose</emphasis>
+</term>
+<listitem>
+<simpara>
+    Keep the output from the OpenSSL certificate request command visible after
+    it completes, instead of clearing the screen.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-interactive, -int</emphasis>
+</term>
+<listitem>
+<simpara>
+    Prompt for each component of the subject name of the request, instead of
+    generating the common name from other command-line options. Note that CAs
+    may not sign certificates for subject names that don&#8217;t match their signing
+    policies.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-force</emphasis>
+</term>
+<listitem>
+<simpara>
+    Overwrite any existing certificate request and private key with a new
+    one.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-nopw, -nodes, -nopassphrase</emphasis>
+</term>
+<listitem>
+<simpara>
+    Create an unencrypted private key for the certificate instead of prompting
+    for a passphrase. This is the default behavior for host or service
+    certificates, but not recommended for user certificates.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-host <emphasis>FQDN</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Create a certificate request for use on a particular host. This option also
+    causes the private key associated with the certificate request to be
+    unencrypted. The <emphasis>FQDN</emphasis> argument to this option should be the fully
+    qualified domain name of the host that will use this certificate. The
+    subject name of the certificate will be derived from the <emphasis>FQDN</emphasis> and the
+    service option if specified by the <emphasis>-service</emphasis> command-line
+    option. If the host for the certificate has multiple names, then use either
+    the <emphasis>-dns</emphasis> or <emphasis>-ip</emphasis> command-line options to add alternate names or
+    addresses to the certificates.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-service <emphasis>SERVICE</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Create a certificate request for a particular service on a host. The
+    subject name of the certificate will be derived from the <emphasis>FQDN</emphasis> passed as
+    the argument to the <emphasis>-host</emphasis> command-line option and the <emphasis>SERVICE</emphasis> string.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-dns <emphasis>FQDN,&#8230;</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Create a certificate request containing a <literal>subjectAltName</literal> extension
+    containing one or more host names. This is used when a certificate may be
+    used by multiple virtual servers or if a host has different names when
+    contacted within or outside a private network. Multiple DNS names can be
+    included in the extension by separating then with a
+    comma.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-ip <emphasis>IP-ADDRESS,&#8230;</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Create a certificate request containing a <literal>subjectAltName</literal>
+    extension containing the IP addresses named by the <emphasis>IP-ADDRESS</emphasis> strings.
+    This is used when a certificate may be used by services listening on
+    multiple networks. Multiple IP addresses can be included in the extension
+    by separating then with a comma.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="grid-cert-request-EXAMPLES">
+<title>EXAMPLES</title>
+<simpara>Create a user certificate request:
+    % <emphasis role="strong">grid-cert-request</emphasis>
+    A certificate request and private key is being created.
+    You will be asked to enter a PEM pass phrase.
+    This pass phrase is akin to your account password,
+    and is used to protect your key file.
+    If you forget your pass phrase, you will need to
+    obtain a new certificate.
+    A private key and a certificate request has been generated with the subject:</simpara>
+<literallayout class="monospaced">/O=org/OU=example/OU=grid/CN=Joe User</literallayout>
+<literallayout class="monospaced">If the CN=Joe User is not appropriate, rerun this
+script with the -force -cn "Common Name" options.</literallayout>
+<literallayout class="monospaced">Your private key is stored in /home/juser/.globus/userkey.pem
+Your request is stored in /home/juser/.globus/usercert_request.pem</literallayout>
+<literallayout class="monospaced">Please e-mail the request to the Example CA ca@grid.example.org
+You may use a command similar to the following:</literallayout>
+<literallayout class="monospaced">cat /home/juser/.globus/usercert_request.pem | mail ca@grid.example.org</literallayout>
+<literallayout class="monospaced">Only use the above if this machine can send AND receive e-mail. if not, please
+mail using some other method.</literallayout>
+<literallayout class="monospaced">    Your certificate will be mailed to you within two working days.
+If you receive no response, contact Example CA at ca@grid.example.org</literallayout>
+<simpara>Create a host certificate for a host with two names.</simpara>
+<literallayout class="monospaced">% *grid-cert-request -host grid.example.org -dns grid.example.org,grid-internal.example.org*
 A private host key and a certificate request has been generated
-with the subject:
-
-/O=org/OU=example/OU=grid/CN=host/grid.example.org
-
-----------------------------------------------------------
-
-The private key is stored in /etc/grid-security/hostkey.pem
-The request is stored in /etc/grid-security/hostcert_request.pem
-
-Please e-mail the request to the Example CA ca@grid.example.org
-You may use a command similar to the following:
-
- cat /etc/grid-security/hostcert_request.pem | mail ca@grid.example.org
-
-Only use the above if this machine can send AND receive e-mail. if not, please
-mail using some other method.
-
-Your certificate will be mailed to you within two working days.
+with the subject:</literallayout>
+<literallayout class="monospaced">/O=org/OU=example/OU=grid/CN=host/grid.example.org</literallayout>
+<literallayout class="monospaced">----------------------------------------------------------</literallayout>
+<literallayout class="monospaced">The private key is stored in /etc/grid-security/hostkey.pem
+The request is stored in /etc/grid-security/hostcert_request.pem</literallayout>
+<literallayout class="monospaced">Please e-mail the request to the Example CA ca@grid.example.org
+You may use a command similar to the following:</literallayout>
+<literallayout class="monospaced">cat /etc/grid-security/hostcert_request.pem | mail ca@grid.example.org</literallayout>
+<literallayout class="monospaced">Only use the above if this machine can send AND receive e-mail. if not, please
+mail using some other method.</literallayout>
+<literallayout class="monospaced">Your certificate will be mailed to you within two working days.
 If you receive no response, contact Example CA at
-ca@grid.example.org</computeroutput></screen>
-    </para>
-
-  </refsect1>
-
-  <refsect1>
-    <title>Environment Variables</title>
-
-    <para>
-    The following environment variables affect the execution of &cmd;:
-    <variablelist>
-        <varlistentry>
-            <term><envar>X509_CERT_DIR</envar></term>
-            <listitem><simpara>Path to the directory containing
-            SSL configuration files for generating certificate
-            requests.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><envar>GRID_SECURITY_DIR</envar></term>
-            <listitem><simpara>Path to the directory containing
-            SSL configuration files for generating certificate
-            requests. This value is used if <envar>X509_CERT_DIR</envar> is
-            not set.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><envar>GLOBUS_LOCATION</envar></term>
-            <listitem><simpara>Path to the directory containing
-            the Globus Toolkit. This is searched if neither the
-            <envar>X509_CERT_DIR</envar> nor the
-            <envar>GRID_SECURITY_DIR</envar> environment variables are
-            set.</simpara></listitem>
-        </varlistentry>
-    </variablelist>
-    </para>
-  </refsect1>
-
-  <refsect1>
-    <title>Files</title>
-
-    <para>
-    <variablelist>
-        <varlistentry>
-            <term><filename><envar>$HOME</envar>/.globus/usercert_request.pem</filename></term>
-            <listitem><simpara>Default path to write a user certificate
-            request.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><filename><envar>$HOME</envar>/.globus/usercert.pem</filename></term>
-            <listitem><simpara>Default path to write a user
-            certificate.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><filename><envar>$HOME</envar>/.globus/userkey.pem</filename></term>
-            <listitem><simpara>Default path to write a user private
-            key.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><filename>/etc/grid-security/hostcert_request.pem</filename></term>
-            <listitem><simpara>Default path to write a host certificate
-            request.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><filename>/etc/grid-security/hostcert.pem</filename></term>
-            <listitem><simpara>Default path to write a host
-            certificate.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><filename>/etc/grid-security/hostkey.pem</filename></term>
-            <listitem><simpara>Default path to write a host private
-            key.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><filename><replaceable>TRUSTED-CERT-DIR</replaceable>/globus-user-ssl.conf</filename></term>
-            <term><filename><replaceable>TRUSTED-CERT-DIR</replaceable>/globus-user-ssl.conf.<replaceable>CA-HASH</replaceable></filename></term>
-            <listitem><simpara>SSL configuration file for requesting a user
-            certificate. The first form is the default location, the second form
-            is used when the <replaceable>-ca</replaceable> command-line option
-            is specified.</simpara></listitem>
-        </varlistentry>
-
-        <varlistentry>
-            <term><filename><replaceable>TRUSTED-CERT-DIR</replaceable>/globus-host-ssl.conf</filename></term>
-            <term><filename><replaceable>TRUSTED-CERT-DIR</replaceable>/globus-host-ssl.conf.<replaceable>CA-HASH</replaceable></filename></term>
-            <listitem><simpara>SSL configuration file for requesting a host or
-            service certificate. The first form is the default location, the
-            second form is used when the <replaceable>-ca</replaceable>
-            command-line option is specified.</simpara></listitem>
-        </varlistentry>
-    </variablelist>
-    </para>
-  </refsect1>
+ca@grid.example.org</literallayout>
+</refsect1>
+<refsect1 id="grid-cert-request-ENVIRONMENT">
+<title>ENVIRONMENT</title>
+<simpara>The following environment variables affect the execution of
+<emphasis role="strong">grid-cert-request</emphasis>:</simpara>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_CERT_DIR</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to the directory containing SSL configuration files for generating
+    certificate requests.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">GRID_SECURITY_DIR</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to the directory containing SSL configuration files for generating
+    certificate requests. This value is used if <literal>X509_CERT_DIR</literal> is
+    not set.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">GLOBUS_LOCATION</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to the directory containing the Globus Toolkit. This is searched if
+    neither the <literal>X509_CERT_DIR</literal> nor the <literal>GRID_SECURITY_DIR</literal> environment
+    variables are set.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="grid-cert-request-FILES">
+<title>FILES</title>
+<variablelist>
+<varlistentry>
+<term>
+<emphasis role="strong">$HOME/.globus/usercert_request.pem</emphasis>
+</term>
+<listitem>
+<simpara>
+    Default path to write a user certificate request.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">$HOME/.globus/usercert.pem</emphasis>
+</term>
+<listitem>
+<simpara>
+    Default path to write a user certificate.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">$HOME/.globus/userkey.pem</emphasis>
+</term>
+<listitem>
+<simpara>
+    Default path to write a user private key.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">/etc/grid-security/hostcert_request.pem</emphasis>
+</term>
+<listitem>
+<simpara>
+    Default path to write a host certificate request.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">/etc/grid-security/hostcert.pem</emphasis>
+</term>
+<listitem>
+<simpara>
+    Default path to write a host certificate.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">/etc/grid-security/hostkey.pem</emphasis>
+</term>
+<listitem>
+<simpara>
+    Default path to write a host private key.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong"><emphasis>TRUSTED-CERT-DIR</emphasis>/globus-user-ssl.conf, <emphasis>TRUSTED-CERT-DIR</emphasis>/globus-user-ssl.conf.<emphasis>CA-HASH</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    SSL configuration file for requesting a user certificate. The first form is
+    the default location, the second form is used when the <emphasis>-ca</emphasis> command-line
+    option is specified.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong"><emphasis>TRUSTED-CERT-DIR</emphasis>/globus-host-ssl.conf, <emphasis>TRUSTED-CERT-DIR</emphasis>/globus-host-ssl.conf.<emphasis>CA-HASH</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    SSL configuration file for requesting a host or service certificate. The
+    first form is the default location, the second form is used when the <emphasis>-ca</emphasis>
+    command-line option is specified.
+</simpara>
+</listitem>
+</varlistentry>
+</variablelist>
+</refsect1>
+<refsect1 id="grid-cert-request-AUTHOR">
+<title>AUTHOR</title>
+<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
+</refsect1>
 </refentry>

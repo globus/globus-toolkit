@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-ftp-client
 _name = globus_ftp_client
-version = 8.12
+version = 8.13
 soname = 2
 
 INSTALLDIR = $(CURDIR)/debian/tmp
