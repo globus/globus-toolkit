@@ -22,6 +22,8 @@ EXTRA_DIST = \
 
 CLEANFILES = jobmanager-slurm-poll
 
+DISTCLEANFILES = mpi_type.rvf
+
 install-data-hook:
 	cd $(DESTDIR)$(gridservicesdir)/..; \
 	[ -L "jobmanager-slurm" ] || \
