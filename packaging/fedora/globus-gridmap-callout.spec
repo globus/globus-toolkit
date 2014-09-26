@@ -33,13 +33,6 @@ BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
 
-%package devel
-Summary:	Globus Toolkit - Globus Gridmap Callout Development Files
-Group:		Development/Libraries
-Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-common-devel%{?_isa} >= 14
-Requires:	globus-gssapi-error-devel%{?_isa} >= 4
-
 %package doc
 Summary:	Globus Toolkit - Globus Gridmap Callout Documentation Files
 Group:		Documentation
@@ -56,15 +49,6 @@ using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name} package contains:
 Globus Gridmap Callout
-
-%description devel
-The Globus Toolkit is an open source software toolkit used for building Grid
-systems and applications. It is being developed by the Globus Alliance and
-many others all over the world. A growing number of projects and companies are
-using the Globus Toolkit to unlock the potential of grids for their cause.
-
-The %{name}-devel package contains:
-Globus Gridmap Callout Development Files
 
 %description doc
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -113,12 +97,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
-%{_libdir}/libglobus*.so.*
-
-%files devel
-%defattr(-,root,root,-)
-%{_includedir}/globus/*
-%{_libdir}/libglobus*.so
+%{_libdir}/libglobus*.so*
 
 %files doc
 %defattr(-,root,root,-)
