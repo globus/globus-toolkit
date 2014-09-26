@@ -13,6 +13,22 @@ LT_INIT([dlopen win32-dll])
 m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
+
+AC_MSG_CHECKING([Toolkit version])
+if test "X$GLOBUS_TOOLKIT_ID" = "X"; then
+    if test "X$GLOBUS_VERSION" = "X"; then
+        if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version; then
+            GLOBUS_TOOLKIT_ID="`${GLOBUS_LOCATION-/usr}/bin/globus-version -full`"
+        else
+            GLOBUS_TOOLKIT_ID="unknown"
+        fi
+    else
+        GLOBUS_TOOLKIT_ID="Globus Toolkit $GLOBUS_VERSION"
+    fi
+fi
+AC_MSG_RESULT($GLOBUS_TOOLKIT_ID)
+AC_SUBST(GLOBUS_TOOLKIT_ID)
+
 AC_CANONICAL_HOST
 AM_CONDITIONAL([CYGPATH_W_DEFINED], [
     case $host in
