@@ -22,7 +22,8 @@
 #include <string.h>
 
 /**
- * @file seg_job_manager_module.c Job Manager SEG Module
+ * @file seg_job_manager_module.c
+ * @brief Job Manager SEG Module
  */
 #define SEG_JOB_MANAGER_DEBUG(level, message) \
     GlobusDebugPrintf(SEG_JOB_MANAGER, level, message)

@@ -17,20 +17,12 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gram_client.c
- * 
  * @brief Resource Managemant Client APIs
  * 
  * This file contains the GRAM Client API functions.
  * This API provides functions for submitting a job request to a GRAM resource,
  * checking status, cancelling a job and requesting notification of state
  * changes for a request.
- * 
- * CVS Information:
- * 
- * - $Source$
- * - $Date$
- * - $Revision$
- * - $Author$
  */
 
 /*

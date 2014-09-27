@@ -15,7 +15,9 @@
  */
 
 /**
- * @file globus_gatekeeper.c GRAM Gatekeeper
+ * @file globus_gatekeeper.c
+ * @brief GRAM Gatekeeper
+ *
  * This source file has been modified by Brent Milne (BMilne@lbl.gov)
  * with extensions for UNICOS.
  * September 1998

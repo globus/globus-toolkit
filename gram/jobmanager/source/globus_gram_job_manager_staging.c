@@ -16,14 +16,8 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gram_job_manager_staging.c GRAM Job Manager Staging Tracking
- *
- * CVS Information:
- *
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
+ * @file globus_gram_job_manager_staging.c
+ * @brief GRAM Job Manager Staging Tracking
  */
 
 #include "globus_gram_job_manager.h"

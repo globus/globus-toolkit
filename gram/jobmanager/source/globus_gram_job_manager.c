@@ -16,14 +16,8 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gram_job_manager.c LRM-Specific state
- *
- * CVS Information:
- * 
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
+ * @file globus_gram_job_manager.c
+ * @brief LRM-Specific state
  */
 
 #include "globus_common.h"

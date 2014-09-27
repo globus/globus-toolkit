@@ -17,14 +17,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gram_job_manager_validate.c
- *
- * RSL Validation Support for the GRAM Job Manager.
- *
- * CVS Information:
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
+ * @brief RSL Validation Support for the GRAM Job Manager.
  */
 
 #define GLOBUS_GRAM_VALIDATE_JOB_SUBMIT_STRING \

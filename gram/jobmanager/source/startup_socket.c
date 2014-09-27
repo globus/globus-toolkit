@@ -16,13 +16,8 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file start_socket.c Job Manager Socket Transfer Code
- *
- * CVS Information:
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
+ * @file start_socket.c
+ * @brief Job Manager Socket Transfer Code
  */
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"

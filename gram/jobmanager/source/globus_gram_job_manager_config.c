@@ -16,14 +16,8 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_job_manager.c Resource Allocation Job Manager
- *
- * CVS Information:
- * 
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
+ * @file globus_gram_job_manager_config.c
+ * @brief Resource Allocation Job Manager Configuration
  */
 
 #include "globus_gram_job_manager.h"
