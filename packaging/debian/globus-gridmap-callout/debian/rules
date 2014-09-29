@@ -12,7 +12,7 @@ endif
 name = globus-gridmap-callout
 _name = globus_gridmap_callout
 version = 1.0
-soname = -1
+soname =
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
