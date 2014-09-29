@@ -98,6 +98,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %{_libdir}/libglobus*.so*
+%config(noreplace) %{_sysconfdir}/gridmap_callout-gsi_authz.conf
 
 %files doc
 %defattr(-,root,root,-)
