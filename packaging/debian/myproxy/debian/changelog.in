@@ -1,3 +1,9 @@
+myproxy (6.0-1) @distro@; urgency=low
+
+  * Merge myproxy sources into git repo
+
+ -- Globus Toolkit <support@globus.org>  Mon, 29 Sep 2014 13:53:37 -0400
+
 myproxy (6.0rc3-3+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

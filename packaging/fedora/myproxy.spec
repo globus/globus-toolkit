@@ -1,7 +1,7 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.0rc3
-Release:	5%{?dist}
+Version:	6.0
+Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -514,6 +514,9 @@ fi
 %{_libdir}/libmyproxy.so
 
 %changelog
+* Mon Sep 29 2014 Globus Toolkit <support@globus.org> - 6.0-1
+- Merge myproxy sources into git repo
+
 * Mon Aug 04 2014 Globus Toolkit <support@globus.org> - 5.10rc3-5
 - Quote suse init script
 
