@@ -7,6 +7,10 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
+
 #define PEM_CALLBACK(func)	func, NULL
 #define PEM_NO_CALLBACK		NULL, NULL
 
