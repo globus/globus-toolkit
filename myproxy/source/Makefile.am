@@ -224,6 +224,7 @@ EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
                myproxy.spec pkgdata/pkg_data_src.gpt.in m4/myproxy.m4
 
 myproxy-admin-addservice: myproxy-admin-adduser
+	rm -f myproxy-admin-addservice
 	$(LN_S) $(srcdir)/myproxy-admin-adduser myproxy-admin-addservice
 
 KRB5CPPFLAGS = @KRB5CPPFLAGS@
