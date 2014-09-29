@@ -4,12 +4,9 @@ m4_define([short_version], [m4_substr(AC_PACKAGE_VERSION, [0],
 AC_PREFIX_DEFAULT([/usr/local/globus-]short_version)
 export GLOBUS_VERSION=$VERSION
 syscmd([./update-dirt.sh])
-syscmd([test -x ./prep-myproxy && sh -x ./prep-myproxy || true])
 syscmd([test -x ./prep-gsissh && sh -x ./prep-gsissh || true])
 syscmd([test -x ./write-globus-version && sh -x ./write-globus-version ]AC_PACKAGE_VERSION [ || true])
-m4_include([myproxy/version.m4])
 m4_include([gsi_openssh/version.m4])
-AC_SUBST([MYPROXY_VERSION], [myproxy_version])
 AC_SUBST([GSI_OPENSSH_VERSION], [gsissh_version])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax subdir-objects])
 AC_CONFIG_HEADERS([ltdlconfig.h])
@@ -65,12 +62,11 @@ m4_define([TARGETS_MACRO],[
 # GT_PACKAGE(package, subdir, dependencies, bundle, is_xio_driver)
 m4_define([GT_PACKAGE],
 [
-ifelse([$1], [myproxy], [m4_define([pkgver], myproxy_version)],
-    [ifelse([$1], [gsi_openssh], [m4_define([pkgver], gsissh_version)], [
+ifelse([$1], [gsi_openssh], [m4_define([pkgver], gsissh_version)], [
 m4_pushdef([AC_INIT],[$]2)dnl
 m4_define([pkgver], m4_normalize(m4_esyscmd(grep AC[_]INIT [$2][/configure.ac])))dnl
 m4_popdef([AC_INIT])dnl
-])])
+])
 m4_define([native_name], m4_translit([$1],[_],[-]))
 
     m4_append([TARGETS_MACRO],[dnl
@@ -106,8 +102,7 @@ $1-osx-pkg: \$($1-osx-pkg)
 ])
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
     ifelse([$1], [gsi_openssh], [], [
-        ifelse([$1], [myproxy], [], [
-            m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])])dnl
+            m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])dnl
     m4_append_uniq([GT_BUNDLES_MACRO],[$4], [ ])dnl
     m4_append([GT_BUNDLES_]m4_translit($4,[-],[_])[_MACRO],[$1-stamp], [ ])dnl
     m4_append([GT_BUNDLE_PACKAGES]m4_translit($4,[-],[_]),[$1], [ ])dnl
@@ -521,9 +516,6 @@ AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
 
 if test x"$gsi_openssh_enabled" = x"yes"; then
     AC_CONFIG_SUBDIRS(gsi_openssh/source)
-fi
-if test x"$myproxy_enabled" = x"yes"; then
-    AC_CONFIG_SUBDIRS(myproxy/source)
 fi
 
 AC_OUTPUT
