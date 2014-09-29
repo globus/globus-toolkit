@@ -1,0 +1,19 @@
+#!/usr/bin/perl -T
+
+($username, $dn, $credname, $retriever_policy, $renewer_policy) = @ARGV;
+chomp($passphrase = <STDIN>);
+
+use Crypt::Cracklib; # if missing, install with:
+                     #   perl -MCPAN -e 'install Crypt::Cracklib'
+
+if ($passphrase eq "") {
+    exit(0);	# allow empty passphrase for other auth methods
+}
+
+$reason = fascist_check($passphrase);
+if ($reason ne "ok") {
+    print $reason, "\n";
+    exit(1);
+}
+
+exit(0);

@@ -1,0 +1,104 @@
+First, you need to install the Globus Toolkit packages
+required for MyProxy.  Right now the best way to do that is to run
+
+  $ ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
+  $ make gsi-myproxy install 
+
+in the gt-all-source-installer directory.  That will include all the
+Globus Toolkit packages needed by MyProxy.
+
+You'll need GSI user credentials to run the MyProxy clients and host
+credentials to run the myproxy-server.
+
+To build in a CVS workspace (replacing gcc32dbg with the flavor of
+your Globus Toolkit installation):
+$ ./bootstrap
+$ ./configure --with-gpt --with-flavor=gcc64dbg
+$ make
+
+Don't use threaded (thr) flavors.
+
+To install from a CVS workspace to $GLOBUS_LOCATION:
+$ make install
+
+To build source packages from a CVS workspace:
+$ make dist
+
+---------- Releasing MyProxy ----------
+
+0. Make sure all changes for the release are documented in the VERSION
+   file.  Be sure to note any API changes.
+
+1. Update the version definitions in a few different files.  Be aware
+   of the difference between the MyProxy version and the GPT package
+   version.
+
+     myproxy.h: update the MYPROXY_VERSION_* constants
+     VERSION: update version on first line and add entry to Version History
+     pkgdata/pkg_data_src.gpt.in: update Aging_Version and VersionLabel
+     myproxy.spec: update the Version line
+     configure.in: update AC_INIT
+
+   Commit your changes to CVS.
+
+3. Build a source package.
+
+     $ ./bootstrap
+     $ ./configure --with-gpt --with-flavor=gcc64dbg
+     $ make dist
+
+4. Verify that the source package builds against supported versions of
+   the Globus Toolkit.  It should build without warnings.
+
+     $ gpt-build -force -verbose myproxy-*.tar.gz gcc64dbg
+
+   For instructions on submitting test builds to the UW NMI system,
+   see nmi/README.  The results of all test builds, including
+   automated nightly builds, can be viewed at:
+
+   http://submit-1.batlab.org/nmi/results/overview?project=MyProxy
+
+5. Test the installation.  (-valgrind will work only on x86.)
+
+     $ grid-proxy-init -bits 2048
+     $ myproxy-test -startserver -valgrind
+
+6. Tag CVS with the version number (ex. MYPROXY_3_3).
+
+     $ cvs tag MYPROXY_X_X
+
+7. Sign the release file with GPG.
+
+     $ gpg -ab myproxy-*.tar.gz
+
+8. Upload the release notes and myproxy-*.tar.gz* files to
+   <https://sourceforge.net/projects/cilogon/files/myproxy/>.
+
+   Just for backup, also upload to myproxy.ncsa.uiuc.edu:
+
+    $ scp README LICENSE VERSION myproxy-*.tar.gz* \
+      osage.ncsa.uiuc.edu:/afs/ncsa/web/grid.ncsa.uiuc.edu/htdocs/myproxy/dl
+
+9. Update MyProxy web site in
+   /afs/ncsa.uiuc.edu/web/grid.ncsa.uiuc.edu/htdocs/myproxy.
+
+   Perform a CVS update to update to the latest changes in CVS. Then,
+
+     download.html: add new entry at top of table for new release
+     index.html/news.html/news.xml: add note to News
+     install.html: any changes to install instructions needed?
+     man: update html man pages
+
+   To update html man pages, run make_html in the man subdirectory of
+   your CVS workspace and copy the resulting html files to the web
+   site.
+
+   Commit web site changes to CVS.
+
+10. Send release announcement to myproxy-announce@globus.org.
+    Sign it with 'gpg --clearsign'.
+
+11. Add MyProxy version number at
+    <https://bugzilla.mcs.anl.gov/globus/editversions.cgi?product=MyProxy>.
+
+12. Add release announcement on www.cilogon.org.

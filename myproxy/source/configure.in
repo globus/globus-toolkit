@@ -1,0 +1,335 @@
+dnl Process this file with autoconf to produce a configure script.
+
+AC_REVISION($Revision: 1.87 $)
+AC_INIT([myproxy],[6.0])
+AM_INIT_AUTOMAKE([foreign])
+LT_INIT([dlopen win32-dll])
+
+AC_CONFIG_MACRO_DIR([m4])
+
+AC_PROG_LN_S
+
+AC_ARG_WITH([flavor],
+    AS_HELP_STRING([--with-flavor=FLAVOR], [Build with Globus Flavor]),
+    [
+    GLOBUS_FLAVOR_NAME="$withval"
+    _GLOBUS_FLAVOR_NAME="_$withval"
+    ],
+    [GLOBUS_FLAVOR_NAME=""
+    _GLOBUS_FLAVOR_NAME=""
+    ])
+AC_SUBST(GLOBUS_FLAVOR_NAME)
+AC_SUBST(_GLOBUS_FLAVOR_NAME)
+
+dnl
+dnl Figure out which regular expression parser to use.
+dnl  (taken from krb5/lib/krb5/os/configure.in)
+dnl Try, in order, regcomp, compile/step
+dnl
+AC_HAVE_HEADERS(regex.h regexpr.h)
+dnl
+dnl regcomp (which is present but non-functional on Solaris 2.4)
+dnl
+AC_CACHE_CHECK([for working regcomp],
+  [ac_cv_func_regcomp],
+  [AC_TRY_RUN([
+#include <sys/types.h>
+#include <regex.h>
+regex_t x; regmatch_t m;
+int main() { return regcomp(&x,"pat.*",0) || regexec(&x,"pattern",1,&m,0); }
+    ], ac_cv_func_regcomp=yes, ac_cv_func_regcomp=no, ac_cv_func_regcomp=no)])
+dnl
+dnl compre/step
+dnl
+save_LIBS=$LIBS
+LIBS=-lgen
+dnl this will fail if there's no compile/step in -lgen, or if there's
+dnl no -lgen.  This is fine.
+AC_CHECK_FUNCS(compile step, have_func_compile=yes)
+LIBS=$save_LIBS
+dnl
+if test "$ac_cv_func_regcomp" = yes ; then
+  AC_MSG_RESULT([Using re_comp for regular expression matching])
+  AC_DEFINE(HAVE_REGCOMP)
+elif test "$have_func_compile" = yes ; then
+  AC_MSG_RESULT([Using compile/step for regular expression matching])
+  AC_CHECK_LIB(gen, compile, [SERVERLIBS="$SERVERLIBS -lgen"])
+else
+  AC_MSG_ERROR([No support for regular expression matching])
+fi
+dnl
+dnl Check for setenv()
+dnl
+AC_CHECK_FUNCS(setenv)
+dnl
+dnl Check for unsetenv()
+dnl
+AC_CHECK_FUNCS(unsetenv)
+dnl
+dnl Check for getopt_long()
+dnl
+AC_HAVE_HEADERS(getopt.h)
+AC_CHECK_FUNCS(getopt_long)
+dnl
+dnl Check for socklen_t
+dnl
+AC_CHECK_HEADERS([sys/socket.h])
+
+AC_CHECK_TYPES([socklen_t],[],[],AC_INCLUDES_DEFAULT[
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif])
+dnl
+dnl Check for facilitynames
+dnl
+AC_CHECK_DECLS([facilitynames], [], [],
+  [[
+        #define SYSLOG_NAMES
+        #include <stdio.h>
+        #include <syslog.h>
+  ]])
+dnl
+dnl Check to see if we need "netlibs" (specifically, libnsl and libsocket)
+dnl
+uname=`(uname) 2>/dev/null`
+if test "$uname" != IRIX -a "$uname" != IRIX64 ; then
+	AC_CHECK_LIB(socket, socket,
+[	SYSLIBS="$SYSLIBS -lsocket"], ,-lnsl)
+	AC_CHECK_LIB(nsl, t_bind,
+[	SYSLIBS="$SYSLIBS -lnsl"])
+fi
+AC_SUBST(SYSLIBS)
+
+AC_ARG_WITH([gpt],
+	AS_HELP_STRING([--with-gpt], [Use gpt tools to generate compiler/link lines]),
+        [
+if test "$withval" = yes; then
+     GLOBUS_LOCATION=${GLOBUS_LOCATION:-/usr}
+     GPT_LOCATION=${GPT_LOCATION:-$GLOBUS_LOCATION}
+     GPT_LOCATION=${GPT_LOCATION:-/usr}
+     if test x$enable_static != x; then
+         GPT_LINKTYPE=static
+     else
+         GPT_LINKTYPE=shared
+     fi
+     if test -f $GLOBUS_LOCATION/share/globus/globus-build-env-$GLOBUS_FLAVOR_NAME.sh; then
+     	. $GLOBUS_LOCATION/share/globus/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
+     fi
+        if $GPT_LOCATION/sbin/gpt_build_config -src pkgdata/pkg_data_src.gpt.in -f $GLOBUS_FLAVOR_NAME -link $GPT_LINKTYPE; then
+                echo "Dependencies Complete";
+        else
+                exit 1;
+        fi
+
+
+# The following variables are used to manage the build enviroment
+# GPT_CFLAGS, GPT_INCLUDES, GPT_PGM_LINKS, GPT_LIB_LINKS, and GPT_LDFLAGS
+# are the variables used in the Makefile.am's
+# GPT_PKG_CFLAGS, GPT_EXTERNAL_INCLUDES and GPT_EXTERNAL_LIBS are stored
+# as build data in the packaging metadata file.
+# GPT_CONFIG_FLAGS, GPT_CONFIG_INCLUDES, GPT_CONFIG_PGM_LINKS, and
+# GPT_CONFIG_LIB_LINKS are returned by gpt_build_config and contain build
+# environment data from the dependent packages.
+
+
+
+        . ./gpt_build_temp.sh
+        GLOBUS_CFLAGS="$GPT_CONFIG_CFLAGS $GPT_CONFIG_INCLUDES -I$GLOBUS_LOCATION/include/globus -I$GLOBUS_LOCATION/include/globus/$GLOBUS_FLAVOR_NAME"
+        GLOBUS_LIBS="$GPT_CONFIG_LIB_LINKS $GPT_CONFIG_LIBS"
+AC_SUBST(GLOBUS_CFLAGS)
+AC_SUBST(GLOBUS_LIBS)
+with_gpt=yes
+fi
+])
+
+if test x$with_gpt = x; then
+dnl
+dnl The following tests need/use GPT_LIBS
+dnl
+if test "x$PKG_CONFIG_PATH" = "x" -a "x$GLOBUS_LOCATION" != "x" ; then
+   PKG_CONFIG_PATH=$GLOBUS_LOCATION/lib/pkgconfig
+   export PKG_CONFIG_PATH
+fi
+PKG_CHECK_MODULES([GLOBUS], [globus-gss-assist >= 3, globus-usage >= 3, globus-gss-assist >= 3, globus-gssapi-gsi >= 4, globus-common >= 0, globus-gsi-sysconfig >= 0, globus-gsi-cert-utils >= 0], [], [AC_MSG_ERROR([GLOBUS_PKG_ERRORS])])
+fi
+dnl
+dnl Check for libcrypto
+dnl
+AC_SEARCH_LIBS(ENGINE_init, crypto_$GLOBUS_FLAVOR_NAME crypto, ,
+			     AC_MSG_ERROR([ENGINE_init not found in libcrypto]) )
+dnl
+dnl Check for libssl
+dnl
+AC_SEARCH_LIBS(SSL_library_init, ssl_$GLOBUS_FLAVOR_NAME ssl, ,
+			     AC_MSG_ERROR([SSL_library_init not found in libssl]) )
+dnl
+dnl Check for globus_usage_stats_send
+dnl
+AC_CHECK_LIB(globus_usage,
+             globus_usage_stats_send,
+             AC_DEFINE(HAVE_GLOBUS_USAGE),
+             )
+dnl
+dnl Check for globus_usage_stats_send_array
+dnl
+AC_CHECK_LIB(globus_usage,
+             globus_usage_stats_send_array,
+             AC_DEFINE(HAVE_GLOBUS_USAGE_SEND_ARRAY),
+             )
+dnl
+dnl Check for globus_gsi_proxy_handle_set_extensions
+dnl
+AC_CHECK_LIB(globus_gsi_proxy_core,
+             globus_gsi_proxy_handle_set_extensions,
+             AC_DEFINE(HAVE_GLOBUS_GSI_PROXY_HANDLE_SET_EXTENSIONS),
+             )
+dnl
+dnl Check for OCSP
+dnl
+AC_CHECK_FUNC(OCSP_basic_verify, AC_DEFINE(HAVE_OCSP))
+dnl
+dnl Check for UI_UTIL_read_pw
+dnl
+AC_CHECK_FUNC(UI_UTIL_read_pw, AC_DEFINE(HAVE_UI_UTIL))
+dnl
+dnl Check for SASL
+dnl
+AC_ARG_WITH(sasl2,
+    AS_HELP_STRING([--with-sasl2=PATH], [Build with SASL V2 support]),
+	[
+		if test "x$withval" = "xyes" ; then
+		   AC_MSG_ERROR([--with-sasl2 requires PATH argument])
+		fi
+		if test "x$withval" != "xno" ; then
+		   CPPFLAGS="-I${withval}/include/sasl $CPPFLAGS"
+		   LDFLAGS="-L${withval}/lib $LDFLAGS"
+		   AC_CHECK_HEADER(sasl.h)
+		   AC_CHECK_LIB(sasl2, sasl_client_init, ,
+				AC_MSG_ERROR([libsasl2 not found]))
+		   AC_MSG_CHECKING(that sasl.h matches libsasl2)
+		   AC_TRY_RUN([
+#include <sasl.h>
+int main() { if (SASL_VERSION_MAJOR != 2) exit(1); else exit(0); }
+		      ],
+		      [AC_MSG_RESULT([yes])],
+		      [
+			AC_MSG_RESULT([no])
+			AC_MSG_ERROR([sasl.h does not match libsasl2])
+		      ],
+		      [AC_MSG_RESULT([yes])])
+		   SASL="yes"
+		fi
+	]
+)
+dnl
+dnl Check for Kerberos
+dnl
+AC_ARG_WITH(kerberos5,
+    AS_HELP_STRING([--with-kerberos5=PATH],[Build with Kerberos V5 support]),
+       [
+               if test "x$withval" = "xyes" ; then
+                  AC_MSG_ERROR([--with-kerberos5 requires PATH argument])
+               fi
+               if test "x$withval" != "xno" ; then
+                  if test "$SASL" != "yes"; then
+                     AC_MSG_ERROR([--with-kerberos5 requires --with-sasl2])
+                  fi
+                  KRB5CPPFLAGS="-I${withval}/include $CPPFLAGS"
+                  AC_SUBST(KRB5CPPFLAGS)
+                  AC_DEFINE(BUILD_GSSAPI_PLUGIN)
+                  AC_CHECK_HEADERS(gssapi.h)
+               fi
+       ]
+)
+dnl
+dnl Check for PAM
+dnl
+AC_CHECK_HEADERS(security/pam_appl.h pam/pam_appl.h)
+if test "x$ac_cv_header_security_pam_appl_h" = "xyes" || \
+   test "x$ac_cv_header_pam_pam_appl_h" = "xyes" ; then
+   AC_CHECK_LIB(dl, dlopen, , )
+   AC_CHECK_LIB(pam, pam_set_item, , )
+fi
+
+dnl
+dnl Check for pthread_sigmask
+dnl
+AC_CHECK_FUNC(pthread_sigmask, AC_DEFINE(HAVE_PTHREAD_SIGMASK))
+
+dnl
+dnl Check for pidfile_open
+dnl
+AC_CHECK_DECL(pidfile_open, AC_DEFINE(HAVE_PIDFILE_DECL),  ,
+              [#include <libutil.h>])
+AC_SEARCH_LIBS(pidfile_open, util bsd, AC_DEFINE(HAVE_PIDFILE))
+
+dnl
+dnl Check for OpenLDAP
+dnl
+
+AC_ARG_WITH(openldap,
+    AS_HELP_STRING([--with-openldap=PATH],[Build with OpenLDAP CA support]),
+       [
+               if test "x$withval" = "xyes" ; then
+                  AC_MSG_ERROR([--with-openldap requires PATH argument])
+               fi
+               if test "x$withval" != "xno" ; then
+		  CPPFLAGS="-I${withval}/include $CPPFLAGS"
+		  AC_MSG_CHECKING(for OpenLDAP v2.3 or later)
+          AC_TRY_RUN([
+#include <ldap.h>
+int main() { if (LDAP_VENDOR_VERSION < 20300) exit(1); else exit(0); }
+		      ],
+		      [AC_MSG_RESULT([yes])],
+		      [
+			AC_MSG_RESULT([no])
+			AC_MSG_ERROR([OpenLDAP is not v2.3 or later])
+		      ],
+		      [AC_MSG_RESULT([yes])])
+          # warning: if ${withval}/lib isn't in the shared library
+          # search path, then adding -lldap may cause AC_TRY_RUN tests
+          # below to fail
+		  LDFLAGS="-L${withval}/lib $LDFLAGS"
+		  AC_CHECK_HEADERS(ldap.h)
+		  AC_CHECK_LIB(lber, ber_free, ,
+				     AC_MSG_ERROR([ber_free not found in liblber]) )
+		  AC_CHECK_LIB(ldap, ldap_sasl_bind_s, ,
+				     AC_MSG_ERROR([ldap_sasl_bind_s not found in libldap]) )
+		  AC_CHECK_FUNC(ldap_search_ext_s, ,
+				     AC_MSG_ERROR([ldap_search_ext_s not found in libldap]) )
+		  AC_CHECK_FUNC(ldap_str2dn, ,
+				     AC_MSG_ERROR([ldap_str2dn not found in libldap]) )
+		  AC_CHECK_FUNC(ldap_start_tls_s, ,
+				     AC_MSG_ERROR([ldap_start_tls_s not found in libldap]) )
+               fi
+       ]
+)
+
+dnl
+dnl Check for VOMS libraries
+dnl
+
+AC_ARG_WITH(voms,
+    AS_HELP_STRING([--with-voms=PATH],[Build with VOMS support]),
+	[
+		if test "x$withval" = "xyes" ; then
+		   AC_MSG_ERROR([--with-voms requires PATH argument])
+		fi
+		if test "x$withval" != "xno" ; then
+		   CPPFLAGS="-I${withval}/include -I${withval}/include/voms -I${withval}/include/glite/security/voms $CPPFLAGS"
+		   LDFLAGS="-L${withval}/lib -L${withval}/lib64 $LDFLAGS"
+		   AC_CHECK_HEADER(voms_apic.h)
+		   AC_CHECK_HEADER(newformat.h)
+           AC_SEARCH_LIBS(VOMS_Init, vomsapi vomsc vomsc_$GLOBUS_FLAVOR_NAME, ,
+			     AC_MSG_ERROR([VOMS_Init not found in libvomsapi/libvomsc]) )
+           AC_DEFINE(HAVE_VOMS)
+		fi
+	]
+)
+
+AC_CONFIG_FILES([
+	Makefile
+	web/Makefile
+	systemd/Makefile
+	man/Makefile])
+AC_OUTPUT

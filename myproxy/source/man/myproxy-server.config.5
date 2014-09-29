@@ -1,0 +1,1020 @@
+.TH myproxy-server.config 5 "2014-07-12" "MyProxy" "MyProxy"
+.SH NAME
+myproxy-server.config \- myproxy-server configuration file
+.SH DESCRIPTION
+The
+.B myproxy-server.config
+file sets the policy for the 
+.BR myproxy-server (8),
+specifying what credentials may be stored in the server's
+repository, who is authorized to retrieve credentials,
+and other configurable server behaviors.
+By default, the
+.BR myproxy-server (8)
+looks for this file in
+.I /etc/myproxy-server.config
+and if it is not found there, it looks in
+.IR $GLOBUS_LOCATION/etc/myproxy-server.config .
+A template is provided at
+.IR $GLOBUS_LOCATION/share/myproxy/myproxy-server.config .
+The
+.B myproxy-server -c
+option can be used to specify an alternative location.
+.PP
+The following lines set access control policies according to the
+client's certificate subject distinguished name (DN).
+Note that MyProxy uses non-standard regular expressions for
+distinguished name (DN) matching. See the
+.B REGULAR EXPRESSIONS
+section below for details.
+.TP
+.BI accepted_credentials " \*(lqDN regex\*(rq"
+Each of these lines allows any clients whose DNs match the
+given limited regex to connect to the myproxy-server and store
+credentials with it for future retrieval.  Any number of these
+lines may appear.  For backwards compatibility, these lines
+can also start with 
+.B allowed_clients 
+instead of
+.BR accepted_credentials .
+If no 
+.B accepted_credentials
+lines are specified, the server will not allow any clients to store
+credentials.
+.TP
+.BI authorized_retrievers " \*(lqDN regex\*(rq"
+Each of these lines allows the server administrator to set
+server-wide policies for credential retrievers. If the client
+DN does not match the given limited regex, the client is not
+allowed to retrieve credentials from the server.  
+In addition to the server-wide policy, myproxy also
+provides support for per-credential policy. The user can
+specify the regex DN of the allowed retrievers of the
+credential when uploading the credential (using
+.BR myproxy-init (1)
+or
+.BR myproxy-store (1)).
+The retrieval client
+DN must also match the user specified regex. In order to
+retrieve credentials the client also needs to know the name
+and pass phrase provided by the client when the credentials
+were stored. Any number of these lines may appear.  For
+backwards compatibility, these lines can also start with
+.B allowed_services 
+instead of 
+.BR authorized_retrievers .
+If no 
+.B authorized_retrievers
+lines are specified, the server will not allow any clients to retrieve
+credentials.
+.TP
+.BI default_retrievers " \*(lqDN regex\*(rq"
+Each of these lines allows the server administrator to set
+server-wide default policies. The regex specifies the clients
+who can access the credentials. The default retriever policy
+is enforced if a per-credential policy is not specified on
+upload (using
+.BR myproxy-init (1)
+or
+.BR myproxy-store (1)).
+In other words, the client can override this policy
+for a credential on upload.  The per-credential policy is
+enforced in addition to the server-wide policy specified by
+the authorized_retrievers line (which clients can not
+override).  Any number of these lines may be present.  For
+backwards compatibility, if no 
+.B default_retrievers 
+line is
+specified, the default policy is "*", which allows any client
+to pass the per-credential policy check.  (The client must
+still pass the 
+.B authorized_retrievers 
+check.)
+.TP
+.BI authorized_renewers " \*(lqDN regex\*(rq"
+Each of these lines allows the server administrator to set
+server-wide policies for authorized renewers. If the client DN
+does not match the given limited regex the client is not
+allowed to renew the credentials previously stored by a
+client.  
+See
+.B allow_self_authorization
+below for a further restriction on this policy.
+In addition to the server-wide policy, myproxy also
+provides support for per-credential policy. The user can
+specify the regex DN of the allowed renewers of the credential
+on upload (using
+.BR myproxy-init (1)).
+The renewal client DN must match both this regex
+and the user specified regex. In this case, the client must
+also already have a credential with a DN matching the DN of
+the credentials to be retrieved, to be used in a second
+authorization step (see the
+.B -a
+options for
+.BR myproxy-logon (1)
+and
+.BR myproxy-retrieve (1)).
+.TP
+.BI default_renewers " \*(lqDN regex\*(rq"
+Each of these lines allows the server administrator to set
+server-wide default renewer policies. The regex specifies the
+clients who can renew the credentials. The default renewer
+policy is enforced if a per-credential policy is not specified
+on upload (using
+.BR myproxy-init (1)).
+This is enforced in addition to the server-wide
+policy specified by the 
+.B authorized_renewers 
+line. Any number
+of these lines may appear.  For backwards compatibility, if no
+default_renewers line is specified, the default policy is "*",
+which allows any client to pass the per-credential policy
+check.  (The client must still pass the 
+.B authorized_renewers
+check.)
+.TP
+.BI authorized_key_retrievers " \*(lqDN regex\*(rq"
+This policy controls who can retrieve credentials (certificates and
+keys) directly from the repository using
+.BR myproxy-retrieve (1).
+Clients must also match the
+.B authorized_retrievers
+policy.
+If no 
+.B authorized_key_retrievers
+lines are specified, the server will not allow any clients to retrieve
+keys directly from the repository.
+.TP
+.BI default_key_retrievers " \*(lqDN regex\*(rq"
+This policy applies if a per-credential policy is not specified on
+upload (using
+.BR myproxy-init (1)
+or
+.BR myproxy-store (1)).
+In other words, the client can override this policy
+for a credential on upload.  The per-credential policy is
+enforced in addition to the server-wide policy specified by
+the authorized_key_retrievers line (which clients can not
+override).  Any number of these lines may be present.  
+If no 
+.B default_key_retrievers 
+line is
+specified, the default policy is "*", which allows any client
+to pass the per-credential policy check.  (The client must
+still pass the 
+.B authorized_key_retrievers 
+check.)
+.TP
+.BI trusted_retrievers " \*(lqDN regex\*(rq"
+This policy controls who can retrieve credentials without further
+authentication.
+By default, clients that match 
+.B authorized_retrievers 
+must perform additional authentication (such as passphrase, PAM, or
+SASL) to retrieve credentials.  However, authenticated clients that
+match both
+.B authorized_retrievers 
+and
+.B trusted_retrievers 
+do not need to perform additional authentication,
+unless the credentials are protected by a passphrase,
+in which case the passphrase is still required.
+Note: The
+.BR myproxy-server (8)
+will fail on startup or reconfig with an "unsafe policy" error if a policy of
+.BI trusted_retrievers " \*(lq*\*(rq"
+is specified without also specifying a restrictive
+.B default_trusted_retrievers
+policy, to avoid an unsafe policy that would release credentials to 
+all clients without additional authentication.
+See also
+.B allow_self_authorization
+below for a further restriction on this policy.
+.TP
+.BI default_trusted_retrievers " \*(lqDN regex\*(rq"
+If a user doesn't set a trusted retrieval policy with the credential
+on upload (via 
+.B 'myproxy-init 
+.BR -Z' ), 
+the 
+.BR myproxy-server (8)
+will apply the following policy in addition to the 
+.B trusted_retrievers 
+policy.  If no 
+.B default_trusted_retrievers 
+policy is set, then only the 
+.B trusted_retrievers 
+policy is applied.
+.PP
+The following lines in the configuration file set other server
+options.
+.TP
+.BI passphrase_policy_program " full-path-to-script"
+This line specifies a program to run whenever a passphrase is set or
+changed for implementing a local password policy.
+The program is passed the new passphrase via stdin and is passed the
+following arguments: username, distinguished name, credential name (if
+any), per-credential retriever policy (if any), and per-credential
+renewal policy (if any).
+If the passphrase is acceptable, the program should exit with status 0.
+Otherwise, it should exit with non-zero status, causing the operation
+in progress (credential load, passphrase change) to fail with the error
+message provided by the program's stdout.
+Note: You must specify the full path to the external program.
+$GLOBUS_LOCATION can't be used in the myproxy-server.config file.
+A sample program is installed in
+.I $GLOBUS_LOCATION/share/myproxy/myproxy-passphrase-policy
+but is not enabled by default.
+.RS
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PD 0
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
+.TP
+.BI cert_dir " full-path-to-certificates-directory"
+Specifies the path to the CA certificates directory to be returned
+to clients requesting trust roots (such as via the 
+.BR myproxy-logon (1)
+.B -T
+option).
+.TP
+.BI max_proxy_lifetime " hours"
+This line specifies a server-wide maximum lifetime for
+retrieved proxy credentials.
+By default, no server-wide maximum is enforced.
+However, if this option is specified, the server will limit the
+lifetime of any retrieved proxy credentials to the value given.
+.TP
+.BI max_cred_lifetime " hours"
+This line specifies a server-wide maximum lifetime for
+stored credentials.
+By default, no server-wide maximum is enforced.
+However, if this option is specified, the server will limit the
+lifetime of any stored credentials to the value given.
+.TP
+.BI ignore_globus_limited_proxy_flag " boolean"
+By default, MyProxy will respect the policy of "limited" proxy
+certificates as follows.  If a client authenticates with a limited
+proxy, the client should only be able to obtain another limited
+proxy, not a full proxy or end entity certificate.  Thus, the
+MyProxy CA will not accept limited proxies for authentication.
+However, if this option is set to true, MyProxy will treat limited proxy
+certificates as if they were full proxy certificates.
+.TP
+.BI allow_self_authorization " boolean"
+By default, MyProxy will disallow 
+.B trusted_retrievers
+and
+.B authorized_renewers
+whose DN matches the identity of the stored credential,
+so a proxy by itself can not be refreshed or renewed.
+However, if this option is set to true, this restriction is lifted.
+.TP
+.BI syslog_ident " name"
+You can optionally specify the string to be prepended to every message
+written to the syslog.  If not specified, the name defaults to the the
+program name, i.e. myproxy-server.
+.TP
+.BI syslog_facility " name"
+By default, the myproxy-server will log to the syslog "daemon"
+facility. With this option you can specify an alternate syslog
+facility, such as "auth", "user", "security", or "local0".
+The facility can also be specified numerically as with the 
+.BR logger (1)
+command.
+.TP
+.BI request_timeout " seconds"
+Specifies the maximum time a 
+.BR myproxy-server (8)
+child process should spend servicing a client request before aborting.
+By default, child processes will abort after 120 seconds.
+A negative value will disable the timeout.
+.TP
+.BI request_size_limit " bytes"
+Limits the amount of incoming application-level protocol data the
+.BR myproxy-server (8)
+will accept from clients, to avoid memory exhaustion
+under heavy load. Specified in bytes.
+Defaults to 1MB (1048576 bytes).
+A zero or negative value disables the limit.
+.TP
+.BI proxy_extfile " full-path-to-extension-file"
+Optionally specifies the full path to a file containing an OpenSSL
+formatted set of certificate extensions to include in all 
+proxy certificates issued from the MyProxy repository (analogous to
+.B certificate_extfile
+for the CA module).
+.TP
+.BI proxy_extapp " full-path-to-extension-callout-program"
+This is the call-out version of proxy_extfile.  It optionally
+specifies the full path to a call-out program for specifying
+proxy certificate extensions.  It will be passed the authenticated
+username and the proxy credential location as the two command arguments.
+On success, it should
+write the OpenSSL formatted set of certificate extensions to stdout
+and exit with zero status.  On error, it should write to stderr and
+exit with nonzero status.
+Either 
+.B proxy_extfile
+or
+.B proxy_extapp
+can be specified but not both.
+.RS
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PD 0
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
+.TP
+.BI voms_userconf " full-path-to-voms-configuration-file"
+Optionally specifies the full path to the VOMS configuration file
+containing VOMS server information. It is usually specified in
+the environmental variable VOMS_USERCONF.
+.TP
+.BI allow_voms_attribute_requests " boolean"
+If this parameter is set to true and a GET request includes VONAME
+and (optionally) VOMSES parameters, call-out to VOMS to add the
+requested attributes to the issued certificate. Requires linking
+with VOMS libraries. By default, VONAME and VOMSES parameters in
+requests will be ignored unless this parameter is set to true.
+.PP
+The MyProxy server can be optionally configured for authentication
+based on Pluggable Authentication Modules (PAM) and/or
+the Simple Authentication and Security Layer (SASL).
+Kerberos is one of the supported SASL authentication methods.
+The following options control the use of PAM and SASL.
+.TP
+.BI pam " option"
+This line
+governs the use of PAM to check passphrases.
+MyProxy will attempt to
+authenticate via PAM, with the supplied username and passphrase.
+Note that PAM will need to be configured externally for the
+application "myproxy" (usually in /etc/pam.d/), or for the
+application named by pam_id, below.
+Accepted values:
+.RS
+.TP
+.B required
+PAM password authentication is required under all conditions.  If the
+credential is unencrypted (that is, it has no passphrase), a PAM
+password check is still required for authentication.  If the
+credential is encrypted, its passphrase must match the PAM password.
+.TP
+.B sufficient
+The user's passphrase may match either the credential passphrase or,
+if the credential is unencrypted, the PAM passphrase.  If the
+credential is encrypted, then the PAM password is not relevant.
+.TP
+.BR disabled " (default)"
+PAM is not used to check passphrases.
+.RE
+.TP
+.BI pam_id " string"
+The name that myproxy uses to identify itself to PAM.  Default is
+"myproxy".
+For example, on most Unix-like systems, if pam_id is set to "login",
+MyProxy will authenticate against the system's own usernames and
+passwords.
+.TP
+.BI sasl " option"
+This line
+governs the use of SASL authentication.
+Accepted values:
+.RS
+.TP
+.B required
+SASL authentication is required for retrieving credentials.
+.TP
+.B sufficient
+SASL authentication is sufficient for retrieving credentials, but
+other authentication methods may be used instead.
+.TP
+.BR disabled " (default)"
+SASL authentication isn't used.
+.RE
+.TP
+.BI sasl_mech " mechanism"
+Forces the use of a single SASL mechanism, overriding the SASL
+configuration file. (Typically not required.)
+.TP
+.BI sasl_serverFQDN " hostname"
+Configures the SASL server fully-qualified domain name for
+multi-homed servers. (Typically not required.)
+.TP
+.BI sasl_user_realm " realm"
+Configures the SASL user realm. (Typically not required.)
+.PP
+The MyProxy server can also be configured to act as a Certificate
+Authority (CA) to issue credentials to clients.  The following
+parameters enable and configure the CA functionality.
+.TP
+.BI certificate_issuer_cert " full-path-to-certificate"
+This line specifies the full path to the issuer certificate to
+optionally configure the myproxy-server to act as an online
+certificate authority. 
+.TP
+.BI certificate_issuer_key " full-path-to-key"
+When specifying 
+.B certificate_issuer_cert 
+above, you must also give the name of the CA private key for 
+signing certificates.  This is
+normally path to a CA private key in PEM format, but if you
+are using an OpenSSL engine (see
+.B certificate_openssl_engine_id
+) then it can be the key name.
+.TP
+.BI certificate_issuer_key_passphrase " \*(lqpassphrase\*(rq"
+If the 
+.B certificate_issuer_key 
+is encrypted, give the passphrase here.
+.TP
+.BI certificate_issuer_subca_certfile " full-path-to-subca-certificate-file"
+If you would like an intermediate/sub-CA certificate chain to be sent
+along with the EEC (End Entity Certificate) generated using a local
+intermediate/sub-CA, specify the file that contains those certificates in
+PEM format. This is meant to aid scenarios where the CA used is an
+intermediate CA (i.e. not a root CA) and the client may not have the
+intermediate CA(s) in its trust store. The client will write out the
+chain into the same file as the EEC, following the EEC.
+.TP
+.BI certificate_issuer_hashalg " algorithm"
+Specifies the hash algorithm to use when signing end-entity
+certificates. 
+Defaults to "sha256". 
+.TP
+.BI certificate_issuer_email_domain " \*(lqdomain\*(rq"
+If set, specifies the domain part of the X509v3 Subject Alternative
+Name email address included in issued certificates.
+.PP
+.BI certificate_openssl_engine_id " engineId"
+.PP
+.BI certificate_openssl_engine_pre " pre-initialization-commands"
+.TP
+.BI certificate_openssl_engine_post " post-initialization-commands"
+These commands can be used to allow any OpenSSL engine to be used
+with MyProxy.  This enables the use of hardware tokens and signing 
+modules to sign certificates.  Given the parameters of an OpenSSL 
+"engine" command, the first argument, the identity of the engine
+becomes the argument to
+.B certificate_openssl_engine_id 
+and -pre commands are listed in order using 
+.B certificate_openssl_engine_pre
+and -post commands are listed in order using
+.B certificate_openssl_engine_post.
+For example the command-line:
+.IP 
+   openssl engine dynamic -pre SO_PATH:/usr/lib/engines/engine_pkcs11.so 
+-pre ID:pkcs11 -pre LIST_ADD:1 -pre LOAD 
+-pre MODULE_PATH:/usr/lib/opensc-pksc11.so
+.IP
+becomes:
+.IP
+   certificate_openssl_engine_id "dynamic"
+.IP 
+   certificate_openssl_engine_pre 
+"SO_PATH:/usr/lib/engines/engine_pkcs11.so"
+"ID:pkcs11" "LIST_ADD:1" "LOAD"
+"MODULE_PATH:/usr/lib/opensc-pksc11.so"
+.IP
+Please note that any shared library engines loaded through the
+"dynamic" engine MUST be compiled againt the correct version of
+OpenSSL.  The Globus toolkit has its own installation and can
+be found by running $GLOBUS_LOCATION/bin/openssl version.
+.TP
+.BI certificate_openssl_engine_lockfile " full-path-to-file"
+If your hardware token or HSM is unable to handle simultaneous
+operations, provide a path to a lockfile for synchronizing
+operations to the engine device.  The myproxy-server will create the
+file if it does not already exist.
+.TP
+.BI certificate_issuer_program " full-path-to-script"
+This line specifies the path to a program to issue certificates for
+authenticated clients that don't have credentials stored.  
+This optionally
+configures the myproxy-server to act as an online certificate
+authority, allowing programmatic control over the certificate
+issuance process.  
+You can either specify 
+.B certificate_issuer_cert
+or 
+.BR certificate_issuer_program .  
+.RS
+.PP
+.PD 0
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
+.TP
+.BI certificate_serialfile " full-path-to-serial-file"
+Specifies the path to a file to store the serial number counter for
+issued certificates.  Defaults to /var/lib/myproxy/serial.
+.TP
+.BI certificate_serial_skip " increment"
+Specifies the number to add to the serial number each time a certificate is
+issued. Use this to stagger serial numbers across multiple CA
+instances to avoid serial number clashes. Defaults to 1.
+.TP
+.BI certificate_out_dir " full-path-to-putput-directory"
+Specifies the path to a directory where new certificates will be archived.
+.TP
+.BI max_cert_lifetime " hours"
+Specifies the maximum lifetime (in hours) for certificates issued by
+the CA module.  Defaults to 12 hours.
+.TP
+.BI min_keylen " bits"
+Specifies the minimum RSA key length (in bits)
+for certificates issued by the CA module.
+.TP
+.BI certificate_extfile " full-path-to-extension-file"
+Optionally specifies the full path to a file containing an OpenSSL
+formatted set of certificate extensions to include in all issued
+certificates.  For example:
+.RS
+.PD 0
+   keyUsage=digitalSignature,keyEncipherment,dataEncipherment
+.PP
+   subjectKeyIdentifier=hash
+.PP
+   authorityKeyIdentifier=keyid,issuer:always
+.PP
+   crlDistributionPoints=URI:http://ca.ncsa.uiuc.edu/4a6cd8b1.r0
+.PP
+   basicConstraints=CA:FALSE
+.PD
+.RE
+.RS
+If not set, the MyProxy CA will include a basic set of extensions in
+issued certificates.
+.RE
+.TP
+.BI certificate_extapp " full-path-to-extension-callout-program"
+This is the call-out version of certificate_extfile.  It optionally
+specifies the full path to a call-out program for specifying
+certificate extensions.  It will be passed the authenticated
+username as the single command argument.  On success, it should
+write the OpenSSL formatted set of certificate extensions to stdout
+and exit with zero status.  On error, it should write to stderr and
+exit with nonzero status.
+Either 
+.B certificate_extfile
+or
+.B certificate_extapp
+can be specified but not both.
+.RS
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PD 0
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
+.TP
+.BI certificate_mapfile " full-path-to-mapfile"
+When specifying certificate_issuer_cert above, you can map account names
+to certificate subject distinguished names for the issued
+certificates using this mapfile, which has the same format as used
+by other Globus Toolkit services.
+By default, /etc/grid-security/grid-mapfile is used.
+The Globus Toolkit
+.B grid-mapfile-add-entry
+and
+.B grid-mapfile-delete-entry
+commands can be used to manage the grid-mapfile.
+.TP
+.BI certificate_mapapp " full-path-to-mapapp"
+When specifying certificate_issuer_cert above, you can map account names
+to certificate subject distinguished names for the issued
+certificates using this call-out.  It will be passed the
+authenticated username as the single command argument.  On success,
+it should write the distinguished name 
+in OpenSSL one line format
+(for example,
+"/C=US/O=National Computational Science Alliance/CN=Jim Basney")
+to stdout and exit with zero
+status.  On error, it should write to stderr and exit with nonzero
+status.  If it is not defined, then mapfile lookup will be executed
+instead (see certificate_mapfile above).
+An example is installed in
+.IR $GLOBUS_LOCATION/share/myproxy/myproxy-certificate-mapapp .
+.RS
+.PP
+.PD 0
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
+.TP
+.BI certificate_request_checker " full-path-to-callout-program"
+This CA call-out can be used to perform checks on incoming
+certificate requests. It will be passed the certificate request in
+PEM format on stdin. If it returns a nonzero exit status, the CA
+will abort without signing the request.  When returning a nonzero
+exit status, the callout should indicate the problem on stderr.
+An example is installed in
+.IR $GLOBUS_LOCATION/share/myproxy/myproxy-certreq-checker .
+.TP
+.BI certificate_issuer_checker " full-path-to-callout-program"
+This CA call-out can be used to perform checks on issued
+certificates before the certificate is returned to the client.  It
+will be passed the certificate in PEM format on stdin. If it returns
+a nonzero exit status, the CA will abort without returning the
+signed certificate to the client. When returning a nonzero exit
+status, the callout should indicate the problem on stderr.
+An example is installed in
+.IR $GLOBUS_LOCATION/share/myproxy/myproxy-cert-checker .
+.PP
+If OpenLDAP support is built-in to the
+.BR myproxy-server (8),
+the following parameters can be used to configure the CA module to map
+account names to certificate subject distinguished names via LDAP.
+.TP
+.BI ca_ldap_server " \*(lqldap://localhost:389/\*(rq"
+This parameter specifies the URI to the LDAP server to use for
+username to DN resolution in the CA module.  Both ldap:// and ldaps://
+protocols are supported.  A port number may optionally be specified as
+well.  Defining this directive is the "trigger" that causes the name
+resolution module to use LDAP querying.  If it is not defined, then
+mapfile lookup will be executed instead (see 
+.B certificate_mapfile
+above).
+.TP
+.BI ca_ldap_uid_attribute " \*(lquid\*(rq"
+The name of the record attribute that maps to the MyProxy username.
+Required for LDAP username to DN resolution.
+.TP
+.BI ca_ldap_searchbase " \*(lqou=people,dc=bullwinkle,dc=lbl,dc=gov\*(rq"
+The DN of the region of the ldap database to be searched.
+Required for LDAP username to DN resolution.
+.TP
+.BI ca_ldap_dn_attribute " \*(lqsubjectDN\*(rq"
+If this directive is set, the LDAP resolver will pull the DN from
+the specified attribute in the returned record.  If it is not set,
+the default is to use the DN of the record itself.
+.TP
+.BI ca_ldap_connect_dn " \*(lqcn=MyProxy,ou=ldapusers,dc=lbl,dc=gov\*(rq"
+DN for LDAP basic authentication (optional).
+.TP
+.BI ca_ldap_connect_passphrase " \*(lqpassphrase\*(rq"
+Passphrase for LDAP basic authentication (optional).
+.PP
+The following parameters control server replication with the
+.BR myproxy-replicate (1)
+utility.
+.TP
+.BI slave_servers " server:port;"
+This value is for use with the 
+.BR myproxy-replicate (1)
+utility.  This tag provides a list of servers that will be used as secondary
+repositories for the MyProxy database.  Each server should be seperated by
+a ";".  Also, a port may be provided if the slave server is using a port
+other then the default.  The server name maybe a recognized DNS or an IP
+address.
+.PP
+The following parameters are used primarily when utilizing MyProxy as a
+delegation service for web portals.
+.TP
+.BI accepted_credentials_mapfile " full-path-to-mapfile"
+This parameter points to a grid-mapfile, which is possibly different from
+other mapfiles above. When specified, this mapfile is utilized during
+puts/stores (e.g. with 
+.BR myproxy-init (1)
+and
+.BR myproxy-store (1)).
+A credential is authorized to be put/stored only under the username
+specified in the mapfile.  This prevents storing a user's credential under a
+different username.  Note that the credential checked for the presence of a
+SubjectDN/Username entry in the mapfile is the credential utilized to secure
+the connection between client and server, NOT the actual credential being
+stored.  As the credential which secures the TLS connection is typically the
+same as the credential being stored, this should not be a major issue.
+The Globus Toolkit
+.B grid-mapfile-add-entry
+and
+.B grid-mapfile-delete-entry
+commands can be used to manage the grid-mapfile.
+.TP
+.BI accepted_credentials_mapapp " full-path-to-mapapp"
+As an alternative to the accepted_credentials_mapfile option above, you can
+specify a call-out which is passed two parameters: a certificate subject
+distinguished name and a username (in that order).  In essence, the call-out
+performs a lookup in a 'virtual' accepted_credentials_mapfile.  If the
+SubjectDN/Username line would appear in such a mapfile, then the call-out
+should exit with zero status indicating that a credential with the given
+SubjectDN is allowed to be stored under the given Username.  Otherwise, the
+call-out should exit with nonzero status indicating error.
+An example is installed in
+.IR $GLOBUS_LOCATION/share/myproxy/myproxy-accepted-credentials-mapapp .
+.RS
+.PP
+.PD 0
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
+.TP
+.BI check_multiple_credentials " boolean"
+Typically when a credential is accessed by a client, the server checks only
+one credential for possible access authorization, even if there are multiple
+credentials stored under the given username.  If this option is set to
+"true" AND the client does not specify a credential name for a MyProxy
+GET operation (i.e., from 
+.BR myproxy-logon (1)),
+then the server will check multiple credentials with the given
+username.  If a credential is found to be authorized for client access, then
+that one will be used during processing.  The default value for this option
+is "false".
+.PP
+The following parameters enable OCSP status checking of stored
+credentials in the 
+.BR myproxy-server (8)
+repository, to avoid use of expired credentials.
+.TP
+.BI ocsp_policy " policy"
+Controls the policy for checking certificate validity via OCSP
+before credentials may be delegated.  
+Currently, only the status of the end entity certificate is checked
+via OCSP (and not any proxy certificates or CA certificates).
+OCSP will not be used unless ocsp_responder_url and/or ocsp_policy
+are set.
+Supported policies are:
+  "aia" - use OCSP responder in certificate AIA extension, if
+          present; otherwise use ocsp_responder_url, if set
+.TP
+.BI ocsp_responder_url " URL"
+Specifies the URL of an OCSP responder to use to check the validity
+of credentials stored in the myproxy-server repository before
+they may be delegated, so that revoked credentials can not be
+retrieved and used where their revocation status may not be checked.
+Currently, only the status of the end entity certificate is checked
+via OCSP (and not any proxy certificates or CA certificates).
+In any case, CRL checks are always performed.
+Both http and https urls are supported.
+OCSP will not be used unless ocsp_responder_url and/or ocsp_policy
+are set.
+.TP
+.BI ocsp_responder_cert " path"
+Specifies the path to the certificate of a trusted OCSP responder.
+This is needed if the OCSP responder must be explicity trusted in
+cases where standard path validation fails for the OCSP responder's
+certificate.
+.PP
+The following parameters control Usage Metrics reporting by the
+.BR myproxy-server (8).
+.TP
+.BI disable_usage_stats " value"
+By default Usage Metrics reporting is enabled. Specifying
+"true", "enabled", "yes", "on" or "1" for
+.I value
+will disable Usage Metrics reporting. Setting the GLOBUS_USAGE_OPTOUT environment
+variable to "1" will also disable the reporting of usage metrics. Disabling
+reporting of usage metrics will cause the
+.B usage_stats_target
+setting to be ignored.
+.TP
+.BI usage_stats_target " target_list"
+This option can be used to specify the target collector hosts to which
+usage metrics should be reported. This setting will be ignored if
+.B disable_usage_stats
+is enabled.
+Multiple targets can be specified in
+.I target_list
+separated by comma(s). Each target specification is of the format
+.I host:port[!tags]
+. The 
+.I tags
+control what data elements are reported. The following list
+specifies the tags for the corresponding data elements.
+.RS
+.PD 0
+V - Major Version number of MyProxy server
+.PP
+v - Minor Version number of MyProxy server
+.PP
+t - Task Code (0=Get, 1=Put, 2=Info, 3=Destroy, 4=ChangeCredPassphrase, 5=StoreEndEntCred, 6=RetrEndEntCred, 7=GetTrustRoots)
+.PP
+r - Task Return Code.
+.PP
+l - Requested Lifetime for Credential.
+.PP
+L - Actual Lifetime for Credential.
+.PP
+B - Informational Bit mask to be interpreted left to right as follows:
+       PAM used
+       SASL used
+       Credential passphrase check used
+       Trusted Retriever (Certificate-based authentication)
+       Certificate Authorization method used (Trusted Renewer)
+       Pubcookie was used
+       Trustroots requested
+       Trustroots delivered
+.PP
+I - Client IP address
+.PP
+u - Username
+.PP
+U - User DN
+.PD
+
+In addition to the above selected information, the following data are reported to
+ALL the specified/default target collectors. There's no way to exclude these from
+being reported other than by disabling the reporting of usage metrics:
+
+.PD 0
+.PP
+Component code - 11 for MyProxy
+.PP
+Component Data Format version - 0 currently
+.PP
+IP Address of Reporting Server
+.PP
+Timestamp
+.PP
+Hostname
+
+If no tags are specified in a host spec, or the special string "default" is specified,
+the tags VvtrlLB are assumed. A site could choose to allow a different set of data to
+be reported by specifying a different tag set. The last 3 tags I, u and U above are
+more meant for a local collector that a site might like to deploy since they could be
+construed as private information. The special string "all" denotes all tags.
+
+By default, Usage Metrics reporting is disabled.
+This can be made explicit by specifying "default" (all by itself) for the target
+specification as in:
+
+usage_stats_target "default"
+
+.SH REGULAR EXPRESSIONS
+For matching distinguished names (DNs) in access control policies,
+MyProxy uses POSIX Extended Regular Expressions (see
+.BR re_format (7)),
+with custom processing of '*', '?', and '.' metacharacters
+to simulate Unix shell style wildcard processing
+(for backward compatibility and other historical reasons).
+MyProxy's custom regular expressions are converted to POSIX EREs
+according to the following rules:
+
+  [ MyProxy regex ] => [ POSIX ERE ]
+  ----------------------------------
+         '*'        =>      '.*'
+         '?'        =>      '.'
+         '.'        =>      '\\.'
+         '\\*'       =>      '*'
+         '\\?'       =>      '?'
+         '\\.'       =>      '.'
+
+Additionally, MyProxy wraps all regular expressions inside '^(' and ')$'
+to require full DN matching.
+
+Be aware that parentheses are metacharacters according to POSIX,
+so escaping is required for literal matching. For example:
+
+  "*/CN=Jim Basney \\(admin\\)"
+
+The following examples illustrate how MyProxy regular expressions are
+converted to POSIX EREs:
+
+     [ MyProxy regex ]     =>    [ POSIX ERE ]
+  ------------------------------------------------------------
+  "*/CN=Jim Basney"        => "^(.*/CN=Jim Basney)$"
+  "*/CN=Test User ?"       => "^(.*/CN=Test User .)$"
+  "*/CN=James A. Basney"   => "^(.*/CN=James A\\. Basney)$"
+  "/O=Test/CN=[:alnum:]\\*" => "^(/O=Test/CN=[:alnum:]*)$"
+
+  "*/CN=Jim Basney|*/CN=James Basney" =>
+      "^(.*/CN=Jim Basney|.*/CN=James Basney)$"
+
+.PD
+.SH EXAMPLES
+The following policy enables all credential repository features.
+.PP
+.PD 0
+accepted_credentials       "*"
+.PP
+authorized_retrievers      "*"
+.PP
+default_retrievers         "*"
+.PP
+authorized_renewers        "*"
+.PP
+default_renewers           "none"
+.PP
+authorized_key_retrievers  "*"
+.PP
+default_key_retrievers     "none"
+.PP
+trusted_retrievers         "*"
+.PP
+default_trusted_retrievers "none"
+.PP
+cert_dir                   /etc/grid-security/certificates
+.PD
+.PP
+The following enables CA functionality using an existing Globus Simple
+CA configuration.
+.PP
+.PD 0
+authorized_retrievers "*"
+.PP
+pam  "sufficient"
+.PP
+sasl "sufficient"
+.PP
+certificate_issuer_cert /home/globus/.globus/simpleCA/cacert.pem
+.PP
+certificate_issuer_key /home/globus/.globus/simpleCA/private/cakey.pem
+.PP
+certificate_issuer_key_passphrase "myproxy"
+.PP
+certificate_serialfile /home/globus/.globus/simpleCA/serial
+.PP
+certificate_mapfile /etc/grid-security/grid-mapfile
+.PP
+cert_dir /etc/grid-security/certificates
+.PD
+.PP
+The following will cause usage metrics to be reported to the default target (only the
+default tags) as well as a local collector (including the tags IuU):
+.PP
+usage_stats_target "usage-stats.cilogon.org:4810,localcollector.somedomain:4810!VvtrlLBIuU"
+.SH FILES
+.TP
+.I /etc/myproxy-server.config
+Default location for the server configuration file.
+.TP
+.I $GLOBUS_LOCATION/etc/myproxy-server.config
+Alternate location for the server configuration file.
+A different location can be specified by using the
+.BR myproxy-server (8)
+.B -c
+option.
+.TP
+.I $GLOBUS_LOCATION/share/myproxy/myproxy-passphrase-policy
+A sample program for evaluating passphrase quality for use with the
+.I passphrase_policy_program 
+option.
+.TP
+.I $GLOBUS_LOCATION/share/myproxy/myproxy-certificate-mapapp
+A sample 
+.I certificate_mapapp
+program for mapping account names to certificate subject distinguished
+names.
+.TP
+.I $GLOBUS_LOCATION/share/myproxy/myproxy-accepted-credentials-mapapp
+A sample
+.I accepted_credentials_mapapp
+program for authorizing 
+puts/stores (e.g. with 
+.BR myproxy-init (1)
+and
+.BR myproxy-store (1)).
+.SH ENVIRONMENT
+.TP
+.B GLOBUS_LOCATION
+Specifies the root of the MyProxy installation, used to find the
+default location of the 
+.I myproxy-server.config
+file.
+.SH AUTHORS
+See 
+.B http://myproxy.ncsa.uiuc.edu/about
+for the list of MyProxy authors.
+.SH "SEE ALSO"
+.BR myproxy-change-pass-phrase (1),
+.BR myproxy-destroy (1),
+.BR myproxy-get-trustroots (1),
+.BR myproxy-info (1),
+.BR myproxy-init (1),
+.BR myproxy-logon (1),
+.BR myproxy-retrieve (1),
+.BR myproxy-store (1),
+.BR myproxy-admin-adduser (8),
+.BR myproxy-admin-change-pass (8),
+.BR myproxy-admin-load-credential (8),
+.BR myproxy-admin-query (8),
+.BR myproxy-server (8)
