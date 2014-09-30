@@ -1,3 +1,10 @@
+globus-common (15.26-1+gt6.@distro@) @distro@; urgency=low
+
+  * Doxygen markup fixes
+  * Fix typos and clarify some documentation
+
+ -- Globus Toolkit <support@globus.org>  Tue, 30 Sep 2014 08:31:36 -0400
+
 globus-common (15.25-1+gt6.@distro@) @distro@; urgency=low
 
   * Set GLOBUS_VERSION in bootstrap
