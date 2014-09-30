@@ -1,3 +1,10 @@
+globus-gridmap-verify-myproxy-callout (2.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add missing dependencies
+  * Don't autoconf substitute conf file with no substitutions in it
+
+ -- Globus Toolkit <support@globus.org>  Tue, 30 Sep 2014 08:46:57 -0400
+
 globus-gridmap-verify-myproxy-callout (2.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch
