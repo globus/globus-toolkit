@@ -1,0 +1,58 @@
+GLOBUS-JOB-GET-OUTPUT-HELPER(1)
+===============================
+:doctype:      manpage
+:man source:   University of Chicago
+:man manual:   Globus Toolkit Manual
+
+NAME
+----
+globus-job-get-output-helper - Display the output or error stream from a GRAM job
+
+[[globus-job-get-output-helper-SYNOPSIS]]
+SYNOPSIS
+--------
+*globus-job-get-output-helper* 'TAG' 'JOBID' { 'stdout' | 'stderr' } { no | 'LINES' } { no | 'LINES' } URL
+
+*globus-job-get-output-helper* -help | -h | -usage
+
+[[globus-job-get-output-helper-DESCRIPTION]]
+DESCRIPTION
+-----------
+The *globus-job-get-output-helper* program is an internal interface used by the
+*globus-job-get-output* program to copy output back to a 
+GASS server. This program is submitted via the *globusrun*
+command and executes *globus-url-copy* to transfer the data.
+
+The invocation to this command is created in the RSL arguments by the
+*globus-job-get-output* program. The arguments are positional
+and may change in future releases. Their meaning is
+
+. GASS cache tag for the output file
+. GRAM job id
+. Stream to transfer (stdout or stderr)
+. Number of lines to include (from the end of the file) for one time processing or +no+
+. Number of lines to include (from the end of the file) for tail -f processing or literal +no+
+. GASS server URL to send the data to
+
+[[globus-job-get-output-helper-OPTIONS]]
+OPTIONS
+-------
+The full set of options to *globus-job-get-output-helper* are:
+
+*-help, -h, -usage*::
+    Display a help message to standard output and exit.
+
+[[globus-job-get-output-helper-ENVIRONMENT]]
+ENVIRONMENT
+-----------
+The following variables affect the execution of *globus-job-get-output-helper*.
+
+*X509_USER_PROXY*::
+    Path to proxy credential.
+*X509_CERT_DIR*::
+    Path to trusted certificate directory.
+
+[[globus-job-get-output-helper-AUTHOR]]
+AUTHOR
+------
+Copyright (C) 1999-2014 University of Chicago

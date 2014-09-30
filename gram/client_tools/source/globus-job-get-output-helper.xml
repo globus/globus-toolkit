@@ -1,108 +1,111 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
-    <!ENTITY cmdname "globus-job-get-output-helper">
-    <!ENTITY cmd "<command>globus-job-get-output-helper</command>">
-]>
-<!-- Canonical version of this document lives in 
-$Header$
--->
-
-<refentry id="gram5-cmd-globus-job-get-output-helper">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+<refentry lang="en">
+<refentryinfo>
+    <title>GLOBUS-JOB-GET-OUTPUT-HELPER(1)</title>
+</refentryinfo>
 <refmeta>
-<refentrytitle>&cmdname;</refentrytitle>
+<refentrytitle>globus-job-get-output-helper</refentrytitle>
 <manvolnum>1</manvolnum>
-<refmiscinfo class="author">University of Chicago</refmiscinfo>
+<refmiscinfo class="source">University of Chicago</refmiscinfo>
+<refmiscinfo class="manual">Globus Toolkit Manual</refmiscinfo>
 </refmeta>
-
 <refnamediv>
-<refname>&cmdname;</refname>
-<refpurpose>Display the output or error stream from a GRAM job</refpurpose>
+    <refname>globus-job-get-output-helper</refname>
+    <refpurpose>Display the output or error stream from a GRAM job</refpurpose>
 </refnamediv>
-<refsynopsisdiv>
-<cmdsynopsis>
-&cmd; <arg choice="plain"></arg>
-</cmdsynopsis>
-<cmdsynopsis>
-<arg choice="plain"><replaceable>TAG</replaceable></arg>
-<arg choice="plain"><replaceable>JOBID</replaceable></arg>
-<group choice="req">
-    <arg choice="plain"><replaceable>stdout</replaceable></arg>
-    <arg choice="plain"><replaceable>stderr</replaceable></arg>
-</group>
-<group choice="req">
-    <arg choice="plain">no</arg>
-    <arg choice="plain"><replaceable>LINES</replaceable></arg>
-</group>
-<group choice="req">
-    <arg choice="plain">no</arg>
-    <arg choice="plain"><replaceable>LINES</replaceable></arg>
-</group>
-<arg choice="plain"><replaceable>URL</replaceable></arg>
-</cmdsynopsis>
-<cmdsynopsis>
-&cmd;
-<arg>-help</arg>
-<arg>-h</arg>
-<arg>-usage</arg>
-</cmdsynopsis>
+<refsynopsisdiv id="globus-job-get-output-helper-SYNOPSIS">
+<simpara><emphasis role="strong">globus-job-get-output-helper</emphasis> <emphasis>TAG</emphasis> <emphasis>JOBID</emphasis> { <emphasis>stdout</emphasis> | <emphasis>stderr</emphasis> } { no | <emphasis>LINES</emphasis> } { no | <emphasis>LINES</emphasis> } URL</simpara>
+<simpara><emphasis role="strong">globus-job-get-output-helper</emphasis> -help | -h | -usage</simpara>
 </refsynopsisdiv>
-
-<refsect1><title>Description</title>
-<para>
-The &cmd; program is an internal interface used by the
-<command>globus-job-get-output</command> program to copy output back to a 
-GASS server. This program is submitted via the <command>globusrun</command>
-command and executes <command>globus-url-copy</command> to transfer the data.
-</para>
-
-<para>
-The invocation to this command is created in the RSL arguments by the
-<command>globus-job-get-output</command> program. The arguments are positional
-and may change in future releases. Their meaning is
-<orderedlist>
-    <listitem><simpara>GASS cache tag for the output file</simpara></listitem>
-    <listitem><simpara>GRAM job id</simpara></listitem>
-    <listitem><simpara>Stream to transfer (stdout or stderr)</simpara></listitem>
-    <listitem><simpara>Number of lines to include (from the end of the file) for one time processing or <literal>no</literal></simpara></listitem>
-    <listitem><simpara>Number of lines to include (from the end of the file) for tail -f processing or literal <literal>no</literal></simpara></listitem>
-    <listitem><simpara>GASS server URL to send the data to</simpara></listitem>
+<refsect1 id="globus-job-get-output-helper-DESCRIPTION">
+<title>DESCRIPTION</title>
+<simpara>The <emphasis role="strong">globus-job-get-output-helper</emphasis> program is an internal interface used by the
+<emphasis role="strong">globus-job-get-output</emphasis> program to copy output back to a
+GASS server. This program is submitted via the <emphasis role="strong">globusrun</emphasis>
+command and executes <emphasis role="strong">globus-url-copy</emphasis> to transfer the data.</simpara>
+<simpara>The invocation to this command is created in the RSL arguments by the
+<emphasis role="strong">globus-job-get-output</emphasis> program. The arguments are positional
+and may change in future releases. Their meaning is</simpara>
+<orderedlist numeration="arabic">
+<listitem>
+<simpara>
+GASS cache tag for the output file
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+GRAM job id
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Stream to transfer (stdout or stderr)
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Number of lines to include (from the end of the file) for one time processing or <literal>no</literal>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Number of lines to include (from the end of the file) for tail -f processing or literal <literal>no</literal>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+GASS server URL to send the data to
+</simpara>
+</listitem>
 </orderedlist>
-</para>
-
 </refsect1>
-
-<refsect1><title>Options</title>
-<para>
-The full set of options to &cmd; are:
-
+<refsect1 id="globus-job-get-output-helper-OPTIONS">
+<title>OPTIONS</title>
+<simpara>The full set of options to <emphasis role="strong">globus-job-get-output-helper</emphasis> are:</simpara>
 <variablelist>
-    <varlistentry>
-        <term><option>-help</option></term>
-        <term><option>-h</option></term>
-        <term><option>-usage</option></term>
-        <listitem><simpara>Display a help message to standard output and
-        exit.</simpara></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-help, -h, -usage</emphasis>
+</term>
+<listitem>
+<simpara>
+    Display a help message to standard output and exit.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
 </refsect1>
-
-<refsect1><title>ENVIRONMENT</title>
-<para>
-If the following variables affect the execution of &cmd;.
-
+<refsect1 id="globus-job-get-output-helper-ENVIRONMENT">
+<title>ENVIRONMENT</title>
+<simpara>The following variables affect the execution of <emphasis role="strong">globus-job-get-output-helper</emphasis>.</simpara>
 <variablelist>
-    <varlistentry>
-        <term><envar>X509_USER_PROXY</envar></term>
-        <listitem><simpara>Path to proxy credential.</simpara></listitem>
-    </varlistentry>
-    <varlistentry>
-        <term><envar>X509_CERT_DIR</envar></term>
-        <listitem><simpara>Path to trusted certificate directory.</simpara></listitem>
-    </varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_USER_PROXY</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to proxy credential.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">X509_CERT_DIR</emphasis>
+</term>
+<listitem>
+<simpara>
+    Path to trusted certificate directory.
+</simpara>
+</listitem>
+</varlistentry>
 </variablelist>
-</para>
 </refsect1>
-
+<refsect1 id="globus-job-get-output-helper-AUTHOR">
+<title>AUTHOR</title>
+<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
+</refsect1>
 </refentry>
