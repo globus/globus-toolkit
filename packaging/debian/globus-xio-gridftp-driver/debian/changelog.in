@@ -1,3 +1,9 @@
+globus-xio-gridftp-driver (2.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Metadata version out of sync
+
+ -- Globus Toolkit <support@globus.org>  Tue, 30 Sep 2014 08:53:35 -0400
+
 globus-xio-gridftp-driver (2.7-2+gt6.@distro@) @distro@; urgency=low
 
   * Doxygen markup fixes
