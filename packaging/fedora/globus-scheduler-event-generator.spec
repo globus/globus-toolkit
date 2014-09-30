@@ -1,7 +1,7 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
 Version:	5.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
@@ -194,9 +194,13 @@ fi
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}/html
 %{_docdir}/%{name}-%{version}/html/*
+%{_docdir}/%{name}-%{version}/*.txt
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 30 2014 Globus Toolkit <support@globus.org> - 5.7-2
+- Add .txt documentation to filelist
+
 * Tue Sep 23 2014 Globus Toolkit <support@globus.org> - 5.7-1
 - Use mixed case man page install for all packages
 - Doxygen markup fixes

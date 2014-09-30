@@ -1,3 +1,9 @@
+globus-scheduler-event-generator (5.7-2+gt6.@distro@) @distro@; urgency=low
+
+  * Add .txt documentation to filelist
+
+ -- Globus Toolkit <support@globus.org>  Tue, 30 Sep 2014 08:52:00 -0400
+
 globus-scheduler-event-generator (5.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Use mixed case man page install for all packages
