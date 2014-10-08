@@ -1,7 +1,7 @@
 Source: globus-common
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 6.0.7~), autotools-dev, quilt, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
+Build-Depends: debhelper (>= 6.0.7~), autotools-dev, quilt, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, libltdl-dev
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes

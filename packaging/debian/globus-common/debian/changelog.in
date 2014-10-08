@@ -1,3 +1,9 @@
+globus-common (15.26-2+gt6.@distro@) @distro@; urgency=low
+
+  * Add libltdl-dev dependency
+
+ -- Globus Toolkit <support@globus.org>  Wed, 08 October 2014 10:03:54 -0400
+
 globus-common (15.26-1+gt6.@distro@) @distro@; urgency=low
 
   * Doxygen markup fixes
