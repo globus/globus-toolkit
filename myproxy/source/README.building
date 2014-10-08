@@ -74,7 +74,7 @@ $ make dist
 8. Upload the release notes and myproxy-*.tar.gz* files to
    <https://sourceforge.net/projects/cilogon/files/myproxy/>.
 
-   Just for backup, also upload to myproxy.ncsa.uiuc.edu:
+   Just for backup, also upload to MyProxy web site:
 
     $ scp README LICENSE VERSION myproxy-*.tar.gz* \
       osage.ncsa.uiuc.edu:/afs/ncsa/web/grid.ncsa.uiuc.edu/htdocs/myproxy/dl

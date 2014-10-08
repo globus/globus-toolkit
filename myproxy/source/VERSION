@@ -276,7 +276,8 @@ v4.7 6 May 2009
     default is the "daemon" facility
     (http://bugzilla.globus.org/globus/show_bug.cgi?id=6717)
   - added an example in myproxy-accepted-credentials-mapapp
-    of how to ban users (http://myproxy.ncsa.uiuc.edu/blacklist.html)
+    of how to ban users
+    (http://grid.ncsa.illinois.edu/myproxy/blacklist.html)
   - added myproxy-admin-query -o option to query by owner DN
   - replace fixed-length buffer in read_data_file() (credential
     repository file parser) with dynamically-sized buffer to support
