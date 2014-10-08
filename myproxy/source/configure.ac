@@ -6,6 +6,10 @@ AM_INIT_AUTOMAKE([foreign])
 LT_INIT([dlopen win32-dll])
 
 AC_CONFIG_MACRO_DIR([m4])
+AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
+AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
+AC_SUBST([AGE_VERSION], [0])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-usage >= 3, globus-gssapi-gsi >= 9, globus-gss-assist >= 8, globus-gsi-sysconfig >= 5, globus-gsi-cert-utils >= 8, globus-gsi-proxy-core >= 6, globus-gsi-credential >= 5, globus-gsi-callback >= 4"])
 
 AC_PROG_LN_S
 
@@ -150,7 +154,7 @@ if test "x$PKG_CONFIG_PATH" = "x" -a "x$GLOBUS_LOCATION" != "x" ; then
    PKG_CONFIG_PATH=$GLOBUS_LOCATION/lib/pkgconfig
    export PKG_CONFIG_PATH
 fi
-PKG_CHECK_MODULES([GLOBUS], [globus-gss-assist >= 3, globus-usage >= 3, globus-gss-assist >= 3, globus-gssapi-gsi >= 4, globus-common >= 0, globus-gsi-sysconfig >= 0, globus-gsi-cert-utils >= 0], [], [AC_MSG_ERROR([GLOBUS_PKG_ERRORS])])
+PKG_CHECK_MODULES([GLOBUS], [$PACKAGE_DEPS], [], [AC_MSG_ERROR([GLOBUS_PKG_ERRORS])])
 fi
 dnl
 dnl Check for libcrypto
@@ -331,5 +335,6 @@ AC_CONFIG_FILES([
 	Makefile
 	web/Makefile
 	systemd/Makefile
-	man/Makefile])
+	man/Makefile
+	myproxy.pc])
 AC_OUTPUT

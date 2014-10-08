@@ -6,6 +6,10 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
+
 static char usage[] = \
 "\n"
 "Syntax: myproxy-retrieve [-l username] ...\n"
