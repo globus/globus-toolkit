@@ -98,7 +98,8 @@ lib_LTLIBRARIES = libmyproxy$(_GLOBUS_FLAVOR_NAME).la
 
 libmyproxy___GLOBUS_FLAVOR_NAME__la_SOURCES = $(LibSources)
 
-libmyproxy___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libmyproxy___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) \
+	-version-info ${MAJOR_VERSION}:${MINOR_VERSION}:${AGE_VERSION}
 
 libmyproxy___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GLOBUS_LIBS)
 
@@ -237,3 +238,7 @@ splint:
 	-Dsocklen_t=int -Din_addr_t=int \
 	-Du_int="unsigned int" -Du_char="unsigned char" \
 	$(DEFS) $(GPT_INCLUDES) *.c
+
+pkgconfdir = ${libdir}/pkgconfig
+
+pkgconf_DATA = myproxy.pc

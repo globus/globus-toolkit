@@ -6,6 +6,10 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
+
 #ifndef MIN
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #endif

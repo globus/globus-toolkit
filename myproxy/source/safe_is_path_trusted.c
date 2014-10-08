@@ -31,6 +31,9 @@
 #include "safe_id_range_list.h"
 #include "safe_is_path_trusted.h"
 
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 
 /***********************************************************************
