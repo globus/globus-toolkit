@@ -67,8 +67,6 @@ Perform the give SQL query on the audit database.
 
 =cut
 
-@GLOBUS_PERL_INITIALIZER@
-
 use Getopt::Long;
 use strict;
 use DBI qw(:sql_types);
