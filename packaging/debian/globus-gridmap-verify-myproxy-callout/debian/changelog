@@ -1,3 +1,9 @@
+globus-gridmap-verify-myproxy-callout (1.6-1) unstable; urgency=low
+
+  * GT-560: Verify sharing certs
+
+ -- Globus Toolkit <support@globus.org>  Wed, 08 Oct 2014 15:51:17 -0500
+
 globus-gridmap-verify-myproxy-callout (1.5-2) unstable; urgency=low
 
   * Rename dbg package

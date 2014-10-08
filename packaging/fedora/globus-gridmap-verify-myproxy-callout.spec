@@ -12,7 +12,7 @@
 
 Name:		globus-gridmap-verify-myproxy-callout
 %global _name %(tr - _ <<< %{name})
-Version:	1.5
+Version:	1.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus gridmap myproxy callout.
 
@@ -101,6 +101,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Oct 08 2014 Globus Toolkit <support@globus.org> - 1.6-1
+- GT-560: Verify sharing certs
+
 * Mon Oct 28 2013 Globus Toolkit <support@globus.org> - 1.5-1
 - Update dependencies for new credential/assist functions
 
