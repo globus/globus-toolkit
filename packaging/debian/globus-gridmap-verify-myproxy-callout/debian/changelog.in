@@ -1,3 +1,9 @@
+globus-gridmap-verify-myproxy-callout (2.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-560: Verify sharing certs
+
+ -- Globus Toolkit <support@globus.org>  Wed, 08 Oct 2014 16:59:59 -0500
+
 globus-gridmap-verify-myproxy-callout (2.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Add missing dependencies
