@@ -7,6 +7,10 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
+
 /**********************************************************************
  *
  * Internal functions

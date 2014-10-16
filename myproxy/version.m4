@@ -1,1 +1,1 @@
-m4_define([myproxy_version], [6.0rc2])
+m4_define([myproxy_version], [6.1])

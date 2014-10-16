@@ -5,7 +5,7 @@
 
 # Customize the following environment variables as appropriate.
 GLOBUS_LOCATION="/usr/local/globus"
-MYPROXY_SERVER="myproxy.ncsa.uiuc.edu"
+MYPROXY_SERVER="myproxy.example.edu"
 export GLOBUS_LOCATION MYPROXY_SERVER
 
 # set if connecting to a myproxy-server on a non-standard port

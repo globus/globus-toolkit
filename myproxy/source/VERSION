@@ -1,9 +1,13 @@
-This is MyProxy v6.0 Jul 2014.
+This is MyProxy v6.1 Oct 2014.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v6.1 Oct 2014
+  - portability, man page, and build script fixes from Mattias Ellert
+  - first release from https://github.com/globus/globus-toolkit sources
+
 v6.0 Jul 2014
   - disable usage stats collection by default
   - make myproxy-server's credential repository storage directory
@@ -276,7 +280,8 @@ v4.7 6 May 2009
     default is the "daemon" facility
     (http://bugzilla.globus.org/globus/show_bug.cgi?id=6717)
   - added an example in myproxy-accepted-credentials-mapapp
-    of how to ban users (http://myproxy.ncsa.uiuc.edu/blacklist.html)
+    of how to ban users
+    (http://grid.ncsa.illinois.edu/myproxy/blacklist.html)
   - added myproxy-admin-query -o option to query by owner DN
   - replace fixed-length buffer in read_data_file() (credential
     repository file parser) with dynamically-sized buffer to support

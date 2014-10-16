@@ -8,6 +8,10 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
+
 /* Files should only be readable by me */
 #define FILE_MODE               0600
 

@@ -6,6 +6,10 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
+
 /* Location of default proxy */
 #define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
 

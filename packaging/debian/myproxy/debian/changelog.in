@@ -1,3 +1,16 @@
+myproxy (6.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Make sure MAXPATHLEN and PATH_MAX are defined (portability)
+  * Man page syntax fix
+  * Propagate version to soname, add missing pkgconfig file, missing dependencies
+  * fix from ysvenkat: Using command line to pass in the extra long username
+  * http://myproxy.ncsa.uiuc.edu -> http://grid.ncsa.illinois.edu/myproxy/
+  * prepare for MyProxy 6.1 release	27e6b38
+  * documenting git-based procedure as I go	f2664dd
+  * prepare MyProxy 6.1 release
+
+ -- Globus Toolkit <support@globus.org>  Thu, 16 Oct 2014 15:19:19 -0400
+
 myproxy (6.0-1) @distro@; urgency=low
 
   * Merge myproxy sources into git repo
