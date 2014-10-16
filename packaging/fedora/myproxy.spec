@@ -1,6 +1,6 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.0
+Version:	6.1
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -21,8 +21,8 @@ Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}.tar.
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:  globus-gss-assist-devel >= 3
-BuildRequires:  globus-usage-devel >= 0
+BuildRequires:  globus-gss-assist-devel >= 8
+BuildRequires:  globus-usage-devel >= 3
 BuildRequires:  pam-devel
 %if 0%{?suse_version} == 0
 BuildRequires:  voms-devel >= 1.9.12.1
@@ -41,10 +41,10 @@ BuildRequires:      krb5-devel >= 1
 
 BuildRequires:      globus-proxy-utils >= 5
 BuildRequires:      globus-gsi-cert-utils-progs >= 8
-BuildRequires:      globus-common-devel >= 8
+BuildRequires:      globus-common-devel >= 14
 BuildRequires:      globus-xio-devel >= 3
-BuildRequires:      globus-usage-devel >= 0
-BuildRequires:      globus-gss-assist-devel >= 3
+BuildRequires:      globus-usage-devel >= 3
+BuildRequires:      globus-gss-assist-devel >= 8
 
 Requires:      myproxy-libs = %{version}-%{release}
 Requires:      globus-proxy-utils >= 5
@@ -90,7 +90,7 @@ Requires:      myproxy-libs = %{version}-%{release}
 # automatically via pkgconfig
 %if  0%{?el4}%{?el5}
 Requires:      globus-gss-assist-devel > 8
-Requires:      globus-usage-devel >= 0
+Requires:      globus-usage-devel >= 3
 %endif
 
 Summary:       Develop X.509 Public Key Infrastructure (PKI) security credentials 
@@ -514,6 +514,16 @@ fi
 %{_libdir}/libmyproxy.so
 
 %changelog
+* Thu Oct 16 2014 Globus Toolkit <support@globus.org> - 6.1-1
+- Make sure MAXPATHLEN and PATH_MAX are defined (portability)
+- Man page syntax fix
+- Propagate version to soname, add missing pkgconfig file, missing dependencies
+- fix from ysvenkat: Using command line to pass in the extra long username
+- http://myproxy.ncsa.uiuc.edu -> http://grid.ncsa.illinois.edu/myproxy/
+- prepare for MyProxy 6.1 release	27e6b38
+- documenting git-based procedure as I go	f2664dd
+- prepare MyProxy 6.1 release
+
 * Mon Sep 29 2014 Globus Toolkit <support@globus.org> - 6.0-1
 - Merge myproxy sources into git repo
 
