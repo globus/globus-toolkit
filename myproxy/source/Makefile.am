@@ -72,7 +72,8 @@ Scripts= \
 	myproxy-test-replicate \
 	myproxy-admin-adduser \
 	myproxy-admin-addservice \
-	myproxy-server-setup
+	myproxy-server-setup \
+        myproxy-test-wrapper
 
 sbin_SCRIPTS = $(Scripts)
 
@@ -242,3 +243,5 @@ splint:
 pkgconfdir = ${libdir}/pkgconfig
 
 pkgconf_DATA = myproxy.pc
+TESTS_ENVIRONMENT = PATH="$(abs_srcdir):$(abs_builddir):$${PATH}";
+TESTS = myproxy-test-wrapper
