@@ -210,6 +210,9 @@ find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 # Remove static libraries (.a files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.a' -exec rm -v '{}' \;
 
+# Remove the test script wrapper
+rm -f $RPM_BUILD_ROOT%{_sbindir}/myproxy-test-wrapper
+
 # No need for myproxy-server-setup since the rpm will perform
 # the needed setup
 rm $RPM_BUILD_ROOT%{_sbindir}/myproxy-server-setup
@@ -405,7 +408,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %check 
-PATH=.:$PATH ./myproxy-test -startserver -generatecerts
+PATH=.:$PATH make check
 
 %post libs -p /sbin/ldconfig
 %postun libs -p /sbin/ldconfig
@@ -512,6 +515,7 @@ fi
 %{_includedir}/globus/myproxy_server.h
 %{_includedir}/globus/verror.h
 %{_libdir}/libmyproxy.so
+%{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
 * Thu Oct 16 2014 Globus Toolkit <support@globus.org> - 6.1-1
