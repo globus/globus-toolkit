@@ -171,6 +171,7 @@ install: build-stamp
 		> debian/$(name).install
 	ls -1 debian/tmp$(_libdir)/*.so.* > debian/lib$(name)$(soname).install
 	ls -1 debian/tmp$(_libdir)/*.so \
+	      debian/tmp$(_libdir)/pkgconfig/*.pc \
 	      debian/tmp$(_includedir)/globus/* \
 		> debian/lib$(name)-dev.install
 	ls -1 debian/tmp$(_sbindir)/myproxy-server \
