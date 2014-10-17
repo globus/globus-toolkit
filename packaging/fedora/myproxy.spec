@@ -173,7 +173,7 @@ Package %{name}-doc contains the MyProxy documentation.
 
 
 %prep
-%setup -q -n myproxy-6.0
+%setup -q -n myproxy-%{version}
 #%patch0 -p1
 #cp -p %{SOURCE1} .
 #cp -p %{SOURCE2} .
