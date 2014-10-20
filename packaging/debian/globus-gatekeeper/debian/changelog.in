@@ -1,3 +1,9 @@
+globus-gatekeeper (10.8-2+gt6.@distro@) @distro@; urgency=low
+
+  * GT-566: Debian packages look for configuration in /usr/etc and state in /usr/var
+
+ -- Globus Toolkit <support@globus.org>  Mon, 20 October 2014 15:55:54 -0400
+
 globus-gatekeeper (10.8-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-455: Incorporate OSG patches

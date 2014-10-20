@@ -26,6 +26,7 @@ _includedir = $(_prefix)/include
 _libdir = $(_prefix)/lib/$(DEB_HOST_MULTIARCH)
 _datadir = $(_prefix)/share
 _mandir = $(_datadir)/man
+_localstatedir = /var
 _docdir = $(_datadir)/doc
 
 DEB_BUILD_ARCH_CPU ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_CPU)
@@ -51,6 +52,7 @@ configure-stamp: $(QUILT_STAMPFN)
 	   --infodir='$${datadir}/info' \
 	   --libdir='$(_libdir)' \
            --libexecdir='$(_datadir)/globus' \
+           --localstatedir='$(_localstatedir)' \
 	   --with-flavor=$(flavor) \
 	   --docdir='$${datadir}/doc/$(name)' \
 	   --disable-static \
