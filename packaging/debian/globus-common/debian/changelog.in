@@ -1,3 +1,9 @@
+globus-common (15.26-3+gt6.@distro@) @distro@; urgency=low
+
+  * GT-566: Debian packages look for configuration in /usr/etc and state in /usr/var
+
+ -- Globus Toolkit <support@globus.org>  Mon, 20 October 2014 11:31:12 -0400
+
 globus-common (15.26-2+gt6.@distro@) @distro@; urgency=low
 
   * Add libltdl-dev dependency

@@ -26,6 +26,9 @@ _libdir = $(_prefix)/lib/$(DEB_HOST_MULTIARCH)
 _datadir = $(_prefix)/share
 _mandir = $(_datadir)/man
 _docdir = $(_datadir)/doc
+_localstatedir = /var
+_sharedstatedir = $(_localstatedir)
+_sysconfdir = /etc
 perl_vendorlib = $(shell eval "`perl -V:installvendorlib`"; echo $$installvendorlib)
 
 DEB_BUILD_ARCH_CPU ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_CPU)
@@ -66,6 +69,9 @@ configure-stamp: sed-stamp
 	   --datadir='$(_datadir)/globus' \
 	   --libdir='$(_libdir)' \
 	   --libexecdir='$(_datadir)/globus' \
+	   --localstatedir='$(_localstatedir)' \
+	   --sharedstatedir='$(_sharedstatedir)' \
+	   --sysconfdir='$(_sysconfdir)' \
 	   --with-perlmoduledir=$(perl_vendorlib) \
 	   --disable-static \
 	   --with-backward-compatibility-hack
