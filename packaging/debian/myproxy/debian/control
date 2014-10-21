@@ -1,7 +1,7 @@
 Source: myproxy
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-xio-dev, libglobus-gss-assist-dev, libglobus-usage-dev, libbsd-dev, libpam0g-dev, openssl, globus-proxy-utils, globus-gsi-cert-utils-progs, procps
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-xio-dev, libglobus-gss-assist-dev, libglobus-usage-dev, libbsd-dev, libpam0g-dev, openssl, globus-proxy-utils, globus-gsi-cert-utils-progs, procps, libperl4-corelibs-perl
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes

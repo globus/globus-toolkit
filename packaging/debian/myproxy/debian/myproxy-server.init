@@ -71,6 +71,11 @@ stop() {
     retval=$?
     if [ "$retval" -eq 0 ]; then
         log_success_msg "Stopped $prog"
+        # lsb says this should be removed automatically, but not all debian
+        # ones do
+        if [ -f "$PIDFILE" ]; then
+            rm -f "$PIDFILE"
+        fi
     else
         log_success_msg "Error stopping $prog"
     fi
