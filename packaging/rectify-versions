@@ -53,10 +53,6 @@ sub parse_package
 
     my $soname = int($values{PACKAGE_VERSION}) - int($values{AGE_VERSION});
 
-    if ($native_name eq 'myproxy') {
-        $soname = 0; 
-    }
-
     return {
         PACKAGE_DIR => $package_dir,
         TARBALL => $values{PACKAGE_NAME} . "-" . $values{PACKAGE_VERSION} . ".tar.gz",

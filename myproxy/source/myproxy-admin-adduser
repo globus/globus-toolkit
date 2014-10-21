@@ -39,9 +39,16 @@ $cmdname = basename($0);
 
 # handle arguments
 
-require "getopts.pl";
+use Getopt::Long;
 
-if (!&Getopts('huvc:p:s:l:t:aAxXr:R:ndk:K:Z:E:') || $opt_h || $opt_u) {
+our ($opt_h, $opt_u, $opt_v, $opt_c, $opt_p, $opt_s, $opt_l, $opt_t, $opt_a,
+     $opt_A, $opt_x, $opt_X, $opt_r, $opt_R, $opt_n, $opt_d, $opt_k, $opt_K,
+     $opt_Z, $opt_E);
+
+$result = GetOptions('h', 'u', 'v', 'c=s', 'p=s', 'l=s', 't=i', 'a',
+     'A', 'x', 'X', 'r=s', 'R=s', 'n', 'd', 'k=s', 'K=s', 'Z=s', 'E=s');
+
+if ((!$result) || $opt_h || $opt_u) {
     print STDERR <<"EOF";
 Syntax: $0 [-c cn] [-l username] ...
         $0 [-usage|-help]

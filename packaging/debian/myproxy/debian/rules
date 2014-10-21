@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = myproxy
 _name = myproxy
-version = 6.1.1
+version = 6.1.2
 soname = 5
 
 INSTALLDIR = $(CURDIR)/debian/tmp

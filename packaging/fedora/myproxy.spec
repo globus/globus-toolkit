@@ -1,6 +1,6 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.1.1
+Version:	6.1.2
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -518,6 +518,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Tue Oct 21 2014 Globus Toolkit <support@globus.org> - 6.1.2-1
+- Update arg parsing to Getopt::Long
+
 * Tue Oct 21 2014 Globus Toolkit <support@globus.org> - 6.1.1-1
 - Increment library age
 
