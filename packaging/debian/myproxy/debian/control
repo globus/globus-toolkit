@@ -9,7 +9,7 @@ Vcs-Browser: http://svn.nordugrid.org/trac/packaging/browser/debian/globus-gass-
 Vcs-Svn: http://svn.nordugrid.org/repos/packaging/debian/globus-gass-copy
 Homepage: http://www.globus.org/
 
-Package: libmyproxy0
+Package: libmyproxy5
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -21,7 +21,7 @@ Description: MyProxy Library
  Users run myproxy-logon to authenticate and obtain credentials, including
  trusted CA certificates and Certificate Revocation Lists (CRLs).
  .
- The libmyproxy0 package contains:
+ The libmyproxy5 package contains:
  MyProxy Library
 
 Package: libmyproxy-dev
@@ -57,7 +57,7 @@ Description: MyProxy Library Documentation
 Package: myproxy
 Section: net
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libmyproxy0, libglobus-gss-assist3, libglobus-usage0
+Depends: ${shlibs:Depends}, ${misc:Depends}, libmyproxy5, libglobus-gss-assist3, libglobus-usage0
 Description: MyProxy Client Programs
  MyProxy is open source software for managing X.509 Public Key Infrastructure
  (PKI) security credentials (certificates and private keys). MyProxy
@@ -72,7 +72,7 @@ Description: MyProxy Client Programs
 Package: myproxy-admin
 Section: net
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libmyproxy0
+Depends: ${shlibs:Depends}, ${misc:Depends}, libmyproxy5
 Description: MyProxy Administrator Programs
  MyProxy is open source software for managing X.509 Public Key Infrastructure
  (PKI) security credentials (certificates and private keys). MyProxy
@@ -87,7 +87,7 @@ Description: MyProxy Administrator Programs
 Package: myproxy-server
 Section: net
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libmyproxy0
+Depends: ${shlibs:Depends}, ${misc:Depends}, libmyproxy5
 Description: MyProxy Server Programs
  MyProxy is open source software for managing X.509 Public Key Infrastructure
  (PKI) security credentials (certificates and private keys). MyProxy
@@ -103,7 +103,7 @@ Package: libmyproxy-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libmyproxy0 (= ${binary:Version})
+Depends: libmyproxy5 (= ${binary:Version})
 Description: MyProxy Debug Symbols
  MyProxy is open source software for managing X.509 Public Key Infrastructure
  (PKI) security credentials (certificates and private keys). MyProxy

@@ -1,3 +1,9 @@
+myproxy (6.1.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Increment library age
+
+ -- Globus Toolkit <support@globus.org>  Tue, 21 Oct 2014 10:02:20 -0400
+
 myproxy (6.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Make sure MAXPATHLEN and PATH_MAX are defined (portability)
