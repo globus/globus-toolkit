@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.22-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix some install issues
+
+ -- Globus Toolkit <support@globus.org>  Tue, 21 October 2014 14:24:49 -0400
+
 globus-gram-job-manager (14.22-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix some documentation typos

@@ -104,7 +104,7 @@ install: build-stamp
 	rm -f $(INSTALLDIR)/$(_libdir)/lib*.la
 
 	# Generate package filelists
-	ls -1 \
+	ls -1d \
 	  debian/tmp$(_sbindir)/globus-* \
 	  debian/tmp$(_bindir)/globus-* \
 	  debian/tmp$(_mandir)/man1/* \
@@ -115,6 +115,8 @@ install: build-stamp
 	  debian/tmp$(_sysconfdir)/globus/*.conf \
 	  debian/tmp$(_sysconfdir)/logrotate.d/* \
 	  debian/tmp$(_docdir)/$(name)/GLOBUS_LICENSE \
+	  debian/tmp$(_localstatedir)/lib/globus/gram_job_state \
+	  debian/tmp$(_localstatedir)/log/globus \
 	  > debian/$(name).install
 
 binary-indep:
