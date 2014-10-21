@@ -14,7 +14,7 @@ include /usr/share/quilt/quilt.make
 name = myproxy
 _name = myproxy
 version = 6.1.1
-soname = 0
+soname = 5
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
