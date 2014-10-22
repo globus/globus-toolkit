@@ -1,3 +1,9 @@
+globus-gram-client (12.5-1) unstable; urgency=low
+
+  * GT-567: Remove requirement that GRAM5 use SSLv3
+
+ -- Globus Toolkit <support@globus.org>  Wed, 22 Oct 2014 13:52:59 -0400
+
 globus-gram-client (12.4-3) unstable; urgency=low
 
   * Rename dbg package

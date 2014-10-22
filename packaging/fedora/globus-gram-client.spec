@@ -12,8 +12,8 @@
 
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
-Version:	12.4
-Release:	8%{?dist}
+Version:	12.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
 Group:		System Environment/Libraries
@@ -183,6 +183,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Oct 22 2014 Globus Toolkit <support@globus.org> - 12.5-1
+- GT-567: Remove requirement that GRAM5 use SSLv3
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 12.4-8
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 

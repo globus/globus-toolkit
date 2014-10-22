@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_client">
-    <Aging_Version Major="12" Minor="4" Age="9"/>
+    <Aging_Version Major="12" Minor="5" Age="9"/>
     <Description>GRAM Client Library</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
