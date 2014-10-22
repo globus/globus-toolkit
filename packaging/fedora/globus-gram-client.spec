@@ -13,7 +13,7 @@
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
 Version:	12.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
 Group:		System Environment/Libraries
@@ -55,7 +55,7 @@ BuildRequires:	tetex-latex
 %endif
 %endif
 
-%if %{?fedora}%{!?fedora:0} == 18
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires: tex(sectsty.sty)
 BuildRequires: tex(tocloft.sty)
 BuildRequires: tex(xtab.sty)
@@ -183,8 +183,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Wed Oct 22 2014 Globus Toolkit <support@globus.org> - 12.5-1
+* Wed Oct 22 2014 Globus Toolkit <support@globus.org> - 12.5-2
 - GT-567: Remove requirement that GRAM5 use SSLv3
+- Fix latex dependencies for newer fedora/rhel
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 12.4-8
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
