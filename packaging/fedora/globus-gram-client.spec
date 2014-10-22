@@ -1,7 +1,7 @@
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
 Version:	13.10
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
 Group:		System Environment/Libraries
@@ -31,6 +31,11 @@ BuildRequires:	graphviz-gd
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
+%endif
+%if 0%{?suse_version} > 0
+BuildRequires: libtool
+%else
+BuildRequires: libtool-ltdl-devel
 %endif
 BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
@@ -137,8 +142,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Wed Oct 22 2014 Globus Toolkit <support@globus.org> - 13.10-1
+* Wed Oct 22 2014 Globus Toolkit <support@globus.org> - 13.10-2
 - GT-567: Remove requirement that GRAM5 use SSLv3
+- Add libtool-ltdl-devel dependency
 
 * Mon Sep 22 2014 Globus Toolkit <support@globus.org> - 13.9-1
 - Include more manpages for API
