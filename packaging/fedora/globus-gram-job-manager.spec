@@ -52,6 +52,8 @@ BuildRequires:  globus-gram-client-tools >= 10
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
+# For static linking and tests
+BuildRequires:  libtool-ltdl-devel >= 2.2
 %endif
 BuildRequires:  pkgconfig
 BuildRequires:  globus-gsi-cert-utils-progs >= 0
