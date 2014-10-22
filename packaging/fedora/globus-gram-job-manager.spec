@@ -1,7 +1,7 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
 Version:	14.22
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -52,7 +52,7 @@ BuildRequires:  globus-gram-client-tools >= 10
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
-# For static linking and tests
+# For and tests
 BuildRequires:  libtool-ltdl-devel >= 2.2
 %endif
 BuildRequires:  pkgconfig
@@ -145,6 +145,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Wed Oct 22 2014 Globus Toolkit <support@globus.org> - 14.22-2
+- Build dependency on ltdl for tests
+
 * Thu Sep 25 2014 Globus Toolkit <support@globus.org> - 14.22-1
 - Fix some documentation typos
 
