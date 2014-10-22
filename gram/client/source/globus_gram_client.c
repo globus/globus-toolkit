@@ -603,14 +603,9 @@ globus_l_gram_client_setup_gatekeeper_attr(
     {
         goto destroy_2;
     }
-    /* HACK: To support 4.0.8 which VDT widely redistributed, and
-     * which doesn't handle TLSv1 correctly when exporting/importing
-     * security contexts from the gatekeeper to job manager, we
-     * must use SSLv3 instead
-     */
     res = globus_io_attr_set_secure_channel_mode(
         attrp,
-        GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP_SSL3);
+        GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP);
     if (res != GLOBUS_SUCCESS)
     {
         goto destroy_2;

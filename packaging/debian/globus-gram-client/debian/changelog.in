@@ -1,3 +1,9 @@
+globus-gram-client (13.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-567: Remove requirement that GRAM5 use SSLv3
+
+ -- Globus Toolkit <support@globus.org>  Wed, 22 Oct 2014 11:20:14 -0400
+
 globus-gram-client (13.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Include more manpages for API
