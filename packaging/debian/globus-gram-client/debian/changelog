@@ -1,6 +1,7 @@
-globus-gram-client (12.5-1) unstable; urgency=low
+globus-gram-client (12.5-2) unstable; urgency=low
 
   * GT-567: Remove requirement that GRAM5 use SSLv3
+  * Add dependency on latex-xcolor for newer debian/ubuntu builds
 
  -- Globus Toolkit <support@globus.org>  Wed, 22 Oct 2014 13:52:59 -0400
 
