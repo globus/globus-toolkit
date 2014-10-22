@@ -1,7 +1,7 @@
 Source: globus-gram-client
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, libglobus-gram-protocol-dev, libglobus-common-dev, libglobus-rsl-dev, libglobus-io-dev, libglobus-gram-protocol-doc (>= 3), libglobus-common-doc, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl, libltdl-dev
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-gram-protocol-dev, libglobus-common-dev, libglobus-rsl-dev, libglobus-io-dev, libglobus-gram-protocol-doc (>= 3), libglobus-common-doc, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl, libltdl-dev, openssl
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
