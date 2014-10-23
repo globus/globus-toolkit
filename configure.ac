@@ -468,6 +468,19 @@ m4_foreach([bundle],
         fi])
 ])
 
+AC_ARG_ENABLE(all, AS_HELP_STRING([--enable-all], [Build all optional parts of the toolkit]),
+    [if test X"$enableval" = X"yes"; then
+         enable_all=yes
+     else
+         enable_all=no
+     fi],
+    [enable_all=no])
+
+if test "$enable_all" = yes; then
+    disabled_buns=""
+    enabled_buns="GT_BUNDLES_MACRO"
+fi
+
 final_enabled_bundles=""
 final_enabled_xio_drivers=""
 gsi_openssh_enabled=no
