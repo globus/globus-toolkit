@@ -1,3 +1,9 @@
+globus-gridmap-callout-error (2.4-2+gt6.@distro@) @distro@; urgency=low
+
+  * Remove latex dependencies
+
+ -- Globus Toolkit <support@globus.org>  Fri, 24 Oct 2014 09:25:17 -0400
+
 globus-gridmap-callout-error (2.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Include more manpages for API

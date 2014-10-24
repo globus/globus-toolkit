@@ -1,7 +1,7 @@
 Source: globus-gridmap-callout-error
 Priority: optional
 Maintainer: Globus Toolkit <support@globus.org>
-Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev, libglobus-gssapi-error-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev, libglobus-gssapi-error-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
 Standards-Version: 3.8.4
 Section: net
 Homepage: http://www.globus.org/

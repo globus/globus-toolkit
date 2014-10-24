@@ -1,9 +1,10 @@
-globus-gram-client (13.10-4+gt6.@distro@) @distro@; urgency=low
+globus-gram-client (13.10-5+gt6.@distro@) @distro@; urgency=low
 
   * GT-567: Remove requirement that GRAM5 use SSLv3
   * Missing libltdl-dev and openssl dependencies
+  * Remove latex dependencies
 
- -- Globus Toolkit <support@globus.org>  Wed, 22 October 2014 12:55:06 -0400
+ -- Globus Toolkit <support@globus.org>  Fri, 24 Oct 2014 09:19:32 -0400
 
 globus-gram-client (13.9-1+gt6.@distro@) @distro@; urgency=low
 

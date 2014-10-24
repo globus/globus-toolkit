@@ -1,8 +1,9 @@
-globus-gram-job-manager-fork (2.4-1+gt6.@distro@) @distro@; urgency=low
+globus-gram-job-manager-fork (2.4-2+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch
+  * Remove latex dependencies
 
- -- Globus Toolkit <support@globus.org>  Fri, 22 Aug 2014 16:29:29 -0400
+ -- Globus Toolkit <support@globus.org>  Fri, 24 Oct 2014 09:20:03 -0400
 
 globus-gram-job-manager-fork (2.3-3+gt6.@distro@) @distro@; urgency=low
 
