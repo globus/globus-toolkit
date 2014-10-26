@@ -34,6 +34,20 @@ AM_CONDITIONAL([TARGET_MINGW], [
             false
             ;;
     esac])
+
+AM_CONDITIONAL([TARGET_HURD], [
+    case $host in
+        *-linux*|*-k*bsd-gnu*)
+            false
+            ;;
+        *-gnu*)
+            true
+            ;;
+        *)
+            false
+            ;;
+    esac])
+
 GRIDFTP_SERVER_PATH=`pkg-config --variable=path globus-gridftp-server`
 AC_SUBST(GRIDFTP_SERVER_PATH)
 

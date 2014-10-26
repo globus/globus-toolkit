@@ -1,8 +1,8 @@
-EXTRA_SCRIPTS = run-tests.pl many-server.pl run-backend-tests.pl test-wrapper put-test.pl
+EXTRA_SCRIPTS = run-tests.pl many-server.pl run-backend-tests.pl test-wrapper \
+	put-test.pl bad-buffer-test.pl
 
 check_SCRIPTS = \
 	dir-test.pl \
-	bad-buffer-test.pl \
 	create-destroy-test.pl \
 	exist-test.pl \
 	extended-get-test.pl \
@@ -23,9 +23,12 @@ check_SCRIPTS = \
 	user-auth-test.pl
 
 if ! TARGET_MINGW
-    check_SCRIPTS += put-test.pl
+	check_SCRIPTS += put-test.pl
 endif
 
+if ! TARGET_HURD
+	check_SCRIPTS += bad-buffer-test.pl
+endif
 
 check_DATA_real = \
 	FtpTestLib.pm \
