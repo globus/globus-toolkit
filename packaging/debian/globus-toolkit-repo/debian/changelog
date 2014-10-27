@@ -1,3 +1,9 @@
+globus-toolkit-repo (6.0.3-1) unstable; urgency=low
+
+  * Add support for utopic and vivid
+
+ -- Globus Toolkit <support@globus.org>  Mon, 27 Oct 2014 13:47:10 -0400
+
 globus-toolkit-repo (6.0.2-2) unstable; urgency=low
 
   * Add globus-connect-server-repo Provides alias
