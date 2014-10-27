@@ -1,6 +1,6 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.1.3
+Version:	6.1.4
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -391,13 +391,6 @@ EOF
 chmod 755 $RPM_BUILD_ROOT%{_initddir}/myproxy-server
 %endif
 install  -m 644 myproxy.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/myproxy-server
-cat >> $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/myproxy-server <<'EOF'
-for myproxy_conf in "%{_sysconfdir}/myproxy.d"/*; do
-    if [ -r "$myproxy_conf" ]; then
-        . "$myproxy_conf"
-    fi
-done
-EOF
 mkdir -p $RPM_BUILD_ROOT%{_var}/lib/myproxy
 
 # Create a directory to hold myproxy owned host certificates.
@@ -518,6 +511,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Mon Oct 27 2014 Globus Toolkit <support@globus.org> - 6.1.4-1
+- Stop patching myproxy.sysconfig
+
 * Thu Oct 23 2014 Globus Toolkit <support@globus.org> - 6.1.3-1
 - Fix incorrect soname change
 

@@ -4,6 +4,7 @@ aclocal.m4
 autom4te.cache
 build
 build-aux
+compile
 config.cache
 config.guess
 config.h
@@ -12,6 +13,7 @@ config.log
 config.status
 config.sub
 configure
+depcomp
 dirt.sh
 globus_gatekeeper_config.h.in~
 globus_i_common_config.h.in
