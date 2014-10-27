@@ -59,7 +59,7 @@ OPTIONS
     globus-scheduler-event-generator to process events that occur before
     the process begins. If not specified, it will generate events from the
     current timestamp only.
-*-d 'DIRECTORY'::
+*-d 'DIRECTORY'*::
     Write job state change events to files in 'DIRECTORY', named by the day
     that the event occurred (+DIRECTORY/YYYYMMDD+); if not specified, the
     events will be written to standard output.
