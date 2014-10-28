@@ -64,7 +64,6 @@ else
 
     if [ "$?" != 0 ] || [ -z "$contact" ]; then
         exit 99
-        globus-personal-gatekeeper -kill "$contact"
     fi
 
     trap cleanup EXIT
