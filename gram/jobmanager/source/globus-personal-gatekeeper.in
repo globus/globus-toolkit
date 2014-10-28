@@ -369,6 +369,10 @@ while [ -n "$1" ]; do
         ;;
     
     -kill)
+    if test -z "$2" ; then
+        echo "ERROR: -kill option requires a contact string" >&2
+        exit 1
+    fi
     verify_setup kill
     killem "$2"
     exit 0
