@@ -192,7 +192,7 @@ killem ()
                 cd
 		statedir="${TMPDIR:-/tmp}/${user}/`echo \"${dir}\" | sed -e 's|.*/||'`"
                 if [ -r ${dir}/jobmanager.conf ]; then
-                    host=`globus_hostname | cut -d. -f1`
+                    host=`globus_hostname`
                     args=`cat "${dir}/jobmanager.conf"`
                     service_tag="`eval get_jm_arg_value -service-tag $args`"
                     if [ "$service_tag" = "" ]; then
@@ -314,20 +314,17 @@ startnew=false
 
 globus_hostname()
 {
-    if command -v globus-hostname; then
-        host=`globus-hostname| cut -d. -f1`
-    fi
-
-    if [ "${host}" = "" ] && command -v hostname > /dev/null 2>&1; then
-        host=`hostname`
-    fi
-
-    if [ "${host}" = "" ] && command -v uname > /dev/null 2>&1; then
-        host=`uname -n`
+    if command -v globus-hostname > /dev/null 2>&1; then
+        globus-hostname | cut -d. -f1
+    elif command -v hostname > /dev/null 2>&1; then
+        hostname | cut -d. -f1
+    elif command -v uname > /dev/null 2>&1; then
+        uname -n | cut -d. -f1
     fi
 }
 
-file_location="$HOME/.globus/."
+host=`globus_hostname`
+file_location="$HOME/.globus"
 file_prefix="gram.$host"
 log=never
 seg=0
