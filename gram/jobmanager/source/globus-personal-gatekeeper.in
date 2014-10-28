@@ -165,6 +165,7 @@ killem ()
     do
         if [ -n "${dir}" ]; then
             found=true
+            contact=
             if [ -r ${dir}/gatekeeper.log ]; then
                 contact="`grep 'GRAM contact' ${dir}/gatekeeper.log |
                     tail -1 |
@@ -240,6 +241,7 @@ findit ()
     do
         if [ -n "${dir}" ]; then
             found=true
+            contact=
             if [ -r ${dir}/gatekeeper.log ]; then
                 contact="`grep 'GRAM contact' ${dir}/gatekeeper.log |
                     tail -1 |
@@ -267,6 +269,7 @@ listem ()
     do
         if [ -n "${dir}" ]; then
             found=true
+            contact=
             if [ -r ${dir}/gatekeeper.log ]; then
                 contact="`grep 'GRAM contact' ${dir}/gatekeeper.log |
                     tail -1 |
