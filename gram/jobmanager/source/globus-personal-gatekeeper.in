@@ -63,7 +63,7 @@ Syntax: globus-personal-gatekeeper [options]
     gatekeeper to use a particular port. The default is to let the
     system choose a port. The -log switch causes the job manager
     to write log messages to files in DIRECTORY.
-    If -seg is used, then the Scheduler Event Generator will be used to 
+    If -seg is used, then the Scheduler Event Generator will be used to
     poll job state. The -auditdir switch tells the jobmanager where
     to store the audit-records. The -acctfile switch tells the gatekeeper
     where to log accounting records.
@@ -116,7 +116,7 @@ globus_args_unrecognized_option()
 {
     globus_args_option_error $1 "unrecognized option"
     exit 1
-}	
+}
 
 debug=:
 
@@ -191,7 +191,7 @@ killem ()
                     kill -9 $pid &
                 fi
                 cd
-		statedir="${TMPDIR:-/tmp}/${user}/`echo \"${dir}\" | sed -e 's|.*/||'`"
+                statedir="${TMPDIR:-/tmp}/${user}/`echo \"${dir}\" | sed -e 's|.*/||'`"
                 if [ -r ${dir}/jobmanager.conf ]; then
                     host=`globus_hostname`
                     args=`cat "${dir}/jobmanager.conf"`
@@ -219,7 +219,7 @@ killem ()
                 fi
 
                 rm -rf ${dir} &
-		rm -rf "${statedir}" &
+                rm -rf "${statedir}" &
             fi
         fi
     done
@@ -367,7 +367,7 @@ while [ -n "$1" ]; do
         fi
         exit 0;
         ;;
-    
+
     -kill)
     if test -z "$2" ; then
         echo "ERROR: -kill option requires a contact string" >&2
@@ -395,30 +395,30 @@ while [ -n "$1" ]; do
     shift
     while [ -n "$1" ]; do
         case $1 in
-	    -jmtype)
-		jmtype="$2"
-		shift
-		;;
-	-log*)
+        -jmtype)
+                jmtype="$2"
+                shift
+                ;;
+        -log*)
                 logdir=`expr "$1" : "-log=\(.*\)"`
                 if [ "$logdir" = "" ]; then
                     logdir="$HOME"
                 fi
-		;;
+                ;;
         -single)
                 single="$1"
                 ;;
         -valgrind)
                 valgrind=1
                 ;;
-	-port)
-		port="$2"
-		shift
-		;;
+        -port)
+                port="$2"
+                shift
+                ;;
         -seg)
                 seg=1
                 ;;
-	-auditdir)
+        -auditdir)
                 auditdir="$2"
                 shift
                 ;;
@@ -427,17 +427,17 @@ while [ -n "$1" ]; do
                 shift;
                 ;;
         *)
-		startargs="$startargs $1"
-		;;
-	esac
-	shift
+                startargs="$startargs $1"
+                ;;
+        esac
+        shift
     done
     break
     ;;
     -debug)
     debug=echo
     ;;
-    *)  
+    *)
     globus_args_unrecognized_option "$1"
     ;;
     esac
@@ -466,7 +466,7 @@ trap cleanup 0 1 2 3 6 9 12 15
 
 
 docleanup=true
-mkdir -p ${scratch}
+mkdir -p "${scratch}"
 mkdir -p "${statefiledir}"
 
 if test $? != 0; then
@@ -518,7 +518,7 @@ cat > ${scratch}/gatekeeper.conf <<EOF
 -e ${sbindir}
 -logfile ${scratch}/gatekeeper.log
 -grid_services ${scratch}
--d 
+-d
 EOF
 
 if [ -n "$port" ]; then
@@ -584,7 +584,7 @@ fi
 echo "-globus-job-dir ${TMPDIR:-/tmp}" >> ${scratch}/jobmanager.conf
 
 docleanup=false
- 
+
 globus-gatekeeper -c ${scratch}/gatekeeper.conf -test \
     1>/dev/null 2>/dev/null
 x=$?
