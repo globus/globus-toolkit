@@ -848,7 +848,8 @@ globus_i_gfs_log_create_transfer_event_msg(
     const char *                        fname,
     globus_off_t                        nbytes,
     char *                              type,
-    char *                              username)
+    char *                              username,
+    char *                              retransmit_str)
 {
     char *                              transfermsg;
     GlobusGFSName(globus_i_gfs_log_create_transfer_event_msg);
@@ -863,7 +864,8 @@ globus_i_gfs_log_create_transfer_event_msg(
         "streams=%d "
         "stripes=%d "
         "remoteIP=%s "
-        "type=%s",
+        "type=%s"
+        "%s%s",
         username,
         fname,
         (long) tcp_bs,
@@ -872,7 +874,9 @@ globus_i_gfs_log_create_transfer_event_msg(
         stream_count,
         stripe_count,
         dest_ip,
-        type);
+        type,
+        retransmit_str ? " retrans=" : "",
+        retransmit_str ? retransmit_str : "");
 
     GlobusGFSDebugExit();
     return transfermsg;
@@ -892,7 +896,8 @@ globus_i_gfs_log_transfer(
     int                                 code,
     char *                              volume,
     char *                              type,
-    char *                              username)
+    char *                              username,
+    char *                              retransmit_str)
 {
     time_t                              start_time_time;
     time_t                              end_time_time;
@@ -951,7 +956,8 @@ globus_i_gfs_log_transfer(
         "STRIPES=%d "
         "DEST=[%s] "
         "TYPE=%s "
-        "CODE=%d\n",
+        "CODE=%d"
+        "%s%s\n",
         /* end time */
         end_tm_time.tm_year + 1900,
         end_tm_time.tm_mon + 1,
@@ -981,7 +987,9 @@ globus_i_gfs_log_transfer(
         stripe_count,
         dest_ip,
         type,
-        code);
+        code,
+        retransmit_str ? " retrans=" : "",
+        retransmit_str ? retransmit_str : "");
 
     if(globus_l_gfs_transfer_log_file != NULL)
     {

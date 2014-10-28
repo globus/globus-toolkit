@@ -24,6 +24,9 @@
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
 #include <string.h>
+#ifdef HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
 #ifndef TARGET_ARCH_WIN32
 #include <sys/uio.h>
 #endif
@@ -3670,6 +3673,152 @@ globus_ftp_control_data_get_socket_buf(
 
     return GLOBUS_SUCCESS;
 }
+
+
+
+globus_result_t
+globus_ftp_control_data_get_retransmit_count(
+    globus_ftp_control_handle_t *               handle,
+    char **                                     retransmit_count)
+{
+    globus_object_t *                           err;
+    globus_result_t                             res = GLOBUS_SUCCESS;
+    globus_list_t *                             list;
+    globus_i_ftp_dc_handle_t *                  dc_handle;
+    globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
+    globus_ftp_data_stripe_t *                  stripe;
+    globus_ftp_data_connection_t *              data_conn;
+    globus_xio_driver_t                         tcp_driver;
+    int                                         ctr;
+    int                                         count;
+    char *                                      count_str = NULL;
+    static char *                               myname=
+                          "globus_ftp_control_data_get_retransmit_count";
+
+    /*
+     *  error checking
+     */
+    if(handle == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+    if(retransmit_count == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "retransmit_count",
+                  3,
+                  myname);
+        return globus_error_put(err);
+    }
+
+    dc_handle = &handle->dc_handle;
+    GlobusFTPControlDataTestMagic(dc_handle);
+    if(!dc_handle->initialized)
+    {
+        err = globus_io_error_construct_not_initialized(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+
+    globus_mutex_lock(&dc_handle->mutex);
+    {
+        transfer_handle = dc_handle->transfer_handle;
+
+        if(transfer_handle == GLOBUS_NULL)
+        {
+            res = globus_error_put(globus_error_construct_string(
+                      GLOBUS_FTP_CONTROL_MODULE,
+                      GLOBUS_NULL,
+                      _FCSL("handle not in proper state.")));
+            globus_mutex_unlock(&dc_handle->mutex);
+            return res;
+        }
+
+        tcp_driver = globus_io_compat_get_tcp_driver();
+        
+        for(ctr = 0; ctr < transfer_handle->stripe_count; ctr++)
+        {
+            stripe = &transfer_handle->stripes[ctr];
+            for(list = stripe->all_conn_list;
+                !globus_list_empty(list);
+                list = globus_list_rest(list))
+            {
+                globus_xio_handle_t         xio_handle;
+                globus_xio_system_socket_t  socket;
+                socklen_t                   len;
+                char *                      tmp_str;
+
+                data_conn = (globus_ftp_data_connection_t *)
+                                 globus_list_first(list);
+
+                res = globus_io_handle_get_xio_handle(
+                    &data_conn->io_handle, &xio_handle);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    globus_mutex_unlock(&dc_handle->mutex);
+                    return res;
+                }
+
+                res = globus_xio_handle_cntl(
+                    xio_handle,
+                    tcp_driver,
+                    GLOBUS_XIO_TCP_GET_HANDLE,
+                    &socket);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    globus_mutex_unlock(&dc_handle->mutex);
+                    return res;
+                }
+
+                count = -1;
+#if defined(TARGET_ARCH_LINUX) && defined(TCP_MD5SIG)
+                {
+                    struct tcp_info             tcpinfo;
+    
+                    len = sizeof(tcpinfo);
+                    res = globus_xio_system_socket_getsockopt(
+                        socket, IPPROTO_TCP, TCP_INFO, (void *) &tcpinfo, &len);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        globus_mutex_unlock(&dc_handle->mutex);
+                        return res;
+                    }
+    
+                    count = tcpinfo.tcpi_total_retrans;
+                }
+#endif
+
+                if(count_str)
+                {
+                    tmp_str = globus_common_create_string("%s,%d", count_str, count);
+                    globus_free(count_str);
+                    count_str = tmp_str;
+                }
+                else
+                {
+                    count_str = globus_common_create_string("%d", count);
+                }
+            }
+        }
+        *retransmit_count = count_str;
+    }
+    globus_mutex_unlock(&dc_handle->mutex);
+
+    return res;
+}
+
 
 /**
  * @brief Set data channel DCAU

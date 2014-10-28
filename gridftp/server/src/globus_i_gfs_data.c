@@ -9163,7 +9163,8 @@ globus_l_gfs_data_end_transfer_kickout(
     globus_bool_t                       disconnect = GLOBUS_FALSE;
     void *                              remote_data_arg = NULL;
     globus_gfs_event_info_t             event_info;
-        globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    char *                              retransmit_str = NULL;
     GlobusGFSName(globus_l_gfs_data_end_transfer_kickout);
     GlobusGFSDebugEnter();
 
@@ -9430,6 +9431,10 @@ response_exit:
             "Finished transferring \"%s\".\n",
                 ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
 
+        globus_ftp_control_data_get_retransmit_count(
+            &op->data_handle->data_channel,
+            &retransmit_str);
+
         msg = globus_i_gfs_log_create_transfer_event_msg(
             op->node_count,
             op->data_handle->info.nstreams,
@@ -9439,7 +9444,8 @@ response_exit:
             info->pathname,
             op->bytes_transferred,
             type,
-            op->session_handle->username);
+            op->session_handle->username,
+            retransmit_str);
 
         globus_gfs_log_event(
             GLOBUS_GFS_LOG_INFO,
@@ -9562,7 +9568,8 @@ response_exit:
                 226,
                 "/",
                 type,
-                op->session_handle->username);
+                op->session_handle->username,
+                retransmit_str);
         }
         if(!globus_l_gfs_data_is_remote_node &&
             !globus_i_gfs_config_string("disable_usage_stats"))
@@ -9591,7 +9598,11 @@ response_exit:
                     "remote" : globus_i_gfs_config_string("load_dsi_module"));
         }
     }
-
+    if(retransmit_str)
+    {
+        globus_free(retransmit_str);
+    }
+    
     /* XXX sc process bytes transferred count */
     {
         char *                          names[5] =

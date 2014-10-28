@@ -1,11 +1,11 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_ftp_control], [5.12], [https://globus.atlassian.net/])
+AC_INIT([globus_ftp_control], [6.1], [https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
-AC_SUBST([AGE_VERSION], [4])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gss-assist >= 8, globus-gssapi-gsi >= 9, globus-io >= 8, globus-xio >= 3, globus-gssapi-error >= 4"])
+AC_SUBST([AGE_VERSION], [5])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gss-assist >= 8, globus-gssapi-gsi >= 9, globus-io >= 11, globus-xio >= 3, globus-gssapi-error >= 4"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])

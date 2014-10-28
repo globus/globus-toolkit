@@ -1,10 +1,10 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_io],[10.12],[https://globus.atlassian.net/])
+AC_INIT([globus_io],[11.1],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
-AC_SUBST([AGE_VERSION], [7])
+AC_SUBST([AGE_VERSION], [8])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-xio >= 3, globus-gss-assist >= 8, globus-gssapi-gsi >= 10, globus-xio-gsi-driver >= 2, globus-gssapi-error >= 4"])
 
 AC_CONFIG_AUX_DIR([build-aux])

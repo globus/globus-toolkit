@@ -1,3 +1,9 @@
+globus-io (11.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-477: Tracking TCP retransmits on the GridFTP server
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 Oct 2014 17:11:04 -0500
+
 globus-io (10.12-1+gt6.@distro@) @distro@; urgency=low
 
   * Drop empty documentation from globus_io package

@@ -1,3 +1,9 @@
+globus-ftp-control (6.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-477: Tracking TCP retransmits on the GridFTP server
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 Oct 2014 17:11:55 -0500
+
 globus-ftp-control (5.12-1+gt6.@distro@) @distro@; urgency=low
 
   * Doxygen markup fixes
