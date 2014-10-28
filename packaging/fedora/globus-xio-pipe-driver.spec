@@ -1,7 +1,7 @@
 Name:		globus-xio-pipe-driver
 %global _name %(tr - _ <<< %{name})
 Version:	3.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Pipe Driver
 
 Group:		System Environment/Libraries
@@ -88,10 +88,12 @@ rm -rf $RPM_BUILD_ROOT
 %files devel
 %defattr(-,root,root,-)
 %{_includedir}/globus/*
-%{_libdir}/libglobus*.so
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 3.7-2
+- put .so file in only one package
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 3.7-1
 - Merge fixes from ellert-globus_6_branch
 
