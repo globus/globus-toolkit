@@ -4286,6 +4286,21 @@ globus_io_handle_set_user_pointer(
 }
 
 globus_result_t
+globus_io_handle_get_xio_handle(
+    globus_io_handle_t *                handle,
+    globus_xio_handle_t *               xio_handle)
+{
+    GlobusIOName(globus_io_handle_get_xio_handle);
+    
+    GlobusLIOCheckHandle(handle, 0);
+    GlobusLIOCheckNullParam(xio_handle);
+    
+    *xio_handle = (*handle)->xio_handle;
+    
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
 globus_io_tcp_get_security_context(
     globus_io_handle_t *                handle,
     gss_ctx_id_t *                      context)

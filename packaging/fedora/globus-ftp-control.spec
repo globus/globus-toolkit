@@ -1,23 +1,23 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	5.12
+Version:	6.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_control-5.12.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_control-6.1.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-gss-assist%{?_isa} >= 8
-Requires:	globus-io%{?_isa} >= 8
+Requires:	globus-io%{?_isa} >= 11
 Requires:	globus-gssapi-gsi%{?_isa} >= 9
 
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gss-assist-devel >= 8
-BuildRequires:	globus-io-devel >= 8
+BuildRequires:	globus-io-devel >= 11
 BuildRequires:	globus-gssapi-gsi-devel >= 9
 BuildRequires:	doxygen
 BuildRequires:	graphviz
@@ -40,7 +40,7 @@ Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-gss-assist-devel%{?_isa} >= 8
-Requires:	globus-io-devel%{?_isa} >= 8
+Requires:	globus-io-devel%{?_isa} >= 11
 Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
 Requires:       globus-xio-devel%{?_isa} >= 3
 Requires:       globus-gssapi-error-devel%{?_isa} >= 4
@@ -137,6 +137,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Oct 28 2014 Globus Toolkit <support@globus.org> - 6.1-1
+- GT-477: Tracking TCP retransmits on the GridFTP server
+
 * Tue Sep 23 2014 Globus Toolkit <support@globus.org> - 5.12-1
 - Doxygen markup fixes
 - Fix typos and clarify some documentation

@@ -71,7 +71,8 @@ globus_i_gfs_log_transfer(
     int                                 code,
     char *                              volume,
     char *                              type,
-    char *                              username);
+    char *                              username,
+    char *                              retrans);
 
 char *
 globus_i_gfs_log_create_transfer_event_msg(
@@ -83,7 +84,8 @@ globus_i_gfs_log_create_transfer_event_msg(
     const char *                        fname,
     globus_off_t                        nbytes,
     char *                              type,
-    char *                              username);
+    char *                              username,
+    char *                              retrans);
 
 void
 globus_i_gfs_log_usage_stats(

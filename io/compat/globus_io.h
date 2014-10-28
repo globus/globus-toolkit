@@ -831,6 +831,11 @@ globus_xio_driver_t
 globus_io_compat_get_file_driver();
 
 globus_result_t
+globus_io_handle_get_xio_handle(
+    globus_io_handle_t *                handle,
+    globus_xio_handle_t *               xio_handle);
+
+globus_result_t
 globus_io_attr_get_xio_attr(
     globus_io_attr_t *                  attr,
     globus_xio_attr_t *                 xio_attr);
