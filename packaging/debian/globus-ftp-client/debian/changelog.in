@@ -1,3 +1,9 @@
+globus-ftp-client (8.14-2+gt6.@distro@) @distro@; urgency=low
+
+  * Add openssl build dep for tests
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 Oct 2014 20:53:00 -0500
+
 globus-ftp-client (8.14-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-572: globus-ftp-client performs MLSD with incorrect TYPE
