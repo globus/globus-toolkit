@@ -1,7 +1,7 @@
 Source: globus-gram-protocol
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-io-dev (>= 8), libglobus-common-doc (>= 3), libglobus-gssapi-gsi-dev (>= 10), libglobus-gss-assist-dev (>= 8), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-io-dev (>= 8), libglobus-common-doc (>= 3), libglobus-gssapi-gsi-dev (>= 10), libglobus-gss-assist-dev (>= 8), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, openssl
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes
