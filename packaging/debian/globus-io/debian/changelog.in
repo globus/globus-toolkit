@@ -1,3 +1,9 @@
+globus-io (11.1-2+gt6.@distro@) @distro@; urgency=low
+
+  * Add openssl build dep for tests
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 Oct 2014 17:11:04 -0500
+
 globus-io (11.1-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-477: Tracking TCP retransmits on the GridFTP server
