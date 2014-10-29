@@ -1,4 +1,4 @@
-globus-gram-job-manager-lsf (2.6-2+gt6.@distro@) @distro@; urgency=low
+globus-gram-job-manager-lsf (2.6-3+gt6.@distro@) @distro@; urgency=low
 
   * Attempt to fix pbuilder failure
 
