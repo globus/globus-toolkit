@@ -1,3 +1,9 @@
+globus-ftp-control (6.1-2+gt6.@distro@) @distro@; urgency=low
+
+  * Add build dependency on OpenSSL
+
+ -- Globus Toolkit <support@globus.org>  Wed, 29 Oct 2014 10:31:58 -0400
+
 globus-ftp-control (6.1-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-477: Tracking TCP retransmits on the GridFTP server
