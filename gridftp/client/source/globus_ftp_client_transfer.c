@@ -6166,7 +6166,14 @@ globus_l_ftp_client_list_op(
     if(!handle->source->attr->list_uses_data_mode)
     {
         handle->source->attr->mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
-        handle->source->attr->type = GLOBUS_FTP_CONTROL_TYPE_ASCII;
+        if(op == GLOBUS_FTP_CLIENT_MLSD)
+        {
+            handle->source->attr->type = GLOBUS_FTP_CONTROL_TYPE_IMAGE;
+        }
+        else
+        {
+            handle->source->attr->type = GLOBUS_FTP_CONTROL_TYPE_ASCII;
+        }
         handle->source->attr->parallelism.mode = 
             GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
     }
