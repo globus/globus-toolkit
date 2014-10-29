@@ -1,7 +1,7 @@
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
 Version:	1.15
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
 Group:		System Environment/Libraries
@@ -12,7 +12,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-xio%{?_isa} >= 3
-%if %{?fedora}%{!?fedora:0} >= 18
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 7
 Requires:       glib2%{?_isa} >= 2.32
 Requires:       libnice%{?_isa} >= 0.0.12
 %endif
@@ -122,6 +122,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Oct 29 2014 Globus Toolkit <support@globus.org> - 1.15-2
+- Use native libs for EL7
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 1.15-1
 - Merge fixes from ellert-globus_6_branch
 
