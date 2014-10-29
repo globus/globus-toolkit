@@ -1,3 +1,9 @@
+globus-xio-udt-driver (1.15-2+gt6.@distro@) @distro@; urgency=low
+
+  * Add dependency on libgupnp-igd-1.0-dev
+
+ -- Globus Toolkit <support@globus.org>  Wed, 29 Oct 2014 13:08:31 -0400
+
 globus-xio-udt-driver (1.15-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch
