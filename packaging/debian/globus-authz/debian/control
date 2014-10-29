@@ -1,7 +1,7 @@
 Source: globus-authz
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-authz-callout-error-dev (>= 2), libglobus-callout-dev (>= 2), libglobus-gssapi-gsi-dev (>= 9), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, libltdl-dev
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-authz-callout-error-dev (>= 2), libglobus-callout-dev (>= 2), libglobus-gssapi-gsi-dev (>= 9), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, libltdl-dev, openssl
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes

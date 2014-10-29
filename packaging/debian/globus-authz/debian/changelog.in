@@ -1,5 +1,11 @@
 globus-authz (3.10-1+gt6.@distro@) @distro@; urgency=low
 
+  * Add OpenSSL build dependency
+
+ -- Globus Toolkit <support@globus.org>  Wed, 29 Oct 2014 12:08:18 -0400
+
+globus-authz (3.10-1+gt6.@distro@) @distro@; urgency=low
+
   * Doxygen markup fixes
   * Include more manpages for API
   * Fix typos and clarify some documentation
