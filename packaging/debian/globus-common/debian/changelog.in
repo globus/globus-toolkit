@@ -1,8 +1,9 @@
-globus-common (15.26-4+gt6.@distro@) @distro@; urgency=low
+globus-common (15.26-5+gt6.@distro@) @distro@; urgency=low
 
   * Fix missing libglobus_thread_pthread.so in library package
+  * put libglobus_memory_debug in library package
 
- -- Globus Toolkit <support@globus.org>  Thu, 30 Oct 2014 14:49:05 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 30 Oct 2014 15:11:38 -0400
 
 globus-common (15.26-3+gt6.@distro@) @distro@; urgency=low
 

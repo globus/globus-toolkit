@@ -156,6 +156,7 @@ install: build-stamp
 
 	ls -1 debian/tmp$(perl_vendorlib)/Globus/Core/*.pm \
 	  debian/tmp$(_libdir)/libglobus*.so.* \
+	  debian/tmp$(_libdir)/libglobus_memory_debug.so \
 	  debian/tmp$(_libdir)/libglobus_thread*.so \
 	  > debian/lib$(name)$(soname).install
 	ls -1 debian/tmp$(_includedir)/globus/*.h \
