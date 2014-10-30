@@ -1,7 +1,7 @@
 Source: globus-gass-copy
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-ftp-client-dev, libglobus-common-dev, libglobus-gssapi-gsi-dev, libglobus-io-dev, libglobus-gass-transfer-dev, libglobus-ftp-control-dev, globus-gridftp-server-progs, libglobus-gridftp-server-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, libltdl-dev, openssl
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-ftp-client-dev, libglobus-common-dev, libglobus-gssapi-gsi-dev, libglobus-io-dev, libglobus-gass-transfer-dev, libglobus-ftp-control-dev, globus-gridftp-server-progs, libglobus-gridftp-server-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, libltdl-dev, openssl, liburi-perl
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes

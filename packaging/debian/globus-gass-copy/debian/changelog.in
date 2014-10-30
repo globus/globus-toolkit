@@ -1,8 +1,8 @@
-globus-gass-copy (9.12-2+gt6.@distro@) @distro@; urgency=low
+globus-gass-copy (9.12-3+gt6.@distro@) @distro@; urgency=low
 
-  * Add build depdendency on OpenSSL
+  * Add build depdendency on OpenSSL and liburi-perl
 
- -- Globus Toolkit <support@globus.org>  Wed, 29 Oct 2014 17:50:51 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 29 Oct 2014 20:04:25 -0400
 
 globus-gass-copy (9.12-1+gt6.@distro@) @distro@; urgency=low
 
