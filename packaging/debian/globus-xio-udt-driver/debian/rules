@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-xio-udt-driver
 _name = globus_xio_udt_driver
-version = 1.15
+version = 1.16
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp
@@ -133,6 +133,10 @@ install: build-stamp
 	  debian/tmp$(_libdir)/libglobus*.so* \
 	  debian/tmp$(_docdir)/lib$(name)-dev/GLOBUS_LICENSE \
 	  > debian/lib$(name)$(soname).install
+	if [ -f debian/tmp$(_libdir)/globus/libudt.so ]; then \
+	  ls -1 debian/tmp$(_libdir)/globus/libudt.so \
+	      >> debian/lib$(name)$(soname).install; \
+	fi
 	ls -1 debian/tmp$(_includedir)/globus/*.h \
 	  debian/tmp$(_libdir)/pkgconfig/*.pc \
 	  > debian/lib$(name)-dev.install

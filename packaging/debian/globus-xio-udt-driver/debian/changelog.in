@@ -1,3 +1,9 @@
+globus-xio-udt-driver (1.16-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add support for debian squeeze and ubuntu lucid
+
+ -- Globus Toolkit <support@globus.org>  Thu, 30 Oct 2014 11:11:41 -0400
+
 globus-xio-udt-driver (1.15-2+gt6.@distro@) @distro@; urgency=low
 
   * Add dependency on libgupnp-igd-1.0-dev
