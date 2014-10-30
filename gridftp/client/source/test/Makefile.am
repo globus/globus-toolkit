@@ -1,7 +1,6 @@
-EXTRA_SCRIPTS = run-tests.pl many-server.pl run-backend-tests.pl test-wrapper \
-	put-test.pl bad-buffer-test.pl
+EXTRA_SCRIPTS = run-tests.pl many-server.pl run-backend-tests.pl test-wrapper
 
-check_SCRIPTS = \
+check_SCRIPTS_run = \
 	dir-test.pl \
 	create-destroy-test.pl \
 	exist-test.pl \
@@ -21,23 +20,30 @@ check_SCRIPTS = \
 	caching-transfer-test.pl \
 	caching-extended-get-test.pl \
 	user-auth-test.pl
+check_SCRIPTS_skip =
 
 if ! TARGET_MINGW
-	check_SCRIPTS += put-test.pl
+check_SCRIPTS_run += put-test.pl
+else
+check_SCRIPTS_skip += put-test.pl
 endif
 
 if ! TARGET_HURD
-	check_SCRIPTS += bad-buffer-test.pl
+check_SCRIPTS_run += bad-buffer-test.pl
+else
+check_SCRIPTS_skip += bad-buffer-test.pl
 endif
+
+check_SCRIPTS = $(check_SCRIPTS_run) $(check_SCRIPTS_skip)
 
 check_DATA_real = \
 	FtpTestLib.pm \
-        URL.pm
+	URL.pm
 check_DATA = $(check_DATA_real) \
-        testcred.key \
-        testcred.cert \
-        testcredlink \
-        gridmap
+	testcred.key \
+	testcred.cert \
+	testcredlink \
+	gridmap
 
 check_LTLIBRARIES = libglobus_ftp_client_test.la
 
@@ -85,9 +91,9 @@ check_PROGRAMS = \
 	caching-transfer-test \
 	pipelined-transfer-test \
 	user-auth-test \
-        restart-marker-test
+	restart-marker-test
 
-TESTS = $(check_SCRIPTS)
+TESTS = $(check_SCRIPTS_run)
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
 LDADD = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) libglobus_ftp_client_test.la $(top_builddir)/libglobus_ftp_client.la $(PACKAGE_DEP_LIBS) -lltdl
 
@@ -142,7 +148,7 @@ testcredlink: testcred.cert
 
 gridmap: testcred.cert
 	subject=`openssl x509 -subject -noout -in testcred.cert | sed -e 's/subject= *//'` ; \
-        echo "\"$$subject\" $${LOGNAME:-`id -un`}" > gridmap
+	echo "\"$$subject\" $${LOGNAME:-`id -un`}" > gridmap
 
 
 CLEANFILES = testcred.key testcred.cert testcred.req gridmap
@@ -153,9 +159,7 @@ clean-local:
 	fi
 
 EXTRA_DIST = \
-        $(check_DATA_real) \
-        $(globusperl_DATA) \
-	FtpTestLib.pm \
-        $(check_SCRIPTS) \
+	$(check_DATA_real) \
+	$(check_SCRIPTS) \
 	$(EXTRA_SCRIPTS)
 SUFFIXES = .key .req .cert
