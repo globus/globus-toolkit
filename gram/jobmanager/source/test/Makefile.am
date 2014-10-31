@@ -21,8 +21,11 @@ testcred.key:
 	echo "$$linkname" > $@
 
 CLEANFILES = testcred.key testcred.cert
+
 clean-local:
 	@if test -r testcred.link; then \
-            rm -f $$(cat testcred.link) testcred.link ; \
-        fi
+	    rm -f $$(cat testcred.link) testcred.link ; \
+	fi
+	rm -rf .globus
+
 SUFFIXES = .req .cert .key .link
