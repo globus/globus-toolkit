@@ -35,13 +35,13 @@ my @tests;
 my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
-my $source_url="$proto$source_host/~/gRidFTpTestdIR";
+my $source_url="$proto$source_host$source_file";
 
 # remove the file if it is there
-run_command("./rmdir-test -s $source_file", -2);
+run_command("./delete-test -s $source_url", -2);
 push(@tests, "run_check('./mkdir-test', '-s', '');");
 push(@tests, "run_check('./rmdir-test', '-s', '');");
-push(@tests, "run_check('./put-test', '-d', '< /etc/group');");
+push(@tests, "run_check('./put-test', '-d', '< $local_copy');");
 push(@tests, "run_check('./delete-test', '-s', '');");
 
 sub run_check
