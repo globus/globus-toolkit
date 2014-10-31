@@ -1,15 +1,17 @@
 #! /bin/sh
 
-bambooscriptdir=$(dirname $0)
-if ! expr $bambooscriptdir ":" "/" ; then
-    bambooscriptdir="$(pwd)/$bambooscriptdir"
-fi
-
 baseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/packages/rpm/\$osname/\\\$releasever"
 
-fullglobusversion="$(cat $bambooscriptdir/../fait_accompli/version)"
-globusversion="${fullglobusversion%.*}"
-majorglobusversion="gt${globusversion%.*}"
+if [ -f "../fait_accompli/version" ]; then
+    fullglobusversion="$(cat $bambooscriptdir/../fait_accompli/version)"
+    globusversion="${fullglobusversion%.*}"
+    majorglobusversion="gt${globusversion%.*}"
+else
+    majorglobusversion="gt5"
+    globusversion="5.2"
+    fullglobusversion="stable"
+fi
+
 sign=1
 reponame=Globus-repo-config
 while getopts "n:v:b:r:SUts" i; do
@@ -42,7 +44,7 @@ while getopts "n:v:b:r:SUts" i; do
 done
 
 if [ "$osname" = "" ]; then
-    osname="$(lsb_release -is)"
+    osname="$(lsb_release -is | tr 'A-Z' 'a-z')"
 fi
 if [ "$osver" = "" ]; then
     osver="$(lsb_release -rs)"
@@ -66,14 +68,16 @@ else
 fi
 
 for x in BUILD BUILDROOT RPMS SOURCES SPECS SRPMS; do
-    mkdir -p ${HOME}/${x}
+    mkdir -p ${HOME}/rpmbuild/${x}
 done
 
 if [ "$osname" = "sles" ]; then
     typeline="type=yast2"
+else
+    typeline="priority=98"
 fi
-echo "Creating $HOME/SOURCES/${reponame}.$osname.repo"
-cat <<EOF > $HOME/SOURCES/${reponame}.$osname.repo
+echo "Creating $HOME/rpmbuild/SOURCES/${reponame}.$osname.repo"
+cat <<EOF > $HOME/rpmbuild/SOURCES/${reponame}.$osname.repo
 [Globus]
 name=Globus
 baseurl=$baseurlresolved
@@ -85,7 +89,7 @@ $typeline
 EOF
 
 if [ "$osname" != "sles" ]; then
-    cat <<EOF >> $HOME/SOURCES/${reponame}.$osname.repo
+    cat <<EOF >> $HOME/rpmbuild/SOURCES/${reponame}.$osname.repo
 [Globus-source]
 name=Globus - Source
 baseurl=$srcbaseurlresolved
@@ -98,7 +102,7 @@ EOF
 fi
 
 if [ "$no_updates" != "yes" ]; then
-    cat <<EOF >> $HOME/SOURCES/${reponame}.$osname.repo
+    cat <<EOF >> $HOME/rpmbuild/SOURCES/${reponame}.$osname.repo
 
 [Globus-Updates]
 name=Globus - Updates
@@ -110,7 +114,7 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
 $typeline
 EOF
     if [ "$osname" != "sles" ]; then
-    cat <<EOF >> $HOME/SOURCES/${reponame}.$osname.repo
+    cat <<EOF >> $HOME/rpmbuild/SOURCES/${reponame}.$osname.repo
 
 [Globus-Updates-source]
 name=Globus - Updates Source
@@ -124,13 +128,14 @@ EOF
     fi
 fi
 
-cp "${bambooscriptdir}/RPM-GPG-KEY-Globus" $HOME/SOURCES
+curl -Ls http://builds.globus.org/repo52/etc/GLOBUS-KEY \
+    > "${HOME}/rpmbuild/SOURCES/RPM-GPG-KEY-Globus" 
 
-echo "Creating $HOME/SPECS/$reponame.$osname.spec"
-cat <<EOF > $HOME/SPECS/$reponame.$osname.spec
+echo "Creating $HOME/rpmbuild/SPECS/$reponame.$osname.spec"
+cat <<EOF > $HOME/rpmbuild/SPECS/$reponame.$osname.spec
 Name:           $reponame.$osname
 Version:        $osver
-Release:        1
+Release:        2
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -140,6 +145,13 @@ Source1:        $reponame.$osname.repo
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 Requires:       ${osname}-release >= ${osver}
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:       yum-priorities
+%else
+%if %{?suse_version}%{!?suse_version:0} == 0
+Requires:       yum-plugin-priorities
+%endif
+%endif
 
 %description
 This package installs the Globus yum repository configuration and GPG key.
@@ -181,8 +193,8 @@ rm -rf \$RPM_BUILD_ROOT
 %endif
 EOF
 
-rpmbuild -ba $HOME/SPECS/$reponame.$osname.spec
+rpmbuild -ba $HOME/rpmbuild/SPECS/$reponame.$osname.spec
 if [ $sign -eq 1 ]; then
-    expect ${bambooscriptdir}/sign-rpm $HOME/SRPMS/${reponame}.$osname*rpm
-    expect ${bambooscriptdir}/sign-rpm $HOME/RPMS/noarch/${reponame}.$osname*rpm
+    expect ${bambooscriptdir}/sign-rpm $HOME/rpmbuild/SRPMS/${reponame}.$osname*rpm
+    expect ${bambooscriptdir}/sign-rpm $HOME/rpmbuild/RPMS/noarch/${reponame}.$osname*rpm
 fi
