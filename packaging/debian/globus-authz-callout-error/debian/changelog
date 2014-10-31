@@ -1,8 +1,8 @@
-globus-authz-callout-error (2.2-4) unstable; urgency=low
+globus-authz-callout-error (2.2-5) unstable; urgency=low
 
   * Update latex dependencies
 
- -- Globus Toolkit <support@globus.org>  Fri, 31 Oct 2014 09:51:17 -0400
+ -- Globus Toolkit <support@globus.org>  Fri, 31 Oct 2014 10:07:52 -0400
 
 globus-authz-callout-error (2.2-3) unstable; urgency=low
 
