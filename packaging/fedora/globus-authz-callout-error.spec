@@ -13,7 +13,7 @@
 Name:		globus-authz-callout-error
 %global _name %(tr - _ <<< %{name})
 Version:	2.2
-Release:	9%{?dist}
+Release:	10%{?dist}
 Summary:	Globus Toolkit - Globus authz error library
 
 Group:		System Environment/Libraries
@@ -46,7 +46,7 @@ BuildRequires:	tetex-latex
 %endif
 %endif
 
-%if %{?fedora}%{!?fedora:0} == 18
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires: tex(sectsty.sty)
 BuildRequires: tex(tocloft.sty)
 BuildRequires: tex(xtab.sty)
@@ -176,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Oct 31 2013 Globus Toolkit <support@globus.org> - 2.2-10
+- update version condition on doxygen/latex dependency
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.2-9
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 
