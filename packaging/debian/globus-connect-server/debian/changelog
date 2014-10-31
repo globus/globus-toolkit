@@ -1,3 +1,9 @@
+globus-connect-server (3.0.7-2) unstable; urgency=low
+
+  * Add build dependency on python
+
+ -- Globus Toolkit <support@globus.org>  Fri, 31 Oct 2014 09:13:56 -0400
+
 globus-connect-server (3.0.7-1) unstable; urgency=low
 
   * Backport changes from GT6 branch: Fixes for CentOS 7, SLES 11, Ubuntu 14.04
