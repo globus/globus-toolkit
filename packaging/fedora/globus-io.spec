@@ -1,13 +1,13 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	11.1
+Version:	11.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_io-11.1.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_io-11.2.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -117,6 +117,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 11.2-1
+- Use localhost for tests
+
 * Tue Oct 28 2014 Globus Toolkit <support@globus.org> - 11.1-1
 - GT-477: Tracking TCP retransmits on the GridFTP server
 

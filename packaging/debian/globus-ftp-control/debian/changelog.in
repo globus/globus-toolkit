@@ -1,3 +1,9 @@
+globus-ftp-control (6.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Use localhost for tests
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Nov 2014 10:00:25 -0500
+
 globus-ftp-control (6.1-2+gt6.@distro@) @distro@; urgency=low
 
   * Add build dependency on OpenSSL
