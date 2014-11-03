@@ -282,9 +282,58 @@ globus_ftp_control_server_listen(
     globus_ftp_control_server_callback_t        callback,
     void *                                      callback_arg)
 {
+    globus_io_attr_t                            attr;
+    globus_io_tcpattr_init(&attr);
+    globus_ftp_control_server_listen_ex(
+        server_handle,
+        &attr,
+        port,
+        callback,
+        callback_arg
+    );
+}
+
+/**
+ * @brief Listen on for FTP Client Connections
+ * @ingroup globus_ftp_control_server
+ * @details
+ * This function starts the listening on *port for connections
+ * from ftp clients.  When a connection request is made callback is
+ * called and passed callback_arg.  Upon return from this function
+ * the server_handle structure is initialized.
+ *
+ * This is an extendend version of globus_ftp_control_server_listen()
+ * that provides additional control over the listening socket.
+ *
+ *  @param server_handle
+ *         A pointer to a initialized server handle.
+ *  @param attr
+ *         A pointer to a globus_io_attr_t providing additional attributes
+ *         for the listening socket.
+ *  @param port
+ *         A pointer to the port to listen on.  If the initial value
+ *         is zero it will be set to the default value.
+ *  @param callback
+ *         The callback function called when connection requests
+ *         are made.
+ *  @param callback_arg
+ *         The user argument passed to the callback function when 
+ *         connection requests are made.
+ *
+ *  @note I'm not providing any mechanism for making sure that this
+ *        function is only called once. Is this needed?
+ */
+
+globus_result_t
+globus_ftp_control_server_listen_ex(
+    globus_ftp_control_server_t *               server_handle,
+    globus_io_attr_t *                          attr,
+    unsigned short *                            port,
+    globus_ftp_control_server_callback_t        callback,
+    void *                                      callback_arg)
+{
     globus_result_t                             rc;
     int                                         backlog;
-    globus_io_attr_t                            attr;
 
     if(server_handle == GLOBUS_NULL)
     {
@@ -339,14 +388,12 @@ globus_ftp_control_server_listen(
 
     backlog=-1;
     
-    globus_io_tcpattr_init(&attr);
-    globus_io_attr_set_socket_oobinline(&attr, GLOBUS_TRUE);
-    globus_io_attr_set_tcp_nodelay(&attr, 
-                                   GLOBUS_TRUE);
+    globus_io_attr_set_socket_oobinline(attr, GLOBUS_TRUE);
+    globus_io_attr_set_tcp_nodelay(attr, GLOBUS_TRUE);
 
     rc=globus_io_tcp_create_listener(port,
                                      backlog,
-                                     &attr,
+                                     attr,
                                      &server_handle->io_handle);
     
 

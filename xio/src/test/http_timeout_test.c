@@ -309,6 +309,13 @@ main(
         }
     }
 
+    /* Set up server attributes */
+    globus_xio_attr_cntl(
+            server_timeout_info.attr,
+            globus_l_tcp_driver,
+            GLOBUS_XIO_TCP_SET_INTERFACE,
+            "localhost");
+
     /* create server */
     server_timeout_info.state = GLOBUS_XIO_OPERATION_TYPE_ACCEPT;
     server_timeout_info.handle = NULL;

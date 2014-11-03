@@ -243,6 +243,15 @@ http_test_server_init(
     {
         goto destroy_attr_error;
     }
+    result = globus_xio_attr_cntl(
+        attr,
+        tcp_driver,
+        GLOBUS_XIO_TCP_SET_INTERFACE,
+        "localhost");
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto destroy_attr_error;
+    }
 
     result = globus_xio_server_create(
         &server->server, 

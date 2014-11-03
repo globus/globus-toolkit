@@ -1430,6 +1430,14 @@ globus_ftp_control_server_listen(
     void *					callback_arg);
 
 globus_result_t
+globus_ftp_control_server_listen_ex(
+    globus_ftp_control_server_t *		handle,
+    globus_io_attr_t *				attr,
+    unsigned short *				port,
+    globus_ftp_control_server_callback_t	callback,
+    void *					callback_arg);
+
+globus_result_t
 globus_ftp_control_server_stop(
     globus_ftp_control_server_t *		listener,
     globus_ftp_control_server_callback_t	callback,

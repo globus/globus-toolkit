@@ -328,6 +328,7 @@ main(
     int                                         ctr;
     int                                         rc;
     globus_ftp_control_server_t                 server;
+    globus_io_attr_t                            attr;
 
     LTDL_SET_PRELOADED_SYMBOLS();
     printf("1..1\n");
@@ -359,8 +360,11 @@ main(
     ftp_test_monitor_init(&g_server_monitor);
 
     globus_ftp_control_server_handle_init(&server);
-    globus_ftp_control_server_listen(
+    globus_io_tcpattr_init(&attr);
+    globus_io_attr_set_tcp_interface(&attr, "localhost");
+    globus_ftp_control_server_listen_ex(
         &server, 
+        &attr,
         &g_bs_port,
         bullshit_server,
         GLOBUS_NULL);

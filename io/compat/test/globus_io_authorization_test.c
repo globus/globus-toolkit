@@ -141,6 +141,19 @@ main(
 	goto no_authorization_mode;
     }
 
+    result = globus_io_attr_set_tcp_interface(
+	    &attr,
+	    "localhost");
+
+    if(result != GLOBUS_SUCCESS)
+    {
+	char *msg = globus_error_print_friendly(globus_error_peek(result));
+	globus_libc_fprintf(stderr, "# Could not set interface: %s\n", msg);
+	free(msg);
+
+	goto error_exit;
+    }
+
     result = globus_io_tcp_create_listener(
 	    &port,
 	    -1,
