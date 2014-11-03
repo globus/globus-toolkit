@@ -10,9 +10,7 @@ include_HEADERS = \
 lib_LTLIBRARIES = libglobus_scheduler_event_generator.la
 sbin_PROGRAMS = globus-scheduler-event-generator
 sbin_SCRIPTS = globus-scheduler-event-generator-admin
-doc_DATA = GLOBUS_LICENSE \
-        globus-scheduler-event-generator.txt \
-        globus-scheduler-event-generator-admin.txt
+doc_DATA = GLOBUS_LICENSE
 pkgconfig_DATA = globus-scheduler-event-generator.pc
 man_MANS = \
         globus-scheduler-event-generator.8 \
@@ -38,7 +36,9 @@ globus_scheduler_event_generator_LDADD = \
 	libglobus_scheduler_event_generator.la \
 	$(PACKAGE_DEP_LIBS)
 
-EXTRA_DIST = dirt.sh protocol.dox $(doc_DATA) $(man_MANS)
+EXTRA_DIST = dirt.sh protocol.dox $(doc_DATA) $(man_MANS) \
+        globus-scheduler-event-generator.txt \
+        globus-scheduler-event-generator-admin.txt
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN

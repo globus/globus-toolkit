@@ -31,7 +31,7 @@ OPTIONS
 *-d 'SERVICE'*::
     Enable the globus-scheduler-event-generator for 'SERVICE', such as
     +pbs+ or +sge+.
-*-n 'NAME'::
+*-n 'NAME'*::
     When used with the -l option below, only list services which match 'NAME'.
 *-l*::
     List the all the available LRM services and whether they are enabled.
