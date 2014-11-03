@@ -2761,8 +2761,12 @@ globus_l_ftp_control_send_cmd_cb(
                         "globus_l_ftp_control_send_cmd_cb",
                         __LINE__,
                         "gss_import_name failed");
+                    gss_release_buffer(&min_stat, &send_tok);
+
                     goto return_error;
                 }
+
+                gss_release_buffer(&min_stat, &send_tok);
 	    }
 	    else
 	    {
@@ -3403,7 +3407,12 @@ globus_l_ftp_control_send_cmd_cb(
     default:
         break;
     }
-    
+
+    if(serverhost)
+    {
+        globus_free(serverhost);
+    }
+
     globus_i_ftp_control_debug_printf(1,
         (stderr, "globus_l_ftp_control_send_cmd_cb() exiting\n"));
         
@@ -3418,7 +3427,12 @@ return_error:
 
     globus_object_free(error_obj);
     globus_libc_free(callback_arg);
-    
+
+    if(serverhost)
+    {
+        globus_free(serverhost);
+    }
+
     globus_i_ftp_control_debug_printf(1,
         (stderr, "globus_l_ftp_control_send_cmd_cb() exiting with error\n"));
         
