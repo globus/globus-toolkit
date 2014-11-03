@@ -128,7 +128,10 @@ install: build-stamp
 	  > debian/$(name)-setup-seg.install
 
 
-binary-indep: install
+binary-indep:
+	:
+
+binary-arch: install
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs
@@ -146,9 +149,6 @@ binary-indep: install
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
-
-binary-arch:
-#	:
 
 binary: binary-indep binary-arch
 	:
