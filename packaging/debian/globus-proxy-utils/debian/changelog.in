@@ -1,3 +1,9 @@
+globus-proxy-utils (6.9-2+gt6.@distro@) @distro@; urgency=low
+
+  * Add build dependency on OpenSSL
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Nov 2014 14:47:30 -0500
+
 globus-proxy-utils (6.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Remove unused Doxygen headers
