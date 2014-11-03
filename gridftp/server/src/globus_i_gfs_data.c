@@ -8957,10 +8957,8 @@ globus_l_gfs_data_begin_cb(
               &op->data_handle->data_channel,
               &remote_addr,
               &remote_addr_count);
-        op->remote_ip = globus_common_create_string(
-            "%d.%d.%d.%d",
-            remote_addr.host[0], remote_addr.host[1],
-            remote_addr.host[2], remote_addr.host[3]);
+        op->remote_ip = globus_libc_ints_to_contact_string(
+            remote_addr.host, remote_addr.hostlen, 0);
 
         memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
         event_reply.type = GLOBUS_GFS_EVENT_TRANSFER_CONNECTED;
