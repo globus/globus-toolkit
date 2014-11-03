@@ -1,13 +1,13 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.13
+Version:	7.14
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.13.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.14.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15
@@ -169,6 +169,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 7.14-1
+- Fix logging of IPv6 address
+
 * Tue Oct 28 2014 Globus Toolkit <support@globus.org> - 7.13-1
 - GT-477: Tracking TCP retransmits on the GridFTP server
 
