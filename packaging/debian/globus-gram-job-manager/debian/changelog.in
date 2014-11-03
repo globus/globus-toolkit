@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.24-1+gt6.@distro@) @distro@; urgency=low
+
+  * globus-personal-gatekeeper cleanups
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Nov 2014 14:01:19 -0500
+
 globus-gram-job-manager (14.23-1+gt6.@distro@) @distro@; urgency=low
 
   * doxygen fixes
