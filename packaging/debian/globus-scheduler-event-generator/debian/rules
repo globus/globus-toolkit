@@ -139,7 +139,6 @@ install: build-stamp
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*.* \
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*/* \
 	  debian/tmp$(_mandir)/man3/[Gg][Ll][Oo][Bb][Uu][Ss]*.3 \
-	  debian/tmp$(_docdir)/lib$(name)-dev/*.txt \
 	  > debian/lib$(name)-doc.install
 	ls -1 debian/tmp$(_includedir)/globus/*.h \
 	  debian/tmp$(_libdir)/*.so \

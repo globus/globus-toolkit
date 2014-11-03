@@ -1,7 +1,7 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
 Version:	5.8
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
@@ -194,11 +194,10 @@ fi
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}/html
 %{_docdir}/%{name}-%{version}/html/*
-%{_docdir}/%{name}-%{version}/*.txt
 %{_mandir}/man3/*
 
 %changelog
-* Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 5.8-1
+* Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 5.8-2
 - Manpage format mistake
 
 * Tue Sep 30 2014 Globus Toolkit <support@globus.org> - 5.7-2
