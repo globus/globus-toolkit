@@ -1,13 +1,13 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	5.7
-Release:	2%{?dist}
+Version:	5.8
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_scheduler_event_generator-5.7.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_scheduler_event_generator-5.8.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gram-protocol%{?_isa} >= 11
@@ -198,6 +198,9 @@ fi
 %{_mandir}/man3/*
 
 %changelog
+* Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 5.8-1
+- Manpage format mistake
+
 * Tue Sep 30 2014 Globus Toolkit <support@globus.org> - 5.7-2
 - Add .txt documentation to filelist
 

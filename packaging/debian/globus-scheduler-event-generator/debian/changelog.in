@@ -1,3 +1,9 @@
+globus-scheduler-event-generator (5.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Manpage format mistake
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Nov 2014 13:57:04 -0500
+
 globus-scheduler-event-generator (5.7-2+gt6.@distro@) @distro@; urgency=low
 
   * Add .txt documentation to filelist
