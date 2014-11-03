@@ -142,7 +142,7 @@ client_main(
     if (transfer_encoding != NULL)
     {
         headers[header_cnt].name = "Transfer-Encoding";
-        headers[header_cnt].name = transfer_encoding;
+        headers[header_cnt].value = transfer_encoding;
 
         header_cnt++;
 
@@ -323,7 +323,7 @@ globus_l_xio_test_server_request_callback(
         if (transfer_encoding != NULL)
         {
             response_headers[header_cnt].name = "Transfer-Encoding";
-            response_headers[header_cnt].name = transfer_encoding;
+            response_headers[header_cnt].value = transfer_encoding;
 
             header_cnt++;
         }

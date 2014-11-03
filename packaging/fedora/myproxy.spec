@@ -1,6 +1,6 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.1.4
+Version:	6.1.5
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -511,6 +511,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 6.1.5-1
+- find paths for cert and proxy utils for tests
+
 * Mon Oct 27 2014 Globus Toolkit <support@globus.org> - 6.1.4-1
 - Stop patching myproxy.sysconfig
 

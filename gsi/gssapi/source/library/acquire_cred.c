@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gssapi/source/library/acquire_cred.c Acquire Credential
+ * @file acquire_cred.c
+ * @brief Acquire Credential
  * @author Sam Meder, Sam Lang
  */
+#endif
 
 #include "gssapi.h"
 #include "gssapi_openssl.h"

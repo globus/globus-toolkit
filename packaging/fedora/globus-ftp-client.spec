@@ -1,13 +1,13 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.14
+Version:	8.15
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_client-8.14.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_client-8.15.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
@@ -141,6 +141,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 8.15-1
+- doxygen fixes
+
 * Tue Oct 28 2014 Globus Toolkit <support@globus.org> - 8.14-1
 - GT-572: globus-ftp-client performs MLSD with incorrect TYPE
 

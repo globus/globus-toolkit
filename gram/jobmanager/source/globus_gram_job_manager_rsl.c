@@ -15,7 +15,8 @@
  */
 
 /**
- * @file globus_gram_job_manager_rsl.c Job Manager RSL Manipulations
+ * @file globus_gram_job_manager_rsl.c
+ * @brief Job Manager RSL Manipulations
  */
 #include "globus_gram_job_manager.h"
 #include "globus_rsl_assist.h"

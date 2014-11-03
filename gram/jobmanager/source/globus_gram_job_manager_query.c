@@ -16,14 +16,8 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gram_job_manager_query.c Job Manager Query Handlers
- *
- * CVS Information:
- * 
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
+ * @file globus_gram_job_manager_query.c
+ * @brief Job Manager Query Handlers
  */
 #include "globus_gram_job_manager.h"
 #include "globus_callout.h"

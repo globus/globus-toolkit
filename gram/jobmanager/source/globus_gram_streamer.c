@@ -15,7 +15,8 @@
  */
 
 /*
- * @file globus_gram_streamer.c GRAM File Streamer Application
+ * @file globus_gram_streamer.c
+ * @brief GRAM File Streamer Application
  *
  * @details
  *     The globus-gram-streamer program provides support for live file
@@ -24,12 +25,6 @@
  *     the execution of the job. It is started as an additional process by
  *     the fork module and its pid is included along with the other pids that
  *     must be monitored for the job to be complete. 
- *     
- * CVS Information:
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
  */
 
 #include "globus_common.h"

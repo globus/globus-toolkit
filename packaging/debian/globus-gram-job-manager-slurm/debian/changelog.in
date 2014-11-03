@@ -1,3 +1,9 @@
+globus-gram-job-manager-slurm (2.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * doxygen fixes
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Nov 2014 13:13:24 -0500
+
 globus-gram-job-manager-slurm (2.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

@@ -1,3 +1,9 @@
+globus-gram-client (13.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * doxygen fixes
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Nov 2014 13:12:36 -0500
+
 globus-gram-client (13.10-5+gt6.@distro@) @distro@; urgency=low
 
   * GT-567: Remove requirement that GRAM5 use SSLv3

@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([myproxy],[6.1.4])
+AC_INIT([myproxy],[6.1.5])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign])
 LT_INIT([dlopen win32-dll])
@@ -10,6 +10,13 @@ AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [0])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-usage >= 3, globus-gssapi-gsi >= 9, globus-gss-assist >= 8, globus-gsi-sysconfig >= 5, globus-gsi-cert-utils >= 8, globus-gsi-proxy-core >= 6, globus-gsi-credential >= 5, globus-gsi-callback >= 4"])
+
+PKG_CHECK_EXISTS([globus-proxy-utils], [
+    GSI_PROXY_UTILS_PATH="$($PKG_CONFIG --variable=path globus-proxy-utils)"])
+AC_SUBST([GSI_PROXY_UTILS_PATH])
+PKG_CHECK_EXISTS([globus-gsi-cert-utils], [
+    GSI_CERT_UTILS_PATH="$($PKG_CONFIG --variable=path globus-gsi-cert-utils)"])
+AC_SUBST([GSI_CERT_UTILS_PATH])
 
 AC_PROG_LN_S
 

@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file gssapi/source/library/export_cred.c
+ * @file export_cred.c
  * @author Sam Lang, Sam Meder
  */
+#endif
 
 #include "globus_gsi_gss_constants.h"
 #include "globus_gsi_system_config.h"

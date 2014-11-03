@@ -16,13 +16,8 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gram_job_manager_request.c Globus Job Management Request
- *
- * CVS Information:
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
+ * @file globus_gram_job_manager_request.c
+ * @brief Globus Job Management Request
  */
 
 /*

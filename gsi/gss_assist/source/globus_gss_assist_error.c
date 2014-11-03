@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
- * @file gss_assist/source/globus_gss_assist_error.c
+ * @file globus_gss_assist_error.c
  * @brief GSS Assist Error Handling
  * @author Sam Lang, Sam Meder
  */
@@ -24,7 +26,6 @@
 #include "globus_i_gss_assist.h"
 #include "globus_gss_assist_constants.h"
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 char *
 globus_l_gsi_gss_assist_error_strings[GLOBUS_GSI_GSS_ASSIST_ERROR_LAST] =
 {

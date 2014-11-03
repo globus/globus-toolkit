@@ -1,13 +1,13 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	10.8
+Version:	10.9
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gatekeeper-10.8.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gatekeeper-10.9.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -112,6 +112,9 @@ fi
 
 
 %changelog
+* Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 10.9-1
+- doxygen fixes
+
 * Thu Sep 18 2014 Globus Toolkit <support@globus.org> - 10.8-1
 - GT-455: Incorporate OSG patches
 - GT-465: OSG patch "gatekeeper-logrotate-copytruncate.patch" for globus-gatekeeper

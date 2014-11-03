@@ -1,13 +1,13 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	9.12
+Version:	9.13
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gass_copy-9.12.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gass_copy-9.13.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15
@@ -170,6 +170,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 9.13-1
+- doxygen fixes
+
 * Mon Sep 22 2014 Globus Toolkit <support@globus.org> - 9.12-1
 - Include more manpages for API
 - Fix some Doxygen issues

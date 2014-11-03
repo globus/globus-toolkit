@@ -16,14 +16,8 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gram_job_manager_state.c Job Manager State Machine
- *
- * CVS Information:
- * 
- * $Source$
- * $Date$
- * $Revision$
- * $Author$
+ * @file globus_gram_job_manager_state.c
+ * @brief Job Manager State Machine
  */
 #include "globus_gram_job_manager.h"
 #include "globus_rsl_assist.h"

@@ -1,13 +1,13 @@
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
-Version:	13.10
-Release:	2%{?dist}
+Version:	13.11
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_client-13.10.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_client-13.11.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -142,6 +142,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 13.11-1
+- doxygen fixes
+
 * Wed Oct 22 2014 Globus Toolkit <support@globus.org> - 13.10-2
 - GT-567: Remove requirement that GRAM5 use SSLv3
 - Add libtool-ltdl-devel dependency

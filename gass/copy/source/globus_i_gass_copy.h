@@ -20,8 +20,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
- * @file globus_i_gass_copy.h Globus GASS
- * @brief Copy Library Internals
+ * @file globus_i_gass_copy.h
+ * @brief Globus GASS Copy Library Internals
  */
 
 #include "globus_gass_copy.h"

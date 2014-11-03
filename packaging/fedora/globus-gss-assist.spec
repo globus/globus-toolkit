@@ -1,13 +1,13 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	10.12
+Version:	10.13
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gss_assist-10.12.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gss_assist-10.13.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -160,6 +160,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 10.13-1
+- doxygen fixes
+
 * Thu Sep 25 2014 Globus Toolkit <support@globus.org> - 10.12-1
 - Include more manpages for API
 - Doxygen markup fixes

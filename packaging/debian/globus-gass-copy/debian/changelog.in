@@ -1,3 +1,9 @@
+globus-gass-copy (9.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * doxygen fixes
+
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Nov 2014 13:11:55 -0500
+
 globus-gass-copy (9.12-3+gt6.@distro@) @distro@; urgency=low
 
   * Add build depdendency on OpenSSL and liburi-perl

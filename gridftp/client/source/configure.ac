@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_ftp_client],[8.14],[https://globus.atlassian.net/])
+AC_INIT([globus_ftp_client],[8.15],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -14,6 +14,30 @@ LT_INIT([dlopen win32-dll])
 m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
+
+GLOBUS_COMMON_PATH=
+PKG_CHECK_EXISTS([globus-common], [
+    GLOBUS_COMMON_PATH="$($PKG_CONFIG --variable=path globus-common)"])
+AC_SUBST([GLOBUS_COMMON_PATH])
+
+if test x"$GLOBUS_COMMON_PATH" != ""; then
+    PATH="${GLOBUS_COMMON_PATH}:${PATH}"
+fi
+AC_MSG_CHECKING([Toolkit version])
+if test "X$GLOBUS_TOOLKIT_ID" = "X"; then
+    if test "X$GLOBUS_VERSION" = "X"; then
+        if command -v globus-version > /dev/null; then
+            GLOBUS_TOOLKIT_ID="`globus-version -full`"
+        else
+            GLOBUS_TOOLKIT_ID="unknown"
+        fi
+    else
+        GLOBUS_TOOLKIT_ID="Globus Toolkit $GLOBUS_VERSION"
+    fi
+fi
+AC_MSG_RESULT($GLOBUS_TOOLKIT_ID)
+AC_SUBST(GLOBUS_TOOLKIT_ID)
+
 AC_CANONICAL_HOST
 AM_CONDITIONAL([CYGPATH_W_DEFINED], [
     case $host in
