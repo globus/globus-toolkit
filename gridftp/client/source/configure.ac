@@ -15,11 +15,19 @@ m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
+GLOBUS_COMMON_PATH=
+PKG_CHECK_EXISTS([globus-common], [
+    GLOBUS_COMMON_PATH="$($PKG_CONFIG --variable=path globus-common)"])
+AC_SUBST([GLOBUS_COMMON_PATH])
+
+if test x"$GLOBUS_COMMON_PATH" != ""; then
+    PATH="${GLOBUS_COMMON_PATH}:${PATH}"
+fi
 AC_MSG_CHECKING([Toolkit version])
 if test "X$GLOBUS_TOOLKIT_ID" = "X"; then
     if test "X$GLOBUS_VERSION" = "X"; then
-        if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version; then
-            GLOBUS_TOOLKIT_ID="`${GLOBUS_LOCATION-/usr}/bin/globus-version -full`"
+        if command -v globus-version > /dev/null; then
+            GLOBUS_TOOLKIT_ID="`globus-version -full`"
         else
             GLOBUS_TOOLKIT_ID="unknown"
         fi
