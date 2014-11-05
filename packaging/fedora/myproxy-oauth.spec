@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.15
-Release:	2%{?dist}
+Version:	0.16
+Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
@@ -35,7 +35,6 @@ Requires:       python-json
 Requires:       python-hashlib
 Requires:       python-ssl
 %endif
-Requires:       python-httplib2
 %if %{rhel} < 7
 Requires:       python-sqlite2
 %endif
@@ -43,10 +42,8 @@ Requires:       python-sqlite2
 %if 0%{?suse_version} > 0
 Requires:       python-crypto
 Requires:       python-m2crypto
-Requires:       python-httplib2
 %else
 Requires:       python-crypto >= 2.2
-Requires:       python-httplib2
 %endif
 %endif
 %if 0%{?rhel} == 05
@@ -136,6 +133,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Wed Nov 05 2014 Globus Toolkit <support@globus.org> - 0.16-1
+- Remove httplib2 dependent code which is not used
+
 * Mon Aug 04 2014 Globus Toolkit <support@globus.org> - 0.15-2
 - Fix error in scriptlet to create wsgi socket dir on SLES 11
 

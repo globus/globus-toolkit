@@ -34,14 +34,12 @@ Prerequisite packages on Debian-based systems:
 * python-crypto >= 2.0 and python-m2crypto or python-crypto >= 2.2
 * python-openssl
 * python-openssl
-* python-httplib2
 
 If you want to use this with apache2 instead of the standalone server, you'll
 also need libapache2-mod-wsgi and the apache2 server with the ssl module
 enabled and the default-ssl site enabled.
 
 Prerequisite packages on RedHat-based systems
-* python-httplib2
 * pyOpenSSL
 * python-crypto
 

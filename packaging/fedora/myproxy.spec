@@ -1,6 +1,6 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.1.5
+Version:	6.1.6
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -48,9 +48,6 @@ BuildRequires:      globus-gss-assist-devel >= 8
 
 Requires:      myproxy-libs = %{version}-%{release}
 Requires:      globus-proxy-utils >= 5
-%if 0%{?suse_version} == 0
-Requires:      voms-clients
-%endif
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:	automake >= 1.11
 BuildRequires:	autoconf >= 2.60
@@ -171,6 +168,24 @@ trusted CA certificates and Certificate Revocation Lists (CRLs).
 
 Package %{name}-doc contains the MyProxy documentation.
 
+
+%package voms
+Summary:       Manage X.509 Public Key Infrastructure (PKI) security credentials 
+Group:         System Environment/Daemons
+Obsoletes:     myproxy < 5.1-3
+%if 0%{?suse_version} == 0
+Requires:      voms-clients
+%endif
+
+%description voms
+MyProxy is open source software for managing X.509 Public Key Infrastructure 
+(PKI) security credentials (certificates and private keys). MyProxy 
+combines an online credential repository with an online certificate 
+authority to allow users to securely obtain credentials when and where needed.
+Users run myproxy-logon to authenticate and obtain credentials, including 
+trusted CA certificates and Certificate Revocation Lists (CRLs). 
+
+Package %{name}-libs contains runtime libs for MyProxy to use VOMS.
 
 %prep
 %setup -q -n myproxy-%{version}
@@ -509,6 +524,9 @@ fi
 %{_includedir}/globus/verror.h
 %{_libdir}/libmyproxy.so
 %{_libdir}/pkgconfig/myproxy.pc
+
+%files voms
+%{_libdir}/libmyproxy_voms.so
 
 %changelog
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 6.1.5-1

@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([myproxy],[6.1.5])
+AC_INIT([myproxy],[6.1.6])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign])
 LT_INIT([dlopen win32-dll])
@@ -329,14 +329,21 @@ AC_ARG_WITH(voms,
 		if test "x$withval" != "xno" ; then
 		   CPPFLAGS="-I${withval}/include -I${withval}/include/voms -I${withval}/include/glite/security/voms $CPPFLAGS"
 		   LDFLAGS="-L${withval}/lib -L${withval}/lib64 $LDFLAGS"
+		   SAVE_LIBS="$LIBS"
 		   AC_CHECK_HEADER(voms_apic.h)
 		   AC_CHECK_HEADER(newformat.h)
-           AC_SEARCH_LIBS(VOMS_Init, vomsapi vomsc vomsc_$GLOBUS_FLAVOR_NAME, ,
+                   AC_SEARCH_LIBS(VOMS_Init, vomsapi vomsc vomsc_$GLOBUS_FLAVOR_NAME, ,
 			     AC_MSG_ERROR([VOMS_Init not found in libvomsapi/libvomsc]) )
-           AC_DEFINE(HAVE_VOMS)
+                   VOMS_LIBS="$LIBS"
+                   LIBS="$SAVE_LIBS"
+                   AC_SUBST([VOMS_LIBS])
+                   HAVE_VOMS=1
+                   AC_DEFINE(HAVE_VOMS)
 		fi
 	]
 )
+
+AM_CONDITIONAL([HAVE_VOMS], [test x"$HAVE_VOMS" = x1])
 
 AC_CONFIG_FILES([
 	Makefile

@@ -1,5 +1,3 @@
-#ifdef HAVE_VOMS
-
 #include "myproxy_common.h"
 
 void get_voms_proxy(myproxy_socket_attrs_t *attrs,
@@ -896,6 +894,3 @@ voms_init_delegation(myproxy_socket_attrs_t *attrs,
     }
     return 0;
 }
-
-
-#endif

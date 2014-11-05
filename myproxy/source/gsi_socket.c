@@ -5,24 +5,9 @@
  */
 
 #include "myproxy_common.h"
+#include "gsi_socket_priv.h"
+#include "dlfcn.h"
 
-struct _gsi_socket 
-{
-    int				sock;
-    int				allow_anonymous; /* Boolean */
-    /* All these variables together indicate the last error we saw */
-    char			*error_string;
-    int				error_number;
-    gss_ctx_id_t		gss_context;
-    OM_uint32			major_status;
-    OM_uint32			minor_status;
-    char			*peer_name;
-    int             limited_proxy; /* 1 if peer used a limited proxy */
-    int             max_token_len;
-    char            *certreq;   /* path to a PEM encoded cert req */
-};
-
-#define DEFAULT_SERVICE_NAME		"host"
 
 /*********************************************************************
  *
@@ -1124,74 +1109,32 @@ GSI_SOCKET_get_peer_cert_chain(GSI_SOCKET *self,
 int
 GSI_SOCKET_get_peer_fqans(GSI_SOCKET *self, char ***fqans)
 {
-#ifndef HAVE_VOMS
-   *fqans = NULL;
-   return 0;
-#else
-   char **local_fqans = NULL;
-   int ret;
-   struct vomsdata *voms_data = NULL;
-   struct voms **voms_cert  = NULL;
-   char **fqan = NULL;
-   int voms_err;
-   char *err_msg, *err_str;
-   X509 *cert = NULL;
-   STACK_OF(X509) *cert_chain = NULL;
+    static int once = 1;
+    static void *myproxy_voms_handle = 0;
+    static int (*myproxy_voms_get_peer_fqans)() = 0;
 
-   voms_data = VOMS_Init(NULL, NULL);
-   if (voms_data == NULL) {
-      GSI_SOCKET_set_error_string(self,
-                    "Failed to read VOMS attributes, VOMS_Init() failed");
-      return GSI_SOCKET_ERROR;
-   }
+    if (once)
+    {
+        once = 0;
+        myproxy_voms_handle = dlopen("libmyproxy_voms.so",
+            RTLD_LAZY|RTLD_LOCAL);
+        if (myproxy_voms_handle != NULL)
+        {
+            myproxy_voms_get_peer_fqans = dlsym(myproxy_voms_handle,
+                    "GSI_SOCKET_get_peer_fqans");
+        }
+    }
 
-   if (GSI_SOCKET_get_peer_cert_chain(self,
-                                      &cert,
-                                      &cert_chain) != GSI_SOCKET_SUCCESS) {
-      GSI_SOCKET_set_error_string(self, "Failed to read VOMS attributes, GSI_SOCKET_get_peer_cert_chain( failed");
-      return GSI_SOCKET_ERROR;
-   }
+    *fqans = NULL;
 
-   ret = VOMS_Retrieve(cert,
-                       cert_chain,
-                       RECURSE_CHAIN, voms_data, &voms_err);
-   if (ret == 0) {
-      if (voms_err == VERR_NOEXT) {
-	 /* No VOMS extensions present, return silently */
-	 ret = 0;
-	 goto end;
-      } else {
-         err_msg = VOMS_ErrorMessage(voms_data, voms_err, NULL, 0);
-         err_str = (char *)malloc(strlen(err_msg)+50);
-         snprintf(err_str, strlen(err_msg)+50,
-                  "Failed to read VOMS attributes: %s", err_msg);
-         GSI_SOCKET_set_error_string(self, err_str);
-	 free(err_msg);
-     free(err_str);
-	 ret = GSI_SOCKET_ERROR;
-	 goto end;
-      }
-   }
-
-   for (voms_cert = voms_data->data; voms_cert && *voms_cert; voms_cert++) {
-      for (fqan = (*voms_cert)->fqan; fqan && *fqan; fqan++) {
-	 add_fqan(&local_fqans, *fqan);
-      }
-   }
-
-   *fqans = local_fqans;
-   ret = 0;
-
-end:
-   if (voms_data)
-      VOMS_Destroy(voms_data);
-   if (cert)
-       X509_free(cert);
-   if (cert_chain)
-       sk_X509_pop_free(cert_chain, X509_free);
-
-   return ret;
-#endif
+    if (myproxy_voms_get_peer_fqans != NULL)
+    {
+        return myproxy_voms_get_peer_fqans(self, fqans);
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 int
