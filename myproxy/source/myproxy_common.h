@@ -35,6 +35,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #if defined(HAVE_STDINT_H)
 #include <stdint.h>

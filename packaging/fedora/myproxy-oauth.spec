@@ -34,8 +34,6 @@ Requires:       python-wsgiref
 Requires:       python-json
 Requires:       python-hashlib
 Requires:       python-ssl
-%endif
-%if %{rhel} < 7
 Requires:       python-sqlite2
 %endif
 %else

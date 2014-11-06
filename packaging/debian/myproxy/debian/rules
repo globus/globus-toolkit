@@ -170,10 +170,12 @@ install: build-stamp
 	ls -1 debian/tmp$(_bindir)/*  debian/tmp$(_mandir)/man1/* \
 		> debian/$(name).install
 	ls -1 debian/tmp$(_libdir)/*.so.* > debian/lib$(name)$(soname).install
-	ls -1 debian/tmp$(_libdir)/*.so \
+	ls -1 debian/tmp$(_libdir)/lib$(name).so \
 	      debian/tmp$(_libdir)/pkgconfig/*.pc \
 	      debian/tmp$(_includedir)/globus/* \
 		> debian/lib$(name)-dev.install
+	ls -1 debian/tmp$(_libdir)/lib$(name)_voms.so \
+		> debian/lib$(name)-voms.install
 	ls -1 debian/tmp$(_sbindir)/myproxy-server \
 	      debian/tmp$(_mandir)/man[58]/* \
 	      debian/tmp$(_sysconfdir)/$(name)-server.config \
