@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        12
+Release:        13
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -130,7 +130,10 @@ rm -rf $RPM_BUILD_ROOT
 
 %post
 # Can't do this here, as it deadlocks on SUSE
-# rpm --import %{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
+if [ ! -f /etc/SuSE-release ]; then
+    rpm --import %{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
+fi
+
 case $(lsb_release -is):$(lsb_release -rs) in
     CentOS:5* | Scientific*:5* | RedHat*:5* )
         repo=el5
@@ -212,6 +215,9 @@ fi
 %{_datadir}/*
 
 %changelog
+* Thu Nov 06 2014 Globus Toolkit <support@globus.org> - 6-13
+- Import key on non-SUSE
+
 * Thu Nov 06 2014 Globus Toolkit <support@globus.org> - 6-12
 - Fix sed substitution command line
 
