@@ -1,7 +1,7 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
 Version:	6.1.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -169,12 +169,14 @@ trusted CA certificates and Certificate Revocation Lists (CRLs).
 Package %{name}-doc contains the MyProxy documentation.
 
 
+%if 0%{?suse_version} == 0
 %package voms
 Summary:       Manage X.509 Public Key Infrastructure (PKI) security credentials 
 Group:         System Environment/Daemons
 Obsoletes:     myproxy < 5.1-3
 %if 0%{?suse_version} == 0
 Requires:      voms-clients
+%endif
 %endif
 
 %description voms
@@ -525,10 +527,15 @@ fi
 %{_libdir}/libmyproxy.so
 %{_libdir}/pkgconfig/myproxy.pc
 
+%if 0%{?suse_version} == 0
 %files voms
 %{_libdir}/libmyproxy_voms.so
+%endif
 
 %changelog
+* Thu Nov 06 2014 Globus Toolkit <support@globus.org> - 6.1.6-2
+- Make voms parts optional
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 6.1.5-1
 - find paths for cert and proxy utils for tests
 
