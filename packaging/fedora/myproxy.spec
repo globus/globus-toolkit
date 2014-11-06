@@ -1,7 +1,7 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
 Version:	6.1.6
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -177,7 +177,6 @@ Obsoletes:     myproxy < 5.1-3
 %if 0%{?suse_version} == 0
 Requires:      voms-clients
 %endif
-%endif
 
 %description voms
 MyProxy is open source software for managing X.509 Public Key Infrastructure 
@@ -188,6 +187,7 @@ Users run myproxy-logon to authenticate and obtain credentials, including
 trusted CA certificates and Certificate Revocation Lists (CRLs). 
 
 Package %{name}-libs contains runtime libs for MyProxy to use VOMS.
+%endif
 
 %prep
 %setup -q -n myproxy-%{version}
@@ -533,7 +533,7 @@ fi
 %endif
 
 %changelog
-* Thu Nov 06 2014 Globus Toolkit <support@globus.org> - 6.1.6-2
+* Thu Nov 06 2014 Globus Toolkit <support@globus.org> - 6.1.6-3
 - Make voms parts optional
 
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 6.1.5-1
