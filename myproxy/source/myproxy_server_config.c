@@ -289,10 +289,8 @@ clear_server_context(myproxy_server_context_t *context)
     context->disable_usage_stats = 0;
     free_ptr(&context->usage_stats_target);
     memset(&context->usage, 0, sizeof(context->usage));
-#ifdef HAVE_VOMS
     free_ptr(&context->voms_userconf);
     context->allow_voms_attribute_requests = 0;
-#endif
 }
 
 void

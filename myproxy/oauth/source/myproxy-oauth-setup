@@ -51,24 +51,24 @@ def public_name():
     return value
 
 """
-Register Globus Online as an OAuth client with this MyProxy OAuth Delegation
+Register Globus as an OAuth client with this MyProxy OAuth Delegation
 service. The registration consists of two steps:
-1. Get an access token from Globus Online.
-2. Trigger Globus Online client registration with this service.
+1. Get an access token from Globus.
+2. Trigger Globus client registration with this service.
 """
 def configure(username=None, pwstdin=False, oauth_server=None, myproxy_server=None, nexus_server=None):
 
     if username is None:
         default_user = getpass.getuser()
-        print "Globus Online Username [%s]: " % (default_user),
+        print "Globus Username [%s]: " % (default_user),
         username = sys.stdin.readline().strip()
         if username == '':
             username = default_user
     if pwstdin:
-        print "Globus Online Password: ",
+        print "Globus Password: ",
         password = sys.stdin.readline().strip()
     else:
-        password = getpass.getpass("Globus Online Password: ")
+        password = getpass.getpass("Globus Password: ")
 
     default_hostname = public_name()
 
@@ -137,7 +137,7 @@ def configure(username=None, pwstdin=False, oauth_server=None, myproxy_server=No
 
 def get_access_token(username, password, server):
     """
-    Get an access token from Globus Online Nexus.
+    Get an access token from Globus Nexus.
     Returns: an access token
     """
 

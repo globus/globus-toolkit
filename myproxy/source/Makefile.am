@@ -16,6 +16,7 @@ LibSources= \
 	getopt_long.c \
 	gsi_socket.c \
 	gsi_socket.h \
+	gsi_socket_priv.h \
 	gssapi.c \
 	myproxy.c \
 	myproxy.h \
@@ -59,7 +60,6 @@ LibSources= \
 	string_funcs.h \
 	verror.c \
 	verror.h \
-	vomsclient.c \
 	vomsclient.h \
 	voms_utils.c \
 	voms_utils.h \
@@ -95,7 +95,13 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = $(GLOBUS_CFLAGS)
 LDADD = $(GLOBUS_LIBS)
 
-lib_LTLIBRARIES = libmyproxy$(_GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libmyproxy$(_GLOBUS_FLAVOR_NAME).la 
+
+if HAVE_VOMS
+lib_LTLIBRARIES += libmyproxy_voms$(_GLOBUS_FLAVOR_NAME).la
+else
+EXTRA_LTLIBRARIES = libmyproxy_voms$(_GLOBUS_FLAVOR_NAME).la
+endif
 
 libmyproxy___GLOBUS_FLAVOR_NAME__la_SOURCES = $(LibSources)
 
@@ -103,6 +109,11 @@ libmyproxy___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) \
 	-version-info ${MAJOR_VERSION}:${MINOR_VERSION}:${AGE_VERSION}
 
 libmyproxy___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GLOBUS_LIBS)
+
+libmyproxy_voms___GLOBUS_FLAVOR_NAME__la_SOURCES = gsi_socket_voms.c vomsclient.c
+libmyproxy_voms___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) \
+	-avoid-version -no-undefined
+libmyproxy_voms___GLOBUS_FLAVOR_NAME__la_LIBADD = $(VOMS_LIBS) $(GLOBUS_LIBS)
 
 bin_PROGRAMS= \
 	myproxy-init \

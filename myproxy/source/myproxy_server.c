@@ -14,6 +14,9 @@
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #endif
 
+int have_voms = 0;
+void (*get_voms_proxy_impl)();
+
 static char usage[] = \
 "\n"\
 "Syntax: myproxy-server [-p|-port #] [-c config-file] [-s storage-dir] ...\n"\
@@ -184,6 +187,7 @@ main(int argc, char *argv[])
     socklen_t client_addr_len = sizeof(client_addr);
     sigset_t mysigset;
     struct pidfh *pfh = NULL;
+    void * voms_lib_handle;
 
     myproxy_socket_attrs_t         *socket_attrs;
     myproxy_server_context_t       *server_context;
@@ -195,6 +199,13 @@ main(int argc, char *argv[])
 		MYPROXY_VERSION_DATE, myproxy_version(0,0,0));
 	exit(1);
     }
+    voms_lib_handle = dlopen("libmyproxy_voms.so", RTLD_LAZY|RTLD_LOCAL);
+    if (voms_lib_handle != NULL)
+    {
+        have_voms = 1;
+        get_voms_proxy_impl = dlsym(voms_lib_handle, "get_voms_proxy");
+    }
+
 
     socket_attrs    = malloc(sizeof(*socket_attrs));
     memset(socket_attrs, 0, sizeof(*socket_attrs));
@@ -816,15 +827,14 @@ handle_client(myproxy_socket_attrs_t *attrs,
                 myproxy_log_verror(); verror_clear();
             }
         }
-#ifdef HAVE_VOMS
-        if (client_request->voname != NULL &&
+        if (have_voms != 0 && get_voms_proxy_impl != NULL &&
+            client_request->voname != NULL &&
 	    context->allow_voms_attribute_requests) {
-            get_voms_proxy(attrs, client_creds, client_request,
+            get_voms_proxy_impl(attrs, client_creds, client_request,
                            server_response, 
                            context);
         }
         else
-#endif
 	    get_proxy(attrs, client_creds, client_request, server_response,
 		      context->max_proxy_lifetime);
 	  }

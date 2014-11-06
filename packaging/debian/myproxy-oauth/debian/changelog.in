@@ -1,3 +1,9 @@
+myproxy-oauth (0.16-1+gt6.@distro@) @distro@; urgency=low
+
+  * Remove python-httplib2 dependency in unused code
+
+ -- Globus Toolkit <support@globus.org>  Wed, 05 Nov 2014 14:28:51 -0500
+
 myproxy-oauth (0.15-4+gt6.@distro@) @distro@; urgency=low
 
   * Add python build dependency
