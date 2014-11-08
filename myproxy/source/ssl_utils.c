@@ -2146,12 +2146,13 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    X509_LOOKUP_add_dir(lookup, certdir, X509_FILETYPE_PEM);
    X509_STORE_CTX_init(&csc, cert_store, chain->certificate, NULL);
    
-   sslContext = SSL_CTX_new(SSLv3_server_method());
+   sslContext = SSL_CTX_new(SSLv23_server_method());
    if (sslContext == NULL) {
       verror_put_string("Initializing SSL_CTX");
       ssl_error_to_verror();
       goto end;
    }
+   SSL_CTX_set_options(sslContext, SSL_OP_NO_SSLv2);
 
    SSL_CTX_set_purpose(sslContext, X509_PURPOSE_ANY);
 

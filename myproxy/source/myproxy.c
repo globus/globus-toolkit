@@ -544,8 +544,9 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
     }
 
     /* get trust root(s) from the myproxy-server */
-    ctx = SSL_CTX_new(SSLv3_client_method());
-    SSL_CTX_set_options(ctx, SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
+    ctx = SSL_CTX_new(SSLv23_client_method());
+    SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2 |
+			SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
 
     if (!(sbio = BIO_new_ssl_connect(ctx))) goto error;
     if ( (sockfd = get_connected_myproxy_host_socket(
