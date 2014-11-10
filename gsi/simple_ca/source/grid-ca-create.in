@@ -852,7 +852,7 @@ get_ca_lifetime CA_CERT_DAYS
 save_ca_settings "${GRID_CA_DIR}" "$grid_ca_subject" "$grid_ca_email"
 generate_ca_certificate "${GRID_CA_DIR}" "${grid_ca_subject}"
 generate_signing_policy "${GRID_CA_DIR}" "${grid_ca_subject}"
-mkdir -m 0755 -p "${sysconfdir}/grid-security/certificates/" 2> /dev/null
+mkdir -m 0755 -p "${sysconfdir}/grid-security/certificates/" 2> /dev/null || :
 if [ -w "${sysconfdir}/grid-security/certificates/." ]; then
     setup_grid_security_dir "${GRID_CA_DIR}" "${sysconfdir}/grid-security/certificates"
 elif [ -w "${datadir}/certificates" ]; then
