@@ -216,6 +216,10 @@ myproxy-oauth-setup {-s | --stdin} {-u USER | --user=USER}
                     {-n SERVER| --nexus-api-server=SERVER}"""
 
 def selinux_permissions():
+    save_uid = os.geteuid()
+    if os.getuid() == 0:
+        os.seteuid(0)
+
     semanage = which("semanage")
     restorecon = which("restorecon")
     if semanage is not None:
@@ -246,6 +250,8 @@ def selinux_permissions():
         if err is not None:
             print >>sys.stderr, err
 
+    if os.geteuid() == 0 and save_uid != 0:
+        os.seteuid(save_uid)
 def which(name):
     exe_path = None
     path_to_check = os.environ['PATH'].split(os.pathsep)
@@ -261,9 +267,9 @@ def which(name):
 
 if __name__ == '__main__':
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hsu:o:m:n:",
+        opts, args = getopt.getopt(sys.argv[1:], "hsu:o:m:n:i:",
                 ["help", "stdin", "user=", "oauth-server=", "myproxy-server=",
-                 "nexus-api-server="])
+                 "nexus-api-server=", "id="])
     except getopt.GetoptError, e:
         print >>sys.stderr, "Invalid option " + e.opt
         usage(outstream=sys.stderr)
@@ -274,6 +280,7 @@ if __name__ == '__main__':
     oauth_server = None
     myproxy_server = None
     nexus_server = None
+    userid = None
 
     for (o, val) in opts:
         if o in ['-h', '--help']:
@@ -289,10 +296,13 @@ if __name__ == '__main__':
             myproxy_server = val
         elif o in ['-n', '--nexus-api-server']:
             nexus_server = val
+        elif o in ['-i', '--id']:
+            userid = int(val)
         else:
             print >>sys.stderr, "Unknown option %s" %(o)
             sys.exit(1)
 
+    os.seteuid(userid)
     configure(username=user, pwstdin=pwstdin, oauth_server=oauth_server,
                 myproxy_server=myproxy_server, nexus_server=nexus_server)
 # vim: syntax=python: nospell:

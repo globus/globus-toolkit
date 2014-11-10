@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.16
+Version:	0.17
 Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
@@ -77,9 +77,9 @@ pythonpath="/usr/share/%{name}"
 cat > $RPM_BUILD_ROOT%{_sbindir}/myproxy-oauth-setup <<EOF 
 #! /bin/sh
 if [ "\$(id -u)" = 0 ]; then
-    exec /bin/su -m myproxyoauth \$0 -- "\$@"
+    idarg="-i \$(id -u myproxyoauth)"
 fi
-exec /usr/bin/env PYTHONPATH="$pythonpath" python /usr/share/%{name}/myproxy-oauth-setup "\$@"
+exec /usr/bin/env PYTHONPATH="$pythonpath" python /usr/share/%{name}/myproxy-oauth-setup "\$@" \${idarg}
 EOF
 chmod a+x $RPM_BUILD_ROOT%{_sbindir}/myproxy-oauth-setup
 %if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
@@ -131,6 +131,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Mon Nov 10 2014 Globus Toolkit <support@globus.org> - 0.17-1
+- Run selinux commands as root
+
 * Wed Nov 05 2014 Globus Toolkit <support@globus.org> - 0.16-1
 - Remove httplib2 dependent code which is not used
 
