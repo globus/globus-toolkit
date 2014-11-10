@@ -17,22 +17,9 @@
 # 
 
 
-BEGIN
-{
-    if(exists $ENV{GLOBUS_LOCATION})
-    {
-        unshift(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
-    }
-    else
-    {
-        unshift(@INC, '@perlmoduledir@');
-    }
-}
-
 use strict;
 use warnings;
 
-use Globus::Core::Paths;
 use Getopt::Long;
 use English;
 use File::Path;
@@ -49,6 +36,11 @@ if(!GetOptions("help|h" => \$opt_help,
 if(defined($opt_help))
 {
     usage(0);
+}
+
+my $GLOBUS_LOCATION = '@prefix@';
+if (exists $ENV{GLOBUS_LOCATION}) {
+    $GLOBUS_LOCATION = $ENV{GLOBUS_LOCATION};
 }
 
 ######################################################
@@ -72,7 +64,7 @@ my $sshftp = <<EOF;
 # 
 
 if [ -z "\$GLOBUS_LOCATION" ]; then
-    GLOBUS_LOCATION=$Globus::Core::Paths::prefix
+    GLOBUS_LOCATION=$GLOBUS_LOCATION
     export GLOBUS_LOCATION
 fi
 
