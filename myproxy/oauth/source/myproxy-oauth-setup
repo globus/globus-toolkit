@@ -27,8 +27,6 @@ import urllib
 from subprocess import Popen, PIPE
 import sys
 
-from myproxyoauth.database import db_session, Admin, Client
-
 def public_name():
     """
     Try to guess the public host name of this machine. If this is
@@ -58,6 +56,9 @@ service. The registration consists of two steps:
 """
 def configure(username=None, pwstdin=False, oauth_server=None, myproxy_server=None, nexus_server=None):
 
+    # Delay this until after seteuid() so that the database file is owned by 
+    # the specified user
+    from myproxyoauth.database import db_session, Admin, Client
     if username is None:
         default_user = getpass.getuser()
         print "Globus Username [%s]: " % (default_user),
@@ -302,7 +303,9 @@ if __name__ == '__main__':
             print >>sys.stderr, "Unknown option %s" %(o)
             sys.exit(1)
 
-    os.seteuid(userid)
+    if userid is not None:
+        os.seteuid(userid)
+
     configure(username=user, pwstdin=pwstdin, oauth_server=oauth_server,
                 myproxy_server=myproxy_server, nexus_server=nexus_server)
 # vim: syntax=python: nospell:

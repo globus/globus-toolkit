@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.17
+Version:	0.18
 Release:	1%{?dist}
 Summary:	MyProxy OAuth Delegation Serice
 
@@ -131,8 +131,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
-* Mon Nov 10 2014 Globus Toolkit <support@globus.org> - 0.17-1
-- Run selinux commands as root
+* Mon Nov 11 2014 Globus Toolkit <support@globus.org> - 0.18-1
+- Run selinux commands as root, run database commands as myproxyoauth
 
 * Wed Nov 05 2014 Globus Toolkit <support@globus.org> - 0.16-1
 - Remove httplib2 dependent code which is not used
