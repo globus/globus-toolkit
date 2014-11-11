@@ -1,4 +1,4 @@
-myproxy-oauth (0.18-1+gt6.@distro@) @distro@; urgency=low
+myproxy-oauth (0.18-2+gt6.@distro@) @distro@; urgency=low
 
   * Run selinux commands as root
   * Run database commands as myproxyoauth
