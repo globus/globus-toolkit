@@ -67,7 +67,10 @@ install-stamp: build-stamp
 install: install-stamp
 	:
 
+binary-indep: install
+	dh $@
+
 binary: install
 	dh $@
 
-.PHONY: clean build install binary
+.PHONY: clean build install binary binary-indep

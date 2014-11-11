@@ -1,11 +1,12 @@
-myproxy-oauth (0.18-2+gt6.@distro@) @distro@; urgency=low
+myproxy-oauth (0.18-3+gt6.@distro@) @distro@; urgency=low
 
   * Run selinux commands as root
   * Run database commands as myproxyoauth
   * Remove python-httplib2 dependency in unused code
   * Add python build dependency
+  * build and install when building with -A
 
- -- Globus Toolkit <support@globus.org>  Tue, 11 Nov 2014 09:16:08 -0500
+ -- Globus Toolkit <support@globus.org>  Tue, 11 Nov 2014 17:07:07 -0500
 
 myproxy-oauth (0.15-3+gt6.@distro@) @distro@; urgency=low
 
