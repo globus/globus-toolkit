@@ -1,0 +1,11 @@
+service gsiftp
+{
+    socket_type = stream
+    protocol    = tcp
+    wait        = no
+    user        = root
+    instances   = UNLIMITED
+    cps         = 400 10
+    server      = @prefix_resolved@/sbin/gridftp-hdfs-inetd
+    disable     = yes
+}

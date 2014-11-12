@@ -1,0 +1,96 @@
+
+# This file is designed to be sourced in bash to configure the 
+# basic Hadoop environment.
+
+HADOOP_CONF_DIR=/etc/hadoop-0.20/conf
+HADOOP_HOME=/usr/lib/hadoop-0.20
+
+source $HADOOP_CONF_DIR/hadoop-env.sh
+
+if [ "x$JAVA_HOME" = "x" ]; then
+JAVA_HOME=/usr/java/default
+fi
+# Often, libjvm gets hidden off the path.
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/i386:$JAVA_HOME/jre/lib/i386/server:$JAVA_HOME/jre/lib/amd64:$JAVA_HOME/jre/lib/amd64/server
+
+# The following is the CLASSPATH building logic from the hadoop script:
+# CLASSPATH initially contains $HADOOP_CONF_DIR
+CLASSPATH="${HADOOP_CONF_DIR}"
+CLASSPATH=${CLASSPATH}:$JAVA_HOME/lib/tools.jar
+
+# for developers, add Hadoop classes to CLASSPATH
+if [ -d "$HADOOP_HOME/build/classes" ]; then
+  CLASSPATH=${CLASSPATH}:$HADOOP_HOME/build/classes
+fi
+if [ -d "$HADOOP_HOME/build/webapps" ]; then
+  CLASSPATH=${CLASSPATH}:$HADOOP_HOME/build
+fi
+if [ -d "$HADOOP_HOME/build/test/classes" ]; then
+  CLASSPATH=${CLASSPATH}:$HADOOP_HOME/build/test/classes
+fi
+if [ -d "$HADOOP_HOME/build/tools" ]; then
+  CLASSPATH=${CLASSPATH}:$HADOOP_HOME/build/tools
+fi
+
+# so that filenames w/ spaces are handled correctly in loops below
+IFS=
+
+# for releases, add core hadoop jar & webapps to CLASSPATH
+if [ -d "$HADOOP_HOME/webapps" ]; then
+  CLASSPATH=${CLASSPATH}:$HADOOP_HOME
+fi
+for f in $HADOOP_HOME/hadoop-*-core.jar; do
+  CLASSPATH=${CLASSPATH}:$f;
+done
+
+# add libs to CLASSPATH
+for f in $HADOOP_HOME/lib/*.jar; do
+  CLASSPATH=${CLASSPATH}:$f;
+done
+
+if [ -d "$HADOOP_HOME/build/ivy/lib/Hadoop/common" ]; then
+for f in $HADOOP_HOME/build/ivy/lib/Hadoop/common/*.jar; do
+  CLASSPATH=${CLASSPATH}:$f;
+done
+fi
+
+for f in $HADOOP_HOME/lib/jsp-2.1/*.jar; do
+  CLASSPATH=${CLASSPATH}:$f;
+done
+
+# add user-specified CLASSPATH last
+if [ "$HADOOP_CLASSPATH" != "" ]; then
+  CLASSPATH=${CLASSPATH}:${HADOOP_CLASSPATH}
+fi
+
+export CLASSPATH=$CLASSPATH
+
+unset IFS
+
+# Configurations for the authz
+# Only applies to the root user due to ownership issues
+if [ $UID -eq 0 ]; then
+  # Set defaults if they're not already available
+  # LCAS configuration
+  export LCAS_LOG_LEVEL=${LCAS_LOG_LEVEL:=0}
+  export LCAS_DEBUG_LEVEL=${LCAS_DEBUG_LEVEL:=0}
+  export LCAS_DB_FILE=${LCAS_DB_FILE:=/etc/lcas/lcas.db}
+  export LCAS_DIR=${LCAS_DIR:=/etc/lcas}
+  export LCAS_MOD_HOME=${LCAS_MOD_HOME:=/usr/lib64/modules}
+ 
+  # LCMAPS configuration
+  export LCMAPS_LOG_LEVEL=${LCMAPS_LOG_LEVEL:=0}
+  export LCMAPS_DEBUG_LEVEL=${LCMAPS_DEBUG_LEVEL:=0}
+  export LCMAPS_DB_FILE=${LCMAPS_DB_FILE:=/etc/lcmaps.db}
+  export LCMAPS_DIR=${LCMAPS_DIR:=/etc/lcmaps}
+  export LCMAPS_MOD_HOME=${LCMAPS_MOD_HOME:=/usr/lib64/modules}
+  export LCMAPS_POLICY_NAME=${LCMAPS_POLICY_NAME:=globus_gridftp_mapping}
+fi
+
+# New gridftp.conf override in GT 5.2
+#export GRIDFTP_CONF=/etc/gridftp-hdfs/gridftp.conf
+export conf=/etc/gridftp-hdfs/gridftp.conf
+
+# Allow non-java-based signal handling
+export LD_PRELOAD=libjsig.so
+

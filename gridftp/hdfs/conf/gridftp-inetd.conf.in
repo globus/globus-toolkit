@@ -1,0 +1,6 @@
+inetd 1
+log_level ERROR,WARN,INFO
+log_single @logdir@/gridftp-auth.log
+log_transfer @logdir@/gridftp.log
+blocksize 1048576
+load_dsi_module hdfs
