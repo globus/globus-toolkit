@@ -10,6 +10,8 @@
 #include <sys/syscall.h>
 #include <signal.h>
 #include <execinfo.h>
+#define __USE_XOPEN_EXTENDED
+#include <ftw.h>
 
 #include "gridftp_hdfs.h"
 
@@ -137,6 +139,52 @@ gridftp_check_core()
     }
 }
 
+static char *hdfs_classpath = NULL;
+
+static
+int
+hdfs_add_jar(
+    const char * pathname,
+    const struct stat *statbuf,
+    int type,
+    struct FTW *info)
+{
+    long envmax = sysconf(_SC_ARG_MAX);
+    char * ext;
+
+    if (hdfs_classpath == NULL)
+    {
+        if (envmax < 0)
+        {
+            envmax = 4096;
+        }
+
+        hdfs_classpath = malloc(envmax);
+        if (hdfs_classpath == NULL)
+        {
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Unable to allocate classpath");
+            return ENOMEM;
+        }
+        hdfs_classpath[0] = 0;
+    }
+    if (type != FTW_F)
+    {
+        return 0;
+    }
+    if ((strlen(hdfs_classpath) + strlen(pathname) + 2) > envmax)
+    {
+        globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Unable to populate classpath");
+        return E2BIG;
+    }
+    ext = strrchr(pathname, '.');
+    if (ext && strcmp(ext, ".jar") == 0)
+    {
+        strcat(hdfs_classpath, pathname);
+        strcat(hdfs_classpath, ":");
+    }
+    return 0;
+}
+
 /*
  *  Called when the HDFS module is activated.
  *  Completely boilerplate.
@@ -144,6 +192,22 @@ gridftp_check_core()
 int
 hdfs_activate(void)
 {
+    const char *hadoopdir = "/usr/lib/hadoop";
+    const char *hdfsdir = "/usr/lib/hadoop-hdfs";
+    char *cp=NULL;
+    size_t cplen = 0;
+
+    nftw(hadoopdir, hdfs_add_jar, 4, FTW_PHYS);
+    nftw(hdfsdir, hdfs_add_jar, 4, FTW_PHYS);
+    if (hdfs_classpath != NULL)
+    {
+        if (strlen(hdfs_classpath) > 1)
+        {
+            hdfs_classpath[strlen(hdfs_classpath)-1] = 0;
+        }
+        setenv("CLASSPATH", hdfs_classpath, 1);
+    }
+
     globus_extension_registry_add(
         GLOBUS_GFS_DSI_REGISTRY,
         "hdfs",
@@ -215,7 +279,7 @@ hdfs_command(
     globus_gfs_command_info_t *         cmd_info,
     void *                              user_arg)
 {
-    globus_result_t                    result;
+    globus_result_t                    result = GLOBUS_FAILURE;
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
     char *                             PathName;
     GlobusGFSName(hdfs_command);
@@ -259,7 +323,7 @@ hdfs_command(
     case GLOBUS_GFS_CMD_DELE:
 {
         errno = 0;
-        if (hdfsDelete(hdfs_handle->fs, PathName) == -1) {
+        if (hdfsDelete(hdfs_handle->fs, PathName,0) == -1) {
             if (errno) {
                 result = GlobusGFSErrorSystemError("unlink", errno);
             } else {

@@ -3,16 +3,16 @@
 # GridFTP-HDFS will automatically strip of a mount point
 # This is to help smooth over differences between the SRM and GridFTP view of
 # the filesystem.
-#export GRIDFTP_HDFS_MOUNT_POINT=/mnt/hadoop
+#$GRIDFTP_HDFS_MOUNT_POINT /mnt/hadoop
 
 # GridFTP-HDFS will buffer blocks in memory to re-order the data stream.
 # By default, each block is 1MB.
-#export GRIDFTP_BUFFER_COUNT=200
+#$GRIDFTP_BUFFER_COUNT 200
 
 # If we hit memory limits when buffering, GridFTP-HDFS will dump its
 # buffers to a file in $TMPDIR, up to the limit specified below.
-#export GRIDFTP_FILE_BUFFER_COUNT=1500
-#export TMPDIR=/tmp
+#$GRIDFTP_FILE_BUFFER_COUNT 1500
+#$TMPDIR /tmp
 
 # Note that Nebraska provides a custom globus-ftp-control that prevents
 # out-of-control data stream re-ordering and prevents the file buffer
@@ -21,26 +21,20 @@
 # The replica-map file controls the number of replicas GridFTP-HDFS will
 # request for the files it writes; if not specified, it will use the default
 # in hdfs-site.xml.
-#export GRIDFTP_HDFS_REPLICA_MAP=/etc/gridftp-hdfs/replica-map.conf
+$GRIDFTP_HDFS_REPLICA_MAP /etc/gridftp-hdfs/replica-map.conf
 
 # Every time GridFTP-HDFS recieves a block, it can write this fact out to
 # syslog.  This allows the site to build a simple monitoring system for
 # transfer progress, but is admittedly rather esoteric.
-#export GRIDFTP_SYSLOG=1
+#$GRIDFTP_SYSLOG 1
 
 # Comment out the following line to disable on-the-fly GridFTP checksum calculations
 # Alternately, remove one or more checksum format from the list to reduce CPU usage.
-export GRIDFTP_HDFS_CHECKSUMS="MD5,ADLER32,CRC32,CKSUM"
+#$GRIDFTP_HDFS_CHECKSUMS "MD5,ADLER32,CRC32,CKSUM"
 
 # By default, reduce the amount of memory that HDFS uses for its embedded JVM.
 # This is typically a safe setting as long as the process only has one file
 # transfer at a time.
-if test "x$LIBHDFS_OPTS" = "x"; then
-  export LIBHDFS_OPTS=-Xmx64m
-fi
+$LIBHDFS_OPTS -Xmx64m
 
-# Uncomment to allow core files; you will probably also want to do
-# echo "/tmp/core" > /proc/sys/kernel/core_pattern
-# So the process has a writable directory for its core file (it isn't root)
-#ulimit -c unlimited
-
+load_dsi_module hdfs

@@ -40,6 +40,7 @@ typedef struct globus_l_gfs_hdfs_handle_s
     char *                              pathname;
     hdfsFS                              fs;
     hdfsFile                            fd;
+    globus_off_t                        file_size; // size of the file for reads
     globus_size_t                       block_size;
     globus_off_t                        op_length; // Length of the requested read/write size
     globus_off_t                        offset;

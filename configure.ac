@@ -103,7 +103,8 @@ $1-osx-pkg: \$($1-osx-pkg)
 ])
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
     ifelse([$1], [gsi_openssh], [], [
-            m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])dnl
+        ifelse([$1], [gridftp_hdfs], [], [
+                m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])])dnl
     m4_append_uniq([GT_BUNDLES_MACRO],[$4], [ ])dnl
     m4_append([GT_BUNDLES_]m4_translit($4,[-],[_])[_MACRO],[$1-stamp], [ ])dnl
     m4_append([GT_BUNDLE_PACKAGES]m4_translit($4,[-],[_]),[$1], [ ])dnl
@@ -316,6 +317,8 @@ GT_PACKAGE([globus_gram_job_manager],[gram/jobmanager/source],
       globus_xio_popen_driver  globus_rsl
       globus_gram_job_manager_callout_error globus_scheduler_event_generator
       globus_usage globus_gram_client_tools], [gram5-server])
+GT_PACKAGE([gridftp_hdfs],[gridftp/hdfs],
+    [ globus_gridftp_server ], [gridftp-hdfs])
 PKG_CONFIG_PATH="[${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}]GT_PKGCONFIG_DIRS_MACRO"
 export PKG_CONFIG_PATH
 
@@ -408,7 +411,10 @@ m4_foreach([bundle], m4_split(GT_BUNDLES_MACRO),
         [ifelse(
             m4_expand(m4_substr(bundle, 0, 3)), [udt],
             [m4_append([GT_DISABLED_BUNDLES_MACRO], bundle, [ ])],dnl
-            [m4_append([GT_ENABLED_BUNDLES_MACRO], bundle, [ ])])])])
+            [ifelse(
+                m4_expand(m4_substr(bundle, 0, 12)), [gridftp-hdfs],
+                [m4_append([GT_DISABLED_BUNDLES_MACRO], bundle, [ ])],dnl
+                [m4_append([GT_ENABLED_BUNDLES_MACRO], bundle, [ ])])])])])
 
 enabled_buns="GT_ENABLED_BUNDLES_MACRO"
 m4_foreach([bundle],
@@ -530,6 +536,9 @@ AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
 
 if test x"$gsi_openssh_enabled" = x"yes"; then
     AC_CONFIG_SUBDIRS(gsi_openssh/source)
+fi
+if test x"$gridft_hdfs_enabled" = x"yes"; then
+    AC_CONFIG_SUBDIRS(gridftp/hdfs)
 fi
 
 AC_OUTPUT
