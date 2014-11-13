@@ -116,13 +116,13 @@ install -Dpm 644 %{SOURCE0} \
   $RPM_BUILD_ROOT%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
 
 for repo in $(cat pkg_repos); do
-    install -dm 755 $RPM_BUILD_ROOT%{_datadir}
+    install -dm 755 $RPM_BUILD_ROOT%{_datadir}/globus/repo
     install -pm 644 globus-toolkit-6-stable-${repo}.repo \
-      $RPM_BUILD_ROOT%{_datadir}
+      $RPM_BUILD_ROOT%{_datadir}/globus/repo
     install -pm 644 globus-toolkit-6-testing-${repo}.repo \
-      $RPM_BUILD_ROOT%{_datadir}
+      $RPM_BUILD_ROOT%{_datadir}/globus/repo
     install -pm 644 globus-toolkit-6-unstable-${repo}.repo \
-      $RPM_BUILD_ROOT%{_datadir}
+      $RPM_BUILD_ROOT%{_datadir}/globus/repo
 done
 
 %clean
@@ -158,23 +158,23 @@ esac
 
 if command -v zypper > /dev/null; then
     sed 's/enabled=0/enabled=1/' \
-        < %{_datadir}/globus-toolkit-6-stable-${repo}.repo \
+        < %{_datadir}/globus/repo/globus-toolkit-6-stable-${repo}.repo \
         > %{_sysconfdir}/zypp/repos.d/globus-toolkit-6-stable-${repo}.repo 
-    cp %{_datadir}/globus-toolkit-6-testing-${repo}.repo %{_sysconfdir}/zypp/repos.d
-    cp %{_datadir}/globus-toolkit-6-unstable-${repo}.repo %{_sysconfdir}/zypp/repos.d
+    cp %{_datadir}/globus/repo/globus-toolkit-6-testing-${repo}.repo %{_sysconfdir}/zypp/repos.d
+    cp %{_datadir}/globus/repo/globus-toolkit-6-unstable-${repo}.repo %{_sysconfdir}/zypp/repos.d
 elif command -v yum-config-manager > /dev/null; then
-    yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-stable-${repo}.repo
-    yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-testing-${repo}.repo
-    yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-unstable-${repo}.repo
+    yum-config-manager --add-repo file://%{_datadir}/globus/repo/globus-toolkit-6-stable-${repo}.repo
+    yum-config-manager --add-repo file://%{_datadir}/globus/repo/globus-toolkit-6-testing-${repo}.repo
+    yum-config-manager --add-repo file://%{_datadir}/globus/repo/globus-toolkit-6-unstable-${repo}.repo
     yum-config-manager --enable Globus-Toolkit-6-$repo > /dev/null
 elif [ -d %{_sysconfdir}/yum.repos.d ] ; then
     sed 's/enabled=0/enabled=1/' \
-        < %{_datadir}/globus-toolkit-6-stable-${repo}.repo \
+        < %{_datadir}/globus/repo/globus-toolkit-6-stable-${repo}.repo \
         > %{_sysconfdir}/yum.repos.d/globus-toolkit-6-stable-${repo}.repo 
-    cp %{_datadir}/globus-toolkit-6-testing-${repo}.repo %{_sysconfdir}/yum.repos.d
-    cp %{_datadir}/globus-toolkit-6-unstable-${repo}.repo %{_sysconfdir}/yum.repos.d
+    cp %{_datadir}/globus/repo/globus-toolkit-6-testing-${repo}.repo %{_sysconfdir}/yum.repos.d
+    cp %{_datadir}/globus/repo/globus-toolkit-6-unstable-${repo}.repo %{_sysconfdir}/yum.repos.d
 else
-    echo "Copy the Globus Repository Definition from %{_datadir} to your system's repo configuration"
+    echo "Copy the Globus Repository Definition from %{_datadir}/globus/repo/ to your system's repo configuration"
 fi
 
 %preun
@@ -211,7 +211,7 @@ fi
 %files
 %defattr(-,root,root,-)
 %{_sysconfdir}/pki/rpm-gpg/*
-%{_datadir}/*
+%{_datadir}/globus/repo/*
 
 %changelog
 * Thu Nov 13 2014 Globus Toolkit <support@globus.org> - 6-14
