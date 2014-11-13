@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        13
+Release:        14
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -157,20 +157,22 @@ case $(lsb_release -is):$(lsb_release -rs) in
 esac
 
 if command -v zypper > /dev/null; then
-    zypper ar %{_datadir}/globus-toolkit-6-stable-${repo}.repo
-    zypper ar -d %{_datadir}/globus-toolkit-6-testing-${repo}.repo
-    zypper ar -d %{_datadir}/globus-toolkit-6-unstable-${repo}.repo
+    sed 's/enabled=0/enabled=1/' \
+        < %{_datadir}/globus-toolkit-6-stable-${repo}.repo \
+        > %{_sysconfdir}/zypp/repos.d/globus-toolkit-6-stable-${repo}.repo 
+    cp %{_datadir}/globus-toolkit-6-testing-${repo}.repo %{_sysconfdir}/zypp/repos.d
+    cp %{_datadir}/globus-toolkit-6-unstable-${repo}.repo %{_sysconfdir}/zypp/repos.d
 elif command -v yum-config-manager > /dev/null; then
     yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-stable-${repo}.repo
     yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-testing-${repo}.repo
     yum-config-manager --add-repo file://%{_datadir}/globus-toolkit-6-unstable-${repo}.repo
     yum-config-manager --enable Globus-Toolkit-6-$repo > /dev/null
-elif [ -d /etc/yum.repos.d ] ; then
+elif [ -d %{_sysconfdir}/yum.repos.d ] ; then
     sed 's/enabled=0/enabled=1/' \
         < %{_datadir}/globus-toolkit-6-stable-${repo}.repo \
-        > /etc/yum.repos.d/globus-toolkit-6-stable-${repo}.repo 
-    cp %{_datadir}/globus-toolkit-6-testing-${repo}.repo /etc/yum.repos.d
-    cp %{_datadir}/globus-toolkit-6-unstable-${repo}.repo /etc/yum.repos.d
+        > %{_sysconfdir}/yum.repos.d/globus-toolkit-6-stable-${repo}.repo 
+    cp %{_datadir}/globus-toolkit-6-testing-${repo}.repo %{_sysconfdir}/yum.repos.d
+    cp %{_datadir}/globus-toolkit-6-unstable-${repo}.repo %{_sysconfdir}/yum.repos.d
 else
     echo "Copy the Globus Repository Definition from %{_datadir} to your system's repo configuration"
 fi
@@ -195,16 +197,13 @@ case $(lsb_release -is):$(lsb_release -rs) in
 esac
 
 if command -v zypper > /dev/null; then
-    for reponame in Globus-Toolkit-6 \
-                    Globus-Toolkit-6-Testing \
-                    Globus-Toolkit-6-Unstable; do
-        zypper rr ${reponame}-${repo}
-        zypper rr ${reponame}-Source-${repo}
-    done
-elif [ -d /etc/yum.repos.d ]; then
-    rm -f /etc/yum.repos.d/globus-toolkit-6-stable-${repo}.repo
-    rm -f /etc/yum.repos.d/globus-toolkit-6-testing-${repo}.repo
-    rm -f /etc/yum.repos.d/globus-toolkit-6-unstable-${repo}.repo
+    rm -f %{_sysconfdir}/zypp/repos.d/globus-toolkit-6-stable-${repo}.repo 
+    rm -f %{_sysconfdir}/zypp/repos.d/globus-toolkit-6-testing-${repo}.repo 
+    rm -f %{_sysconfdir}/zypp/repos.d/globus-toolkit-6-unstable-${repo}.repo 
+elif [ -d %{_sysconfdir}/yum.repos.d ]; then
+    rm -f %{_sysconfdir}/yum.repos.d/globus-toolkit-6-stable-${repo}.repo
+    rm -f %{_sysconfdir}/yum.repos.d/globus-toolkit-6-testing-${repo}.repo
+    rm -f %{_sysconfdir}/yum.repos.d/globus-toolkit-6-unstable-${repo}.repo
 else
     echo "Remove the Globus Repository defintion from your system configuration"
 fi
@@ -215,6 +214,9 @@ fi
 %{_datadir}/*
 
 %changelog
+* Thu Nov 13 2014 Globus Toolkit <support@globus.org> - 6-14
+- Don't use zypper from postinstall on SUSE
+
 * Thu Nov 06 2014 Globus Toolkit <support@globus.org> - 6-13
 - Import key on non-SUSE
 
