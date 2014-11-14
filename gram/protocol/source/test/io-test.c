@@ -80,6 +80,8 @@ int main(
     monitor.job_failure_code[1] = 0;
     monitor.error = 0;
 
+    globus_gram_protocol_set_interface("localhost");
+
     rc = globus_gram_protocol_allow_attach(
 	    &server_callback_contact,
 	    server_callback,

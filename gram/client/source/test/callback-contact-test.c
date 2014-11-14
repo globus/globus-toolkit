@@ -37,6 +37,11 @@ add_remove_callback_contact_test(void)
     {
 	return rc;
     }
+    rc = globus_gram_protocol_set_interface("localhost");
+    if(rc != GLOBUS_SUCCESS)
+    {
+	return rc;
+    }
     rc = globus_gram_client_callback_allow(
 	    callback_func,
 	    GLOBUS_NULL,
@@ -86,6 +91,11 @@ remove_callback_contacts_out_of_order(void)
     int rc;
 
     rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	return rc;
+    }
+    rc = globus_gram_protocol_set_interface("localhost");
     if(rc != GLOBUS_SUCCESS)
     {
 	return rc;
@@ -146,6 +156,11 @@ deactivate_before_callback_disallow(void)
     char * callback_contact;
 
     rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	return rc;
+    }
+    rc = globus_gram_protocol_set_interface("localhost");
     if(rc != GLOBUS_SUCCESS)
     {
 	return rc;

@@ -262,6 +262,7 @@ globus_gram_protocol_allow_attach(
 {
     int					rc = GLOBUS_SUCCESS;
     char				hostnamebuf[256];
+    char *				interface = GLOBUS_NULL;
     unsigned short			port;
     globus_result_t			res;
     globus_io_handle_t *		handle;
@@ -285,7 +286,6 @@ globus_gram_protocol_allow_attach(
         goto error_exit;
     }
 
-    globus_libc_gethostname(hostnamebuf, 256);
     port = 0;
 
     res = globus_io_tcp_create_listener(&port,
@@ -297,6 +297,18 @@ globus_gram_protocol_allow_attach(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
 
 	goto free_handle_exit;
+    }
+
+    globus_io_attr_get_tcp_interface(&globus_i_gram_protocol_default_attr,
+                                     &interface);
+    if (interface)
+    {
+        strncpy(hostnamebuf, interface, 256);
+        globus_free(interface);
+    }
+    else
+    {
+        globus_libc_gethostname(hostnamebuf, 256);
     }
 
     listener = globus_libc_malloc(sizeof(globus_i_gram_protocol_listener_t));
@@ -2090,6 +2102,44 @@ globus_gram_protocol_set_credentials(gss_cred_id_t new_credentials)
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_protocol_set_credentials() */
+
+
+/**
+ * @brief Set GRAM default network interface
+ * @ingroup globus_gram_protocol_io
+ * @details
+ * The globus_gram_protocol_set_interface() function causes subsequent
+ * GRAM operations to use the network interface @a interface.
+ *
+ * @param interface
+ *     New network interface to use.
+ *
+ * @return
+ *     Upon success, globus_gram_protocol_set_interface() returns
+ *     GLOBUS_SUCCESS. If an error occurs, an integer error code will be
+ *     returned.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ */
+int
+globus_gram_protocol_set_interface(
+    const char *			interface)
+{
+    globus_result_t			result;
+
+    result = globus_io_attr_set_tcp_interface(
+	&globus_i_gram_protocol_default_attr,
+	interface);
+    if(result != GLOBUS_SUCCESS)
+    {
+	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+    }
+    return GLOBUS_SUCCESS;
+}
+/* globus_gram_protocol_set_interface() */
 
 
 /* Parsing Functions */

@@ -67,6 +67,9 @@ int test2()
 		globus_gram_protocol_error_string(rc));
 	return rc;
     }
+
+    globus_gram_protocol_set_interface("localhost");
+
     rc = globus_gram_protocol_allow_attach(
 	    &callback_contact,
 	    callback_func,
@@ -107,6 +110,9 @@ int test3()
 		globus_gram_protocol_error_string(rc));
 	return rc;
     }
+
+    globus_gram_protocol_set_interface("localhost");
+
     for(i = 0; i < 5; i++)
     {
 	rc = globus_gram_protocol_allow_attach(
@@ -165,6 +171,9 @@ int test4()
 		globus_gram_protocol_error_string(rc));
 	return rc;
     }
+
+    globus_gram_protocol_set_interface("localhost");
+
     for(i = 0; i < 5; i++)
     {
 	rc = globus_gram_protocol_allow_attach(
