@@ -1,0 +1,8 @@
+
+# Please do not edit this source file; it contains the standard bootstrap,
+# and will be overwritten on RPM upgrades.
+# The preferred way of altering the environment is by editing
+#   /etc/sysconfig/gridftp.conf.d/gridftp-hdfs
+
+source /usr/share/gridftp-hdfs/gridftp-hdfs-environment
+

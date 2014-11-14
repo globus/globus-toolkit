@@ -1,0 +1,16 @@
+#!/bin/sh
+
+if [ -e @datadir_resolved@/gridftp-hdfs/gridftp-hdfs-environment ] ; then
+    . @datadir_resolved@/gridftp-hdfs/gridftp-hdfs-environment
+fi
+
+if [ -e @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf ] ; then
+    . @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf
+fi
+
+if [ -e @sysconfdir_resolved@/sysconfig/gridftp-hdfs ] ; then
+    . @sysconfdir_resolved@/sysconfig/gridftp-hdfs
+fi
+
+exec /usr/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp-inetd.conf -dsi hdfs
+
