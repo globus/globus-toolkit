@@ -1,36 +1,28 @@
-
-# OSG packaging is a bit different from Globus
-%if "0%{?dist}" == "0.osg"
-%define _osg 1
-%else
-%define _osg 0
-%endif
-
-
 Name:           gridftp-hdfs
-Version:        0.5.4
+Version:        1.0
 Release:        1
 Summary:        HDFS DSI plugin for GridFTP
 
 Group:          System Environment/Daemons
 License:        ASL 2.0
 URL:            http://twiki.grid.iu.edu/bin/view/Storage/HadoopInstallation
-# TODO:  Check if this svn tag is the same as the source tarball available
-# for download.  That might simplify this a bit.
-# svn co svn://t2.unl.edu/brian/gridftp_hdfs
-# cd gridftp_hdfs
-# ./bootstrap
-# ./configure
-# make dist
 Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: java-devel
+
+# Natively available in Fedora >= 20
+%if %{?fedora}%{!?fedora:0} >= 20
+BuildRequires: hadoop-devel
+BuildRequires: libhdfs
+%else
+# Requires cloudera versions for other releases
 BuildRequires: hadoop-0.20-libhdfs
 BuildRequires: globus-gridftp-server-devel
 BuildRequires: globus-common-devel
-
 Requires: hadoop-0.20-libhdfs
+%endif
+
 Requires: globus-gridftp-server-progs
 Requires: xinetd
 
@@ -50,7 +42,7 @@ HDFS DSI plugin for GridFTP
 
 %build
 
-%configure --with-java=/etc/alternatives/java_sdk
+%configure --with-java=/etc/alternatives/java_sdk --disable-static CPPFLAGS=-I/usr/include/hadoop
 
 make %{?_smp_mflags}
 
@@ -59,16 +51,11 @@ rm -rf $RPM_BUILD_ROOT
 
 make DESTDIR=$RPM_BUILD_ROOT install
 
-# Remove libtool turds
+# Remove libtool .la files
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
-rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
 
 # Remove the init script - in GT5.2, this gets bootstrapped appropriately
-%if %_osg
-rm $RPM_BUILD_ROOT%{_sysconfdir}/init.d/%{name}
-%else
 rm $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}-environment-bootstrap
-%endif
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -76,39 +63,27 @@ rm -rf $RPM_BUILD_ROOT
 %post
 /sbin/ldconfig
 
-%if %_osg
-/sbin/service globus-gridftp-server condrestart >/dev/null 2>&1 || :
-%else
 /sbin/chkconfig --add %{name}
-%endif
 
 %preun
 if [ "$1" = "0" ] ; then
     /sbin/service xinetd condrestart >/dev/null 2>&1
-%if %_osg
-    /sbin/service globus-gridftp-server condrestart >/dev/null 2>&1 || :
-%else
     /sbin/service %{name} stop >/dev/null 2>&1 || :
     /sbin/chkconfig --del %{name}
-%endif
 fi
 
 %postun
 /sbin/ldconfig
 if [ "$1" -ge "1" ]; then
     /sbin/service xinetd condrestart >/dev/null 2>&1
-%if %_osg
-    /sbin/service globus-gridftp-server condrestart >/dev/null 2>&1 || :
-%else
     /sbin/service gridftp-hdfs condrestart >/dev/null 2>&1 || :
-%endif
 fi
 
 %files
 %defattr(-,root,root,-)
 %{_sbindir}/gridftp-hdfs-inetd
 %{_bindir}/gridftp-hdfs-standalone
-%{_libdir}/libglobus_gridftp_server_hdfs.so*
+%{_libdir}/libglobus_gridftp_server_hdfs.so
 %{_datadir}/%{name}/%{name}-environment
 %config(noreplace) %{_sysconfdir}/xinetd.d/%{name}
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp-debug.conf
@@ -116,13 +91,13 @@ fi
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp.conf
 %config(noreplace) %{_sysconfdir}/%{name}/replica-map.conf
 %config(noreplace) %{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}
-%if %_osg
-%{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}-environment-bootstrap
-%else
 %{_sysconfdir}/init.d/%{name}
-%endif
 
 %changelog
+* Fri Nov 14 2014 Joseph Bester <bester@mcs.anl.gov> - 1.0-1
+- Imported into GT6
+- Initial support for native hdfs on Fedora
+
 * Tue Dec 06 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.3-1
 - Initial support for GlobusOnline.
 

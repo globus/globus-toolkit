@@ -38,7 +38,7 @@ AC_CHECK_FILE(${HADOOPHOME}/src/c++/libhdfs/hdfs.h, INCLUDE=["$INCLUDE -I${HADOO
 AC_CHECK_FILE(${HADOOPHOME}/build/libhdfs/libhdfs.so, LDFLAGS=["$LDFLAGS -L${HADOOPHOME}/build/libhdfs"],)
 
 # EPEL5 defaults
-PKG_CHECK_MODULES([GLOBUS_GRIDFTP_SERVER], [globus-gridftp-server])
+PKG_CHECK_MODULES([GLOBUS_GRIDFTP_SERVER], [globus-gridftp-server globus-common])
 
 # Checks for libraries.
 AC_CHECK_LIB([jvm], [JNI_CreateJavaVM], , [AC_MSG_ERROR(Could not find libjvm)])
