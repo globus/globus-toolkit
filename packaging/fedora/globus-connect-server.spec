@@ -1,5 +1,5 @@
 Name:           globus-connect-server
-Version:        3.0.7
+Version:        3.0.8
 Release:        1%{?dist}
 Summary:        Globus Connect Server
 %global _name %(tr - _ <<< %{name})
@@ -211,6 +211,9 @@ if [ -f %{_sysconfdir}/globus-connect-multiuser.conf ]; then
 fi
 
 %changelog
+* Fri Nov 14 2014 Globus Toolkit <support@globus.org> 3.0.8-1
+- Update expired anonymous setup certficate
+
 * Thu Aug 21 2014 Globus Toolkit <support@globus.org> 3.0.7-1
 - Backport changes from GT6 branch: Fixes for CentOS 7, SLES 11, Ubuntu 14.04
 
