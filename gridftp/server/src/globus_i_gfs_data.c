@@ -9429,9 +9429,12 @@ response_exit:
             "Finished transferring \"%s\".\n",
                 ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
 
-        globus_ftp_control_data_get_retransmit_count(
-            &op->data_handle->data_channel,
-            &retransmit_str);
+        if(!op->data_handle->http_handle && op->data_handle->is_mine)
+        {
+            globus_ftp_control_data_get_retransmit_count(
+                &op->data_handle->data_channel,
+                &retransmit_str);
+        }
 
         msg = globus_i_gfs_log_create_transfer_event_msg(
             op->node_count,
