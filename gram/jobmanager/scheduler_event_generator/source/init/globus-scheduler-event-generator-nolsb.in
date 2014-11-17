@@ -45,13 +45,6 @@ sysconfdir="@sysconfdir@"
 sharedstatedir="@sharedstatedir@"
 localstatedir="@localstatedir@"
 
-if [ -r ${libexecdir}/globus-script-initializer ]; then
-    . ${libexecdir}/globus-script-initializer
-else
-    echo "Unable to locate globus-script-initializer" 1>&2
-    exit 1
-fi
-
 progname=globus-scheduler-event-generator
 GLOBUS_SEG_CONFIG=${GLOBUS_SEG_CONFIG:-@SEG_CONFIGDIR@/@SEG_CONFIGFILE@}
 test -f "${GLOBUS_SEG_CONFIG}" && . "${GLOBUS_SEG_CONFIG}"

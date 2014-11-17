@@ -16,12 +16,12 @@
 prefix="${GLOBUS_LOCATION-@prefix@}"
 exec_prefix="@exec_prefix@"
 sbindir="@sbindir@"
-datarootdir="${prefix}/share"
-datadir="${datarootdir}"
-libexecdir="${exec_prefix}/libexec"
-sysconfdir="${prefix}/etc"
-sharedstatedir="${prefix}/com"
-localstatedir="${prefix}/var"
+datarootdir="@datarootdir@"
+datadir="@datadir@"
+libexecdir="@libexecdir@"
+sysconfdir="@sysconfdir@"
+sharedstatedir="@sharedstatedir@"
+localstatedir="@localstatedir@"
 
 PATH=${sbindir}:${PATH}
 GLOBUS_SEG_CONFIG=${GLOBUS_SEG_CONFIG:-@SEG_CONFIGDIR@/@SEG_CONFIGFILE@}

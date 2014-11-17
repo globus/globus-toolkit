@@ -1,3 +1,9 @@
+globus-scheduler-event-generator (5.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix globus-scheduler-event-generator script paths
+
+ -- Globus Toolkit <support@globus.org>  Mon, 17 Nov 2014 10:11:51 -0500
+
 globus-scheduler-event-generator (5.8-2+gt6.@distro@) @distro@; urgency=low
 
   * Manpage format mistake
