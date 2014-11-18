@@ -311,11 +311,12 @@ int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
     goto end;
   }
   X509_LOOKUP_add_dir(lookup, certdir, X509_FILETYPE_PEM);
-  ctx = SSL_CTX_new(SSLv3_client_method());
+  ctx = SSL_CTX_new(SSLv23_client_method());
   if (ctx == NULL) {
     result = MYPROXY_OCSPRESULT_ERROR_OUTOFMEMORY;
     goto end;
   }
+  SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
   SSL_CTX_set_cert_store(ctx, store);
   SSL_CTX_set_verify(ctx,SSL_VERIFY_PEER,NULL);
 
