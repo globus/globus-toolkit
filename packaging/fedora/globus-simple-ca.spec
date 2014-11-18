@@ -2,14 +2,14 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	4.17
+Version:	4.18
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_simple_ca-4.17.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_simple_ca-4.18.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   globus-common
 Requires:   globus-common-progs
@@ -113,6 +113,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Tue Nov 18 2014 Globus Toolkit <support@globus.org> - 4.18-1
+- Avoid make check failures when ~/.rnd is not writable
+
 * Mon Nov 10 2014 Globus Toolkit <support@globus.org> - 4.17-1
 - Fix regression writing to cert dir
 
