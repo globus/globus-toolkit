@@ -1,7 +1,7 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.1.6
-Release:	3%{?dist}
+Version:	6.1.7
+Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -533,6 +533,9 @@ fi
 %endif
 
 %changelog
+* Tue Nov 18 2014 Globus Toolkit <support@globus.org> - 6.1.7-1
+- Allow TLS in myproxy
+
 * Thu Nov 06 2014 Globus Toolkit <support@globus.org> - 6.1.6-3
 - Make voms parts optional
 
