@@ -1,6 +1,6 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.1.7
+Version:	6.1.8
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -533,6 +533,12 @@ fi
 %endif
 
 %changelog
+* Wed Nov 19 2014 Globus Toolkit <support@globus.org> - 6.1.8-1
+- Properly extract MINOR_VERSION from a three digit PACKAGE_VERSION
+- Fix undefined symbols in myproxy-voms plugin
+- Don't install test wrapper
+- Comments are not allowed in tmpfile.d config files
+
 * Tue Nov 18 2014 Globus Toolkit <support@globus.org> - 6.1.7-1
 - Allow TLS in myproxy
 

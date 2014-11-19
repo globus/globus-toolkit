@@ -1,3 +1,12 @@
+myproxy (6.1.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Properly extract MINOR_VERSION from a three digit PACKAGE_VERSION
+  * Fix undefined symbols in myproxy-voms plugin
+  * Don't install test wrapper
+  * Comments are not allowed in tmpfile.d config files
+
+ -- Globus Toolkit <support@globus.org>  Wed, 19 Nov 2014 09:01:36 -0500
+
 myproxy (6.1.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Allow TLS in myproxy
