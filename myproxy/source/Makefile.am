@@ -72,10 +72,11 @@ Scripts= \
 	myproxy-test-replicate \
 	myproxy-admin-adduser \
 	myproxy-admin-addservice \
-	myproxy-server-setup \
-        myproxy-test-wrapper
+	myproxy-server-setup
 
 sbin_SCRIPTS = $(Scripts)
+
+check_SCRIPTS = myproxy-test-wrapper
 
 include_HEADERS= \
 	myproxy.h \
@@ -221,7 +222,8 @@ pkgdata_DATA = README INSTALL myproxy-server.config \
                myproxy-accepted-credentials-mapapp \
                myproxy-cert-checker myproxy-certreq-checker
 
-EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
+EXTRA_DIST = $(Scripts) $(check_SCRIPTS) \
+               LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
                LICENSE.safefile LICENSE.globus \
                VERSION PROTOCOL \
                myproxy-server.config \
