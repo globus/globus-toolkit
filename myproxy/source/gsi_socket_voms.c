@@ -8,6 +8,17 @@
 #include "gsi_socket_priv.h"
 
 static int
+GSI_SOCKET_set_error_string(GSI_SOCKET *self,
+                            char *buffer)
+{
+    if (self->error_string) {
+        free(self->error_string);
+    }
+    self->error_string = strdup(buffer);
+    return GSI_SOCKET_SUCCESS;
+}
+
+static int
 add_fqan(char ***fqans, const char *fqan)
 {
    int current_len;
