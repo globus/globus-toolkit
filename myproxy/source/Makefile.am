@@ -72,10 +72,11 @@ Scripts= \
 	myproxy-test-replicate \
 	myproxy-admin-adduser \
 	myproxy-admin-addservice \
-	myproxy-server-setup \
-        myproxy-test-wrapper
+	myproxy-server-setup
 
 sbin_SCRIPTS = $(Scripts)
+
+check_SCRIPTS = myproxy-test-wrapper
 
 include_HEADERS= \
 	myproxy.h \
@@ -113,7 +114,7 @@ libmyproxy___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GLOBUS_LIBS)
 libmyproxy_voms___GLOBUS_FLAVOR_NAME__la_SOURCES = gsi_socket_voms.c vomsclient.c
 libmyproxy_voms___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) \
 	-avoid-version -no-undefined
-libmyproxy_voms___GLOBUS_FLAVOR_NAME__la_LIBADD = $(VOMS_LIBS) $(GLOBUS_LIBS)
+libmyproxy_voms___GLOBUS_FLAVOR_NAME__la_LIBADD = libmyproxy$(_GLOBUS_FLAVOR_NAME).la $(VOMS_LIBS) $(GLOBUS_LIBS)
 
 bin_PROGRAMS= \
 	myproxy-init \
@@ -221,7 +222,8 @@ pkgdata_DATA = README INSTALL myproxy-server.config \
                myproxy-accepted-credentials-mapapp \
                myproxy-cert-checker myproxy-certreq-checker
 
-EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
+EXTRA_DIST = $(Scripts) $(check_SCRIPTS) \
+               LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
                LICENSE.safefile LICENSE.globus \
                VERSION PROTOCOL \
                myproxy-server.config \
