@@ -240,6 +240,8 @@ typedef struct
     char *                              sharing_id;
     char *                              sharing_sharee;
     
+    char *                              taskid;
+    
     char *                              s3id;
     char *                              s3key;
     gss_cred_id_t                       http_cred;
@@ -6006,6 +6008,17 @@ error_uprt:
                 }
             }
             globus_free(tmp);
+
+            call = GLOBUS_FALSE;
+            globus_gridftp_server_finished_command(op, result, NULL);
+            break;
+            
+        case GLOBUS_GFS_CMD_SITE_TASKID:
+            if(op->session_handle->taskid)
+            {
+                globus_free(op->session_handle->taskid);
+            }
+            op->session_handle->taskid = globus_libc_strdup(cmd_info->pathname);
 
             call = GLOBUS_FALSE;
             globus_gridftp_server_finished_command(op, result, NULL);
