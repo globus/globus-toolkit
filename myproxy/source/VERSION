@@ -4,6 +4,33 @@ Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v6.1.8
+  - Properly extract MINOR_VERSION from a three digit PACKAGE_VERSION
+  - Fix undefined symbols in myproxy-voms plugin
+  - Don't install test wrapper
+  - Comments are not allowed in tmpfile.d config files
+
+v6.1.7
+  - Allow TLS in myproxy-get-trustroots and myproxy-logon -T
+
+v6.1.6
+  - Make VOMS dependency optional
+
+v6.1.5
+  - Minor packaging fixes
+
+v6.1.4
+  - Stop patching myproxy.sysconfig
+
+v6.1.3
+  - Fix incorrect soname change
+
+v6.1.2
+  - Update arg parsing to Getopt::Long
+
+v6.1.1
+  - Increment library age
+
 v6.1 Oct 2014
   - portability, man page, and build script fixes from Mattias Ellert
   - first release from https://github.com/globus/globus-toolkit sources
