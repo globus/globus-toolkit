@@ -120,8 +120,8 @@ static globus_list_t *                  globus_l_gfs_path_alias_list_base = NULL
 static globus_list_t *                  globus_l_gfs_path_alias_list_sharing = NULL;
 static int                              globus_l_gfs_op_info_ctr = 1;
 static globus_xio_driver_t              globus_l_gfs_udt_driver_preload = NULL;
+static globus_xio_driver_t              globus_l_gfs_netmgr_driver = NULL;
 static int                              globus_l_gfs_watchdog_limit = 0;
-
 static globus_xio_driver_t              gfs_l_tcp_driver = NULL;
 static globus_xio_driver_t              gfs_l_gsi_driver = NULL;
 static globus_xio_driver_t              gfs_l_q_driver = NULL;
@@ -4539,6 +4539,7 @@ globus_i_gfs_data_init()
     char *                              restrict_path;
     int                                 rc;
     globus_result_t                     result;
+    char *                              driver;
     GlobusGFSName(globus_i_gfs_data_init);
     GlobusGFSDebugEnter();
 
@@ -4637,6 +4638,17 @@ globus_i_gfs_data_init()
             globus_gfs_config_set_bool("allow_udt", GLOBUS_FALSE);
         }
     }
+    
+    if((driver = globus_i_gfs_config_string("netmgr")) != NULL)
+    {
+        result = globus_xio_driver_load(driver, &globus_l_gfs_netmgr_driver);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_result(
+                GLOBUS_GFS_LOG_INFO, 
+                "Unable to load Network Manager driver", result);
+        }
+    }    
     
     GlobusGFSDebugExit();
 }
@@ -6402,6 +6414,26 @@ globus_l_gfs_data_handle_init(
         }
     }
     
+    /* create a default stack that we can add the netmgr driver to */
+    if(globus_l_gfs_netmgr_driver && globus_list_empty(net_stack_list))
+    {
+        globus_xio_driver_list_ent_t *    ent;
+        
+        ent = (globus_xio_driver_list_ent_t *)
+            globus_calloc(1, sizeof(globus_xio_driver_list_ent_t));
+        ent->driver = globus_io_compat_get_tcp_driver();
+        ent->driver_name = strdup("tcp");
+        ent->loaded = GLOBUS_TRUE;
+        globus_list_insert(&net_stack_list, ent);
+        
+        ent = (globus_xio_driver_list_ent_t *)
+            globus_calloc(1, sizeof(globus_xio_driver_list_ent_t));
+        ent->driver = globus_io_compat_get_gsi_driver();
+        ent->driver_name = strdup("gsi");
+        ent->loaded = GLOBUS_TRUE;
+        globus_list_insert(&net_stack_list, ent);
+    }
+    
     if(!globus_list_empty(net_stack_list))
     {
         globus_xio_stack_t              stack;
@@ -6449,6 +6481,26 @@ globus_l_gfs_data_handle_init(
                 "set stack failed: %s\n",
                 globus_error_print_friendly(globus_error_peek(result)));
             goto error_control;
+        }
+    
+        if(globus_l_gfs_netmgr_driver)
+        {
+            globus_xio_stack_push_driver(stack, globus_l_gfs_netmgr_driver);
+    
+            if(session_handle->taskid != NULL)
+            {
+                char *                  opt_str;
+                globus_common_create_string(
+                    "taskid=%s;", session_handle->taskid);
+
+                globus_xio_attr_cntl(
+                    xio_attr,
+                    globus_l_gfs_netmgr_driver,
+                    GLOBUS_XIO_SET_STRING_OPTIONS,
+                    opt_str);
+                    
+                globus_free(opt_str);
+            }
         }
 
         result = globus_i_ftp_control_data_set_stack(
