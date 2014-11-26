@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: globus-xio-net-manager-driver
+Description: Globus Toolkit - Globus XIO Net Manager Driver
+Version: @VERSION@
+Requires.private: @PACKAGE_DEPS@ globus-xio-net-manager
+Libs: -L${libdir}
+Cflags: -I${includedir}
