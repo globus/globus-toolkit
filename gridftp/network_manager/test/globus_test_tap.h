@@ -53,4 +53,4 @@ static void ok(int predval, const char *fmt, ...)
 #endif
 
 #define TEST_EXIT_CODE (skipped == total) ? 77 : failed
-#define TEST_ASSERT(assertion) if (!assertion) { return 1; }
+#define TEST_ASSERT(assertion) if (!assertion) { fprintf(stderr, "%s:%d:%s %s\n", __FILE__, __LINE__, __func__, #assertion); return 1; }

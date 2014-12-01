@@ -84,7 +84,20 @@ typedef enum
      * @ingroup globus_xio_net_manager_driver
      */
     /* */
-    GLOBUS_XIO_NET_MANAGER_PRE_LISTEN
+    GLOBUS_XIO_NET_MANAGER_PRE_LISTEN,
+    /** GlobusVarArgEnum(attr)
+     * Set the task id associated with this XIO handle.
+     * @ingroup globus_xio_net_manager_driver
+     */
+    /* const char * task_id*/
+    GLOBUS_XIO_NET_MANAGER_SET_TASK_ID,
+    /** GlobusVarArgEnum(attr)
+     * Get the task id associated with this XIO handle.
+     * @ingroup globus_xio_net_manager_driver
+     */
+    /* const char ** task_id*/
+    GLOBUS_XIO_NET_MANAGER_GET_TASK_ID
+
 } globus_xio_net_manager_cntl_t;
 
 #ifdef __cplusplus

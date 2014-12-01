@@ -15,21 +15,17 @@
  */
 
 /**
- * @file attr/array_destroy.c
- * @brief globus_net_manager_attr_array_destroy()
+ * @file attr/array_copy.c
+ * @brief globus_net_manager_attr_array_copy()
  */
 
 #include "globus_net_manager_attr.h"
 
-
-const
-globus_net_manager_attr_t
-globus_net_manager_null_attr = GLOBUS_NET_MANAGER_NULL_ATTR;
-
-void
-globus_net_manager_attr_array_destroy(
-    globus_net_manager_attr_t          *attrs)
+globus_result_t
+globus_net_manager_attr_array_copy(
+    globus_net_manager_attr_t         **dest_array,
+    const globus_net_manager_attr_t    *src_array)
 {
-    return;
+    return GLOBUS_FAILURE;
 }
-
+/* globus_net_manager_attr_array_copy() */
