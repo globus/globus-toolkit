@@ -2,7 +2,7 @@
 
 [Unit]
 Description=Server for X.509 Public Key Infrastructure (PKI) security credentials
-After=syslog.target auditd.service
+After=network.target auditd.service
 
 [Service]
 Type=forking
