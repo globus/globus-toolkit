@@ -39,7 +39,7 @@ typedef struct globus_net_manager_context_s *globus_net_manager_context_t;
  * manager plug-ins which will be called when network events occur. 
  *
  * Initialize the context by calling globus_net_manager_context_init().
- * This processes an array attributes. The "scope" member of
+ * This processes an array of attributes. The "scope" member of
  * of attributes indicate the name of a network manager to associate
  * with the context. The (name, value) tuples of the attributes
  * are added to the attributes passed to all of that particular

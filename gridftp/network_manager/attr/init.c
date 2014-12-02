@@ -21,6 +21,22 @@
 
 #include "globus_net_manager_attr.h"
 
+/**
+ * @brief Initialize the contents of an attribute
+ * @ingroup globus_net_manager_attr
+ * @details
+ * This function initializes <b>attr</b> and with copies of the values
+ * passed as the <b>scope</b>, <b>name</b>, and <b>value</b> parameters.
+ *
+ * @param[out] attr
+ *     Pointer to the attribute to initialize.
+ * @param[in] scope
+ *     Attribute scope
+ * @param[in] name
+ *     Attribute name
+ * @param[in] value
+ *     Attribute value
+ */
 globus_result_t
 globus_net_manager_attr_init(
     globus_net_manager_attr_t          *attr,
@@ -28,5 +44,44 @@ globus_net_manager_attr_init(
     const char                         *name,
     const char                         *value)
 {
-    return GLOBUS_FAILURE;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_net_manager_attr_t           new_attr = GLOBUS_NET_MANAGER_NULL_ATTR;
+
+    if ((!attr) || (!scope) || (!name) || (!value))
+    {
+        result = GLOBUS_FAILURE;
+        goto null_attr;
+    }
+    new_attr.scope = strdup(scope);
+    if (!new_attr.scope)
+    {
+        result = GLOBUS_FAILURE;
+        goto scope_strdup_fail;
+    }
+    new_attr.name = strdup(name);
+    if (!new_attr.name)
+    {
+        result = GLOBUS_FAILURE;
+        goto name_strdup_fail;
+    }
+    new_attr.value = strdup(value);
+    if (!new_attr.value)
+    {
+        result = GLOBUS_FAILURE;
+        goto value_strdup_fail;
+    }
+
+    *attr = new_attr;
+
+    if (result)
+    {
+value_strdup_fail:
+        free(new_attr.name);
+name_strdup_fail:
+        free(new_attr.scope);
+    }
+scope_strdup_fail:
+null_attr:
+    return result;
 }
+/* globus_net_manager_attr_init() */

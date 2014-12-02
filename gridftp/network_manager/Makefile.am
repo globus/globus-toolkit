@@ -17,7 +17,7 @@ libglobus_net_manager_la_LIBADD = \
         logging/libglobus_net_manager_logging.la \
         python/libglobus_net_manager_python.la \
         $(PACKAGE_DEP_LIBS)
-libglobus_net_manager_la_SOURCES = register.c unregister.c
+libglobus_net_manager_la_SOURCES = module.c register.c unregister.c
 libglobus_net_manager_la_LDFLAGS = \
 	-version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
         -no-undefined

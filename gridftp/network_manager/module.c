@@ -14,17 +14,29 @@
  * limitations under the License.
  */
 
-/**
- * @file attr/copy.c
- * @brief globus_net_manager_attr_copy()
- */
+#include "globus_net_manager.h"
+#include "version.h"
 
-#include "globus_net_manager_attr.h"
-
-globus_result_t
-globus_net_manager_attr_copy(
-    globus_net_manager_attr_t          *dest,
-    const globus_net_manager_attr_t    *src)
+static
+int
+globus_l_net_manager_activate(void)
 {
-    return GLOBUS_FAILURE;
+    return globus_module_activate(GLOBUS_COMMON_MODULE);
 }
+
+static
+int
+globus_l_net_manager_deactivate(void)
+{
+    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+}
+
+globus_module_descriptor_t              globus_i_net_manager_module =
+{
+    "globus_net_manager",
+    globus_l_net_manager_activate,
+    globus_l_net_manager_deactivate,
+    NULL,
+    NULL,
+    &local_version
+};

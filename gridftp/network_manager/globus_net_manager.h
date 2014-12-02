@@ -26,22 +26,13 @@ extern "C" {
 
 /**
  * @file globus_net_manager.h
- * @brief Globus Network Manager Interface
+ * @brief Globus Net Manager Interface
  */
 
 #ifndef GLOBUS_GLOBAL_DOCUMENT_SET
 /**
- * @mainpage Globus Network Manager
- * @copydoc globus_net_manager
- */
-#endif
-
-struct globus_net_manager_s;
-
-/**
- * @defgroup globus_net_manager Globus Network Manager
- * @details
- * The Globus Network Manager library is a plug-in point for network
+ * @mainpage Overview
+ * The Globus Net Manager library is a plug-in point for network
  * management tasks, such as:
  * - selectively open ports in a firewall and allow these ports to be closed
  *   when transfers are complete
@@ -49,44 +40,62 @@ struct globus_net_manager_s;
  *   over this circuit
  * - route network traffic related to a task over a particular network
  *
- * For users interested in implementing or using such functionality, 
- * the @link globus_net_manager.h globus_net_manager library @endlink provides a
- * low-level set of 
- * interfaces to implement specific network managers.
+ * @section globus_net_manager_implementor Implementing a Network Manager
+ * For users interested in implementing such functionality, 
+ * the @link globus_net_manager globus_net_manager library @endlink provides a
+ * low-level set of interfaces to implement specific network managers.
+ *
+ * These interfaces provide methods for registering functions to be called
+ * before and after interesting network operations. Those functions may
+ * observe or modify the attributes of the network operations. This information
+ * can be used to modify the port to listen on, or modify the 
+ * addresses used to use a particular network interface.
  *
  * In addition, the globus_net_manager library includes sample
- * implementations to provide a starting point for implementing alternative
+ * implementations to provide a starting point for implementing
  * network managers.
  * <dl>
  * <dt>Logging Manager</dt>
  * <dd>Logs network operations as they occur. This implementation
  * shows the simplest network manager implementation in C</dd>
- * <dt>Exec Manager</dt>
+ * <!--<dt>Exec Manager</dt>
  * <dd>Launches a command when network operations occur. This implementation
  * enables network managers to be implemented in any external process.</dd>
  * <dt>Python Manager<dt>
  * <dd>Loads a python module, and calls python functions when network
- * operations occur.</dd>
+ * operations occur.</dd>-->
  * </dl>
  *
+ * The Logging Manager sample is broken down in detail in the
+ * @ref globus_net_manager_tutorial page.
+ *
+ * @section globus_net_manager_user Using Network Managers
  * For users interested in using the network manager in their own services,
  * they can use the @ref globus_net_manager_context APIs to configure and
  * invoke network manager plug-ins, or the
- * @link globus_xio_net_manager_driver Globus XIO Network Manager Driver @endlink
- * to plug the network manager interface directly into the globus_xio stack.
+ * @link globus_xio_net_manager_driver Globus XIO Net Manager Driver @endlink
+ * to plug the network manager interface directly into the Globus XIO stack.
+ */
+#endif
+
+struct globus_net_manager_s;
+
+/**
+ * @brief Net Manager API
+ * @defgroup globus_net_manager Net Manager
+ * @details
+ * This API defines the plug-in points for network manager functionality,
+ * as well as functions for registering a particular network manager
+ * implementation so that it can be invoked during network events.
+ *
+ * To implement a network manager, define a struct #globus_net_manager_s 
+ * with the functions you want called, and register it by calling
+ * globus_net_manager_register(). More details are included in
+ * @ref globus_net_manager_tutorial
  */
 
 /**
- * @defgroup globus_net_manager_types Data Types
- * @ingroup globus_net_manager
- */
-/**
- * @defgroup globus_net_manager_signatures Function Signatures
- * @ingroup globus_net_manager
- */
-
-/**
- * Network Manager Pre-Listen Function Signature
+ * Net Manager Pre-Listen Function Signature
  * @ingroup globus_net_manager_signatures
  *
  * A function of this signature, if included in a network manager
@@ -130,7 +139,7 @@ typedef globus_result_t (*globus_net_manager_pre_listen)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Network Manager Post-Listen Function Signature
+ * Net Manager Post-Listen Function Signature
  * @ingroup globus_net_manager_signatures
  *
  * A function of this signature, if included in a network manager
@@ -184,7 +193,7 @@ typedef globus_result_t (*globus_net_manager_post_listen)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Network Manager Pre-Accept Function Signature
+ * Net Manager Pre-Accept Function Signature
  * @ingroup globus_net_manager_signatures
  *
  * A function of this signature, if included in a network manager
@@ -230,7 +239,7 @@ typedef globus_result_t (*globus_net_manager_pre_accept)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Network Manager Post-Accept Function Signature
+ * Net Manager Post-Accept Function Signature
  * @ingroup globus_net_manager_signatures
  *
  * A function of this signature, if included in a network manager
@@ -282,7 +291,7 @@ typedef globus_result_t (*globus_net_manager_post_accept)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Network Manager Pre-Connect Function Signature
+ * Net Manager Pre-Connect Function Signature
  * @ingroup globus_net_manager_signatures
  *
  * A function of this signature, if included in a network manager
@@ -336,7 +345,7 @@ typedef globus_result_t (*globus_net_manager_pre_connect)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Network Manager Post-Connect Function Signature
+ * Net Manager Post-Connect Function Signature
  * @ingroup globus_net_manager_signatures
  *
  * A function of this signature, if included in a network manager
@@ -385,7 +394,7 @@ typedef globus_result_t (*globus_net_manager_post_connect)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Network Manager Pre-Close Function Signature
+ * Net Manager Pre-Close Function Signature
  * @ingroup globus_net_manager_signatures
  *
  * A function of this signature, if included in a network manager
@@ -425,7 +434,7 @@ typedef globus_result_t (*globus_net_manager_pre_close)(
     const globus_net_manager_attr_t    *attr_array);
 
 /**
- * Network Manager Post-Close Function Signature
+ * Net Manager Post-Close Function Signature
  * @ingroup globus_net_manager_signatures
  *
  * A function of this signature, if included in a network manager
@@ -465,7 +474,7 @@ typedef globus_result_t (*globus_net_manager_post_close)(
     const globus_net_manager_attr_t    *attr_array);
 
 /**
- * @brief Network Manager Definition
+ * @brief Net Manager Definition
  * @ingroup globus_net_manager_types
  * @details
  */
@@ -475,7 +484,7 @@ struct globus_net_manager_s
     /** Name of the network manager */
     const char                         *name;
     /** Pre-listen function implementation */
-    globus_net_manager_post_listen      pre_listen;
+    globus_net_manager_pre_listen       pre_listen;
     /** Post-listen function implementation */
     globus_net_manager_post_listen      post_listen;
     /** Pre-accept function implementation */
@@ -490,40 +499,48 @@ struct globus_net_manager_s
     globus_net_manager_pre_close        pre_close;
     /** Post-close function implementation */
     globus_net_manager_post_close       post_close;
-    /** Manager specific data */
-    void *                              manager_data;
 }
 globus_net_manager_t;
 
-/**
- * @brief Register a network manager
- * @ingroup globus_net_manager
- * @param[in] manager
- *     Manager information to register.
- *
- * The globus_net_manager_register() function adds this network manager
- * to those which will be called by the network manager interface
- * when network events occur. This is typically called by the network
- * manager when its module is activated.
- */
 globus_result_t
 globus_net_manager_register(
     globus_net_manager_t               *manager);
 
-/**
- * @brief Unregister a network manager
- * @ingroup globus_net_manager
- * @param[in] manager
- *     Manager information to unregister.
- *
- * The globus_net_manager_unregister() function removes this network manager
- * from those which will be called by the network manager interface
- * when network events occur. This is typically called by the network
- * manager when its module is deactivated.
- */
 globus_result_t
 globus_net_manager_unregister(
     globus_net_manager_t               *manager);
+
+extern globus_module_descriptor_t       globus_i_net_manager_module;
+/**
+ * @brief Module descriptor
+ * @ingroup globus_net_manager
+ * @hideinitializer
+ * @details
+ * The Globus Net Manager uses Globus Toolkit module activation and
+ * deactivation. Before any Net Manager functions can be called,
+ * the module must be activated, like this:
+ * @code
+       globus_module_activate(GLOBUS_NET_MANAGER_MODULE);
+   @endcode
+ *
+ * This function returns GLOBUS_SUCCESS if the library
+ * is successfully initialized.  Otherwise, an error code is returned,
+ * and Net Manager functions should not be subsequently called.  
+ *
+ * Activations are reference counted, so it is safe to activate the
+ * module multiple times or in different modules.
+ *
+ * To deactivate Net Manager, call
+ * 
+ * @code
+     globus_module_deactivate(GLOBUS_NET_MANAGER_MODULE);
+  @endcode
+ *
+ * This function should be done once for each time the Net Manager
+ * was activated.
+ * 
+ */
+#define GLOBUS_NET_MANAGER_MODULE     (&globus_i_net_manager_module)
 
 #ifdef __cplusplus
 }

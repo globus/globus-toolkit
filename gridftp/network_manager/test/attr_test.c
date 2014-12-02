@@ -54,51 +54,6 @@ attr_destroy_null(void)
 }
 
 int
-attr_copy_null(void)
-{
-    globus_net_manager_attr_t attr;
-    globus_net_manager_attr_t copy;
-    globus_result_t result;
-
-    result = globus_net_manager_attr_copy(NULL, &attr);
-    TEST_ASSERT (result != GLOBUS_SUCCESS);
-
-    result = globus_net_manager_attr_copy(&copy, NULL);
-    TEST_ASSERT (result != GLOBUS_SUCCESS);
-
-    return 0;
-}
-
-int
-attr_copy_destroy(void)
-{
-    globus_result_t result;
-    globus_net_manager_attr_t attr, copy;
-    const char *scope = "scope";
-    const char *name = "name";
-    const char *value = "value";
-
-    result = globus_net_manager_attr_init(&attr, scope, name, value);
-    TEST_ASSERT (result == GLOBUS_SUCCESS);
-
-    result = globus_net_manager_attr_copy(&copy, &attr);
-    TEST_ASSERT (result == GLOBUS_SUCCESS);
-
-    TEST_ASSERT (strcmp(attr.scope, scope) == 0);
-    TEST_ASSERT (strcmp(attr.name, name) == 0);
-    TEST_ASSERT (strcmp(attr.value, value) == 0);
-    globus_net_manager_attr_destroy(&attr);
-
-    TEST_ASSERT (strcmp(copy.scope, scope) == 0);
-    TEST_ASSERT (strcmp(copy.name, name) == 0);
-    TEST_ASSERT (strcmp(copy.value, value) == 0);
-
-    globus_net_manager_attr_destroy(&copy);
-
-    return 0;
-}
-
-int
 attr_create_from_string_null(void)
 {
     globus_result_t result;
@@ -173,8 +128,7 @@ attr_create_from_string_destroy(void)
     TEST_ASSERT (strcmp(attr[2].name, "arg") == 0);
     TEST_ASSERT (strcmp(attr[2].value, "baz") == 0);
 
-    globus_net_manager_attr_destroy(&attr[0]);
-    globus_net_manager_attr_array_destroy(attr);
+    globus_net_manager_attr_array_delete(attr);
 
     return 0;
 }
@@ -194,8 +148,6 @@ main(int argc, char *argv[])
         TEST_INITIALIZER(attr_init_null),
         TEST_INITIALIZER(attr_init_destroy),
         TEST_INITIALIZER(attr_destroy_null),
-        TEST_INITIALIZER(attr_copy_null),
-        TEST_INITIALIZER(attr_copy_destroy),
         TEST_INITIALIZER(attr_create_from_string_null),
         TEST_INITIALIZER(attr_create_from_string_bad),
         TEST_INITIALIZER(attr_create_from_string_destroy),

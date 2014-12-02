@@ -54,11 +54,13 @@ typedef struct
 }
 globus_l_xio_net_manager_attr_t;
 
-static int
-globus_l_xio_net_manager_activate();
+static
+int
+globus_l_xio_net_manager_activate(void);
 
-static int
-globus_l_xio_net_manager_deactivate();
+static
+int
+globus_l_xio_net_manager_deactivate(void);
 
 #include "version.h"
 
@@ -365,7 +367,7 @@ globus_l_xio_net_manager_attr_set_string_options(
     }
     if (new_attrs)
     {
-        globus_net_manager_attr_array_destroy(attr->attr_array);
+        globus_net_manager_attr_array_delete(attr->attr_array);
         attr->attr_array = new_attrs;
         new_attrs = NULL;
 
@@ -382,7 +384,7 @@ no_scope:
 no_equals:
     free(new_task_id);
     free(scope);
-    globus_net_manager_attr_array_destroy(new_attrs);
+    globus_net_manager_attr_array_delete(new_attrs);
 new_attrs_calloc_fail:
     globus_list_destroy_all(options, free);
 no_options:
@@ -608,7 +610,7 @@ globus_l_xio_net_manager_attr_destroy(
         result = GLOBUS_FAILURE;
         goto null_a_exit;
     }
-    globus_net_manager_attr_array_destroy(a->attr_array);
+    globus_net_manager_attr_array_delete(a->attr_array);
     free(a->task_id);
     globus_net_manager_context_destroy(&a->context);
 
@@ -673,10 +675,22 @@ globus_l_xio_net_manager_activate(void)
     GlobusDebugInit(GLOBUS_XIO_NET_MANAGER, TRACE);
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto activate_xio_fail;
+    }
+    rc = globus_module_activate(GLOBUS_NET_MANAGER_MODULE);
+
     if(rc == GLOBUS_SUCCESS)
     {
         GlobusXIORegisterDriver(net_manager);
     }
+    else
+    {
+        globus_module_deactivate(GLOBUS_XIO_MODULE);
+    }
+
+activate_xio_fail:
     return rc;
 }
 
@@ -685,5 +699,7 @@ int
 globus_l_xio_net_manager_deactivate(void)
 {
     GlobusXIOUnRegisterDriver(net_manager);
-    return globus_module_deactivate(GLOBUS_XIO_MODULE);
+    globus_module_deactivate(GLOBUS_NET_MANAGER_MODULE);
+    globus_module_deactivate(GLOBUS_XIO_MODULE);
+    return 0;
 }
