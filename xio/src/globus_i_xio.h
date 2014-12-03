@@ -656,6 +656,7 @@ typedef struct globus_i_xio_driver_s
     /*
      * server
      */
+    globus_xio_driver_server_init_t     server_pre_init_func;
     globus_xio_driver_server_init_t     server_init_func;
     globus_xio_driver_server_accept_t   server_accept_func;
     globus_xio_driver_server_destroy_t  server_destroy_func;

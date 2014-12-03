@@ -473,8 +473,8 @@ typedef globus_result_t
  *         it is acceptable to 'steal' pointers from the received contact_info.
  * 
  *  @param driver_server
- *         The driver's server handle.  Future calls to server accept or server
- *         cntl will be passed this value.
+ *         The driver's server handle.  Future calls to server accept, 
+ *         cntl, and destroy will be passed this value.
  */
 globus_result_t
 globus_xio_driver_pass_server_init(
@@ -1278,6 +1278,10 @@ globus_xio_driver_set_server(
     globus_xio_driver_link_cntl_t       link_cntl_func,
     globus_xio_driver_link_destroy_t    link_destroy_func);
 
+globus_result_t
+globus_xio_driver_set_server_pre_init(
+    globus_xio_driver_t                 driver,
+    globus_xio_driver_server_init_t     server_pre_init_func);
 /**
  *  @ingroup globus_xio_driver_programming
  */
@@ -1329,6 +1333,10 @@ globus_xio_operation_get_driver_specific(
 
 globus_xio_driver_t
 globus_xio_operation_get_user_driver(
+    globus_xio_operation_t              op);
+
+globus_xio_driver_t
+globus_xio_operation_get_transport_user_driver(
     globus_xio_operation_t              op);
 
 /* this returns the handle to the drivers below you */
@@ -1402,7 +1410,7 @@ typedef struct globus_xio_string_cntl_table_s
  *  all at runtime with no object module references.  For example, a TCP driver
  *  can be loaded with the string: tcp, and the options can be set with:
  *
- *  port=50668\#keepalive=yes\#nodelay=N
+ *  port=50668;keepalive=yes;nodelay=N
  *
  *  this would set the port to 50668, keepalive to true and nodelay to false.
  *  The particular string definition is defined by the tcp driver by properly 

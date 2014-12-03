@@ -966,8 +966,20 @@ globus_xio_server_create(
         
         ctr++;
     }
+    for (xio_op->ndx = 0; xio_op->ndx < xio_op->stack_size; xio_op->ndx++)
+    {
+        globus_i_xio_driver_t * dp = xio_op->_op_server->entry[xio_op->ndx].driver;
+        if (dp->server_pre_init_func)
+        {
+            res = dp->server_pre_init_func(
+                    xio_op->entry[xio_op->ndx].open_attr, NULL, xio_op);
+            if (res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
+    }
     
-    xio_op->ndx = xio_op->stack_size;
     memset(&contact_info, 0, sizeof(contact_info));
     res = globus_xio_driver_pass_server_init(xio_op, &contact_info, NULL);
     if(res != GLOBUS_SUCCESS)
