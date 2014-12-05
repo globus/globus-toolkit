@@ -1,6 +1,6 @@
 Name: globus-gridftp-server
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.16.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.17.tar.gz
 
 
 Upstream-Authors: The Globus Alliance - http://www.globus.org/

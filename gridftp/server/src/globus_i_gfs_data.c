@@ -5537,16 +5537,17 @@ globus_i_gfs_data_request_command(
                         }                            
 
                         sharingfd = 
-                            open(share_file, O_WRONLY | O_CREAT, S_IRUSR);
+                            open(share_file, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
                         if(sharingfd < 0)
                         {
                             result = GlobusGFSErrorSystemError(
-                                "Enabling sharing", errno);
+                                "Enabling sharing (open)", errno);
                         }
                         else
                         {
-                            char * tmp_content;
-                            char * tmp_enc;
+                            char *      tmp_content;
+                            char *      tmp_enc;
+                            int         save_rc = 0;
 #ifdef WIN32                            
                             if(isalpha(share_path[0]) && share_path[1] == ':')
                             {
@@ -5568,15 +5569,25 @@ globus_i_gfs_data_request_command(
                             if(rc < 0)
                             {
                                 result = GlobusGFSErrorSystemError(
-                                    "Enabling sharing", errno);
+                                    "Enabling sharing (write)", errno);
+                                save_rc = rc;
                             }
 
                             rc = close(sharingfd);
-                            if(rc < 0)
+                            if(rc < 0 && !save_rc)
                             {
                                 result = GlobusGFSErrorSystemError(
-                                    "Enabling sharing", errno);
+                                    "Enabling sharing (close)", errno);
+                                save_rc = rc;
                             }
+                            
+                            rc = chmod(share_file, S_IRUSR);
+                            if(rc < 0 && !save_rc)
+                            {
+                                result = GlobusGFSErrorSystemError(
+                                    "Enabling sharing (chmod)", errno);
+                            }
+                            
                             globus_free(tmp_enc);
                             globus_free(tmp_content);
                         }
