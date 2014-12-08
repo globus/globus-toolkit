@@ -2,7 +2,9 @@
 
 [Unit]
 Description=Server for X.509 Public Key Infrastructure (PKI) security credentials
-After=syslog.target auditd.service
+After=network.target auditd.service
+ConditionPathExists=/etc/grid-security/myproxy/hostcert.pem
+ConditionPathExists=/etc/grid-security/myproxy/hostkey.pem
 
 [Service]
 Type=forking
