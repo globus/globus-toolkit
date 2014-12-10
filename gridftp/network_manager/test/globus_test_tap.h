@@ -54,3 +54,10 @@ static void ok(int predval, const char *fmt, ...)
 
 #define TEST_EXIT_CODE (skipped == total) ? 77 : failed
 #define TEST_ASSERT(assertion) if (!assertion) { fprintf(stderr, "%s:%d:%s %s\n", __FILE__, __LINE__, __func__, #assertion); return 1; }
+#define TEST_ASSERT_RESULT_SUCCESS(result) \
+    if (result) { \
+        char * err = globus_error_print_friendly(globus_error_peek(result)); \
+        fprintf(stderr, "%s:%d:%s %s\n", __FILE__, __LINE__, __func__, err); \
+        free(err); \
+        return 1; \
+    }

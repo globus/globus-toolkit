@@ -287,13 +287,21 @@ globus_net_manager_t                    globus_l_net_manager_logging = {
 };
 //! [Network Manager Definition]
 
+static
+void *
+globus_l_net_manager_logging_get_pointer(void)
+{
+    return &globus_l_net_manager_logging;
+}
+/* globus_l_net_manager_logging_get_pointer() */
+
 //! [Module Descriptor and Activation]
 GlobusExtensionDefineModule(globus_net_manager_logging) = {
     "globus_net_manager_logging",
     globus_l_net_manager_logging_activate,
     globus_l_net_manager_logging_deactivate,
     NULL,
-    NULL,
+    globus_l_net_manager_logging_get_pointer,
     &local_version
 };
 

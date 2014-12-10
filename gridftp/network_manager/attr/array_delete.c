@@ -48,11 +48,14 @@ void
 globus_net_manager_attr_array_delete(
     globus_net_manager_attr_t          *attrs)
 {
-    for (int i = 0; attrs[i].scope || attrs[i].name || attrs[i].value; i++)
+    if (attrs)
     {
-        globus_net_manager_attr_destroy(&attrs[i]);
+        for (int i = 0; attrs[i].scope || attrs[i].name || attrs[i].value; i++)
+        {
+            globus_net_manager_attr_destroy(&attrs[i]);
+        }
+        free(attrs);
     }
-    free(attrs);
     return;
 }
 /* globus_net_manager_attr_array_delete() */

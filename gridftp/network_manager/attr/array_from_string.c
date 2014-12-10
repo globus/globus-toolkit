@@ -34,7 +34,7 @@
     NAME=VALUE(;NAME=VALUE)*
 @endverbatim
  * The NAME and VALUE strings may contain any character except <code>;</code>
- * and <code>=</code>.
+ * <code>=</code>, and the carriage return and newline characters.
  *
  * The caller must free the array stored in *attr by calling
  * globus_net_manager_attr_array_destroy().
@@ -52,6 +52,111 @@ globus_net_manager_attr_array_from_string(
     const char                         *scope,
     const char                         *attr_string)
 {
-    return GLOBUS_FAILURE;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_list_t                      *attr_string_list = NULL;
+    int                                 attr_string_list_size = 0;
+    globus_net_manager_attr_t          *attr_array = NULL;
+    int                                 i = 0;
+
+    if (attr == NULL)
+    {
+        result = GLOBUS_FAILURE;
+        goto bad_attr_param;
+    }
+    if (scope == NULL || attr_string == NULL)
+    {
+        result = GLOBUS_FAILURE;
+        goto bad_param;
+    }
+    if (strchr(attr_string, '\r') || strchr(attr_string, '\n'))
+    {
+        result = GLOBUS_FAILURE;
+        goto illegal_string;
+    }
+    attr_string_list = globus_list_from_string(attr_string, ';', NULL);
+    if (attr_string_list == NULL)
+    {
+        if (strlen(attr_string) > 0)
+        {
+            result = GLOBUS_FAILURE;
+        }
+        goto no_attrs;
+    }
+    attr_string_list_size = globus_list_size(attr_string_list);
+    attr_array = malloc((attr_string_list_size + 1) *
+            sizeof(globus_net_manager_attr_t));
+    if (attr_array == NULL)
+    {
+        goto attr_array_malloc_fail;
+    }
+    attr_array[attr_string_list_size - 1] = globus_net_manager_null_attr;
+
+    while (!globus_list_empty(attr_string_list))
+    {
+        char                           *attr_name = NULL;
+        char                           *attr_value = NULL;
+
+        attr_name = globus_list_remove(
+                &attr_string_list, attr_string_list);
+        attr_value = strchr(attr_name, '=');
+        if (!attr_value)
+        {
+            free(attr_name);
+            result = GLOBUS_FAILURE;
+            goto bad_attr;
+        }
+        *attr_value++ = '\0';
+        if (*attr_value == '\0')
+        {
+            free(attr_name);
+            result = GLOBUS_FAILURE;
+            goto bad_value;
+        }
+        attr_array[attr_string_list_size - i - 1].scope = strdup(scope);
+        if (attr_array[attr_string_list_size - i - 1].scope == NULL)
+        {
+            free(attr_name);
+            result = GLOBUS_FAILURE;
+            goto strdup_scope_fail;
+        }
+        attr_array[attr_string_list_size - i - 1].name = attr_name;
+        attr_array[attr_string_list_size - i - 1].value = strdup(attr_value);
+        if (attr_array[attr_string_list_size - i - 1].value == NULL)
+        {
+            result = GLOBUS_FAILURE;
+            free(attr_array[attr_string_list_size - i - 1].scope);
+            free(attr_array[attr_string_list_size - i - 1].name);
+            free(attr_array[attr_string_list_size - i - 1].value);
+            goto strdup_value_fail;
+        }
+        i++;
+    }
+
+strdup_value_fail:
+strdup_scope_fail:
+bad_value:
+bad_attr:
+    attr_array[i] = globus_net_manager_null_attr;
+    if (result)
+    {
+        if (i > 0)
+        {
+            for (int j = i - 1; j >= 0; j--)
+            {
+                free(attr_array[j].scope);
+                free(attr_array[j].name);
+                free(attr_array[j].value);
+            }
+        }
+        free(attr_array);
+        attr_array = NULL;
+    }
+attr_array_malloc_fail:
+no_attrs:
+illegal_string:
+bad_param:
+    *attr = attr_array;
+bad_attr_param:
+    return result;
 }
 /* globus_net_manager_attr_array_from_string() */

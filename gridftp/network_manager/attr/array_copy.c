@@ -48,6 +48,67 @@ globus_net_manager_attr_array_copy(
     globus_net_manager_attr_t         **dest_array,
     const globus_net_manager_attr_t    *src_array)
 {
-    return GLOBUS_FAILURE;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_net_manager_attr_t          *new_array = NULL;
+    int                                 i = 0;
+
+    if (dest_array == NULL)
+    {
+        result = GLOBUS_FAILURE;
+        goto null_dest;
+    }
+    if (src_array == NULL)
+    {
+        result = GLOBUS_FAILURE;
+        goto null_src;
+    }
+
+    /* Count elements of src_array into i */
+    for (i = 0; src_array[i].scope != NULL; i++)
+    {
+    }
+    new_array = malloc((i+1) * sizeof(globus_net_manager_attr_t));
+    for (i = 0; src_array[i].scope != NULL; i++)
+    {
+        new_array[i].scope = strdup(src_array[i].scope);
+        if (new_array[i].scope == NULL)
+        {
+            result = GLOBUS_FAILURE;
+            goto strdup_scope_fail;
+        }
+        new_array[i].name = strdup(src_array[i].name);
+        if (new_array[i].name == NULL)
+        {
+            result = GLOBUS_FAILURE;
+            goto strdup_name_fail;
+        }
+        new_array[i].value = strdup(src_array[i].value);
+        if (new_array[i].value == NULL)
+        {
+            result = GLOBUS_FAILURE;
+            goto strdup_value_fail;
+        }
+    }
+    new_array[i] = globus_net_manager_null_attr;
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        do
+        {
+            free(new_array[i].value);
+strdup_value_fail:
+            free(new_array[i].name);
+strdup_name_fail:
+            free(new_array[i].scope);
+strdup_scope_fail:
+            i--;
+        } while (i >= 0);
+        free(new_array);
+        new_array = NULL;
+    }
+null_src:
+    *dest_array = new_array;
+null_dest:
+    return result;
 }
 /* globus_net_manager_attr_array_copy() */

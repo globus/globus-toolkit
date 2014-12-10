@@ -130,7 +130,7 @@ set_get_string_opts(void)
 {
     globus_xio_attr_t                   attr;
     globus_result_t                     result;
-    const char                         *expected_opts = "task-id=42";
+    const char                         *expected_opts = "task-id=42;";
     char                               *opts;
 
     globus_xio_attr_init(&attr);
@@ -167,13 +167,6 @@ get_driver_name(void)
     return 0;
 }
 
-static
-int
-pre_listen(void)
-{
-    return GLOBUS_FAILURE;
-}
-
 struct tests
 {
     char * test_name;
@@ -193,7 +186,6 @@ main(int argc, char *argv[])
         TEST_INITIALIZER(get_string_opts_null),
         TEST_INITIALIZER(set_get_string_opts),
         TEST_INITIALIZER(get_driver_name),
-        TEST_INITIALIZER(pre_listen),
         {NULL, NULL}
     };
     int i;

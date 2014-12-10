@@ -23,13 +23,21 @@ static int globus_l_net_manager_exec_deactivate(void);
 
 static globus_net_manager_t globus_l_net_manager_exec = {"exec"};
 
+static
+void *
+globus_l_net_manager_exec_get_manager(void)
+{
+    return &globus_l_net_manager_exec;
+}
+/* globus_l_net_manager_exec_get_manager() */
+
 GlobusExtensionDefineModule(globus_net_manager_exec) =
 {
     "globus_net_manager_exec",
     globus_l_net_manager_exec_activate,
     globus_l_net_manager_exec_deactivate,
     NULL,
-    NULL,
+    globus_l_net_manager_exec_get_manager,
     &local_version
 };
 

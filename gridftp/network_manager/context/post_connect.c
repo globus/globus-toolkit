@@ -23,7 +23,7 @@
 
 globus_result_t
 globus_net_manager_context_post_connect(
-    globus_net_manager_context_t       *context,
+    globus_net_manager_context_t        context,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -31,5 +31,6 @@ globus_net_manager_context_post_connect(
     const globus_net_manager_attr_t    *attr_array,
     globus_net_manager_attr_t         **attr_array_out)
 {
-    return GLOBUS_FAILURE;
+    *attr_array_out = NULL;
+    return GLOBUS_SUCCESS;
 }

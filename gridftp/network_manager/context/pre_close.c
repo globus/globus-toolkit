@@ -23,12 +23,12 @@
 
 globus_result_t
 globus_net_manager_context_pre_close(
-    globus_net_manager_context_t       *context,
+    globus_net_manager_context_t        context,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
     const char                         *remote_contact,
     const globus_net_manager_attr_t    *attr_array)
 {
-    return GLOBUS_FAILURE;
+    return GLOBUS_SUCCESS;
 }

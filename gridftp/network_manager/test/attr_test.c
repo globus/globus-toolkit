@@ -99,6 +99,13 @@ attr_create_from_string_bad(void)
 }
 
 int
+attr_array_delete_null(void)
+{
+    globus_net_manager_attr_array_delete(NULL);
+    return 0;
+}
+
+int
 attr_create_from_string_destroy(void)
 {
     globus_result_t result;
@@ -133,6 +140,48 @@ attr_create_from_string_destroy(void)
     return 0;
 }
 
+int
+attr_array_copy_null(void)
+{
+    globus_result_t result;
+    globus_net_manager_attr_t *attr = NULL;
+
+    result = globus_net_manager_attr_array_copy(
+            NULL, attr);
+    TEST_ASSERT (result != GLOBUS_SUCCESS);
+    result = globus_net_manager_attr_array_copy(
+            &attr, NULL);
+    TEST_ASSERT (result != GLOBUS_SUCCESS);
+
+    return 0;
+}
+
+int
+attr_array_copy_delete(void)
+{
+    globus_result_t result;
+    globus_net_manager_attr_t src[] = {
+        { "scope", "name", "value" },
+        { "scope2", "name2", "value2" },
+        GLOBUS_NET_MANAGER_NULL_ATTR
+    };
+    globus_net_manager_attr_t *attr = NULL;
+
+    result = globus_net_manager_attr_array_copy(
+            &attr, src);
+    TEST_ASSERT (result == GLOBUS_SUCCESS);
+
+    for (int i = 0; src[i].scope != NULL; i++)
+    {
+        TEST_ASSERT(strcmp(attr[i].scope, src[i].scope) == 0);
+        TEST_ASSERT(strcmp(attr[i].name, src[i].name) == 0);
+        TEST_ASSERT(strcmp(attr[i].value, src[i].value) == 0);
+    }
+    globus_net_manager_attr_array_delete(attr);
+
+    return 0;
+}
+
 struct tests
 {
     char * test_name;
@@ -150,7 +199,10 @@ main(int argc, char *argv[])
         TEST_INITIALIZER(attr_destroy_null),
         TEST_INITIALIZER(attr_create_from_string_null),
         TEST_INITIALIZER(attr_create_from_string_bad),
+        TEST_INITIALIZER(attr_array_delete_null),
         TEST_INITIALIZER(attr_create_from_string_destroy),
+        TEST_INITIALIZER(attr_array_copy_null),
+        TEST_INITIALIZER(attr_array_copy_delete),
         {NULL, NULL}
     };
     int i;

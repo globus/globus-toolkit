@@ -26,5 +26,6 @@ globus_net_manager_context_init(
     globus_net_manager_context_t       *context,
     const globus_net_manager_attr_t    *attrs)
 {
-    return GLOBUS_FAILURE;
+    *context = NULL;
+    return GLOBUS_SUCCESS;
 }

@@ -58,14 +58,6 @@ manager=first;arg=foo;another-arg=bar;manager=second;yet-another=baz
  *
  * and pass these, along with transport-specific attributes, to the network
  * managers when their functions are called. 
- *
- * In addition to the string attributes, there is one more attr_cntl which
- * invokes the pre_listen functionality, as this is possible
- * to do automatically by the XIO framework. The
- * GLOBUS_XIO_NET_MANAGER_PRE_LISTEN attr_cntl invokes the pre_listen network
- * management functions and modifies the attribute so that the network managers
- * have an opportunity to modify the transport parameters before the server
- * listener is created.
  */
 
 /** doxygen varargs filter stuff
@@ -78,13 +70,6 @@ manager=first;arg=foo;another-arg=bar;manager=second;yet-another=baz
  */
 typedef enum
 {
-    /** GlobusVarArgEnum(attr)
-     * Invoke the pre-listen network manager functions with the attribute
-     * which is to be used with globus_xio_server_create().
-     * @ingroup globus_xio_net_manager_driver
-     */
-    /* */
-    GLOBUS_XIO_NET_MANAGER_PRE_LISTEN,
     /** GlobusVarArgEnum(attr)
      * Set the task id associated with this XIO handle.
      * @ingroup globus_xio_net_manager_driver

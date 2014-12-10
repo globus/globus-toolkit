@@ -24,6 +24,6 @@
 
 void
 globus_net_manager_context_destroy(
-    globus_net_manager_context_t       *context)
+    globus_net_manager_context_t        context)
 {
 }

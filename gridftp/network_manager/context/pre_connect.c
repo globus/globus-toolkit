@@ -23,7 +23,7 @@
 
 globus_result_t
 globus_net_manager_context_pre_connect(
-    globus_net_manager_context_t       *context,
+    globus_net_manager_context_t        context,
     const char                         *task_id,
     const char                         *transport,
     const char                         *remote_contact,
@@ -31,5 +31,7 @@ globus_net_manager_context_pre_connect(
     char                              **remote_contact_out,
     globus_net_manager_attr_t         **attr_array_out)
 {
-    return GLOBUS_FAILURE;
+    *remote_contact_out = NULL;
+    *attr_array_out = NULL;
+    return GLOBUS_SUCCESS;
 }

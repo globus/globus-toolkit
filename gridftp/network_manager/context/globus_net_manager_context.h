@@ -60,11 +60,11 @@ globus_net_manager_context_init(
 
 void
 globus_net_manager_context_destroy(
-    globus_net_manager_context_t       *context);
+    globus_net_manager_context_t        context);
 
 globus_result_t
 globus_net_manager_context_pre_listen(
-    globus_net_manager_context_t       *context,
+    globus_net_manager_context_t        context,
     const char                         *task_id,
     const char                         *transport,
     const globus_net_manager_attr_t    *attr_array,
@@ -72,7 +72,7 @@ globus_net_manager_context_pre_listen(
 
 globus_result_t
 globus_net_manager_context_post_listen(
-    globus_net_manager_context_t       *context,
+    globus_net_manager_context_t        context,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -82,7 +82,7 @@ globus_net_manager_context_post_listen(
 
 globus_result_t
 globus_net_manager_context_pre_accept(
-    globus_net_manager_context_t       *context,
+    globus_net_manager_context_t        context,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -91,7 +91,7 @@ globus_net_manager_context_pre_accept(
 
 globus_result_t
 globus_net_manager_context_post_accept(
-    globus_net_manager_context_t       *context,
+    globus_net_manager_context_t        context,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -101,7 +101,7 @@ globus_net_manager_context_post_accept(
 
 globus_result_t
 globus_net_manager_context_pre_connect(
-    globus_net_manager_context_t       *context,
+    globus_net_manager_context_t        context,
     const char                         *task_id,
     const char                         *transport,
     const char                         *remote_contact,
@@ -111,7 +111,7 @@ globus_net_manager_context_pre_connect(
 
 globus_result_t
 globus_net_manager_context_post_connect(
-    globus_net_manager_context_t       *context,
+    globus_net_manager_context_t        context,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -121,7 +121,7 @@ globus_net_manager_context_post_connect(
 
 globus_result_t
 globus_net_manager_context_pre_close(
-    globus_net_manager_context_t       *context,
+    globus_net_manager_context_t        context,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -130,7 +130,7 @@ globus_net_manager_context_pre_close(
 
 globus_result_t
 globus_net_manager_context_post_close(
-    globus_net_manager_context_t       *context,
+    globus_net_manager_context_t        context,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,

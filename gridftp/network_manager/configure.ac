@@ -19,7 +19,26 @@ PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
-AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
+AC_ARG_ENABLE([python],
+    AS_HELP_STRING([--enable-python],[Enable Python Module]),
+[
+if test "$enableval" = yes; then
+    AC_PATH_PROGS([PYTHON_CONFIG], [python-config])
+    if test x"$PYTHON_CONFIG" != x; then
+        PYTHON_CPPFLAGS="$CPPFLAGS $(python-config --includes)"
+        PYTHON_LDFLAGS="$LDFLAGS $(python-config --ldflags)"
+        PYTHON_LIBS="$LIBS $(python-config --libs)"
+    else
+        AC_MSG_ERROR([Cannot find usable python-config])
+    fi
+fi
+])
+AC_SUBST(PYTHON_CPPFLAGS)
+AC_SUBST(PYTHON_LDFLAGS)
+AC_SUBST(PYTHON_LIBS)
+
+AM_CONDITIONAL([ENABLE_PYTHON], [test "x$PYTHON_CONFIG" != x])
+AM_CONDITIONAL([ENABLE_DOXYGEN], [test "x$DOXYGEN" != "x"])
 
 AC_CONFIG_FILES(
         globus-net-manager-uninstalled.pc

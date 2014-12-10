@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-/**
- * @file context/pre_listen.c
- * @brief globus_net_manager_context_pre_listen()
- */
+#ifndef GLOBUS_NET_MANAGER_EXEC_H
+#define GLOBUS_NET_MANAGER_EXEC_H 1
 
-#include "globus_net_manager_context.h"
+#include "globus_common.h"
 
-globus_result_t
-globus_net_manager_context_pre_listen(
-    globus_net_manager_context_t        context,
-    const char                         *task_id,
-    const char                         *transport,
-    const globus_net_manager_attr_t    *attr_array,
-    globus_net_manager_attr_t         **attr_array_out)
-{
-    *attr_array_out = NULL;
-    return GLOBUS_SUCCESS;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+GlobusExtensionDeclareModule(globus_net_manager_exec);
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* GLOBUS_NET_MANAGER_EXEC_H */
