@@ -100,7 +100,7 @@ typedef struct
     globus_xio_system_socket_t          fd;
     char *                              bind_address;
     globus_bool_t                       restrict_port;
-    globus_bool_t                       resuseaddr;
+    globus_bool_t                       reuseaddr;
     globus_bool_t                       no_ipv6;
     
     /* handle attrs */
@@ -159,7 +159,6 @@ static globus_mutex_t                   globus_l_xio_tcp_port_range_state_lock;
 /* string parse options table.  this rable has all of the options that
     the use can set via strings */
 static globus_xio_string_cntl_table_t tcp_l_string_opts_table[] =
-
 {
     {"port", GLOBUS_XIO_TCP_SET_SERVICE,
         globus_xio_string_cntl_string},
@@ -172,6 +171,21 @@ static globus_xio_string_cntl_table_t tcp_l_string_opts_table[] =
     {"noipv6", GLOBUS_XIO_TCP_SET_NO_IPV6,
         globus_xio_string_cntl_bool},
     {"keepalive", GLOBUS_XIO_TCP_SET_KEEPALIVE,
+        globus_xio_string_cntl_bool},
+    {"sndbuf", GLOBUS_XIO_TCP_SET_SNDBUF,
+        globus_xio_string_cntl_formated_int},
+    {"rcvbuf", GLOBUS_XIO_TCP_SET_RCVBUF,
+        globus_xio_string_cntl_formated_int},
+    {"nodelay", GLOBUS_XIO_TCP_SET_NODELAY,
+        globus_xio_string_cntl_bool},
+    {NULL, 0, NULL}
+};
+
+static globus_xio_string_cntl_table_t tcp_l_handle_string_opts_table[] =
+{
+    {"keepalive", GLOBUS_XIO_TCP_SET_KEEPALIVE,
+        globus_xio_string_cntl_bool},
+    {"oobinline", GLOBUS_XIO_TCP_SET_OOBINLINE,
         globus_xio_string_cntl_bool},
     {"sndbuf", GLOBUS_XIO_TCP_SET_SNDBUF,
         globus_xio_string_cntl_formated_int},
@@ -457,6 +471,7 @@ globus_l_xio_tcp_attr_cntl(
     globus_l_attr_t *                   attr;
     globus_xio_system_socket_t *        out_fd;
     char **                             out_string;
+    const char **                       out_const_string;
     int *                               out_int;
     globus_bool_t *                     out_bool;
     globus_result_t                     result;
@@ -615,15 +630,15 @@ globus_l_xio_tcp_attr_cntl(
         *out_bool = attr->restrict_port;
         break;
       
-      /* globus_bool_t                  resuseaddr */
+      /* globus_bool_t                  reuseaddr */
       case GLOBUS_XIO_TCP_SET_REUSEADDR:
-        attr->resuseaddr = va_arg(ap, globus_bool_t);
+        attr->reuseaddr = va_arg(ap, globus_bool_t);
         break;
         
-      /* globus_bool_t *                resuseaddr_out */
+      /* globus_bool_t *                reuseaddr_out */
       case GLOBUS_XIO_TCP_GET_REUSEADDR:
         out_bool = va_arg(ap, globus_bool_t *);
-        *out_bool = attr->resuseaddr;
+        *out_bool = attr->reuseaddr;
         break;
       
       /* globus_bool_t                  no_ipv6 */
@@ -752,6 +767,130 @@ globus_l_xio_tcp_attr_cntl(
         *out_bool = attr->use_blocking_io;
         break;
 
+      case GLOBUS_XIO_GET_DRIVER_NAME:
+        out_const_string = va_arg(ap, const char **);
+        *out_const_string = "tcp";
+        break;
+
+      case GLOBUS_XIO_GET_STRING_OPTIONS:
+      {
+        out_string = va_arg(ap, char **);
+        size_t string_opts_len = 1;
+        if (attr->listener_serv)
+        {
+            string_opts_len += snprintf(
+                NULL, 0, "port=%s;", attr->listener_serv);
+        }
+        if (attr->listener_min_port || attr->listener_max_port)
+        {
+            string_opts_len += snprintf(
+                NULL, 0,
+                "listen_range=%d %d;",
+                attr->listener_min_port,
+                attr->listener_max_port);
+        }
+       
+        if (attr->bind_address)
+        {
+            string_opts_len += snprintf(
+                NULL, 0,
+                "iface=%s;",
+                attr->bind_address);
+        }
+
+        string_opts_len += snprintf(
+                NULL, 0,
+                "reuse=%s;",
+                attr->reuseaddr ? "true" : "false");
+        string_opts_len += snprintf(
+                NULL, 0,
+                "noipv6=%s;",
+                attr->no_ipv6 ? "true" : "false");
+        string_opts_len += snprintf(
+                NULL, 0,
+                "keepalive=%s;",
+                attr->keepalive ? "true" : "false");
+        if (attr->sndbuf)
+        {
+            string_opts_len += snprintf(
+                    NULL, 0,
+                    "sndbuf=%d;",
+                    attr->sndbuf);
+        }
+        if (attr->rcvbuf)
+        {
+            string_opts_len += snprintf(
+                    NULL, 0,
+                    "rcvbuf=%d;",
+                    attr->rcvbuf);
+        }
+        if (attr->nodelay)
+        {
+            string_opts_len += snprintf(
+                    NULL, 0,
+                    "nodelay=%d;",
+                    attr->rcvbuf);
+        }
+        *out_string = malloc(string_opts_len);
+
+        string_opts_len = 0;
+        if (attr->listener_serv)
+        {
+            string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "port=%s;", attr->listener_serv);
+        }
+        if (attr->listener_min_port || attr->listener_max_port)
+        {
+            string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "listen_range=%d %d;",
+                attr->listener_min_port,
+                attr->listener_max_port);
+        }
+       
+        if (attr->bind_address)
+        {
+            string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "iface=%s;",
+                attr->bind_address);
+        }
+
+        string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "reuse=%s;",
+                attr->reuseaddr ? "true" : "false");
+        string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "noipv6=%s;",
+                attr->no_ipv6 ? "true" : "false");
+        string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "keepalive=%s;",
+                attr->keepalive ? "true" : "false");
+        if (attr->sndbuf)
+        {
+            string_opts_len += sprintf(
+                    *out_string + string_opts_len,
+                    "sndbuf=%d;",
+                    attr->sndbuf);
+        }
+        if (attr->rcvbuf)
+        {
+            string_opts_len += sprintf(
+                    *out_string + string_opts_len,
+                    "rcvbuf=%d;",
+                    attr->rcvbuf);
+        }
+        string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "nodelay=%s;",
+                attr->nodelay ? "true" : "false");
+        *((*out_string) + string_opts_len - 1) = '\0';
+      }
+        break;
+
       default:
         result = GlobusXIOErrorInvalidCommand(cmd);
         goto error_invalid;
@@ -874,7 +1013,7 @@ globus_l_xio_tcp_apply_handle_attrs(
     
     if(do_bind_attrs)
     {
-        if(attr->resuseaddr)
+        if(attr->reuseaddr)
         {
             result = globus_xio_system_socket_setsockopt(
                 fd, SOL_SOCKET, SO_REUSEADDR, &int_one, sizeof(int_one));
@@ -2725,6 +2864,102 @@ globus_l_xio_tcp_cntl(
         *out_bool = handle->use_blocking_io;
         break;
         
+      case GLOBUS_XIO_GET_STRING_OPTIONS:
+      {
+        size_t string_opts_len = 1;
+        globus_bool_t keepalive, oobinline, nodelay;
+        int sndbuf, rcvbuf;
+        out_string = va_arg(ap, char **);
+
+        *out_string = NULL;
+
+        len = sizeof(globus_bool_t);
+        result = globus_xio_system_socket_getsockopt(
+            fd, SOL_SOCKET, SO_KEEPALIVE, &keepalive, &len);
+        if (result)
+        {
+            goto error_sockopt;
+        }
+
+        len = sizeof(globus_bool_t);
+        result = globus_xio_system_socket_getsockopt(
+            fd, SOL_SOCKET, SO_OOBINLINE, &oobinline, &len);
+        if (result)
+        {
+            goto error_sockopt;
+        }
+
+        len = sizeof(int);
+        result = globus_xio_system_socket_getsockopt(
+            fd, SOL_SOCKET, SO_SNDBUF, &sndbuf, &len);
+        if (result)
+        {
+            goto error_sockopt;
+        }
+
+        len = sizeof(int);
+        result = globus_xio_system_socket_getsockopt(
+            fd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, &len);
+        if (result)
+        {
+            goto error_sockopt;
+        }
+
+        len = sizeof(globus_bool_t);
+        result = globus_xio_system_socket_getsockopt(
+            fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, &len);
+        if (result)
+        {
+            goto error_sockopt;
+        }
+
+        string_opts_len += snprintf(
+                NULL, 0,
+                "keepalive=%s;",
+                keepalive ? "true" : "false");
+        string_opts_len += snprintf(
+                NULL, 0,
+                "oobinline=%s;",
+                oobinline ? "true" : "false");
+        string_opts_len += snprintf(
+                NULL, 0,
+                "sndbuf=%d;",
+                sndbuf);
+        string_opts_len += snprintf(
+                NULL, 0,
+                "rcvbuf=%d;",
+                rcvbuf);
+        string_opts_len += snprintf(
+                NULL, 0,
+                "nodelay=%s;",
+                nodelay ? "true" : "false");
+        *out_string = malloc(string_opts_len);
+
+        string_opts_len = 0;
+        string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "keepalive=%s;",
+                keepalive ? "true" : "false");
+        string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "oobinline=%s;",
+                oobinline ? "true" : "false");
+        string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "sndbuf=%d;",
+                sndbuf);
+        string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "rcvbuf=%d;",
+                rcvbuf);
+        string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "nodelay=%s;",
+                nodelay ? "true" : "false");
+        *((*out_string) + string_opts_len - 1) = '\0';
+      }
+      break;
+        
       default:
         result = GlobusXIOErrorInvalidCommand(cmd);
         goto error_invalid;
@@ -2788,6 +3023,10 @@ globus_l_xio_tcp_init(
     globus_xio_driver_string_cntl_set_table(
         driver,
         tcp_l_string_opts_table);
+
+    globus_xio_driver_handle_string_cntl_set_table(
+        driver,
+        tcp_l_handle_string_opts_table);
     
     *out_driver = driver;
     
