@@ -1,4 +1,5 @@
 Name:           gridftp-hdfs
+%global _name %(tr - _ <<< %{name})
 Version:        1.0
 Release:        1
 Summary:        HDFS DSI plugin for GridFTP
@@ -6,6 +7,7 @@ Summary:        HDFS DSI plugin for GridFTP
 Group:          System Environment/Daemons
 License:        ASL 2.0
 URL:            http://twiki.grid.iu.edu/bin/view/Storage/HadoopInstallation
+Source:         http://www.globus.org/ftppub/gt6/packages/%{_name}-%{Version}.tar.gz
 Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -94,6 +96,9 @@ fi
 %{_sysconfdir}/init.d/%{name}
 
 %changelog
+* Wed Dec 10 2014 Joseph Bester <bester@mcs.anl.gov> - 1.0-2
+- Source tarball name fix
+
 * Fri Nov 14 2014 Joseph Bester <bester@mcs.anl.gov> - 1.0-1
 - Imported into GT6
 - Initial support for native hdfs on Fedora
