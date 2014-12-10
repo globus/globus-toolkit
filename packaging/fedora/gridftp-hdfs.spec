@@ -19,10 +19,10 @@ BuildRequires: libhdfs
 %else
 # Requires cloudera versions for other releases
 BuildRequires: hadoop-0.20-libhdfs
-BuildRequires: globus-gridftp-server-devel
-BuildRequires: globus-common-devel
 Requires: hadoop-0.20-libhdfs
 %endif
+BuildRequires: globus-gridftp-server-devel
+BuildRequires: globus-common-devel
 
 Requires: globus-gridftp-server-progs
 Requires: xinetd
