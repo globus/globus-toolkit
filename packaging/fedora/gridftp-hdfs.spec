@@ -8,7 +8,6 @@ Group:          System Environment/Daemons
 License:        ASL 2.0
 URL:            http://twiki.grid.iu.edu/bin/view/Storage/HadoopInstallation
 Source:         http://www.globus.org/ftppub/gt6/packages/%{_name}-%{Version}.tar.gz
-Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: java-devel
