@@ -452,6 +452,141 @@ globus_l_xio_udt_ref_attr_cntl(
             attr->fd = va_arg(ap, int);
             break;
 
+        case GLOBUS_XIO_GET_STRING_OPTIONS:
+            {
+                out_string = va_arg(ap, char **);
+                size_t string_opts_len = 1;
+                if (attr->mss != -1)
+                {
+                    string_opts_len += snprintf(
+                        NULL, 0, "mss=%d;", attr->mss);
+                }
+                if (attr->sndsyn != XIO_UDT_BOOL_UNDEF)
+                {
+                    string_opts_len += snprintf(
+                        NULL, 0, "sndsyn=%s;", attr->sndsyn ? "true" : "false");
+                }
+                if (attr->rcvsyn != XIO_UDT_BOOL_UNDEF)
+                {
+                    string_opts_len += snprintf(
+                        NULL, 0, "rcvsyn=%s;", attr->rcvsyn ? "true" : "false");
+                }
+                if (attr->fc != -1)
+                {
+                    string_opts_len += snprintf(
+                        NULL, 0, "fc=%d;", attr->fc);
+                }
+                if (attr->sndbuf != -1)
+                {
+                    string_opts_len += snprintf(
+                        NULL, 0, "sndbuf=%d;", attr->sndbuf);
+                }
+                if (attr->rcvbuf != -1)
+                {
+                    string_opts_len += snprintf(
+                        NULL, 0, "rcvbuf=%d;", attr->rcvbuf);
+                }
+                if (attr->rendezvous != XIO_UDT_BOOL_UNDEF)
+                {
+                    string_opts_len += snprintf(
+                        NULL, 0, "rendezvous=%s;",
+                                attr->rendezvous ? "true" : "false");
+                }
+                if (attr->sndtimeo != -1)
+                {
+                    string_opts_len += snprintf(
+                        NULL, 0, "sndtimeo=%d;", attr->sndtimeo);
+                }
+                if (attr->rcvtimeo != -1)
+                {
+                    string_opts_len += snprintf(
+                        NULL, 0, "rcvtimeo=%d;", attr->rcvtimeo);
+                }
+                if (attr->reuseaddr != XIO_UDT_BOOL_UNDEF)
+                {
+                    string_opts_len += snprintf(
+                        NULL, 0, "reuseaddr=%s;",
+                                attr->reuseaddr ? "true" : "false");
+                }
+                if (attr->port != -1)
+                {
+                    string_opts_len += snprintf(
+                        NULL, 0, "port=%d;", attr->port);
+                }
+
+                *out_string = reinterpret_cast<char *>(malloc(string_opts_len));
+                string_opts_len = 0;
+
+                if (attr->mss != -1)
+                {
+                    string_opts_len += sprintf(
+                        (*out_string) + string_opts_len,
+                        "mss=%d;", attr->mss);
+                }
+                if (attr->sndsyn != XIO_UDT_BOOL_UNDEF)
+                {
+                    string_opts_len += sprintf(
+                        (*out_string) + string_opts_len,
+                        "sndsyn=%s;", attr->sndsyn ? "true" : "false");
+                }
+                if (attr->rcvsyn != XIO_UDT_BOOL_UNDEF)
+                {
+                    string_opts_len += sprintf(
+                        (*out_string) + string_opts_len,
+                        "rcvsyn=%s;", attr->rcvsyn ? "true" : "false");
+                }
+                if (attr->fc != -1)
+                {
+                    string_opts_len += sprintf(
+                        (*out_string) + string_opts_len,
+                        "fc=%d;", attr->fc);
+                }
+                if (attr->sndbuf != -1)
+                {
+                    string_opts_len += sprintf(
+                        (*out_string) + string_opts_len,
+                        "sndbuf=%d;", attr->sndbuf);
+                }
+                if (attr->rcvbuf != -1)
+                {
+                    string_opts_len += sprintf(
+                        (*out_string) + string_opts_len,
+                        "rcvbuf=%d;", attr->rcvbuf);
+                }
+                if (attr->rendezvous != XIO_UDT_BOOL_UNDEF)
+                {
+                    string_opts_len += sprintf(
+                        (*out_string) + string_opts_len,
+                        "rendezvous=%s;",
+                                attr->rendezvous ? "true" : "false");
+                }
+                if (attr->sndtimeo != -1)
+                {
+                    string_opts_len += sprintf(
+                        (*out_string) + string_opts_len,
+                        "sndtimeo=%d;", attr->sndtimeo);
+                }
+                if (attr->rcvtimeo != -1)
+                {
+                    string_opts_len += sprintf(
+                        (*out_string) + string_opts_len,
+                        "rcvtimeo=%d;", attr->rcvtimeo);
+                }
+                if (attr->reuseaddr != XIO_UDT_BOOL_UNDEF)
+                {
+                    string_opts_len += sprintf(
+                        (*out_string) + string_opts_len,
+                        "reuseaddr=%s;",
+                                attr->reuseaddr ? "true" : "false");
+                }
+                if (attr->port != -1)
+                {
+                    string_opts_len += sprintf(
+                        (*out_string) + string_opts_len,
+                        "port=%d;", attr->port);
+                }
+            }
+            break;
         default:
             break;
     }
