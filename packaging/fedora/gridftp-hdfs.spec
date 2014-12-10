@@ -39,7 +39,7 @@ HDFS DSI plugin for GridFTP
 
 %prep
 
-%setup -q
+%setup -q -n %{_name}-%{version}
 
 %build
 
