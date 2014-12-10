@@ -79,7 +79,7 @@ typedef struct
     int                                 listener_max_port;
     char *                              bind_address;
     globus_bool_t                       restrict_port;
-    globus_bool_t                       resuseaddr;
+    globus_bool_t                       reuseaddr;
     globus_bool_t                       no_ipv6;
     int                                 sndbuf;
     int                                 rcvbuf;
@@ -111,6 +111,25 @@ static globus_l_attr_t                  globus_l_xio_udp_attr_default =
     
     GLOBUS_FALSE,                       /* use_addr */
     {0}                                 /* addr */
+};
+
+static globus_xio_string_cntl_table_t   udp_l_string_opts_table[] =
+{
+    {"port", GLOBUS_XIO_UDP_SET_SERVICE,
+        globus_xio_string_cntl_string},
+    {"listen_range", GLOBUS_XIO_UDP_SET_LISTEN_RANGE,
+        globus_xio_string_cntl_int_int},
+    {"iface", GLOBUS_XIO_UDP_SET_INTERFACE,
+        globus_xio_string_cntl_string},
+    {"reuse", GLOBUS_XIO_UDP_SET_REUSEADDR,
+        globus_xio_string_cntl_bool},
+    {"noipv6", GLOBUS_XIO_UDP_SET_NO_IPV6,
+        globus_xio_string_cntl_bool},
+    {"sndbuf", GLOBUS_XIO_UDP_SET_SNDBUF,
+        globus_xio_string_cntl_formated_int},
+    {"rcvbuf", GLOBUS_XIO_UDP_SET_RCVBUF,
+        globus_xio_string_cntl_formated_int},
+    {NULL, 0, NULL }
 };
 
 /*
@@ -256,7 +275,7 @@ globus_l_xio_udp_attr_cntl(
       case GLOBUS_XIO_UDP_SET_SERVICE:
         if(attr->listener_serv)
         {
-            globus_free(attr->listener_serv);
+            free(attr->listener_serv);
         }
         
         attr->listener_serv = va_arg(ap, char *);
@@ -320,7 +339,7 @@ globus_l_xio_udp_attr_cntl(
       case GLOBUS_XIO_UDP_SET_INTERFACE:
         if(attr->bind_address)
         {
-            globus_free(attr->bind_address);
+            free(attr->bind_address);
         }
         
         attr->bind_address = va_arg(ap, char *);
@@ -364,15 +383,15 @@ globus_l_xio_udp_attr_cntl(
         *out_bool = attr->restrict_port;
         break;
       
-      /* globus_bool_t                  resuseaddr */
+      /* globus_bool_t                  reuseaddr */
       case GLOBUS_XIO_UDP_SET_REUSEADDR:
-        attr->resuseaddr = va_arg(ap, globus_bool_t);
+        attr->reuseaddr = va_arg(ap, globus_bool_t);
         break;
         
-      /* globus_bool_t *                resuseaddr_out */
+      /* globus_bool_t *                reuseaddr_out */
       case GLOBUS_XIO_UDP_GET_REUSEADDR:
         out_bool = va_arg(ap, globus_bool_t *);
-        *out_bool = attr->resuseaddr;
+        *out_bool = attr->reuseaddr;
         break;
       
       /* globus_bool_t                  no_ipv6 */
@@ -524,6 +543,105 @@ globus_l_xio_udp_attr_cntl(
         
         break;
 
+      case GLOBUS_XIO_GET_STRING_OPTIONS:
+        out_string = va_arg(ap, char **);
+        size_t string_opts_len = 1;
+        if (attr->listener_serv)
+        {
+            string_opts_len += snprintf(
+                NULL, 0, "port=%s;", attr->listener_serv);
+        }
+        if (attr->listener_min_port || attr->listener_max_port)
+        {
+            string_opts_len += snprintf(
+                NULL, 0,
+                "listen_range=%d %d;",
+                attr->listener_min_port,
+                attr->listener_max_port);
+        }
+       
+        if (attr->bind_address)
+        {
+            string_opts_len += snprintf(
+                NULL, 0,
+                "iface=%s;",
+                attr->bind_address);
+        }
+
+        string_opts_len += snprintf(
+                NULL, 0,
+                "reuse=%s;",
+                attr->reuseaddr ? "true" : "false");
+        string_opts_len += snprintf(
+                NULL, 0,
+                "noipv6=%s;",
+                attr->no_ipv6 ? "true" : "false");
+        if (attr->sndbuf)
+        {
+            string_opts_len += snprintf(
+                    NULL, 0,
+                    "sndbuf=%d;",
+                    attr->sndbuf);
+        }
+        if (attr->rcvbuf)
+        {
+            string_opts_len += snprintf(
+                    NULL, 0,
+                    "rcvbuf=%d;",
+                    attr->rcvbuf);
+        }
+        *out_string = malloc(string_opts_len);
+
+        string_opts_len = 0;
+        if (attr->listener_serv)
+        {
+            string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "port=%s;", attr->listener_serv);
+        }
+        if (attr->listener_min_port || attr->listener_max_port)
+        {
+            string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "listen_range=%d %d;",
+                attr->listener_min_port,
+                attr->listener_max_port);
+        }
+       
+        if (attr->bind_address)
+        {
+            string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "iface=%s;",
+                attr->bind_address);
+        }
+
+        string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "reuse=%s;",
+                attr->reuseaddr ? "true" : "false");
+        string_opts_len += sprintf(
+                *out_string + string_opts_len,
+                "noipv6=%s;",
+                attr->no_ipv6 ? "true" : "false");
+        if (attr->sndbuf)
+        {
+            string_opts_len += sprintf(
+                    *out_string + string_opts_len,
+                    "sndbuf=%d;",
+                    attr->sndbuf);
+        }
+        if (attr->rcvbuf)
+        {
+            string_opts_len += sprintf(
+                    *out_string + string_opts_len,
+                    "rcvbuf=%d;",
+                    attr->rcvbuf);
+        }
+        *((*out_string) + string_opts_len - 1) = '\0';
+        break;
+
+
       default:
         result = GlobusXIOErrorInvalidCommand(cmd);
         goto error_invalid;
@@ -589,11 +707,11 @@ globus_l_xio_udp_attr_copy(
 error_listener_serv:
     if(attr->bind_address)
     {
-        globus_free(attr->bind_address);
+        free(attr->bind_address);
     }
     
 error_bind_address:
-    globus_free(attr);
+    free(attr);
     
 error_attr:
     return result;
@@ -613,14 +731,14 @@ globus_l_xio_udp_attr_destroy(
     attr = (globus_l_attr_t *) driver_attr;
     if(attr->bind_address)
     {
-        globus_free(attr->bind_address);
+        free(attr->bind_address);
     }
     if(attr->listener_serv)
     {
-        globus_free(attr->listener_serv);
+        free(attr->listener_serv);
     }
     
-    globus_free(attr);
+    free(attr);
 
     return GLOBUS_SUCCESS;
 }
@@ -636,7 +754,7 @@ globus_l_xio_udp_apply_handle_attrs(
     int                                 int_one = 1;
     GlobusXIOName(globus_l_xio_udp_apply_handle_attrs);
     
-    if(attr->resuseaddr)
+    if(attr->reuseaddr)
     {
         result = globus_xio_system_socket_setsockopt(
             fd, SOL_SOCKET, SO_REUSEADDR, &int_one, sizeof(int_one));
@@ -1007,7 +1125,7 @@ globus_l_xio_udp_handle_destroy(
 {
     GlobusXIOName(globus_l_xio_udp_handle_destroy);
     
-    globus_free(handle);
+    free(handle);
 }
 
 static
@@ -1586,6 +1704,10 @@ globus_l_xio_udp_init(
         globus_l_xio_udp_attr_cntl,
         globus_l_xio_udp_attr_destroy);
     
+    globus_xio_driver_string_cntl_set_table(
+        driver,
+        udp_l_string_opts_table);
+
     *out_driver = driver;
 
     return GLOBUS_SUCCESS;
