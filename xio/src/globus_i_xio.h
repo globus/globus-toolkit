@@ -640,6 +640,7 @@ typedef struct globus_i_xio_driver_s
     globus_bool_t                       extension_activated;
 
     globus_xio_string_cntl_table_t *    string_table;
+    globus_xio_string_cntl_table_t *    handle_string_table;
 
     /*
      *  main io interface functions

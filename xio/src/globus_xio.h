@@ -40,7 +40,6 @@ extern "C" {
  * - @ref GLOBUS_XIO_API
  * - @ref GLOBUS_XIO_API_ASSIST
  * - @ref globus_xio_driver
- * - @ref globus_xio_driver_programming
  */
 
 /**

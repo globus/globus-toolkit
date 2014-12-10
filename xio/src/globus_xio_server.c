@@ -1507,14 +1507,6 @@ globus_xio_server_close(
     return res;
 }
 
-#define GlobusLXioFreeNull(_member)                                         \
-    {                                                                       \
-        if((_member))                                                       \
-        {                                                                   \
-            globus_free((_member));                                         \
-        }                                                                   \
-    }
-    
 void
 globus_xio_contact_destroy(
     globus_xio_contact_t *              contact_info)
@@ -1522,15 +1514,18 @@ globus_xio_contact_destroy(
     GlobusXIOName(globus_xio_contact_destroy);
 
     GlobusXIODebugInternalEnter();
-    
-    GlobusLXioFreeNull(contact_info->unparsed);
-    GlobusLXioFreeNull(contact_info->resource);
-    GlobusLXioFreeNull(contact_info->host);
-    GlobusLXioFreeNull(contact_info->port);
-    GlobusLXioFreeNull(contact_info->scheme);
-    GlobusLXioFreeNull(contact_info->user);
-    GlobusLXioFreeNull(contact_info->pass);
-    GlobusLXioFreeNull(contact_info->subject);
+
+    if (contact_info)
+    {
+        free(contact_info->unparsed);
+        free(contact_info->resource);
+        free(contact_info->host);
+        free(contact_info->port);
+        free(contact_info->scheme);
+        free(contact_info->user);
+        free(contact_info->pass);
+        free(contact_info->subject);
+    }
     
     GlobusXIODebugInternalExit();
 }

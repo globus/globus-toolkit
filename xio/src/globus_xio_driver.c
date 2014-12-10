@@ -1183,6 +1183,12 @@ globus_i_xio_driver_attr_cntl(
                 ds,
                 driver->attr_cntl_func);
         }
+        else if (cmd == GLOBUS_XIO_GET_DRIVER_NAME)
+        {
+            const char **               conststropt;
+            conststropt = va_arg(ap, const char **);
+            *conststropt = driver->name;
+        }
         else
         {
             res = driver->attr_cntl_func(ds, cmd, ap);
@@ -1353,7 +1359,7 @@ globus_i_xio_driver_dd_cntl(
                     if(op->entry[ctr].open_attr == NULL)
                     {
                         res = 
-                        op->_op_context->entry[ctr].driver->attr_init_func(
+                        op->_op_server->entry[ctr].driver->attr_init_func(
                             &op->entry[ctr].open_attr);
                     }
                     in_attr = op->entry[ctr].open_attr;
@@ -2183,6 +2189,36 @@ error:
     return result;
 }
 
+globus_result_t
+globus_xio_driver_handle_string_cntl_set_table(
+    globus_xio_driver_t                driver,
+    globus_xio_string_cntl_table_t *   table)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_xio_driver_string_cntl_set_table);
+
+    GlobusXIODebugEnter();
+
+    if(driver == NULL)
+    {
+        result = GlobusXIOErrorParameter("driver");
+        goto error;
+    }
+    if(table == NULL)
+    {
+        result = GlobusXIOErrorParameter("table");
+        goto error;
+    }
+    driver->handle_string_table = table;
+
+    GlobusXIODebugExit();
+
+    return GLOBUS_SUCCESS;
+error:
+    GlobusXIODebugExitWithError();
+    return result;
+}
+
 void
 globus_xio_operation_block_timeout(
     globus_xio_operation_t              op)
@@ -2301,6 +2337,10 @@ globus_xio_operation_get_user_driver(
     return op->_op_context->entry[op->ndx - 1].driver;
 }
 
+/**
+ * @brief Get the XIO transport driver associated with an op
+ * @ingroup globus_xio_driver_programming
+ */
 globus_xio_driver_t
 globus_xio_operation_get_transport_user_driver(
     globus_xio_operation_t              op)
