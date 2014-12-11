@@ -2366,6 +2366,11 @@ globus_xio_driver_handle_t
 globus_xio_operation_get_driver_handle(
     globus_xio_operation_t              op)
 {
+    if (op->type == GLOBUS_XIO_OPERATION_TYPE_SERVER_INIT ||
+        op->type == GLOBUS_XIO_OPERATION_TYPE_ACCEPT)
+    {
+        return NULL;
+    }
     return &op->_op_context->entry[op->ndx];
 }
 
