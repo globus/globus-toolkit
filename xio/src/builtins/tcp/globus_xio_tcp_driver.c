@@ -824,13 +824,11 @@ globus_l_xio_tcp_attr_cntl(
                     "rcvbuf=%d;",
                     attr->rcvbuf);
         }
-        if (attr->nodelay)
-        {
-            string_opts_len += snprintf(
+	string_opts_len += snprintf(
                     NULL, 0,
                     "nodelay=%d;",
-                    attr->rcvbuf);
-        }
+                    attr->nodelay ? "true" : "false");
+
         *out_string = malloc(string_opts_len);
 
         string_opts_len = 0;
