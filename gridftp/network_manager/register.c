@@ -32,5 +32,5 @@ globus_result_t
 globus_net_manager_register(
     globus_net_manager_t               *manager)
 {
-    return GLOBUS_FAILURE;
+    return GLOBUS_SUCCESS;
 }

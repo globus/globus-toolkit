@@ -60,10 +60,10 @@ extern "C" {
  * shows the simplest network manager implementation in C</dd>
  * <!--<dt>Exec Manager</dt>
  * <dd>Launches a command when network operations occur. This implementation
- * enables network managers to be implemented in any external process.</dd>
- * <dt>Python Manager<dt>
+ * enables network managers to be implemented in any external process.</dd>-->
+ * <dt>@ref globus_net_manager_python<dt>
  * <dd>Loads a python module, and calls python functions when network
- * operations occur.</dd>-->
+ * operations occur.</dd>
  * </dl>
  *
  * The Logging Manager sample is broken down in detail in the

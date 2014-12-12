@@ -1,4 +1,10 @@
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/attr -I$(srcdir) -I$(top_srcdir)/xio_driver
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) \
+        -I$(top_srcdir) \
+        -I$(top_builddir) \
+        -I$(top_srcdir)/attr \
+        -I$(srcdir) \
+        -I$(top_srcdir)/xio_driver \
+        -I$(top_srcdir)/python
 LDADD = $(top_builddir)/libglobus_net_manager.la $(PACKAGE_DEP_LIBS)
 
 check_LTLIBRARIES = \
@@ -17,6 +23,14 @@ check_PROGRAMS = \
     attr_test \
     xio_driver_cntl_test \
     xio_driver_test
+
+if ENABLE_PYTHON
+check_PROGRAMS += python_test
+TESTS_ENVIRONMENT = export \
+    PYTHONPATH=$${PYTHONPATH:+$$PYTHONPATH:}$(srcdir);
+endif
+
+EXTRA_DIST = test_module.py
 
 TESTS = $(check_PROGRAMS)
 LOG_COMPILER = $(LIBTOOL) --mode=execute \

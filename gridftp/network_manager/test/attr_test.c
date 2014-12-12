@@ -124,7 +124,7 @@ attr_create_from_string_destroy(void)
     {
         TEST_ASSERT (strcmp(attr[i].scope, scope) == 0);
     }
-    TEST_ASSERT (i == 4);
+    TEST_ASSERT (i == 3);
 
     TEST_ASSERT (strcmp(attr[0].name, "manager") == 0);
     TEST_ASSERT (strcmp(attr[0].value, "foo") == 0);

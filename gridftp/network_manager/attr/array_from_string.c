@@ -98,6 +98,14 @@ globus_net_manager_attr_array_from_string(
 
         attr_name = globus_list_remove(
                 &attr_string_list, attr_string_list);
+        if (*attr_name  == '\0')
+        {
+            attr_string_list_size--;
+            attr_array[attr_string_list_size - 1] =
+                    globus_net_manager_null_attr;
+            free(attr_name);
+            continue;
+        }
         attr_value = strchr(attr_name, '=');
         if (!attr_value)
         {
