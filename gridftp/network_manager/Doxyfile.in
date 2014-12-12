@@ -11,6 +11,7 @@ HIDE_UNDOC_CLASSES     = YES
 HIDE_UNDOC_RELATIONS   = YES
 GENERATE_DEPRECATEDLIST= YES
 INPUT                  = @top_srcdir@
+EXAMPLE_PATH           = @top_srcdir@/logging
 RECURSIVE              = YES
 QUIET                  = YES
 EXCLUDE_PATTERNS       = version.h test
