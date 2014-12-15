@@ -1,11 +1,17 @@
-AC_INIT([globus_toolkit], [6.1alpha1], [https://globus.atlassian.net/])
+m4_define([globus_buildno], [m4_syscmd([
+if test -d .git ; then
+    git log -n 1 --pretty=format:%ct > globus-version.inc;
+fi])dnl
+m4_[]include(globus-version.inc)])dnl
+m4_define([gtreleasebuild], [6.0.]globus_buildno)
+AC_INIT([globus_toolkit], gtreleasebuild, [https://globus.atlassian.net/])
 m4_define([short_version], [m4_substr(AC_PACKAGE_VERSION, [0],
     m4_index(AC_PACKAGE_VERSION, [.]))])
 AC_PREFIX_DEFAULT([/usr/local/globus-]short_version)
 export GLOBUS_VERSION=$VERSION
 syscmd([./update-dirt.sh])
 syscmd([test -x ./prep-gsissh && sh -x ./prep-gsissh || true])
-syscmd([test -x ./write-globus-version && sh -x ./write-globus-version ]AC_PACKAGE_VERSION [ || true])
+syscmd([test -x ./write-globus-version && sh -x ./write-globus-version ]AC_PACKAGE_VERSION)
 m4_include([gsi_openssh/version.m4])
 AC_SUBST([GSI_OPENSSH_VERSION], [gsissh_version])
 AC_CONFIG_AUX_DIR([build-aux])

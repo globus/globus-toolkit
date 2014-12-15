@@ -28,6 +28,7 @@ globus_i_gsi_sysconfig_config.h.in
 globus_i_gsi_sysconfig_config.h.in~
 globus_i_xio_config.h.in
 globus_i_xio_config.h.in~
+globus-version.inc
 gptdata.sh
 install-sh
 libtool.m4
