@@ -9,6 +9,7 @@ AC_CONFIG_MACRO_DIR([m4])
 PACKAGE_VERSION2=${PACKAGE_VERSION%.*}
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION2%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION2##*.}])
+AC_SUBST([MICRO_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [0])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-usage >= 3, globus-gssapi-gsi >= 9, globus-gss-assist >= 8, globus-gsi-sysconfig >= 5, globus-gsi-cert-utils >= 8, globus-gsi-proxy-core >= 6, globus-gsi-credential >= 5, globus-gsi-callback >= 4"])
 
@@ -351,5 +352,6 @@ AC_CONFIG_FILES([
 	web/Makefile
 	systemd/Makefile
 	man/Makefile
+	myproxy.h
 	myproxy.pc])
 AC_OUTPUT

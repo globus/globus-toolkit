@@ -19,7 +19,6 @@ LibSources= \
 	gsi_socket_priv.h \
 	gssapi.c \
 	myproxy.c \
-	myproxy.h \
 	myproxy_authorization.c \
 	myproxy_authorization.h \
 	myproxy_common.h \
@@ -78,8 +77,9 @@ sbin_SCRIPTS = $(Scripts)
 
 check_SCRIPTS = myproxy-test-wrapper
 
-include_HEADERS= \
-	myproxy.h \
+nodist_include_HEADERS = \
+	myproxy.h
+include_HEADERS = \
 	myproxy_constants.h \
 	myproxy_authorization.h \
 	myproxy_protocol.h \
