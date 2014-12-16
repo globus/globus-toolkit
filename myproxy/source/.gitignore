@@ -1,6 +1,7 @@
 *.la
 *.lo
 .libs
+myproxy-date.inc
 BUILD
 Makefile
 Makefile.in

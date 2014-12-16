@@ -1,5 +1,4 @@
 dnl Process this file with autoconf to produce a configure script.
-
 AC_INIT([myproxy],[6.1.9])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign])
@@ -12,6 +11,19 @@ AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION2##*.}])
 AC_SUBST([MICRO_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [0])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-usage >= 3, globus-gssapi-gsi >= 9, globus-gss-assist >= 8, globus-gsi-sysconfig >= 5, globus-gsi-cert-utils >= 8, globus-gsi-proxy-core >= 6, globus-gsi-credential >= 5, globus-gsi-callback >= 4"])
+
+m4_define([myproxy_date], m4_syscmd([
+if git rev-parse --show-toplevel 2> /dev/null; then
+    git log -n 1 --pretty=format:%cD | awk '{printf $3 " " $4}' > myproxy-date.inc.new;
+    if ! cmp myproxy-date.inc myproxy-date.inc.new > /dev/null 2>&1; then
+        mv myproxy-date.inc.new myproxy-date.inc
+    else
+        rm myproxy-date.inc.new
+    fi
+fi])dnl
+m4_incl[ude(myproxy-date.inc)])dnl
+MYPROXY_DATE="myproxy_date"
+AC_SUBST([MYPROXY_DATE])
 
 PKG_CHECK_EXISTS([globus-proxy-utils], [
     GSI_PROXY_UTILS_PATH="$($PKG_CONFIG --variable=path globus-proxy-utils)"])
