@@ -1,6 +1,6 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.1.9
+Version:	6.1.10
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -533,6 +533,9 @@ fi
 %endif
 
 %changelog
+* Tue Dec 16 2014 Globus Toolkit <support@globus.org> - 6.1.10-1
+- Fix version and date string macros
+
 * Mon Dec 08 2014 Globus Toolkit <support@globus.org> - 6.1.9-1
 - Myproxy systemd fix
 

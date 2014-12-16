@@ -1,3 +1,9 @@
+myproxy (6.1.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix version and date string macros
+
+ -- Globus Toolkit <support@globus.org>  Tue, 16 Dec 2014 12:31:09 -0500
+
 myproxy (6.1.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Myproxy systemd fix
