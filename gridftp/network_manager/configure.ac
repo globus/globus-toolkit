@@ -39,6 +39,9 @@ AC_SUBST(PYTHON_CPPFLAGS)
 AC_SUBST(PYTHON_LDFLAGS)
 AC_SUBST(PYTHON_LIBS)
 
+if test "x$PYTHON_CONFIG" != x; then
+    AC_DEFINE([ENABLE_PYTHON], [1], [Define to `1' to build python module])
+fi
 AM_CONDITIONAL([ENABLE_PYTHON], [test "x$PYTHON_CONFIG" != x])
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "x$DOXYGEN" != "x"])
 

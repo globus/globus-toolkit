@@ -3,6 +3,11 @@
 #include "globus_net_manager_attr.h"
 #include "globus_test_tap.h"
 
+#ifdef ENABLE_PYTHON
+#define SKIP_PYTHON_TEST(x) 0
+#else
+#define SKIP_PYTHON_TEST(x) (strcmp(x.test_name, "port_plus_one") == 0)
+#endif
 
 globus_xio_driver_t                     net_manager_driver;
 globus_xio_driver_t                     tcp_driver;
@@ -100,6 +105,29 @@ stack_with_no_managers(void)
 }
 
 /*
+ * Test case: Try to configure a listener with a non-existant network manager
+ */
+static
+int
+listener_bad_manager(void)
+{
+    globus_xio_attr_t                   attr = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+    result = globus_xio_attr_init(&attr);
+    TEST_ASSERT(result == GLOBUS_SUCCESS);
+    result = globus_xio_attr_cntl(
+            attr,
+            net_manager_driver,
+            GLOBUS_XIO_SET_STRING_OPTIONS,
+            "manager=globus_net_manager_bad_manager");
+    TEST_ASSERT(result != GLOBUS_SUCCESS);
+    globus_xio_attr_destroy(attr);
+
+    return 0;
+}
+
+/*
  * Test case: stack that includes the network manager configure with the
  * port plus one manager
  */
@@ -125,7 +153,7 @@ port_plus_one(void)
             attr,
             net_manager_driver,
             GLOBUS_XIO_SET_STRING_OPTIONS,
-            "manager=globus_net_manager_port_plus_one");
+            "manager=globus_net_manager_python;pymod=port_plus_one");
     TEST_ASSERT(result == GLOBUS_SUCCESS);
 
     result = globus_xio_server_create(&server, attr, stack);
@@ -159,6 +187,7 @@ main(int argc, char *argv[])
 {
     struct tests tests[] = {
         TEST_INITIALIZER(stack_with_no_managers),
+        TEST_INITIALIZER(listener_bad_manager),
         TEST_INITIALIZER(port_plus_one),
         {NULL, NULL}
     };
@@ -207,7 +236,8 @@ main(int argc, char *argv[])
     printf("1..%d\n", (int) (sizeof(tests)/sizeof(tests[0]))-1);
     for (i = 0; tests[i].test_name; i++)
     {
-        ok(tests[i].test_func() == 0, tests[i].test_name);
+        skip(SKIP_PYTHON_TEST(tests[i]),
+            ok(tests[i].test_func() == 0, "%s", tests[i].test_name));
     }
     globus_xio_stack_destroy(stack);
     globus_xio_driver_unload(net_manager_driver);
