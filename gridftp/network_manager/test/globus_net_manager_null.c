@@ -50,6 +50,17 @@ globus_l_net_manager_null_post_listen(
 }
 
 globus_result_t
+globus_l_net_manager_null_end_listen(
+    struct globus_net_manager_s        *manager,
+    const char                         *task_id,
+    const char                         *transport,
+    const char                         *local_contact,
+    const globus_net_manager_attr_t    *attr_array)
+{
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
 globus_l_net_manager_null_pre_accept(
     struct globus_net_manager_s        *manager,
     const char                         *task_id,
@@ -137,6 +148,7 @@ globus_net_manager_t                    globus_l_net_manager_null = {
     "null",
     globus_l_net_manager_null_pre_listen,
     globus_l_net_manager_null_post_listen,
+    globus_l_net_manager_null_end_listen,
     globus_l_net_manager_null_pre_accept,
     globus_l_net_manager_null_post_accept,
     globus_l_net_manager_null_pre_connect,
