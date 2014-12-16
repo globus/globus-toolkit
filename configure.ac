@@ -1,6 +1,11 @@
 m4_define([globus_buildno], [m4_syscmd([
 if test -d .git ; then
-    git log -n 1 --pretty=format:%ct > globus-version.inc;
+    git log -n 1 --pretty=format:%ct > globus-version.inc.new;
+    if ! cmp globus-version.inc.new globus-version.inc > /dev/null 2>&1; then
+        mv globus-version.inc.new globus-version.inc
+    else
+        rm globus-version.inc.new
+    fi
 fi])dnl
 m4_[]include(globus-version.inc)])dnl
 m4_define([gtreleasebuild], [6.0.]globus_buildno)
