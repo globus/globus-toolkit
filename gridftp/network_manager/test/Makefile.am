@@ -17,6 +17,8 @@ libglobus_net_manager_null_module_la_SOURCES = \
 
 libglobus_net_manager_null_module_la_LDFLAGS = \
         -rpath $(abs_builddir) \
+        -module \
+        -avoid-version \
         -no-undefined
 libglobus_net_manager_null_module_la_LIBADD = $(LDADD)
 
