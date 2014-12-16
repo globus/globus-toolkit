@@ -34,7 +34,6 @@ globus_net_manager_context_pre_accept(
     globus_list_t *                     list;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_net_manager_attr_t *         tmp_attr_array = NULL;
-    globus_bool_t                       free_attr = GLOBUS_FALSE;
     globus_i_net_manager_context_entry_t * ent;
     
     if(!ctx || !attr_array_out)
@@ -43,7 +42,6 @@ globus_net_manager_context_pre_accept(
         goto error_bad_args;
     }
 
-    tmp_attr_array = attr_array;
     for(list = ctx->managers; 
         !globus_list_empty(list) && result == GLOBUS_SUCCESS; 
         list = globus_list_rest(list))
@@ -59,29 +57,19 @@ globus_net_manager_context_pre_accept(
                 task_id,
                 transport,
                 local_contact,
-                tmp_attr_array,
+                tmp_attr_array ? tmp_attr_array : attr_array,
                 &ret_attr_array);
                 
             if(ret_attr_array != NULL)
             {
-                if(free_attr)
-                {
-                    globus_net_manager_attr_array_delete(tmp_attr_array);
-                }
-                else
-                {
-                    free_attr = GLOBUS_TRUE;
-                }
+                globus_net_manager_attr_array_delete(tmp_attr_array);
                 tmp_attr_array = ret_attr_array;
             }
         }
     }
     
-    *attr_array_out = NULL;
-    if(free_attr)
-    {
-        *attr_array_out = tmp_attr_array;
-    }
+    *attr_array_out = tmp_attr_array;
+
     return result;
 
 error_bad_args:

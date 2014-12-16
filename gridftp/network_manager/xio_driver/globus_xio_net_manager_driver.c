@@ -961,7 +961,7 @@ globus_l_xio_net_manager_server_accept_callback(
 {
     globus_l_xio_net_manager_link_t    *link = user_arg;
 
-    if (result)
+    if (result && link)
     {
         globus_l_xio_net_manager_attr_destroy(link->attr);
         free(link->local_contact);

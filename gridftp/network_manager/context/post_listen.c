@@ -36,8 +36,6 @@ globus_net_manager_context_post_listen(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_net_manager_attr_t *         tmp_attr_array = NULL;
     char *                              tmp_local_contact = NULL;
-    globus_bool_t                       free_attr = GLOBUS_FALSE;
-    globus_bool_t                       free_contact = GLOBUS_FALSE;
     globus_i_net_manager_context_entry_t * ent;
     
     if(!ctx || !local_contact_out || !attr_array_out)
@@ -45,9 +43,6 @@ globus_net_manager_context_post_listen(
         result = GLOBUS_FAILURE;
         goto error_bad_args;
     }
-
-    tmp_attr_array = attr_array;
-    tmp_local_contact = local_contact;
     
     for(list = ctx->managers; 
         !globus_list_empty(list) && result == GLOBUS_SUCCESS; 
@@ -64,48 +59,30 @@ globus_net_manager_context_post_listen(
                 ent->manager,
                 task_id,
                 transport,
-                tmp_local_contact,
-                tmp_attr_array,
+                tmp_local_contact ? tmp_local_contact : local_contact,
+                tmp_attr_array ? tmp_attr_array : attr_array,
                 &ret_local_contact,
                 &ret_attr_array);
                 
             if(ret_attr_array != NULL)
             {
-                if(free_attr)
-                {
-                    globus_net_manager_attr_array_delete(tmp_attr_array);
-                }
-                else
-                {
-                    free_attr = GLOBUS_TRUE;
-                }
+                globus_net_manager_attr_array_delete(tmp_attr_array);
                 tmp_attr_array = ret_attr_array;
             }
             if(ret_local_contact != NULL)
             {
-                if(free_contact)
+                if(tmp_local_contact)
                 {
                     globus_free(tmp_local_contact);
-                }
-                else
-                {
-                    free_contact = GLOBUS_TRUE;
                 }
                 tmp_local_contact = ret_local_contact;
             }
         }
     }
     
-    *local_contact_out = NULL;
-    *attr_array_out = NULL;
-    if(free_attr)
-    {
-        *attr_array_out = tmp_attr_array;
-    }
-    if(free_contact)
-    {
-        *local_contact_out = tmp_local_contact;
-    }
+    *attr_array_out = tmp_attr_array;
+    *local_contact_out = tmp_local_contact;
+
     return result;
 
 error_bad_args:
