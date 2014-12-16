@@ -118,7 +118,8 @@ globus_l_net_manager_port_plus_one_activate(void)
     int rc = globus_module_activate(GLOBUS_NET_MANAGER_MODULE);
     if (rc == 0)
     {
-        rc = globus_net_manager_register(&globus_l_net_manager_port_plus_one);
+        rc = globus_net_manager_register(&globus_l_net_manager_port_plus_one,
+            GlobusExtensionMyModule(globus_net_manager_port_plus_one));
     }
     return rc;
 }

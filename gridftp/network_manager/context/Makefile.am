@@ -13,4 +13,5 @@ libglobus_net_manager_context_la_SOURCES = \
             pre_accept.c \
             pre_close.c \
             pre_connect.c \
-            pre_listen.c
+            pre_listen.c \
+            end_listen.c

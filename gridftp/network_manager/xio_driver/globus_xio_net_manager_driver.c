@@ -1072,11 +1072,25 @@ globus_l_xio_net_manager_server_destroy(
     globus_l_xio_net_manager_server_t  *server = driver_server;
 
     if (server)
-    {
+    {        
+        result = globus_net_manager_context_end_listen(
+            server->attr->context,
+            server->attr->task_id,
+            server->transport_name,
+            server->local_contact,
+            server->attr->attr_array);
+        if (result)
+        {
+            goto end_listen_fail;
+        }
+
         globus_l_xio_net_manager_attr_destroy(server->attr);
         free(server->local_contact);
         free(server);
     }
+    return result;
+    
+end_listen_fail:
     return result;
 }
 

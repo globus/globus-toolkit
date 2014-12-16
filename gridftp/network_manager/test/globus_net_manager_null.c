@@ -161,7 +161,8 @@ globus_l_net_manager_null_activate(void)
     int rc = globus_module_activate(GLOBUS_NET_MANAGER_MODULE);
     if (rc == 0)
     {
-        rc = globus_net_manager_register(&globus_l_net_manager_null);
+        rc = globus_net_manager_register(&globus_l_net_manager_null,
+            GlobusExtensionMyModule(globus_net_manager_null));
     }
     return rc;
 }

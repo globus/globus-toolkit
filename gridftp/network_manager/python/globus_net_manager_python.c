@@ -29,6 +29,7 @@ typedef struct
     PyObject                           *module;
     PyObject                           *pre_listen;
     PyObject                           *post_listen;
+    PyObject                           *end_listen;
     PyObject                           *pre_accept;
     PyObject                           *post_accept;
     PyObject                           *pre_connect;
@@ -115,6 +116,8 @@ globus_l_python_module(
                             modref->module, "pre_listen");
                     modref->post_listen = globus_l_python_resolve_func(
                             modref->module, "post_listen"); 
+                    modref->end_listen = globus_l_python_resolve_func(
+                            modref->module, "end_listen"); 
                     modref->pre_accept = globus_l_python_resolve_func(
                             modref->module, "pre_accept"); 
                     modref->post_accept = globus_l_python_resolve_func(
@@ -148,6 +151,7 @@ hashtable_insert_fail:
     {
         Py_XDECREF(modref->pre_listen);
         Py_XDECREF(modref->post_listen);
+        Py_XDECREF(modref->end_listen);
         Py_XDECREF(modref->pre_accept);
         Py_XDECREF(modref->post_accept);
         Py_XDECREF(modref->pre_connect);
@@ -630,6 +634,99 @@ local_contact_null:
     return result;
 }
 /* globus_l_python_post_listen() */
+
+
+static
+globus_result_t
+globus_l_python_end_listen(
+    struct globus_net_manager_s        *manager,
+    const char                         *task_id,
+    const char                         *transport,
+    const char                         *local_contact,
+    const globus_net_manager_attr_t    *attr_array)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_l_python_modref_t           *pymod = NULL;
+
+    result = globus_l_python_module(attr_array, &pymod);
+    if (result)
+    {
+        goto lookup_module_fail;
+    }
+    assert(pymod != NULL);
+
+    if (pymod->end_listen)
+    {
+        PyObject                       *pyargs = NULL,
+                                       *pytaskid = NULL,
+                                       *pytransport = NULL,
+                                       *pylocal_contact = NULL,
+                                       *pylist = NULL,
+                                       *pyresult = NULL;
+
+        pyargs = PyTuple_New(4);
+        if (pyargs == NULL)
+        {
+            result = GLOBUS_FAILURE;
+            goto pyargs_new_fail;
+        }
+        pytaskid = PyString_FromString(task_id);
+        if (pytaskid == NULL)
+        {
+            result = GLOBUS_FAILURE;
+            goto pystring_taskid_fail;
+        }
+        PyTuple_SetItem(pyargs, 0, pytaskid);
+
+        pytransport = PyString_FromString(transport);
+        if (pytransport == NULL)
+        {
+            result = GLOBUS_FAILURE;
+            goto pystring_transport_fail;
+        }
+        PyTuple_SetItem(pyargs, 1, pytransport);
+
+        pylocal_contact = PyString_FromString(local_contact);
+        if (pylocal_contact == NULL)
+        {
+            result = GLOBUS_FAILURE;
+            goto pystring_local_contact_fail;
+        }
+        PyTuple_SetItem(pyargs, 2, pylocal_contact);
+
+        result = globus_l_python_attr_array_to_pylist(attr_array, &pylist);
+        if (result)
+        {
+            goto attr_to_pylist_fail;
+        }
+        PyTuple_SetItem(pyargs, 3, pylist);
+
+        PyErr_Clear();
+        pyresult = PyObject_CallObject(pymod->end_listen, pyargs);
+        if (pyresult && pyresult != Py_None)
+        {
+            result = GLOBUS_FAILURE;
+            Py_DECREF(pyresult);
+        }
+        if (result == GLOBUS_SUCCESS)
+        {
+            result = globus_l_net_manager_python_handle_exception(
+                    "pre_end");
+        }
+attr_to_pylist_fail:
+pystring_local_contact_fail:
+pystring_transport_fail:
+pystring_taskid_fail:
+        Py_DECREF(pyargs);
+        pyargs = NULL;
+    }
+pyargs_new_fail:
+lookup_module_fail:
+attr_array_out_null:
+local_contact_null:
+    return result;
+}
+/* globus_l_python_end_listen() */
 
 static
 globus_result_t
@@ -1328,6 +1425,7 @@ static globus_net_manager_t globus_l_net_manager_python = {
     "python",
     globus_l_python_pre_listen,
     globus_l_python_post_listen,
+    globus_l_python_end_listen,
     globus_l_python_pre_accept,
     globus_l_python_post_accept,
     globus_l_python_pre_connect,
@@ -1364,7 +1462,9 @@ globus_l_net_manager_python_activate(void)
             globus_hashtable_string_hash, 
             globus_hashtable_string_keyeq); 
     globus_module_activate(GLOBUS_NET_MANAGER_MODULE);
-    return globus_net_manager_register(&globus_l_net_manager_python);
+    return globus_net_manager_register(
+        &globus_l_net_manager_python,
+        GlobusExtensionMyModule(globus_net_manager_python));
 }
 
 static

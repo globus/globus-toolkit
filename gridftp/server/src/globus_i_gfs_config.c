@@ -549,7 +549,7 @@ static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_optio
 
 static globus_hashtable_t               option_table;
 static int                              globus_l_gfs_num_threads = -1;
-static globus_bool_t                    globus_l_gfs_port_range = GLOBUS_FALSE;
+static char *                           globus_l_gfs_port_range = NULL;
 
 /* for string options, setting with an int_val of 1 will free the old one */ 
 static

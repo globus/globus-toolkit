@@ -21,11 +21,114 @@
 
 #include "globus_net_manager_context.h"
 
+
+
+
+static 
+globus_result_t
+globus_l_net_manager_context_load_entry(
+    const char *                            name,
+    globus_i_net_manager_context_entry_t ** entry)
+{
+    globus_extension_handle_t               ext_handle;
+    globus_net_manager_t *                  loaded_manager;
+    char *                                  dll_name = NULL;
+    globus_i_net_manager_context_entry_t *  ent;
+    int                                     rc;
+    globus_result_t                         result = GLOBUS_SUCCESS;
+
+    /* is module already in registry? */
+    loaded_manager = (globus_net_manager_t *) globus_extension_lookup(
+        &ext_handle, GLOBUS_NET_MANAGER_REGISTRY, (void *) name);
+    if(loaded_manager == NULL)
+    {
+        /* load and activate the dll */
+        dll_name = globus_common_create_string(
+            "globus_net_manager_%s", name);
+
+        rc = globus_extension_activate(dll_name);        
+        if(rc != GLOBUS_SUCCESS)
+        {
+            result = GLOBUS_FAILURE;
+            goto error_activate;
+        }
+    
+        /* now module should be in registry */
+        loaded_manager = (globus_net_manager_t *) globus_extension_lookup(
+            &ext_handle, GLOBUS_NET_MANAGER_REGISTRY, (void *) name);
+        if(loaded_manager == NULL)
+        {
+            result = GLOBUS_FAILURE;
+            goto error_activate;
+        }
+    }
+    ent = globus_calloc(1, sizeof(globus_i_net_manager_context_entry_t));
+    ent->manager = loaded_manager;
+    ent->ext_handle = ext_handle;
+    ent->name = strdup(name);
+    ent->dll_name = dll_name;
+    
+    *entry = ent;
+    return GLOBUS_SUCCESS;
+    
+error_activate:
+    globus_free(dll_name);
+    *entry = NULL;
+    return result;
+}
+
+
+
 globus_result_t
 globus_net_manager_context_init(
-    globus_net_manager_context_t       *context,
-    const globus_net_manager_attr_t    *attrs)
+    globus_net_manager_context_t *      context,
+    const globus_net_manager_attr_t *   attrs)
 {
-    *context = NULL;
+    globus_i_net_manager_context_t *    ctx;
+    globus_net_manager_attr_t *         attr;
+    globus_result_t                     result;
+    int                                 i;
+    
+    if(context == NULL || attrs == NULL || attrs[0].scope == NULL)
+    {
+        result = GLOBUS_FAILURE;
+        goto error_no_attr;
+    }
+    
+    ctx = globus_calloc(1, sizeof(globus_i_net_manager_context_t));
+    if(ctx == NULL)
+    {
+        result = GLOBUS_FAILURE;
+        goto error_ctx_mem;
+    }
+    
+    for(i = 0; attrs[i].scope != NULL; i++)
+    {
+        globus_i_net_manager_context_entry_t *  ent = NULL;
+        
+        if(strcmp(attrs[i].scope, "net_manager") != 0 || 
+            strcmp(attrs[i].name, "manager") != 0)
+        {
+            continue;
+        }
+        
+        result = globus_l_net_manager_context_load_entry(attrs[i].value, &ent);
+        if(result)
+        {
+            goto error_load;
+        }
+        globus_list_insert(&ctx->managers, ent);
+    }
+    
+    *context = ctx;
     return GLOBUS_SUCCESS;
+    
+
+error_load:
+error_ctx_mem:
+error_no_attr:
+
+    return result;
 }
+
+

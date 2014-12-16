@@ -4639,9 +4639,9 @@ globus_i_gfs_data_init()
         }
     }
     
-    if((driver = globus_i_gfs_config_string("netmgr")) != NULL)
+    if((globus_i_gfs_config_string("netmgr")) != NULL)
     {
-        result = globus_xio_driver_load(driver, &globus_l_gfs_netmgr_driver);
+        result = globus_xio_driver_load("net_manager", &globus_l_gfs_netmgr_driver);
         if(result != GLOBUS_SUCCESS)
         {
             globus_gfs_log_result(
@@ -6467,6 +6467,37 @@ globus_l_gfs_data_handle_init(
                 tailp = globus_list_rest_ref(*tailp);
             }
         }
+
+        if(globus_l_gfs_netmgr_driver)
+        {
+            globus_xio_stack_push_driver(stack, globus_l_gfs_netmgr_driver);
+    
+            if(session_handle->taskid != NULL)
+            {
+                char *                  opt_str;
+                opt_str = globus_common_create_string(
+                    "service=gridftp-data;task-id=%s;%s", 
+                    session_handle->taskid, 
+                    globus_i_gfs_config_string("netmgr"));
+
+                result = globus_xio_attr_cntl(
+                    xio_attr,
+                    globus_l_gfs_netmgr_driver,
+                    GLOBUS_XIO_SET_STRING_OPTIONS,
+                    opt_str);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_WARN,
+                        "Setting network manager options \"%s\": %s\n",
+                        opt_str,
+                        globus_error_print_friendly(globus_error_peek(result)));
+                    globus_free(opt_str);    
+                    goto error_control;
+                }
+                globus_free(opt_str);
+            }
+        }
         
         globus_xio_stack_init(&stack, NULL);
         
@@ -6481,26 +6512,6 @@ globus_l_gfs_data_handle_init(
                 "set stack failed: %s\n",
                 globus_error_print_friendly(globus_error_peek(result)));
             goto error_control;
-        }
-    
-        if(globus_l_gfs_netmgr_driver)
-        {
-            globus_xio_stack_push_driver(stack, globus_l_gfs_netmgr_driver);
-    
-            if(session_handle->taskid != NULL)
-            {
-                char *                  opt_str;
-                globus_common_create_string(
-                    "taskid=%s;", session_handle->taskid);
-
-                globus_xio_attr_cntl(
-                    xio_attr,
-                    globus_l_gfs_netmgr_driver,
-                    GLOBUS_XIO_SET_STRING_OPTIONS,
-                    opt_str);
-                    
-                globus_free(opt_str);
-            }
         }
 
         result = globus_i_ftp_control_data_set_stack(

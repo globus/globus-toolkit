@@ -31,7 +31,83 @@ globus_net_manager_context_pre_connect(
     char                              **remote_contact_out,
     globus_net_manager_attr_t         **attr_array_out)
 {
+    globus_i_net_manager_context_t *    ctx = context;
+    globus_list_t *                     list;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_net_manager_attr_t *         tmp_attr_array = NULL;
+    char *                              tmp_remote_contact = NULL;
+    globus_bool_t                       free_attr = GLOBUS_FALSE;
+    globus_bool_t                       free_contact = GLOBUS_FALSE;
+    globus_i_net_manager_context_entry_t * ent;
+    
+    if(!ctx || !remote_contact_out || !attr_array_out)
+    {
+        result = GLOBUS_FAILURE;
+        goto error_bad_args;
+    }
+
+    tmp_attr_array = attr_array;
+    tmp_remote_contact = remote_contact;
+    
+    for(list = ctx->managers; 
+        !globus_list_empty(list) && result == GLOBUS_SUCCESS; 
+        list = globus_list_rest(list))
+    {            
+        ent = globus_list_first(list);
+        
+        if(ent->manager->pre_connect)
+        {   
+            globus_net_manager_attr_t *     ret_attr_array = NULL;
+            char *                          ret_remote_contact = NULL;
+            
+            result = ent->manager->pre_connect(
+                ent->manager,
+                task_id,
+                transport,
+                tmp_remote_contact,
+                tmp_attr_array,
+                &ret_remote_contact,
+                &ret_attr_array);
+                
+            if(ret_attr_array != NULL)
+            {
+                if(free_attr)
+                {
+                    globus_net_manager_attr_array_delete(tmp_attr_array);
+                }
+                else
+                {
+                    free_attr = GLOBUS_TRUE;
+                }
+                tmp_attr_array = ret_attr_array;
+            }
+            if(ret_remote_contact != NULL)
+            {
+                if(free_contact)
+                {
+                    globus_free(tmp_remote_contact);
+                }
+                else
+                {
+                    free_contact = GLOBUS_TRUE;
+                }
+                tmp_remote_contact = ret_remote_contact;
+            }
+        }
+    }
+    
     *remote_contact_out = NULL;
     *attr_array_out = NULL;
-    return GLOBUS_SUCCESS;
+    if(free_attr)
+    {
+        *attr_array_out = tmp_attr_array;
+    }
+    if(free_contact)
+    {
+        *remote_contact_out = tmp_remote_contact;
+    }
+    return result;
+
+error_bad_args:
+    return result;
 }

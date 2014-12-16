@@ -26,4 +26,28 @@ void
 globus_net_manager_context_destroy(
     globus_net_manager_context_t        context)
 {
+    globus_i_net_manager_context_t *    ctx = context;
+    globus_list_t *                     list;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_i_net_manager_context_entry_t * ent;
+    
+    if(ctx)
+    {
+        for(list = ctx->managers; 
+            !globus_list_empty(list) && result == GLOBUS_SUCCESS; 
+            list = globus_list_first(list))
+        {            
+            ent = globus_list_remove(&list, list);
+            
+            globus_extension_release(ent->ext_handle);
+            /* if dll_name is set, driver was activated by me */
+            if(ent->dll_name)
+            {
+                globus_extension_deactivate(ent->dll_name);
+                globus_free(ent->dll_name);
+            }
+            globus_free(ent->name);
+            globus_free(ent);
+        }
+    }
 }

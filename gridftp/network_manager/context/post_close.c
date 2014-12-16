@@ -30,5 +30,37 @@ globus_net_manager_context_post_close(
     const char                         *remote_contact,
     const globus_net_manager_attr_t    *attr_array)
 {
-    return GLOBUS_SUCCESS;
+    globus_i_net_manager_context_t *    ctx = context;
+    globus_list_t *                     list;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_i_net_manager_context_entry_t * ent;
+    
+    if(ctx == NULL)
+    {
+        result = GLOBUS_FAILURE;
+        goto error_bad_args;
+    }
+
+    for(list = ctx->managers; 
+        !globus_list_empty(list) && result == GLOBUS_SUCCESS; 
+        list = globus_list_rest(list))
+    {            
+        ent = globus_list_first(list);
+        
+        if(ent->manager->post_close)
+        {
+            result = ent->manager->post_close(
+                ent->manager,
+                task_id,
+                transport,
+                local_contact,
+                remote_contact,
+                attr_array);
+        }
+    }
+    
+    return result;
+
+error_bad_args:
+    return result;
 }

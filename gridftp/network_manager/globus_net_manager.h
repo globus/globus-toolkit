@@ -193,6 +193,42 @@ typedef globus_result_t (*globus_net_manager_post_listen)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
+ * Net Manager End-Listen Function Signature
+ * @ingroup globus_net_manager_signatures
+ *
+ * A function of this signature, if included in a network manager
+ * implementation, is called when the transport-specific listening port will
+ * be closed.
+ * 
+ * The network manager is passed the network transport-specific options and
+ * contact string for the listener. 
+ *
+ * The globus_net_manager library aborts the closing of the listening port 
+ * if this function returns a value other than GLOBUS_SUCCESS. In this
+ * case, the globus_net_manager will not call any other
+ * globus_net_manager_end_listen functions configured for this listener.
+ *
+ * @param[in] manager
+ *      Pointer to the network manager struct that is being invoked.
+ * @param[in] task_id
+ *      An application-specific task ID associated with this network operation.
+ * @param[in] transport
+ *      The name of the transport associated with this listener.
+ * @param[in] local_contact
+ *      The transport-specific contact string for the listener [in].
+ * @param[in] attr_array
+ *      An array of transport attributes associated with the
+ *      listener. The end of the array is indicated by
+ *      an attribute containing a NULL scope.
+ */
+typedef globus_result_t (*globus_net_manager_end_listen)(
+    struct globus_net_manager_s        *manager,
+    const char                         *task_id,
+    const char                         *transport,
+    const char                         *local_contact,
+    const globus_net_manager_attr_t    *attr_array);
+
+/**
  * Net Manager Pre-Accept Function Signature
  * @ingroup globus_net_manager_signatures
  *
@@ -487,10 +523,12 @@ struct globus_net_manager_s
     globus_net_manager_pre_listen       pre_listen;
     /** Post-listen function implementation */
     globus_net_manager_post_listen      post_listen;
+    /** End-listen function implementation */
+    globus_net_manager_end_listen       end_listen;
     /** Pre-accept function implementation */
     globus_net_manager_pre_accept       pre_accept;
     /** Post-accept function implementation */
-    globus_net_manager_post_accept      post_accept;
+    globus_net_manager_post_accept      post_accept;    
     /** Pre-connect function implementation */
     globus_net_manager_pre_connect      pre_connect;
     /** Post-connect function implementation */
@@ -502,9 +540,13 @@ struct globus_net_manager_s
 }
 globus_net_manager_t;
 
+extern globus_extension_registry_t      globus_i_net_manager_registry;
+#define GLOBUS_NET_MANAGER_REGISTRY     &globus_i_net_manager_registry
+
 globus_result_t
 globus_net_manager_register(
-    globus_net_manager_t               *manager);
+    globus_net_manager_t               *manager,
+    globus_module_descriptor_t         *module);
 
 globus_result_t
 globus_net_manager_unregister(

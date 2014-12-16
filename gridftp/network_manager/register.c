@@ -30,7 +30,21 @@
  */
 globus_result_t
 globus_net_manager_register(
-    globus_net_manager_t               *manager)
+    globus_net_manager_t               *manager,
+    globus_module_descriptor_t         *module)
 {
-    return GLOBUS_SUCCESS;
+    int                                 rc;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    
+    rc = globus_extension_registry_add(
+        GLOBUS_NET_MANAGER_REGISTRY,
+        (void *) manager->name,
+        module,
+        (void *) manager);
+    if(!rc)
+    {
+        result = GLOBUS_FAILURE;
+    }
+
+    return result;
 }

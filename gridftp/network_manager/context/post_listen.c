@@ -31,7 +31,83 @@ globus_net_manager_context_post_listen(
     char                              **local_contact_out,
     globus_net_manager_attr_t         **attr_array_out)
 {
+    globus_i_net_manager_context_t *    ctx = context;
+    globus_list_t *                     list;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_net_manager_attr_t *         tmp_attr_array = NULL;
+    char *                              tmp_local_contact = NULL;
+    globus_bool_t                       free_attr = GLOBUS_FALSE;
+    globus_bool_t                       free_contact = GLOBUS_FALSE;
+    globus_i_net_manager_context_entry_t * ent;
+    
+    if(!ctx || !local_contact_out || !attr_array_out)
+    {
+        result = GLOBUS_FAILURE;
+        goto error_bad_args;
+    }
+
+    tmp_attr_array = attr_array;
+    tmp_local_contact = local_contact;
+    
+    for(list = ctx->managers; 
+        !globus_list_empty(list) && result == GLOBUS_SUCCESS; 
+        list = globus_list_rest(list))
+    {            
+        ent = globus_list_first(list);
+        
+        if(ent->manager->post_listen)
+        {   
+            globus_net_manager_attr_t *     ret_attr_array = NULL;
+            char *                          ret_local_contact = NULL;
+            
+            result = ent->manager->post_listen(
+                ent->manager,
+                task_id,
+                transport,
+                tmp_local_contact,
+                tmp_attr_array,
+                &ret_local_contact,
+                &ret_attr_array);
+                
+            if(ret_attr_array != NULL)
+            {
+                if(free_attr)
+                {
+                    globus_net_manager_attr_array_delete(tmp_attr_array);
+                }
+                else
+                {
+                    free_attr = GLOBUS_TRUE;
+                }
+                tmp_attr_array = ret_attr_array;
+            }
+            if(ret_local_contact != NULL)
+            {
+                if(free_contact)
+                {
+                    globus_free(tmp_local_contact);
+                }
+                else
+                {
+                    free_contact = GLOBUS_TRUE;
+                }
+                tmp_local_contact = ret_local_contact;
+            }
+        }
+    }
+    
     *local_contact_out = NULL;
     *attr_array_out = NULL;
-    return GLOBUS_SUCCESS;
+    if(free_attr)
+    {
+        *attr_array_out = tmp_attr_array;
+    }
+    if(free_contact)
+    {
+        *local_contact_out = tmp_local_contact;
+    }
+    return result;
+
+error_bad_args:
+    return result;
 }

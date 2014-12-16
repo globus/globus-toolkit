@@ -45,7 +45,9 @@ static
 int
 globus_l_net_manager_exec_activate(void)
 {
-    return globus_net_manager_register(&globus_l_net_manager_exec);
+    return globus_net_manager_register(
+        &globus_l_net_manager_exec,
+        GlobusExtensionMyModule(globus_net_manager_exec));
 }
 
 static

@@ -23,13 +23,14 @@
  */
 
 #include "globus_common.h"
+#include "globus_net_manager.h"
 #include "globus_net_manager_attr.h"
 
 #ifdef __cplusplus
 extern "C"
 #endif
 
-typedef struct globus_net_manager_context_s *globus_net_manager_context_t;
+typedef struct globus_i_net_manager_context_s *globus_net_manager_context_t;
 
 /**
  * @defgroup globus_net_manager_context Context
@@ -79,6 +80,14 @@ globus_net_manager_context_post_listen(
     const globus_net_manager_attr_t    *attr_array,
     char                              **local_contact_out,
     globus_net_manager_attr_t         **attr_array_out);
+
+globus_result_t
+globus_net_manager_context_end_listen(
+    globus_net_manager_context_t        context,
+    const char                         *task_id,
+    const char                         *transport,
+    const char                         *local_contact,
+    const globus_net_manager_attr_t    *attr_array);
 
 globus_result_t
 globus_net_manager_context_pre_accept(
@@ -136,6 +145,20 @@ globus_net_manager_context_post_close(
     const char                         *local_contact,
     const char                         *remote_contact,
     const globus_net_manager_attr_t    *attr_array);
+
+
+typedef struct globus_i_net_manager_context_s
+{
+    globus_list_t *                     managers;
+} globus_i_net_manager_context_t;
+
+typedef struct globus_i_net_manager_context_entry_s
+{
+    char *                              name;
+    char *                              dll_name;
+    globus_extension_handle_t           ext_handle;
+    globus_net_manager_t *              manager;
+} globus_i_net_manager_context_entry_t;
 
 #ifdef __cplusplus
 }

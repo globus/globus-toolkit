@@ -1134,7 +1134,7 @@ struct tests
 #ifdef ENABLE_PYTHON
 #define SKIP_PYTHON_TESTS 0
 #else
-#define SKIP_PYTHON_TESTS 1
+#define SKIP_PYTHON_TESTS 0
 #endif
 
 int

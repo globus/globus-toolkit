@@ -55,6 +55,8 @@ globus_l_net_manager_deactivate(void)
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 
+globus_extension_registry_t             globus_i_net_manager_registry;
+
 globus_module_descriptor_t              globus_i_net_manager_module =
 {
     "globus_net_manager",
