@@ -28,7 +28,11 @@ TESTS_ENVIRONMENT = export \
     PYTHONPATH="$${PYTHONPATH:+$$PYTHONPATH:}$(srcdir)";
 endif
 
-EXTRA_DIST = test_module.py port_plus_one.py return_function_called_module.py
+EXTRA_DIST = \
+             port_minus_one.py \
+             port_plus_one.py \
+             return_function_called_module.py \
+             test_module.py
 
 TESTS = $(check_PROGRAMS)
 LOG_COMPILER = $(LIBTOOL) --mode=execute \
