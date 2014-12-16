@@ -4,7 +4,7 @@ AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) \
         -I$(top_srcdir)/attr \
         -I$(srcdir) \
         -I$(top_srcdir)/xio_driver \
-        -I$(top_srcdir)/python \ 
+        -I$(top_srcdir)/python \
         -I$(top_srcdir)/context
 LDADD = $(top_builddir)/libglobus_net_manager.la $(PACKAGE_DEP_LIBS)
 
