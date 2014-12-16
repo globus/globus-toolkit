@@ -41,7 +41,7 @@ globus_net_manager_register(
         (void *) manager->name,
         module,
         (void *) manager);
-    if(!rc)
+    if(rc)
     {
         result = GLOBUS_FAILURE;
     }
