@@ -253,6 +253,17 @@ globus_l_xio_net_manager_attr_set_string_options(
 
         if (strcmp(opt, "manager") == 0)
         {
+            result = globus_net_manager_attr_init(
+                    &new_attrs[attrnum++],
+                    "net_manager",
+                    opt,
+                    val);
+            if (result)
+            {
+                free(opt);
+                new_attrs[attrnum-1] = globus_net_manager_null_attr;
+                goto new_attr_init_fail;
+            }
             free(scope);
             scope = strdup(val);
             if (!scope)
