@@ -15,6 +15,11 @@ libglobus_net_manager_null_module_la_SOURCES = \
         globus_net_manager_null.c \
         globus_net_manager_null.h
 
+libglobus_net_manager_null_module_la_LDFLAGS = \
+        -rpath $(abs_builddir) \
+        -no-undefined
+libglobus_net_manager_null_module_la_LIBADD = $(LDADD)
+
 check_PROGRAMS = \
     activate_deactivate_test \
     attr_test \
