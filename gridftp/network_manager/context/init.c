@@ -127,16 +127,16 @@ globus_net_manager_context_init(
             {
                 goto error_load;
             }
+
+            ent->attrs = calloc(
+                max_attr_count, sizeof(globus_net_manager_attr_t));
+            ent->attrs[0] = globus_net_manager_null_attr;
+            
             globus_list_insert(&ctx->managers, ent);
         }
         /* attrs for the current manager entry */
         else if(current_scope && strcmp(attrs[i].scope, current_scope) == 0)
         {
-            if(attrnum == 0)
-            {
-                 ent->attrs = calloc(
-                    max_attr_count, sizeof(globus_net_manager_attr_t));
-            }
             result = globus_net_manager_attr_init(
                     &ent->attrs[attrnum++],
                     attrs[i].scope,
