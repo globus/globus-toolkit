@@ -126,7 +126,7 @@ globus_l_xio_net_manager_attr_init(
     }
 
     a->attr_array = NULL;
-    a->task_id = strdup("unset");
+    a->task_id = NULL;
     a->context = NULL;
 
 malloc_attr_exit:
@@ -809,7 +809,7 @@ globus_l_xio_net_manager_server_pre_init(
     }
     result = globus_net_manager_context_pre_listen(
         attr->context,
-        attr->task_id,
+        attr->task_id ? attr->task_id : "unset",
         transport_name,
         transport_attrs,
         &new_attrs);
@@ -869,14 +869,11 @@ globus_l_xio_net_manager_server_init(
     {
         goto get_driver_name_fail;
     }
-    if (driver_attr)
+    result = globus_l_xio_net_manager_attr_copy(
+            (void **)&server->attr, driver_attr);
+    if (result)
     {
-        result = globus_l_xio_net_manager_attr_copy(
-                (void **)&server->attr, driver_attr);
-        if (result)
-        {
-            goto copy_attr_fail;
-        }
+        goto copy_attr_fail;
     }
     
     result = globus_l_xio_net_manager_get_attr_array(
@@ -891,7 +888,7 @@ globus_l_xio_net_manager_server_init(
 
     result = globus_net_manager_context_post_listen(
         server->attr->context,
-        server->attr->task_id,
+        server->attr->task_id ? server->attr->task_id : "unset",
         server->transport_name,
         contact_info->unparsed,
         transport_attrs,
@@ -1005,7 +1002,7 @@ globus_l_xio_net_manager_server_accept(
     }
     result = globus_net_manager_context_pre_accept(
         server->attr->context,
-        server->attr->task_id,
+        server->attr->task_id ? server->attr->task_id : "unset",
         server->transport_name,
         server->local_contact,
         server->attr->attr_array,
@@ -1087,7 +1084,7 @@ globus_l_xio_net_manager_server_destroy(
     {        
         result = globus_net_manager_context_end_listen(
             server->attr->context,
-            server->attr->task_id,
+            server->attr->task_id ? server->attr->task_id : "unset",
             server->transport_name,
             server->local_contact,
             server->attr->attr_array);
@@ -1151,7 +1148,7 @@ globus_l_xio_net_manager_connect_callback(
 
     result = globus_net_manager_context_post_connect(
             handle->attr->context,
-            handle->attr->task_id,
+            handle->attr->task_id ? handle->attr->task_id : "unset",
             handle->transport_name,
             handle->local_contact,
             handle->remote_contact,
@@ -1254,7 +1251,7 @@ globus_l_xio_net_manager_connect(
 
     result = globus_net_manager_context_pre_connect(
             handle->attr->context,
-            handle->attr->task_id,
+            handle->attr->task_id ? handle->attr->task_id : "unset",
             handle->transport_name,
             contact_info->unparsed,
             attrs,
@@ -1401,7 +1398,7 @@ globus_l_xio_net_manager_accept_callback(
 
     result = globus_net_manager_context_post_accept(
             handle->attr->context,
-            handle->attr->task_id,
+            handle->attr->task_id ? handle->attr->task_id : "unset",
             handle->transport_name,
             handle->local_contact,
             handle->remote_contact,
@@ -1517,7 +1514,7 @@ globus_l_xio_net_manager_close_cb(
     {
         result = globus_net_manager_context_post_close(
                 handle->attr->context,
-                handle->attr->task_id,
+                handle->attr->task_id ? handle->attr->task_id : "unset",
                 handle->transport_name,
                 handle->local_contact,
                 handle->remote_contact,
@@ -1564,7 +1561,7 @@ globus_l_xio_net_manager_close(
 
     result = globus_net_manager_context_pre_close(
             handle->attr->context,
-            handle->attr->task_id,
+            handle->attr->task_id ? handle->attr->task_id : "unset",
             handle->transport_name,
             handle->local_contact,
             handle->remote_contact,

@@ -93,8 +93,6 @@ globus_net_manager_context_init(
     char *                              current_scope = NULL;
     globus_i_net_manager_context_entry_t *  ent = NULL;
     
-    
-    
     if(context == NULL || attrs == NULL || attrs[0].scope == NULL)
     {
         result = GLOBUS_FAILURE;
@@ -162,8 +160,13 @@ globus_net_manager_context_init(
     
 error_attr:
 error_load:
+    free(ctx);
 error_ctx_mem:
 error_no_attr:
+    if (context)
+    {
+        *context = NULL;
+    }
 
     return result;
 }

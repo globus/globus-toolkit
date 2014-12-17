@@ -48,5 +48,6 @@ globus_net_manager_context_destroy(
             globus_free(ent->name);
             globus_free(ent);
         }
+        free(ctx);
     }
 }
