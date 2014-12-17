@@ -745,7 +745,7 @@ globus_list_from_string(
             globus_list_insert(&list, globus_libc_strdup(entry)); 
             entry = ptr + 1;
         }
-        if(ptr == NULL)
+        if(ptr == NULL && *entry != '\0')
         {
             globus_list_insert(&list, globus_libc_strdup(entry)); 
         }               
