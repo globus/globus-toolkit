@@ -138,13 +138,15 @@ set_get_string_opts(void)
             attr,
             nm_driver,
             GLOBUS_XIO_SET_STRING_OPTIONS, expected_opts);
-    TEST_ASSERT(result == GLOBUS_SUCCESS);
+    TEST_ASSERT_RESULT_SUCCESS(result);
     result = globus_xio_attr_cntl(
             attr,
             nm_driver,
             GLOBUS_XIO_GET_STRING_OPTIONS, &opts);
     TEST_ASSERT(result == GLOBUS_SUCCESS);
     TEST_ASSERT(strcmp(expected_opts, opts) == 0);
+    free(opts);
+    globus_xio_attr_destroy(attr);
     return 0;
 }
 
