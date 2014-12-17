@@ -1,7 +1,7 @@
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
 Version:	1.16
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
 Group:		System Environment/Libraries
@@ -43,6 +43,9 @@ BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
+%if %{?fedora}%{!?fedora:0} >= 21
+BuildRequires:  gupnp-igd-devel
+%endif
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO UDT Driver Development Files
@@ -122,6 +125,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Dec 17 2014 Globus Toolkit <support@globus.org> - 1.16-2
+- Dependency on gupnp-igd-devel for Fedora 21
+
 * Thu Oct 30 2014 Globus Toolkit <support@globus.org> - 1.16-1
 - Add support for debian squeeze and ubuntu lucid
 
