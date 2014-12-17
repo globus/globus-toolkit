@@ -88,6 +88,7 @@ globus_net_manager_context_init(
     globus_net_manager_attr_t *         attr;
     globus_result_t                     result;
     int                                 i;
+    int                                 j;
     int                                 max_attr_count;
     int                                 attrnum;
     char *                              current_scope = NULL;
@@ -128,7 +129,22 @@ globus_net_manager_context_init(
 
             ent->attrs = calloc(
                 max_attr_count, sizeof(globus_net_manager_attr_t));
-            ent->attrs[0] = globus_net_manager_null_attr;
+            for(j = 0; attrs[j].scope != NULL; j++)
+            {
+                if(strcmp(attrs[j].scope, "global") == 0)
+                {
+                    result = globus_net_manager_attr_init(
+                            &ent->attrs[attrnum++],
+                            attrs[j].scope,
+                            attrs[j].name,
+                            attrs[j].value);
+                    if(result)
+                    {
+                        goto error_attr;
+                    }
+                }
+            }
+            ent->attrs[attrnum] = globus_net_manager_null_attr;
             
             globus_list_insert(&ctx->managers, ent);
         }

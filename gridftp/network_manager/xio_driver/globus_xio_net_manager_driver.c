@@ -295,16 +295,9 @@ globus_l_xio_net_manager_attr_set_string_options(
         }
         else
         {
-            if (!scope)
-            {
-                result = GLOBUS_FAILURE;
-                free(opt);
-                new_attrs[attrnum++] = globus_net_manager_null_attr;
-                goto no_scope;
-            }
             result = globus_net_manager_attr_init(
                     &new_attrs[attrnum++],
-                    scope,
+                    scope ? scope : "global",
                     opt,
                     val);
             if (result)
