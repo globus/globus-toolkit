@@ -67,7 +67,16 @@ stack_with_no_managers(void)
     globus_mutex_init(&passive.lock, NULL);
     globus_cond_init(&passive.cond, NULL);
 
-    result = globus_xio_server_create(&server, NULL, stack);
+    result = globus_xio_attr_init(&attr);
+    TEST_ASSERT(result == GLOBUS_SUCCESS);
+    result = globus_xio_attr_cntl(
+            attr,
+            net_manager_driver,
+            GLOBUS_XIO_SET_STRING_OPTIONS,
+            "manager=null;");
+    TEST_ASSERT(result == GLOBUS_SUCCESS);
+
+    result = globus_xio_server_create(&server, attr, stack);
     TEST_ASSERT_RESULT_SUCCESS(result);
     result = globus_xio_server_cntl(server,
             tcp_driver,
@@ -78,7 +87,7 @@ stack_with_no_managers(void)
     TEST_ASSERT_RESULT_SUCCESS(result);
     result = globus_xio_handle_create(&active, stack);
     TEST_ASSERT_RESULT_SUCCESS(result);
-    result = globus_xio_open(active, contact, NULL);
+    result = globus_xio_open(active, contact, attr);
     TEST_ASSERT_RESULT_SUCCESS(result);
     globus_mutex_lock(&passive.lock);
     while ((!passive.open) && (passive.result == GLOBUS_SUCCESS))
@@ -120,7 +129,7 @@ listener_bad_manager(void)
             attr,
             net_manager_driver,
             GLOBUS_XIO_SET_STRING_OPTIONS,
-            "manager=globus_net_manager_bad_manager");
+            "manager=bad_manager;");
     TEST_ASSERT(result != GLOBUS_SUCCESS);
     globus_xio_attr_destroy(attr);
 
@@ -153,7 +162,7 @@ port_plus_one(void)
             attr,
             net_manager_driver,
             GLOBUS_XIO_SET_STRING_OPTIONS,
-            "manager=globus_net_manager_python;pymod=port_plus_one");
+            "manager=python;pymod=port_plus_one;");
     TEST_ASSERT(result == GLOBUS_SUCCESS);
 
     result = globus_xio_server_create(&server, attr, stack);
@@ -162,7 +171,7 @@ port_plus_one(void)
             tcp_driver,
             GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT,
             &contact);
-    if (strcmp(strrchr(contact, ':'), "50506") == 0)
+    if (strcmp(strrchr(contact, ':'), ":50506") == 0)
     {
         port_plus_one_ok = GLOBUS_TRUE;
     }

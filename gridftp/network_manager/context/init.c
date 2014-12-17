@@ -88,6 +88,12 @@ globus_net_manager_context_init(
     globus_net_manager_attr_t *         attr;
     globus_result_t                     result;
     int                                 i;
+    int                                 max_attr_count;
+    int                                 attrnum;
+    char *                              current_scope = NULL;
+    globus_i_net_manager_context_entry_t *  ent = NULL;
+    
+    
     
     if(context == NULL || attrs == NULL || attrs[0].scope == NULL)
     {
@@ -101,29 +107,60 @@ globus_net_manager_context_init(
         result = GLOBUS_FAILURE;
         goto error_ctx_mem;
     }
+    for(max_attr_count = 0; 
+        attrs[max_attr_count].scope != NULL;
+        max_attr_count++);
     
     for(i = 0; attrs[i].scope != NULL; i++)
     {
-        globus_i_net_manager_context_entry_t *  ent = NULL;
-        
-        if(strcmp(attrs[i].scope, "net_manager") != 0 || 
-            strcmp(attrs[i].name, "manager") != 0)
+        /* start of a new manager entry */
+        if(strcmp(attrs[i].scope, "net_manager") == 0 && 
+            strcmp(attrs[i].name, "manager") == 0)
         {
-            continue;
+            ent = NULL;
+            attrnum = 0;
+            current_scope = attrs[i].value;
+
+            result = globus_l_net_manager_context_load_entry(
+                attrs[i].value, &ent);
+            if(result)
+            {
+                goto error_load;
+            }
+            globus_list_insert(&ctx->managers, ent);
         }
-        
-        result = globus_l_net_manager_context_load_entry(attrs[i].value, &ent);
-        if(result)
+        /* attrs for the current manager entry */
+        else if(current_scope && strcmp(attrs[i].scope, current_scope) == 0)
         {
-            goto error_load;
+            if(attrnum == 0)
+            {
+                 ent->attrs = calloc(
+                    max_attr_count, sizeof(globus_net_manager_attr_t));
+            }
+            result = globus_net_manager_attr_init(
+                    &ent->attrs[attrnum++],
+                    attrs[i].scope,
+                    attrs[i].name,
+                    attrs[i].value);
+            if(result)
+            {
+                goto error_attr;
+            }
+            ent->attrs[attrnum] = globus_net_manager_null_attr;
         }
-        globus_list_insert(&ctx->managers, ent);
+        /* unrelated scope */
+        else
+        {
+            ent = NULL;
+            attrnum = 0;
+            current_scope = attrs[i].value;
+        }
     }
     
     *context = ctx;
     return GLOBUS_SUCCESS;
     
-
+error_attr:
 error_load:
 error_ctx_mem:
 error_no_attr:

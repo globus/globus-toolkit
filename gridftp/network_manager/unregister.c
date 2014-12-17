@@ -32,5 +32,8 @@ globus_result_t
 globus_net_manager_unregister(
     globus_net_manager_t               *manager)
 {
+    globus_extension_registry_remove(
+        GLOBUS_NET_MANAGER_REGISTRY, (void *) manager->name);
+    
     return GLOBUS_SUCCESS;
 }

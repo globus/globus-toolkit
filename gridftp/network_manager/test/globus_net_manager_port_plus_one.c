@@ -27,6 +27,7 @@ static
 globus_result_t
 globus_l_net_manager_port_plus_one_pre_listen(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const globus_net_manager_attr_t    *attr_array,

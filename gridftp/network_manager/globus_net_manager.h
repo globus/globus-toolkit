@@ -113,6 +113,10 @@ struct globus_net_manager_s;
  *
  * @param[in] manager
  *      Pointer to the network manager struct that is being invoked.
+ * @param[in] manager_attr_array
+ *      An array of attributes associated with the
+ *      manager. The end of the array is indicated by
+ *      an attribute containing a NULL scope.
  * @param[in] task_id
  *      An application-specific task ID associated with this network operation.
  * @param[in] transport
@@ -133,6 +137,7 @@ struct globus_net_manager_s;
  */
 typedef globus_result_t (*globus_net_manager_pre_listen)(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const globus_net_manager_attr_t    *attr_array,
@@ -158,6 +163,10 @@ typedef globus_result_t (*globus_net_manager_pre_listen)(
  *
  * @param[in] manager
  *      Pointer to the network manager struct that is being invoked.
+ * @param[in] manager_attr_array
+ *      An array of attributes associated with the
+ *      manager. The end of the array is indicated by
+ *      an attribute containing a NULL scope.
  * @param[in] task_id
  *      An application-specific task ID associated with this network operation.
  * @param[in] transport
@@ -185,6 +194,7 @@ typedef globus_result_t (*globus_net_manager_pre_listen)(
  */
 typedef globus_result_t (*globus_net_manager_post_listen)(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -210,6 +220,10 @@ typedef globus_result_t (*globus_net_manager_post_listen)(
  *
  * @param[in] manager
  *      Pointer to the network manager struct that is being invoked.
+ * @param[in] manager_attr_array
+ *      An array of attributes associated with the
+ *      manager. The end of the array is indicated by
+ *      an attribute containing a NULL scope.
  * @param[in] task_id
  *      An application-specific task ID associated with this network operation.
  * @param[in] transport
@@ -223,6 +237,7 @@ typedef globus_result_t (*globus_net_manager_post_listen)(
  */
 typedef globus_result_t (*globus_net_manager_end_listen)(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -247,6 +262,10 @@ typedef globus_result_t (*globus_net_manager_end_listen)(
  *
  * @param[in] manager
  *      Pointer to the network manager struct that is being invoked.
+ * @param[in] manager_attr_array
+ *      An array of attributes associated with the
+ *      manager. The end of the array is indicated by
+ *      an attribute containing a NULL scope.
  * @param[in] task_id
  *      An application-specific task ID associated with this network operation.
  * @param[in] transport
@@ -268,6 +287,7 @@ typedef globus_result_t (*globus_net_manager_end_listen)(
  */
 typedef globus_result_t (*globus_net_manager_pre_accept)(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -293,6 +313,10 @@ typedef globus_result_t (*globus_net_manager_pre_accept)(
  *
  * @param[in] manager
  *      Pointer to the network manager struct that is being invoked.
+ * @param[in] manager_attr_array
+ *      An array of attributes associated with the
+ *      manager. The end of the array is indicated by
+ *      an attribute containing a NULL scope.
  * @param[in] task_id
  *      An application-specific task ID associated with this network operation.
  * @param[in] transport
@@ -319,6 +343,7 @@ typedef globus_result_t (*globus_net_manager_pre_accept)(
  */
 typedef globus_result_t (*globus_net_manager_post_accept)(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -345,6 +370,10 @@ typedef globus_result_t (*globus_net_manager_post_accept)(
  *
  * @param[in] manager
  *      Pointer to the network manager struct that is being invoked.
+ * @param[in] manager_attr_array
+ *      An array of attributes associated with the
+ *      manager. The end of the array is indicated by
+ *      an attribute containing a NULL scope.
  * @param[in] task_id
  *      An application-specific task ID associated with this network operation.
  * @param[in] transport
@@ -373,6 +402,7 @@ typedef globus_result_t (*globus_net_manager_post_accept)(
  */
 typedef globus_result_t (*globus_net_manager_pre_connect)(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *remote_contact,
@@ -399,6 +429,10 @@ typedef globus_result_t (*globus_net_manager_pre_connect)(
  *
  * @param[in] manager
  *      Pointer to the network manager struct that is being invoked.
+ * @param[in] manager_attr_array
+ *      An array of attributes associated with the
+ *      manager. The end of the array is indicated by
+ *      an attribute containing a NULL scope.
  * @param[in] task_id
  *      An application-specific task ID associated with this network operation.
  * @param[in] transport
@@ -422,6 +456,7 @@ typedef globus_result_t (*globus_net_manager_pre_connect)(
  */
 typedef globus_result_t (*globus_net_manager_post_connect)(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -446,6 +481,10 @@ typedef globus_result_t (*globus_net_manager_post_connect)(
  *
  * @param[in] manager
  *      Pointer to the network manager struct that is being invoked.
+ * @param[in] manager_attr_array
+ *      An array of attributes associated with the
+ *      manager. The end of the array is indicated by
+ *      an attribute containing a NULL scope.
  * @param[in] task_id
  *      An application-specific task ID associated with this network operation.
  * @param[in] transport
@@ -463,6 +502,7 @@ typedef globus_result_t (*globus_net_manager_post_connect)(
  */
 typedef globus_result_t (*globus_net_manager_pre_close)(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -486,6 +526,10 @@ typedef globus_result_t (*globus_net_manager_pre_close)(
  *
  * @param[in] manager
  *      Pointer to the network manager struct that is being invoked.
+ * @param[in] manager_attr_array
+ *      An array of attributes associated with the
+ *      manager. The end of the array is indicated by
+ *      an attribute containing a NULL scope.
  * @param[in] task_id
  *      An application-specific task ID associated with this network operation.
  * @param[in] transport
@@ -503,6 +547,7 @@ typedef globus_result_t (*globus_net_manager_pre_close)(
  */
 typedef globus_result_t (*globus_net_manager_post_close)(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,

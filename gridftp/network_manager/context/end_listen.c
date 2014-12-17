@@ -34,7 +34,7 @@ globus_net_manager_context_end_listen(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_net_manager_context_entry_t * ent;
     
-    if(ctx == NULL)
+    if(!ctx || !task_id || !transport || !attr_array || !local_contact)
     {
         result = GLOBUS_FAILURE;
         goto error_bad_args;
@@ -50,6 +50,7 @@ globus_net_manager_context_end_listen(
         {
             result = ent->manager->end_listen(
                 ent->manager,
+                ent->attrs,
                 task_id,
                 transport,
                 local_contact,

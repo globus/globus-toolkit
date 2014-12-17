@@ -23,6 +23,7 @@ test_pre_listen_no_result(void)
 
     result = net_manager->pre_listen(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             attr_array,
@@ -55,6 +56,7 @@ test_pre_listen_exception(void)
 
     result = net_manager->pre_listen(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             attr_array,
@@ -87,6 +89,7 @@ test_pre_listen_new_attr(void)
 
     result = net_manager->pre_listen(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             attr_array,
@@ -126,6 +129,7 @@ test_post_listen_no_result(void)
 
     result = net_manager->post_listen(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -162,6 +166,7 @@ test_post_listen_exception(void)
 
     result = net_manager->post_listen(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -198,6 +203,7 @@ test_post_listen_new_contact(void)
 
     result = net_manager->post_listen(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4545",
@@ -236,6 +242,7 @@ test_post_listen_new_attr(void)
 
     result = net_manager->post_listen(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4545",
@@ -281,6 +288,7 @@ test_post_listen_new_attr_and_contact(void)
 
     result = net_manager->post_listen(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4545",
@@ -325,6 +333,7 @@ test_pre_accept_no_result(void)
 
     result = net_manager->pre_accept(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -358,6 +367,7 @@ test_pre_accept_exception(void)
 
     result = net_manager->pre_accept(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -391,6 +401,7 @@ test_pre_accept_new_attr(void)
 
     result = net_manager->pre_accept(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -431,6 +442,7 @@ test_post_accept_no_result(void)
 
     result = net_manager->post_accept(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -465,6 +477,7 @@ test_post_accept_exception(void)
 
     result = net_manager->post_accept(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -499,6 +512,7 @@ test_post_accept_new_attr(void)
 
     result = net_manager->post_accept(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -537,6 +551,7 @@ test_pre_connect_no_result(void)
 
     result = net_manager->pre_connect(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -573,6 +588,7 @@ test_pre_connect_exception(void)
 
     result = net_manager->pre_connect(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -609,6 +625,7 @@ test_pre_connect_new_contact(void)
 
     result = net_manager->pre_connect(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4545",
@@ -647,6 +664,7 @@ test_pre_connect_new_attr(void)
 
     result = net_manager->pre_connect(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4545",
@@ -692,6 +710,7 @@ test_pre_connect_new_attr_and_contact(void)
 
     result = net_manager->pre_connect(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4545",
@@ -737,6 +756,7 @@ test_post_connect_no_result(void)
 
     result = net_manager->post_connect(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -771,6 +791,7 @@ test_post_connect_exception(void)
 
     result = net_manager->post_connect(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -805,6 +826,7 @@ test_post_connect_new_attr(void)
 
     result = net_manager->post_connect(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4545",
@@ -846,6 +868,7 @@ test_pre_close_no_result(void)
 
     result = net_manager->pre_close(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -877,6 +900,7 @@ test_pre_close_exception(void)
 
     result = net_manager->pre_close(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -907,6 +931,7 @@ test_post_close_no_result(void)
 
     result = net_manager->post_close(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",
@@ -938,6 +963,7 @@ test_post_close_exception(void)
 
     result = net_manager->post_close(
             net_manager,
+            attr_array,
             "42",
             "tcp",
             "localhost:4242",

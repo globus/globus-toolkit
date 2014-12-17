@@ -37,7 +37,8 @@ globus_net_manager_context_post_connect(
     globus_net_manager_attr_t *         tmp_attr_array = NULL;
     globus_i_net_manager_context_entry_t * ent;
     
-    if(!ctx || !attr_array_out)
+    if(!ctx || !task_id || !transport || !attr_array || !attr_array_out ||
+        !local_contact || !remote_contact)
     {
         result = GLOBUS_FAILURE;
         goto error_bad_args;
@@ -55,6 +56,7 @@ globus_net_manager_context_post_connect(
                         
             result = ent->manager->post_connect(
                 ent->manager,
+                ent->attrs,
                 task_id,
                 transport,
                 local_contact,

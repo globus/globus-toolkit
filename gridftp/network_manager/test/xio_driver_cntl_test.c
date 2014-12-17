@@ -130,7 +130,7 @@ set_get_string_opts(void)
 {
     globus_xio_attr_t                   attr;
     globus_result_t                     result;
-    const char                         *expected_opts = "task-id=42;";
+    const char                         *expected_opts = "task-id=42;manager=null;";
     char                               *opts;
 
     globus_xio_attr_init(&attr);

@@ -28,14 +28,12 @@ globus_net_manager_context_destroy(
 {
     globus_i_net_manager_context_t *    ctx = context;
     globus_list_t *                     list;
-    globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_net_manager_context_entry_t * ent;
     
     if(ctx)
     {
-        for(list = ctx->managers; 
-            !globus_list_empty(list) && result == GLOBUS_SUCCESS; 
-            list = globus_list_first(list))
+        list = ctx->managers;
+        while (!globus_list_empty(list))
         {            
             ent = globus_list_remove(&list, list);
             
@@ -46,6 +44,7 @@ globus_net_manager_context_destroy(
                 globus_extension_deactivate(ent->dll_name);
                 globus_free(ent->dll_name);
             }
+            globus_net_manager_attr_array_delete(ent->attrs);
             globus_free(ent->name);
             globus_free(ent);
         }

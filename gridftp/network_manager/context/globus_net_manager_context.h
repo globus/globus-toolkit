@@ -158,6 +158,7 @@ typedef struct globus_i_net_manager_context_entry_s
     char *                              dll_name;
     globus_extension_handle_t           ext_handle;
     globus_net_manager_t *              manager;
+    globus_net_manager_attr_t *         attrs;
 } globus_i_net_manager_context_entry_t;
 
 #ifdef __cplusplus

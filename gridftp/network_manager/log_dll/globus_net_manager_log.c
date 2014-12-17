@@ -127,6 +127,7 @@ static
 globus_result_t
 globus_l_net_manager_log_pre_listen(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const globus_net_manager_attr_t    *attr_array,
@@ -143,6 +144,7 @@ globus_l_net_manager_log_pre_listen(
 globus_result_t
 globus_l_net_manager_log_post_listen(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -160,6 +162,7 @@ globus_l_net_manager_log_post_listen(
 globus_result_t
 globus_l_net_manager_log_end_listen(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -175,6 +178,7 @@ globus_l_net_manager_log_end_listen(
 globus_result_t
 globus_l_net_manager_log_pre_accept(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -191,6 +195,7 @@ globus_l_net_manager_log_pre_accept(
 globus_result_t
 globus_l_net_manager_log_post_accept(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -208,6 +213,7 @@ globus_l_net_manager_log_post_accept(
 globus_result_t
 globus_l_net_manager_log_pre_connect(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *remote_contact,
@@ -225,6 +231,7 @@ globus_l_net_manager_log_pre_connect(
 globus_result_t
 globus_l_net_manager_log_post_connect(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -242,6 +249,7 @@ globus_l_net_manager_log_post_connect(
 globus_result_t
 globus_l_net_manager_log_pre_close(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,
@@ -258,6 +266,7 @@ globus_l_net_manager_log_pre_close(
 globus_result_t
 globus_l_net_manager_log_post_close(
     struct globus_net_manager_s        *manager,
+    const globus_net_manager_attr_t    *manager_attr_array,
     const char                         *task_id,
     const char                         *transport,
     const char                         *local_contact,

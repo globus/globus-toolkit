@@ -38,7 +38,8 @@ globus_net_manager_context_post_listen(
     char *                              tmp_local_contact = NULL;
     globus_i_net_manager_context_entry_t * ent;
     
-    if(!ctx || !local_contact_out || !attr_array_out)
+    if(!ctx || !task_id || !transport || !attr_array || !attr_array_out ||
+        !local_contact || !local_contact_out)
     {
         result = GLOBUS_FAILURE;
         goto error_bad_args;
@@ -57,6 +58,7 @@ globus_net_manager_context_post_listen(
             
             result = ent->manager->post_listen(
                 ent->manager,
+                ent->attrs,
                 task_id,
                 transport,
                 tmp_local_contact ? tmp_local_contact : local_contact,

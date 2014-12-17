@@ -38,7 +38,8 @@ globus_net_manager_context_pre_connect(
     char *                              tmp_remote_contact = NULL;
     globus_i_net_manager_context_entry_t * ent;
     
-    if(!ctx || !remote_contact_out || !attr_array_out)
+    if(!ctx || !task_id || !transport || !attr_array || !attr_array_out ||
+        !remote_contact || !remote_contact_out)
     {
         result = GLOBUS_FAILURE;
         goto error_bad_args;
@@ -57,6 +58,7 @@ globus_net_manager_context_pre_connect(
             
             result = ent->manager->pre_connect(
                 ent->manager,
+                ent->attrs,
                 task_id,
                 transport,
                 tmp_remote_contact ? tmp_remote_contact : remote_contact,

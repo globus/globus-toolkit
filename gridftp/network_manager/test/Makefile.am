@@ -9,18 +9,18 @@ AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) \
 LDADD = $(top_builddir)/libglobus_net_manager.la $(PACKAGE_DEP_LIBS)
 
 check_LTLIBRARIES = \
-    libglobus_net_manager_null_module.la
+    libglobus_net_manager_null.la
 
-libglobus_net_manager_null_module_la_SOURCES = \
+libglobus_net_manager_null_la_SOURCES = \
         globus_net_manager_null.c \
         globus_net_manager_null.h
 
-libglobus_net_manager_null_module_la_LDFLAGS = \
+libglobus_net_manager_null_la_LDFLAGS = \
         -rpath $(abs_builddir) \
         -module \
         -avoid-version \
         -no-undefined
-libglobus_net_manager_null_module_la_LIBADD = $(LDADD)
+libglobus_net_manager_null_la_LIBADD = $(LDADD)
 
 check_PROGRAMS = \
     activate_deactivate_test \
@@ -45,4 +45,4 @@ TESTS = $(check_PROGRAMS)
 LOG_COMPILER = $(LIBTOOL) --mode=execute \
     -dlopen $(top_builddir)/libglobus_net_manager.la \
     -dlopen $(top_builddir)/xio_driver/libglobus_xio_net_manager_driver.la \
-    -dlopen $(builddir)/libglobus_net_manager_null_module.la
+    -dlopen $(builddir)/libglobus_net_manager_null.la

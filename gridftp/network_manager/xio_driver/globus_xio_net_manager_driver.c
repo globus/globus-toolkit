@@ -126,7 +126,7 @@ globus_l_xio_net_manager_attr_init(
     }
 
     a->attr_array = NULL;
-    a->task_id = NULL;
+    a->task_id = strdup("unset");
     a->context = NULL;
 
 malloc_attr_exit:
@@ -211,7 +211,8 @@ globus_l_xio_net_manager_attr_set_string_options(
     const char                         *options_string)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    globus_list_t                      *options;
+    globus_list_t                      *options = NULL;
+    globus_list_t                      *rev_options;
     int                                 num_options;
     globus_net_manager_attr_t          *new_attrs;
     globus_net_manager_context_t        new_context = NULL;
@@ -219,7 +220,14 @@ globus_l_xio_net_manager_attr_set_string_options(
     char                               *new_task_id = NULL;
     size_t                              attrnum = 0;
 
-    options = globus_list_from_string(options_string, ';', NULL);
+    rev_options = globus_list_from_string(options_string, ';', NULL);
+    /* dislike that this func produces a reversed list */
+    while (!globus_list_empty(rev_options))
+    {
+        globus_list_insert(
+            &options, globus_list_remove(&rev_options, rev_options));
+    }
+
     num_options = globus_list_size(options);
 
     if (num_options == 0)
@@ -368,14 +376,16 @@ globus_l_xio_net_manager_attr_get_string_options(
     }
     if (attr->attr_array)
     {
-        for (int i = 0; attr->attr_array[0].scope != NULL; i++)
-        {
+        for (int i = 0; attr->attr_array[i].scope != NULL; i++)
+        {   
+            /*
             if ((!prev_scope) || strcmp(attr->attr_array[i].scope, prev_scope))
             {
                 out_len += snprintf(NULL, 0, "manager=%s;",
                         attr->attr_array[i].scope);
                 prev_scope = attr->attr_array[i].scope;
             }
+            */
             out_len += snprintf(NULL, 0, "%s=%s;",
                         attr->attr_array[i].name,
                         attr->attr_array[i].value);
@@ -397,12 +407,14 @@ globus_l_xio_net_manager_attr_get_string_options(
         prev_scope = NULL;
         for (int i = 0; attr->attr_array[i].scope != NULL; i++)
         {
+            /*
             if ((!prev_scope) || strcmp(attr->attr_array[i].scope, prev_scope))
             {
                 out_len += sprintf(output + out_len, "manager=%s;",
                         attr->attr_array[i].scope);
                 prev_scope = attr->attr_array[i].scope;
             }
+            */
             out_len += sprintf(output + out_len, "%s=%s;",
                         attr->attr_array[i].name,
                         attr->attr_array[i].value);

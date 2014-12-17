@@ -35,7 +35,7 @@ globus_net_manager_context_pre_listen(
     globus_net_manager_attr_t *         tmp_attr_array = NULL;
     globus_i_net_manager_context_entry_t * ent;
     
-    if(!ctx || !attr_array_out)
+    if(!ctx || !task_id || !transport || !attr_array || !attr_array_out)
     {
         result = GLOBUS_FAILURE;
         goto error_bad_args;
@@ -53,6 +53,7 @@ globus_net_manager_context_pre_listen(
                         
             result = ent->manager->pre_listen(
                 ent->manager,
+                ent->attrs,
                 task_id,
                 transport,
                 tmp_attr_array ? tmp_attr_array : attr_array,
