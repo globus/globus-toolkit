@@ -1427,13 +1427,40 @@ globus_i_xio_driver_dd_cntl(
 
         if (attr_cntl_func)
         {
-            res = attr_cntl_func(
-                    in_attr,
-                    cmd,
-                    ap);
-            if(res != GLOBUS_SUCCESS)
+            /* if the driver is capable of parsing the strings 
+                and this is the string parser command, if there is
+                no table defined the SET_STRING command will be passed
+                to the driver.  this is fine.  they may want to parse it
+                in their own way */
+            if(driver->string_table != NULL && 
+                cmd == GLOBUS_XIO_SET_STRING_OPTIONS)
             {
-                goto err;
+                char *                      opt_str;
+    
+                opt_str = va_arg(ap, char *);
+                res = globus_i_xio_string_cntl_parser(
+                    opt_str,
+                    driver->string_table,
+                    in_attr,
+                    attr_cntl_func);
+            }
+            else if (cmd == GLOBUS_XIO_GET_DRIVER_NAME)
+            {
+                const char **               conststropt;
+                conststropt = va_arg(ap, const char **);
+                *conststropt = driver->name;
+                res = GLOBUS_SUCCESS;
+            }
+            else
+            {
+                res = attr_cntl_func(
+                        in_attr,
+                        cmd,
+                        ap);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto err;
+                }
             }
         }
         else

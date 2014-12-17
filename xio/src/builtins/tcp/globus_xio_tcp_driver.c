@@ -767,11 +767,6 @@ globus_l_xio_tcp_attr_cntl(
         *out_bool = attr->use_blocking_io;
         break;
 
-      case GLOBUS_XIO_GET_DRIVER_NAME:
-        out_const_string = va_arg(ap, const char **);
-        *out_const_string = "tcp";
-        break;
-
       case GLOBUS_XIO_GET_STRING_OPTIONS:
       {
         out_string = va_arg(ap, char **);
