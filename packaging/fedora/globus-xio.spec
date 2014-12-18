@@ -1,13 +1,13 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	4.17
+Version:	5.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio-4.17.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio-5.0.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -140,6 +140,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Thu Dec 18 2014 Globus Toolkit <support@globus.org> - 5.0-1
+- Add net_manager support
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 4.17-1
 - doxygen fixes
 
