@@ -160,6 +160,7 @@ bad_attr:
         attr_array = NULL;
     }
 attr_array_malloc_fail:
+    globus_list_destroy_all(attr_string_list, free);
 no_attrs:
 illegal_string:
 bad_param:

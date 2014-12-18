@@ -1477,10 +1477,36 @@ globus_l_net_manager_python_activate(void)
 }
 
 static
+void
+globus_l_python_modules_destroy(void *datum)
+{
+    globus_l_python_modref_t           *modref = datum;
+    if (modref)
+    {
+        free(modref->key);
+        Py_XDECREF(modref->module);
+        Py_XDECREF(modref->pre_listen);
+        Py_XDECREF(modref->post_listen);
+        Py_XDECREF(modref->end_listen);
+        Py_XDECREF(modref->pre_accept);
+        Py_XDECREF(modref->post_accept);
+        Py_XDECREF(modref->pre_connect);
+        Py_XDECREF(modref->post_connect);
+        Py_XDECREF(modref->pre_close);
+        Py_XDECREF(modref->post_close);
+        free(modref);
+    }
+}
+/* globus_l_python_modules_destroy() */
+
+static
 int
 globus_l_net_manager_python_deactivate(void)
 {
     globus_net_manager_unregister(&globus_l_net_manager_python);
+    globus_hashtable_destroy_all(
+            &globus_l_python_modules,
+            globus_l_python_modules_destroy);
     Py_Finalize();
     return globus_module_deactivate(GLOBUS_NET_MANAGER_MODULE);
 }

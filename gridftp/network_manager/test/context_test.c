@@ -825,6 +825,7 @@ context_pre_connect_test(void)
     TEST_ASSERT(strcmp(attr_array_out[0].value,
             "pre_connect") == 0);
 
+    free(remote_contact_out);
     globus_net_manager_attr_array_delete(attr_array_out);
     globus_net_manager_context_destroy(context);
 
@@ -1237,6 +1238,7 @@ context_chain_plus_minus_listen_test(void)
     TEST_ASSERT(strcmp(attr_array_out[0].name, "port") == 0);
     TEST_ASSERT(strcmp(attr_array_out[0].value, "42") == 0);
 
+    globus_net_manager_attr_array_delete(attr_array_out);
     globus_net_manager_context_destroy(context);
 
     return 0;

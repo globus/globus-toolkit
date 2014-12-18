@@ -205,5 +205,8 @@ main(int argc, char *argv[])
     {
         ok(tests[i].test_func() == 0, tests[i].test_name);
     }
+    globus_xio_driver_unload(tcp_driver);
+    globus_xio_driver_unload(nm_driver);
+    globus_module_deactivate_all();
     return TEST_EXIT_CODE;
 }
