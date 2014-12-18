@@ -1,7 +1,7 @@
 Source: globus-net-manager
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev (>= 15.27), libglobus-xio-dev (>= 5), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev (>= 15.27), libglobus-xio-dev (>= 5), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, python-dev
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
