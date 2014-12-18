@@ -7,7 +7,9 @@ pkgconfig_DATA = globus-xio-net-manager-driver.pc
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/attr -I$(top_srcdir)/context
 libglobus_xio_net_manager_driver_la_LIBADD = \
         ../libglobus_net_manager.la $(PACKAGE_DEP_LIBS)
-libglobus_xio_net_manager_driver_la_SOURCES = globus_xio_net_manager_driver.c
+libglobus_xio_net_manager_driver_la_SOURCES = \
+        globus_xio_net_manager_driver.c \
+        globus_xio_net_manager_driver.h
 libglobus_xio_net_manager_driver_la_LDFLAGS = \
         -avoid-version \
         -no-undefined \

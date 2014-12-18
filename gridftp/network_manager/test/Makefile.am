@@ -29,6 +29,12 @@ check_PROGRAMS = \
     xio_driver_cntl_test \
     xio_driver_test
 
+activate_deactivate_test_SOURCES = activate_deactivate_test.c globus_test_tap.h
+attr_test_SOURCES = attr_test.c globus_test_tap.h
+context_test_SOURCES = context_test.c globus_test_tap.h
+xio_driver_cntl_test_SOURCES = xio_driver_cntl_test.c globus_test_tap.h
+xio_driver_test_SOURCES = xio_driver_test.c globus_test_tap.h
+
 if ENABLE_PYTHON
 check_PROGRAMS += python_test
 TESTS_ENVIRONMENT = export \

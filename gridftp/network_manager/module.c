@@ -19,7 +19,6 @@
 #include "globus_net_manager_python.h"
 #endif
 #include "globus_net_manager_logging.h"
-#include "globus_net_manager_exec.h"
 
 #include "version.h"
 
@@ -36,9 +35,6 @@ globus_l_net_manager_activate(void)
     globus_extension_register_builtin(
         "globus_net_manager_logging",
         &globus_net_manager_logging_module);
-    globus_extension_register_builtin(
-        "globus_net_manager_exec",
-        &globus_net_manager_exec_module);
     return GLOBUS_SUCCESS;
 }
 
@@ -50,7 +46,6 @@ globus_l_net_manager_deactivate(void)
     globus_extension_unregister_builtin("globus_net_manager_python");
 #endif
     globus_extension_unregister_builtin("globus_net_manager_logging");
-    globus_extension_unregister_builtin("globus_net_manager_exec");
 
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
