@@ -64,6 +64,11 @@ globus_net_manager_context_post_accept(
                 remote_contact,
                 tmp_attr_array ? tmp_attr_array : attr_array,
                 &ret_attr_array);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusNetManagerErrorManager(
+                    result, ent->manager->name, "post_accept");
+            }
                 
             if(ret_attr_array != NULL)
             {

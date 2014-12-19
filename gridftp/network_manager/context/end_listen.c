@@ -56,6 +56,11 @@ globus_net_manager_context_end_listen(
                 transport,
                 local_contact,
                 attr_array);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusNetManagerErrorManager(
+                    result, ent->manager->name, "end_listen");
+            }
         }
     }
 

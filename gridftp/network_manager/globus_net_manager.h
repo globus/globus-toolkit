@@ -684,18 +684,18 @@ typedef enum
             __FILE__,                                                \
             _netmgr_name,                                            \
             __LINE__,                                                \
-           "An error occurred loading the network manager. %s: %s", manager, explain))
+           "An error occurred accessing a module. %s: %s", manager, explain))
 
-#define GlobusNetManagerErrorManager(manager, explain)               \
+#define GlobusNetManagerErrorManager(result, manager, explain)       \
     globus_error_put(                                                \
         globus_error_construct_error(                                \
             GLOBUS_NET_MANAGER_MODULE,                               \
-            NULL,                                                    \
+            globus_error_get((result)),                              \
             GLOBUS_NET_MANAGER_ERROR_MANAGER,                        \
             __FILE__,                                                \
             _netmgr_name,                                            \
             __LINE__,                                                \
-           "An network manager error occurred. %s: %s", manager, explain))
+           "A network manager (%s) errored in %s.", manager, explain))
 
 #define GlobusNetManagerErrorWrapFailed(failed_func, result)         \
     globus_error_put(                                                \

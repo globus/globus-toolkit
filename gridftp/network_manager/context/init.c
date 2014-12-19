@@ -48,8 +48,8 @@ globus_l_net_manager_context_load_entry(
         rc = globus_extension_activate(dll_name);        
         if(rc != GLOBUS_SUCCESS)
         {
-            result = GlobusNetManagerErrorInit(
-                name, "Error attempting to activate module.");
+            result = GlobusNetManagerErrorManager(
+                rc, name, "attempting to activate module.");
             goto error_activate;
         }
     
@@ -58,8 +58,8 @@ globus_l_net_manager_context_load_entry(
             &ext_handle, GLOBUS_NET_MANAGER_REGISTRY, (void *) name);
         if(loaded_manager == NULL)
         {
-            result = GlobusNetManagerErrorInit(
-                name, "Error attempting to load activated module.");
+            result = GlobusNetManagerErrorManager(
+                rc, name, "attempting to load activated module.");
             goto error_activate;
         }
     }

@@ -59,7 +59,12 @@ globus_net_manager_context_pre_listen(
                 transport,
                 tmp_attr_array ? tmp_attr_array : attr_array,
                 &ret_attr_array);
-                
+
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusNetManagerErrorManager(
+                    result, ent->manager->name, "pre_listen");
+            }
             if(ret_attr_array != NULL)
             {
                 globus_net_manager_attr_array_delete(tmp_attr_array);

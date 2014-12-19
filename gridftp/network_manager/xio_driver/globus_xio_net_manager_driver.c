@@ -1389,7 +1389,7 @@ globus_l_xio_net_manager_accept_callback(
     }
     if (!handle->remote_contact)
     {
-        result = GlobusNetManagerErrorManager(
+        result = GlobusNetManagerErrorInit(
             handle->transport_name, "Unable to get remote contact.");
         goto get_remote_contact_fail;
     }

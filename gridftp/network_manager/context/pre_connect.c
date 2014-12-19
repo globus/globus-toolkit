@@ -66,6 +66,11 @@ globus_net_manager_context_pre_connect(
                 tmp_attr_array ? tmp_attr_array : attr_array,
                 &ret_remote_contact,
                 &ret_attr_array);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusNetManagerErrorManager(
+                    result, ent->manager->name, "pre_connect");
+            }
                 
             if(ret_attr_array != NULL)
             {
