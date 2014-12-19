@@ -1,5 +1,7 @@
 SUBDIRS = drivers .
 
+check_PROGRAMS_NO_SCRIPT = server_pre_init_test
+
 check_PROGRAMS =                        \
 	framework_test			\
 	http_header_test		\
@@ -9,7 +11,8 @@ check_PROGRAMS =                        \
 	http_pingpong_test		\
 	http_timeout_test 		\
         handle_create_from_url_test     \
-	http_throughput_test
+	http_throughput_test            \
+	$(check_PROGRAMS_NO_SCRIPT)
 
 check_DATA =                            \
 	headers				\
@@ -50,7 +53,7 @@ else
 TEST_DATA_DIR = $(srcdir)/
 endif
 
-TESTS = $(check_SCRIPTS)
+TESTS = $(check_SCRIPTS) $(check_PROGRAMS_NO_SCRIPT)
 TESTS_ENVIRONMENT = \
 	export XIO_TEST_OUPUT_DIR=test_output/$$$$ \
 	       TEST_DATA_DIR=$(TEST_DATA_DIR) ;

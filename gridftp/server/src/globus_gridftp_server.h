@@ -125,6 +125,7 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_HTTP_GET,
     GLOBUS_GFS_CMD_HTTP_CONFIG,
     GLOBUS_GFS_CMD_TRNC,
+    GLOBUS_GFS_CMD_SITE_TASKID,
     
     /* handled internally */
     GLOBUS_GFS_CMD_SITE_RESTRICT = 3072,

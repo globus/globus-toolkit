@@ -192,7 +192,31 @@ typedef enum
      *      The driver specific parameter string.
      */
     /* char *                           config_string */
-    GLOBUS_XIO_SET_STRING_OPTIONS
+    GLOBUS_XIO_SET_STRING_OPTIONS,
+
+    /** GlobusVarArgEnum(handle)
+     * Set the driver specific configuration string.  The format of the
+     * string is defined by the driver.  It is typically a set of key=value
+     * pairs
+     * @ingroup GLOBUS_XIO_API
+     *
+     * @param config_string
+     *      The driver specific parameter string.
+     */
+    /* char **                          config_string */
+    GLOBUS_XIO_GET_STRING_OPTIONS,
+
+    /** GlobusVarArgEnum(handle)
+     * Set the driver specific configuration string.  The format of the
+     * string is defined by the driver.  It is typically a set of key=value
+     * pairs
+     * @ingroup GLOBUS_XIO_API
+     *
+     * @param driver_name
+     *      The driver name.
+     */
+    /* const char **                    driver_name */
+    GLOBUS_XIO_GET_DRIVER_NAME
     
 } globus_xio_handle_cmd_t;
 

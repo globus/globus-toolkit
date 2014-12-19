@@ -966,8 +966,20 @@ globus_xio_server_create(
         
         ctr++;
     }
+    for (xio_op->ndx = 0; xio_op->ndx < xio_op->stack_size; xio_op->ndx++)
+    {
+        globus_i_xio_driver_t * dp = xio_op->_op_server->entry[xio_op->ndx].driver;
+        if (dp->server_pre_init_func)
+        {
+            res = dp->server_pre_init_func(
+                    xio_op->entry[xio_op->ndx].open_attr, NULL, xio_op);
+            if (res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
+    }
     
-    xio_op->ndx = xio_op->stack_size;
     memset(&contact_info, 0, sizeof(contact_info));
     res = globus_xio_driver_pass_server_init(xio_op, &contact_info, NULL);
     if(res != GLOBUS_SUCCESS)
@@ -1495,14 +1507,6 @@ globus_xio_server_close(
     return res;
 }
 
-#define GlobusLXioFreeNull(_member)                                         \
-    {                                                                       \
-        if((_member))                                                       \
-        {                                                                   \
-            globus_free((_member));                                         \
-        }                                                                   \
-    }
-    
 void
 globus_xio_contact_destroy(
     globus_xio_contact_t *              contact_info)
@@ -1510,15 +1514,18 @@ globus_xio_contact_destroy(
     GlobusXIOName(globus_xio_contact_destroy);
 
     GlobusXIODebugInternalEnter();
-    
-    GlobusLXioFreeNull(contact_info->unparsed);
-    GlobusLXioFreeNull(contact_info->resource);
-    GlobusLXioFreeNull(contact_info->host);
-    GlobusLXioFreeNull(contact_info->port);
-    GlobusLXioFreeNull(contact_info->scheme);
-    GlobusLXioFreeNull(contact_info->user);
-    GlobusLXioFreeNull(contact_info->pass);
-    GlobusLXioFreeNull(contact_info->subject);
+
+    if (contact_info)
+    {
+        free(contact_info->unparsed);
+        free(contact_info->resource);
+        free(contact_info->host);
+        free(contact_info->port);
+        free(contact_info->scheme);
+        free(contact_info->user);
+        free(contact_info->pass);
+        free(contact_info->subject);
+    }
     
     GlobusXIODebugInternalExit();
 }

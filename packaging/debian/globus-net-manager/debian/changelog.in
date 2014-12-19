@@ -1,0 +1,5 @@
+globus-net-manager (0.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Initial packaging
+
+ -- Globus Toolkit <support@globus.org>  Thu, 18 Dec 2014 08:30:24 -0500

@@ -1183,6 +1183,12 @@ globus_i_xio_driver_attr_cntl(
                 ds,
                 driver->attr_cntl_func);
         }
+        else if (cmd == GLOBUS_XIO_GET_DRIVER_NAME)
+        {
+            const char **               conststropt;
+            conststropt = va_arg(ap, const char **);
+            *conststropt = driver->name;
+        }
         else
         {
             res = driver->attr_cntl_func(ds, cmd, ap);
@@ -1335,6 +1341,8 @@ globus_i_xio_driver_dd_cntl(
     int                                 ndx;
     int                                 ctr;
     void *                              in_attr = NULL;
+    globus_xio_driver_attr_cntl_t       attr_cntl_func;
+
     GlobusXIOName(globus_i_xio_driver_dd_cntl);
 
     GlobusXIODebugEnter();
@@ -1344,7 +1352,22 @@ globus_i_xio_driver_dd_cntl(
         ndx = -1;
         for(ctr = 0; ctr < op->stack_size && ndx == -1; ctr++)
         {
-            if(driver == op->_op_context->entry[ctr].driver)
+            if (op->type == GLOBUS_XIO_OPERATION_TYPE_SERVER_INIT)
+            {
+                if (driver == op->_op_server->entry[ctr].driver)
+                {
+                    if(op->entry[ctr].open_attr == NULL)
+                    {
+                        res = 
+                        op->_op_server->entry[ctr].driver->attr_init_func(
+                            &op->entry[ctr].open_attr);
+                    }
+                    in_attr = op->entry[ctr].open_attr;
+                    ndx = ctr;
+                    break;
+                }
+            }
+            else if(driver == op->_op_context->entry[ctr].driver)
             {
                 switch(type)
                 {
@@ -1384,6 +1407,7 @@ globus_i_xio_driver_dd_cntl(
                     goto err;
                 }
                 ndx = ctr;
+                break;
             }
         }
         if(ndx == -1)
@@ -1392,15 +1416,51 @@ globus_i_xio_driver_dd_cntl(
             goto err;
         }
 
-        if(op->_op_context->entry[ndx].driver->attr_cntl_func)
+        if (op->type == GLOBUS_XIO_OPERATION_TYPE_SERVER_INIT)
         {
-            res = op->_op_context->entry[ndx].driver->attr_cntl_func(
-                    in_attr,
-                    cmd,
-                    ap);
-            if(res != GLOBUS_SUCCESS)
+            attr_cntl_func = op->_op_server->entry[ndx].driver->attr_cntl_func;
+        }
+        else
+        {
+            attr_cntl_func = op->_op_context->entry[ndx].driver->attr_cntl_func;
+        }
+
+        if (attr_cntl_func)
+        {
+            /* if the driver is capable of parsing the strings 
+                and this is the string parser command, if there is
+                no table defined the SET_STRING command will be passed
+                to the driver.  this is fine.  they may want to parse it
+                in their own way */
+            if(driver->string_table != NULL && 
+                cmd == GLOBUS_XIO_SET_STRING_OPTIONS)
             {
-                goto err;
+                char *                      opt_str;
+    
+                opt_str = va_arg(ap, char *);
+                res = globus_i_xio_string_cntl_parser(
+                    opt_str,
+                    driver->string_table,
+                    in_attr,
+                    attr_cntl_func);
+            }
+            else if (cmd == GLOBUS_XIO_GET_DRIVER_NAME)
+            {
+                const char **               conststropt;
+                conststropt = va_arg(ap, const char **);
+                *conststropt = driver->name;
+                res = GLOBUS_SUCCESS;
+            }
+            else
+            {
+                res = attr_cntl_func(
+                        in_attr,
+                        cmd,
+                        ap);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto err;
+                }
             }
         }
         else
@@ -2041,6 +2101,52 @@ globus_xio_driver_set_server(
     return GLOBUS_SUCCESS;
 }
 
+
+/**
+ * @brief Server Pre-Init
+ * @ingroup globus_xio_driver
+ * @details
+ * This function adds a callback to a driver that will be called before
+ * a server handle is created by XIO. This function has the same signature
+ * as the server_init_func in the driver, but is always called with a 
+ * NULL contact string. There is no support for calling a pass() or finished()
+ * function for this interface. It may inspect and modify its attributes
+ * and operation, but can not directly return any data or set a driver-specific
+ * server handle value. If this function returns an error result, the server
+ * create will be aborted.
+ *
+ * @param driver
+ *     Driver to associate the function with
+ * @param server_pre_init_func
+ *     Function to call prior to creating a server
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_XIO_ERROR_PARAMETER
+ *     Invalid parameter
+ */
+globus_result_t
+globus_xio_driver_set_server_pre_init(
+    globus_xio_driver_t                 driver,
+    globus_xio_driver_server_init_t     server_pre_init_func)
+{
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_driver_set_server_pre_init);
+
+    GlobusXIODebugEnter();
+    if (!driver)
+    {
+        res = GlobusXIOErrorParameter("driver");
+        goto error;
+    }
+    driver->server_pre_init_func = server_pre_init_func;
+    GlobusXIODebugExit();
+
+    return res;
+error:
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
 globus_result_t
 globus_xio_driver_set_attr(
     globus_xio_driver_t                 driver,
@@ -2101,6 +2207,36 @@ globus_xio_driver_string_cntl_set_table(
         goto error;
     }
     driver->string_table = table;
+
+    GlobusXIODebugExit();
+
+    return GLOBUS_SUCCESS;
+error:
+    GlobusXIODebugExitWithError();
+    return result;
+}
+
+globus_result_t
+globus_xio_driver_handle_string_cntl_set_table(
+    globus_xio_driver_t                driver,
+    globus_xio_string_cntl_table_t *   table)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_xio_driver_string_cntl_set_table);
+
+    GlobusXIODebugEnter();
+
+    if(driver == NULL)
+    {
+        result = GlobusXIOErrorParameter("driver");
+        goto error;
+    }
+    if(table == NULL)
+    {
+        result = GlobusXIOErrorParameter("table");
+        goto error;
+    }
+    driver->handle_string_table = table;
 
     GlobusXIODebugExit();
 
@@ -2228,10 +2364,40 @@ globus_xio_operation_get_user_driver(
     return op->_op_context->entry[op->ndx - 1].driver;
 }
 
+/**
+ * @brief Get the XIO transport driver associated with an op
+ * @ingroup globus_xio_driver_programming
+ */
+globus_xio_driver_t
+globus_xio_operation_get_transport_user_driver(
+    globus_xio_operation_t              op)
+{
+    globus_xio_driver_t driver;
+
+    switch (op->type)
+    {
+
+        case GLOBUS_XIO_OPERATION_TYPE_SERVER_INIT:
+        case GLOBUS_XIO_OPERATION_TYPE_ACCEPT:
+            driver = op->_op_server->entry[op->stack_size-1].driver;
+            break;
+        default:
+            driver = op->_op_context->entry[op->stack_size-1].driver;
+            break;
+    }
+
+    return driver;
+}
+
 globus_xio_driver_handle_t
 globus_xio_operation_get_driver_handle(
     globus_xio_operation_t              op)
 {
+    if (op->type == GLOBUS_XIO_OPERATION_TYPE_SERVER_INIT ||
+        op->type == GLOBUS_XIO_OPERATION_TYPE_ACCEPT)
+    {
+        return NULL;
+    }
     return &op->_op_context->entry[op->ndx];
 }
 

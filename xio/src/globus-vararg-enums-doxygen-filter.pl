@@ -189,6 +189,9 @@ while((my $blob = get_next_blob()))
             
             # strip GlobusVarArgEnum from blob
             $blob =~ s/GlobusVarArgEnum\(.*?\)/\@overload/s;
+            # normalize leading whitespace before * in comment block so
+            # that doxygen doesn't think its a blockquote
+            $blob =~ s/^ *\*/ */mg;
             $docblock = $blob . "\n";
             
             # next blob is either an optional prototype comment or the enum

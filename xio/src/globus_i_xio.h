@@ -640,6 +640,7 @@ typedef struct globus_i_xio_driver_s
     globus_bool_t                       extension_activated;
 
     globus_xio_string_cntl_table_t *    string_table;
+    globus_xio_string_cntl_table_t *    handle_string_table;
 
     /*
      *  main io interface functions
@@ -656,6 +657,7 @@ typedef struct globus_i_xio_driver_s
     /*
      * server
      */
+    globus_xio_driver_server_init_t     server_pre_init_func;
     globus_xio_driver_server_init_t     server_init_func;
     globus_xio_driver_server_accept_t   server_accept_func;
     globus_xio_driver_server_destroy_t  server_destroy_func;

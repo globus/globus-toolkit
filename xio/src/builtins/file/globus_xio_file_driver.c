@@ -187,63 +187,18 @@ globus_l_xio_file_string_cntl_mode(
     globus_xio_driver_attr_cntl_t       cntl_func)
 {
     globus_result_t                     result;
-    int                                 mode = 0;
+    unsigned int                        mode = 0;
     int                                 sc;
-    int                                 mode_i;
-    int                                 u;
-    int                                 g;
-    int                                 o;
     GlobusXIOName(globus_l_xio_file_string_cntl_mode);
 
-    sc = sscanf(val, "%d", &mode_i);
-    if(sc != 1)
+    sc = sscanf(val, "%o", &mode);
+    if(sc != 1 || mode > INT_MAX)
     {
         result = GlobusXIOErrorParse(val);
         goto error;
     }
-    u = mode_i / 100;
-    mode_i -= u * 100;
-    g = mode_i / 10;
-    o = mode_i % 10;
 
-    if(u & 1)
-    {
-        mode |= GLOBUS_XIO_FILE_IXUSR;
-    }
-    if(u & 2)
-    {
-        mode |= GLOBUS_XIO_FILE_IWUSR;
-    }
-    if(u & 3)
-    {
-        mode |= GLOBUS_XIO_FILE_IRUSR;
-    }
-    if(g & 1)
-    {
-        mode |= GLOBUS_XIO_FILE_IXGRP;
-    }
-    if(g & 2)
-    {
-        mode |= GLOBUS_XIO_FILE_IWGRP;
-    }
-    if(g & 3)
-    {
-        mode |= GLOBUS_XIO_FILE_IRGRP;
-    }
-    if(o & 1)
-    {
-        mode |= GLOBUS_XIO_FILE_IXOTH;
-    }
-    if(o & 2)
-    {
-        mode |= GLOBUS_XIO_FILE_IWOTH;
-    }
-    if(o & 3)
-    {
-        mode |= GLOBUS_XIO_FILE_IROTH;
-    }
-
-    result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, mode);
+    result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, (int) mode);
 
     return result;
 
@@ -251,7 +206,6 @@ error:
 
     return result;
 }
-
 
 static
 globus_result_t
@@ -297,6 +251,54 @@ globus_l_xio_file_string_cntl_flags(
     return result;
 }
 
+static
+globus_result_t
+globus_l_xio_file_flags_to_string(
+    int                                 flags,
+    const char                        **flag_string)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+    if (flags ==
+        (GLOBUS_XIO_FILE_CREAT
+            | GLOBUS_XIO_FILE_RDWR | GLOBUS_XIO_FILE_APPEND))
+    {
+        *flag_string = "a+";
+    }
+    else if (flags == 
+        (GLOBUS_XIO_FILE_CREAT |
+            GLOBUS_XIO_FILE_WRONLY | GLOBUS_XIO_FILE_APPEND))
+    {
+        *flag_string = "a";
+    }
+    else if (flags == 
+        (GLOBUS_XIO_FILE_RDWR | GLOBUS_XIO_FILE_CREAT))
+    {
+        *flag_string = "w+";
+    }
+    else if (flags == 
+        (GLOBUS_XIO_FILE_WRONLY |
+            GLOBUS_XIO_FILE_CREAT | GLOBUS_XIO_FILE_TRUNC))
+    {
+        *flag_string = "w";
+    }
+    else if (flags == GLOBUS_XIO_FILE_RDWR)
+    {
+        *flag_string = "r+";
+    }
+    else if (flags == GLOBUS_XIO_FILE_RDONLY)
+    {
+        *flag_string = "r";
+    }
+    else
+    {
+        result = GLOBUS_FAILURE;
+    }
+
+    return result;
+}
+
+
 static globus_xio_string_cntl_table_t file_l_string_opts_table[] =
 {
     {"flags", GLOBUS_XIO_FILE_SET_FLAGS,
@@ -323,6 +325,7 @@ globus_l_xio_file_attr_cntl(
     globus_xio_system_file_t          * out_fd;
     globus_off_t *                      out_offset;
     globus_bool_t *                     out_bool;
+    char                              **out_string;
     GlobusXIOName(globus_l_xio_file_attr_cntl);
     
     GlobusXIOFileDebugEnter();
@@ -385,6 +388,35 @@ globus_l_xio_file_attr_cntl(
         *out_bool = attr->use_blocking_io;
         break;
         
+      case GLOBUS_XIO_GET_STRING_OPTIONS:
+        {
+            const char *opts_format = "flags=%s;mode=%03o;blocking=%s"; 
+            const char *flags_string, *blocking_string;
+            globus_result_t result = GLOBUS_SUCCESS;
+
+            out_string = va_arg(ap, char **);
+            result = globus_l_xio_file_flags_to_string(attr->flags,
+                    &flags_string);
+            if (result)
+            {
+                GlobusXIOFileDebugExitWithError();
+                return result;
+            }
+            blocking_string = attr->use_blocking_io ? "true" : "false";
+            *out_string = malloc(strlen(opts_format)
+                    + strlen(flags_string)
+                    + 4
+                    + strlen(blocking_string));
+            if (!*out_string)
+            {
+                result = GlobusXIOErrorMemory("attr");
+                GlobusXIOFileDebugExitWithError();
+                return result;
+            }
+            sprintf(*out_string, opts_format,
+                    flags_string, attr->mode, blocking_string);
+        }
+        break;
       default:
         GlobusXIOFileDebugExitWithError();
         return GlobusXIOErrorInvalidCommand(cmd);
@@ -440,7 +472,7 @@ globus_l_xio_file_attr_destroy(
     
     GlobusXIOFileDebugEnter();
     
-    globus_free(driver_attr);
+    free(driver_attr);
     
     GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
@@ -484,7 +516,7 @@ globus_l_xio_file_handle_destroy(
     GlobusXIOFileDebugEnter();
     
     globus_mutex_destroy(&handle->lock);
-    globus_free(handle);
+    free(handle);
     
     GlobusXIOFileDebugExit();
 }

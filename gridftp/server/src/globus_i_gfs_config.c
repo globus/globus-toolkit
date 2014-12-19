@@ -446,6 +446,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "execute, when used on the network or disk stack.  An alias may also be "
     "specified, so that a client does not need to specify the full path. "
     "Format is [alias:]prog,[alias:]prog. example: /bin/gzip,tar:/bin/tar", NULL, NULL, GLOBUS_FALSE, NULL},
+ {"netmgr", "xnetmgr", NULL, "xnetmgr", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "The name of an XIO driver that acts as a Network Manager."
+    "", NULL, NULL, GLOBUS_FALSE, NULL},
  {"dc_default", "dc_default", NULL, "dc-default", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "A comma separated list of XIO drivers and options representing the default "
     "network stack. Format is of each driver entry is driver1[:opt1=val1;opt2=val2;...]. "
@@ -546,7 +549,7 @@ static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_optio
 
 static globus_hashtable_t               option_table;
 static int                              globus_l_gfs_num_threads = -1;
-static globus_bool_t                    globus_l_gfs_port_range = GLOBUS_FALSE;
+static char *                           globus_l_gfs_port_range = NULL;
 
 /* for string options, setting with an int_val of 1 will free the old one */ 
 static
