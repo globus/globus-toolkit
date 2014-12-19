@@ -29,6 +29,8 @@ BuildRequires:  pkgconfig
 %if %{?rhel}%{!?rhel:0} == 5
 BuildRequires:  python26-devel
 %global python_config_env export PYTHON_CONFIG=python2.6-config
+%else
+BuildRequires:  python-devel
 %endif
 
 %package devel
