@@ -26,6 +26,8 @@
  * manager when its module is activated.
  * @param[in] manager
  *     Manager information to register.
+ * @param[in] module
+ *     Module descriptor to register.  Use GlobusExtensionMyModule(module name)
  *
  */
 globus_result_t
@@ -35,6 +37,7 @@ globus_net_manager_register(
 {
     int                                 rc;
     globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusNetManagerName(globus_net_manager_register);
     
     rc = globus_extension_registry_add(
         GLOBUS_NET_MANAGER_REGISTRY,
@@ -43,7 +46,8 @@ globus_net_manager_register(
         (void *) manager);
     if(rc)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorInit(
+            manager->name, "Failed adding to registry.");
     }
 
     return result;

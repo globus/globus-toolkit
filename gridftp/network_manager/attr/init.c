@@ -20,6 +20,7 @@
  */
 
 #include "globus_net_manager_attr.h"
+#include "globus_net_manager.h"
 
 /**
  * @brief Initialize the contents of an attribute
@@ -46,28 +47,29 @@ globus_net_manager_attr_init(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_net_manager_attr_t           new_attr = GLOBUS_NET_MANAGER_NULL_ATTR;
+    GlobusNetManagerName(globus_net_manager_attr_init);
 
     if ((!attr) || (!scope) || (!name) || (!value))
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("No parameter may be NULL.");
         goto null_attr;
     }
     new_attr.scope = strdup(scope);
     if (!new_attr.scope)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorMemory("scope");
         goto scope_strdup_fail;
     }
     new_attr.name = strdup(name);
     if (!new_attr.name)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorMemory("name");
         goto name_strdup_fail;
     }
     new_attr.value = strdup(value);
     if (!new_attr.value)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorMemory("value");
         goto value_strdup_fail;
     }
 

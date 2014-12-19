@@ -29,7 +29,7 @@ globus_net_manager_context_destroy(
     globus_i_net_manager_context_t *    ctx = context;
     globus_list_t *                     list;
     globus_i_net_manager_context_entry_t * ent;
-    
+    GlobusNetManagerName(globus_net_manager_context_destroy);
     if(ctx)
     {
         list = ctx->managers;

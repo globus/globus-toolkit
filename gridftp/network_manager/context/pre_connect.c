@@ -37,11 +37,12 @@ globus_net_manager_context_pre_connect(
     globus_net_manager_attr_t *         tmp_attr_array = NULL;
     char *                              tmp_remote_contact = NULL;
     globus_i_net_manager_context_entry_t * ent;
-    
+    GlobusNetManagerName(globus_net_manager_context_pre_connect);
+
     if(!ctx || !task_id || !transport || !attr_array || !attr_array_out ||
         !remote_contact || !remote_contact_out)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("No parameter may be NULL.");
         goto error_bad_args;
     }
 

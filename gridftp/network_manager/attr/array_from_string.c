@@ -20,6 +20,7 @@
  */
 
 #include "globus_net_manager_attr.h"
+#include "globus_net_manager.h"
 
 /**
  * @brief Parse an array of Network Manager attributes from a string
@@ -57,20 +58,22 @@ globus_net_manager_attr_array_from_string(
     int                                 attr_string_list_size = 0;
     globus_net_manager_attr_t          *attr_array = NULL;
     int                                 i = 0;
-
+    GlobusNetManagerName(globus_net_manager_attr_array_from_string);
+    
     if (attr == NULL)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("NULL attr.");
         goto bad_attr_param;
     }
     if (scope == NULL || attr_string == NULL)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("NULL scope or attr_string.");
         goto bad_param;
     }
     if (strchr(attr_string, '\r') || strchr(attr_string, '\n'))
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter(
+            "CR and LF are not allowed in attr_string.");
         goto illegal_string;
     }
     attr_string_list = globus_list_from_string(attr_string, ';', NULL);
@@ -78,7 +81,7 @@ globus_net_manager_attr_array_from_string(
     {
         if (strlen(attr_string) > 0)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorParameter("Invalid attr_string.");
         }
         goto no_attrs;
     }
@@ -110,28 +113,28 @@ globus_net_manager_attr_array_from_string(
         if (!attr_value)
         {
             free(attr_name);
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorParameter("Invalid attr_string.");
             goto bad_attr;
         }
         *attr_value++ = '\0';
         if (*attr_value == '\0')
         {
             free(attr_name);
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorParameter("Empty value in attr_string.");
             goto bad_value;
         }
         attr_array[attr_string_list_size - i - 1].scope = strdup(scope);
         if (attr_array[attr_string_list_size - i - 1].scope == NULL)
         {
             free(attr_name);
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("scope");
             goto strdup_scope_fail;
         }
         attr_array[attr_string_list_size - i - 1].name = attr_name;
         attr_array[attr_string_list_size - i - 1].value = strdup(attr_value);
         if (attr_array[attr_string_list_size - i - 1].value == NULL)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("attr_value");
             free(attr_array[attr_string_list_size - i - 1].scope);
             free(attr_array[attr_string_list_size - i - 1].name);
             free(attr_array[attr_string_list_size - i - 1].value);

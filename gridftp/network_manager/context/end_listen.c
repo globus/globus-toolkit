@@ -33,10 +33,11 @@ globus_net_manager_context_end_listen(
     globus_list_t *                     list;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_net_manager_context_entry_t * ent;
+    GlobusNetManagerName(globus_net_manager_context_end_listen);
     
     if(!ctx || !task_id || !transport || !attr_array || !local_contact)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("No parameter may be NULL.");
         goto error_bad_args;
     }
     

@@ -22,8 +22,6 @@
 #include "globus_net_manager_context.h"
 
 
-
-
 static 
 globus_result_t
 globus_l_net_manager_context_load_entry(
@@ -36,6 +34,7 @@ globus_l_net_manager_context_load_entry(
     globus_i_net_manager_context_entry_t *  ent;
     int                                     rc;
     globus_result_t                         result = GLOBUS_SUCCESS;
+    GlobusNetManagerName(globus_l_net_manager_context_load_entry);
 
     /* is module already in registry? */
     loaded_manager = (globus_net_manager_t *) globus_extension_lookup(
@@ -49,7 +48,8 @@ globus_l_net_manager_context_load_entry(
         rc = globus_extension_activate(dll_name);        
         if(rc != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorInit(
+                name, "Error attempting to activate module.");
             goto error_activate;
         }
     
@@ -58,7 +58,8 @@ globus_l_net_manager_context_load_entry(
             &ext_handle, GLOBUS_NET_MANAGER_REGISTRY, (void *) name);
         if(loaded_manager == NULL)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorInit(
+                name, "Error attempting to load activated module.");
             goto error_activate;
         }
     }
@@ -93,17 +94,18 @@ globus_net_manager_context_init(
     int                                 attrnum;
     char *                              current_scope = NULL;
     globus_i_net_manager_context_entry_t *  ent = NULL;
+    GlobusNetManagerName(globus_net_manager_context_init);
     
     if(context == NULL || attrs == NULL || attrs[0].scope == NULL)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("No parameter may be NULL.");
         goto error_no_attr;
     }
     
     ctx = globus_calloc(1, sizeof(globus_i_net_manager_context_t));
     if(ctx == NULL)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorMemory("context");
         goto error_ctx_mem;
     }
     for(max_attr_count = 0; 

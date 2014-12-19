@@ -20,6 +20,7 @@
  */
 
 #include "globus_net_manager_attr.h"
+#include "globus_net_manager.h"
 
 /**
  * @brief Destroy the contents of an attribute
@@ -35,6 +36,7 @@ void
 globus_net_manager_attr_destroy(
     globus_net_manager_attr_t          *attr)
 {
+    GlobusNetManagerName(globus_net_manager_attr_destroy);
     if (attr)
     {
         free(attr->scope);

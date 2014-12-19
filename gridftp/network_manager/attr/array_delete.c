@@ -20,6 +20,7 @@
  */
 
 #include "globus_net_manager_attr.h"
+#include "globus_net_manager.h"
 
 
 /**
@@ -48,6 +49,7 @@ void
 globus_net_manager_attr_array_delete(
     globus_net_manager_attr_t          *attrs)
 {
+    GlobusNetManagerName(globus_net_manager_attr_array_delete);
     if (attrs)
     {
         for (int i = 0; attrs[i].scope || attrs[i].name || attrs[i].value; i++)

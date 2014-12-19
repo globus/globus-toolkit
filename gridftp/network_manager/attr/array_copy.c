@@ -20,6 +20,7 @@
  */
 
 #include "globus_net_manager_attr.h"
+#include "globus_net_manager.h"
 
 /**
  * @brief Copy an array of Network Manager attributes
@@ -51,15 +52,16 @@ globus_net_manager_attr_array_copy(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_net_manager_attr_t          *new_array = NULL;
     int                                 i = 0;
-
+    GlobusNetManagerName(globus_net_manager_attr_array_copy);
+    
     if (dest_array == NULL)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("NULL dest_array.");
         goto null_dest;
     }
     if (src_array == NULL)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("NULL src_array.");
         goto null_src;
     }
 
@@ -73,19 +75,19 @@ globus_net_manager_attr_array_copy(
         new_array[i].scope = strdup(src_array[i].scope);
         if (new_array[i].scope == NULL)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("scope");
             goto strdup_scope_fail;
         }
         new_array[i].name = strdup(src_array[i].name);
         if (new_array[i].name == NULL)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("name");
             goto strdup_name_fail;
         }
         new_array[i].value = strdup(src_array[i].value);
         if (new_array[i].value == NULL)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("value");
             goto strdup_value_fail;
         }
     }
