@@ -28,7 +28,7 @@ BuildRequires:  libtool >= 2.2
 BuildRequires:  pkgconfig
 %if %{?rhel}%{!?rhel:0} == 5
 BuildRequires:  python26-devel
-%global python_config_env PYTHON_CONFIG=python2.6-config
+%global python_config_env export PYTHON_CONFIG=python2.6-config
 %endif
 
 %package devel
@@ -100,13 +100,13 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
-
+%{python_config_env}
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
            --includedir=%{_includedir}/globus \
            --libexecdir=%{_datadir}/globus \
-           --enable-python %{python_config_env}
+           --enable-python 
 
 make %{?_smp_mflags}
 
