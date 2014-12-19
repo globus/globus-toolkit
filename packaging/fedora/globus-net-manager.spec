@@ -26,7 +26,10 @@ BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
-BuildRequires:  python-devel
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  python26-devel
+%global python_config_env PYTHON_CONFIG=python2.6-config
+%endif
 
 %package devel
 Summary:	Globus Toolkit - Net Manager Library Development Files
@@ -103,7 +106,7 @@ autoreconf -if
            --docdir=%{_docdir}/%{name}-%{version} \
            --includedir=%{_includedir}/globus \
            --libexecdir=%{_datadir}/globus \
-           --enable-python
+           --enable-python %{python_config_env}
 
 make %{?_smp_mflags}
 
