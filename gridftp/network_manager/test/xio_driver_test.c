@@ -1,6 +1,7 @@
 #include "globus_xio.h"
 #include "globus_xio_net_manager_driver.h"
 #include "globus_net_manager_attr.h"
+#include "globus_net_manager.h"
 #include "globus_test_tap.h"
 
 #ifdef ENABLE_PYTHON
@@ -241,6 +242,7 @@ main(int argc, char *argv[])
     globus_result_t result;
 
     globus_module_activate(GLOBUS_XIO_MODULE);
+    globus_module_activate(GLOBUS_NET_MANAGER_MODULE);
 
     result = globus_xio_driver_load("tcp", &tcp_driver);
     if (result)

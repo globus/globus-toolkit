@@ -1,4 +1,5 @@
 #include "globus_net_manager_attr.h"
+#include "globus_net_manager.h"
 #include "globus_test_tap.h"
 
 int
@@ -193,6 +194,8 @@ struct tests
 int
 main(int argc, char *argv[])
 {
+    globus_module_activate(GLOBUS_NET_MANAGER_MODULE);
+    
     struct tests tests[] = {
         TEST_INITIALIZER(attr_init_null),
         TEST_INITIALIZER(attr_init_destroy),
