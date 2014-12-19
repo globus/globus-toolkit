@@ -211,7 +211,7 @@ GT_PACKAGE([globus_xio_rate_driver],[xio/drivers/rate/source],
 GT_PACKAGE([globus_xio_popen_driver],[xio/drivers/popen/source],
     [globus_common globus_xio], [ccommonlibs], 1)
 GT_PACKAGE([globus_xio_udt_driver],[xio/drivers/udt/source], [globus_common globus_xio], [udt], 1)
-GT_PACKAGE([globus_net_manager],[gridftp/network_manager],
+GT_PACKAGE([globus_net_manager],[gridftp/net_manager],
     [globus_common globus_xio], [gridftp])
 GT_PACKAGE([globus_gridftp_server],[gridftp/server/src],
     [ globus_common  globus_xio  globus_xio_gsi_driver  globus_gfork
