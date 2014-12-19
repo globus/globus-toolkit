@@ -1,11 +1,12 @@
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) \
+AM_CPPFLAGS = \
         -I$(top_srcdir) \
         -I$(top_builddir) \
         -I$(top_srcdir)/attr \
         -I$(srcdir) \
         -I$(top_srcdir)/xio_driver \
         -I$(top_srcdir)/python \
-        -I$(top_srcdir)/context
+        -I$(top_srcdir)/context \
+        $(PACKAGE_DEP_CFLAGS)
 LDADD = $(top_builddir)/libglobus_net_manager.la $(PACKAGE_DEP_LIBS)
 
 check_LTLIBRARIES = \
