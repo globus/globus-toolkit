@@ -8,7 +8,7 @@ pkgconfig_DATA = globus-net-manager.pc
 include_HEADERS = globus_net_manager.h attr/globus_net_manager_attr.h
 lib_LTLIBRARIES = libglobus_net_manager.la
 
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/attr -I$(top_srcdir)/context -I$(top_srcdir)/exec -I$(top_srcdir)/logging
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/attr -I$(top_srcdir)/context -I$(top_srcdir)/exec -I$(top_srcdir)/logging $(PACKAGE_DEP_CFLAGS)
 if ENABLE_PYTHON
 AM_CPPFLAGS += -DENABLE_PYTHON -I$(top_srcdir)/python
 python_libadd = python/libglobus_net_manager_python.la
