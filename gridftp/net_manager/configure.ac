@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_net_manager],[0.0],[https://globus.atlassian.net/])
+AC_INIT([globus_net_manager],[0.1],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -25,11 +25,11 @@ AC_ARG_ENABLE([python],
     AS_HELP_STRING([--enable-python],[Enable Python Module]),
 [
 if test "$enableval" = yes; then
-    AC_PATH_PROGS([PYTHON_CONFIG], [python-config])
+    AC_PATH_PROGS([PYTHON_CONFIG], [python-config python2.6-config])
     if test x"$PYTHON_CONFIG" != x; then
-        PYTHON_CPPFLAGS="$CPPFLAGS $(python-config --includes)"
-        PYTHON_LDFLAGS="$LDFLAGS $(python-config --ldflags)"
-        PYTHON_LIBS="$LIBS $(python-config --libs)"
+        PYTHON_CPPFLAGS="$CPPFLAGS $($PYTHON_CONFIG --includes)"
+        PYTHON_LDFLAGS="$LDFLAGS $($PYTHON_CONFIG --ldflags)"
+        PYTHON_LIBS="$LIBS $($PYTHON_CONFIG --libs)"
     else
         AC_MSG_ERROR([Cannot find usable python-config])
     fi

@@ -1,3 +1,9 @@
+globus-net-manager (0.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * check for python2.6-config
+
+ -- Globus Toolkit <support@globus.org>  Fri, 19 Dec 2014 15:31:16 -0500
+
 globus-net-manager (0.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Initial packaging

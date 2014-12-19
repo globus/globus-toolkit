@@ -41,7 +41,7 @@ Description: Globus Toolkit - Net Manager Library Development Files
 Package: libglobus-xio-net-manager-driver
 Section: libs
 Architecture: any
-Depends: libglobus-net-manager0 (= ${binary:Version}), ${misc:Depends}, libglobus-common, libglobus-xio
+Depends: libglobus-net-manager0 (= ${binary:Version}), ${misc:Depends}, libglobus-common0, libglobus-xio0
 Recommends: libglobus-net-manager-doc (= ${binary:Version})
 Description: Globus Toolkit - Net Manager Library Development Files
  The Globus Toolkit is an open source software toolkit used for

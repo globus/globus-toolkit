@@ -1,19 +1,19 @@
 Name:		globus-net-manager
 %global _name %(tr - _ <<< %{name})
-Version:	0.0
+Version:	0.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Net Manager Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_net_manager-0.1.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15.27
 Requires:	globus-xio%{?_isa} >= 5
 
-BuildRequires:	globus-common-devel >= 5.274
+BuildRequires:	globus-common-devel >= 15.27
 BuildRequires:	globus-xio-devel >= 5
 BuildRequires:	doxygen
 BuildRequires:	graphviz
@@ -28,7 +28,6 @@ BuildRequires:  libtool >= 2.2
 BuildRequires:  pkgconfig
 %if %{?rhel}%{!?rhel:0} == 5
 BuildRequires:  python26-devel
-%global python_config_env export PYTHON_CONFIG=python2.6-config
 %else
 BuildRequires:  python-devel
 %endif
@@ -102,7 +101,6 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
-%{python_config_env}
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
@@ -153,5 +151,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Dec 19 2014 Globus Toolkit <support@globus.org> - 0.1-1
+- check for python2.6-config
+
 * Wed Dec 17 2014 Globus Toolkit <support@globus.org> - 0.0-1
 - Initial package
