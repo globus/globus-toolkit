@@ -115,7 +115,8 @@ $1-osx-pkg: \$($1-osx-pkg)
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
     ifelse([$1], [gsi_openssh], [], [
         ifelse([$1], [gridftp_hdfs], [], [
-                m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])])dnl
+            ifelse([$1], [myproxy], [], [
+                    m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])])])dnl
     m4_append_uniq([GT_BUNDLES_MACRO],[$4], [ ])dnl
     m4_append([GT_BUNDLES_]m4_translit($4,[-],[_])[_MACRO],[$1-stamp], [ ])dnl
     m4_append([GT_BUNDLE_PACKAGES]m4_translit($4,[-],[_]),[$1], [ ])dnl
