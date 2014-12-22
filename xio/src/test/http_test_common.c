@@ -212,29 +212,6 @@ http_test_server_init(
         goto free_cond_error;
     }
 
-    result = globus_xio_attr_cntl(
-        attr,
-        tcp_driver,
-        GLOBUS_XIO_TCP_SET_INTERFACE,
-        "localhost");
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_attr_error;
-    }
-
-    /*
-    result = globus_xio_attr_cntl(
-        attr,
-        tcp_driver,
-        GLOBUS_XIO_TCP_SET_LINGER,
-        GLOBUS_TRUE,
-        1200);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_attr_error;
-    }
-    */
-
     result = globus_xio_server_create(
         &server->server, 
         attr,
@@ -651,13 +628,6 @@ http_test_client_request(
 
     sprintf(url, fmt, contact, uri);
 
-    result = globus_xio_handle_create(new_handle, stack);
-
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto free_url_exit;
-    }
-
     globus_xio_attr_init(&attr);
 
     if (method != NULL)
@@ -705,6 +675,16 @@ http_test_client_request(
 
     for (tries = 0; tries < 10; tries++)
     {
+        result = globus_xio_handle_create(new_handle, stack);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            printf("    [%d] open failed: %s\n",
+                tries+1,
+                globus_error_print_friendly(globus_error_peek(result)));
+            continue;
+        }
+
         result = globus_xio_open(
                 *new_handle,
                 url, 
@@ -727,7 +707,6 @@ http_test_client_request(
 destroy_attr_exit:
     globus_xio_attr_destroy(attr);
 
-free_url_exit:
     globus_libc_free(url);
 error_exit:
     return result;
