@@ -447,8 +447,10 @@ static const globus_l_gfs_config_option_t option_list[] =
     "specified, so that a client does not need to specify the full path. "
     "Format is [alias:]prog,[alias:]prog. example: /bin/gzip,tar:/bin/tar", NULL, NULL, GLOBUS_FALSE, NULL},
  {"netmgr", "xnetmgr", NULL, "xnetmgr", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "The name of an XIO driver that acts as a Network Manager."
-    "", NULL, NULL, GLOBUS_FALSE, NULL},
+   "An option string to pass to the XIO Network Manager Driver, which will "
+   "then be loaded for all data channel connections.  "
+   "This must be in the form \"manager=module;option1=value;option2=value;\".  "
+   "See the Network Manager documentation for more info.", NULL, NULL, GLOBUS_FALSE, NULL},
  {"dc_default", "dc_default", NULL, "dc-default", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "A comma separated list of XIO drivers and options representing the default "
     "network stack. Format is of each driver entry is driver1[:opt1=val1;opt2=val2;...]. "

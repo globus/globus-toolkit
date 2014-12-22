@@ -1,19 +1,19 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.17
+Version:	7.18
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.17.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.18.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15
 Requires:	globus-gridftp-server-control%{?_isa} >= 2
 Requires:	globus-usage%{?_isa} >= 3
-Requires:	globus-xio%{?_isa} >= 3
+Requires:	globus-xio%{?_isa} >= 5
 Requires:	globus-authz%{?_isa} >= 2
 Requires:	globus-gfork%{?_isa} >= 3
 Requires:	globus-ftp-control%{?_isa} >= 6
@@ -23,7 +23,7 @@ Requires:	globus-gsi-credential%{?_isa} >= 6
 BuildRequires:	globus-gridftp-server-control-devel >= 2
 BuildRequires:	globus-usage-devel >= 3
 BuildRequires:	globus-xio-gsi-driver-devel >= 2
-BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-xio-devel >= 5
 BuildRequires:	globus-authz-devel >= 2
 BuildRequires:	globus-gfork-devel >= 3
 BuildRequires:	globus-ftp-control-devel >= 6
@@ -55,7 +55,7 @@ Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-gridftp-server-control-devel%{?_isa} >= 2
 Requires:	globus-usage-devel%{?_isa} >= 3
 Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
-Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-xio-devel%{?_isa} >= 5
 Requires:	globus-authz-devel%{?_isa} >= 2
 Requires:	globus-gfork-devel%{?_isa} >= 3
 Requires:	globus-ftp-control-devel%{?_isa} >= 6
@@ -169,6 +169,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Dec 22 2014 Globus Toolkit <support@globus.org> - 7.18-1
+- GT-575: Add support for the network manager driver.
+
 * Fri Dec 05 2014 Globus Toolkit <support@globus.org> - 7.17-1
 - Fix share file creation errors on bad fuse filesystems.
 
