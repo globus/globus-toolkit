@@ -1,3 +1,9 @@
+globus-xio (5.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix hang in tests on cygwin
+
+ -- Globus Toolkit <support@globus.org>  Mon, 22 Dec 2014 15:34:19 -0500
+
 globus-xio (5.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix hang in tests on cygwin
