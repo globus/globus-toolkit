@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([myproxy],[6.1.10])
+AC_INIT([myproxy],[6.1.11])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign])
 LT_INIT([dlopen win32-dll])
@@ -13,7 +13,7 @@ AC_SUBST([AGE_VERSION], [0])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-usage >= 3, globus-gssapi-gsi >= 9, globus-gss-assist >= 8, globus-gsi-sysconfig >= 5, globus-gsi-cert-utils >= 8, globus-gsi-proxy-core >= 6, globus-gsi-credential >= 5, globus-gsi-callback >= 4"])
 
 m4_define([myproxy_date], m4_syscmd([
-if git rev-parse --show-toplevel 2> /dev/null; then
+if git rev-parse --show-toplevel > /dev/null 2>&1; then
     git log -n 1 --pretty=format:%cD | awk '{printf $3 " " $4}' > myproxy-date.inc.new;
     if ! cmp myproxy-date.inc myproxy-date.inc.new > /dev/null 2>&1; then
         mv myproxy-date.inc.new myproxy-date.inc

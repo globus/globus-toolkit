@@ -1,3 +1,9 @@
+myproxy (6.1.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix missing redirect in date detection autoconf
+
+ -- Globus Toolkit <support@globus.org>  Mon, 22 Dec 2014 09:13:30 -0500
+
 myproxy (6.1.10-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix version and date string macros

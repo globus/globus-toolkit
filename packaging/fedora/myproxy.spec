@@ -1,6 +1,6 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.1.10
+Version:	6.1.11
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -533,6 +533,9 @@ fi
 %endif
 
 %changelog
+* Mon Dec 22 2014 Globus Toolkit <support@globus.org> - 6.1.11-1
+- Fix missing redirect in date detection autoconf
+
 * Tue Dec 16 2014 Globus Toolkit <support@globus.org> - 6.1.10-1
 - Fix version and date string macros
 
