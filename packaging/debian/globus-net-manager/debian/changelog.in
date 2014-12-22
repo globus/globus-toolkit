@@ -1,3 +1,9 @@
+globus-net-manager (0.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix missing skip test
+
+ -- Globus Toolkit <support@globus.org>  Mon, 22 Dec 2014 13:12:58 -0500
+
 globus-net-manager (0.1-1+gt6.@distro@) @distro@; urgency=low
 
   * check for python2.6-config

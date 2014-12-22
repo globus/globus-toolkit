@@ -7,7 +7,7 @@
 #ifdef ENABLE_PYTHON
 #define SKIP_PYTHON_TEST(x) 0
 #else
-#define SKIP_PYTHON_TEST(x) (strcmp(x.test_name, "port_plus_one") == 0)
+#define SKIP_PYTHON_TEST(x) (strcmp(x.test_name, "port_plus_one") == 0 || strcmp(x.test_name, "port_plus_one_minus_one") == 0)
 #endif
 
 globus_xio_driver_t                     net_manager_driver;
