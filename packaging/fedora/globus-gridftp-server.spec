@@ -1,13 +1,13 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.18
+Version:	7.19
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.18.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.19.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15
@@ -169,6 +169,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Dec 23 2014 Globus Toolkit <support@globus.org> - 7.19-1
+- Fix --help long line formatting
+
 * Mon Dec 22 2014 Globus Toolkit <support@globus.org> - 7.18-1
 - GT-575: Add support for the network manager driver.
 

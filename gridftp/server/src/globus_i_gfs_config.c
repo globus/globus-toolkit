@@ -1984,8 +1984,11 @@ globus_l_gfs_config_format_line(
         if(count < len && in_str[count] != ' ')
         {
             blanks = count - last;
-            count = last + 1;
-            out_buffer[i * columns + j - blanks] = 0;
+            if (blanks < columns)
+            {
+                count = last + 1;
+                out_buffer[i * columns + j - blanks] = 0;
+            }
         }
         while(count < len && in_str[count] == ' ')
         {
