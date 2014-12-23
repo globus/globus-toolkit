@@ -333,10 +333,29 @@ GT_PACKAGE([globus_gram_job_manager],[gram/jobmanager/source],
       globus_usage globus_gram_client_tools], [gram5-server])
 GT_PACKAGE([gridftp_hdfs],[gridftp/hdfs],
     [ globus_gridftp_server ], [gridftp-hdfs])
+
+dnl Augment PKG_CONFIG_PATH with the paths to all of the build directories so
+dnl that flags can be constructed automatically
 PKG_CONFIG_PATH="[${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}]GT_PKGCONFIG_DIRS_MACRO"
 export PKG_CONFIG_PATH
-
-dnl PKG_PROG_PKG_CONFIG([0.22])
+if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
+    AC_PATH_TOOL([PKG_CONFIG], [pkg-config])
+fi
+dnl Similar to PKG_PROG_PKG_CONFIG, but without setting AC_ARG_VAR for
+dnl PKG_CONFIG at the top level so we can override it.
+pkg_config_min=0.22
+if test -n "$PKG_CONFIG"; then
+    AC_MSG_CHECKING([pkg-config is at least version $pkg_config_min])
+    if $PKG_CONFIG --atleast-pkgconfig-version $pkg_config_min; then
+            AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no])
+        PKG_CONFIG=""
+    fi
+fi
+if test x"$PKG_CONFIG" = x ; then
+   AC_MSG_ERROR([Missing required pkg-config >= $pkg_config_min])
+fi
 
 dnl 
 if test "$HAVE_LTDL" = 1; then
@@ -428,7 +447,10 @@ m4_foreach([bundle], m4_split(GT_BUNDLES_MACRO),
             [ifelse(
                 m4_expand(m4_substr(bundle, 0, 12)), [gridftp-hdfs],
                 [m4_append([GT_DISABLED_BUNDLES_MACRO], bundle, [ ])],dnl
-                [m4_append([GT_ENABLED_BUNDLES_MACRO], bundle, [ ])])])])])
+                [ifelse(
+                    m4_expand(m4_substr(bundle, 0, 7)), [myproxy],
+                    [m4_append([GT_DISABLED_BUNDLES_MACRO], bundle, [ ])],dnl
+                    [m4_append([GT_ENABLED_BUNDLES_MACRO], bundle, [ ])])])])])])
 
 enabled_buns="GT_ENABLED_BUNDLES_MACRO"
 m4_foreach([bundle],
@@ -505,6 +527,7 @@ final_enabled_bundles=""
 final_enabled_xio_drivers=""
 gsi_openssh_enabled=no
 myproxy_enabled=no
+gridftp_hdfs_enabled=no
 for en_name in ""$enabled_buns; do
     skip=0
     for dis_name in ""$disabled_buns; do
@@ -518,6 +541,8 @@ for en_name in ""$enabled_buns; do
             gsi_openssh_enabled=yes
         elif test X"$en_name" = X"myproxy"; then
             myproxy_enabled=yes
+        elif test X"$en_name" = X"gridftp-hdfs"; then
+            gridftp_hdfs_enabled=yes
         fi
         final_enabled_bundles="${final_enabled_bundles:+$final_enabled_bundles }$en_name"
         final_enabled_xio_drivers="${final_enabled_xio_drivers:+$final_enabled_xio_drivers }\$(${en_name}-xio-drivers)"
@@ -551,8 +576,11 @@ AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
 if test x"$gsi_openssh_enabled" = x"yes"; then
     AC_CONFIG_SUBDIRS(gsi_openssh/source)
 fi
-if test x"$gridft_hdfs_enabled" = x"yes"; then
+if test x"$gridftp_hdfs_enabled" = x"yes"; then
     AC_CONFIG_SUBDIRS(gridftp/hdfs)
+fi
+if test x"$myproxy_enabled" = x"yes"; then
+    AC_CONFIG_SUBDIRS(myproxy/source)
 fi
 
 AC_OUTPUT
