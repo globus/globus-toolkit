@@ -1,6 +1,6 @@
 globus-gridftp-server (7.19-1+gt6.@distro@) @distro@; urgency=low
 
-  * Fix --help long line formatting
+  * Fix -help long line formatting
 
  -- Globus Toolkit <support@globus.org>  Tue, 23 Dec 2014 14:20:28 -0500
 

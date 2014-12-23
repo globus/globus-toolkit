@@ -170,7 +170,7 @@ fi
 
 %changelog
 * Tue Dec 23 2014 Globus Toolkit <support@globus.org> - 7.19-1
-- Fix --help long line formatting
+- Fix -help long line formatting
 
 * Mon Dec 22 2014 Globus Toolkit <support@globus.org> - 7.18-1
 - GT-575: Add support for the network manager driver.
