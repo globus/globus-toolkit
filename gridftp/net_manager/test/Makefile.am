@@ -34,7 +34,13 @@ activate_deactivate_test_SOURCES = activate_deactivate_test.c globus_test_tap.h
 attr_test_SOURCES = attr_test.c globus_test_tap.h
 context_test_SOURCES = context_test.c globus_test_tap.h
 xio_driver_cntl_test_SOURCES = xio_driver_cntl_test.c globus_test_tap.h
+xio_driver_cntl_test_LDADD = \
+    -dlpreopen ../xio_driver/libglobus_xio_net_manager_driver.la \
+    -dlpreopen libglobus_net_manager_null.la
 xio_driver_test_SOURCES = xio_driver_test.c globus_test_tap.h
+xio_driver_test_LDADD = \
+    -dlpreopen ../xio_driver/libglobus_xio_net_manager_driver.la \
+    -dlpreopen libglobus_net_manager_null.la
 
 if ENABLE_PYTHON
 check_PROGRAMS += python_test

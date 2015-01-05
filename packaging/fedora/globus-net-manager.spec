@@ -1,13 +1,13 @@
 Name:		globus-net-manager
 %global _name %(tr - _ <<< %{name})
-Version:	0.2
+Version:	0.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Net Manager Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_net_manager-0.2.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_net_manager-0.3.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15.27
@@ -151,6 +151,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jan 05 2015 Globus Toolkit <support@globus.org> - 0.3-1
+- Tests run with static build
+
 * Mon Dec 22 2014 Globus Toolkit <support@globus.org> - 0.2-1
 - Fix missing skip test
 

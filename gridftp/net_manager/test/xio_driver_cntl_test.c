@@ -2,6 +2,7 @@
 #include "globus_xio_net_manager_driver.h"
 #include "globus_net_manager_attr.h"
 #include "globus_test_tap.h"
+#include "globus_preload.h"
 
 static globus_xio_driver_t              nm_driver;
 
@@ -194,6 +195,8 @@ main(int argc, char *argv[])
     int i;
     globus_xio_driver_t tcp_driver;
     globus_result_t result;
+
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     globus_module_activate(GLOBUS_XIO_MODULE);
 

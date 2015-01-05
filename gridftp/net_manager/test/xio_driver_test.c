@@ -3,6 +3,7 @@
 #include "globus_net_manager_attr.h"
 #include "globus_net_manager.h"
 #include "globus_test_tap.h"
+#include "globus_preload.h"
 
 #ifdef ENABLE_PYTHON
 #define SKIP_PYTHON_TEST(x) 0
@@ -240,6 +241,8 @@ main(int argc, char *argv[])
     };
     int i;
     globus_result_t result;
+
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_NET_MANAGER_MODULE);

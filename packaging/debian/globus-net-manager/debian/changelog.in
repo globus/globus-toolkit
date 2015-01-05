@@ -1,3 +1,9 @@
+globus-net-manager (0.3-1+gt6.@distro@) @distro@; urgency=low
+
+  * Tests run with static build
+
+ -- Globus Toolkit <support@globus.org>  Mon, 05 Jan 2015 12:24:28 -0500
+
 globus-net-manager (0.2-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix missing skip test
