@@ -15,6 +15,7 @@
  */
 
 #include "globus_gram_client.h"
+#include "globus_preload.h"
 
 static
 void
@@ -172,6 +173,8 @@ int main(int argc, char *argv[])
     int rc;
     int test_num = 0;
     int not_ok = 0;
+
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     printf("1..4\n");
 
