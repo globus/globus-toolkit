@@ -248,7 +248,7 @@ int main()
     {
         res = "not ok";
     }
-    printf("%s - %s\n", testname, res);
+    printf("%s 1 - %s\n", res, testname);
 
     testname = "pre_init_fail_test";
     pre_init_func_called = init_func_called = GLOBUS_FALSE;
@@ -262,7 +262,7 @@ int main()
         res = "not ok";
         xc++;
     }
-    printf("%s - %s\n", testname, res);
+    printf("%s 2 - %s\n", res, testname);
 
     return xc;
 }

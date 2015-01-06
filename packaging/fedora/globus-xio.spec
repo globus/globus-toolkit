@@ -1,13 +1,13 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	5.2
+Version:	5.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio-5.2.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio-5.3.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -140,6 +140,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Tue Jan 06 2015 Globus Toolkit <support@globus.org> - 5.3-1
+- Fix TAP output of test
+
 * Mon Dec 22 2014 Globus Toolkit <support@globus.org> - 5.2-1
 - Fix hang in tests on cygwin
 
