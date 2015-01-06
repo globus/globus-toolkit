@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gridftp_server],[7.19],[https://globus.atlassian.net/])
+AC_INIT([globus_gridftp_server],[7.20],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -28,12 +28,13 @@ AC_ARG_WITH([preloaded-modules],
 if test x"$preload_modules" != x; then
     preload_modules="$(echo $preload_modules | tr , ' ')"
     for module in $preload_modules; do
+        module_found=no
         AC_MSG_CHECKING([for $module mode])
         PKG_CHECK_EXISTS([$module], [
             preload_links="$preload_links $($PKG_CONFIG --variable=dlopen $module)"
-            AC_MSG_RESULT([yes])],
-            [AC_MSG_RESULT([no])]
-        )
+            module_found=yes],
+            [module_found=no])
+        AC_MSG_RESULT([$module_found])
         if test x"$module" = x"globus-xio-udt-driver"; then
             link_with_cxx=1
         fi
