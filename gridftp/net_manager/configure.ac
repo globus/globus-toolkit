@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_net_manager],[0.3],[https://globus.atlassian.net/])
+AC_INIT([globus_net_manager],[0.4],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -38,6 +38,16 @@ fi
 AC_SUBST(PYTHON_CPPFLAGS)
 AC_SUBST(PYTHON_LDFLAGS)
 AC_SUBST(PYTHON_LIBS)
+
+AC_ARG_VAR([LIBLTDL],[libltdl library path])
+AC_ARG_VAR([LTDLDEPS],[libltdl compile dependencies])
+
+if test x"$LIBLTDL" = x; then
+    save_libs="$LIBS"
+    AC_CHECK_LIB([ltdl], [lt_dlopen], [LIBLTDL="-lltdl"])
+    LIBS="$save_libs"
+fi
+AC_SUBST([LIBLTDL])
 
 if test "x$PYTHON_CONFIG" != x; then
     AC_DEFINE([ENABLE_PYTHON], [1], [Define to `1' to build python module])
