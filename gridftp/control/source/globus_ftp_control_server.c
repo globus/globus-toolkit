@@ -345,6 +345,16 @@ globus_ftp_control_server_listen_ex(
             );
     }
 
+    if(attr == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                GLOBUS_NULL,
+                _FCSL("globus_ftp_control_server_listen: attr argument is NULL"))
+            );
+    }
+
     if(port == GLOBUS_NULL)
     {
         return globus_error_put(
