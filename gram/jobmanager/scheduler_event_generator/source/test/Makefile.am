@@ -15,23 +15,24 @@ check_DATA = \
 TESTS = seg-api-test.pl seg-module-load-test seg-timestamp-test
 
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
-AM_LDFLAGS = $(PACKAGE_DEP_LIBS)
 
 libglobus_seg_load_test_module_la_SOURCES = \
     seg_module_load_test_module.c
-libglobus_seg_load_test_module_la_LDFLAGS = $(AM_LDFLAGS) \
-	-module \
-	-no-undefined \
-	-rpath $(abs_builddir)
-libglobus_seg_load_test_module_la_LIBADD = ../libglobus_scheduler_event_generator.la $(PACKAGE_DEP_LIBS)
-libglobus_seg_timestamp_test_module_la_SOURCES = \
-    seg_timestamp_test_module.c
-libglobus_seg_timestamp_test_module_la_LIBADD = ../libglobus_scheduler_event_generator.la $(PACKAGE_DEP_LIBS)
-libglobus_seg_timestamp_test_module_la_LDFLAGS = $(AM_LDFLAGS) \
+libglobus_seg_load_test_module_la_LDFLAGS = \
 	-module \
 	-no-undefined \
 	-avoid-version \
 	-rpath $(abs_builddir)
+libglobus_seg_load_test_module_la_LIBADD = ../libglobus_scheduler_event_generator.la $(PACKAGE_DEP_LIBS)
+
+libglobus_seg_timestamp_test_module_la_SOURCES = \
+    seg_timestamp_test_module.c
+libglobus_seg_timestamp_test_module_la_LDFLAGS = \
+	-module \
+	-no-undefined \
+	-avoid-version \
+	-rpath $(abs_builddir)
+libglobus_seg_timestamp_test_module_la_LIBADD = ../libglobus_scheduler_event_generator.la $(PACKAGE_DEP_LIBS)
 
 seg_module_load_test_SOURCES = seg_module_load_test.c
 seg_module_load_test_LDADD = \
@@ -40,7 +41,6 @@ seg_module_load_test_LDADD = \
 	$(PACKAGE_DEP_LIBS)
 
 seg_timestamp_test_SOURCES = seg_timestamp_test.c
-seg_timestamp_test_LDFLAGS = -dlopen libglobus_seg_timestamp_test_module.la
 seg_timestamp_test_LDADD = \
         -dlpreopen libglobus_seg_timestamp_test_module.la \
 	../libglobus_scheduler_event_generator.la \
