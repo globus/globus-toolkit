@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_ftp_control], [6.3], [https://globus.atlassian.net/])
+AC_INIT([globus_ftp_control], [6.4], [https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -36,6 +36,7 @@ AC_SUBST([GSI_DRIVER_CFLAGS])
 AC_SUBST([GSI_DRIVER_LIBS])
 AC_SUBST([DLPREOPEN_FORCE])
 
+AC_CHECK_HEADERS([netinet/tcp.h])
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 

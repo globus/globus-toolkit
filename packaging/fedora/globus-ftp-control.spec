@@ -1,13 +1,13 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	6.3
+Version:	6.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_control-6.3.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_control-6.4.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -137,6 +137,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Jan 08 2015 Globus Toolkit <support@globus.org> - 6.4-1
+- Missing check for netinet/tcp.h
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 6.3-1
 - fix memleak
 
