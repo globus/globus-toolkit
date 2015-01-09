@@ -284,7 +284,8 @@ globus_ftp_control_server_listen(
 {
     globus_io_attr_t                            attr;
     globus_io_tcpattr_init(&attr);
-    globus_ftp_control_server_listen_ex(
+
+    return globus_ftp_control_server_listen_ex(
         server_handle,
         &attr,
         port,
