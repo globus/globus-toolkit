@@ -96,7 +96,7 @@ sub basic_func
        $ENV{X509_USER_PROXY} = "/bogus";
    }
    
-   my $command = "$valgrind $server_prog -I localhost $server_args |";
+   my $command = "$valgrind $server_prog $server_args |";
    #print "Running server: $command\n";
    $server_pid = open(SERVER, $command);
 

@@ -109,7 +109,7 @@ make install DESTDIR=$RPM_BUILD_ROOT
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
 %check
-make %{?_smp_mflags} check
+GLOBUS_HOSTNAME=localhost make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT
