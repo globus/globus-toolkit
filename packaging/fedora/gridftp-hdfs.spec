@@ -1,13 +1,13 @@
 Name:           gridftp-hdfs
 %global _name %(tr - _ <<< %{name})
-Version:        1.0
-Release:        1
+Version:	1.1
+Release:	1
 Summary:        HDFS DSI plugin for GridFTP
 
 Group:          System Environment/Daemons
 License:        ASL 2.0
 URL:            http://twiki.grid.iu.edu/bin/view/Storage/HadoopInstallation
-Source:         http://www.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/gridftp_hdfs-1.1.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: java-devel
@@ -95,6 +95,9 @@ fi
 %{_sysconfdir}/init.d/%{name}
 
 %changelog
+* Fri Jan 09 2015 Globus Toolkit <support@globus.org> - 1.1-1
+- Missing -module
+
 * Wed Dec 10 2014 Joseph Bester <bester@mcs.anl.gov> - 1.0-2
 - Source tarball name fix
 

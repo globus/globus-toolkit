@@ -1,3 +1,9 @@
+globus-net-manager (0.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix conflicts with globus-common-doc and globus-xio-doc
+
+ -- Globus Toolkit <support@globus.org>  Fri, 09 Jan 2015 08:32:42 -0500
+
 globus-net-manager (0.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix test link on recent debians

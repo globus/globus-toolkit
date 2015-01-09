@@ -1,13 +1,13 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	11.2
+Version:	11.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_io-11.2.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_io-11.3.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -117,6 +117,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Fri Jan 09 2015 Globus Toolkit <support@globus.org> - 11.3-1
+- Better fix for testing on localhost
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 11.2-1
 - Use localhost for tests
 

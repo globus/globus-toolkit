@@ -1,13 +1,13 @@
 Name:		globus-net-manager
 %global _name %(tr - _ <<< %{name})
-Version:	0.5
+Version:	0.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Net Manager Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_net_manager-0.5.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_net_manager-0.6.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15.27
@@ -151,6 +151,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Jan 09 2015 Globus Toolkit <support@globus.org> - 0.6-1
+- Fix conflicts with globus-common-doc and globus-xio-doc
+
 * Thu Jan 08 2015 Globus Toolkit <support@globus.org> - 0.5-1
 - Fix test link on recent debians
 

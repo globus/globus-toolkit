@@ -1,3 +1,15 @@
+globus-scheduler-event-generator (5.10-2+gt6.@distro@) @distro@; urgency=low
+
+  * Better fix for testing on localhost
+
+ -- Globus Toolkit <support@globus.org>  Fri, 09 Jan 2015 08:31:15 -0500
+
+globus-scheduler-event-generator (5.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * Missing -avoid-version (and remove duplicated compiler options)
+
+ -- Globus Toolkit <support@globus.org>  Fri, 09 Jan 2015 08:30:32 -0500
+
 globus-scheduler-event-generator (5.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix globus-scheduler-event-generator script paths

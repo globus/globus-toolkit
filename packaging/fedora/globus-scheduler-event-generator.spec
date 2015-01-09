@@ -1,13 +1,13 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	5.9
-Release:	1%{?dist}
+Version:	5.10
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_scheduler_event_generator-5.9.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_scheduler_event_generator-5.10.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gram-protocol%{?_isa} >= 11
@@ -197,6 +197,12 @@ fi
 %{_mandir}/man3/*
 
 %changelog
+* Fri Jan 09 2015 Globus Toolkit <support@globus.org> - 5.10-2
+- Better fix for testing on localhost
+
+* Fri Jan 09 2015 Globus Toolkit <support@globus.org> - 5.10-1
+- Missing -avoid-version (and remove duplicated compiler options)
+
 * Mon Nov 17 2014 Globus Toolkit <support@globus.org> - 5.9-1
 - Fix globus-scheduler-event-generator script paths
 
