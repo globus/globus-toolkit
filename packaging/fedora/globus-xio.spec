@@ -112,7 +112,7 @@ done
 
 
 %check
-make %{?_smp_mflags} check
+GLOBUS_HOSTNAME=localhost make %{?_smp_mflags} check
 
 %clean
 rm -rf $RPM_BUILD_ROOT

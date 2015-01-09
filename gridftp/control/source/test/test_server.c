@@ -264,7 +264,6 @@ main(
     int                               rc;
     globus_result_t                   res;
     globus_ftp_control_server_t       server_handle;
-    globus_io_attr_t                  attr;
 
     LTDL_SET_PRELOADED_SYMBOLS();
 
@@ -279,13 +278,8 @@ main(
     res = globus_ftp_control_server_handle_init(&server_handle);
     error_msg(res, __LINE__);
 
-    res = globus_io_tcpattr_init(&attr);
-    error_msg(res, __LINE__);
-    globus_io_attr_set_tcp_interface(&attr, "localhost");
-
-    res = globus_ftp_control_server_listen_ex(
+    res = globus_ftp_control_server_listen(
               &server_handle,
-              &attr,
               &port,
               gpftpd_listen_callback,
               NULL);

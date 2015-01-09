@@ -82,7 +82,7 @@ build-stamp: configure-stamp
 	dh_testdir
 	$(MAKE)
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) check
+	GLOBUS_HOSTNAME=localhost $(MAKE) check
 endif
 	touch $@
 
