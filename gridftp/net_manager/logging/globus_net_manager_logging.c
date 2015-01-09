@@ -320,7 +320,6 @@ globus_l_net_manager_logging_get_pointer(void)
 }
 /* globus_l_net_manager_logging_get_pointer() */
 
-//! [Module Descriptor and Activation]
 GlobusExtensionDefineModule(globus_net_manager_logging) = {
     "globus_net_manager_logging",
     globus_l_net_manager_logging_activate,
@@ -330,6 +329,7 @@ GlobusExtensionDefineModule(globus_net_manager_logging) = {
     &local_version
 };
 
+//! [Module Descriptor and Activation]
 static
 int
 globus_l_net_manager_logging_activate(void)
