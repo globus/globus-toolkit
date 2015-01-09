@@ -113,7 +113,7 @@ libmyproxy___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GLOBUS_LIBS)
 
 libmyproxy_voms___GLOBUS_FLAVOR_NAME__la_SOURCES = gsi_socket_voms.c vomsclient.c
 libmyproxy_voms___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) \
-	-avoid-version -no-undefined
+	-module -avoid-version -no-undefined
 libmyproxy_voms___GLOBUS_FLAVOR_NAME__la_LIBADD = libmyproxy$(_GLOBUS_FLAVOR_NAME).la $(VOMS_LIBS) $(GLOBUS_LIBS)
 
 bin_PROGRAMS= \
