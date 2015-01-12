@@ -34,6 +34,11 @@ BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
 %endif
+%if 0%{?suse_version} > 0
+BuildRequires: libtool
+%else
+BuildRequires: libtool-ltdl-devel
+%endif
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO GSI Driver Development Files
@@ -132,7 +137,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Mon Jan 12 2015 Globus Toolkit <support@globus.org> - 2.9-1
+* Mon Jan 12 2015 Globus Toolkit <support@globus.org> - 2.9-2
 - Fix tests on static builds
 
 * Tue Sep 30 2014 Globus Toolkit <support@globus.org> - 2.8-1

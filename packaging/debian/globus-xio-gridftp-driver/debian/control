@@ -1,7 +1,7 @@
 Source: globus-xio-gridftp-driver
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-xio-dev (>= 3), libglobus-common-dev (>= 14), libglobus-ftp-client-dev (>= 7), libglobus-xio-gsi-driver-dev, libglobus-xio-pipe-driver-dev, libglobus-gridftp-server-dev, globus-gridftp-server-progs, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, openssl
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-xio-dev (>= 3), libglobus-common-dev (>= 14), libglobus-ftp-client-dev (>= 7), libglobus-xio-gsi-driver-dev, libglobus-xio-pipe-driver-dev, libglobus-gridftp-server-dev, globus-gridftp-server-progs, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, openssl, libltdl-dev
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
