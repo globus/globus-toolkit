@@ -1,5 +1,5 @@
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)
-globus_gridftp_driver_test_LDADD = $(PACKAGE_DEP_LIBS)
+globus_gridftp_driver_test_LDADD = $(GSI_DRIVER_DLOPEN) $(PIPE_DRIVER_DLOPEN) -dlopen ../libglobus_xio_gridftp_driver.la $(PACKAGE_DEP_LIBS) -ltdl
 
 check_SCRIPTS = globus_gridftp_driver_test.pl
 check_PROGRAMS = globus_gridftp_driver_test

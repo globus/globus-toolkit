@@ -1,3 +1,9 @@
+globus-xio-gridftp-driver (2.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix tests on static builds
+
+ -- Globus Toolkit <support@globus.org>  Mon, 12 Jan 2015 13:19:42 -0500
+
 globus-xio-gridftp-driver (2.8-2+gt6.@distro@) @distro@; urgency=low
 
   * Add OpenSSL build dependency

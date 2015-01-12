@@ -1,13 +1,13 @@
 Name:		globus-xio-gridftp-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.8
+Version:	2.9
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio_gridftp_driver-2.8.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio_gridftp_driver-2.9.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
@@ -132,6 +132,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jan 12 2015 Globus Toolkit <support@globus.org> - 2.9-1
+- Fix tests on static builds
+
 * Tue Sep 30 2014 Globus Toolkit <support@globus.org> - 2.8-1
 - Metadata version out of sync
 

@@ -18,6 +18,7 @@
 #include "globus_xio_util.h"
 #include "globus_xio_gridftp_driver.h"
 #include "globus_ftp_client.h"
+#include "globus_preload.h"
 
 #define CHUNK_SIZE 5000
 #define FILE_NAME_LEN 1024
@@ -81,6 +82,8 @@ main(
     char				    eret_esto_alg_str[ALG_NAME_LEN];
     FILE *                                  fp;
     globus_ftp_client_handle_t              ftp_handle;
+
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     for(ctr = 1; ctr < argc; ctr++)
     {
