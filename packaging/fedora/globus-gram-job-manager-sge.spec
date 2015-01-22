@@ -15,8 +15,8 @@
 
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
-Version:	1.7
-Release:	2%{?dist}
+Version:	1.8
+Release:	1%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
@@ -281,6 +281,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Jan 22 2015 Globus Toolkit <support@globus.org> - 1.8-1
+- Handle UGE 8.2.0 timestamp format change
+
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 1.7-2
 - GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
 
