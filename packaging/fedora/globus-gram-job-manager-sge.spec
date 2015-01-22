@@ -2,14 +2,14 @@
 
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
-Version:	2.4
+Version:	2.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
 License:	LGPL 2.1 and Apache License 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_sge-2.4.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_sge-2.5.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-sge < 4.5
 
@@ -210,6 +210,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-sge-seg
 
 %changelog
+* Thu Jan 22 2015 Globus Toolkit <support@globus.org> - 2.5-1
+- Handle UGE 8.2.0 timestamp format change
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 2.4-1
 - Merge fixes from ellert-globus_6_branch
 
