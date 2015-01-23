@@ -171,7 +171,10 @@ install: build-stamp
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_doc.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name)-doc.install
 
-binary-indep: install
+binary-indep:
+	:
+
+binary-arch: install
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs
@@ -189,9 +192,6 @@ binary-indep: install
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
-
-binary-arch:
-#	:
 
 binary: binary-indep binary-arch
 	:
