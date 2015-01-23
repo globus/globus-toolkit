@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
 Version:	1.8
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
@@ -61,7 +61,7 @@ BuildRequires:	tetex-latex
 %endif
 %endif
 
-%if %{?fedora}%{!?fedora:0} == 18
+%if %{?fedora}%{!?fedora:0} >= 18
 BuildRequires: tex(sectsty.sty)
 BuildRequires: tex(tocloft.sty)
 BuildRequires: tex(xtab.sty)
@@ -281,7 +281,10 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Thu Jan 22 2015 Globus Toolkit <support@globus.org> - 1.8-1
+* Fri Jan 23 2015 Globus Toolkit <support@globus.org> - 1.8-2
+- latex dependency update >= 18
+
+* Thu Jan 22 2015 Globus Toolkit <support@globus.org> - 1.8-2
 - Handle UGE 8.2.0 timestamp format change
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 1.7-2
