@@ -4980,7 +4980,10 @@ redo:
 		 GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION) ||
 		(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
 		 client_handle->state ==
-		 GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT));
+		 GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT) ||
+		(target->delayed_pasv && client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
+                 client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION));
+	     
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
             
             goto connection_error;

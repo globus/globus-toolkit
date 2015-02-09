@@ -1,3 +1,9 @@
+globus-ftp-client (8.18-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-534: Fix for crash after error with delayed pasv response
+
+ -- Globus Toolkit <support@globus.org>  Mon, 09 Feb 2015 15:49:46 -0600
+
 globus-ftp-client (8.17-1+gt6.@distro@) @distro@; urgency=low
 
   * Disable segfaulting test on GNU/Hurd
