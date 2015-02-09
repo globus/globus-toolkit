@@ -1378,6 +1378,7 @@ globus_l_xio_tcp_create_listener(
     globus_result_t                     result;
     globus_addrinfo_t *                 save_addrinfo;
     globus_addrinfo_t *                 addrinfo;
+    globus_addrinfo_t *                 prefer_addrinfo;
     globus_addrinfo_t                   addrinfo_hints;
     char                                portbuf[10];
     char *                              port;
@@ -1426,8 +1427,30 @@ globus_l_xio_tcp_create_listener(
      * its not possible to bind multiple interfaces (except on some openbsd)
      * so, if the system doesnt map its inet interfaces to inet6, we
      * may have a problem
+     *
+     *
+     *  prefer inet6 (which includes v4 address space) when not binding to a 
+     *  specific interface.
      */
-    for(addrinfo = save_addrinfo; addrinfo; addrinfo = addrinfo->ai_next)
+    prefer_addrinfo = NULL;
+    if(attr->bind_address == NULL && addrinfo_hints.ai_family == PF_UNSPEC)
+    {
+        for(addrinfo = save_addrinfo; 
+            addrinfo && !prefer_addrinfo; 
+            addrinfo = addrinfo->ai_next)
+        {
+            if(addrinfo->ai_family == AF_INET6)
+            {
+                prefer_addrinfo = addrinfo;
+            }
+        }
+    }
+    if(!prefer_addrinfo)
+    {
+        prefer_addrinfo = save_addrinfo;
+    }
+     
+    for(addrinfo = prefer_addrinfo; addrinfo; addrinfo = addrinfo->ai_next)
     {
         if(GlobusLibcProtocolFamilyIsIP(addrinfo->ai_family))
         {
