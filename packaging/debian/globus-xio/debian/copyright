@@ -1,6 +1,6 @@
 Name: globus-xio
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt6/packages/globus_xio-5.5.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/globus_xio-5.6.tar.gz
 
 
 Upstream-Authors: The Globus Alliance - http://www.globus.org/

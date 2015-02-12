@@ -1383,6 +1383,7 @@ globus_l_xio_tcp_create_listener(
     char                                portbuf[10];
     char *                              port;
     globus_xio_system_socket_t          fd;
+    globus_bool_t                       try_again = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_tcp_create_listener);
     
     GlobusXIOTcpDebugEnter();
@@ -1400,132 +1401,131 @@ globus_l_xio_tcp_create_listener(
     /* setup hints for types of connectable sockets we want */
     memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
     addrinfo_hints.ai_flags = GLOBUS_AI_PASSIVE;
-    addrinfo_hints.ai_family = attr->no_ipv6 ? PF_INET : PF_UNSPEC;
     addrinfo_hints.ai_socktype = SOCK_STREAM;
     addrinfo_hints.ai_protocol = 0;
-    
-    result = globus_libc_getaddrinfo(
-        attr->bind_address, port, &addrinfo_hints, &save_addrinfo);
-    if(result != GLOBUS_SUCCESS && 
-        attr->listener_serv && attr->listener_port > 0)
+    if(attr->bind_address)
     {
-        /* it's possible the service name doesnt exist, since they also
-         * specified a numeric port, lets try that one
-         */
-        snprintf(portbuf, sizeof(portbuf), "%d", attr->listener_port);
-        result = globus_libc_getaddrinfo(
-            attr->bind_address, portbuf, &addrinfo_hints, &save_addrinfo);
+        addrinfo_hints.ai_family = attr->no_ipv6 ? PF_INET : PF_UNSPEC;
+    }
+    else
+    {
+        addrinfo_hints.ai_family = attr->no_ipv6 ? PF_INET : PF_INET6;
     }
 
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusXIOErrorWrapFailed("globus_libc_getaddrinfo", result);
-        goto error_getaddrinfo;
-    }
-    
-    /* bind to the first one possible --
-     * its not possible to bind multiple interfaces (except on some openbsd)
-     * so, if the system doesnt map its inet interfaces to inet6, we
-     * may have a problem
-     *
-     *
-     *  prefer inet6 (which includes v4 address space) when not binding to a 
-     *  specific interface.
-     */
-    prefer_addrinfo = NULL;
-    if(attr->bind_address == NULL && addrinfo_hints.ai_family == PF_UNSPEC)
-    {
-        for(addrinfo = save_addrinfo; 
-            addrinfo && !prefer_addrinfo; 
-            addrinfo = addrinfo->ai_next)
+    /* getaddrinfo now returns results in the 'correct' rfc order of ipv4 
+     * first and ipv6 last, but we want to bind to ipv6 addresses first. 
+     * we'll loop through the whole getaddrinfo+bind twice -- first for V6, 
+     * then for V4 */
+    do
+    {    
+        result = globus_libc_getaddrinfo(
+            attr->bind_address, port, &addrinfo_hints, &save_addrinfo);
+        if(result != GLOBUS_SUCCESS && 
+            attr->listener_serv && attr->listener_port > 0)
         {
-            if(addrinfo->ai_family == AF_INET6)
-            {
-                prefer_addrinfo = addrinfo;
-            }
+            /* it's possible the service name doesnt exist, since they also
+             * specified a numeric port, lets try that one
+             */
+            snprintf(portbuf, sizeof(portbuf), "%d", attr->listener_port);
+            result = globus_libc_getaddrinfo(
+                attr->bind_address, portbuf, &addrinfo_hints, &save_addrinfo);
         }
-    }
-    if(!prefer_addrinfo)
-    {
-        prefer_addrinfo = save_addrinfo;
-    }
-     
-    for(addrinfo = prefer_addrinfo; addrinfo; addrinfo = addrinfo->ai_next)
-    {
-        if(GlobusLibcProtocolFamilyIsIP(addrinfo->ai_family))
+
+        if(result != GLOBUS_SUCCESS)
         {
-            globus_bool_t               found = GLOBUS_FALSE;
-            
-            do
+            result = GlobusXIOErrorWrapFailed(
+                "globus_libc_getaddrinfo", result);
+            goto error_getaddrinfo;
+        }
+        
+        for(addrinfo = save_addrinfo; addrinfo; addrinfo = addrinfo->ai_next)
+        {
+            if(GlobusLibcProtocolFamilyIsIP(addrinfo->ai_family))
             {
-                result = globus_xio_system_socket_create(
-                    &fd,
-                    addrinfo->ai_family,
-                    addrinfo->ai_socktype,
-                    addrinfo->ai_protocol);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    break;
-                }
+                globus_bool_t               found = GLOBUS_FALSE;
                 
-                result = globus_l_xio_tcp_apply_handle_attrs(
-                    attr, fd, GLOBUS_TRUE, GLOBUS_FALSE);
-                if(result != GLOBUS_SUCCESS)
+                do
                 {
-                    result = GlobusXIOErrorWrapFailed(
-                        "globus_l_xio_tcp_apply_handle_attrs", result);
-                    globus_xio_system_socket_close(fd);
-                    break;
-                }
-                
-                result = globus_l_xio_tcp_bind(
-                    fd,
-                    addrinfo->ai_addr,
-                    addrinfo->ai_addrlen,
-                    attr->restrict_port ? attr->listener_min_port : 0,
-                    attr->restrict_port ? attr->listener_max_port : 0,
-                    GLOBUS_TRUE);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    result = GlobusXIOErrorWrapFailed(
-                        "globus_l_xio_tcp_bind", result);
-                    globus_xio_system_socket_close(fd);
-                    break;
-                }
-                
-                result = globus_xio_system_socket_listen(
-                    fd, 
-                    attr->listener_backlog < 0 
-                        ? SOMAXCONN : attr->listener_backlog);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    globus_xio_system_socket_close(fd);
-                    
-                    if(globus_error_errno_match(
-                        globus_error_peek(result),
-                        GLOBUS_XIO_MODULE,
-                        EADDRINUSE))
-                    {
-                        /* there's a race between bind and listen, let's try
-                         * this all over again
-                         */
-                        continue;
-                    }
-                    else
+                    result = globus_xio_system_socket_create(
+                        &fd,
+                        addrinfo->ai_family,
+                        addrinfo->ai_socktype,
+                        addrinfo->ai_protocol);
+                    if(result != GLOBUS_SUCCESS)
                     {
                         break;
                     }
-                }
+                    
+                    result = globus_l_xio_tcp_apply_handle_attrs(
+                        attr, fd, GLOBUS_TRUE, GLOBUS_FALSE);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        result = GlobusXIOErrorWrapFailed(
+                            "globus_l_xio_tcp_apply_handle_attrs", result);
+                        globus_xio_system_socket_close(fd);
+                        break;
+                    }
+                    
+                    result = globus_l_xio_tcp_bind(
+                        fd,
+                        addrinfo->ai_addr,
+                        addrinfo->ai_addrlen,
+                        attr->restrict_port ? attr->listener_min_port : 0,
+                        attr->restrict_port ? attr->listener_max_port : 0,
+                        GLOBUS_TRUE);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        result = GlobusXIOErrorWrapFailed(
+                            "globus_l_xio_tcp_bind", result);
+                        globus_xio_system_socket_close(fd);
+                        break;
+                    }
+                    
+                    result = globus_xio_system_socket_listen(
+                        fd, 
+                        attr->listener_backlog < 0 
+                            ? SOMAXCONN : attr->listener_backlog);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        globus_xio_system_socket_close(fd);
+                        
+                        if(globus_error_errno_match(
+                            globus_error_peek(result),
+                            GLOBUS_XIO_MODULE,
+                            EADDRINUSE))
+                        {
+                            /* there's a race between bind and listen, let's try
+                             * this all over again
+                             */
+                            continue;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    
+                    found = GLOBUS_TRUE;
+                } while(!found);
                 
-                found = GLOBUS_TRUE;
-            } while(!found);
-            
-            if(found)
-            {
-                break;
+                if(found)
+                {
+                    break;
+                }
             }
         }
-    }
+        
+        if(!addrinfo && addrinfo_hints.ai_family == PF_INET6)
+        {
+            try_again = GLOBUS_TRUE;
+            addrinfo_hints.ai_family = PF_INET;
+            globus_libc_freeaddrinfo(save_addrinfo);
+        }
+        else
+        {
+            try_again = GLOBUS_FALSE;
+        }
+    } while(!addrinfo && try_again);
     
     if(!addrinfo)
     {
