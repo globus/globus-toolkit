@@ -1417,7 +1417,9 @@ globus_l_xio_tcp_create_listener(
      * we'll loop through the whole getaddrinfo+bind twice -- first for V6, 
      * then for V4 */
     do
-    {    
+    {   
+        addrinfo = NULL;
+         
         result = globus_libc_getaddrinfo(
             attr->bind_address, port, &addrinfo_hints, &save_addrinfo);
         if(result != GLOBUS_SUCCESS && 
@@ -1433,9 +1435,18 @@ globus_l_xio_tcp_create_listener(
 
         if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_libc_getaddrinfo", result);
-            goto error_getaddrinfo;
+            if(addrinfo_hints.ai_family == PF_INET6)
+            {
+                try_again = GLOBUS_TRUE;
+                addrinfo_hints.ai_family = PF_INET;
+                continue;
+            }
+            else
+            {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_libc_getaddrinfo", result);
+                goto error_getaddrinfo;
+            }
         }
         
         for(addrinfo = save_addrinfo; addrinfo; addrinfo = addrinfo->ai_next)
@@ -1456,6 +1467,20 @@ globus_l_xio_tcp_create_listener(
                         break;
                     }
                     
+                    if(addrinfo->ai_family == AF_INET6 && !attr->bind_address)
+                    {
+                        int             int_zero = 0;
+                        
+                        result = globus_xio_system_socket_setsockopt(
+                            fd, IPPROTO_IPV6, IPV6_V6ONLY, &int_zero, sizeof(int_zero));
+                        if(result != GLOBUS_SUCCESS)
+                        {
+                             GlobusXIOTcpDebugPrintf(
+                                GLOBUS_L_XIO_TCP_DEBUG_INFO,
+                                ("Unable to set V6ONLY sockopt."));
+                        }
+                    }
+
                     result = globus_l_xio_tcp_apply_handle_attrs(
                         attr, fd, GLOBUS_TRUE, GLOBUS_FALSE);
                     if(result != GLOBUS_SUCCESS)

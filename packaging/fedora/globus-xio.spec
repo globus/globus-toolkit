@@ -1,13 +1,13 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	5.6
+Version:	5.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio-5.6.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio-5.7.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -140,6 +140,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Thu Feb 12 2015 Globus Toolkit <support@globus.org> - 5.7-1
+- more GT-581 tweaks
+
 * Thu Feb 12 2015 Globus Toolkit <support@globus.org> - 5.6-1
 - GT-581: Prefer IPV6 address family when creating a listener on all interfaces
 
