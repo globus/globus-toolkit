@@ -142,6 +142,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Feb 12 2015 Globus Toolkit <support@globus.org> - 8.19-2
+- Add openssl build requirement for tests
+
 * Thu Feb 12 2015 Globus Toolkit <support@globus.org> - 8.19-1
 - GT-568: Fix incompatibility between IPV4-only source and IPV6 dest when IPV6 is enabled
 
