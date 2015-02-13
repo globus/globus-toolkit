@@ -1,7 +1,7 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
 Version:	8.19
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
@@ -23,6 +23,7 @@ BuildRequires:	doxygen
 BuildRequires:	graphviz
 BuildRequires:	globus-gridftp-server-devel >= 0
 BuildRequires:	globus-xio-pipe-driver-devel >= 0
+BuildRequires:  openssl
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
