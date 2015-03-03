@@ -104255,7 +104255,7 @@ index 0000000..7381446
 +
 +#endif /* RUNTIME_LIBPAM */
 diff --git a/pathnames.c b/pathnames.c
-index 7d1826f..deb4305 100644
+index 7d1826f..86f4b36 100644
 --- a/pathnames.c
 +++ b/pathnames.c
 @@ -9,7 +9,7 @@
@@ -104267,7 +104267,7 @@ index 7d1826f..deb4305 100644
  #define SSHDIR "/etc/ssh"
  #define VARDIR "/var"
  #define VARRUN "/var/run"
-@@ -86,14 +86,69 @@ init_pathnames()
+@@ -86,14 +86,84 @@ init_pathnames()
              sshdir = NULL;
          }
      }
@@ -104295,8 +104295,8 @@ index 7d1826f..deb4305 100644
 +            logit("%s not found.", sshdir);
 +            free(sshdir);
 +            sshdir = NULL;
-         }
-     }
++        }
++    }
 +    if ((!sshdir) && gl) {
 +        sshdir = compose2(gl, DEFAULT_GSISSHDIR);
 +        if (access(sshdir, X_OK) < 0) {
@@ -104305,10 +104305,25 @@ index 7d1826f..deb4305 100644
 +            sshdir = NULL;
 +        }
 +    }
++#if defined(__APPLE__) && defined(__MACH__)
++    if (!sshdir)
++    {
++        char * home = getenv("HOME");
++        if (home)
++        {
++            sshdir = compose2(home, GSISSHDIR);
++            if (access(sshdir, X_OK) < 0) {
++                logit("%s not found.", sshdir);
++                free(sshdir);
++                sshdir = NULL;
++            }
+         }
+     }
++#endif /* APPLE && __MACH__ */
 +    if (!sshdir) {
-+        fatal("%s not found.", sshdir);
++        fatal("sshdir not found. Check your installation or set GLOBUS_LOCATION");
 +    }
-+#endif
++#endif /* !WIN32_FIXME */
  
      /* lots of one time memory leaks here */
 +#ifdef WIN32_FIXME
@@ -104338,7 +104353,7 @@ index 7d1826f..deb4305 100644
      _PATH_SSH_SYSTEM_HOSTFILE	= compose2(sshdir, "/ssh_known_hosts");
      _PATH_SSH_SYSTEM_HOSTFILE2	= compose2(sshdir, "/ssh_known_hosts2");
      _PATH_SERVER_CONFIG_FILE	= compose2(sshdir, "/sshd_config");
-@@ -111,6 +166,9 @@ init_pathnames()
+@@ -111,6 +181,9 @@ init_pathnames()
      _PATH_SSH_KEY_SIGN		= compose2(libexec, "/ssh-keysign");
      _PATH_SSH_PKCS11_HELPER = compose2(libexec, "/ssh-pkcs11-helper");
      _PATH_SFTP_SERVER		= compose2(libexec, "/sftp-server");
