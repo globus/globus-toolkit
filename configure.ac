@@ -120,17 +120,8 @@ $1-osx-pkg: \$($1-osx-pkg)
     m4_append_uniq([GT_BUNDLES_MACRO],[$4], [ ])dnl
     m4_append([GT_BUNDLES_]m4_translit($4,[-],[_])[_MACRO],[$1-stamp], [ ])dnl
     m4_append([GT_BUNDLE_PACKAGES]m4_translit($4,[-],[_]),[$1], [ ])dnl
-    m4_append([GT_TARGETS_ALL_MACRO], [$1-all], [ ])dnl
-    m4_append([GT_TARGETS_CLEAN_MACRO], [$1-clean], [ ])dnl
-    m4_append([GT_TARGETS_CHECK_MACRO], [$1-check], [ ])dnl
-    m4_append([GT_TARGETS_INSTALL_MACRO], [$1-install], [ ])dnl
-    m4_append([GT_TARGETS_DIST_MACRO], [$1-dist], [ ])dnl
     m4_append([GT_DOXYGEN_SUBDIRS_MACRO], [$srcdir/$2], [ ])dnl
-    m4_append([GT_ALL_STAMPS_MACRO], [$1-stamp], [ ])dnl
     m4_append([GT_ONLY_MACRO], [$1-only], [ ])dnl
-    m4_append([GT_TARGETS_RPM_MACRO], [$1-rpm], [ ])dnl
-    m4_append([GT_TARGETS_DEB_MACRO], [$1-deb], [ ])dnl
-    m4_append([GT_TARGETS_OSX_PKG_MACRO], [\$($1-osx-pkg)], [ ])dnl
     m4_append([GT_BUNDLES_]$4[_PACKAGES],native_name)
     m4_append([GT_PACKAGE_LIST], [$1], [ ])dnl
     m4_define($1[_VERSION], pkgver)
@@ -364,17 +355,11 @@ else
     TOP_SUBDIRS="libltdl ."
 fi
 TOP_DIST_SUBDIRS="libltdl GT_SUBDIRS_MACRO"
-GT_TARGETS_ALL="GT_TARGETS_ALL_MACRO"
 GT_TARGETS_CLEAN="GT_TARGETS_CLEAN_MACRO"
 GT_TARGETS_INSTALL="GT_TARGETS_INSTALL_MACRO"
-GT_TARGETS_CHECK="GT_TARGETS_CHECK_MACRO"
 GT_TARGETS_DIST="GT_TARGETS_DIST_MACRO"
-GT_TARGETS_RPM="GT_TARGETS_RPM_MACRO"
-GT_TARGETS_DEB="GT_TARGETS_DEB_MACRO"
-GT_TARGETS_OSX_PKG="GT_TARGETS_OSX_PKG_MACRO"
 GT_PKGCONFIG_DIRS="GT_PKGCONFIG_DIRS_MACRO"
 GT_DOXYGEN_SUBDIRS="GT_DOXYGEN_SUBDIRS_MACRO"
-GT_ALL_STAMPS="GT_ALL_STAMPS_MACRO"
 dnl These could live in Makefile.am if automake could handle these variable
 dnl names
 m4_append([TARGETS_MACRO], [
@@ -382,60 +367,6 @@ ltdl-$LTDL_VERSION.pkg_SUBDIR = libltdl
 ltdl-$LTDL_VERSION.pkg_PACKAGE_NAME = libltdl
 ltdl-$LTDL_VERSION.pkg_PACKAGE_VERSION = $LTDL_VERSION
 ])
-
-TARGETS="TARGETS_MACRO m4_foreach([bundle],
-    m4_split(GT_BUNDLES_MACRO),
-    [
-bundle[-deps] =  m4_expand([GT_BUNDLES_]m4_translit(bundle,[-],[_])[_MACRO])
-bundle: \$(bundle[-deps])
-bundle[-xio-drivers] = m4_expand([GT_BUNDLES_]m4_translit(bundle,[-],[_])[_XIO_DRIVERS])
-])"
-GT_BUNDLES="m4_normalize(GT_BUNDLES_MACRO)"
-AC_PATH_PROGS([DOXYGEN], [doxygen])
-AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
-TARGETS_FILE=makefile.targets
-echo "$TARGETS" > "$TARGETS_FILE"
-
-MAC_INSTALLER_PKG_REFS="osx/MAC_INSTALLER_PKG_REFS"
-MAC_INSTALLER_CHOICE_LINES="osx/MAC_INSTALLER_CHOICE_LINES"
-MAC_INSTALLER_PACKAGE_CHOICES="osx/MAC_INSTALLER_PACKAGE_CHOICES"
-rm -f "$MAC_INSTALLER_PKG_REFS" "$MAC_INSTALLER_CHOICE_LINES" "$MAC_INSTALLER_PACKAGE_CHOICES"
-mkdir -p osx
-
-touch $MAC_INSTALLER_PKG_REFS $MAC_INSTALLER_CHOICE_LINES $MAC_INSTALLER_PACKAGE_CHOICES
-
-m4_foreach([packname], m4_split(GT_PACKAGE_LIST), [
-cat <<EOF >> "$MAC_INSTALLER_PKG_REFS"
-    <pkg-ref id="org.globus.packname" version="m4_expand(packname[_VERSION])">packname[-]m4_expand(packname[_VERSION]).pkg</pkg-ref>
-EOF
-cat <<EOF >> "$MAC_INSTALLER_PACKAGE_CHOICES"
-    <choice 
-        id="org.globus.package.packname"
-        visible="false"
-        title="packname"
-        description="packname Libraries and Tools"dnl
-m4_ifdef(packname[_REQUIRES],[
-        selected="m4_expand(packname[_REQUIRES])"])
-        start_selected="choices@<:@'org.globus.bundle.m4_expand(packname[_BUNDLE])'@:>@.selected">
-        <pkg-ref id="org.globus.packname"/>
-    </choice>
-EOF
-])
-
-cat <<EOF >> "$MAC_INSTALLER_CHOICE_LINES"
-m4_foreach([bundlename],
-    m4_split(GT_BUNDLES_MACRO),
-    [
-    <line choice="org.globus.bundle.bundlename">
-    m4_foreach([pkgname], m4_split(m4_expand([GT_BUNDLE_PACKAGES]m4_translit(bundlename,[-],[_]))), [
-        <line choice="org.globus.package.pkgname"/>])
-    </line>
-    ])
-EOF
-    
-AC_SUBST_FILE(MAC_INSTALLER_PKG_REFS)
-AC_SUBST_FILE(MAC_INSTALLER_CHOICE_LINES)
-AC_SUBST_FILE(MAC_INSTALLER_PACKAGE_CHOICES)
 
 m4_foreach([bundle], m4_split(GT_BUNDLES_MACRO),
     [ifelse(
@@ -548,6 +479,85 @@ for en_name in ""$enabled_buns; do
         final_enabled_xio_drivers="${final_enabled_xio_drivers:+$final_enabled_xio_drivers }\$(${en_name}-xio-drivers)"
     fi
 done
+TARGETS="TARGETS_MACRO m4_foreach([bundle],
+    m4_split(GT_BUNDLES_MACRO),
+    [
+bundle[-deps] =  m4_expand([GT_BUNDLES_]m4_translit(bundle,[-],[_])[_MACRO])
+bundle: \$(bundle[-deps])
+bundle[-xio-drivers] = m4_expand([GT_BUNDLES_]m4_translit(bundle,[-],[_])[_XIO_DRIVERS])
+])"
+GT_BUNDLES="m4_normalize(GT_BUNDLES_MACRO)"
+AC_PATH_PROGS([DOXYGEN], [doxygen])
+AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
+TARGETS_FILE=makefile.targets
+echo "$TARGETS" > "$TARGETS_FILE"
+
+MAC_INSTALLER_PKG_REFS="osx/MAC_INSTALLER_PKG_REFS"
+MAC_INSTALLER_CHOICE_LINES="osx/MAC_INSTALLER_CHOICE_LINES"
+MAC_INSTALLER_PACKAGE_CHOICES="osx/MAC_INSTALLER_PACKAGE_CHOICES"
+rm -f "$MAC_INSTALLER_PKG_REFS" "$MAC_INSTALLER_CHOICE_LINES" "$MAC_INSTALLER_PACKAGE_CHOICES"
+mkdir -p osx
+
+touch $MAC_INSTALLER_PKG_REFS $MAC_INSTALLER_CHOICE_LINES $MAC_INSTALLER_PACKAGE_CHOICES
+GT_TARGETS_OSX_PKG=""
+GT_ALL_STAMPS=""
+GT_TARGETS_RPM=""
+GT_TARGETS_DEB=""
+GT_TARGETS_ALL=""
+GT_TARGETS_CHECK=""
+GT_TARGETS_INSTALL=""
+GT_TARGETS_DIST=""
+m4_foreach([packname], m4_split(GT_PACKAGE_LIST), [
+    for bun in $final_enabled_bundles; do
+        if test "m4_expand(packname[_BUNDLE])" = "$bun"; then
+            cat <<EOF >> "$MAC_INSTALLER_PKG_REFS"
+    <pkg-ref id="org.globus.packname" version="m4_expand(packname[_VERSION])">packname[-]m4_expand(packname[_VERSION]).pkg</pkg-ref>
+EOF
+            cat <<EOF >> "$MAC_INSTALLER_PACKAGE_CHOICES"
+    <choice 
+        id="org.globus.package.packname"
+        visible="false"
+        title="packname"
+        description="packname Libraries and Tools"dnl
+m4_ifdef(packname[_REQUIRES],[
+        selected="m4_expand(packname[_REQUIRES])"])
+        start_selected="choices@<:@'org.globus.bundle.m4_expand(packname[_BUNDLE])'@:>@.selected">
+        <pkg-ref id="org.globus.packname"/>
+    </choice>
+EOF
+        GT_TARGETS_OSX_PKG="${GT_TARGETS_OSX_PKG:+$GT_TARGETS_OSX_PKG }\$(packname[-osx-pkg])"
+        GT_ALL_STAMPS="${GT_ALL_STAMPS:+$GT_ALL_STAMPS }packname[-stamp]"
+        GT_TARGETS_DEB="${GT_TARGETS_DEB:+$GT_TARGETS_DEB }packname[-deb]"
+        GT_TARGETS_RPM="${GT_TARGETS_RPM:+$GT_TARGETS_RPM }packname[-rpm]"
+        GT_TARGETS_ALL="${GT_TARGETS_ALL:+$GT_TARGETS_ALL }packname[-all]"
+        if test "packname" != "gsi_openssh"; then
+            GT_TARGETS_CHECK="${GT_TARGETS_CHECK:+$GT_TARGETS_CHECK }packname[-check]"
+            GT_TARGETS_DIST="${GT_TARGETS_DIST:+$GT_TARGETS_DIST }packname[-dist]"
+        fi
+        GT_TARGETS_INSTALL="${GT_TARGETS_INSTALL:+$GT_TARGETS_INSTALL }packname[-install]"
+        fi
+    done
+])
+
+m4_foreach([bundlename],
+    m4_split(GT_BUNDLES_MACRO),
+    [
+    for bun in $final_enabled_bundles; do
+        if test bundlename = "$bun"; then
+            cat <<EOF >> "$MAC_INSTALLER_CHOICE_LINES"
+    <line choice="org.globus.bundle.bundlename">
+    m4_foreach([pkgname], m4_split(m4_expand([GT_BUNDLE_PACKAGES]m4_translit(bundlename,[-],[_]))), [
+        <line choice="org.globus.package.pkgname"/>])
+    </line>
+EOF
+        fi
+    done
+    ])
+    
+AC_SUBST_FILE(MAC_INSTALLER_PKG_REFS)
+AC_SUBST_FILE(MAC_INSTALLER_CHOICE_LINES)
+AC_SUBST_FILE(MAC_INSTALLER_PACKAGE_CHOICES)
+
 AC_SUBST_FILE(TARGETS_FILE)
 AC_SUBST(TOP_SUBDIRS)
 AC_SUBST(TOP_DIST_SUBDIRS)
