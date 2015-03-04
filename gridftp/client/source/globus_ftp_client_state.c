@@ -2388,8 +2388,8 @@ redo:
 	}
 	else if(target->attr->allow_ipv6)
 	{
-            /* if ipv6 is enabled, and but we connected to a v4 interface
-             * on the source, use PASV.  otherwise, if dest connected on a 
+            /* if ipv6 is enabled, ensure we connected to an ipv6 addressed
+             * source before using EPSV.  otherwise, if dest connected on a 
              * v6 interface we won't have a compatible data address to pass 
              * to the source via eprt/port. */ 
 	    if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER && 
@@ -2403,13 +2403,15 @@ redo:
                     client_handle->source->control_handle,
                     GLOBUS_NULL, 
                     host_port);
-                if(result == GLOBUS_SUCCESS && host_port->hostlen == 4)
+                /* v4mapped addresses can return an error, but we will 
+                   correctly use PASV in that case */
+                if(result == GLOBUS_SUCCESS && host_port->hostlen == 16)
                 {
-                    tmpstr = "PASV";
+                    tmpstr = "EPSV";
                 }
                 else
                 {
-                    tmpstr = "EPSV";
+                    tmpstr = "PASV";
                 }
                 globus_free(host_port);
             }

@@ -1,3 +1,9 @@
+globus-ftp-client (8.20-1+gt6.@distro@) @distro@; urgency=low
+
+  * improve fix for GT-568
+
+ -- Globus Toolkit <support@globus.org>  Wed, 04 Mar 2015 15:00:46 -0600
+
 globus-ftp-client (8.19-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-568: Fix incompatibility between IPV4-only source and IPV6 dest when IPV6 is enabled
