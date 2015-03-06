@@ -2314,7 +2314,7 @@ globus_l_gfs_config_misc()
     {
         globus_l_gfs_config_set("help", GLOBUS_TRUE, NULL);
     }
-
+    
     if((value = 
         globus_i_gfs_config_string("control_interface")) != GLOBUS_NULL)
     {        
@@ -2728,6 +2728,24 @@ error_exit:
     return result;
 }
     
+
+/* logging is available in this func */
+void
+globus_i_gfs_config_post_init()
+{
+    GlobusGFSName(globus_l_gfs_config_misc);
+    GlobusGFSDebugEnter();
+
+    if(globus_i_gfs_config_bool("allow_udt") && globus_l_gfs_num_threads < 1)
+    {
+        globus_gfs_log_message(GLOBUS_GFS_LOG_WARN, 
+            "Disabling UDT: threads must be enabled for UDT to function.\n");
+
+        globus_l_gfs_config_set("allow_udt", GLOBUS_FALSE, NULL);
+    }
+
+    GlobusGFSDebugExit();
+}
 
 /**
  * load configuration.  read from defaults, file, env, and command line 
