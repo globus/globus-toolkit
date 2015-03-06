@@ -19,6 +19,7 @@ Requires:	globus-gfork%{?_isa} >= 3
 Requires:	globus-ftp-control%{?_isa} >= 6
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:	globus-gsi-credential%{?_isa} >= 6
+Requires:       globus-xio-udt-driver%{?_isa} >= 1
 
 BuildRequires:	globus-gridftp-server-control-devel >= 2
 BuildRequires:	globus-usage-devel >= 3
