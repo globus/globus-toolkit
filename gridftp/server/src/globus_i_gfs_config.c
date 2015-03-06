@@ -466,8 +466,9 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"config_dir", "config_dir", NULL, "C", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
      "Path to directory holding configuration files that should be loaded. Files "
      "will be loaded in alphabetical order, and in the event of duplicate parameters "
-     "the last loaded file will take precedence.  Note that the main configuration"
-     "file, if one exists, will always be loaded last.", NULL, NULL,GLOBUS_FALSE, NULL},
+     "the last loaded file will take precedence.  Files with a '.' in the name "
+     "(file.bak, file.rpmsave, etc.) will be ignored.  Note that the main "
+     "configuration file, if one exists, will always be loaded last.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"config_base_path", "config_base_path", NULL, "config-base-path", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
      "Base path to use when config and log path options are not full paths. "
      "By default this is the current directory when the process is started.", NULL, NULL,GLOBUS_FALSE, NULL},
@@ -1072,7 +1073,8 @@ error_mem:
 static
 globus_result_t
 globus_l_gfs_config_load_config_dir(
-    char *                              conf_dir)
+    char *                              conf_dir,
+    globus_bool_t                       envs_only)
 {
     struct dirent **                    entries;
     int                                 count;
@@ -1091,36 +1093,39 @@ globus_l_gfs_config_load_config_dir(
         {
             char *                      full_path;
             
-            /* skip hidden and . or ..
-             and files possibly created by updates .rpmsave or .rpmnew */
-            if(*entries[i]->d_name == '.' || 
-                strstr(entries[i]->d_name, ".rpm") != NULL)
+            /* skip any file with a '.': hidden, . or ..
+             and files like .rpm*, .deb*, .bak*, etc */
+            if(strchr(entries[i]->d_name, '.') != NULL)
             {
                 free(entries[i]);
                 continue;
             }
             
-            full_path = globus_common_create_string(
-                "%s/%s", conf_dir, entries[i]->d_name); 
+            full_path = malloc(PATH_MAX);
+            rc = snprintf(
+                full_path, PATH_MAX, "%s/%s", conf_dir, entries[i]->d_name);
 
-            rc = globus_l_gfs_config_load_config_file(full_path);
-            if(rc == -2)
+            if(!envs_only)
             {
-                globus_gfs_log_exit_message("Problem parsing config file %s: "
-                    "Unable to open file.\n", full_path);
-            }
-            if(rc < 0)
-            {
-                result = GLOBUS_FAILURE;
+                rc = globus_l_gfs_config_load_config_file(full_path);
+                if(rc == -2)
+                {
+                    globus_gfs_log_exit_message("Problem parsing config file %s: "
+                        "Unable to open file.\n", full_path);
+                }
+                if(rc < 0)
+                {
+                    result = GLOBUS_FAILURE;
+                }
             }
             globus_l_gfs_config_load_envs_from_file(full_path);
             
             free(entries[i]);
-            globus_free(full_path);
+            free(full_path);
         }
         free(entries);
     }
-    else
+    else if(!envs_only)
     {
         globus_gfs_log_exit_message("Problem reading files from config dir %s.\n", conf_dir);
         result = GLOBUS_FAILURE;
@@ -2747,6 +2752,7 @@ globus_i_gfs_config_init_envs(
     int                                 rc;
     char *                              cwd_str;
     char *                              base_str = NULL;
+    char *                              conf_dir = NULL;
 
     if(argv == NULL)
     {
@@ -2763,18 +2769,52 @@ globus_i_gfs_config_init_envs(
 
     global_config_file = "/etc/grid-security/gridftp.conf";
     local_config_file = NULL;
-    
+    conf_dir = NULL;
+
     for(arg_num = 0; arg_num < argc; arg_num++)
     {
         argp = tmp_argv[arg_num];
-        if(argp[0] == '-' && argp[1] == 'c' && argp[2] == '\0' 
+        while(*argp == '-')
+        {
+            argp++;
+        }
+        if(argp[0] == 'c' && argp[1] == '\0' 
             && tmp_argv[arg_num + 1])
         {
             local_config_file = strdup(tmp_argv[arg_num + 1]);
-            arg_num = argc;
+            arg_num++;
             cmdline_config = 1;
         }
+        else if(argp[0] == 'C' && argp[1] == '\0' && 
+            tmp_argv[arg_num + 1])
+        {
+            conf_dir = strdup(tmp_argv[arg_num + 1]);
+            arg_num++;
+        }
+        else if(!strcmp(argp, "config-base-path") && tmp_argv[arg_num + 1])
+        {
+            base_str = strdup(tmp_argv[arg_num + 1]);
+            arg_num++;
+        }
+        else if(!strcmp(argp, "threads") && tmp_argv[arg_num + 1])
+        {            
+            globus_l_gfs_num_threads = atoi(tmp_argv[arg_num + 1]);
+            arg_num++;
+            if(globus_l_gfs_num_threads > 0)
+            {
+                setenv("GLOBUS_CALLBACK_POLLING_THREADS", 
+                    tmp_argv[arg_num + 1], 1);
+                globus_thread_set_model("pthread");
+            }
+        }
+        else if(!strcmp(argp, "port-range") && tmp_argv[arg_num + 1])
+        {
+            /* save arg and set after file is loaded */
+            globus_l_gfs_port_range = tmp_argv[arg_num + 1];
+            arg_num++;
+        }
     }
+
     if(local_config_file == NULL)
     {
         char *                          tmp_gl;
@@ -2791,35 +2831,6 @@ globus_i_gfs_config_init_envs(
         }
     }
     
-    for(arg_num = 0; arg_num < argc; arg_num++)
-    {
-        argp = tmp_argv[arg_num];
-        while(*argp == '-')
-        {
-            argp++;
-        }
-
-        if(!strcmp(argp, "config-base-path") && tmp_argv[arg_num + 1])
-        {
-            base_str = strdup(tmp_argv[arg_num + 1]);
-        }
-        else if(!strcmp(argp, "threads") && tmp_argv[arg_num + 1])
-        {            
-            globus_l_gfs_num_threads = atoi(tmp_argv[arg_num + 1]);
-            if(globus_l_gfs_num_threads > 0)
-            {
-                setenv("GLOBUS_CALLBACK_POLLING_THREADS", 
-                    tmp_argv[arg_num + 1], 1);
-                globus_thread_set_model("pthread");
-            }
-        }
-        else if(!strcmp(argp, "port-range") && tmp_argv[arg_num + 1])
-        {
-            /* save arg and set after file is loaded */
-            globus_l_gfs_port_range = tmp_argv[arg_num + 1];
-        }
-    }
-    
     if(base_str)
     {
         free(cwd_str);
@@ -2829,6 +2840,23 @@ globus_i_gfs_config_init_envs(
     {
         base_str = cwd_str;
         cwd_str = NULL;
+    }
+
+    if(conf_dir != NULL)
+    {
+        if(*conf_dir != '/')
+        {
+            tmp_str = malloc(PATH_MAX);
+            rc = snprintf(
+                tmp_str, PATH_MAX, "%s/%s", base_str, conf_dir);
+            globus_free(conf_dir);
+            conf_dir = tmp_str;
+        }
+        rc = globus_l_gfs_config_load_config_dir(conf_dir, GLOBUS_TRUE);
+        if(rc < 0)
+        {
+            goto error;
+        }
     }
 
     if(local_config_file != NULL)
@@ -3010,7 +3038,7 @@ globus_i_gfs_config_init(
             globus_free(conf_dir);
             conf_dir = tmp_str;
         }
-        rc = globus_l_gfs_config_load_config_dir(conf_dir);
+        rc = globus_l_gfs_config_load_config_dir(conf_dir, GLOBUS_FALSE);
         if(rc < 0)
         {
             goto error;
