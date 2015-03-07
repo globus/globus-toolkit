@@ -7,7 +7,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	15.27
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -187,6 +187,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{perl_vendorlib}/Globus/Core
 %{perl_vendorlib}/Globus/Core/*
 %{_libdir}/libglobus_*so.*
+%{_libdir}/libglobus_thread*.so
 
 %files progs
 %defattr(-,root,root,-)
@@ -200,6 +201,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_includedir}/globus
 %{_includedir}/globus/*.h
 %{_libdir}/libglobus_*so
+%exclude %{_libdir}/libglobus_thread*.so
 %{_libdir}/pkgconfig/%{name}.pc
 
 %files doc
@@ -209,6 +211,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Sat Mar 07 2015 Globus Toolkit <support@globus.org> - 15.27-2
+- move thread plugins to base
+
 * Thu Dec 18 2014 Globus Toolkit <support@globus.org> - 15.27-1
 - Don't add empty entries in list_from_string
 
