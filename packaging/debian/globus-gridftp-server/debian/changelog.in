@@ -1,3 +1,9 @@
+globus-gridftp-server (7.22-1+gt6.@distro@) @distro@; urgency=low
+
+  * windows fix
+
+ -- Globus Toolkit <support@globus.org>  Fri, 06 Mar 2015 20:31:22 -0600
+
 globus-gridftp-server (7.21-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-586: Restrict sharing based on username or group membership

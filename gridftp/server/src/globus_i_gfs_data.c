@@ -46,6 +46,7 @@
 #define S_ISLNK(x) 0
 
 #define getuid() 1
+#define getgid() 1
 #define getpwuid(x) 0
 #define initgroups(x,y) -1
 #define getgroups(x,y) -1
