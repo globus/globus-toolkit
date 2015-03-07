@@ -217,6 +217,24 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Sharing specific path restrictions.  This completely replaces the normal path "
     "restrictions (-rp) when an account is being shared by a sharing-dn login."
     "Follows normal path restriction semantics.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"sharing_users_allow", "sharing_users_allow", NULL, "sharing-users-allow", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Comma separated list of usernames that are allowed to share unless matched "
+    "in the user deny lists.  If this list is set, users that are not "
+    "included will be denied unless matched in the group allow list."
+    "", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"sharing_users_deny", "sharing_users_deny", NULL, "sharing-users-deny", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Comma separated list of usernames that are denied sharing even if matched "
+    "in the user or group allow lists."
+    "", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"sharing_groups_allow", "sharing_groups_allow", NULL, "sharing-groups-allow", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Comma separated list of groups whose members are allowed to share unless "
+    "matched in the user or group deny lists.  If this list is set, groups that "
+    "are not included will be denied unless matched in the user allow list."
+    "", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"sharing_groups_deny", "sharing_groups_deny", NULL, "sharing-groups-deny", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Comma separated list of groups whose members will be denied sharing "
+    "unless matched in the user allow list."
+    "", NULL, NULL,GLOBUS_FALSE, NULL},
  {"allow_root", "allow_root", NULL, "allow-root", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow clients to be mapped to the root account.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"allow_disabled_login", "allow_disabled_login", NULL, "allow-disabled-login", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
