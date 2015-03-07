@@ -1,13 +1,13 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.20
+Version:	7.21
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.20.tar.gz
+Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.21.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15
@@ -170,6 +170,13 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Mar 06 2015 Globus Toolkit <support@globus.org> - 7.21-1
+- GT-586: Restrict sharing based on username or group membership
+- GT-552: don't enable udt without threads
+- GT-585: Environrment and threading config not loaded from config dir
+- Ignore config.d files with a '.' in name
+- always install udt driver
+
 * Tue Jan 06 2015 Globus Toolkit <support@globus.org> - 7.20-1
 - Fix autoreconf error on some setups
 
