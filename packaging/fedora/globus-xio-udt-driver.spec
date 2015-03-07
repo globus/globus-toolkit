@@ -129,7 +129,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
-* Fri Mar 06 2014 Globus Toolkit <support@globus.org> - 1.16-3
+* Fri Mar 06 2015 Globus Toolkit <support@globus.org> - 1.16-3
 - SLES 11 needs libffi43
 
 * Wed Dec 17 2014 Globus Toolkit <support@globus.org> - 1.16-2
