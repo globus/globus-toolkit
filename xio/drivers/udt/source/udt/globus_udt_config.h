@@ -5,6 +5,7 @@
 
 #if __APPLE__
         #define os OSX
+        #define OSX
         #if __ppc__
             #define arch PPC
         #elif __ppc64__
