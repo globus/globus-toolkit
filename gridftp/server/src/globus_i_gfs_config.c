@@ -571,7 +571,7 @@ static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_optio
 static globus_hashtable_t               option_table;
 static int                              globus_l_gfs_num_threads = -1;
 static char *                           globus_l_gfs_port_range = NULL;
-
+static globus_bool_t                    globus_l_gfs_common_loaded = GLOBUS_FALSE;
 /* for string options, setting with an int_val of 1 will free the old one */ 
 static
 int
@@ -1079,8 +1079,18 @@ globus_l_gfs_config_load_envs_from_file(
     return 0;
 
 error_parse:
-    globus_gfs_log_exit_message("Problem parsing environment from config file %s: line %d.\n", 
-        filename, line_num);
+    if(globus_l_gfs_common_loaded)
+    {
+        globus_gfs_log_exit_message("Problem parsing environment from config file %s: line %d.\n", 
+            filename, line_num);
+    }
+    else
+    {
+        fprintf(
+            stderr,
+            "Problem parsing environment from config file %s: line %d. \n", 
+            filename, line_num);
+    }
 
 error_mem:
     fclose(fptr);
@@ -1106,8 +1116,7 @@ globus_l_gfs_config_load_config_dir(
     count = scandir(conf_dir, &entries, 0, alphasort);
     if(count >= 0)
     {
-       
-        for(i = 0; i < count; i++)
+        for(i = 0; i < count && result == GLOBUS_SUCCESS; i++)
         {
             char *                      full_path;
             
@@ -1136,7 +1145,7 @@ globus_l_gfs_config_load_config_dir(
                     result = GLOBUS_FAILURE;
                 }
             }
-            globus_l_gfs_config_load_envs_from_file(full_path);
+            result = globus_l_gfs_config_load_envs_from_file(full_path);
             
             free(entries[i]);
             free(full_path);
@@ -2835,13 +2844,13 @@ globus_i_gfs_config_init_envs(
         else if(!strcmp(argp, "threads") && tmp_argv[arg_num + 1])
         {            
             globus_l_gfs_num_threads = atoi(tmp_argv[arg_num + 1]);
-            arg_num++;
             if(globus_l_gfs_num_threads > 0)
             {
                 setenv("GLOBUS_CALLBACK_POLLING_THREADS", 
                     tmp_argv[arg_num + 1], 1);
                 globus_thread_set_model("pthread");
             }
+            arg_num++;
         }
         else if(!strcmp(argp, "port-range") && tmp_argv[arg_num + 1])
         {
@@ -2969,6 +2978,8 @@ globus_i_gfs_config_init(
     char *                              base_str = NULL;
     GlobusGFSName(globus_i_gfs_config_init);
     GlobusGFSDebugEnter();
+    
+    globus_l_gfs_common_loaded = GLOBUS_TRUE;
     
     globus_hashtable_init(
         &option_table,
