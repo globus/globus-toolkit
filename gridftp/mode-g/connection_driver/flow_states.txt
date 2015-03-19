@@ -1,0 +1,46 @@
+This document describes the Mode G Data Flow state machine. It may be
+processed into a diagram with the PlantUML tool from
+http://plantuml.sourceforge.net
+
+java -jar plantuml.jar flow_states.txt
+
+@startuml
+skinparam shadowing false
+
+
+skinparam activity {
+    FontName Verdana
+    FontSize 12
+    BackgroundColor #White
+
+    BorderColor<< State >> #A80036
+    BackgroundColor<< State >> #FEFECE
+}
+
+title
+Data Flow States
+endtitle
+
+(*) --> "send\nDATA_START"
+--> "STARTING" as s << State >>
+(*) --> "send\nDATA_START|DATA_END"
+--> "STARTING_ENDING" as se << State >>
+s --> "recv\nDATA_YES" as s_y
+--> "ACTIVE" as a << State >>
+s --> "recv\nDATA_NO" as s_n
+--> "REFUSED" as r << State >>
+s --> "send\nDATA_END" as s_e
+--> se
+a --> "send\nDATA_END" as ae
+--> "ENDING" as e << State >>
+a --> "send or recv\nTRANSFER_ABORT"
+--> r
+se --> "recv\nDATA_YES"
+--> e
+se --> "recv\nDATA_NO"
+--> e
+r --> "send\nDATA_END" as r_e
+--> e
+e --> "recv\nDATA_END"
+--> (*)
+@enduml

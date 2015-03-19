@@ -322,6 +322,8 @@ GT_PACKAGE([globus_gram_job_manager],[gram/jobmanager/source],
       globus_xio_popen_driver  globus_rsl
       globus_gram_job_manager_callout_error globus_scheduler_event_generator
       globus_usage globus_gram_client_tools], [gram5-server])
+GT_PACKAGE([globus_xio_mode_g],[gridftp/mode-g],
+    [ globus_xio globus_common ], [gridftp], 1)
 GT_PACKAGE([gridftp_hdfs],[gridftp/hdfs],
     [ globus_gridftp_server ], [gridftp-hdfs])
 

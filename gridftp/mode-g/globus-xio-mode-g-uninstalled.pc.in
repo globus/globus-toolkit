@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@abs_top_builddir@
+includedir=@includedir@
+abs_top_builddir=@abs_top_builddir@
+abs_top_srcdir=@abs_top_srcdir@
+dlopen=-dlopen @abs_top_builddir@/connection_driver/libglobus_xio_mode_g_connection_driver.la -dlopen @abs_top_builddir@/transfer_driver/libglobus_xio_mode_g_connection_driver.la
+Name: globus-xio-mode-g
+Description: Globus Toolkit - Globus XIO Mode G Drivers
+Version: @PACKAGE_VERSION@
+Requires.private: @PACKAGE_DEPS@
+Cflags: -I${abs_top_srcdir}

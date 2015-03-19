@@ -1,0 +1,68 @@
+This document describes the Mode G Data Sender state machine. It may be
+processed into a diagram with the PlantUML tool from
+http://plantuml.sourceforge.net
+
+java -jar plantuml.jar connection_states.txt
+
+@startuml
+skinparam shadowing false
+
+
+skinparam activity {
+    FontName Verdana
+    FontSize 12
+    BackgroundColor #White
+
+    BorderColor<< State >> #A80036
+    BackgroundColor<< State >> #FEFECE
+}
+
+title
+Connection States
+endtitle
+
+(*) --> "Open" as open << State >>
+open --> "Sent CONNECTION_CLOSE_REQ†" as s_ccr
+s_ccr --> "Outgoing closing" as o_c << State >>
+open --> "Recv CONNECTION_CLOSE_REQ†" as r_ccr
+r_ccr --> "Incoming closing" as i_c << State >>
+
+o_c --> "Recv CONNECTION_CLOSE_REQ†" as o_sr_ccr
+i_c --> "Send CONNECTION_CLOSE_REQ†" as i_sr_ccr
+o_sr_ccr --> "Both closing" as b_closing << State >>
+i_sr_ccr --> b_closing
+
+b_closing --> "Send CONNECTION_CLOSE††" as sr_ccr_s_cc
+b_closing --> "Recv CONNECTION_CLOSE††" as sr_ccr_r_cc
+sr_ccr_s_cc --> "Outgoing Closed" as o_closed << State >>
+sr_ccr_r_cc --> "Incoming Closed" as i_closed << State >>
+
+o_closed --> "Recv CONNECTION_CLOSE††" as oi_closed
+i_closed --> "Send CONNECTION_CLOSE††" as io_closed
+
+oi_closed --> "close†††" as close << State >>
+io_closed --> close
+
+o_c --> "Recv CONNECTION_CLOSE_REQ†|\nCONNECTION_CLOSE††" 
+--> i_closed
+
+i_c --> "Send CONNECTION_CLOSE_REQ†|\nCONNECTION_CLOSE††" 
+--> o_closed
+
+close --> (*)
+
+legend
+† The CONNECTION_CLOSE_REQ may only be sent when there
+are no outgoing data flows. After sending a message
+with that bit, the only valid things to send are
+DATA_END and TRANSFER_ABORT until a CONNECTION_CLOSE_REQ 
+is received.
+
+†† The CONNECTION_CLOSE may only be sent after receiving
+a CONNECTION_CLOSE_REQ. After sending a message with that
+bit, no further messages may be sent on that data connection
+
+††† The data connection may be closed after having both sent
+and received the CONNECTION_CLOSE message.
+endlegend
+@enduml
