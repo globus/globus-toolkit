@@ -1586,6 +1586,10 @@ globus_l_gfs_free_session_handle(
     {
         globus_free(session_handle->sharing_sharee);
     }
+    if(session_handle->taskid)
+    {
+        globus_free(session_handle->taskid);
+    }
     if(session_handle->gid_array)
     {
         globus_free(session_handle->gid_array);
@@ -6717,37 +6721,6 @@ globus_l_gfs_data_handle_init(
             }
         }
 
-        if(globus_l_gfs_netmgr_driver)
-        {
-            globus_xio_stack_push_driver(stack, globus_l_gfs_netmgr_driver);
-    
-            if(session_handle->taskid != NULL)
-            {
-                char *                  opt_str;
-                opt_str = globus_common_create_string(
-                    "service=gridftp-data;task-id=%s;%s", 
-                    session_handle->taskid, 
-                    globus_i_gfs_config_string("netmgr"));
-
-                result = globus_xio_attr_cntl(
-                    xio_attr,
-                    globus_l_gfs_netmgr_driver,
-                    GLOBUS_XIO_SET_STRING_OPTIONS,
-                    opt_str);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    globus_gfs_log_message(
-                        GLOBUS_GFS_LOG_WARN,
-                        "Setting network manager options \"%s\": %s\n",
-                        opt_str,
-                        globus_error_print_friendly(globus_error_peek(result)));
-                    globus_free(opt_str);    
-                    goto error_control;
-                }
-                globus_free(opt_str);
-            }
-        }
-        
         globus_xio_stack_init(&stack, NULL);
         
         result = globus_xio_driver_list_to_stack_attr(
@@ -6763,6 +6736,36 @@ globus_l_gfs_data_handle_init(
             goto error_control;
         }
 
+        if(globus_l_gfs_netmgr_driver)
+        {
+            char *                  opt_str;
+
+            globus_xio_stack_push_driver(stack, globus_l_gfs_netmgr_driver);
+    
+            opt_str = globus_common_create_string(
+                "service=gridftp-data;task-id=%s;%s", 
+                session_handle->taskid ? session_handle->taskid : "none", 
+                globus_i_gfs_config_string("netmgr"));
+
+            result = globus_xio_attr_cntl(
+                xio_attr,
+                globus_l_gfs_netmgr_driver,
+                GLOBUS_XIO_SET_STRING_OPTIONS,
+                opt_str);
+            if(result != GLOBUS_SUCCESS)
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_WARN,
+                    "Setting network manager options \"%s\": %s\n",
+                    opt_str,
+                    globus_error_print_friendly(globus_error_peek(result)));
+                globus_free(opt_str);    
+                goto error_control;
+            }
+
+            globus_free(opt_str);
+        }
+        
         result = globus_i_ftp_control_data_set_stack(
             &handle->data_channel, stack);
         if(result != GLOBUS_SUCCESS)

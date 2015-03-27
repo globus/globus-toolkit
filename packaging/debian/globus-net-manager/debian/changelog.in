@@ -1,3 +1,9 @@
+globus-net-manager (0.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * add file paramter to logging driver to set a file to log to.  use manager=logging;file=/path/to/file;.
+
+ -- Globus Toolkit <support@globus.org>  Fri, 27 Mar 2015 03:19:40 -0500
+
 globus-net-manager (0.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix conflicts with globus-common-doc and globus-xio-doc

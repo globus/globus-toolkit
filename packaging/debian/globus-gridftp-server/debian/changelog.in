@@ -1,3 +1,10 @@
+globus-gridftp-server (7.24-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix netmanager crash
+  * allow netmanager calls when taskid isn't set
+
+ -- Globus Toolkit <support@globus.org>  Fri, 27 Mar 2015 03:20:34 -0500
+
 globus-gridftp-server (7.23-1+gt6.@distro@) @distro@; urgency=low
 
   * fix threads commandline arg processing
