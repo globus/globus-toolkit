@@ -1,10 +1,10 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        14
+Release:        15
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
-URL:            http://www.globus.org/toolkit
+URL:            http://toolkit.globus.org/toolkit
 Source0:        RPM-GPG-KEY-Globus
 Source1:        globus-toolkit-6-stable.repo.in
 Source2:        globus-toolkit-6-testing.repo.in
@@ -23,8 +23,8 @@ Globus Toolkit 6.
 %setup -c -T
 
 %build
-repo_root='http://www.globus.org/ftppub/gt6'
-unstable_root='http://www.globus.org/ftppub/gt6/unstable/rpm'
+repo_root='http://toolkit.globus.org/ftppub/gt6'
+unstable_root='http://toolkit.globus.org/ftppub/gt6/unstable/rpm'
 pkg_repos="${pkg_repos:+$pkg_repos }el5"
 el5_stable_baseurl="${repo_root}/stable/rpm/el/5/\$basearch/"
 el5_stable_sourceurl="${repo_root}/stable/rpm/el/5/SRPMS/"
@@ -214,6 +214,9 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Mon Mar 30 2015 Globus Toolkit <support@globus.org> - 6-15
+- Rename www.globus.org -> toolkit.globus.org
+
 * Thu Nov 13 2014 Globus Toolkit <support@globus.org> - 6-14
 - Don't use zypper from postinstall on SUSE
 
