@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        15
+Release:        16
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -178,6 +178,9 @@ else
 fi
 
 %preun
+if [ "$1" != 0 ]; then
+    exit 0
+fi
 case $(lsb_release -is):$(lsb_release -rs) in
     CentOS:5* | Scientific*:5* | RedHat*:5* )
         repo=el5
@@ -214,6 +217,9 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Tue Mar 31 2015 Globus Toolkit <support@globus.org> - 6-16
+- Don't preun when upgrading
+
 * Mon Mar 30 2015 Globus Toolkit <support@globus.org> - 6-15
 - Rename www.globus.org -> toolkit.globus.org
 
