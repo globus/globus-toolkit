@@ -1,3 +1,9 @@
+globus-ftp-client (8.21-2+gt6.@distro@) @distro@; urgency=low
+
+  * gridftp-ssh script required in base package
+
+ -- Globus Toolkit <support@globus.org>  Mon, 30 Mar 2015 14:55:30 -0500
+
 globus-ftp-client (8.21-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-587: ssh path not  being set in globus-ftp-client for sshftp in GT6

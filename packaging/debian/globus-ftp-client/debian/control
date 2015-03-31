@@ -54,20 +54,6 @@ Description: Globus Toolkit - GridFTP Client Library Documentation Files
  The libglobus-ftp-client-doc package contains:
  GridFTP Client Library Documentation Files
 
-Package: globus-ftp-client-progs
-Section: net
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libglobus-ftp-client2
-Description: Globus Toolkit - GridFTP Client Programs
- The Globus Toolkit is an open source software toolkit used for
- building Grid systems and applications. It is being developed by the
- Globus Alliance and many others all over the world. A growing number
- of projects and companies are using the Globus Toolkit to unlock the
- potential of grids for their cause.
- .
- The libglobus-ftp-client2 package contains:
- GridFTP Client Programs
-
 Package: libglobus-ftp-client-dbg
 Section: debug
 Priority: extra

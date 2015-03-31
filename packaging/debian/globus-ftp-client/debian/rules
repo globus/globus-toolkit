@@ -118,11 +118,9 @@ install: build-stamp
 	# Generate package filelists
 	ls -1 \
 	  debian/tmp$(_libdir)/libglobus*.so.* \
+	  debian/tmp$(_datadir)/globus/gridftp-ssh \
 	  debian/tmp$(_docdir)/lib$(name)-dev/GLOBUS_LICENSE \
 	  > debian/lib$(name)$(soname).install
-	ls -1 \
-	  debian/tmp$(_datadir)/globus/gridftp-ssh \
-	  > debian/$(name)-progs.install
 	ls -1 \
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*.* \
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*/* \
