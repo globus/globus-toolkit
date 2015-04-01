@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        16
+Release:        17
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -12,8 +12,6 @@ Source3:        globus-toolkit-6-unstable.repo.in
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 Provides:       globus-connect-server-repo
-Requires(post): lsb
-Requires(preun): lsb
 
 %description
 This package installs the Globus yum repository configuration and GPG key for
@@ -134,20 +132,30 @@ if [ ! -f /etc/SuSE-release ]; then
     rpm --import %{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
 fi
 
-case $(lsb_release -is):$(lsb_release -rs) in
-    CentOS:5* | Scientific*:5* | RedHat*:5* )
+if [ -f /etc/redhat-release ]; then
+    osname=$(rpm -qf /etc/redhat-release --queryformat '%%{Name}')
+    osver=$(rpm -qf /etc/redhat-release --queryformat '%%{Version}')
+elif [ -f /etc/SuSE-release ]; then
+    osname=$(rpm -qf /etc/SuSE-release --queryformat '%%{Name}')
+    osver=$(rpm -qf /etc/SuSE-release --queryformat '%%{Version}')
+else
+    osname=unknown
+    osver=unknown
+fi
+case ${osname}:${osver} in
+    centos*:5* | sl*:5* | redhat*:5* )
         repo=el5
         ;;
-    CentOS:6* | Scientific*:6* | RedHat*:6* )
+    centos*:6* | sl*:6* | redhat*:6* )
         repo=el6
         ;;
-    CentOS:7* | Scientific*:7* | RedHat*:7* )
+    centos*:7* | sl*:7* | redhat*:7* )
         repo=el7
         ;;
-    Fedora*:*)
+    fedora*:*)
         repo=fedora
         ;;
-    SUSE*:11*)
+    sles*:11*)
         repo=sles11
         ;;
     *)
@@ -181,21 +189,35 @@ fi
 if [ "$1" != 0 ]; then
     exit 0
 fi
-case $(lsb_release -is):$(lsb_release -rs) in
-    CentOS:5* | Scientific*:5* | RedHat*:5* )
+if [ -f /etc/redhat-release ]; then
+    osname=$(rpm -qf /etc/redhat-release --queryformat '%%{Name}')
+    osver=$(rpm -qf /etc/redhat-release --queryformat '%%{Version}')
+elif [ -f /etc/SuSE-release ]; then
+    osname=$(rpm -qf /etc/SuSE-release --queryformat '%%{Name}')
+    osver=$(rpm -qf /etc/SuSE-release --queryformat '%%{Version}')
+else
+    osname=unknown
+    osver=unknown
+fi
+case ${osname}:${osver} in
+    centos*:5* | sl*:5* | redhat*:5* )
         repo=el5
         ;;
-    CentOS:6* | Scientific*:6* | RedHat*:6* )
+    centos*:6* | sl*:6* | redhat*:6* )
         repo=el6
         ;;
-    CentOS:7* | Scientific*:7* | RedHat*:7* )
+    centos*:7* | sl*:7* | redhat*:7* )
         repo=el7
         ;;
-    Fedora*:*)
+    fedora*:*)
         repo=fedora
         ;;
-    SUSE*:11*)
+    sles*:11*)
         repo=sles11
+        ;;
+    *)
+	echo "Unsupported repo" 1>&2
+	exit 1
         ;;
 esac
 
@@ -217,6 +239,9 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Wed Apr 01 2015 Globus Toolkit <support@globus.org> - 6-17
+- Don't require lsb
+
 * Tue Mar 31 2015 Globus Toolkit <support@globus.org> - 6-16
 - Don't preun when upgrading
 
