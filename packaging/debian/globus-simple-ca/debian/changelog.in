@@ -1,3 +1,9 @@
+globus-simple-ca (4.19-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add support for additional DN components
+
+ -- Globus Toolkit <support@globus.org>  Thu, 02 Apr 2015 11:40:46 -0400
+
 globus-simple-ca (4.18-1+gt6.@distro@) @distro@; urgency=low
 
   * Avoid make check failures when ~/.rnd is not writable
