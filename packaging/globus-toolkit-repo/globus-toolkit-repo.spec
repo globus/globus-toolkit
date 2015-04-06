@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        17
+Release:        18
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -126,7 +126,7 @@ done
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post
+%posttrans
 # Can't do this here, as it deadlocks on SUSE
 if [ ! -f /etc/SuSE-release ]; then
     rpm --import %{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
@@ -239,6 +239,9 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Mon Apr 06 2015 Globus Toolkit <support@globus.org> - 6-18
+- Handle update from broken versions
+
 * Wed Apr 01 2015 Globus Toolkit <support@globus.org> - 6-17
 - Don't require lsb
 
