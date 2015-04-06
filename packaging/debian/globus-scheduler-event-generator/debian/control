@@ -7,7 +7,7 @@ Section: net
 DM-Upload-Allowed: yes
 Vcs-Browser: http://svn.nordugrid.org/trac/packaging/browser/debian/globus-scheduler-event-generator
 Vcs-Svn: http://svn.nordugrid.org/repos/packaging/debian/globus-scheduler-event-generator
-Homepage: http://www.globus.org/
+Homepage: http://toolkit.globus.org/
 
 Package: libglobus-scheduler-event-generator0
 Section: libs

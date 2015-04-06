@@ -1,13 +1,13 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	5.10
-Release:	2%{?dist}
+Version:	5.11
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_scheduler_event_generator-5.10.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gram-protocol%{?_isa} >= 11
@@ -38,21 +38,31 @@ BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
 %endif
+%if %{?suse_version}%{!?suse_version:0} > 0
+BuildRequires:       insserv
+%else
+%if %{?rhel}%{!?rhel:0} >= 6 || %{?fedora}%{!?fedora:0} >= 20
+BuildRequires:       lsb-core-noarch
+%else
+BuildRequires:       lsb
+%endif
+%endif
 
 %package progs
 Summary:	Globus Toolkit - Scheduler Event Generator Programs
 Group:		Applications/Internet
-%if 0%{?suse_version} == 0
-BuildRequires:       lsb
-%else
-BuildRequires:       insserv
-%endif
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-%if 0%{?suse_version} == 0
-Requires:       lsb
-%else
+
+%if %{?suse_version}%{!?suse_version:0}  > 0
 Requires:       insserv
+%else
+%if %{?rhel}%{!?rhel:0}  >= 6 || %{?fedora}%{!?fedora:0} >= 20
+Requires:       lsb-core-noarch
+%else
+Requires:       lsb
 %endif
+%endif
+
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires(post): globus-common-progs >= 14
 Requires(preun):globus-common-progs >= 14
@@ -197,6 +207,10 @@ fi
 %{_mandir}/man3/*
 
 %changelog
+* Mon Apr 06 2015 Globus Toolkit <support@globus.org> - 5.11-1
+- Remove dead code
+- Depend on lsb-core when possible
+
 * Fri Jan 09 2015 Globus Toolkit <support@globus.org> - 5.10-2
 - Better fix for testing on localhost
 

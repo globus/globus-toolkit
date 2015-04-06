@@ -55,13 +55,6 @@ lockfile="@LOCKFILE@"
 
 . /lib/lsb/init-functions
 
-lsb_ok=1
-# Old versions of RH LSB init scripts cause infinite loops with the -p
-# parameter
-if [ -f /etc/redhat-release ] && lsb_release -v | grep -q 'core-[123]'; then
-    unset lsb_ok
-fi
-
 GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
 
 full=1
@@ -93,7 +86,7 @@ start()
             (umask 022; mkdir "$logdir")
         fi
         start_daemon ${GLOBUS_SEG_NICE_LEVEL:+-n "${GLOBUS_SEG_NICE_LEVEL}"} \
-            ${lsb_ok:+-p "$pidfile"} "${prog}" \
+            -p "$pidfile" "${prog}" \
             -s "$lrm" \
             -p "$pidfile" \
             -d "$logdir" \
@@ -130,7 +123,7 @@ stop()
         logdir="$(printf "$GLOBUS_SEG_LOGFMT" "$lrm")"
 
         if [ -f "$pidfile" ]; then
-            killproc ${lsb_ok:+-p "$pidfile"} "${prog}"
+            killproc -p "$pidfile" "${prog}"
             rc=$?
             if [ $rc = 0 ]; then
                 stopped="${stopped:+$stopped, }$lrm"
@@ -165,7 +158,7 @@ status()
 
     for lrm in $lrms; do
         pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
-        pid="$(pidofproc ${lsb_ok:+-p "${pidfile}"} "${prog}")"
+        pid="$(pidofproc -p "${pidfile}" "${prog}")"
         rc=$?
         case $rc in
             0)
@@ -186,7 +179,7 @@ status()
                 # If the -p pidfile option is specified and the named pidfile
                 # does not exist, the functions shall assume that the daemon is
                 # not running.
-                if [ -n "$lsb_ok" -a ! -f "${GLOBUS_GATEKEEPER_PIDFILE}" ]; then
+                if [ -f "${GLOBUS_GATEKEEPER_PIDFILE}" ]; then
                     echo "$progname ($lrm) is not running"
                     rc=0
                 fi
