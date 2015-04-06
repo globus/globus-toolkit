@@ -23,7 +23,7 @@ my $dryrun = 0;
 my $update;
 my $help;
 my %packagelist = ();
-my $package_root = "http://www.globus.org/ftppub/gt6/packages";
+my $package_root = "http://toolkit.globus.org/ftppub/gt6/packages";
 
 sub parse_package
 {
@@ -114,11 +114,17 @@ sub update_rpm($$)
         {
             $changelogindex = $index;
         }
+        elsif ($specline =~ m!URL:\s*http://www.globus.org(.*)!)
+        {
+            my $oldpath = $1;
+            $ARRAY[$index] = "URL:\t\thttp://toolkit.globus.org$1\n";
+            $specfile_changed = 1;
+        }
         elsif ($specline =~ m!Source:\s*http://(.*)/([^/]*)!)
         {
-            if ($1 =~ m/www.globus.org/) {
+            if ($1 =~ m/www.globus.org/ || $1 =~ m/toolkit.globus.org/) {
                 my $oldsrc = $2;
-                my $newsrc = $package_root . "/" . $package->{TARBALL};
+                my $newsrc = $package_root . "/\%{_name}-\%{version}.tar.gz";
                 if ($oldsrc ne $newsrc) {
                     $ARRAY[$index] = "Source:\t$newsrc\n";
                     $specfile_changed = 1;

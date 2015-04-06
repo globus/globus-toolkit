@@ -63,14 +63,6 @@ lockfile="@LOCKFILE@"
 GLOBUS_GATEKEEPER_PIDFILE="${GLOBUS_GATEKEEPER_PIDFILE:-${localstatedir}/run/globus-gatekeeper.pid}"
 GLOBUS_GATEKEEPER_PORT="${GLOBUS_GATEKEEPER_PORT:-2119}"
 
-lsb_ok=1
-
-# Old versions of RH LSB init scripts cause infinite loops with the -p
-# parameter
-if [ -f /etc/redhat-release ] && lsb_release -v | grep -q 'core-[123]'; then
-    unset lsb_ok
-fi
-
 
 start()
 {
@@ -94,7 +86,7 @@ start()
         kflag=""
     fi
 
-    start_daemon ${lsb_ok:+-p "${GLOBUS_GATEKEEPER_PIDFILE}"} \
+    start_daemon -p "${GLOBUS_GATEKEEPER_PIDFILE}" \
         ${GLOBUS_GATEKEEPER_NICE_LEVEL:+-n "${GLOBUS_GATEKEEPER_NICE_LEVEL}"} \
         "$prog" \
         -pidfile ${GLOBUS_GATEKEEPER_PIDFILE} \
@@ -121,7 +113,7 @@ start()
 
 stop()
 {
-    killproc ${lsb_ok:+-p "${GLOBUS_GATEKEEPER_PIDFILE}"} "${prog}"
+    killproc -p "${GLOBUS_GATEKEEPER_PIDFILE}" "${prog}"
     rc=$?
     if [ $rc = 0 ]; then
         log_success_msg "Stopped globus-gatekeeper"
@@ -140,7 +132,7 @@ restart()
 
 status()
 {
-    pid="$(pidofproc ${lsb_ok:+-p "${GLOBUS_GATEKEEPER_PIDFILE}"} "${prog}")"
+    pid="$(pidofproc -p "${GLOBUS_GATEKEEPER_PIDFILE}" "${prog}")"
     rc=$?
     case $rc in
         0)
@@ -162,7 +154,7 @@ status()
             # If the -p pidfile option is specified and the named pidfile
             # does not exist, the functions shall assume that the daemon is
             # not running.
-            if [ -n "$lsb_ok" -a ! -f "${GLOBUS_GATEKEEPER_PIDFILE}" ]; then
+            if [ ! -f "${GLOBUS_GATEKEEPER_PIDFILE}" ]; then
                 echo "$progname is not running"
                 rc=0
             fi
