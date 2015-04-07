@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.28
+Version:	15.29
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
@@ -211,6 +211,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 15.29-1
+- Fix skip() regression in tests
+
 * Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 15.28-1
 - Disable network tests when NO_EXTERNAL_NET is in the environment
 
