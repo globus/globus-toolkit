@@ -1,3 +1,10 @@
+globus-xio (5.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Check push result in globus_xio_driver_list_to_stack_attr()
+  * Add doc for globus_xio_driver_list_to_stack_attr()
+
+ -- Globus Toolkit <support@globus.org>  Tue, 07 Apr 2015 14:37:34 -0400
+
 globus-xio (5.7-1+gt6.@distro@) @distro@; urgency=low
 
   * more GT-581 tweaks
