@@ -6670,21 +6670,26 @@ globus_l_gfs_data_handle_init(
     /* create a default stack that we can add the netmgr driver to */
     if(globus_l_gfs_netmgr_driver && globus_list_empty(net_stack_list))
     {
-        globus_xio_driver_list_ent_t *    ent;
+        globus_xio_driver_list_ent_t *  ent;
+        globus_list_t **                tailp = &net_stack_list;
         
-        ent = (globus_xio_driver_list_ent_t *)
-            globus_calloc(1, sizeof(globus_xio_driver_list_ent_t));
+        ent = malloc(sizeof(globus_xio_driver_list_ent_t));
         ent->driver = globus_io_compat_get_tcp_driver();
         ent->driver_name = strdup("tcp");
+        ent->opts = NULL;
+        ent->user_arg = NULL;
         ent->loaded = GLOBUS_TRUE;
-        globus_list_insert(&net_stack_list, ent);
+        globus_list_insert(tailp, ent);
+        tailp = globus_list_rest_ref(*tailp);
         
-        ent = (globus_xio_driver_list_ent_t *)
-            globus_calloc(1, sizeof(globus_xio_driver_list_ent_t));
+        ent = malloc(sizeof(globus_xio_driver_list_ent_t));
         ent->driver = globus_io_compat_get_gsi_driver();
         ent->driver_name = strdup("gsi");
+        ent->opts = NULL;
+        ent->user_arg = NULL;
         ent->loaded = GLOBUS_TRUE;
-        globus_list_insert(&net_stack_list, ent);
+        globus_list_insert(tailp, ent);
+        tailp = globus_list_rest_ref(*tailp);
     }
     
     if(!globus_list_empty(net_stack_list))

@@ -1,13 +1,13 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.24
+Version:	7.25
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.24.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15
@@ -170,6 +170,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 7.25-1
+- Fix order of drivers when using netmgr
+
 * Fri Mar 27 2015 Globus Toolkit <support@globus.org> - 7.24-1
 - fix netmanager crash
 - allow netmanager calls when taskid isn't set
