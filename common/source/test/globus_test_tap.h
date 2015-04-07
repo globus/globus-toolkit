@@ -32,7 +32,7 @@ static void ok(int predval, const char *fmt, ...)
 #define skip(skip_predicate, ...) \
     if (skip_predicate) \
     { \
-        ok(1, " # SKIP (" #skip_predicate  ") " get_explanation ## __VA_ARGS__); \
+        ok(1, get_explanation ## __VA_ARGS__ " # SKIP (" #skip_predicate  ") "); \
         skipped++; \
     } \
     else \

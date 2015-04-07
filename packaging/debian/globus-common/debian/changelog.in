@@ -1,3 +1,9 @@
+globus-common (15.28-1+gt6.@distro@) @distro@; urgency=low
+
+  * Disable network tests when NO_EXTERNAL_NET is in the environment
+
+ -- Globus Toolkit <support@globus.org>  Tue, 07 Apr 2015 12:04:18 -0400
+
 globus-common (15.27-1+gt6.@distro@) @distro@; urgency=low
 
   * Don't add empty entries in list_from_string
