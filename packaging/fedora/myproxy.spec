@@ -1,13 +1,14 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
-Version:	6.1.12
+%global _name %(tr - _ <<< %{name})
+Version:	6.1.13
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
 License:        NCSA and BSD and ASL 2.0
 URL:            http://grid.ncsa.illinois.edu/myproxy/
-Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}.tar.gz
+Source0:        http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 
 #Source1:        myproxy.init
 #Source2:        myproxy.sysconfig
@@ -533,6 +534,9 @@ fi
 %endif
 
 %changelog
+* Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 6.1.13-1
+- Fixed 2 instances of underallocation of memory.
+
 * Fri Jan 09 2015 Globus Toolkit <support@globus.org> - 6.1.12-1
 - Missing -module
 

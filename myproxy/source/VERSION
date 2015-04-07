@@ -4,6 +4,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v6.1.13
+- Fixed 2 instances of underallocation of memory.
+
 v6.1.12
 - Missing -module
 

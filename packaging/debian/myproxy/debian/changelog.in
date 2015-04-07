@@ -1,3 +1,9 @@
+myproxy (6.1.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fixed 2 instances of underallocation of memory.
+
+ -- Globus Toolkit <support@globus.org>  Tue, 07 Apr 2015 15:29:34 -0400
+
 myproxy (6.1.12-1+gt6.@distro@) @distro@; urgency=low
 
   * Missing -module
