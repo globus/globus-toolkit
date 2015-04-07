@@ -70,7 +70,11 @@ xj7TEZmv
 -----END PGP PUBLIC KEY BLOCK-----
 EOF
 
-codename=$(lsb_release -cs)
+if [ -f /etc/os-release ]; then
+    codename="$(awk -F"[)(]+" '/VERSION=/ {print $2}' /etc/os-release)"
+elif [ -f /etc/lsb-release ]; then
+    codename="$(awk -F= '/DISTRIB_CODENAME=/ {print $2}' /etc/lsb-release)"
+fi
 data="/usr/share/globus-toolkit-repo/sources.list.d"
 list_d="/etc/apt/sources.list.d"
 
