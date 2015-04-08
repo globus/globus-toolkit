@@ -1,6 +1,6 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	9.14
+Version:	9.15
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
@@ -18,6 +18,7 @@ Requires:	globus-io%{?_isa} >= 8
 Requires:	globus-gass-transfer%{?_isa} >= 7
 Requires:	globus-ftp-control%{?_isa} >= 4
 
+BuildRequires:  openssl
 BuildRequires:	globus-ftp-client-devel >= 7
 BuildRequires:	globus-common-devel >= 15
 BuildRequires:	globus-gssapi-gsi-devel >= 9
@@ -170,6 +171,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Apr 08 2015 Globus Toolkit <support@globus.org> - 9.15-1
+- Clarify documentation of stack options
+- Add openssl build dependency
+
 * Wed Apr 08 2015 Globus Toolkit <support@globus.org> - 9.14-1
 - Fix user-specified data channel stack handling
 

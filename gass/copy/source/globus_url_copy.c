@@ -15,19 +15,6 @@
  */
 
 /******************************************************************************
-globus_url_copy.c
-
-Description:
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
-
-/******************************************************************************
                              Include header files
 ******************************************************************************/
 #include "globus_common.h"
@@ -669,7 +656,11 @@ const char * long_usage =
 "     sets both -src-pipe and -dst-pipe to the same thing\n"
 "  -dcstack | -data-channel-stack\n"
 "     Set the XIO driver stack for the network on both the source and\n"
-"     and the destination.  Both must be gridftp servers\n"
+"     and the destination.  Both must be gridftp servers. The stack should\n"
+"     contain all network drivers to use, in the order specified from bottom\n"
+"     to top (e.g. -dcstack tcp,gsi). If the gsi driver is not included in\n"
+"     the stack and data channel authentication is enabled, it will be\n"
+"     inserted above the transport driver in the stack.\n"
 "  -fsstack | -file-system-stack\n"
 "     Set the XIO driver stack for the disk on both the source and\n"
 "     and the destination.  Both must be gridftp servers\n"
