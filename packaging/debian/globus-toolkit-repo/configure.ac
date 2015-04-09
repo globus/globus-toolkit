@@ -1,4 +1,4 @@
-AC_INIT([globus-toolkit-repo], [6.0.4])
+AC_INIT([globus-toolkit-repo], [6.0.5])
 
 AM_INIT_AUTOMAKE([foreign])
 
