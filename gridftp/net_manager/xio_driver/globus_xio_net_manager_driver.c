@@ -1228,8 +1228,8 @@ globus_l_xio_net_manager_connect(
     }
     handle->local_contact = handle->remote_contact = NULL;
 
-    result = globus_l_xio_net_manager_attr_init(
-                (void **) &handle->attr);
+    result = globus_l_xio_net_manager_attr_copy(
+            (void **)&handle->attr, driver_attr);
     if (result != GLOBUS_SUCCESS)
     {
         goto attr_copy_fail;
