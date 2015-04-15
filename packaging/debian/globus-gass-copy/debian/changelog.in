@@ -1,3 +1,9 @@
+globus-gass-copy (9.15-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix test on jessie pbuilder
+
+ -- Globus Toolkit <support@globus.org>  Wed, 15 Apr 2015 17:33:37 -0400
+
 globus-gass-copy (9.15-1+gt6.@distro@) @distro@; urgency=low
 
   * Clarify documentation of stack options
