@@ -1,13 +1,13 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.21
+Version:	8.22
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_client-8.21.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
@@ -142,6 +142,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Apr 15 2015 Globus Toolkit <support@globus.org> - 8.22-1
+- Fix tests on jessie with pbuilder
+
 * Thu Mar 12 2015 Globus Toolkit <support@globus.org> - 8.21-1
 - GT-587: ssh path not  being set in globus-ftp-client for sshftp in GT6
 

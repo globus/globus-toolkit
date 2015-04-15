@@ -36,7 +36,7 @@ my @todo;
 
 =head2 I<basic_func> (Test 1-2)
 
-Do a transfer of /etc/group to/from localhost (with and without a valid proxy).
+Do a transfer of test file to/from localhost (with and without a valid proxy).
 
 =over 4
 
@@ -119,8 +119,8 @@ sub bad_url_src
     
     clean_remote_file($dest_host, $dest_file);
 }
-push(@tests, "bad_url_src('$proto$source_host/etc/no-such-file-here');");
-push(@tests, "bad_url_src('$proto$source_host:4/etc/no-such-file-here');");
+push(@tests, "bad_url_src('$proto$source_host$source_file/etc/no-such-file-here');");
+push(@tests, "bad_url_src('$proto$source_host:4$source_file/etc/no-such-file-here');");
 
 =head2
 
@@ -140,7 +140,7 @@ sub bad_url_dest
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/etc/no-such-file-here";
+    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host$dest_file/etc/no-such-file-here";
     $errors = run_command($command, 1);
     
     ok($errors eq "", "bad_url_dest $command");

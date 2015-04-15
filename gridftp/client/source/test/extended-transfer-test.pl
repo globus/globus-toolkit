@@ -70,7 +70,7 @@ sub bad_url_src
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host/etc/no-such-file-here -d $proto$dest_host$dest_file";
+    my $command = "$test_exec -s $proto$source_host$source_file/no-such-file-here -d $proto$dest_host$dest_file";
     $errors = run_command($command, 1);
     ok($errors eq '', "bad_url_src $command");
     
@@ -85,7 +85,7 @@ sub bad_url_dest
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/etc/no-such-file-here";
+    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host$dest_file/no-such-file-here";
     $errors = run_command($command, 1);
     ok($errors eq "", "bad_url_dest $command");
 }

@@ -37,7 +37,7 @@ my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 my ($dest_host, $dest_file) = setup_remote_dest();
 
-# Test #1-2. Basic functionality: Do two transfers of /etc/group to/from
+# Test #1-2. Basic functionality: Do two transfers of test-file to/from
 # localhost (with and without a valid proxy) using URL caching.
 # Compare the resulting file with the real file
 # Success if program returns 0, files compare,
@@ -78,7 +78,7 @@ sub bad_url_src
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host/etc/no-such-file-here -d $proto$dest_host$dest_file";
+    my $command = "$test_exec -s $proto$source_host$source_file/etc/no-such-file-here -d $proto$dest_host$dest_file";
     $errors = run_command($command, 2);
 
     ok($errors eq "", "bad_url_src $command");
@@ -94,14 +94,14 @@ sub bad_url_dest
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/etc/no-such-file-here";
+    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host$dest_file/etc/no-such-file-here";
     $errors = run_command($command, 2);
 
     ok($errors eq "", "bad_url_dest $command");
 }
 push(@tests, "bad_url_dest");
 
-# Test #5-45: Do a simple transfer of /etc/group to/from localhost twice,
+# Test #5-45: Do a simple transfer of test-file to/from localhost twice,
 # using caching, and aborting at each possible position. Note that not all
 # aborts may be reached.
 # Success if no core file is generated for all abort points. (we could use
@@ -123,7 +123,7 @@ for(my $i = 1; $i <= 43; $i++)
     push(@tests, "abort_test($i);");
 }
 
-# Test #46-86. Restart functionality: Do a simple transfer of /etc/group
+# Test #46-86. Restart functionality: Do a simple transfer of test-file
 # to/from localhost twice using URL caching, restarting at each
 # plugin-possible point. Compare the resulting file with the real file.
 # Success if program returns 0, files compare,

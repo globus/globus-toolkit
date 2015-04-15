@@ -1,3 +1,9 @@
+globus-ftp-client (8.22-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix tests on jessie with pbuilder
+
+ -- Globus Toolkit <support@globus.org>  Wed, 15 Apr 2015 12:58:25 -0400
+
 globus-ftp-client (8.21-2+gt6.@distro@) @distro@; urgency=low
 
   * gridftp-ssh script required in base package
