@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.25-2+gt6.@distro@) @distro@; urgency=low
+
+  * Test fixes for jessie pbuilder
+
+ -- Globus Toolkit <support@globus.org>  Thu, 16 Apr 2015 14:39:04 -0400
+
 globus-gram-job-manager (14.25-1+gt6.@distro@) @distro@; urgency=low
 
   * don't use $HOME in tests
