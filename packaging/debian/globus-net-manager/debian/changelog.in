@@ -1,3 +1,9 @@
+globus-net-manager (0.8-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix tests on jessie pbuilder
+
+ -- Globus Toolkit <support@globus.org>  Thu, 16 Apr 2015 14:00:39 -0400
+
 globus-net-manager (0.8-1+gt6.@distro@) @distro@; urgency=low
 
   * fix for attr not being used on connect()
