@@ -148,7 +148,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
-* Thu Apr 16 2014 Globus Toolkit <support@globus.org> - 14.25-2
+* Thu Apr 17 2015 Globus Toolkit <support@globus.org> - 14.25-2
 - Add build dependency on perl-Test-Simple
 
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 14.25-1
