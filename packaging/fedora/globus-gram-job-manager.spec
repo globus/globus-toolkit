@@ -1,7 +1,7 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
 Version:	14.25
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -64,6 +64,9 @@ BuildRequires:  globus-gram-client-devel >= 0
 BuildRequires:	globus-gass-copy-progs >= 8
 BuildRequires:	globus-gass-server-ez-devel >= 0
 BuildRequires:	globus-proxy-utils >= 5
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
+BuildRequires:  perl-Test-Simple
+%endif
 
 %package doc
 Summary:	Globus Toolkit - GRAM Jobmanager Documentation Files
@@ -145,6 +148,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Thu Apr 16 2014 Globus Toolkit <support@globus.org> - 14.25-2
+- Add build dependency on perl-Test-Simple
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 14.25-1
 - don't use $HOME in tests
 
