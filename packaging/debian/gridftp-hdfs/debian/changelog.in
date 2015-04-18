@@ -1,0 +1,5 @@
+gridftp-hdfs (1.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * Initial debian packaging
+
+ -- Globus Toolkit <support@globus.org>  Fri, 17 Apr 2015 13:36:28 -0400
