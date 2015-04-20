@@ -18,8 +18,8 @@ BuildRequires: hadoop-devel
 BuildRequires: libhdfs
 %else
 # Requires cloudera versions for other releases
-BuildRequires: hadoop-0.20-libhdfs
-Requires: hadoop-0.20-libhdfs
+BuildRequires: hadoop-libhdfs-devel
+Requires: hadoop-libhdfs
 %endif
 BuildRequires: globus-gridftp-server-devel
 BuildRequires: globus-common-devel
@@ -27,7 +27,6 @@ BuildRequires: globus-common-devel
 Requires: globus-gridftp-server-progs
 Requires: xinetd
 
-Requires(pre): shadow-utils
 Requires(preun): initscripts
 Requires(preun): chkconfig
 Requires(post): chkconfig
@@ -95,6 +94,9 @@ fi
 %{_sysconfdir}/init.d/%{name}
 
 %changelog
+* Mon Apr 20 2015 Globus Toolkit <support@globus.org> - 1.1-2
+- Update to cloudera cdh5 dependency
+
 * Fri Jan 09 2015 Globus Toolkit <support@globus.org> - 1.1-1
 - Missing -module
 
