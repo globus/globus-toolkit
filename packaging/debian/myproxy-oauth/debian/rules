@@ -14,18 +14,27 @@ libdir = /usr/share
 sbindir = /usr/sbin
 name = myproxy-oauth
 
-os_vendor=$(shell lsb_release -is)
-os_version=$(shell lsb_release -rs | tr -d .)
+os_vendor:=$(shell lsb_release -is)
+os_version:=$(shell lsb_release -rs)
 
 ifeq (Ubuntu,$(os_vendor))
-    # Poor man's less than
-    ifeq (0, $(shell expr $(os_version) / 1404))
+    ifeq (0, $(shell [ `echo $(os_version) | tr -d .` -lt  1404 ] && echo 0))
         apacheconfdir=/etc/apache2/conf.d
     else
         apacheconfdir=/etc/apache2/conf-available
+        apacheconf_suffix=-2.4-deb
     endif
 else
-    apacheconfdir=/etc/apache2/conf.d
+    ifeq (Debian,$(os_vendor))
+        ifeq (0, $(shell [ `echo $(os_version) | cut -d . -f1` -lt  8 ] && echo 0))
+            apacheconfdir=/etc/apache2/conf.d
+        else
+            apacheconfdir=/etc/apache2/conf-available
+            apacheconf_suffix=-2.4-deb
+        endif
+    else
+        apacheconfdir=/etc/apache2/conf.d
+    endif
 endif
 
 %:
@@ -57,7 +66,7 @@ install-stamp: build-stamp
             < $(CURDIR)/debian/myproxy-oauth-setup.in \
             > $(INSTALLDIR)/$(sbindir)/myproxy-oauth-setup
 	chmod 0755 $(INSTALLDIR)/$(sbindir)/myproxy-oauth-setup
-	cp $(INSTALLDIR)/usr/share/doc/$(name)/apache/$(name) \
+	cp $(INSTALLDIR)/usr/share/doc/$(name)/apache/$(name)$(apacheconf_suffix) \
 	   $(INSTALLDIR)$(apacheconfdir)/$(name).conf
 	find debian/tmp -type f | while read filename; do \
 		echo "$$filename" |sed -e s"|debian/tmp/||"; \
