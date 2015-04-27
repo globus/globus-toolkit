@@ -1,3 +1,9 @@
+myproxy (6.1.13-2+gt6.@distro@) @distro@; urgency=low
+
+  * Pass pidfile options to more commands
+
+ -- Globus Toolkit <support@globus.org>  Thu, 23 Apr 2015 13:19:53 -0400
+
 myproxy (6.1.13-1+gt6.@distro@) @distro@; urgency=low
 
   * Fixed 2 instances of underallocation of memory.

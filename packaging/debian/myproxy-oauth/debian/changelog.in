@@ -1,3 +1,9 @@
+myproxy-oauth (0.19-2+gt6.@distro@) @distro@; urgency=low
+
+  * Add lsb-release build dependency
+
+ -- Globus Toolkit <support@globus.org>  Mon, 27 Apr 2015 09:16:09 -0400
+
 myproxy-oauth (0.19-1+gt6.@distro@) @distro@; urgency=low
 
   * Use TLSv1
