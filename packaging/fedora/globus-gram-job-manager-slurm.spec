@@ -2,14 +2,14 @@
 
 Name:		globus-gram-job-manager-slurm
 %global _name %(tr - _ <<< %{name})
-Version:	2.5
+Version:	2.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - SLURM Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_slurm-2.5.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:       globus-gram-job-manager-scripts >= 5
@@ -134,6 +134,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-slurm-poll
 
 %changelog
+* Wed May 06 2015 Globus Toolkit <support@globus.org> - 2.6-1
+- GT-595: Remove GRAM slurm option: SBATCH -l h_cpu
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 2.5-1
 - doxygen fixes
 

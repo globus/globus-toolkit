@@ -319,7 +319,6 @@ sub create_prologue($)
         ['queue', sub { "#SBATCH -p ".shift }],
         ['project', sub { "#SBATCH -A ".shift; }],
         ['wall_time', sub { "#SBATCH -t " . format_time_value(shift) }],
-        ['cpu_time', sub { "#SBATCH -l h_cpu=" . format_time_value(shift) }],
         ['stdout', sub { return "#SBATCH -o ".shift; }],
         ['stderr', sub { "#SBATCH -e ".shift; }],
         ['module_del',  sub {
