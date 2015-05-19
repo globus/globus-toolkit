@@ -1,7 +1,7 @@
 Source: gridftp-hdfs
 Priority: optional
 Maintainer: Globus toolkit <supprt@globus.org>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libhdfs0-dev (>= 2.5.0), libglobus-gridftp-server-dev, libglobus-common-dev
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libhdfs0-dev, libglobus-gridftp-server-dev, libglobus-common-dev
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes

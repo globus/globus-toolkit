@@ -1,6 +1,6 @@
 Name: gridftp-hdfs
 Maintainer: Globus Toolkit <support@globus.org>
-Source: http://www.globus.org/ftppub/gt6/packages/gridftp_hdfs-1.1.tar.gz
+Source: http://toolkit.globus.org/ftppub/gt6/packages/gridftp_hdfs-1.2.tar.gz
 
 
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
