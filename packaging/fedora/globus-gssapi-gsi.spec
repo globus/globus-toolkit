@@ -1,7 +1,7 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
 Version:	11.14
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
@@ -47,6 +47,7 @@ BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
 %endif
+BuildRequires:  openssl
 
 %package devel
 Summary:	Globus Toolkit - GSSAPI library Development Files
@@ -151,6 +152,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue May 19 2015 Globus Toolkit <support@globus.org> - 11.14-2
+- Add openssl build dependency
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 11.14-1
 - doxygen fixes
 
