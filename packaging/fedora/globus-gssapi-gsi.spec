@@ -137,6 +137,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%config(noreplace) %{_sysconfdir}/grid-security/gsi.conf
 %{_libdir}/libglobus_*.so.*
 
 %files devel

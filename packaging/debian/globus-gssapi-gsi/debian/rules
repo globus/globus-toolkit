@@ -22,6 +22,7 @@ DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 _prefix = /usr
 _bindir = $(_prefix)/bin
 _sbindir = $(_prefix)/sbin
+_sysconfdir = /etc
 _includedir = $(_prefix)/include
 _libdir = $(_prefix)/lib/$(DEB_HOST_MULTIARCH)
 _datadir = $(_prefix)/share
@@ -67,6 +68,7 @@ configure-stamp: sed-stamp
 	   --includedir='$(_includedir)/globus' \
 	   --datadir='$(_datadir)/globus' \
 	   --libdir='$(_libdir)' \
+	   --sysconfdir='$(_sysconfdir)' \
 	   --libexecdir='$(_datadir)/globus' \
 	   --disable-static \
 	   --enable-doxygen
@@ -130,6 +132,7 @@ install: build-stamp
 	rm -f debian/tmp$(_docdir)/lib$(name)-dev/html/installdox
 	# Generate package filelists
 	ls -1 \
+	  debian/tmp$(_sysconfdir)/grid-security/gsi.conf \
 	  debian/tmp$(_libdir)/libglobus*.so.* \
 	  debian/tmp$(_docdir)/lib$(name)-dev/GLOBUS_LICENSE \
 	  > debian/lib$(name)$(soname).install
