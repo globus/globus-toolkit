@@ -1,13 +1,13 @@
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
 Version:	5.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gsi_callback-5.6.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-openssl-module%{?_isa} >= 3
@@ -134,6 +134,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu May 28 2015 Globus Toolkit <support@globus.org> - 5.6-2
+- GT-599: Race condition in globus_gsi_callback_get_SSL_callback_data_index() and globus_gsi_callback_get_X509_STORE_callback_data_index()
+
 * Wed Sep 24 2014 Globus Toolkit <support@globus.org> - 5.6-1
 - Doxygen markup fixes
 - Include more manpages for API

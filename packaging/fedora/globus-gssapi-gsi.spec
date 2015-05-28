@@ -1,13 +1,13 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.14
-Release:	2%{?dist}
+Version:	11.15
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gssapi_gsi-11.14.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gsi-credential%{?_isa} >= 5
@@ -152,6 +152,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu May 28 2015 Globus Toolkit <support@globus.org> - 11.15-1
+- Add config file for GSI options
+- Allow configuration of SSL cipher suite
+- Allow server preference for SSL cipher suite ordering
+- Fix thread test to run without unix domain sockets
+
 * Tue May 19 2015 Globus Toolkit <support@globus.org> - 11.14-2
 - Add openssl build dependency
 

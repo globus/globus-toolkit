@@ -1,3 +1,10 @@
+globus-gsi-credential (7.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add deprecation comment to obsolete functions
+  * Tighten up const on some parameters
+
+ -- Globus Toolkit <support@globus.org>  Thu, 28 May 2015 07:23:35 -0400
+
 globus-gsi-credential (7.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Doxygen markup fixes

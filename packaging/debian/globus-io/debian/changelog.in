@@ -1,3 +1,9 @@
+globus-io (11.4-1+gt6.@distro@) @distro@; urgency=low
+
+  * Improve test diagnostic messages
+
+ -- Globus Toolkit <support@globus.org>  Thu, 28 May 2015 07:56:26 -0400
+
 globus-io (11.3-1+gt6.@distro@) @distro@; urgency=low
 
   * Better fix for testing on localhost
