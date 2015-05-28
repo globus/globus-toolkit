@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.15
+Version:	11.16
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -152,6 +152,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu May 28 2015 Globus Toolkit <support@globus.org> - 11.16-1
+- Update autoconf script
+
 * Thu May 28 2015 Globus Toolkit <support@globus.org> - 11.15-1
 - Add config file for GSI options
 - Allow configuration of SSL cipher suite

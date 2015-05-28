@@ -1,3 +1,9 @@
+globus-gssapi-gsi (11.16-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update autoconf script
+
+ -- Globus Toolkit <support@globus.org>  Thu, 28 May 2015 10:22:17 -0400
+
 globus-gssapi-gsi (11.15-1+gt6.@distro@) @distro@; urgency=low
 
   * Add config file for GSI options
