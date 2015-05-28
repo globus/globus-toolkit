@@ -46,6 +46,7 @@ expand_libtool_var()
 {
     varname="$1"
     eval "value=\${$varname}"
+    value="$(echo "$value" | tr '()' '{}')"
     top_build_prefix=${top_build_prefix:-$(pwd)/}
     top_builddir=${top_builddir:-$(pwd)}
     if test "x${top_srcdir}" = "x"; then
@@ -128,6 +129,7 @@ $1-osx-pkg: \$($1-osx-pkg)
     m4_append($1[_BUNDLE], $4)
     m4_append([GT_BUNDLES_]m4_translit([$4], [-], [_])[_XIO_DRIVERS],
         [ifelse([$5],[1], [$1-stamp ],[])])
+    m4_append([GT_TARGETS_CLEAN_MACRO], [$1-clean], [ ])dnl
     m4_foreach([req], m4_split(m4_normalize($3)), [dnl
         m4_append(req[_REQUIRES], [choices]@<:@'org.globus.package.$1'@:>@[.selected], [ || ])])dnl
 ])dnl
@@ -356,7 +358,6 @@ else
 fi
 TOP_DIST_SUBDIRS="libltdl GT_SUBDIRS_MACRO"
 GT_TARGETS_CLEAN="GT_TARGETS_CLEAN_MACRO"
-GT_TARGETS_INSTALL="GT_TARGETS_INSTALL_MACRO"
 GT_TARGETS_DIST="GT_TARGETS_DIST_MACRO"
 GT_PKGCONFIG_DIRS="GT_PKGCONFIG_DIRS_MACRO"
 GT_DOXYGEN_SUBDIRS="GT_DOXYGEN_SUBDIRS_MACRO"
@@ -579,7 +580,7 @@ AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Doxyfile])
 AC_CONFIG_FILES([doxygen/index.dox])
 AC_CONFIG_FILES([osx/distribution.xml])
-AC_CONFIG_FILES([osx/scripts/postinstall], [chmod a+x osx/scripts/postinstall])
+AC_CONFIG_FILES([osx/scripts/globus_common/postinstall], [chmod a+x osx/scripts/globus_common/postinstall])
 
 AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
 
