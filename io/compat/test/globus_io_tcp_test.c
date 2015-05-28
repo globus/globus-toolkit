@@ -109,6 +109,7 @@ main(int argc, char **argv)
     test4(atoi(argv[1]));		/* connect to secure server*/
     globus_module_deactivate(GLOBUS_IO_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    return 0;
 }
 /* main() */
 
