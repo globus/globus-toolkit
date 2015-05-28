@@ -1329,6 +1329,8 @@ globus_l_xio_gsi_read_token_cb(
             if(handle->attr->target_name != GSS_C_NO_NAME)
             {
                 int equal;
+                gss_buffer_desc target_namebuf = {0};
+                gss_OID target_oid;
                 
                 major_status = 
                     gss_compare_name(&minor_status,
@@ -1341,7 +1343,38 @@ globus_l_xio_gsi_read_token_cb(
                     result = GlobusXIOErrorWrapGSSFailed("gss_compare_name",
                                                          major_status,
                                                          minor_status);
-                    goto error_pass_close;
+                }
+
+                if (!equal)
+                {
+                    /* RFC 2743: 2.4.3
+                     * If either name presented to GSS_Compare_name() denotes
+                     * an anonymous principal, GSS_Compare_name() shall
+                     * indicate FALSE.
+                     *
+                     * GT2 version of GSSAPI incorrectly returned TRUE. In
+                     * strict mode, we get false, but, if our target is
+                     * anonymous, we don't care what the peer is.
+                     */
+                    major_status = gss_display_name(
+                            &minor_status,
+                            handle->attr->target_name,
+                            &target_namebuf,
+                            &target_oid);
+                    gss_release_buffer(&minor_status, &target_namebuf);
+                    if (major_status != GSS_S_COMPLETE)
+                    {
+                        goto error_pass_close;
+                    }
+                    if (target_oid->length != GSS_C_NT_ANONYMOUS->length ||
+                        memcmp(target_oid->elements,
+                                GSS_C_NT_ANONYMOUS->elements,
+                                target_oid->length))
+                    {
+                        goto error_pass_close;
+                    }
+                    result = GLOBUS_SUCCESS;
+                    equal = GLOBUS_TRUE;
                 }
 
                 if(!equal)
@@ -3798,6 +3831,7 @@ static globus_xio_string_cntl_table_t  gsi_l_string_opts_table[] =
     {"delegation", GLOBUS_XIO_GSI_SET_DELEGATION_MODE, gsi_l_attr_parse_del},
     {"auth", GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE, gsi_l_attr_parse_auth},
     {"proxy", GLOBUS_XIO_GSI_SET_PROXY_MODE, gsi_l_attr_parse_proxy},
+    {"ssl_compatible", GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE, globus_xio_string_cntl_bool},
     {NULL, 0, NULL}
 };
 

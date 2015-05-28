@@ -228,6 +228,8 @@ typedef enum
      * @param proxy_mode
      *      The proxy mode to set
      * @note Changing the proxy mode changes the req_flags
+     *
+     * string opt: <tt>proxy="many"|"full"|"limited"</tt>
      */
     /* globus_xio_gsi_proxy_mode_t      proxy_mode*/
     GLOBUS_XIO_GSI_SET_PROXY_MODE,
@@ -249,6 +251,8 @@ typedef enum
      *
      * @param authz_mode
      *      The authorization mode to set
+     *
+     * string opt: <tt>auth="none"|"self"|"host"|"id"</tt>
      */
     /* globus_xio_gsi_authorization_mode_t      authz_mode*/
     GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
@@ -293,6 +297,8 @@ typedef enum
      * @param ssl_mode
      *      The ssl compatibility mode to use
      * @note Changing the ssl compatibility mode changes the req_flags     
+     *
+     * string opt: <tt>ssl_compatible="true"|"false"</tt>
      */
     /* globus_bool_t                    ssl_mode*/
     GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE,
@@ -370,6 +376,8 @@ typedef enum
      * @param protection_level
      *      The protection level to set
      * @note Changing the proxy mode changes the req_flags
+     *
+     * string opt: <tt>protection="none"|"private"|"integrity"</tt>
      */
     /* globus_xio_gsi_protection_level_t    protection_level*/
     GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
@@ -400,6 +408,8 @@ typedef enum
      *
      * @param target_name
      *      The expected peer name
+     *
+     * string opt: <tt>subject=<em>string</em></tt>
      */
     /* gss_name_t                       target_name */
     GLOBUS_XIO_GSI_SET_TARGET_NAME,
