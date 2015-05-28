@@ -67,113 +67,8 @@ globus_module_descriptor_t globus_i_gsi_callback_module =
     &local_version
 };
 
-/**
- * Module activation
- */
-static
-int
-globus_l_gsi_callback_activate(void)
-{
-    int                                 result = (int) GLOBUS_SUCCESS;
-    char *                              tmp_string;
-    static char *                       _function_name_ =
-        "globus_l_gsi_callback_activate";
-
-    tmp_string = globus_module_getenv("GLOBUS_GSI_CALLBACK_DEBUG_LEVEL");
-    if(tmp_string != GLOBUS_NULL)
-    {
-        globus_i_gsi_callback_debug_level = atoi(tmp_string);
-        
-        if(globus_i_gsi_callback_debug_level < 0)
-        {
-            globus_i_gsi_callback_debug_level = 0;
-        }
-    }
-
-    tmp_string = globus_module_getenv("GLOBUS_GSI_CALLBACK_DEBUG_FILE");
-    if(tmp_string != GLOBUS_NULL)
-    {
-        globus_i_gsi_callback_debug_fstream = fopen(tmp_string, "a");
-        if(globus_i_gsi_callback_debug_fstream == NULL)
-        {
-            result = (int) GLOBUS_FAILURE;
-            goto exit;
-        }
-    }
-    else
-    {
-        globus_i_gsi_callback_debug_fstream = stderr;
-    }
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    result = globus_module_activate(GLOBUS_COMMON_MODULE);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto exit;
-    }
-    
-    result = globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto exit;
-    }
-
-    result = globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto exit;
-    }
-
-    globus_mutex_init(&globus_l_gsi_callback_oldgaa_mutex, NULL);
-    globus_mutex_init(&globus_l_gsi_callback_verify_mutex, NULL);
-    
-    OpenSSL_add_all_algorithms();
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-
- exit:
-
-    return result;
-}
-
-/**
- * Module deactivation
- */
-static
-int
-globus_l_gsi_callback_deactivate(void)
-{
-    int                                 result = (int) GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_l_gsi_callback_deactivate";
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    EVP_cleanup();
-
-    globus_mutex_destroy(&globus_l_gsi_callback_oldgaa_mutex);
-    globus_mutex_destroy(&globus_l_gsi_callback_verify_mutex);
-    globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
-    globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE);
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-
-    if(globus_i_gsi_callback_debug_fstream != stderr)
-    {
-        fclose(globus_i_gsi_callback_debug_fstream);
-    }
-
-    return result;
-}
-
 static int globus_i_gsi_callback_SSL_callback_data_index = -1;
 static int globus_i_gsi_callback_X509_STORE_callback_data_index = -1;
-
 
 static int
 globus_l_gsi_callback_openssl_new(
@@ -240,6 +135,145 @@ globus_l_gsi_callback_openssl_dup(
     return result;
 }
 
+/**
+ * Module activation
+ */
+static
+int
+globus_l_gsi_callback_activate(void)
+{
+    int                                 result = (int) GLOBUS_SUCCESS;
+    char *                              tmp_string;
+    static char *                       _function_name_ =
+        "globus_l_gsi_callback_activate";
+
+    tmp_string = globus_module_getenv("GLOBUS_GSI_CALLBACK_DEBUG_LEVEL");
+    if(tmp_string != GLOBUS_NULL)
+    {
+        globus_i_gsi_callback_debug_level = atoi(tmp_string);
+        
+        if(globus_i_gsi_callback_debug_level < 0)
+        {
+            globus_i_gsi_callback_debug_level = 0;
+        }
+    }
+
+    tmp_string = globus_module_getenv("GLOBUS_GSI_CALLBACK_DEBUG_FILE");
+    if(tmp_string != GLOBUS_NULL)
+    {
+        globus_i_gsi_callback_debug_fstream = fopen(tmp_string, "a");
+        if(globus_i_gsi_callback_debug_fstream == NULL)
+        {
+            result = (int) GLOBUS_FAILURE;
+            goto exit;
+        }
+    }
+    else
+    {
+        globus_i_gsi_callback_debug_fstream = stderr;
+    }
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    result = globus_module_activate(GLOBUS_COMMON_MODULE);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+    
+    result = globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+
+    result = globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+
+    globus_mutex_init(&globus_l_gsi_callback_oldgaa_mutex, NULL);
+    globus_mutex_init(&globus_l_gsi_callback_verify_mutex, NULL);
+    
+    OpenSSL_add_all_algorithms();
+
+    if(globus_i_gsi_callback_X509_STORE_callback_data_index < 0)
+    {
+        globus_i_gsi_callback_X509_STORE_callback_data_index = 
+            X509_STORE_CTX_get_ex_new_index(
+                0, NULL, 
+                (CRYPTO_EX_new *)  &globus_l_gsi_callback_openssl_new,
+                (CRYPTO_EX_dup *)  &globus_l_gsi_callback_openssl_dup,
+                (CRYPTO_EX_free *) &globus_l_gsi_callback_openssl_free);
+        if(globus_i_gsi_callback_X509_STORE_callback_data_index < 0)
+        {
+            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
+                (_CLS("Couldn't create external data index for SSL object")));
+            goto exit;
+        }
+    }
+
+    if(globus_i_gsi_callback_SSL_callback_data_index < 0)
+    {
+        globus_i_gsi_callback_SSL_callback_data_index = SSL_get_ex_new_index(
+            0, NULL, 
+            (CRYPTO_EX_new *)  &globus_l_gsi_callback_openssl_new,
+            (CRYPTO_EX_dup *)  &globus_l_gsi_callback_openssl_dup,
+            (CRYPTO_EX_free *) &globus_l_gsi_callback_openssl_free);
+        if(globus_i_gsi_callback_SSL_callback_data_index < 0)
+        {
+            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
+                (_CLS("Couldn't create external data index for SSL object")));
+            goto exit;
+        }
+    }
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+
+ exit:
+
+    return result;
+}
+
+/**
+ * Module deactivation
+ */
+static
+int
+globus_l_gsi_callback_deactivate(void)
+{
+    int                                 result = (int) GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_l_gsi_callback_deactivate";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    EVP_cleanup();
+
+    globus_mutex_destroy(&globus_l_gsi_callback_oldgaa_mutex);
+    globus_mutex_destroy(&globus_l_gsi_callback_verify_mutex);
+    globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE);
+    globus_module_deactivate(GLOBUS_COMMON_MODULE);
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+
+    if(globus_i_gsi_callback_debug_fstream != stderr)
+    {
+        fclose(globus_i_gsi_callback_debug_fstream);
+    }
+
+    return result;
+}
+
 #endif
 
 /**
@@ -265,24 +299,6 @@ globus_gsi_callback_get_X509_STORE_callback_data_index(
         "globus_gsi_callback_get_X509_STORE_callback_data_index";
     
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    if(globus_i_gsi_callback_X509_STORE_callback_data_index < 0)
-    {
-        globus_i_gsi_callback_X509_STORE_callback_data_index = 
-            X509_STORE_CTX_get_ex_new_index(
-                0, NULL, 
-                (CRYPTO_EX_new *)  &globus_l_gsi_callback_openssl_new,
-                (CRYPTO_EX_dup *)  &globus_l_gsi_callback_openssl_dup,
-                (CRYPTO_EX_free *) &globus_l_gsi_callback_openssl_free);
-        if(globus_i_gsi_callback_X509_STORE_callback_data_index < 0)
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
-                (_CLS("Couldn't create external data index for SSL object")));
-            goto exit;
-        }
-    }
 
     *index = globus_i_gsi_callback_X509_STORE_callback_data_index;
 
@@ -315,22 +331,6 @@ globus_gsi_callback_get_SSL_callback_data_index(
     
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
     
-    if(globus_i_gsi_callback_SSL_callback_data_index < 0)
-    {
-        globus_i_gsi_callback_SSL_callback_data_index = SSL_get_ex_new_index(
-            0, NULL, 
-            (CRYPTO_EX_new *)  &globus_l_gsi_callback_openssl_new,
-            (CRYPTO_EX_dup *)  &globus_l_gsi_callback_openssl_dup,
-            (CRYPTO_EX_free *) &globus_l_gsi_callback_openssl_free);
-        if(globus_i_gsi_callback_SSL_callback_data_index < 0)
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
-                (_CLS("Couldn't create external data index for SSL object")));
-            goto exit;
-        }
-    }
 
     *index = globus_i_gsi_callback_SSL_callback_data_index;
 
