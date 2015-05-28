@@ -234,7 +234,7 @@ globus_i_gsi_gss_create_and_fill_context(
     globus_result_t                     local_result;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_ctx_id_desc*                    context = NULL;
-    int                                 cb_index;
+    int                                 cb_index = -1;
     OM_uint32                           local_minor_status;
     char *                              certdir = NULL;
 
@@ -533,7 +533,24 @@ globus_i_gsi_gss_create_and_fill_context(
             goto free_cert_dir;   
         }
     }
+    else if (globus_i_gsi_gssapi_cipher_list != NULL)
+    {
+        if(!SSL_set_cipher_list(context->gss_ssl, globus_i_gsi_gssapi_cipher_list))
+        {
+            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
+                (_GGSL("Couldn't set the cipher list in the SSL object")));
+            major_status = GSS_S_FAILURE;
+            goto free_cert_dir;   
+        }
+        
+    }
     
+    if (cred_usage == GSS_C_ACCEPT && globus_i_gsi_gssapi_server_cipher_order)
+    {
+        SSL_set_options(context->gss_ssl, SSL_OP_CIPHER_SERVER_PREFERENCE);
+    }
     GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
         3, (globus_i_gsi_gssapi_debug_fstream,
             "SSL is at %p\n", context->gss_ssl));

@@ -5,6 +5,9 @@ if USE_SYMBOL_LABELS
 LABELFLAGS = -Wl,--version-script,$(srcdir)/gssapi.sym
 endif
 
+gridsecurityconfdir = $(sysconfdir)/grid-security
+gridsecurityconf_DATA = gsi.conf
+
 libglobus_gssapi_gsi_la_SOURCES = \
 	accept_sec_context.c \
 	acquire_cred.c \
@@ -52,8 +55,17 @@ libglobus_gssapi_gsi_la_LIBADD = $(PACKAGE_DEP_LIBS)
 libglobus_gssapi_gsi_la_LDFLAGS = $(LABELFLAGS) \
 	-version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
 	-no-undefined
+nodist_libglobus_gssapi_gsi_la_SOURCES = gsi.conf.h
+BUILT_SOURCES = gsi.conf.h
 
-EXTRA_DIST = gssapi.sym
+gsi.conf.h: Makefile $(srcdir)/gsi.conf
+	$(AWK) 'BEGIN { print "static char *globus_l_gsi_conf_string  =" } \
+	              { print "\"" $$0 "\\n\"" } \
+	        END { print ";" }' < $(srcdir)/gsi.conf > $(builddir)/gsi.conf.h
+
+
+CLEANFILES = gsi.conf.h
+EXTRA_DIST = gssapi.sym gsi.conf
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN
