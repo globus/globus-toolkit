@@ -1,3 +1,9 @@
+globus-gsi-callback (4.7-2) unstable; urgency=low
+
+  * Add dependency on texlive-latex-extra
+
+ -- Globus Toolkit <support@globus.org>  Fri, 29 May 2015 10:27:21 -0400
+
 globus-gsi-callback (4.7-1) unstable; urgency=low
 
   * GT-599: Race condition in globus_gsi_callback_get_SSL_callback_data_index() and globus_gsi_callback_get_X509_STORE_callback_data_index()
