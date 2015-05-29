@@ -12,7 +12,7 @@
 
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
-Version:	4.6
+Version:	4.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
@@ -195,6 +195,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 29 2015 Globus Toolkit <support@globus.org> - 4.7-1
+- GT-599: Race condition in globus_gsi_callback_get_SSL_callback_data_index() and globus_gsi_callback_get_X509_STORE_callback_data_index()
+
+
 * Fri Sep 13 2013 Globus Toolkit <support@globus.org> - 4.6-1
 - GT-426: memory leaks in globus-gsi-callback package
 

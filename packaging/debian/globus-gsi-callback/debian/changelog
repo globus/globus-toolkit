@@ -1,3 +1,9 @@
+globus-gsi-callback (4.7-1) unstable; urgency=low
+
+  * GT-599: Race condition in globus_gsi_callback_get_SSL_callback_data_index() and globus_gsi_callback_get_X509_STORE_callback_data_index()
+
+ -- Globus Toolkit <support@globus.org>  Fri, 29 May 2015 08:17:11 -0400
+
 globus-gsi-callback (4.6-2) unstable; urgency=low
 
   * Rename dbg package

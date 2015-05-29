@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 my $valgrind = "";
+$ENV{GLOBUS_GSSAPI_NAME_COMPATIBILITY} = 'HYBRID';
 if (exists $ENV{VALGRIND})
 {
     $valgrind = "valgrind --log-file=VALGRIND-compare_name_test.log";

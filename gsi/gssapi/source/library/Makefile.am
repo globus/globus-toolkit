@@ -57,11 +57,22 @@ else
 LABELFLAGS =
 endif
 
+nodist_libglobus_gssapi_gsi_la_SOURCES = gsi.conf.h
+BUILT_SOURCES = gsi.conf.h
+
+gsi.conf.h: Makefile $(srcdir)/gsi.conf
+	$(AWK) 'BEGIN { print "static char *globus_l_gsi_conf_string  =" } \
+	              { print "\"" $$0 "\\n\"" } \
+	        END   { print ";" }' < $(srcdir)/gsi.conf > $(builddir)/gsi.conf.h
+
 #AM_CFLAGS = -DDEBUG
 
 lib_LTLIBRARIES = libglobus_gssapi_gsi.la
 
 INCLUDES = -I.. $(GPT_INCLUDES)
+
+gridsecurityconfdir = $(sysconfdir)/grid-security
+gridsecurityconf_DATA = gsi.conf
 
 libglobus_gssapi_gsi_la_SOURCES = $(Sources)
 
@@ -69,6 +80,6 @@ libglobus_gssapi_gsi_la_LIBADD = $(GPT_LIB_LINKS)
 libglobus_gssapi_gsi_la_LDFLAGS = $(GPT_LDFLAGS) \
 	$(LABELFLAGS)
 
-EXTRA_DIST = gssapi.sym
+EXTRA_DIST = gssapi.sym gsi.conf
 
 include $(top_srcdir)/globus_automake_post

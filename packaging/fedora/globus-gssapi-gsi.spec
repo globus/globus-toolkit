@@ -12,8 +12,8 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	10.12
-Release:	3%{?dist}
+Version:	10.13
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
@@ -204,6 +204,11 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 29 2015 Globus Toolkit <support@globus.org> - 10.13-1
+- Add config file for GSI options
+- Allow configuration of SSL cipher suite
+- Allow server preference for SSL cipher suite ordering
+
 * Tue Mar 11 2014 Globus Toolkit <support@globus.org> - 10.12-2
 - Updated version numbers
 

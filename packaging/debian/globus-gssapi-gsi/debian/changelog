@@ -1,3 +1,11 @@
+globus-gssapi-gsi (10.13-1) unstable; urgency=low
+
+  * Add config file for GSI options
+  * Allow configuration of SSL cipher suite
+  * Allow server preference for SSL cipher suite ordering
+
+ -- Globus Toolkit <support@globus.org>  Fri, 29 May 2015 08:17:12 -0400
+
 globus-gssapi-gsi (10.12-2) unstable; urgency=low
 
   * Rename dbg package

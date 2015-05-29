@@ -1,3 +1,9 @@
+globus-xio-gsi-driver (2.5-1) unstable; urgency=low
+
+  * Handle anonymous targets in GSI RFC2818 mode
+
+ -- Globus Toolkit <support@globus.org>  Fri, 29 May 2015 08:17:12 -0400
+
 globus-xio-gsi-driver (2.4-2) unstable; urgency=low
 
   * Rename dbg package

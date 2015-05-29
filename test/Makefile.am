@@ -13,10 +13,11 @@ SUBDIRS= \
 
 # Scripts contains all of the scripts in this directory
 Scripts= \
-	test-toolkit testcred.pem b38b4d8c.0 \
-	test-package b38b4d8c.signing_policy \
+	test-toolkit testcred.pem \
+	test-package \
 	global_security_descriptor.xml.in \
-        5dda73d8.0 5dda73d8.signing_policy \
+        3b4121e7.0 3b4121e7.signing_policy \
+        55184f03.0 55184f03.signing_policy \
 	usercert.pem userkey.pem \
         testcred-env.sh testcred-setup.sh
 
@@ -28,9 +29,10 @@ test_SCRIPTS = $(Scripts)
 # EXTRA_DIST is used to include files in 
 # a source distribution that automake fails to detect.
 EXTRA_DIST = Utilities.pm.in \
-	test-toolkit.in testcred.pem b38b4d8c.0 \
-	test-package.in b38b4d8c.signing_policy \
-        5dda73d8.0 5dda73d8.signing_policy \
+	test-toolkit.in testcred.pem \
+	test-package.in \
+        3b4121e7.0 3b4121e7.signing_policy \
+        55184f03.0 55184f03.signing_policy \
 	global_security_descriptor.xml.in \
 	usercert.pem userkey.pem \
         testcred-env.sh.in testcred-setup.sh.in
