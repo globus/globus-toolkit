@@ -177,7 +177,11 @@ sed -e '/deprecated\.3/d' -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
 # Generate package filelists
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-  | sed s!^!%{_prefix}! > package.filelist
+  | grep -v '/etc' \
+  | sed -e s!^!%{_prefix}! > package.filelist
+cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
+  | grep '^/etc' \
+  >> package.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
   | sed s!^!%{_prefix}! > package-devel.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
