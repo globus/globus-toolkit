@@ -1,3 +1,9 @@
+globus-gssapi-gsi (10.13-2) unstable; urgency=low
+
+  * Fix latex dependencies
+
+ -- Globus Toolkit <support@globus.org>  Fri, 29 May 2015 12:17:48 -0400
+
 globus-gssapi-gsi (10.13-1) unstable; urgency=low
 
   * Add config file for GSI options

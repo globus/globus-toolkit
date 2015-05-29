@@ -13,7 +13,7 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
 Version:	10.13
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
@@ -65,7 +65,7 @@ BuildRequires:	tetex-latex
 %endif
 %endif
 
-%if %{?fedora}%{!?fedora:0} == 18
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires: tex(sectsty.sty)
 BuildRequires: tex(tocloft.sty)
 BuildRequires: tex(xtab.sty)
@@ -204,6 +204,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 29 2015 Globus Toolkit <support@globus.org> - 10.13-2
+- Fix latex dependency on fedora > 18
+
 * Fri May 29 2015 Globus Toolkit <support@globus.org> - 10.13-1
 - Add config file for GSI options
 - Allow configuration of SSL cipher suite

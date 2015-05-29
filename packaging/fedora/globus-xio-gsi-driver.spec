@@ -13,7 +13,7 @@
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
 Group:		System Environment/Libraries
@@ -54,7 +54,7 @@ BuildRequires:	tetex-latex
 %endif
 %endif
 
-%if %{?fedora}%{!?fedora:0} == 18
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires: tex(sectsty.sty)
 BuildRequires: tex(tocloft.sty)
 BuildRequires: tex(xtab.sty)
@@ -194,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 29 2015 Globus Toolkit <support@globus.org> - 2.5-2
+- Fix latex dependency on fedora > 18
+
 * Fri May 29 2015 Globus Toolkit <support@globus.org> - 2.5-1
 - Handle anonymous targets in GSI RFC2818 mode
 

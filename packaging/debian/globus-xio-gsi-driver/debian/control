@@ -1,7 +1,7 @@
 Source: globus-xio-gsi-driver
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-common-dev, libglobus-gssapi-error-dev (>= 4), libglobus-gss-assist-dev (>= 8), libglobus-xio-dev, libglobus-gssapi-gsi-dev (>= 9), globus-core (>= 7.7), libglobus-xio-doc, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1) | doxygen-latex, graphviz, texlive-fonts-recommended, texlive-font-utils, ghostscript
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-common-dev, libglobus-gssapi-error-dev (>= 4), libglobus-gss-assist-dev (>= 8), libglobus-xio-dev, libglobus-gssapi-gsi-dev (>= 9), globus-core (>= 7.7), libglobus-xio-doc, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1) | doxygen-latex, graphviz, texlive-fonts-recommended, texlive-font-utils, ghostscript, texlive-latex-extra, latex-xcolor
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
