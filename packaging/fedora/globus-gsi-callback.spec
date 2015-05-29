@@ -56,7 +56,7 @@ BuildRequires:	tetex-latex
 %endif
 %endif
 
-%if %{?fedora}%{!?fedora:0} == 18
+%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires: tex(sectsty.sty)
 BuildRequires: tex(tocloft.sty)
 BuildRequires: tex(xtab.sty)
@@ -195,6 +195,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 29 2015 Globus Toolkit <support@globus.org> - 4.7-2
+- Fix latex dependencies for fedora >18
+
 * Fri May 29 2015 Globus Toolkit <support@globus.org> - 4.7-1
 - GT-599: Race condition in globus_gsi_callback_get_SSL_callback_data_index() and globus_gsi_callback_get_X509_STORE_callback_data_index()
 
