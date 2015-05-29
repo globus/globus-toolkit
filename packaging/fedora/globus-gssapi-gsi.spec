@@ -13,7 +13,7 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
 Version:	10.13
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
@@ -176,6 +176,7 @@ sed -e '/deprecated\.3/d' -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
 
 # Generate package filelists
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
+    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | sed s!^!%{_prefix}! > package.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
   | sed s!^!%{_prefix}! > package-devel.filelist
@@ -204,6 +205,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri May 29 2015 Globus Toolkit <support@globus.org> - 10.13-3
+- Add noflavor_data to package
+
 * Fri May 29 2015 Globus Toolkit <support@globus.org> - 10.13-2
 - Fix latex dependency on fedora > 18
 

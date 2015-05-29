@@ -157,6 +157,7 @@ install: build-stamp
 
 	# Generate package filelists
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_rtl.filelist \
+	    $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)$(soname).install
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)-dev.install
