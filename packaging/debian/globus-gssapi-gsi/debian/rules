@@ -25,6 +25,7 @@ _sbindir = $(_prefix)/sbin
 _libdir = $(_prefix)/lib
 _datadir = $(_prefix)/share
 _mandir = $(_datadir)/man
+_sysconfdir = /etc
 _docdir = $(_datadir)/doc
 
 DEB_BUILD_ARCH_CPU ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_CPU)
@@ -67,6 +68,7 @@ configure-stamp: sed-stamp
 	   --host=$(DEB_HOST_GNU_TYPE) \
 	   --build=$(DEB_BUILD_GNU_TYPE) \
 	   --prefix=$(_prefix) \
+	   --sysconfdir='${_sysconfdir}' \
 	   --mandir='$${datadir}/man' \
 	   --infodir='$${datadir}/info' \
 	   --docdir='$${datadir}/doc/$(name)' \
@@ -158,7 +160,11 @@ install: build-stamp
 	# Generate package filelists
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_rtl.filelist \
 	    $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
+	  | grep -v /etc \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)$(soname).install
+	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
+	  | grep /etc \
+	  | sed s!^!debian/tmp! > debian/lib$(name)$(soname).install
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)-dev.install
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_doc.filelist \
