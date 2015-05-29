@@ -1,3 +1,9 @@
+globus-gsi-callback (4.7-3) unstable; urgency=low
+
+  * Add dependency on latex-xcolor
+
+ -- Globus Toolkit <support@globus.org>  Fri, 29 May 2015 10:44:50 -0400
+
 globus-gsi-callback (4.7-2) unstable; urgency=low
 
   * Add dependency on texlive-latex-extra
