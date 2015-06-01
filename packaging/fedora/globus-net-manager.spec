@@ -1,7 +1,7 @@
 Name:		globus-net-manager
 %global _name %(tr - _ <<< %{name})
 Version:	0.8
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Net Manager Library
 
 Group:		System Environment/Libraries
@@ -39,12 +39,13 @@ Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 15.27
 Requires:	globus-xio-devel%{?_isa} >= 5
 
-%package xio-driver
+%package -n globus-xio-net-manager-driver
 Summary:	Globus Toolkit - Net Manager Library XIO Driver
 Group:		System Environment/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 15.27
 Requires:	globus-xio-devel%{?_isa} >= 5
+Provides:       globus-net-manager-xio-driver
 
 %package doc
 Summary:	Globus Toolkit - Net Manager Library Documentation Files
@@ -72,7 +73,7 @@ using the Globus Toolkit to unlock the potential of grids for their cause.
 The %{name}-devel package contains:
 Net Manager Library Development Files
 
-%description xio-driver
+%description -n globus-xio-net-manager-driver
 The Globus Toolkit is an open source software toolkit used for building Grid
 systems and applications. It is being developed by the Globus Alliance and
 many others all over the world. A growing number of projects and companies are
@@ -138,7 +139,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libglobus_net_manager*.so
 %{_libdir}/pkgconfig/%{name}.pc
 
-%files xio-driver
+%files -n globus-xio-net-manager-driver
 %defattr(-,root,root,-)
 %{_includedir}/globus/globus_xio_net_manager_driver.h
 %{_libdir}/libglobus_xio_net_manager_driver.so
@@ -151,6 +152,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jun 01 2015 Globus Toolkit <support@globus.org> - 0.8-2
+- Rename xio driver package
+
 * Mon Apr 13 2015 Globus Toolkit <support@globus.org> - 0.8-1
 - fix for attr not being used on connect()
 
