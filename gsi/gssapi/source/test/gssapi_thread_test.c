@@ -110,7 +110,7 @@ main()
     }
 
     /* wait for last thread to terminate */
-    while (client_thread_count > 0 && server_thread_count > 0)
+    while (client_thread_count > 0 || server_thread_count > 0)
     {
         globus_cond_wait(&cond, &mutex);
     }
@@ -165,7 +165,7 @@ server_func(
         if (thread_args->init_token.length > 0)
         {
             thread_args->init_token_ready = GLOBUS_TRUE;
-            globus_cond_signal(&thread_args->cond);
+            globus_cond_broadcast(&thread_args->cond);
         }
     } while (major_status == GSS_S_CONTINUE_NEEDED);
     thread_args->accept_done = GLOBUS_TRUE;
@@ -256,7 +256,7 @@ client_func(
             if (thread_args->accept_token.length > 0)
             {
                 thread_args->accept_token_ready = GLOBUS_TRUE;
-	        globus_cond_signal(&thread_args->cond);
+	        globus_cond_broadcast(&thread_args->cond);
             }
         }
         while (major_status == GSS_S_CONTINUE_NEEDED);
