@@ -12,8 +12,8 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	10.13
-Release:	3%{?dist}
+Version:	10.14
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
@@ -209,6 +209,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Jun 04 2015 Globus Toolkit <support@globus.org> - 10.14-1
+- Revert to HYBRID name comparisons by default
+
 * Fri May 29 2015 Globus Toolkit <support@globus.org> - 10.13-3
 - Add noflavor_data to package
 

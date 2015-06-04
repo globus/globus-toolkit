@@ -1,3 +1,9 @@
+globus-gssapi-gsi (10.14-1) unstable; urgency=low
+
+  * Revert to HYBRID name comparisons by default
+
+ -- Globus Toolkit <support@globus.org>  Thu, 04 Jun 2015 12:21:14 -0400
+
 globus-gssapi-gsi (10.13-4) unstable; urgency=low
 
   * Add noflavor_data to package
