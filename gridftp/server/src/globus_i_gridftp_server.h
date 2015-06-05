@@ -120,6 +120,15 @@ void
 globus_l_gfs_data_brain_ready(
     void *                              user_arg);
 
+globus_result_t
+globus_i_gfs_get_full_path(
+    const char *                            home_dir,
+    const char *                            server_cwd,
+    void *                                  session_arg,
+    const char *                            in_path,
+    char **                                 ret_path,
+    int                                     access_type);
+
 #define GlobusGFSErrorGenericStr(_res, _fmt)                           \
 do                                                                     \
 {                                                                      \
@@ -149,7 +158,7 @@ typedef enum globus_l_gfs_auth_level_e
     GLOBUS_L_GFS_AUTH_ACTION = 0x02,
     GLOBUS_L_GFS_AUTH_NOSETUID = 0x04,
     GLOBUS_L_GFS_AUTH_NOGRIDMAP = 0x08,
-
+    GLOBUS_L_GFS_AUTH_DATA_NODE_PATH = 0x10,
     GLOBUS_L_GFS_AUTH_ALL = 0xFF
 } globus_l_gfs_auth_level_t;
 

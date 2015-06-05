@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.25
+Version:	7.26
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -170,6 +170,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Jun 05 2015 Globus Toolkit <support@globus.org> - 7.26-1
+- Fix GLOBUS_VERSION detection during configure from installer
+
 * Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 7.25-1
 - Fix order of drivers when using netmgr
 

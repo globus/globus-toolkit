@@ -1148,6 +1148,258 @@ globus_i_gfs_data_virtualize_path(
 }
 
 globus_result_t
+globus_i_gfs_get_full_path(
+    const char *                            home_dir,
+    const char *                            server_cwd,
+    void *                                  session_arg,
+    const char *                            in_path,
+    char **                                 ret_path,
+    int                                     access_type)
+{
+    globus_result_t                         result;
+    char                                    path[MAXPATHLEN];
+    char *                                  cwd = GLOBUS_NULL;
+    int                                     cwd_len;
+    int                                     sc;
+    char *                                  slash = "/";
+    char *                                  tmp_path;
+    GlobusGFSName(globus_i_gfs_get_full_path);
+    GlobusGFSDebugEnter();
+
+    *ret_path = NULL;
+    if(!in_path)
+    {
+        result = GlobusGFSErrorGeneric("invalid pathname");
+        goto done;
+    }
+    
+#ifdef WIN32
+#define WIN_CHARS_NOT_ALLOWED ":*?\"<>|"
+    tmp_path = in_path;
+    while(*tmp_path)
+    {
+        if(*tmp_path == '\\')
+        {
+            *tmp_path = '/';
+        }
+        tmp_path++;
+    }
+    if(strcspn(in_path, WIN_CHARS_NOT_ALLOWED) != strlen(in_path))
+    {
+        result = GlobusGFSErrorGeneric(
+            "A filename cannot contain any of the following characters: "
+            "\\ / : * ? \" < > |");
+            goto done;  
+    }          
+#endif
+ 
+    if(*in_path == '/')
+    {
+        strncpy(path, in_path, sizeof(path));
+    }
+    else if(*in_path == '~')
+    {
+        if(home_dir == NULL)
+        {
+            result = GlobusGFSErrorGeneric(
+                "No home directory, cannot expand ~");
+            goto done;            
+        }
+        in_path++;
+        if(*in_path == '/')
+        {
+            in_path++;
+            cwd = globus_libc_strdup(home_dir);
+        }
+        else if(*in_path == '\0')
+        {
+            slash = "";
+            cwd = globus_libc_strdup(home_dir);
+        }
+        else
+        {
+            char workbuf[MAXPATHLEN];
+            char  * hd_name = strdup(in_path);
+            char * tmp_ptr = strchr(hd_name, '/');
+            struct passwd  l_pwd;
+            struct passwd * res_pwd;
+
+            in_path = strchr(in_path, '/');
+            if(tmp_ptr != NULL)
+            {
+                *tmp_ptr = '\0';
+            }
+            else
+            {
+                in_path = "";
+            }
+
+            sc = globus_libc_getpwnam_r(hd_name, &l_pwd,
+                workbuf,
+                MAXPATHLEN,
+                &res_pwd);
+            free(hd_name);
+            if(sc != 0 || res_pwd == NULL)
+            {
+                /* XXX expand other usernames here */
+                result = GlobusGFSErrorGeneric(
+                    "Cannot expand ~");
+                goto done;  
+            }
+                      
+            cwd = globus_libc_strdup(res_pwd->pw_dir);
+        } 
+        cwd_len = strlen(cwd);
+        if(cwd_len > 1 && cwd[cwd_len - 1] == '/')
+        {
+            cwd[--cwd_len] = '\0';
+        }
+        snprintf(path, sizeof(path), "%s%s%s", cwd, slash, in_path);
+        globus_free(cwd);
+    }
+    else
+    {
+        cwd = globus_libc_strdup(server_cwd);
+        if(cwd == NULL)
+        {
+            result = GlobusGFSErrorGeneric("invalid cwd");
+            goto done;
+        }
+        cwd_len = strlen(cwd);
+        if(cwd[cwd_len - 1] == '/')
+        {
+            cwd[--cwd_len] = '\0';
+        }
+        snprintf(path, sizeof(path), "%s/%s", cwd, in_path);
+        globus_free(cwd);
+    }
+    path[MAXPATHLEN - 1] = '\0';
+
+    {
+    char *                                  end;
+    char *                                  next_sep;
+    char *                                  out_ptr;
+    char *                                  out_path;
+    char *                                  in_ptr;
+
+    out_path = globus_malloc(strlen(path) + 4);
+    out_path[0] = '/';
+    out_path[1] = '\0';
+    out_ptr = out_path;
+    
+    end = path + strlen(path);
+    
+    for(in_ptr = path + 1; in_ptr < end; in_ptr = next_sep + 1)
+    {
+        int                                 len;
+            
+        next_sep = strchr(in_ptr, '/');
+        if(next_sep == NULL)
+        {
+            next_sep = end;
+        }
+        len = next_sep - in_ptr;
+        
+        switch(len)
+        {
+            case 0:
+                continue;
+                break;
+            
+            case 1:
+                if(in_ptr[0] == '.')
+                {
+                    continue;
+                }
+                break;
+            
+            case 2:
+                if(in_ptr[0] == '.' && in_ptr[1] == '.')
+                {
+                    while(out_ptr > out_path && *out_ptr != '/')
+                    {
+                        out_ptr--;
+                    }
+                    if(out_ptr == out_path)
+                    {
+                        out_path[1] = '\0';
+                    }
+                    else
+                    {
+                       *out_ptr = '\0';
+                    }
+    
+                    continue;
+                }
+                break;
+            
+            default:
+                break;
+        }
+        *out_ptr++ = '/';
+        strncpy(out_ptr, in_ptr, len);
+        out_ptr += len;
+        *out_ptr = '\0';
+    }
+#ifdef WIN32
+    if(isalpha(out_path[1]) && out_path[2] == '/')
+    {
+        out_path[0] = out_path[1];
+        out_path[1] = ':';
+    }
+    else if(isalpha(out_path[1]) && out_path[2] == '\0')
+    {
+        out_path[0] = out_path[1];
+        out_path[1] = ':';
+        out_path[2] = '/';
+        out_path[3] = '\0';
+    }
+#endif
+
+    strcpy(path, out_path);
+    globus_free(out_path);
+    
+    }
+
+    result = globus_i_gfs_data_check_path(
+        session_arg, path, ret_path, access_type, 1);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto done;
+    }
+#ifdef WIN32
+    /* path could have a wrong formatted chroot */
+    if(*ret_path)
+    {
+        char *  out_path = *ret_path;
+        if(isalpha(out_path[1]) && out_path[2] == '/')
+        {
+            out_path[0] = out_path[1];
+            out_path[1] = ':';
+        }
+        else if(isalpha(out_path[1]) && out_path[2] == '\0')
+        {
+            out_path[0] = out_path[1];
+            out_path[1] = ':';
+            out_path[2] = '/';
+            out_path[3] = '\0';
+        }
+    }
+#endif
+    if(*ret_path == NULL)
+    {
+        *ret_path = globus_libc_strdup(path);
+    }
+
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+
+done:
+    GlobusGFSDebugExitWithError();
+    return result;
+}
+
+globus_result_t
 globus_i_gfs_data_check_path(
     void *                              session_arg,
     char *                              in_path,
@@ -2091,6 +2343,8 @@ globus_l_gfs_authorize_cb(
             result = GlobusGFSErrorWrapFailed(
                 "authorization", result);
             finished_info.result = result;
+            finished_info.type = op->type;
+            finished_info.id = op->id;
     
             if(op->callback == NULL)
             {
@@ -5006,6 +5260,37 @@ globus_i_gfs_data_request_stat(
     op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_STAT;
 
     object.name = stat_info->pathname;
+
+    if (globus_i_gfs_config_bool("data_node") &&
+        globus_i_gfs_config_int("auth_level")&GLOBUS_L_GFS_AUTH_DATA_NODE_PATH)
+    {
+        char *                          chdir_to;
+        char *                          full_pathname = NULL;
+
+        chdir_to = globus_i_gfs_config_string("chdir_to");
+        
+        result = globus_i_gfs_get_full_path(
+            session_handle->home_dir,
+            chdir_to ? chdir_to : "/", // XXX
+            session_handle,
+            stat_info->pathname,
+            &full_pathname,
+            GFS_L_LIST);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_operation_init", result);
+            goto error_op;
+        }
+        if (full_pathname)
+        {
+            free(stat_info->pathname);
+            stat_info->pathname = full_pathname;
+
+            object.name = stat_info->pathname;
+        }
+    }
+
 
     if(stat_info->internal)
     {
@@ -8256,6 +8541,34 @@ globus_i_gfs_data_request_send(
     }
 
     op->dsi = globus_l_gfs_data_new_dsi(session_handle, send_info->module_name);
+    if (globus_i_gfs_config_bool("data_node") &&
+        globus_i_gfs_config_int("auth_level")&GLOBUS_L_GFS_AUTH_DATA_NODE_PATH)
+    {
+        char *                          chdir_to;
+        char *                          full_pathname = NULL;
+
+        chdir_to = globus_i_gfs_config_string("chdir_to");
+        
+        result = globus_i_gfs_get_full_path(
+            session_handle->home_dir,
+            chdir_to ? chdir_to : "/", // XXX
+            session_handle,
+            send_info->pathname,
+            &full_pathname,
+            GFS_L_READ);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_operation_init", result);
+            goto error_op;
+        }
+        if (full_pathname)
+        {
+            free(send_info->pathname);
+            send_info->pathname = full_pathname;
+
+        }
+    }
     if(op->dsi == NULL)
     {
         globus_gridftp_server_finished_transfer(

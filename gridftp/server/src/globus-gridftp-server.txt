@@ -1,0 +1,28 @@
+GLOBUS-GRIDFTP-SERVER(8)
+========================
+:doctype:       manpage
+:man source:    University of Chicago
+:man manual:    Globus Toolkit Manual
+
+NAME
+----
+globus-gridftp-server - The Globus GridFTP server daemon
+
+SYNOPSIS
+--------
+globus-gridftp-server OPTIONS
+
+DESCRIPTION
+----------
+The *globus-gridftp-server* program is a ftp server with support for GridFTP
+protocol extensions, including strong authentication, parallel data transfers,
+and parallel data layouts.
+
+OPTIONS
+-------
+include::globus-gridftp-server-options.txt[]
+
+EXIT STATUS
+-----------
+0::
+    Successful program execution.

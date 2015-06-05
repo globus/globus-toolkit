@@ -150,8 +150,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "globus-gridftp-server-setup-chroot can help create a suitable directory structure.", NULL, NULL,GLOBUS_FALSE, NULL},
 {NULL, "Authentication, Authorization, and Security Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"auth_level", "auth_level", NULL, "auth-level", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
-    "Add levels together to use more than one.  0 = Disables all authorization checks. 1 = Authorize identity. "
-    "2 = Authorize all file/resource accesses. 4 = Disable changing process uid to authenticated user (no setuid) -- DO NOT use this when process is started as root.  "
+    "Add levels together to use more than one.\n    0 = Disables all authorization checks.\n    1 = Authorize identity. "
+    "\n    2 = Authorize all file/resource accesses.\n    4 = Disable changing process uid to authenticated user (no setuid) -- DO NOT use this when process is started as root.\n"
     "If not set uses level 2 for front ends and level 1 for data nodes.  Note that levels 2 and 4 imply level 1 as well.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_allow_from", "ipc_allow_from", NULL, "ipc-allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Only allow connections from these source ip addresses.  Specify a comma "
@@ -267,8 +267,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "read or write access, otherwise full access is granted.  If a given path is a directory, "
     "all contents and subdirectories will be given the same access.  Order of paths does not matter -- "
     "the permissions on the longest matching path will apply.  The special character '~' will be "
-    "replaced by the authenticated user's home directory, or the -home-dir option, if used. "
-    "Note that if the home directory is not accessible, ~ will be set to '/'.  "
+    "replaced by the authenticated user's home directory, or the '-home-dir' option, if used. "
+    "Note that if the home directory is not accessible, '~' will be set to '/'.  "
     "By default all paths are allowed, and access control is handled by the OS. "
     "In a striped or split process configuration, this should be set on both the frontend and data nodes.", 
     NULL, NULL,GLOBUS_FALSE, NULL},
@@ -319,29 +319,29 @@ static const globus_l_gfs_config_option_t option_list[] =
     "of characters that each correspond to a usage stats tag.  When this option is unset, stats are reported to "
     "usage-stats.globus.org:4810.  If you set your own receiver, and wish to continue reporting to the Globus receiver, "
     "you will need to add it manually.  The list of available tags follow. Tags marked * are reported by default.\n\t\n"
-    "*(e) START - start time of transfer\n"
-    "*(E) END - end time of transfer\n"
-    "*(v) VER - version string of GridFTP server\n"
-    "*(b) BUFFER - tcp buffer size used for transfer\n"
-    "*(B) BLOCK - disk blocksize used for transfer\n"
-    "*(N) NBYTES - number of bytes transferred\n"
-    "*(s) STREAMS - number of parallel streams used\n"
-    "*(S) STRIPES - number of stripes used\n"
-    "*(t) TYPE - transfer command: RETR, STOR, LIST, etc\n"
-    "*(c) CODE - ftp result code (226 = success, 5xx = fail)\n"
-    "*(D) DSI - DSI module in use\n"
-    "*(A) EM - event modules in use\n"
-    "*(T) SCHEME - ftp, gsiftp, sshftp, etc. (client supplied)\n"
-    "*(a) APP - guc, rft, generic library app, etc. (client supplied)\n"
-    "*(V) APPVER - version string of above. (client supplied)\n"
-    "(f) FILE - name of file/data transferred\n"
-    "(i) CLIENTIP - ip address of host running client (control channel)\n"
-    "(I) DATAIP - ip address of source/dest host of data (data channel)\n"
-    "(u) USER - local user name the transfer was performed as\n"
-    "(d) USERDN - DN that was mapped to user id\n"
-    "(C) CONFID - ID defined by -usage-stats-id config option\n"
-    "(U) SESSID - unique id that can be used to match transfers in a session and\n"
-    "           transfers across source/dest of a third party transfer. (client supplied)\n"
+    "  *(e) START - start time of transfer\n"
+    "  *(E) END - end time of transfer\n"
+    "  *(v) VER - version string of GridFTP server\n"
+    "  *(b) BUFFER - tcp buffer size used for transfer\n"
+    "  *(B) BLOCK - disk blocksize used for transfer\n"
+    "  *(N) NBYTES - number of bytes transferred\n"
+    "  *(s) STREAMS - number of parallel streams used\n"
+    "  *(S) STRIPES - number of stripes used\n"
+    "  *(t) TYPE - transfer command: RETR, STOR, LIST, etc\n"
+    "  *(c) CODE - ftp result code (226 = success, 5xx = fail)\n"
+    "  *(D) DSI - DSI module in use\n"
+    "  *(A) EM - event modules in use\n"
+    "  *(T) SCHEME - ftp, gsiftp, sshftp, etc. (client supplied)\n"
+    "  *(a) APP - guc, rft, generic library app, etc. (client supplied)\n"
+    "  *(V) APPVER - version string of above. (client supplied)\n"
+    "  (f) FILE - name of file/data transferred\n"
+    "  (i) CLIENTIP - ip address of host running client (control channel)\n"
+    "  (I) DATAIP - ip address of source/dest host of data (data channel)\n"
+    "  (u) USER - local user name the transfer was performed as\n"
+    "  (d) USERDN - DN that was mapped to user id\n"
+    "  (C) CONFID - ID defined by -usage-stats-id config option\n"
+    "  (U) SESSID - unique id that can be used to match transfers in a session and\n"
+    "      transfers across source/dest of a third party transfer. (client supplied)"
     , NULL, NULL,GLOBUS_FALSE, NULL},
  {"usage_stats_id", "usage_stats_id", NULL, "usage-stats-id", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Identifying tag to include in usage statistics data.  If this is set and usage-stats-target is unset, "
@@ -365,7 +365,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"brain", "brain", NULL, "brain", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* switch out the default remote brain [unsupported] */, NULL, NULL, GLOBUS_FALSE, NULL},
  {"stripe_layout", "stripe_layout", NULL, "stripe-layout", "sl", GLOBUS_L_GFS_CONFIG_INT, GLOBUS_GFS_LAYOUT_BLOCKED, NULL,
-    "Stripe layout. 1 = Partitioned, 2 = Blocked.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "Stripe layout.\n    1 = Partitioned\n   2 = Blocked.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"stripe_blocksize_locked", "stripe_blocksize_locked", NULL, "stripe-blocksize-locked", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Do not allow client to override stripe blocksize with the OPTS RETR command", NULL, NULL,GLOBUS_FALSE, NULL},
  {"stripe_layout_locked", "stripe_layout_locked", NULL, "stripe-layout-locked", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
@@ -515,6 +515,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     NULL /* generate usage suitable for web docs */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"docbook", NULL, NULL, "docbook", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     NULL /* generate usage suitable for web docs */, NULL, NULL,GLOBUS_FALSE, NULL},
+ {"asciidoc", NULL, NULL, "asciidoc", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    NULL /* generate usage suitable for asciidoc docs */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"fqdn", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* hostname found by gethostname() */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"contact_string", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
@@ -1921,6 +1923,143 @@ globus_l_gfs_config_display_docbook_usage()
     GlobusGFSDebugExit();
 }
 
+static
+void
+globus_l_gfs_config_display_asciidoc_usage()
+{
+    globus_bool_t                       first = GLOBUS_TRUE;
+    int                                 i;
+    globus_l_gfs_config_option_t *      o;
+    GlobusGFSName(globus_l_gfs_config_display_docbook_usage);
+    GlobusGFSDebugEnter();
+    
+    printf("////\ngenerated by globus-gridftp-server -help -asciidoc\n////\n");
+    printf("The list below contains the command-line options for the server, "
+        "and also the name of the configuration file entry that implements "
+        "that option. Note that any boolean option can be negated on the "
+        "command line by preceding the specified option with '-no-' or '-n'.  "
+        "example: +-no-cas+ or +-nf+.\n"
+        "\n");
+
+    for(i = 0; i < option_count; i++)
+    {        
+        char *                          shortflag;
+        char *                          longflag;
+        char *                          value;
+        char *                          defval;
+        
+        o = (globus_l_gfs_config_option_t *) &option_list[i];
+        if(o->option_name == NULL && o->configfile_option != NULL)
+        {
+            size_t hyphens = strlen(o->configfile_option);
+
+            if(!first)
+            {
+                printf("\n");
+            }
+            first = GLOBUS_FALSE;
+
+            printf(
+                "%s\n",
+                o->configfile_option);
+            while (hyphens-- > 0)
+            {
+                printf("~");
+            }
+            printf("\n");
+            continue;
+        }
+        if(o->usage == NULL)
+        {
+            continue;
+        }
+
+        switch(o->type)
+        {
+          case GLOBUS_L_GFS_CONFIG_BOOL:
+            shortflag = "-";
+            longflag = "-";
+            value = NULL;
+            defval = o->int_value ? "TRUE" : "FALSE";
+            break;
+          case GLOBUS_L_GFS_CONFIG_INT:
+            shortflag = "-";
+            longflag = "-";
+            value = "number"; 
+            defval = o->int_value > 0 ? 
+                globus_common_create_string("%d", o->int_value) : NULL;
+            break;
+          case GLOBUS_L_GFS_CONFIG_STRING:
+            shortflag = "-";
+            longflag = "-";
+            value = "string";
+            defval = o->value ? o->value : NULL;
+            break;
+          default:
+            shortflag = "";
+            longflag = "";
+            value = ""; 
+            defval = o->value ? o->value : NULL;
+            break;
+        }
+        
+        printf("*");
+        if (o->short_cmdline_option)
+        {
+            printf("-%s%s%s",
+                    o->short_cmdline_option,
+                    value ? " " : "",
+                    value ? value : "");
+            if (o->long_cmdline_option)
+            {
+                printf(",");
+            }
+
+        }
+        if (o->long_cmdline_option)
+        {
+            printf("-%s%s%s",
+                    o->long_cmdline_option,
+                    value ? " " : "",
+                    value ? value : "");
+        }
+        printf("*::\n");
+        if (o->usage)
+        {
+            char *c;
+
+            puts("    ");
+            for (c = o->usage; *c != '\0'; c++)
+            {
+                if (*c == '~')
+                {
+                    putchar('\\');
+                }
+                putchar(*c);
+            }
+            putchar('\n');
+        }
+        if (o->configfile_option)
+        {
+            printf("+\nThis option can also be set in the configuration file as +%s+.\n",
+            o->configfile_option);
+        }
+        if (defval)
+        {
+            printf("    The default value of this option is +%s+.\n",
+                defval);
+        }
+        printf("\n\n");
+    }
+    if(!first)
+    {
+        printf("\n");
+    }
+    printf("////\nend generated block\n////\n");
+
+    GlobusGFSDebugExit();
+}
+
 void
 globus_i_gfs_config_display_long_usage()
 {
@@ -1936,6 +2075,10 @@ globus_i_gfs_config_display_long_usage()
     else if(globus_i_gfs_config_bool("docbook"))
     {
         globus_l_gfs_config_display_docbook_usage();
+    }
+    else if(globus_i_gfs_config_bool("asciidoc"))
+    {
+        globus_l_gfs_config_display_asciidoc_usage();
     }
     else if(globus_i_gfs_config_string("wsdl") != NULL)
     {
@@ -2046,6 +2189,10 @@ globus_i_gfs_config_display_usage()
     else if(globus_i_gfs_config_bool("docbook"))
     {
         globus_l_gfs_config_display_docbook_usage();
+    }
+    else if(globus_i_gfs_config_bool("asciidoc"))
+    {
+        globus_l_gfs_config_display_asciidoc_usage();
     }
     else if(globus_i_gfs_config_string("wsdl"))
     {

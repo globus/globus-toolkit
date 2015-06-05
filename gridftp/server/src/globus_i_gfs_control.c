@@ -343,240 +343,34 @@ globus_l_gfs_get_full_path(
     char **                                 ret_path,
     int                                     access_type)
 {
-    globus_result_t                         result;
-    char                                    path[MAXPATHLEN];
-    char *                                  cwd = GLOBUS_NULL;
-    int                                     cwd_len;
-    int                                     sc;
-    char *                                  slash = "/";
-    char *                                  tmp_path;
+    globus_result_t                         result = GLOBUS_SUCCESS;
+    char *                                  cwd = NULL;
     GlobusGFSName(globus_l_gfs_get_full_path);
     GlobusGFSDebugEnter();
 
-    *ret_path = NULL;
-    if(!in_path)
+    result = globus_gridftp_server_control_get_cwd(
+        instance->server_handle, &cwd);
+    if(result != GLOBUS_SUCCESS || cwd == GLOBUS_NULL)
     {
-        result = GlobusGFSErrorGeneric("invalid pathname");
+        result = GlobusGFSErrorGeneric("invalid cwd");
         goto done;
     }
-    
-#ifdef WIN32
-#define WIN_CHARS_NOT_ALLOWED ":*?\"<>|"
-    tmp_path = in_path;
-    while(*tmp_path)
-    {
-        if(*tmp_path == '\\')
-        {
-            *tmp_path = '/';
-        }
-        tmp_path++;
-    }
-    if(strcspn(in_path, WIN_CHARS_NOT_ALLOWED) != strlen(in_path))
-    {
-        result = GlobusGFSErrorGeneric(
-            "A filename cannot contain any of the following characters: "
-            "\\ / : * ? \" < > |");
-            goto done;  
-    }          
-#endif
- 
-    if(*in_path == '/')
-    {
-        strncpy(path, in_path, sizeof(path));
-    }
-    else if(*in_path == '~')
-    {
-        if(instance->home_dir == NULL)
-        {
-            result = GlobusGFSErrorGeneric(
-                "No home directory, cannot expand ~");
-            goto done;            
-        }
-        in_path++;
-        if(*in_path == '/')
-        {
-            in_path++;
-            cwd = globus_libc_strdup(instance->home_dir);
-        }
-        else if(*in_path == '\0')
-        {
-            slash = "";
-            cwd = globus_libc_strdup(instance->home_dir);
-        }
-        else
-        {
-            char workbuf[MAXPATHLEN];
-            char  * hd_name = strdup(in_path);
-            char * tmp_ptr = strchr(hd_name, '/');
-            struct passwd  l_pwd;
-            struct passwd * res_pwd;
 
-            in_path = strchr(in_path, '/');
-            if(tmp_ptr != NULL)
-            {
-                *tmp_ptr = '\0';
-            }
-            else
-            {
-                in_path = "";
-            }
-
-            sc = globus_libc_getpwnam_r(hd_name, &l_pwd,
-                workbuf,
-                MAXPATHLEN,
-                &res_pwd);
-            free(hd_name);
-            if(sc != 0 || res_pwd == NULL)
-            {
-                /* XXX expand other usernames here */
-                result = GlobusGFSErrorGeneric(
-                    "Cannot expand ~");
-                goto done;  
-            }
-                      
-            cwd = globus_libc_strdup(res_pwd->pw_dir);
-        } 
-        cwd_len = strlen(cwd);
-        if(cwd_len > 1 && cwd[cwd_len - 1] == '/')
-        {
-            cwd[--cwd_len] = '\0';
-        }
-        snprintf(path, sizeof(path), "%s%s%s", cwd, slash, in_path);
-        globus_free(cwd);
-    }
-    else
+    result = globus_i_gfs_get_full_path(
+            instance->home_dir,
+            cwd,
+            instance->session_arg,
+            in_path,
+            ret_path,
+            access_type);
+    if (cwd)
     {
-        result = globus_gridftp_server_control_get_cwd(
-            instance->server_handle, &cwd);
-        if(result != GLOBUS_SUCCESS || cwd == GLOBUS_NULL)
-        {
-            result = GlobusGFSErrorGeneric("invalid cwd");
-            goto done;
-        }
-        cwd_len = strlen(cwd);
-        if(cwd[cwd_len - 1] == '/')
-        {
-            cwd[--cwd_len] = '\0';
-        }
-        snprintf(path, sizeof(path), "%s/%s", cwd, in_path);
-        globus_free(cwd);
-    }
-    path[MAXPATHLEN - 1] = '\0';
-
-    {
-    char *                                  end;
-    char *                                  next_sep;
-    char *                                  out_ptr;
-    char *                                  out_path;
-    char *                                  in_ptr;
-
-    out_path = globus_malloc(strlen(path) + 4);
-    out_path[0] = '/';
-    out_path[1] = '\0';
-    out_ptr = out_path;
-    
-    end = path + strlen(path);
-    
-    for(in_ptr = path + 1; in_ptr < end; in_ptr = next_sep + 1)
-    {
-        int                                 len;
-            
-        next_sep = strchr(in_ptr, '/');
-        if(next_sep == NULL)
-        {
-            next_sep = end;
-        }
-        len = next_sep - in_ptr;
-        
-        switch(len)
-        {
-            case 0:
-                continue;
-                break;
-            
-            case 1:
-                if(in_ptr[0] == '.')
-                {
-                    continue;
-                }
-                break;
-            
-            case 2:
-                if(in_ptr[0] == '.' && in_ptr[1] == '.')
-                {
-                    while(out_ptr > out_path && *out_ptr != '/')
-                    {
-                        out_ptr--;
-                    }
-                    if(out_ptr == out_path)
-                    {
-                        out_path[1] = '\0';
-                    }
-                    else
-                    {
-                       *out_ptr = '\0';
-                    }
-    
-                    continue;
-                }
-                break;
-            
-            default:
-                break;
-        }
-        *out_ptr++ = '/';
-        strncpy(out_ptr, in_ptr, len);
-        out_ptr += len;
-        *out_ptr = '\0';
-    }
-#ifdef WIN32
-    if(isalpha(out_path[1]) && out_path[2] == '/')
-    {
-        out_path[0] = out_path[1];
-        out_path[1] = ':';
-    }
-    else if(isalpha(out_path[1]) && out_path[2] == '\0')
-    {
-        out_path[0] = out_path[1];
-        out_path[1] = ':';
-        out_path[2] = '/';
-        out_path[3] = '\0';
-    }
-#endif
-
-    strcpy(path, out_path);
-    globus_free(out_path);
-    
+        free(cwd);
     }
 
-    result = globus_i_gfs_data_check_path(
-        instance->session_arg, path, ret_path, access_type, 1);
-    if(result != GLOBUS_SUCCESS)
+    if (result)
     {
         goto done;
-    }
-#ifdef WIN32
-    /* path could have a wrong formatted chroot */
-    if(*ret_path)
-    {
-        char *  out_path = *ret_path;
-        if(isalpha(out_path[1]) && out_path[2] == '/')
-        {
-            out_path[0] = out_path[1];
-            out_path[1] = ':';
-        }
-        else if(isalpha(out_path[1]) && out_path[2] == '\0')
-        {
-            out_path[0] = out_path[1];
-            out_path[1] = ':';
-            out_path[2] = '/';
-            out_path[3] = '\0';
-        }
-    }
-#endif
-    if(*ret_path == NULL)
-    {
-        *ret_path = globus_libc_strdup(path);
     }
 
     GlobusGFSDebugExit();
