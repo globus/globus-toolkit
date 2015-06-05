@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.29
+Version:	15.30
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
@@ -211,6 +211,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Jun 05 2015 Globus Toolkit <support@globus.org> - 15.30-1
+- Make globus-version executable during build time
+
 * Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 15.29-1
 - Fix skip() regression in tests
 

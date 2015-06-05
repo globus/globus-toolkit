@@ -1,5 +1,5 @@
 AC_PREREQ([2.60])
-AC_INIT([globus_common], [15.29], [https://globus.atlassian.net/])
+AC_INIT([globus_common], [15.30], [https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -223,7 +223,6 @@ AC_CONFIG_FILES([
         library/globus_l_common_paths.h
 	programs/Makefile
         programs/globus-sh-exec
-        programs/globus-version
 	scripts/Makefile
         scripts/Paths.pm
         scripts/globus-sh-tools.sh
@@ -235,6 +234,7 @@ AC_CONFIG_FILES([
         test/Makefile
         manpages/Makefile
 	version.h])
+AC_CONFIG_FILES([programs/globus-version], [chmod a+x programs/globus-version])
 AC_CONFIG_FILES([scripts/globus-domainname:scripts/globus-hostname.in],
         [chmod a+x scripts/globus-domainname])
 AC_CONFIG_FILES([scripts/globus-hostname],
