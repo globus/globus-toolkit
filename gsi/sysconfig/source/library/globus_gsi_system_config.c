@@ -192,6 +192,11 @@ static int globus_l_gsi_sysconfig_deactivate(void);
 
 int globus_i_gsi_sysconfig_debug_level = 0;
 
+
+#ifdef TARGET_ARCH_CYGWIN
+static int globus_l_gsi_sysconfig_skip_check = 0;
+#endif
+
 /**
  * Module descriptor static initializer.
  */
@@ -252,6 +257,15 @@ globus_l_gsi_sysconfig_activate(void)
     }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+
+#ifdef TARGET_ARCH_CYGWIN
+    /* windows permissions are a pain, and cygwin won't give reliable 
+    permissions when a non-posix path is used anyways */
+    if(getenv("GLOBUS_IGNORE_CRED_PERMS"))
+    {
+        globus_l_gsi_sysconfig_skip_check = 1;
+    }
+#endif
 
     result = globus_module_activate(GLOBUS_COMMON_MODULE);
 
@@ -4577,6 +4591,13 @@ globus_gsi_sysconfig_check_keyfile_unix(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
+#ifdef TARGET_ARCH_CYGWIN
+    if(globus_l_gsi_sysconfig_skip_check)
+    {
+        return globus_gsi_sysconfig_file_exists_unix(filename);
+    }
+#endif
+
     if (stat(filename,&stx) == -1)
     {
         switch (errno)
@@ -4703,6 +4724,13 @@ globus_gsi_sysconfig_check_certfile_unix(
         "globus_i_gsi_sysconfig_check_certfile_unix";
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+
+#ifdef TARGET_ARCH_CYGWIN
+    if(globus_l_gsi_sysconfig_skip_check)
+    {
+        return globus_gsi_sysconfig_file_exists_unix(filename);
+    }
+#endif
     
     if (stat(filename,&stx) == -1)
     {
