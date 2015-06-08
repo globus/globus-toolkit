@@ -273,6 +273,11 @@ globus_l_gsi_gssapi_parse_config(
                             goto conf_set_fail;
                         }
                         globus_module_setenv(conf_keys[i], newe);
+                        if (getenv(conf_keys[i]) == NULL)
+                        {
+                            globus_libc_setenv(conf_keys[i], newe, 1);
+                        }
+
                         break;
                     }
                 }

@@ -624,7 +624,7 @@ GSI_SOCKET_check_creds(GSI_SOCKET *self)
 }
 
 int
-GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
+GSI_SOCKET_authentication_init(GSI_SOCKET *self, gss_name_t accepted_peer_names[])
 {
     int				token_status;
     gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
@@ -645,7 +645,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     }
 
     if (accepted_peer_names == NULL ||
-	accepted_peer_names[0] == NULL) {
+	accepted_peer_names[0] == GSS_C_NO_NAME) {
 	return GSI_SOCKET_ERROR;
     }
 
@@ -753,35 +753,30 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 
     /* We told gss_assist_init_sec_context() not to check the server
        name so we can check it manually here. */
-    for (i=0; accepted_peer_names[i] != NULL; i++) {
-	tmp_gss_buffer.value = (void *)accepted_peer_names[i];
-	tmp_gss_buffer.length = strlen(accepted_peer_names[i]);
-	if (strchr(accepted_peer_names[i],'@') && 
-	    !strstr(accepted_peer_names[i],"CN=")) { 
-	    target_name_type = GSS_C_NT_HOSTBASED_SERVICE;
-	} else {
-	    target_name_type = GSS_C_NO_OID;
-	}
-	self->major_status = gss_import_name(&self->minor_status,
-					     &tmp_gss_buffer,
-					     target_name_type,
-					     &target_name);
-	if (self->major_status != GSS_S_COMPLETE) {
-	    char error_string[550];
-	    sprintf(error_string, "failed to import GSS name \"%.500s\"",
-		    accepted_peer_names[i]);
-	    GSI_SOCKET_set_error_string(self, error_string);
-	    goto error;
-	}
+    for (i=0; accepted_peer_names[i] != GSS_C_NO_NAME; i++) {
 	self->major_status = gss_compare_name(&self->minor_status,
 					      server_gss_name,
-					      target_name, &rc);
-        gss_release_name(&self->minor_status, &target_name);
+					      accepted_peer_names[i], &rc);
 	if (self->major_status != GSS_S_COMPLETE) {
+            OM_uint32 stM, stm;
+            gss_buffer_desc errbuf = {0};
+
 	    char error_string[1050];
-	    sprintf(error_string,
-		    "gss_compare_name(\"%.500s\",\"%.500s\") failed",
-		    self->peer_name, accepted_peer_names[i]);
+            stM = gss_display_status(&stm, self->minor_status, GSS_C_MECH_CODE,
+                GSS_C_NO_OID, NULL, &errbuf);
+            if (stM == GSS_S_COMPLETE && errbuf.length > 0)
+            {
+                strncpy(error_string, errbuf.value, sizeof error_string);
+                error_string[1049] = '\0';
+                gss_release_buffer(&stm, &errbuf);
+            }
+            else
+            {
+                strncpy(error_string, "gss_compare_name failed",
+                        sizeof error_string);
+                error_string[1049] = '\0';
+            }
+
 	    GSI_SOCKET_set_error_string(self, error_string);
 	    goto error;
 	}

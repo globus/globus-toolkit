@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.18
+Version:	11.19
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -153,6 +153,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jun 08 2015 Globus Toolkit <support@globus.org> - 11.19-1
+- export config file values into environment if not set already
+
 * Thu Jun 04 2015 Globus Toolkit <support@globus.org> - 11.18-1
 - Revert to HYBRID name mode by default
 

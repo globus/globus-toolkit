@@ -534,6 +534,9 @@ fi
 %endif
 
 %changelog
+* Mon Jun 08 2015 Globus Toolkit <support@globus.org> - 6.1.13-1
+- improve rfc2818 name comparison handling
+
 * Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 6.1.13-1
 - Fixed 2 instances of underallocation of memory.
 
