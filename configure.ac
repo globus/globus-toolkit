@@ -118,6 +118,8 @@ $1-osx-pkg: \$($1-osx-pkg)
         ifelse([$1], [gridftp_hdfs], [], [
             ifelse([$1], [myproxy], [], [
                     m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])])])dnl
+    ifelse([$1], [gsi_openssh], [], [
+        m4_append([GT_TARGETS_CHECK_MACRO], [$1]-check, [ ])])dnl
     m4_append_uniq([GT_BUNDLES_MACRO],[$4], [ ])dnl
     m4_append([GT_BUNDLES_]m4_translit($4,[-],[_])[_MACRO],[$1-stamp], [ ])dnl
     m4_append([GT_BUNDLE_PACKAGES]m4_translit($4,[-],[_]),[$1], [ ])dnl
@@ -125,6 +127,7 @@ $1-osx-pkg: \$($1-osx-pkg)
     m4_append([GT_ONLY_MACRO], [$1-only], [ ])dnl
     m4_append([GT_BUNDLES_]$4[_PACKAGES],native_name)
     m4_append([GT_PACKAGE_LIST], [$1], [ ])dnl
+    m4_append([GT_ALL_STAMPS_MACRO], [$1]-stamp, [ ])dnl
     m4_define($1[_VERSION], pkgver)
     m4_append($1[_BUNDLE], $4)
     m4_append([GT_BUNDLES_]m4_translit([$4], [-], [_])[_XIO_DRIVERS],
@@ -501,11 +504,9 @@ mkdir -p osx
 
 touch $MAC_INSTALLER_PKG_REFS $MAC_INSTALLER_CHOICE_LINES $MAC_INSTALLER_PACKAGE_CHOICES
 GT_TARGETS_OSX_PKG=""
-GT_ALL_STAMPS=""
 GT_TARGETS_RPM=""
 GT_TARGETS_DEB=""
 GT_TARGETS_ALL=""
-GT_TARGETS_CHECK=""
 GT_TARGETS_INSTALL=""
 GT_TARGETS_DIST=""
 m4_foreach([packname], m4_split(GT_PACKAGE_LIST), [
@@ -527,12 +528,10 @@ m4_ifdef(packname[_REQUIRES],[
     </choice>
 EOF
         GT_TARGETS_OSX_PKG="${GT_TARGETS_OSX_PKG:+$GT_TARGETS_OSX_PKG }\$(packname[-osx-pkg])"
-        GT_ALL_STAMPS="${GT_ALL_STAMPS:+$GT_ALL_STAMPS }packname[-stamp]"
         GT_TARGETS_DEB="${GT_TARGETS_DEB:+$GT_TARGETS_DEB }packname[-deb]"
         GT_TARGETS_RPM="${GT_TARGETS_RPM:+$GT_TARGETS_RPM }packname[-rpm]"
         GT_TARGETS_ALL="${GT_TARGETS_ALL:+$GT_TARGETS_ALL }packname[-all]"
         if test "packname" != "gsi_openssh"; then
-            GT_TARGETS_CHECK="${GT_TARGETS_CHECK:+$GT_TARGETS_CHECK }packname[-check]"
             GT_TARGETS_DIST="${GT_TARGETS_DIST:+$GT_TARGETS_DIST }packname[-dist]"
         fi
         GT_TARGETS_INSTALL="${GT_TARGETS_INSTALL:+$GT_TARGETS_INSTALL }packname[-install]"
@@ -565,6 +564,7 @@ AC_SUBST(TOP_DIST_SUBDIRS)
 AC_SUBST(GT_TARGETS_ALL)
 AC_SUBST(GT_TARGETS_CLEAN)
 AC_SUBST(GT_TARGETS_INSTALL)
+GT_TARGETS_CHECK="GT_TARGETS_CHECK_MACRO"
 AC_SUBST(GT_TARGETS_CHECK)
 AC_SUBST(GT_TARGETS_DIST)
 AC_SUBST(GT_TARGETS_RPM)
@@ -572,6 +572,7 @@ AC_SUBST(GT_TARGETS_DEB)
 AC_SUBST(GT_TARGETS_OSX_PKG)
 AC_SUBST(GT_PKGCONFIG_DIRS)
 AC_SUBST(GT_DOXYGEN_SUBDIRS)
+GT_ALL_STAMPS="GT_ALL_STAMPS_MACRO"
 AC_SUBST(GT_ALL_STAMPS)
 AC_SUBST(GT_ENABLED_BUNDLES, ["$final_enabled_bundles"])
 AC_SUBST(GT_ENABLED_XIO_DRIVERS, ["$final_enabled_xio_drivers"])
