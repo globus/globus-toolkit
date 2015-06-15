@@ -1,4 +1,4 @@
-myproxy (6.1.13-3+gt6.@distro@) @distro@; urgency=low
+myproxy (6.1.14-1+gt6.@distro@) @distro@; urgency=low
 
   * improve rfc2818 name comparison handling
 

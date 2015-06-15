@@ -1,7 +1,7 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.13
+Version:	6.1.14
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -534,7 +534,7 @@ fi
 %endif
 
 %changelog
-* Mon Jun 08 2015 Globus Toolkit <support@globus.org> - 6.1.13-1
+* Mon Jun 08 2015 Globus Toolkit <support@globus.org> - 6.1.14-1
 - improve rfc2818 name comparison handling
 
 * Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 6.1.13-1
