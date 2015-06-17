@@ -58,4 +58,4 @@ TESTS = $(check_PROGRAMS)
 LOG_COMPILER = $(LIBTOOL) --mode=execute \
     -dlopen $(top_builddir)/libglobus_net_manager.la \
     -dlopen $(top_builddir)/xio_driver/libglobus_xio_net_manager_driver.la \
-    -dlopen $(builddir)/libglobus_net_manager_null.la
+    -dlopen $(builddir)/libglobus_net_manager_null.la $(VALGRIND)

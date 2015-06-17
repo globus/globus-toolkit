@@ -30,6 +30,23 @@ def post_listen(task_id, transport, local_contact, attrs):
     print "# res =", res
     return res
 
+def end_listen(task_id, transport, local_contact, attrs):
+    print "# task_id =", str(task_id)
+    print "# transport =", str(transport)
+    print "# local_contact =", str(local_contact)
+    print "# attrs =", str(attrs)
+    res = None
+    for (scope, name, value) in attrs:
+        print "# (%s, %s, %s)" % (scope, name, value)
+        if scope == 'python':
+            if name == 'test_func' and value != "end_listen":
+                raise "post_listen called when ", value, " expected"
+            elif name == 'expected_result':
+                print "# evaluating", value
+                exec value
+    print "# res =", res
+    return res
+
 def pre_accept(task_id, transport, local_contact, attrs):
     print "# task_id =", str(task_id)
     print "# transport =", str(transport)

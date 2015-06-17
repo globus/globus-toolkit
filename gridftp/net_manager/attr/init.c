@@ -37,6 +37,10 @@
  *     Attribute name
  * @param[in] value
  *     Attribute value
+ *
+ * @return
+ *     On error, 'attr' is set to NULL and this function returns
+ *     an error object. Otherwise this function returns 'GLOBUS_SUCCESS'
  */
 globus_result_t
 globus_net_manager_attr_init(
@@ -47,7 +51,6 @@ globus_net_manager_attr_init(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_net_manager_attr_t           new_attr = GLOBUS_NET_MANAGER_NULL_ATTR;
-    GlobusNetManagerName(globus_net_manager_attr_init);
 
     if ((!attr) || (!scope) || (!name) || (!value))
     {

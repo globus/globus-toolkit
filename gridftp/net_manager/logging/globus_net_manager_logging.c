@@ -57,14 +57,6 @@
  * @snippet globus_net_manager_logging.c Pre-Listen Implementation
  */
 
-/**
- * @defgroup globus_net_manager_types Data Types
- * @ingroup globus_net_manager
- */
-/**
- * @defgroup globus_net_manager_signatures Function Signatures
- * @ingroup globus_net_manager
- */
 
 
 /**

@@ -36,7 +36,6 @@ void
 globus_net_manager_attr_destroy(
     globus_net_manager_attr_t          *attr)
 {
-    GlobusNetManagerName(globus_net_manager_attr_destroy);
     if (attr)
     {
         free(attr->scope);

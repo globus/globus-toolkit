@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_net_manager],[0.8],[https://globus.atlassian.net/])
+AC_INIT([globus_net_manager],[0.9],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -62,7 +62,6 @@ AC_CONFIG_FILES(
         Doxyfile
         attr/Makefile
         context/Makefile
-        exec/Makefile
         logging/Makefile
         python/Makefile
         test/Makefile

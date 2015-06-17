@@ -1,7 +1,7 @@
 Name:		globus-net-manager
 %global _name %(tr - _ <<< %{name})
-Version:	0.8
-Release:	2%{?dist}
+Version:	0.9
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Net Manager Library
 
 Group:		System Environment/Libraries
@@ -152,6 +152,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jun 17 2015 Globus Toolkit <support@globus.org> - 0.9-1
+- Fix missing documentation
+- Clarify python invocation
+- Fix error handling
+- Add test for end_listen in python
+- Allow running tests with valgrind
+
 * Mon Jun 01 2015 Globus Toolkit <support@globus.org> - 0.8-2
 - Rename xio driver package
 

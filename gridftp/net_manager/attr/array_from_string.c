@@ -46,6 +46,10 @@
  *     The string to be added as the scope value of the attributes.
  * @param[in] attr_string
  *     The string to be parsed.
+ *
+ * @return
+ *     On success, this function returns GLOBUS_SUCCESS. Otherwise, an
+ *     error result is returned to the caller.
  */
 globus_result_t
 globus_net_manager_attr_array_from_string(
@@ -58,7 +62,6 @@ globus_net_manager_attr_array_from_string(
     int                                 attr_string_list_size = 0;
     globus_net_manager_attr_t          *attr_array = NULL;
     int                                 i = 0;
-    GlobusNetManagerName(globus_net_manager_attr_array_from_string);
     
     if (attr == NULL)
     {
@@ -86,13 +89,14 @@ globus_net_manager_attr_array_from_string(
         goto no_attrs;
     }
     attr_string_list_size = globus_list_size(attr_string_list);
-    attr_array = malloc((attr_string_list_size + 1) *
+    attr_array = calloc(
+            attr_string_list_size + 1,
             sizeof(globus_net_manager_attr_t));
     if (attr_array == NULL)
     {
+        result = GlobusNetManagerErrorMemory("attr_array");
         goto attr_array_malloc_fail;
     }
-    attr_array[attr_string_list_size - 1] = globus_net_manager_null_attr;
 
     while (!globus_list_empty(attr_string_list))
     {

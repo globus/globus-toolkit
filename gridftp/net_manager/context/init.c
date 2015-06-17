@@ -34,7 +34,6 @@ globus_l_net_manager_context_load_entry(
     globus_i_net_manager_context_entry_t *  ent;
     int                                     rc;
     globus_result_t                         result = GLOBUS_SUCCESS;
-    GlobusNetManagerName(globus_l_net_manager_context_load_entry);
 
     /* is module already in registry? */
     loaded_manager = (globus_net_manager_t *) globus_extension_lookup(
@@ -44,6 +43,11 @@ globus_l_net_manager_context_load_entry(
         /* load and activate the dll */
         dll_name = globus_common_create_string(
             "globus_net_manager_%s", name);
+        if (dll_name == NULL)
+        {
+            result = GlobusNetManagerErrorMemory("dll_name");
+            goto dll_name_alloc;
+        }
 
         rc = globus_extension_activate(dll_name);        
         if(rc != GLOBUS_SUCCESS)
@@ -54,32 +58,64 @@ globus_l_net_manager_context_load_entry(
         }
     
         /* now module should be in registry */
-        loaded_manager = (globus_net_manager_t *) globus_extension_lookup(
+        loaded_manager = globus_extension_lookup(
             &ext_handle, GLOBUS_NET_MANAGER_REGISTRY, (void *) name);
         if(loaded_manager == NULL)
         {
             result = GlobusNetManagerErrorManager(
                 rc, name, "attempting to load activated module.");
-            goto error_activate;
+            goto error_lookup;
         }
     }
-    ent = globus_calloc(1, sizeof(globus_i_net_manager_context_entry_t));
-    ent->manager = loaded_manager;
-    ent->ext_handle = ext_handle;
-    ent->name = strdup(name);
-    ent->dll_name = dll_name;
+    ent = malloc(sizeof(globus_i_net_manager_context_entry_t));
+    if (ent == NULL)
+    {
+        result = GlobusNetManagerErrorMemory("ent");
+        goto error_ent;
+    }
+    *ent = (globus_i_net_manager_context_entry_t) {
+        .manager = loaded_manager,
+        .ext_handle = ext_handle,
+        .name = strdup(name),
+        .dll_name = dll_name
+    };
+
+    if (ent->name == NULL)
+    {
+        result = GlobusNetManagerErrorMemory("name");
     
-    *entry = ent;
-    return GLOBUS_SUCCESS;
-    
+error_ent_name:
+        free(ent);
+        ent = NULL;
+error_ent:
+error_lookup:
+        if (dll_name)
+        {
+            globus_extension_deactivate(dll_name);
 error_activate:
-    globus_free(dll_name);
-    *entry = NULL;
+            free(dll_name);
+        }
+    }
+dll_name_alloc:
+    *entry = ent;
     return result;
 }
 
 
-
+/**
+ * @brief Initialize Context
+ * @ingroup globus_net_manager_context
+ * @details
+ * This functions initializes *context* with the attribute list *attrs*.
+ * 
+ * @param [out] context
+ *     A pointer to the context to initialize.
+ * @param [in] attrs
+ *     An array of attributes to initialize the context with.
+ * @return
+ *     On error, the 'context' is set to NULL and this function returns
+ *     an error object. Otherwise this function returns 'GLOBUS_SUCCESS'
+ */
 globus_result_t
 globus_net_manager_context_init(
     globus_net_manager_context_t *      context,
@@ -94,8 +130,7 @@ globus_net_manager_context_init(
     int                                 attrnum;
     char *                              current_scope = NULL;
     globus_i_net_manager_context_entry_t *  ent = NULL;
-    GlobusNetManagerName(globus_net_manager_context_init);
-    
+
     if(context == NULL || attrs == NULL || attrs[0].scope == NULL)
     {
         result = GlobusNetManagerErrorParameter("No parameter may be NULL.");

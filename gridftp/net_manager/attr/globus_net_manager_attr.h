@@ -29,6 +29,7 @@ extern "C" {
  */
 
 /**
+ * @brief Net Manager Attribute Management Functions
  * @defgroup globus_net_manager_attr Attributes
  * @ingroup globus_net_manager
  */

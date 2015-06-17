@@ -75,6 +75,12 @@ extern "C" {
  * invoke network manager plug-ins, or the
  * @link globus_xio_net_manager_driver Globus XIO Net Manager Driver @endlink
  * to plug the network manager interface directly into the Globus XIO stack.
+ *
+ * To configure a GridFTP server to use the network manager, use the
+ * configuration option '-xnetmgr' ('xnetmgr' in the config file). The
+ * parameters to this option are a list of managers and their configuration
+ * attributes. See the @ref globus_net_manager_python documentation for an
+ * example.
  */
 #endif
 
@@ -95,9 +101,24 @@ struct globus_net_manager_s;
  */
 
 /**
- * Net Manager Pre-Listen Function Signature
+ * @brief Net Manager Data Types
+ * @defgroup globus_net_manager_types Net Manager Data Types
+ * @details
+ * Data types for the Net Manager interface.
+ * @ref globus_net_manager_tutorial
+ */
+
+/**
+ * @brief Net Manager Function Signatures
+ * @defgroup globus_net_manager_signatures Function Signatures
+ * @ingroup globus_net_manager
+ * Function signatures for the Net Manager interface.
+ * @ref globus_net_manager_tutorial
+ */
+/**
+ * @brief Net Manager Pre-Listen Function Signature
  * @ingroup globus_net_manager_signatures
- *
+ * @details
  * A function of this signature, if included in a network manager
  * implementation, is called before the transport-specific listening port has
  * been created.
@@ -144,9 +165,9 @@ typedef globus_result_t (*globus_net_manager_pre_listen)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Net Manager Post-Listen Function Signature
+ * @brief Net Manager Post-Listen Function Signature
  * @ingroup globus_net_manager_signatures
- *
+ * @details
  * A function of this signature, if included in a network manager
  * implementation, is called after the transport-specific listening port has
  * been created.
@@ -203,9 +224,9 @@ typedef globus_result_t (*globus_net_manager_post_listen)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Net Manager End-Listen Function Signature
+ * @brief Net Manager End-Listen Function Signature
  * @ingroup globus_net_manager_signatures
- *
+ * @details
  * A function of this signature, if included in a network manager
  * implementation, is called when the transport-specific listening port will
  * be closed.
@@ -244,9 +265,9 @@ typedef globus_result_t (*globus_net_manager_end_listen)(
     const globus_net_manager_attr_t    *attr_array);
 
 /**
- * Net Manager Pre-Accept Function Signature
+ * @brief Net Manager Pre-Accept Function Signature
  * @ingroup globus_net_manager_signatures
- *
+ * @details
  * A function of this signature, if included in a network manager
  * implementation, is called before accepting a connection on a
  * transport-specific listening port.
@@ -295,9 +316,9 @@ typedef globus_result_t (*globus_net_manager_pre_accept)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Net Manager Post-Accept Function Signature
+ * @brief Net Manager Post-Accept Function Signature
  * @ingroup globus_net_manager_signatures
- *
+ * @details
  * A function of this signature, if included in a network manager
  * implementation, is called after accepting a connection on a
  * transport-specific listening port.
@@ -352,9 +373,9 @@ typedef globus_result_t (*globus_net_manager_post_accept)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Net Manager Pre-Connect Function Signature
+ * @brief Net Manager Pre-Connect Function Signature
  * @ingroup globus_net_manager_signatures
- *
+ * @details
  * A function of this signature, if included in a network manager
  * implementation, is called after initiating a connection to a
  * transport-specific listener.
@@ -411,9 +432,9 @@ typedef globus_result_t (*globus_net_manager_pre_connect)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Net Manager Post-Connect Function Signature
+ * @brief Net Manager Post-Connect Function Signature
  * @ingroup globus_net_manager_signatures
- *
+ * @details
  * A function of this signature, if included in a network manager
  * implementation, is called after establishing a connection to a
  * transport-specific listener.
@@ -465,9 +486,9 @@ typedef globus_result_t (*globus_net_manager_post_connect)(
     globus_net_manager_attr_t         **attr_array_out);
 
 /**
- * Net Manager Pre-Close Function Signature
+ * @brief Net Manager Pre-Close Function Signature
  * @ingroup globus_net_manager_signatures
- *
+ * @details
  * A function of this signature, if included in a network manager
  * implementation, is called prior to closing a connection.
  *
@@ -510,9 +531,9 @@ typedef globus_result_t (*globus_net_manager_pre_close)(
     const globus_net_manager_attr_t    *attr_array);
 
 /**
- * Net Manager Post-Close Function Signature
+ * @brief Net Manager Post-Close Function Signature
  * @ingroup globus_net_manager_signatures
- *
+ * @details
  * A function of this signature, if included in a network manager
  * implementation, is called after closing a connection.
  *
@@ -643,11 +664,14 @@ typedef enum
 /* all macros in this file require each function to 'declare' their name with
  * this
  */
+#define GlobusNetManagerName(func)
+/*
 #ifdef __GNUC__
 #define GlobusNetManagerName(func) static const char * _netmgr_name __attribute__((__unused__)) = #func
 #else
 #define GlobusNetManagerName(func) static const char * _netmgr_name = #func
 #endif
+*/
 
 
 
@@ -658,7 +682,7 @@ typedef enum
             GLOBUS_NULL,                                             \
             GLOBUS_NET_MANAGER_ERROR_PARAMETER,                      \
             __FILE__,                                                \
-            _netmgr_name,                                            \
+            __func__,                                                \
             __LINE__,                                                \
            "Bad parameter, %s",                                      \
             (param_name)))
@@ -670,7 +694,7 @@ typedef enum
             GLOBUS_NULL,                                             \
             GLOBUS_NET_MANAGER_ERROR_MEMORY,                         \
             __FILE__,                                                \
-            _netmgr_name,                                            \
+            __func__,                                                \
             __LINE__,                                                \
            "Memory allocation failed on %s",                         \
             (mem_name)))
@@ -682,7 +706,7 @@ typedef enum
             NULL,                                                    \
             GLOBUS_NET_MANAGER_ERROR_INIT,                           \
             __FILE__,                                                \
-            _netmgr_name,                                            \
+            __func__,                                                \
             __LINE__,                                                \
            "An error occurred accessing a module. %s: %s", manager, explain))
 
@@ -693,7 +717,7 @@ typedef enum
             globus_error_get((result)),                              \
             GLOBUS_NET_MANAGER_ERROR_MANAGER,                        \
             __FILE__,                                                \
-            _netmgr_name,                                            \
+            __func__,                                                \
             __LINE__,                                                \
            "A network manager (%s) errored in %s.", manager, explain))
 
@@ -704,7 +728,7 @@ typedef enum
             globus_error_get((result)),                              \
             GLOBUS_NET_MANAGER_ERROR_WRAPPED,                        \
             __FILE__,                                                \
-            _netmgr_name,                                            \
+            __func__,                                                \
             __LINE__,                                                \
            "%s failed.",                                             \
             (failed_func)))
@@ -716,7 +740,7 @@ typedef enum
             globus_error_get((result)),                              \
             GLOBUS_NET_MANAGER_ERROR_WRAPPED,                        \
             __FILE__,                                                \
-            _netmgr_name,                                            \
+            __func__,                                                \
             __LINE__,                                                \
             (format),                                                \
             (arg)))
@@ -728,7 +752,7 @@ typedef enum
             globus_error_get((result)),                              \
             GLOBUS_NET_MANAGER_ERROR_WRAPPED,                        \
             __FILE__,                                                \
-            _netmgr_name,                                            \
+            __func__,                                                \
             __LINE__,                                                \
             (format),                                                \
             (arg1), (arg2)))
