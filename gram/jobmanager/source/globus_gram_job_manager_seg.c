@@ -490,7 +490,7 @@ globus_gram_job_manager_seg_handle_event(
                 protocol_event_type = GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING;
                 break;
             case GLOBUS_SCHEDULER_EVENT_ACTIVE:
-                protocol_event_type = GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING;
+                protocol_event_type = GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE;
                 break;
             default:
                 protocol_event_type = -1;

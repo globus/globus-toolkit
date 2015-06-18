@@ -1,3 +1,10 @@
+globus-gram-job-manager (14.26-1+gt6.@distro@) @distro@; urgency=low
+
+  * Convert manpage source to asciidoc
+  * Fix GT-590: GT5 shows running jobs as being in pending state
+
+ -- Globus Toolkit <support@globus.org>  Thu, 18 Jun 2015 16:00:58 -0400
+
 globus-gram-job-manager (14.25-2+gt6.@distro@) @distro@; urgency=low
 
   * Test fixes for jessie pbuilder

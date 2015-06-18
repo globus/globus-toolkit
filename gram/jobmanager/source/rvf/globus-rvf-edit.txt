@@ -1,0 +1,36 @@
+[[gram5-cmd-globus-rvf-edit]]
+= GLOBUS-RVF-EDIT(8) =
+:doctype: manpage
+:man source: University of Chicago
+
+== NAME ==
+globus-rvf-edit - Edit a GRAM5 RSL validation file
+
+== SYNOPSIS ==
+**++globus-rvf-edit++** '-h' 
+
+== Description ==
+The **++globus-rvf-edit++** command is a utility which opens the default
+editor on a specified RSL validation file, and then, when editing
+completes, runs the  command is a utility which opens the default editor
+on a specified RSL validation file, and then, when editing completes,
+runs the **++globus-rvf-check++** command to verify that the RVF file
+syntax is correct. If a parse error occurs, the user will be given an
+option to rerun the editor or discard the modifications.  command to
+verify that the RVF file syntax is correct. If a parse error occurs, the
+user will be given an option to rerun the editor or discard the
+modifications. 
+
+The full set of command-line options to **++globus-rvf-edit++** consists
+of:  consists of: 
+
+*'-h'*::
+     Print command-line option summary and exit
+*'-s'*::
+     Edit of the site-specific RVF file, which provides override values applicable to all LRMs installed on the system.
+*'-l '*::
+     Edit the site-specific LRM overrides for the LRM named by the ''LRM'' parameter to the option.
+*'-f '*::
+     Edit the RVF file located at ''PATH''
+
+

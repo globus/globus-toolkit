@@ -1,13 +1,13 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	14.25
-Release:	2%{?dist}
+Version:	14.26
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager-14.25.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 15
@@ -148,6 +148,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Thu Jun 18 2015 Globus Toolkit <support@globus.org> - 14.26-1
+- Convert manpage source to asciidoc
+- Fix GT-590: GT5 shows running jobs as being in pending state
+
 * Thu Apr 17 2015 Globus Toolkit <support@globus.org> - 14.25-2
 - Add build dependency on perl-Test-Simple
 

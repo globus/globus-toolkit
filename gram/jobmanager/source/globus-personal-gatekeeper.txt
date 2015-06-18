@@ -1,0 +1,147 @@
+[[gram5-cmd-globus-personal-gatekeeper]]
+= GLOBUS-PERSONAL-GATEKEEPER(1) =
+:doctype: manpage
+:man source: University of Chicago
+
+== NAME ==
+globus-personal-gatekeeper - Manage a user's personal gatekeeper daemon
+
+== SYNOPSIS ==
+**++globus-personal-gatekeeper++** [++-help++ ] [++-usage++ ] [++-version++ ] [++-versions++ ] [++-list++ ] [++-directory++ 'CONTACT'] 
+
+== Description ==
+
+The **++globus-personal-gatekeeper++** command is a utility which
+manages a gatekeeper and job manager service for a single user.
+Depending on the command-line arguments it will operate in one of
+several modes. In the first set of arguments indicated in the synopsis,
+the program provides information about the
+**++globus-personal-gatekeeper++** command or about instances of the
+**++globus-personal-gatekeeper++** that are running currently. The
+second set of arguments indicated in the synopsis provide control over
+starting a new **++globus-personal-gatekeeper++** instance. The final
+set of arguments provide control for terminating one or more
+**++globus-personal-gatekeeper++** instances. 
+
+The '-start' mode will create a new subdirectory of ++$HOME/.globus++
+and write the configuration files needed to start a  and write the
+configuration files needed to start a **++globus-gatekeeper++** daemon
+which will invoke the **++globus-job-manager++** service when new
+authenticated connections are made to its service port. The
+**++globus-personal-gatekeeper++** then exits, printing the contact
+string for the new gatekeeper prefixed by ++GRAM contact: ++ to standard
+output. In addition to the arguments described above, any arguments
+described in **++globus-job-manager(8)++** can be appended to the
+command-line and will be added to the job manager configuration for the
+service started by the **++globus-gatekeeper++**. 
+
+The new **++globus-gatekeeper++** will continue to run in the background
+until killed by invoking **++globus-personal-gatekeeper++** with the
+'-kill' or '-killall' argument. When killed, it will kill the
+**++globus-gatekeeper++** and **++globus-job-manager++** processes,
+remove state files and configuration data, and then exit. Jobs which are
+running when the personal gatekeeper is killed will continue to run, but
+their job directory will be destroyed so they may fail in the LRM. 
+
+The full set of command-line options to
+**++globus-personal-gatekeeper++** consists of: 
+
+**-help, -usage**::
+     Print command-line option summary and exit
+
+**-version**::
+     Print software version
+
+**-versions**::
+     Print software version including DiRT information
+
+**-list**::
+     Print a list of all currently running personal gatekeepers. These entries will be printed one per line.
+
+**-directory 'CONTACT'**::
+     Print the configuration directory for the personal gatekeeper with the contact string 'CONTACT'.
+
+**-debug**::
+     Print additional debugging information when starting a personal gatekeeper. This option is ignored in other modes.
+
+**-start**::
+     Start a new personal gatekeeper process.
+
+**-jmtype 'LRM'**::
+     Use 'LRM' as the local resource manager interface. If not provided when starting a personal gatekeeper, the job manager will use the default ++fork++ LRM.
+
+**-auditdir 'AUDIT_DIRECTORY'**::
+     Write audit report files to 'AUDIT_DIRECTORY'. If not provided, the job manager will not write any audit files.
+
+**-port 'PORT'**::
+     Listen for gatekeeper TCP/IP connections on the port 'PORT'. If not provided, the gatekeeper will let the operating system choose.
+
+**-log[='DIRECTORY']**::
+     Write job manager log files to 'DIRECTORY'. If 'DIRECTORY' is omitted, the default of ++$HOME++ will be used. If this option is not present, the job manager will not write any log files. will be used. If this option is not present, the job manager will not write any log files.
+
+**-seg**::
+     Try to use the SEG mechanism to receive job state change information, instead of polling for these. These require either the system administrator or the user to run an instance of the **++globus-job-manager-event-generator++** program for the LRM specified by the '-jmtype' option.
+
+**-acctfile 'ACCOUNTING_FILE'**::
+     Write gatekeeper accounting entries to 'ACCOUNTING_FILE'. If not provided, no accounting records are written.
+
+
+
+== Examples ==
+
+This example shows the output when starting a new personal gatekeeper
+which will schedule jobs via the ++lsf++ LRM, with debugging enabled. 
+
+
+
+--------
+%  globus-personal-gatekeeper -start -jmtype lsf
+
+
+verifying setup...
+done.
+GRAM contact: personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User
+
+--------
+
+This example shows the output when listing the current active personal
+gatekeepers. 
+
+
+
+--------
+%  globus-personal-gatekeeper -list
+
+
+personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User
+
+--------
+
+This example shows the output when querying the configuration directory
+for th eabove personal gatekeeper. gatekeepers. 
+
+
+
+--------
+%  globus-personal-gatekeeper -directory "personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User"
+
+
+/home/juser/.globus/.personal-gatekeeper.personal-grid.example.org.1337
+
+--------
+
+
+
+--------
+%  globus-personal-gatekeeper -kill "personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User"
+
+
+killing gatekeeper: "personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User"
+
+--------
+
+
+== See Also ==
+
+++globusrun(1)++, ++globus-job-manager(8)++, ++globus-gatekeeper(8)++ 
+
