@@ -291,7 +291,7 @@ globus_l_xio_tcp_file_lock(void)
 
 static
 void
-globus_l_xio_tcp_file_unlock()
+globus_l_xio_tcp_file_unlock(void)
 {
     int                                 rc;
     struct flock                        fl;
