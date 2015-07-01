@@ -316,6 +316,7 @@ sub create_prologue($)
         }],
         ['name' => sub { "#SBATCH -J ".shift; }],
         ['email_address', sub { "#SBATCH --mail-user=" . shift; }],
+        ['job_dependency', sub { "#SBATCH --dependency=afterany:" . shift; }],
         ['queue', sub { "#SBATCH -p ".shift }],
         ['project', sub { "#SBATCH -A ".shift; }],
         ['wall_time', sub { "#SBATCH -t " . format_time_value(shift) }],

@@ -1,3 +1,9 @@
+globus-gram-job-manager-slurm (2.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-609: Add job_dependency RSL to SLURM LRM
+
+ -- Globus Toolkit <support@globus.org>  Wed, 01 Jul 2015 09:28:44 -0400
+
 globus-gram-job-manager-slurm (2.6-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-595: Remove GRAM slurm option: SBATCH -l h_cpu

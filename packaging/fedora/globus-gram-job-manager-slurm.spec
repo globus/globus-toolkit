@@ -2,7 +2,7 @@
 
 Name:		globus-gram-job-manager-slurm
 %global _name %(tr - _ <<< %{name})
-Version:	2.6
+Version:	2.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - SLURM Job Manager
 
@@ -134,6 +134,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-slurm-poll
 
 %changelog
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 2.7-1
+- GT-609: Add job_dependency RSL to SLURM LRM
+
 * Wed May 06 2015 Globus Toolkit <support@globus.org> - 2.6-1
 - GT-595: Remove GRAM slurm option: SBATCH -l h_cpu
 
