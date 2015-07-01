@@ -1,6 +1,6 @@
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
-Version:	5.7
+Version:	5.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
@@ -134,6 +134,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 5.8-1
+- GT-608: Remove dead code from gsi callback
+
 * Thu May 28 2015 Globus Toolkit <support@globus.org> - 5.7-1
 - GT-599: Race condition in globus_gsi_callback_get_SSL_callback_data_index() and globus_gsi_callback_get_X509_STORE_callback_data_index()
 

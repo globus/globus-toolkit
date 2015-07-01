@@ -1,3 +1,9 @@
+globus-gsi-callback (5.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-608: Remove dead code from gsi callback
+
+ -- Globus Toolkit <support@globus.org>  Wed, 01 Jul 2015 09:05:51 -0400
+
 globus-gsi-callback (5.7-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-599: Race condition in globus_gsi_callback_get_SSL_callback_data_index() and globus_gsi_callback_get_X509_STORE_callback_data_index()
