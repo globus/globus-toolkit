@@ -203,6 +203,7 @@ globus_l_net_manager_logging_pre_listen(
 /* globus_l_net_manager_logging_pre_listen() */
 //! [Pre-Listen Implementation]
 
+static
 globus_result_t
 globus_l_net_manager_logging_post_listen(
     struct globus_net_manager_s        *manager,
@@ -223,6 +224,7 @@ globus_l_net_manager_logging_post_listen(
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_end_listen(
     struct globus_net_manager_s        *manager,
@@ -241,6 +243,7 @@ globus_l_net_manager_logging_end_listen(
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_pre_accept(
     struct globus_net_manager_s        *manager,
@@ -260,6 +263,7 @@ globus_l_net_manager_logging_pre_accept(
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_post_accept(
     struct globus_net_manager_s        *manager,
@@ -280,6 +284,7 @@ globus_l_net_manager_logging_post_accept(
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_pre_connect(
     struct globus_net_manager_s        *manager,
@@ -300,6 +305,7 @@ globus_l_net_manager_logging_pre_connect(
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_post_connect(
     struct globus_net_manager_s        *manager,
@@ -320,6 +326,7 @@ globus_l_net_manager_logging_post_connect(
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_pre_close(
     struct globus_net_manager_s        *manager,
@@ -339,6 +346,7 @@ globus_l_net_manager_logging_pre_close(
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_post_close(
     struct globus_net_manager_s        *manager,

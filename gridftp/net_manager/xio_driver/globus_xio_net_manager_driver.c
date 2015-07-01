@@ -23,6 +23,7 @@
 #include "globus_net_manager_attr.h"
 #include "globus_net_manager_context.h"
 
+GlobusDebugDeclare(GLOBUS_XIO_NET_MANAGER);
 GlobusDebugDefine(GLOBUS_XIO_NET_MANAGER);
 GlobusXIODeclareDriver(net_manager);
 
@@ -100,6 +101,8 @@ int
 globus_l_xio_net_manager_deactivate(void);
 
 #include "version.h"
+
+GlobusXIODeclareModule(net_manager);
 
 GlobusXIODefineModule(net_manager) =
 {
@@ -837,7 +840,7 @@ globus_l_xio_net_manager_server_init(
                                        *new_attrs = NULL;
     globus_l_xio_net_manager_server_t  *server = NULL;
     char                               *new_contact_string = NULL;
-    globus_xio_contact_t                new_contact_info = {0};
+    globus_xio_contact_t                new_contact_info = {NULL};
 
     if (!driver_attr)
     {
@@ -1185,7 +1188,7 @@ globus_l_xio_net_manager_connect(
     char                               *contact_out = NULL;
     char                               *string_opts = NULL;
     globus_net_manager_attr_t          *attrs = NULL, *attr_array_out = NULL;
-    globus_xio_contact_t                new_contact_info = {0};
+    globus_xio_contact_t                new_contact_info = {NULL};
     
     if (!driver_attr)
     {
