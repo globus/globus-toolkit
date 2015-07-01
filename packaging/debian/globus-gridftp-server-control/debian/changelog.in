@@ -1,3 +1,9 @@
+globus-gridftp-server-control (3.6-2+gt6.@distro@) @distro@; urgency=low
+
+  * remove dead code
+
+ -- Globus Toolkit <support@globus.org>  Wed, 01 Jul 2015 17:06:16 -0400
+
 globus-gridftp-server-control (3.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch
