@@ -1348,18 +1348,22 @@ globus_l_xio_udt_ref_write(
 {
     globus_result_t                     result;
     xio_l_udt_ref_handle_t *            handle;
+    int                                 rc;
     GlobusXIOName(globus_l_xio_udt_ref_write);
     GlobusXIOUDTRefDebugEnter();
 
     handle = (xio_l_udt_ref_handle_t *) driver_specific_handle;
 
-    *nbytes = (globus_size_t) UDT::send(
+    rc = UDT::send(
         handle->sock, (char*)iovec[0].iov_base, iovec[0].iov_len, 0);
-    if(*nbytes < 0)
+    if(rc < 0)
     {
+        *nbytes = 0;
+
         result = GlobusXIOUdtError("UDT::send failed");
         goto error;
     }
+    *nbytes = (globus_size_t) rc;
 
     GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;

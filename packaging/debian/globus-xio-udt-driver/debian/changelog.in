@@ -1,3 +1,9 @@
+globus-xio-udt-driver (1.17-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix error checking and automake warning
+
+ -- Globus Toolkit <support@globus.org>  Mon, 15 Jun 2015 21:31:33 -0400
+
 globus-xio-udt-driver (1.16-2+gt6.@distro@) @distro@; urgency=low
 
   * Add support for debian squeeze and ubuntu lucid
