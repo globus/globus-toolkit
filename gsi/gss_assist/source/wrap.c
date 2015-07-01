@@ -71,7 +71,7 @@ globus_gss_assist_wrap_send(
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
-    globus_result_t                     local_result;
+    globus_result_t                     local_result = GLOBUS_SUCCESS;
     gss_buffer_desc                     input_token_desc  = GSS_C_EMPTY_BUFFER;
     gss_buffer_t                        input_token       = &input_token_desc;
     gss_buffer_desc                     output_token_desc = GSS_C_EMPTY_BUFFER;
