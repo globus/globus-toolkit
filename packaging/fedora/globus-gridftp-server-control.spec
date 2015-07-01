@@ -1,7 +1,7 @@
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
-Version:	3.6
-Release:	2%{?dist}
+Version:	3.7
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
 Group:		System Environment/Libraries
@@ -105,7 +105,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
-* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 3.6-2
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 3.7-1
 - remove dead code
 
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 3.6-1
