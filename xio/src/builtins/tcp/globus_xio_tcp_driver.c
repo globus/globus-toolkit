@@ -471,7 +471,6 @@ globus_l_xio_tcp_attr_cntl(
     globus_l_attr_t *                   attr;
     globus_xio_system_socket_t *        out_fd;
     char **                             out_string;
-    const char **                       out_const_string;
     int *                               out_int;
     globus_bool_t *                     out_bool;
     globus_result_t                     result;
@@ -821,7 +820,7 @@ globus_l_xio_tcp_attr_cntl(
         }
 	string_opts_len += snprintf(
                     NULL, 0,
-                    "nodelay=%d;",
+                    "nodelay=%s;",
                     attr->nodelay ? "true" : "false");
 
         *out_string = malloc(string_opts_len);
@@ -1378,7 +1377,6 @@ globus_l_xio_tcp_create_listener(
     globus_result_t                     result;
     globus_addrinfo_t *                 save_addrinfo;
     globus_addrinfo_t *                 addrinfo;
-    globus_addrinfo_t *                 prefer_addrinfo;
     globus_addrinfo_t                   addrinfo_hints;
     char                                portbuf[10];
     char *                              port;

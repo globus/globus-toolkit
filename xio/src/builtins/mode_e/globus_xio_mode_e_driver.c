@@ -784,7 +784,6 @@ globus_i_xio_mode_e_server_accept_cb(
     {
         case GLOBUS_XIO_MODE_E_OPEN:
         {
-            globus_result_t     res;    
             res = globus_xio_register_open(
                         xio_handle, 
                         NULL, 
@@ -1657,7 +1656,7 @@ globus_i_xio_mode_e_server_open_cb(
     {
         globus_l_xio_mode_e_connection_handle_t *
                                         connection_handle;
-        globus_result_t                 res;
+
         connection_handle = (globus_l_xio_mode_e_connection_handle_t *)
                                 globus_malloc(sizeof(
                                     globus_l_xio_mode_e_connection_handle_t));

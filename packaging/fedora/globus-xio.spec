@@ -1,6 +1,6 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	5.8
+Version:	5.9
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
@@ -140,6 +140,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 5.9-1
+- Allow const string option names
+- Fix miscount of string length in GLOBUS_XIO_GET_STRING_OPTIONS
+- Fix some error handling bugs
+- Remove some unused variables
+
 * Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 5.8-1
 - Check push result in globus_xio_driver_list_to_stack_attr()
 - Add doc for globus_xio_driver_list_to_stack_attr

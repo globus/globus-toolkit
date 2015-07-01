@@ -1,3 +1,12 @@
+globus-xio (5.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Allow const string option names
+  * Fix miscount of string length in GLOBUS_XIO_GET_STRING_OPTIONS
+  * Fix some error handling bugs
+  * Remove some unused variables
+
+ -- Globus Toolkit <support@globus.org>  Wed, 01 Jul 2015 14:10:29 -0400
+
 globus-xio (5.8-1+gt6.@distro@) @distro@; urgency=low
 
   * Check push result in globus_xio_driver_list_to_stack_attr()
