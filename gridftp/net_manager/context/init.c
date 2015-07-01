@@ -31,7 +31,7 @@ globus_l_net_manager_context_load_entry(
     globus_extension_handle_t               ext_handle;
     globus_net_manager_t *                  loaded_manager;
     char *                                  dll_name = NULL;
-    globus_i_net_manager_context_entry_t *  ent;
+    globus_i_net_manager_context_entry_t *  ent = NULL;
     int                                     rc;
     globus_result_t                         result = GLOBUS_SUCCESS;
 
@@ -84,7 +84,6 @@ globus_l_net_manager_context_load_entry(
     {
         result = GlobusNetManagerErrorMemory("name");
     
-error_ent_name:
         free(ent);
         ent = NULL;
 error_ent:
@@ -122,7 +121,6 @@ globus_net_manager_context_init(
     const globus_net_manager_attr_t *   attrs)
 {
     globus_i_net_manager_context_t *    ctx;
-    globus_net_manager_attr_t *         attr;
     globus_result_t                     result;
     int                                 i;
     int                                 j;

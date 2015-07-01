@@ -341,7 +341,6 @@ new_context_fail:
 new_attr_init_fail:
 strdup_task_id_fail:
 strdup_scope_fail:
-no_scope:
 no_equals:
     free(new_task_id);
     free(scope);
@@ -834,7 +833,6 @@ globus_l_xio_net_manager_server_init(
     globus_xio_operation_t              op)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    globus_l_xio_net_manager_attr_t    *tmp_attr = NULL;
     globus_net_manager_attr_t          *transport_attrs = NULL,
                                        *new_attrs = NULL;
     globus_l_xio_net_manager_server_t  *server = NULL;
@@ -946,7 +944,6 @@ get_attr_array_fail:
     {
         globus_l_xio_net_manager_attr_destroy(server->attr);
 copy_attr_fail:
-init_attr_fail:
 get_driver_name_fail:
         free(server);
     }
@@ -973,7 +970,6 @@ globus_l_xio_net_manager_server_accept_callback(
         link = NULL;
     }
 
-accept_fail:
     globus_xio_driver_finished_accept(op, link, result);
 }
 /* globus_l_xio_net_manager_server_accept_callback() */
@@ -986,7 +982,6 @@ globus_l_xio_net_manager_server_accept(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_xio_net_manager_server_t  *server = driver_server;
-    globus_l_xio_net_manager_attr_t    *attr = NULL;
     globus_l_xio_net_manager_link_t    *link = NULL;
     globus_net_manager_attr_t          *new_attr_array = NULL;
 
@@ -1162,7 +1157,6 @@ globus_l_xio_net_manager_connect_callback(
     {
 post_connect_fail:
         free(handle->remote_contact);
-get_remote_contact_fail:
         free(handle->local_contact);
     }
 get_local_contact_fail:
@@ -1328,7 +1322,6 @@ globus_l_xio_net_manager_accept_callback(
     globus_l_xio_net_manager_handle_t  *handle = NULL;
     char                               *string_opts = NULL;
     globus_net_manager_attr_t          *attrs = NULL, *attr_array_out = NULL;
-    globus_xio_contact_t                new_contact_info = {0};
     globus_xio_driver_handle_t          driver_handle =
                 globus_xio_operation_get_driver_handle(op);
 
@@ -1428,7 +1421,6 @@ array_from_string_fail:
     {
 get_string_opts_fail:
         globus_l_xio_net_manager_attr_destroy(handle->attr);
-attr_copy_fail:
         free(handle->remote_contact);
 get_remote_contact_fail:
         free(handle->local_contact);
@@ -1452,13 +1444,11 @@ globus_l_xio_net_manager_accept(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_xio_net_manager_link_t    *link = driver_link;
-    globus_l_xio_net_manager_link_t    *copy_link = NULL;
 
     result = globus_xio_driver_pass_open(op, contact_info,
             globus_l_xio_net_manager_accept_callback,
             link);
 
-copy_link_malloc_fail:
     return result;
 }
 /* globus_l_xio_net_manager_accept() */
@@ -1516,7 +1506,6 @@ globus_l_xio_net_manager_close_cb(
                 handle->attr->attr_array);
     }
     globus_l_xio_net_manager_attr_destroy(handle->attr);
-get_attr_array_fail:
     free(handle->remote_contact);
     free(handle->local_contact);
     free(handle);
@@ -1534,8 +1523,6 @@ globus_l_xio_net_manager_close(
     globus_l_xio_net_manager_handle_t  *handle = driver_specific_handle;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_net_manager_attr_t          *transport_opts = NULL;
-    globus_xio_driver_handle_t          driver_handle =
-            globus_xio_operation_get_driver_handle(op);
 
     if (!handle)
     {

@@ -1,6 +1,6 @@
 Name:		globus-net-manager
 %global _name %(tr - _ <<< %{name})
-Version:	0.9
+Version:	0.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Net Manager Library
 
@@ -152,6 +152,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 0.10-1
+- Fix uninitialized value
+- Remove unused variables
+
 * Wed Jun 17 2015 Globus Toolkit <support@globus.org> - 0.9-1
 - Fix missing documentation
 - Clarify python invocation
