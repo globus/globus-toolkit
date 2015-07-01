@@ -1,6 +1,6 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	6.10
+Version:	6.11
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
@@ -98,6 +98,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 6.11-1
+- Remove unused label
+- Check for c99 compiler flags
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 6.10-1
 - GT-607: improve grid-cert-diagnostic command to retrieve endpoint cert
 

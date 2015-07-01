@@ -1,3 +1,10 @@
+globus-proxy-utils (6.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * Remove unused label
+  * Check for c99 compiler flags
+
+ -- Globus Toolkit <support@globus.org>  Wed, 01 Jul 2015 19:26:21 -0400
+
 globus-proxy-utils (6.10-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-607: improve grid-cert-diagnostic command to retrieve endpoint cert
