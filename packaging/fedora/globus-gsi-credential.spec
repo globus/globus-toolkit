@@ -1,6 +1,6 @@
 Name:		globus-gsi-credential
 %global _name %(tr - _ <<< %{name})
-Version:	7.8
+Version:	7.9
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Credential Library
 
@@ -137,6 +137,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 7.9-1
+- add missing const to parameters
+
 * Thu May 28 2015 Globus Toolkit <support@globus.org> - 7.8-1
 - Add deprecation comment to obsolete functions
 - Tighten up const on some parameters

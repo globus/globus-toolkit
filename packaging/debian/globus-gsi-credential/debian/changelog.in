@@ -1,3 +1,9 @@
+globus-gsi-credential (7.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * add missing const to parameters
+
+ -- Globus Toolkit <support@globus.org>  Wed, 01 Jul 2015 17:03:28 -0400
+
 globus-gsi-credential (7.8-1+gt6.@distro@) @distro@; urgency=low
 
   * Add deprecation comment to obsolete functions
