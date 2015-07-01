@@ -90,6 +90,7 @@
  */
 #undef YY_INPUT
 #define YY_INPUT(b,r,s) globus_i_rsl_yyinput(globus_rslget_extra(yyscanner), b, &r, s)
+#define YY_NO_INPUT
 %}
 
 
@@ -177,7 +178,6 @@ OP_CONCATENATE             ("#")
    yyless(yyleng-1);
 
    return (RSL_OP_CONCATENATE);
-dummy_implicit_concatenate_label: ;
 }
 
 
@@ -218,7 +218,6 @@ dummy_implicit_concatenate_label: ;
     /* return the quoted literal token */
     {
       char * buf;
-      char c;
       int i;
 
       buf = globus_malloc (sizeof(char)
@@ -240,7 +239,6 @@ dummy_implicit_concatenate_label: ;
       parse_state->quote_text_fifo = NULL;
 
       return (RSL_STRING);
-    dummy_quoted_literal_label: ;
     }
   }
 }
@@ -279,7 +277,6 @@ dummy_implicit_concatenate_label: ;
   }
 
   return (RSL_VARIABLE_START);
-dummy_variable_start_label: ;
 }
 
 <INITIAL,VARIABLE>{UNQUOTED_LITERAL}/{VARIABLE_START} { 
@@ -293,18 +290,15 @@ dummy_variable_start_label: ;
    */
   yylval->String = strdup (yytext);
   return (RSL_STRING);
-dummy_unquoted_literal_label_1: ;
 }
 
 <INITIAL,VARIABLE>{UNQUOTED_LITERAL}		{
   yylval->String = strdup (yytext);
   return (RSL_STRING);
-dummy_unquoted_literal_label_2: ;
 }
 
 <INITIAL>{LPAREN}				{ 
   return (RSL_LPAREN); 
-dummy_lparen_label_1: ;
 }
 
 <VARIABLE>{LPAREN}				{
@@ -312,12 +306,10 @@ dummy_lparen_label_1: ;
   (((paren_count_stack_elem_t *) 
     globus_list_first (parse_state->paren_count_stack))->count) += 1;
   return (RSL_LPAREN);
-dummy_lparen_label_2: ;
 }
 
 <INITIAL>{RPAREN} 				{
   return (RSL_RPAREN);
-dummy_rparen_label_1: ;
 }
 
 <VARIABLE>{RPAREN}/({UNQUOTED_LITERAL_CHAR}|{VARIABLE_START}) { 
@@ -359,7 +351,6 @@ dummy_rparen_label_1: ;
   }
 
   return (RSL_RPAREN);
-dummy_rparen_label_2: ;
 }
 
 <VARIABLE>{RPAREN} 				{ /* conditional BEGIN */
@@ -391,57 +382,46 @@ dummy_rparen_label_2: ;
   }
 
   return (RSL_RPAREN);
-dummy_rparen_label_4: ;
 }
 
 <INITIAL,VARIABLE>{OP_EQ} 			{
   return (RSL_OP_EQ);
-dummy_op_eq_label: ;
 }
 
 <INITIAL,VARIABLE>{OP_NEQ} 			{
   return (RSL_OP_NEQ);
-dummy_op_neq_label: ;
 }
 
 <INITIAL,VARIABLE>{OP_LT} 			{
   return (RSL_OP_LT);
-dummy_op_lt_label: ;
 }
 
 <INITIAL,VARIABLE>{OP_LTEQ} 			{
   return (RSL_OP_LTEQ);
-dummy_op_lteq_label: ;
 }
 
 <INITIAL,VARIABLE>{OP_GT} 			{
   return (RSL_OP_GT);
-dummy_op_gt_label: ;
 }
 
 <INITIAL,VARIABLE>{OP_GTEQ} 			{
   return (RSL_OP_GTEQ);
-dummy_op_gteq_label: ;
 }
 
 <INITIAL,VARIABLE>{OP_MULTIREQ} 		{
   return (RSL_OP_MULTIREQ);
-dummy_op_multireq_label: ;
 }
 
 <INITIAL,VARIABLE>{OP_AND}		{
   return (RSL_OP_AND);
-dummy_op_conjunction_label: ;
 }
 
 <INITIAL,VARIABLE>{OP_OR} 		{
   return (RSL_OP_OR);
-dummy_op_disjunction_label: ;
 }
 
 <INITIAL,VARIABLE>{OP_CONCATENATE}		{
   return (RSL_OP_CONCATENATE);
-dummy_op_concatenate_label: ;
 }
 
 <INITIAL,VARIABLE>{WHITESPACE}+ 		{ }
@@ -451,7 +431,6 @@ dummy_op_concatenate_label: ;
   /* we ran into a character not matched by any of the
    * above patterns.  let the parser sort it out. */
   yyterminate();
-dummy_invalid_char_label: ;
 }
 
 
@@ -459,5 +438,4 @@ dummy_invalid_char_label: ;
   /* we ran into EOF in any of the states.  maybe error, maybe not.
    * let the parser sort it out. */
   yyterminate();
-dummy_eof_label: ;
 }
