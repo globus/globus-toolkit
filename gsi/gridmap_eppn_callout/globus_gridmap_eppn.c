@@ -301,7 +301,6 @@ ggvm_get_myproxy_userid(
     char *                              myproxy_ca_cert_file = NULL;
     char *                              myproxy_authorized_dn = NULL;
     int                                 authorized_dn_length;
-    char *                              myproxy_idp_realm = NULL;
     char *                              eppn;
     long                                length;
     char *                              at;
