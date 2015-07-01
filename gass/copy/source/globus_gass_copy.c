@@ -2797,7 +2797,13 @@ globus_l_gass_copy_register_read(
 	    (void *) handle);
 
 	break;
-    default:
+    case GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED:
+	result = globus_error_put(globus_error_construct_string(
+	    GLOBUS_GASS_COPY_MODULE,
+	    GLOBUS_NULL,
+	    "[%s]: %s: GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED",
+	    myname,
+	    state->source.url));
         break;
     }
 

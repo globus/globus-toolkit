@@ -2098,11 +2098,26 @@ globus_l_gass_copy_cksm_file(
     fd = open(parsed_url.url_path, O_RDONLY);        
     if(fd < 0)
     {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error opening checksum file %s",
+                myname,
+                parsed_url.url_path));
         goto error_fd;
     }
 
     if (lseek(fd, offset, SEEK_SET) == -1)
     {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error (%d) seeking checksum file %s",
+                myname,
+                errno,
+                parsed_url.url_path));
         goto error_seek;
     }
 
@@ -2130,7 +2145,7 @@ globus_l_gass_copy_cksm_file(
        md5ptr++;
        md5ptr++;
     }
-    md5ptr = '\0';
+    *md5ptr = '\0';
     
     strncpy(cksm, md5sum, sizeof(md5sum));
     

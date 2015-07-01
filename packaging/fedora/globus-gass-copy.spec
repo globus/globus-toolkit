@@ -1,6 +1,6 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	9.15
+Version:	9.16
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
@@ -171,6 +171,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 9.16-1
+- Improve error handling
+- Fix non-terminated string
+
 * Wed Apr 08 2015 Globus Toolkit <support@globus.org> - 9.15-1
 - Clarify documentation of stack options
 - Add openssl build dependency
