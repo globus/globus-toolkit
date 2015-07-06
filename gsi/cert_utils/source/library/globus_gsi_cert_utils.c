@@ -477,7 +477,7 @@ globus_gsi_cert_utils_get_cert_type(
             }
             
             if((new_ne = X509_NAME_ENTRY_create_by_NID(NULL, NID_commonName,
-                                                       V_ASN1_APP_CHOOSE,
+                                                       data->type,
                                                        data->data, -1)) == NULL)
             {
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
