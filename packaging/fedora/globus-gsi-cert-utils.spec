@@ -128,6 +128,9 @@ make install DESTDIR=$RPM_BUILD_ROOT
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
+%check
+make %{?_smp_mflags} check
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -163,6 +166,7 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Mon Jul 06 2015 Globus Toolkit <support@globus.org> - 9.11-1
 - GT-606: fix encoding for CN=(limited) proxy
+- GT-610: globus-gsi-cert-utils crash
 
 * Wed Sep 24 2014 Globus Toolkit <support@globus.org> - 9.10-1
 - Include more manpages for API

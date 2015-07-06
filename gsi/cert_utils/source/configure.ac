@@ -127,6 +127,7 @@ AC_CONFIG_FILES([
 	library/Makefile
 	library/Doxyfile
         programs/Makefile
+        test/Makefile
 	version.h])
 AC_CONFIG_FILES(
     [programs/grid-cert-info],

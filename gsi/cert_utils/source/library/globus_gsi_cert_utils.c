@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2014 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,14 +97,33 @@ globus_l_gsi_cert_utils_activate(void)
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
 
     result = globus_module_activate(GLOBUS_OPENSSL_MODULE);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto activate_openssl_fail;
+    }
     
     result = globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto activate_openssl_error_fail;
+    }
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
+    return GLOBUS_SUCCESS;
 
+activate_openssl_error_fail:
+    globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
+activate_openssl_fail:
+    if (globus_i_gsi_cert_utils_debug_fstream != NULL &&
+        globus_i_gsi_cert_utils_debug_fstream != stderr)
+    {
+        fclose(globus_i_gsi_cert_utils_debug_fstream);
+        globus_i_gsi_cert_utils_debug_fstream = NULL;
+    }
  exit:
     return result;
 }
+/* globus_l_gsi_cert_utils_activate() */
 
 /**
  * Module deactivation
@@ -114,24 +133,36 @@ static
 int
 globus_l_gsi_cert_utils_deactivate(void)
 {
-    int                                 result;
+    int                                 res1 = GLOBUS_SUCCESS,
+                                        res2 = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_l_gsi_cert_utils_deactivate";
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
 
-    result = globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+    res1 = globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
 
-    result = globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
+    res2 = globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
 
-    if(globus_i_gsi_cert_utils_debug_fstream != stderr)
+    /*
+     * This must have been set to non-NULL fopen result or stderr in activate
+     */
+    globus_assert(globus_i_gsi_cert_utils_debug_fstream != NULL);
+    if (globus_i_gsi_cert_utils_debug_fstream != stderr)
     {
         fclose(globus_i_gsi_cert_utils_debug_fstream);
     }
 
-    return result;
+    if (res1 != GLOBUS_SUCCESS)
+    {
+        return res1;
+    }
+    else
+    {
+        return res2;
+    }
 }
 /* globus_l_gsi_cert_utils_deactivate() */
 
@@ -576,7 +607,7 @@ globus_gsi_cert_utils_get_cert_type(
  */
 globus_result_t
 globus_gsi_cert_utils_get_x509_name(
-    char *                              subject_string,
+    const char *                        subject_string,
     int                                 length,
     X509_NAME *                         x509_name)
 {
@@ -705,6 +736,10 @@ globus_gsi_cert_utils_get_x509_name(
             X509_NAME_ENTRY_free(x509_name_entry);
             x509_name_entry = NULL;
 
+            if (index2 == NULL)
+            {
+                break;
+            }
             name_entry_str = index2 + 1;
         }
     }
