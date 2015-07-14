@@ -199,6 +199,11 @@ attr_array_copy_failed:
 strdup_task_id_failed:
         free(d);
         d = NULL;
+
+        if (result == GLOBUS_SUCCESS)
+        {
+            result = GLOBUS_FAILURE;
+        }
     }
 malloc_d_failed:
 null_src:
@@ -288,6 +293,7 @@ globus_l_xio_net_manager_attr_set_string_options(
         }
         else if (strcmp(opt, "task-id") == 0)
         {
+            free(new_task_id);
             new_task_id = strdup(val);
             if (!new_task_id)
             {
@@ -844,6 +850,11 @@ globus_l_xio_net_manager_server_init(
 
     if (!driver_attr)
     {
+        result = globus_xio_driver_pass_server_init(
+            op,
+            contact_info,
+            NULL);
+
         goto no_attr;
     }
     server = malloc(sizeof(globus_l_xio_net_manager_server_t));
@@ -924,7 +935,6 @@ globus_l_xio_net_manager_server_init(
         }
     }
 
-no_attr:
     result = globus_xio_driver_pass_server_init(
         op,
         new_contact_info.unparsed ? &new_contact_info : contact_info,
@@ -951,6 +961,7 @@ get_driver_name_fail:
         free(server);
     }
 server_malloc_fail:
+no_attr:
     return result;
 }
 /* globus_l_xio_net_manager_server_init() */

@@ -94,11 +94,16 @@ error_lookup:
 error_activate:
             free(dll_name);
         }
-    }
 dll_name_alloc:
+        if (result == GLOBUS_SUCCESS)
+        {
+            result = GLOBUS_FAILURE;
+        }
+    }
     *entry = ent;
     return result;
 }
+/* globus_l_net_manager_context_load_entry() */
 
 
 /**
@@ -124,6 +129,7 @@ globus_net_manager_context_init(
     globus_result_t                     result;
     int                                 i;
     int                                 j;
+    int                                 rc;
     int                                 max_attr_count;
     int                                 attrnum;
     char *                              current_scope = NULL;
@@ -135,83 +141,114 @@ globus_net_manager_context_init(
         goto error_no_attr;
     }
     
-    ctx = globus_calloc(1, sizeof(globus_i_net_manager_context_t));
+    ctx = malloc(sizeof(globus_i_net_manager_context_t));
     if(ctx == NULL)
     {
         result = GlobusNetManagerErrorMemory("context");
         goto error_ctx_mem;
     }
+    ctx->managers = NULL;
+
     for(max_attr_count = 0; 
         attrs[max_attr_count].scope != NULL;
         max_attr_count++);
     
     for(i = 0; attrs[i].scope != NULL; i++)
     {
-        /* start of a new manager entry */
-        if(strcmp(attrs[i].scope, "net_manager") == 0 && 
-            strcmp(attrs[i].name, "manager") == 0)
+        if(strcmp(attrs[i].scope, "global") != 0)
         {
-            ent = NULL;
-            attrnum = 0;
-            current_scope = attrs[i].value;
-
-            result = globus_l_net_manager_context_load_entry(
-                attrs[i].value, &ent);
-            if(result)
+            /* Ignore global scope attributes here. They get added
+             * to each new manager's attribute list when we encounter them.
+             */
+            if (current_scope == NULL ||
+                     strcmp(attrs[i].scope, current_scope) != 0)
             {
-                goto error_load;
-            }
-
-            ent->attrs = calloc(
-                max_attr_count, sizeof(globus_net_manager_attr_t));
-            for(j = 0; attrs[j].scope != NULL; j++)
-            {
-                if(strcmp(attrs[j].scope, "global") == 0)
+                /* start of a new manager entry, either explicitly or by
+                 * changing scope
+                 */
+                if(strcmp(attrs[i].scope, "net_manager") == 0 && 
+                    strcmp(attrs[i].name, "manager") == 0)
                 {
-                    result = globus_net_manager_attr_init(
-                            &ent->attrs[attrnum++],
-                            attrs[j].scope,
-                            attrs[j].name,
-                            attrs[j].value);
-                    if(result)
+                    ent = NULL;
+                    attrnum = 0;
+                    current_scope = attrs[i].value;
+                }
+                else
+                {
+                    ent = NULL;
+                    attrnum = 0;
+                    current_scope = attrs[i].scope;
+                }
+
+                result = globus_l_net_manager_context_load_entry(
+                    current_scope, &ent);
+                if(result)
+                {
+                    goto error_load;
+                }
+
+                ent->attrs = calloc(
+                    max_attr_count, sizeof(globus_net_manager_attr_t));
+                for(j = 0; attrs[j].scope != NULL; j++)
+                {
+                    if(strcmp(attrs[j].scope, "global") == 0)
                     {
-                        goto error_attr;
+                        result = globus_net_manager_attr_init(
+                                &ent->attrs[attrnum++],
+                                attrs[j].scope,
+                                attrs[j].name,
+                                attrs[j].value);
+                        if(result)
+                        {
+                            goto error_global_attr;
+                        }
                     }
                 }
+                ent->attrs[attrnum] = globus_net_manager_null_attr;
+                
+                rc = globus_list_insert(&ctx->managers, ent);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    result = GlobusNetManagerErrorMemory("managers");
+                    goto error_list_insert;
+                }
             }
-            ent->attrs[attrnum] = globus_net_manager_null_attr;
-            
-            globus_list_insert(&ctx->managers, ent);
-        }
-        /* attrs for the current manager entry */
-        else if(current_scope && strcmp(attrs[i].scope, current_scope) == 0)
-        {
-            result = globus_net_manager_attr_init(
-                    &ent->attrs[attrnum++],
-                    attrs[i].scope,
-                    attrs[i].name,
-                    attrs[i].value);
-            if(result)
+            /* attrs for the current manager entry */
+            if(current_scope && strcmp(attrs[i].scope, current_scope) == 0)
             {
-                goto error_attr;
+                result = globus_net_manager_attr_init(
+                        &ent->attrs[attrnum++],
+                        attrs[i].scope,
+                        attrs[i].name,
+                        attrs[i].value);
+                if(result)
+                {
+                    goto error_attr;
+                }
+                ent->attrs[attrnum] = globus_net_manager_null_attr;
             }
-            ent->attrs[attrnum] = globus_net_manager_null_attr;
-        }
-        /* unrelated scope */
-        else
-        {
-            ent = NULL;
-            attrnum = 0;
-            current_scope = attrs[i].value;
         }
     }
     
     *context = ctx;
     return GLOBUS_SUCCESS;
-    
+
+error_global_attr:
+error_list_insert:
+    globus_extension_release(ent->ext_handle);
+    /* if dll_name is set, driver was activated by me */
+    if(ent->dll_name)
+    {
+        globus_extension_deactivate(ent->dll_name);
+        free(ent->dll_name);
+    }
+    globus_net_manager_attr_array_delete(ent->attrs);
+    free(ent->name);
+    free(ent);
+
 error_attr:
 error_load:
-    free(ctx);
+    globus_net_manager_context_destroy(ctx);
 error_ctx_mem:
 error_no_attr:
     if (context)
@@ -221,5 +258,4 @@ error_no_attr:
 
     return result;
 }
-
-
+/* globus_net_manager_context_init() */

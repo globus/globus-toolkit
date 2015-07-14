@@ -343,7 +343,7 @@ bad_tuple_item:
     }
 attr_array_malloc_fail:
     *attr_array_out = attr_array;
-    return GLOBUS_SUCCESS;
+    return result;
 }
 /* globus_l_python_pylist_to_attr_array() */
 

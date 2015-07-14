@@ -82,7 +82,6 @@ globus_l_net_manager_logging_get_logfile(
     const globus_net_manager_attr_t    *attrs)
 {
     int                                 rc = 0;
-    globus_result_t                     result = GLOBUS_SUCCESS;
     FILE *                              handle = NULL;
     globus_l_nm_logging_logref_t *      logref = NULL;
 
@@ -98,35 +97,53 @@ globus_l_net_manager_logging_get_logfile(
                 {
                     handle = fopen(attrs[i].value, "a");
                     if (!handle)
-                    {   result = GLOBUS_FAILURE;
+                    {
                         goto fopen_fail;
                     }
                     logref = malloc(sizeof(globus_l_nm_logging_logref_t));
+                    if (logref == NULL)
+                    {
+                        goto logref_malloc_fail;
+                    }
                     logref->key = strdup(attrs[i].value);
+                    if (logref->key == NULL)
+                    {
+                        goto logref_key_fail;
+                    }
                     logref->handle = handle;
+                    handle = NULL;
                     rc = globus_hashtable_insert(
                             &globus_l_nm_logging_logfiles,
                             logref->key,
                             logref);
                     if (rc != GLOBUS_SUCCESS)
                     {
-                        result = GLOBUS_FAILURE;
+                        goto hashtable_insert_fail;
                     }
                 }
                 break;
             }
         }
     }
-    
+
+    return logref ? logref->handle : stdout;
+
+hashtable_insert_fail:
+logref_key_fail:
+logref_malloc_fail:
+    if (handle)
+    {
+        fclose(handle);
+        handle = NULL;
+    }
 fopen_fail:
-    if (result != GLOBUS_SUCCESS)
+    if (logref)
     {
         free(logref->key);
         free(logref);
         logref = NULL;
     }
-
-    return logref ? logref->handle : stdout;
+    return stdout;
 }
 
 

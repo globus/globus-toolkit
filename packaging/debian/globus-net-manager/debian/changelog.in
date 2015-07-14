@@ -1,3 +1,9 @@
+globus-net-manager (0.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix memory leaks, NULL pointer derefs, and dead assignments
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Jul 2015 12:01:35 -0400
+
 globus-net-manager (0.10-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix uninitialized value

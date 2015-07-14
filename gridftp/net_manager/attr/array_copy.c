@@ -72,7 +72,7 @@ globus_net_manager_attr_array_copy(
     if (new_array == NULL)
     {
         result = GlobusNetManagerErrorMemory("new_array");
-        goto strdup_scope_fail;
+        goto calloc_new_array_fail;
     }
     for (i = 0; src_array[i].scope != NULL; i++)
     {
@@ -112,6 +112,7 @@ strdup_scope_fail:
         free(new_array);
         new_array = NULL;
     }
+calloc_new_array_fail:
 null_src:
     *dest_array = new_array;
 null_dest:

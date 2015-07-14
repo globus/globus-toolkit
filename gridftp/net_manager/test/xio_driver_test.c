@@ -167,6 +167,7 @@ port_plus_one(void)
             tcp_driver,
             GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT,
             &contact);
+    TEST_ASSERT(result == GLOBUS_SUCCESS);
     if (strcmp(strrchr(contact, ':'), ":50506") == 0)
     {
         port_plus_one_ok = GLOBUS_TRUE;
@@ -209,6 +210,7 @@ port_plus_one_minus_one(void)
             tcp_driver,
             GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT,
             &contact);
+    TEST_ASSERT(result == GLOBUS_SUCCESS);
     if (strcmp(strrchr(contact, ':'), ":50505") == 0)
     {
         port_plus_one_ok = GLOBUS_TRUE;
@@ -217,6 +219,20 @@ port_plus_one_minus_one(void)
     globus_xio_attr_destroy(attr);
     globus_xio_server_close(server);
     TEST_ASSERT(port_plus_one_ok);
+
+    return 0;
+}
+
+int
+server_null_attr(void)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_xio_server_t                 server;
+
+    result = globus_xio_server_create(&server, NULL, stack);
+    TEST_ASSERT(result == GLOBUS_SUCCESS);
+
+    globus_xio_server_close(server);
 
     return 0;
 }
@@ -237,6 +253,7 @@ main(int argc, char *argv[])
         TEST_INITIALIZER(listener_bad_manager),
         TEST_INITIALIZER(port_plus_one),
         TEST_INITIALIZER(port_plus_one_minus_one),
+        TEST_INITIALIZER(server_null_attr),
         {NULL, NULL}
     };
     int i;

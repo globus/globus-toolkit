@@ -1,6 +1,6 @@
 Name:		globus-net-manager
 %global _name %(tr - _ <<< %{name})
-Version:	0.10
+Version:	0.11
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Net Manager Library
 
@@ -152,6 +152,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Jul 14 2015 Globus Toolkit <support@globus.org> - 0.11-1
+- Fix memory leaks, NULL pointer derefs, and dead assignments
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 0.10-1
 - Fix uninitialized value
 - Remove unused variables
