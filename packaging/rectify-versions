@@ -32,6 +32,19 @@ sub parse_package
     my @lines;
     my %values;
 
+    print "Checking if configure is out of date in $package_dir \n" if $verbose;
+    if ((stat("${configure_script}.ac"))[9] > (stat("${configure_script}"))[9]) {
+        my $cwd = POSIX::getcwd();
+        my $autoreconf_out;
+
+        print "Running autoreconf in $package_dir\n" if $verbose;
+
+        chdir($package_dir);
+        $autoreconf_out = `autoreconf -i`;
+        chdir($cwd);
+
+        print $autoreconf_out if $verbose;
+    }
     print "Parsing $package_dir \n" if $verbose;
     open(my $configure, "<$configure_script");
     @lines = grep(/^(PACKAGE_NAME|PACKAGE_VERSION|AGE_VERSION|PACKAGE_DEPS)=/, <$configure>);
@@ -747,11 +760,12 @@ GetOptions('package=s' => \$package,
            'stage' => \$stage,
            'help' => \$help);
 
-Pod::Usage::pod2usage() if defined $help;
+Pod::Usage::pod2usage() if (defined($help) || !defined($package));
 
 setlocale(LC_TIME, 'C');
 
 $package =~ s/_/-/g if $package;
+
 
 open(PKG, "sed -ne '/-all_SUBDIR *=/s/-all_SUBDIR *= */    /gp' '$topdir/../configure'|");
 while ( <PKG> )
@@ -788,7 +802,7 @@ B<rectify-versions> - Rectify package versions from GPT metadata
 
 =head1 SYNOPSIS
 
-B<rectify-versions> [options] 
+B<rectify-versions> -package PACKAGE [options] 
 
 Options:
 
