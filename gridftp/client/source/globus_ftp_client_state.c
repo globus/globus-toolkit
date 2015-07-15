@@ -772,7 +772,7 @@ redo:
 	    target->clientinfo_argstr = 
 	        globus_libc_strdup(target->attr->clientinfo_argstr);
 	}
-	else
+	else if (response)
 	{
             globus_i_ftp_client_feature_set(
                 target->features,
@@ -781,6 +781,10 @@ redo:
             response->response_class = GLOBUS_FTP_POSITIVE_COMPLETION_REPLY;
             globus_object_free(error);
             error = NULL;
+        }
+        else
+        {
+	    goto notify_fault;
         }
 
     skip_clientinfo:

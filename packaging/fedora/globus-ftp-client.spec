@@ -1,6 +1,6 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.22
+Version:	8.23
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
@@ -142,6 +142,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 15 2015 Globus Toolkit <support@globus.org> - 8.23-1
+- Fix crash in error handling
+
 * Wed Apr 15 2015 Globus Toolkit <support@globus.org> - 8.22-1
 - Fix tests on jessie with pbuilder
 
