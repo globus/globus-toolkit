@@ -2118,11 +2118,12 @@ globus_l_xio_gridftp_attr_cntl(
 			    "Partial transfers can not be used with ERET/ESTO");
 		goto error;
 	    }
+            free(attr->eret_alg_str);
 	    attr->eret_alg_str = strdup(va_arg(ap, char*));
 	    break;
 	case GLOBUS_XIO_GRIDFTP_GET_ERET:
 	{
-	    char ** eret_alg_str_out;
+	    char ** eret_alg_str_out = va_arg(ap, char **);
 	    *eret_alg_str_out = strdup(attr->eret_alg_str);
 	    break;
 	}    
@@ -2133,11 +2134,12 @@ globus_l_xio_gridftp_attr_cntl(
 			    "Partial transfers can not be used with ERET/ESTO");
 		goto error;
 	    }
+            free(attr->esto_alg_str);
 	    attr->esto_alg_str = strdup(va_arg(ap, char*));
 	    break;
 	case GLOBUS_XIO_GRIDFTP_GET_ESTO:
 	{
-	    char ** esto_alg_str_out;
+	    char ** esto_alg_str_out = va_arg(ap, char **);
 	    *esto_alg_str_out = strdup(attr->esto_alg_str);
 	    break;
 	}
