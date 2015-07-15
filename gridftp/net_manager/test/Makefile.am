@@ -35,12 +35,12 @@ attr_test_SOURCES = attr_test.c globus_test_tap.h
 context_test_SOURCES = context_test.c globus_test_tap.h
 xio_driver_cntl_test_SOURCES = xio_driver_cntl_test.c globus_test_tap.h
 xio_driver_cntl_test_LDADD = \
-    -dlpreopen ../xio_driver/libglobus_xio_net_manager_driver.la \
-    -dlpreopen libglobus_net_manager_null.la $(LDADD) $(LIBLTDL)
+    -dlopen ../xio_driver/libglobus_xio_net_manager_driver.la \
+    -dlopen libglobus_net_manager_null.la $(LDADD) $(LIBLTDL)
 xio_driver_test_SOURCES = xio_driver_test.c globus_test_tap.h
 xio_driver_test_LDADD = \
-    -dlpreopen ../xio_driver/libglobus_xio_net_manager_driver.la \
-    -dlpreopen libglobus_net_manager_null.la $(LDADD) $(LIBLTDL)
+    -dlopen ../xio_driver/libglobus_xio_net_manager_driver.la \
+    -dlopen libglobus_net_manager_null.la $(LDADD) $(LIBLTDL)
 
 if ENABLE_PYTHON
 check_PROGRAMS += python_test

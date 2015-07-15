@@ -1,3 +1,9 @@
+globus-net-manager (0.12-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix linkage on Mac with libtool 2.4.6
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Jul 2015 20:02:19 -0400
+
 globus-net-manager (0.11-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix memory leaks, NULL pointer derefs, and dead assignments
