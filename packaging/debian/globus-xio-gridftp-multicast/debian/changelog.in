@@ -1,3 +1,11 @@
+globus-xio-gridftp-multicast (1.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Remove dead code
+  * Fix uninitialized variables
+  * Fix string parsing error
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Jul 2015 20:08:07 -0400
+
 globus-xio-gridftp-multicast (1.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

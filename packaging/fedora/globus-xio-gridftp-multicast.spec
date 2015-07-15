@@ -1,13 +1,13 @@
 Name:		globus-xio-gridftp-multicast
 %global _name %(tr - _ <<< %{name})
-Version:	1.5
+Version:	1.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Multicast Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio_gridftp_multicast-1.5.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -97,6 +97,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Jul 14 2015 Globus Toolkit <support@globus.org> - 1.6-1
+- Remove dead code
+- Fix uninitialized variables
+- Fix string parsing error
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 1.5-1
 - Merge fixes from ellert-globus_6_branch
 

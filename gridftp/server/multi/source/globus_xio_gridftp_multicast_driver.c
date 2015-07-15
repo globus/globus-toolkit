@@ -302,10 +302,10 @@ xio_l_gmc_make_ftp_error_list(
         end_str = strstr(start_str, "\n");
         if(end_str == NULL)
         {
-            end_str = strstr(start_str, "\0");
+            end_str = start_str + strlen(start_str);
         }
         len = end_str - start_str;
-        end_str = '\0';
+        *end_str = '\0';
 
         rc = globus_url_parse(start_str, &url_info);
         if(rc != GLOBUS_URL_SUCCESS)
@@ -407,68 +407,6 @@ xio_l_gmc_get_error(
         NULL,
         "%s%s",
         GMC_ERROR_TOKEN,
-        err_str);
-
-    return globus_error_put(err_obj);
-}
-
-static
-globus_result_t
-xio_l_gmc_error_strings(
-    xio_l_gridftp_multicast_handle_t *  handle)
-{
-    char *                              new_err;
-    char *                              tmp_str;
-    char *                              err_str;
-    int                                 i;
-    int                                 err_count = 0;
-    globus_object_t *                   err_obj;
-
-
-    err_str = strdup("");
-    for(i = 0; i < handle->ftps_total; i++)
-    {
-        if(handle->ftp_handles[i].result != GLOBUS_SUCCESS)
-        {
-            tmp_str = globus_error_print_friendly(
-                globus_error_peek(handle->ftp_handles[i].result));
-
-            new_err = globus_common_create_string("%s\n%s",
-                err_str, tmp_str);
-
-            globus_free(tmp_str);
-            globus_free(err_str);
-            err_str = tmp_str;
-
-            err_count++;
-        }
-    }
-
-    if(handle->result != GLOBUS_SUCCESS)
-    {
-        tmp_str = globus_error_print_friendly(
-            globus_error_peek(handle->result));
-
-        new_err = globus_common_create_string("%s\n%s",
-            err_str, tmp_str);
-
-        globus_free(tmp_str);
-        globus_free(err_str);
-        err_str = tmp_str;
-
-        err_count++;
-    }
-
-    /* call this when there are no errors in the close case */
-    if(err_count == 0)
-    {
-        return GLOBUS_SUCCESS;
-    }
-
-    err_obj = globus_error_construct_string(
-        NULL,
-        NULL,
-        "%s",
         err_str);
 
     return globus_error_put(err_obj);
@@ -783,7 +721,7 @@ xio_l_gridftp_multicast_open(
     void *                              driver_attr,
     globus_xio_operation_t              op)
 {
-    int                                 error_cast_count;
+    int                                 error_cast_count = 0;
     int                                 each_cast_count;
     int                                 total_url_count;
     int                                 cast_count;
@@ -905,7 +843,7 @@ xio_l_gridftp_multicast_open(
                     goto error_forward_setup;
                 }
 
-                /* keep a count of successfull ones for clean up */
+                /* keep a count of successful ones for clean up */
                 error_cast_count++;
                 handle->op_count++;
                 handle->ftps++;
