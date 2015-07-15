@@ -14,14 +14,18 @@ if (exists $ENV{VALGRIND})
     }
 }
 
+my $GRIDMAP;
+my $dn = '/DC=org/DC=doegrids/OU=People/UserID=328453245/EMAIL=john@doe.com/EmailAddress=john@doe.com';
+my $local = 'jdoe';
+
 if ($ENV{TEST_GRIDMAP_DIR})
 {
-    $ENV{GRIDMAP} = "$ENV{TEST_GRIDMAP_DIR}/grid-mapfile";
+    $GRIDMAP = "$ENV{TEST_GRIDMAP_DIR}/grid-mapfile";
 }
 else
 {
-    $ENV{GRIDMAP} = "grid-mapfile";
+    $GRIDMAP = "grid-mapfile";
 }
 
-system("$valgrind $test_prog");
+system("$valgrind $test_prog -g \"$GRIDMAP\" -d \"$dn\" -l \"$local\"");
 exit($? >> 8)

@@ -1,6 +1,6 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	10.14
+Version:	10.15
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
@@ -160,6 +160,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 15 2015 Globus Toolkit <support@globus.org> - 10.15-1
+- Fix gridmap parsing error
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 10.14-1
 - fix uninitialized variable
 

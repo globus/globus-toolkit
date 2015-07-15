@@ -2482,6 +2482,7 @@ globus_l_gss_assist_read_line(
     do
     {
         char * tmp;
+        int this_read = -1;
 
         tmp = realloc(buffer, buffer_size + BUFSIZ);
         if (!tmp)
@@ -2500,7 +2501,20 @@ globus_l_gss_assist_read_line(
         buffer = tmp;
         buffer_size += BUFSIZ;
 
-        if (fgets(buffer + line_len, buffer_size - line_len, stream) == NULL)
+        while ((line_len+1) < buffer_size && (this_read = getc(stream)) != -1)
+        {
+            buffer[line_len++] = this_read;
+            buffer[line_len] = '\0';
+            if (buffer[line_len-1] == '\n')
+            {
+                break;
+            }
+        }
+        if ((line_len+1) == buffer_size)
+        {
+            continue;
+        }
+        if (this_read == -1)
         {
             if (! feof(stream))
             {
@@ -2522,7 +2536,6 @@ globus_l_gss_assist_read_line(
             }
             goto fail;
         }
-        line_len = strlen(buffer);
     } while (buffer[line_len-1] != '\n');
 fail:
     *line = buffer;
