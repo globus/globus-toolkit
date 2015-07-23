@@ -842,35 +842,14 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
    } else {
        char *fqhn, *buf;
        if (new_server_identity_check_behavior_needed()) {
-           globus_sockaddr_t sockaddr; 
-           globus_socklen_t socklen = sizeof sockaddr;
            OM_uint32 major_status, minor_status;
-           char ipname[40];
            gss_buffer_desc hostip;
            int rc;
            static gss_OID_desc gss_nt_host_ip_oid =
                 { 10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02" };
            gss_OID_desc * gss_nt_host_ip = &gss_nt_host_ip_oid;
 
-           fqhn = strdup(attrs->pshost);
-           rc = getpeername(attrs->socket_fd,
-                (struct sockaddr *) &sockaddr, &socklen);
-           if (rc != GLOBUS_SUCCESS)
-           {
-                 verror_put_string("Error getting name of remote party: %s\n",
-                                   strerror(errno));
-                 goto error;
-           }
-           rc = getnameinfo((struct sockaddr *) &sockaddr, socklen, ipname, sizeof ipname, 
-                NULL, 0, NI_NUMERICHOST);
-           if (rc != GLOBUS_SUCCESS)
-           {
-                 verror_put_string("Error getting name of remote party: %s\n",
-                                   strerror(errno));
-                 goto error;
-           }
-           hostip.value = globus_common_create_string(
-                "%s/%s", attrs->pshost, ipname);
+           hostip.value = strdup(attrs->pshost);
            if (hostip.value == NULL)
            {
                  verror_put_string("Error getting name of remote party: %s\n",
@@ -883,6 +862,36 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
                 &hostip,
                 gss_nt_host_ip,
                 &accepted_peer_names[0]);
+           free(hostip.value);
+           if (GSS_ERROR(major_status))
+           {
+               OM_uint32                msg_context = 0;
+               OM_uint32                local_major_status, local_minor_status;
+               gss_buffer_desc          status_string = {0};
+
+               local_major_status = gss_display_status(
+                    &local_minor_status,
+                    minor_status,
+                    GSS_C_MECH_CODE,
+                    GSS_C_NO_OID,
+                    &msg_context,
+                    &status_string);
+
+               if (!GSS_ERROR(local_major_status))
+               {
+                   verror_put_string("%.*s",
+                        (int) status_string.length, status_string.value);
+                   gss_release_buffer(&local_minor_status, &status_string);
+               }
+               else
+               {
+                   verror_put_string(
+                        "Error getting name of remote party: GSSAPI ERROR %d\n",
+                        (int) major_status);
+               }
+
+               goto error;
+           }
        } else { /* old way */
            gss_buffer_desc name_buf;
            const char *services[] = { "myproxy", "host" };
@@ -2410,7 +2419,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	    if (len == -1) goto error;
 	    
         curr->size = b64_decode(buf, &curr->contents);
-        if (curr->size < 0) {
+        if (curr->size == (size_t) -1) {
             verror_put_string("b64 decode failed!");
             goto error;
 	    }

@@ -1,7 +1,7 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.14
+Version:	6.1.15
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -534,6 +534,9 @@ fi
 %endif
 
 %changelog
+* Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 6.1.15-1
+- GT-616: Myproxy uses resolved IP address when importing names
+
 * Mon Jun 08 2015 Globus Toolkit <support@globus.org> - 6.1.14-1
 - improve rfc2818 name comparison handling
 
