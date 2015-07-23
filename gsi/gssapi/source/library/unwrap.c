@@ -68,8 +68,7 @@ GSS_CALLCONV gss_unwrap(
     OM_uint32                           local_minor_status;
     time_t                              context_goodtill;
     int                                 ssl_error;
-    static char *                       _function_name_ =
-        "gss_unwrap";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
@@ -150,7 +149,6 @@ GSS_CALLCONV gss_unwrap(
 
         /* get data length */
         N2L(input_value, data_buf->length);  
-        input_value += 4;
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             2, (globus_i_gsi_gssapi_debug_fstream,
@@ -359,8 +357,6 @@ GSS_CALLCONV gss_unseal(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
         
-    static char *                       _function_name_ =
-        "gss_unseal";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
   major_status = gss_unwrap(&local_minor_status,

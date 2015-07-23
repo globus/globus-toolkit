@@ -36,6 +36,7 @@ check_SCRIPTS = \
 check_PROGRAMS= \
         compare-name-test \
         duplicate-name-test \
+	error-test \
 	gssapi-anonymous-test \
 	gssapi-delegation-test \
         gssapi-import-context-test \
@@ -55,6 +56,7 @@ check_PROGRAMS= \
 
 TESTS = $(check_SCRIPTS) \
         duplicate-name-test \
+	error-test \
         inquire-names-for-mech-test \
 	gssapi-anonymous-test \
 	gssapi-context-test \

@@ -82,12 +82,6 @@ typedef enum
     GLOBUS_GSI_GSSAPI_ERROR_LAST = 42
 } globus_gsi_gssapi_error_t;
 
-#define GLOBUS_GSI_GSSAPI_ERROR_BASE            100
-
-#define GLOBUS_GSI_GSSAPI_ERROR_MINOR_STATUS(_ERROR_VALUE_) \
-            _ERROR_VALUE_ + GLOBUS_GSI_GSSAPI_ERROR_BASE
-
-
 /**
  * @brief Cred Export/Import Type
  * @ingroup globus_gsi_gssapi_constants

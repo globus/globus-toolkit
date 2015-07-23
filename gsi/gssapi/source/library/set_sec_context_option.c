@@ -70,8 +70,7 @@ GSS_CALLCONV gss_set_sec_context_option(
     OM_uint32                           local_minor_status;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     int                                 index;
-    static char *                       _function_name_ =
-        "gss_set_sec_context_option";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     if(minor_status == NULL)
@@ -145,7 +144,7 @@ GSS_CALLCONV gss_set_sec_context_option(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT,
             (_GGSL("The context has already been initialized!  %s should be "
-             "called on a context before initialization"), _function_name_));
+             "called on a context before initialization"), __func__));
         major_status = GSS_S_FAILURE;
         goto exit;
     }

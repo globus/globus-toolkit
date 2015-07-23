@@ -73,8 +73,6 @@ GSS_CALLCONV gss_inquire_cred(
     gss_cred_id_desc *                  cred_handle =
         (gss_cred_id_desc *)cred_handle_P;
 
-    static char *                       _function_name_ =
-        "gss_inquire_cred";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;

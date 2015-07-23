@@ -78,9 +78,6 @@ globus_i_gsi_gss_copy_name_to_name(
     gss_name_desc *                     output_name;
     X509_NAME *                         x509n = NULL;
 
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_copy_name_to_name";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     output_name = calloc(1, sizeof(gss_name_desc));
@@ -237,9 +234,6 @@ globus_i_gsi_gss_create_and_fill_context(
     int                                 cb_index = -1;
     OM_uint32                           local_minor_status;
     char *                              certdir = NULL;
-
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_create_and_fill_context";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -730,8 +724,6 @@ globus_i_gsi_gss_put_token(
 {
     BIO *                               read_bio;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_put_token";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -823,9 +815,6 @@ globus_i_gsi_gss_get_token(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     BIO *                               write_bio;
 
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_get_token";
-    
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
@@ -928,9 +917,6 @@ globus_i_gsi_gss_handshake(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     int rc;
     
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_handshake";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     ERR_clear_error();
@@ -1107,8 +1093,6 @@ globus_i_gsi_gss_retrieve_peer(
     X509 *                              peer_cert = NULL;
     X509 *                              identity_cert = NULL;
     STACK_OF(X509) *                    peer_cert_chain = NULL;
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_retrieve_peer";
     
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
@@ -1237,9 +1221,6 @@ globus_i_gsi_gss_create_anonymous_cred(
     gss_buffer_desc                     name_buffer;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
 
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_create_anonymous_cred";
-    
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
@@ -1329,8 +1310,6 @@ globus_i_gsi_gss_cred_read_bio(
     OM_uint32                           local_minor_status;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     globus_result_t                     local_result;
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_cred_read_bio";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -1395,8 +1374,6 @@ globus_i_gsi_gss_cred_read(
     globus_gsi_cred_handle_t            local_cred_handle;
     OM_uint32                           local_minor_status;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_cred_read";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -1479,9 +1456,6 @@ globus_i_gsi_gss_create_cred(
     STACK_OF(X509) *                    cert_chain = NULL;
     globus_bool_t                       free_identity_cert = GLOBUS_FALSE;
     
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_create_cred";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     *output_cred_handle = NULL;
@@ -1504,7 +1478,7 @@ globus_i_gsi_gss_create_cred(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL,
             (_GGSL("NULL credential handle passed to function: %s"), 
-             _function_name_));
+             __func__));
         goto error_exit;
     }
 
@@ -1633,8 +1607,6 @@ globus_i_gsi_gss_SSL_write_bio(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     SSL *                               ssl_handle;
     unsigned char                       intbuffer[4];
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_SSL_write_bio";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -1753,8 +1725,6 @@ globus_i_gsi_gss_SSL_read_bio(
     int                                 len = 0;
     int                                 rc;
     int                                 ssl_result;
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_SSL_read_bio";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -2067,9 +2037,6 @@ globus_i_gsi_gssapi_init_ssl_context(
     gss_cred_id_desc *                  cred_handle;
     char *                              ca_cert_dir = NULL;
 
-    static char *                       _function_name_ =
-        "globus_i_gsi_gssapi_init_ssl_context";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     cred_handle = (gss_cred_id_desc *) credential;
@@ -2081,7 +2048,7 @@ globus_i_gsi_gssapi_init_ssl_context(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CREDENTIAL,
             (_GGSL("Null credential handle passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -2367,8 +2334,7 @@ globus_i_gsi_gss_get_context_goodtill(
     time_t                              local_cred_goodtill;
     globus_result_t                     local_result;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_get_context_goodtill";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *goodtill = 0;
@@ -2438,8 +2404,6 @@ int globus_i_gsi_gss_verify_extensions_callback(
     globus_result_t                     local_result;
     gss_OID_desc                        oid;
 
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_verify_extensions_callback";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     local_result = globus_gsi_callback_get_extension_oids(
@@ -2491,7 +2455,6 @@ globus_i_gsi_gssapi_get_hostname(
     unsigned char *                     data;
     unsigned char *                     p;
     X509_NAME_ENTRY *                   name_entry = NULL;
-    static const char * _function_name_ = "globus_i_gsi_gssapi_get_hostname";
 
     name->service_name = name->host_name = NULL;
     *minor_status = GLOBUS_SUCCESS;

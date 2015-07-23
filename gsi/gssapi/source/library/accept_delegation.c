@@ -101,8 +101,6 @@ GSS_CALLCONV gss_accept_delegation(
     globus_gsi_cred_handle_t            delegated_cred = NULL;
     char                                dbuf[1];
 
-    static char *                       _function_name_ =
-        "gss_accept_delegation";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     /* parameter checking goes here */

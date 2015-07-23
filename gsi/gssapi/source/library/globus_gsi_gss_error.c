@@ -89,9 +89,6 @@ globus_i_gsi_gssapi_openssl_error_result(
     globus_object_t *                   error_object;
     globus_result_t                     result;
 
-    static char *                       _function_name_ =
-        "globus_i_gsi_gssapi_openssl_error_result";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     error_object =
@@ -129,8 +126,6 @@ globus_i_gsi_gssapi_error_result(
     globus_object_t *                   error_object;
     globus_result_t                     result;
 
-    static char *                       _function_name_ =
-        "globus_i_gsi_gssapi_error_result";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -138,7 +133,7 @@ globus_i_gsi_gssapi_error_result(
         globus_error_construct_error(
             GLOBUS_GSI_GSSAPI_MODULE,
             NULL,
-            GLOBUS_GSI_GSSAPI_ERROR_MINOR_STATUS(minor_status),
+            minor_status,
             filename,
             function_name,
             line_number, 
@@ -171,9 +166,6 @@ globus_i_gsi_gssapi_error_chain_result(
     globus_result_t                     result;
     globus_object_t *                   error_object;
     
-    static char *                       _function_name_ =
-        "globus_i_gsi_gssapi_error_chain_result";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     error_object = 
@@ -212,8 +204,7 @@ globus_i_gsi_gssapi_error_join_chains_result(
     globus_object_t *                   outer_error_obj = NULL;
     globus_object_t *                   inner_error_obj = NULL;
     globus_object_t *                   temp_error_obj = NULL;
-    static char *                       _function_name_ =
-        "globus_i_gsi_gssapi_error_join_chains";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     outer_error_obj = globus_error_get(outer_error);
@@ -226,9 +217,15 @@ globus_i_gsi_gssapi_error_join_chains_result(
             temp_error_obj = globus_error_get_cause(temp_error_obj);
         }
 
-        temp_error_obj = globus_error_initialize_base(temp_error_obj,
-                                                      globus_error_get_source(temp_error_obj),
-                                                      inner_error_obj);
+        /*
+         * Ignore failure of assigning inner_error as the root cause of
+         * outer_error.  This can only fail if the outer_error is not a dynamic
+         * error object
+         */
+        (void) globus_error_initialize_base(
+                temp_error_obj,
+                globus_error_get_source(temp_error_obj),
+                inner_error_obj);
         result_error_obj = outer_error_obj;
     }
     else if(inner_error_obj)
@@ -243,7 +240,7 @@ globus_i_gsi_gssapi_error_join_chains_result(
                 NULL,
                 GLOBUS_GSI_GSSAPI_ERROR_CREATING_ERROR_OBJ,
                 __FILE__,
-                _function_name_,
+                __func__,
                 __LINE__, 
                 "Couldn't join inner and outer error chains");
     }

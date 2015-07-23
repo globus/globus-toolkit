@@ -45,8 +45,6 @@ GSS_CALLCONV gss_export_name(
     char *                              oneline_name = NULL;
     char *                              ename;
     int                                 i, oneline_name_len;
-    static char *                       _function_name_ = 
-        "gss_export_name";
     
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -57,7 +55,7 @@ GSS_CALLCONV gss_export_name(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("The input name passed to: %s is not valid", _function_name_));
+            ("The input name passed to: %s is not valid", __func__));
         goto exit;
     }
 

@@ -46,11 +46,7 @@ GSS_CALLCONV gss_release_cred(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_cred_id_desc**                  cred_handle =
         (gss_cred_id_desc**) cred_handle_P;
-    OM_uint32                           local_minor_status = GSS_S_COMPLETE;
-    OM_uint32                           local_major_status = GSS_S_COMPLETE;
 
-    static char *                       _function_name_ =
-        "gss_release_cred";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
@@ -62,12 +58,22 @@ GSS_CALLCONV gss_release_cred(
 
     if ((*cred_handle)->globusid != NULL)
     {
-        local_major_status = gss_release_name(
-            &local_minor_status,
+        major_status = gss_release_name(
+            minor_status,
             (void*) &((*cred_handle)->globusid));
+
+        if (major_status != GSS_S_COMPLETE)
+        {
+            goto exit;
+        }
     }
 
-    globus_gsi_cred_handle_destroy((*cred_handle)->cred_handle);
+    *minor_status = globus_gsi_cred_handle_destroy((*cred_handle)->cred_handle);
+    if (*minor_status != GLOBUS_SUCCESS)
+    {
+        major_status = GSS_S_FAILURE;
+        goto exit;
+    }
 
     if((*cred_handle)->ssl_context)
     {

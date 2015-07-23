@@ -57,9 +57,6 @@ GSS_CALLCONV gss_init_sec_context(
     char                                cbuf[1];
     globus_gsi_cert_utils_cert_type_t   cert_type;
 
-    static char *                       _function_name_ = 
-        "gss_init_sec_context";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;

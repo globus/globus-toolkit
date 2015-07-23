@@ -59,8 +59,7 @@ GSS_CALLCONV gss_inquire_context(
     gss_name_t *			peer_name;
     gss_ctx_id_desc *                   context = 
         (gss_ctx_id_desc *)context_handle_P;
-    static char *                       _function_name_ =
-        "gss_inquire_context";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     if (context == GSS_C_NO_CONTEXT)
@@ -214,8 +213,7 @@ GSS_CALLCONV gss_context_time(
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
-    static char *                       _function_name_ =
-        "gss_context_time";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     major_status = gss_inquire_context(&local_minor_status,

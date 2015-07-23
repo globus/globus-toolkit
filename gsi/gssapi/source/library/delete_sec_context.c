@@ -53,8 +53,6 @@ GSS_CALLCONV gss_delete_sec_context(
     OM_uint32                           local_major_status;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     globus_result_t                     local_result;
-    static char *                       _function_name_ =
-        "gss_delete_sec_context";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 

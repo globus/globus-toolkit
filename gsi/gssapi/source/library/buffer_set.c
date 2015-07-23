@@ -63,8 +63,6 @@ GSS_CALLCONV gss_create_empty_buffer_set(
     gss_buffer_set_t *                  buffer_set)
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    static char *                       _function_name_ =
-        "gss_create_empty_buffer_set";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -76,7 +74,7 @@ GSS_CALLCONV gss_create_empty_buffer_set(
             minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             (_GGSL("NULL parameters passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -134,8 +132,6 @@ GSS_CALLCONV gss_add_buffer_set_member(
     gss_buffer_t                        new_elements;
     gss_buffer_set_t                    set;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    static char *                       _function_name_ =
-        "gss_add_buffer_set_member";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
         
@@ -227,8 +223,6 @@ GSS_CALLCONV gss_release_buffer_set(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
     int                                 index;
-    static char *                       _function_name_ =
-        "gss_release_buffer_set";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
@@ -240,7 +234,7 @@ GSS_CALLCONV gss_release_buffer_set(
             minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             (_GGSL("NULL parameters passed to function: %s"),
-             _function_name_));
+             __func__));
         major_status = GSS_S_FAILURE;
         goto exit;
     }

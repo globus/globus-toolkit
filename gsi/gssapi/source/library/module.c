@@ -28,6 +28,13 @@
 
 #include "gsi.conf.h"
 
+#ifdef WIN32
+#define strcasecmp stricmp
+#define strncasecmp strnicmp
+#else
+#include <strings.h>
+#endif
+
 static int globus_l_gsi_gssapi_activate(void);
 static int globus_l_gsi_gssapi_deactivate(void);
 
@@ -305,11 +312,8 @@ int
 globus_l_gsi_gssapi_activate(void)
 {
     int                                 rc = GLOBUS_SUCCESS;
-    globus_result_t                     result = GLOBUS_SUCCESS;
     char *                              tmp_string;
     char *                              gsi_conf_data;
-    static char *                       _function_name_ =
-        "globus_l_gsi_gssapi_activate";
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -479,9 +483,6 @@ static
 int
 globus_l_gsi_gssapi_deactivate(void)
 {
-    static char *                       _function_name_ =
-        "globus_l_gsi_gssapi_deactivate";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     globus_module_deactivate(GLOBUS_GSI_CALLBACK_MODULE);

@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.19
+Version:	11.20
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -153,6 +153,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 11.20-1
+- GT-614: GLOBUS_GSS_C_NT_HOST_IP doesn't allow host-only imports and comparisons
+
 * Mon Jun 08 2015 Globus Toolkit <support@globus.org> - 11.19-1
 - export config file values into environment if not set already
 
