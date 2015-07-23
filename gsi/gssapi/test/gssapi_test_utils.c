@@ -635,12 +635,14 @@ accept_sec_context(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           minor_status;
     OM_uint32                           minor_status2;
+    OM_uint32                           message_context = 0;
     OM_uint32                           ret_flags = 0;
     int                                 token_status = 0;
     gss_name_t                          client_name = GSS_C_NO_NAME;
     gss_buffer_desc                     input_token  = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc                     output_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc                     name_buffer;
+    gss_buffer_desc                     status_string = {0};
     gss_OID                             mech_type = GSS_C_NO_OID;
     OM_uint32                           time_ret;
     char *                              error_str;
@@ -726,6 +728,21 @@ accept_sec_context(
                                        GSS_C_NO_BUFFER);
                 break;
             }
+        }
+        if (gss_display_status(&minor_status2,
+                               major_status,
+                               GSS_C_MECH_CODE,
+                               GSS_C_NO_OID,
+                               &message_context,
+                               &status_string) == GSS_S_COMPLETE)
+        {
+            if (status_string.length)
+            {
+                printf("\nERROR: %.*s\n",
+                        (int) status_string.length,
+                        (char *) status_string.value);
+            }
+            gss_release_buffer(&minor_status2, &status_string);
         }
     }
     while(major_status & GSS_S_CONTINUE_NEEDED);

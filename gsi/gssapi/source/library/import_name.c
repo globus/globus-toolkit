@@ -149,13 +149,18 @@ GSS_CALLCONV gss_import_name(
     }
     else if (g_OID_equal(GSS_C_NT_HOSTBASED_SERVICE, input_name_type))
     {
-        name_buffer = globus_libc_strdup(input_name_buffer->value);
+        name_buffer = malloc(input_name_buffer->length+1);
         if (name_buffer == NULL)
         {
             GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
             major_status = GSS_S_FAILURE;
             goto release_name_out;
         }
+
+        memcpy(name_buffer,
+               input_name_buffer->value,
+               input_name_buffer->length);
+        name_buffer[input_name_buffer->length] = '\0';
 
         index = strchr(name_buffer, '@');
         if (index)
@@ -177,6 +182,13 @@ GSS_CALLCONV gss_import_name(
             output_name->host_name = name_buffer;
             name_buffer = NULL;
             output_name->service_name = globus_libc_strdup("host");
+            if (output_name->service_name == NULL)
+            {
+                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                major_status = GSS_S_FAILURE;
+
+                goto release_name_out;
+            }
         }
         name_buffer = globus_common_create_string(
                 "/CN=%s%s%s",
@@ -275,7 +287,7 @@ GSS_CALLCONV gss_import_name(
     else if (g_OID_equal(GSS_C_NO_OID, input_name_type) ||
              g_OID_equal(GSS_C_NT_USER_NAME, input_name_type))
     {
-        output_name->user_name = globus_libc_strdup(input_name_buffer->value);
+        output_name->user_name = malloc(input_name_buffer->length + 1);
         if (output_name->user_name == NULL)
         {
             GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
@@ -283,6 +295,11 @@ GSS_CALLCONV gss_import_name(
 
             goto release_name_out;
         }
+        memcpy(output_name->user_name,
+               input_name_buffer->value, 
+               input_name_buffer->length);
+        output_name->user_name[input_name_buffer->length] = '\0';
+
         local_result = globus_gsi_cert_utils_get_x509_name(
                 output_name->user_name,
                 strlen(output_name->user_name),
@@ -314,7 +331,7 @@ GSS_CALLCONV gss_import_name(
     }
     else if (g_OID_equal(GLOBUS_GSS_C_NT_HOST_IP, input_name_type))
     {
-        name_buffer = globus_libc_strdup(input_name_buffer->value);
+        name_buffer = malloc(input_name_buffer->length+1);
         if (name_buffer == NULL)
         {
             GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
@@ -322,27 +339,45 @@ GSS_CALLCONV gss_import_name(
 
             goto release_name_out;
         }
+        memcpy(name_buffer,
+               input_name_buffer->value, input_name_buffer->length);
+        name_buffer[input_name_buffer->length] = '\0';
 
         index = strchr(name_buffer, '/');
         if (index)
         {
             *index = '\0';
-            output_name->host_name = name_buffer;
-            name_buffer = NULL;
-            output_name->ip_address = globus_libc_strdup(index+1);
+            if (index == name_buffer)
+            {
+                output_name->host_name = NULL;
+            }
+            else
+            {
+                output_name->host_name = name_buffer;
+                name_buffer = NULL;
+            }
+            if (strlen(index+1) > 0)
+            {
+                output_name->ip_address = globus_libc_strdup(index+1);
+
+                if (output_name->ip_address == NULL)
+                {
+                    GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                    major_status = GSS_S_FAILURE;
+
+                    goto release_name_out;
+                }
+            }
+            else
+            {
+                output_name->ip_address = NULL;
+            }
         }
         else
         {
-            free(name_buffer);
+            output_name->host_name = name_buffer;
             name_buffer = NULL;
-
-            major_status = GSS_S_BAD_NAME;
-
-            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-                    minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
-                    (_GGSL("Bad name")));
-            goto release_name_out;
+            output_name->ip_address = NULL;
         }
         name_buffer = globus_common_create_string(
                 "/CN=%s",
@@ -383,11 +418,24 @@ GSS_CALLCONV gss_import_name(
     }
     else if (g_OID_equal(GLOBUS_GSS_C_NT_X509, input_name_type))
     {
-        X509_NAME * n;
-        X509 * x509_input = input_name_buffer->value;
-        GENERAL_NAMES * subject_alt_name;
-        int idx;
+        X509_NAME                      *n;
+        X509                           *x509_input;
+        GENERAL_NAMES                  *subject_alt_name;
+        int                             idx;
 
+        if (input_name_buffer->length != sizeof(X509))
+        {
+            /* Invalid input */
+            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                    (_GGSL("Invalid parameter")));
+            major_status = GSS_S_FAILURE;
+
+            goto release_name_out;
+        }
+
+        x509_input = input_name_buffer->value;
         /* Extract SubjectName if present */
         if ((n = X509_get_subject_name(x509_input)) != NULL)
         {

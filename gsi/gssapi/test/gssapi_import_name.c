@@ -302,6 +302,168 @@ import_host_ip(void)
 }
 
 int
+import_host_ip_no_ip(void)
+{
+    char *                              subject;
+    gss_name_t                          gss_name;
+    gss_buffer_desc                     name_tok;
+    gss_OID                             name_type;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+
+    subject = "cvs.globus.org";
+
+    name_tok.value = subject;
+    name_tok.length = strlen(subject) + 1;
+    name_type = GLOBUS_GSS_C_NT_HOST_IP;
+    
+    major_status = gss_import_name(&minor_status,
+                                   &name_tok,
+                                   name_type,
+                                   &gss_name);
+
+    if(major_status != GSS_S_COMPLETE)
+    {
+        globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
+
+        return 1;
+    }
+
+    major_status = gss_display_name(&minor_status,
+                                    gss_name,
+                                    &name_tok,
+                                    NULL);
+    
+    if(major_status != GSS_S_COMPLETE)
+    {
+        globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
+
+        return 2;
+    }
+
+    if (strcasecmp(name_tok.value, subject) != 0)
+    {
+        fprintf(stderr,
+            "# Expected subject name \"%s\" got \"%s\"\n",
+            subject,
+            (char *) name_tok.value);
+        return 1;
+    }
+    gss_release_buffer(&minor_status, &name_tok);
+    gss_release_name(&minor_status, &gss_name);
+
+    return 0;
+}
+
+int
+import_host_ip_no_host(void)
+{
+    char *                              subject;
+    gss_name_t                          gss_name;
+    gss_buffer_desc                     name_tok;
+    gss_OID                             name_type;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+
+    subject = "/192.168.1.1";
+
+    name_tok.value = subject;
+    name_tok.length = strlen(subject) + 1;
+    name_type = GLOBUS_GSS_C_NT_HOST_IP;
+    
+    major_status = gss_import_name(&minor_status,
+                                   &name_tok,
+                                   name_type,
+                                   &gss_name);
+
+    if(major_status != GSS_S_COMPLETE)
+    {
+        globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
+
+        return 1;
+    }
+
+    major_status = gss_display_name(&minor_status,
+                                    gss_name,
+                                    &name_tok,
+                                    NULL);
+    
+    if(major_status != GSS_S_COMPLETE)
+    {
+        globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
+
+        return 2;
+    }
+
+    if (strcasecmp(name_tok.value, subject) != 0)
+    {
+        fprintf(stderr,
+            "# Expected subject name \"%s\" got \"%s\"\n",
+            subject,
+            (char *) name_tok.value);
+        return 1;
+    }
+    gss_release_buffer(&minor_status, &name_tok);
+    gss_release_name(&minor_status, &gss_name);
+
+    return 0;
+}
+
+int
+import_host_ip_nonterminated(void)
+{
+    char *                              subject;
+    gss_name_t                          gss_name;
+    gss_buffer_desc                     name_tok;
+    gss_OID                             name_type;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+
+    subject = "cvs.globus.org";
+
+    name_tok.value = "cvs.globus.org/192.168.1.1";
+    name_tok.length = strlen(subject);
+    name_type = GLOBUS_GSS_C_NT_HOST_IP;
+    
+    major_status = gss_import_name(&minor_status,
+                                   &name_tok,
+                                   name_type,
+                                   &gss_name);
+
+    if(major_status != GSS_S_COMPLETE)
+    {
+        globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
+
+        return 1;
+    }
+
+    major_status = gss_display_name(&minor_status,
+                                    gss_name,
+                                    &name_tok,
+                                    NULL);
+    
+    if(major_status != GSS_S_COMPLETE)
+    {
+        globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
+
+        return 2;
+    }
+
+    if (strcasecmp(name_tok.value, subject) != 0)
+    {
+        fprintf(stderr,
+            "# Expected subject name \"%s\" got \"%s\"\n",
+            subject,
+            (char *) name_tok.value);
+        return 1;
+    }
+    gss_release_buffer(&minor_status, &name_tok);
+    gss_release_name(&minor_status, &gss_name);
+
+    return 0;
+}
+
+int
 import_x509(void)
 {
     char *                              subject;
@@ -403,6 +565,110 @@ import_x509(void)
     return 0;
 }
 
+int
+import_x509_wrong_size(void)
+{
+    char *                              subject;
+    globus_gsi_cred_handle_t            cred_handle;
+    globus_result_t                     result;
+    X509 *                              x509;
+    gss_name_t                          gss_name;
+    gss_buffer_desc                     name_tok;
+    gss_OID                             name_type;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    int                                 i;
+    const char *                        test_cert_dir;
+    char *                              test_certs[] =
+    {
+        "star.example.org.pem"              /* Wildcard dNSName */
+    };
+
+    test_cert_dir = getenv("TEST_CERT_DIR");
+    if (test_cert_dir == NULL)
+    {
+        test_cert_dir = ".";
+    }
+
+    for (i = 0; i < SIZEOF_ARRAY(test_certs); i++)
+    {
+        char *                          test_cert;
+
+        test_cert = globus_common_create_string("%s/%s",
+                test_cert_dir, test_certs[i]);
+        if (test_cert == NULL)
+        {
+            fprintf(stderr, "# malloc failed\n");
+            return 1;
+        }
+        result = globus_gsi_cred_handle_init(&cred_handle, NULL);
+        if (result != GLOBUS_SUCCESS)
+        {
+            globus_gsi_gssapi_test_print_result(stderr, result);
+            free(test_cert);
+            return 2;
+        }
+
+        result = globus_gsi_cred_read_cert(cred_handle, test_cert);
+        free(test_cert);
+        if (result != GLOBUS_SUCCESS)
+        {
+            globus_gsi_gssapi_test_print_result(stderr, result);
+            return 3;
+        }
+        result = globus_gsi_cred_get_cert(cred_handle, &x509);
+        if (result != GLOBUS_SUCCESS)
+        {
+            globus_gsi_gssapi_test_print_result(stderr, result);
+            return 4;
+        }
+
+        result = globus_gsi_cred_get_subject_name(cred_handle, &subject);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gsi_gssapi_test_print_result(stderr, result);
+
+            return 5;
+        }
+
+        name_tok.value = x509;
+        name_tok.length = sizeof(*x509) - 1;
+        name_type = GLOBUS_GSS_C_NT_X509;
+        
+        major_status = gss_import_name(&minor_status,
+                                       &name_tok,
+                                       name_type,
+                                       &gss_name);
+
+        if (!GSS_ERROR(major_status))
+        {
+            fprintf(stderr, "Unexpected import success for short X509\n");
+            return 6;
+        }
+
+        name_tok.length = sizeof(*x509) + 1;
+        name_type = GLOBUS_GSS_C_NT_X509;
+        
+        major_status = gss_import_name(&minor_status,
+                                       &name_tok,
+                                       name_type,
+                                       &gss_name);
+
+        if (!GSS_ERROR(major_status))
+        {
+            fprintf(stderr, "Unexpected import success for long X509\n");
+            return 7;
+        }
+
+        X509_free(x509);
+        free(subject);
+        globus_gsi_cred_handle_destroy(cred_handle);
+    }
+
+    return 0;
+}
+
+
 int main()
 {
     int                                 i, rc = 0, failed = 0;
@@ -420,7 +686,11 @@ int main()
         TEST_CASE(import_anonymous),
         TEST_CASE(import_hostbase_service),
         TEST_CASE(import_host_ip),
-        TEST_CASE(import_x509)
+        TEST_CASE(import_host_ip_no_ip),
+        TEST_CASE(import_host_ip_no_host),
+        TEST_CASE(import_host_ip_nonterminated),
+        TEST_CASE(import_x509),
+        TEST_CASE(import_x509_wrong_size),
     };
 
     rc = globus_module_activate_array(modules, &failed_module);

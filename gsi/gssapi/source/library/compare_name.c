@@ -503,16 +503,12 @@ gss_l_compare_x509_to_x509(
             gn1 = sk_GENERAL_NAME_value(name1->subjectAltNames, i1);
             if (gn1->type == GEN_IPADD)
             {
-                ns1 = (char *) ASN1_STRING_data(gn1->d.iPAddress);
-
                 for (i2 = 0; i2 < name_count2; i2++)
                 {
                     gn2 = sk_GENERAL_NAME_value(name2->subjectAltNames, i2);
 
                     if (gn2->type == GEN_IPADD)
                     {
-                        ns2 = (char *) ASN1_STRING_data(gn2->d.iPAddress);
-
                         if (ASN1_OCTET_STRING_cmp(
                                 gn1->d.iPAddress, gn2->d.iPAddress) == 0)
                         {
@@ -748,7 +744,8 @@ gss_l_compare_x509_to_host_ip(
                     return major_status;
                 }
 
-                if (strcmp(ns1, name2->ip_address) == 0)
+                if (name2->ip_address != NULL &&
+                    strcmp(ns1, name2->ip_address) == 0)
                 {
                     *name_equal = GSS_NAMES_EQUAL;
                     free(ns1);
@@ -849,7 +846,8 @@ gss_l_compare_default_to_hostbased_service(
         }
         else
         {
-            if (strcasecmp(name2->service_name, "host") != 0)
+            if (name2->service_name &&
+                strcasecmp(name2->service_name, "host") != 0)
             {
                 *name_equal = GSS_NAMES_NOT_EQUAL;
 
@@ -1019,7 +1017,9 @@ gss_l_compare_host_ip_to_host_ip(
     {
         goto out;
     }
-    else if (strcmp(name1->ip_address, name2->ip_address) == 0)
+    else if (name1->ip_address != NULL &&
+             name2->ip_address != NULL &&
+             strcmp(name1->ip_address, name2->ip_address) == 0)
     {
         *name_equal = GSS_NAMES_EQUAL;
     }
@@ -1073,6 +1073,11 @@ gss_l_compare_hostnames_with_wildcards(
         "gss_l_compare_hostnames_with_wildcards";
 
     major_status = GSS_S_COMPLETE;
+
+     if (host1 == NULL || host2 == NULL)
+     {
+         goto nomatch;
+     }
 
     /* Normalize to lowercase */
     host_cpy1 = malloc(strlen(host1)+1);
