@@ -1,3 +1,9 @@
+globus-xio-udt-driver (1.18-1+gt6.@distro@) @distro@; urgency=low
+
+  * don't attempt ice negotiation over ipv6 while udt driver does not support ipv6
+
+ -- Globus Toolkit <support@globus.org>  Thu, 23 Jul 2015 13:30:27 -0500
+
 globus-xio-udt-driver (1.17-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix error checking and automake warning
