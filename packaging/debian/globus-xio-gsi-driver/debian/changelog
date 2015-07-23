@@ -1,3 +1,9 @@
+globus-xio-gsi-driver (2.6-1) unstable; urgency=low
+
+  * GT-615: GSI XIO driver uses resolved IP address when importing names
+
+ -- Globus Toolkit <support@globus.org>  Thu, 23 Jul 2015 12:18:34 -0400
+
 globus-xio-gsi-driver (2.5-2) unstable; urgency=low
 
   * Fix latex dependencies

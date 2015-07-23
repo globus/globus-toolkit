@@ -12,8 +12,8 @@
 
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.5
-Release:	2%{?dist}
+Version:	2.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
 Group:		System Environment/Libraries
@@ -194,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 2.6-1
+- GT-615: GSI XIO driver uses resolved IP address when importing names
+
 * Fri May 29 2015 Globus Toolkit <support@globus.org> - 2.5-2
 - Fix latex dependency on fedora > 18
 

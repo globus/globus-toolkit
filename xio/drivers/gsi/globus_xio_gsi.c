@@ -4044,14 +4044,7 @@ globus_l_xio_gsi_setup_target_name(
 
         if (globus_l_xio_gsi_host_ip_supported)
         {
-            name_buffer.value = globus_common_create_string("%s/%s",
-                    handle->host_name, contact_info.host);
-            if (name_buffer.value == NULL)
-            {
-                result = GlobusXIOErrorMemory("name");
-                globus_xio_contact_destroy(&contact_info);
-                goto error;
-            }
+            name_buffer.value = handle->host_name;
             name_buffer.length = strlen(name_buffer.value);
 
             major_status = gss_import_name(
@@ -4060,7 +4053,6 @@ globus_l_xio_gsi_setup_target_name(
                 GLOBUS_GSS_C_NT_HOST_IP,
                 &handle->attr->target_name);
             globus_xio_contact_destroy(&contact_info);
-            free(name_buffer.value);
             if(major_status != GLOBUS_SUCCESS)
             {
                 result = globus_error_put(
