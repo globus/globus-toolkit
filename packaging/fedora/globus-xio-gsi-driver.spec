@@ -1,6 +1,6 @@
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	3.7
+Version:	3.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
@@ -129,6 +129,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 3.8-1
+- GT-615: GSI XIO driver uses resolved IP address when importing names
+
 * Thu May 28 2015 Globus Toolkit <support@globus.org> - 3.7-1
 - Handle anonymous targets in GSI RFC2818 mode and document stringopts
 
