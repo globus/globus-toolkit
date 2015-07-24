@@ -12768,6 +12768,51 @@ globus_gridftp_server_operation_event(
 }
 
 void
+globus_gridftp_server_update_bytes_recvd(
+    globus_gfs_operation_t              op,
+    globus_off_t                        length)
+{
+    GlobusGFSName(globus_gridftp_server_update_bytes_recvd);
+    GlobusGFSDebugEnter();
+
+    globus_l_gfs_data_alive(op->session_handle);
+
+    globus_mutex_lock(&op->session_handle->mutex);
+    {
+        op->recvd_bytes += length;
+            
+        if(op->data_handle->http_handle)
+        {
+            op->data_handle->http_transferred += length;
+        }
+    }
+    globus_mutex_unlock(&op->session_handle->mutex);
+
+    GlobusGFSDebugExit();
+}
+
+void
+globus_gridftp_server_update_range_recvd(
+    globus_gfs_operation_t              op,
+    globus_off_t                        offset,
+    globus_off_t                        length)
+{
+    GlobusGFSName(globus_gridftp_server_update_range_recvd);
+    GlobusGFSDebugEnter();
+
+    globus_l_gfs_data_alive(op->session_handle);
+
+    globus_mutex_lock(&op->session_handle->mutex);
+    {
+        globus_range_list_insert(
+            op->recvd_ranges, offset + op->transfer_delta, length);
+    }
+    globus_mutex_unlock(&op->session_handle->mutex);
+
+    GlobusGFSDebugExit();
+}
+
+void
 globus_gridftp_server_update_bytes_written(
     globus_gfs_operation_t              op,
     globus_off_t                        offset,

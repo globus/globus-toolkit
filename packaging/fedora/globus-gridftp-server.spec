@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.26
+Version:	8.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -170,6 +170,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 8.0-1
+- GT-517: add update_bytes* api that sets byte counters and range markers seperately
+
 * Fri Jun 05 2015 Globus Toolkit <support@globus.org> - 7.26-1
 - Fix GLOBUS_VERSION detection during configure from installer
 

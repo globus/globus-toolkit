@@ -241,6 +241,11 @@ int ice_get_local_data(struct icedata *ice_data, char *out, size_t outsize) {
         c = (NiceCandidate *)item->data;
         if (outsize < 2)
             return ICE_FAILURE;
+
+        /* only allow ipv4 until udt driver support v6 */
+        if(nice_address_ip_version(&c->addr) != 4)
+            continue;
+
         snprintf(p, outsize, " ");
         outsize--;
         p++;
