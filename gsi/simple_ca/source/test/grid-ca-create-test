@@ -12,7 +12,7 @@ require v5.8.0;
 my $testdir = tempdir(CLEANUP => 1);
 chdir $testdir;
 
-plan tests => 27;
+plan tests => 33;
 
 help_tests(); # 1..4
 create_ca_tests(); # 5..14
@@ -20,6 +20,7 @@ email_test(); # 15..17
 days_test(); # 18..20
 pass_test(); # 21..23
 subject_test(); # 24..27
+bits_test(); # 28-33
 
 sub help_tests
 {
@@ -198,6 +199,48 @@ sub subject_test
         $subject =~ s/^subject= *//;
         chop($subject);
         ok($subject eq $reference_subject, "subject $subject and $reference_subject match");
+    }
+}
+
+sub bits_test
+{
+    my ($infd, $outfd, $errfd, $pid, $rc, $bits);
+    my $reference_bits = '4096';
+    my $bitsdir = "$testdir/bitstest.$reference_bits";
+    $errfd = gensym;
+
+    # Try to create a CA with default 4096 bit key
+    $pid = open3($infd, $outfd, $errfd, "grid-ca-create", "-noint",
+        "-dir", "$bitsdir");
+    ok($pid > 0, "grid-ca-create -noint -dir \$bitsdir");
+
+    SKIP: {
+        skip "Unable to run grid-ca-create", 2 unless ($pid > 0);
+        local $/;
+        close($infd);
+        waitpid($pid, 0);
+        ok($? == 0, "grid-ca-create -noint -bits exits with 0");
+
+        $bits = `openssl x509 -in $bitsdir/cacert.pem -text -noout | grep 'RSA Public Key' | tr -cd 0-9`;
+        ok($bits eq $reference_bits, "Bits $bits matches $reference_bits");
+    }
+
+    $reference_bits = '2048';
+    $bitsdir = "$testdir/bitstest.$reference_bits";
+    # Try to create a CA with 2048 bit key
+    $pid = open3($infd, $outfd, $errfd, "grid-ca-create", "-noint",
+        "-dir", "$bitsdir", "-bits", $reference_bits);
+    ok($pid > 0, "grid-ca-create -noint -dir \$bitsdir -bits $reference_bits");
+
+    SKIP: {
+        skip "Unable to run grid-ca-create", 2 unless ($pid > 0);
+        local $/;
+        close($infd);
+        waitpid($pid, 0);
+        ok($? == 0, "grid-ca-create -noint -bits exits with 0");
+
+        $bits = `openssl x509 -in $bitsdir/cacert.pem -text -noout | grep 'RSA Public Key' | tr -cd 0-9`;
+        ok($bits eq $reference_bits, "Bits $bits matches $reference_bits");
     }
 }
 chdir '/';

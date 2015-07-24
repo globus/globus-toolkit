@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <?asciidoc-toc?>
 <?asciidoc-numbered?>
 <refentry lang="en">
@@ -72,6 +72,16 @@ command when creating the self-signed certificate.</simpara>
 <listitem>
 <simpara>
     Overwite existing CA in the destination directory if one exists.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-bits BITS</emphasis>
+</term>
+<listitem>
+<simpara>
+    Create a CA certificate with a BITS long RSA key [4096]
 </simpara>
 </listitem>
 </varlistentry>

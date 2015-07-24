@@ -21,6 +21,8 @@ if test x"$CYGPATH_W" != x; then
     esac
 fi
 
+bits=4096
+
 ##
 # create_ca_directory:
 # Creates the directory tree needed for a grid CA. The tree contains:
@@ -606,13 +608,13 @@ generate_ca_certificate()
     if [ -n "${verbose}" ]; then
         openssl req ${openssl_options} ${password_option} -config "$(construct_path ${_ca_ssl_conf})" \
             -x509 -days ${CA_CERT_DAYS} \
-            -newkey rsa:1024 -keyout $(construct_path ${CA_KEY_FILE}) \
+            -newkey rsa:${bits} -keyout $(construct_path ${CA_KEY_FILE}) \
             -out $(construct_path ${CA_CERT_FILE}) < ${CA_REQ_INPUT}
         RET=$?
     else
         openssl req ${openssl_options} ${password_option} -config "$(construct_path ${_ca_ssl_conf})" \
             -x509 -days ${CA_CERT_DAYS} \
-            -newkey rsa:1024 -keyout $(construct_path ${CA_KEY_FILE}) \
+            -newkey rsa:${bits} -keyout $(construct_path ${CA_KEY_FILE}) \
             -out $(construct_path ${CA_CERT_FILE}) < ${CA_REQ_INPUT} > openssl_req.log 2>&1
         RET=$?
     fi
@@ -725,6 +727,7 @@ EOF
             requests to ADDRESS [${globus_username}@${globus_hostname}]"
     printhelp "-days DAYS" "Create a CA certificate that lasts for DAYS days
             [$((365 * 5))]"
+    printhelp "-bits BITS" "Create a CA certificate with a BITS long RSA key [4096]"
     printhelp "-pass PASSWORD" "Set the password for the CA's private key
             to PASSWORD.  Since the password is visible to utilities, this
             should only be used where security is not important. [globus]"
@@ -759,6 +762,11 @@ readCommandLine () {
          backward_compatible=1
          shift
          ;;
+     -bits|--bits)
+        shift
+        bits="$1"
+        shift
+        ;;
      -dir|--dir)
          tmp_ca_dir="$2"
          if test -z "${tmp_ca_dir}"; then
