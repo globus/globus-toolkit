@@ -772,7 +772,7 @@ redo:
 	    target->clientinfo_argstr = 
 	        globus_libc_strdup(target->attr->clientinfo_argstr);
 	}
-	else
+	else if (response)
 	{
             globus_i_ftp_client_feature_set(
                 target->features,
@@ -781,6 +781,10 @@ redo:
             response->response_class = GLOBUS_FTP_POSITIVE_COMPLETION_REPLY;
             globus_object_free(error);
             error = NULL;
+        }
+        else
+        {
+	    goto notify_fault;
         }
 
     skip_clientinfo:
@@ -2388,7 +2392,37 @@ redo:
 	}
 	else if(target->attr->allow_ipv6)
 	{
-	    tmpstr = "EPSV";
+            /* if ipv6 is enabled, ensure we connected to an ipv6 addressed
+             * source before using EPSV.  otherwise, if dest connected on a 
+             * v6 interface we won't have a compatible data address to pass 
+             * to the source via eprt/port. */ 
+	    if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER && 
+	        client_handle->source && target == client_handle->dest)
+            {
+                globus_ftp_control_host_port_t *    host_port;
+                host_port = globus_libc_calloc(
+                    1, sizeof(globus_ftp_control_host_port_t));
+    
+                result = globus_ftp_control_client_get_connection_info_ex(
+                    client_handle->source->control_handle,
+                    GLOBUS_NULL, 
+                    host_port);
+                /* v4mapped addresses can return an error, but we will 
+                   correctly use PASV in that case */
+                if(result == GLOBUS_SUCCESS && host_port->hostlen == 16)
+                {
+                    tmpstr = "EPSV";
+                }
+                else
+                {
+                    tmpstr = "PASV";
+                }
+                globus_free(host_port);
+            }
+            else
+            {
+                tmpstr = "EPSV";
+            }
 	}
 	else
 	{
@@ -4980,7 +5014,10 @@ redo:
 		 GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION) ||
 		(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
 		 client_handle->state ==
-		 GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT));
+		 GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT) ||
+		(target->delayed_pasv && client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
+                 client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION));
+	     
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
             
             goto connection_error;

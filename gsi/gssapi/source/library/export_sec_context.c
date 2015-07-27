@@ -25,6 +25,7 @@
 #include "globus_i_gsi_gss_utils.h"
 #include <string.h>
 
+#if (!WIN32) && LINK_WITH_INTERNAL_OPENSSL_API
 /**
  * @brief Export Security Context
  * @ingroup globus_gsi_gssapi
@@ -74,21 +75,10 @@ GSS_CALLCONV gss_export_sec_context(
     int                                 length;
     int                                 rc;
     unsigned char *                     context_serialized;
-    static char *                       _function_name_ =
-        "gss_export_sec_context";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
-
-#if WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API
-    major_status = GSS_S_UNAVAILABLE;
-    GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-        minor_status,
-        GLOBUS_GSI_GSSAPI_ERROR_UNSUPPORTED,
-        (_GGSL("This function is not currently supported on this platform")));
-    goto exit;
-#else /* WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API */
 
     context = *context_handle_P;
 
@@ -101,7 +91,7 @@ GSS_CALLCONV gss_export_sec_context(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             (_GGSL("Invalid context handle passed to the function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -113,7 +103,7 @@ GSS_CALLCONV gss_export_sec_context(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             (_GGSL("Invalid interprocess token parameter passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -256,7 +246,6 @@ GSS_CALLCONV gss_export_sec_context(
 
     globus_mutex_unlock(&context->mutex);
     
-#endif /* WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API */
  exit:
     
     if(bp)
@@ -267,3 +256,4 @@ GSS_CALLCONV gss_export_sec_context(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
+#endif

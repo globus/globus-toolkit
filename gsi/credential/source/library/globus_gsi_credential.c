@@ -824,10 +824,10 @@ globus_gsi_cred_read(
  * @details
  * Read a proxy from a PEM file.
  *
- * @param handle
+ * @param[inout] handle
  *        The credential handle to set based on the proxy
  *        credential read from the file
- * @param proxy_filename
+ * @param[in] proxy_filename
  *        The file containing the proxy credential
  *
  * @return
@@ -1145,7 +1145,7 @@ globus_gsi_cred_read_proxy_bio(
 globus_result_t
 globus_gsi_cred_read_key(
     globus_gsi_cred_handle_t            handle,
-    char *                              key_filename,
+    const char *                        key_filename,
     int                                 (*pw_cb)())
 {
     BIO *                               key_bio = NULL;
@@ -1222,9 +1222,9 @@ globus_gsi_cred_read_key(
  * Read a cert from a file.  Cert should be in PEM format.  Will also
  * read additional certificates as chain if present.
  *
- * @param handle
+ * @param[out] handle
  *        the handle to set based on the certificate that is read
- * @param cert_filename
+ * @param[in] cert_filename
  *        the filename of the certificate to read
  *
  * @return
@@ -1233,7 +1233,7 @@ globus_gsi_cred_read_key(
 globus_result_t
 globus_gsi_cred_read_cert(
     globus_gsi_cred_handle_t            handle,
-    char *                              cert_filename)
+    const char *                        cert_filename)
 {
     BIO *                               cert_bio = NULL;
     globus_result_t                     result;
@@ -1416,7 +1416,7 @@ globus_gsi_cred_read_cert_bio(
  */
 globus_result_t
 globus_gsi_cred_read_cert_buffer(
-    char *                              pem_buf,
+    const char *                        pem_buf,
     globus_gsi_cred_handle_t *          out_handle,
     X509 **                             out_cert,
     STACK_OF(X509) **                   out_cert_chain,
@@ -1546,7 +1546,7 @@ error:
 globus_result_t
 globus_gsi_cred_read_pkcs12(
     globus_gsi_cred_handle_t            handle,
-    char *                              pkcs12_filename)
+    const char *                        pkcs12_filename)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     char                                password[100];
@@ -1881,7 +1881,7 @@ globus_gsi_cred_write(
 globus_result_t
 globus_gsi_cred_write_proxy(
     globus_gsi_cred_handle_t            handle,
-    char *                              proxy_filename)
+    const char *                        proxy_filename)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     BIO *                               proxy_bio = NULL;

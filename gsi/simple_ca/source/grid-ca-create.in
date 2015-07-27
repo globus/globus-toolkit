@@ -21,6 +21,8 @@ if test x"$CYGPATH_W" != x; then
     esac
 fi
 
+bits=4096
+
 ##
 # create_ca_directory:
 # Creates the directory tree needed for a grid CA. The tree contains:
@@ -325,6 +327,7 @@ rfc2253_to_ssl_config()
     IFS=","
     oucount=0
     ocount=0
+    dccount=0
 
     _reversei=""
     for i in ${_name}; do
@@ -333,33 +336,58 @@ rfc2253_to_ssl_config()
 
     for i in ${_reversei}; do
         i="${i# }"
-        _component="${i%%=*}"
+        _component="$(echo ${i%%=*} | tr 'A-Z' 'a-z')"
         _value="${i#*=}"
 
         case "$_component" in
-            [Cc])
+            c|countryname)
                 printf "%-40s= %s\n" countryName "Country Name (2 letter code)"
                 printf "%-40s= %s\n" countryName_default "${_value}"
                 printf "%-40s= %s\n" countryName_min "2"
                 printf "%-40s= %s\n" countryName_max "2"
                 ;;
-            [Oo])
+            o|organizationname)
                 printf "%-40s= %s\n" "$ocount.organizationName" "Level $ocount Organization"
                 printf "%-40s= %s\n" "$ocount.organizationName_default" "${_value}"
                 ocount=$(($ocount+1))
                 ;;
-            [Oo][Uu])
+            ou|organizationalunitname)
                 printf "%-40s= %s\n" "$oucount.organizationalUnitName" "Level $oucount Organizational Unit"
                 printf "%-40s= %s\n" "$oucount.organizationalUnitName_default" "${_value}"
                 oucount=$(($oucount+1))
                 ;;
-            [Cc][Nn])
+            postalcode)
+                printf "%-40s= %s\n" "postalCode" "Postal Code"
+                printf "%-40s= %s\n" "postalCode_default" "${_value}"
+                ;;
+            cn|commonname)
                 if [ "$_type" = "-user" ]; then
                     printf "%-40s= %s\n" "$oucount.organizationalUnitName" "Level $oucount Organizational Unit"
-                    printf "%-40s= %s\n" "$oucount.organizationalUnitName_default" "local"
+                    printf "%-40s= %s\n" "$oucount.organizationalUnitName_default" "${_value}"
                 fi
                 printf "%-40s= %s\n" "commonName" "Name (E.g., John M. Smith)"
                 printf "%-40s= %s\n" "commonName_max" "64"
+                ;;
+            l|localityname)
+                printf "%-40s= %s\n" "localityName" "Locality Name"
+                printf "%-40s= %s\n" "localityName_default" "${_value}"
+                ;;
+            st|stateorprovincename )
+                printf "%-40s= %s\n" "stateOrProvinceName" "State or Province Name"
+                printf "%-40s= %s\n" "stateOrProvinceName_default" "${_value}"
+                ;;
+             street|streetaddress)
+                printf "%-40s= %s\n" "streetAddress" "Street Address"
+                printf "%-40s= %s\n" "streetAddress_default" "${_value}"
+                ;;
+             dc|domaincomponent )
+                printf "%-40s= %s\n" "$dccount.DC" "Domain Component"
+                printf "%-40s= %s\n" "$dccount.DC_default" "${_value}"
+                dccount=$(($dccount + 1))
+                ;;
+             uid|userid)
+                printf "%-40s= %s\n" "UID" "UserId"
+                printf "%-40s= %s\n" "UID_default" "${_value}"
                 ;;
             *)
                 echo 1>&2 "Unknown subject name component"
@@ -380,21 +408,39 @@ rfc2253_to_oneline()
 
     for i in ${_name}; do
         i="${i# }"
-        _component="${i%%=*}"
+        _component="$(echo ${i%%=*} | tr 'A-Z' 'a-z')"
         _value="${i#*=}"
 
         case "$_component" in
-            [Cc])
+            c)
                 _oneline="/C=${_value}${_oneline}"
                 ;;
-            [Oo])
+            o)
                 _oneline="/O=${_value}${_oneline}"
                 ;;
-            [Oo][Uu])
+            ou)
                 _oneline="/OU=${_value}${_oneline}"
                 ;;
-            [Cc][Nn])
+            cn)
                 _oneline="/CN=${_value}${_oneline}"
+                ;;
+            l)
+                _oneline="/L=${_value}${_oneline}"
+                ;;
+            postalcode)
+                _oneline="/POSTALCODE=${_value}${_oneline}"
+                ;;
+            st)
+                _oneline="/ST=${_value}${_oneline}"
+                ;;
+            street)
+                _oneline="/STREET=${_value}${_oneline}"
+                ;;
+            dc)
+                _oneline="/DC=${_value}${_oneline}"
+                ;;
+            uid)
+                _oneline="/UID=${_value}${_oneline}"
                 ;;
             *)
                 echo 1>&2 "Unknown subject name component"
@@ -562,13 +608,13 @@ generate_ca_certificate()
     if [ -n "${verbose}" ]; then
         openssl req ${openssl_options} ${password_option} -config "$(construct_path ${_ca_ssl_conf})" \
             -x509 -days ${CA_CERT_DAYS} \
-            -newkey rsa:1024 -keyout $(construct_path ${CA_KEY_FILE}) \
+            -newkey rsa:${bits} -keyout $(construct_path ${CA_KEY_FILE}) \
             -out $(construct_path ${CA_CERT_FILE}) < ${CA_REQ_INPUT}
         RET=$?
     else
         openssl req ${openssl_options} ${password_option} -config "$(construct_path ${_ca_ssl_conf})" \
             -x509 -days ${CA_CERT_DAYS} \
-            -newkey rsa:1024 -keyout $(construct_path ${CA_KEY_FILE}) \
+            -newkey rsa:${bits} -keyout $(construct_path ${CA_KEY_FILE}) \
             -out $(construct_path ${CA_CERT_FILE}) < ${CA_REQ_INPUT} > openssl_req.log 2>&1
         RET=$?
     fi
@@ -681,6 +727,7 @@ EOF
             requests to ADDRESS [${globus_username}@${globus_hostname}]"
     printhelp "-days DAYS" "Create a CA certificate that lasts for DAYS days
             [$((365 * 5))]"
+    printhelp "-bits BITS" "Create a CA certificate with a BITS long RSA key [4096]"
     printhelp "-pass PASSWORD" "Set the password for the CA's private key
             to PASSWORD.  Since the password is visible to utilities, this
             should only be used where security is not important. [globus]"
@@ -715,6 +762,11 @@ readCommandLine () {
          backward_compatible=1
          shift
          ;;
+     -bits|--bits)
+        shift
+        bits="$1"
+        shift
+        ;;
      -dir|--dir)
          tmp_ca_dir="$2"
          if test -z "${tmp_ca_dir}"; then

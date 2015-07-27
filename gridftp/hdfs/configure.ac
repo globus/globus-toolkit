@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.60])
-AC_INIT([gridftp_hdfs], [1.1])
+AC_INIT([gridftp_hdfs], [1.2])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
@@ -12,6 +12,7 @@ AC_CONFIG_SRCDIR([src/gridftp_hdfs.c])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_CC_C99
 AC_PROG_LIBTOOL
 
 AC_ARG_WITH(logdir, 

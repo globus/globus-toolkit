@@ -1,10 +1,10 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gridftp_server],[7.20],[https://globus.atlassian.net/])
+AC_INIT([globus_gridftp_server],[8.0],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
-AC_SUBST([AGE_VERSION], [1])
+AC_SUBST([AGE_VERSION], [2])
 AC_SUBST([PACKAGE_DEPS], ["globus-common >= 15, globus-xio >= 5, globus-xio-gsi-driver >= 2, globus-gfork >= 3, globus-gridftp-server-control >= 2, globus-ftp-control >= 6, globus-authz >= 2, globus-usage >= 3, globus-gssapi-gsi >= 10, globus-gss-assist >= 9, globus-gsi-credential >= 6, globus-gsi-sysconfig >= 5, globus-io >= 9, openssl >= 0.9.8"])
 
 AC_CONFIG_AUX_DIR([build-aux])
@@ -102,11 +102,14 @@ AC_C_BIGENDIAN
 
 AC_PATH_PROGS(PERL, perl perl5)
 
+GLOBUS_COMMON_PATH="$("$PKG_CONFIG" --variable=path globus-common)"
+AC_PATH_PROG([GLOBUS_VERSION_PROG], [globus-version], [],
+             [$GLOBUS_COMMON_PATH$PATH_SEPARATOR$PATH])
 AC_MSG_CHECKING([Toolkit version])
 if test "X$GLOBUS_TOOLKIT_ID" = "X"; then
     if test "X$GLOBUS_VERSION" = "X"; then
-        if test -x ${GLOBUS_LOCATION-/usr}/bin/globus-version; then
-            GLOBUS_TOOLKIT_ID="`${GLOBUS_LOCATION-/usr}/bin/globus-version -full`"
+        if test -x "$GLOBUS_VERSION_PROG"; then
+            GLOBUS_TOOLKIT_ID="$("$GLOBUS_VERSION_PROG" -full)"
         else
             GLOBUS_TOOLKIT_ID="unknown"
         fi

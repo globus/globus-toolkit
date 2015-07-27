@@ -85,9 +85,6 @@ GSS_CALLCONV gss_acquire_cred(
     OM_uint32                           local_minor_status;
     X509_NAME *                         desired_name = NULL;
     
-    static char *                       _function_name_ =
-        "gss_acquire_cred";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;

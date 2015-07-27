@@ -76,7 +76,7 @@ void GSI_SOCKET_clear_error(GSI_SOCKET *gsi_socket);
  * acceptable peer names, and GSI_SOCKET_ERROR otherwise.
  */
 int GSI_SOCKET_authentication_init(GSI_SOCKET *gsi_socket,
-				   char *accepted_peer_names[]);
+				   gss_name_t accepted_peer_names[]);
 
 /*
  * GSI_SOCKET_use_creds()

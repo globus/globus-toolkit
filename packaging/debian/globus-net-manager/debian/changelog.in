@@ -1,3 +1,50 @@
+globus-net-manager (0.12-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix linkage on Mac with libtool 2.4.6
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Jul 2015 20:02:19 -0400
+
+globus-net-manager (0.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix memory leaks, NULL pointer derefs, and dead assignments
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Jul 2015 12:01:35 -0400
+
+globus-net-manager (0.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix uninitialized value
+  * Remove unused variables
+
+ -- Globus Toolkit <support@globus.org>  Wed, 01 Jul 2015 16:06:21 -0400
+
+globus-net-manager (0.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix missing documentation
+  * Clarify python invocation
+  * Fix error handling
+  * Add test for end_listen in python
+  * Allow running tests with valgrind
+
+ -- Globus Toolkit <support@globus.org>  Wed, 17 Jun 2015 13:50:43 -0400
+
+globus-net-manager (0.8-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix tests on jessie pbuilder
+
+ -- Globus Toolkit <support@globus.org>  Thu, 16 Apr 2015 14:00:39 -0400
+
+globus-net-manager (0.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix for attr not being used on connect()
+
+ -- Globus Toolkit <support@globus.org>  Mon, 13 Apr 2015 17:00:47 -0500
+
+globus-net-manager (0.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * add file paramter to logging driver to set a file to log to.  use manager=logging;file=/path/to/file;.
+
+ -- Globus Toolkit <support@globus.org>  Fri, 27 Mar 2015 03:19:40 -0500
+
 globus-net-manager (0.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix conflicts with globus-common-doc and globus-xio-doc

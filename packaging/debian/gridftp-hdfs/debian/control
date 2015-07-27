@@ -1,0 +1,39 @@
+Source: gridftp-hdfs
+Priority: optional
+Maintainer: Globus toolkit <supprt@globus.org>
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libhdfs0-dev, libglobus-gridftp-server-dev, libglobus-common-dev
+Standards-Version: 3.9.2
+Section: net
+DM-Upload-Allowed: yes
+Vcs-Browser: http://svn.nordugrid.org/trac/packaging/browser/debian/gridftp-hdfs
+Vcs-Svn: http://svn.nordugrid.org/repos/packaging/debian/gridftp-hdfs
+Homepage: http://www.globus.org/
+
+Package: libglobus-gridftp-server-hdfs
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, globus-gridftp-server-progs
+Description: Globus Toolkit - HDFS DSI
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-gridftp-server-hdfs package contains:
+ Globus HDFS DSI
+
+Package: libglobus-gridftp-server-hdfs-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: libglobus-gridftp-server-hdfs (= ${binary:Version}), ${misc:Depends}
+Description: Globus Toolkit - HDFS DSI
+ The Globus Toolkit is an open source software toolkit used for
+ building Grid systems and applications. It is being developed by the
+ Globus Alliance and many others all over the world. A growing number
+ of projects and companies are using the Globus Toolkit to unlock the
+ potential of grids for their cause.
+ .
+ The libglobus-gridftp-server-hdfs-dbg package contains:
+ Globus HDFS DSI

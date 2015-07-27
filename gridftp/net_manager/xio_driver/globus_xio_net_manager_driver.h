@@ -30,6 +30,7 @@ extern "C" {
  */
 
 /**
+ * @brief Net Manager XIO Driver
  * @defgroup globus_xio_net_manager_driver Globus XIO Net Manager Driver
  * @ingroup globus_net_manager
  * @details

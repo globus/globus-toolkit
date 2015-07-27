@@ -335,12 +335,6 @@ import_names()
     }
 }
 
-#ifdef _WIN32
-#define PATH_DELIMITER "\\"
-#else
-#define PATH_DELIMITER "/"
-#endif
-
 static
 void
 compare_l_parse_name_type(

@@ -258,8 +258,11 @@ main(int argc, char *argv[])
     ok(do_test(test7) < 0, "test7");
     ok(do_test(test8) < 0, "test8");
     ok(do_test(test9) < 0, "test9");
-    ok(do_test(testhnok) == 1, "testhnok");
-    ok(do_test(testhnfail) < 0, "testhnfail");
+
+    skip(getenv("NO_EXTERNAL_NET") != NULL,
+        ok(do_test(testhnok) == 1, "testhnok"));
+    skip(getenv("NO_EXTERNAL_NET") != NULL,
+        ok(do_test(testhnfail) < 0, "testhnfail"));
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 

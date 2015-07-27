@@ -4295,7 +4295,6 @@ globus_i_gsc_list_single_line(
 {
     char                                username[GSU_MAX_USERNAME_LENGTH];
     char                                grpname[GSU_MAX_USERNAME_LENGTH];
-    int                                 tmplen;
     struct passwd *                     pw;
     struct group *                      gr;
     struct tm *                         tm;

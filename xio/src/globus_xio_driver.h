@@ -1356,7 +1356,7 @@ typedef globus_result_t
  */
 typedef struct globus_xio_string_cntl_table_s
 {
-    char *                              key;
+    const char *                        key;
     int                                 cmd;
     globus_xio_string_cntl_parse_func_t parse_func;
 } globus_xio_string_cntl_table_t;

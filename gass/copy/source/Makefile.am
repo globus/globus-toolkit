@@ -30,14 +30,24 @@ globus_url_copy_LDADD = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) \
                         libglobus_gass_copy.la \
 			$(PACKAGE_DEP_LIBS) -lltdl
 
+MANUAL_SOURCE = globus-url-copy.txt \
+                globus-url-copy.xml
+
 if BUILD_MANPAGES
 SUFFIXES = .xml .1
 
+if HAVE_A2X
+SUFFIXES += .txt
+.txt.xml:
+	$(A2X) -f docbook -d manpage $<
+endif
+
 .xml.1:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) $<
+	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) `test -f $< && echo $< || echo $(srcdir)/$<` > /dev/null
+	$(XSLTPROC) --nonet $(MAN_XSL) `test -f $< && echo $< || echo $(srcdir)/$<`
 MAINTAINERCLEANFILES = $(man_MANS)
 endif
+
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN
@@ -72,6 +82,7 @@ EXTRA_DIST = \
 	dirt.sh \
 	$(doc_DATA) \
         $(man_MANS) \
+        $(MANUAL_SOURCE) \
         globus-url-copy.xml
 
 

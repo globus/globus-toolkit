@@ -1,4 +1,17 @@
-globus-xio-gridftp-driver (2.10-1+gt6.@distro@) @distro@; urgency=low
+globus-xio-gridftp-driver (2.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix missing va_arg in attr_cntl
+  * Fix memory leak
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Jul 2015 20:00:34 -0400
+
+globus-xio-gridftp-driver (2.10-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix tests jessie pbuilder
+
+ -- Globus Toolkit <support@globus.org>  Thu, 16 Apr 2015 10:58:58 -0400
+
+globus-xio-gridftp-driver (2.10-2+gt6.@distro@) @distro@; urgency=low
 
   * Fix tests on static builds
 

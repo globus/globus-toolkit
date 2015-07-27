@@ -368,6 +368,7 @@ globus_l_xio_ordering_handle_create(
 		    globus_malloc(sizeof(globus_l_xio_ordering_user_req_t));
     if (handle->user_req == GLOBUS_NULL)
     {
+        result = GlobusXIOErrorMemory("user_req");
         goto error_user_req;
     }
     if (!attr)

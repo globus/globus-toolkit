@@ -36,7 +36,7 @@
          char *                         tmpstr = \
              globus_common_create_string _ERRSTR_; \
          *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_result( \
-             _MIN_, __FILE__, _function_name_, \
+             _MIN_, __FILE__, __func__, \
              __LINE__, tmpstr, NULL); \
          globus_libc_free(tmpstr); \
     }
@@ -48,7 +48,7 @@
              globus_common_create_string _ERRORSTR_; \
          *_MIN_RESULT_ = \
              (OM_uint32) globus_i_gsi_gssapi_openssl_error_result( \
-             _ERRORTYPE_, __FILE__, _function_name_, __LINE__, tmpstr, NULL); \
+             _ERRORTYPE_, __FILE__, __func__, __LINE__, tmpstr, NULL); \
          globus_libc_free(tmpstr); \
     }
 
@@ -57,7 +57,7 @@
     *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_chain_result( \
                                  (globus_result_t)_TOP_RESULT_, \
                                  _ERRORTYPE_, __FILE__, \
-                                 _function_name_, __LINE__, NULL, NULL)
+                                 __func__, __LINE__, NULL, NULL)
 
 #define GLOBUS_GSI_GSSAPI_LONG_ERROR_RESULT(_MIN_RESULT_, _MIN_, \
                                             _ERRSTR_, _LONG_DESC_) \
@@ -65,7 +65,7 @@
          char *                         tmpstr = \
              globus_common_create_string _ERRSTR_; \
          *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_result( \
-             _MIN_, __FILE__, _function_name_, \
+             _MIN_, __FILE__, __func__, \
              __LINE__, tmpstr, _LONG_DESC_); \
          globus_libc_free(tmpstr); \
     }
@@ -79,7 +79,7 @@
              globus_common_create_string _ERRORSTR_; \
          *_MIN_RESULT_ = \
              (OM_uint32) globus_i_gsi_gssapi_openssl_error_result( \
-             _ERRORTYPE_, __FILE__, _function_name_, \
+             _ERRORTYPE_, __FILE__, __func__, \
              __LINE__, tmpstr, _LONG_DESC_); \
          globus_libc_free(tmpstr); \
     }
@@ -89,7 +89,7 @@
     *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_chain_result( \
                                  (globus_result_t)_TOP_RESULT_, \
                                  _ERRORTYPE_, __FILE__, \
-                                 _function_name_, __LINE__, NULL, _LONG_DESC_)
+                                 __func__, __LINE__, NULL, _LONG_DESC_)
 
 #define GLOBUS_GSI_GSSAPI_MALLOC_ERROR(_MIN_RESULT_) \
     { \
@@ -102,28 +102,10 @@
                 errno, \
                 GLOBUS_GSI_GSSAPI_ERROR_OUT_OF_MEMORY, \
                 __FILE__, \
-                _function_name_, \
+                __func__, \
                 __LINE__, \
                 "%s", \
                 _tmp_str_)); \
-    }
-
-#define GLOBUS_GSI_GSSAPI_ERRNO_ERROR_RESULT(_MIN_RESULT_, \
-                                               _ERRORTYPE_, _ERRORSTR_) \
-    { \
-        char *                          _tmp_str_ = \
-             globus_common_create_string _ERRORSTR_; \
-        *_MIN_RESULT_ = (OM_uint32) globus_error_put( \
-            globus_error_wrap_errno_error( \
-                GLOBUS_GSI_GSSAPI_MODULE, \
-                errno, \
-                _ERRORTYPE_, \
-                __FILE__, \
-                _function_name_, \
-                __LINE__, \
-                "%s", \
-                _tmp_str_)); \
-        globus_libc_free(_tmp_str_); \
     }
 
 
@@ -193,21 +175,23 @@ extern globus_bool_t                    globus_i_gssapi_active;
 #define GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER \
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF( \
                 1, (globus_i_gsi_gssapi_debug_fstream, \
-                    "%s entering\n", _function_name_))
+                    "%s entering\n", __func__))
 
 #define GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT \
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF( \
                 1, (globus_i_gsi_gssapi_debug_fstream, \
                     "%s exiting: major_status=%d\n", \
-                    _function_name_, (int)major_status))
+                    __func__, (int)major_status))
 
 #define GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT \
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF( \
                 1, (globus_i_gsi_gssapi_debug_fstream, \
                     "%s exiting\n", \
-                    _function_name_))
+                    __func__))
 
 extern int                              globus_i_gsi_gssapi_force_tls;
+extern const char *                     globus_i_gsi_gssapi_cipher_list;
+extern globus_bool_t                    globus_i_gsi_gssapi_server_cipher_order;
 
 typedef enum
 {

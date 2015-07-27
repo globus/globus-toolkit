@@ -52,8 +52,7 @@ globus_net_manager_attr_array_copy(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_net_manager_attr_t          *new_array = NULL;
     int                                 i = 0;
-    GlobusNetManagerName(globus_net_manager_attr_array_copy);
-    
+
     if (dest_array == NULL)
     {
         result = GlobusNetManagerErrorParameter("NULL dest_array.");
@@ -69,7 +68,12 @@ globus_net_manager_attr_array_copy(
     for (i = 0; src_array[i].scope != NULL; i++)
     {
     }
-    new_array = malloc((i+1) * sizeof(globus_net_manager_attr_t));
+    new_array = calloc(i+1, sizeof(globus_net_manager_attr_t));
+    if (new_array == NULL)
+    {
+        result = GlobusNetManagerErrorMemory("new_array");
+        goto calloc_new_array_fail;
+    }
     for (i = 0; src_array[i].scope != NULL; i++)
     {
         new_array[i].scope = strdup(src_array[i].scope);
@@ -108,6 +112,7 @@ strdup_scope_fail:
         free(new_array);
         new_array = NULL;
     }
+calloc_new_array_fail:
 null_src:
     *dest_array = new_array;
 null_dest:

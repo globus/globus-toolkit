@@ -1,13 +1,13 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	7.20
+Version:	8.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridftp_server-7.20.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15
@@ -19,6 +19,7 @@ Requires:	globus-gfork%{?_isa} >= 3
 Requires:	globus-ftp-control%{?_isa} >= 6
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:	globus-gsi-credential%{?_isa} >= 6
+Requires:       globus-xio-udt-driver%{?_isa} >= 1
 
 BuildRequires:	globus-gridftp-server-control-devel >= 2
 BuildRequires:	globus-usage-devel >= 3
@@ -169,6 +170,33 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 8.0-1
+- GT-517: add update_bytes* api that sets byte counters and range markers seperately
+
+* Fri Jun 05 2015 Globus Toolkit <support@globus.org> - 7.26-1
+- Fix GLOBUS_VERSION detection during configure from installer
+
+* Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 7.25-1
+- Fix order of drivers when using netmgr
+
+* Fri Mar 27 2015 Globus Toolkit <support@globus.org> - 7.24-1
+- fix netmanager crash
+- allow netmanager calls when taskid isn't set
+
+* Mon Mar 16 2015 Globus Toolkit <support@globus.org> - 7.23-1
+- fix threads commandline arg processing
+- prevent parse error on pre-init envs from raising assertion
+
+* Fri Mar 06 2015 Globus Toolkit <support@globus.org> - 7.22-1
+- windows fix
+
+* Fri Mar 06 2015 Globus Toolkit <support@globus.org> - 7.21-1
+- GT-586: Restrict sharing based on username or group membership
+- GT-552: don't enable udt without threads
+- GT-585: Environrment and threading config not loaded from config dir
+- Ignore config.d files with a '.' in name
+- always install udt driver
+
 * Tue Jan 06 2015 Globus Toolkit <support@globus.org> - 7.20-1
 - Fix autoreconf error on some setups
 

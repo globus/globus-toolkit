@@ -1150,8 +1150,18 @@ globus_l_sge_parse_events(
 	    goto free_fields;
 	}
 
-	/* Extract the timestamp from the first field. */
-	/* (rp is a pointer to the symbol immediately following the timestamp.) */
+	/* Extract the timestamp from the first field.
+         * Originally this was seconds since the epoch. Univa changed it
+         * in UGE 8.2.0 to milliseconds since the epoch
+         *
+         * If the string is longer than 10 digits, we'll truncate it---
+         * that'll work for > one hundred years.
+         */
+        if (strlen(fields[0]) > 10)
+        {
+            fields[0][10] = '\0';
+        }
+        /* (rp is a pointer to the char immediately following the timestamp.) */
 	rp = strptime(fields[0],"%s", &tm);
 
 	if (rp == NULL || (*rp) != '\0')

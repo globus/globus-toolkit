@@ -14,6 +14,6 @@ INPUT                  = @top_srcdir@
 EXAMPLE_PATH           = @top_srcdir@/logging 
 RECURSIVE              = YES
 QUIET                  = YES
-EXCLUDE_PATTERNS       = version.h test log_dll
+EXCLUDE_PATTERNS       = version.h test
 PREDEFINED             = GLOBUS_DONT_DOCUMENT_INTERNAL DOXYGEN
 INPUT_FILTER           = @top_srcdir@/globus-vararg-enums-doxygen-filter.pl

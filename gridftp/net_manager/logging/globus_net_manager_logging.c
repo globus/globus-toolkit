@@ -57,14 +57,6 @@
  * @snippet globus_net_manager_logging.c Pre-Listen Implementation
  */
 
-/**
- * @defgroup globus_net_manager_types Data Types
- * @ingroup globus_net_manager
- */
-/**
- * @defgroup globus_net_manager_signatures Function Signatures
- * @ingroup globus_net_manager
- */
 
 
 /**
@@ -76,15 +68,94 @@
 #include "globus_net_manager.h"
 #include "version.h"
 
-//! [Pre-Listen Implementation]
+typedef struct
+{
+    char *                              key;
+    FILE *                              handle;
+} globus_l_nm_logging_logref_t;
+
+static globus_hashtable_t               globus_l_nm_logging_logfiles;
+
+static
+FILE *
+globus_l_net_manager_logging_get_logfile(
+    const globus_net_manager_attr_t    *attrs)
+{
+    int                                 rc = 0;
+    FILE *                              handle = NULL;
+    globus_l_nm_logging_logref_t *      logref = NULL;
+
+    for (int i = 0; attrs != NULL && attrs[i].scope != NULL; i++)
+    {
+        if (strcmp(attrs[i].scope, "logging") == 0)
+        {
+            if (strcmp(attrs[i].name, "file") == 0)
+            {
+                logref = globus_hashtable_lookup(
+                    &globus_l_nm_logging_logfiles, attrs[i].value);
+                if (!logref)
+                {
+                    handle = fopen(attrs[i].value, "a");
+                    if (!handle)
+                    {
+                        goto fopen_fail;
+                    }
+                    logref = malloc(sizeof(globus_l_nm_logging_logref_t));
+                    if (logref == NULL)
+                    {
+                        goto logref_malloc_fail;
+                    }
+                    logref->key = strdup(attrs[i].value);
+                    if (logref->key == NULL)
+                    {
+                        goto logref_key_fail;
+                    }
+                    logref->handle = handle;
+                    handle = NULL;
+                    rc = globus_hashtable_insert(
+                            &globus_l_nm_logging_logfiles,
+                            logref->key,
+                            logref);
+                    if (rc != GLOBUS_SUCCESS)
+                    {
+                        goto hashtable_insert_fail;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    return logref ? logref->handle : stdout;
+
+hashtable_insert_fail:
+logref_key_fail:
+logref_malloc_fail:
+    if (handle)
+    {
+        fclose(handle);
+        handle = NULL;
+    }
+fopen_fail:
+    if (logref)
+    {
+        free(logref->key);
+        free(logref);
+        logref = NULL;
+    }
+    return stdout;
+}
+
+
 static
 void
 globus_l_net_manager_logging_log_attrs(
+    FILE                               *fh,
     const globus_net_manager_attr_t    *attr_array)
 {
     for (int i = 0; attr_array[i].scope; i++)
     {
-        printf("[%s, %s, %s] ",
+        fprintf(fh, "[%s, %s, %s] ",
             attr_array[i].scope, attr_array[i].name, attr_array[i].value);
     }
 }
@@ -92,37 +163,43 @@ globus_l_net_manager_logging_log_attrs(
 static
 void
 globus_l_net_manager_logging_log_header(
+    FILE                               *fh,
     struct globus_net_manager_s        *manager,
     const char                         *task_id,
     const char                         *transport,
     const char                         *op)
 {
-    printf("%s:%s: task-id=%s transport=%s", op, manager->name, task_id, transport);
+    fprintf(fh, "%s:%s: task-id=%s transport=%s", op, manager->name, task_id, transport);
 }
 
 static
 void
-globus_l_net_manager_logging_log_footer(void)
+globus_l_net_manager_logging_log_footer(
+    FILE                               *fh)
 {
-    printf("\n");
+    fprintf(fh, "\n");
+    fflush(fh);
 }
 
 static
 void
 globus_l_net_manager_logging_log_contacts(
+    FILE                               *fh,
     const char                         *local_contact,
     const char                         *remote_contact)
 {
     if (local_contact)
     {
-        printf("%s ", local_contact);
+        fprintf(fh, "%s ", local_contact);
     }
     if (remote_contact)
     {
-        printf("%s ", remote_contact);
+        fprintf(fh, "%s ", remote_contact);
     }
 }
 
+
+//! [Pre-Listen Implementation]
 static
 globus_result_t
 globus_l_net_manager_logging_pre_listen(
@@ -133,14 +210,17 @@ globus_l_net_manager_logging_pre_listen(
     const globus_net_manager_attr_t    *attr_array,
     globus_net_manager_attr_t         **attr_array_out)
 {
-    globus_l_net_manager_logging_log_header(manager, task_id, transport, "pre_listen");
-    globus_l_net_manager_logging_log_attrs(attr_array);
-    globus_l_net_manager_logging_log_footer();
+    FILE *                              logfile;
+    logfile = globus_l_net_manager_logging_get_logfile(manager_attr_array);
+    globus_l_net_manager_logging_log_header(logfile, manager, task_id, transport, "pre_listen");
+    globus_l_net_manager_logging_log_attrs(logfile, attr_array);
+    globus_l_net_manager_logging_log_footer(logfile);
     return GLOBUS_SUCCESS;
 }
 /* globus_l_net_manager_logging_pre_listen() */
 //! [Pre-Listen Implementation]
 
+static
 globus_result_t
 globus_l_net_manager_logging_post_listen(
     struct globus_net_manager_s        *manager,
@@ -152,13 +232,16 @@ globus_l_net_manager_logging_post_listen(
     char                              **local_contact_out,
     globus_net_manager_attr_t         **attr_array_out)
 {
-    globus_l_net_manager_logging_log_header(manager, task_id, transport, "post_listen");
-    globus_l_net_manager_logging_log_attrs(attr_array);
-    globus_l_net_manager_logging_log_contacts(local_contact, NULL);
-    globus_l_net_manager_logging_log_footer();
+    FILE *                              logfile;
+    logfile = globus_l_net_manager_logging_get_logfile(manager_attr_array);
+    globus_l_net_manager_logging_log_header(logfile, manager, task_id, transport, "post_listen");
+    globus_l_net_manager_logging_log_attrs(logfile, attr_array);
+    globus_l_net_manager_logging_log_contacts(logfile, local_contact, NULL);
+    globus_l_net_manager_logging_log_footer(logfile);
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_end_listen(
     struct globus_net_manager_s        *manager,
@@ -168,13 +251,16 @@ globus_l_net_manager_logging_end_listen(
     const char                         *local_contact,
     const globus_net_manager_attr_t    *attr_array)
 {
-    globus_l_net_manager_logging_log_header(manager, task_id, transport, "end_listen");
-    globus_l_net_manager_logging_log_attrs(attr_array);
-    globus_l_net_manager_logging_log_contacts(local_contact, NULL);
-    globus_l_net_manager_logging_log_footer();
+    FILE *                              logfile;
+    logfile = globus_l_net_manager_logging_get_logfile(manager_attr_array);
+    globus_l_net_manager_logging_log_header(logfile, manager, task_id, transport, "end_listen");
+    globus_l_net_manager_logging_log_attrs(logfile, attr_array);
+    globus_l_net_manager_logging_log_contacts(logfile, local_contact, NULL);
+    globus_l_net_manager_logging_log_footer(logfile);
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_pre_accept(
     struct globus_net_manager_s        *manager,
@@ -185,13 +271,16 @@ globus_l_net_manager_logging_pre_accept(
     const globus_net_manager_attr_t    *attr_array,
     globus_net_manager_attr_t         **attr_array_out)
 {
-    globus_l_net_manager_logging_log_header(manager, task_id, transport, "pre_accept");
-    globus_l_net_manager_logging_log_attrs(attr_array);
-    globus_l_net_manager_logging_log_contacts(local_contact, NULL);
-    globus_l_net_manager_logging_log_footer();
+    FILE *                              logfile;
+    logfile = globus_l_net_manager_logging_get_logfile(manager_attr_array);
+    globus_l_net_manager_logging_log_header(logfile, manager, task_id, transport, "pre_accept");
+    globus_l_net_manager_logging_log_attrs(logfile, attr_array);
+    globus_l_net_manager_logging_log_contacts(logfile, local_contact, NULL);
+    globus_l_net_manager_logging_log_footer(logfile);
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_post_accept(
     struct globus_net_manager_s        *manager,
@@ -203,13 +292,16 @@ globus_l_net_manager_logging_post_accept(
     const globus_net_manager_attr_t    *attr_array,
     globus_net_manager_attr_t         **attr_array_out)
 {
-    globus_l_net_manager_logging_log_header(manager, task_id, transport, "post_accept");
-    globus_l_net_manager_logging_log_attrs(attr_array);
-    globus_l_net_manager_logging_log_contacts(local_contact, remote_contact);
-    globus_l_net_manager_logging_log_footer();
+    FILE *                              logfile;
+    logfile = globus_l_net_manager_logging_get_logfile(manager_attr_array);
+    globus_l_net_manager_logging_log_header(logfile, manager, task_id, transport, "post_accept");
+    globus_l_net_manager_logging_log_attrs(logfile, attr_array);
+    globus_l_net_manager_logging_log_contacts(logfile, local_contact, remote_contact);
+    globus_l_net_manager_logging_log_footer(logfile);
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_pre_connect(
     struct globus_net_manager_s        *manager,
@@ -221,13 +313,16 @@ globus_l_net_manager_logging_pre_connect(
     char                              **remote_contact_out,
     globus_net_manager_attr_t         **attr_array_out)
 {
-    globus_l_net_manager_logging_log_header(manager, task_id, transport, "pre_connect");
-    globus_l_net_manager_logging_log_attrs(attr_array);
-    globus_l_net_manager_logging_log_contacts(NULL, remote_contact);
-    globus_l_net_manager_logging_log_footer();
+    FILE *                              logfile;
+    logfile = globus_l_net_manager_logging_get_logfile(manager_attr_array);
+    globus_l_net_manager_logging_log_header(logfile, manager, task_id, transport, "pre_connect");
+    globus_l_net_manager_logging_log_attrs(logfile, attr_array);
+    globus_l_net_manager_logging_log_contacts(logfile, NULL, remote_contact);
+    globus_l_net_manager_logging_log_footer(logfile);
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_post_connect(
     struct globus_net_manager_s        *manager,
@@ -239,13 +334,16 @@ globus_l_net_manager_logging_post_connect(
     const globus_net_manager_attr_t    *attr_array,
     globus_net_manager_attr_t         **attr_array_out)
 {
-    globus_l_net_manager_logging_log_header(manager, task_id, transport, "post_connect");
-    globus_l_net_manager_logging_log_attrs(attr_array);
-    globus_l_net_manager_logging_log_contacts(local_contact, remote_contact);
-    globus_l_net_manager_logging_log_footer();
+    FILE *                              logfile;
+    logfile = globus_l_net_manager_logging_get_logfile(manager_attr_array);
+    globus_l_net_manager_logging_log_header(logfile, manager, task_id, transport, "post_connect");
+    globus_l_net_manager_logging_log_attrs(logfile, attr_array);
+    globus_l_net_manager_logging_log_contacts(logfile, local_contact, remote_contact);
+    globus_l_net_manager_logging_log_footer(logfile);
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_pre_close(
     struct globus_net_manager_s        *manager,
@@ -256,13 +354,16 @@ globus_l_net_manager_logging_pre_close(
     const char                         *remote_contact,
     const globus_net_manager_attr_t    *attr_array)
 {
-    globus_l_net_manager_logging_log_header(manager, task_id, transport, "pre_close");
-    globus_l_net_manager_logging_log_attrs(attr_array);
-    globus_l_net_manager_logging_log_contacts(local_contact, remote_contact);
-    globus_l_net_manager_logging_log_footer();
+    FILE *                              logfile;
+    logfile = globus_l_net_manager_logging_get_logfile(manager_attr_array);
+    globus_l_net_manager_logging_log_header(logfile, manager, task_id, transport, "pre_close");
+    globus_l_net_manager_logging_log_attrs(logfile, attr_array);
+    globus_l_net_manager_logging_log_contacts(logfile, local_contact, remote_contact);
+    globus_l_net_manager_logging_log_footer(logfile);
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
 globus_l_net_manager_logging_post_close(
     struct globus_net_manager_s        *manager,
@@ -273,10 +374,12 @@ globus_l_net_manager_logging_post_close(
     const char                         *remote_contact,
     const globus_net_manager_attr_t    *attr_array)
 {
-    globus_l_net_manager_logging_log_header(manager, task_id, transport, "post_close");
-    globus_l_net_manager_logging_log_attrs(attr_array);
-    globus_l_net_manager_logging_log_contacts(local_contact, remote_contact);
-    globus_l_net_manager_logging_log_footer();
+    FILE *                              logfile;
+    logfile = globus_l_net_manager_logging_get_logfile(manager_attr_array);
+    globus_l_net_manager_logging_log_header(logfile, manager, task_id, transport, "post_close");
+    globus_l_net_manager_logging_log_attrs(logfile, attr_array);
+    globus_l_net_manager_logging_log_contacts(logfile, local_contact, remote_contact);
+    globus_l_net_manager_logging_log_footer(logfile);
     return GLOBUS_SUCCESS;
 }
 
@@ -286,7 +389,6 @@ globus_l_net_manager_logging_post_close(
  */
 extern globus_module_descriptor_t globus_net_manager_logging_module;
 #endif
-
 
 static
 int
@@ -334,6 +436,11 @@ static
 int
 globus_l_net_manager_logging_activate(void)
 {
+    globus_hashtable_init(
+        &globus_l_nm_logging_logfiles,
+        7,
+        globus_hashtable_string_hash, 
+        globus_hashtable_string_keyeq);
     int rc = globus_module_activate(GLOBUS_NET_MANAGER_MODULE);
     if (rc == 0)
     {
@@ -345,9 +452,26 @@ globus_l_net_manager_logging_activate(void)
 }
 
 static
+void
+globus_l_logging_logfiles_destroy(void *datum)
+{
+    globus_l_nm_logging_logref_t        *logref = datum;
+    if (logref)
+    {
+        free(logref->key);
+        fclose(logref->handle);
+        free(logref);
+    }
+}
+
+static
 int
 globus_l_net_manager_logging_deactivate(void)
 {
+    globus_hashtable_destroy_all(
+            &globus_l_nm_logging_logfiles,
+            globus_l_logging_logfiles_destroy);
+
     int rc = globus_net_manager_unregister(&globus_l_net_manager_logging);
     if (rc == 0)
     {

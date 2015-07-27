@@ -80,9 +80,6 @@ GSS_CALLCONV gss_import_cred(
     char *                              filename = NULL;
     FILE *                              fp;
 
-    static char *                       _function_name_ =
-        "gss_import_cred";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     /* module activation if not already done by calling
@@ -109,7 +106,7 @@ GSS_CALLCONV gss_import_cred(
             minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             (_GGSL("Invalid import_buffer passed to function: %s"),
-             _function_name_));
+             __func__));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -120,7 +117,7 @@ GSS_CALLCONV gss_import_cred(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             (_GGSL("Invalid output_cred_handle parameter passed to function: %s"),
-             _function_name_));
+             __func__));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -159,7 +156,7 @@ GSS_CALLCONV gss_import_cred(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
                     (_GGSL("Invalid import_buffer parameter passed to function: %s"),
-                     _function_name_));
+                     __func__));
                 major_status = GSS_S_FAILURE;
                 goto exit;
             }

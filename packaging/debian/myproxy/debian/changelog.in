@@ -1,3 +1,27 @@
+myproxy (6.1.15-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-616: Myproxy uses resolved IP address when importing names
+
+ -- Globus Toolkit <support@globus.org>  Thu, 23 Jul 2015 15:11:23 -0400
+
+myproxy (6.1.14-1+gt6.@distro@) @distro@; urgency=low
+
+  * improve rfc2818 name comparison handling
+
+ -- Globus Toolkit <support@globus.org>  Mon, 08 Jun 2015 19:14:37 -0400
+
+myproxy (6.1.13-2+gt6.@distro@) @distro@; urgency=low
+
+  * Pass pidfile options to more commands
+
+ -- Globus Toolkit <support@globus.org>  Thu, 23 Apr 2015 13:19:53 -0400
+
+myproxy (6.1.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fixed 2 instances of underallocation of memory.
+
+ -- Globus Toolkit <support@globus.org>  Tue, 07 Apr 2015 15:29:34 -0400
+
 myproxy (6.1.12-1+gt6.@distro@) @distro@; urgency=low
 
   * Missing -module

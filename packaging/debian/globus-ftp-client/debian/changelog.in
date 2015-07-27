@@ -1,3 +1,45 @@
+globus-ftp-client (8.23-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix crash in error handling
+
+ -- Globus Toolkit <support@globus.org>  Wed, 15 Jul 2015 12:26:16 -0400
+
+globus-ftp-client (8.22-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix tests on jessie with pbuilder
+
+ -- Globus Toolkit <support@globus.org>  Wed, 15 Apr 2015 12:58:25 -0400
+
+globus-ftp-client (8.21-2+gt6.@distro@) @distro@; urgency=low
+
+  * gridftp-ssh script required in base package
+
+ -- Globus Toolkit <support@globus.org>  Mon, 30 Mar 2015 14:55:30 -0500
+
+globus-ftp-client (8.21-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-587: ssh path not  being set in globus-ftp-client for sshftp in GT6
+
+ -- Globus Toolkit <support@globus.org>  Thu, 12 Mar 2015 16:16:30 -0500
+
+globus-ftp-client (8.20-1+gt6.@distro@) @distro@; urgency=low
+
+  * improve fix for GT-568
+
+ -- Globus Toolkit <support@globus.org>  Wed, 04 Mar 2015 15:00:46 -0600
+
+globus-ftp-client (8.19-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-568: Fix incompatibility between IPV4-only source and IPV6 dest when IPV6 is enabled
+
+ -- Globus Toolkit <support@globus.org>  Thu, 12 Feb 2015 11:39:43 -0600
+
+globus-ftp-client (8.18-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-534: Fix for crash after error with delayed pasv response
+
+ -- Globus Toolkit <support@globus.org>  Mon, 09 Feb 2015 15:49:46 -0600
+
 globus-ftp-client (8.17-1+gt6.@distro@) @distro@; urgency=low
 
   * Disable segfaulting test on GNU/Hurd

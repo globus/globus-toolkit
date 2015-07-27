@@ -1,13 +1,13 @@
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	3.6
+Version:	3.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio_gsi_driver-3.6.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gssapi-error%{?_isa} >= 4
@@ -129,6 +129,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 3.8-1
+- GT-615: GSI XIO driver uses resolved IP address when importing names
+
+* Thu May 28 2015 Globus Toolkit <support@globus.org> - 3.7-1
+- Handle anonymous targets in GSI RFC2818 mode and document stringopts
+
 * Thu Sep 25 2014 Globus Toolkit <support@globus.org> - 3.6-1
 - Doxygen markup fixes
 - Fix typos and clarify some documentation

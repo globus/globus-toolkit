@@ -1,3 +1,9 @@
+globus-gram-job-manager-sge (2.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Handle UGE 8.2.0 timestamp format change
+
+ -- Globus Toolkit <support@globus.org>  Thu, 22 Jan 2015 10:54:52 -0500
+
 globus-gram-job-manager-sge (2.4-2+gt6.@distro@) @distro@; urgency=low
 
   * Attempt to fix build in pbuilder chroot

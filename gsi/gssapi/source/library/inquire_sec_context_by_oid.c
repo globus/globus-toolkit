@@ -28,8 +28,6 @@
 /* Only build if we have the extended GSSAPI */
 #ifdef _HAVE_GSI_EXTENDED_GSSAPI
 
-static char *rcsid = "$Id$";
-
 extern const gss_OID_desc * const gss_ext_x509_cert_chain_oid;
 
 /**
@@ -57,8 +55,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     gss_buffer_desc                     data_set_buffer = GSS_C_EMPTY_BUFFER;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     unsigned char *                     tmp_ptr;
-    static char *                       _function_name_ =
-        "gss_inquire_sec_context_by_oid";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     /* parameter checking goes here */

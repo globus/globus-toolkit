@@ -78,8 +78,6 @@ GSS_CALLCONV gss_verify_mic(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
 
-    static char *                       _function_name_ = 
-        "gss_verify_mic";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
@@ -217,7 +215,6 @@ GSS_CALLCONV gss_verify_mic(
                   GSS_SSL3_WRITE_SEQUENCE_SIZE;
     
     N2L(token_value, buffer_len);
-    token_value += 4;
 
     if (message_buffer->length != buffer_len)
     {
@@ -336,8 +333,7 @@ GSS_CALLCONV gss_verify(
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
-    static char *                       _function_name_ =
-        "gss_verify";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;

@@ -1,3 +1,10 @@
+globus-gsi-cert-utils (9.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-606: fix encoding for CN=(limited) proxy
+  * GT-610: globus-gsi-cert-utils crash
+
+ -- Globus Toolkit <support@globus.org>  Mon, 06 Jul 2015 09:52:36 -0400
+
 globus-gsi-cert-utils (9.10-1+gt6.@distro@) @distro@; urgency=low
 
   * Include more manpages for API

@@ -28,7 +28,6 @@ OM_uint32 GSS_CALLCONV gss_inquire_names_for_mech(
     const gss_OID                       mechanism,
     gss_OID_set *                       name_types )
 {
-    static char *                       _function_name_ = "gss_inquire_names_for_mech";
     OM_uint32                           major_status;
     int                                 i;
     gss_OID                             oids[] = {
@@ -87,10 +86,9 @@ OM_uint32 GSS_CALLCONV gss_inquire_names_for_mech(
 free_oids:
     if (major_status != GSS_S_COMPLETE)
     {
-        OM_uint32                       local_major;
         OM_uint32                       local_minor;
 
-        local_major = gss_release_oid_set(
+        (void) gss_release_oid_set(
             &local_minor,
             name_types);
     }

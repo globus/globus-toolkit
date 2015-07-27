@@ -1,13 +1,13 @@
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.16
-Release:	2%{?dist}
+Version:	1.18
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio_udt_driver-1.16.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -16,7 +16,11 @@ Requires:	globus-xio%{?_isa} >= 3
 Requires:       glib2%{?_isa} >= 2.32
 Requires:       libnice%{?_isa} >= 0.0.12
 %endif
+%if 0%{?suse_version} > 0
+Requires:       libffi43
+%else
 Requires:       libffi
+%endif
 
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-common-devel >= 14
@@ -45,6 +49,9 @@ BuildRequires:  libtool >= 2.2
 BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 21
 BuildRequires:  gupnp-igd-devel
+%endif
+%if %{?fedora}%{!?fedora:0} >= 22
+BuildRequires: libselinux-devel
 %endif
 
 %package devel
@@ -125,6 +132,18 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 1.18-1
+- don't attempt ice negotiation over ipv6 while udt driver does not support ipv6
+
+* Mon Jun 15 2015 Globus Toolkit <support@globus.org> - 1.17-1
+- Fix error checking and automake warning
+
+* Tue May 19 2015 Globus Toolkit <support@globus.org> - 1.16-4
+- Fedora 22 needs libselinux-devel
+
+* Fri Mar 06 2015 Globus Toolkit <support@globus.org> - 1.16-3
+- SLES 11 needs libffi43
+
 * Wed Dec 17 2014 Globus Toolkit <support@globus.org> - 1.16-2
 - Dependency on gupnp-igd-devel for Fedora 21
 

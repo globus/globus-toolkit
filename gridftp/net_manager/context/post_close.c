@@ -21,6 +21,32 @@
 
 #include "globus_net_manager_context.h"
 
+/**
+ * @brief Call Context Post Close
+ * @ingroup globus_net_manager_context
+ * @details
+ * Call the chain of post_close() functions in a context with the given
+ * task_id, transport, contact information, and attributes. If any manager in
+ * the context returns an error, the subsequent managers will not be called.
+ *
+ * @param [in] context
+ *     The context to call functions in.
+ * @param [in] task_id
+ *     The task_id associated with this network operation.
+ * @param [in] transport
+ *     The transport driver associated with this network operation.
+ * @param [in] local_contact
+ *     The string representation of the local address of the socket.
+ * @param [in] remote_contact
+ *     The string representation of the remote address of the socket
+ * @param [in] attr_array
+ *     The set of attributes to pass to the managers.
+ *
+ * @return
+ *     On success, this function returns GLOBUS_SUCCESS. If any manager
+ *     returns an error, the post_close calls stop and the error is returned
+ *     to the caller.
+ */
 globus_result_t
 globus_net_manager_context_post_close(
     globus_net_manager_context_t        context,
@@ -34,8 +60,7 @@ globus_net_manager_context_post_close(
     globus_list_t *                     list;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_net_manager_context_entry_t * ent;
-    GlobusNetManagerName(globus_net_manager_context_post_close);
-    
+
     if(!ctx || !task_id || !transport || !attr_array ||
         !local_contact || !remote_contact)
     {
@@ -72,3 +97,4 @@ globus_net_manager_context_post_close(
 error_bad_args:
     return result;
 }
+/* globus_net_manager_context_post_close() */

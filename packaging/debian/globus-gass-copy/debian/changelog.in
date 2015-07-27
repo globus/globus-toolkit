@@ -1,3 +1,28 @@
+globus-gass-copy (9.16-1+gt6.@distro@) @distro@; urgency=low
+
+  * Improve error handling
+  * Fix non-terminated string
+
+ -- Globus Toolkit <support@globus.org>  Wed, 01 Jul 2015 16:02:34 -0400
+
+globus-gass-copy (9.15-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix test on jessie pbuilder
+
+ -- Globus Toolkit <support@globus.org>  Wed, 15 Apr 2015 17:33:37 -0400
+
+globus-gass-copy (9.15-1+gt6.@distro@) @distro@; urgency=low
+
+  * Clarify documentation of stack options
+
+ -- Globus Toolkit <support@globus.org>  Wed, 08 Apr 2015 15:32:07 -0400
+
+globus-gass-copy (9.14-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix user-specified data channel stack handling
+
+ -- Globus Toolkit <support@globus.org>  Wed, 08 Apr 2015 12:57:24 -0400
+
 globus-gass-copy (9.13-1+gt6.@distro@) @distro@; urgency=low
 
   * doxygen fixes

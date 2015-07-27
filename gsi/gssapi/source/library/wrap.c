@@ -55,8 +55,7 @@ GSS_CALLCONV gss_wrap_size_limit(
     OM_uint32                           max;
     OM_uint32                           overhead;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    static char *                       _function_name_ =
-        "gss_wrap_size_limit";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
  
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
@@ -151,8 +150,7 @@ GSS_CALLCONV gss_wrap(
     OM_uint32                           local_minor_status;
     unsigned char *                     message_value;
     time_t                              context_goodtill;
-    static char *                       _function_name_ =
-        "gss_wrap";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
@@ -359,8 +357,7 @@ GSS_CALLCONV gss_seal(
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
-    static char *                       _function_name_ =
-        "gss_seal";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     major_status = gss_wrap(&local_minor_status,

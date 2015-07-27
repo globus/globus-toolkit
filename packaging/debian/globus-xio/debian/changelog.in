@@ -1,3 +1,37 @@
+globus-xio (5.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Allow const string option names
+  * Fix miscount of string length in GLOBUS_XIO_GET_STRING_OPTIONS
+  * Fix some error handling bugs
+  * Remove some unused variables
+
+ -- Globus Toolkit <support@globus.org>  Wed, 01 Jul 2015 14:10:29 -0400
+
+globus-xio (5.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Check push result in globus_xio_driver_list_to_stack_attr()
+  * Add doc for globus_xio_driver_list_to_stack_attr()
+
+ -- Globus Toolkit <support@globus.org>  Tue, 07 Apr 2015 14:37:34 -0400
+
+globus-xio (5.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * more GT-581 tweaks
+
+ -- Globus Toolkit <support@globus.org>  Thu, 12 Feb 2015 21:02:53 -0600
+
+globus-xio (5.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-581: Prefer IPV6 address family when creating a listener on all interfaces
+
+ -- Globus Toolkit <support@globus.org>  Thu, 12 Feb 2015 14:43:31 -0600
+
+globus-xio (5.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-581: Prefer IPV6 address family when creating a listener on all interfaces
+
+ -- Globus Toolkit <support@globus.org>  Mon, 09 Feb 2015 15:46:08 -0600
+
 globus-xio (5.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Better fix for testing on localhost

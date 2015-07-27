@@ -1,13 +1,13 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	10.9
+Version:	10.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gatekeeper-10.9.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -15,18 +15,26 @@ Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	globus-gssapi-gsi%{?_isa} >= 9
 Requires:       psmisc
 
-%if 0%{?suse_version} == 0
-Requires:       lsb
-%else
+%if 0%{?suse_version} > 0
 Requires:       insserv
+%else
+%if 0%{?rhel} >= 6 || 0%{?fedora} >= 20
+Requires:       lsb-core-noarch
+%else
+Requires:       lsb
+%endif
 %endif
 
 Requires(post): globus-common-progs >= 13.4
 Requires(preun):globus-common-progs >= 13.4
-%if 0%{?suse_version} == 0
-BuildRequires:       lsb
-%else
+%if 0%{?suse_version} > 0
 BuildRequires:       insserv
+%else
+%if 0%{?rhel} >= 6 || 0%{?fedora} >= 20
+BuildRequires:       lsb-core-noarch
+%else
+BuildRequires:       lsb
+%endif
 %endif
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-gssapi-gsi-devel >= 9
@@ -112,6 +120,10 @@ fi
 
 
 %changelog
+* Mon Apr 06 2015 Globus Toolkit <support@globus.org> - 10.10-1
+- - Remove Dead Code
+- - Require minimal lsb-core for RHEL 6+ and fedora 20+
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 10.9-1
 - doxygen fixes
 

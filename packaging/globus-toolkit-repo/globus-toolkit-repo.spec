@@ -1,10 +1,10 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        14
+Release:        18
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
-URL:            http://www.globus.org/toolkit
+URL:            http://toolkit.globus.org/toolkit
 Source0:        RPM-GPG-KEY-Globus
 Source1:        globus-toolkit-6-stable.repo.in
 Source2:        globus-toolkit-6-testing.repo.in
@@ -12,8 +12,6 @@ Source3:        globus-toolkit-6-unstable.repo.in
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 Provides:       globus-connect-server-repo
-Requires(post): lsb
-Requires(preun): lsb
 
 %description
 This package installs the Globus yum repository configuration and GPG key for
@@ -23,8 +21,8 @@ Globus Toolkit 6.
 %setup -c -T
 
 %build
-repo_root='http://www.globus.org/ftppub/gt6'
-unstable_root='http://www.globus.org/ftppub/gt6/unstable/rpm'
+repo_root='http://toolkit.globus.org/ftppub/gt6'
+unstable_root='http://toolkit.globus.org/ftppub/gt6/unstable/rpm'
 pkg_repos="${pkg_repos:+$pkg_repos }el5"
 el5_stable_baseurl="${repo_root}/stable/rpm/el/5/\$basearch/"
 el5_stable_sourceurl="${repo_root}/stable/rpm/el/5/SRPMS/"
@@ -128,26 +126,36 @@ done
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post
+%posttrans
 # Can't do this here, as it deadlocks on SUSE
 if [ ! -f /etc/SuSE-release ]; then
     rpm --import %{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
 fi
 
-case $(lsb_release -is):$(lsb_release -rs) in
-    CentOS:5* | Scientific*:5* | RedHat*:5* )
+if [ -f /etc/redhat-release ]; then
+    osname=$(rpm -qf /etc/redhat-release --queryformat '%%{Name}')
+    osver=$(rpm -qf /etc/redhat-release --queryformat '%%{Version}')
+elif [ -f /etc/SuSE-release ]; then
+    osname=$(rpm -qf /etc/SuSE-release --queryformat '%%{Name}')
+    osver=$(rpm -qf /etc/SuSE-release --queryformat '%%{Version}')
+else
+    osname=unknown
+    osver=unknown
+fi
+case ${osname}:${osver} in
+    centos*:5* | sl*:5* | redhat*:5* )
         repo=el5
         ;;
-    CentOS:6* | Scientific*:6* | RedHat*:6* )
+    centos*:6* | sl*:6* | redhat*:6* )
         repo=el6
         ;;
-    CentOS:7* | Scientific*:7* | RedHat*:7* )
+    centos*:7* | sl*:7* | redhat*:7* )
         repo=el7
         ;;
-    Fedora*:*)
+    fedora*:*)
         repo=fedora
         ;;
-    SUSE*:11*)
+    sles*:11*)
         repo=sles11
         ;;
     *)
@@ -178,21 +186,38 @@ else
 fi
 
 %preun
-case $(lsb_release -is):$(lsb_release -rs) in
-    CentOS:5* | Scientific*:5* | RedHat*:5* )
+if [ "$1" != 0 ]; then
+    exit 0
+fi
+if [ -f /etc/redhat-release ]; then
+    osname=$(rpm -qf /etc/redhat-release --queryformat '%%{Name}')
+    osver=$(rpm -qf /etc/redhat-release --queryformat '%%{Version}')
+elif [ -f /etc/SuSE-release ]; then
+    osname=$(rpm -qf /etc/SuSE-release --queryformat '%%{Name}')
+    osver=$(rpm -qf /etc/SuSE-release --queryformat '%%{Version}')
+else
+    osname=unknown
+    osver=unknown
+fi
+case ${osname}:${osver} in
+    centos*:5* | sl*:5* | redhat*:5* )
         repo=el5
         ;;
-    CentOS:6* | Scientific*:6* | RedHat*:6* )
+    centos*:6* | sl*:6* | redhat*:6* )
         repo=el6
         ;;
-    CentOS:7* | Scientific*:7* | RedHat*:7* )
+    centos*:7* | sl*:7* | redhat*:7* )
         repo=el7
         ;;
-    Fedora*:*)
+    fedora*:*)
         repo=fedora
         ;;
-    SUSE*:11*)
+    sles*:11*)
         repo=sles11
+        ;;
+    *)
+	echo "Unsupported repo" 1>&2
+	exit 1
         ;;
 esac
 
@@ -214,6 +239,18 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Mon Apr 06 2015 Globus Toolkit <support@globus.org> - 6-18
+- Handle update from broken versions
+
+* Wed Apr 01 2015 Globus Toolkit <support@globus.org> - 6-17
+- Don't require lsb
+
+* Tue Mar 31 2015 Globus Toolkit <support@globus.org> - 6-16
+- Don't preun when upgrading
+
+* Mon Mar 30 2015 Globus Toolkit <support@globus.org> - 6-15
+- Rename www.globus.org -> toolkit.globus.org
+
 * Thu Nov 13 2014 Globus Toolkit <support@globus.org> - 6-14
 - Don't use zypper from postinstall on SUSE
 

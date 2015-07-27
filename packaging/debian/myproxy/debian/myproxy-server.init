@@ -53,13 +53,12 @@ if [ "$1" != "status" ]; then
 fi
 
 start() {
-    pidofproc $prog > /dev/null && log_warning_msg "$prog already running" && exit 0
+    pidofproc -p $PIDFILE $prog > /dev/null && log_warning_msg "$prog already running" && exit 0
     cd /
-    X509_USER_CERT=$X509_USER_CERT X509_USER_KEY=$X509_USER_KEY start_daemon -p $PIDFILE "$exec" ${MYPROXY_OPTIONS}
+    X509_USER_CERT=$X509_USER_CERT X509_USER_KEY=$X509_USER_KEY start_daemon -p $PIDFILE "$exec" ${MYPROXY_OPTIONS} -P $PIDFILE
     retval="$?"
     if [ "$retval" -eq 0 ]; then
 	log_success_msg "Started $prog"
-	pidofproc "$exec" > "$PIDFILE"
     else
 	log_failure_msg "Error starting $prog"
     fi

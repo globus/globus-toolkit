@@ -126,21 +126,21 @@ hdfs_dump_buffer_immed(
     globus_size_t                     nbytes);
 
 // Buffer management for reads
-inline globus_result_t
+globus_result_t
 allocate_buffers(
     hdfs_handle_t *    hdfs_handle,
     globus_size_t             num_buffers);
     
-inline globus_ssize_t
+globus_ssize_t
 find_buffer(
     hdfs_handle_t *    hdfs_handle,
     globus_byte_t *    buffer); 
             
-inline globus_ssize_t
+globus_ssize_t
 find_empty_buffer(
     hdfs_handle_t *    hdfs_handle);
 
-inline void
+void
 disgard_buffer(
     hdfs_handle_t * hdfs_handle,
     globus_ssize_t idx);

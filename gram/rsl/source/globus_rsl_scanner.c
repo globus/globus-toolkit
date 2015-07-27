@@ -479,8 +479,8 @@ static yyconst flex_int32_t yy_rule_can_match_eol[31] =
 #define yymore() yymore_used_but_not_detected
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
-#line 1 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
-#line 2 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 1 "globus_rsl_scanner.l"
+#line 2 "globus_rsl_scanner.l"
 /*
  * Copyright 1999-2006 University of Chicago
  * 
@@ -572,10 +572,11 @@ static yyconst flex_int32_t yy_rule_can_match_eol[31] =
  */
 #undef YY_INPUT
 #define YY_INPUT(b,r,s) globus_i_rsl_yyinput(globus_rslget_extra(yyscanner), b, &r, s)
+#define YY_NO_INPUT
 /*
 COMMENT_BODY               ((("*"[^)])|([^*]))*)
 */
-#line 129 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 130 "globus_rsl_scanner.l"
   /* the following are all exclusive states.  the use of the states
    * are explained above.
    *
@@ -599,7 +600,7 @@ COMMENT_BODY               ((("*"[^)])|([^*]))*)
 
 
 
-#line 603 "globus_rsl_scanner.c"
+#line 604 "globus_rsl_scanner.c"
 
 #define INITIAL 0
 #define COMMENT 1
@@ -841,7 +842,7 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 168 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 169 "globus_rsl_scanner.l"
 
 
 
@@ -849,7 +850,7 @@ YY_DECL
     parse_state = globus_rslget_extra(yyscanner);
 
 
-#line 853 "globus_rsl_scanner.c"
+#line 854 "globus_rsl_scanner.c"
 
     yylval = yylval_param;
 
@@ -951,25 +952,24 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 175 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 176 "globus_rsl_scanner.l"
 { BEGIN (parse_state->calling_state);
    /* we just ate a character "by accident", so push it back */
    yyless(yyleng-1);
 
    return (RSL_OP_CONCATENATE);
-dummy_implicit_concatenate_label: ;
 }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 184 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 184 "globus_rsl_scanner.l"
 { BEGIN (parse_state->calling_state);
 }
 	YY_BREAK
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 187 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 187 "globus_rsl_scanner.l"
 { }
 	YY_BREAK
 case 4:
@@ -978,13 +978,13 @@ case 4:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 188 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 188 "globus_rsl_scanner.l"
 { }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 190 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 190 "globus_rsl_scanner.l"
 { /* conditional BEGIN */
   if ( yytext[0] != parse_state->quote_delimiter ) {
     /* another quoted character */
@@ -1001,7 +1001,7 @@ YY_RULE_SETUP
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 203 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 203 "globus_rsl_scanner.l"
 { /* conditional BEGIN */
   if ( yytext[0] == parse_state->quote_delimiter ) {
     /* an escaped delimiter */
@@ -1020,7 +1020,6 @@ YY_RULE_SETUP
     /* return the quoted literal token */
     {
       char * buf;
-      char c;
       int i;
 
       buf = globus_malloc (sizeof(char)
@@ -1042,14 +1041,13 @@ YY_RULE_SETUP
       parse_state->quote_text_fifo = NULL;
 
       return (RSL_STRING);
-    dummy_quoted_literal_label: ;
     }
   }
 }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 249 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 247 "globus_rsl_scanner.l"
 { 
   parse_state->calling_state = YY_START;
   BEGIN (COMMENT);
@@ -1057,7 +1055,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 254 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 252 "globus_rsl_scanner.l"
 {
   parse_state->calling_state = YY_START;
   BEGIN (QUOTE);
@@ -1070,7 +1068,7 @@ YY_RULE_SETUP
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 263 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 261 "globus_rsl_scanner.l"
 { 
   parse_state->calling_state = YY_START;
   BEGIN (QUOTE);
@@ -1082,7 +1080,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 272 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 270 "globus_rsl_scanner.l"
 { BEGIN (VARIABLE);
   {
     paren_count_stack_elem_t * frame;
@@ -1093,7 +1091,6 @@ YY_RULE_SETUP
   }
 
   return (RSL_VARIABLE_START);
-dummy_variable_start_label: ;
 }
 	YY_BREAK
 case 11:
@@ -1101,7 +1098,7 @@ case 11:
 yyg->yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 285 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 282 "globus_rsl_scanner.l"
 { 
   parse_state->calling_state = YY_START;
   BEGIN (IMPLICIT_CONCATENATE);
@@ -1113,43 +1110,38 @@ YY_RULE_SETUP
    */
   yylval->String = strdup (yytext);
   return (RSL_STRING);
-dummy_unquoted_literal_label_1: ;
 }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 299 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 295 "globus_rsl_scanner.l"
 {
   yylval->String = strdup (yytext);
   return (RSL_STRING);
-dummy_unquoted_literal_label_2: ;
 }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 305 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 300 "globus_rsl_scanner.l"
 { 
   return (RSL_LPAREN); 
-dummy_lparen_label_1: ;
 }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 310 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 304 "globus_rsl_scanner.l"
 {
   assert (! globus_list_empty (parse_state->paren_count_stack));
   (((paren_count_stack_elem_t *) 
     globus_list_first (parse_state->paren_count_stack))->count) += 1;
   return (RSL_LPAREN);
-dummy_lparen_label_2: ;
 }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 318 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 311 "globus_rsl_scanner.l"
 {
   return (RSL_RPAREN);
-dummy_rparen_label_1: ;
 }
 	YY_BREAK
 case 16:
@@ -1157,7 +1149,7 @@ case 16:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 323 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 315 "globus_rsl_scanner.l"
 { 
 						  /* conditional BEGIN */
   int * paren_countp;
@@ -1197,12 +1189,11 @@ YY_RULE_SETUP
   }
 
   return (RSL_RPAREN);
-dummy_rparen_label_2: ;
 }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 365 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 356 "globus_rsl_scanner.l"
 { /* conditional BEGIN */
   int * paren_countp;
 
@@ -1232,103 +1223,91 @@ YY_RULE_SETUP
   }
 
   return (RSL_RPAREN);
-dummy_rparen_label_4: ;
 }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 397 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 387 "globus_rsl_scanner.l"
 {
   return (RSL_OP_EQ);
-dummy_op_eq_label: ;
 }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 402 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 391 "globus_rsl_scanner.l"
 {
   return (RSL_OP_NEQ);
-dummy_op_neq_label: ;
 }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 407 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 395 "globus_rsl_scanner.l"
 {
   return (RSL_OP_LT);
-dummy_op_lt_label: ;
 }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 412 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 399 "globus_rsl_scanner.l"
 {
   return (RSL_OP_LTEQ);
-dummy_op_lteq_label: ;
 }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 417 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 403 "globus_rsl_scanner.l"
 {
   return (RSL_OP_GT);
-dummy_op_gt_label: ;
 }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 422 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 407 "globus_rsl_scanner.l"
 {
   return (RSL_OP_GTEQ);
-dummy_op_gteq_label: ;
 }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 427 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 411 "globus_rsl_scanner.l"
 {
   return (RSL_OP_MULTIREQ);
-dummy_op_multireq_label: ;
 }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 432 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 415 "globus_rsl_scanner.l"
 {
   return (RSL_OP_AND);
-dummy_op_conjunction_label: ;
 }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 437 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 419 "globus_rsl_scanner.l"
 {
   return (RSL_OP_OR);
-dummy_op_disjunction_label: ;
 }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 442 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 423 "globus_rsl_scanner.l"
 {
   return (RSL_OP_CONCATENATE);
-dummy_op_concatenate_label: ;
 }
 	YY_BREAK
 case 28:
 /* rule 28 can match eol */
 YY_RULE_SETUP
-#line 447 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 427 "globus_rsl_scanner.l"
 { }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 450 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 430 "globus_rsl_scanner.l"
 {
   /* we ran into a character not matched by any of the
    * above patterns.  let the parser sort it out. */
   yyterminate();
-dummy_invalid_char_label: ;
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
@@ -1337,20 +1316,19 @@ case YY_STATE_EOF(VARIABLE):
 case YY_STATE_EOF(QUOTE):
 case YY_STATE_EOF(QUOTE_HIT_DELIM):
 case YY_STATE_EOF(IMPLICIT_CONCATENATE):
-#line 458 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 437 "globus_rsl_scanner.l"
 {
   /* we ran into EOF in any of the states.  maybe error, maybe not.
    * let the parser sort it out. */
   yyterminate();
-dummy_eof_label: ;
 }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 464 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 442 "globus_rsl_scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1354 "globus_rsl_scanner.c"
+#line 1332 "globus_rsl_scanner.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2495,4 +2473,4 @@ void globus_rslfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 464 "../../../../../gram/rsl/source/globus_rsl_scanner.l"
+#line 442 "globus_rsl_scanner.l"

@@ -12,7 +12,7 @@ endif
 include /usr/share/quilt/quilt.make
 
 name = globus-common
-version = 15.27
+version = 15.30
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp
@@ -86,7 +86,7 @@ build-stamp: configure-stamp
 
 	$(MAKE)
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) check
+	NO_EXTERNAL_NET=1 $(MAKE) check
 endif
 
 	touch $@

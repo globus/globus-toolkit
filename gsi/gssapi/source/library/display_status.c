@@ -55,8 +55,6 @@ GSS_CALLCONV gss_display_status(
     char *                              error_chain_string = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     char *                              reason;
-    static char *                       _function_name_ =
-        "gss_display_status";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     status_string->length = 0;

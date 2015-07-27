@@ -230,6 +230,7 @@ globus_gsi_cred_handle_attrs_copy(
  * @ingroup globus_gsi_cred_handle_attrs
  * @details
  * Set the Trusted CA Certificate Directory Location
+ * @deprecated This function is a no-op
  *
  * @param handle_attrs
  *        the credential handle attributes to set
@@ -242,7 +243,7 @@ globus_gsi_cred_handle_attrs_copy(
 globus_result_t
 globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char *                              ca_cert_dir)
+    const char *                        ca_cert_dir)
 {
     globus_result_t                     result;
     static char *                       _function_name_ =
@@ -276,6 +277,10 @@ globus_gsi_cred_handle_attrs_set_ca_cert_dir(
  * @ingroup globus_gsi_cred_handle_attrs
  * @details
  * Get the trusted CA certificate directory
+ *
+ * @deprecated This function has been turned into a no-op, please use
+ * GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR to obtain the trusted certs
+ * directory.
  *
  * @param handle_attrs
  *        the credential handle attributes to get the trusted ca cert 

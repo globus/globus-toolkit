@@ -1508,7 +1508,6 @@ globus_l_xio_udp_cntl(
     char *                              in_string;
     globus_sockaddr_t                   sock_name;
     globus_xio_system_socket_t          fd;
-    globus_size_t                       len;
     globus_socklen_t                    optlen;
     int                                 flags;
     char **                             out_string;

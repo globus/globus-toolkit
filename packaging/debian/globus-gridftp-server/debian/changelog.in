@@ -1,3 +1,51 @@
+globus-gridftp-server (8.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-517: add update_bytes* api that sets byte counters and range markers seperately
+
+ -- Globus Toolkit <support@globus.org>  Thu, 23 Jul 2015 13:41:11 -0500
+
+globus-gridftp-server (7.26-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix GLOBUS_VERSION detection during configure from installer
+
+ -- Globus Toolkit <support@globus.org>  Fri, 05 Jun 2015 10:52:19 -0400
+
+globus-gridftp-server (7.25-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix order of drivers when using netmgr
+
+ -- Globus Toolkit <support@globus.org>  Tue, 07 Apr 2015 15:03:07 -0400
+
+globus-gridftp-server (7.24-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix netmanager crash
+  * allow netmanager calls when taskid isn't set
+
+ -- Globus Toolkit <support@globus.org>  Fri, 27 Mar 2015 03:20:34 -0500
+
+globus-gridftp-server (7.23-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix threads commandline arg processing
+  * prevent parse error on pre-init envs from raising assertion
+
+ -- Globus Toolkit <support@globus.org>  Mon, 16 Mar 2015 17:50:10 -0500
+
+globus-gridftp-server (7.22-1+gt6.@distro@) @distro@; urgency=low
+
+  * windows fix
+
+ -- Globus Toolkit <support@globus.org>  Fri, 06 Mar 2015 20:31:22 -0600
+
+globus-gridftp-server (7.21-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-586: Restrict sharing based on username or group membership
+  * GT-552: don't enable udt without threads
+  * GT-585: Environrment and threading config not loaded from config dir
+  * Ignore config.d files with a '.' in name
+  * always install udt driver
+
+ -- Globus Toolkit <support@globus.org>  Fri, 06 Mar 2015 18:48:32 -0600
+
 globus-gridftp-server (7.20-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix autoreconf error on some setups

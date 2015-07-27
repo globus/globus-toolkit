@@ -2,8 +2,6 @@
 
 static gfork_i_state_t **               gfork_l_state_tansitions;
 
-static gfork_i_state_t **               gfork_l_child_state_tansitions;
-
 static char *                           gfork_l_state_names[] =
 {
     "GFORK_STATE_NONE",

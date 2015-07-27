@@ -27,12 +27,11 @@
 #include "globus_net_manager_attr.h"
 
 #ifdef __cplusplus
-extern "C"
+extern "C" {
 #endif
 
-typedef struct globus_i_net_manager_context_s *globus_net_manager_context_t;
-
 /**
+ * @brief Net Manager Context Management Functions
  * @defgroup globus_net_manager_context Context
  * @ingroup globus_net_manager
  * @details
@@ -53,6 +52,17 @@ typedef struct globus_i_net_manager_context_s *globus_net_manager_context_t;
  * When the network manager context is no longer needed, destroy
  * it by calling globus_net_manager_context_destroy().
  */
+
+
+/**
+ * @brief Net Manager Context
+ * @ingroup globus_net_manager_context
+ * @details
+ * A structure of this type is used to thread attributes through the set
+ * of configured net manager modules and invoke their functions in
+ * configuration order.
+ */
+typedef struct globus_i_net_manager_context_s *globus_net_manager_context_t;
 
 globus_result_t
 globus_net_manager_context_init(

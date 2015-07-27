@@ -61,8 +61,6 @@ GSS_CALLCONV gss_export_cred(
     gss_cred_id_desc *                  cred_desc = NULL;
     globus_result_t                     local_result;
     char *                              proxy_filename = NULL;
-    static char *                       _function_name_ =
-        "gss_export_cred";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -78,7 +76,7 @@ GSS_CALLCONV gss_export_cred(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             (_GGSL("NULL or empty export_buffer parameter passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -92,7 +90,7 @@ GSS_CALLCONV gss_export_cred(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             (_GGSL("NULL or empty export_buffer parameter passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
 

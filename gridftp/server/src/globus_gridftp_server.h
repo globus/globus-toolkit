@@ -1073,13 +1073,48 @@ globus_gridftp_server_query_op_info(
 
 
 /*
- * update bytes
+ * update bytes written to storage
  * 
  * This should be called during a recv(), after each successful write
  * to the storage system.
+ * 
+ * Use EITHER globus_gridftp_server_update_bytes_written() OR 
+ * both globus_gridftp_server_update_bytes_recvd() and 
+ * globus_gridftp_server_update_range_recvd() for a given range.
  */ 
 void
 globus_gridftp_server_update_bytes_written(
+    globus_gfs_operation_t              op,
+    globus_off_t                        offset,
+    globus_off_t                        length);
+
+/*
+ * update bytes recieved, but not yet written to storage
+ * use this when there may be a delay between reciving data 
+ * and writing to storage.  this will ensure accurate performance
+ * markers, but will not cause range/restart markers to be sent.
+ * 
+ * Use EITHER globus_gridftp_server_update_bytes_written() OR 
+ * both globus_gridftp_server_update_bytes_recvd() and 
+ * globus_gridftp_server_update_range_recvd() for a given range.
+ */
+void
+globus_gridftp_server_update_bytes_recvd(
+    globus_gfs_operation_t              op,
+    globus_off_t                        length);
+
+/*
+ * update bytes written to storage
+ * use this when there may be a delay between reciving data 
+ * and writing to storage.  this will cause range/restart markers 
+ * to be sent.
+ * 
+ * Use EITHER globus_gridftp_server_update_bytes_written() OR 
+ * both globus_gridftp_server_update_bytes_recvd() and 
+ * globus_gridftp_server_update_range_recvd() for a given range.
+ */
+void
+globus_gridftp_server_update_range_recvd(
     globus_gfs_operation_t              op,
     globus_off_t                        offset,
     globus_off_t                        length);

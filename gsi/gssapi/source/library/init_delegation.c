@@ -109,8 +109,7 @@ GSS_CALLCONV gss_init_delegation(
     globus_gsi_cert_utils_cert_type_t   cert_type;
     int                                 index;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "init_delegation";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     if(minor_status == NULL)

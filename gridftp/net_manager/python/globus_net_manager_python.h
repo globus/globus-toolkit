@@ -24,8 +24,10 @@ extern "C" {
 #endif
 
 /**
+ * @brief Net Manager Python Module
  * @defgroup globus_net_manager_python Python Module
  * @ingroup globus_net_manager
+ * @details
  * The Net Manager Python module is an example module that provides basic
  * Python language bindings to the Network Manager callout functionality. 
  * To use this example, define a python module that implements the some
@@ -35,6 +37,8 @@ def pre_listen(task_id, transport, attrs):
     # return list of (scope, name, value) tuples or None
 def post_listen(task_id, transport, local_contact, attrs):
     # return a tuple containing (local_contact_out, [(scope, name, value),...])
+def end_listen(task_id, transport, local_contact, attrs):
+    # return a list of (scope, name, value) tuples or None
 def pre_accept(task_id, transport, local_contact, attrs):
     # return list of (scope, name, value) tuples or None
 def post_accept(task_id, transport, local_contact, remote_contact, attrs):
@@ -48,19 +52,43 @@ def pre_close(task_id, transport, local_contact, remote_contact, attrs):
 def post_close(task_id, transport, local_contact, remote_contact, attrs):
     # return None
 @endcode
- * The <em>task_id</em>, <em>transport</em>, <em>local_contact</em>,
- * and <em>remote_contact</em> parameters to these functions are all string
+ * The *task_id*, *transport*, *local_contact*,
+ * and *remote_contact* parameters to these functions are all string
  * objects.
- * The <em>attrs</em> parameter to these functions are lists of 3-tuples
+ * The *attrs* parameter to these functions are lists of 3-tuples
  * (scope, name, value).
  *
- * To configure the network manager to use this module, set the "pymod"
- * attribute in the "python" scope to the name of the python module to 
- * import and use. For example to use the "netman.py" module, add this
- * attribute: ("python", "pymod", "netman").
+ * To use this with the GridFTP server, add a file containing the following to
+ * the GridFTP configuration directory <code>/etc/gridftp.d</code>:
+@verbatim
+$PYTHONPATH PATH
+xnetmgr "manager=python;pymod=MODULE_NAME;"
+@endverbatim
+ * Where 'PATH' is the directory containing your module
+ * and 'MODULE_NAME' is the name of the python module that you
+ * would use to import it (i.e. without the '.py' extension). So a module
+ * '/usr/local/globus/routeman.py' would require
+@verbatim
+$PYTHONPATH /usr/local/globus
+xnetmgr "manager=python;pymod=routeman;"
+@endverbatim
  *
- * To use this with the XIO module,
- * set the string options <code>module=python;pymod=netman;</code>
+ * To use this with the XIO module directly,
+ * set the string options <code>manager=python;pymod=routeman;</code>.
+ * You'll need to set the <code>PYTHONPATH</code> environment variable
+ * elsewhere.
+ *
+ * To configure the network manager to use this module directly without
+ * XIO, set the "pymod" attribute in the "python" scope to the name of the
+ * python module to import and use. For example:
+@code
+globus_net_manager_attr_init(
+    &attr,
+    "python",
+    "pymod",
+    "routeman");
+@endcode
+ * and pass this to the context functions.
  */
 GlobusExtensionDeclareModule(globus_net_manager_python);
 

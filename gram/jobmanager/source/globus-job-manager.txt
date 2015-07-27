@@ -1,0 +1,240 @@
+[[gram5-cmd-globus-job-manager]]
+= GLOBUS-JOB-MANAGER(8) =
+:doctype: manpage
+:man source: University of Chicago
+
+== NAME ==
+globus-job-manager - Execute and monitor jobs
+
+== SYNOPSIS ==
+**++globus-job-manager++** ++-type++ 'LRM' [++-conf++ 'CONFIG_PATH'] [++-help++ ] [++-globus-host-manufacturer++ 'MANUFACTURER'] [++-globus-host-cputype++ 'CPUTYPE'] [++-globus-host-osname++ 'OSNAME'] [++-globus-host-osversion++ 'OSVERSION'] [++-globus-gatekeeper-host++ 'HOST'] [++-globus-gatekeeper-port++ 'PORT'] [++-globus-gatekeeper-subject++ 'SUBJECT'] [++-home++ 'GLOBUS_LOCATION'] [++-target-globus-location++ 'TARGET_GLOBUS_LOCATION'] [++-condor-arch++ 'ARCH'] [++-condor-os++ 'OS'] [++-history++ 'HISTORY_DIRECTORY'] [++-scratch-dir-base++ 'SCRATCH_DIRECTORY'] [++-enable-syslog++ ] [++-stdio-log++ 'LOG_DIRECTORY'] [++-log-pattern++ 'PATTERN'] [++-log-levels++ 'LEVELS'] [++-state-file-dir++ 'STATE_DIRECTORY'] [++-globus-tcp-port-range++ 'PORT_RANGE'] [++-globus-tcp-source-range++ 'SOURCE_RANGE'] [++-x509-cert-dir++ 'TRUSTED_CERTIFICATE_DIRECTORY'] [++-cache-location++ 'GASS_CACHE_DIRECTORY'] [++-k++ ] [++-extra-envvars++ 'VAR=VAL,...'] [++-seg-module++ 'SEG_MODULE'] [++-audit-directory++ 'AUDIT_DIRECTORY'] [++-globus-toolkit-version++ 'TOOLKIT_VERSION'] [++-disable-streaming++ ] [++-disable-usagestats++ ] [++-usagestats-targets++ 'TARGET'] [++-service-tag++ 'SERVICE_TAG'] 
+
+== Description ==
+
+The **++globus-job-manager++** program is a servivce which starts and
+controls GRAM jobs which are executed by a local resource management
+system, such as LSF or Condor. The **++globus-job-manager++** program is
+typically started by the **++globus-gatekeeper++** program and not
+directly by a user. It runs until all jobs it is managing have
+terminated or its delegated credentials have expired. 
+
+Typically, users interact with the **++globus-job-manager++** program
+via client applications such as **++globusrun++**,
+**++globus-job-submit++**, or tools such as CoG jglobus or Condor-G. 
+
+The full set of command-line options to **++globus-job-manager++**
+consists of: 
+
+**-help**::
+     Display a help message to standard error and exit
+
+**-type 'LRM'**::
+     Execute jobs using the local resource manager named 'LRM'.
+
+**-conf 'CONFIG_PATH'**::
+     Read additional command-line arguments from the file 'CONFIG_PATH'. If present, this must be the first command-line argument to the **++globus-job-manager++** program.
+
+**-globus-host-manufacturer
+                'MANUFACTURER'**::
+     Indicate the manufacturer of the system which the jobs will execute on. This parameter sets the value of the ++$(GLOBUS_HOST_MANUFACTURER)++ RSL substitution to 'MANUFACTURER'
+
+**-globus-host-cputype 'CPUTYPE'**::
+     Indicate the CPU type of the system which the jobs will execute on. This parameter sets the value of the ++$(GLOBUS_HOST_CPUTYPE)++ RSL substitution to 'CPUTYPE'
+
+**-globus-host-osname 'OSNAME'**::
+     Indicate the operating system type of the system which the jobs will execute on. This parameter sets the value of the ++$(GLOBUS_HOST_OSNAME)++ RSL substitution to 'OSNAME'
+
+**-globus-host-osversion 'OSVERSION'**::
+     Indicate the operating system version of the system which the jobs will execute on. This parameter sets the value of the ++$(GLOBUS_HOST_OSVERSION)++ RSL substitution to 'OSVERSION'
+
+**-globus-gatekeeper-host 'HOST'**::
+     Indicate the host name of the machine which the job was submitted to. This parameter sets the value of the ++$(GLOBUS_GATEKEEPER_HOST)++ RSL substitution to 'HOST'
+
+**-globus-gatekeeper-port 'PORT'**::
+     Indicate the TCP port number of gatekeeper to which jobs are submitted to. This parameter sets the value of the ++$(GLOBUS_GATEKEEPER_PORT)++ RSL substitution to 'PORT'
+
+**-globus-gatekeeper-subject 'SUBJECT'**::
+     Indicate the X.509 identity of the gatekeeper to which jobs are submitted to. This parameter sets the value of the ++$(GLOBUS_GATEKEEPER_SUBJECT)++ RSL substitution to 'SUBJECT'
+
+**-home 'GLOBUS_LOCATION'**::
+     Indicate the path where the Globus Toolkit(r) is installed on the service node. This is used by the job manager to locate its support and configuration files.
+
+**-target-globus-location 'TARGET_GLOBUS_LOCATION'**::
+     Indicate the path where the Globus Toolkit(r) is installed on the execution host. If this is omitted, the value specified as a parameter to '-home' is used. This parameter sets the value of the ++$(GLOBUS_LOCATION)++ RSL substitution to 'TARGET_GLOBUS_LOCATION'
+
+**-history 'HISTORY_DIRECTORY'**::
+     Configure the job manager to write job history files to 'HISTORY_DIRECTORY'. These files are described in the FILES section below.
+
+**-scratch-dir-base 'SCRATCH_DIRECTORY'**::
+     Configure the job manager to use 'SCRATCH_DIRECTORY' as the default scratch directory root if a relative path is specified in the job RSL's ++scratch_dir++ attribute.
+
+**-enable-syslog**::
+     Configure the job manager to write log messages via syslog. Logging is further controlled by the argument to the '-log-levels' parameter described below.
+
+**-log-pattern 'PATTERN'**::
+     Configure the job manager to write log messages to files named by the string 'PATTERN'. The 'PATTERN' string may contain job-independent RSL substitutions such as ++$(HOME)++, ++$(LOGNAME)++, etc, as well as the special RSL substition ++$(DATE)++ which will be resolved at log time to the date in YYYYMMDD form.
+
+**-stdio-log 'LOG_DIRECTORY'**::
+     Configure the job manager to write log messages to files in the 'LOG_DIRECTORY' directory. This is a backward-compatible parameter, equivalent to '-log-pattern '.
+
+**-log-levels 'LEVELS'**::
+     Configure the job manager to write log messages of certain levels to syslog and/or log files. The available log levels are ++FATAL++, ++ERROR++, ++WARN++, ++INFO++, ++DEBUG++, and ++TRACE++. Multiple values can be combined with the ++|++ character. The default value of logging when enabled is ++FATAL|ERROR++.
+
+**-state-file-dir 'STATE_DIRECTORY'**::
+     Configure the job manager to write state files to 'STATE_DIRECTORY'. If not specified, the job manager uses the default of ++$GLOBUS_LOCATION/tmp/gram_job_state/++. This directory must be writable by all users and be on a file system which supports POSIX advisory file locks. . This directory must be writable by all users and be on a file system which supports POSIX advisory file locks.
+
+**-globus-tcp-port-range 'PORT_RANGE'**::
+     Configure the job manager to restrict its TCP/IP communication to use ports in the range described by 'PORT_RANGE'. This value is also made available in the job environment via the ++GLOBUS_TCP_PORT_RANGE++ environment variable.
+
+**-globus-tcp-source-range 'SOURCE_RANGE'**::
+     Configure the job manager to restrict its TCP/IP communication to use source ports in the range described by 'SOURCE_RANGE'. This value is also made available in the job environment via the ++GLOBUS_TCP_SOURCE_RANGE++ environment variable.
+
+**-x509-cert-dir 'TRUSTED_CERTIFICATE_DIRECTORY'**::
+     Configure the job manager to search 'TRUSTED_CERTIFICATE_DIRECTORY' for its list of trusted CA certificates and their signing policies. This value is also made available in the job environment via the ++X509_CERT_DIR++ environment variable.
+
+**-cache-location 'GASS_CACHE_DIRECTORY'**::
+     Configure the job manager to use the path 'GASS_CACHE_DIRECTORY' for its temporary GASS-cache files. This value is also made available in the job environment via the ++GLOBUS_GASS_CACHE_DEFAULT++ environment variable.
+
+**-k**::
+     Configure the job manager to assume it is using Kerberos for authentication instead of X.509 certificates. This disables some certificate-specific processing in the job manager.
+
+**-extra-envvars 'VAR=VAL,...'**::
+     Configure the job manager to define a set of environment variables in the job environment beyond those defined in the base job environment. The format of the parameter to this argument is a comma-separated sequence of VAR=VAL pairs, where ++VAR++ is the variable name and ++VAL++ is the variable's value. If the value is not specified, then the value of the variable in the job manager's environment is used. This option may be present multiple times on the command-line or the job manager configuration file to append multiple environment settings.
+
+**-seg-module 'SEG_MODULE'**::
+     Configure the job manager to use the schedule event generator module named by 'SEG_MODULE' to detect job state changes events from the local resource manager, in place of the less efficient polling operations used in GT2. To use this, one instance of the **++globus-job-manager-event-generator++** must be running to process events for the LRM into a generic format that the job manager can parse.
+
+**-audit-directory 'AUDIT_DIRECTORY'**::
+     Configure the job manager to write audit records to the directory named by 'AUDIT_DIRECTORY'. This records can be loaded into a database using the **++globus-gram-audit++** program.
+
+**-globus-toolkit-version 'TOOLKIT_VERSION'**::
+     Configure the job manager to use 'TOOLKIT_VERSION' as the version for audit and usage stats records.
+
+**-service-tag 'SERVICE_TAG'**::
+     Configure the job manager to use 'SERVICE_TAG' as a unique identifier to allow multiple GRAM instances to use the same job state directories without interfering with each other's jobs. If not set, the value ++untagged++ will be used.
+
+**-disable-streaming**::
+     Configure the job manager to disable file streaming. This is propagated to the LRM script interface but has no effect in GRAM5.
+
+**-disable-usagestats**::
+     Disable sending of any usage stats data, even if '-usagestats-targets' is present in the configuration.
+
+**-usagestats-targets 'TARGET'**::
+     Send usage packets to a data collection service for analysis. The 'TARGET' string consists of a comma-separated list of HOST:PORT combinations, each contaiing an optional list of data to send. See http://confluence.globus.org/display/~bester/GRAM5+Usage+Stats+Packets[Usage Stats Packets] for more information about the tags. Special tag strings of ++all++ (which enables all tags) and ++default++ may be used, or a sequence of characters for the various tags. If this option is not present in the configuration, then the default of usage-stats.globus.org:4810 is used.
+
+**-condor-arch 'ARCH'**::
+     Set the architecture specification for condor jobs to be 'ARCH' in job classified ads generated by the GRAM5 codnor LRM script. This is required for the condor LRM but ignored for all others.
+
+**-condor-os 'OS'**::
+     Set the operating system specification for condor jobs to be 'OS' in job classified ads generated by the GRAM5 codnor LRM script. This is required for the condor LRM but ignored for all others.
+
+
+
+== Environment ==
+
+If the following variables affect the execution of
+**++globus-job-manager++** 
+
+**++HOME++**::
+     User's home directory.
+
+**++LOGNAME++**::
+     User's name.
+
+**++JOBMANAGER_SYSLOG_ID++**::
+     String to prepend to syslog audit messages.
+
+**++JOBMANAGER_SYSLOG_FAC++**::
+     Facility to log syslog audit messages as.
+
+**++JOBMANAGER_SYSLOG_LVL++**::
+     Priority level to use for syslog audit messages.
+
+**++GATEKEEPER_JM_ID++**::
+     Job manager ID to be used in syslog audit records.
+
+**++GATEKEEPER_PEER++**::
+     Peer information to be used in syslog audit records
+
+**++GLOBUS_ID++**::
+     Credential information to be used in syslog audit records
+
+**++GLOBUS_JOB_MANAGER_SLEEP++**::
+     Time (in seconds) to sleep when the job manager is started. [For debugging purposes only]
+
+**++GRID_SECURITY_HTTP_BODY_FD++**::
+     File descriptor of an open file which contains the initial job request and to which the initial job reply should be sent. This file descriptor is inherited from the **++globus-gatekeeper++**.
+
+**++X509_USER_PROXY++**::
+     Path to the X.509 user proxy which was delegated by the client to the **++globus-gatekeeper++** program to be used by the job manager.
+
+**++GRID_SECURITY_CONTEXT_FD++**::
+     File descriptor containing an exported security context that the job manager should use to reply to the client which submitted the job.
+
+**++GLOBUS_USAGE_TARGETS++**::
+     Default list of usagestats services to send usage packets to.
+
+**++GLOBUS_TCP_PORT_RANGE++**::
+     Default range of allowed TCP ports to listen on. The '-globus-tcp-port-range' command-line option overrides this.
+
+**++GLOBUS_TCP_SOURCE_RANGE++**::
+     Default range of allowed TCP ports to bind to. The '-globus-tcp-source-range' command-line option overrides this.
+
+
+
+== Files ==
+
+
+
+**++$HOME/.globus/job/HOSTNAME/LRM.TAG.red++**::
+     Job manager delegated user credential.
+
+**++$HOME/.globus/job/HOSTNAME/LRM.TAG.lock++**::
+     Job manager state lock file.
+
+**++$HOME/.globus/job/HOSTNAME/LRM.TAG.pid++**::
+     Job manager pid file.
+
+**++$HOME/.globus/job/HOSTNAME/LRM.TAG.sock++**::
+     Job manager socket for inter-job manager communications.
+
+**++$HOME/.globus/job/HOSTNAME/JOB_ID/++**::
+     Job-specific state directory.
+
+**++$HOME/.globus/job/HOSTNAME/JOB_ID/stdin++**::
+     Standard input which has been staged from a remote URL.
+
+**++$HOME/.globus/job/HOSTNAME/JOB_ID/stdout++**::
+     Standard output which will be staged from a remote URL.
+
+**++$HOME/.globus/job/HOSTNAME/JOB_ID/stderr++**::
+     Standard error which will be staged from a remote URL.
+
+**++$HOME/.globus/job/HOSTNAME/JOB_ID/x509_user_proxy++**::
+     Job-specific delegated credential.
+
+**++$GLOBUS_LOCATION/tmp/gram_job_state/job.HOSTNAME.JOB_ID++**::
+     Job state file.
+
+**++$GLOBUS_LOCATION/tmp/gram_job_state/job.HOSTNAME.JOB_ID.lock++**::
+     Job state lock file. In most cases this will be a symlink to the job manager lock file.
+
+**++$GLOBUS_LOCATION/etc/globus-job-manager.conf++**::
+     Default location of the global job manager configuration file.
+
+**++$GLOBUS_LOCATION/etc/grid-services/jobmanager-LRM++**::
+     Default location of the LRM-specific gatekeeper configuration file.
+
+**++$GLOBUS_LOCATION/etc/globus/gram/job--manager.rvf++**::
+     Default location of the site-specific job manager RSL validation file.
+
+**++$GLOBUS_LOCATION/etc/globus/gram/lrm.rvf++**::
+     Default location of the site-specific job manager RSL validation file for the named lrm.
+
+
+
+== See Also ==
+
+++globusrun(1)++, ++globus-gatekeeper(8)++,
+++globus-personal-gatekeeper(1)++, ++globus-gram-audit(8)++ 
+

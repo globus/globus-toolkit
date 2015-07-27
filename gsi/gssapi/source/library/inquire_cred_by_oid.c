@@ -55,7 +55,6 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
-    gss_cred_id_desc *                  cred;
     X509_EXTENSION *                    extension;
     X509 *                              cert = NULL;
     STACK_OF(X509) *                    cert_chain = NULL;
@@ -65,8 +64,7 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
     int                                 chain_index;
     int                                 found_index;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "gss_inquire_cred_by_oid";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     if(minor_status == NULL)
@@ -76,7 +74,6 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
     }
     
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
-    cred = (gss_cred_id_desc *) cred_handle;
 
     /* parameter checking goes here */
 

@@ -32,6 +32,8 @@
 #ifdef WIN32
 #define strcasecmp stricmp
 #define strncasecmp strnicmp
+#else
+#include <strings.h>
 #endif
 
 /* Comparison types */
@@ -191,8 +193,6 @@ GSS_CALLCONV gss_compare_name(
     int *                               name_equal)
 {
     OM_uint32                           major_status;
-    static char *                       _function_name_ =
-        "gss_compare_name";
     int                                 type1 = -1;
     int                                 type2 = -1;
     gss_name_t                          name1 = name1_P, name2 = name2_P;
@@ -494,16 +494,12 @@ gss_l_compare_x509_to_x509(
             gn1 = sk_GENERAL_NAME_value(name1->subjectAltNames, i1);
             if (gn1->type == GEN_IPADD)
             {
-                ns1 = (char *) ASN1_STRING_data(gn1->d.iPAddress);
-
                 for (i2 = 0; i2 < name_count2; i2++)
                 {
                     gn2 = sk_GENERAL_NAME_value(name2->subjectAltNames, i2);
 
                     if (gn2->type == GEN_IPADD)
                     {
-                        ns2 = (char *) ASN1_STRING_data(gn2->d.iPAddress);
-
                         if (ASN1_OCTET_STRING_cmp(
                                 gn1->d.iPAddress, gn2->d.iPAddress) == 0)
                         {
@@ -678,8 +674,6 @@ gss_l_compare_x509_to_host_ip(
     char                                *ns1, *ns2;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     globus_bool_t                       dns_alt_name_found = GLOBUS_FALSE;
-    static char *                       _function_name_ =
-        "gss_l_compare_x509_to_host_ip";
 
     *name_equal = GSS_NAMES_NOT_EQUAL;
 
@@ -739,7 +733,8 @@ gss_l_compare_x509_to_host_ip(
                     return major_status;
                 }
 
-                if (strcmp(ns1, name2->ip_address) == 0)
+                if (name2->ip_address != NULL &&
+                    strcmp(ns1, name2->ip_address) == 0)
                 {
                     *name_equal = GSS_NAMES_EQUAL;
                     free(ns1);
@@ -840,7 +835,8 @@ gss_l_compare_default_to_hostbased_service(
         }
         else
         {
-            if (strcasecmp(name2->service_name, "host") != 0)
+            if (name2->service_name &&
+                strcasecmp(name2->service_name, "host") != 0)
             {
                 *name_equal = GSS_NAMES_NOT_EQUAL;
 
@@ -1010,7 +1006,9 @@ gss_l_compare_host_ip_to_host_ip(
     {
         goto out;
     }
-    else if (strcmp(name1->ip_address, name2->ip_address) == 0)
+    else if (name1->ip_address != NULL &&
+             name2->ip_address != NULL &&
+             strcmp(name1->ip_address, name2->ip_address) == 0)
     {
         *name_equal = GSS_NAMES_EQUAL;
     }
@@ -1060,10 +1058,13 @@ gss_l_compare_hostnames_with_wildcards(
     int                                 i;
     globus_bool_t                       first_token = GLOBUS_TRUE;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    static char *                       _function_name_ =
-        "gss_l_compare_hostnames_with_wildcards";
 
     major_status = GSS_S_COMPLETE;
+
+    if (host1 == NULL || host2 == NULL)
+    {
+        goto nomatch;
+    }
 
     /* Normalize to lowercase */
     host_cpy1 = malloc(strlen(host1)+1);

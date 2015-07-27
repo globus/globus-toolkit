@@ -77,7 +77,7 @@ sub bad_url
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host/etc/no-such-file-here >/dev/null  2>/dev/null";
+    my $command = "$test_exec -s $proto$source_host$testfile/no-such-file-here >/dev/null  2>/dev/null";
     $errors = run_command($command, 1);
 
     ok($errors eq '', "bad_url $command");

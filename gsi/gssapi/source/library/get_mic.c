@@ -87,8 +87,6 @@ GSS_CALLCONV gss_get_mic(
     unsigned char *                     message_digest;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     globus_result_t                     local_result;
-    static char *                       _function_name_ =
-        "gss_get_mic";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
@@ -101,7 +99,7 @@ GSS_CALLCONV gss_get_mic(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             (_GGSL("Invalid context_handle parameter passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -258,8 +256,6 @@ GSS_CALLCONV gss_sign(
     
 {
     OM_uint32                           major_status;
-    static char *                       _function_name_ =
-        "gss_sign";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     major_status = gss_get_mic(minor_status, 

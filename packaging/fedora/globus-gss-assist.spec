@@ -1,13 +1,13 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	10.13
+Version:	10.15
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gss_assist-10.13.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -160,6 +160,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 15 2015 Globus Toolkit <support@globus.org> - 10.15-1
+- Fix gridmap parsing error
+
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 10.14-1
+- fix uninitialized variable
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 10.13-1
 - doxygen fixes
 

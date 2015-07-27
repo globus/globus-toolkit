@@ -6,14 +6,14 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.27
+Version:	15.30
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_common-15.27.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 #		Obsolete dropped packages from Globus Toolkit 4.2.1
@@ -187,6 +187,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{perl_vendorlib}/Globus/Core
 %{perl_vendorlib}/Globus/Core/*
 %{_libdir}/libglobus_*so.*
+%{_libdir}/libglobus_thread*.so
 
 %files progs
 %defattr(-,root,root,-)
@@ -200,6 +201,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_includedir}/globus
 %{_includedir}/globus/*.h
 %{_libdir}/libglobus_*so
+%exclude %{_libdir}/libglobus_thread*.so
 %{_libdir}/pkgconfig/%{name}.pc
 
 %files doc
@@ -209,6 +211,18 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Jun 05 2015 Globus Toolkit <support@globus.org> - 15.30-1
+- Make globus-version executable during build time
+
+* Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 15.29-1
+- Fix skip() regression in tests
+
+* Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 15.28-1
+- Disable network tests when NO_EXTERNAL_NET is in the environment
+
+* Sat Mar 07 2015 Globus Toolkit <support@globus.org> - 15.27-2
+- move thread plugins to base
+
 * Thu Dec 18 2014 Globus Toolkit <support@globus.org> - 15.27-1
 - Don't add empty entries in list_from_string
 

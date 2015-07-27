@@ -23,6 +23,7 @@
 #include "globus_net_manager_attr.h"
 #include "globus_net_manager_context.h"
 
+GlobusDebugDeclare(GLOBUS_XIO_NET_MANAGER);
 GlobusDebugDefine(GLOBUS_XIO_NET_MANAGER);
 GlobusXIODeclareDriver(net_manager);
 
@@ -38,9 +39,6 @@ GlobusXIODeclareDriver(net_manager);
     GlobusXIONetManagerDebugPrintf(                                     \
         GLOBUS_XIO_NET_MANAGER_DEBUG_TRACE,                             \
         ("[%s] Exiting\n", __func__))
-
-#define GlobusXIONetManagerName(name) GlobusNetManagerName(name)
-
 
 typedef enum
 {
@@ -104,6 +102,8 @@ globus_l_xio_net_manager_deactivate(void);
 
 #include "version.h"
 
+GlobusXIODeclareModule(net_manager);
+
 GlobusXIODefineModule(net_manager) =
 {
     "globus_xio_net_manager",
@@ -121,7 +121,6 @@ globus_l_xio_net_manager_attr_init(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_xio_net_manager_attr_t    *a;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_attr_init);
 
     a = malloc(sizeof(globus_l_xio_net_manager_attr_t));
     if (!a)
@@ -148,7 +147,6 @@ globus_l_xio_net_manager_attr_copy(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_xio_net_manager_attr_t    *s = src, *d = NULL;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_attr_copy);
 
     if (!dest)
     {
@@ -201,6 +199,11 @@ attr_array_copy_failed:
 strdup_task_id_failed:
         free(d);
         d = NULL;
+
+        if (result == GLOBUS_SUCCESS)
+        {
+            result = GLOBUS_FAILURE;
+        }
     }
 malloc_d_failed:
 null_src:
@@ -225,7 +228,6 @@ globus_l_xio_net_manager_attr_set_string_options(
     char                               *scope = NULL;
     char                               *new_task_id = NULL;
     size_t                              attrnum = 0;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_attr_set_string_options);
 
     rev_options = globus_list_from_string(options_string, ';', NULL);
     /* dislike that this func produces a reversed list */
@@ -291,6 +293,7 @@ globus_l_xio_net_manager_attr_set_string_options(
         }
         else if (strcmp(opt, "task-id") == 0)
         {
+            free(new_task_id);
             new_task_id = strdup(val);
             if (!new_task_id)
             {
@@ -347,7 +350,6 @@ new_context_fail:
 new_attr_init_fail:
 strdup_task_id_fail:
 strdup_scope_fail:
-no_scope:
 no_equals:
     free(new_task_id);
     free(scope);
@@ -369,7 +371,6 @@ globus_l_xio_net_manager_attr_get_string_options(
     const char                         *prev_scope = NULL;
     char                               *output = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_attr_get_string_options);
 
     if (attr->task_id)
     {
@@ -435,7 +436,6 @@ globus_l_xio_net_manager_set_task_id(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     char                               *new_task_id = NULL;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_set_task_id);
 
     if (in_string)
     {
@@ -461,7 +461,6 @@ globus_l_xio_net_manager_get_task_id(
     char                              **out_string)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_get_task_id);
 
     if (!out_string)
     {
@@ -499,7 +498,6 @@ globus_l_xio_net_manager_attr_cntl(
     const char                         *const_in_string;
     char                              **out_string;
     const char                        **const_out_string;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_attr_cntl);
 
     if (!attr)
     {
@@ -564,7 +562,6 @@ globus_l_xio_net_manager_attr_destroy(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_xio_net_manager_attr_t    *a = attr;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_attr_destroy);
 
     if (!a)
     {
@@ -591,7 +588,6 @@ globus_l_xio_net_manager_attr_array_to_string(
     int                                 string_options_count = 0;
     size_t                              string_options_length = 1;
     char                               *p = NULL;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_attr_array_to_string);
 
     if (!attrs)
     {
@@ -645,7 +641,6 @@ globus_l_xio_net_manager_transport_attr_apply(
     globus_xio_driver_t                 transport_driver;
     const char                         *transport_name;
     char                               *string_options = NULL;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_transport_attr_apply);
 
     transport_driver = globus_xio_operation_get_transport_user_driver(op);
 
@@ -683,7 +678,6 @@ globus_l_xio_net_manager_transport_handle_apply(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     char                               *string_options = NULL;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_transport_handle_apply);
 
     result = globus_l_xio_net_manager_attr_array_to_string(
             attrs,
@@ -716,7 +710,6 @@ globus_l_xio_net_manager_get_handle_attr_array(
     globus_xio_driver_handle_t          driver_handle = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     char                               *string_opts = NULL;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_get_handle_attr_array);
 
     driver_handle = globus_xio_operation_get_driver_handle(op);
 
@@ -752,7 +745,6 @@ globus_l_xio_net_manager_get_attr_array(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     char                               *string_opts = NULL;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_get_attr_array);
 
     result = globus_xio_driver_attr_cntl(
         op,
@@ -789,7 +781,6 @@ globus_l_xio_net_manager_server_pre_init(
     const char                         *transport_name = NULL;
     globus_net_manager_attr_t          *transport_attrs = NULL,
                                        *new_attrs = NULL;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_server_pre_init);
 
     if (!attr)
     {
@@ -851,16 +842,19 @@ globus_l_xio_net_manager_server_init(
     globus_xio_operation_t              op)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    globus_l_xio_net_manager_attr_t    *tmp_attr = NULL;
     globus_net_manager_attr_t          *transport_attrs = NULL,
                                        *new_attrs = NULL;
     globus_l_xio_net_manager_server_t  *server = NULL;
     char                               *new_contact_string = NULL;
-    globus_xio_contact_t                new_contact_info = {0};
-    GlobusXIONetManagerName(globus_l_xio_net_manager_server_init);
+    globus_xio_contact_t                new_contact_info = {NULL};
 
     if (!driver_attr)
     {
+        result = globus_xio_driver_pass_server_init(
+            op,
+            contact_info,
+            NULL);
+
         goto no_attr;
     }
     server = malloc(sizeof(globus_l_xio_net_manager_server_t));
@@ -941,7 +935,6 @@ globus_l_xio_net_manager_server_init(
         }
     }
 
-no_attr:
     result = globus_xio_driver_pass_server_init(
         op,
         new_contact_info.unparsed ? &new_contact_info : contact_info,
@@ -964,11 +957,11 @@ get_attr_array_fail:
     {
         globus_l_xio_net_manager_attr_destroy(server->attr);
 copy_attr_fail:
-init_attr_fail:
 get_driver_name_fail:
         free(server);
     }
 server_malloc_fail:
+no_attr:
     return result;
 }
 /* globus_l_xio_net_manager_server_init() */
@@ -981,7 +974,6 @@ globus_l_xio_net_manager_server_accept_callback(
     void                               *user_arg)
 {
     globus_l_xio_net_manager_link_t    *link = user_arg;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_server_accept_callback);
 
     if (result && link)
     {
@@ -992,7 +984,6 @@ globus_l_xio_net_manager_server_accept_callback(
         link = NULL;
     }
 
-accept_fail:
     globus_xio_driver_finished_accept(op, link, result);
 }
 /* globus_l_xio_net_manager_server_accept_callback() */
@@ -1005,10 +996,8 @@ globus_l_xio_net_manager_server_accept(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_xio_net_manager_server_t  *server = driver_server;
-    globus_l_xio_net_manager_attr_t    *attr = NULL;
     globus_l_xio_net_manager_link_t    *link = NULL;
     globus_net_manager_attr_t          *new_attr_array = NULL;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_server_accept);
 
     if (! server)
     {
@@ -1093,7 +1082,6 @@ globus_l_xio_net_manager_server_destroy(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_xio_net_manager_server_t  *server = driver_server;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_server_destroy);
 
     if (server)
     {        
@@ -1130,7 +1118,6 @@ globus_l_xio_net_manager_connect_callback(
                                        *new_transport_opts = NULL;
     globus_xio_driver_handle_t          driver_handle =
             globus_xio_operation_get_driver_handle(op);
-    GlobusXIONetManagerName(globus_l_xio_net_manager_connect_callback);
 
     if (handle == NULL)
     {
@@ -1184,7 +1171,6 @@ globus_l_xio_net_manager_connect_callback(
     {
 post_connect_fail:
         free(handle->remote_contact);
-get_remote_contact_fail:
         free(handle->local_contact);
     }
 get_local_contact_fail:
@@ -1213,8 +1199,7 @@ globus_l_xio_net_manager_connect(
     char                               *contact_out = NULL;
     char                               *string_opts = NULL;
     globus_net_manager_attr_t          *attrs = NULL, *attr_array_out = NULL;
-    globus_xio_contact_t                new_contact_info = {0};
-    GlobusXIONetManagerName(globus_l_xio_net_manager_connect);
+    globus_xio_contact_t                new_contact_info = {NULL};
     
     if (!driver_attr)
     {
@@ -1228,8 +1213,8 @@ globus_l_xio_net_manager_connect(
     }
     handle->local_contact = handle->remote_contact = NULL;
 
-    result = globus_l_xio_net_manager_attr_init(
-                (void **) &handle->attr);
+    result = globus_l_xio_net_manager_attr_copy(
+            (void **)&handle->attr, driver_attr);
     if (result != GLOBUS_SUCCESS)
     {
         goto attr_copy_fail;
@@ -1351,10 +1336,8 @@ globus_l_xio_net_manager_accept_callback(
     globus_l_xio_net_manager_handle_t  *handle = NULL;
     char                               *string_opts = NULL;
     globus_net_manager_attr_t          *attrs = NULL, *attr_array_out = NULL;
-    globus_xio_contact_t                new_contact_info = {0};
     globus_xio_driver_handle_t          driver_handle =
                 globus_xio_operation_get_driver_handle(op);
-    GlobusXIONetManagerName(globus_l_xio_net_manager_accept_callback);
 
     if (result)
     {
@@ -1452,7 +1435,6 @@ array_from_string_fail:
     {
 get_string_opts_fail:
         globus_l_xio_net_manager_attr_destroy(handle->attr);
-attr_copy_fail:
         free(handle->remote_contact);
 get_remote_contact_fail:
         free(handle->local_contact);
@@ -1476,14 +1458,11 @@ globus_l_xio_net_manager_accept(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_xio_net_manager_link_t    *link = driver_link;
-    globus_l_xio_net_manager_link_t    *copy_link = NULL;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_accept);
 
     result = globus_xio_driver_pass_open(op, contact_info,
             globus_l_xio_net_manager_accept_callback,
             link);
 
-copy_link_malloc_fail:
     return result;
 }
 /* globus_l_xio_net_manager_accept() */
@@ -1497,7 +1476,6 @@ globus_l_xio_net_manager_open(
     globus_xio_operation_t              op)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_open);
 
     if (contact_info->unparsed != NULL)
     {
@@ -1526,7 +1504,6 @@ globus_l_xio_net_manager_close_cb(
     void *                              user_arg)
 {
     globus_l_xio_net_manager_handle_t  *handle = user_arg;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_close_cb);
 
     if (!handle)
     {
@@ -1543,7 +1520,6 @@ globus_l_xio_net_manager_close_cb(
                 handle->attr->attr_array);
     }
     globus_l_xio_net_manager_attr_destroy(handle->attr);
-get_attr_array_fail:
     free(handle->remote_contact);
     free(handle->local_contact);
     free(handle);
@@ -1561,9 +1537,6 @@ globus_l_xio_net_manager_close(
     globus_l_xio_net_manager_handle_t  *handle = driver_specific_handle;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_net_manager_attr_t          *transport_opts = NULL;
-    globus_xio_driver_handle_t          driver_handle =
-            globus_xio_operation_get_driver_handle(op);
-    GlobusXIONetManagerName(globus_l_xio_net_manager_close);
 
     if (!handle)
     {
@@ -1611,7 +1584,6 @@ globus_l_xio_net_manager_link_destroy(
     void                               *driver_link)
 {
     globus_l_xio_net_manager_link_t    *link = driver_link;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_link_destroy);
 
     if (link)
     {
@@ -1632,7 +1604,6 @@ globus_l_xio_net_manager_init(
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_init);
 
     result = globus_xio_driver_init(&driver, "net_manager", NULL);
     if(result != GLOBUS_SUCCESS)
@@ -1679,7 +1650,6 @@ void
 globus_l_xio_net_manager_destroy(
     globus_xio_driver_t                 driver)
 {
-    GlobusXIONetManagerName(globus_l_xio_net_manager_destroy);
     globus_xio_driver_destroy(driver);
 }
 
@@ -1693,7 +1663,6 @@ int
 globus_l_xio_net_manager_activate(void)
 {
     int                                 rc;
-    GlobusXIONetManagerName(globus_l_xio_net_manager_activate);
 
     GlobusDebugInit(GLOBUS_XIO_NET_MANAGER, TRACE);
 
@@ -1721,8 +1690,6 @@ static
 int
 globus_l_xio_net_manager_deactivate(void)
 {
-    GlobusXIONetManagerName(globus_l_xio_net_manager_deactivate);
-
     GlobusXIOUnRegisterDriver(net_manager);
     globus_module_deactivate(GLOBUS_NET_MANAGER_MODULE);
     globus_module_deactivate(GLOBUS_XIO_MODULE);

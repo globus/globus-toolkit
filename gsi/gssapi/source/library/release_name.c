@@ -46,9 +46,6 @@ GSS_CALLCONV gss_release_name(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_name_desc** name = (gss_name_desc**) name_P ;
 
-    static char *                       _function_name_ =
-        "gss_release_name";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     if (name == NULL || minor_status == NULL || 

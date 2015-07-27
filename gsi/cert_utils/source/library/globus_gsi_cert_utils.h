@@ -153,7 +153,7 @@ globus_gsi_cert_utils_get_cert_type(
 
 globus_result_t
 globus_gsi_cert_utils_get_x509_name(
-    char *                              subject_string,
+    const char *                        subject_string,
     int                                 length,
     X509_NAME *                         x509_name);
 

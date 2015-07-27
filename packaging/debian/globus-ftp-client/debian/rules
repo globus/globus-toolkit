@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-ftp-client
 _name = globus_ftp_client
-version = 8.17
+version = 8.23
 soname = 2
 
 INSTALLDIR = $(CURDIR)/debian/tmp
@@ -75,7 +75,7 @@ build-stamp: configure-stamp
 	dh_testdir
 	$(MAKE)
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) check
+	GLOBUS_HOSTNAME=localhost $(MAKE) check
 endif
 	touch $@
 
@@ -118,11 +118,9 @@ install: build-stamp
 	# Generate package filelists
 	ls -1 \
 	  debian/tmp$(_libdir)/libglobus*.so.* \
+	  debian/tmp$(_datadir)/globus/gridftp-ssh \
 	  debian/tmp$(_docdir)/lib$(name)-dev/GLOBUS_LICENSE \
 	  > debian/lib$(name)$(soname).install
-	ls -1 \
-	  debian/tmp$(_datadir)/globus/gridftp-ssh \
-	  > debian/$(name)-progs.install
 	ls -1 \
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*.* \
 	  debian/tmp$(_docdir)/lib$(name)-dev/html/*/* \

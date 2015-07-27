@@ -47,8 +47,6 @@ GSS_CALLCONV gss_duplicate_name(
     gss_name_t *                        dest_name)
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    static char *                       _function_name_ = 
-        "gss_duplicate_name";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 

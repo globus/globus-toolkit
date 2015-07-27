@@ -867,6 +867,21 @@ globus_gsi_gssapi_test_print_error(
             }
             gss_release_buffer(&minor_status2, &status_string);
         }
+        if (gss_display_status(&minor_status2,
+                               major_status,
+                               GSS_C_MECH_CODE,
+                               GSS_C_NO_OID,
+                               &message_context,
+                               &status_string) == GSS_S_COMPLETE)
+        {
+            if (status_string.length)
+            {
+                fprintf(stream,"\nERROR: %.*s\n",
+                        (int) status_string.length,
+                        (char *) status_string.value);
+            }
+            gss_release_buffer(&minor_status2, &status_string);
+        }
     }
     while (message_context != 0);
 }

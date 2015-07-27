@@ -1,13 +1,13 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	9.13
+Version:	9.16
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gass_copy-9.13.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15
@@ -18,6 +18,7 @@ Requires:	globus-io%{?_isa} >= 8
 Requires:	globus-gass-transfer%{?_isa} >= 7
 Requires:	globus-ftp-control%{?_isa} >= 4
 
+BuildRequires:  openssl
 BuildRequires:	globus-ftp-client-devel >= 7
 BuildRequires:	globus-common-devel >= 15
 BuildRequires:	globus-gssapi-gsi-devel >= 9
@@ -170,6 +171,17 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 9.16-1
+- Improve error handling
+- Fix non-terminated string
+
+* Wed Apr 08 2015 Globus Toolkit <support@globus.org> - 9.15-1
+- Clarify documentation of stack options
+- Add openssl build dependency
+
+* Wed Apr 08 2015 Globus Toolkit <support@globus.org> - 9.14-1
+- Fix user-specified data channel stack handling
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 9.13-1
 - doxygen fixes
 

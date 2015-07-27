@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gssapi_gsi],[11.14],[https://globus.atlassian.net/])
+AC_INIT([globus_gssapi_gsi],[11.20],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -15,6 +15,8 @@ m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
+AC_PROG_CC_C99
+AC_PROG_AWK
 AC_CANONICAL_HOST
 AM_CONDITIONAL([CYGPATH_W_DEFINED], [
     case $host in

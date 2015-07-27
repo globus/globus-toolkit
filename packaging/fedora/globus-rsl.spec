@@ -1,13 +1,13 @@
 Name:		globus-rsl
 %global _name %(tr - _ <<< %{name})
-Version:	10.9
+Version:	10.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Resource Specification Language Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_rsl-10.9.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 10.10-1
+- Remove unused labels and functions
+
 * Tue Sep 23 2014 Globus Toolkit <support@globus.org> - 10.9-1
 - Include more manpages for API
 - Fix some Doxygen issues

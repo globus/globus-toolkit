@@ -1,22 +1,21 @@
 This package is part of of the Globus Toolkit. For more information visit:
 
-http://www.globus.org/toolkit/docs/latest-stable/security/myproxy/
+http://www.globus.org/toolkit/docs/latest-stable/myproxy/
 
 Admin Guide:
-http://www.globus.org/toolkit/docs/latest-stable/security/myproxy/admin/
+http://www.globus.org/toolkit/docs/latest-stable/myproxy/admin/
 
 Developer's Guide:
-http://www.globus.org/toolkit/docs/latest-stable/security/myproxy/developer/
+http://www.globus.org/toolkit/docs/latest-stable/myproxy/developer/
 
 Release Notes:
-http://www.globus.org/toolkit/docs/latest-stable/data/gridftp/rn/
-http://www.globus.org/toolkit/docs/latest-stable/security/myproxy/rn/
+http://www.globus.org/toolkit/docs/latest-stable/myproxy/rn/
 
 Public Interface Guide:
-http://www.globus.org/toolkit/docs/latest-stable/security/myproxy/pi/
+http://www.globus.org/toolkit/docs/latest-stable/myproxy/pi/
 
 Quality Profile:
-http://www.globus.org/toolkit/docs/latest-stable/security/myproxy/qp/
+http://www.globus.org/toolkit/docs/latest-stable/myproxy/qp/
 
 Migrating Guide:
-http://www.globus.org/toolkit/docs/latest-stable/security/myproxy/mig/
+http://www.globus.org/toolkit/docs/latest-stable/myproxy/mig/

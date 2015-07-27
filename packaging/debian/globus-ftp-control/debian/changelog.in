@@ -1,3 +1,10 @@
+globus-ftp-control (6.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix old-style function definitions
+  * Fix scope of socklen variable
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Jul 2015 20:05:11 -0400
+
 globus-ftp-control (6.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix undefined return code

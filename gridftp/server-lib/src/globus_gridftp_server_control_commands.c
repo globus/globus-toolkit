@@ -571,24 +571,6 @@ globus_l_gsc_cmd_pwd(
     }
 }
 
-static
-globus_bool_t
-globus_l_gsc_check_grp(
-    globus_i_gsc_op_t *                 op,
-    gid_t                               gid)
-{
-    int                                 i;
-
-    for(i = 0; i < op->gid_count; i++)
-    {
-        if(op->gid_array[i] == gid)
-        {
-            return GLOBUS_TRUE;
-        }
-    }
-
-    return GLOBUS_FALSE;
-}
 /*
  *  CWD
  */
@@ -645,17 +627,6 @@ globus_l_gsc_cmd_cwd_cb(
         * ignore permission checks for CWD.  We will use the success of the stat
         * to indicate validity, since this is merely a virtual operation.
         * specifically, allows this to function with linux filesystem ACL
-        
-        if(!(S_IXOTH & stat_info->mode && S_IROTH & stat_info->mode) &&
-            !(stat_info->uid == uid && 
-                S_IXUSR & stat_info->mode && S_IRUSR & stat_info->mode) &&
-            !(globus_l_gsc_check_grp(op, stat_info->gid) && 
-                S_IXGRP & stat_info->mode && S_IRGRP & stat_info->mode))
-        {
-            code = 550;
-            msg = globus_common_create_string(_FSMSL("%s: Permission denied"), path);
-        }
-        else
         */
         {
             if(op->server_handle->cwd != NULL)

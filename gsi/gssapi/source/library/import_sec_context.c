@@ -31,6 +31,7 @@
 #include "globus_ssl_locl.h"
 #include <string.h>
 
+#if !WIN32 && LINK_WITH_INTERNAL_OPENSSL_API
 /**
  * @brief Import Security Context
  * @ingroup globus_gsi_gssapi
@@ -62,21 +63,10 @@ GSS_CALLCONV gss_import_sec_context(
     int                                 index;
     int                                 res;
     int                                 ssl_result;
-    static char *                       _function_name_ =
-        "gss_import_sec_context";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
-
-#if WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API
-        major_status = GSS_S_UNAVAILABLE;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_UNSUPPORTED,
-            (_GGSL("This function is not implemented on this platform")));
-        goto exit;
-
-#else /* WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API */
 
     /* module activation if not already done by calling
      * globus_module_activate
@@ -350,7 +340,6 @@ GSS_CALLCONV gss_import_sec_context(
     *context_handle_P = context;
     context = GSS_C_NO_CONTEXT;
 
-#endif /* WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API */
 exit:
 
     if(session)
@@ -374,3 +363,4 @@ exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
+#endif /* !WIN32 && LINK_WITH_INTERNAL_OPENSSL_API */

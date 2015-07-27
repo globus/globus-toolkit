@@ -1,3 +1,16 @@
+globus-toolkit-repo (6.0.5-1) unstable; urgency=low
+
+  * handle trusty os-release not having parsable codename
+
+ -- Globus Toolkit <support@globus.org>  Thu, 09 Apr 2015 14:46:09 -0400
+
+globus-toolkit-repo (6.0.4-1) unstable; urgency=low
+
+  * Add handling for jessie, stretch, and buster
+  * Don't rely on lsb_release
+
+ -- Globus Toolkit <support@globus.org>  Tue, 07 Apr 2015 09:05:54 -0400
+
 globus-toolkit-repo (6.0.3-1) unstable; urgency=low
 
   * Add support for utopic and vivid

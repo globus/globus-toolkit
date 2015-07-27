@@ -36,12 +36,8 @@
 #include "version.h"
 
 #ifndef BUILD_FOR_K5CERT_ONLY
-#ifndef NO_OLDGAA_API
 #include "globus_oldgaa.h"
 #include "globus_oldgaa_utils.h"
-#else
-#include "ca_policy_file_parse.h"
-#endif
 #endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -66,6 +62,74 @@ globus_module_descriptor_t globus_i_gsi_callback_module =
     GLOBUS_NULL,
     &local_version
 };
+
+static int globus_i_gsi_callback_SSL_callback_data_index = -1;
+static int globus_i_gsi_callback_X509_STORE_callback_data_index = -1;
+
+static int
+globus_l_gsi_callback_openssl_new(
+    void *                              parent, 
+    void *                              ptr, 
+    CRYPTO_EX_DATA *                    ad,
+    int                                 idx, 
+    long                                argl, 
+    void *                              argp)
+{
+    int                                 result = 1;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_openssl_new";
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    /* init app specific data (callback data)
+     * since we can't allocate the ptr here
+     * this function isn't particularly useful
+     */
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+static int
+globus_l_gsi_callback_openssl_free(
+    void *                              parent, 
+    void *                              ptr, 
+    CRYPTO_EX_DATA *                    ad,
+    int                                 idx, 
+    long                                argl, 
+    void *                              argp)
+{
+    int                                 result = 1;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_openssl_free";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    /* free the callback data - currently not used*/
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+static int
+globus_l_gsi_callback_openssl_dup(
+    CRYPTO_EX_DATA *                    to, 
+    CRYPTO_EX_DATA *                    from, 
+    void *                              from_d,                   
+    int                                 idx, 
+    long                                argl, 
+    void *                              argp)
+{
+    int                                 result = 1;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_openssl_dup";
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    /* copy the callback data - currenlty not used by OpenSSL */
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
 
 /**
  * Module activation
@@ -133,6 +197,41 @@ globus_l_gsi_callback_activate(void)
     
     OpenSSL_add_all_algorithms();
 
+    if(globus_i_gsi_callback_X509_STORE_callback_data_index < 0)
+    {
+        globus_i_gsi_callback_X509_STORE_callback_data_index = 
+            X509_STORE_CTX_get_ex_new_index(
+                0, NULL, 
+                (CRYPTO_EX_new *)  &globus_l_gsi_callback_openssl_new,
+                (CRYPTO_EX_dup *)  &globus_l_gsi_callback_openssl_dup,
+                (CRYPTO_EX_free *) &globus_l_gsi_callback_openssl_free);
+        if(globus_i_gsi_callback_X509_STORE_callback_data_index < 0)
+        {
+            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
+                (_CLS("Couldn't create external data index for SSL object")));
+            goto exit;
+        }
+    }
+
+    if(globus_i_gsi_callback_SSL_callback_data_index < 0)
+    {
+        globus_i_gsi_callback_SSL_callback_data_index = SSL_get_ex_new_index(
+            0, NULL, 
+            (CRYPTO_EX_new *)  &globus_l_gsi_callback_openssl_new,
+            (CRYPTO_EX_dup *)  &globus_l_gsi_callback_openssl_dup,
+            (CRYPTO_EX_free *) &globus_l_gsi_callback_openssl_free);
+        if(globus_i_gsi_callback_SSL_callback_data_index < 0)
+        {
+            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
+                (_CLS("Couldn't create external data index for SSL object")));
+            goto exit;
+        }
+    }
+
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
 
  exit:
@@ -171,75 +270,6 @@ globus_l_gsi_callback_deactivate(void)
     return result;
 }
 
-static int globus_i_gsi_callback_SSL_callback_data_index = -1;
-static int globus_i_gsi_callback_X509_STORE_callback_data_index = -1;
-
-
-static int
-globus_l_gsi_callback_openssl_new(
-    void *                              parent, 
-    void *                              ptr, 
-    CRYPTO_EX_DATA *                    ad,
-    int                                 idx, 
-    long                                argl, 
-    void *                              argp)
-{
-    int                                 result = 1;
-    static char *                       _function_name_ =
-        "globus_gsi_callback_openssl_new";
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    /* init app specific data (callback data)
-     * since we can't allocate the ptr here
-     * this function isn't particularly useful
-     */
-    
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return result;
-}
-
-static int
-globus_l_gsi_callback_openssl_free(
-    void *                              parent, 
-    void *                              ptr, 
-    CRYPTO_EX_DATA *                    ad,
-    int                                 idx, 
-    long                                argl, 
-    void *                              argp)
-{
-    int                                 result = 1;
-    static char *                       _function_name_ =
-        "globus_gsi_callback_openssl_free";
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    /* free the callback data - currently not used*/
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return result;
-}
-
-static int
-globus_l_gsi_callback_openssl_dup(
-    CRYPTO_EX_DATA *                    to, 
-    CRYPTO_EX_DATA *                    from, 
-    void *                              from_d,                   
-    int                                 idx, 
-    long                                argl, 
-    void *                              argp)
-{
-    int                                 result = 1;
-    static char *                       _function_name_ =
-        "globus_gsi_callback_openssl_dup";
-    
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    /* copy the callback data - currenlty not used by OpenSSL */
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return result;
-}
-
 #endif
 
 /**
@@ -266,27 +296,8 @@ globus_gsi_callback_get_X509_STORE_callback_data_index(
     
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
-    if(globus_i_gsi_callback_X509_STORE_callback_data_index < 0)
-    {
-        globus_i_gsi_callback_X509_STORE_callback_data_index = 
-            X509_STORE_CTX_get_ex_new_index(
-                0, NULL, 
-                (CRYPTO_EX_new *)  &globus_l_gsi_callback_openssl_new,
-                (CRYPTO_EX_dup *)  &globus_l_gsi_callback_openssl_dup,
-                (CRYPTO_EX_free *) &globus_l_gsi_callback_openssl_free);
-        if(globus_i_gsi_callback_X509_STORE_callback_data_index < 0)
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
-                (_CLS("Couldn't create external data index for SSL object")));
-            goto exit;
-        }
-    }
-
     *index = globus_i_gsi_callback_X509_STORE_callback_data_index;
 
- exit:
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
@@ -315,26 +326,9 @@ globus_gsi_callback_get_SSL_callback_data_index(
     
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
     
-    if(globus_i_gsi_callback_SSL_callback_data_index < 0)
-    {
-        globus_i_gsi_callback_SSL_callback_data_index = SSL_get_ex_new_index(
-            0, NULL, 
-            (CRYPTO_EX_new *)  &globus_l_gsi_callback_openssl_new,
-            (CRYPTO_EX_dup *)  &globus_l_gsi_callback_openssl_dup,
-            (CRYPTO_EX_free *) &globus_l_gsi_callback_openssl_free);
-        if(globus_i_gsi_callback_SSL_callback_data_index < 0)
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
-                (_CLS("Couldn't create external data index for SSL object")));
-            goto exit;
-        }
-    }
 
     *index = globus_i_gsi_callback_SSL_callback_data_index;
 
- exit:
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
@@ -518,7 +512,7 @@ int globus_gsi_callback_handshake_callback(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
         verify_result = 0;
-        goto set_callback_data_error;
+        goto exit;
     }
 
     callback_data = *(globus_gsi_callback_data_t *)
@@ -1361,8 +1355,6 @@ globus_i_gsi_callback_check_gaa_auth(
     globus_result_t                     result = GLOBUS_SUCCESS;
     char *                              ca_policy_file_path = NULL;
 
-#ifndef NO_OLDGAA_API
-
     oldgaa_rights_ptr                   rights = NULL;
     oldgaa_policy_ptr                   policy_handle = NULL;
     oldgaa_answer_ptr                   detailed_answer = NULL;
@@ -1371,12 +1363,6 @@ globus_i_gsi_callback_check_gaa_auth(
     oldgaa_error_code                   policy_result;
     oldgaa_data_ptr                     policy_db = OLDGAA_NO_DATA;
     uint32                              minor_status;
-
-#else /* Von's code */
-
-    int                                 policy_result;
-
-#endif /* NO_OLDGAA_API */
 
     static char *                       _function_name_ =
         "globus_i_gsi_callback_check_gaa_auth";
@@ -1392,8 +1378,6 @@ globus_i_gsi_callback_check_gaa_auth(
         NULL,
         0);
     
-#ifndef NO_OLDGAA_API
- 
     result =
         GLOBUS_GSI_SYSCONFIG_GET_SIGNING_POLICY_FILENAME(
             X509_get_issuer_name(x509_context->current_cert),
@@ -1531,16 +1515,6 @@ globus_i_gsi_callback_check_gaa_auth(
                           NULL);
 
     globus_mutex_unlock(&globus_l_gsi_callback_oldgaa_mutex);
-    
-#else /* Von's code */
-    
-/* #warning this doesn't appear to be defined anywhere within the gsi code */
-    policy_result = ca_policy_file_check_signature(issuer_name,
-                                                   subject_name,
-                                                   &error_string,
-                                                   callback_data->cert_dir);
-    
-#endif /* #ifndef NO_OLDGAA_API */
     
     if (policy_result != 0)
     {

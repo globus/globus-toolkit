@@ -3757,7 +3757,6 @@ globus_ftp_control_data_get_retransmit_count(
             {
                 globus_xio_handle_t         xio_handle;
                 globus_xio_system_socket_t  socket;
-                socklen_t                   len;
                 char *                      tmp_str;
 
                 data_conn = (globus_ftp_data_connection_t *)
@@ -3786,6 +3785,7 @@ globus_ftp_control_data_get_retransmit_count(
 #if defined(TARGET_ARCH_LINUX) && defined(TCP_MD5SIG)
                 {
                     struct tcp_info             tcpinfo;
+                    socklen_t                   len;
     
                     len = sizeof(tcpinfo);
                     res = globus_xio_system_socket_getsockopt(
@@ -4930,7 +4930,7 @@ globus_ftp_control_data_read_all(
 }
 
 globus_result_t
-globus_i_ftp_control_data_activate()
+globus_i_ftp_control_data_activate(void)
 {
     globus_mutex_init(&globus_l_ftp_control_data_mutex, GLOBUS_NULL);
     globus_cond_init(&globus_l_ftp_control_data_cond, GLOBUS_NULL);
@@ -4992,7 +4992,7 @@ globus_l_ftp_control_data_layout_clean(
 }
 
 globus_result_t
-globus_i_ftp_control_data_deactivate()
+globus_i_ftp_control_data_deactivate(void)
 {
     globus_hashtable_destroy_all(
         &globus_l_ftp_control_data_layout_table,

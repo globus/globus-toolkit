@@ -145,6 +145,38 @@ globus_xio_driver_list_destroy(
     }
 }
 
+/**
+ * @brief Add a list of driver entries to a stack
+ * @ingroup GLOBUS_XIO_API
+ * @details
+ * This function walks a list of <code>globus_xio_driver_list_ent_t *</code>
+ * values passed as the driver_list parameter, and pushes them onto the
+ * XIO stack passed as the stack parameter and sets attributes for those
+ * drivers in the attr passed as the attr parameter to this function.
+ *
+ * @param driver_list
+ *     A list of driver list entries in stack order (transport, followed by
+ *     transform). Each entry may contain a option string for attributes
+ *     to set for this driver.
+ * @param stack
+ *     A pointer to an XIO stack which will have the drivers pushed onto.
+ *     It must be previously initialized by calling globus_xio_stack_init().
+ *     This function does not overwrite the stack, so the drivers passed in
+ *     the driver list will be pushed on top of any existing drivers in the
+ *     stack.
+ * @param attr
+ *     A pointer to an XIO attribute which will have the driver-specific
+ *     string options set on it, after the drivers are pushed onto the stack.
+ *     The opts field of the list entries are passed to the
+ *     GLOBUS_XIO_SET_STRING_OPTIONS attr control function. This value
+ *     must be previously initialized by calling globus_xio_attr_init().
+ *     Errors from the attr control function are ignored.
+ *
+ * @return If the driver can not be pushed onto the stack, an error 
+ * result is returned; otherwise, GLOBUS_SUCCESS. If an error occurs, some
+ * of the entries MAY be pushed on to the stack and some attributes may
+ * have been set in the attr. Both should be destroyed by the caller.
+ */
 globus_result_t
 globus_xio_driver_list_to_stack_attr(
     globus_list_t *                     driver_list,
@@ -153,6 +185,7 @@ globus_xio_driver_list_to_stack_attr(
 {
     globus_xio_driver_list_ent_t *      ent; 
     globus_list_t *                     list;
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     for(list = driver_list;
         !globus_list_empty(list);
@@ -160,12 +193,16 @@ globus_xio_driver_list_to_stack_attr(
     {
         ent = (globus_xio_driver_list_ent_t *) globus_list_first(list);
 
-        globus_xio_stack_push_driver(stack, ent->driver);
+        result = globus_xio_stack_push_driver(stack, ent->driver);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto stack_push_fail;
+        }
 
         if(ent->opts != NULL)
         {
             /* ignore error */
-            globus_xio_attr_cntl(
+            (void) globus_xio_attr_cntl(
                 attr,
                 ent->driver,
                 GLOBUS_XIO_SET_STRING_OPTIONS,
@@ -173,8 +210,10 @@ globus_xio_driver_list_to_stack_attr(
         }
     }
 
-    return GLOBUS_SUCCESS;
+stack_push_fail:
+    return result;
 }
+/* globus_xio_driver_list_to_stack_attr() */
 
 globus_result_t
 globus_xio_driver_safe_table_from_string(

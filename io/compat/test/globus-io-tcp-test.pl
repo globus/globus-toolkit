@@ -43,7 +43,7 @@ if (exists $ENV{VALGRIND})
 
 chomp(my $identity = `openssl x509 -subject -in \${X509_USER_CERT-\$HOME/.globus/usercert.pem} -noout`);
 $identity =~ s/^subject= //;
-print "    Using test identity $identity\n";
+diag("Using test identity $identity");
 
 sub basic_func
 {
@@ -97,7 +97,7 @@ sub basic_func
    }
    
    my $command = "$valgrind $server_prog $server_args |";
-   #print "Running server: $command\n";
+   diag("Running server: $command");
    $server_pid = open(SERVER, $command);
 
    if($server_pid == -1)
@@ -107,11 +107,12 @@ sub basic_func
    }
 
    $port = <SERVER>;
-   print STDERR "# Server said $port";
+   diag("Server said $port");
    chomp($port);
    $port =~ s/listening on port //;
 
    $command = "$valgrind $client_prog -h localhost -p $port $client_args |";
+   diag("Running client: $command");
    $client_pid = open(CLIENT, $command);
 
    if($client_pid == -1)
@@ -121,10 +122,11 @@ sub basic_func
    }
    
    waitpid($client_pid,0);
+   my $client_exit_code = $? >> 8;
 
-   if($? != 0)
+   if($client_exit_code != 0)
    {
-       $errors .= "Client exited abnormally. \n The following output was generated:\n";
+       $errors .= "Client exited abnormally $client_exit_code. \n The following output was generated:\n";
        while(<CLIENT>)
        {
            $errors .= $_;
@@ -146,7 +148,7 @@ sub basic_func
    close(CLIENT);
    close(SERVER);
 
-   print STDERR "# $errors\n";
+   diag($errors);
    ok(($errors eq "" && !$expect_failure) || ($errors ne "" && $expect_failure),
         $test_name);
 

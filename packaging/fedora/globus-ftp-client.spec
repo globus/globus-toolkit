@@ -1,13 +1,13 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.17
+Version:	8.23
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_ftp_client-8.17.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
@@ -23,6 +23,7 @@ BuildRequires:	doxygen
 BuildRequires:	graphviz
 BuildRequires:	globus-gridftp-server-devel >= 0
 BuildRequires:	globus-xio-pipe-driver-devel >= 0
+BuildRequires:  openssl
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
@@ -141,6 +142,27 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jul 15 2015 Globus Toolkit <support@globus.org> - 8.23-1
+- Fix crash in error handling
+
+* Wed Apr 15 2015 Globus Toolkit <support@globus.org> - 8.22-1
+- Fix tests on jessie with pbuilder
+
+* Thu Mar 12 2015 Globus Toolkit <support@globus.org> - 8.21-1
+- GT-587: ssh path not  being set in globus-ftp-client for sshftp in GT6
+
+* Wed Mar 04 2015 Globus Toolkit <support@globus.org> - 8.20-1
+- improve fix for GT-568
+
+* Thu Feb 12 2015 Globus Toolkit <support@globus.org> - 8.19-2
+- Add openssl build requirement for tests
+
+* Thu Feb 12 2015 Globus Toolkit <support@globus.org> - 8.19-1
+- GT-568: Fix incompatibility between IPV4-only source and IPV6 dest when IPV6 is enabled
+
+* Mon Feb 09 2015 Globus Toolkit <support@globus.org> - 8.18-1
+- GT-534: Fix for crash after error with delayed pasv response
+
 * Tue Nov 18 2014 Globus Toolkit <support@globus.org> - 8.17-1
 - Disable segfaulting test on GNU/Hurd
 

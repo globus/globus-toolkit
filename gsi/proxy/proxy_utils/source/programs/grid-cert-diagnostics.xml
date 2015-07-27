@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <?asciidoc-toc?>
 <?asciidoc-numbered?>
 <refentry lang="en">
@@ -19,6 +19,7 @@
 <refsynopsisdiv id="grid-cert-diagnostics-SYNOPSIS">
 <simpara><emphasis role="strong">grid-cert-diagnostics</emphasis> [ -h | -help ]</simpara>
 <simpara><emphasis role="strong">grid-cert-diagnostics</emphasis> [ -p ] [ -n ] [ -c CERTIFICATE ]</simpara>
+<simpara><emphasis role="strong">grid-cert-diagnostics</emphasis> [ -s HOST[:PORT] | -g HOST[:PORT] ]</simpara>
 </refsynopsisdiv>
 <refsect1 id="grid-cert-diagnostics-DESCRIPTION">
 <title>DESCRIPTION</title>
@@ -31,6 +32,8 @@ information to help diagnose problems using GSIC.</simpara>
 environment and trusted certificate directory. If the <emphasis>-p</emphasis>
 command-line option is used, then additional information about the current
 user&#8217;s default certificate and key will be printed.</simpara>
+<simpara>The <emphasis role="strong">grid-cert-diagnostics</emphasis> program can also attempt do diagnose problems
+connecting to remote GridFTP or SSL-based services.</simpara>
 </refsect1>
 <refsect1 id="grid-cert-diagnostics-OPTIONS">
 <title>OPTIONS</title>
@@ -75,6 +78,32 @@ user&#8217;s default certificate and key will be printed.</simpara>
 <simpara>
     Check the validity of the certificate in the file named by <emphasis>CERTIFICATE</emphasis> or
     standard input if the parameter to <emphasis>-c</emphasis> is <emphasis>-</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-s <emphasis>HOST[:PORT]</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Connect to the service listening on <emphasis>HOST:PORT</emphasis> and initiate the TLS
+    protocol. Diagnostics will be printed containing the TLS / SSL protocol
+    version and available cipher list. The certificate chain will be verified,
+    and certificate subject name, issuer name, and subjectAltName extensions
+    will be printed. If the <emphasis>:PORT</emphasis> is omitted, the default of <emphasis>443</emphasis> is used.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-g <emphasis>HOST[:PORT]</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Similar to the <emphasis>-s</emphasis> option, but use the GridFTP protocol. The
+    initial GridFTP banner response is included in the diagnostic output.
+    If the <emphasis>:PORT</emphasis> is omitted, the default of <emphasis>2811</emphasis> is used.
 </simpara>
 </listitem>
 </varlistentry>
@@ -150,6 +179,6 @@ Certificate and and private key don't match</literallayout>
 </refsect1>
 <refsect1 id="grid-cert-diagnostics-AUTHOR">
 <title>AUTHOR</title>
-<simpara>Copyright &#169; 1999-2014 University of Chicago</simpara>
+<simpara>Copyright &#169; 1999-2015 University of Chicago</simpara>
 </refsect1>
 </refentry>

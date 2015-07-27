@@ -355,7 +355,7 @@ globus_result_t hdfs_dump_buffer_immed(hdfs_handle_t *hdfs_handle, globus_byte_t
 /**
  *  Buffer management functions for the read workflow
  */
-inline globus_result_t
+globus_result_t
 allocate_buffers( 
     hdfs_handle_t * hdfs_handle, 
     globus_size_t          num_buffers)
@@ -385,7 +385,7 @@ allocate_buffers(
     return rc;
 }   
 
-inline globus_ssize_t
+globus_ssize_t
 find_buffer(
     hdfs_handle_t * hdfs_handle,
     globus_byte_t * buffer)                       
@@ -401,7 +401,7 @@ find_buffer(
     return result;
 }       
 
-inline globus_ssize_t
+globus_ssize_t
 find_empty_buffer(
     hdfs_handle_t * hdfs_handle)
 {
@@ -419,7 +419,7 @@ find_empty_buffer(
     return result;
 }
 
-inline void
+void
 disgard_buffer(
     hdfs_handle_t * hdfs_handle,
     globus_ssize_t idx)

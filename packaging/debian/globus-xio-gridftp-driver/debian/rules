@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-xio-gridftp-driver
 _name = globus_xio_gridftp_driver
-version = 2.10
+version = 2.11
 soname = 1
 
 INSTALLDIR = $(CURDIR)/debian/tmp
@@ -72,7 +72,7 @@ build-stamp: configure-stamp
 	dh_testdir
 	$(MAKE)
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) check
+	GLOBUS_HOSTNAME=localhost $(MAKE) check
 endif
 	touch $@
 

@@ -15,19 +15,6 @@
  */
 
 /******************************************************************************
-globus_url_copy.c
-
-Description:
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
-
-/******************************************************************************
                              Include header files
 ******************************************************************************/
 #include "globus_common.h"
@@ -669,7 +656,11 @@ const char * long_usage =
 "     sets both -src-pipe and -dst-pipe to the same thing\n"
 "  -dcstack | -data-channel-stack\n"
 "     Set the XIO driver stack for the network on both the source and\n"
-"     and the destination.  Both must be gridftp servers\n"
+"     and the destination.  Both must be gridftp servers. The stack should\n"
+"     contain all network drivers to use, in the order specified from bottom\n"
+"     to top (e.g. -dcstack tcp,gsi). If the gsi driver is not included in\n"
+"     the stack and data channel authentication is enabled, it will be\n"
+"     inserted above the transport driver in the stack.\n"
 "  -fsstack | -file-system-stack\n"
 "     Set the XIO driver stack for the disk on both the source and\n"
 "     and the destination.  Both must be gridftp servers\n"
@@ -5775,7 +5766,7 @@ globus_l_guc_gass_attr_init(
     globus_ftp_control_parallelism_t    parallelism;
     globus_ftp_control_dcau_t           dcau;
     globus_ftp_control_layout_t         layout;
-    char *                              gsi_stack = "";
+    const char *                        gsi_driver_str = NULL;
     char *                              subject;
     char *                              module_name;
     char *                              module_args;
@@ -5958,7 +5949,7 @@ globus_l_guc_gass_attr_init(
             
             if(url_info.scheme_type == GLOBUS_URL_SCHEME_GSIFTP)
             {
-                gsi_stack = "gsi,";
+                gsi_driver_str = "gsi";
             }
         }
         
@@ -5985,12 +5976,40 @@ globus_l_guc_gass_attr_init(
             tmp_net_str = guc_info->dst_net_stack_str;
             tmp_disk_str = guc_info->dst_disk_stack_str;
         }
-        if(tmp_net_str)
+        if(tmp_net_str != NULL && gsi_driver_str != NULL)
         {
             char *  tmp_stack;
+            char *  second_driver;
+            char * gsi_ptr;
 
-            tmp_stack = globus_common_create_string(
-                "%s%s", gsi_stack, tmp_net_str);
+            if ((strstr(tmp_net_str, "gsi,") != tmp_net_str) &&
+                (strstr(tmp_net_str, ",gsi,") == NULL) &&
+                (((gsi_ptr = strstr(tmp_net_str, ",gsi")) == NULL) ||
+                    (strlen(gsi_ptr) != 4)))
+            {
+                tmp_stack = malloc(strlen(tmp_net_str) + 5);
+                if (tmp_stack == NULL)
+                {
+                    fprintf(stderr, "Malloc fail\n");
+                    exit(EXIT_FAILURE);
+                }
+                second_driver = strchr(tmp_net_str, ',');
+                if (second_driver)
+                {
+                    sprintf(tmp_stack, "%s", tmp_net_str);
+                    strcpy(tmp_stack + (second_driver - tmp_net_str)+1,
+                           gsi_driver_str);
+                    strcat(tmp_stack, second_driver);
+                }
+                else
+                {
+                    sprintf(tmp_stack, "%s,%s", tmp_net_str, gsi_driver_str);
+                }
+            }
+            else
+            {
+                tmp_stack = globus_common_create_string("%s", tmp_net_str);
+            }
             globus_ftp_client_operationattr_set_net_stack(
                 ftp_attr,
                 tmp_stack);

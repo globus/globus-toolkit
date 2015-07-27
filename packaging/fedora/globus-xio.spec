@@ -1,13 +1,13 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	5.4
+Version:	5.9
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio-5.4.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -140,6 +140,25 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 5.9-1
+- Allow const string option names
+- Fix miscount of string length in GLOBUS_XIO_GET_STRING_OPTIONS
+- Fix some error handling bugs
+- Remove some unused variables
+
+* Tue Apr 07 2015 Globus Toolkit <support@globus.org> - 5.8-1
+- Check push result in globus_xio_driver_list_to_stack_attr()
+- Add doc for globus_xio_driver_list_to_stack_attr
+
+* Thu Feb 12 2015 Globus Toolkit <support@globus.org> - 5.7-1
+- more GT-581 tweaks
+
+* Thu Feb 12 2015 Globus Toolkit <support@globus.org> - 5.6-1
+- GT-581: Prefer IPV6 address family when creating a listener on all interfaces
+
+* Mon Feb 09 2015 Globus Toolkit <support@globus.org> - 5.5-1
+- GT-581: Prefer IPV6 address family when creating a listener on all interfaces
+
 * Fri Jan 09 2015 Globus Toolkit <support@globus.org> - 5.4-1
 - Better fix for testing on localhost
 

@@ -1,13 +1,13 @@
 Name:		globus-xio-gridftp-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.10
+Version:	2.11
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio_gridftp_driver-2.10.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
@@ -39,6 +39,7 @@ BuildRequires: libtool
 %else
 BuildRequires: libtool-ltdl-devel
 %endif
+BuildRequires: openssl
 
 %package devel
 Summary:	Globus Toolkit - Globus XIO GSI Driver Development Files
@@ -137,6 +138,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Jul 14 2015 Globus Toolkit <support@globus.org> - 2.11-1
+- Fix missing va_arg in attr_cntl
+- Fix memory leak
+
+* Thu Apr 16 2015 Globus Toolkit <support@globus.org> - 2.10-2
+- Add openssl build dependency
+
 * Mon Jan 12 2015 Globus Toolkit <support@globus.org> - 2.10-1
 - Fix tests on static builds
 

@@ -41,6 +41,10 @@ my @dc_opts = (
     ["-dcsafe", "-subject", $subject],
     ["-dcpriv", "-subject", $subject]);
     
+my @stack_opts = (
+    "tcp",
+    "tcp,gsi");
+
 my $work_dir = tempdir( CLEANUP => 1);
 
 my @chars=("A".."Z","a".."z","0".."9");
@@ -49,7 +53,7 @@ open ($fd, ">$work_dir/src.data");
 print $fd $chars[rand @chars] for 1..10240*1024;
 close($fd);
 
-my $test_count = 2 * scalar(@dc_opts);
+my $test_count = 2 * scalar(@dc_opts) * scalar(@stack_opts);
 plan tests => $test_count;
 
 sub transform_path
@@ -84,41 +88,44 @@ SKIP: {
 
     foreach my $dc_opt (@dc_opts)
     {
-        my ($infd, $outfd, $errfd);
-        my ($out, $err);
-        my ($pid, $rc);
-        $errfd = gensym;
-        my @args = ("globus-url-copy", '-ipv6',
-                '-fsstack', 'file',
-                '-dcstack', 'gsi,tcp',
-                '-stripe', @{$dc_opt}, $src_url, $dst_url);
-
-        print STDERR join(" ", "#", @args, "\n");
-        $pid = open3($infd, $outfd, $errfd, @args);
-
-        close($infd);
-
-        waitpid($pid, 0);
-        $rc = $?;
-
+        foreach my $stack_opt (@stack_opts)
         {
-            local($/);
-            $out = <$outfd> if $outfd;
-            $err = <$errfd> if $errfd;
+            my ($infd, $outfd, $errfd);
+            my ($out, $err);
+            my ($pid, $rc);
+            $errfd = gensym;
+            my @args = ("globus-url-copy", '-ipv6',
+                    '-fsstack', 'file',
+                    '-dcstack', $stack_opt,
+                    '-stripe', @{$dc_opt}, $src_url, $dst_url);
 
-            $out =~ s/^/# /mg if $out;
-            $err =~ s/^/# /mg if $err;
+            print STDERR join(" ", "#", @args, "\n");
+            $pid = open3($infd, $outfd, $errfd, @args);
 
-            print STDERR "# stdout:\n$out\n" if $out;
-            print STDERR "# stderr:\n$err\n" if $err;
+            close($infd);
+
+            waitpid($pid, 0);
+            $rc = $?;
+
+            {
+                local($/);
+                $out = <$outfd> if $outfd;
+                $err = <$errfd> if $errfd;
+
+                $out =~ s/^/# /mg if $out;
+                $err =~ s/^/# /mg if $err;
+
+                print STDERR "# stdout:\n$out\n" if $out;
+                print STDERR "# stderr:\n$err\n" if $err;
+            }
+
+            ok($rc == 0, join(" ", "guc stack", @{$dc_opt}[0..scalar(@$dc_opt)-3],
+                ,"exits with 0"));
+
+            ok(compare("$work_dir/src.data", "$work_dir/dst.data") == 0,
+                "guc-stack data compare");
+            unlink("$work_dir/dst.data") if (-f "$work_dir/dst.data");
         }
-
-        ok($rc == 0, join(" ", "guc stack", @{$dc_opt}[0..scalar(@$dc_opt)-3],
-            ,"exits with 0"));
-
-        ok(compare("$work_dir/src.data", "$work_dir/dst.data") == 0,
-            "guc-stack data compare");
-        unlink("$work_dir/dst.data") if (-f "$work_dir/dst.data");
     }
 }
 exit(77) if ((!$server_cs) || (!$subject));

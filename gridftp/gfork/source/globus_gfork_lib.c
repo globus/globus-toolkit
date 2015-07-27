@@ -10,9 +10,6 @@ globus_xio_driver_t                     gfork_i_file_driver;
 
 static globus_bool_t                    gfork_l_globals_set = GLOBUS_FALSE;
 
-/* can only be 1 pipe per process, but we allow a list of callbacks */
-static gfork_child_handle_t             gfork_l_handle;
-
 GlobusDebugDefine(GLOBUS_GFORK);
 
 static

@@ -22,4 +22,10 @@ Attribute: mpi_type
 Description: "Choose the type of mpi to use when running jobs with
              jobtype=mpi"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: job_dependency
+Description: "Defer the start of the job until this job dependency 
+             is satisfied. The value of this attribute is colon-delimited
+             list of slurm job ids."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 @mpi_type_rvf@

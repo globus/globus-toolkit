@@ -14,7 +14,7 @@ thread_tests += gssapi-thread-test-windows
 endif
 
 check_DATA_real = \
-        compare_name_test.txt \
+        compare_name_test_hybrid.txt \
         compare_name_test_strict_gt2.txt \
         compare_name_test_strict_rfc2818.txt \
         test.example.org.pem \
@@ -29,13 +29,14 @@ check_DATA = $(check_DATA_real) \
         copy_cases
 
 check_SCRIPTS = \
-        compare-name-test.pl \
+        compare-name-test-hybrid.pl \
         compare-name-test-gt2.pl \
         compare-name-test-rfc2818.pl
 
 check_PROGRAMS= \
         compare-name-test \
         duplicate-name-test \
+	error-test \
 	gssapi-anonymous-test \
 	gssapi-delegation-test \
         gssapi-import-context-test \
@@ -55,6 +56,7 @@ check_PROGRAMS= \
 
 TESTS = $(check_SCRIPTS) \
         duplicate-name-test \
+	error-test \
         inquire-names-for-mech-test \
 	gssapi-anonymous-test \
 	gssapi-context-test \

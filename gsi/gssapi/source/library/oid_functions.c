@@ -134,8 +134,7 @@ GSS_CALLCONV gss_add_oid_set_member(
     gss_OID                             new_elements;
     gss_OID_set                         set = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    static char *                       _function_name_ = 
-        "gss_add_oid_set_member";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     /* Sanity check */
@@ -209,8 +208,7 @@ GSS_CALLCONV gss_create_empty_oid_set(
     gss_OID_set *                       oid_set)
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    static char *                       _function_name_ =
-        "gss_create_empty_oid_set";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     /* Sanity check */
@@ -263,8 +261,7 @@ GSS_CALLCONV gss_indicate_mechs(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
     gss_OID_set_desc  *                 set;
-    static char *                       _function_name_ =
-        "gss_indicate_mechs";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     if (minor_status == NULL || mech_set == NULL)
@@ -332,22 +329,14 @@ GSS_CALLCONV gss_release_oid_set(
     gss_OID_set *                       mech_set)
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    gss_OID_set                         set;
-    static char *                       _function_name_ =
-        "gss_release_oid_set";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+    *minor_status = GLOBUS_SUCCESS;
 
-    set = *mech_set;
-
-    if (mech_set && set && set != GSS_C_NO_OID_SET) {
-        
-        if((*mech_set)->elements)
-        {
-            free((*mech_set)->elements);
-        }
-
+    if (mech_set && *mech_set != GSS_C_NO_OID_SET)
+    {
+        free((*mech_set)->elements);
         free(*mech_set);
         *mech_set = GSS_C_NO_OID_SET;
     }
@@ -383,8 +372,7 @@ GSS_CALLCONV gss_test_oid_set_member(
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
     int			                index;
-    static char *                       _function_name_ =
-        "gss_test_oid_set_member";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     /* Sanity check arguments */

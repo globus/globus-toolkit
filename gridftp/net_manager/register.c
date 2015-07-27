@@ -37,7 +37,6 @@ globus_net_manager_register(
 {
     int                                 rc;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    GlobusNetManagerName(globus_net_manager_register);
     
     rc = globus_extension_registry_add(
         GLOBUS_NET_MANAGER_REGISTRY,

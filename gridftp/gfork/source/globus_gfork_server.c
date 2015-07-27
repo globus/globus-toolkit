@@ -472,7 +472,7 @@ gfork_l_list_to_array(
     argv = (char **) calloc(
         globus_list_size(list) + 1, sizeof(char *));
     i = 0;
-    for(list = list;
+    for(;
         !globus_list_empty(list);
         list = globus_list_rest(list))
     {
@@ -1272,7 +1272,7 @@ gfork_l_read_body_cb(
             {
                 globus_free(msg2);
             }
-            for(list = list;
+            for(;
                 !globus_list_empty(list);
                 list = globus_list_rest(list))
             {

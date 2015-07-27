@@ -73,8 +73,6 @@ GSS_CALLCONV gss_accept_sec_context(
     X509 *                              peer_cert = NULL;
     const EVP_MD *                      peer_digest;
 
-    static char *                       _function_name_ =
-        "gss_accept_sec_context";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
@@ -86,7 +84,7 @@ GSS_CALLCONV gss_accept_sec_context(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             (_GGSL("Parameter context_handle_P passed to function: %s is NULL"),
-             _function_name_));
+             __func__));
         major_status = GSS_S_FAILURE;
         goto exit;
     }

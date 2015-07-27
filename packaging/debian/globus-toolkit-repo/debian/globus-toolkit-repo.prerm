@@ -1,6 +1,25 @@
 #! /bin/sh
 
-codename=$(lsb_release -cs)
+# Why is this so hard
+if [ -f /etc/lsb-release ]; then
+    codename="$(awk -F= '/DISTRIB_CODENAME=/ {print $2}' /etc/lsb-release)"
+elif [ -f /etc/os-release ]; then
+    codename="$(awk -F"[)(]+" '/VERSION=/ {print $2}' /etc/os-release)"
+fi
+
+if [ -z "$codename" ] && command -v lsb_release > /dev/null; then
+    codename="$(lsb_release -cs)"
+fi
+
+if [ -z "$codename" ]; then
+    codename="$(python -c "import platform; print platform.linux_distribution()[2]")"
+fi
+
+if [ -z "$codename" ]; then
+    echo "Error determining OS codename" 1>&2
+    exit 1
+fi
+
 data="/usr/share/globus-toolkit-repo/sources.list.d"
 list_d="/etc/apt/sources.list.d"
 

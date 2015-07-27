@@ -11,12 +11,14 @@ bindir="@bindir@"
 sbindir="@sbindir@"
 datarootdir="@datarootdir@"
 datadir="@datadir@"
+libdir="@libdir@"
 mandir="@mandir@"
 
 l="$(echo "${TARGET_LOCATION}/$prefix" | sed -e 's!//*!/!g')"
 b="$(echo "${TARGET_LOCATION}/$bindir" | sed -e 's!//*!/!g')"
 s="$(echo "${TARGET_LOCATION}/$sbindir" | sed -e 's!//*!/!g')"
 m="$(echo "${TARGET_LOCATION}/$mandir" | sed -e 's!//*!/!g')"
+p="$(echo "${TARGET_LOCATION}/$libdir/pkgconfig" | sed -e 's!//*!/!g')"
 
 
 if [ "$TARGET_LOCATION" = "/" ]; then
@@ -33,6 +35,9 @@ if [ "$TARGET_LOCATION" = "/" ]; then
 	$m
 	EOF
 else
+    for pc in "${TARGET_LOCATION}${libdir}/pkgconfig"/*.pc; do
+        sed -i '' -e "s|^prefix=|prefix=${TARGET_LOCATION}|" "${pc}"
+    done
     user_shell="$(perl -e '@pw = getpwuid $< ; print $pw[8], "\n"')"
     case "$user_shell" in 
         /bin/bash|/bin/sh|/bin/ksh)
@@ -71,6 +76,8 @@ else
 	# BEGIN GLOBUS
 	PATH="\${PATH:+\$PATH:}${b}:${s}"
 	MANPATH="\${MANPATH:+\$MANPATH:}${m}"
+	GLOBUS_LOCATION="\${GLOBUS_LOCATION:-${l}}"
+	PKG_CONFIG_PATH="\${PKG_CONFIG_PATH:-/usr/lib/pkgconfig}:${p}"
 	# END GLOBUS
 	EOF
         mv "${profile}" "${profile}.globus.save"
@@ -99,6 +106,14 @@ else
 	    setenv MANPATH "$MANPATH:${m}"
 	else
 	    setenv MANPATH "${m}"
+	endif
+	if ($?PKG_CONFIG_PATH) then
+	    setenv PKG_CONFIG_PATH "$PKG_CONFIG_PATH:${p}"
+	else
+	    setenv PKG_CONFIG_PATH "/usr/lib/pkgconfig:${p}"
+	endif
+	if (!$?GLOBUS_LOCATION) then
+	    setenv GLOBUS_LOCATION "${l}"
 	endif
 	# END GLOBUS
 	EOF

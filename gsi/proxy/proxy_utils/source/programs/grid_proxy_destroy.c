@@ -264,8 +264,6 @@ int main(
                                                   dryrun_flag);
     }
 
- done:
-
     if(default_full_file)
     { 
         free(default_full_file);

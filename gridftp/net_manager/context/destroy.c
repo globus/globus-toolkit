@@ -19,9 +19,17 @@
  * @brief globus_net_manager_context_destroy()
  */
 
-
 #include "globus_net_manager_context.h"
 
+/**
+ * @brief Destroy Context
+ * @ingroup globus_net_manager_context
+ * @details
+ * This functions destroys *context*.
+ * 
+ * @param [in] context
+ *     Pointer to the context to destroy.
+ */
 void
 globus_net_manager_context_destroy(
     globus_net_manager_context_t        context)
@@ -29,7 +37,6 @@ globus_net_manager_context_destroy(
     globus_i_net_manager_context_t *    ctx = context;
     globus_list_t *                     list;
     globus_i_net_manager_context_entry_t * ent;
-    GlobusNetManagerName(globus_net_manager_context_destroy);
     if(ctx)
     {
         list = ctx->managers;
@@ -42,11 +49,11 @@ globus_net_manager_context_destroy(
             if(ent->dll_name)
             {
                 globus_extension_deactivate(ent->dll_name);
-                globus_free(ent->dll_name);
+                free(ent->dll_name);
             }
             globus_net_manager_attr_array_delete(ent->attrs);
-            globus_free(ent->name);
-            globus_free(ent);
+            free(ent->name);
+            free(ent);
         }
         free(ctx);
     }

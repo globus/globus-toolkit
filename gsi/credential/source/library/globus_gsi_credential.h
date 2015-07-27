@@ -212,19 +212,19 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
 
 globus_result_t globus_gsi_cred_read_key(
     globus_gsi_cred_handle_t            handle,
-    char *                              key_filename,
+    const char *                        key_filename,
     int                                 (*pw_cb)());
 
 globus_result_t globus_gsi_cred_read_cert(
     globus_gsi_cred_handle_t            handle,
-    char *                              cert_filename);
+    const char *                        cert_filename);
 
 globus_result_t globus_gsi_cred_read_cert_bio(
     globus_gsi_cred_handle_t            handle,
     BIO *                               bio);
 
 globus_result_t globus_gsi_cred_read_cert_buffer(
-    char *                              pem_buf,
+    const char *                        pem_buf,
     globus_gsi_cred_handle_t *          out_handle,
     X509 **                             out_cert,
     STACK_OF(X509) **                   out_cert_chain,
@@ -232,7 +232,7 @@ globus_result_t globus_gsi_cred_read_cert_buffer(
 
 globus_result_t globus_gsi_cred_read_pkcs12(
     globus_gsi_cred_handle_t            handle,
-    char *                              pkcs12_filename);
+    const char *                        pkcs12_filename);
 
 globus_result_t globus_gsi_cred_write(
     globus_gsi_cred_handle_t            handle,
@@ -240,7 +240,7 @@ globus_result_t globus_gsi_cred_write(
 
 globus_result_t globus_gsi_cred_write_proxy(
     globus_gsi_cred_handle_t            handle,
-    char *                              proxy_filename);
+    const char *                        proxy_filename);
 
 globus_result_t
 globus_gsi_cred_verify_cert_chain(
@@ -336,13 +336,15 @@ globus_result_t globus_gsi_cred_get_key_bits(
     globus_gsi_cred_handle_t            handle,
     int *                               key_bits);
 
+GLOBUS_DEPRECATED(
 globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char *                              ca_cert_dir);
+    const char *                        ca_cert_dir));
 
+GLOBUS_DEPRECATED(
 globus_result_t globus_gsi_cred_handle_attrs_get_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char **                             ca_cert_dir);
+    char **                             ca_cert_dir));
 
 globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
     globus_gsi_cred_handle_attrs_t      handle_attrs,

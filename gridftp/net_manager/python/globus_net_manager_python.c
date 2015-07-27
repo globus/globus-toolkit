@@ -91,25 +91,25 @@ globus_l_python_module(
                     modref = malloc(sizeof(globus_l_python_modref_t));
                     if (!modref)
                     {
-                        result = GLOBUS_FAILURE;
+                        result = GlobusNetManagerErrorMemory("modref");
                         goto modref_malloc_fail;
                     }
                     modref->key = strdup(attrs[i].value);
                     if (!modref->key)
                     {
-                        result = GLOBUS_FAILURE;
+                        result = GlobusNetManagerErrorMemory("key");
                         goto strdup_modref_key_fail;
                     }
                     pymodname = PyString_FromString(modref->key);
                     if (!pymodname)
                     {
-                        result = GLOBUS_FAILURE;
+                        result = GlobusNetManagerErrorMemory("pymodname");
                         goto modref_key_to_pystring_fail;
                     }
                     modref->module = PyImport_Import(pymodname);
                     if (!modref->module)
                     {
-                        result = GLOBUS_FAILURE;
+                        result = GlobusNetManagerErrorMemory("module");
                         goto module_import_fail;
                     }
                     modref->pre_listen = globus_l_python_resolve_func(
@@ -137,7 +137,8 @@ globus_l_python_module(
                             modref);
                     if (rc != GLOBUS_SUCCESS)
                     {
-                        result = GLOBUS_FAILURE;
+                        result = GlobusNetManagerErrorMemory(
+                                "hashtable_insert");
                         goto hashtable_insert_fail;
                     }
                 }
@@ -192,7 +193,7 @@ globus_l_python_attr_array_to_pylist(
     pylist = PyList_New(num_attrs);
     if (!pylist)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorMemory("pylist");
         goto pylist_new_fail;
     }
 
@@ -203,7 +204,7 @@ globus_l_python_attr_array_to_pylist(
         tuple = PyTuple_New(3);
         if (!tuple)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("tuple");
             goto pytuple_new_fail;
         }
         PyList_SetItem(pylist, i, tuple);
@@ -211,7 +212,7 @@ globus_l_python_attr_array_to_pylist(
         pyscope = PyString_FromString(attr_array[i].scope);
         if (!pyscope)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("scope");
             goto pyscope_new_fail;
         }
         PyTuple_SetItem(tuple, 0, pyscope);
@@ -219,7 +220,7 @@ globus_l_python_attr_array_to_pylist(
         pyname = PyString_FromString(attr_array[i].name);
         if (!pyname)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("pyname");
             goto pyname_new_fail;
         }
         PyTuple_SetItem(tuple, 1, pyname);
@@ -227,7 +228,7 @@ globus_l_python_attr_array_to_pylist(
         pyvalue = PyString_FromString(attr_array[i].value);
         if (!pyvalue)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("pyvalue");
             goto pyvalue_new_fail;
         }
         PyTuple_SetItem(tuple, 2, pyvalue);
@@ -258,10 +259,10 @@ globus_l_python_pylist_to_attr_array(
     globus_net_manager_attr_t          *attr_array = NULL;
 
     list_size = PyList_Size(pylist);
-    attr_array = malloc((list_size+1) * sizeof(globus_net_manager_attr_t));
+    attr_array = calloc(list_size+1, sizeof(globus_net_manager_attr_t));
     if (!attr_array)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorMemory("attr_array");
         goto attr_array_malloc_fail;
     }
     for (i = 0; i < list_size; i++)
@@ -274,48 +275,48 @@ globus_l_python_pylist_to_attr_array(
         pyattr_tuple = PyList_GetItem(pylist, i);
         if (pyattr_tuple == NULL || !PyTuple_Check(pyattr_tuple))
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorParameter("pyattr_tuple");
             goto bad_tuple_item;
         }
         if (PyTuple_Size(pyattr_tuple) != 3)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorParameter("pyattr_tuple");
             goto bad_tuple_size;
         }
         pyscope = PyTuple_GetItem(pyattr_tuple, 0);
         if (pyscope == NULL || !PyString_Check(pyscope))
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorParameter("pyscope");
             goto bad_tuple_scope;
         }
         pyname = PyTuple_GetItem(pyattr_tuple, 1);
         if (pyname == NULL || !PyString_Check(pyname))
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorParameter("pyname");
             goto bad_tuple_name;
         }
         pyvalue = PyTuple_GetItem(pyattr_tuple, 2);
         if (pyvalue == NULL || !PyString_Check(pyvalue))
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorParameter("pyvalue");
             goto bad_tuple_value;
         }
         attr_array[i].scope = strdup(PyString_AsString(pyscope));
         if (attr_array[i].scope == NULL)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("scope");
             goto strdup_scope_fail;
         }
         attr_array[i].name = strdup(PyString_AsString(pyname));
         if (attr_array[i].name == NULL)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("name");
             goto strdup_name_fail;
         }
         attr_array[i].value = strdup(PyString_AsString(pyvalue));
         if (attr_array[i].value == NULL)
         {
-            result = GLOBUS_FAILURE;
+            result = GlobusNetManagerErrorMemory("value");
             goto strdup_value_fail;
         }
     }
@@ -342,7 +343,7 @@ bad_tuple_item:
     }
 attr_array_malloc_fail:
     *attr_array_out = attr_array;
-    return GLOBUS_SUCCESS;
+    return result;
 }
 /* globus_l_python_pylist_to_attr_array() */
 
@@ -359,28 +360,250 @@ globus_l_net_manager_python_handle_exception(
     exception = PyErr_Occurred();
     if (exception != NULL)
     {
-        result = GLOBUS_FAILURE;
-
         exception_string = PyObject_Str(exception);
         if (exception_string)
         {
             exception_cstr = PyString_AsString(exception_string);
             if (exception_cstr)
             {
-                result = globus_error_put(
-                        globus_error_construct_string(
-                            &globus_net_manager_python_module,
-                            NULL,
-                            "Python Exception in %s: %s",
-                            func_name,
-                            exception_cstr));
+                char *error_explanation = globus_common_create_string(
+                        "Python exception in %s: %s",
+                        func_name,
+                        exception_cstr);
+
+                if (error_explanation != NULL)
+                {
+                    result = GlobusNetManagerErrorManager(
+                            GLOBUS_FAILURE,
+                            "python",
+                            error_explanation);
+                    free(error_explanation);
+                }
             }
             Py_DECREF(exception_string);
+        }
+
+        if (result == GLOBUS_SUCCESS)
+        {
+            result = GlobusNetManagerErrorManager(
+                    GLOBUS_FAILURE,
+                    "python",
+                    "Python exception occurred");
         }
     }
     return result;
 }
 /* globus_l_net_manager_python_handle_exception() */
+
+/**
+ * @brief Prepare arguments for calling python function
+ * @details
+ * This function create a python tuple containing the string arguments and
+ * attributes in the python calling convention.
+ *
+ * @param[in] string_arg_count
+ *     Number of elements in string_args
+ * @param[in] string_args
+ *     String parameters
+ * @param[in] attr_array
+ *     Attribute parameter
+ * @param[out] pyargs_out
+ *     Pointer to a python object to be set to the function parameters.
+ *
+ * @return
+ *     On success, this function sets 'pyargs_out' to the parameters in python
+ *     form and returns GLOBUS_SUCCESS.
+ *     On failure, this function sets 'pyargs_out' to NULL and returns an
+ *     error result.
+ */
+static
+globus_result_t
+globus_l_python_prep_args(
+    size_t                              string_arg_count,
+    const char *                        string_args[],
+    const globus_net_manager_attr_t    *attr_array,
+    PyObject                          **pyargs_out)
+{
+    PyObject                           *pyargs = NULL,
+                                       *pystr = NULL,
+                                       *pylist = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+    pyargs = PyTuple_New(string_arg_count + 1);
+    if (pyargs == NULL)
+    {
+        result = GlobusNetManagerErrorMemory("pyargs");
+        goto pyargs_new_fail;
+    }
+    for (int i = 0; i < string_arg_count; i++)
+    { 
+        pystr = PyString_FromString(string_args[i]); 
+        if (pystr == NULL)
+        {
+            result = GlobusNetManagerErrorMemory("pystr");
+            goto pystr_from_string_failed;
+        }
+        PyTuple_SetItem(pyargs, i, pystr);
+    }
+
+    result = globus_l_python_attr_array_to_pylist(attr_array, &pylist);
+    if (result)
+    {
+        goto attr_to_pylist_fail;
+    }
+    PyTuple_SetItem(pyargs, string_arg_count, pylist);
+
+    if (result != GLOBUS_SUCCESS)
+    {
+attr_to_pylist_fail:
+pystr_from_string_failed:
+        Py_DECREF(pyargs);
+        pyargs = NULL;
+    }
+pyargs_new_fail:
+    *pyargs_out = pyargs;
+    return result;
+}
+/* globus_l_python_prep_args() */
+
+/**
+ * @brief Parse response from calling python function
+ * @details
+ * This function parses a python tuple containing the string responses and
+ * attributes from the python calling convention.
+ *
+ * @param[in] pyresult
+ *     Pointer to a python object containing the response from the function.
+ * @param[in] string_arg_count
+ *     Number of elements in string_args
+ * @param[out] string_args
+ *     Pointer to an array of strings to be set to the string response
+ *     values.
+ * @param[out] attr_array
+ *     Pointer to be set to an array of attributes returned in the response.
+ *
+ * @return
+ *     On success, this function sets the strings pointed to by string_args
+ *     to the response values or NULL, and sets attr_array to the response
+ *     attributes, and returns GLOBUS_SUCCESS.
+ *     On failure, this function sets all elements of string_args and
+ *     attr_array to NULL and returns an error result.
+ */
+static
+globus_result_t
+globus_l_python_parse_response(
+    PyObject                           *pyresult,
+    size_t                              string_arg_count,
+    char **                             string_args_out[],
+    globus_net_manager_attr_t          **attr_array_out)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    Py_ssize_t                          expected_tuple_size;
+
+    for (int i = 0; i < string_arg_count; i++)
+    {
+        *(string_args_out[i]) = NULL;
+    }
+    expected_tuple_size = string_arg_count;
+    if (attr_array_out != NULL)
+    {
+        expected_tuple_size++;
+        *attr_array_out = NULL;
+    }
+
+    if (pyresult && pyresult != Py_None)
+    {
+        if (string_arg_count > 0)
+        {
+            if (PyTuple_Check(pyresult) &&
+                PyTuple_Size(pyresult) == expected_tuple_size)
+            {
+                for (int i = 0; i < string_arg_count; i++)
+                {
+                    PyObject               *pystr = NULL;
+
+                    pystr = PyTuple_GetItem(pyresult, i);
+                    if (!pystr)
+                    {
+                        result = GlobusNetManagerErrorParameter("pystr");
+                        goto get_pystr_fail;
+                    }
+                    if (PyString_Check(pystr))
+                    {
+                        const char * tmpstr = PyString_AsString(pystr);
+                        if (tmpstr)
+                        {
+                            *(string_args_out[i]) = strdup(tmpstr);
+
+                            if (*(string_args_out[i]) == NULL)
+                            {
+                                goto strdup_tmpstr_fail;
+                            }
+                        }
+                    }
+                }
+                if (attr_array_out != NULL)
+                {
+                    PyObject               *pyarray = NULL;
+
+                    pyarray = PyTuple_GetItem(pyresult, string_arg_count);
+                    if (!pyarray)
+                    {
+                        result = GlobusNetManagerErrorParameter("pyarray");
+                        goto get_attr_array_out_fail;
+                    }
+                    if (pyarray == Py_None)
+                    {
+                        *attr_array_out = NULL;
+                    }
+                    else if (PyList_Check(pyarray))
+                    {
+                        result = globus_l_python_pylist_to_attr_array(
+                            pyarray, attr_array_out);
+                    }
+                    else
+                    {
+                        result = GlobusNetManagerErrorParameter("pyarray");
+                        goto py_attr_array_not_list;
+                    }
+                }
+            }
+        }
+        else if (attr_array_out != NULL)
+        {
+            if (PyList_Check(pyresult))
+            {
+                result = globus_l_python_pylist_to_attr_array(
+                    pyresult, attr_array_out);
+            }
+            else
+            {
+                result = GlobusNetManagerErrorParameter("pyresult");
+                goto py_attr_array_not_list;
+            }
+        }
+        else
+        {
+            result = GlobusNetManagerErrorParameter("pyresult");
+            goto py_result_wrong_size;
+        }
+        if (result != GLOBUS_SUCCESS)
+        {
+strdup_tmpstr_fail:
+get_pystr_fail:
+py_result_wrong_size:
+py_attr_array_not_list:
+get_attr_array_out_fail:
+            for (int i = 0; i < string_arg_count; i++)
+            {
+                free(*(string_args_out[i]));
+            }
+        }
+        ;
+    }
+    return result;
+}
+/* globus_l_python_parse_response() */
 
 static
 globus_result_t
@@ -405,65 +628,39 @@ globus_l_python_pre_listen(
 
     if (pymod->pre_listen)
     {
-        PyObject                       *pyargs = NULL;
-        PyObject                       *pytaskid, *pytransport, *pylist;
-        PyObject                       *pyresult;
+        PyObject                       *pyargs = NULL,
+                                       *pyresult = NULL;
 
-        pyargs = PyTuple_New(3);
-        if (pyargs == NULL)
+        result = globus_l_python_prep_args(
+            2,
+            (const char*[2]) { task_id, transport },
+            attr_array,
+            &pyargs);
+        if (result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_FAILURE;
-            goto pyargs_new_fail;
+            goto prep_args_fail;
         }
-        pytaskid = PyString_FromString(task_id);
-        if (pytaskid == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_taskid_fail;
-        }
-        PyTuple_SetItem(pyargs, 0, pytaskid);
-
-        pytransport = PyString_FromString(transport);
-        if (pytransport == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_transport_fail;
-        }
-        PyTuple_SetItem(pyargs, 1, pytransport);
-
-        result = globus_l_python_attr_array_to_pylist(attr_array, &pylist);
-        if (result)
-        {
-            goto attr_to_pylist_fail;
-        }
-        PyTuple_SetItem(pyargs, 2, pylist);
 
         PyErr_Clear();
         pyresult = PyObject_CallObject(pymod->pre_listen, pyargs);
-        if (pyresult && pyresult != Py_None)
+
+        result = globus_l_python_parse_response(
+                pyresult,
+                0,
+                NULL,
+                attr_array_out);
+        if (pyresult)
         {
-            if (PyList_Check(pyresult))
-            {
-                result = globus_l_python_pylist_to_attr_array(
-                    pyresult, attr_array_out);
-            }
-            else
-            {
-                result = GLOBUS_FAILURE;
-            }
             Py_DECREF(pyresult);
         }
+
         if (result == GLOBUS_SUCCESS)
         {
             result = globus_l_net_manager_python_handle_exception("pre_listen");
         }
-attr_to_pylist_fail:
-pystring_transport_fail:
-pystring_taskid_fail:
         Py_DECREF(pyargs);
-        pyargs = NULL;
     }
-pyargs_new_fail:
+prep_args_fail:
 lookup_module_fail:
     return result;
 }
@@ -486,14 +683,14 @@ globus_l_python_post_listen(
 
     if (local_contact_out == NULL)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("local_contact_out");
         goto local_contact_null;
     }
     *local_contact_out = NULL;
 
     if (attr_array_out == NULL)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("attr_array_out");
         goto attr_array_out_null;
     }
     *attr_array_out = NULL;
@@ -508,128 +705,45 @@ globus_l_python_post_listen(
     if (pymod->post_listen)
     {
         PyObject                       *pyargs = NULL,
-                                       *pytaskid = NULL,
-                                       *pytransport = NULL,
-                                       *pylocal_contact = NULL,
-                                       *pylist = NULL,
                                        *pyresult = NULL;
 
-        pyargs = PyTuple_New(4);
-        if (pyargs == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pyargs_new_fail;
-        }
-        pytaskid = PyString_FromString(task_id);
-        if (pytaskid == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_taskid_fail;
-        }
-        PyTuple_SetItem(pyargs, 0, pytaskid);
+        result = globus_l_python_prep_args(
+            3,
+            (const char*[3]) {
+                task_id,
+                transport,
+                local_contact
+            },
+            attr_array,
+            &pyargs);
 
-        pytransport = PyString_FromString(transport);
-        if (pytransport == NULL)
+        if (result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_FAILURE;
-            goto pystring_transport_fail;
+            goto prep_args_fail;
         }
-        PyTuple_SetItem(pyargs, 1, pytransport);
-
-        pylocal_contact = PyString_FromString(local_contact);
-        if (pylocal_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_local_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 2, pylocal_contact);
-
-        result = globus_l_python_attr_array_to_pylist(attr_array, &pylist);
-        if (result)
-        {
-            goto attr_to_pylist_fail;
-        }
-        PyTuple_SetItem(pyargs, 3, pylist);
 
         PyErr_Clear();
         pyresult = PyObject_CallObject(pymod->post_listen, pyargs);
-        if (pyresult && pyresult != Py_None)
+
+        result = globus_l_python_parse_response(
+                pyresult,
+                1,
+                (char **[1]) {local_contact_out},
+                attr_array_out);
+
+        if (pyresult)
         {
-            if (PyTuple_Check(pyresult) && PyTuple_Size(pyresult) == 2)
-            {
-                PyObject                *py_localcontact_out = NULL,
-                                        *py_attr_array_out = NULL;
-
-                py_localcontact_out = PyTuple_GetItem(pyresult, 0);
-                if (!py_localcontact_out)
-                {
-                    result = GLOBUS_FAILURE;
-                    goto get_localcontactitem_fail;
-                }
-                if (PyString_Check(py_localcontact_out))
-                {
-                    const char * tmpstr = PyString_AsString(py_localcontact_out);
-                    if (tmpstr)
-                    {
-                        *local_contact_out = strdup(tmpstr);
-
-                        if (*local_contact_out == NULL)
-                        {
-                            goto strdup_local_contact_out_fail;
-                        }
-                    }
-                }
-                py_attr_array_out = PyTuple_GetItem(pyresult, 1);
-                if (!py_attr_array_out)
-                {
-                    result = GLOBUS_FAILURE;
-                    goto get_attr_array_out_fail;
-                }
-                if (py_attr_array_out == Py_None)
-                {
-                    *attr_array_out = NULL;
-                }
-                else if (PyList_Check(py_attr_array_out))
-                {
-                    result = globus_l_python_pylist_to_attr_array(
-                        py_attr_array_out, attr_array_out);
-                }
-                else
-                {
-                    result = GLOBUS_FAILURE;
-                    goto py_attr_array_not_list;
-                }
-            }
-            else
-            {
-                result = GLOBUS_FAILURE;
-                goto py_result_wrong_size;
-            }
-            if (result != GLOBUS_SUCCESS)
-            {
-py_result_wrong_size:
-py_attr_array_not_list:
-get_attr_array_out_fail:
-                free(*local_contact_out);
-                *local_contact_out = NULL;
-            }
-strdup_local_contact_out_fail:
-get_localcontactitem_fail:
             Py_DECREF(pyresult);
         }
+
         if (result == GLOBUS_SUCCESS)
         {
             result = globus_l_net_manager_python_handle_exception(
                     "post_listen");
         }
-attr_to_pylist_fail:
-pystring_local_contact_fail:
-pystring_transport_fail:
-pystring_taskid_fail:
         Py_DECREF(pyargs);
-        pyargs = NULL;
     }
-pyargs_new_fail:
+prep_args_fail:
 lookup_module_fail:
 attr_array_out_null:
 local_contact_null:
@@ -661,72 +775,47 @@ globus_l_python_end_listen(
     if (pymod->end_listen)
     {
         PyObject                       *pyargs = NULL,
-                                       *pytaskid = NULL,
-                                       *pytransport = NULL,
-                                       *pylocal_contact = NULL,
-                                       *pylist = NULL,
                                        *pyresult = NULL;
 
-        pyargs = PyTuple_New(4);
-        if (pyargs == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pyargs_new_fail;
-        }
-        pytaskid = PyString_FromString(task_id);
-        if (pytaskid == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_taskid_fail;
-        }
-        PyTuple_SetItem(pyargs, 0, pytaskid);
+        result = globus_l_python_prep_args(
+            3,
+            (const char*[3]) {
+                task_id,
+                transport,
+                local_contact
+            },
+            attr_array,
+            &pyargs);
 
-        pytransport = PyString_FromString(transport);
-        if (pytransport == NULL)
+        if (result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_FAILURE;
-            goto pystring_transport_fail;
+            goto prep_args_fail;
         }
-        PyTuple_SetItem(pyargs, 1, pytransport);
-
-        pylocal_contact = PyString_FromString(local_contact);
-        if (pylocal_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_local_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 2, pylocal_contact);
-
-        result = globus_l_python_attr_array_to_pylist(attr_array, &pylist);
-        if (result)
-        {
-            goto attr_to_pylist_fail;
-        }
-        PyTuple_SetItem(pyargs, 3, pylist);
 
         PyErr_Clear();
         pyresult = PyObject_CallObject(pymod->end_listen, pyargs);
-        if (pyresult && pyresult != Py_None)
+
+        result = globus_l_python_parse_response(
+                pyresult,
+                0,
+                NULL,
+                NULL);
+
+        if (pyresult)
         {
-            result = GLOBUS_FAILURE;
             Py_DECREF(pyresult);
         }
+
         if (result == GLOBUS_SUCCESS)
         {
             result = globus_l_net_manager_python_handle_exception(
                     "pre_end");
         }
-attr_to_pylist_fail:
-pystring_local_contact_fail:
-pystring_transport_fail:
-pystring_taskid_fail:
         Py_DECREF(pyargs);
         pyargs = NULL;
     }
-pyargs_new_fail:
+prep_args_fail:
 lookup_module_fail:
-attr_array_out_null:
-local_contact_null:
     return result;
 }
 /* globus_l_python_end_listen() */
@@ -756,62 +845,34 @@ globus_l_python_pre_accept(
     if (pymod->pre_accept)
     {
         PyObject                       *pyargs = NULL,
-                                       *pytaskid = NULL,
-                                       *pytransport = NULL,
-                                       *pylocal_contact = NULL,
-                                       *pylist = NULL,
                                        *pyresult = NULL;
 
-        pyargs = PyTuple_New(4);
-        if (pyargs == NULL)
+        result = globus_l_python_prep_args(
+            3,
+            (const char*[3]) {
+                task_id,
+                transport,
+                local_contact
+            },
+            attr_array,
+            &pyargs);
+        if (result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_FAILURE;
-            goto pyargs_new_fail;
+            goto prep_args_fail;
         }
-        pytaskid = PyString_FromString(task_id);
-        if (pytaskid == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_taskid_fail;
-        }
-        PyTuple_SetItem(pyargs, 0, pytaskid);
-
-        pytransport = PyString_FromString(transport);
-        if (pytransport == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_transport_fail;
-        }
-        PyTuple_SetItem(pyargs, 1, pytransport);
-
-        pylocal_contact = PyString_FromString(local_contact);
-        if (pylocal_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_local_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 2, pylocal_contact);
-
-        result = globus_l_python_attr_array_to_pylist(attr_array, &pylist);
-        if (result)
-        {
-            goto attr_to_pylist_fail;
-        }
-        PyTuple_SetItem(pyargs, 3, pylist);
 
         PyErr_Clear();
+
         pyresult = PyObject_CallObject(pymod->pre_accept, pyargs);
-        if (pyresult != NULL && pyresult != Py_None)
+
+        result = globus_l_python_parse_response(
+                pyresult,
+                0,
+                NULL,
+                attr_array_out);
+
+        if (pyresult)
         {
-            if (PyList_Check(pyresult))
-            {
-                result = globus_l_python_pylist_to_attr_array(
-                    pyresult, attr_array_out);
-            }
-            else
-            {
-                result = GLOBUS_FAILURE;
-            }
             Py_DECREF(pyresult);
         }
         if (result == GLOBUS_SUCCESS)
@@ -819,14 +880,10 @@ globus_l_python_pre_accept(
             result = globus_l_net_manager_python_handle_exception(
                     "pre_accept");
         }
-attr_to_pylist_fail:
-pystring_local_contact_fail:
-pystring_transport_fail:
-pystring_taskid_fail:
         Py_DECREF(pyargs);
         pyargs = NULL;
     }
-pyargs_new_fail:
+prep_args_fail:
 lookup_module_fail:
     return result;
 }
@@ -857,71 +914,32 @@ globus_l_python_post_accept(
     if (pymod->post_accept)
     {
         PyObject                       *pyargs = NULL,
-                                       *pytaskid = NULL,
-                                       *pytransport = NULL,
-                                       *pylocal_contact = NULL,
-                                       *pyremote_contact = NULL,
-                                       *pylist = NULL,
                                        *pyresult = NULL;
 
-        pyargs = PyTuple_New(5);
-        if (pyargs == NULL)
+        result = globus_l_python_prep_args(
+            4,
+            (const char*[4]) {
+                task_id,
+                transport,
+                local_contact,
+                remote_contact
+            },
+            attr_array,
+            &pyargs);
+        if (result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_FAILURE;
-            goto pyargs_new_fail;
+            goto prep_args_fail;
         }
-        pytaskid = PyString_FromString(task_id);
-        if (pytaskid == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_taskid_fail;
-        }
-        PyTuple_SetItem(pyargs, 0, pytaskid);
-
-        pytransport = PyString_FromString(transport);
-        if (pytransport == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_transport_fail;
-        }
-        PyTuple_SetItem(pyargs, 1, pytransport);
-
-        pylocal_contact = PyString_FromString(local_contact);
-        if (pylocal_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_local_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 2, pylocal_contact);
-
-        pyremote_contact = PyString_FromString(remote_contact);
-        if (pyremote_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_remote_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 3, pyremote_contact);
-
-        result = globus_l_python_attr_array_to_pylist(attr_array, &pylist);
-        if (result)
-        {
-            goto attr_to_pylist_fail;
-        }
-        PyTuple_SetItem(pyargs, 4, pylist);
 
         PyErr_Clear();
         pyresult = PyObject_CallObject(pymod->post_accept, pyargs);
-        if (pyresult && pyresult != Py_None)
+        result = globus_l_python_parse_response(
+                pyresult,
+                0,
+                NULL,
+                attr_array_out);
+        if (pyresult)
         {
-            if (PyList_Check(pyresult))
-            {
-                result = globus_l_python_pylist_to_attr_array(
-                    pyresult, attr_array_out);
-            }
-            else
-            {
-                result = GLOBUS_FAILURE;
-            }
             Py_DECREF(pyresult);
         }
         if (result == GLOBUS_SUCCESS)
@@ -929,15 +947,10 @@ globus_l_python_post_accept(
             result = globus_l_net_manager_python_handle_exception(
                     "post_accept");
         }
-attr_to_pylist_fail:
-pystring_remote_contact_fail:
-pystring_local_contact_fail:
-pystring_transport_fail:
-pystring_taskid_fail:
         Py_DECREF(pyargs);
         pyargs = NULL;
     }
-pyargs_new_fail:
+prep_args_fail:
 lookup_module_fail:
     return result;
 }
@@ -960,14 +973,14 @@ globus_l_python_pre_connect(
 
     if (remote_contact_out == NULL)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("remote_contact_out");
         goto remote_contact_null;
     }
     *remote_contact_out = NULL;
 
     if (attr_array_out == NULL)
     {
-        result = GLOBUS_FAILURE;
+        result = GlobusNetManagerErrorParameter("attr_array_out");
         goto attr_array_out_null;
     }
     *attr_array_out = NULL;
@@ -982,126 +995,40 @@ globus_l_python_pre_connect(
     if (pymod->pre_connect)
     {
         PyObject                       *pyargs = NULL,
-                                       *pytaskid = NULL,
-                                       *pytransport = NULL,
-                                       *pyremote_contact = NULL,
-                                       *pylist = NULL,
                                        *pyresult = NULL;
 
-        pyargs = PyTuple_New(4);
-        if (pyargs == NULL)
+        result = globus_l_python_prep_args(
+            3,
+            (const char*[3]) { task_id, transport, remote_contact },
+            attr_array,
+            &pyargs);
+        if (result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_FAILURE;
-            goto pyargs_new_fail;
+            goto prep_args_fail;
         }
-        pytaskid = PyString_FromString(task_id);
-        if (pytaskid == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_taskid_fail;
-        }
-        PyTuple_SetItem(pyargs, 0, pytaskid);
-
-        pytransport = PyString_FromString(transport);
-        if (pytransport == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_transport_fail;
-        }
-        PyTuple_SetItem(pyargs, 1, pytransport);
-
-        pyremote_contact = PyString_FromString(remote_contact);
-        if (pyremote_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_remote_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 2, pyremote_contact);
-
-        result = globus_l_python_attr_array_to_pylist(attr_array, &pylist);
-        if (result)
-        {
-            goto attr_to_pylist_fail;
-        }
-        PyTuple_SetItem(pyargs, 3, pylist);
 
         PyErr_Clear();
         pyresult = PyObject_CallObject(pymod->pre_connect, pyargs);
-        if (pyresult && pyresult != Py_None)
+
+        result = globus_l_python_parse_response(
+                pyresult,
+                1,
+                (char **[]) { remote_contact_out },
+                attr_array_out);
+        if (pyresult)
         {
-            if (PyTuple_Check(pyresult) && PyTuple_Size(pyresult) == 2)
-            {
-                PyObject                *py_localcontact_out = NULL,
-                                        *py_attr_array_out = NULL;
-
-                py_localcontact_out = PyTuple_GetItem(pyresult, 0);
-                if (!py_localcontact_out)
-                {
-                    result = GLOBUS_FAILURE;
-                    goto get_localcontactitem_fail;
-                }
-                if (PyString_Check(py_localcontact_out))
-                {
-                    const char * tmpstr = PyString_AsString(py_localcontact_out);
-                    if (tmpstr)
-                    {
-                        *remote_contact_out = strdup(tmpstr);
-
-                        if (*remote_contact_out == NULL)
-                        {
-                            goto strdup_remote_contact_out_fail;
-                        }
-                    }
-                }
-                py_attr_array_out = PyTuple_GetItem(pyresult, 1);
-                if (!py_attr_array_out)
-                {
-                    result = GLOBUS_FAILURE;
-                    goto get_attr_array_out_fail;
-                }
-                if (py_attr_array_out == Py_None)
-                {
-                    *attr_array_out = NULL;
-                }
-                else if (PyList_Check(py_attr_array_out))
-                {
-                    result = globus_l_python_pylist_to_attr_array(
-                        py_attr_array_out, attr_array_out);
-                }
-                else
-                {
-                    result = GLOBUS_FAILURE;
-                    goto py_attr_array_not_list;
-                }
-            }
-            else
-            {
-                result = GLOBUS_FAILURE;
-            }
-py_attr_array_not_list:
-get_attr_array_out_fail:
-            if (result)
-            {
-                free(*remote_contact_out);
-                *remote_contact_out = NULL;
-            }
-strdup_remote_contact_out_fail:
-get_localcontactitem_fail:
             Py_DECREF(pyresult);
         }
+
         if (result == GLOBUS_SUCCESS)
         {
             result = globus_l_net_manager_python_handle_exception(
                     "pre_connect");
         }
-attr_to_pylist_fail:
-pystring_remote_contact_fail:
-pystring_transport_fail:
-pystring_taskid_fail:
         Py_DECREF(pyargs);
         pyargs = NULL;
     }
-pyargs_new_fail:
+prep_args_fail:
 lookup_module_fail:
 attr_array_out_null:
 remote_contact_null:
@@ -1135,87 +1062,45 @@ globus_l_python_post_connect(
     if (pymod->post_connect)
     {
         PyObject                       *pyargs = NULL,
-                                       *pytaskid = NULL,
-                                       *pytransport = NULL,
-                                       *pylocal_contact = NULL,
-                                       *pyremote_contact = NULL,
-                                       *pylist = NULL,
                                        *pyresult = NULL;
 
-        pyargs = PyTuple_New(5);
-        if (pyargs == NULL)
+        result = globus_l_python_prep_args(
+            4,
+            (const char*[4]) {
+                task_id,
+                transport,
+                local_contact,
+                remote_contact
+            },
+            attr_array,
+            &pyargs);
+        if (result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_FAILURE;
-            goto pyargs_new_fail;
+            goto prep_args_fail;
         }
-        pytaskid = PyString_FromString(task_id);
-        if (pytaskid == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_taskid_fail;
-        }
-        PyTuple_SetItem(pyargs, 0, pytaskid);
-
-        pytransport = PyString_FromString(transport);
-        if (pytransport == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_transport_fail;
-        }
-        PyTuple_SetItem(pyargs, 1, pytransport);
-
-        pylocal_contact = PyString_FromString(local_contact);
-        if (pylocal_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_local_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 2, pylocal_contact);
-
-        pyremote_contact = PyString_FromString(remote_contact);
-        if (pyremote_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_remote_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 3, pyremote_contact);
-
-        result = globus_l_python_attr_array_to_pylist(attr_array, &pylist);
-        if (result)
-        {
-            goto attr_to_pylist_fail;
-        }
-        PyTuple_SetItem(pyargs, 4, pylist);
 
         PyErr_Clear();
         pyresult = PyObject_CallObject(pymod->post_connect, pyargs);
-        if (pyresult && pyresult != Py_None)
+
+        result = globus_l_python_parse_response(
+                pyresult,
+                0,
+                NULL,
+                attr_array_out);
+        if (pyresult)
         {
-            if (PyList_Check(pyresult))
-            {
-                result = globus_l_python_pylist_to_attr_array(
-                    pyresult, attr_array_out);
-            }
-            else
-            {
-                result = GLOBUS_FAILURE;
-            }
             Py_DECREF(pyresult);
         }
+
         if (result == GLOBUS_SUCCESS)
         {
             result = globus_l_net_manager_python_handle_exception(
                     "post_connect");
         }
-attr_to_pylist_fail:
-pystring_remote_contact_fail:
-pystring_local_contact_fail:
-pystring_transport_fail:
-pystring_taskid_fail:
         Py_DECREF(pyargs);
         pyargs = NULL;
     }
-pyargs_new_fail:
+prep_args_fail:
 lookup_module_fail:
     return result;
 }
@@ -1246,79 +1131,45 @@ globus_l_python_pre_close(
     if (pymod->pre_close)
     {
         PyObject                       *pyargs = NULL,
-                                       *pytaskid = NULL,
-                                       *pytransport = NULL,
-                                       *pylocal_contact = NULL,
-                                       *pyremote_contact = NULL,
-                                       *pylist = NULL,
                                        *pyresult = NULL;
 
-        pyargs = PyTuple_New(5);
-        if (pyargs == NULL)
+        result = globus_l_python_prep_args(
+            4,
+            (const char*[4]) {
+                task_id,
+                transport,
+                local_contact,
+                remote_contact
+            },
+            attr_array,
+            &pyargs);
+        if (result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_FAILURE;
-            goto pyargs_new_fail;
+            goto prep_args_fail;
         }
-        pytaskid = PyString_FromString(task_id);
-        if (pytaskid == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_taskid_fail;
-        }
-        PyTuple_SetItem(pyargs, 0, pytaskid);
-
-        pytransport = PyString_FromString(transport);
-        if (pytransport == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_transport_fail;
-        }
-        PyTuple_SetItem(pyargs, 1, pytransport);
-
-        pylocal_contact = PyString_FromString(local_contact);
-        if (pylocal_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_local_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 2, pylocal_contact);
-
-        pyremote_contact = PyString_FromString(remote_contact);
-        if (pyremote_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_remote_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 3, pyremote_contact);
-
-        result = globus_l_python_attr_array_to_pylist(attr_array, &pylist);
-        if (result)
-        {
-            goto attr_to_pylist_fail;
-        }
-        PyTuple_SetItem(pyargs, 4, pylist);
 
         PyErr_Clear();
         pyresult = PyObject_CallObject(pymod->pre_close, pyargs);
-        if (pyresult && pyresult != Py_None)
+
+        result = globus_l_python_parse_response(
+                pyresult,
+                0,
+                NULL,
+                NULL);
+        if (pyresult)
         {
-            result = GLOBUS_FAILURE;
             Py_DECREF(pyresult);
         }
+
         if (result == GLOBUS_SUCCESS)
         {
             result = globus_l_net_manager_python_handle_exception(
                     "pre_close");
         }
-attr_to_pylist_fail:
-pystring_remote_contact_fail:
-pystring_local_contact_fail:
-pystring_transport_fail:
-pystring_taskid_fail:
         Py_DECREF(pyargs);
         pyargs = NULL;
     }
-pyargs_new_fail:
+prep_args_fail:
 lookup_module_fail:
     return result;
 }
@@ -1349,63 +1200,33 @@ globus_l_python_post_close(
     if (pymod->post_close)
     {
         PyObject                       *pyargs = NULL,
-                                       *pytaskid = NULL,
-                                       *pytransport = NULL,
-                                       *pylocal_contact = NULL,
-                                       *pyremote_contact = NULL,
-                                       *pylist = NULL,
                                        *pyresult = NULL;
 
-        pyargs = PyTuple_New(5);
-        if (pyargs == NULL)
+        result = globus_l_python_prep_args(
+            4,
+            (const char*[4]) {
+                task_id,
+                transport,
+                local_contact,
+                remote_contact
+            },
+            attr_array,
+            &pyargs);
+        if (result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_FAILURE;
-            goto pyargs_new_fail;
+            goto prep_args_fail;
         }
-        pytaskid = PyString_FromString(task_id);
-        if (pytaskid == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_taskid_fail;
-        }
-        PyTuple_SetItem(pyargs, 0, pytaskid);
-
-        pytransport = PyString_FromString(transport);
-        if (pytransport == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_transport_fail;
-        }
-        PyTuple_SetItem(pyargs, 1, pytransport);
-
-        pylocal_contact = PyString_FromString(local_contact);
-        if (pylocal_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_local_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 2, pylocal_contact);
-
-        pyremote_contact = PyString_FromString(local_contact);
-        if (pyremote_contact == NULL)
-        {
-            result = GLOBUS_FAILURE;
-            goto pystring_remote_contact_fail;
-        }
-        PyTuple_SetItem(pyargs, 3, pyremote_contact);
-
-        result = globus_l_python_attr_array_to_pylist(attr_array, &pylist);
-        if (result)
-        {
-            goto attr_to_pylist_fail;
-        }
-        PyTuple_SetItem(pyargs, 4, pylist);
 
         PyErr_Clear();
         pyresult = PyObject_CallObject(pymod->post_close, pyargs);
-        if (pyresult && pyresult != Py_None)
+
+        result = globus_l_python_parse_response(
+                pyresult,
+                0,
+                NULL,
+                NULL);
+        if (pyresult)
         {
-            result = GLOBUS_FAILURE;
             Py_DECREF(pyresult);
         }
         if (result == GLOBUS_SUCCESS)
@@ -1413,15 +1234,10 @@ globus_l_python_post_close(
             result = globus_l_net_manager_python_handle_exception(
                     "post_close");
         }
-attr_to_pylist_fail:
-pystring_remote_contact_fail:
-pystring_local_contact_fail:
-pystring_transport_fail:
-pystring_taskid_fail:
         Py_DECREF(pyargs);
         pyargs = NULL;
     }
-pyargs_new_fail:
+prep_args_fail:
 lookup_module_fail:
     return result;
 }

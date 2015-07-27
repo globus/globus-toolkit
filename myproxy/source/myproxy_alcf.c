@@ -240,7 +240,7 @@ init_arguments(int argc,
 		my_creds->retrievers = strdup (optarg);
 	    else
 	    {
-		my_creds->retrievers = (char *)malloc(strlen(optarg)+5);
+		my_creds->retrievers = (char *)malloc(strlen(optarg)+6);
 		strcpy (my_creds->retrievers, "*/CN=");
 		my_creds->retrievers = strcat(my_creds->retrievers,
 					      optarg);
@@ -257,7 +257,7 @@ init_arguments(int argc,
 		my_creds->trusted_retrievers = strdup (optarg);
 	    else
 	    {
-		my_creds->trusted_retrievers = (char *)malloc(strlen(optarg)+5);
+		my_creds->trusted_retrievers = (char *)malloc(strlen(optarg)+6);
 		strcpy (my_creds->trusted_retrievers, "*/CN=");
 		my_creds->trusted_retrievers = strcat(my_creds->trusted_retrievers,
 					      optarg);

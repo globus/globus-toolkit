@@ -1,3 +1,15 @@
+globus-xio-gsi-driver (3.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-615: GSI XIO driver uses resolved IP address when importing names
+
+ -- Globus Toolkit <support@globus.org>  Thu, 23 Jul 2015 13:26:11 -0400
+
+globus-xio-gsi-driver (3.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Handle anonymous targets in GSI RFC2818 mode and document stringopts
+
+ -- Globus Toolkit <support@globus.org>  Thu, 28 May 2015 07:38:09 -0400
+
 globus-xio-gsi-driver (3.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Doxygen markup fixes

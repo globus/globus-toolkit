@@ -201,7 +201,17 @@ main(int argc, char *argv[])
     globus_module_activate(GLOBUS_XIO_MODULE);
 
     result = globus_xio_driver_load("tcp", &tcp_driver);
+    if (result != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "Error loading tcp driver\n");
+        exit(99);
+    }
     result = globus_xio_driver_load("net_manager", &nm_driver);
+    if (result != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "Error loading net_manager driver\n");
+        exit(99);
+    }
 
     printf("1..%d\n", (int) (sizeof(tests)/sizeof(tests[0]))-1);
     for (i = 0; tests[i].test_name; i++)

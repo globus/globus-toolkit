@@ -1771,6 +1771,7 @@ main(
     }
 
     globus_i_gfs_log_open();
+    globus_i_gfs_config_post_init();
     globus_l_gfs_signal_init();
     globus_i_gfs_data_init();
     globus_gfs_ipc_init(!globus_i_gfs_config_bool("data_node"));

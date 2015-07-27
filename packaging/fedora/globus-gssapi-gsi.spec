@@ -1,13 +1,13 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.14
+Version:	11.20
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gssapi_gsi-11.14.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gsi-credential%{?_isa} >= 5
@@ -47,6 +47,7 @@ BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
 %endif
+BuildRequires:  openssl
 
 %package devel
 Summary:	Globus Toolkit - GSSAPI library Development Files
@@ -136,6 +137,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%config(noreplace) %{_sysconfdir}/grid-security/gsi.conf
 %{_libdir}/libglobus_*.so.*
 
 %files devel
@@ -151,6 +153,30 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 11.20-1
+- GT-614: GLOBUS_GSS_C_NT_HOST_IP doesn't allow host-only imports and comparisons
+
+* Mon Jun 08 2015 Globus Toolkit <support@globus.org> - 11.19-1
+- export config file values into environment if not set already
+
+* Thu Jun 04 2015 Globus Toolkit <support@globus.org> - 11.18-1
+- Revert to HYBRID name mode by default
+
+* Mon Jun 01 2015 Globus Toolkit <support@globus.org> - 11.17-1
+- Threaded test fixes
+
+* Thu May 28 2015 Globus Toolkit <support@globus.org> - 11.16-1
+- Update autoconf script
+
+* Thu May 28 2015 Globus Toolkit <support@globus.org> - 11.15-1
+- Add config file for GSI options
+- Allow configuration of SSL cipher suite
+- Allow server preference for SSL cipher suite ordering
+- Fix thread test to run without unix domain sockets
+
+* Tue May 19 2015 Globus Toolkit <support@globus.org> - 11.14-2
+- Add openssl build dependency
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 11.14-1
 - doxygen fixes
 
