@@ -172,6 +172,7 @@ fi
 if test X"$use_included_nice" = X1; then
     nice_agent_gather_candidates_return=gboolean
     have_nice_compatibility_rfc5245=yes
+    have_nice_address_ip_version=yes
 else
     save_CXXFLAGS="$CXXFLAGS"
     save_LIBS="$LIBS"
@@ -203,6 +204,17 @@ else
     # libnice 0.0.11 and later: NiceSocket is a private type
     AC_CHECK_TYPES([NiceSocket],[],[],[#include <nice/agent.h>])
 
+    # libnice 0.1.4 and later: nice_address_ip_version
+    AC_MSG_CHECKING([nice_address_ip_version])
+    AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([
+        #include <nice/address.h>],[
+        NiceAddress addr;
+        int ipver = nice_address_ip_version(&addr);])],
+        [have_nice_address_ip_version=yes],
+        [have_nice_address_ip_version=no])
+    AC_MSG_RESULT([$have_nice_address_ip_version])
+
     CXXFLAGS="$save_CXXFLAGS"
     LIBS="$save_LIBS"
 fi
@@ -225,6 +237,10 @@ fi
 
 if test "$have_nice_compatibility_rfc5245" = yes; then
     AC_DEFINE([HAVE_NICE_COMPATIBILITY_RFC5245], [1], [Define to 1 if libnice defines NICE_COMPATIBILITY_RFC5245])
+fi
+
+if test "$have_nice_address_ip_version" = yes; then
+    AC_DEFINE([HAVE_NICE_ADDRESS_IP_VERSION], [1], [Define to 1 if libnice has the nice_address_ip_version function])
 fi
 
 AC_CHECK_PROGS([GZIP], [gzip])
