@@ -1,13 +1,13 @@
 Name:		globus-gass-cache
 %global _name %(tr - _ <<< %{name})
-Version:	9.5
+Version:	9.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Cache
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gass_cache-9.5.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	openssl
@@ -122,6 +122,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Tue Jul 28 2015 Globus Toolkit <support@globus.org> - 9.6-1
+- GT-618: GASS Cache error mishandling causes crash
+
 * Mon Sep 22 2014 Globus Toolkit <support@globus.org> - 9.5-1
 - Include more manpages for API
 - Fix some Doxygen issues

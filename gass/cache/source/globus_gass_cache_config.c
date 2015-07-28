@@ -80,7 +80,7 @@ globus_l_gass_cache_config_init(
 
     /* open the config file, figure out size, then read the file into
        a buffer */
-    fd = globus_libc_open(file, O_RDONLY);
+    fd = open(file, O_RDONLY);
 
     if (fd < 0)
     {
@@ -117,8 +117,8 @@ globus_l_gass_cache_config_init(
     *(config->buf+length) = '\0';
     
     rc = globus_hashtable_init(&config->table, 16, 
-			       (void*) globus_hashtable_string_hash,
-			       (void*) globus_hashtable_string_keyeq);
+			       globus_hashtable_string_hash,
+			       globus_hashtable_string_keyeq);
     if (rc != GLOBUS_SUCCESS)
     {
         status = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
@@ -158,7 +158,7 @@ globus_l_gass_cache_config_init(
     }
     if (fd >= 0)
     {
-        globus_libc_close(fd);
+        close(fd);
     }
 
     return status;
@@ -166,12 +166,12 @@ globus_l_gass_cache_config_init(
 destroy_hashtable:
     globus_hashtable_destroy(&config->table);
 free_config_buf:
-    globus_libc_free(config->buf);
+    free(config->buf);
     config->buf = NULL;
 cleanup:
     if (fd >= 0)
     {
-        globus_libc_close(fd);
+        close(fd);
     }
     return status;
 }
@@ -191,10 +191,9 @@ int
 globus_l_gass_cache_config_destroy(globus_l_gass_cache_config_t *config)
 {
     int   rc = globus_hashtable_destroy(&config->table);
-    if (config->buf)
-    {
-        globus_libc_free(config->buf);
-    }
+
+    free(config->buf);
+
     return rc;
 }
 /*
