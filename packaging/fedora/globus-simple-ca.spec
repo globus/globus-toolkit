@@ -2,7 +2,7 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	4.21
+Version:	4.22
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
@@ -113,6 +113,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Tue Jul 28 2015 Globus Toolkit <support@globus.org> - 4.22-1
+- Fix test case for ca key bits
+
 * Fri Jul 24 2015 Globus Toolkit <support@globus.org> - 4.21-1
 - GT-617: Use 4096-bit RSA key for globus-simple-ca
 
