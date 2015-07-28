@@ -1630,14 +1630,16 @@ globus_gram_job_manager_request_acct(
 
         if ((s = getenv( "JOBMANAGER_SYSLOG_FAC" )) != 0)
         {
-            if (sscanf( s, "%u", &jm_syslog_fac ) != 1)
+            if (sscanf( s, "%d", &jm_syslog_fac ) != 1 || jm_syslog_fac < 0)
             {
                 jm_syslog_id = 0;
             }
         }
 
-        if ((s = getenv( "JOBMANAGER_SYSLOG_LVL" )) != 0) {
-            if (sscanf( s, "%u", &jm_syslog_lvl ) != 1) {
+        if ((s = getenv( "JOBMANAGER_SYSLOG_LVL" )) != 0)
+        {
+            if (sscanf( s, "%d", &jm_syslog_lvl ) != 1 || jm_syslog_lvl < 0)
+            {
                 jm_syslog_id = 0;
             }
         }

@@ -219,6 +219,10 @@ records:
         globus_rvf_record_t *           record;
 
         record = malloc(sizeof(globus_rvf_record_t));
+        if (record == NULL)
+        {
+            YYERROR;
+        }
         *record = $3;
 
         $$ = $1;
@@ -230,6 +234,10 @@ records:
         $$ = NULL;
 
         record = malloc(sizeof(globus_rvf_record_t));
+        if (record == NULL)
+        {
+            YYERROR;
+        }
         *record = $1;
 
         globus_list_insert(&$$, record);

@@ -118,7 +118,7 @@
 
 
 /* Copy the first part of user declarations.  */
-#line 1 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 1 "globus_i_rvf_parser.y"
 
 /*
  * Copyright 1999-2012 University of Chicago
@@ -197,7 +197,7 @@ globus_l_rvf_attr_match(
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 74 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 74 "globus_i_rvf_parser.y"
 {
     int aspect_name;
     globus_bool_t bool_value;
@@ -536,11 +536,11 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   131,   131,   211,   213,   218,   227,   240,   248,   250,
-     253,   254,   257,   260,   291,   294,   297,   327,   398,   398,
-     398,   398,   399,   399,   399,   400,   405,   408,   411,   414,
-     419,   423,   427,   431,   436,   440,   444,   450,   454,   459,
-     463,   467,   473,   474
+       0,   131,   131,   211,   213,   218,   231,   248,   256,   258,
+     261,   262,   265,   268,   299,   302,   305,   335,   406,   406,
+     406,   406,   407,   407,   407,   408,   413,   416,   419,   422,
+     427,   431,   435,   439,   444,   448,   452,   458,   462,   467,
+     471,   475,   481,   482
 };
 #endif
 
@@ -1197,7 +1197,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
   switch (yytype)
     {
       case 15: /* "RVF_TOKEN_TEXT" */
-#line 118 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 118 "globus_i_rvf_parser.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
@@ -1207,22 +1207,22 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
 #line 1208 "globus_i_rvf_parser.c"
 	break;
       case 23: /* "records" */
-#line 126 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 126 "globus_i_rvf_parser.y"
 	{ globus_l_rvf_records_destroy((yyvaluep->validation_file)); };
 #line 1213 "globus_i_rvf_parser.c"
 	break;
       case 24: /* "record" */
-#line 125 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 125 "globus_i_rvf_parser.y"
 	{ globus_l_rvf_validation_record_destroy(&(yyvaluep->record)); };
 #line 1218 "globus_i_rvf_parser.c"
 	break;
       case 28: /* "aspect_list" */
-#line 125 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 125 "globus_i_rvf_parser.y"
 	{ globus_l_rvf_validation_record_destroy(&(yyvaluep->record)); };
 #line 1223 "globus_i_rvf_parser.c"
 	break;
       case 32: /* "aspect_value" */
-#line 118 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 118 "globus_i_rvf_parser.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
@@ -1232,7 +1232,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
 #line 1233 "globus_i_rvf_parser.c"
 	break;
       case 33: /* "quoted_value" */
-#line 118 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 118 "globus_i_rvf_parser.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
@@ -1242,7 +1242,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
 #line 1243 "globus_i_rvf_parser.c"
 	break;
       case 34: /* "unquoted_value" */
-#line 118 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 118 "globus_i_rvf_parser.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
@@ -1252,7 +1252,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
 #line 1253 "globus_i_rvf_parser.c"
 	break;
       case 35: /* "when_value_list" */
-#line 118 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 118 "globus_i_rvf_parser.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
@@ -1262,7 +1262,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, output, scanner)
 #line 1263 "globus_i_rvf_parser.c"
 	break;
       case 36: /* "when_value" */
-#line 118 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 118 "globus_i_rvf_parser.y"
 	{
     if ((yyvaluep->value).value_type == RVF_STRINGVAL && (yyvaluep->value).string_value != NULL)
     {
@@ -1593,7 +1593,7 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 131 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 131 "globus_i_rvf_parser.y"
     {
         while (!globus_list_empty((yyvsp[(2) - (3)].validation_file)))
         {
@@ -1677,24 +1677,28 @@ yyreduce:
     break;
 
   case 3:
-#line 211 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 211 "globus_i_rvf_parser.y"
     {
     }
     break;
 
   case 4:
-#line 213 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 213 "globus_i_rvf_parser.y"
     {
         return 1;
     }
     break;
 
   case 5:
-#line 218 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 218 "globus_i_rvf_parser.y"
     {
         globus_rvf_record_t *           record;
 
         record = malloc(sizeof(globus_rvf_record_t));
+        if (record == NULL)
+        {
+            YYERROR;
+        }
         *record = (yyvsp[(3) - (3)].record);
 
         (yyval.validation_file) = (yyvsp[(1) - (3)].validation_file);
@@ -1703,13 +1707,17 @@ yyreduce:
     break;
 
   case 6:
-#line 227 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 231 "globus_i_rvf_parser.y"
     {
         globus_rvf_record_t *           record;
 
         (yyval.validation_file) = NULL;
 
         record = malloc(sizeof(globus_rvf_record_t));
+        if (record == NULL)
+        {
+            YYERROR;
+        }
         *record = (yyvsp[(1) - (1)].record);
 
         globus_list_insert(&(yyval.validation_file), record);
@@ -1717,7 +1725,7 @@ yyreduce:
     break;
 
   case 7:
-#line 240 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 248 "globus_i_rvf_parser.y"
     {
         if ((yyvsp[(1) - (1)].record).attribute != NULL)
         {
@@ -1728,7 +1736,7 @@ yyreduce:
     break;
 
   case 13:
-#line 260 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 268 "globus_i_rvf_parser.y"
     {
         (yyval.record) = (yyvsp[(2) - (2)].record);
 
@@ -1763,21 +1771,21 @@ yyreduce:
     break;
 
   case 14:
-#line 291 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 299 "globus_i_rvf_parser.y"
     {
         (yyval.record) = (yyvsp[(2) - (2)].record);
     }
     break;
 
   case 15:
-#line 294 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 302 "globus_i_rvf_parser.y"
     {
         (yyval.record) = empty_record;
     }
     break;
 
   case 16:
-#line 297 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 305 "globus_i_rvf_parser.y"
     {
         (yyval.record) = empty_record;
 
@@ -1809,7 +1817,7 @@ yyreduce:
     break;
 
   case 17:
-#line 327 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 335 "globus_i_rvf_parser.y"
     {
           (yyval.aspect) = empty_aspect;
 
@@ -1881,35 +1889,35 @@ yyreduce:
     break;
 
   case 25:
-#line 400 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 408 "globus_i_rvf_parser.y"
     {
         (yyval.aspect_name) = (yyvsp[(1) - (1)].aspect_name);
     }
     break;
 
   case 27:
-#line 408 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 416 "globus_i_rvf_parser.y"
     {
         (yyval.value) = (yyvsp[(2) - (3)].value);
     }
     break;
 
   case 28:
-#line 411 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 419 "globus_i_rvf_parser.y"
     {
         (yyval.value) = (yyvsp[(1) - (1)].value);
     }
     break;
 
   case 29:
-#line 414 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 422 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_EMPTYVAL;
     }
     break;
 
   case 30:
-#line 419 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 427 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = (yyvsp[(1) - (1)].value).when_value;
@@ -1917,7 +1925,7 @@ yyreduce:
     break;
 
   case 31:
-#line 423 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 431 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_BOOLVAL;
         (yyval.value).bool_value = (yyvsp[(1) - (1)].bool_value);
@@ -1925,7 +1933,7 @@ yyreduce:
     break;
 
   case 32:
-#line 427 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 435 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_STRINGVAL;
         (yyval.value).string_value = (yyvsp[(1) - (1)].value).string_value;
@@ -1933,14 +1941,14 @@ yyreduce:
     break;
 
   case 33:
-#line 431 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 439 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_EMPTYVAL;
     }
     break;
 
   case 34:
-#line 436 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 444 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = (yyvsp[(1) - (1)].value).when_value;
@@ -1948,7 +1956,7 @@ yyreduce:
     break;
 
   case 35:
-#line 440 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 448 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_BOOLVAL;
         (yyval.value).bool_value = (yyvsp[(1) - (1)].bool_value);
@@ -1956,7 +1964,7 @@ yyreduce:
     break;
 
   case 36:
-#line 444 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 452 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_STRINGVAL;
         (yyval.value).string_value = (yyvsp[(1) - (1)].value).string_value;
@@ -1964,7 +1972,7 @@ yyreduce:
     break;
 
   case 37:
-#line 450 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 458 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = (yyvsp[(1) - (2)].value).when_value | (yyvsp[(2) - (2)].value).when_value;
@@ -1972,14 +1980,14 @@ yyreduce:
     break;
 
   case 38:
-#line 454 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 462 "globus_i_rvf_parser.y"
     {
         (yyval.value) = (yyvsp[(1) - (1)].value);
     }
     break;
 
   case 39:
-#line 459 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 467 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = 1;
@@ -1987,7 +1995,7 @@ yyreduce:
     break;
 
   case 40:
-#line 463 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 471 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = 2;
@@ -1995,7 +2003,7 @@ yyreduce:
     break;
 
   case 41:
-#line 467 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 475 "globus_i_rvf_parser.y"
     {
         (yyval.value).value_type = RVF_WHENVAL;
         (yyval.value).when_value = 4;
@@ -2003,14 +2011,14 @@ yyreduce:
     break;
 
   case 43:
-#line 474 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 482 "globus_i_rvf_parser.y"
     {
     }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 2014 "globus_i_rvf_parser.c"
+#line 2022 "globus_i_rvf_parser.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2230,7 +2238,7 @@ yyreturn:
 }
 
 
-#line 476 "../../../../../../gram/jobmanager/source/rvf/globus_i_rvf_parser.y"
+#line 484 "globus_i_rvf_parser.y"
 
 
 typedef struct globus_rvf_extra_s

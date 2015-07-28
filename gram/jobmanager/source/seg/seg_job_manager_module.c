@@ -751,7 +751,8 @@ globus_l_job_manager_parse_events(
 
         gmstampp = globus_libc_gmtime_r(&stamp, &gmstamp);
 
-        if (globus_l_time_is_newer(&state->start_timestamp, &gmstamp))
+        if (gmstampp == NULL ||
+            globus_l_time_is_newer(&state->start_timestamp, &gmstamp))
         {
             /* Ignore events that occur before our start timestamp */
             goto bad_line;

@@ -181,7 +181,10 @@ QUOTED_BOOL                             ({WHITESPACE}|{NEWLINE})*{BOOL}({WHITESP
     int i,j;
     yylval->value.value_type = RVF_STRINGVAL;
     yylval->value.string_value = malloc(len+1);
-
+    if (yylval->value.string_value == NULL)
+    {
+        return RVF_TOKEN_ERROR;
+    }
     for (i = 0, j = 0; i < len; i++)
     {
         if (yytext[i] == '\\' && yytext[i+1] == '"')

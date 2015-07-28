@@ -81,7 +81,7 @@ globus_gram_job_manager_config_init(
         int length;
         FILE *fp;
 
-        newargv = (char**) malloc(newargc * sizeof(char *)); /* not freed */
+        newargv = malloc(newargc * sizeof(char *)); /* not freed */
         newargv[0] = argv[0];
 
         /* get file length via fseek & ftell */
@@ -116,7 +116,7 @@ globus_gram_job_manager_config_init(
         }
         rewind(fp);
 
-        newbuf = (char *) malloc(length+1);  /* don't free */
+        newbuf = malloc(length+1);  /* don't free */
         i = fread(newbuf, 1, length, fp);
         if (i < 0)
         {
@@ -879,13 +879,13 @@ globus_l_gram_tokenize(char * command, char ** args, int * n)
       if ( cp[0] == '\'' && cp[strlen(cp) - 1] != '\'' )
       {
          cp2 = strtok(NULL, "'\n");
-         tmp_str = malloc(sizeof(char *) * (strlen(cp) + strlen(cp2) + 2));
+         tmp_str = malloc((strlen(cp) + strlen(cp2) + 2));
          sprintf(tmp_str, "%s %s", &cp[1], cp2);
       }
       else if ( cp[0] == '"' && cp[strlen(cp) - 1] != '"' )
       {
          cp2 = strtok(NULL, "\"\n");
-         tmp_str = malloc(sizeof(char *) * (strlen(cp) + strlen(cp2) + 2));
+         tmp_str = malloc((strlen(cp) + strlen(cp2) + 2));
          sprintf(tmp_str, "%s %s", &cp[1], cp2);
       }
       else
@@ -893,7 +893,7 @@ globus_l_gram_tokenize(char * command, char ** args, int * n)
          if (( cp[0] == '"' && cp[strlen(cp) - 1] == '"' ) ||
              ( cp[0] == '\'' && cp[strlen(cp) - 1] == '\'' ))
          {
-             tmp_str = malloc(sizeof(char *) * strlen(cp));
+             tmp_str = malloc(strlen(cp));
              x = strlen(cp)-2;
              strncpy(tmp_str, &cp[1], x);
              tmp_str[x] = '\0';

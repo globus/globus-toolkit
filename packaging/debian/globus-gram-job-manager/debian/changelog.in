@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.27-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-619: Uninitialized data in job manager cause crash
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 Jul 2015 10:01:41 -0400
+
 globus-gram-job-manager (14.26-1+gt6.@distro@) @distro@; urgency=low
 
   * Convert manpage source to asciidoc

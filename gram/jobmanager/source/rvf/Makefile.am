@@ -6,7 +6,7 @@ man_MANS = globus-rvf-edit.8 globus-rvf-check.8
 AM_YFLAGS = -d
 
 BUILT_SOURCES = globus_i_rvf_parser.c globus_i_rvf_parser.h globus_i_rvf_scanner.c globus_i_rvf_scanner.h
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -DYY_NO_INPUT -I$(top_srcdir)
 libglobus_rvf_la_SOURCES = \
     globus_i_rvf_scanner.l \
     globus_i_rvf_parser.y \
