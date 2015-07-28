@@ -65,9 +65,12 @@ print STDERR "#". join(" ", @ARGV, "\n");
 my $rc = system(@ARGV);
 print STDERR "# Test exited with $rc\n";
 
-kill 15, $server_pid;
-sleep(1);
-if (kill(0, $server_pid) > 0) {
-    kill 9, $server_pid;
+kill 'INT', $server_pid;
+
+if (kill 0, $server_pid) {
+    sleep(1);
+    if (kill 0, $server_pid) {
+        kill 'KILL', $server_pid;
+    }
 }
 exit ($rc!=0);

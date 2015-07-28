@@ -1,3 +1,9 @@
+globus-xio-gridftp-driver (2.12-1+gt6.@distro@) @distro@; urgency=low
+
+  * use SIGINT to terminating test server for gcov
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 Jul 2015 12:18:03 -0400
+
 globus-xio-gridftp-driver (2.11-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix missing va_arg in attr_cntl

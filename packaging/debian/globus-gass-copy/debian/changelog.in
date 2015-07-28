@@ -1,3 +1,9 @@
+globus-gass-copy (9.17-1+gt6.@distro@) @distro@; urgency=low
+
+  * use SIGINT to terminating test server for gcov
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 Jul 2015 12:16:32 -0400
+
 globus-gass-copy (9.16-1+gt6.@distro@) @distro@; urgency=low
 
   * Improve error handling

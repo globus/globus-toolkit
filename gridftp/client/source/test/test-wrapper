@@ -73,5 +73,13 @@ $ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";
 my $rc = system(@ARGV);
 print "Test exited with $rc\n";
 
-kill 9, $server_pid;
+kill 'INT', $server_pid;
+
+if (kill 0, $server_pid) {
+    sleep(1);
+    if (kill 0, $server_pid) {
+        kill 'KILL', $server_pid;
+    }
+}
+
 exit ($rc>>8);

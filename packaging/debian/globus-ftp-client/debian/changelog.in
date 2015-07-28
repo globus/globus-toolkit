@@ -1,3 +1,9 @@
+globus-ftp-client (8.24-1+gt6.@distro@) @distro@; urgency=low
+
+  * use SIGINT to terminating test server for gcov
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 Jul 2015 12:17:01 -0400
+
 globus-ftp-client (8.23-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix crash in error handling

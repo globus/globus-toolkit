@@ -1,6 +1,6 @@
 Name:		globus-xio-gridftp-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.11
+Version:	2.12
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
 
@@ -138,6 +138,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Jul 28 2015 Globus Toolkit <support@globus.org> - 2.12-1
+- use SIGINT to terminating test server for gcov
+
 * Tue Jul 14 2015 Globus Toolkit <support@globus.org> - 2.11-1
 - Fix missing va_arg in attr_cntl
 - Fix memory leak
