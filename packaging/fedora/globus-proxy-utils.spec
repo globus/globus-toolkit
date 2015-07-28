@@ -1,6 +1,6 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	6.11
+Version:	6.12
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
@@ -98,6 +98,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Tue Jul 28 2015 Globus Toolkit <support@globus.org> - 6.12-1
+- Add explicit name comparison result and mode select option
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 6.11-1
 - Remove unused label
 - Check for c99 compiler flags
