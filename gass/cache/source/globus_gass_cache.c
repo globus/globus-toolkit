@@ -2182,13 +2182,16 @@ globus_l_gass_cache_set_timestamp( const char   *filepath,
     do
     {
         rc = utime( filepath, &timebuf );
-        if ( ENOENT == errno )
+        if (rc != 0)
         {
-            RET_ERROR( GLOBUS_L_ENOENT );
-        }
-        else if ( EINTR != errno )
-        {
-            RET_ERROR( GLOBUS_L_EOTHER );
+            if ( ENOENT == errno )
+            {
+                RET_ERROR( GLOBUS_L_ENOENT );
+            }
+            else if ( EINTR != errno )
+            {
+                RET_ERROR( GLOBUS_L_EOTHER );
+            }
         }
     }
     while (rc != 0);
