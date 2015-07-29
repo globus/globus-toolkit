@@ -1,3 +1,9 @@
+globus-proxy-utils (6.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add missing globus-gssapi-gsi dependency
+
+ -- Globus Toolkit <support@globus.org>  Wed, 29 Jul 2015 06:49:30 -0400
+
 globus-proxy-utils (6.12-1+gt6.@distro@) @distro@; urgency=low
 
   * Add explicit name comparison result and mode select option
