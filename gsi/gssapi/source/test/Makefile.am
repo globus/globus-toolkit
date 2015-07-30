@@ -73,7 +73,15 @@ TESTS = $(check_SCRIPTS) \
         release-name-test \
         $(thread_tests)
 
-LOG_COMPILER = $(srcdir)/gssapi-test-wrapper
+log_compiler_dlopens = 
+if PTHREAD_DLOPEN_VAR
+log_compiler_dlopens += $(PTHREAD_DLOPEN)
+endif
+if WINDOWS_DLOPEN_VAR
+log_compiler_dlopens += $(WINDOWS_DLOPEN)
+endif
+
+LOG_COMPILER = ../libtool --mode=execute $(log_compiler_dlopens) $(srcdir)/gssapi-test-wrapper
 
 TEST_DATA_DIR = $(srcdir)
 
