@@ -1,7 +1,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
 Version:	8.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -122,6 +122,9 @@ mv $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.gfork.default $RPM_BUILD_ROOT%{_sysconf
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
+%check
+make %{_smp_mflags} check
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -170,8 +173,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
-* Wed Aug 05 2015 Globus Toolkit <support@globus.org> - 8.1-1
+* Wed Aug 05 2015 Globus Toolkit <support@globus.org> - 8.1-2
 - GT-622: GridFTP server crash with sharing group permissions
+- Add make check to rpm build
 
 * Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 8.0-1
 - GT-517: add update_bytes* api that sets byte counters and range markers seperately
