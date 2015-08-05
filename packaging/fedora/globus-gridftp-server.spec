@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	8.0
+Version:	8.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -170,6 +170,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Wed Aug 05 2015 Globus Toolkit <support@globus.org> - 8.1-1
+- GT-622: GridFTP server crash with sharing group permissions
+
 * Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 8.0-1
 - GT-517: add update_bytes* api that sets byte counters and range markers seperately
 

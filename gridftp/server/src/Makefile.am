@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS=-I m4
-SUBDIRS = modules init
+SUBDIRS = modules init . test
 
 pkgconfigdir = $(libdir)/pkgconfig
 gridftpconfdir = ${sysconfdir}
