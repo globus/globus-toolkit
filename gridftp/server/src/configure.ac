@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gridftp_server],[8.1],[https://globus.atlassian.net/])
+AC_INIT([globus_gridftp_server],[8.2],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -24,6 +24,10 @@ AC_ARG_WITH([preloaded-modules],
     [if test x"$withval" != x; then
         preload_modules="$withval"
     fi])
+
+if test "x$preload_modules" = x; then
+    preload_modules="globus-xio-gsi-driver globus-xio-pipe-driver"
+fi
 
 if test x"$preload_modules" != x; then
     preload_modules="$(echo $preload_modules | tr , ' ')"
@@ -214,6 +218,9 @@ EOF
 fi
 AC_MSG_RESULT($docbook_dtd_available)
 AC_SUBST(DOCBOOK_DTD)
+
+AC_PATH_PROG(FAKEROOT, "fakeroot")
+AM_CONDITIONAL(TEST_FAKEROOT, test -n "$FAKEROOT")
 
 AC_MSG_CHECKING([docbook xsl])
 MAN_XSL=http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl

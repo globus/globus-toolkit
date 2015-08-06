@@ -6,9 +6,6 @@
 #include "globus_common.h"
 #include "globus_gridftp_server.h"
 
-/* Explicitly rename the symbol we will be testing */
-#define globus_l_gfs_data_check_sharing_allowed \
-        test_globus_l_gfs_data_check_sharing_allowed
 #include "globus_i_gfs_data.c"
 
 extern int globus_i_gfs_config_init();
@@ -100,6 +97,7 @@ int main()
     struct group                       *grent;
     int                                 rc;
     int failed = 0;
+    bool                                skip_other_group = false;
     globus_module_descriptor_t         *modules[] = {
         GLOBUS_COMMON_MODULE,
         GLOBUS_GRIDFTP_SERVER_MODULE,
@@ -137,7 +135,8 @@ int main()
     }
     if (rc < 2)
     {
-        my_other_group = NULL;
+        my_other_group = "";
+        skip_other_group = true;
     }
     else
     {
@@ -434,15 +433,6 @@ int main()
                 .expected_result = false
             },
             {
-                .test_name = "no-user-lists-allowed-and-denied-group",
-                .sharing_users_allow = NULL,
-                .sharing_users_deny = NULL,
-                .sharing_groups_allow = good_group,
-                .sharing_groups_deny = good_group,
-                .sharing_user = my_username,
-                .expected_result = false
-            },
-            {
                 .test_name = "not-in-user-allowed-in-allowed-group",
                 .sharing_users_allow = bad,
                 .sharing_users_deny = NULL,
@@ -461,11 +451,173 @@ int main()
                 .expected_result = true
             },
             {
+                .test_name = "not-in-user-allowed-or-denied-in-allowed-group-initial-list",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = bad,
+                .sharing_groups_allow = good_group_initial_list,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "not-in-user-allowed-or-denied-in-allowed-group-mid-list",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = bad,
+                .sharing_groups_allow = good_group_mid_list,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "not-in-user-allowed-or-denied-in-allowed-group-end-list",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = bad,
+                .sharing_groups_allow = good_group_end_list,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
                 .test_name = "not-in-user-allowed-or-denied-in-denied-group",
                 .sharing_users_allow = bad,
                 .sharing_users_deny = bad,
                 .sharing_groups_allow = bad,
                 .sharing_groups_deny = good_group,
+                .sharing_user = my_username,
+                .expected_result = false
+            },
+            {
+                .test_name = "no-user-lists-allowed-other-group",
+                .sharing_users_allow = NULL,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = good_other_group,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "not-in-user-lists-allowed-group-initial-list",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = good_group_initial_list,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "not-in-user-lists-allowed-group-mid-list",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = good_group_mid_list,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "not-in-user-lists-allowed-group-end-list",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = good_group_end_list,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "not-in-user-lists-allowed-other-group-initial-list",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = good_other_group_initial_list,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "not-in-user-lists-allowed-other-group-mid-list",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = good_other_group_mid_list,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "not-in-user-lists-allowed-other-group-end-list",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = good_other_group_end_list,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "no-user-lists-deny-other-group",
+                .sharing_users_allow = NULL,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = NULL,
+                .sharing_groups_deny = good_other_group,
+                .sharing_user = my_username,
+                .expected_result = false
+            },
+            {
+                .test_name = "no-user-lists-deny-other-group-initial-list",
+                .sharing_users_allow = NULL,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = NULL,
+                .sharing_groups_deny = good_other_group_initial_list,
+                .sharing_user = my_username,
+                .expected_result = false
+            },
+            {
+                .test_name = "no-user-lists-deny-other-group-mid-list",
+                .sharing_users_allow = NULL,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = NULL,
+                .sharing_groups_deny = good_other_group_mid_list,
+                .sharing_user = my_username,
+                .expected_result = false
+            },
+            {
+                .test_name = "no-user-lists-deny-other-group-end-list",
+                .sharing_users_allow = NULL,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = NULL,
+                .sharing_groups_deny = good_other_group_end_list,
+                .sharing_user = my_username,
+                .expected_result = false
+            },
+            {
+                .test_name = "no-user-lists-allowed-and-denied-other-group",
+                .sharing_users_allow = NULL,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = good_other_group,
+                .sharing_groups_deny = good_other_group,
+                .sharing_user = my_username,
+                .expected_result = false
+            },
+            {
+                .test_name = "not-in-user-allowed-in-allowed-other-group",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = good_other_group,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "not-in-user-allowed-or-denied-in-allowed-other-group",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = bad,
+                .sharing_groups_allow = good_other_group,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "not-in-user-allowed-or-denied-in-denied-other-group",
+                .sharing_users_allow = bad,
+                .sharing_users_deny = bad,
+                .sharing_groups_allow = bad,
+                .sharing_groups_deny = good_other_group,
                 .sharing_user = my_username,
                 .expected_result = false
             },
@@ -556,17 +708,23 @@ int main()
 
         for (int i = 0; i < sizeof(test_cases)/sizeof(*test_cases); i++)
         {
+            if (skip_other_group &&
+                strstr("other-group", test_cases[i].test_name) != NULL)
+            {
+                printf("ok %d # SKIP no supplementary groups\n", i+1);
+                continue;
+            }
             printf("# u='%s' ua='%s' ud='%s' ga='%s' gd='%s' %s\n",
                     test_cases[i].sharing_user
-                            ? test_cases[i].sharing_user : "",
+                            ? test_cases[i].sharing_user : "NULL",
                     test_cases[i].sharing_users_allow
-                            ? test_cases[i].sharing_users_allow: "",
+                            ? test_cases[i].sharing_users_allow: "NULL",
                     test_cases[i].sharing_users_deny
-                            ? test_cases[i].sharing_users_deny : "",
+                            ? test_cases[i].sharing_users_deny : "NULL",
                     test_cases[i].sharing_groups_allow
-                            ? test_cases[i].sharing_groups_allow : "",
+                            ? test_cases[i].sharing_groups_allow : "NULL",
                     test_cases[i].sharing_groups_deny
-                            ? test_cases[i].sharing_groups_deny : "",
+                            ? test_cases[i].sharing_groups_deny : "NULL",
                     test_cases[i].expected_result
                             ? "true" : "false");
             rc = test_sharing_allowed(&test_cases[i]);

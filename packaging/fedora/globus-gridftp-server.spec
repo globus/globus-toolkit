@@ -1,7 +1,8 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	8.1
-Release:	2%{?dist}
+Version:	8.2
+Release:	1%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -173,6 +174,13 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 8.2-1
+- Allow test cases to run in installer build
+- Improve test coverage
+
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 8.1-3
+- Add vendor
+
 * Wed Aug 05 2015 Globus Toolkit <support@globus.org> - 8.1-2
 - GT-622: GridFTP server crash with sharing group permissions
 - Add make check to rpm build
