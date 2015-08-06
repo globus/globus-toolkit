@@ -3,13 +3,14 @@
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
 Version:	4.4
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Auditing
 
 Group:		Applications/Internet
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_audit-4.4.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:      noarch
@@ -89,6 +90,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 4.4-2
+- Add vendor
+
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 4.4-1
 - doxygen fixes
 

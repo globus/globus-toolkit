@@ -1,7 +1,8 @@
 Name:           gridftp-hdfs
 %global _name %(tr - _ <<< %{name})
 Version:	1.2
-Release:	1
+Release:	2
+Vendor:	Globus Support
 Summary:        HDFS DSI plugin for GridFTP
 
 Group:          System Environment/Daemons
@@ -94,6 +95,9 @@ fi
 %{_sysconfdir}/init.d/%{name}
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 1.2-2
+- Add vendor
+
 * Tue May 19 2015 Globus Toolkit <support@globus.org> - 1.2-1
 - Remove non-standard inline usage
 

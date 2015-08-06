@@ -1,13 +1,14 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
 Version:	3.13
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_callout-3.13.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 15
@@ -130,6 +131,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 3.13-2
+- Add vendor
+
 * Mon Sep 22 2014 Globus Toolkit <support@globus.org> - 3.13-1
 - Doxygen markup fixes
 - Use consistent flavor tags

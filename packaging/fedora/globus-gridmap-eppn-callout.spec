@@ -1,7 +1,8 @@
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
 Version:	1.8
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
 Group:		System Environment/Libraries
@@ -78,6 +79,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libglobus*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 1.8-2
+- Add vendor
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 1.8-1
 - remove unused variable
 

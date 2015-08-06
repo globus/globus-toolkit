@@ -3,7 +3,8 @@
 Name:		globus-gram-job-manager-slurm
 %global _name %(tr - _ <<< %{name})
 Version:	2.7
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - SLURM Job Manager
 
 Group:		Applications/Internet
@@ -134,6 +135,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-slurm-poll
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 2.7-2
+- Add vendor
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 2.7-1
 - GT-609: Add job_dependency RSL to SLURM LRM
 

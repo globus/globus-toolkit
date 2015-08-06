@@ -1,7 +1,8 @@
 Name:		globus-gass-cache
 %global _name %(tr - _ <<< %{name})
 Version:	9.7
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Cache
 
 Group:		System Environment/Libraries
@@ -122,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 9.7-2
+- Add vendor
+
 * Tue Jul 28 2015 Globus Toolkit <support@globus.org> - 9.7-1
 - regression: bad error check
 

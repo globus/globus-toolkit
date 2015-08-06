@@ -1,7 +1,8 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
 Version:	11.4
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
@@ -117,6 +118,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 11.4-2
+- Add vendor
+
 * Thu May 28 2015 Globus Toolkit <support@globus.org> - 11.4-1
 - Improve test diagnostic messages
 

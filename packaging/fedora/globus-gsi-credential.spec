@@ -1,7 +1,8 @@
 Name:		globus-gsi-credential
 %global _name %(tr - _ <<< %{name})
 Version:	7.9
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Credential Library
 
 Group:		System Environment/Libraries
@@ -137,6 +138,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 7.9-2
+- Add vendor
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 7.9-1
 - add missing const to parameters
 

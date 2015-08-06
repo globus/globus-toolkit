@@ -1,7 +1,8 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
 Version:	6.7
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
 
 Group:		System Environment/Libraries
@@ -137,6 +138,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 6.7-2
+- Add vendor
+
 * Tue Jul 14 2015 Globus Toolkit <support@globus.org> - 6.7-1
 - Fix old-style function definitions
 - Fix scope of socklen variable

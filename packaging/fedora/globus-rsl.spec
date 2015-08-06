@@ -1,7 +1,8 @@
 Name:		globus-rsl
 %global _name %(tr - _ <<< %{name})
 Version:	10.10
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Resource Specification Language Library
 
 Group:		System Environment/Libraries
@@ -123,6 +124,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 10.10-2
+- Add vendor
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 10.10-1
 - Remove unused labels and functions
 

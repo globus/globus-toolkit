@@ -1,7 +1,8 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
 Version:	8.24
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Client Library
 
 Group:		System Environment/Libraries
@@ -142,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 8.24-2
+- Add vendor
+
 * Tue Jul 28 2015 Globus Toolkit <support@globus.org> - 8.24-1
 - use SIGINT to terminating test server for gcov
 

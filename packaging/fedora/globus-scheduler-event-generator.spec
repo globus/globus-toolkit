@@ -1,7 +1,8 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
 Version:	5.11
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
@@ -207,6 +208,9 @@ fi
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 5.11-2
+- Add vendor
+
 * Mon Apr 06 2015 Globus Toolkit <support@globus.org> - 5.11-1
 - Remove dead code
 - Depend on lsb-core when possible

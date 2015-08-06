@@ -1,7 +1,8 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
 Version:	6.13
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
@@ -100,6 +101,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 6.13-2
+- Add vendor
+
 * Wed Jul 29 2015 Globus Toolkit <support@globus.org> - 6.13-1
 - Add missing globus-gssapi-gsi dependency
 

@@ -1,8 +1,8 @@
 Name: udt
 Version: 4.11
-Release: 2g2
+Release: 3g2
+Vendor:	Globus Support
 Summary: UDP-based Data Transfer
-Vendor:  UDT Team
 
 Group:   Development/Libraries
 License: BSD

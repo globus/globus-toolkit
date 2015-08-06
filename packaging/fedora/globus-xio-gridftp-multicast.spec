@@ -1,7 +1,8 @@
 Name:		globus-xio-gridftp-multicast
 %global _name %(tr - _ <<< %{name})
 Version:	1.6
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GridFTP Multicast Driver
 
 Group:		System Environment/Libraries
@@ -97,6 +98,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 1.6-2
+- Add vendor
+
 * Tue Jul 14 2015 Globus Toolkit <support@globus.org> - 1.6-1
 - Remove dead code
 - Fix uninitialized variables

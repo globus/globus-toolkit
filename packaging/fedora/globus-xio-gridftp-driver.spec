@@ -1,7 +1,8 @@
 Name:		globus-xio-gridftp-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.12
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
 
 Group:		System Environment/Libraries
@@ -138,6 +139,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 2.12-2
+- Add vendor
+
 * Tue Jul 28 2015 Globus Toolkit <support@globus.org> - 2.12-1
 - use SIGINT to terminating test server for gcov
 

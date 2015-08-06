@@ -1,7 +1,8 @@
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
 Version:	5.8
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
 Group:		System Environment/Libraries
@@ -134,6 +135,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 5.8-2
+- Add vendor
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 5.8-1
 - GT-608: Remove dead code from gsi callback
 

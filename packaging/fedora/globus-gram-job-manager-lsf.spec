@@ -3,13 +3,14 @@
 Name:		globus-gram-job-manager-lsf
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_lsf-2.6.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-lsf < 4.5
 
@@ -193,6 +194,9 @@ fi
 %{_libdir}/libglobus*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 2.6-2
+- Add vendor
+
 * Mon Sep 22 2014 Globus Toolkit <support@globus.org> - 2.6-1
 - Remove unused Doxyfile
 - Quiet some autoconf/automake warnings

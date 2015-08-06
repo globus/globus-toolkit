@@ -2,6 +2,7 @@ Name:		globus-resource-management-server
 %global _name %(tr - _ <<< %{name})
 Version:	6.0
 Release:	1%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Resource Management Server Programs
 
 Group:		System Environment/Libraries
