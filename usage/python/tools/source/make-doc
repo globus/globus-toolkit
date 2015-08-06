@@ -16,27 +16,18 @@ EOF
 fi
 
 echo "Generating manpages"
-xsltproc $DOCBOOK_XSL/manpages/docbook.xsl manual.xml
-
-echo "Creating hyperlink targets for html document"
-xsltproc --nonet --xinclude \
-         --stringparam collect.xref.targets only \
-         --stringparam targets.filename target.db \
-         $DOCBOOK_XSL/html/docbook.xsl admin.xml
+asciidoc -b docbook -d manpage globus-usage-collector.txt
+asciidoc -b docbook -d manpage globus-usage-uploader.txt
+xsltproc $DOCBOOK_XSL/manpages/docbook.xsl globus-usage-collector.xml
+xsltproc $DOCBOOK_XSL/manpages/docbook.xsl globus-usage-uploader.xml
 
 echo "Creating html manual"
-xsltproc --nonet --xinclude \
-         --stringparam current.docid usagestats-admin \
-         --stringparam target.database.document olinkdb.xml \
-         --stringparam collect.xref.targets "no" \
-         $DOCBOOK_XSL/html/docbook.xsl admin.xml > index.html
+asciidoc -b html -d book -a toc admin.txt
 
 if command -v fop > /dev/null; then
-    xsltproc --nonet --xinclude \
-             --stringparam current.docid usagestats-admin \
-             --stringparam target.database.document olinkdb.xml \
-             --stringparam collect.xref.targets "no" \
-             $DOCBOOK_XSL/fo/docbook.xsl admin.xml > admin.fo
+    asciidoc -b docbook -d book -a toc admin.txt
+    xsltproc --stringparam fop1.extensions 1 \
+        $DOCBOOK_XSL/fo/docbook.xsl admin.xml > admin.fo
     fop admin.fo admin.pdf
 else
     echo "Unable to locate fop, pdf manual not updated"

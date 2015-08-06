@@ -1,35 +1,118 @@
-.\" ** You probably do not want to edit this file directly **
-.\" It was generated using the DocBook XSL Stylesheets (version 1.69.1).
-.\" Instead of manually editing it, you probably should edit the DocBook XML
-.\" source for it and then use the DocBook XSL Stylesheets to regenerate it.
-.TH "GLOBUS\-USAGE\-COLLECT" "8" "11/17/2012" "University of Chicago" "Reference"
+'\" t
+.\"     Title: globus-usage-collector
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 08/06/2015
+.\"    Manual: Globus Toolkit Manual
+.\"    Source: University of Chicago
+.\"  Language: English
+.\"
+.TH "GLOBUS\-USAGE\-COLLE" "8" "08/06/2015" "University of Chicago" "Globus Toolkit Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
 .ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
 .SH "NAME"
-globus\-usage\-collector \- Record usage statistics packets
+globus-usage-collector \- Record usage statistics packets
 .SH "SYNOPSIS"
-.HP 23
-\fBglobus\-usage\-collector\fR [\-h] [\-p\ \fIPORT\fR] [\-b] [\-f\ \fIFILE\fR]
+.sp
+globus\-usage\-collector [\-h] [\-p \fIPORT\fR] [\-b] \-f \fIFILE\fR
 .SH "DESCRIPTION"
+.sp
+The \fBglobus\-usage\-collector\fR command is a service which accepts usage packets on a UDP port and writes them to a file for later processing\&.
+.sp
+The full set of command\-line options to \fBglobus\-usage\-collector\fR consists of:
 .PP
-The
+\-h
+.RS 4
+Display a help message and exit
+.RE
+.PP
+\-p \fIPORT\fR
+.RS 4
+Listen on UDP port
+\fIPORT\fR
+instead of the default port
+4810\&.
+.RE
+.PP
+\-d \fIDIRECTORY\fR
+.RS 4
+Write data to
+\fIDIRECTORY\fR
+instead of the configured path\&.
+.RE
+.PP
+\-b
+.RS 4
+Run the
 \fBglobus\-usage\-collector\fR
-command is a servivce which accepts usage packets on a UDP port and writes them to a file for later processing.
+process in the background
+.RE
 .PP
-The full set of command\-line options to
+\-f \fIFILE\fR
+.RS 4
+Write the process ID of the backgrounded
 \fBglobus\-usage\-collector\fR
-consists of:
-\-h Display a help message and exit .sp -p \fIPORT\fR Listen on UDP port \fIPORT\fR instead of the default port 4810 .sp -d \fIDIRECTORY\fR Write data to \fIDIRECTORY\fR instead of the configured path. .sp -b Run the \fBglobus\-usage\-collector\fR process in the background .sp -f \fIFILE\fR Write the process ID of the backgrounded \fBglobus\-usage\-collector\fR process to \fIFILE\fR. .sp
-.SH "USAGE PACKET FILES"
-.PP
-The files are written in a subdirectory of the current directory with its name derived from the current time in UTC. The form of this directory name is
-\fIYYYYMMDD\fR, (e.g. the date July 20, 2009 would be
-\fI20090720\fR). Within that directory, files are generated with name based on the hour (again in UTC). The form of the filename is
-\fIHH.gup\fR
-.when the packet was processed. That is, a packet processed at 3:20 a.m. on that same day would be stored in the file
-\fI20090720/03.gup\fR.
-.PP
-Each usage packet file consists of simple records containing the binary UDP usage packet data. Each packet record consists of 4 fields:
-Address Length (2 bytes) .sp Big\-endian length of the Address .sp Address .sp Big\-endian packed binary address .sp Packet Length (2 bytes) .sp Big\-endian length of the packet .sp Packet .sp Binary packet data .sp
+process to
+\fIFILE\fR\&.
+.RE
+.SH "FILES"
+.sp
+The files are written in a subdirectory of the current directory with its name derived from the current time in UTC\&. The form of this directory name is \fIYYYYMMDD\fR, (e\&.g\&. the date July 20, 2009 would be 20090720)\&. Within that directory, files are generated with name based on the hour (again in UTC)\&. The form of the filename is \fIHH\&.gup\fR \&.when the packet was processed\&. That is, a packet processed at 3:20 a\&.m\&. on that same day would be stored in the file 20090720/03\&.gup\&.
+.sp
+Each usage packet file consists of simple records containing the binary UDP usage packet data\&. Each packet record consists of 4 fields:
+.TS
+allbox tab(:);
+lt lt
+lt lt
+lt lt
+lt lt.
+T{
+.sp
+Address Length (2 bytes)
+T}:T{
+.sp
+Big\-endian length of the Address
+T}
+T{
+.sp
+Address
+T}:T{
+.sp
+Big\-endian packed binary address
+T}
+T{
+.sp
+Packet Length (2 bytes)
+T}:T{
+.sp
+Big\-endian length of the packet
+T}
+T{
+.sp
+Packet
+T}:T{
+.sp
+Binary packet data
+T}
+.TE
+.sp 1
+.SH "AUTHOR"
+.sp
+Copyright \(co 1999\-2015 University of Chicago
