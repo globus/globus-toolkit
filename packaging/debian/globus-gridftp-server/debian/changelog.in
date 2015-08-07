@@ -1,3 +1,9 @@
+globus-gridftp-server (8.3-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix preload_link checking
+
+ -- Globus Toolkit <support@globus.org>  Fri, 07 Aug 2015 09:06:08 -0400
+
 globus-gridftp-server (8.2-1+gt6.@distro@) @distro@; urgency=low
 
   * Allow test cases to run in installer build

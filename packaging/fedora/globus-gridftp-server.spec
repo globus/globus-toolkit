@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	8.2
+Version:	8.3
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -174,6 +174,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Aug 07 2015 Globus Toolkit <support@globus.org> - 8.3-1
+- Fix preload_link checking
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 8.2-1
 - Allow test cases to run in installer build
 - Improve test coverage

@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gridftp_server],[8.2],[https://globus.atlassian.net/])
+AC_INIT([globus_gridftp_server],[8.3],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -33,9 +33,9 @@ if test x"$preload_modules" != x; then
     preload_modules="$(echo $preload_modules | tr , ' ')"
     for module in $preload_modules; do
         module_found=no
-        AC_MSG_CHECKING([for $module mode])
+        AC_MSG_CHECKING([for $module module])
         PKG_CHECK_EXISTS([$module], [
-            preload_links="$preload_links $($PKG_CONFIG --variable=dlopen $module)"
+            preload_links="${preload_links:+$preload_links }$($PKG_CONFIG --variable=dlopen $module)"
             module_found=yes],
             [module_found=no])
         AC_MSG_RESULT([$module_found])
