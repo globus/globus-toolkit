@@ -5,6 +5,7 @@
 
 #include "globus_common.h"
 #include "globus_gridftp_server.h"
+#include "globus_preload.h"
 
 #include "globus_i_gfs_data.c"
 
@@ -103,6 +104,8 @@ int main()
         GLOBUS_GRIDFTP_SERVER_MODULE,
         NULL
     };
+
+    LTDL_SET_PRELOADED_SYMBOLS();
 
     my_uid = getuid();
     pwent = getpwuid(my_uid);
@@ -709,7 +712,7 @@ int main()
         for (int i = 0; i < sizeof(test_cases)/sizeof(*test_cases); i++)
         {
             if (skip_other_group &&
-                strstr("other-group", test_cases[i].test_name) != NULL)
+                strstr(test_cases[i].test_name, "other-group") != NULL)
             {
                 printf("ok %d # SKIP no supplementary groups\n", i+1);
                 continue;
