@@ -1,7 +1,7 @@
 Name:           gridftp-hdfs
 %global _name %(tr - _ <<< %{name})
 Version:	1.2
-Release:	2
+Release:	3
 Vendor:	Globus Support
 Summary:        HDFS DSI plugin for GridFTP
 
@@ -24,6 +24,7 @@ Requires: hadoop-libhdfs
 %endif
 BuildRequires: globus-gridftp-server-devel
 BuildRequires: globus-common-devel
+BuildRequires: pkgconfig
 
 Requires: globus-gridftp-server-progs
 Requires: xinetd
@@ -95,6 +96,9 @@ fi
 %{_sysconfdir}/init.d/%{name}
 
 %changelog
+* Mon Aug 10 2015 Globus Toolkit <support@globus.org> - 1.2-3
+- Add pkgconfig build dependency
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 1.2-2
 - Add vendor
 
