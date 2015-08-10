@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gridftp_server],[8.4],[https://globus.atlassian.net/])
+AC_INIT([globus_gridftp_server],[8.5],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -49,13 +49,17 @@ AC_PROG_CXX
 
 if test x"$preload_links" = x; then
     preload_links="-dlpreopen force"
+    preload_execute_links=""
     link_with_cxx=0
+else
+    preload_execute_links="${preload_links}"
 fi
 if test "x$link_with_cxx" = x1; then
     AC_MSG_NOTICE([Linking with C++])
 fi
 AM_CONDITIONAL([LINK_WITH_CXX], [test x"$link_with_cxx" = x1])
 AC_SUBST([preload_links])
+AC_SUBST([preload_execute_links])
 
 AC_MSG_CHECKING([builtin modules])
 m4_define([gridftp_modules], m4_normalize(
