@@ -5,7 +5,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 gridftpconfdir = ${sysconfdir}
 
 doc_DATA = GLOBUS_LICENSE
-man_MANS = globus-gridftp-server.8
+man_MANS = globus-gridftp-server.8 globus-gridftp-server-setup-chroot.8
 gridftpconf_DATA = \
         gridftp.conf.default gridftp.xinetd.default gridftp.gfork.default 
 include_HEADERS = globus_gridftp_server.h globus_gridftp_server_embed.h
@@ -89,6 +89,7 @@ EXTRA_DIST = \
     globus-gridftp-server-setup-chroot \
     $(doc_DATA) \
     $(man_MANS) \
+    globus-gridftp-server-setup-chroot.xml \
     globus-gridftp-server.xml
 
 distuninstallcheck:

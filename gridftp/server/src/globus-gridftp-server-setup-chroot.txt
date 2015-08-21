@@ -1,0 +1,51 @@
+GLOBUS-GRIDFTP-SERVER-SETUP-CHROOT(8)
+=====================================
+:doctype:       manpage
+:man source:    University of Chicago
+:man manual:    Globus Toolkit Manual
+
+NAME
+----
+globus-gridftp-server-setup-chroot - Set up a chroot for the Globus GridFTP server
+
+SYNOPSIS
+--------
+globus-gridftp-server-setup-chroot [-h] [-c CERT-DIR] -r NEW-CHROOT
+
+DESCRIPTION
+----------
+The *globus-gridftp-server-setup-chroot* program creates a chroot directory
+tree that can be used for the *globus-gridftp-server*(8). This chroot contains
+a copy of essential POSIX devices in dev; hosts, group, passwd, and
+grid-security configuration files in etc; and a temporary file directory in
+tmp.
+
+The '-c CERT-DIR' option copies certificate files from a different
+directory than the default [/etc/grid-security/certificates].
+
+OPTIONS
+-------
+
+*-h*::
+    Print short usage and exit
+
+*-r NEW-CHROOT*::
+    Specify the new chroot directory to create.
+
+*-c CERT-DIR*::
+    Specify the trusted certificate dir source.
+
+EXIT STATUS
+-----------
+0::
+    Successful program execution.
+1::
+    Error 
+
+AUTHOR
+------
+Copyright (C) 1999-2015 University of Chicago
+
+SEE ALSO
+--------
+*globus-gridftp-server*(8)

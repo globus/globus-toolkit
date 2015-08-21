@@ -1,65 +1,102 @@
 #!/bin/sh
-
-USAGE="Usage: $0 [-c <certificates dir>] -r <chroot path to create>"
+set -e
 
 CERT_DIR=/etc/grid-security/certificates
+
+USAGE_ONELINE="Usage: $(basename $0) [-c CERT-DIR] -r NEW-CHROOT"
+USAGE_OPTIONS="
+Options:
+    -c CERT-DIR                 Copy certificates from CERT-DIR to the chroot
+                                [$CERT_DIR]
+    -r NEW-CHROOT               New chroot directory to set up.
+"
 
 COPYFILES="/etc/passwd
            /etc/group
            /etc/hosts
            /etc/nsswitch.conf"
 
+while getopts "c:r:h" opt; do
+  case $opt in
+    c ) CERT_DIR="$OPTARG";;
+    r ) ROOT_DIR="$OPTARG";;
+    h ) echo "$USAGE_ONELINE" "$USAGE_OPTIONS"; exit 0;;
+    * ) echo "$USAGE_ONELINE"; exit 1;;
+  esac
+done
+
 if [ $(id -ru) -ne 0 ]; then
     echo "This command must be run as 'root'."
     exit 1
 fi
        
-while getopts "c:r:" opt; do
-  case $opt in
-    c ) CERT_DIR=$OPTARG;;
-    r ) ROOT_DIR=$OPTARG;;
-    * ) echo $USAGE; exit 1;;
-  esac
-done
 
-if [ -z "$ROOT_DIR" -o "$ROOT_DIR" -ef "/" ]; then
-    echo "Invalid root path: $ROOT_DIR."
-    echo $USAGE 
+if [ -z "$ROOT_DIR" ]; then
+    echo "ERROR: Missing required argument -r NEW-CHROOT"
+    echo "$USAGE_ONELINE"
+    exit 1
+fi
+if [ "$ROOT_DIR" -ef "/" ]; then
+    echo "ERROR: Invalid root path: '$ROOT_DIR'."
+    echo "$USAGE_ONELINE"
     exit 1
 fi
 
-mkdir -p $ROOT_DIR
+mkdir -p -m 755 "$ROOT_DIR"
 if [ ! -d "$ROOT_DIR" ]; then
     exit 1;
 fi
 
-chown root.root $ROOT_DIR
-chmod 755 $ROOT_DIR
-mkdir $ROOT_DIR/tmp 2>/dev/null
-chmod 1777 $ROOT_DIR/tmp
-mkdir $ROOT_DIR/dev 2>/dev/null
+chown root:$(id -g root) "$ROOT_DIR"
+mkdir -p -m 1777 "$ROOT_DIR/tmp"
+mkdir -p -m 755 "$ROOT_DIR/dev"
+
+devs="zero null random urandom"
+
 if [ -x /dev/MAKEDEV ]; then
-/dev/MAKEDEV -d $ROOT_DIR/dev -x zero null random urandom
+    /dev/MAKEDEV -d "$ROOT_DIR/dev" -x $devs
 elif [ -x /sbin/MAKEDEV ]; then
-/sbin/MAKEDEV -d $ROOT_DIR/dev -x zero null random urandom
+    /sbin/MAKEDEV -d "$ROOT_DIR/dev" -x $devs
+elif [ "$(uname)" = "Linux" ] || [ "$(uname)" = "Darwin" ]; then
+    (cd /dev; tar -cf - $devs) | (cd "$ROOT_DIR/dev"; tar -xf -)
 fi
 
-if [ ! -e /dev/null ]; then
+if [ ! -c "$ROOT_DIR/dev/null" ]; then
     echo "Could not create /dev devices."
     exit 1
 fi
 
-mkdir -p $ROOT_DIR/etc/grid-security/certificates
-cp -LpR $CERT_DIR/* $ROOT_DIR/etc/grid-security/certificates/
+mkdir -p "$ROOT_DIR/etc/grid-security/certificates"
+gotacert=0
+for file in "$CERT_DIR/"*; do
+    if [ -e "$file" ]; then
+        cp -LpR "$file" "$ROOT_DIR/etc/grid-security/certificates/"
+        gotacert=1
+    fi
+done
+
+if [ "$gotacert" = 0 ]; then
+    echo "ERROR: No trusted certificates copied into"
+    echo "    $ROOT_DIR/etc/grid-security/certificates"
+    echo "Use the -c option to choose an alternate source for trusted"
+    echo "certificates."
+    exit 1
+fi
 
 for file in $COPYFILES; do
-    cp --parents -Lp $file $ROOT_DIR
+    if [ -e "$file" ]; then
+        dirn="$(dirname "$file")"
+        mkdir -p "$ROOT_DIR/$dirn"
+        cp -Lp "$file" "$ROOT_DIR/$dirn"
+    fi
 done
+
 echo ""
 echo "Finished setting up a chroot dir at $ROOT_DIR."
 echo ""
-echo "You may wish to create data directories or use"
-echo "	mount --bind datadir $ROOT_DIR/datadir"
-echo "to link in external directories."
+echo "You may wish to create data directories"
+if [ `uname` = Linux ]; then
+    echo "or use mount --bind datadir $ROOT_DIR/datadir"
+    echo "to link in external directories."
+fi
 echo ""
-
