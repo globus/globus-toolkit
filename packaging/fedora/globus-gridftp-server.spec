@@ -1,7 +1,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
 Version:	8.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -42,6 +42,10 @@ BuildRequires:  pkgconfig
 BuildRequires: libtool
 %else
 BuildRequires: libtool-ltdl-devel
+%endif
+%if %{?fedora}%{!?fedora:0} >= 21 || %{?rhel}%{!?rhel:0} >= 5
+# Used for some tests which are skipped if not present
+BuildRequires: fakeroot
 %endif
 
 %package progs
@@ -174,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Aug 21 2015 Globus Toolkit <support@globus.org> - 8.7-2
+- Add fakeroot dependency for tests on platforms that support it
+
 * Fri Aug 21 2015 Globus Toolkit <support@globus.org> - 8.7-1
 - Portability fixes for globus-gridftp-server-setup-chroot
 
