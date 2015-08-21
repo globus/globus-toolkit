@@ -1,5 +1,11 @@
 globus-gridftp-server (8.6-1+gt6.@distro@) @distro@; urgency=low
 
+  * Add openssl build dependency
+
+ -- Globus Toolkit <support@globus.org>  Fri, 21 Aug 2015 12:53:11 -0400
+
+globus-gridftp-server (8.6-1+gt6.@distro@) @distro@; urgency=low
+
   * Improve globus-gridftp-server-setup-chroot
   * Add manpage for globus-gridftp-server-setup-chroot
   * Add tests for globus-gridftp-server-setup-chroot
