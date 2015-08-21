@@ -3,14 +3,14 @@
 failed=0
 test_tmp=""
 
-tests="test_setup_args_missing_r require_root 1\
-       test_setup_args_h false 0 \
-       test_setup_args_c_bad require_root 1\
+tests="test_setup_args_missing_r require_root 1 \
+       test_setup_args_h false 0                \
+       test_setup_args_c_bad require_root 1     \
        test_setup_args_c_good require_root 0"
 
 set -- $tests
 
-echo "1..$(($# / 2))"
+echo "1..$(( $# / 3 ))"
 
 require_root()
 {

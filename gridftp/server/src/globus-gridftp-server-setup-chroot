@@ -53,13 +53,11 @@ mkdir -p -m 755 "$ROOT_DIR/dev"
 
 devs="zero null random urandom"
 
-if [ -x /dev/MAKEDEV ]; then
-    /dev/MAKEDEV -d "$ROOT_DIR/dev" -x $devs
-elif [ -x /sbin/MAKEDEV ]; then
-    /sbin/MAKEDEV -d "$ROOT_DIR/dev" -x $devs
-elif [ "$(uname)" = "Linux" ] || [ "$(uname)" = "Darwin" ]; then
-    (cd /dev; tar -cf - $devs) | (cd "$ROOT_DIR/dev"; tar -xf -)
-fi
+case $(uname) in
+    Linux|Darwin|SunOS)
+        (cd /dev; tar chf - $devs) | (cd "$ROOT_DIR/dev"; tar xf -)
+        ;;
+esac
 
 if [ ! -c "$ROOT_DIR/dev/null" ]; then
     echo "Could not create /dev devices."

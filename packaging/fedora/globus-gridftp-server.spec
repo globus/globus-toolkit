@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	8.6
+Version:	8.7
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -174,6 +174,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Aug 21 2015 Globus Toolkit <support@globus.org> - 8.7-1
+- Portability fixes for globus-gridftp-server-setup-chroot
+
 * Fri Aug 21 2015 Globus Toolkit <support@globus.org> - 8.6-1
 - Improve globus-gridftp-server-setup-chroot
 - Add manpage for globus-gridftp-server-setup-chroot
