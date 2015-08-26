@@ -1,7 +1,7 @@
 Name:		globus-resource-management-sdk
 %global _name %(tr - _ <<< %{name})
 Version:	6.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Resource Management SDK
 
@@ -10,7 +10,6 @@ License:	ASL 2.0
 URL:		http://www.globus.org/
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:       globus-core
 Requires:       globus-common
 Requires:       globus-common-devel
 Requires:       globus-common-doc
@@ -109,5 +108,8 @@ mkdir "$RPM_BUILD_ROOT"
 %postun
 
 %changelog
+* Wed Aug 26 2015 Joseph Bester <bester@mcs.anl.gov> - 6.0-2
+- Remove obsolete globus-core dependency
+
 * Mon Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 14.7-3
 - GT 5.2.2 New Metapackage
