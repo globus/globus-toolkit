@@ -49,6 +49,7 @@ __packet_classifier = \
     (9,0): globus.usage.drspacket.DRSPacket,
     (10,1): globus.usage.ogsadaipacket.OGSADAIPacket,
     (11,0): globus.usage.myproxypacket.MyProxyPacket,
+    (12,0): globus.usage.gsisshpacket.GsiSshPacket,
     (20,0): globus.usage.gram5packet.GRAM5JMPacket,
     (20,1): globus.usage.gram5packet.GRAM5JobPacket
 }
