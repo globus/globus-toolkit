@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2015 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,13 @@ void
 globus_gsi_gssapi_test_release_credential(
     gss_cred_id_t *                     credential);
 
+int
+test_establish_contexts(
+    gss_ctx_id_t                       *init_context,
+    gss_ctx_id_t                       *accept_context,
+    OM_uint32                          *major_status,
+    OM_uint32                          *minor_status);
+
 globus_bool_t
 globus_gsi_gssapi_test_authenticate(
     int                                 fd,
@@ -42,13 +49,13 @@ globus_gsi_gssapi_test_cleanup(
 
 globus_bool_t
 globus_gsi_gssapi_test_export_context(
-    char *                              filename,
+    FILE *                              context_file,
     gss_ctx_id_t *                      context);
 
 
 globus_bool_t
 globus_gsi_gssapi_test_import_context(
-    char *                              filename,
+    FILE *                              context_file,
     gss_ctx_id_t *                      context);
 
 globus_bool_t

@@ -39,6 +39,7 @@ check_PROGRAMS= \
 	error-test \
 	gssapi-anonymous-test \
 	gssapi-delegation-test \
+        gssapi_expimp_cred_test \
         gssapi-import-context-test \
         gssapi-import-name \
 	gssapi-limited-delegation-test \
@@ -61,6 +62,7 @@ TESTS = $(check_SCRIPTS) \
 	gssapi-anonymous-test \
 	gssapi-context-test \
 	gssapi-delegation-test \
+        gssapi_expimp_cred_test \
         gssapi-import-context-test \
         gssapi-import-name \
 	gssapi-limited-delegation-test \

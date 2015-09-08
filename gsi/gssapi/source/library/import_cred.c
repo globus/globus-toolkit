@@ -230,9 +230,11 @@ GSS_CALLCONV gss_import_cred(
      * until the cert expires */    
     if (time_rec != NULL)
     {
+        time_t lifetime;
+
         local_result = globus_gsi_cred_get_lifetime(
             ((gss_cred_id_desc *) *output_cred_handle)->cred_handle,
-            (time_t *) time_rec);
+            &lifetime);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -241,6 +243,7 @@ GSS_CALLCONV gss_import_cred(
             major_status = GSS_S_FAILURE;
             goto exit;
         }
+        *time_rec = (OM_uint32) lifetime;
     }
         
  exit:
