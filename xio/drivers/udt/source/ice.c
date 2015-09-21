@@ -302,6 +302,13 @@ int ice_negotiate(struct icedata *ice_data, int argc, char *rdata[]) {
         if (c == NULL) {
             goto end;
         }
+
+        /* only allow ipv4 until udt driver support v6 */
+        if(nice_address_ip_version(&c->addr) != 4) {
+            nice_candidate_free(c);
+            continue;
+        }
+        
         cands = g_slist_prepend(cands, c);
     }
     cands = g_slist_reverse(cands);
