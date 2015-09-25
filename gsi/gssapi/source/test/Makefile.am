@@ -39,6 +39,7 @@ check_PROGRAMS= \
 	error-test \
 	gssapi-anonymous-test \
 	gssapi-delegation-test \
+        gssapi_expimp_cred_test \
         gssapi-import-context-test \
         gssapi-import-name \
 	gssapi-limited-delegation-test \
@@ -61,6 +62,7 @@ TESTS = $(check_SCRIPTS) \
 	gssapi-anonymous-test \
 	gssapi-context-test \
 	gssapi-delegation-test \
+        gssapi_expimp_cred_test \
         gssapi-import-context-test \
         gssapi-import-name \
 	gssapi-limited-delegation-test \
@@ -73,7 +75,15 @@ TESTS = $(check_SCRIPTS) \
         release-name-test \
         $(thread_tests)
 
-LOG_COMPILER = $(srcdir)/gssapi-test-wrapper
+log_compiler_dlopens = 
+if PTHREAD_DLOPEN_VAR
+log_compiler_dlopens += $(PTHREAD_DLOPEN)
+endif
+if WINDOWS_DLOPEN_VAR
+log_compiler_dlopens += $(WINDOWS_DLOPEN)
+endif
+
+LOG_COMPILER = ../libtool --mode=execute $(log_compiler_dlopens) $(srcdir)/gssapi-test-wrapper
 
 TEST_DATA_DIR = $(srcdir)
 

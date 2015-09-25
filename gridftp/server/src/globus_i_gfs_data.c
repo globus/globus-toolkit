@@ -3939,7 +3939,7 @@ globus_l_gfs_data_check_sharing_allowed(
     if(allowed && group_deny != NULL)
     {
         group = group_deny;
-        while((ptr = strchr(user, ',')) != NULL && allowed)
+        while((ptr = strchr(group, ',')) != NULL && allowed)
         {
             *ptr = '\0';
             grent = getgrnam(group);

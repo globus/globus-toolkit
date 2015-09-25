@@ -1,13 +1,14 @@
 Name:		globus-xio-popen-driver
 %global _name %(tr - _ <<< %{name})
 Version:	3.5
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO Pipe Open Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_xio_popen_driver-3.5.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -95,6 +96,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 3.5-2
+- Add vendor
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 3.5-1
 - Merge fixes from ellert-globus_6_branch
 

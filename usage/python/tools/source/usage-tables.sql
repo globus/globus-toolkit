@@ -867,6 +867,22 @@ CREATE TABLE myproxy_packets(
     PRIMARY KEY (id)
 );
 
+CREATE TABLE gsissh_packets(
+    id SERIAL,
+    component_code SMALLINT NOT NULL,
+    version_code SMALLINT NOT NULL,
+    send_time TIMESTAMP,
+    ip_address INET,
+    hostname VARCHAR(64) NOT NULL,
+    openssh_version VARCHAR(128) NOT NULL,
+    openssl_version VARCHAR(64) NOT NULL,
+    method VARCHAR(32) NOT NULL,
+    mechanism VARCHAR(32),
+    client_ip INET,
+    user_name VARCHAR(128),
+    user_dn VARCHAR(128),
+    PRIMARY KEY (id)
+);
 
 CREATE TABLE usage_community(
     community_name                      TEXT,

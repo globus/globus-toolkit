@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2008 University of Chicago
+ * Copyright 1999-2015 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,215 +15,110 @@
  */
 
 #include "gssapi_test_utils.h"
-#include <sys/types.h>
-#ifndef WIN32
-#include <sys/socket.h>
-#include <sys/un.h>
-#else
-#include <winsock2.h>
-#define pid_t int
-#define fork() -1
-#endif
-
-/* Note: The above allow this file to build, but it won't run under windows 
-   unless the unix fork() is replaced by a CreateProcess or something
-*/
-
-struct context_arg
-{
-    gss_cred_id_t                       credential;
-    int                                 fd;
-    struct sockaddr_un *                address;
-};
 
 int
-server_func(
-    void *                              arg);
-
-void *
-client_func(
-    void *                              arg);
-
-int
-main()
+main(int argc, char *argv[])
 {
-    gss_cred_id_t                       credential;
-    struct context_arg *                arg = NULL;
-    int                                 socks[2];
     int                                 rc;
-    pid_t                               pid;
+    gss_buffer_desc                     hello_buffer =
+    {
+        .value = "hello",
+        .length = 5
+    };
+    gss_buffer_desc                     wrapped_hello_buffer;
+    gss_buffer_desc                     unwrapped_hello_buffer;
+    OM_uint32                           context_major_status;
+    OM_uint32                           context_minor_status;
+    OM_uint32                           wrap_major_status;
+    OM_uint32                           wrap_minor_status;
+    OM_uint32                           unwrap_major_status;
+    OM_uint32                           unwrap_minor_status;
+    OM_uint32                           release_minor_status;
+    gss_ctx_id_t                        init_ctx = GSS_C_NO_CONTEXT;
+    gss_ctx_id_t                        accept_ctx = GSS_C_NO_CONTEXT;
+    int                                 failed = 0;
+    int                                 init_conf_state = 0;
+    int                                 accept_conf_state = 0;
 
-    /* ToDo: Make this run on windows */
-#   ifdef WIN32
     printf("1..1\n");
-    printf("ok # SKIP This Test Doesn't Run On Windows\n");
-    exit(77);
-#   endif
 
-    /* module activation */
+    rc = test_establish_contexts(
+        &init_ctx,
+        &accept_ctx,
+        &context_major_status,
+        &context_minor_status);
 
-    globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
-    globus_module_activate(GLOBUS_COMMON_MODULE);
-    
-    rc = socketpair(AF_UNIX, SOCK_STREAM, 0, socks);
-    if (rc < 0)
+    if (rc != 0)
     {
-        perror("socketpair");
-        exit(EXIT_FAILURE);
-    }
-
-    /* acquire credentials */
-    credential = globus_gsi_gssapi_test_acquire_credential();
-
-    if(credential == GSS_C_NO_CREDENTIAL)
-    {
-        fprintf(stderr,"Unable to aquire credential\n");
-        exit(-1);
-    }
-
-    pid = fork();
-
-    if(pid == 0)
-    {
-        /* child */
-     	arg = malloc(sizeof(struct context_arg));
-        
-	arg->fd = socks[0];
-        close(socks[1]);
-        
-	arg->credential = credential;
-
-        client_func(arg);
-    }
-    else if (pid > 0)
-    {
-        printf("1..1\n");
-	arg = malloc(sizeof(struct context_arg));
-        
-	arg->fd = socks[1];
-        close(socks[0]);
-        
-	arg->credential = credential;
-
-        if ((rc = server_func(arg)) == 0)
-        {
-            printf("ok\n");
-        }
-        else
-        {
-            printf("not ok\n");
-        }
-    }
-    else
-    {
-        printf("1..1\n");
-        perror("not ok - ");
-        exit(EXIT_FAILURE);
-    }
-
-
-    /* release credentials */
-    globus_gsi_gssapi_test_release_credential(&credential); 
-    
-    
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
-    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
-
-    exit(rc);
-}
-
-
-int
-server_func(
-    void *                              arg)
-{
-    struct context_arg *                server_args;
-    globus_bool_t                       result;
-    gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
-    char *                              user_id = NULL;
-    gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
-    
-    server_args = (struct context_arg *) arg;
-
-    result = globus_gsi_gssapi_test_authenticate(
-	server_args->fd,
-	GLOBUS_TRUE, 
-	server_args->credential, 
-	&context_handle, 
-	&user_id, 
-	&delegated_cred);
-    
-    if(result == GLOBUS_FALSE)
-    {
-	fprintf(stderr, "SERVER: Authentication failed\n");
-        return (1);
-    }
-
-    result = globus_gsi_gssapi_test_receive_hello(server_args->fd,
-                                                  context_handle);
-    
-    if(result == GLOBUS_FALSE)
-    {
-        fprintf(stderr, "SERVER: failed to receive hello\n");
-        return (1);
-    }
-
-    close(server_args->fd);
-    
-    free(server_args);
-    
-    globus_gsi_gssapi_test_cleanup(&context_handle,
-				   user_id,
-				   &delegated_cred);
-    
-    return 0;
-}
-
-void *
-client_func(
-    void *                              arg)
-{
-    struct context_arg *                client_args;
-    globus_bool_t                       result;
-    gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
-    char *                              user_id = NULL;
-    gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
-    int                                 connect_fd;
-    int                                 rc;
-    
-    client_args = (struct context_arg *) arg;
-
-
-    result = globus_gsi_gssapi_test_authenticate(
-        client_args->fd,
-        GLOBUS_FALSE, 
-        client_args->credential, 
-        &context_handle, 
-        &user_id, 
-        &delegated_cred);
-    
-    if(result == GLOBUS_FALSE)
-    {
-        fprintf(stderr, "CLIENT: Authentication failed\n");
-        exit(1);
-    }
-
-    result = globus_gsi_gssapi_test_send_hello(client_args->fd, context_handle);
-    
-    if(result == GLOBUS_FALSE)
-    {
-        fprintf(stderr, "CLIENT: failed to send hello\n");
-        exit(1);
+        globus_gsi_gssapi_test_print_error(
+                stderr, context_major_status, context_minor_status);
+        failed = 1;
+        goto establish_failed;
     }
     
-    globus_gsi_gssapi_test_cleanup(&context_handle,
-                                   user_id,
-                                   &delegated_cred);
-    user_id = NULL;
-    
-    close(client_args->fd);
+    wrap_major_status = gss_wrap(
+            &wrap_minor_status,
+            init_ctx,
+            0,
+            0,
+            &hello_buffer,
+            &init_conf_state,
+            &wrapped_hello_buffer);
+    if (GSS_ERROR(wrap_major_status))
+    {
+        globus_gsi_gssapi_test_print_error(
+                stderr, wrap_major_status, wrap_minor_status);
+        failed = 1;
+        goto wrap_fail;
+    }
 
-    free(client_args);
+    unwrap_major_status = gss_unwrap(
+            &unwrap_minor_status,
+            accept_ctx,
+            &wrapped_hello_buffer,
+            &unwrapped_hello_buffer,
+            &accept_conf_state,
+            NULL);
+    if (GSS_ERROR(unwrap_major_status))
+    {
+        globus_gsi_gssapi_test_print_error(
+                stderr, unwrap_major_status, unwrap_minor_status);
+        failed = 1;
+        goto unwrap_fail;
+    }
 
-    return NULL;
+    if (init_conf_state != accept_conf_state)
+    {
+        failed = 1;
+        printf("\t# Conf state mismatch\n");
+        goto conf_state_mismatch;
+    }
+    if (hello_buffer.length != unwrapped_hello_buffer.length || 
+        memcmp(hello_buffer.value, unwrapped_hello_buffer.value,
+               hello_buffer.length) != 0)
+    {
+        printf("\t# wrap/unwrap comparison mismatch\n");
+        failed = 1;
+        goto compare_fail;
+    }
+
+conf_state_mismatch:
+compare_fail:
+    gss_release_buffer(&release_minor_status, &unwrapped_hello_buffer);
+unwrap_fail:
+    gss_release_buffer(&release_minor_status, &wrapped_hello_buffer);
+wrap_fail:
+establish_failed:
+    if (init_ctx != GSS_C_NO_CONTEXT)
+    {
+        gss_delete_sec_context(&release_minor_status, &init_ctx, NULL);
+    }
+    if (accept_ctx != GSS_C_NO_CONTEXT)
+    {
+        gss_delete_sec_context(&release_minor_status, &accept_ctx, NULL);
+    }
+
+    printf("%s 1 - gssapi_context_test\n", failed == 0 ? "ok" : "not ok");
+
+    exit(failed);
 }

@@ -1,7 +1,8 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	14.26
-Release:	1%{?dist}
+Version:	14.27
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -148,6 +149,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 14.27-2
+- Add vendor
+
+* Tue Jul 28 2015 Globus Toolkit <support@globus.org> - 14.27-1
+- GT-619: Uninitialized data in job manager cause crash
+
 * Thu Jun 18 2015 Globus Toolkit <support@globus.org> - 14.26-1
 - Convert manpage source to asciidoc
 - Fix GT-590: GT5 shows running jobs as being in pending state

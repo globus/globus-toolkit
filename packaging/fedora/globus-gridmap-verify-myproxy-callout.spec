@@ -1,13 +1,14 @@
 Name:		globus-gridmap-verify-myproxy-callout
 %global _name %(tr - _ <<< %{name})
 Version:	2.7
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus gridmap myproxy callout.
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gridmap_verify_myproxy_callout-2.7.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -78,6 +79,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libglobus_*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 2.7-2
+- Add vendor
+
 * Wed Oct 08 2014 Globus Toolkit <support@globus.org> - 2.7-1
 - GT-560: Verify sharing certs
 

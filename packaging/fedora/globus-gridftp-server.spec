@@ -1,7 +1,8 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	8.0
-Release:	1%{?dist}
+Version:	8.7
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -41,6 +42,10 @@ BuildRequires:  pkgconfig
 BuildRequires: libtool
 %else
 BuildRequires: libtool-ltdl-devel
+%endif
+%if %{?fedora}%{!?fedora:0} >= 21 || %{?rhel}%{!?rhel:0} >= 5
+# Used for some tests which are skipped if not present
+BuildRequires: fakeroot
 %endif
 
 %package progs
@@ -122,6 +127,9 @@ mv $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.gfork.default $RPM_BUILD_ROOT%{_sysconf
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
+%check
+make %{_smp_mflags} check
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -170,6 +178,37 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Aug 21 2015 Globus Toolkit <support@globus.org> - 8.7-2
+- Add fakeroot dependency for tests on platforms that support it
+
+* Fri Aug 21 2015 Globus Toolkit <support@globus.org> - 8.7-1
+- Portability fixes for globus-gridftp-server-setup-chroot
+
+* Fri Aug 21 2015 Globus Toolkit <support@globus.org> - 8.6-1
+- Improve globus-gridftp-server-setup-chroot
+- Add manpage for globus-gridftp-server-setup-chroot
+- Add tests for globus-gridftp-server-setup-chroot
+
+* Mon Aug 10 2015 Globus Toolkit <support@globus.org> - 8.5-1
+- Fix libtool test run problem
+
+* Sat Aug 08 2015 Globus Toolkit <support@globus.org> - 8.4-1
+- Test fixes
+
+* Fri Aug 07 2015 Globus Toolkit <support@globus.org> - 8.3-1
+- Fix preload_link checking
+
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 8.2-1
+- Allow test cases to run in installer build
+- Improve test coverage
+
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 8.1-3
+- Add vendor
+
+* Wed Aug 05 2015 Globus Toolkit <support@globus.org> - 8.1-2
+- GT-622: GridFTP server crash with sharing group permissions
+- Add make check to rpm build
+
 * Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 8.0-1
 - GT-517: add update_bytes* api that sets byte counters and range markers seperately
 

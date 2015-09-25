@@ -1,13 +1,14 @@
 Name:		globus-openssl-module
 %global _name %(tr - _ <<< %{name})
 Version:	4.6
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_openssl_module-4.6.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gsi-proxy-ssl%{?_isa} >= 4
@@ -134,6 +135,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 4.6-2
+- Add vendor
+
 * Thu Sep 25 2014 Globus Toolkit <support@globus.org> - 4.6-1
 - Include more manpages for API
 - Use consistent PREDEFINED in all Doxyfiles

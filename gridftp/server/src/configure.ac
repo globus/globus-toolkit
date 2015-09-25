@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gridftp_server],[8.0],[https://globus.atlassian.net/])
+AC_INIT([globus_gridftp_server],[8.7],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -10,7 +10,7 @@ AC_SUBST([PACKAGE_DEPS], ["globus-common >= 15, globus-xio >= 5, globus-xio-gsi-
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
 LT_INIT([dlopen win32-dll])
-AC_PROG_CC
+AC_PROG_CC_C99
 
 m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)
@@ -25,13 +25,17 @@ AC_ARG_WITH([preloaded-modules],
         preload_modules="$withval"
     fi])
 
+if test "x$preload_modules" = x; then
+    preload_modules="globus-xio-gsi-driver globus-xio-pipe-driver"
+fi
+
 if test x"$preload_modules" != x; then
     preload_modules="$(echo $preload_modules | tr , ' ')"
     for module in $preload_modules; do
         module_found=no
-        AC_MSG_CHECKING([for $module mode])
+        AC_MSG_CHECKING([for $module module])
         PKG_CHECK_EXISTS([$module], [
-            preload_links="$preload_links $($PKG_CONFIG --variable=dlopen $module)"
+            preload_links="${preload_links:+$preload_links }$($PKG_CONFIG --variable=dlopen $module)"
             module_found=yes],
             [module_found=no])
         AC_MSG_RESULT([$module_found])
@@ -45,13 +49,17 @@ AC_PROG_CXX
 
 if test x"$preload_links" = x; then
     preload_links="-dlpreopen force"
+    preload_execute_links=""
     link_with_cxx=0
+else
+    preload_execute_links="${preload_links}"
 fi
 if test "x$link_with_cxx" = x1; then
     AC_MSG_NOTICE([Linking with C++])
 fi
 AM_CONDITIONAL([LINK_WITH_CXX], [test x"$link_with_cxx" = x1])
 AC_SUBST([preload_links])
+AC_SUBST([preload_execute_links])
 
 AC_MSG_CHECKING([builtin modules])
 m4_define([gridftp_modules], m4_normalize(
@@ -215,6 +223,9 @@ fi
 AC_MSG_RESULT($docbook_dtd_available)
 AC_SUBST(DOCBOOK_DTD)
 
+AC_PATH_PROG(FAKEROOT, "fakeroot")
+AM_CONDITIONAL(TEST_FAKEROOT, test -n "$FAKEROOT")
+
 AC_MSG_CHECKING([docbook xsl])
 MAN_XSL=http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl
 docbook_xsl_available=no
@@ -254,6 +265,7 @@ AC_CONFIG_FILES(
     gridftp.conf.default
     gridftp.xinetd.default
     gridftp.gfork.default
+    test/Makefile
     version.h
     extensions.h)
 

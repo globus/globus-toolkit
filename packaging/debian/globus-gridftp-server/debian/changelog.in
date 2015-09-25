@@ -1,3 +1,54 @@
+globus-gridftp-server (8.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Portability fixes for globus-gridftp-server-setup-chroot
+
+ -- Globus Toolkit <support@globus.org>  Fri, 21 Aug 2015 14:14:39 -0400
+
+globus-gridftp-server (8.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add openssl build dependency
+
+ -- Globus Toolkit <support@globus.org>  Fri, 21 Aug 2015 12:53:11 -0400
+
+globus-gridftp-server (8.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Improve globus-gridftp-server-setup-chroot
+  * Add manpage for globus-gridftp-server-setup-chroot
+  * Add tests for globus-gridftp-server-setup-chroot
+
+ -- Globus Toolkit <support@globus.org>  Fri, 21 Aug 2015 11:06:14 -0400
+
+globus-gridftp-server (8.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix libtool test run problem
+
+ -- Globus Toolkit <support@globus.org>  Mon, 10 Aug 2015 07:55:33 -0400
+
+globus-gridftp-server (8.4-1+gt6.@distro@) @distro@; urgency=low
+
+  * Test fixes
+
+ -- Globus Toolkit <support@globus.org>  Sat, 08 Aug 2015 07:42:18 -0400
+
+globus-gridftp-server (8.3-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix preload_link checking
+
+ -- Globus Toolkit <support@globus.org>  Fri, 07 Aug 2015 09:06:08 -0400
+
+globus-gridftp-server (8.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Allow test cases to run in installer build
+  * Improve test coverage
+
+ -- Globus Toolkit <support@globus.org>  Thu, 06 Aug 2015 11:11:13 -0400
+
+globus-gridftp-server (8.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-622: GridFTP server crash with sharing group permissions
+
+ -- Globus Toolkit <support@globus.org>  Wed, 05 Aug 2015 12:12:37 -0400
+
 globus-gridftp-server (8.0-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-517: add update_bytes* api that sets byte counters and range markers seperately

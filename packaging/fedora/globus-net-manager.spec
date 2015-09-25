@@ -1,7 +1,8 @@
 Name:		globus-net-manager
 %global _name %(tr - _ <<< %{name})
 Version:	0.12
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Net Manager Library
 
 Group:		System Environment/Libraries
@@ -152,6 +153,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 0.12-2
+- Add vendor
+
 * Tue Jul 14 2015 Globus Toolkit <support@globus.org> - 0.12-1
 - Fix linkage on Mac with libtool 2.4.6
 

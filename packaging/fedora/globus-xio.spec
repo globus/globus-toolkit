@@ -1,7 +1,8 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
 Version:	5.9
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
@@ -140,6 +141,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 5.9-2
+- Add vendor
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 5.9-1
 - Allow const string option names
 - Fix miscount of string length in GLOBUS_XIO_GET_STRING_OPTIONS

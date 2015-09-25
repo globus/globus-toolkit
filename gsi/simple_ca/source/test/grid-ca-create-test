@@ -221,7 +221,7 @@ sub bits_test
         waitpid($pid, 0);
         ok($? == 0, "grid-ca-create -noint -bits exits with 0");
 
-        $bits = `openssl x509 -in $bitsdir/cacert.pem -text -noout | grep 'RSA Public Key' | tr -cd 0-9`;
+        $bits = `openssl x509 -in $bitsdir/cacert.pem -text -noout | grep -E 'RSA Public Key|Public-Key' | tr -cd 0-9`;
         ok($bits eq $reference_bits, "Bits $bits matches $reference_bits");
     }
 
@@ -239,7 +239,7 @@ sub bits_test
         waitpid($pid, 0);
         ok($? == 0, "grid-ca-create -noint -bits exits with 0");
 
-        $bits = `openssl x509 -in $bitsdir/cacert.pem -text -noout | grep 'RSA Public Key' | tr -cd 0-9`;
+        $bits = `openssl x509 -in $bitsdir/cacert.pem -text -noout | grep -E 'RSA Public Key|Public-Key' | tr -cd 0-9`;
         ok($bits eq $reference_bits, "Bits $bits matches $reference_bits");
     }
 }

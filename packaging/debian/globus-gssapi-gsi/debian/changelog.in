@@ -1,3 +1,16 @@
+globus-gssapi-gsi (11.22-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-627: gss_import_cred crash
+  * Improve portability for some tests
+
+ -- Globus Toolkit <support@globus.org>  Tue, 08 Sep 2015 16:47:27 -0400
+
+globus-gssapi-gsi (11.21-1+gt6.@distro@) @distro@; urgency=low
+
+  * Find thread libs for in-tree testing
+
+ -- Globus Toolkit <support@globus.org>  Wed, 29 Jul 2015 22:40:07 -0400
+
 globus-gssapi-gsi (11.20-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-614: GLOBUS_GSS_C_NT_HOST_IP doesn't allow host-only imports and comparisons

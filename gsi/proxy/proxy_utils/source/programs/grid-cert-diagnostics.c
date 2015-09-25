@@ -119,7 +119,7 @@ main(int argc, char * argv[])
         NULL
     };
 
-    while ((ch = getopt(argc, argv, "phc:ns:g:")) != -1)
+    while ((ch = getopt(argc, argv, "phc:ns:g:m:")) != -1)
     {
         switch (ch)
         {
@@ -137,11 +137,28 @@ main(int argc, char * argv[])
         case 'g':
             gridftp_to_check = strdup(optarg);
             break;
+        case 'm':
+            if ((strcmp(optarg, "STRICT_GT2") == 0) ||
+                (strcmp(optarg, "STRICT_RFC2818") == 0) ||
+                (strcmp(optarg, "HYBRID") == 0))
+            {
+                globus_libc_setenv(
+                        "GLOBUS_GSSAPI_NAME_COMPATIBILITY", 
+                        optarg,
+                        1);
+            }
+            else
+            {
+                printf("Unknown name compatibility mode '%s'\n", optarg);
+                exit(EXIT_FAILURE);
+            }
+            break;
         default:
         case 'h':
             printf("Usage: %s [OPTIONS]\n\n"
                    "Print diagnostic information about certificates and the GSI environment.\n\n"
                    "OPTIONS:\n"
+                   "  %-27s%s\n"
                    "  %-27s%s\n"
                    "  %-27s%s\n"
                    "  %-27s%s\n"
@@ -160,6 +177,7 @@ main(int argc, char * argv[])
                    "", "file CERT, '-' for standard input [default: none]",
                    "-n", "Enable check for time synchronization",
                    "", "[default: no]",
+                   "-m NAME-MODE", "GSSAPI name comparison mode {STRICT_GT2, HYBRID, STRICT_RFC2818} [HYBRID]",
                    "-s HOST[:PORT]",
                    "Contact the service at HOST:PORT and check its",
                    "", "certificate for validity [default: none]",
@@ -442,7 +460,7 @@ time_check(void)
      *   delta between that epoch and the time protocol 0 value is defined
      *   in RFC 868 and some mktime functions can't handle dates before 1901
      * . Normalize that time struct using localtime, which populates any
-     *   non-standard zone info in a struct tm
+     *   non-standardized zone info in a struct tm
      * . Parse the zone offset using strftime()
      * . Compute the difference between now and the unix epoch using
      *   difftime, adjusting for the time zone offset of the epoch
@@ -472,7 +490,7 @@ time_check(void)
     seconds_since_unix_epoch = ((intmax_t) (((uint32_t) buf[0]) << 24)
                      + (((uint32_t) buf[1]) << 16)
                      + (((uint32_t) buf[2]) << 8)
-                     + (((uint32_t) buf[3]))) - (intmax_t)2208988800;
+                     + (((uint32_t) buf[3]))) - INTMAX_C(2208988800);
 
     local_seconds_since_unix_epoch = (intmax_t)
             difftime(now, unix_epoch_time) - tz_off; 
@@ -538,19 +556,14 @@ default_cred_check(void)
         printf("Skipping rest of credential checks\n");
         goto out;
     }
-    else
+    else if (cert == NULL || key == NULL)
     {
-        printf("ok\n");
+        printf("failed\nSkipping rest of credential checks\n");
+        goto out;
     }
 
-    if (cert)
-    {
-        printf("Certificate Path: \"%s\"\n", cert);
-    }
-    if (key)
-    {
-        printf("Key Path: \"%s\"\n", key);
-    }
+    printf("Certificate Path: \"%s\"\n", cert);
+    printf("Key Path: \"%s\"\n", key);
 
     if (!strncmp(cert, "SC:", 3))
     {
@@ -759,16 +772,16 @@ cert_check(const char *cert_to_check)
     {
         printf("Checking cert from stdin... ");
 
+        if((cert_bio = BIO_new_fp(stdin, BIO_NOCLOSE)) == NULL)
+        {
+            printf("failed\nError opening certificate, skipping rest of certificate tests\n");
+            goto bio_new_fail;
+        }
     }
     else
     {
         printf("Checking cert at %s... ", cert_to_check);
         cert_bio = BIO_new_file(cert_to_check, "rb");
-    }
-    if((cert_bio = BIO_new_fp(stdin, BIO_NOCLOSE)) == NULL)
-    {
-        printf("failed\nError opening certificate, skipping rest of certificate tests\n");
-        goto bio_new_fail;
     }
 
     result = globus_gsi_cred_read_cert_bio(handle, cert_bio);
@@ -1083,6 +1096,8 @@ check_service(const char *service)
             service,
             peer_cert,
             cert_chain);
+
+get_fd_fail:
 handshake_fail:
 connect_fail:
 get_ssl_fail:
@@ -1200,22 +1215,30 @@ check_gridftp(char *service)
             free(encbuf);
 
             char rbuf[256*1024];
-            rc = BIO_read(cbio, rbuf, sizeof rbuf-1);
-            rbuf[rc-2] = '\0';
-            rc -= 2;
-
-            if (rc > 0 &&
-                (strncmp(rbuf, "234 ADAT=", 9) == 0 ||
-                strncmp(rbuf, "235 ADAT=", 9) == 0 ||
-                strncmp(rbuf, "334 ADAT=", 9) == 0 ||
-                strncmp(rbuf, "335 ADAT=", 9) == 0))
+            size_t offset = 0;
+            do
             {
-                base64_decode(rbuf+9, rc-9, &encbuf, &encbufsize);
-                BIO_write(rbio, encbuf, encbufsize);
-                BIO_flush(rbio);
-                free(encbuf);
-                rc = -1;
-            }
+                rc = BIO_read(cbio, rbuf+offset, sizeof rbuf-offset-1);
+                rbuf[offset+rc] = '\0';
+                if (rc >= 0)
+                {
+                    offset += rc;
+                }
+
+                if (rc >= 0 &&
+                    (strncmp(rbuf, "234 ADAT=", 9) == 0 ||
+                    strncmp(rbuf, "235 ADAT=", 9) == 0 ||
+                    strncmp(rbuf, "334 ADAT=", 9) == 0 ||
+                    strncmp(rbuf, "335 ADAT=", 9) == 0) &&
+                    strstr(rbuf, "\r\n") != NULL)
+                {
+                    base64_decode(rbuf+9, offset-11, &encbuf, &encbufsize);
+                    BIO_write(rbio, encbuf, encbufsize);
+                    BIO_flush(rbio);
+                    free(encbuf);
+                    rc = -1;
+                }
+            } while (rc != -1);
         }
         else
         {
@@ -1324,7 +1347,73 @@ check_service_cert_chain(
     globus_gsi_cred_handle_t            handle = NULL;
     globus_gsi_callback_data_t          callback_data = NULL;
     X509_NAME                          *n = NULL;
+    size_t                              host_len;
     const char                         *no_extensions = " no";
+    OM_uint32                           major_status, minor_status;
+    int                                 compare_result = GLOBUS_FALSE;
+    gss_name_t                          host_name = NULL, cert_name = NULL;
+    const char                         *p;
+    gss_OID_desc                       *GSS_C_NT_HOST_IP = &(gss_OID_desc) {
+        10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02"
+    };
+    gss_OID_desc                       *GSS_C_NT_X509 = &(gss_OID_desc) {
+        10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x03"
+    };
+
+    if ((p = strchr(host_string, ':')) == NULL)
+    {
+        host_len = strlen(host_string);
+    }
+    else
+    {
+        host_len = p - host_string;
+    }
+
+    printf("Importing names... ");
+
+    if (cert == NULL || cert_chain == NULL)
+    {
+        printf("not ok\n    Unable to get certificate chain\n");
+        return;
+    }
+
+    major_status = gss_import_name(
+            &minor_status,
+            &(gss_buffer_desc)
+            {
+                .value = (char *) host_string,
+                .length = host_len
+            },
+            GSS_C_NT_HOST_IP,
+            &host_name);
+
+    if (GSS_ERROR(major_status))
+    {
+        printf("failure\n%s\n",
+                indent_string(
+                    globus_error_print_friendly(
+                            globus_error_peek(minor_status))));
+        return;
+    }
+
+    major_status = gss_import_name(
+            &minor_status,
+            &(gss_buffer_desc)
+            {
+                .value = cert,
+                .length = sizeof(X509)
+            },
+            GSS_C_NT_X509,
+            &cert_name);
+    if (GSS_ERROR(major_status))
+    {
+        printf("not ok\n%s\n",
+                indent_string(
+                    globus_error_print_friendly(
+                            globus_error_peek(minor_status))));
+        return;
+    }
+    printf("ok\n");
 
     printf("Loading certificate chain... ");
     result = setup_callback_data(&callback_data, GLOBUS_TRUE);
@@ -1450,6 +1539,27 @@ check_service_cert_chain(
     {
         printf("ok\n");
     }
+    printf("Performing name comparison... ");
+    major_status = gss_compare_name(
+            &minor_status,
+            host_name,
+            cert_name,
+            &compare_result);
+    if (GSS_ERROR(major_status))
+    {
+        printf("failure\n%s\n",
+                indent_string(
+                    globus_error_print_friendly(
+                            globus_error_peek(minor_status))));
+    }
+    else
+    {
+        printf("%s\n", compare_result ? "ok" : "not ok");
+    }
+
+    gss_release_name(&minor_status, &host_name);
+    gss_release_name(&minor_status, &cert_name);
+
 set_cert_chain_fail:
 set_cert_fail:
     globus_gsi_cred_handle_destroy(handle);
@@ -1542,6 +1652,11 @@ indent_string(const char * str)
     char * old_line;
     char * output;
     int i=1;
+
+    if (str == NULL)
+    {
+        return NULL;
+    }
 
     for (new_line = (char *) str; new_line != NULL; new_line = strchr(new_line+1, '\n'))
     {

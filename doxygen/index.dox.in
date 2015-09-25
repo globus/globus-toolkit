@@ -6,6 +6,7 @@
  * - @ref globus_ftp_client_api
  * - @ref globus_ftp_control
  * - @ref globus_xio_gridftp_driver
+ * - @ref globus_net_manager
  *
  * @section gsic_section GSI C
  * - @ref globus_gsi_gssapi

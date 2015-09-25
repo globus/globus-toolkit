@@ -6,8 +6,9 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.30
-Release:	1%{?dist}
+Version:	15.31
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -211,6 +212,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 15.31-2
+- Add vendor
+
+* Wed Jul 29 2015 Globus Toolkit <support@globus.org> - 15.31-1
+- Fix in-tree run of GRAM tests by not having Config.pm in the perl5lib dir
+
 * Fri Jun 05 2015 Globus Toolkit <support@globus.org> - 15.30-1
 - Make globus-version executable during build time
 

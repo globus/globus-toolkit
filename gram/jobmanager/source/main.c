@@ -76,11 +76,11 @@ main(
     int                                 argc,
     char **                             argv)
 {
-    int                                 rc;
+    int                                 rc = GLOBUS_SUCCESS;
     int                                 rc2 = GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
-    globus_gram_job_manager_config_t    config;
-    globus_gram_job_manager_t           manager;
-    char *                              sleeptime_str;
+    globus_gram_job_manager_config_t    config = {0};
+    globus_gram_job_manager_t           manager = {0};
+    char *                              sleeptime_str = NULL;
     long                                sleeptime = 0;
     globus_bool_t                       debug_mode_service = GLOBUS_FALSE;
     globus_bool_t                       located_active_jm = GLOBUS_FALSE;

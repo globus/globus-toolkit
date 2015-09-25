@@ -2,8 +2,9 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	4.21
-Release:	1%{?dist}
+Version:	4.22
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -113,6 +114,12 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 4.22-2
+- Add vendor
+
+* Tue Jul 28 2015 Globus Toolkit <support@globus.org> - 4.22-1
+- Fix test case for ca key bits
+
 * Fri Jul 24 2015 Globus Toolkit <support@globus.org> - 4.21-1
 - GT-617: Use 4096-bit RSA key for globus-simple-ca
 

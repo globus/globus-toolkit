@@ -1,7 +1,8 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
 Version:	10.15
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
@@ -160,6 +161,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 10.15-2
+- Add vendor
+
 * Wed Jul 15 2015 Globus Toolkit <support@globus.org> - 10.15-1
 - Fix gridmap parsing error
 

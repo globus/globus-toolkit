@@ -1,7 +1,8 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	6.11
-Release:	1%{?dist}
+Version:	6.13
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
@@ -27,6 +28,7 @@ Requires:	globus-gsi-proxy-core%{?_isa} >= 6
 Requires:	globus-gsi-cert-utils%{?_isa} >= 8
 Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-gsi-sysconfig%{?_isa} >= 5
+Requires:	globus-gssapi-gsi%{?_isa} >= 4
 
 
 BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
@@ -40,6 +42,7 @@ BuildRequires:	globus-gsi-proxy-core-devel >= 6
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gsi-sysconfig-devel >= 5
+BuildRequires:	globus-gssapi-gsi >= 4
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
@@ -98,6 +101,15 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 6.13-2
+- Add vendor
+
+* Wed Jul 29 2015 Globus Toolkit <support@globus.org> - 6.13-1
+- Add missing globus-gssapi-gsi dependency
+
+* Tue Jul 28 2015 Globus Toolkit <support@globus.org> - 6.12-1
+- Add explicit name comparison result and mode select option
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 6.11-1
 - Remove unused label
 - Check for c99 compiler flags

@@ -1,0 +1,72 @@
+'\" t
+.\"     Title: globus-gridftp-server-setup-chroot
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 08/20/2015
+.\"    Manual: Globus Toolkit Manual
+.\"    Source: University of Chicago
+.\"  Language: English
+.\"
+.TH "GLOBUS\-GRIDFTP\-SER" "8" "08/20/2015" "University of Chicago" "Globus Toolkit Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+globus-gridftp-server-setup-chroot \- Set up a chroot for the Globus GridFTP server
+.SH "SYNOPSIS"
+.sp
+globus\-gridftp\-server\-setup\-chroot [\-h] [\-c CERT\-DIR] \-r NEW\-CHROOT
+.SH "DESCRIPTION"
+.sp
+The \fBglobus\-gridftp\-server\-setup\-chroot\fR program creates a chroot directory tree that can be used for the \fBglobus\-gridftp\-server\fR(8)\&. This chroot contains a copy of essential POSIX devices in dev; hosts, group, passwd, and grid\-security configuration files in etc; and a temporary file directory in tmp\&.
+.sp
+The \fI\-c CERT\-DIR\fR option copies certificate files from a different directory than the default [/etc/grid\-security/certificates]\&.
+.SH "OPTIONS"
+.PP
+\fB\-h\fR
+.RS 4
+Print short usage and exit
+.RE
+.PP
+\fB\-r NEW\-CHROOT\fR
+.RS 4
+Specify the new chroot directory to create\&.
+.RE
+.PP
+\fB\-c CERT\-DIR\fR
+.RS 4
+Specify the trusted certificate dir source\&.
+.RE
+.SH "EXIT STATUS"
+.PP
+0
+.RS 4
+Successful program execution\&.
+.RE
+.PP
+1
+.RS 4
+Error
+.RE
+.SH "AUTHOR"
+.sp
+Copyright \(co 1999\-2015 University of Chicago
+.SH "SEE ALSO"
+.sp
+\fBglobus\-gridftp\-server\fR(8)

@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2008 University of Chicago
+ * Copyright 1999-2015 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,204 +14,144 @@
  * limitations under the License.
  */
 
+/**
+ * @file gssapi_inquire_sec_ctx_by_oid_test.c
+ * @brief Test cases for gss_inquire_sec_context_by_oid()
+ * @test
+ * The gssapi-inquire-sec-ctx-by-oid-test does a GSSAPI handshake and
+ * then verifies that gss_inquire_sec_context_by_oid() can extract the
+ * peer certificate chain from both the initiating and accepting sides.
+ */
 #include "gssapi_test_utils.h"
-#include <sys/types.h>
-#ifndef WIN32
-#include <sys/socket.h>
-#include <sys/un.h>
-#else
-#include <winsock2.h>
-#define pid_t int
-#define fork() NULL
-#endif
 
-struct context_arg
-{
-    gss_cred_id_t                       credential;
-    int                                 fd;
-};
+#include <openssl/x509.h>
+#include <stdio.h>
+
 
 int
-server_func(
-    void *                              arg);
-
-void *
-client_func(
-    void *                              arg);
-
-int
-main()
+main(int argc, char *argv[])
 {
-    gss_cred_id_t                       credential;
-    int                                 listen_fd;
-    int                                 accept_fd;
-    struct context_arg *                arg = NULL;
-    pid_t                               pid;
-    int                                 socks[2];
+    OM_uint32                           context_major_status;
+    OM_uint32                           context_minor_status;
+    OM_uint32                           init_major_status;
+    OM_uint32                           init_minor_status;
+    OM_uint32                           accept_major_status;
+    OM_uint32                           accept_minor_status;
+    OM_uint32                           release_minor_status;
+    gss_ctx_id_t                        init_ctx = GSS_C_NO_CONTEXT;
+    gss_ctx_id_t                        accept_ctx = GSS_C_NO_CONTEXT;
     int                                 rc;
+    int                                 failed = 0;
+    gss_OID_desc                        cert_chain_oid =
+        {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x08"}; 
+    gss_buffer_set_t                    cert_chain_buffers; 
 
-    /* ToDo: Make this run on windows */
-#   ifdef WIN32
-    printf("1..1\n");
-    printf("ok # SKIP This Test Doesn't Run On Windows Yet\n");
-    exit(77);
-#   endif
+    printf("1..2\n");
 
-    /* module activation */
+    rc = test_establish_contexts(
+        &init_ctx,
+        &accept_ctx,
+        &context_major_status,
+        &context_minor_status);
 
-    globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
-    globus_module_activate(GLOBUS_COMMON_MODULE);
+    if (rc != 0)
+    {
+        globus_gsi_gssapi_test_print_error(
+                stderr, context_major_status, context_minor_status);
+        failed = 1;
+        goto establish_failed;
+    }
     
-    rc = socketpair(AF_UNIX, SOCK_STREAM, 0, socks);
-    if (rc < 0)
+    init_major_status = gss_inquire_sec_context_by_oid(
+        &init_minor_status,
+        init_ctx,
+        &cert_chain_oid,
+        &cert_chain_buffers);
+    
+    if (GSS_ERROR(init_major_status))
     {
-        perror("socketpair");
-        exit(EXIT_FAILURE);
+        globus_gsi_gssapi_test_print_error(
+                stderr, init_major_status, init_minor_status);
+        printf("not ok 1 - gss_inquire_sec_context_by_oid(init)\n");
+        failed++;
+
+        goto skip_init_cert_chain_checks;
     }
 
-    /* acquire credentials */
-    credential = globus_gsi_gssapi_test_acquire_credential();
-
-    if(credential == GSS_C_NO_CREDENTIAL)
+    for (int i = 0; i < cert_chain_buffers->count; i++)
     {
-        fprintf(stderr,"Unable to aquire credential\n");
-        exit(-1);
-    }
+        const unsigned char * tmp_ptr;
+        X509 *cert;
 
-    pid = fork();
-
-    if(pid == 0)
-    {
-        /* child */
-     	arg = malloc(sizeof(struct context_arg));
-        
-        arg->fd = socks[0];
-        close(socks[1]);
-        
-	arg->credential = credential;
-
-        client_func(arg);
-    }
-    else if (pid > 0)
-    {
-        printf("1..1\n");
-	arg = malloc(sizeof(struct context_arg));
-        
-	arg->fd = socks[1];
-        close(socks[0]);
-        
-	arg->credential = credential;
-
-        rc = server_func(arg);
-        if (rc == 0)
+        tmp_ptr = cert_chain_buffers->elements[i].value;
+        cert = d2i_X509(NULL, &tmp_ptr,
+                        cert_chain_buffers->elements[i].length);
+        if(cert == NULL)
         {
-            printf("ok\n");
+            printf("not ok 1 - gss_inquire_sec_context_by_oid(init)\n");
+            fprintf(stderr,
+                    "\tCouldn't deserialize initializer's peer's cert chain\n");
+            goto skip_init_cert_chain_checks;
         }
-        else
+        X509_free(cert);
+    }
+    printf("ok 1 - gss_inquire_sec_context_by_oid(init)\n");
+skip_init_cert_chain_checks:
+    if (cert_chain_buffers != NULL)
+    {
+        gss_release_buffer_set(&release_minor_status,
+                               &cert_chain_buffers);
+        cert_chain_buffers = NULL;
+    }
+
+    accept_major_status = gss_inquire_sec_context_by_oid(
+        &accept_minor_status,
+        accept_ctx,
+        &cert_chain_oid,
+        &cert_chain_buffers);
+    
+    if (GSS_ERROR(accept_major_status))
+    {
+        printf("not ok 2 - gss_inquire_sec_context_by_oid(accept)\n");
+        failed++;
+        goto skip_accept_cert_chain_checks;
+    }
+
+    for (int i = 0; i < cert_chain_buffers->count; i++)
+    {
+        const unsigned char * tmp_ptr;
+        X509 *cert;
+
+        tmp_ptr = cert_chain_buffers->elements[i].value;
+        cert = d2i_X509(NULL, &tmp_ptr,
+                        cert_chain_buffers->elements[i].length);
+        if(cert == NULL)
         {
-            printf("not ok\n");
+            printf("not ok 2 - gss_inquire_sec_context_by_oid(accept)\n");
+            fprintf(stderr,
+                    "\tCouldn't deserialize accepter's peer cert chain\n");
+            goto skip_accept_cert_chain_checks;
         }
+        X509_free(cert);
     }
-    else
+    printf("ok 2 - gss_inquire_sec_context_by_oid(accept)\n");
+    if (cert_chain_buffers != NULL)
     {
-        printf("1..1\n");
-        perror("not ok - fork");
-        exit(EXIT_FAILURE);
+        gss_release_buffer_set(&release_minor_status,
+                               &cert_chain_buffers);
+        cert_chain_buffers = NULL;
     }
 
-    
-    /* release credentials */
-    globus_gsi_gssapi_test_release_credential(&credential); 
-    
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
-    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
-
-    exit(rc);
-}
-
-
-int
-server_func(
-    void *                              arg)
-{
-    struct context_arg *                server_args;
-    globus_bool_t                       result;
-    gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
-    char *                              user_id = NULL;
-    gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
-    
-    server_args = (struct context_arg *) arg;
-
-    result = globus_gsi_gssapi_test_authenticate(
-	server_args->fd,
-	GLOBUS_TRUE, 
-	server_args->credential, 
-	&context_handle, 
-	&user_id, 
-	&delegated_cred);
-    
-    if(result == GLOBUS_FALSE)
+skip_accept_cert_chain_checks:
+establish_failed:
+    if (init_ctx != GSS_C_NO_CONTEXT)
     {
-	fprintf(stderr, "SERVER: Authentication failed\n");
-        return 1;
+        gss_delete_sec_context(&release_minor_status, &init_ctx, NULL);
     }
-
-    result = globus_gsi_gssapi_test_dump_cert_chain(
-        "cert_chain.txt",
-        context_handle);
-
-    if(result == GLOBUS_FALSE)
+    if (accept_ctx != GSS_C_NO_CONTEXT)
     {
-	fprintf(stderr, "SERVER: Failed to dump cert chain\n");
-        return 1;
+        gss_delete_sec_context(&release_minor_status, &accept_ctx, NULL);
     }
-    
-    close(server_args->fd);
-    
-    free(server_args);
-    
-    globus_gsi_gssapi_test_cleanup(&context_handle,
-				   user_id,
-				   &delegated_cred);
-    
-    return 0;
-}
-
-void *
-client_func(
-    void *                              arg)
-{
-    struct context_arg *                client_args;
-    globus_bool_t                       authenticated;
-    gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
-    char *                              user_id = NULL;
-    gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
-    int                                 result;
-    
-    client_args = (struct context_arg *) arg;
-
-    authenticated = globus_gsi_gssapi_test_authenticate(
-        client_args->fd,
-        GLOBUS_FALSE, 
-        client_args->credential, 
-        &context_handle, 
-        &user_id, 
-        &delegated_cred);
-    
-    if(authenticated == GLOBUS_FALSE)
-    {
-        fprintf(stderr, "CLIENT: Authentication failed\n");
-        exit(1);
-    }
-    
-    globus_gsi_gssapi_test_cleanup(&context_handle,
-                                   user_id,
-                                   &delegated_cred);
-    user_id = NULL;
-    
-    close(client_args->fd);
-
-    free(client_args);
-
-    return NULL;
+auth_fail:
+    return failed;
 }

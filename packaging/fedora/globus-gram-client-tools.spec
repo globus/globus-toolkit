@@ -1,13 +1,14 @@
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
 Version:	11.7
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
 Group:		Applications/Internet
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_client_tools-11.7.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common-progs%{?_isa} >= 14
@@ -72,6 +73,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 11.7-2
+- Add vendor
+
 * Tue Sep 30 2014 Globus Toolkit <support@globus.org> - 11.7-1
 - Add missing asciidoc manpage source
 

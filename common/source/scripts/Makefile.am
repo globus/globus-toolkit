@@ -20,11 +20,11 @@ globuscore_perlmoduledir = $(perlmoduledir)/Globus/Core
 globuscore_perlmodule_DATA = Config.pm Paths.pm
 
 all-local:
-	$(MKDIR_P) Globus/Core
-	$(INSTALL) $(srcdir)/Config.pm Paths.pm Globus/Core
+	$(MKDIR_P) lib/perl/Globus/Core
+	$(INSTALL) $(srcdir)/Config.pm Paths.pm lib/perl/Globus/Core
 
 clean-local:
-	rm -rf Globus
+	rm -rf lib Globus
 
 DISTCLEANFILES = globus-script-initializer.$(host_cpu)-$(host_vendor)-$(host_os)
 

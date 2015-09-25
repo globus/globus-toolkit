@@ -1,7 +1,8 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
 Version:	10.10
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
@@ -120,6 +121,9 @@ fi
 
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 10.10-2
+- Add vendor
+
 * Mon Apr 06 2015 Globus Toolkit <support@globus.org> - 10.10-1
 - - Remove Dead Code
 - - Require minimal lsb-core for RHEL 6+ and fedora 20+

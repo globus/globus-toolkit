@@ -1,7 +1,8 @@
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.18
+Version:	1.19
 Release:	1%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
 Group:		System Environment/Libraries
@@ -132,6 +133,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Sep 21 2015 Globus Toolkit <support@globus.org> - 1.19-1
+- ignore other end's attempts at ipv6 negotiation
+
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 1.18-2
+- Add vendor
+
 * Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 1.18-1
 - don't attempt ice negotiation over ipv6 while udt driver does not support ipv6
 

@@ -1203,7 +1203,7 @@ globus_l_gram_startup_socket_callback(
     unsigned char                       message_length_buffer[4];
     int                                 message_length;
     struct msghdr                       message;
-    void *                              message_buffer;
+    unsigned char *                     message_buffer;
     struct iovec                        iov[1];
     gss_buffer_desc                     cred_buffer;
     struct cmsghdr *                    control_message = NULL;
@@ -2359,6 +2359,9 @@ globus_l_blocking_send_length_and_fds(
     message.msg_controllen = CMSG_SPACE(fd_count*sizeof(int));
 
     cmsg = CMSG_FIRSTHDR(&message);
+
+    assert(cmsg != NULL);
+
     cmsg->cmsg_level = SOL_SOCKET;
     cmsg->cmsg_type = SCM_RIGHTS;
     cmsg->cmsg_len = CMSG_LEN(fd_count * sizeof(int));

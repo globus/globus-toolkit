@@ -3,6 +3,7 @@ Name:           myproxy
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.15
 Release:	1%{?dist}
+Vendor:	Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -534,6 +535,9 @@ fi
 %endif
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 6.1.15-1
+- Add vendor
+
 * Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 6.1.15-1
 - GT-616: Myproxy uses resolved IP address when importing names
 

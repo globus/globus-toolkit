@@ -1,7 +1,8 @@
 Name:		globus-gfork
 %global _name %(tr - _ <<< %{name})
 Version:	4.8
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - GFork
 
 Group:		System Environment/Libraries
@@ -124,6 +125,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/globus-gfork.pc
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 4.8-2
+- Add vendor
+
 * Wed Jul 01 2015 Globus Toolkit <support@globus.org> - 4.8-1
 - remove dead code
 

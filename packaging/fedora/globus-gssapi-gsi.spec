@@ -1,7 +1,8 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.20
+Version:	11.22
 Release:	1%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
@@ -153,6 +154,16 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 08 2015 Globus Toolkit <support@globus.org> - 11.22-1
+- GT-627: gss_import_cred crash
+- Improve portability for some tests
+
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 11.21-2
+- Add vendor
+
+* Wed Jul 29 2015 Globus Toolkit <support@globus.org> - 11.21-1
+- Find thread libs for in-tree testing
+
 * Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 11.20-1
 - GT-614: GLOBUS_GSS_C_NT_HOST_IP doesn't allow host-only imports and comparisons
 

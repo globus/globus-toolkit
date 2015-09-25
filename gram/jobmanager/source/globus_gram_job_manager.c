@@ -143,13 +143,15 @@ globus_gram_job_manager_init(
 
         goto out;
     }
-    
+
     manager->gt3_failure_message = NULL;
     manager->usagetracker = NULL;
     manager->config = config;
     manager->stop = GLOBUS_FALSE;
     manager->pending_restarts = NULL;
     manager->expiration_handle = GLOBUS_NULL_HANDLE;
+    manager->lockcheck_handle = GLOBUS_NULL_HANDLE;
+    manager->idle_script_handle = GLOBUS_NULL_HANDLE;
 
     rc = globus_mutex_init(&manager->mutex, NULL);
     if (rc != GLOBUS_SUCCESS)
@@ -349,6 +351,7 @@ globus_gram_job_manager_init(
     GlobusGramJobManagerUnlock(manager);
 
     free(dir_prefix);
+    dir_prefix=NULL;
 
     manager->done = GLOBUS_FALSE;
     manager->grace_period_timer = GLOBUS_NULL_HANDLE;
@@ -356,11 +359,24 @@ globus_gram_job_manager_init(
     manager->seg_pause_count = 0;
     rc = globus_fifo_init(&manager->seg_event_queue);
 
-    manager->usagetracker = 
-        globus_calloc(1, sizeof(globus_i_gram_usage_tracker_t));   
-
     if (rc != GLOBUS_SUCCESS)
     {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto event_queue_init_failed;
+    }
+    manager->usagetracker = 
+        calloc(1, sizeof(globus_i_gram_usage_tracker_t));   
+    if (manager->usagetracker == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto usage_tracker_calloc_fail;
+    }
+    if (rc != GLOBUS_SUCCESS)
+    {
+
+usage_tracker_calloc_fail:
+        globus_fifo_destroy(&manager->seg_event_queue);
+event_queue_init_failed:
 script_attr_init_failed:
 state_callback_fifo_init_failed:
         free(manager->pid_path);

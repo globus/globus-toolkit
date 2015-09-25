@@ -7,7 +7,7 @@ abs_top_builddir=@abs_top_builddir@
 abs_top_srcdir=@abs_top_srcdir@
 dlopen=@PTHREAD_PREOPEN_UNINSTALLED@ @WINDOWS_PREOPEN_UNINSTALLED@
 thread_models=@thread_models@
-perl5lib=@abs_builddir@/scripts
+perl5lib=@abs_builddir@/scripts/lib/perl
 
 Name: globus-common
 Description: Globus Toolkit - Common Library

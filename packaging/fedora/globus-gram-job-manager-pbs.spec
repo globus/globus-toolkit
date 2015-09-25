@@ -3,13 +3,14 @@
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
 Version:	2.4
-Release:	1%{?dist}
+Release:	2%{?dist}
+Vendor:	Globus Support
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
-URL:		http://www.globus.org/
-Source:	http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_pbs-2.4.tar.gz
+URL:		http://toolkit.globus.org/
+Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-pbs < 4.5
 
@@ -204,6 +205,9 @@ fi
 
 
 %changelog
+* Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 2.4-2
+- Add vendor
+
 * Fri Aug 22 2014 Globus Toolkit <support@globus.org> - 2.4-1
 - Merge fixes from ellert-globus_6_branch
 

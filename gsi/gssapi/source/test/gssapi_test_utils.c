@@ -138,6 +138,122 @@ globus_gsi_gssapi_test_authenticate(
     return major_status == GSS_S_COMPLETE ? GLOBUS_TRUE : GLOBUS_FALSE;
 }
 
+int
+test_establish_contexts(
+    gss_ctx_id_t                       *init_context,
+    gss_ctx_id_t                       *accept_context,
+    OM_uint32                          *major_status,
+    OM_uint32                          *minor_status)
+    
+{
+    int                                 rc = 0;
+    OM_uint32                           init_major_status;
+    OM_uint32                           init_minor_status;
+    OM_uint32                           accept_major_status;
+    OM_uint32                           accept_minor_status;
+    OM_uint32                           release_minor_status;
+    gss_buffer_desc                     init_token = {0};
+    gss_buffer_desc                     accept_token = {0};
+
+    assert(init_context != NULL);
+    assert(accept_context != NULL);
+    assert(major_status != NULL);
+    assert(minor_status != NULL);
+
+    *init_context = GSS_C_NO_CONTEXT;
+    *accept_context = GSS_C_NO_CONTEXT;
+    *major_status = 0;
+    *minor_status = 0;
+
+    do
+    {
+        init_major_status = gss_init_sec_context(
+                &init_minor_status,
+                GSS_C_NO_CREDENTIAL,
+                init_context,
+                GSS_C_NO_NAME,
+                GSS_C_NO_OID,
+                0,
+                0,
+                GSS_C_NO_CHANNEL_BINDINGS,
+                &accept_token,
+                NULL,
+                &init_token,
+                NULL,
+                NULL);
+
+        if (GSS_ERROR(init_major_status))
+        {
+            *major_status = init_major_status;
+            *minor_status = init_minor_status;
+            rc = 1;
+
+            goto init_fail;
+        }
+
+        if (accept_token.length != 0)
+        {
+            gss_release_buffer(&release_minor_status, &accept_token);
+            accept_token = (gss_buffer_desc) {0};
+        }
+
+
+        if (init_token.length != 0)
+        {
+            accept_major_status = gss_accept_sec_context(
+                    &accept_minor_status,
+                    accept_context,
+                    GSS_C_NO_CREDENTIAL,
+                    &init_token,
+                    GSS_C_NO_CHANNEL_BINDINGS,
+                    NULL,
+                    NULL,
+                    &accept_token,
+                    NULL,
+                    NULL,
+                    NULL);
+            if (GSS_ERROR(accept_major_status))
+            {
+                *major_status = accept_major_status;
+                *minor_status = accept_minor_status;
+                rc = 1;
+                goto accept_fail;
+            }
+            gss_release_buffer(&release_minor_status, &init_token);
+            init_token = (gss_buffer_desc) {0};
+        }
+    }
+    while (init_major_status == GSS_S_CONTINUE_NEEDED &&
+           accept_major_status == GSS_S_CONTINUE_NEEDED);
+    
+    if (rc != 0)
+    {
+init_fail:
+accept_fail:
+        if (*init_context != GSS_C_NO_CONTEXT)
+        {
+            gss_delete_sec_context(&release_minor_status, init_context, NULL);
+            *init_context = GSS_C_NO_CONTEXT;
+        }
+        if (*accept_context != GSS_C_NO_CONTEXT)
+        {
+            gss_delete_sec_context(&release_minor_status, accept_context, NULL);
+            *accept_context = GSS_C_NO_CONTEXT;
+        }
+    }
+    if (init_token.length != 0)
+    {
+        gss_release_buffer(&release_minor_status, &init_token);
+    }
+    if (accept_token.length != 0)
+    {
+        gss_release_buffer(&release_minor_status, &accept_token);
+    }
+
+    return rc;
+}
+
+
 void 
 globus_gsi_gssapi_test_cleanup(
     gss_ctx_id_t *                      context_handle,
@@ -165,25 +281,14 @@ globus_gsi_gssapi_test_cleanup(
 
 globus_bool_t
 globus_gsi_gssapi_test_export_context(
-    char *                              filename,
+    FILE *                              context_file,
     gss_ctx_id_t *                      context)
 {
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     globus_bool_t                       result = GLOBUS_TRUE;
     gss_buffer_desc                     export_token = GSS_C_EMPTY_BUFFER;
-    FILE *                              context_file;
 
-    context_file = fopen(filename,"w");
-
-    if(context_file == NULL)
-    {
-        fprintf(stderr,"\nLINE %d ERROR: Couldn't open %s\n\n",
-                __LINE__, filename);
-        result = GLOBUS_FALSE;
-        goto exit;
-    }
-    
     major_status = gss_export_sec_context(
         &minor_status,
         context,
@@ -210,34 +315,18 @@ globus_gsi_gssapi_test_export_context(
     gss_release_buffer(&minor_status, &export_token);
     
  exit:
-    if(context_file)
-    {
-        fclose(context_file);
-    }
-    
     return result;
 }
 
 globus_bool_t
 globus_gsi_gssapi_test_import_context(
-    char *                              filename,
+    FILE *                              context_file,
     gss_ctx_id_t *                      context)
 {
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     globus_bool_t                       result = GLOBUS_TRUE;
     gss_buffer_desc                     import_token = GSS_C_EMPTY_BUFFER;
-    FILE *                              context_file;
-
-    context_file = fopen(filename,"r");
-
-    if(context_file == NULL)
-    {
-        fprintf(stderr,"\nLINE %d ERROR: Couldn't open %s\n\n",
-                __LINE__, filename);
-        result = GLOBUS_FALSE;
-        goto exit;
-    }
 
     fseek(context_file, 0, SEEK_END);
     import_token.length = ftell(context_file);
@@ -263,12 +352,7 @@ globus_gsi_gssapi_test_import_context(
     gss_release_buffer(&minor_status, &import_token);
     
  exit:
-    if(context_file)
-    {
-        fclose(context_file);
-        unlink(filename);
-    }
-    
+
     return result;
 }
 

@@ -1,3 +1,15 @@
+globus-gass-cache (9.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * regression: bad error check
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 Jul 2015 14:00:43 -0400
+
+globus-gass-cache (9.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * GT-618: GASS Cache error mishandling causes crash
+
+ -- Globus Toolkit <support@globus.org>  Tue, 28 Jul 2015 09:58:30 -0400
+
 globus-gass-cache (9.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Include more manpages for API
