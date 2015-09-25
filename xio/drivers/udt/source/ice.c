@@ -320,10 +320,17 @@ int ice_negotiate(struct icedata *ice_data, int argc, char *rdata[]) {
         }
 
         /* only allow ipv4 until udt driver support v6 */
+#if HAVE_NICE_ADDRESS_IP_VERSION
         if(nice_address_ip_version(&c->addr) != 4) {
             nice_candidate_free(c);
             continue;
         }
+#else
+        if(c->addr.s.addr.sa_family != AF_INET) {
+            nice_candidate_free(c);
+            continue;
+        }
+#endif
         
         cands = g_slist_prepend(cands, c);
     }
