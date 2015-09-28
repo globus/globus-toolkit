@@ -12500,10 +12500,7 @@ globus_l_gfs_operation_finished_kickout(
                 globus_free(op->session_handle->home_dir);
             }
             op->session_handle->home_dir = strdup("/");
-        }  
-
-        if(bounce->finished_info->info.session.home_dir == NULL)
-        {
+            
             bounce->finished_info->info.session.home_dir =
                 op->session_handle->home_dir;
         }
@@ -12635,7 +12632,20 @@ globus_gridftp_server_operation_finished(
                 finished_info->info.session.username =
                     op->session_handle->username;
             }
-            /* home_dir is in the kickout */
+            if(bounce->finished_info->info.session.home_dir == NULL)
+            {
+                bounce->finished_info->info.session.home_dir =
+                    op->session_handle->home_dir;
+            }
+            else
+            {
+                if(op->session_handle->home_dir)
+                {
+                    globus_free(op->session_handle->home_dir);
+                }
+                op->session_handle->home_dir = 
+                    strdup(finished_info->info.session.home_dir);
+            }
             
             if(globus_hashtable_empty(&op->session_handle->custom_cmd_table))
             {

@@ -1,7 +1,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	8.7
-Release:	2%{?dist}
+Version:	8.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -178,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Sep 28 2015 Globus Toolkit <support@globus.org> - 8.8-1
+- Update internal home dir when DSI supplies one
+
 * Fri Aug 21 2015 Globus Toolkit <support@globus.org> - 8.7-2
 - Add fakeroot dependency for tests on platforms that support it
 
