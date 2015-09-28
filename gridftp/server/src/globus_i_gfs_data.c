@@ -12632,9 +12632,9 @@ globus_gridftp_server_operation_finished(
                 finished_info->info.session.username =
                     op->session_handle->username;
             }
-            if(bounce->finished_info->info.session.home_dir == NULL)
+            if(finished_info->info.session.home_dir == NULL)
             {
-                bounce->finished_info->info.session.home_dir =
+                finished_info->info.session.home_dir =
                     op->session_handle->home_dir;
             }
             else
