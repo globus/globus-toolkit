@@ -12487,6 +12487,17 @@ globus_l_gfs_operation_finished_kickout(
     if(bounce->finished_info->type == GLOBUS_GFS_OP_SESSION_START)
     {
         /* update home dir based on restricted paths */
+        
+        /* reset home dir to / if chroot. */
+        if(op->session_handle->chroot_path)
+        {
+            if(op->session_handle->home_dir)
+            {
+                globus_free(op->session_handle->home_dir);
+            }
+            op->session_handle->home_dir = strdup("/");
+        }
+
         globus_l_gfs_data_update_restricted_paths_symlinks(
             op->session_handle, &globus_l_gfs_path_alias_list_base);
         globus_l_gfs_data_update_restricted_paths_symlinks(

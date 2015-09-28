@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	8.8
+Version:	8.9
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -178,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Sep 28 2015 Globus Toolkit <support@globus.org> - 8.9-1
+- home dir is always / when shared chroot
+
 * Mon Sep 28 2015 Globus Toolkit <support@globus.org> - 8.8-1
 - Update internal home dir when DSI supplies one
 
