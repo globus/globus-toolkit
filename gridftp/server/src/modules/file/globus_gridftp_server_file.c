@@ -903,9 +903,10 @@ globus_l_gfs_file_stat(
         }
         
         globus_libc_rewinddir(dir);
-        
-        stat_array = (globus_gfs_stat_t *)
-            globus_malloc(sizeof(globus_gfs_stat_t) * GLOBUS_MIN((stat_limit_max+1), total_stat_count));
+
+        stat_array = (globus_gfs_stat_t *) globus_malloc(
+            sizeof(globus_gfs_stat_t) * 
+            (GLOBUS_MIN(stat_limit_max, total_stat_count) + 1));
         if(!stat_array)
         {
             result = GlobusGFSErrorMemory("stat_array");

@@ -1,3 +1,15 @@
+globus-gridftp-server (8.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * home dir is always / when shared chroot
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Sep 2015 17:31:52 -0500
+
+globus-gridftp-server (8.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update internal home dir when DSI supplies one
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Sep 2015 11:57:54 -0500
+
 globus-gridftp-server (8.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Portability fixes for globus-gridftp-server-setup-chroot
