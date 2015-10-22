@@ -1,3 +1,9 @@
+globus-xio-udt-driver (1.19-2+gt6.@distro@) @distro@; urgency=low
+
+  * Dependency changes for libselinux and liblzma for ubuntu wily
+
+ -- Globus Toolkit <support@globus.org>  Thu, 22 Oct 2015 09:56:58 -0400
+
 globus-xio-udt-driver (1.19-1+gt6.@distro@) @distro@; urgency=low
 
   * ignore other end's attempts at ipv6 negotiation
