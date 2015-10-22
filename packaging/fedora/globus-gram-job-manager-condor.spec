@@ -3,7 +3,7 @@
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
 Version:	2.5
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Condor Job Manager
 
@@ -35,6 +35,7 @@ BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
+BuildArch:      noarch
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -106,6 +107,9 @@ fi
 %{_datadir}/globus/globus_gram_job_manager/condor.rvf
 
 %changelog
+* Thu Oct 22 2015 Globus Toolkit <support@globus.org> - 2.5-3
+- BuildArch: noarch
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 2.5-2
 - Add vendor
 
