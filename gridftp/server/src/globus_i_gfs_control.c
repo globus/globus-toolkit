@@ -1906,6 +1906,16 @@ globus_l_gfs_request_command(
 
             type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
         }
+        else if(strcmp(cmd_array[1], "STORATTR") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_STORATTR;
+            command_info->pathname = strdup(cmd_array[2]);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
         else if(strcmp(cmd_array[1], "TASKID") == 0)
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_TASKID;
@@ -3363,6 +3373,26 @@ globus_l_gfs_add_commands(
         4,
         "SITE TRNC <sp> length <sp> path",
         instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE STORATTR",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE STORATTR <sp> attributes",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gridftp_server_control_add_feature(
+        control_handle, "STORATTR");
     if(result != GLOBUS_SUCCESS)
     {
         goto error;

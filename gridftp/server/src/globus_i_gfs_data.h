@@ -157,7 +157,7 @@ globus_i_gfs_data_virtualize_path(
 char *
 globus_i_gfs_kv_getval(
     char *                              kvstring,
-    char *                              key,
+    const char *                        key,
     globus_bool_t                       urldecode);
 
 char *

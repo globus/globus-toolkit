@@ -149,6 +149,7 @@ typedef struct
     int                                 concurrency_check_interval;
     char *                              expected_cksm;
     char *                              expected_cksm_alg;
+    time_t                              utime;
     /* added for multicast stuff, but cold be genreally useful */
     gfs_l_file_session_t *              session;
 
@@ -171,6 +172,13 @@ typedef struct gfs_l_file_stack_entry_s
 } gfs_l_file_stack_entry_t;
 
 static globus_xio_driver_t              globus_l_gfs_file_driver;
+
+static
+globus_result_t
+globus_l_gfs_file_utime(
+    globus_gfs_operation_t              op,
+    const char *                        pathname,
+    time_t                              modtime);
 
 static
 globus_result_t
@@ -348,6 +356,7 @@ globus_l_gfs_file_monitor_init(
     monitor->concurrency_check_interval = 2;
     monitor->expected_cksm = NULL;
     monitor->expected_cksm_alg = NULL;
+    monitor->utime = -1;
     monitor->pathname = NULL;
 
     *u_monitor = monitor;
@@ -503,6 +512,13 @@ globus_l_gfs_file_close_cb(
         }
         globus_mutex_unlock(&monitor->lock);
 
+        if(monitor->finish_result == GLOBUS_SUCCESS && 
+            monitor->utime >= 0)
+        {
+            monitor->finish_result = globus_l_gfs_file_utime(
+                NULL, monitor->pathname, monitor->utime);
+        }
+        
         if(monitor->finish_result == GLOBUS_SUCCESS && 
             monitor->expected_cksm != NULL)
         {
@@ -1615,8 +1631,11 @@ globus_l_gfs_file_utime(
         goto error;
     }
     
-    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, NULL);
-        
+    if(op)
+    {
+        globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, NULL);
+    }
+    
     GlobusGFSFileDebugExit();
     return GLOBUS_SUCCESS;
     
@@ -2790,6 +2809,16 @@ globus_l_gfs_file_recv(
         op,
         &offset,
         &length);
+
+    result = globus_gridftp_server_get_recv_modification_time(
+        op,
+        &monitor->utime);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_gridftp_server_get_recv_modification_time", result);
+        goto error_alloc;
+    }
         
     monitor->op = op;
     monitor->pathname = globus_libc_strdup(transfer_info->pathname);

@@ -133,6 +133,7 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_SITE_SHARING,
     GLOBUS_GFS_CMD_UPAS,
     GLOBUS_GFS_CMD_UPRT,
+    GLOBUS_GFS_CMD_STORATTR,
     
     GLOBUS_GFS_MIN_CUSTOM_CMD = 4096
 } globus_gfs_command_type_t;
@@ -1071,6 +1072,32 @@ globus_gridftp_server_query_op_info(
     globus_gfs_op_info_param_t          param,
     ...);
 
+/* check for attributes applicable to the current recv operation.
+ * requested_attr is a case-insensitive string indicating the attribute 
+ * whose value will returned in out_value.  requested_attr may be NULL, in 
+ * which case the full attr string will be returned in out_value.
+ * 
+ * the format of the full attr string is attr1=value;attr2=value;...
+ *
+ * it is the caller's responsibility to free() out_value after a succesful return.
+*/
+
+globus_result_t
+globus_gridftp_server_get_recv_attr_string(
+    globus_gfs_operation_t              op,
+    const char *                        requested_attr,
+    char **                             out_value);
+
+/* get intended modification time for the file being received.  out_time
+ * will be the same as if a UTIME/MDTM command had been issued.  if the modify
+ * time has not been requested by the client, this will return GLOBUS_SUCCESS
+ * but out_time will be -1.
+ */
+
+globus_result_t
+globus_gridftp_server_get_recv_modification_time(
+    globus_gfs_operation_t              op,
+    time_t *                            out_time);
 
 /*
  * update bytes written to storage

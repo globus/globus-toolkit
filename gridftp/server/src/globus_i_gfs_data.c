@@ -190,6 +190,16 @@ typedef struct
     globus_bool_t                       final;
 } globus_l_gfs_data_bounce_t;
 
+typedef struct 
+{
+    char *                              all;
+    
+    char *                              modify;
+    globus_bool_t                       modify_seen;
+    char *                              checksum_md5;
+    globus_bool_t                       checksum_md5_seen;
+} globus_l_gfs_storattr_t;
+
 typedef struct
 {
     globus_i_gfs_acl_handle_t           acl_handle;
@@ -254,6 +264,8 @@ typedef struct
     globus_xio_stack_t                  http_stack;
     globus_xio_stack_t                  https_stack;
     globus_xio_driver_t                 http_driver;
+
+    char *                              storattr_str;
 
     int                                 last_active;
     globus_off_t                        watch_updates;
@@ -354,6 +366,8 @@ typedef struct globus_l_gfs_data_operation_s
     char *                              from_pathname;
     /**/
 
+    globus_l_gfs_storattr_t *           storattr;
+    
     char *                              http_response_str;
 
     int                                 update_interval;
@@ -1843,6 +1857,10 @@ globus_l_gfs_free_session_handle(
     {
         globus_free(session_handle->taskid);
     }
+    if(session_handle->storattr_str)
+    {
+        globus_free(session_handle->storattr_str);
+    }
     if(session_handle->gid_array)
     {
         globus_free(session_handle->gid_array);
@@ -2102,7 +2120,7 @@ globus_l_gfs_getpwnam(
 char *
 globus_i_gfs_kv_getval(
     char *                              kvstring,
-    char *                              key,
+    const char *                        key,
     globus_bool_t                       urldecode)
 {
     char *                              keystart;
@@ -2568,6 +2586,7 @@ globus_i_gfs_monitor_init(
 
     GlobusGFSDebugExit();
 }
+
 
 static
 globus_result_t
@@ -5238,6 +5257,13 @@ globus_l_gfs_data_operation_destroy(
     {
         globus_free(op->eof_count);
     }
+    if(op->storattr)
+    {
+        globus_free(op->storattr->all);
+        globus_free(op->storattr->modify);
+        globus_free(op->storattr->checksum_md5);
+        globus_free(op->storattr);
+    }
     globus_mutex_destroy(&op->stat_lock);
 
     globus_free(op);
@@ -6596,6 +6622,18 @@ error_uprt:
                 globus_free(op->session_handle->taskid);
             }
             op->session_handle->taskid = globus_libc_strdup(cmd_info->pathname);
+
+            call = GLOBUS_FALSE;
+            globus_gridftp_server_finished_command(op, result, NULL);
+            break;
+
+        case GLOBUS_GFS_CMD_STORATTR:
+            if(op->session_handle->storattr_str)
+            {
+                globus_free(op->session_handle->storattr_str);
+            }
+            op->session_handle->storattr_str = 
+                globus_libc_strdup(cmd_info->pathname);
 
             call = GLOBUS_FALSE;
             globus_gridftp_server_finished_command(op, result, NULL);
@@ -8328,6 +8366,7 @@ error_op:
     GlobusGFSDebugExitWithError();
 }
 
+
 void
 globus_i_gfs_data_request_recv(
     globus_gfs_ipc_handle_t             ipc_handle,
@@ -8376,7 +8415,7 @@ globus_i_gfs_data_request_recv(
             "globus_l_gfs_data_operation_init", result);
         goto error_op;
     }
-
+ 
     op->ipc_handle = ipc_handle;
     op->session_handle = session_handle;
     op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_RECV;
@@ -8395,6 +8434,31 @@ globus_i_gfs_data_request_recv(
     session_handle->node_ndx = recv_info->node_ndx;
     op->node_count = recv_info->node_count;
     op->stripe_count = recv_info->stripe_count;
+    if(session_handle->storattr_str)
+    {
+        op->storattr = (globus_l_gfs_storattr_t *) 
+            globus_calloc(1, sizeof(globus_l_gfs_storattr_t));
+        op->storattr->all = session_handle->storattr_str;
+        session_handle->storattr_str = NULL;
+
+        op->storattr->modify = globus_i_gfs_kv_getval(
+            op->storattr->all, "modify", 0);
+            
+        op->storattr->checksum_md5 = globus_i_gfs_kv_getval(
+            op->storattr->all, "x.checksum.md5", 0);
+        if(!op->storattr->checksum_md5)
+        {
+            op->storattr->checksum_md5 = globus_i_gfs_kv_getval(
+                op->storattr->all, "checksum.md5", 0);
+        }
+        
+        if(op->storattr->checksum_md5 && !recv_info->expected_checksum)
+        {
+            recv_info->expected_checksum_alg = globus_libc_strdup("md5");
+            recv_info->expected_checksum = 
+                globus_libc_strdup(op->storattr->checksum_md5);
+        }
+    }
     /* events and disconnects cannot happen while i am in this
         function */
     if(data_handle)
@@ -12941,26 +13005,27 @@ globus_gridftp_server_get_block_size(
     GlobusGFSName(globus_gridftp_server_get_block_size);
     GlobusGFSDebugEnter();
 
-    tcp_mem_limit = globus_gfs_config_get_int("tcp_mem_limit");
-
-    if(op->data_handle != NULL && op->data_handle->is_mine)
+    if(op && op->data_handle != NULL && op->data_handle->is_mine)
     {
         *block_size = op->data_handle->info.blocksize;
+
+        tcp_mem_limit = globus_gfs_config_get_int("tcp_mem_limit");
+
+        if(tcp_mem_limit > 0)
+        {
+            globus_gridftp_server_get_optimal_concurrency(op, &concur);
+            tcp_mem_limit = tcp_mem_limit / concur;
+            if(tcp_mem_limit < *block_size)
+            {
+                *block_size = tcp_mem_limit;
+            }
+        }
     }
     else
     {
         *block_size = (globus_size_t) globus_i_gfs_config_int("blocksize");
     }
 
-    if(tcp_mem_limit > 0)
-    {
-        globus_gridftp_server_get_optimal_concurrency(op, &concur);
-        tcp_mem_limit = tcp_mem_limit / concur;
-        if(tcp_mem_limit < *block_size)
-        {
-            *block_size = tcp_mem_limit;
-        }
-    }
     GlobusGFSDebugExit();
 }
 
@@ -13426,7 +13491,122 @@ globus_gridftp_server_get_read_range(
     GlobusGFSDebugExit();
 }
 
+globus_result_t
+globus_gridftp_server_get_recv_modification_time(
+    globus_gfs_operation_t              op,
+    time_t *                            out_time)
+{    
+    globus_result_t                     result;
+    time_t                              tmp_time = -1;
+    GlobusGFSName(globus_gridftp_server_get_recv_modification_time);
+    GlobusGFSDebugEnter();
 
+    if(!op || !out_time)
+    {
+        result = GlobusGFSErrorGeneric("Invalid parameters.");
+        goto error;
+    }
+    
+    if(op->storattr)
+    {
+        char* tz;
+        struct tm modtime;
+        memset(&modtime, 0, sizeof(modtime));
+        if (sscanf(op->storattr->modify, "%4d%2d%2d%2d%2d%2d", 
+                    &modtime.tm_year, &modtime.tm_mon, &modtime.tm_mday,
+                    &modtime.tm_hour, &modtime.tm_min, &modtime.tm_sec) != 6)
+        {
+            goto error;
+        }
+        modtime.tm_year -= 1900;
+        modtime.tm_mon  -= 1;
+        /* This block converts the user-specified UTC time to a Unix time
+         * value.  We have to do contortions here as there is no standard
+         * inverse of the 'gmtime' function. */
+        tz = getenv("TZ");
+        globus_libc_setenv("TZ", "UTC", 1);
+        tzset();
+        tmp_time = mktime(&modtime);
+        if (tz)
+            globus_libc_setenv("TZ", tz, 1);
+        else
+            globus_libc_unsetenv("TZ");
+        tzset();
+                                
+        op->storattr->modify_seen = GLOBUS_TRUE;
+    }
+    *out_time = tmp_time;
+    
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+
+error:
+    GlobusGFSDebugExitWithError();
+    return result;
+}
+    
+    
+
+globus_result_t
+globus_gridftp_server_get_recv_attr_string(
+    globus_gfs_operation_t              op,
+    const char *                        requested_attr,
+    char **                             out_value)
+{
+    globus_result_t                     result;
+    char *                              tmp_val = NULL;
+    char *                              tmp_req;
+    GlobusGFSName(globus_gridftp_server_get_recv_attr_string);
+    GlobusGFSDebugEnter();
+
+    if(!op || !out_value)
+    {
+        result = GlobusGFSErrorGeneric("Invalid parameters.");
+        goto error;
+    }
+    
+    if(op->storattr)
+    {
+        if(requested_attr)
+        {
+            if(strcasecmp(requested_attr, "modify") == 0)
+            {
+                tmp_val = globus_libc_strdup(op->storattr->modify);
+                op->storattr->modify_seen = GLOBUS_TRUE;
+            }
+            else if(strcasecmp(requested_attr, "checksum.md5") == 0)
+            {
+                tmp_val = globus_libc_strdup(op->storattr->checksum_md5);
+                op->storattr->checksum_md5_seen = GLOBUS_TRUE;
+            }
+            else
+            {
+                tmp_val = globus_i_gfs_kv_getval(
+                    op->storattr->all, requested_attr, 0);
+                if(!tmp_val)
+                {
+                    tmp_req = globus_common_create_string("x.%s", requested_attr);
+                    tmp_val = globus_i_gfs_kv_getval(
+                        op->storattr->all, requested_attr, 0);
+                    globus_free(tmp_req);
+                }
+            }
+        }
+        else
+        {
+            tmp_val = globus_libc_strdup(op->storattr->all);
+        }
+    }
+    *out_value = tmp_val;
+    
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+
+error:
+    GlobusGFSDebugExitWithError();
+    return result;
+}
+    
 
 globus_result_t
 globus_gridftp_server_register_read(
