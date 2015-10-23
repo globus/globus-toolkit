@@ -2250,6 +2250,18 @@ redo:
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_STAT;
 	}
+        else if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER && 
+            target == client_handle->source && client_handle->dest &&
+            client_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_SETUP_PASV)
+        {
+            /* dest was waiting for this source to connect before calling PASV
+             * jump back now.
+             */
+            target = client_handle->dest;
+            client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION;
+            goto redo;
+        }
+
         /* defaulting to a PASV on the source */
         else if(client_handle->source_pasv && 
             target->mode != GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
@@ -2395,11 +2407,31 @@ redo:
             /* if ipv6 is enabled, ensure we connected to an ipv6 addressed
              * source before using EPSV.  otherwise, if dest connected on a 
              * v6 interface we won't have a compatible data address to pass 
-             * to the source via eprt/port. */ 
+             * to the source via eprt/port.
+             */ 
 	    if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER && 
 	        client_handle->source && target == client_handle->dest)
             {
                 globus_ftp_control_host_port_t *    host_port;
+                
+                /* if source hasn't connected yet, activate it */ 
+                if(client_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_START || 
+                    client_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_CLOSED)
+                {
+                    target = client_handle->source;
+                    
+                    error = globus_i_ftp_client_target_activate(
+                        client_handle, target, &registered);
+                    if(registered == GLOBUS_FALSE && 
+                        client_handle->state != GLOBUS_FTP_CLIENT_HANDLE_ABORT &&
+                        client_handle->state != GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+                    {
+                        goto connection_error;
+                    }
+                    
+                    break;
+                }
+
                 host_port = globus_libc_calloc(
                     1, sizeof(globus_ftp_control_host_port_t));
     

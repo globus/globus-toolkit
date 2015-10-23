@@ -1,7 +1,7 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.24
-Release:	2%{?dist}
+Version:	8.25
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Client Library
 
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Oct 23 2015 Globus Toolkit <support@globus.org> - 8.25-1
+- GT-604: fix ipv6 negotiation when source does not pre-connect
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 8.24-2
 - Add vendor
 
