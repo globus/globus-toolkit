@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	8.9
+Version:	9.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -11,7 +11,7 @@ URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common%{?_isa} >= 15
+Requires:	globus-common%{?_isa} >= 16
 Requires:	globus-gridftp-server-control%{?_isa} >= 2
 Requires:	globus-usage%{?_isa} >= 3
 Requires:	globus-xio%{?_isa} >= 5
@@ -30,7 +30,7 @@ BuildRequires:	globus-authz-devel >= 2
 BuildRequires:	globus-gfork-devel >= 3
 BuildRequires:	globus-ftp-control-devel >= 6
 BuildRequires:	globus-gss-assist-devel >= 9
-BuildRequires:  globus-common-progs >= 15
+BuildRequires:  globus-common-progs >= 16
 BuildRequires:	globus-gsi-credential-devel >= 6
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:  automake >= 1.11
@@ -178,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Oct 23 2015 Globus Toolkit <support@globus.org> - 9.0-1
+- add SITE STORATTR command and associated DSI api
+
 * Mon Sep 28 2015 Globus Toolkit <support@globus.org> - 8.9-1
 - home dir is always / when shared chroot
 
