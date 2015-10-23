@@ -536,9 +536,11 @@ globus_ftp_control_connect(
             host, sizeof(handle->cc_handle.serverhost));
         handle->cc_handle.serverhost[
             sizeof(handle->cc_handle.serverhost) - 1] = 0;
-               
-        globus_io_attr_set_tcp_nodelay(&handle->cc_handle.io_attr, 
-                                       GLOBUS_TRUE);
+
+        globus_io_attr_set_socket_keepalive(
+            &handle->cc_handle.io_attr, GLOBUS_TRUE);
+        globus_io_attr_set_tcp_nodelay(
+            &handle->cc_handle.io_attr, GLOBUS_TRUE);
         rc=globus_io_tcp_register_connect(
             host,
             port,

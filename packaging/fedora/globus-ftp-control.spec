@@ -1,7 +1,7 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	6.7
-Release:	2%{?dist}
+Version:	6.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
 
@@ -138,6 +138,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Oct 23 2015 Globus Toolkit <support@globus.org> - 6.8-1
+- GT-594: enable keepalives
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 6.7-2
 - Add vendor
 
