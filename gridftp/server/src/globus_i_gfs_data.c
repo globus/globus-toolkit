@@ -4485,8 +4485,8 @@ globus_l_gfs_data_authorize(
         rc = setgid(gid);
         if(rc != 0)
         {
-            res = GlobusGFSErrorGeneric(
-                "Unable to set the gid of the server process.");
+            res = GlobusGFSErrorSystemError(
+                "Unable to set the gid of the server process.", errno);
             goto uid_error;
         }
         if(getuid() == 0)
@@ -4524,16 +4524,16 @@ globus_l_gfs_data_authorize(
             rc = chroot(chroot_dir);
             if(rc != 0)
             {
-                res = GlobusGFSErrorGeneric(
-                    "Unable to chroot.");
+                res = GlobusGFSErrorSystemError(
+                    "Unable to chroot.", errno);
                     goto uid_error;
             }
         }
         rc = setuid(pwent->pw_uid);
         if(rc != 0)
         {
-            res = GlobusGFSErrorGeneric(
-                "Unable to set the uid of the server process.");
+            res = GlobusGFSErrorSystemError(
+                "Unable to set the uid of the server process.", errno);
             goto uid_error;
         }
     }
