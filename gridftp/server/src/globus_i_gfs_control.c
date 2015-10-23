@@ -2967,6 +2967,8 @@ globus_l_gfs_add_commands(
     globus_gridftp_server_control_t     control_handle)
 {
     globus_result_t                     result;
+    char *                              feat_str = NULL;
+    char *                              dsi_ver = NULL;
     GlobusGFSName(globus_l_gfs_add_commands);
     GlobusGFSDebugEnter();
 
@@ -3380,6 +3382,21 @@ globus_l_gfs_add_commands(
         goto error;
     }
 
+    dsi_ver = globus_i_gfs_data_dsi_version();
+    if(dsi_ver)
+    {
+        feat_str = globus_common_create_string("DSI %s", dsi_ver);
+        
+        result = globus_gridftp_server_control_add_feature(
+            control_handle, feat_str);
+        globus_free(feat_str);
+        globus_free(dsi_ver);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+    }
+
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
@@ -3501,7 +3518,7 @@ globus_i_gfs_control_start(
     globus_list_t *                     module_list;
     globus_list_t *                     list;
     char *                              alias;
-    char *                              module;    
+    char *                              module;
     GlobusGFSName(globus_i_gfs_control_start);
     GlobusGFSDebugEnter();
 
@@ -3692,6 +3709,8 @@ globus_i_gfs_control_start(
     {
         goto error_add_commands;
     }
+
+    
 
     /* disable commands if the user says to */
     if((value = globus_i_gfs_config_string("disable_command_list")) != NULL)
