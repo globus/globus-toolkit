@@ -975,6 +975,38 @@ error_param:
     return NULL;
 }
 
+int
+globus_extension_get_module_version(
+    globus_extension_handle_t           handle,
+    globus_version_t *                  out_version)
+{
+    globus_l_extension_handle_t *       entry;
+    globus_version_t *                  version;
+    GlobusFuncName(globus_extension_get_module_version);    
+    GlobusExtensionDebugEnter();
+
+    entry = handle;
+
+    if(!entry || !entry->module || !entry->module->version || !out_version)
+    {
+        goto error;
+    }
+
+    version = entry->module->version;
+    
+    out_version->major      = version->major;
+    out_version->minor      = version->minor;
+    out_version->timestamp  = version->timestamp;
+    out_version->branch_id  = version->branch_id;
+
+    GlobusExtensionDebugExit();
+    return GLOBUS_SUCCESS;
+
+error:    
+    GlobusExtensionDebugExitWithError();
+    return GLOBUS_FAILURE;
+}
+
 void
 globus_extension_release(
     globus_extension_handle_t           handle)

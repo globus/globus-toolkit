@@ -170,6 +170,13 @@ void
 globus_extension_release(
     globus_extension_handle_t           handle);
 
+/* get the module version of a loaded extension.  version is a pointer to 
+   an existing globus_version_t */
+int
+globus_extension_get_module_version(
+    globus_extension_handle_t           handle,
+    globus_version_t *                  version);
+
 globus_bool_t
 globus_extension_error_match(
     globus_extension_handle_t           handle,

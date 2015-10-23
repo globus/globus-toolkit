@@ -6,8 +6,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	15.31
-Release:	2%{?dist}
+Version:	16.0
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Common Library
 
@@ -212,6 +212,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Oct 23 2015 Globus Toolkit <support@globus.org> - 16.0-1
+- Add globus_extension_get_module_version
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 15.31-2
 - Add vendor
 
