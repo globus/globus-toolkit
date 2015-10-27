@@ -1,7 +1,7 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	5.9
-Release:	2%{?dist}
+Version:	5.10
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO Framework
 
@@ -141,6 +141,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Tue Oct 27 2015 Globus Toolkit <support@globus.org> - 5.10-1
+- Clarify documentation for timeouts
+- Remove NET+OS fragments
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 5.9-2
 - Add vendor
 

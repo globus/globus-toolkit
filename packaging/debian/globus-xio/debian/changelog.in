@@ -1,3 +1,10 @@
+globus-xio (5.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * Clarify documentation for timeouts
+  * Remove NET+OS fragments
+
+ -- Globus Toolkit <support@globus.org>  Tue, 27 Oct 2015 10:43:12 -0400
+
 globus-xio (5.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Allow const string option names
