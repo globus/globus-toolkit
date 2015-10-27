@@ -75,12 +75,7 @@ static globus_list_t *                  globus_l_xio_system_canceled_reads;
 static globus_list_t *                  globus_l_xio_system_canceled_writes;
 static globus_i_xio_system_op_info_t ** globus_l_xio_system_read_operations;
 static globus_i_xio_system_op_info_t ** globus_l_xio_system_write_operations;
-#ifndef TARGET_ARCH_NETOS
-/* Net+OS does not support pipes. It might better to wrap code related to this
- * with a HAVE_PIPE define...
- */
 static int                              globus_l_xio_system_wakeup_pipe[2];
-#endif
 static globus_callback_handle_t         globus_l_xio_system_poll_handle;
 
 /* In the pre-activation of the thread module, we
@@ -163,7 +158,6 @@ globus_l_xio_system_wakeup_handler(
 
     GlobusXIOSystemDebugEnter();
     
-#ifndef TARGET_ARCH_NETOS
     if(!globus_l_xio_system_shutdown_called)
     {
         byte = 0;
@@ -173,7 +167,6 @@ globus_l_xio_system_wakeup_handler(
                 globus_l_xio_system_wakeup_pipe[1], &byte, sizeof(byte));
         } while(rc < 0 && errno == EINTR);
     }
-#endif
     
     GlobusXIOSystemDebugExit();
 }
@@ -242,7 +235,6 @@ globus_l_xio_system_activate(void)
     globus_l_xio_system_write_operations =
         globus_l_xio_system_read_operations + globus_l_xio_system_max_fds;
 
-#ifndef TARGET_ARCH_NETOS
     /*
      * Create a pipe to myself, so that I can wake up the thread that is
      * blocked on a select().
@@ -256,7 +248,6 @@ globus_l_xio_system_activate(void)
     
     globus_l_xio_system_highest_fd = globus_l_xio_system_wakeup_pipe[0];
     FD_SET(globus_l_xio_system_wakeup_pipe[0], globus_l_xio_system_read_fds);
-#endif
 
     GlobusTimeReltimeSet(period, 0, 0);
     result = globus_callback_register_periodic(
@@ -279,10 +270,8 @@ globus_l_xio_system_activate(void)
     return GLOBUS_SUCCESS;
 
 error_register:
-#ifndef TARGET_ARCH_NETOS
     globus_l_xio_system_close(globus_l_xio_system_wakeup_pipe[0]);
     globus_l_xio_system_close(globus_l_xio_system_wakeup_pipe[1]);
-#endif
 
 error_pipe:
     globus_free(globus_l_xio_system_read_operations);
@@ -352,10 +341,8 @@ globus_l_xio_system_deactivate(void)
     }
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
 
-#ifndef TARGET_ARCH_NETOS
     globus_l_xio_system_close(globus_l_xio_system_wakeup_pipe[0]);
     globus_l_xio_system_close(globus_l_xio_system_wakeup_pipe[1]);
-#endif
 
     globus_list_free(globus_l_xio_system_canceled_reads);
     globus_list_free(globus_l_xio_system_canceled_writes);
@@ -824,30 +811,15 @@ globus_l_xio_system_add_nonblocking(
     int flags;
     int rc;
 
-#ifdef TARGET_ARCH_NETOS
-    if (handle->type != GLOBUS_XIO_SYSTEM_FILE)
+    flags = fcntl(handle->fd, F_GETFL);
+    if(flags < 0)
     {
-        int trueval = 1;
-        rc = setsockopt(
-                handle->fd,
-                SOL_SOCKET,
-                SO_NONBLOCK,
-                (void *) trueval,
-                sizeof(trueval));
+        rc = flags;
     }
     else
-#endif
     {
-        flags = fcntl(handle->fd, F_GETFL);
-        if(flags < 0)
-        {
-            rc = flags;
-        }
-        else
-        {
-            flags |= O_NONBLOCK;
-            rc = fcntl(handle->fd, F_SETFL, flags);
-        }
+        flags |= O_NONBLOCK;
+        rc = fcntl(handle->fd, F_SETFL, flags);
     }
     GlobusXIOSystemUpdateErrno();
 
@@ -862,31 +834,17 @@ globus_l_xio_system_remove_nonblocking(
     int                             flags;
     int                             rc;
 
-#ifdef TARGET_ARCH_NETOS
-    if (handle->type != GLOBUS_XIO_SYSTEM_FILE)
+    flags = fcntl(handle->fd, F_GETFL);
+    if(flags < 0)
     {
-        int falseval = 0;
-        rc = setsockopt(
-                handle->fd,
-                SOL_SOCKET,
-                SO_NONBLOCK,
-                (void *) falseval,
-                sizeof(falseval));
+        rc = flags;
     }
     else
-#endif
     {
-        flags = fcntl(handle->fd, F_GETFL);
-        if(flags < 0)
-        {
-            rc = flags;
-        }
-        else
-        {
-            flags &= ~O_NONBLOCK;
-            rc = fcntl(handle->fd, F_SETFL, flags);
-        }
+        flags &= ~O_NONBLOCK;
+        rc = fcntl(handle->fd, F_SETFL, flags);
     }
+
     GlobusXIOSystemUpdateErrno();
     return rc;
 }
@@ -944,7 +902,6 @@ globus_l_xio_system_select_wakeup(void)
     
     byte = 0;
 
-#ifndef TARGET_ARCH_NETOS
     do
     {
         rc = write(globus_l_xio_system_wakeup_pipe[1], &byte, sizeof(byte));
@@ -959,7 +916,6 @@ globus_l_xio_system_select_wakeup(void)
             _xio_name,
             __LINE__);
     }
-#endif
 
     GlobusXIOSystemDebugExit();
 }
@@ -974,12 +930,10 @@ globus_l_xio_system_handle_wakeup(void)
 
     GlobusXIOSystemDebugEnter();
 
-#ifndef TARGET_ARCH_NETOS
     do
     {
         done = read(globus_l_xio_system_wakeup_pipe[0], buf, sizeof(buf));
     } while(done < 0 && errno == EINTR);
-#endif
 
     GlobusXIOSystemDebugExit();
 }
@@ -1365,7 +1319,6 @@ globus_l_xio_system_poll(
 
             if(nready > 0)
             {
-#ifndef TARGET_ARCH_NETOS
                 fd = globus_l_xio_system_wakeup_pipe[0];
                 if(FD_ISSET(fd, globus_l_xio_system_ready_reads))
                 {
@@ -1374,7 +1327,6 @@ globus_l_xio_system_poll(
                     FD_CLR(fd, globus_l_xio_system_ready_reads);
                     nready--;
                 }
-#endif
             }
             else
                 if(nready == 0)
@@ -2343,10 +2295,8 @@ globus_xio_system_socket_create(
         goto error_socket;
     }
     
-#ifndef TARGET_ARCH_NETOS
     /* all handles created by me are closed on exec */
     fcntl(*fd, F_SETFD, FD_CLOEXEC);
-#endif
 
     GlobusXIOSystemDebugExitFD(*fd);
     return GLOBUS_SUCCESS;
@@ -2551,34 +2501,6 @@ globus_result_t
 globus_xio_system_socket_close(
     globus_xio_system_socket_t          socket)
 {
-#ifdef TARGET_ARCH_NETOS
-    globus_result_t                     result;
-    int                                 rc;
-    GlobusXIOName(globus_xio_system_socket_close);
-
-    GlobusXIOSystemDebugEnterFD(socket);
-    
-    do
-    {
-        rc = socketclose(socket);
-        GlobusXIOSystemUpdateErrno();
-    } while(rc < 0 && errno == EINTR);
-    
-    if(rc < 0)
-    {
-        result = GlobusXIOErrorSystemError("close", errno);
-        goto error_close;
-    }
-        
-    GlobusXIOSystemDebugExitFD(socket);
-    return GLOBUS_SUCCESS;
-
-error_close:
-    GlobusXIOSystemDebugExitWithErrorFD(fd);
-    return result;
-
-#else
     return globus_l_xio_system_close(socket);
-#endif
 }
 #endif /*TARGET_ARCH_WIN32*/

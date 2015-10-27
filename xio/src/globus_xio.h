@@ -129,25 +129,41 @@ extern "C" {
 /**
  * @addtogroup GLOBUS_XIO_API_ASSIST
  *
- *  \section globus_xio_timeouts Timeouts
- *  A user can set a timeout value for any io operation.  Each IO 
- *  operation (open close read write) can have its own timeout value.
- *  If no timeout is set the operation will be allowed to infinitely
- *  block.
+ * \section globus_xio_timeouts Timeouts
+ * A user can set a timeout value for any I/O operation.  Each I/O 
+ * operation (open close read write) can have its own timeout value.
+ * If no timeout is set the operation will be allowed to infinitely
+ * block.
  *
- *  When time expires the outstanding operation is canceled.  If the
- *  timeout callback for the given operation is not NULL it is called first to
- *  notify the user that the operation timed out and give the user a chance to
- *  ignore that timeout.  If canceled, the user will get the callback they 
- *  registered for the operation as well, but it will come with an error
- *  indicating that it has been canceled.
+ * When time expires the outstanding operation is canceled.  If the
+ * timeout callback for the given operation is not NULL it is called first to
+ * notify the user that the operation timed out and give the user a chance to
+ * ignore that timeout.  If canceled, the user will get the callback they 
+ * registered for the operation as well, but it will come with an error
+ * indicating that it has been canceled.
  *
- *  It is possible that part of an I/O operation will complete before
- *  the timeout expires.  In this case the operation can still be 
- *  canceled.  The user will receive there IO callback with and 
- *  error set and the length value appropriately set to indicate how
- *  much of the operation completed.
+ * It is possible that part of an I/O operation will complete before
+ * the timeout expires.  In this case the operation can still be 
+ * canceled.  The user will receive there IO callback with and 
+ * error set and the length value appropriately set to indicate how
+ * much of the operation completed.
+ *
+ * Timeouts are registered by using the following handle_cntl values:
+ *
+ * - GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL
+ * - GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN
+ * - GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE
+ * - GLOBUS_XIO_ATTR_SET_TIMEOUT_READ
+ * - GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE
+ * - GLOBUS_XIO_ATTR_SET_TIMEOUT_ACCEPT
+ *
+ * Each of these cntls expect three parameters:
+ *
+ * - globus_xio_timeout_callback_t      callback_function
+ * - globus_reltime_t *                 delay_time
+ * - void *                             callback_arg
  */
+
 /**
  * @addtogroup GLOBUS_XIO_API_ASSIST
  *

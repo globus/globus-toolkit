@@ -240,7 +240,7 @@ globus_l_xio_tcp_get_env_pair(
     return GLOBUS_FALSE;
 }
 
-#if !defined(WIN32) && !defined(TARGET_ARCH_NETOS)
+#if !defined(WIN32)
 
 static
 void

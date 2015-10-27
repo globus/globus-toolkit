@@ -892,7 +892,7 @@ globus_i_xio_system_socket_try_read(
 
     GlobusXIOSystemDebugEnter();
 
-#if !defined(WIN32) && !defined(TARGET_ARCH_NETOS)
+#if !defined(WIN32)
     /* posix can use readv for sockets */
     if(!flags && !from && iovc > 1)
     {
@@ -948,7 +948,7 @@ globus_i_xio_system_socket_try_write(
 
     GlobusXIOSystemDebugEnter();
 
-#if !defined(WIN32) && !defined(TARGET_ARCH_NETOS)
+#if !defined(WIN32)
     /* posix can use writev for sockets */
     if(!flags && !to && iovc > 1)
     {
