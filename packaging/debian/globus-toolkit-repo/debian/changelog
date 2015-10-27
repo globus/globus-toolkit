@@ -1,3 +1,9 @@
+globus-toolkit-repo (6.0.6-1) unstable; urgency=low
+
+  * Add handling for wily, xenial
+
+ -- Globus Toolkit <support@globus.org>  Tue, 27 Oct 2015 09:27:45 -0400
+
 globus-toolkit-repo (6.0.5-1) unstable; urgency=low
 
   * handle trusty os-release not having parsable codename
