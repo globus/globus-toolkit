@@ -222,27 +222,58 @@ def selinux_permissions():
         os.seteuid(0)
 
     semanage = which("semanage")
+    chcon = which("chcon")
     restorecon = which("restorecon")
+    setsebool = which("setsebool")
+    args = None
+
+    # Allow httpd to write to the myproxy-oauth sqlite3 database
     if semanage is not None:
-        # Allow httpd to write to the myproxy-oauth sqlite3 database
         args = [semanage, 'fcontext', '-a', '-t', 'httpd_sys_rw_content_t',
                 '/var/lib/myproxy-oauth/myproxy-oauth.db']
-        semanage_proc = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
-        (out, err) = semanage_proc.communicate()
-        if out is not None:
-            print out
-        if err is not None:
-            print >>sys.stderr, err
-        # Allow httpd to connect to myproxy service
-        args = [semanage, 'boolean', '-m', '-1', 'httpd_can_network_connect']
-        semanage_proc = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
-        (out, err) = semanage_proc.communicate()
+    elif chcon is not None:
+        args = [chcon, '-t', 'httpd_sys_rw_content_t',
+                '/var/lib/myproxy-oauth/myproxy-oauth.db']
+
+    if args is not None:
+        context_proc = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
+        (out, err) = context_proc.communicate()
         if out is not None:
             print out
         if err is not None:
             print >>sys.stderr, err
 
-    if restorecon is not None:
+    args = None
+
+    # Allow httpd to connect to myproxy service
+    if semanage is not None:
+        args = [semanage, 'boolean', '-m', '-1', 'httpd_can_network_connect']
+    elif setsebool is not None:
+        args = [setsebool, '-P', 'httpd_can_network_connect', 'on']
+
+    if args is not None:
+        setbool_proc = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
+        (out, err) = setbool_proc.communicate()
+        if out is not None:
+            print out
+        if err is not None:
+            print >>sys.stderr, err
+
+    args = None
+    # Allow httpd to run wsgi
+    if semanage is not None:
+        args = [semanage, 'boolean', '-m', '-1', 'httpd_execmem']
+    elif setsebool is not None:
+        args = [setsebool, '-P', 'httpd_execmem', 'on']
+    if args is not None:
+        setbool_proc = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
+        (out, err) = setbool_proc.communicate()
+        if out is not None:
+            print out
+        if err is not None:
+            print >>sys.stderr, err
+
+    if semanage is not None and restorecon is not None:
         args = [restorecon, '/var/lib/myproxy-oauth/myproxy-oauth.db']
         restorecon_proc = Popen(args, stdin=None, stdout=PIPE, stderr=PIPE)
         (out, err) = restorecon_proc.communicate()

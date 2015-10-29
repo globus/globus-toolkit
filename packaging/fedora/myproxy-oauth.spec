@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.19
+Version:	0.20
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	MyProxy OAuth Delegation Serice
@@ -132,7 +132,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
-* Mon Nov 11 2014 Globus Toolkit <support@globus.org> - 0.18-1
+* Thu Oct 29 2015 Globus Toolkit <support@globus.org> - 0.20-1
+- Use setsebool if it is installed and semanage is not available
+
+* Tue Nov 11 2014 Globus Toolkit <support@globus.org> - 0.18-1
 - Run selinux commands as root, run database commands as myproxyoauth
 
 * Wed Nov 05 2014 Globus Toolkit <support@globus.org> - 0.16-1
