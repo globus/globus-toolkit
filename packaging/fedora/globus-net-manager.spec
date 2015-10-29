@@ -1,7 +1,7 @@
 Name:		globus-net-manager
 %global _name %(tr - _ <<< %{name})
-Version:	0.12
-Release:	2%{?dist}
+Version:	0.13
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Net Manager Library
 
@@ -153,6 +153,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Oct 29 2015 Globus Toolkit <support@globus.org> - 0.13-1
+- Remove unused code
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 0.12-2
 - Add vendor
 

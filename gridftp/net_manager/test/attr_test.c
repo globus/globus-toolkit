@@ -114,7 +114,6 @@ attr_create_from_string_destroy(void)
     const char scope[] = "scope";
     const char attr_string[] = "manager=foo;arg=bar;arg=baz";
     int i;
-    int num=3;
 
     result = globus_net_manager_attr_array_from_string(
             &attr, scope, attr_string);

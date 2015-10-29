@@ -368,7 +368,6 @@ globus_l_xio_net_manager_attr_get_string_options(
     char                              **out_string)
 {
     size_t                              out_len = 0;
-    const char                         *prev_scope = NULL;
     char                               *output = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
@@ -380,14 +379,6 @@ globus_l_xio_net_manager_attr_get_string_options(
     {
         for (int i = 0; attr->attr_array[i].scope != NULL; i++)
         {   
-            /*
-            if ((!prev_scope) || strcmp(attr->attr_array[i].scope, prev_scope))
-            {
-                out_len += snprintf(NULL, 0, "manager=%s;",
-                        attr->attr_array[i].scope);
-                prev_scope = attr->attr_array[i].scope;
-            }
-            */
             out_len += snprintf(NULL, 0, "%s=%s;",
                         attr->attr_array[i].name,
                         attr->attr_array[i].value);
@@ -406,17 +397,8 @@ globus_l_xio_net_manager_attr_get_string_options(
     }
     if (attr->attr_array)
     {
-        prev_scope = NULL;
         for (int i = 0; attr->attr_array[i].scope != NULL; i++)
         {
-            /*
-            if ((!prev_scope) || strcmp(attr->attr_array[i].scope, prev_scope))
-            {
-                out_len += sprintf(output + out_len, "manager=%s;",
-                        attr->attr_array[i].scope);
-                prev_scope = attr->attr_array[i].scope;
-            }
-            */
             out_len += sprintf(output + out_len, "%s=%s;",
                         attr->attr_array[i].name,
                         attr->attr_array[i].value);

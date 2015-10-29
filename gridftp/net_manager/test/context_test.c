@@ -25,8 +25,6 @@ static
 int
 context_destroy_null_test(void)
 {
-    globus_result_t                     result = GLOBUS_SUCCESS;
-
     globus_net_manager_context_destroy(NULL);
 
     return 0;
@@ -334,12 +332,10 @@ context_end_listen_null_test(void)
     const char                         *task_id = "42";
     const char                         *transport = "tcp";
     const char                         *local_contact = "localhost:42";
-    char                               *local_contact_out = NULL;
     globus_net_manager_attr_t           attr[] = {
         {"net_manager", "manager", "logging"},
         GLOBUS_NET_MANAGER_NULL_ATTR
     };
-    globus_net_manager_attr_t          *attr_array_out;
 
     result = globus_net_manager_context_init(&context, attr);
     TEST_ASSERT_RESULT_SUCCESS(result);
@@ -990,7 +986,6 @@ context_pre_close_null_test(void)
         {"net_manager", "manager", "logging"},
         GLOBUS_NET_MANAGER_NULL_ATTR
     };
-    globus_net_manager_attr_t          *attr_array_out;
 
     result = globus_net_manager_context_init(&context, attr);
     TEST_ASSERT_RESULT_SUCCESS(result);
@@ -1070,7 +1065,6 @@ context_pre_close_test(void)
     };
     const char                         *local_contact = "localhost:42";
     const char                         *remote_contact = "remotehost:42";
-    globus_net_manager_attr_t          *attr_array_out = NULL;
 
     result = globus_net_manager_context_init(&context, attr);
     TEST_ASSERT_RESULT_SUCCESS(result);
