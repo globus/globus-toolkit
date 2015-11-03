@@ -7570,9 +7570,11 @@ globus_i_gfs_data_request_handle_destroy(
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+/*  closing means pending force_close, which will clean up in its callback
                 data_handle->state =
                     GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
                 free_it = GLOBUS_TRUE;
+*/
                 break;
 
 
@@ -8465,8 +8467,8 @@ globus_i_gfs_data_request_recv(
     {
         /* globus_assert(data_handle->outstanding_op == NULL); */
         data_handle->outstanding_op = op;
-    globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
-/*        || data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID);*/
+    globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID || 
+        data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID);
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
     }
 
@@ -8615,9 +8617,8 @@ globus_i_gfs_data_request_send(
     {
         /*globus_assert(data_handle->outstanding_op == NULL); */
         data_handle->outstanding_op = op;
-    globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
-/*
-        || data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID); */
+    globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID || 
+        data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID);
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
     }
 
@@ -11873,19 +11874,11 @@ globus_gridftp_server_finished_stat_partial(
     {        
         stat_info = (globus_gfs_stat_info_t *) op->info_struct;
         
-        if(!stat_info->file_only && stat_count == 1 && stat_array && 
-            !S_ISDIR(stat_array[0].mode))
+        stat_copy = (globus_gfs_stat_t *)
+            globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
+        if(stat_copy == NULL)
         {
-            result = GlobusGFSErrorGeneric("Path is not a directory.");
-        }
-        else
-        {
-            stat_copy = (globus_gfs_stat_t *)
-                globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
-            if(stat_copy == NULL)
-            {
-                result = GlobusGFSErrorMemory("stat_copy");
-            }
+            result = GlobusGFSErrorMemory("stat_copy");
         }
     }
     

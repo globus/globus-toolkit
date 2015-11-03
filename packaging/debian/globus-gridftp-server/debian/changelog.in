@@ -1,3 +1,11 @@
+globus-gridftp-server (9.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix for thread race crash between sequential transfers
+  * fix for partial stat punting when passed a single entry
+  * fix for double free on transfer failure race
+
+ -- Globus Toolkit <support@globus.org>  Tue, 03 Nov 2015 06:41:44 -0600
+
 globus-gridftp-server (9.0-1+gt6.@distro@) @distro@; urgency=low
 
   * add SITE STORATTR command and associated DSI api

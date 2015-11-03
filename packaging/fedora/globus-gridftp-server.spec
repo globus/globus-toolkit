@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	9.0
+Version:	9.1
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -178,6 +178,11 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Nov 03 2015 Globus Toolkit <support@globus.org> - 9.1-1
+- fix for thread race crash between sequential transfers
+- fix for partial stat punting when passed a single entry
+- fix for double free on transfer failure race
+
 * Fri Oct 23 2015 Globus Toolkit <support@globus.org> - 9.0-1
 - add SITE STORATTR command and associated DSI api
 
