@@ -466,9 +466,9 @@ typedef struct
 typedef struct
 {
     char *                              alias;
-    int                                 alias_len;
+    size_t                              alias_len;
     char *                              realpath;
-    int                                 realpath_len;
+    size_t                              realpath_len;
     int                                 access;
 } globus_l_gfs_alias_ent_t;
 
@@ -3024,26 +3024,23 @@ globus_list_cmp_alias_ent(
     void *                              b,
     void *                              arg)
 {
-    globus_l_gfs_alias_ent_t *          a_ent;
-    globus_l_gfs_alias_ent_t *          b_ent;
-    int                                 cmp;
-    int                                 a_i;
-    int                                 b_i;
-    char *                              a_tmp;
-    char *                              b_tmp;
+    globus_l_gfs_alias_ent_t            dummy = {.alias = NULL, .alias_len=0};
+    globus_l_gfs_alias_ent_t *          a_ent = (a != NULL) ? a : &dummy;
+    globus_l_gfs_alias_ent_t *          b_ent = (b != NULL) ? b : &dummy;
+    char                                a_tmp[a_ent->alias_len+1];
+    char                                b_tmp[b_ent->alias_len+1];
+    size_t                              a_i;
+    size_t                              b_i;
     
-    a_ent = (globus_l_gfs_alias_ent_t *) a;
-    b_ent = (globus_l_gfs_alias_ent_t *) b;
 
-    a_tmp = (a_ent && a_ent->alias) ? a_ent->alias : "";
-    b_tmp = (b_ent && b_ent->alias) ? b_ent->alias : "";
-    
+    strcpy(a_tmp, a_ent->alias ? a_ent->alias : "");
+    strcpy(b_tmp, b_ent->alias ? b_ent->alias : "");
+
     /* check for wildcard chars and replace the first one with a low value */
     /* we want the reverse sorted order to be a, [abc], ?, *           */
     a_i = strcspn(a_tmp, "[*?");
     if(a_i < a_ent->alias_len)
     {
-        a_tmp = globus_libc_strdup(a_ent->alias);
         switch(a_tmp[a_i])
         {
             case '*':
@@ -3056,13 +3053,11 @@ globus_list_cmp_alias_ent(
                 a_tmp[a_i] = 3;
                 break;
         }
-        a_i = 0;
     } 
 
     b_i = strcspn(b_tmp, "[*?");
     if(b_i < b_ent->alias_len)
     {
-        b_tmp = globus_libc_strdup(b_ent->alias);
         switch(b_tmp[b_i])
         {
             case '*':
@@ -3075,21 +3070,9 @@ globus_list_cmp_alias_ent(
                 b_tmp[b_i] = 3;
                 break;
         }
-        b_i = 0;
     }
     
-    cmp = strcmp(a_tmp, b_tmp);
-
-    if(!a_i)
-    {
-        globus_free(a_tmp);
-    } 
-    if(!b_i)
-    {
-        globus_free(b_tmp);
-    }    
-    
-    return cmp >= 0;
+    return strcmp(a_tmp, b_tmp) >= 0;
 }
 
 static
@@ -9172,6 +9155,7 @@ globus_l_gfs_data_list_stat_cb(
         {
             result = GlobusGFSErrorWrapFailed(
                 "globus_gridftp_server_register_write", result);
+            free(bounce_info);
             globus_mutex_unlock(&op->stat_lock);
             goto error;
         }
