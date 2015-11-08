@@ -465,22 +465,31 @@ globus_i_gsi_gss_create_and_fill_context(
             SSLeay() < 0x0090708fL) ||
             context->req_flags & GSS_C_GLOBUS_FORCE_SSL3)
     {
-	/* For backward compatibility.  Older GSI GSSAPI accepters
-	   will fail if we try to negotiate TLSv1, so stick with SSLv3
-	   when initiating to be safe. */
-	SSL_set_ssl_method(context->gss_ssl, SSLv3_method());
+#ifdef HAVE_SSLV3_METHOD
+        /* For backward compatibility.  Older GSI GSSAPI accepters
+           will fail if we try to negotiate TLSv1, so stick with SSLv3
+           when initiating to be safe. */
+        SSL_set_ssl_method(context->gss_ssl, SSLv3_method());
+#else
+        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
+            (_GGSL("OpenSSL does not support SSLv3 - use TLS")));
+        major_status = GSS_S_FAILURE;
+        goto free_cert_dir;
+#endif
     }
     else if (globus_i_gsi_gssapi_force_tls)
     {
-	/* GLOBUS_GSSAPI_FORCE_TLS defined in environment. */
+        /* GLOBUS_GSSAPI_FORCE_TLS defined in environment. */
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
             2, "Forcing TLS.\n");
-	SSL_set_ssl_method(context->gss_ssl, TLSv1_method());
+        SSL_set_ssl_method(context->gss_ssl, TLSv1_method());
     }
     else
     {
-	/* Accept both SSLv3 and TLSv1. */
-	SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
+        /* Accept both SSLv3 and TLSv1. */
+        SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
     }
     /* Never use SSLv2. */
     SSL_set_options(context->gss_ssl, 
@@ -939,7 +948,7 @@ globus_i_gsi_gss_handshake(
                     context_handle->gss_ssl->s3->send_alert[0],
                     context_handle->gss_ssl->s3->send_alert[1],
                     context_handle->gss_ssl->s3->wbuf.left));
-			
+
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (globus_i_gsi_gssapi_debug_fstream,
                     "SSL_get_error = %d\n",
@@ -1034,14 +1043,14 @@ globus_i_gsi_gss_handshake(
             }
 
             /* DEBUG BLOCK */
-	    if (globus_i_gsi_gssapi_debug_level >= 2)
+            if (globus_i_gsi_gssapi_debug_level >= 2)
             {
                 char                    cipher_description[256];
                 GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
                     2, "SSL handshake finished\n");
                 GLOBUS_I_GSI_GSSAPI_DEBUG_FNPRINTF(
                     2, (20, "Using %s.\n",
-			SSL_get_version(context_handle->gss_ssl)));
+                        SSL_get_version(context_handle->gss_ssl)));
                 GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                     2, (globus_i_gsi_gssapi_debug_fstream,
                         "cred_usage=%d\n",

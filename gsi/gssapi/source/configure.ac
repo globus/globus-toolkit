@@ -66,6 +66,8 @@ AC_LINK_IFELSE(
     [ac_cv_can_link_with_openssl_internal_api=yes],
     [ac_cv_can_link_with_openssl_internal_api=no])
 AC_MSG_RESULT([$ac_cv_can_link_with_openssl_internal_api])
+
+AC_CHECK_FUNCS(SSLv3_method)
 LIBS="$SAVE_LIBS"
 
 if test "$ac_cv_can_link_with_openssl_internal_api" = yes; then
