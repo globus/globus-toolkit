@@ -1710,7 +1710,6 @@ globus_i_gsi_gss_SSL_write_bio(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */
 
 OM_uint32
 globus_i_gsi_gss_SSL_read_bio(
