@@ -1,3 +1,9 @@
+globus-gridftp-server (9.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * More robust cmp function
+
+ -- Globus Toolkit <support@globus.org>  Fri, 20 Nov 2015 09:21:56 -0500
+
 globus-gridftp-server (9.1-1+gt6.@distro@) @distro@; urgency=low
 
   * fix for thread race crash between sequential transfers

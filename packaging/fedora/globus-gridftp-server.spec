@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	9.1
+Version:	9.2
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -178,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Nov 20 2015 Globus Toolkit <support@globus.org> - 9.2-1
+- More robust cmp function
+
 * Tue Nov 03 2015 Globus Toolkit <support@globus.org> - 9.1-1
 - fix for thread race crash between sequential transfers
 - fix for partial stat punting when passed a single entry
