@@ -1,7 +1,7 @@
 Name:		globus-authz
 %global _name %(tr - _ <<< %{name})
-Version:	3.10
-Release:	2%{?dist}
+Version:	3.11
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus authz library
 
@@ -139,6 +139,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Fri Nov 20 2015 Globus Toolkit <support@globus.org> - 3.11-1
+- Fix paths for mingw tests
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 3.10-2
 - Add vendor
 

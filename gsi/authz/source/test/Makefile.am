@@ -6,13 +6,12 @@ check_DATA = \
         testcred.cert \
         testcredlink
 
-X509_USER_CERT=$(abs_builddir)/testcred.cert
-X509_USER_KEY=$(abs_builddir)/testcred.key
+X509_USER_CERT=testcred.cert
+X509_USER_KEY=testcred.key
+X509_CERT_DIR=.
 if CYGPATH_W_DEFINED
-X509_CERT_DIR=$$($(CYGPATH_W) $(abs_builddir))
 GSI_AUTHZ_CONF=$$($(CYGPATH_W) $(abs_srcdir)/authz_test_callout.conf)
 else
-X509_CERT_DIR=$(abs_builddir)
 GSI_AUTHZ_CONF=$(abs_srcdir)/authz_test_callout.conf
 endif
 
