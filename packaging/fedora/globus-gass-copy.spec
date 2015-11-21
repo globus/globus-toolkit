@@ -1,7 +1,7 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	9.17
-Release:	2%{?dist}
+Version:	9.18
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Copy
 
@@ -172,6 +172,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Nov 20 2015 Globus Toolkit <support@globus.org> - 9.18-1
+- Disable ipv6 default for tests
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 9.17-2
 - Add vendor
 

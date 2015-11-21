@@ -121,7 +121,6 @@ SKIP: {
             my ($out, $err);
             my ($pid, $rc);
             my @args = ("globus-url-copy",
-                '-ipv6',
                 @{$mode}, @{$cc}, @{$dc_opt},
                 "-cd", "-r", $src_url, $dst_url);
             $errfd = gensym;

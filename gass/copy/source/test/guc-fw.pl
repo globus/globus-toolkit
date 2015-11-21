@@ -99,7 +99,6 @@ SKIP: {
             $errfd = gensym;
 
             $pid = open3($infd, $outfd, $errfd, "globus-url-copy",
-                '-ipv6',
                 @{$mode}, '-stripe', '-tcp-bs', '131072', @{$dc_opt},
                 transform_path($src_url), transform_path($dst_url));
             close($infd);

@@ -1,3 +1,9 @@
+globus-gass-copy (9.18-1+gt6.@distro@) @distro@; urgency=low
+
+  * Disable ipv6 default for tests
+
+ -- Globus Toolkit <support@globus.org>  Fri, 20 Nov 2015 20:13:24 -0500
+
 globus-gass-copy (9.17-1+gt6.@distro@) @distro@; urgency=low
 
   * use SIGINT to terminating test server for gcov
