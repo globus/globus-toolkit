@@ -1475,7 +1475,7 @@ globus_l_xio_tcp_create_listener(
                         {
                              GlobusXIOTcpDebugPrintf(
                                 GLOBUS_L_XIO_TCP_DEBUG_INFO,
-                                ("Unable to set V6ONLY sockopt."));
+                                ("Unable to disable V6ONLY sockopt."));
                         }
                     }
 
@@ -2073,6 +2073,22 @@ globus_l_xio_tcp_connect_next(
                 continue;
             }
             
+            if(addrinfo->ai_family == AF_INET6)
+            {
+                /* linux traditionally disables this by default, some systems
+                 * enable by default.  needed to be able to connect to v4
+                 * mapped/compatible addresses. */
+                int             int_zero = 0;
+                result = globus_xio_system_socket_setsockopt(
+                    fd, IPPROTO_IPV6, IPV6_V6ONLY, &int_zero, sizeof(int_zero));
+                if(result != GLOBUS_SUCCESS)
+                {
+                     GlobusXIOTcpDebugPrintf(
+                        GLOBUS_L_XIO_TCP_DEBUG_INFO,
+                        ("Unable to disable V6ONLY sockopt."));
+                }
+            }
+
             result = globus_l_xio_tcp_apply_handle_attrs(
                 attr, fd, GLOBUS_TRUE, GLOBUS_FALSE);
             if(result != GLOBUS_SUCCESS)
