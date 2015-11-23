@@ -330,6 +330,7 @@ globus_ftp_client_handle_init(
     i_handle->checksum_length = -1;
     i_handle->checksum = GLOBUS_NULL;
     i_handle->source_pasv = (getenv("GLOBUS_FTP_CLIENT_SOURCE_PASV") != NULL);
+    i_handle->tried_both_pasv = GLOBUS_FALSE;
     globus_fifo_init(&i_handle->src_op_queue);
     globus_fifo_init(&i_handle->dst_op_queue);
     globus_fifo_init(&i_handle->src_response_pending_queue);

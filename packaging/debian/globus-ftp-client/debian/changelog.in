@@ -1,3 +1,9 @@
+globus-ftp-client (8.27-1+gt6.@distro@) @distro@; urgency=low
+
+  * prevent endless loop when auto-retrying failed pasv on other server
+
+ -- Globus Toolkit <support@globus.org>  Mon, 23 Nov 2015 15:06:45 -0600
+
 globus-ftp-client (8.26-1+gt6.@distro@) @distro@; urgency=low
 
   * Disable mandatory IPv6 in tests. Can be enabled via the environment if needed

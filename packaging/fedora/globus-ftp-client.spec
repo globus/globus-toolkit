@@ -1,6 +1,6 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.26
+Version:	8.27
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Client Library
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Nov 23 2015 Globus Toolkit <support@globus.org> - 8.27-1
+- prevent endless loop when auto-retrying failed pasv on other server
+
 * Fri Nov 20 2015 Globus Toolkit <support@globus.org> - 8.26-1
 - Disable mandatory IPv6 in tests. Can be enabled via the environment if needed
 

@@ -2814,8 +2814,10 @@ redo:
 	    }
 	    /* Try the PASV on the other server for a 3rd party transfer */
 	    else if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
-	       target->mode != GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
+	       target->mode != GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK && 
+	       !client_handle->tried_both_pasv)
 	    {   
+                client_handle->tried_both_pasv = GLOBUS_TRUE;
                 target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
                 client_handle->source_pasv = !client_handle->source_pasv;
                 target = (target == client_handle->source) ? 
