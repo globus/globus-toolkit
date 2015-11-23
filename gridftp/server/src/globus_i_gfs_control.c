@@ -2695,12 +2695,13 @@ globus_l_gfs_request_passive_data(
     const char *                        pathname,
     void *                              user_arg)
 {
-    char *                              tmp_str;
+    char *                              tmp_str = NULL;
     globus_l_gfs_server_instance_t *    instance;
     globus_gfs_data_info_t *            data_info;
     globus_l_gfs_request_info_t *       request;
     globus_result_t                     result;
     globus_xio_contact_t                parsed_contact;
+    int                                 err_code;
     GlobusGFSName(globus_l_gfs_request_passive_data);
     GlobusGFSDebugEnter();
 
@@ -2713,18 +2714,29 @@ globus_l_gfs_request_passive_data(
         &request, instance, op, data_info);
     if(result != GLOBUS_SUCCESS)
     {
+        err_code = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED;
         goto error_init;
     }
 
     globus_l_gfs_get_data_info(op, data_info, net_prt);
 
+    if(globus_i_gfs_config_bool("encrypt_data") && 
+        (data_info->prot != 'P' || data_info->dcau == 'N'))
+    {
+        tmp_str = strdup("Encryption is required.");
+        err_code = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_DATA_CONN_AUTH;
+        goto error_postinit;
+    }
+    
     if(pathname)
     {
+        /* delayed pasv, final perm check will happen on the stor/retr */ 
         result = globus_l_gfs_get_full_path(
-            instance, pathname, &data_info->pathname, GFS_L_WRITE);
+            instance, pathname, &data_info->pathname, GFS_L_LIST);
         if(result != GLOBUS_SUCCESS)
         {
-            goto error_init;
+            err_code = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED;
+            goto error_postinit;
         }        
     }
     globus_xio_contact_parse(&parsed_contact, instance->local_contact);
@@ -2744,15 +2756,21 @@ globus_l_gfs_request_passive_data(
     GlobusGFSDebugExit();
     return;
     
+error_postinit:
+    globus_l_gfs_request_info_destroy(request);
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_peek(result));
+    globus_free(data_info);
+    if(!tmp_str)
+    {
+        tmp_str = globus_error_print_friendly(globus_error_peek(result));
+    }
     globus_gridftp_server_control_finished_passive_connect(
         op,
         NULL,
         0,
         NULL,
         0,
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
+        err_code,
         tmp_str);
     globus_free(tmp_str);
     GlobusGFSDebugExitWithError();
@@ -2827,12 +2845,13 @@ globus_l_gfs_request_active_data(
     int                                 cs_count,
     void *                              user_arg)
 {
-    char *                              tmp_str;
+    char *                              tmp_str = NULL;
     globus_l_gfs_server_instance_t *    instance;
     globus_gfs_data_info_t *            data_info;
     globus_l_gfs_request_info_t *       request;
     globus_result_t                     result;
     globus_xio_contact_t                parsed_contact;
+    int                                 err_code;
     GlobusGFSName(globus_l_gfs_request_active_data);
     GlobusGFSDebugEnter();
 
@@ -2845,10 +2864,19 @@ globus_l_gfs_request_active_data(
         &request, instance, op, data_info);
     if(result != GLOBUS_SUCCESS)
     {
+        err_code = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED;
         goto error_init;
     }
 
     globus_l_gfs_get_data_info(op, data_info, net_prt);
+    if(globus_i_gfs_config_bool("encrypt_data") && 
+        (data_info->prot != 'P' || data_info->dcau == 'N'))
+    {
+        tmp_str = strdup("Encryption is required.");
+        err_code = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_DATA_CONN_AUTH;
+        goto error_postinit;
+    }
+
     globus_xio_contact_parse(&parsed_contact, instance->local_contact);
 
     data_info->contact_strings = cs;
@@ -2867,15 +2895,22 @@ globus_l_gfs_request_active_data(
 
     GlobusGFSDebugExit();
     return;
-    
+  
+error_postinit:
+    globus_l_gfs_request_info_destroy(request);
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_peek(result));
+    globus_free(data_info);
+    if(!tmp_str)
+    {
+        tmp_str = globus_error_print_friendly(globus_error_peek(result));
+    }
     globus_gridftp_server_control_finished_active_connect(
         op,
         NULL,
         0,
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
+        err_code,
         tmp_str);
+    globus_free(tmp_str);
     GlobusGFSDebugExitWithError();
 }
 

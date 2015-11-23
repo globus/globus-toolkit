@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	9.2
+Version:	9.3
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -12,7 +12,7 @@ Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 16
-Requires:	globus-gridftp-server-control%{?_isa} >= 2
+Requires:	globus-gridftp-server-control%{?_isa} >= 4
 Requires:	globus-usage%{?_isa} >= 3
 Requires:	globus-xio%{?_isa} >= 5
 Requires:	globus-authz%{?_isa} >= 2
@@ -22,7 +22,7 @@ Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:	globus-gsi-credential%{?_isa} >= 6
 Requires:       globus-xio-udt-driver%{?_isa} >= 1
 
-BuildRequires:	globus-gridftp-server-control-devel >= 2
+BuildRequires:	globus-gridftp-server-control-devel >= 4
 BuildRequires:	globus-usage-devel >= 3
 BuildRequires:	globus-xio-gsi-driver-devel >= 2
 BuildRequires:	globus-xio-devel >= 5
@@ -58,7 +58,7 @@ Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Summary:	Globus Toolkit - Globus GridFTP Server Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-gridftp-server-control-devel%{?_isa} >= 2
+Requires:	globus-gridftp-server-control-devel%{?_isa} >= 4
 Requires:	globus-usage-devel%{?_isa} >= 3
 Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-xio-devel%{?_isa} >= 5
@@ -178,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Nov 23 2015 Globus Toolkit <support@globus.org> - 9.3-1
+- Add configuration to require encrypted data channels
+
 * Fri Nov 20 2015 Globus Toolkit <support@globus.org> - 9.2-1
 - More robust cmp function
 

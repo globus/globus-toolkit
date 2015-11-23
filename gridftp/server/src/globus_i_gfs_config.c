@@ -175,6 +175,10 @@ static const globus_l_gfs_config_option_t option_list[] =
     "separated list of ip address fragments.  A match is any ip address that "
     "starts with the specified fragment.  Example: '192.168.2.' will match and "
     "deny a connection from 192.168.2.45.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"encrypt_data", "encrypt_data", NULL, "encrypt-data", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Require encrypted data channels.  This will cause an error and prevent all "
+    "transfers in which the client does not request an authenticated and encrypted "
+    "data channel.", NULL, NULL, GLOBUS_FALSE, NULL},
  {"secure_ipc", "secure_ipc", NULL, "secure-ipc", "si", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Use GSI security on ipc channel.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_auth_mode", "ipc_auth_mode", NULL, "ipc-auth-mode", "ia", GLOBUS_L_GFS_CONFIG_STRING, 0, "host",
