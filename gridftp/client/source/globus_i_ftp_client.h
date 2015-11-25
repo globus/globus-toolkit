@@ -662,7 +662,7 @@ typedef struct globus_i_ftp_client_handle_t
     int                                         no_callback_count;
     
     globus_bool_t                               source_pasv;
-
+    globus_bool_t                               tried_both_pasv;
     /** User pointer
      * @see globus_ftp_client_handle_set_user_pointer(),
      *      globus_ftp_client_handle_get_user_pointer()

@@ -1,3 +1,9 @@
+globus-xio (5.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix failures connecting to v4mapped addresses on systems that disable dual stack sockets by default
+
+ -- Globus Toolkit <support@globus.org>  Mon, 23 Nov 2015 11:30:46 -0600
+
 globus-xio (5.10-1+gt6.@distro@) @distro@; urgency=low
 
   * Clarify documentation for timeouts

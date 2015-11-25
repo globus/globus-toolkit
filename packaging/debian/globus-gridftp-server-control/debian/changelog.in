@@ -1,3 +1,9 @@
+globus-gridftp-server-control (4.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add correct behavior for data auth error code
+
+ -- Globus Toolkit <support@globus.org>  Mon, 23 Nov 2015 15:20:53 -0600
+
 globus-gridftp-server-control (3.7-1+gt6.@distro@) @distro@; urgency=low
 
   * remove dead code
