@@ -1,7 +1,7 @@
 Name:		globus-gsi-sysconfig
 %global _name %(tr - _ <<< %{name})
-Version:	6.8
-Release:	2%{?dist}
+Version:	6.9
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
@@ -126,6 +126,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Nov 25 2015 Globus Toolkit <support@globus.org> - 6.9-1
+- Remove @} without matching @{
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 6.8-2
 - Add vendor
 

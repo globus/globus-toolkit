@@ -1,3 +1,9 @@
+globus-gsi-sysconfig (6.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Remove @} without matching @{
+
+ -- Globus Toolkit <support@globus.org>  Wed, 25 Nov 2015 16:16:03 -0500
+
 globus-gsi-sysconfig (6.8-1+gt6.@distro@) @distro@; urgency=low
 
   * Include more manpages for API

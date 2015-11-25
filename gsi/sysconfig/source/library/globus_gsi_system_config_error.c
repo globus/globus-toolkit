@@ -61,7 +61,6 @@ globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 /* 29 */  "Could not find a valid  GAA configuration file",
 /* 30 */  "File is not a directory"
 };
-/* @} */ 
 
 
 /* ERROR FUNCTIONS */

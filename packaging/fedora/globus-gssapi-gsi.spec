@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.22
+Version:	11.23
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -154,6 +154,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Nov 25 2015 Globus Toolkit <support@globus.org> - 11.23-1
+- Remove @} without matching @{
+
 * Tue Sep 08 2015 Globus Toolkit <support@globus.org> - 11.22-1
 - GT-627: gss_import_cred crash
 - Improve portability for some tests
