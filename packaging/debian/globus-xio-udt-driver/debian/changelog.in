@@ -1,3 +1,10 @@
+globus-xio-udt-driver (1.19-3+gt6.@distro@) @distro@; urgency=low
+
+  * Rename binary package from libglobus-xio-gridftp-driver1 to
+    libglobus-xio-gridftp-driver since it is an unversioned shared object
+
+ -- Globus Toolkit <support@globus.org>  Fri, 04 Dec 2015 08:47:39 -0500
+
 globus-xio-udt-driver (1.19-2+gt6.@distro@) @distro@; urgency=low
 
   * Dependency changes for libselinux and liblzma for ubuntu wily

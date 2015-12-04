@@ -1,3 +1,10 @@
+globus-xio-gridftp-driver (2.12-2+gt6.@distro@) @distro@; urgency=low
+
+  * Rename binary package from libglobus-xio-gridftp-driver1 to
+    libglobus-xio-gridftp-driver since it is an unversioned shared object
+
+ -- Globus Toolkit <support@globus.org>  Thu, 03 Dec 2015 14:04:27 -0500
+
 globus-xio-gridftp-driver (2.12-1+gt6.@distro@) @distro@; urgency=low
 
   * use SIGINT to terminating test server for gcov

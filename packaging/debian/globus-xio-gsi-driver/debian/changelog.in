@@ -1,3 +1,10 @@
+globus-xio-gsi-driver (3.8-2+gt6.@distro@) @distro@; urgency=low
+
+  * Rename binary package from libglobus-xio-gsi-driver0 to
+    libglobus-xio-gsi-driver since it is an unversioned shared object
+
+ -- Globus Toolkit <support@globus.org>  Fri, 04 Dec 2015 08:40:01 -0500
+
 globus-xio-gsi-driver (3.8-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-615: GSI XIO driver uses resolved IP address when importing names

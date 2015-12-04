@@ -1,3 +1,10 @@
+globus-xio-popen-driver (3.5-2+gt6.@distro@) @distro@; urgency=low
+
+  * Rename binary package from libglobus-xio-popen-driver0 to
+    libglobus-xio-popen-driver since it is an unversioned shared object
+
+ -- Globus Toolkit <support@globus.org>  Fri, 04 Dec 2015 08:44:50 -0500
+
 globus-xio-popen-driver (3.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

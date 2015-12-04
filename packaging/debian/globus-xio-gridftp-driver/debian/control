@@ -4,14 +4,14 @@ Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
 Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-xio-dev (>= 3), libglobus-common-dev (>= 14), libglobus-ftp-client-dev (>= 7), libglobus-xio-gsi-driver-dev, libglobus-xio-pipe-driver-dev, libglobus-gridftp-server-dev, globus-gridftp-server-progs, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, openssl, libltdl-dev
 Standards-Version: 3.9.2
 Section: net
-DM-Upload-Allowed: yes
-Vcs-Browser: http://svn.nordugrid.org/trac/packaging/browser/debian/globus-xio-gridftp-driver
-Vcs-Svn: http://svn.nordugrid.org/repos/packaging/debian/globus-xio-gridftp-driver
 Homepage: http://www.globus.org/
 
-Package: libglobus-xio-gridftp-driver1
+Package: libglobus-xio-gridftp-driver
 Section: libs
 Architecture: any
+Provides: libglobus-xio-gridftp-driver1
+Conflicts: libglobus-xio-gridftp-driver1
+Replaces: libglobus-xio-gridftp-driver1
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Globus Toolkit - Globus XIO GridFTP Driver
  The Globus Toolkit is an open source software toolkit used for
@@ -20,13 +20,13 @@ Description: Globus Toolkit - Globus XIO GridFTP Driver
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The libglobus-xio-gridftp-driver1 package contains:
+ The libglobus-xio-gridftp-driver package contains:
  Globus XIO GridFTP Driver
 
 Package: libglobus-xio-gridftp-driver-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-xio-gridftp-driver1 (= ${binary:Version}), ${misc:Depends}, libglobus-xio-dev
+Depends: libglobus-xio-gridftp-driver (= ${binary:Version}), ${misc:Depends}, libglobus-xio-dev
 Recommends: libglobus-xio-gridftp-driver-doc (= ${binary:Version})
 Description: Globus Toolkit - Globus XIO GridFTP Driver Development Files
  The Globus Toolkit is an open source software toolkit used for
@@ -56,7 +56,7 @@ Package: libglobus-xio-gridftp-driver-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libglobus-xio-gridftp-driver1 (= ${binary:Version}), ${misc:Depends}
+Depends: libglobus-xio-gridftp-driver (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Globus XIO GridFTP Driver Debug Symbols
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

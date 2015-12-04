@@ -124,7 +124,7 @@ install: build-stamp
 	ls -1 \
 	  debian/tmp$(_libdir)/libglobus*.so* \
 	  debian/tmp$(_docdir)/lib$(name)-dev/GLOBUS_LICENSE \
-	  > debian/lib$(name)$(soname).install
+	  > debian/lib$(name).install
 	ls -1 debian/tmp$(_includedir)/globus/*.h \
 	  debian/tmp$(_libdir)/pkgconfig/*.pc \
 	  > debian/lib$(name)-dev.install
@@ -142,13 +142,13 @@ binary-arch: install
 	dh_install --fail-missing
 	dh_installman
 	dh_link
-	dh_strip --dbg-package=globus-xio-rate-driver-dbg
+	dh_strip --dbg-package=libglobus-xio-rate-driver-dbg
 	dh_compress -X .tag
 	dh_fixperms
 	dh_perl
 	dh_makeshlibs
 	dh_installdeb
-	dh_shlibdeps -l debian/lib$(name)$(soname)/usr/lib
+	dh_shlibdeps -l debian/lib$(name)/usr/lib
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb

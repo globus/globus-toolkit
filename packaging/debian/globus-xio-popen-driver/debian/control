@@ -4,14 +4,14 @@ Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
 Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-xio-dev
 Standards-Version: 3.9.2
 Section: net
-DM-Upload-Allowed: yes
-Vcs-Browser: http://svn.nordugrid.org/trac/packaging/browser/debian/globus-xio-popen-driver
-Vcs-Svn: http://svn.nordugrid.org/repos/packaging/debian/globus-xio-popen-driver
 Homepage: http://www.globus.org/
 
-Package: libglobus-xio-popen-driver0
+Package: libglobus-xio-popen-driver
 Section: libs
 Architecture: any
+Provides: libglobus-xio-popen-driver0
+Conflicts: libglobus-xio-popen-driver0
+Replaces: libglobus-xio-popen-driver0
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Globus Toolkit - Globus XIO Pipe Open Driver
  The Globus Toolkit is an open source software toolkit used for
@@ -20,13 +20,13 @@ Description: Globus Toolkit - Globus XIO Pipe Open Driver
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The libglobus-xio-popen-driver0 package contains:
+ The libglobus-xio-popen-driver package contains:
  Globus XIO Pipe Open Driver
 
 Package: libglobus-xio-popen-driver-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-xio-popen-driver0 (= ${binary:Version}), ${misc:Depends}, libglobus-xio-dev
+Depends: libglobus-xio-popen-driver (= ${binary:Version}), ${misc:Depends}, libglobus-xio-dev
 Description: Globus Toolkit - Globus XIO Pipe Open Driver Development Files
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
@@ -41,7 +41,7 @@ Package: libglobus-xio-popen-driver-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libglobus-xio-popen-driver0 (= ${binary:Version}), ${misc:Depends}
+Depends: libglobus-xio-popen-driver (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Globus XIO Pipe Open Driver Debug Symbols
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

@@ -132,10 +132,10 @@ install: build-stamp
 	ls -1 \
 	  debian/tmp$(_libdir)/libglobus*.so* \
 	  debian/tmp$(_docdir)/lib$(name)-dev/GLOBUS_LICENSE \
-	  > debian/lib$(name)$(soname).install
+	  > debian/lib$(name).install
 	if [ -f debian/tmp$(_libdir)/globus/libudt.so ]; then \
 	  ls -1 debian/tmp$(_libdir)/globus/libudt.so \
-	      >> debian/lib$(name)$(soname).install; \
+	      >> debian/lib$(name).install; \
 	fi
 	ls -1 debian/tmp$(_includedir)/globus/*.h \
 	  debian/tmp$(_libdir)/pkgconfig/*.pc \
@@ -158,7 +158,7 @@ binary-arch: install
 	dh_perl
 	dh_makeshlibs
 	dh_installdeb
-	dh_shlibdeps -l debian/lib$(name)$(soname)/usr/lib
+	dh_shlibdeps -l debian/lib$(name)/usr/lib
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb

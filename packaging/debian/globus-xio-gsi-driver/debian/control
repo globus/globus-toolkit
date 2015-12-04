@@ -4,14 +4,14 @@ Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
 Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-gssapi-error-dev (>= 4), libglobus-gss-assist-dev (>= 8), libglobus-xio-dev (>= 3), libglobus-gssapi-gsi-dev (>= 9), libglobus-xio-doc (>= 0), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config
 Standards-Version: 3.9.2
 Section: net
-DM-Upload-Allowed: yes
-Vcs-Browser: http://svn.nordugrid.org/trac/packaging/browser/debian/globus-xio-gsi-driver
-Vcs-Svn: http://svn.nordugrid.org/repos/packaging/debian/globus-xio-gsi-driver
 Homepage: http://www.globus.org/
 
-Package: libglobus-xio-gsi-driver0
+Package: libglobus-xio-gsi-driver
 Section: libs
 Architecture: any
+Provides: libglobus-xio-gsi-driver0
+Conflicts: libglobus-xio-gsi-driver0
+Replcaes: libglobus-xio-gsi-driver0
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Globus Toolkit - Globus XIO GSI Driver
  The Globus Toolkit is an open source software toolkit used for
@@ -20,13 +20,13 @@ Description: Globus Toolkit - Globus XIO GSI Driver
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The libglobus-xio-gsi-driver0 package contains:
+ The libglobus-xio-gsi-driver package contains:
  Globus XIO GSI Driver
 
 Package: libglobus-xio-gsi-driver-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-xio-gsi-driver0 (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-gssapi-error-dev, libglobus-gss-assist-dev, libglobus-xio-dev, libglobus-gssapi-gsi-dev
+Depends: libglobus-xio-gsi-driver (= ${binary:Version}), ${misc:Depends}, libglobus-common-dev, libglobus-gssapi-error-dev, libglobus-gss-assist-dev, libglobus-xio-dev, libglobus-gssapi-gsi-dev
 Recommends: libglobus-xio-gsi-driver-doc (= ${binary:Version})
 Description: Globus Toolkit - Globus XIO GSI Driver Development Files
  The Globus Toolkit is an open source software toolkit used for
@@ -56,7 +56,7 @@ Package: libglobus-xio-gsi-driver-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libglobus-xio-gsi-driver0 (= ${binary:Version}), ${misc:Depends}
+Depends: libglobus-xio-gsi-driver (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Globus XIO GSI Driver Debug Symbols
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
