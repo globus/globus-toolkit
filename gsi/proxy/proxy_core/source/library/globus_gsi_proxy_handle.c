@@ -142,7 +142,10 @@ globus_gsi_proxy_handle_init(
         }
     }
 
-    handle_i->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
+    /* Default to RFC3820 impersonation proxy, which is also the default for
+     * grid-proxy-init */
+    handle_i->type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY
+
 
     handle_i->extensions = NULL;
     

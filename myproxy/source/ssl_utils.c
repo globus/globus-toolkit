@@ -1373,6 +1373,8 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
     globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
     globus_gsi_proxy_handle_attrs_set_keybits(proxy_handle_attrs, keybits);
 
+    /* globus_gsi_proxy_handle_init() initializes proxy_req->type, which is used
+     * when the GT_PROXY_MODE environment variable is unset */
     local_result = globus_gsi_proxy_handle_init(&(*new_creds)->proxy_req,
 						proxy_handle_attrs);
     /* done with proxy_handle_attrs now */
@@ -1394,13 +1396,18 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
                 globus_gsi_proxy_handle_set_type((*new_creds)->proxy_req,
                        GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY);
 #endif
+        } else {
+	    verror_put_string("Unsupported value for GT_PROXY_MODE: %s",
+			      GT_PROXY_MODE);
+	globus_error_to_verror(GLOBUS_FAILURE);
+	    goto error;
         }
-    }
 	if (local_result != GLOBUS_SUCCESS) {
 	    verror_put_string("globus_gsi_proxy_handle_set_type() failed");
         globus_error_to_verror(local_result);
 	    goto error;
-	}
+        }
+    }
     bio = BIO_new(BIO_s_mem());
     if (bio == NULL) {
 	verror_put_string("BIO_new() failed");
