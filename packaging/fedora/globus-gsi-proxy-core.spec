@@ -1,7 +1,7 @@
 Name:		globus-gsi-proxy-core
 %global _name %(tr - _ <<< %{name})
-Version:	7.7
-Release:	2%{?dist}
+Version:	7.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
 
@@ -145,6 +145,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Dec 04 2015 Globus Toolkit <support@globus.org> - 7.8-1
+- Change default proxy_req type to RFC
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 7.7-2
 - Add vendor
 
