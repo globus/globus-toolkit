@@ -1,3 +1,9 @@
+globus-gsi-proxy-core (7.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix missing ;
+
+ -- Globus Toolkit <support@globus.org>  Fri, 04 Dec 2015 11:18:16 -0500
+
 globus-gsi-proxy-core (7.8-1+gt6.@distro@) @distro@; urgency=low
 
   * Change default proxy_req type to RFC
