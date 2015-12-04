@@ -1,3 +1,9 @@
+globus-gssapi-gsi (11.24-1+gt6.@distro@) @distro@; urgency=low
+
+  * Don't call SSLv3_method unless it is available
+
+ -- Globus Toolkit <support@globus.org>  Fri, 04 Dec 2015 10:12:26 -0500
+
 globus-gssapi-gsi (11.23-1+gt6.@distro@) @distro@; urgency=low
 
   * Remove @} without matching @{

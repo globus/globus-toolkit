@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.23
+Version:	11.24
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -154,6 +154,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Dec 04 2015 Globus Toolkit <support@globus.org> - 11.24-1
+- Don't call SSLv3_method unless it is available
+
 * Wed Nov 25 2015 Globus Toolkit <support@globus.org> - 11.23-1
 - Remove @} without matching @{
 
