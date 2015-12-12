@@ -12,7 +12,7 @@ globus_libc_setenv(
     int rewrite)
 {
 #ifdef _WIN32
-    size_t len = snprintf(NULL, 0, "%s=%s", name, value);
+    size_t len = snprintf(NULL, 0, "%s=%s", name, value) + 1;
     char *tmp;
     if (rewrite || !getenv(name))
     {
