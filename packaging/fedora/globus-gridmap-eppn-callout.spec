@@ -1,7 +1,7 @@
 Name:		globus-gridmap-eppn-callout
 %global _name %(tr - _ <<< %{name})
-Version:	1.8
-Release:	2%{?dist}
+Version:	1.9
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus gridmap eppn callout.
 
@@ -79,6 +79,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libglobus*
 
 %changelog
+* Mon Dec 14 2015 Globus Toolkit <support@globus.org> - 1.9-1
+- GT-373: add support for proxies to eppn callout
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 1.8-2
 - Add vendor
 
