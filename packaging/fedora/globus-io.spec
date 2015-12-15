@@ -1,7 +1,7 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
 Version:	11.4
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - uniform I/O interface
 
@@ -23,6 +23,7 @@ BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-gssapi-gsi-devel >= 10
 BuildRequires:	globus-gssapi-error-devel >= 4
+BuildRequires:  openssl
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:	automake >= 1.11
 BuildRequires:	autoconf >= 2.60
@@ -118,6 +119,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Tue Dec 15 2015 Globus Toolkit <support@globus.org> - 11.4-3
+- Add build dependency on openssl
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 11.4-2
 - Add vendor
 
