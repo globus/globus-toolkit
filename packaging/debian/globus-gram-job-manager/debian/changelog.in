@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.27-2+gt6.@distro@) @distro@; urgency=low
+
+  * Update XIO Driver package names
+
+ -- Globus Toolkit <support@globus.org>  Tue, 15 Dec 2015 10:41:16 -0500
+
 globus-gram-job-manager (14.27-1+gt6.@distro@) @distro@; urgency=low
 
   * GT-619: Uninitialized data in job manager cause crash

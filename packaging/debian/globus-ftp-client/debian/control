@@ -14,7 +14,7 @@ Conflicts: libglobus-ftp-client1
 Replaces: libglobus-ftp-client1
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libglobus-xio-popen-driver0
+Depends: ${shlibs:Depends}, ${misc:Depends}, libglobus-xio-popen-driver
 Description: Globus Toolkit - GridFTP Client Library
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

@@ -1,3 +1,9 @@
+globus-scheduler-event-generator (5.11-2+gt6.@distro@) @distro@; urgency=low
+
+  * Update XIO Driver package names
+
+ -- Globus Toolkit <support@globus.org>  Tue, 15 Dec 2015 10:43:33 -0500
+
 globus-scheduler-event-generator (5.11-1+gt6.@distro@) @distro@; urgency=low
 
   * - Remove dead code

@@ -1,8 +1,8 @@
-globus-resource-management-sdk (6.0-1+gt6.@distro@) @distro@; urgency=low
+globus-resource-management-sdk (6.0-2+gt6.@distro@) @distro@; urgency=low
 
-  * New for Globus Toolkit 6.0
+  * Update XIO Driver package names
 
- -- Globus Toolkit <support@globus.org>  Tue, 22 April 2014 13:52:17 -0400
+ -- Globus Toolkit <support@globus.org>  Tue, 15 Dec 2015 10:42:54 -0500
 
 globus-resource-management-sdk (0.0.0-3) unstable; urgency=low
 

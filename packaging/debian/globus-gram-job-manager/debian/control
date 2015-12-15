@@ -12,7 +12,7 @@ Homepage: http://www.globus.org/
 Package: globus-gram-job-manager
 Section: net
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libglobus-xio-popen-driver0, libxml2, globus-gram-job-manager-scripts, globus-gass-copy-progs, globus-proxy-utils, globus-gass-cache-program, globus-common-progs, globus-gatekeeper
+Depends: ${shlibs:Depends}, ${misc:Depends}, libglobus-xio-popen-driver, libxml2, globus-gram-job-manager-scripts, globus-gass-copy-progs, globus-proxy-utils, globus-gass-cache-program, globus-common-progs, globus-gatekeeper
 Recommends: globus-gram-job-manager-doc (= ${binary:Version})
 Breaks: globus-gram-job-manager-doc (<< 10.59)
 Description: Globus Toolkit - GRAM Jobmanager
