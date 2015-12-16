@@ -2272,17 +2272,13 @@ globus_i_gsi_gssapi_init_ssl_context(
 
             B_mem = BIO_new(BIO_s_mem());
             BIO_puts(B_mem, extra_pem);
-            extra_x509 = PEM_read_bio_X509(B_mem, NULL, 0, NULL);
-            BIO_free(B_mem);
-
-            if(extra_x509)
+            
+            while(extra_x509 = PEM_read_bio_X509(B_mem, NULL, 0, NULL))
             {
                 if(!X509_STORE_add_cert(
                     SSL_CTX_get_cert_store(cred_handle->ssl_context),
                     extra_x509))
                 {
-                    /* need to free to reduce ref count */
-                    X509_free(extra_x509);
                     if ((ERR_GET_REASON(ERR_peek_error()) ==
                          X509_R_CERT_ALREADY_IN_HASH_TABLE))
                     {
@@ -2296,12 +2292,15 @@ globus_i_gsi_gssapi_init_ssl_context(
                             (_GGSL("Couldn't add certificate to the SSL context's "
                              "certificate store.")));
                         major_status = GSS_S_FAILURE;
+                        X509_free(extra_x509);
+                        BIO_free(B_mem);
                         goto exit;
                     }
                 }
+                /* need to free to reduce ref count */
+                X509_free(extra_x509);
             }
-            /* need to free to reduce ref count */
-            X509_free(extra_x509);
+            BIO_free(B_mem);
         }
     }
 

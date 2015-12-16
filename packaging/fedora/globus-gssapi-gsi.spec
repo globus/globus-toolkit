@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.24
+Version:	11.25
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -154,6 +154,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Dec 16 2015 Globus Toolkit <support@globus.org> - 11.25-1
+- support loading mutiple extra CA certs
+
 * Fri Dec 04 2015 Globus Toolkit <support@globus.org> - 11.24-1
 - Don't call SSLv3_method unless it is available
 
