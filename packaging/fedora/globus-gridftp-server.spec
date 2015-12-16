@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	9.3
+Version:	9.4
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -178,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Wed Dec 16 2015 Globus Toolkit <support@globus.org> - 9.4-1
+- fix mem error when sharing
+
 * Mon Nov 23 2015 Globus Toolkit <support@globus.org> - 9.3-1
 - Add configuration to require encrypted data channels
 

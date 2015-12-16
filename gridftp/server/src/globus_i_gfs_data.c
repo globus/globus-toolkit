@@ -12564,6 +12564,9 @@ globus_l_gfs_operation_finished_kickout(
                 globus_free(op->session_handle->home_dir);
             }
             op->session_handle->home_dir = strdup("/");
+
+            bounce->finished_info->info.session.home_dir =
+                op->session_handle->home_dir;
         }
 
         globus_l_gfs_data_update_restricted_paths_symlinks(
