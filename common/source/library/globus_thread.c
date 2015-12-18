@@ -981,7 +981,7 @@ globus_condattr_getspace(
  * will be automatically reclaimed by the operating system. A thread
  * identifier will be copied to the value pointed by the @a thread
  * parameter if it is non-NULL. The caller may use this thread identifier
- * to signal or cancel this thread. The @a attr paramter is ignored by
+ * to signal or cancel this thread. The @a attr parameter is ignored by
  * this function. If the "none" threading model is used by an application,
  * then this function will always fail. One alternative that will work both
  * with and without threads is to use the functions in the

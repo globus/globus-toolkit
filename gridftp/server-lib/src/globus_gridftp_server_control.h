@@ -133,7 +133,7 @@ typedef enum globus_gsc_response_e
             __LINE__,                                                       \
             "Panic error"))
 
-#define GlobusGridFTPServerControlErrorSytem()                              \
+#define GlobusGridFTPServerControlErrorSystem()                             \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
@@ -142,7 +142,11 @@ typedef enum globus_gsc_response_e
             __FILE__,                                                       \
             _gridftp_server_name,                                           \
             __LINE__,                                                       \
-            "Sytem resource error"))
+            "System resource error"))
+
+// For compatibility with old mispelled macro - deprecated
+#define GlobusGridFTPServerControlErrorSytem()                              \
+    GlobusGridFTPServerControlErrorSystem()
 
 #define GlobusGridFTPServerControlErrorAuthentication()                     \
     globus_error_put(                                                       \
@@ -153,7 +157,7 @@ typedef enum globus_gsc_response_e
             __FILE__,                                                       \
             _gridftp_server_name,                                           \
             __LINE__,                                                       \
-            "Sytem resource error"))
+            "Authentication error"))
 
 
 /*

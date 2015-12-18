@@ -38,7 +38,7 @@ globus_gridftp_server_control_attr_init(
                 1, sizeof(globus_i_gsc_attr_t));
     if(attr == NULL)
     {
-        res = GlobusGridFTPServerControlErrorSytem();
+        res = GlobusGridFTPServerControlErrorSystem();
         goto err;
     }
 
@@ -174,7 +174,7 @@ globus_gridftp_server_control_attr_copy(
                 sizeof(globus_i_gsc_attr_t));
     if(attr == NULL)
     {
-        res = GlobusGridFTPServerControlErrorSytem();
+        res = GlobusGridFTPServerControlErrorSystem();
         goto err;
     }
     attr->version_ctl = src->version_ctl;
@@ -337,7 +337,7 @@ globus_gridftp_server_control_attr_add_recv(
             sizeof(globus_i_gsc_module_func_t));
         if(mod_func == NULL)
         {
-            res = GlobusGridFTPServerControlErrorSytem();
+            res = GlobusGridFTPServerControlErrorSystem();
             goto err;
         }
         mod_func->func = recv_cb;
@@ -403,7 +403,7 @@ globus_gridftp_server_control_attr_add_send(
             sizeof(globus_i_gsc_module_func_t));
         if(mod_func == NULL)
         {
-            res = GlobusGridFTPServerControlErrorSytem();
+            res = GlobusGridFTPServerControlErrorSystem();
             goto err;
         }
         mod_func->func = send_cb;

@@ -4990,7 +4990,7 @@ globus_gass_cache_open(const char               *cache_directory_path,
 
     separator = directory_separator[cache_handle->cache_type];
 
-    /* open the log file and log the some informations */
+    /* open the log file and log some information */
 # if defined GLOBUS_L_GASS_CACHE_LOG
     {
         char    tmp[20];
