@@ -1,6 +1,6 @@
 Name:		globus-net-manager
 %global _name %(tr - _ <<< %{name})
-Version:	0.13
+Version:	0.14
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Net Manager Library
@@ -153,6 +153,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Dec 18 2015 Globus Toolkit <support@globus.org> - 0.14-1
+- pre_connect return attrs get set on attr, not handle
+
 * Thu Oct 29 2015 Globus Toolkit <support@globus.org> - 0.13-1
 - Remove unused code
 

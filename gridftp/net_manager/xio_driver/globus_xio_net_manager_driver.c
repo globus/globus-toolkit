@@ -1270,8 +1270,7 @@ globus_l_xio_net_manager_connect(
         globus_net_manager_attr_array_delete(handle->attr->attr_array);
         handle->attr->attr_array = attr_array_out;
 
-        result = globus_l_xio_net_manager_transport_handle_apply(
-                handle, op, attr_array_out);
+        result = globus_l_xio_net_manager_transport_attr_apply(op, attr_array_out);
         if (result != GLOBUS_SUCCESS)
         {
             goto attr_apply_fail;
