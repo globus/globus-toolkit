@@ -104465,7 +104465,7 @@ index 2798a42..e0d3bee 100644
 +#endif
  }
 diff --git a/readconf.c b/readconf.c
-index b7fddf7..f60bca9 100644
+index b7fddf7..4fdd0ff 100644
 --- a/readconf.c
 +++ b/readconf.c
 @@ -139,10 +139,17 @@ typedef enum {
@@ -104541,6 +104541,15 @@ index b7fddf7..f60bca9 100644
  	}
  
  	debug("Reading configuration data %.200s", filename);
+@@ -1307,7 +1343,7 @@ initialize_options(Options * options)
+ 	options->tun_remote = -1;
+ 	options->local_command = NULL;
+ 	options->permit_local_command = -1;
+-	options->use_roaming = -1;
++	options->use_roaming = 0;
+ 	options->visual_host_key = -1;
+ 	options->zero_knowledge_password_authentication = -1;
+ 	options->ip_qos_interactive = -1;
 @@ -1315,6 +1351,12 @@ initialize_options(Options * options)
  	options->request_tty = -1;
  	options->ignored_unknown = NULL;
@@ -104554,6 +104563,16 @@ index b7fddf7..f60bca9 100644
  	options->none_switch = -1;
  	options->none_enabled = -1;
  	options->hpn_disabled = -1;
+@@ -1492,8 +1534,7 @@ fill_default_options(Options * options)
+ 		options->tun_remote = SSH_TUNID_ANY;
+ 	if (options->permit_local_command == -1)
+ 		options->permit_local_command = 0;
+-	if (options->use_roaming == -1)
+-		options->use_roaming = 1;
++	options->use_roaming = 0;
+ 	if (options->visual_host_key == -1)
+ 		options->visual_host_key = 0;
+ 	if (options->zero_knowledge_password_authentication == -1)
 diff --git a/readconf.h b/readconf.h
 index 38d149f..147bf82 100644
 --- a/readconf.h
@@ -110235,7 +110254,7 @@ index 618c075..5f38c72 100644
  }
  
 diff --git a/ssh.c b/ssh.c
-index ff45960..5e3cd75 100644
+index ff45960..8c9b278 100644
 --- a/ssh.c
 +++ b/ssh.c
 @@ -109,6 +109,20 @@
@@ -110509,7 +110528,17 @@ index ff45960..5e3cd75 100644
  		/* Store tty modes in the packet. */
  		tty_make_modes(fileno(stdin), NULL);
  
-@@ -1670,7 +1843,16 @@ load_public_identity_files(void)
+@@ -1621,9 +1794,6 @@ ssh_session2(void)
+ 			fork_postauth();
+ 	}
+ 
+-	if (options.use_roaming)
+-		request_roaming();
+-
+ 	return client_loop(tty_flag, tty_flag ?
+ 	    options.escape_char : SSH_ESCAPECHAR_NONE, id);
+ }
+@@ -1670,7 +1840,16 @@ load_public_identity_files(void)
  	if ((pw = getpwuid(original_real_uid)) == NULL)
  		fatal("load_public_identity_files: getpwuid failed");
  	pwname = xstrdup(pw->pw_name);
@@ -110526,7 +110555,7 @@ index ff45960..5e3cd75 100644
  	if (gethostname(thishost, sizeof(thishost)) == -1)
  		fatal("load_public_identity_files: gethostname: %s",
  		    strerror(errno));
-@@ -1727,6 +1909,7 @@ load_public_identity_files(void)
+@@ -1727,6 +1906,7 @@ load_public_identity_files(void)
  	free(pwdir);
  }
  
@@ -110534,7 +110563,7 @@ index ff45960..5e3cd75 100644
  static void
  main_sigchld_handler(int sig)
  {
-@@ -1741,4 +1924,4 @@ main_sigchld_handler(int sig)
+@@ -1741,4 +1921,4 @@ main_sigchld_handler(int sig)
  	signal(sig, main_sigchld_handler);
  	errno = save_errno;
  }

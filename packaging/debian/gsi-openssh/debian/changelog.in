@@ -1,3 +1,9 @@
+gsi-openssh (5.7-3+gt6.@distro@) @distro@; urgency=low
+
+  * CVE-2016-0777
+
+ -- Globus Toolkit <support@globus.org>  Thu, 14 Jan 2016 14:26:45 -0500
+
 gsi-openssh (5.7-2+gt6.@distro@) @distro@; urgency=low
 
   * https://globus.atlassian.net/browse/GT-492
