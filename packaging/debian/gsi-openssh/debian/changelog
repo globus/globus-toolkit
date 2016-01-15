@@ -1,3 +1,9 @@
+gsi-openssh (5.7-3) unstable; urgency=low
+
+  * CVE-2016-0777
+
+ -- Globus Toolkit <support@globus.org>  Fri, 15 Jan 2016 13:56:18 -0500
+
 gsi-openssh (5.7-2) unstable; urgency=low
 
   * https://globus.atlassian.net/browse/GT-492

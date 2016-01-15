@@ -34,7 +34,7 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 1
+%global gsi_openssh_rel 2
 %global gsi_openssh_ver 5.7
 
 %ifarch alpha ia64 ppc64 s390x sparc64 x86_64
@@ -105,6 +105,8 @@ Source0: http://downloads.sourceforge.net/cilogon/gsi_openssh-%{version}-src.tar
 ## This is the patch that adds GSI support
 ## Based on http://grid.ncsa.illinois.edu/ssh/dl/patch/openssh-5.5p1.patch
 #Patch99: openssh-5.5p1-gsissh.patch
+Patch20167777: https://www.globus.org/ftppub/gt6/patches/CVE-2016-0777.gsissh-5.7.diff
+
 
 License: BSD
 Group: Applications/Internet
@@ -278,6 +280,8 @@ This version of OpenSSH has been modified to support GSI authentication.
 #%patch79 -p1 -b .x11
 #%patch81 -p1 -b .clientloop
 #%patch99 -p1 -b .gsi
+
+%patch20167777 -p0 -b .CVE-2016-0777
 
 sed 's/sshd.pid/gsisshd.pid/' -i pathnames.h
 sed 's!$(piddir)/sshd.pid!$(piddir)/gsisshd.pid!' -i Makefile.in
@@ -479,6 +483,9 @@ fi
 %endif
 
 %changelog
+* Fri Jan 15 2016 Globus Toolkit <support@globus.org> - 5.7-2
+- CVE-2016-0777
+
 * Mon Nov 11 2013 Globus Toolkit <support@globus.org> - 5.7-1
 - Update to 5.7
 
