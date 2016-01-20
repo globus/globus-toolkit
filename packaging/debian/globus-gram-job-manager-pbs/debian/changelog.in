@@ -1,3 +1,9 @@
+globus-gram-job-manager-pbs (2.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix issue parsing torque v5.1.2 logs in SEG
+
+ -- Globus Toolkit <support@globus.org>  Wed, 20 Jan 2016 11:37:10 -0500
+
 globus-gram-job-manager-pbs (2.4-2+gt6.@distro@) @distro@; urgency=low
 
   * Merge fixes from ellert-globus_6_branch

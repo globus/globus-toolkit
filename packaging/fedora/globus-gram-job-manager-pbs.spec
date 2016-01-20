@@ -2,8 +2,8 @@
 
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
-Version:	2.4
-Release:	2%{?dist}
+Version:	2.5
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - PBS Job Manager
 
@@ -205,6 +205,9 @@ fi
 
 
 %changelog
+* Wed Jan 20 2016 Globus Toolkit <support@globus.org> - 2.5-1
+- Fix issue parsing torque v5.1.2 logs in SEG
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 2.4-2
 - Add vendor
 
