@@ -483,7 +483,7 @@ globus_l_pbs_read_callback(
                             state->path = next_file;
                             state->log_offset = 0;
 
-                            strptime(next_file + strlen(state->log_dir) + 1, 
+                            globus_strptime(next_file + strlen(state->log_dir) + 1, 
                                 "%Y%m%d", &state->path_time);
                             break;
                         }
@@ -619,7 +619,7 @@ globus_l_pbs_read_callback(
                             free(state->path);
                             state->path = next_file;
 
-                            strptime(next_file + strlen(state->log_dir) + 1, 
+                            globus_strptime(next_file + strlen(state->log_dir) + 1, 
                                 "%Y%m%d", &state->path_time);
 
                             state->log_offset = 0;
@@ -884,7 +884,7 @@ globus_l_pbs_parse_events(
         }
 
         sep = globus_strptime(fields[0], "%m/%d/%Y %H:%M:%S", &tm);
-        if (sep == NULL || (*sep) != '\0')
+        if (sep == NULL || (((*sep) != '\0') && ((*sep) != '.')))
         {
             goto strptime_failed;
         }
@@ -915,6 +915,8 @@ globus_l_pbs_parse_events(
             /* Might be "Log closed", but we don't care */
             break;
 
+        case 0x0016: /* Job Resource Usage --- in v 5.1.2, the event type is
+                        not hex, but we parsed it as such above */
         case 0x0010: /* Job Resource Usage */
         case 0x0008: /* Job Events */
             if (nfields < 6)
@@ -953,6 +955,14 @@ globus_l_pbs_parse_events(
                 SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
                     ("job %s failed\n", fields[4]));
                 rc = globus_scheduler_event_failed(stamp, fields[4], 0);
+            }
+            else if ((strcmp(fields[4], "req_commit") == 0) &&
+                     (strstr(fields[5], "job_id:") == fields[5]))
+            {
+                const char *job_id = fields[5] + strlen("job_id: ");
+                SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
+                        ("job %s pending\n", fields[4]));
+                rc = globus_scheduler_event_pending(stamp, job_id);
             }
             break;
         }
