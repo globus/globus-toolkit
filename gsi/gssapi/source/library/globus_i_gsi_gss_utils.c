@@ -494,7 +494,21 @@ globus_i_gsi_gss_create_and_fill_context(
 	/* GLOBUS_GSSAPI_FORCE_TLS defined in environment. */
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
             2, "Forcing TLS.\n");
-	SSL_set_ssl_method(context->gss_ssl, TLSv1_method());
+
+        /* openssl 1.1.0 adds a new method of setting this, deprecates old */ 
+        #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+        {
+            SSL_set_ssl_method(context->gss_ssl, TLS_method());
+            SSL_set_min_proto_version(context->gss_ssl, TLS1_VERSION);
+        }
+        #else
+        {
+            /* TLSv1_method is only TLSv1.0 */
+            SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
+            SSL_set_options(context->gss_ssl,
+                SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+        }
+        #endif
     }
     else
     {

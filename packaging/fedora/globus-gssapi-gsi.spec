@@ -12,7 +12,7 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	10.15
+Version:	10.16
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -209,6 +209,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Jan 25 2016 Globus Toolkit <support@globus.org> - 10.16-1
+- Fix FORCE_TLS setting to allow TLSv1.1 and TLS1.2, not just TLSv1.0
+
 * Thu Jul 23 2015 Globus Toolkit <support@globus.org> - 10.15-1
 - GT-614: GLOBUS_GSS_C_NT_HOST_IP doesn't allow host-only imports and comparisons
 
