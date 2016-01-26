@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	16.1
+Version:	16.2
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Common Library
@@ -212,6 +212,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Tue Jan 26 2016 Globus Toolkit <support@globus.org> - 16.2-1
+- Fix missing doxygen comment header
+
 * Fri Dec 11 2015 Globus Toolkit <support@globus.org> - 16.1-1
 - fix windows setenv impl
 

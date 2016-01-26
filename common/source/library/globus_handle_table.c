@@ -305,7 +305,7 @@ globus_handle_table_increment_reference_by(
     }
 }
 
-/*
+/**
  * @brief Remove a reference to a handle
  * @ingroup globus_handle_table
  * @details
