@@ -1,3 +1,9 @@
+globus-gssapi-gsi (11.26-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix FORCE_TLS setting to allow TLSv1.1 and TLS1.2, not just TLSv1.0
+
+ -- Globus Toolkit <support@globus.org>  Mon, 25 Jan 2016 14:52:49 -0600
+
 globus-gssapi-gsi (11.25-1+gt6.@distro@) @distro@; urgency=low
 
   * support loading mutiple extra CA certs
