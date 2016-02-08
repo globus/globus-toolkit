@@ -284,9 +284,12 @@ def post_authorize(environ, start_response):
     db_session.commit()
 
     status = "301 Moved Permanently"
+    joiner = "?"
+    if "?" in transaction.oauth_callback:
+        joiner="&"
     headers = [
-            ("Location", str("%s?oauth_token=%s&oauth_verifier=%s" % \
-            (transaction.oauth_callback, oauth_temp_token, oauth_verifier)))]
+            ("Location", str("%s%soauth_token=%s&oauth_verifier=%s" % \
+            (transaction.oauth_callback, joiner, oauth_temp_token, oauth_verifier)))]
 
     start_response(status, headers)
     return ""
