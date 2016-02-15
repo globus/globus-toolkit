@@ -1,6 +1,6 @@
 Name: gsi-openssh
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/gsi_openssh-5.5-src.tar.gz
+Source: http://www.globus.org/ftppub/gt6/packages/gsi_openssh-7.1p2.tar.gz
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 
 Files: ssh-globus-usage.c

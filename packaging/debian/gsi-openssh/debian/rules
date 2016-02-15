@@ -13,7 +13,6 @@ include /usr/share/quilt/quilt.make
 
 name = gsi-openssh
 _name = gsi_openssh
-version = 5.7
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
@@ -27,12 +26,6 @@ _mandir = $(_datadir)/man
 _docdir = $(_datadir)/doc
 
 DEB_BUILD_ARCH_CPU ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_CPU)
-
-ifneq (,$(filter $(DEB_HOST_ARCH_CPU), amd64 alpha ia64 s390x ppc64 sparc64))
-flavor = gcc64
-else
-flavor = gcc32
-endif
 
 sed: sed-stamp
 	:
@@ -67,12 +60,11 @@ configure-stamp: sed-stamp
 	   --datarootdir=$(_datadir) \
 	   --datadir=$(_datadir)/gsissh \
 	   --docdir='$(_datadir)/doc/$(_name)' \
-	   --with-flavor=$(flavor) \
 	   --with-tcp-wrappers \
 	   --with-default-path=/usr/local/bin:/bin:/usr/bin \
 	   --with-superuser-path=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin \
 	   --with-privsep-path=/var/empty/gsisshd \
-	   --enable-vendor-patchlevel=$(version).deb1 \
+	   --enable-vendor-patchlevel=GT6-$(version) \
 	   --program-prefix=gsi \
 	   --disable-strip \
 	   --without-zlib-version-check \
@@ -81,7 +73,6 @@ configure-stamp: sed-stamp
 	   --with-pam \
 	   --without-kerberos \
 	   --with-gsi=/usr \
-	   --with-globus-flavor=$(flavor) \
 	   --with-libedit \
 	   --enable-doxygen
 

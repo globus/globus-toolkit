@@ -1,0 +1,3 @@
+[submodule "gsi_openssh/source"]
+	path = gsi_openssh/source
+	url = https://github.com/globus/gsi-openssh

@@ -1,3 +1,9 @@
+gsi-openssh (7.1p2+gt6.@distro@) @distro@; urgency=low
+
+  * Update to gsi-openssh 7.1p2
+
+ -- Globus Toolkit <support@globus.org>  Tue, 09 Feb 2016 12:38:45 -0500
+
 gsi-openssh (5.7-3+gt6.@distro@) @distro@; urgency=low
 
   * CVE-2016-0777

@@ -37,13 +37,6 @@
 %global gsi_openssh_rel 1.beta
 %global gsi_openssh_ver 7.1p2
 
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
-
 Summary: An implementation of the SSH protocol with GSI authentication
 Name: gsi-openssh
 Version: %{gsi_openssh_ver}
@@ -349,8 +342,6 @@ else
 fi
 %endif
 
-LOOK_FOR_FC_GLOBUS_INCLUDE="yes"; export LOOK_FOR_FC_GLOBUS_INCLUDE
-
 %configure \
 	--sysconfdir=%{_sysconfdir}/gsissh \
 	--libexecdir=%{_libexecdir}/gsissh \
@@ -360,7 +351,7 @@ LOOK_FOR_FC_GLOBUS_INCLUDE="yes"; export LOOK_FOR_FC_GLOBUS_INCLUDE
 	--with-superuser-path=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin \
 	--with-privsep-path=%{_var}/empty/gsisshd \
 	--with-privsep-user=gsisshd \
-	--enable-vendor-patchlevel="FC-%{version}-%{release}" \
+	--enable-vendor-patchlevel="GT6-%{version}-%{release}" \
 	--disable-strip \
 	--without-zlib-version-check \
 	--with-ssl-engine \
@@ -380,7 +371,6 @@ LOOK_FOR_FC_GLOBUS_INCLUDE="yes"; export LOOK_FOR_FC_GLOBUS_INCLUDE
 %endif
 %if %{gsi}
 	--with-gsi=/usr \
-	--with-globus-flavor=%{flavor} \
 %else
 	--without-gsi \
 %endif
