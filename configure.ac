@@ -127,7 +127,7 @@ $1-osx-pkg = osx/packages/$1-]pkgver[.pkg
 $1-osx-pkg: \$($1-osx-pkg)
 ])
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
-    ifelse([$1], [gsi_openssh], [], [
+    ifelse([$1], [gsi-openssh], [], [
         ifelse([$1], [gridftp_hdfs], [], [
             ifelse([$1], [myproxy], [], [
                     m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])])])dnl
@@ -366,6 +366,15 @@ if test x"$PKG_CONFIG" = x ; then
    AC_MSG_ERROR([Missing required pkg-config >= $pkg_config_min])
 fi
 
+pkg_config_version="$("${PKG_CONFIG}" --version)"
+pkg_config_major="${pkg_config_version%%.*}"
+pkg_config_minor="${pkg_config_version#*.}"
+gsi_openssh_can_recurse=no
+if  test "${pkg_config_major:-0}" -gt 0 || \
+    test "${pkg_config_minor:-0}" -ge 28; then
+    gsi_openssh_can_recurse=yes
+fi
+
 dnl 
 if test "$HAVE_LTDL" = 1; then
     TOP_SUBDIRS="."
@@ -578,6 +587,14 @@ EOF
     done
     ])
     
+if test "${gsi_openssh_can_recurse}" = yes; then
+    if test x"$gsi_openssh_enabled" = x"yes"; then
+        TOP_DIST_SUBDIRS="${TOP_DIST_SUBDIRS} gsi_openssh/source"
+        AC_CONFIG_SUBDIRS(gsi_openssh/source)
+    fi
+elif test x"$gsi_openssh_enabled" = x"yes"; then
+    AC_MSG_ERROR([Unable to build with gsi-openssh])
+fi
 AC_SUBST_FILE(MAC_INSTALLER_PKG_REFS)
 AC_SUBST_FILE(MAC_INSTALLER_CHOICE_LINES)
 AC_SUBST_FILE(MAC_INSTALLER_PACKAGE_CHOICES)
