@@ -1,4 +1,4 @@
-gsi-openssh (7.1p2+gt6.@distro@) @distro@; urgency=low
+gsi-openssh (7.1p2a-1+gt6.@distro@) @distro@; urgency=low
 
   * Update to gsi-openssh 7.1p2
 

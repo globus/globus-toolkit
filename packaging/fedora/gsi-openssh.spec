@@ -34,8 +34,8 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 1.beta
-%global gsi_openssh_ver 7.1p2
+%global gsi_openssh_rel 1
+%global gsi_openssh_ver 7.1p2a
 
 Summary: An implementation of the SSH protocol with GSI authentication
 Name: gsi-openssh
@@ -43,11 +43,11 @@ Version: %{gsi_openssh_ver}
 Release: %{gsi_openssh_rel}%{?dist}
 URL: http://www.openssh.com/portable.html
 Source0: ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.1p2.tar.gz
-Source1: ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.1p2.tar.gz.asc
 #Source2: gsisshd.pam
 #Source3: gsisshd.init
 #
-Patch0: http://sourceforge.net/projects/hpnssh/files/HPN-SSH%2014v10%207.1p2/openssh-7_1_P2-hpn-14.10.diff
+#Patch0: http://sourceforge.net/projects/hpnssh/files/HPN-SSH%2014v10%207.1p2/openssh-7_1_P2-hpn-14.10.diff
+Patch0: https://github.com/globus/gsi-openssh/releases/download/%{version}/openssh-7_1_P2-hpn-14.10.diff
 ##Patch0 is the HPN-SSH patch to Portable OpenSSH and is constructed as follows if the patch isn't readily available at the above link.
 ## git clone git@github.com:rapier1/openssh-portable.git
 ## cd openssh-portable
@@ -63,7 +63,7 @@ Patch0: http://sourceforge.net/projects/hpnssh/files/HPN-SSH%2014v10%207.1p2/ope
 ## git fetch hpn
 ## git merge-base v3.19.1 hpn-7_1_P2 > common_ancestor
 ## git diff `cat common_ancestor` v3.19.1 > hpn-isshd.v3.19.1.patch
-Patch1: hpn-isshd.v3.19.1.patch
+Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-isshd.v3.19.1.patch
 ##Patch2 is the GSI patch to be applied on top of the iSSHD patch and is constructed as follows:
 ## tar xvf openssh-7.1p2.tar.gz
 ## cd openssh-7.1p2
@@ -79,52 +79,7 @@ Patch1: hpn-isshd.v3.19.1.patch
 ## rm -fr .git
 ## cd ..
 ## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2.patch
-Patch2: hpn_isshd-gsi.%{version}.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1638
-#Patch2: openssh-5.3p1-skip-initial.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1640
-#Patch4: openssh-5.2p1-vendor.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1641
-#Patch12: openssh-5.4p1-selinux.patch
-#Patch13: openssh-5.5p1-mls.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1402
-#Patch16: openssh-5.3p1-audit.patch
-#Patch18: openssh-5.4p1-pam_selinux.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1663
-#Patch20: openssh-5.5p1-authorized-keys-command.patch
-#Patch21: openssh-5.5p1-ldap.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1668
-#Patch23: openssh-5.5p1-keygen.patch
-#Patch24: openssh-4.3p1-fromto-remote.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1636
-#Patch27: openssh-5.1p1-log-in-chroot.patch
-#Patch30: openssh-4.0p1-exit-deadlock.patch
-#Patch35: openssh-5.1p1-askpass-progress.patch
-#Patch38: openssh-4.3p2-askpass-grab-info.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1644
-#Patch44: openssh-5.2p1-allow-ip-opts.patch
-#Patch49: openssh-4.3p2-gssapi-canohost.patch
-#Patch62: openssh-5.1p1-scp-manpage.patch
-#Patch65: openssh-5.5p1-fips.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1614
-#Patch69: openssh-5.3p1-selabel.patch
-#Patch71: openssh-5.2p1-edns.patch
-#Patch73: openssh-5.5p1-gsskex.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1701
-#Patch74: openssh-5.3p1-randclean.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1740
-#Patch76: openssh-5.5p1-staterr.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1750
-#Patch77: openssh-5.5p1-stderr.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1780
-#Patch78: openssh-5.5p1-kuserok.patch
-#Patch79: openssh-5.5p1-x11.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1842
-#Patch81: openssh-5.5p1-clientloop.patch
-#
-## This is the patch that adds GSI support
-## Based on http://grid.ncsa.illinois.edu/ssh/dl/patch/openssh-5.5p1.patch
-#Patch99: openssh-5.5p1-gsissh.patch
+Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.%{version}.patch
 
 License: BSD
 Group: Applications/Internet
