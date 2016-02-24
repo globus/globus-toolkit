@@ -5,11 +5,6 @@
 %global WITH_SELINUX 1
 %endif
 
-# OpenSSH privilege separation requires a user & group ID
-# Will let the system choose the UID/GID for the gsisshd user/group; see later
-#%global sshd_uid    74
-#%global sshd_gid    74
-
 # Build position-independent executables (requires toolchain support)?
 %global pie 0
 
@@ -79,7 +74,7 @@ Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-i
 ## rm -fr .git
 ## cd ..
 ## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2.patch
-Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.7.1p2.patch
+Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.%{version}.patch
 
 License: BSD
 Group: Applications/Internet
