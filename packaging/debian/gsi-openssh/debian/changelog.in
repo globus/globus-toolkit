@@ -1,6 +1,6 @@
-gsi-openssh (7.1p2a-1+gt6.@distro@) @distro@; urgency=low
+gsi-openssh (7.1p2-1a+gt6.@distro@) @distro@; urgency=low
 
-  * Update to gsi-openssh 7.1p2
+  * Update to gsi-openssh 7.1p2a
 
  -- Globus Toolkit <support@globus.org>  Tue, 09 Feb 2016 12:38:45 -0500
 
