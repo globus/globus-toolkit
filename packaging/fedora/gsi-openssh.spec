@@ -30,7 +30,7 @@
 %global nologin 1
 
 %global gsi_openssh_rel 1
-%global gsi_openssh_ver 7.1p2a
+%global gsi_openssh_ver 7.1p2b
 
 Summary: An implementation of the SSH protocol with GSI authentication
 Name: gsi-openssh
@@ -464,8 +464,11 @@ fi
 %endif
 
 %changelog
-* Tue Feb  9 2016 Globus Toolkit <support@globus.org> - 7.1p2-1.beta
-- Update to 7.1p2-1.beta
+* Fri Mar  4 2016 Globus Toolkit <support@globus.org> - 7.1p2-1b
+- Update to 7.1p2b
+
+* Tue Feb  9 2016 Globus Toolkit <support@globus.org> - 7.1p2-1a
+- Update to 7.1p2a
 
 * Mon Nov 11 2013 Globus Toolkit <support@globus.org> - 5.7-1
 - Update to 5.7
