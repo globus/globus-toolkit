@@ -13,7 +13,6 @@ include /usr/share/quilt/quilt.make
 
 name = gsi-openssh
 _name = gsi_openssh
-version = 5.7
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
@@ -27,12 +26,6 @@ _mandir = $(_datadir)/man
 _docdir = $(_datadir)/doc
 
 DEB_BUILD_ARCH_CPU ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_CPU)
-
-ifneq (,$(filter $(DEB_HOST_ARCH_CPU), amd64 alpha ia64 s390x ppc64 sparc64))
-flavor = gcc64
-else
-flavor = gcc32
-endif
 
 sed: sed-stamp
 	:
@@ -52,7 +45,6 @@ configure: configure-stamp
 
 configure-stamp: sed-stamp
 	dh_testdir
-	$(MAKE) -f Makefile.in distprep
 	for f in config.sub config.guess ; do \
 	  if [ -e /usr/share/misc/$$f -a ! -e $$f.dist ] ; then \
 	    mv $$f $$f.dist ; \
@@ -67,12 +59,11 @@ configure-stamp: sed-stamp
 	   --datarootdir=$(_datadir) \
 	   --datadir=$(_datadir)/gsissh \
 	   --docdir='$(_datadir)/doc/$(_name)' \
-	   --with-flavor=$(flavor) \
 	   --with-tcp-wrappers \
 	   --with-default-path=/usr/local/bin:/bin:/usr/bin \
 	   --with-superuser-path=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin \
 	   --with-privsep-path=/var/empty/gsisshd \
-	   --enable-vendor-patchlevel=$(version).deb1 \
+	   --enable-vendor-patchlevel=GT6-$(version) \
 	   --program-prefix=gsi \
 	   --disable-strip \
 	   --without-zlib-version-check \
@@ -81,7 +72,6 @@ configure-stamp: sed-stamp
 	   --with-pam \
 	   --without-kerberos \
 	   --with-gsi=/usr \
-	   --with-globus-flavor=$(flavor) \
 	   --with-libedit \
 	   --enable-doxygen
 
@@ -134,21 +124,7 @@ install: build-stamp
 		bindir=$(_bindir)
 
 	install -d $(INSTALLDIR)/etc/pam.d
-	install -m644 gsisshd.pam $(INSTALLDIR)/etc/pam.d/gsissh
-	rm $(INSTALLDIR)/$(_bindir)/ssh-add \
-	   $(INSTALLDIR)/$(_bindir)/ssh-agent \
-	   $(INSTALLDIR)/$(_bindir)/ssh-keyscan \
-	   $(INSTALLDIR)/$(_libdir)/gsissh/ssh-pkcs11-helper \
-	   $(INSTALLDIR)/$(_mandir)/man1/ssh-add.1* \
-	   $(INSTALLDIR)/$(_mandir)/man1/ssh-agent.1* \
-	   $(INSTALLDIR)/$(_mandir)/man1/ssh-keyscan.1* \
-	   $(INSTALLDIR)/$(_mandir)/man8/ssh-pkcs11-helper.8*
-	for f in $(INSTALLDIR)/$(_bindir)/* $(INSTALLDIR)/$(_sbindir)/* \
-		$(INSTALLDIR)/$(_mandir)/man*/*; do \
-		mv "$$f" "$$(dirname "$$f")/gsi$$(basename "$$f")" ; \
-	done
-	ln -sf gsissh $(INSTALLDIR)/$(_bindir)/gsislogin
-	ln -sf gsissh.1 $(INSTALLDIR)/$(_mandir)/man1/gsislogin.1
+	install -m644 debian/gsisshd.pam $(INSTALLDIR)/etc/pam.d/gsissh
 
 binary-indep:
 	:

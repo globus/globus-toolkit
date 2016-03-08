@@ -1,14 +1,21 @@
 #! /bin/sh
 
-gsissh_version=5.7
-gsissh_bundle="gsi_openssh_bundle-${gsissh_version}-src.tar.gz"
-bundle_output="$(dirname "$0")/packaging/bundle-output"
-gsissh_bundle_file="${bundle_output}/${gsissh_bundle}"
+openssh_version=7.1p2
+gsissh_version=${openssh_version}b
+openssh_tarball=openssh-${openssh_version}.tar.gz
+Source0=ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/${openssh_tarball}
 
-gsissh_tarball="gsi_openssh-${gsissh_version}-src.tar.gz"
-gsissh_url="http://sourceforge.net/projects/cilogon/files/gsissh/$gsissh_bundle"
+# Patch0 is the HPN-SSH patch to Portable OpenSSH
+Patch0=https://github.com/globus/gsi-openssh/releases/download/${gsissh_version}/openssh-7_1_P2-hpn-14.10.diff
+# Patch1 is the iSSHD patch to HPN-SSH
+Patch1=https://github.com/globus/gsi-openssh/releases/download/${gsissh_version}/hpn-isshd.v3.19.1.patch
+# Patch2 is the GSI patch to be applied on top of the iSSHD patch
+Patch2=https://github.com/globus/gsi-openssh/releases/download/${gsissh_version}/hpn_isshd-gsi.${gsissh_version}.patch
+
+Patches="${Patch0} ${Patch1} ${Patch2}"
+Sources="${Patches} ${Source0}"
+
 package_output="$(dirname "$0")/packaging/package-output"
-gsissh_package_file="${package_output}/${gsissh_tarball}"
 gsissh_sourcedir="$(dirname $0)/gsi_openssh/source"
 unpacked_file="${gsissh_sourcedir}/gsissh.unpacked" 
 
@@ -33,24 +40,32 @@ else
 fi
 
 (
-mkdir -p "${bundle_output}" "${package_output}" "${gsissh_sourcedir}"
+mkdir -p "${package_output}" "${gsissh_sourcedir}"
 
-if [ ! -f "${gsissh_bundle_file}" ]; then
-    download "${gsissh_url}" "${gsissh_bundle_file}"
-fi
+for f in ${Sources}; do
+    source_path="${package_output}/$(basename "${f}")"
 
-if [ ! -f "${gsissh_package_file}" ]; then
-    gzip -dc "${gsissh_bundle_file}" | tar -xf - "${gsissh_tarball}"
-    mv "${gsissh_tarball}" "${gsissh_package_file}"
-fi
+    if [ ! -f "${source_path}" ]; then
+        download "${f}" "${source_path}"
+    fi
+done
 
 if [ ! -f "${unpacked_file}" ] || \
-   [ x$(cat "${unpacked_file}") != x"${gsissh_tarball}" ]; then
-    gzip -dc "${gsissh_package_file}" | \
-        tar --strip 2 -C "${gsissh_sourcedir}" -xf -
-    patch -d "${gsissh_sourcedir}" -p1 < gsi_openssh.gt6.diff
+   [ x$(cat "${unpacked_file}") != x"${openssh_tarball}" ]; then
+    rm -rf "${gsissh_sourcedir}"
+    mkdir -p "${gsissh_sourcedir}"
+    gzip -dc "${package_output}/${openssh_tarball}" | \
+        tar --strip 1 -C "${gsissh_sourcedir}" -xf -
+    for p in ${Patches}; do
+        patchfile="${package_output}/$(basename "${p}")"
+        patch -d "${gsissh_sourcedir}" -p1 < "${patchfile}"
+    done
+    cat <<-"EOF" >"${gsissh_sourcedir}/configure.gnu"
+	#! /bin/sh
+	"${0%.gnu}" "$@" --with-gsi
+	EOF
     chmod a+x "${gsissh_sourcedir}/configure.gnu"
-    echo "${gsissh_tarball}" > "${unpacked_file}"
+    echo "${openssh_tarball}" > "${unpacked_file}"
 fi
 ) 1>&2
 echo "m4_define([gsissh_version], [${gsissh_version}])" > gsi_openssh/version.m4.new

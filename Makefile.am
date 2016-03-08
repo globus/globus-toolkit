@@ -9,11 +9,11 @@ $(GT_TARGETS_CLEAN):
 		export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) clean ; \
 	fi
 	@rm -f $($@_stamp)
-$(GT_TARGETS_INSTALL):
+$(GT_ALL_TARGETS_INSTALL):
 	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) install
 $(GT_TARGETS_CHECK):
 	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) check
-$(GT_TARGETS_DIST):
+$(GT_ALL_TARGETS_DIST):
 	@$(MKDIR_P) package-output
 	@export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && MAKEFLAGS= $(MAKE) $(AM_MAKEFLAGS) dist
 	@cp $($@_SUBDIR)/$($@-tarball) package-output
@@ -41,12 +41,12 @@ rpmbuild/.rpmmacros:
 	) > $@
 
 
-$(GT_TARGETS_RPM): rpmbuild/.rpmmacros
+$(GT_ALL_TARGETS_RPM): rpmbuild/.rpmmacros
 	@for d in $(RPMDIRS); do mkdir -p rpmbuild/$$d; done
 	@cp $($@_SOURCE) rpmbuild/SOURCES
 	@HOME=$$(pwd) ac_cv_host=$(host_triplet) rpmbuild --target=$(host_triplet) -ba $($@_SPECFILE)
 
-$(GT_TARGETS_DEB):
+$(GT_ALL_TARGETS_DEB):
 	@rm -rf debbuild/$($@_PACKAGE_NAME)
 	@mkdir -p debbuild/$($@_PACKAGE_NAME)
 	@cp $($@_SOURCE) $($@_TARBALL)
@@ -55,7 +55,7 @@ $(GT_TARGETS_DEB):
 	@tar --strip 1 -zxf $($@_SOURCE) -C debbuild/$($@_PACKAGE_NAME)
 	@cd debbuild/$($@_PACKAGE_NAME) && dpkg-buildpackage -uc -us $(DPKG_BUILDPACKAGE_OPTS)
 
-$(GT_TARGETS_OSX_PKG):
+$(GT_ALL_TARGETS_OSX_PKG):
 	rm -f $@
 	export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) install DESTDIR=$(abs_builddir)/osx/dest/$$(basename $@ .pkg)
 	@for filename in `find $(abs_builddir)/osx/dest/$$(basename $@ .pkg) -type f | grep -v '\.a$$'`; do \
@@ -134,7 +134,7 @@ install-exec-local:
 	        export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; $(MAKE) $(AM_MAKEFLAGS) $${stamp_pkg}-install ; \
 	    fi; \
 	done
-EXTRA_DIST=doxygen/index.dox globus-vararg-enums-doxygen-filter.pl GLOBUS_LICENSE gsi_openssh.gt6.diff osx/resources/GLOBUS_LICENSE  osx/resources/logo.png
+EXTRA_DIST=doxygen/index.dox globus-vararg-enums-doxygen-filter.pl GLOBUS_LICENSE osx/resources/GLOBUS_LICENSE  osx/resources/logo.png gsi_openssh/source/configure.gnu
 
 
 if !HAVE_LTDL
@@ -173,16 +173,11 @@ endif
 # We'll preserve the output from the prep-gsissh so that
 # configuration will work without re-downloading the sources
 dist-hook:
-	$(MKDIR_P) $(distdir)/gsi_openssh \
-		$(distdir)/myproxy \
-		$(distdir)/packaging/bundle-output \
-		$(distdir)/packaging/package-output
+	$(MKDIR_P) $(distdir)/gsi_openssh $(distdir)/packaging/package-output
 	$(INSTALL) -p $(srcdir)/prep-gsissh $(distdir)
-	$(INSTALL) -p $(srcdir)/packaging/bundle-output/* $(distdir)/packaging/bundle-output
 	$(INSTALL) -p $(srcdir)/packaging/package-output/* $(distdir)/packaging/package-output
 	(cd $(distdir); ./prep-gsissh;)
 	(if [ ! -d $(distdir)/gridftp/hdfs ]; then cp -pPR $(srcdir)/gridftp/hdfs $(distdir)/gridftp/hdfs; fi )
-	(if [ ! -d $(distdir)/myproxy/source ]; then cp -pPR $(srcdir)/myproxy/source $(distdir)/myproxy/source; fi )
 
 globus_gridftp_server-stamp: $(GT_ENABLED_XIO_DRIVERS)
 .PHONY: $(GT_TARGETS_ALL) $(GT_TARGETS_ONLY) $(GT_TARGETS_CLEAN) $(GT_TARGETS_INSTALL) $(GT_TARGETS_CHECK) $(GT_TARGETS_DISTCLEAN) $(GT_TARGETS_DIST) $(DOC_PHONY) $(GT_TARGETS_RPM) $(GT_TARGETS_DEB) $(GT_BUNDLES)

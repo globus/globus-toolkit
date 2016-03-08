@@ -5,11 +5,6 @@
 %global WITH_SELINUX 1
 %endif
 
-# OpenSSH privilege separation requires a user & group ID
-# Will let the system choose the UID/GID for the gsisshd user/group; see later
-#%global sshd_uid    74
-#%global sshd_gid    74
-
 # Build position-independent executables (requires toolchain support)?
 %global pie 0
 
@@ -34,79 +29,52 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 4
-%global gsi_openssh_ver 5.7
-
-%ifarch alpha ia64 ppc64 s390x sparc64 x86_64
-%global flavor gcc64
-%else
-%global flavor gcc32
-%endif
-
+%global gsi_openssh_rel 1
+%global gsi_openssh_ver 7.1p2b
 
 Summary: An implementation of the SSH protocol with GSI authentication
 Name: gsi-openssh
 Version: %{gsi_openssh_ver}
 Release: %{gsi_openssh_rel}%{?dist}
-Vendor:	Globus Support
 URL: http://www.openssh.com/portable.html
-#Source0: ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-%{version}.tar.gz
-#Source1: ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-%{version}.tar.gz.asc
-# This package differs from the upstream OpenSSH tarball in that
-# the ACSS cipher is removed by running openssh-nukeacss.sh in
-# the unpacked source directory.
-Source0: http://downloads.sourceforge.net/cilogon/gsi_openssh-%{version}-src.tar.gz
-#Source1: openssh-nukeacss.sh
+Source0: ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.1p2.tar.gz
 #Source2: gsisshd.pam
 #Source3: gsisshd.init
 #
-#Patch0: openssh-5.4p1-redhat.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1638
-#Patch2: openssh-5.3p1-skip-initial.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1640
-#Patch4: openssh-5.2p1-vendor.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1641
-#Patch12: openssh-5.4p1-selinux.patch
-#Patch13: openssh-5.5p1-mls.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1402
-#Patch16: openssh-5.3p1-audit.patch
-#Patch18: openssh-5.4p1-pam_selinux.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1663
-#Patch20: openssh-5.5p1-authorized-keys-command.patch
-#Patch21: openssh-5.5p1-ldap.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1668
-#Patch23: openssh-5.5p1-keygen.patch
-#Patch24: openssh-4.3p1-fromto-remote.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1636
-#Patch27: openssh-5.1p1-log-in-chroot.patch
-#Patch30: openssh-4.0p1-exit-deadlock.patch
-#Patch35: openssh-5.1p1-askpass-progress.patch
-#Patch38: openssh-4.3p2-askpass-grab-info.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1644
-#Patch44: openssh-5.2p1-allow-ip-opts.patch
-#Patch49: openssh-4.3p2-gssapi-canohost.patch
-#Patch62: openssh-5.1p1-scp-manpage.patch
-#Patch65: openssh-5.5p1-fips.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1614
-#Patch69: openssh-5.3p1-selabel.patch
-#Patch71: openssh-5.2p1-edns.patch
-#Patch73: openssh-5.5p1-gsskex.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1701
-#Patch74: openssh-5.3p1-randclean.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1740
-#Patch76: openssh-5.5p1-staterr.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1750
-#Patch77: openssh-5.5p1-stderr.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1780
-#Patch78: openssh-5.5p1-kuserok.patch
-#Patch79: openssh-5.5p1-x11.patch
-##https://bugzilla.mindrot.org/show_bug.cgi?id=1842
-#Patch81: openssh-5.5p1-clientloop.patch
-#
-## This is the patch that adds GSI support
-## Based on http://grid.ncsa.illinois.edu/ssh/dl/patch/openssh-5.5p1.patch
-#Patch99: openssh-5.5p1-gsissh.patch
-Patch20167777: https://www.globus.org/ftppub/gt6/patches/CVE-2016-0777.gsissh-5.7.diff
+#Patch0: http://sourceforge.net/projects/hpnssh/files/HPN-SSH%2014v10%207.1p2/openssh-7_1_P2-hpn-14.10.diff
+Patch0: https://github.com/globus/gsi-openssh/releases/download/%{version}/openssh-7_1_P2-hpn-14.10.diff
+##Patch0 is the HPN-SSH patch to Portable OpenSSH and is constructed as follows if the patch isn't readily available at the above link.
+## git clone git@github.com:rapier1/openssh-portable.git
+## cd openssh-portable
+## git remote add portable https://github.com/openssh/openssh-portable.git
+## git fetch portable
+## git merge-base hpn-7_1_P2 V_7_1_P2 > common_ancestor
+## git diff `cat common_ancestor` hpn-7_1_P2 > openssh-7_1_P2-hpn-14.10.diff
+
+##Patch1 is the iSSHD patch to HPN-SSH and is constructed as follows:
+## git clone git@github.com:set-element/openssh-hpn-isshd.git
+## cd openssh-hpn-isshd
+## git remote add hpn https://github.com/rapier1/openssh-portable.git
+## git fetch hpn
+## git merge-base v3.19.1 hpn-7_1_P2 > common_ancestor
+## git diff `cat common_ancestor` v3.19.1 > hpn-isshd.v3.19.1.patch
+Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-isshd.v3.19.1.patch
+##Patch2 is the GSI patch to be applied on top of the iSSHD patch and is constructed as follows:
+## tar xvf openssh-7.1p2.tar.gz
+## cd openssh-7.1p2
+## patch -p1 --no-backup-if-mismatch < openssh-7_1_P2-hpn-14.10.diff
+## patch -p1 --no-backup-if-mismatch < hpn-isshd.v3.19.1.patch
+## grep "^commit " ChangeLog | tail -1 | cut -d' ' -f2 > ../changelog_last_commit
+## cd ..
+## git clone https://github.com/globus/gsi-openssh.git
+## cd gsi-openssh
+## git checkout 7.1p2
+## git log `cat ../changelog_last_commit`^... > ChangeLog
+## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" distprep
+## rm -fr .git
+## cd ..
+## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2.patch
+Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.%{version}.patch
 
 License: BSD
 Group: Applications/Internet
@@ -249,9 +217,13 @@ securely connect to your SSH server.
 This version of OpenSSH has been modified to support GSI authentication.
 
 %prep
-%setup -q -n gsi_openssh-%{version}-src
+#%setup -q -n gsi_openssh-%{version}-src
+%setup -q -n openssh-7.1p2
 #%setup -q
 #%patch0 -p1 -b .redhat
+%patch0 -p1
+%patch1 -p1 -F 2
+%patch2 -p1
 #%patch2 -p1 -b .skip-initial
 #%patch4 -p1 -b .vendor
 #
@@ -285,8 +257,6 @@ This version of OpenSSH has been modified to support GSI authentication.
 #%patch79 -p1 -b .x11
 #%patch81 -p1 -b .clientloop
 #%patch99 -p1 -b .gsi
-
-%patch20167777 -p0 -b .CVE-2016-0777
 
 sed 's/sshd.pid/gsisshd.pid/' -i pathnames.h
 sed 's!$(piddir)/sshd.pid!$(piddir)/gsisshd.pid!' -i Makefile.in
@@ -322,8 +292,6 @@ else
 fi
 %endif
 
-LOOK_FOR_FC_GLOBUS_INCLUDE="yes"; export LOOK_FOR_FC_GLOBUS_INCLUDE
-
 %configure \
 	--sysconfdir=%{_sysconfdir}/gsissh \
 	--libexecdir=%{_libexecdir}/gsissh \
@@ -333,11 +301,12 @@ LOOK_FOR_FC_GLOBUS_INCLUDE="yes"; export LOOK_FOR_FC_GLOBUS_INCLUDE
 	--with-superuser-path=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin \
 	--with-privsep-path=%{_var}/empty/gsisshd \
 	--with-privsep-user=gsisshd \
-	--enable-vendor-patchlevel="FC-%{version}-%{release}" \
+	--enable-vendor-patchlevel="GT6-%{version}-%{release}" \
 	--disable-strip \
 	--without-zlib-version-check \
 	--with-ssl-engine \
 	--with-authorized-keys-command \
+	--with-nerscmod \
 %if %{nss}
 	--with-nss \
 %endif
@@ -352,7 +321,6 @@ LOOK_FOR_FC_GLOBUS_INCLUDE="yes"; export LOOK_FOR_FC_GLOBUS_INCLUDE
 %endif
 %if %{gsi}
 	--with-gsi=/usr \
-	--with-globus-flavor=%{flavor} \
 %else
 	--without-gsi \
 %endif
@@ -376,40 +344,44 @@ make install sysconfdir=%{_sysconfdir}/gsissh \
 install -d $RPM_BUILD_ROOT/etc/pam.d/
 %if 0%{?suse_version} == 0
 install -d $RPM_BUILD_ROOT/etc/rc.d/init.d
-install -m755 gsisshd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/gsisshd
+install -m755 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/gsisshd
 %else
 install -d $RPM_BUILD_ROOT/etc/init.d
-install -m755 gsisshd.init $RPM_BUILD_ROOT/etc/init.d/gsisshd
+install -m755 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/init.d/gsisshd
 %endif
 install -d $RPM_BUILD_ROOT%{_libexecdir}/gsissh
-install -m644 gsisshd.pam $RPM_BUILD_ROOT/etc/pam.d/gsisshd
+install -m644 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.pam $RPM_BUILD_ROOT/etc/pam.d/gsisshd
 
 #rm $RPM_BUILD_ROOT%{_bindir}/gsiscp
 #rm $RPM_BUILD_ROOT%{_bindir}/gsisftp
 #rm $RPM_BUILD_ROOT%{_bindir}/gsissh
-rm $RPM_BUILD_ROOT%{_bindir}/ssh-add
-rm $RPM_BUILD_ROOT%{_bindir}/ssh-agent
-rm $RPM_BUILD_ROOT%{_bindir}/ssh-keyscan
+rm $RPM_BUILD_ROOT%{_bindir}/gsissh-add
+rm $RPM_BUILD_ROOT%{_bindir}/gsissh-agent
+rm $RPM_BUILD_ROOT%{_bindir}/gsissh-keyscan
 #rm $RPM_BUILD_ROOT%{_sysconfdir}/gsissh/ldap.conf
 #rm $RPM_BUILD_ROOT%{_libexecdir}/gsissh/ssh-ldap-helper
 rm $RPM_BUILD_ROOT%{_libexecdir}/gsissh/ssh-pkcs11-helper
-rm $RPM_BUILD_ROOT%{_mandir}/man1/ssh-add.1*
-rm $RPM_BUILD_ROOT%{_mandir}/man1/ssh-agent.1*
-rm $RPM_BUILD_ROOT%{_mandir}/man1/ssh-keyscan.1*
+rm $RPM_BUILD_ROOT%{_mandir}/man1/gsissh-add.1*
+rm $RPM_BUILD_ROOT%{_mandir}/man1/gsissh-agent.1*
+rm $RPM_BUILD_ROOT%{_mandir}/man1/gsissh-keyscan.1*
 #rm $RPM_BUILD_ROOT%{_mandir}/man1/gsiscp.1*
 #rm $RPM_BUILD_ROOT%{_mandir}/man1/gsisftp.1*
 #rm $RPM_BUILD_ROOT%{_mandir}/man1/gsissh.1*
 #rm $RPM_BUILD_ROOT%{_mandir}/man5/ssh-ldap.conf.5*
 #rm $RPM_BUILD_ROOT%{_mandir}/man8/ssh-ldap-helper.8*
-rm $RPM_BUILD_ROOT%{_mandir}/man8/ssh-pkcs11-helper.8*
+rm $RPM_BUILD_ROOT%{_mandir}/man8/gsissh-pkcs11-helper.8*
 
-for f in $RPM_BUILD_ROOT%{_bindir}/* \
-	 $RPM_BUILD_ROOT%{_sbindir}/* \
-	 $RPM_BUILD_ROOT%{_mandir}/man*/* ; do
-    mv $f `dirname $f`/gsi`basename $f`
-done
-ln -sf gsissh $RPM_BUILD_ROOT%{_bindir}/gsislogin
-ln -sf gsissh.1 $RPM_BUILD_ROOT%{_mandir}/man1/gsislogin.1
+#for f in $RPM_BUILD_ROOT%{_bindir}/* \
+#	 $RPM_BUILD_ROOT%{_sbindir}/* \
+#	 $RPM_BUILD_ROOT%{_mandir}/man*/* ; do
+#    mv $f `dirname $f`/gsi`basename $f`
+#done
+#ln -sf gsissh $RPM_BUILD_ROOT%{_bindir}/gsislogin
+#ln -sf gsissh.1 $RPM_BUILD_ROOT%{_mandir}/man1/gsislogin.1
+ln -sf  %{_sysconfdir}/ssh/ssh_host_dsa_key $RPM_BUILD_ROOT/%{_sysconfdir}/gsissh/ssh_host_dsa_key
+ln -sf  %{_sysconfdir}/ssh/ssh_host_dsa_key.pub $RPM_BUILD_ROOT/%{_sysconfdir}/gsissh/ssh_host_dsa_key.pub
+ln -sf  %{_sysconfdir}/ssh/ssh_host_rsa_key $RPM_BUILD_ROOT/%{_sysconfdir}/gsissh/ssh_host_rsa_key
+ln -sf  %{_sysconfdir}/ssh/ssh_host_rsa_key.pub $RPM_BUILD_ROOT/%{_sysconfdir}/gsissh/ssh_host_rsa_key.pub
 
 perl -pi -e "s|$RPM_BUILD_ROOT||g" $RPM_BUILD_ROOT%{_mandir}/man*/*
 
@@ -480,6 +452,10 @@ fi
 %attr(0644,root,root) %{_mandir}/man8/gsisshd.8*
 %attr(0644,root,root) %{_mandir}/man8/gsisftp-server.8*
 %attr(0600,root,root) %config(noreplace) %{_sysconfdir}/gsissh/sshd_config
+%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/gsissh/ssh_host_dsa_key
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/gsissh/ssh_host_dsa_key.pub
+%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/gsissh/ssh_host_rsa_key
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/gsissh/ssh_host_rsa_key.pub
 %attr(0644,root,root) %config(noreplace) /etc/pam.d/gsisshd
 %if 0%{?suse_version} == 0
 %attr(0755,root,root) /etc/rc.d/init.d/gsisshd
@@ -488,8 +464,11 @@ fi
 %endif
 
 %changelog
-* Thu Jan 14 2015 Globus Toolkit <support@globus.org> - 5.7-3
-- CVE-2016-0777
+* Fri Mar  4 2016 Globus Toolkit <support@globus.org> - 7.1p2-1b
+- Update to 7.1p2b
+
+* Tue Feb  9 2016 Globus Toolkit <support@globus.org> - 7.1p2-1a
+- Update to 7.1p2a
 
 * Mon Nov 11 2013 Globus Toolkit <support@globus.org> - 5.7-1
 - Update to 5.7

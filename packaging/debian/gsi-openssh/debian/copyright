@@ -1,7 +1,6 @@
 Name: gsi-openssh
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt5/5.2/5.2.3/packages/src/gsi_openssh-5.5-src.tar.gz
-Upstream-Authors: The Globus Alliance - http://www.globus.org/
+Source: ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.1p2.tar.gz
 
 Files: ssh-globus-usage.c
 Copyright: Copyright 2009 The Board of Trustees of the University of Illinois.

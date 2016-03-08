@@ -10,12 +10,12 @@ fi])dnl
 m4_[]include(globus-version.inc)])dnl
 m4_define([gtreleasebuild], [6.0.]globus_buildno)
 AC_INIT([globus_toolkit], gtreleasebuild, [https://globus.atlassian.net/])
+
 m4_define([short_version], [m4_substr(AC_PACKAGE_VERSION, [0],
     m4_index(AC_PACKAGE_VERSION, [.]))])
 AC_PREFIX_DEFAULT([/usr/local/globus-]short_version)
 export GLOBUS_VERSION=$VERSION
 syscmd([./update-dirt.sh])
-syscmd([test -x ./prep-gsissh && sh -x ./prep-gsissh || true])
 syscmd([test -x ./write-globus-version && sh -x ./write-globus-version ]AC_PACKAGE_VERSION)
 m4_include([gsi_openssh/version.m4])
 AC_SUBST([GSI_OPENSSH_VERSION], [gsissh_version])
@@ -75,7 +75,7 @@ m4_define([TARGETS_MACRO],[
 # GT_PACKAGE(package, subdir, dependencies, bundle, is_xio_driver)
 m4_define([GT_PACKAGE],
 [
-ifelse([$1], [gsi_openssh], [m4_define([pkgver], gsissh_version)], [
+ifelse([$1], [gsi-openssh], [m4_define([pkgver], gsissh_version)], [
 m4_pushdef([AC_INIT],[$]2)dnl
 m4_define([pkgver], m4_normalize(m4_esyscmd(grep AC[_]INIT [$2][/configure.ac])))dnl
 m4_popdef([AC_INIT])dnl
@@ -104,7 +104,7 @@ $1-rpm_SOURCE = package-output/\$($1-dist-tarball)
 $1-rpm: \$($1-rpm_SOURCE) \$($1-rpm_SPECFILE)
 $1-deb_PACKAGE_NAME = ]native_name[
 $1-deb_SOURCE = package-output/\$($1-dist-tarball)
-$1-deb_TARBALL = debbuild/]native_name[_]pkgver[.orig.tar.gz
+$1-deb_TARBALL = debbuild/]native_name[_]m4_translit(pkgver,[-],[])[.orig.tar.gz
 $1-deb: \$($1-deb_SOURCE)
 $1-osx-pkg = osx/packages/$1-]pkgver[.pkg
 \$($1-osx-pkg): $1-stamp
@@ -114,7 +114,7 @@ $1-osx-pkg = osx/packages/$1-]pkgver[.pkg
 $1-osx-pkg: \$($1-osx-pkg)
 ])
     m4_append([GT_PKGCONFIG_DIRS_MACRO], ${ac_pwd}/[$2], [:])
-    ifelse([$1], [gsi_openssh], [], [
+    ifelse([$1], [gsi-openssh], [], [
         ifelse([$1], [gridftp_hdfs], [], [
             ifelse([$1], [myproxy], [], [
                     m4_append([GT_SUBDIRS_MACRO], [$2], [ ])])])])dnl
@@ -314,7 +314,7 @@ GT_PACKAGE([globus_gram_audit],
 GT_PACKAGE([myproxy],[myproxy/source],
     [ globus_common globus_gss_assist globus_gssapi_gsi globus_proxy_utils
       globus_usage ], [myproxy])
-GT_PACKAGE([gsi_openssh], [gsi_openssh/source], 
+GT_PACKAGE([gsi-openssh], [gsi_openssh/source], 
     [globus_gss_assist globus_usage], [gsi-openssh])
 GT_PACKAGE([globus_gram_client_tools],[gram/client_tools/source],
     [ globus_common  globus_gram_client  globus_gram_protocol
@@ -351,6 +351,15 @@ if test -n "$PKG_CONFIG"; then
 fi
 if test x"$PKG_CONFIG" = x ; then
    AC_MSG_ERROR([Missing required pkg-config >= $pkg_config_min])
+fi
+
+pkg_config_version="$("${PKG_CONFIG}" --version)"
+pkg_config_major="${pkg_config_version%%.*}"
+pkg_config_minor="${pkg_config_version#*.}"
+gsi_openssh_can_recurse=no
+if  test "${pkg_config_major:-0}" -gt 0 || \
+    test "${pkg_config_minor:-0}" -ge 22; then
+    gsi_openssh_can_recurse=yes
 fi
 
 dnl 
@@ -509,6 +518,13 @@ GT_TARGETS_DEB=""
 GT_TARGETS_ALL=""
 GT_TARGETS_INSTALL=""
 GT_TARGETS_DIST=""
+GT_ALL_TARGETS_OSX_PKG=""
+GT_ALL_TARGETS_DEB=""
+GT_ALL_TARGETS_RPM=""
+GT_ALL_TARGETS_ALL=""
+GT_ALL_TARGETS_DIST=""
+GT_ALL_TARGETS_INSTALL=""
+
 m4_foreach([packname], m4_split(GT_PACKAGE_LIST), [
     for bun in $final_enabled_bundles; do
         if test "m4_expand(packname[_BUNDLE])" = "$bun"; then
@@ -531,12 +547,16 @@ EOF
         GT_TARGETS_DEB="${GT_TARGETS_DEB:+$GT_TARGETS_DEB }packname[-deb]"
         GT_TARGETS_RPM="${GT_TARGETS_RPM:+$GT_TARGETS_RPM }packname[-rpm]"
         GT_TARGETS_ALL="${GT_TARGETS_ALL:+$GT_TARGETS_ALL }packname[-all]"
-        if test "packname" != "gsi_openssh"; then
-            GT_TARGETS_DIST="${GT_TARGETS_DIST:+$GT_TARGETS_DIST }packname[-dist]"
-        fi
+        GT_TARGETS_DIST="${GT_TARGETS_DIST:+$GT_TARGETS_DIST }packname[-dist]"
         GT_TARGETS_INSTALL="${GT_TARGETS_INSTALL:+$GT_TARGETS_INSTALL }packname[-install]"
         fi
     done
+    GT_ALL_TARGETS_OSX_PKG="${GT_ALL_TARGETS_OSX_PKG:+$GT_ALL_TARGETS_OSX_PKG }packname[-osx-pkg]"
+    GT_ALL_TARGETS_DEB="${GT_ALL_TARGETS_DEB:+$GT_ALL_TARGETS_DEB }packname[-deb]"
+    GT_ALL_TARGETS_RPM="${GT_ALL_TARGETS_RPM:+$GT_ALL_TARGETS_RPM }packname[-rpm]"
+    GT_ALL_TARGETS_ALL="${GT_ALL_TARGETS_ALL:+$GT_ALL_TARGETS_ALL }packname[-all]"
+    GT_ALL_TARGETS_DIST="${GT_ALL_TARGETS_DIST:+$GT_ALL_TARGETS_DIST }packname[-dist]"
+    GT_ALL_TARGETS_INSTALL="${GT_ALL_TARGETS_INSTALL:+$GT_ALL_TARGETS_INSTALL }packname[-install]"
 ])
 
 m4_foreach([bundlename],
@@ -554,6 +574,13 @@ EOF
     done
     ])
     
+if test "${gsi_openssh_can_recurse}" = yes; then
+    if test x"$gsi_openssh_enabled" = x"yes"; then
+        TOP_DIST_SUBDIRS="${TOP_DIST_SUBDIRS} gsi_openssh/source"
+    fi
+elif test x"$gsi_openssh_enabled" = x"yes"; then
+    AC_MSG_ERROR([Unable to build with gsi-openssh])
+fi
 AC_SUBST_FILE(MAC_INSTALLER_PKG_REFS)
 AC_SUBST_FILE(MAC_INSTALLER_CHOICE_LINES)
 AC_SUBST_FILE(MAC_INSTALLER_PACKAGE_CHOICES)
@@ -570,6 +597,12 @@ AC_SUBST(GT_TARGETS_DIST)
 AC_SUBST(GT_TARGETS_RPM)
 AC_SUBST(GT_TARGETS_DEB)
 AC_SUBST(GT_TARGETS_OSX_PKG)
+AC_SUBST(GT_ALL_TARGETS_OSX_PKG)
+AC_SUBST(GT_ALL_TARGETS_DEB)
+AC_SUBST(GT_ALL_TARGETS_RPM)
+AC_SUBST(GT_ALL_TARGETS_ALL)
+AC_SUBST(GT_ALL_TARGETS_DIST)
+AC_SUBST(GT_ALL_TARGETS_INSTALL)
 AC_SUBST(GT_PKGCONFIG_DIRS)
 AC_SUBST(GT_DOXYGEN_SUBDIRS)
 GT_ALL_STAMPS="GT_ALL_STAMPS_MACRO"
@@ -584,10 +617,12 @@ AC_CONFIG_FILES([osx/distribution.xml])
 AC_CONFIG_FILES([osx/scripts/globus_common/postinstall], [chmod a+x osx/scripts/globus_common/postinstall])
 
 AC_CONFIG_SUBDIRS(GT_SUBDIRS_MACRO)
-
-if test x"$gsi_openssh_enabled" = x"yes"; then
-    AC_CONFIG_SUBDIRS(gsi_openssh/source)
+if test "${gsi_openssh_can_recurse}" = yes; then
+    if test x"$gsi_openssh_enabled" = x"yes"; then
+        AC_CONFIG_SUBDIRS(gsi_openssh/source)
+    fi
 fi
+
 if test x"$gridftp_hdfs_enabled" = x"yes"; then
     AC_CONFIG_SUBDIRS(gridftp/hdfs)
 fi
