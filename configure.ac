@@ -574,11 +574,8 @@ EOF
     done
     ])
     
-if test "${gsi_openssh_can_recurse}" = yes; then
-    if test x"$gsi_openssh_enabled" = x"yes"; then
-        TOP_DIST_SUBDIRS="${TOP_DIST_SUBDIRS} gsi_openssh/source"
-    fi
-elif test x"$gsi_openssh_enabled" = x"yes"; then
+if test "${gsi_openssh_can_recurse}" != yes && \
+   test x"$gsi_openssh_enabled" = x"yes"; then
     AC_MSG_ERROR([Unable to build with gsi-openssh])
 fi
 AC_SUBST_FILE(MAC_INSTALLER_PKG_REFS)
