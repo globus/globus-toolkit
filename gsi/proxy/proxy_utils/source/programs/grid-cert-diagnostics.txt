@@ -10,9 +10,9 @@ grid-cert-diagnostics - Print diagnostic information about certificates and keys
 == SYNOPSIS ==
 *grid-cert-diagnostics* [ -h | -help ]
 
-*grid-cert-diagnostics* [ -p ] [ -n ] [ -c CERTIFICATE ]
+*grid-cert-diagnostics* [ -p ] [ -n ] [ -c CERTIFICATE [-H HOSTNAME] [-m { STRICT_GT2 | HYBRID | STRICT_RFC2818 }]]
 
-*grid-cert-diagnostics* [ -s HOST[:PORT] | -g HOST[:PORT] ]
+*grid-cert-diagnostics* [ -s HOST[:PORT] | -g HOST[:PORT] ] [-m { STRICT_GT2 | HYBRID | STRICT_RFC2818 }]
 
 [[grid-cert-diagnostics-DESCRIPTION]]
 == DESCRIPTION ==
@@ -47,6 +47,13 @@ The full set of command-line options to *grid-cert-diagnostics* consists of:
 *-c 'CERTIFICATE', -c '-'*::
     Check the validity of the certificate in the file named by 'CERTIFICATE' or
     standard input if the parameter to '-c' is '-'.
+
+*-H 'HOSTNAME'*::
+    When using the *-c* option above, check that the certificate's identity
+    matches HOSTNAME.
+
+*-m 'STRICT_GT2 | HYBRID | STRICT_RFC2818'*::
+    Use the specified mode when comparing host certificate names.
 
 *-s 'HOST[:PORT]'*::
     Connect to the service listening on 'HOST:PORT' and initiate the TLS

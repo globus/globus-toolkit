@@ -27,6 +27,12 @@
 #include <getopt.h>
 #endif
 
+static gss_OID_desc                    *GSS_C_NT_HOST_IP = &(gss_OID_desc) {
+        10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02"
+};
+static gss_OID_desc                    *GSS_C_NT_X509 = &(gss_OID_desc) {
+        10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x03"
+    };
 static
 void
 environment_check(void);
@@ -45,7 +51,7 @@ default_cred_check(void);
 
 static
 void
-cert_check(const char *cert_to_check);
+cert_check(const char *cert_to_check, const char * cert_check_name);
 
 static
 void
@@ -107,6 +113,7 @@ main(int argc, char * argv[])
     int                                 ch;
     globus_bool_t                       do_time_check = GLOBUS_FALSE;
     char *                              cert_to_check = NULL;
+    char *                              cert_check_name = NULL;
     char *                              service_to_check = NULL;
     char *                              gridftp_to_check = NULL;
     globus_module_descriptor_t *        modules[] =
@@ -119,7 +126,7 @@ main(int argc, char * argv[])
         NULL
     };
 
-    while ((ch = getopt(argc, argv, "phc:ns:g:m:")) != -1)
+    while ((ch = getopt(argc, argv, "phc:ns:g:m:H:")) != -1)
     {
         switch (ch)
         {
@@ -128,6 +135,9 @@ main(int argc, char * argv[])
             break;
         case 'c':
             cert_to_check = strdup(optarg);
+            break;
+        case 'H':
+            cert_check_name = strdup(optarg);
             break;
         case 'n':
             do_time_check = GLOBUS_TRUE;
@@ -168,15 +178,17 @@ main(int argc, char * argv[])
                    "  %-27s%s\n"
                    "  %-27s%s\n"
                    "  %-27s%s\n"
+                   "  %-27s%s\n"
                    "  %-27s%s\n",
                    strrchr(argv[0], '/') != NULL
                     ? strrchr(argv[0], '/')+1 : argv[0],
                    "-p", "Perform checks on use certificates [default: no]",
                    "-h", "Print this help message",
+                   "-n", "Enable check for time synchronization",
                    "-c CERT | -c -", "Check the validity of the certificate in the",
                    "", "file CERT, '-' for standard input [default: none]",
-                   "-n", "Enable check for time synchronization",
-                   "", "[default: no]",
+                   "-H HOSTNAME", "When checking a cert with -c, see if its",
+                   "", "name matches HOSTNAME",
                    "-m NAME-MODE", "GSSAPI name comparison mode {STRICT_GT2, HYBRID, STRICT_RFC2818} [HYBRID]",
                    "-s HOST[:PORT]",
                    "Contact the service at HOST:PORT and check its",
@@ -212,7 +224,7 @@ main(int argc, char * argv[])
 
     if (cert_to_check)
     {
-        cert_check(cert_to_check);
+        cert_check(cert_to_check, cert_check_name);
     }
 
     check_trusted_certs();
@@ -756,7 +768,7 @@ out:
 
 static
 void
-cert_check(const char *cert_to_check)
+cert_check(const char *cert_to_check, const char *cert_check_name)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_gsi_cred_handle_t            handle = NULL;
@@ -764,10 +776,21 @@ cert_check(const char *cert_to_check)
     char                               *subject_name = NULL;
     X509                               *x509_cert = NULL;
     EVP_PKEY                           *pubkey = NULL;
+    gss_name_t                          cert_name = NULL;
+    gss_name_t                          check_name = NULL;
     globus_gsi_callback_data_t          callback_data = NULL;
 
     printf("\nChecking Certificate\n"
            "====================\n");
+    result = globus_gsi_cred_handle_init(&handle, NULL);
+    if (result != GLOBUS_SUCCESS)
+    {
+        printf("failed\n%s\n",
+                indent_string(
+                    globus_error_print_friendly(
+                            globus_error_peek(result))));
+        goto handle_init_fail;
+    }
     if (strcmp(cert_to_check, "-") == 0)
     {
         printf("Checking cert from stdin... ");
@@ -810,7 +833,6 @@ cert_check(const char *cert_to_check)
     {
         printf("\"%s\"\n", subject_name);
     }
-
     printf("Checking cert... ");
     result = globus_gsi_cred_get_cert(handle, &x509_cert);
     if (result != GLOBUS_SUCCESS)
@@ -822,6 +844,75 @@ cert_check(const char *cert_to_check)
     else
     {
         printf("ok\n");
+    }
+
+    if (cert_check_name != NULL)
+    {
+        int name_equal = 0;
+        OM_uint32 major_status=0, minor_status=0;
+        gss_name_t x509_gss_name = GSS_C_NO_NAME;
+        gss_name_t check_gss_name = GSS_C_NO_NAME;
+
+        printf("Comparing certificate against hostname %s...",
+                cert_check_name);
+
+        major_status = gss_import_name(
+                &minor_status,
+                &(gss_buffer_desc)
+                {
+                    .value = x509_cert,
+                    .length = sizeof(X509)
+                },
+                GSS_C_NT_X509,
+                &x509_gss_name);
+        if (major_status != GSS_S_COMPLETE)
+        {
+            printf("failed importing certificate name\n%s\n",
+                indent_string(
+                    globus_error_print_friendly(
+                            globus_error_peek(minor_status))));
+            goto import_x509_name_fail;
+        }
+
+        major_status = gss_import_name(
+                &minor_status,
+                &(gss_buffer_desc) {
+                    .value = (void *) cert_check_name,
+                    .length = strlen(cert_check_name)
+                },
+                GSS_C_NT_HOST_IP,
+                &check_gss_name);
+        if (major_status != GSS_S_COMPLETE)
+        {
+            printf("failed importing host name\n%s\n",
+                indent_string(
+                    globus_error_print_friendly(
+                            globus_error_peek(minor_status))));
+            goto import_check_name_fail;
+        }
+
+        major_status = gss_compare_name(
+                &minor_status,
+                x509_gss_name,
+                check_gss_name,
+                &name_equal);
+
+        if (major_status != GSS_S_COMPLETE)
+        {
+            printf("failed comparison\n%s\n",
+                indent_string(
+                    globus_error_print_friendly(
+                            globus_error_peek(minor_status))));
+            goto name_compare_fail;
+        }
+        printf("%s\n", name_equal ? "ok" : "failed");
+
+name_compare_fail:
+        gss_release_name(&minor_status, &check_gss_name);
+import_check_name_fail:
+        gss_release_name(&minor_status, &x509_gss_name);
+import_x509_name_fail:
+        ;
     }
 
     pubkey = X509_PUBKEY_get(X509_get_X509_PUBKEY(x509_cert));
@@ -864,6 +955,8 @@ setup_callback_data_fail:
 read_bio_fail:
     BIO_free(cert_bio);
 bio_new_fail:
+    globus_gsi_cred_handle_destroy(handle);
+handle_init_fail:
     return;
 }
 /* cert_check() */
@@ -1353,12 +1446,6 @@ check_service_cert_chain(
     int                                 compare_result = GLOBUS_FALSE;
     gss_name_t                          host_name = NULL, cert_name = NULL;
     const char                         *p;
-    gss_OID_desc                       *GSS_C_NT_HOST_IP = &(gss_OID_desc) {
-        10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02"
-    };
-    gss_OID_desc                       *GSS_C_NT_X509 = &(gss_OID_desc) {
-        10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x03"
-    };
 
     if ((p = strchr(host_string, ':')) == NULL)
     {

@@ -18,8 +18,8 @@
 </refnamediv>
 <refsynopsisdiv id="grid-cert-diagnostics-SYNOPSIS">
 <simpara><emphasis role="strong">grid-cert-diagnostics</emphasis> [ -h | -help ]</simpara>
-<simpara><emphasis role="strong">grid-cert-diagnostics</emphasis> [ -p ] [ -n ] [ -c CERTIFICATE ]</simpara>
-<simpara><emphasis role="strong">grid-cert-diagnostics</emphasis> [ -s HOST[:PORT] | -g HOST[:PORT] ]</simpara>
+<simpara><emphasis role="strong">grid-cert-diagnostics</emphasis> [ -p ] [ -n ] [ -c CERTIFICATE [-H HOSTNAME] [-m { STRICT_GT2 | HYBRID | STRICT_RFC2818 }]]</simpara>
+<simpara><emphasis role="strong">grid-cert-diagnostics</emphasis> [ -s HOST[:PORT] | -g HOST[:PORT] ] [-m { STRICT_GT2 | HYBRID | STRICT_RFC2818 }]</simpara>
 </refsynopsisdiv>
 <refsect1 id="grid-cert-diagnostics-DESCRIPTION">
 <title>DESCRIPTION</title>
@@ -78,6 +78,27 @@ connecting to remote GridFTP or SSL-based services.</simpara>
 <simpara>
     Check the validity of the certificate in the file named by <emphasis>CERTIFICATE</emphasis> or
     standard input if the parameter to <emphasis>-c</emphasis> is <emphasis>-</emphasis>.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-H <emphasis>HOSTNAME</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    When using the <emphasis role="strong">-c</emphasis> option above, check that the certificate&#8217;s identity
+    matches HOSTNAME.
+</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-m <emphasis>STRICT_GT2 | HYBRID | STRICT_RFC2818</emphasis></emphasis>
+</term>
+<listitem>
+<simpara>
+    Use the specified mode when comparing host certificate names.
 </simpara>
 </listitem>
 </varlistentry>

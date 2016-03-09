@@ -2,12 +2,12 @@
 .\"     Title: grid-cert-diagnostics
 .\"    Author: [see the "AUTHOR" section]
 .\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
-.\"      Date: 07/01/2015
+.\"      Date: 03/09/2016
 .\"    Manual: Globus Toolkit Manual
 .\"    Source: globus-proxy-utils
 .\"  Language: English
 .\"
-.TH "GRID\-CERT\-DIAGNOST" "1" "07/01/2015" "globus\-proxy\-utils" "Globus Toolkit Manual"
+.TH "GRID\-CERT\-DIAGNOST" "1" "03/09/2016" "globus\-proxy\-utils" "Globus Toolkit Manual"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -33,9 +33,9 @@ grid-cert-diagnostics \- Print diagnostic information about certificates and key
 .sp
 \fBgrid\-cert\-diagnostics\fR [ \-h | \-help ]
 .sp
-\fBgrid\-cert\-diagnostics\fR [ \-p ] [ \-n ] [ \-c CERTIFICATE ]
+\fBgrid\-cert\-diagnostics\fR [ \-p ] [ \-n ] [ \-c CERTIFICATE [\-H HOSTNAME] [\-m { STRICT_GT2 | HYBRID | STRICT_RFC2818 }]]
 .sp
-\fBgrid\-cert\-diagnostics\fR [ \-s HOST[:PORT] | \-g HOST[:PORT] ]
+\fBgrid\-cert\-diagnostics\fR [ \-s HOST[:PORT] | \-g HOST[:PORT] ] [\-m { STRICT_GT2 | HYBRID | STRICT_RFC2818 }]
 .SH "DESCRIPTION"
 .sp
 The \fBgrid\-cert\-diagnostics\fR program displays information about the current user\(cqs security environment, including information about security\-related environment variables, security directory search path, personal key and certificates, and trusted certificates\&. It is intended to provide information to help diagnose problems using GSIC\&.
@@ -72,6 +72,18 @@ or standard input if the parameter to
 \fI\-c\fR
 is
 \fI\-\fR\&.
+.RE
+.PP
+\fB\-H \fR\fB\fIHOSTNAME\fR\fR
+.RS 4
+When using the
+\fB\-c\fR
+option above, check that the certificate\(cqs identity matches HOSTNAME\&.
+.RE
+.PP
+\fB\-m \fR\fB\fISTRICT_GT2 | HYBRID | STRICT_RFC2818\fR\fR
+.RS 4
+Use the specified mode when comparing host certificate names\&.
 .RE
 .PP
 \fB\-s \fR\fB\fIHOST[:PORT]\fR\fR

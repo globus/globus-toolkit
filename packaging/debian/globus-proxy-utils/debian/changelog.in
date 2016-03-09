@@ -1,3 +1,10 @@
+globus-proxy-utils (6.14-1+gt6.@distro@) @distro@; urgency=low
+
+  * Missing handle_init in grid-cert-diagnostics -c
+  * Add option (-H) to compare hostname when checking a certificate with -c
+
+ -- Globus Toolkit <support@globus.org>  Wed, 09 Mar 2016 12:19:23 -0500
+
 globus-proxy-utils (6.13-1+gt6.@distro@) @distro@; urgency=low
 
   * Add missing globus-gssapi-gsi dependency
