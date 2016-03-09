@@ -124,7 +124,7 @@ install: build-stamp
 		bindir=$(_bindir)
 
 	install -d $(INSTALLDIR)/etc/pam.d
-	install -m644 debian/gsisshd.pam $(INSTALLDIR)/etc/pam.d/gsissh
+	install -m644 contrib/redhat/gsisshd.pam $(INSTALLDIR)/etc/pam.d/gsissh
 
 binary-indep:
 	:
