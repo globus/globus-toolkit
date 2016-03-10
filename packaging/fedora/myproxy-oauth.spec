@@ -1,6 +1,6 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
-Version:	0.20
+Version:	0.21
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	MyProxy OAuth Delegation Serice
@@ -132,6 +132,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Thu Mar 10 2016 Globus Toolkit <support@globus.org> - 0.21-1
+- Fix redirect when callback_uri contains a query
+
 * Thu Oct 29 2015 Globus Toolkit <support@globus.org> - 0.20-1
 - Use setsebool if it is installed and semanage is not available
 

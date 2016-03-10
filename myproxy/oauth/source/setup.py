@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name = 'myproxy_oauth',
-    version = '0.20',
+    version = '0.21',
     description = 'MyProxy OAuth Delegation Service',
     author = 'Globus Toolkit',
     author_email = 'support@globus.org',

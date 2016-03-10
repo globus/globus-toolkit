@@ -1,5 +1,11 @@
 myproxy-oauth (0.20-1+gt6.@distro@) @distro@; urgency=low
 
+  * Fix redirect when callback_uri contains a query
+
+ -- Globus Toolkit <support@globus.org>  Thu, 10 Mar 2016 11:17:33 -0500
+
+myproxy-oauth (0.20-1+gt6.@distro@) @distro@; urgency=low
+
   * Use setsebool if it is installed and semanage is not available
 
  -- Globus Toolkit <support@globus.org>  Thu, 29 Oct 2015 08:53:56 -0400
