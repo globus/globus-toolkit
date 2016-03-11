@@ -20,6 +20,13 @@ $ make dist
 Make sure all changes for the release are documented in the VERSION
 file.  Be sure to note any API changes.
 
+See also packaging/fedora/myproxy.spec and
+packaging/debian/myproxy/debian/changelog.in for changes since the
+last release:
+
+* https://github.com/globus/globus-toolkit/blob/globus_6_branch/packaging/debian/myproxy/debian/changelog.in
+* https://github.com/globus/globus-toolkit/blob/globus_6_branch/packaging/fedora/myproxy.spec
+
 Update the version definitions in a few different files.  Be aware
 of the difference between the MyProxy version and the GPT package
 version.

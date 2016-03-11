@@ -275,6 +275,7 @@ int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
 
   chosenurl = aiaocspurl ? aiaocspurl : responder_url;
   if (!OCSP_parse_url(chosenurl, &host, &port, &path, &ssl)) {
+    host = port = path = 0; /* may return bad ptrs on failure */
     result = MYPROXY_OCSPRESULT_ERROR_BADOCSPADDRESS;
     goto end;
   }
