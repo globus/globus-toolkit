@@ -1,7 +1,7 @@
 Name:           gridftp-hdfs
 %global _name %(tr - _ <<< %{name})
-Version:	1.2
-Release:	3
+Version:	1.3
+Release:	1
 Vendor:	Globus Support
 Summary:        HDFS DSI plugin for GridFTP
 
@@ -11,7 +11,11 @@ URL:            http://twiki.grid.iu.edu/bin/view/Storage/HadoopInstallation
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
+%if 0%{?suse_version} > 0
+BuildRequires: java-sdk >= 1.7.0'
+%else
 BuildRequires: java-devel
+%endif
 
 # Natively available in Fedora >= 20
 %if %{?fedora}%{!?fedora:0} >= 20
@@ -96,6 +100,9 @@ fi
 %{_sysconfdir}/init.d/%{name}
 
 %changelog
+* Fri Mar 11 2016 Globus Toolkit <support@globus.org> - 1.3-1
+- Update jdk dependency for sles
+
 * Mon Aug 10 2015 Globus Toolkit <support@globus.org> - 1.2-3
 - Add pkgconfig build dependency
 

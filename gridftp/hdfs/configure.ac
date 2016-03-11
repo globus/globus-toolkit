@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.60])
-AC_INIT([gridftp_hdfs], [1.2])
+AC_INIT([gridftp_hdfs], [1.3])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
@@ -27,9 +27,12 @@ AC_ARG_WITH([java],
 AS_IF([ test -e ${JAVA_HOME}/include ], [JNIHDIR=${JAVA_HOME}/include], )
 AC_CHECK_FILE(${JNIHDIR}/jni.h, ,[AC_MSG_ERROR(Can't find jni.h in ${JNIHDIR})])
 dnl '
-AS_IF([ test -e ${JAVA_HOME}/jre/lib/amd64 ], LDFLAGS=["$LDFLAGS -L${JAVA_HOME}/jre/lib/amd64 -L${JAVA_HOME}/jre/lib/amd64/server -Wl,-rpath,${JAVA_HOME}/jre/lib/amd64/server"])
-AS_IF([ test -e ${JAVA_HOME}/jre/lib/i386 ], LDFLAGS=["$LDFLAGS -L${JAVA_HOME}/jre/lib/i386 -L${JAVA_HOME}/jre/lib/i386/server -Wl,-rpath,${JAVA_HOME}/jre/lib/i386/server"])
+AS_IF([ test -e ${JAVA_HOME}/jre/lib/amd64/server ], LDFLAGS=["$LDFLAGS -L${JAVA_HOME}/jre/lib/amd64 -L${JAVA_HOME}/jre/lib/amd64/server -Wl,-rpath,${JAVA_HOME}/jre/lib/amd64/server"])
+AS_IF([ test -e ${JAVA_HOME}/jre/lib/amd64/default ], LDFLAGS=["$LDFLAGS -L${JAVA_HOME}/jre/lib/amd64 -L${JAVA_HOME}/jre/lib/amd64/default -Wl,-rpath,${JAVA_HOME}/jre/lib/amd64/default"])
+AS_IF([ test -e ${JAVA_HOME}/jre/lib/i386/server ], LDFLAGS=["$LDFLAGS -L${JAVA_HOME}/jre/lib/i386 -L${JAVA_HOME}/jre/lib/i386/server -Wl,-rpath,${JAVA_HOME}/jre/lib/i386/server"])
+AS_IF([ test -e ${JAVA_HOME}/jre/lib/i386/default ], LDFLAGS=["$LDFLAGS -L${JAVA_HOME}/jre/lib/i386 -L${JAVA_HOME}/jre/lib/i386/default -Wl,-rpath,${JAVA_HOME}/jre/lib/i386/default"])
 AS_IF([ test -e ${JAVA_HOME}/jre/lib/server ], LDFLAGS=["$LDFLAGS -L${JAVA_HOME}/jre/lib/server -Wl,-rpath,${JAVA_HOME}/jre/lib/server"])
+AS_IF([ test -e ${JAVA_HOME}/jre/lib/default ], LDFLAGS=["$LDFLAGS -L${JAVA_HOME}/jre/lib/default -Wl,-rpath,${JAVA_HOME}/jre/lib/default"])
 
 
 AC_ARG_WITH([hadoop],
