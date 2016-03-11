@@ -1,3 +1,9 @@
+gsi-openssh (7.1p2b-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix missing call to dh_shlibdeps
+
+ -- Globus Toolkit <support@globus.org>  Fri, 11 Mar 2016 09:13:35 -0500
+
 gsi-openssh (7.1p2b-1+gt6.@distro@) @distro@; urgency=low
 
   * Update to gsi-openssh 7.1p2b
