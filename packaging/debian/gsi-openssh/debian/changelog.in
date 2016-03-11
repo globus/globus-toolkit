@@ -1,8 +1,12 @@
-gsi-openssh (7.1p2b-2+gt6.@distro@) @distro@; urgency=low
+gsi-openssh (7.1p2c-1+gt6.@distro@) @distro@; urgency=low
 
+  * Fixes for Globus Toolkit builds: Skip probing for specific globus funcs
+  * Fixes for building kerberos/mechglue without GSI.
+  * Disable iSSHD auditing by default in the source code itself.
   * Fix missing call to dh_shlibdeps
+  * Fix init script problems
 
- -- Globus Toolkit <support@globus.org>  Fri, 11 Mar 2016 09:13:35 -0500
+ -- Globus Toolkit <support@globus.org>  Fri, 11 Mar 2016 13:35:19 -0500
 
 gsi-openssh (7.1p2b-1+gt6.@distro@) @distro@; urgency=low
 

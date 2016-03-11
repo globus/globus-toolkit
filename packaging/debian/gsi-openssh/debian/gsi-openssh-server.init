@@ -39,6 +39,7 @@ RSA1_KEY=/etc/gsissh/ssh_host_key
 RSA_KEY=/etc/gsissh/ssh_host_rsa_key
 DSA_KEY=/etc/gsissh/ssh_host_dsa_key
 ECDSA_KEY=/etc/gsissh/ssh_host_ecdsa_key
+ED25519_KEY=/etc/gsissh/ssh_host_ed25519_key
 PID_FILE=/var/run/gsisshd.pid
 
 # pull in default settings
@@ -49,7 +50,7 @@ runlevel=$(set -- $(runlevel); eval "echo \$$#" )
 do_rsa1_keygen() {
 	if [ ! -s $RSA1_KEY ]; then
 		rm -f $RSA1_KEY
-		if test ! -f $RSA1_KEY && $KEYGEN -q -t rsa1 -f $RSA1_KEY -C '' -N '' >&/dev/null; then
+		if test ! -f $RSA1_KEY && $KEYGEN -q -t rsa1 -f $RSA1_KEY -C '' -N '' > /dev/null 2>&1; then
 			chmod 600 $RSA1_KEY
 			chmod 644 $RSA1_KEY.pub
 			if [ -x /sbin/restorecon ]; then
@@ -66,7 +67,7 @@ do_rsa1_keygen() {
 do_rsa_keygen() {
 	if [ ! -s $RSA_KEY ]; then
 		rm -f $RSA_KEY
-		if test ! -f $RSA_KEY && $KEYGEN -q -t rsa -f $RSA_KEY -C '' -N '' >&/dev/null; then
+		if test ! -f $RSA_KEY && $KEYGEN -q -t rsa -f $RSA_KEY -C '' -N '' >/dev/null 2>&1; then
 			chmod 600 $RSA_KEY
 			chmod 644 $RSA_KEY.pub
 			if [ -x /sbin/restorecon ]; then
@@ -85,7 +86,7 @@ do_rsa_keygen() {
 do_dsa_keygen() {
 	if [ ! -s $DSA_KEY ]; then
 		rm -f $DSA_KEY
-		if test ! -f $DSA_KEY && $KEYGEN -q -t dsa -f $DSA_KEY -C '' -N '' >&/dev/null; then
+		if test ! -f $DSA_KEY && $KEYGEN -q -t dsa -f $DSA_KEY -C '' -N '' >/dev/null 2>&1; then
 			chmod 600 $DSA_KEY
 			chmod 644 $DSA_KEY.pub
 			if [ -x /sbin/restorecon ]; then
@@ -104,7 +105,7 @@ do_dsa_keygen() {
 do_ecdsa_keygen() {
 	if [ ! -s $ECDSA_KEY ]; then
 		rm -f $ECDSA_KEY
-		if test ! -f $ECDSA_KEY && $KEYGEN -q -t ecdsa -f $ECDSA_KEY -C '' -N '' >&/dev/null; then
+		if test ! -f $ECDSA_KEY && $KEYGEN -q -t ecdsa -f $ECDSA_KEY -C '' -N '' >/dev/null 2>&1; then
 			chmod 600 $ECDSA_KEY
 			chmod 644 $ECDSA_KEY.pub
 			if [ -x /sbin/restorecon ]; then
@@ -114,6 +115,26 @@ do_ecdsa_keygen() {
 			echo
 		else
 			log_failure_msg "SSH2 ECDSA key generation"
+			echo
+			exit 1
+		fi
+	fi
+
+}
+
+do_ed25519_keygen() {
+	if [ ! -s $ED25519_KEY ]; then
+		rm -f $ED25519_KEY
+		if test ! -f $ED25519_KEY && $KEYGEN -q -t ed25519 -f $ED25519_KEY -C '' -N '' >/dev/null 2>&1; then
+			chmod 600 $ED25519_KEY 
+			chmod 644 $ED25519_KEY.pub
+			if [ -x /sbin/restorecon ]; then
+			    /sbin/restorecon $ED25519_KEY.pub
+			fi
+			log_success_msg "SSH2 ED25519 key generation"
+			echo
+		else
+			log_failure_msg "SSH2 ED25519 key generation"
 			echo
 			exit 1
 		fi
@@ -140,9 +161,10 @@ start()
 	if [ "x${AUTOCREATE_SERVER_KEYS}" != xNO ]; then
 		do_rsa_keygen
 		if [ "x${AUTOCREATE_SERVER_KEYS}" != xRSAONLY ]; then
-			do_rsa1_keygen
+			#do_rsa1_keygen
 			do_dsa_keygen
 			do_ecdsa_keygen
+                        do_ed25519_keygen
 		fi
 	 fi
 
@@ -198,11 +220,11 @@ force_reload() {
 }
 
 rh_status() {
-	pidofproc "$SSH"
+	status_of_proc "$SSHD" $prog
 }
 
 rh_status_q() {
-	pidofproc "$SSH" > /dev/null
+	pidofproc "$SSHD" > /dev/null
 }
 
 case "$1" in

@@ -30,7 +30,7 @@
 %global nologin 1
 
 %global gsi_openssh_rel 1
-%global gsi_openssh_ver 7.1p2b
+%global gsi_openssh_ver 7.1p2c
 
 Summary: An implementation of the SSH protocol with GSI authentication
 Name: gsi-openssh
@@ -217,46 +217,10 @@ securely connect to your SSH server.
 This version of OpenSSH has been modified to support GSI authentication.
 
 %prep
-#%setup -q -n gsi_openssh-%{version}-src
 %setup -q -n openssh-7.1p2
-#%setup -q
-#%patch0 -p1 -b .redhat
 %patch0 -p1
 %patch1 -p1 -F 2
 %patch2 -p1
-#%patch2 -p1 -b .skip-initial
-#%patch4 -p1 -b .vendor
-#
-#%if %{WITH_SELINUX}
-##SELinux
-#%patch12 -p1 -b .selinux
-#%patch13 -p1 -b .mls
-#%patch16 -p1 -b .audit
-#%patch18 -p1 -b .pam_selinux
-#%endif
-#
-#%patch20 -p1 -b .akc
-#%patch21 -p1 -b .ldap
-#%patch23 -p1 -b .keygen
-#%patch24 -p1 -b .fromto-remote
-#%patch27 -p1 -b .log-chroot
-#%patch30 -p1 -b .exit-deadlock
-#%patch35 -p1 -b .progress
-#%patch38 -p1 -b .grab-info
-#%patch44 -p1 -b .ip-opts
-#%patch49 -p1 -b .canohost
-#%patch62 -p1 -b .manpage
-#%patch65 -p1 -b .fips
-#%patch69 -p1 -b .selabel
-#%patch71 -p1 -b .edns
-#%patch73 -p1 -b .gsskex
-#%patch74 -p1 -b .randclean
-#%patch76 -p1 -b .staterr
-#%patch77 -p1 -b .stderr
-#%patch78 -p1 -b .kuserok
-#%patch79 -p1 -b .x11
-#%patch81 -p1 -b .clientloop
-#%patch99 -p1 -b .gsi
 
 sed 's/sshd.pid/gsisshd.pid/' -i pathnames.h
 sed 's!$(piddir)/sshd.pid!$(piddir)/gsisshd.pid!' -i Makefile.in
@@ -275,21 +239,6 @@ CFLAGS="$CFLAGS -fpic"
 export CFLAGS
 SAVE_LDFLAGS="$LDFLAGS"
 LDFLAGS="$LDFLAGS -pie -z relro -z now"; export LDFLAGS
-%endif
-%if %{kerberos5}
-if test -r /etc/profile.d/krb5-devel.sh ; then
-	source /etc/profile.d/krb5-devel.sh
-fi
-krb5_prefix=`krb5-config --prefix`
-if test "$krb5_prefix" != "%{_prefix}" ; then
-	CPPFLAGS="$CPPFLAGS -I${krb5_prefix}/include -I${krb5_prefix}/include/gssapi"; export CPPFLAGS
-	CFLAGS="$CFLAGS -I${krb5_prefix}/include -I${krb5_prefix}/include/gssapi"
-	LDFLAGS="$LDFLAGS -L${krb5_prefix}/%{_lib}"; export LDFLAGS
-else
-	krb5_prefix=
-	CPPFLAGS="-I%{_includedir}/gssapi"; export CPPFLAGS
-	CFLAGS="$CFLAGS -I%{_includedir}/gssapi"
-fi
 %endif
 
 %configure \
@@ -352,32 +301,15 @@ install -m755 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.init $RPM_BUIL
 install -d $RPM_BUILD_ROOT%{_libexecdir}/gsissh
 install -m644 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.pam $RPM_BUILD_ROOT/etc/pam.d/gsisshd
 
-#rm $RPM_BUILD_ROOT%{_bindir}/gsiscp
-#rm $RPM_BUILD_ROOT%{_bindir}/gsisftp
-#rm $RPM_BUILD_ROOT%{_bindir}/gsissh
 rm $RPM_BUILD_ROOT%{_bindir}/gsissh-add
 rm $RPM_BUILD_ROOT%{_bindir}/gsissh-agent
 rm $RPM_BUILD_ROOT%{_bindir}/gsissh-keyscan
-#rm $RPM_BUILD_ROOT%{_sysconfdir}/gsissh/ldap.conf
-#rm $RPM_BUILD_ROOT%{_libexecdir}/gsissh/ssh-ldap-helper
 rm $RPM_BUILD_ROOT%{_libexecdir}/gsissh/ssh-pkcs11-helper
 rm $RPM_BUILD_ROOT%{_mandir}/man1/gsissh-add.1*
 rm $RPM_BUILD_ROOT%{_mandir}/man1/gsissh-agent.1*
 rm $RPM_BUILD_ROOT%{_mandir}/man1/gsissh-keyscan.1*
-#rm $RPM_BUILD_ROOT%{_mandir}/man1/gsiscp.1*
-#rm $RPM_BUILD_ROOT%{_mandir}/man1/gsisftp.1*
-#rm $RPM_BUILD_ROOT%{_mandir}/man1/gsissh.1*
-#rm $RPM_BUILD_ROOT%{_mandir}/man5/ssh-ldap.conf.5*
-#rm $RPM_BUILD_ROOT%{_mandir}/man8/ssh-ldap-helper.8*
 rm $RPM_BUILD_ROOT%{_mandir}/man8/gsissh-pkcs11-helper.8*
 
-#for f in $RPM_BUILD_ROOT%{_bindir}/* \
-#	 $RPM_BUILD_ROOT%{_sbindir}/* \
-#	 $RPM_BUILD_ROOT%{_mandir}/man*/* ; do
-#    mv $f `dirname $f`/gsi`basename $f`
-#done
-#ln -sf gsissh $RPM_BUILD_ROOT%{_bindir}/gsislogin
-#ln -sf gsissh.1 $RPM_BUILD_ROOT%{_mandir}/man1/gsislogin.1
 ln -sf  %{_sysconfdir}/ssh/ssh_host_dsa_key $RPM_BUILD_ROOT/%{_sysconfdir}/gsissh/ssh_host_dsa_key
 ln -sf  %{_sysconfdir}/ssh/ssh_host_dsa_key.pub $RPM_BUILD_ROOT/%{_sysconfdir}/gsissh/ssh_host_dsa_key.pub
 ln -sf  %{_sysconfdir}/ssh/ssh_host_rsa_key $RPM_BUILD_ROOT/%{_sysconfdir}/gsissh/ssh_host_rsa_key
@@ -464,6 +396,11 @@ fi
 %endif
 
 %changelog
+* Fri Mar 11 2016 Globus Toolkit <support@globus.org> - 7.1p2c-1
+- Fixes for Globus Toolkit builds: Skip probing for specific globus funcs
+- Fixes for building kerberos/mechglue without GSI.
+- Disable iSSHD auditing by default in the source code itself.
+
 * Fri Mar  4 2016 Globus Toolkit <support@globus.org> - 7.1p2-1b
 - Update to 7.1p2b
 
