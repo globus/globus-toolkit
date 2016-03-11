@@ -1,7 +1,7 @@
 Name:           gridftp-hdfs
 %global _name %(tr - _ <<< %{name})
 Version:	1.3
-Release:	2
+Release:	3
 Vendor:	Globus Support
 Summary:        HDFS DSI plugin for GridFTP
 
@@ -48,7 +48,7 @@ HDFS DSI plugin for GridFTP
 
 %build
 
-%configure --with-java=/etc/alternatives/java_sdk --disable-static CPPFLAGS=-I/usr/include/hadoop
+%configure --with-java=/etc/alternatives/java_sdk --disable-static CPPFLAGS=-I/usr/include/hadoop LDFLAGS=-ldl
 
 make %{?_smp_mflags}
 
@@ -100,6 +100,9 @@ fi
 %{_sysconfdir}/init.d/%{name}
 
 %changelog
+* Fri Mar 11 2016 Globus Toolkit <support@globus.org> - 1.3-3
+- add -ldl
+
 * Fri Mar 11 2016 Globus Toolkit <support@globus.org> - 1.3-2
 - Fix typo
 
