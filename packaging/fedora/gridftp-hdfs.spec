@@ -1,7 +1,7 @@
 Name:           gridftp-hdfs
 %global _name %(tr - _ <<< %{name})
 Version:	1.3
-Release:	1
+Release:	2
 Vendor:	Globus Support
 Summary:        HDFS DSI plugin for GridFTP
 
@@ -12,7 +12,7 @@ Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %if 0%{?suse_version} > 0
-BuildRequires: java-sdk >= 1.7.0'
+BuildRequires: java-sdk >= 1.7.0
 %else
 BuildRequires: java-devel
 %endif
@@ -100,6 +100,9 @@ fi
 %{_sysconfdir}/init.d/%{name}
 
 %changelog
+* Fri Mar 11 2016 Globus Toolkit <support@globus.org> - 1.3-2
+- Fix typo
+
 * Fri Mar 11 2016 Globus Toolkit <support@globus.org> - 1.3-1
 - Update jdk dependency for sles
 
