@@ -779,6 +779,7 @@ cert_check(const char *cert_to_check, const char *cert_check_name)
     gss_name_t                          cert_name = NULL;
     gss_name_t                          check_name = NULL;
     globus_gsi_callback_data_t          callback_data = NULL;
+    char                               *compat_name = NULL;
 
     printf("\nChecking Certificate\n"
            "====================\n");
@@ -852,6 +853,37 @@ cert_check(const char *cert_to_check, const char *cert_check_name)
         OM_uint32 major_status=0, minor_status=0;
         gss_name_t x509_gss_name = GSS_C_NO_NAME;
         gss_name_t check_gss_name = GSS_C_NO_NAME;
+        const char *name_mode = getenv("GLOBUS_GSSAPI_NAME_COMPATIBILITY");
+        int rc;
+
+        if (name_mode != NULL && strcmp(name_mode, "STRICT_RFC2818") == 0)
+        {
+            compat_name = strdup(cert_check_name);
+        }
+        else
+        {
+            struct addrinfo *res;
+            char hbuf[NI_MAXHOST];
+
+            rc = getaddrinfo(cert_check_name, NULL, NULL, &res);
+            if (rc == 0)
+            {
+                rc = getnameinfo(
+                    res->ai_addr,
+                    res->ai_addrlen,
+                    hbuf, (socklen_t) sizeof(hbuf),
+                    NULL, (socklen_t) 0,
+                    NI_NUMERICHOST);
+                compat_name = globus_common_create_string("%s/%s",
+                        cert_check_name,
+                        hbuf);
+                freeaddrinfo(res);
+            }
+            else
+            {
+                compat_name = strdup(cert_check_name);
+            }
+        }
 
         printf("Comparing certificate against hostname %s...",
                 cert_check_name);
@@ -877,8 +909,8 @@ cert_check(const char *cert_to_check, const char *cert_check_name)
         major_status = gss_import_name(
                 &minor_status,
                 &(gss_buffer_desc) {
-                    .value = (void *) cert_check_name,
-                    .length = strlen(cert_check_name)
+                    .value = (void *) compat_name,
+                    .length = strlen(compat_name)
                 },
                 GSS_C_NT_HOST_IP,
                 &check_gss_name);
@@ -957,6 +989,10 @@ read_bio_fail:
 bio_new_fail:
     globus_gsi_cred_handle_destroy(handle);
 handle_init_fail:
+    if (compat_name != NULL)
+    {
+        free(compat_name);
+    }
     return;
 }
 /* cert_check() */

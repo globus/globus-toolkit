@@ -1,6 +1,6 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	6.14
+Version:	6.15
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
@@ -101,6 +101,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Mon Mar 14 2016 Globus Toolkit <support@globus.org> - 6.15-1
+- Updates for reverse lookups for backward compatibility checking
+
 * Wed Mar 09 2016 Globus Toolkit <support@globus.org> - 6.14-1
 - Missing handle_init in grid-cert-diagnostics -c
 - Add option (-H) to compare hostname when checking a certificate with -c
