@@ -11,7 +11,7 @@ Homepage: http://www.globus.org/
 
 Package: libglobus-gridftp-server-hdfs
 Section: libs
-Architecture: any
+Architecture: amd64
 Depends: ${shlibs:Depends}, ${misc:Depends}, globus-gridftp-server-progs
 Description: Globus Toolkit - HDFS DSI
  The Globus Toolkit is an open source software toolkit used for
@@ -26,7 +26,7 @@ Description: Globus Toolkit - HDFS DSI
 Package: libglobus-gridftp-server-hdfs-dbg
 Section: debug
 Priority: extra
-Architecture: any
+Architecture: amd64
 Depends: libglobus-gridftp-server-hdfs (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - HDFS DSI
  The Globus Toolkit is an open source software toolkit used for
