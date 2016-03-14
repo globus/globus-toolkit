@@ -1,6 +1,7 @@
 gridftp-hdfs (1.3-2+gt6.@distro@) @distro@; urgency=low
 
   * Explictly build for amd64 only (cdh5 not available for i386)
+  * Explictly add dependency on openjdk-7-jdk
 
  -- Globus Toolkit <support@globus.org>  Mon, 14 Mar 2016 11:11:25 -0400
 
