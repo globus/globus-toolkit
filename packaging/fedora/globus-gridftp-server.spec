@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	9.4
+Version:	9.5
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -178,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Mar 15 2016 Globus Toolkit <support@globus.org> - 9.5-1
+- update manpage for -encrypt-data
+
 * Wed Dec 16 2015 Globus Toolkit <support@globus.org> - 9.4-1
 - fix mem error when sharing
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <?asciidoc-toc?>
 <?asciidoc-numbered?>
 <refentry lang="en">
@@ -275,6 +275,18 @@ Only allow connections from these source ip addresses.  Specify a comma separate
 Deny connections from these source ip addresses. Specify a comma separated list of ip address fragments.  A match is any ip address that starts with the specified fragment.  Example: <emphasis>192.168.2.</emphasis> will match and deny a connection from 192.168.2.45.
 </simpara>
 <simpara>This option can also be set in the configuration file as <literal>deny_from</literal>.</simpara>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<emphasis role="strong">-encrypt-data</emphasis>
+</term>
+<listitem>
+<simpara>
+Require encrypted data channels.  This will cause an error and prevent all transfers in which the client does not request an authenticated and encrypted data channel.
+</simpara>
+<simpara>This option can also be set in the configuration file as <literal>encrypt_data</literal>.
+    The default value of this option is <literal>FALSE</literal>.</simpara>
 </listitem>
 </varlistentry>
 <varlistentry>

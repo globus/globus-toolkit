@@ -2,12 +2,12 @@
 .\"     Title: globus-gridftp-server
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
-.\"      Date: 06/04/2015
+.\"      Date: 03/15/2016
 .\"    Manual: Globus Toolkit Manual
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUS\-GRIDFTP\-SER" "8" "06/04/2015" "University of Chicago" "Globus Toolkit Manual"
+.TH "GLOBUS\-GRIDFTP\-SER" "8" "03/15/2016" "University of Chicago" "Globus Toolkit Manual"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -221,6 +221,15 @@ will match and deny a connection from 192\&.168\&.2\&.45\&.
 .sp
 This option can also be set in the configuration file as
 deny_from\&.
+.RE
+.PP
+\fB\-encrypt\-data\fR
+.RS 4
+Require encrypted data channels\&. This will cause an error and prevent all transfers in which the client does not request an authenticated and encrypted data channel\&.
+.sp
+This option can also be set in the configuration file as
+encrypt_data\&. The default value of this option is
+FALSE\&.
 .RE
 .PP
 \fB\-si,\-secure\-ipc\fR
