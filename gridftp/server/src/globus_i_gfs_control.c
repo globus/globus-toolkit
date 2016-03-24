@@ -1022,6 +1022,13 @@ globus_l_gfs_data_command_cb(
             globus_free(msg);
             break;
 
+          case GLOBUS_GFS_CMD_WHOAMI:
+            msg = globus_common_create_string(
+                "200 %s\r\n", reply->info.command.checksum);
+            globus_gsc_959_finished_command(op, msg);
+            globus_free(msg);
+            break;
+            
           case GLOBUS_GFS_CMD_HTTP_PUT:
           case GLOBUS_GFS_CMD_HTTP_GET:
             if(reply->code / 100 == 1)
@@ -1924,6 +1931,11 @@ globus_l_gfs_request_command(
             {
                 goto err;
             }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else if(strcmp(cmd_array[1], "WHOAMI") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_WHOAMI;
             type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
         }
 
@@ -3071,6 +3083,26 @@ globus_l_gfs_add_commands(
     }
     result = globus_gridftp_server_control_add_feature(
                                         control_handle, "AUTHZ_ASSERT");
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE WHOAMI",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "SITE WHOAMI",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    result = globus_gridftp_server_control_add_feature(control_handle, "WHOAMI");
     if(result != GLOBUS_SUCCESS)
     {
         goto error;

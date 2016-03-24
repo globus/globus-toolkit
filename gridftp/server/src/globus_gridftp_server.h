@@ -134,6 +134,7 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_UPAS,
     GLOBUS_GFS_CMD_UPRT,
     GLOBUS_GFS_CMD_STORATTR,
+    GLOBUS_GFS_CMD_WHOAMI,
     
     GLOBUS_GFS_MIN_CUSTOM_CMD = 4096
 } globus_gfs_command_type_t;

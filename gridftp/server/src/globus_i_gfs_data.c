@@ -6622,6 +6622,12 @@ error_uprt:
             globus_gridftp_server_finished_command(op, result, NULL);
             break;
 
+        case GLOBUS_GFS_CMD_WHOAMI:
+            call = GLOBUS_FALSE;
+            globus_gridftp_server_finished_command(
+                op, result, op->session_handle->username);
+            break;
+
         case GLOBUS_GFS_CMD_TRNC:
             action = GFS_ACL_ACTION_WRITE;
             break;
@@ -11782,6 +11788,10 @@ globus_gridftp_server_finished_command(
             op->user_msg = globus_libc_strdup(command_data);
         }
         break;
+      case GLOBUS_GFS_CMD_WHOAMI:
+        op->cksm_response = globus_libc_strdup(command_data);
+        break;
+        
       case GLOBUS_GFS_CMD_MKD:
       case GLOBUS_GFS_CMD_RMD:
       case GLOBUS_GFS_CMD_DELE:
