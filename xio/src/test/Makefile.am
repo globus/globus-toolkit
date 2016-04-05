@@ -57,7 +57,6 @@ TESTS = $(check_SCRIPTS) $(check_PROGRAMS_NO_SCRIPT)
 TESTS_ENVIRONMENT = \
 	export XIO_TEST_OUPUT_DIR=test_output/$$$$ \
 	       TEST_DATA_DIR=$(TEST_DATA_DIR) ;
-LOG_COMPILER = $(LIBTOOL) --mode=execute -dlopen drivers/libglobus_xio_test_drivers.la
 
 AM_CPPFLAGS = \
     -I$(top_srcdir) \
@@ -66,7 +65,7 @@ AM_CPPFLAGS = \
     -DGLOBUS_BUILTIN=1 $(PACKAGE_DEP_CFLAGS)
 AM_LDFLAGS = $(GPT_LDFLAGS)
 LDADD = $(PACKAGE_DEP_LIBS) \
-	-dlopen drivers/libglobus_xio_test_drivers.la \
+	-dlpreopen drivers/libglobus_xio_test_drivers.la \
 	../libglobus_xio.la \
         -lltdl
 
