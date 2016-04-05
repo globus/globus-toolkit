@@ -5,6 +5,7 @@ includedir=@abs_top_srcdir@
 abs_top_builddir=@abs_top_builddir@
 abs_top_srcdir=@abs_top_srcdir@
 dlopen=-dlopen @abs_builddir@/libglobus_xio_pipe_driver.la
+dlpreopen=-dlpreopen @abs_builddir@/libglobus_xio_pipe_driver.la
 
 Name: globus-xio-pipe-driver
 Description: Globus Toolkit - Globus Pipe Driver

@@ -11,7 +11,7 @@ Section: libs
 Architecture: any
 Provides: libglobus-xio-gsi-driver0
 Conflicts: libglobus-xio-gsi-driver0
-Replcaes: libglobus-xio-gsi-driver0
+Replaces: libglobus-xio-gsi-driver0
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Globus Toolkit - Globus XIO GSI Driver
  The Globus Toolkit is an open source software toolkit used for

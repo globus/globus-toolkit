@@ -1,7 +1,7 @@
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	3.8
-Release:	2%{?dist}
+Version:	3.9
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
@@ -130,6 +130,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Apr 05 2016 Globus Toolkit <support@globus.org> - 3.9-1
+- Add dlpreopen variable to uninstalled pc file
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 3.8-2
 - Add vendor
 

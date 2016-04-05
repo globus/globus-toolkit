@@ -1,7 +1,7 @@
 Name:		globus-xio-pipe-driver
 %global _name %(tr - _ <<< %{name})
-Version:	3.7
-Release:	3%{?dist}
+Version:	3.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Pipe Driver
 
@@ -92,6 +92,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Apr 05 2016 Globus Toolkit <support@globus.org> - 3.8-1
+- Add dlpreopen variable to uninstalled pc file
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 3.7-3
 - Add vendor
 
