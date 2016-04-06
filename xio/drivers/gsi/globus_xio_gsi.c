@@ -1362,19 +1362,21 @@ globus_l_xio_gsi_read_token_cb(
                             &target_namebuf,
                             &target_oid);
                     gss_release_buffer(&minor_status, &target_namebuf);
-                    if (major_status != GSS_S_COMPLETE)
+                    if(GSS_ERROR(major_status))
                     {
+                        result = GlobusXIOErrorWrapGSSFailed("gss_display_name",
+                                                             major_status,
+                                                             minor_status);
                         goto error_pass_close;
                     }
-                    if (target_oid->length != GSS_C_NT_ANONYMOUS->length ||
+                    if (target_oid->length == GSS_C_NT_ANONYMOUS->length &&
                         memcmp(target_oid->elements,
                                 GSS_C_NT_ANONYMOUS->elements,
                                 target_oid->length))
                     {
-                        goto error_pass_close;
+                        result = GLOBUS_SUCCESS;
+                        equal = GLOBUS_TRUE;
                     }
-                    result = GLOBUS_SUCCESS;
-                    equal = GLOBUS_TRUE;
                 }
 
                 if(!equal)

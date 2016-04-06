@@ -132,6 +132,8 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Tue Apr 05 2016 Globus Toolkit <support@globus.org> - 3.9-1
 - Add dlpreopen variable to uninstalled pc file
+- Propagate error back to caller when name mismatch occurs on server
+  instead of just closing the handle
 
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 3.8-2
 - Add vendor
