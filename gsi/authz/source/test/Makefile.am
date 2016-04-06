@@ -21,12 +21,11 @@ TESTS_ENVIRONMENT = export \
     X509_USER_KEY=$(X509_USER_KEY) \
     X509_CERT_DIR=$(X509_CERT_DIR) \
     GSI_AUTHZ_CONF=$(GSI_AUTHZ_CONF);
-LOG_COMPILER = $(top_builddir)/libtool --mode=execute -dlopen libglobus_authz_test_callout.la
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)
 LDADD = $(PACKAGE_DEP_LIBS) -lltdl
 
-authz_cred_test_LDFLAGS = -rpath $(abs_builddir) -dlopen libglobus_authz_test_callout.la
+authz_cred_test_LDFLAGS = -dlpreopen libglobus_authz_test_callout.la
 authz_cred_test_LDADD = ../libglobus_authz.la $(LDADD)
 authz_cred_test_SOURCES = authz_cred_test.c 
 authz_cred_test_DEPENDENCIES = libglobus_authz_test_callout.la

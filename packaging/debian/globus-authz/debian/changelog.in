@@ -1,3 +1,9 @@
+globus-authz (3.12-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix authz callout load in test on mac
+
+ -- Globus Toolkit <support@globus.org>  Wed, 06 Apr 2016 10:12:35 -0400
+
 globus-authz (3.11-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix paths for mingw tests

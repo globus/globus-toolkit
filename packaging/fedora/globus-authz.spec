@@ -1,6 +1,6 @@
 Name:		globus-authz
 %global _name %(tr - _ <<< %{name})
-Version:	3.11
+Version:	3.12
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus authz library
@@ -139,6 +139,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Wed Apr 06 2016 Globus Toolkit <support@globus.org> - 3.12-1
+- Fix authz callout load in test on mac
+
 * Fri Nov 20 2015 Globus Toolkit <support@globus.org> - 3.11-1
 - Fix paths for mingw tests
 
