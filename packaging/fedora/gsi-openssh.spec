@@ -68,12 +68,12 @@ Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-i
 ## cd ..
 ## git clone https://github.com/globus/gsi-openssh.git
 ## cd gsi-openssh
-## git checkout 7.1p2
+## git checkout tags/7.1p2c
 ## git log `cat ../changelog_last_commit`^... > ChangeLog
-## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" distprep
+## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" SHELL=$SHELL distprep
 ## rm -fr .git
 ## cd ..
-## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2.patch
+## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2c.patch
 Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.%{version}.patch
 
 License: BSD
