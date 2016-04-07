@@ -501,7 +501,7 @@ test1(int argc, char **argv)
     }
     else
     {
-	globus_libc_printf("wrote large_block (%d bytes)\n", nbytes);
+	globus_libc_printf("wrote large_block (%zd bytes)\n", nbytes);
     }
 
     result = globus_io_read(&handle,

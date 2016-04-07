@@ -178,11 +178,6 @@ test1(int argc, char **argv)
 	&attr,
 	GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
 	&auth_data);
-/*
-    globus_io_attr_set_tcp_restrict_port(
-	&attr,
-	GLOBUS_FALSE);
-*/
     while (( c = getopt(argc, argv, "brgscvz:i:I:P:")) != EOF)
     {
         switch(c)
@@ -410,9 +405,18 @@ test1(int argc, char **argv)
 	}
 
     }
-    globus_io_tcp_get_local_address(&child_handle,
+    result = globus_io_tcp_get_local_address(&child_handle,
 	                            host,
 			            &port);
+    if (result != GLOBUS_SUCCESS)
+    {
+        err = globus_error_get(result);
+        errstring = globus_object_printable_to_string(err);
+	globus_libc_printf("test 1 get_local_address failed: %s\n", errstring);
+        rc = -1;
+	goto exit;
+    }
+
     printf("Accepted connection on my socket: %d.%d.%d.%d:%d\n",
 	    host[0],
 	    host[1],
@@ -420,9 +424,17 @@ test1(int argc, char **argv)
 	    host[3],
 	    (int) port);
 
-    globus_io_tcp_get_remote_address(&child_handle,
+    result = globus_io_tcp_get_remote_address(&child_handle,
 	                            host,
 			            &port);
+    if (result != GLOBUS_SUCCESS)
+    {
+        err = globus_error_get(result);
+        errstring = globus_object_printable_to_string(err);
+	globus_libc_printf("test 1 get_remote_address failed: %s\n", errstring);
+        rc = -1;
+	goto exit;
+    }
     printf("Accepted connection on my peer: %d.%d.%d.%d:%d\n",
 	    host[0],
 	    host[1],

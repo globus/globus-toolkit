@@ -31,7 +31,8 @@ testcredlink: testcred.cert
 	echo "$$linkname" > $@
 
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS) $(GSI_DRIVER_CFLAGS)
-LDADD = ../libglobus_io.la $(PACKAGE_DEP_LIBS) $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) -lltdl
+LDADD = ../libglobus_io.la $(PACKAGE_DEP_LIBS) $(GSI_DRIVER_DLPREOPEN) -lltdl
+AM_LDFLAGS = -dlpreopen force
 
 if CYGPATH_W_DEFINED
 X509_CERT_DIR = $$($(CYGPATH_W) $(abs_builddir))
@@ -45,7 +46,7 @@ TESTS_ENVIRONMENT = export \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR=$(X509_CERT_DIR);
 
-LOG_COMPILER = $(LIBTOOL) --mode=execute $(GSI_DRIVER_LIBS) $(srcdir)/globus-io-test-wrapper
+LOG_COMPILER = $(srcdir)/globus-io-test-wrapper
 
 EXTRA_DIST = \
 	random_data.txt \

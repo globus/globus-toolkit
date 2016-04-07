@@ -1,3 +1,10 @@
+globus-io (11.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Use new dlpreopen variable from gsi driver to build tests for installer
+  * Fix uninitialized variable reads and some warnings in io tests
+
+ -- Globus Toolkit <support@globus.org>  Thu, 07 Apr 2016 08:43:35 -0400
+
 globus-io (11.4-2+gt6.@distro@) @distro@; urgency=low
 
   * Update XIO Driver package names
