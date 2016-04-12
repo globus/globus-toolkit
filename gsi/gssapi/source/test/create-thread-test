@@ -1,0 +1,11 @@
+#! /bin/sh
+
+testname="$1"
+model="${1#gssapi-thread-test-}"
+
+cat <<EOF > "$testname"
+#! /bin/sh
+export GLOBUS_THREAD_MODEL="$model"
+./gssapi-thread-test
+EOF
+chmod a+x "$testname"

@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gssapi_gsi],[11.26],[https://globus.atlassian.net/])
+AC_INIT([globus_gssapi_gsi],[11.27],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -38,18 +38,33 @@ case "$host" in
 esac
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+GLOBUS_THREAD_MODELS=$($PKG_CONFIG globus-common --variable=thread_models)
+AC_SUBST(GLOBUS_THREAD_MODELS)
+
+for model in $GLOBUS_THREAD_MODELS""; do
+    if test x"$model" != x; then
+        eval "have_${model}_module"=1
+        thread_tests="${thread_tests:+$thread_tests }gssapi-thread-test-$model"
+    fi
+done
 
 PKG_CHECK_EXISTS([globus-thread-pthread], [
-pthread_dlopen=$($PKG_CONFIG --variable=dlopen globus-thread-pthread)])
-
-AM_CONDITIONAL([PTHREAD_DLOPEN_VAR], [test X"$pthread_dlopen" != X""])
-AC_SUBST([PTHREAD_DLOPEN], [$pthread_dlopen])
+pthread_dlpreopen=$($PKG_CONFIG --variable=dlpreopen globus-thread-pthread)
+if test "$have_pthread_module"x = x; then
+    have_pthread_module=1
+    thread_tests="${thread_tests:+$thread_tests }gssapi-thread-test-pthread"
+fi])
 
 PKG_CHECK_EXISTS([globus-thread-windows], [
-windows_dlopen=$($PKG_CONFIG --variable=dlopen globus-thread-windows)])
+windows_dlpreopen=$($PKG_CONFIG --variable=dlpreopen globus-thread-windows)
+if test "$have_windows_module"x = x; then
+    have_windows_module=1
+    thread_tests="${thread_tests:+$thread_tests }gssapi-thread-test-windows"
+fi])
 
-AM_CONDITIONAL([WINDOWS_DLOPEN_VAR], [test X"$windows_dlopen" != X""])
-AC_SUBST([WINDOWS_DLOPEN], [$windows_dlopen])
+
+AC_SUBST([THREAD_TEST_DLPREOPEN], [$pthread_dlpreopen $windows_dlpreopen])
+AC_SUBST([THREAD_TESTS], [$thread_tests])
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 

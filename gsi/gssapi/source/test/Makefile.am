@@ -5,14 +5,6 @@ LDADD = libgssapi_test_utils.la \
 
 check_LTLIBRARIES = libgssapi_test_utils.la
 
-thread_tests = 
-if PTHREAD_DLOPEN_VAR
-thread_tests += gssapi-thread-test-pthread
-endif
-if WINDOWS_DLOPEN_VAR
-thread_tests += gssapi-thread-test-windows
-endif
-
 check_DATA_real = \
         compare_name_test_hybrid.txt \
         compare_name_test_strict_gt2.txt \
@@ -26,12 +18,14 @@ check_DATA = $(check_DATA_real) \
         testcred.key \
         testcred.cert \
         testcredlink \
-        copy_cases
+        copy_cases \
+        $(THREAD_TESTS)
 
 check_SCRIPTS = \
         compare-name-test-hybrid.pl \
         compare-name-test-gt2.pl \
-        compare-name-test-rfc2818.pl
+        compare-name-test-rfc2818.pl \
+        gssapi-thread-test-wrapper
 
 check_PROGRAMS= \
         compare-name-test \
@@ -53,7 +47,7 @@ check_PROGRAMS= \
         inquire-names-for-mech-test \
         nonterminated-export-cred-test \
         release-name-test \
-        $(thread_tests)
+        gssapi-thread-test
 
 TESTS = $(check_SCRIPTS) \
         duplicate-name-test \
@@ -72,18 +66,9 @@ TESTS = $(check_SCRIPTS) \
         indicate-mechs-test \
 	gssapi-inquire-sec-ctx-by-oid-test \
         nonterminated-export-cred-test \
-        release-name-test \
-        $(thread_tests)
+        release-name-test 
 
-log_compiler_dlopens = 
-if PTHREAD_DLOPEN_VAR
-log_compiler_dlopens += $(PTHREAD_DLOPEN)
-endif
-if WINDOWS_DLOPEN_VAR
-log_compiler_dlopens += $(WINDOWS_DLOPEN)
-endif
-
-LOG_COMPILER = ../libtool --mode=execute $(log_compiler_dlopens) $(srcdir)/gssapi-test-wrapper
+LOG_COMPILER = $(srcdir)/gssapi-test-wrapper
 
 TEST_DATA_DIR = $(srcdir)
 
@@ -97,9 +82,13 @@ TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR=$(X509_CERT_DIR) \
+    THREAD_MODELS=$(GLOBUS_THREAD_MODELS) \
     TEST_DATA_DIR=$(TEST_DATA_DIR) \
     TEST_CERT_DIR=$(srcdir);
 
+THREAD_TESTS-undefined $(THREAD_TESTS):
+	${srcdir}/create-thread-test "$@"
+	
 libgssapi_test_utils_la_SOURCES = \
         gssapi_test_utils.c \
         gssapi_test_utils.h
@@ -114,17 +103,10 @@ gssapi_delegation_test_SOURCES = \
 gssapi_limited_delegation_test_SOURCES = gssapi_limited_delegation_test.c 
 gssapi_delegation_compat_test_SOURCES = gssapi_delegation_compat_test.c
 
-if PTHREAD_DLOPEN_VAR
-gssapi_thread_test_pthread_SOURCES = gssapi_thread_test.c
-gssapi_thread_test_pthread_LDADD = $(LDADD) $(PTHREAD_DLOPEN)
-gssapi_thread_test_pthread_CPPFLAGS = $(AM_CPPFLAGS) -DTHREAD_MODEL='"pthread"'
-endif
-
-if WINDOWS_DLOPEN_VAR
-gssapi_thread_test_windows_SOURCES = gssapi_thread_test.c
-gssapi_thread_test_windows_LDADD = $(LDADD) $(WINDOWS_DLOPEN)
-gssapi_thread_test_windows_CPPFLAGS = $(AM_CPPFLAGS) -DTHREAD_MODEL='"windows"'
-endif
+gssapi_thread_test_SOURCES = gssapi_thread_test.c
+gssapi_thread_test_LDADD = $(LDADD) $(THREAD_TEST_DLPREOPEN)
+gssapi_thread_test_LDFLAGS = -dlpreopen force
+gssapi_thread_test_CPPFLAGS = $(AM_CPPFLAGS)
 
 gssapi_import_context_test_SOURCES = gssapi_import_context_test.c
 gssapi_context_test_SOURCES =	gssapi_context_test.c 
@@ -161,9 +143,11 @@ testcredlink: testcred.cert
 EXTRA_DIST = \
         $(check_DATA_real) \
         $(check_SCRIPTS) \
-        gssapi-test-wrapper
+        gssapi-test-wrapper \
+        create-thread-test \
+        gssapi-thread-test-wrapper
 
-CLEANFILES = testcred.key testcred.cert testcred.req cert_chain.txt
+CLEANFILES = testcred.key testcred.cert testcred.req cert_chain.txt $(THREAD_TESTS)
 
 copy_cases:
 	if [ "$(VPATH)" != "" ]; then \

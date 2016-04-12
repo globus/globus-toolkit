@@ -63,12 +63,9 @@ main()
 
     LTDL_SET_PRELOADED_SYMBOLS();
 
-    globus_thread_set_model(THREAD_MODEL);
-
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
 
-    printf("1..%d\n", NUM_CLIENTS);
     globus_mutex_init(&mutex, NULL);
     globus_cond_init(&cond, NULL);
     globus_fifo_init(&arg_queue);
@@ -123,6 +120,14 @@ main()
     globus_gsi_gssapi_test_release_credential(&credential); 
 
     globus_module_deactivate_all();
+    if (client_failed == 0)
+    {
+        printf("ok - %s\n", getenv("GLOBUS_THREAD_MODEL"));
+    }
+    else
+    {
+        printf("not ok - %s\n", getenv("GLOBUS_THREAD_MODEL"));
+    }
 
     exit(client_failed);
 }
@@ -281,8 +286,6 @@ client_func(
         client_thread_count--;
         client_failed += failed;
 
-        printf("%s\n", failed ? "not ok" : "ok");
-        
         if(client_thread_count == 0)
         {
             globus_cond_signal(&cond);

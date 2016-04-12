@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.26
+Version:	11.27
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -154,6 +154,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Apr 12 2016 Globus Toolkit <support@globus.org> - 11.27-1
+- Updates to get tests to run on El Capitan
+
 * Mon Jan 25 2016 Globus Toolkit <support@globus.org> - 11.26-1
 - Fix FORCE_TLS setting to allow TLSv1.1 and TLS1.2, not just TLSv1.0
 

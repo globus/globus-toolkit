@@ -1,0 +1,25 @@
+#! /bin/sh
+
+rc=0
+count=0
+for x in ${THREAD_MODELS}""; do
+    if [ -x "gssapi-thread-test-$x" ]; then
+        count=$(($count + 1))
+    fi
+done
+
+if [ "$count" -eq 0 ]; then
+    exit 77
+fi
+echo "1..$count"
+
+for x in ${THREAD_MODELS}""; do
+    if [ -x "gssapi-thread-test-$x" ]; then
+        ./gssapi-thread-test-${x}
+        newrc=$?
+        if [ "$newrc" != 0 ]; then
+            rc=$(($rc + 1))
+        fi
+    fi
+done
+exit $rc

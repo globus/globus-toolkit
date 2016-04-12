@@ -1,3 +1,9 @@
+globus-gssapi-gsi (11.27-1+gt6.@distro@) @distro@; urgency=low
+
+  * Updates to get tests to run on El Capitan
+
+ -- Globus Toolkit <support@globus.org>  Tue, 12 Apr 2016 14:13:41 -0400
+
 globus-gssapi-gsi (11.26-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix FORCE_TLS setting to allow TLSv1.1 and TLS1.2, not just TLSv1.0
