@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	16.2
+Version:	16.3
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Common Library
@@ -212,6 +212,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Thu Apr 07 2016 Globus Toolkit <support@globus.org> - 16.3-1
+- Thread pc files dlpreopen and dlopen variables
+
 * Tue Jan 26 2016 Globus Toolkit <support@globus.org> - 16.2-1
 - Fix missing doxygen comment header
 

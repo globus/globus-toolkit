@@ -11,7 +11,7 @@ SUBDIRS = \
 
 doc_DATA = GLOBUS_LICENSE
 
-pkgconf_DATA = globus-common.pc
+pkgconf_DATA = globus-common.pc $(GLOBUS_THREAD_PKGCONF)
 libexec_SCRIPTS = build-aux/config.guess
 
 EXTRA_DIST = \

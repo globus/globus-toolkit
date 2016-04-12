@@ -4,7 +4,8 @@ libdir=@libdir@
 includedir=@includedir@
 abs_top_builddir=@abs_top_builddir@
 abs_top_srcdir=@abs_top_srcdir@
-dlopen=@WINDOWS_PREOPEN_UNINSTALLED@
+dlopen=@WINDOWS_DLOPEN_UNINSTALLED@
+dlpreopen=@WINDOWS_DLPREOPEN_UNINSTALLED@
 
 Name: globus-thread-windows
 Description: Globus Toolkit - Common Library Windows Bindings

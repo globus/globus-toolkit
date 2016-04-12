@@ -4,7 +4,8 @@ libdir=@libdir@
 includedir=@includedir@
 abs_top_builddir=@abs_top_builddir@
 abs_top_srcdir=@abs_top_srcdir@
-dlopen=@PTHREAD_PREOPEN_UNINSTALLED@
+dlopen=@PTHREAD_DLOPEN_UNINSTALLED@
+dlpreopen=@PTHREAD_DLPREOPEN_UNINSTALLED@
 
 Name: globus-thread-pthreads
 Description: Globus Toolkit - Common Library Pthreads Bindings

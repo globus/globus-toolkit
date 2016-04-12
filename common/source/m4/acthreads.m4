@@ -28,9 +28,12 @@ if test "$build_windows_threads" = "yes"; then
     thread_models="$thread_models windows"
 fi
 AC_SUBST(thread_models)
+AC_SUBST(GLOBUS_THREAD_PKGCONFIG)
 
-AC_SUBST(PTHREAD_PREOPEN_UNINSTALLED)
-AC_SUBST(WINDOWS_PREOPEN_UNINSTALLED)
+AC_SUBST(PTHREAD_DLOPEN_UNINSTALLED)
+AC_SUBST(PTHREAD_DLPREOPEN_UNINSTALLED)
+AC_SUBST(WINDOWS_DLOPEN_UNINSTALLED)
+AC_SUBST(WINDOWS_DLPREOPEN_UNINSTALLED)
 ])
 
 dnl LAC_THREADS_PTHREADS
@@ -92,7 +95,8 @@ AC_DEFUN([LAC_THREADS_PTHREADS],
     LDFLAGS="${LDFLAGS:+$LDFLAGS }${pthread_ldflags}"
     LIBS="${LIBS:+$LIBS }${pthread_libs}"
     if test "$build_pthreads" = "yes"; then
-        PTHREAD_PREOPEN_UNINSTALLED="-dlopen '\${abs_top_builddir}/library/libglobus_thread_pthread.la'"
+        PTHREAD_DLPREOPEN_UNINSTALLED="-dlpreopen '\${abs_top_builddir}/library/libglobus_thread_pthread.la'"
+        PTHREAD_DLOPEN_UNINSTALLED="-dlopen '\${abs_top_builddir}/library/libglobus_thread_pthread.la'"
         AC_CONFIG_FILES([globus-thread-pthread-uninstalled.pc])
     fi
     AM_CONDITIONAL([BUILD_PTHREADS], [test "$build_pthreads" = "yes"])
@@ -113,7 +117,8 @@ AC_DEFUN([LAC_THREADS_WINDOWS],
     case "$host" in
         *mingw* [)]
             build_windows_threads="yes"
-            WINDOWS_PREOPEN_UNINSTALLED="-dlopen '\${abs_top_builddir}/library/libglobus_thread_windows.la'"
+            WINDOWS_DLPREOPEN_UNINSTALLED="-dlpreopen '\${abs_top_builddir}/library/libglobus_thread_windows.la'"
+            WINDOWS_DLOPEN_UNINSTALLED="-dlopen '\${abs_top_builddir}/library/libglobus_thread_windows.la'"
             AC_CONFIG_FILES([globus-thread-windows-uninstalled.pc])
             ;;
     esac
