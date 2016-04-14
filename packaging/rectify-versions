@@ -159,7 +159,7 @@ sub update_rpm($$)
                 '-progs', '-server', '-setup-poll', '-setup-seg');
 
             $base_requirement = $requirement;
-            $base_requirement =~ s/\%{\?_isa}//;
+            $base_requirement =~ s/\%\{\?_isa\}//;
 
             for my $suffix (@specsuffixes)
             {
