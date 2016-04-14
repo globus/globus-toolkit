@@ -4159,7 +4159,7 @@ globus_l_gfs_data_authorize(
                 
         if(!(auth_level & GLOBUS_L_GFS_AUTH_NOGRIDMAP))
         {
-            if(context != NULL && globus_i_gfs_config_bool("cas"))
+            if(/*context != NULL &&*/ globus_i_gfs_config_bool("cas"))
             {
                 globus_bool_t           free_usr = GLOBUS_FALSE;
                 
@@ -5297,37 +5297,6 @@ globus_i_gfs_data_request_stat(
 
     object.name = stat_info->pathname;
 
-    if (globus_i_gfs_config_bool("data_node") &&
-        globus_i_gfs_config_int("auth_level")&GLOBUS_L_GFS_AUTH_DATA_NODE_PATH)
-    {
-        char *                          chdir_to;
-        char *                          full_pathname = NULL;
-
-        chdir_to = globus_i_gfs_config_string("chdir_to");
-        
-        result = globus_i_gfs_get_full_path(
-            session_handle->home_dir,
-            chdir_to ? chdir_to : "/", // XXX
-            session_handle,
-            stat_info->pathname,
-            &full_pathname,
-            GFS_L_LIST);
-        if(result != GLOBUS_SUCCESS)
-        {
-            result = GlobusGFSErrorWrapFailed(
-                "globus_l_gfs_data_operation_init", result);
-            goto error_op;
-        }
-        if (full_pathname)
-        {
-            free(stat_info->pathname);
-            stat_info->pathname = full_pathname;
-
-            object.name = stat_info->pathname;
-        }
-    }
-
-
     if(stat_info->internal)
     {
         res = GLOBUS_SUCCESS;
@@ -5335,6 +5304,37 @@ globus_i_gfs_data_request_stat(
     }
     else
     {
+        if (globus_i_gfs_config_bool("data_node") &&
+            globus_i_gfs_config_int("auth_level")&GLOBUS_L_GFS_AUTH_DATA_NODE_PATH)
+        {
+            char *                          chdir_to;
+            char *                          full_pathname = NULL;
+
+            chdir_to = globus_i_gfs_config_string("chdir_to");
+
+            result = globus_i_gfs_get_full_path(
+                session_handle->home_dir,
+                chdir_to ? chdir_to : "/", // XXX
+                session_handle,
+                stat_info->pathname,
+                &full_pathname,
+                GFS_L_LIST);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusGFSErrorWrapFailed(
+                    "globus_l_gfs_data_operation_init", result);
+                goto error_op;
+            }
+            if (full_pathname)
+            {
+                free(stat_info->pathname);
+                stat_info->pathname = full_pathname;
+
+                object.name = stat_info->pathname;
+            }
+        }
+
+
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
             GFS_ACL_ACTION_LOOKUP,
@@ -5975,6 +5975,9 @@ globus_i_gfs_data_request_command(
             break;
 
         case GLOBUS_GFS_CMD_SITE_SHARING:
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_INFO,
+                "Processing SITE SHARING %s\n", cmd_info->pathname);
             if(!op->session_handle->sharing)
             {
                 result = GlobusGFSErrorGeneric("Sharing not enabled.");
@@ -8478,25 +8481,52 @@ globus_i_gfs_data_request_recv(
             op, GlobusGFSErrorGeneric("bad module"));
         goto error_module;
     }
+    if (globus_i_gfs_config_bool("data_node") &&
+        globus_i_gfs_config_int("auth_level")&GLOBUS_L_GFS_AUTH_DATA_NODE_PATH)
+    {
+        char *                          chdir_to;
+        char *                          full_pathname = NULL;
+
+        chdir_to = globus_i_gfs_config_string("chdir_to");
+
+        result = globus_i_gfs_get_full_path(
+            session_handle->home_dir,
+            chdir_to ? chdir_to : "/", // XXX
+            session_handle,
+            recv_info->pathname,
+            &full_pathname,
+            GFS_L_READ);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_operation_init", result);
+            goto error_op;
+        }
+        if (full_pathname)
+        {
+            free(recv_info->pathname);
+            recv_info->pathname = full_pathname;
+        }
+    }
     if(op->dsi->stat_func != NULL)
     {
-    stat_info = (globus_gfs_stat_info_t *)
-        globus_calloc(1, sizeof(globus_gfs_stat_info_t));
+        stat_info = (globus_gfs_stat_info_t *)
+            globus_calloc(1, sizeof(globus_gfs_stat_info_t));
 
-    stat_info->pathname = recv_info->pathname;
-    stat_info->file_only = GLOBUS_TRUE;
-    stat_info->internal = GLOBUS_TRUE;
+        stat_info->pathname = recv_info->pathname;
+        stat_info->file_only = GLOBUS_TRUE;
+        stat_info->internal = GLOBUS_TRUE;
 
-    op->info_struct = recv_info;
-    op->stat_wrapper = stat_info;
+        op->info_struct = recv_info;
+        op->stat_wrapper = stat_info;
 
-    globus_i_gfs_data_request_stat(
-        ipc_handle,
-        session_handle,
-        id,
-        stat_info,
-        globus_l_gfs_data_auth_stat_cb,
-        op);
+        globus_i_gfs_data_request_stat(
+            ipc_handle,
+            session_handle,
+            id,
+            stat_info,
+            globus_l_gfs_data_auth_stat_cb,
+            op);
     }
     else
     {
@@ -11791,7 +11821,7 @@ globus_gridftp_server_finished_command(
       case GLOBUS_GFS_CMD_WHOAMI:
         op->cksm_response = globus_libc_strdup(command_data);
         break;
-        
+
       case GLOBUS_GFS_CMD_MKD:
       case GLOBUS_GFS_CMD_RMD:
       case GLOBUS_GFS_CMD_DELE:

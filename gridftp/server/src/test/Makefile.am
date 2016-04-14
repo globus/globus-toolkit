@@ -1,5 +1,6 @@
 check_PROGRAMS = \
         cmp_alias_ent_test \
+        ipc-test \
         sharing_allowed_test
 
 check_DATA = \
@@ -11,6 +12,7 @@ check_SCRIPTS = setup-chroot-test
 
 TESTS = \
 	cmp_alias_ent_test\
+	ipc-test \
 	setup-chroot-test \
 	sharing_allowed_test
 TESTS_ENVIRONMENT = \
@@ -20,7 +22,7 @@ LOG_COMPILER = $(FAKEROOT) ../libtool --mode=execute $(preload_execute_links)
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(srcdir)/..
 LDADD = ../libglobus_gridftp_server.la \
-        $(preload_links) $(PACKAGE_DEP_LIBS) -lltdl
+        $(dlpreopen_links) $(PACKAGE_DEP_LIBS) -lltdl
 
 testcred.key:
 	umask 077; openssl genrsa 1024 > $@

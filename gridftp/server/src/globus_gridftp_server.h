@@ -1835,6 +1835,21 @@ globus_gfs_ipc_handle_connect(
     void *                              error_user_arg);
 
 globus_result_t
+globus_gfs_ipc_handle_connect_ex(
+    globus_gfs_session_info_t *         session_info,
+    globus_gfs_ipc_open_callback_t      cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg,
+    globus_bool_t                       secure_ipc,
+    gss_cred_id_t                       cred,
+    const char                         *auth_mode,
+    const char                         *subject,
+    time_t                              connect_timeout,
+    time_t                              idle_timeout,
+    globus_bool_t                       inetd);
+
+globus_result_t
 globus_gfs_ipc_handle_obtain(
     globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_iface_t *            iface,

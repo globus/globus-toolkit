@@ -31,7 +31,7 @@ do                                                                      \
     uint32_t                            _cw;                            \
     _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
     /* verify buffer size */                                            \
-    if(_ndx + 4 > _len)                                                 \
+    while(_ndx + 4 > _len)                                              \
     {                                                                   \
         _len *= 2;                                                      \
         _start = globus_libc_realloc(_start, _len);                     \
@@ -83,7 +83,7 @@ do                                                                      \
 {                                                                       \
     globus_size_t                       _ndx;                           \
     _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
-    if(_ndx + 8 > _len)                                                 \
+    while(_ndx + 8 > _len)                                              \
     {                                                                   \
         _len *= 2;                                                      \
         _start = globus_libc_realloc(_start, _len);                     \
@@ -117,7 +117,7 @@ do                                                                      \
     uint32_t                            _hi = _w >> 32U;                \
                                                                         \
     _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
-    if(_ndx + 8 > _len)                                                 \
+    while(_ndx + 8 > _len)                                                 \
     {                                                                   \
         _len *= 2;                                                      \
         _start = globus_libc_realloc(_start, _len);                     \
@@ -159,7 +159,7 @@ do                                                                      \
 {                                                                       \
     globus_size_t                       _ndx;                           \
     _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
-    if(_ndx >= _len)                                                    \
+    while(_ndx >= _len)                                                    \
     {                                                                   \
         _len *= 2;                                                      \
         _start = globus_libc_realloc(_start, _len);                     \
@@ -221,21 +221,11 @@ do                                                                      \
     }                                                                   \
 } while(0)
 
-typedef struct globus_i_gfs_community_s
-{
-    char *                              root;
-    char *                              name;
-    int                                 cs_count;
-    char **                             cs;
-    int                                 next_ndx;
-} globus_i_gfs_community_t;
-
 void *
 globus_i_gfs_ipc_query_op_info(
     int                                 op_info_id);
 
 extern globus_xio_stack_t               globus_i_gfs_ipc_xio_stack;
-extern globus_i_gfs_community_t *       globus_i_gfs_ipc_community_default;
 extern globus_xio_driver_t              globus_i_gfs_tcp_driver;
 
 #endif
