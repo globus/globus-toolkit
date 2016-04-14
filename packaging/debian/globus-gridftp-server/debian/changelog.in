@@ -1,3 +1,9 @@
+globus-gridftp-server (9.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix crash when storattr is used without modify
+
+ -- Globus Toolkit <support@globus.org>  Thu, 14 Apr 2016 13:55:01 -0500
+
 globus-gridftp-server (9.6-1+gt6.@distro@) @distro@; urgency=low
 
   * add SITE WHOAMI command to return currently authenticated user

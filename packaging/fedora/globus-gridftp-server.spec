@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	9.6
+Version:	9.7
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -178,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Apr 14 2016 Globus Toolkit <support@globus.org> - 9.7-1
+- fix crash when storattr is used without modify
+
 * Thu Mar 24 2016 Globus Toolkit <support@globus.org> - 9.6-1
 - add SITE WHOAMI command to return currently authenticated user
 

@@ -13497,7 +13497,7 @@ globus_gridftp_server_get_recv_modification_time(
         goto error;
     }
     
-    if(op->storattr)
+    if(op->storattr && op->storattr->modify)
     {
         char* tz;
         struct tm modtime;
@@ -13506,6 +13506,7 @@ globus_gridftp_server_get_recv_modification_time(
                     &modtime.tm_year, &modtime.tm_mon, &modtime.tm_mday,
                     &modtime.tm_hour, &modtime.tm_min, &modtime.tm_sec) != 6)
         {
+            result = GlobusGFSErrorGeneric("Invalid modification time.");
             goto error;
         }
         modtime.tm_year -= 1900;
@@ -13532,6 +13533,7 @@ globus_gridftp_server_get_recv_modification_time(
 
 error:
     GlobusGFSDebugExitWithError();
+    *out_time = -1;
     return result;
 }
     
