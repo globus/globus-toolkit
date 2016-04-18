@@ -1,3 +1,9 @@
+globus-gass-copy (9.19-1+gt6.@distro@) @distro@; urgency=low
+
+  * Use prelinks for tests so that they run on El Capitan
+
+ -- Globus Toolkit <support@globus.org>  Mon, 18 Apr 2016 15:02:37 -0400
+
 globus-gass-copy (9.18-1+gt6.@distro@) @distro@; urgency=low
 
   * Disable ipv6 default for tests

@@ -32,7 +32,7 @@ TESTS_ENVIRONMENT = export \
     X509_CERT_DIR=$(X509_CERT_DIR) \
     GRIDMAP=$(GRIDMAP) \
     PATH=$${PATH}:$(abs_builddir):$(abs_srcdir);
-LOG_COMPILER = $(LIBTOOL) --mode=execute $(GSI_DRIVER_LIBS)
+LOG_COMPILER = $(LIBTOOL) --mode=execute $(GSI_DRIVER_DLOPEN)
 
 testcred.key:
 	umask 077 ; openssl genrsa 1024 > $@
@@ -54,7 +54,7 @@ testcredlink: testcred.cert
 	echo "$$linkname" > $@
 
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
-test_ldadd = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) libtest_common.la ../libglobus_ftp_control.la $(PACKAGE_DEP_LIBS) -lltdl
+test_ldadd = $(GSI_DRIVER_DLPREOPEN) libtest_common.la ../libglobus_ftp_control.la $(PACKAGE_DEP_LIBS) -lltdl
 
 check_LTLIBRARIES = libtest_common.la
 libtest_common_la_SOURCES = connect_disconnect_test.c test_common.c test_common.h

@@ -1,6 +1,6 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.27
+Version:	8.28
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Client Library
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Apr 18 2016 Globus Toolkit <support@globus.org> - 8.28-1
+- Use prelinks for tests so that they run on El Capitan
+
 * Mon Nov 23 2015 Globus Toolkit <support@globus.org> - 8.27-1
 - prevent endless loop when auto-retrying failed pasv on other server
 

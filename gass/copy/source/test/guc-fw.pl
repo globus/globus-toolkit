@@ -98,7 +98,7 @@ SKIP: {
             my ($pid, $rc);
             $errfd = gensym;
 
-            $pid = open3($infd, $outfd, $errfd, "globus-url-copy",
+            $pid = open3($infd, $outfd, $errfd, "globus-url-copy-noinst",
                 @{$mode}, '-stripe', '-tcp-bs', '131072', @{$dc_opt},
                 transform_path($src_url), transform_path($dst_url));
             close($infd);

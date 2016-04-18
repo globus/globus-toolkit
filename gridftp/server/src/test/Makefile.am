@@ -16,11 +16,11 @@ TESTS = \
 TESTS_ENVIRONMENT = \
 	export X509_CERT_DIR="$(abs_builddir)/certificates" \
 	       PATH="$(abs_srcdir)/..:$$PATH";
-LOG_COMPILER = $(FAKEROOT) ../libtool --mode=execute $(preload_execute_links)
+LOG_COMPILER = $(FAKEROOT) ../libtool --mode=execute $(MODULE_DLOPEN)
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(srcdir)/..
 LDADD = ../libglobus_gridftp_server.la \
-        $(preload_links) $(PACKAGE_DEP_LIBS) -lltdl
+        $(MODULE_DLPREOPEN) $(PACKAGE_DEP_LIBS) -lltdl
 
 testcred.key:
 	umask 077; openssl genrsa 1024 > $@

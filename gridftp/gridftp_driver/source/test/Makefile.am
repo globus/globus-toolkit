@@ -1,5 +1,5 @@
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)
-globus_gridftp_driver_test_LDADD = $(GSI_DRIVER_DLOPEN) $(PIPE_DRIVER_DLOPEN) -dlopen ../libglobus_xio_gridftp_driver.la $(PACKAGE_DEP_LIBS) -lltdl
+globus_gridftp_driver_test_LDADD = $(GSI_DRIVER_DLPREOPEN) -dlpreopen ../libglobus_xio_gridftp_driver.la $(PACKAGE_DEP_LIBS) -lltdl
 
 check_SCRIPTS = globus_gridftp_driver_test.pl
 check_PROGRAMS = globus_gridftp_driver_test
@@ -11,6 +11,7 @@ TESTS_ENVIRONMENT = \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR=$(abs_builddir) \
     GRIDMAP=$(abs_builddir)/gridmap \
+    GRIDFTP_EXE="$(GRIDFTP_EXE)" \
     PATH="$(GRIDFTP_PATH):$(srcdir):$(abs_builddir):$${PATH}";
 LOG_COMPILER = $(LIBTOOL) --mode=execute \
 	$(GSI_DRIVER_DLOPEN) \

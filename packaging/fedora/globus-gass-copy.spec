@@ -1,6 +1,6 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	9.18
+Version:	9.19
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Copy
@@ -172,6 +172,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Apr 18 2016 Globus Toolkit <support@globus.org> - 9.19-1
+- Use prelinks for tests so that they run on El Capitan
+
 * Fri Nov 20 2015 Globus Toolkit <support@globus.org> - 9.18-1
 - Disable ipv6 default for tests
 

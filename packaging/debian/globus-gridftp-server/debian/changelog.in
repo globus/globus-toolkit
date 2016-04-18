@@ -1,3 +1,9 @@
+globus-gridftp-server (9.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Use prelinks for tests so that they run on El Capitan
+
+ -- Globus Toolkit <support@globus.org>  Mon, 18 Apr 2016 15:04:13 -0400
+
 globus-gridftp-server (9.7-1+gt6.@distro@) @distro@; urgency=low
 
   * fix crash when storattr is used without modify

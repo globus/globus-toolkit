@@ -94,7 +94,7 @@ SKIP: {
             my ($out, $err);
             my ($pid, $rc);
             $errfd = gensym;
-            my @args = ("globus-url-copy",
+            my @args = ("globus-url-copy-noinst",
                     '-fsstack', 'file',
                     '-dcstack', $stack_opt,
                     '-stripe', @{$dc_opt}, $src_url, $dst_url);

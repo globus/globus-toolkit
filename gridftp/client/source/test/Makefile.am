@@ -95,7 +95,8 @@ check_PROGRAMS = \
 
 TESTS = $(check_SCRIPTS_run)
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
-LDADD = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) libglobus_ftp_client_test.la $(top_builddir)/libglobus_ftp_client.la $(PACKAGE_DEP_LIBS) -lltdl
+LDADD = $(GSI_DRIVER_DLPREOPEN) $(PIPE_DRIVER_DLPREOPEN) libglobus_ftp_client_test.la $(top_builddir)/libglobus_ftp_client.la $(PACKAGE_DEP_LIBS) -lltdl
+LDFLAGS = -dlpreopen force
 
 TEST_PATH = $(GRIDFTP_SERVER_PATH):$${PATH}
 if CYGPATH_W_DEFINED
@@ -110,10 +111,11 @@ TESTS_ENVIRONMENT = \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR="$(X509_CERT_DIR)" \
     GRIDMAP="$(GRIDMAP)" \
+    GRIDFTP_SERVER_EXE="$(GRIDFTP_SERVER_EXE)" \
     PATH="$(TEST_PATH)";
 LOG_COMPILER = $(LIBTOOL) --mode=execute \
-	$(GSI_DRIVER_LIBS) \
-	$(PIPE_DRIVER_LIBS) \
+	$(GSI_DRIVER_DLOPEN) \
+	$(PIPE_DRIVER_DLOPEN) \
 	$(srcdir)/test-wrapper
 
 libglobus_ftp_client_test_la_SOURCES = \

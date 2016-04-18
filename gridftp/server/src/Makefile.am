@@ -10,6 +10,7 @@ gridftpconf_DATA = \
         gridftp.conf.default gridftp.xinetd.default gridftp.gfork.default 
 include_HEADERS = globus_gridftp_server.h globus_gridftp_server_embed.h
 lib_LTLIBRARIES = libglobus_gridftp_server.la
+noinst_PROGRAMS = globus-gridftp-server-noinst
 sbin_PROGRAMS= \
         globus-gridftp-server \
         gfs-gfork-master \
@@ -21,6 +22,7 @@ sbin_SCRIPTS = \
 pkgconfig_DATA = globus-gridftp-server.pc
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -DGLOBUS_BUILTIN=1
+LDFLAGS = -dlpreopen force
 libglobus_gridftp_server_la_LIBADD = $(MODULE_LIBS) $(PACKAGE_DEP_LIBS)
 libglobus_gridftp_server_la_LDFLAGS =   \
         -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
@@ -51,7 +53,10 @@ libglobus_gridftp_server_la_SOURCES =   \
 	globus_i_gfs_control.h
 
 globus_gridftp_server_SOURCES = globus_gridftp_server.c
-globus_gridftp_server_LDADD = libglobus_gridftp_server.la $(preload_links) $(PACKAGE_DEP_LIBS) -lltdl
+globus_gridftp_server_LDADD = libglobus_gridftp_server.la $(MODULE_DLOPEN) $(PACKAGE_DEP_LIBS) -lltdl
+
+globus_gridftp_server_noinst_SOURCES = globus_gridftp_server.c
+globus_gridftp_server_noinst_LDADD = libglobus_gridftp_server.la $(MODULE_DLPREOPEN) $(PACKAGE_DEP_LIBS) -lltdl
 
 gfs_gfork_master_SOURCES = gfs_gfork_master.c
 gfs_gfork_master_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS) -lltdl

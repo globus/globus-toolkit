@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_client],[13.12],[https://globus.atlassian.net/])
+AC_INIT([globus_gram_client],[13.13],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -17,19 +17,15 @@ AC_SUBST(DIRT_BRANCH_ID)
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
-AC_SUBST([GLOBUS_XIO_GSI_DLOPEN], ["$("$PKG_CONFIG" globus-xio-gsi-driver --variable=dlopen)"])
-if test "" = "$GLOBUS_XIO_GSI_DLOPEN"; then
-    PRELOAD_FORCE="-dlpreopen force"
-fi
-AC_SUBST([PRELOAD_FORCE])
+AC_SUBST([GLOBUS_XIO_GSI_DLPREOPEN], ["$("$PKG_CONFIG" globus-xio-gsi-driver --variable=dlpreopen)"])
 
-GLOBUS_GRAM_JOB_MANAGER_PATH=$(pkg-config --variable=path globus-gram-job-manager)
+GLOBUS_GRAM_JOB_MANAGER_PATH=$($PKG_CONFIG --variable=path globus-gram-job-manager)
 AC_SUBST([GLOBUS_GRAM_JOB_MANAGER_PATH])
 
-PROXY_UTILS_PATH=$(pkg-config --variable=path globus-proxy-utils)
+PROXY_UTILS_PATH=$($PKG_CONFIG --variable=path globus-proxy-utils)
 AC_SUBST([PROXY_UTILS_PATH])
 
-CERT_UTILS_PATH=$(pkg-config --variable=path globus-gsi-cert-utils)
+CERT_UTILS_PATH=$($PKG_CONFIG --variable=path globus-gsi-cert-utils)
 AC_SUBST([CERT_UTILS_PATH])
 
 AC_CANONICAL_HOST

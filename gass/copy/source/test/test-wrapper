@@ -27,7 +27,7 @@ use vars qw(@tests);
 $ENV{GLOBUS_USAGE_OPTOUT} = "1";
 
 my $server_pid;
-my $server_prog = "globus-gridftp-server";
+my $server_prog = "$ENV{GRIDFTP_SERVER_EXE}" || "globus-gridftp-server";
 my $server_host = "localhost";
 my $server_port = 0;
 my $subject;

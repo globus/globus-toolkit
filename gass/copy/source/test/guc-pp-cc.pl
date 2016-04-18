@@ -107,7 +107,7 @@ SKIP: {
             my ($infd, $outfd, $errfd);
             my ($out, $err);
             my ($pid, $rc);
-            my @args = ("globus-url-copy",
+            my @args = ("globus-url-copy-noinst",
                 "-pp", @{$cc}, @{$dc_opt},
                 "-cd", "-r",
                 transform_path($src_url), transform_path($dst_url));

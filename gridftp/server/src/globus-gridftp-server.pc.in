@@ -2,6 +2,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
+executable=globus-gridftp-server@EXEEXT@
 path=@sbindir@
 
 Name: globus-gridftp-server

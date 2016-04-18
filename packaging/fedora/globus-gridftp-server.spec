@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	9.7
+Version:	9.8
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -178,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Apr 18 2016 Globus Toolkit <support@globus.org> - 9.8-1
+- Use prelinks for tests so that they run on El Capitan
+
 * Thu Apr 14 2016 Globus Toolkit <support@globus.org> - 9.7-1
 - fix crash when storattr is used without modify
 

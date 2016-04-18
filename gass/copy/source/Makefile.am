@@ -10,6 +10,7 @@ include_HEADERS = \
 lib_LTLIBRARIES = libglobus_gass_copy.la
 bin_PROGRAMS = globus-url-copy 
 pkgconfig_DATA = globus-gass-copy.pc
+check_PROGRAMS = globus-url-copy-noinst
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
 
@@ -25,8 +26,13 @@ libglobus_gass_copy_la_LDFLAGS = \
 libglobus_gass_copy_la_LIBADD = $(PACKAGE_DEP_LIBS)
 
 globus_url_copy_SOURCES = globus_url_copy.c
-globus_url_copy_LDFLAGS = -export-dynamic
-globus_url_copy_LDADD = $(GSI_DRIVER_LIBS) $(DLPREOPEN_FORCE) \
+globus_url_copy_LDFLAGS = -export-dynamic -dlpreopen force
+globus_url_copy_LDADD = $(GSI_DRIVER_DLOPEN) \
+                        libglobus_gass_copy.la \
+			$(PACKAGE_DEP_LIBS) -lltdl
+globus_url_copy_noinst_SOURCES = globus_url_copy.c
+globus_url_copy_noinst_LDFLAGS = -dlpreopen force
+globus_url_copy_noinst_LDADD = $(GSI_DRIVER_DLPREOPEN) \
                         libglobus_gass_copy.la \
 			$(PACKAGE_DEP_LIBS) -lltdl
 

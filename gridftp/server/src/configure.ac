@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gridftp_server],[9.7],[https://globus.atlassian.net/])
+AC_INIT([globus_gridftp_server],[9.8],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -29,13 +29,17 @@ if test "x$preload_modules" = x; then
     preload_modules="globus-xio-gsi-driver globus-xio-pipe-driver"
 fi
 
+dlpreopen_links=""
+dlopen_links=""
+link_with_cxx=0
 if test x"$preload_modules" != x; then
     preload_modules="$(echo $preload_modules | tr , ' ')"
     for module in $preload_modules; do
         module_found=no
         AC_MSG_CHECKING([for $module module])
         PKG_CHECK_EXISTS([$module], [
-            preload_links="${preload_links:+$preload_links }$($PKG_CONFIG --variable=dlopen $module)"
+            dlopen_links="${dlopen_links:+$dlopen_links }$($PKG_CONFIG --variable=dlopen $module)"
+            dlpreopen_links="${dlpreopen_links:+$dlpreopen_links }$($PKG_CONFIG --variable=dlpreopen $module)"
             module_found=yes],
             [module_found=no])
         AC_MSG_RESULT([$module_found])
@@ -47,19 +51,14 @@ fi
 
 AC_PROG_CXX
 
-if test x"$preload_links" = x; then
-    preload_links="-dlpreopen force"
-    preload_execute_links=""
-    link_with_cxx=0
-else
-    preload_execute_links="${preload_links}"
-fi
+AC_SUBST([MODULE_DLPREOPEN], [$dlpreopen_links])
+AC_SUBST([MODULE_DLOPEN], [$dlpen_links])
+
 if test "x$link_with_cxx" = x1; then
     AC_MSG_NOTICE([Linking with C++])
 fi
+
 AM_CONDITIONAL([LINK_WITH_CXX], [test x"$link_with_cxx" = x1])
-AC_SUBST([preload_links])
-AC_SUBST([preload_execute_links])
 
 AC_MSG_CHECKING([builtin modules])
 m4_define([gridftp_modules], m4_normalize(

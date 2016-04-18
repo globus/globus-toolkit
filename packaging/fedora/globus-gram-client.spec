@@ -1,7 +1,7 @@
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
-Version:	13.12
-Release:	2%{?dist}
+Version:	13.13
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Client Library
 
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Apr 18 2016 Globus Toolkit <support@globus.org> - 13.13-1
+- Use prelinks for tests so that they run on El Capitan
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 13.12-2
 - Add vendor
 

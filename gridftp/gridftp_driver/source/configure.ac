@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_gridftp_driver],[2.12],[https://globus.atlassian.net/])
+AC_INIT([globus_xio_gridftp_driver],[2.13],[https://globus.atlassian.net/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -18,16 +18,20 @@ AC_SUBST(DIRT_BRANCH_ID)
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
 PKG_CHECK_EXISTS([globus-xio-gsi-driver], [
-    GSI_DRIVER_DLOPEN="$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"])
+    GSI_DRIVER_DLOPEN="$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"
+    GSI_DRIVER_DLPREOPEN="$($PKG_CONFIG --variable=dlpreopen globus-xio-gsi-driver)"])
 AC_SUBST([GSI_DRIVER_DLOPEN])
+AC_SUBST([GSI_DRIVER_DLPREOPEN])
 
 PKG_CHECK_EXISTS([globus-xio-pipe-driver], [
     PIPE_DRIVER_DLOPEN="$($PKG_CONFIG --variable=dlopen globus-xio-pipe-driver)"])
 AC_SUBST([PIPE_DRIVER_DLOPEN])
 
 PKG_CHECK_EXISTS([globus-gridftp-server], [
-    GRIDFTP_PATH="$($PKG_CONFIG --variable=path globus-gridftp-server)"])
+    GRIDFTP_PATH="$($PKG_CONFIG --variable=path globus-gridftp-server)"
+    GRIDFTP_EXE="$($PKG_CONFIG --variable=executable globus-gridftp-server)"])
 AC_SUBST(GRIDFTP_PATH)
+AC_SUBST(GRIDFTP_EXE)
 
 AC_PATH_PROGS([DOXYGEN], doxygen)
 

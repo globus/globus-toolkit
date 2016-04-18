@@ -53,6 +53,7 @@ TESTS = $(check_SCRIPTS_run)
 TESTS_ENVIRONMENT = \
     export X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
+    GRIDFTP_SERVER_EXE=$(GRIDFTP_SERVER_EXE) \
     X509_CERT_DIR=$(X509_CERT_DIR) \
     GRIDMAP=$(GRIDMAP) \
     PATH="$(TEST_PATH)" \
