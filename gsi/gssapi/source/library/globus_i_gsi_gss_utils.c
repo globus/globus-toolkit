@@ -2548,12 +2548,6 @@ globus_i_gsi_gssapi_get_hostname(
 
     if (name->host_name == NULL)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
-                ("No common name in subject"));
-        major_status = GSS_S_FAILURE;
-
 free_service_name_out:
         if (name->service_name)
         {

@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.27
+Version:	11.28
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -154,6 +154,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Apr 19 2016 Globus Toolkit <support@globus.org> - 11.28-1
+- Add support for certificates without a CN
+
 * Tue Apr 12 2016 Globus Toolkit <support@globus.org> - 11.27-1
 - Updates to get tests to run on El Capitan
 

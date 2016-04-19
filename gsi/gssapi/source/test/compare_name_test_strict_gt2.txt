@@ -5,6 +5,7 @@ GSS_C_NT_ANONYMOUS, NULL, GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-macto
 GSS_C_NT_ANONYMOUS, NULL, GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/CN=host/other.example.org", GLOBUS_FALSE
 GSS_C_NT_ANONYMOUS, NULL, GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/CN=test-1.example.org", GLOBUS_FALSE
 GSS_C_NT_ANONYMOUS, NULL, GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/CN=other-1.example.org", GLOBUS_FALSE
+GSS_C_NT_ANONYMOUS, NULL, GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/UID=NoCommonName", GLOBUS_FALSE
 GSS_C_NT_ANONYMOUS, NULL, GSS_C_NT_HOSTBASED_SERVICE, "host@test.example.org", GLOBUS_FALSE
 GSS_C_NT_ANONYMOUS, NULL, GSS_C_NT_HOSTBASED_SERVICE, "ftp@test.example.org", GLOBUS_FALSE
 GSS_C_NT_ANONYMOUS, NULL, GSS_C_NT_HOSTBASED_SERVICE, "test.example.org", GLOBUS_FALSE
@@ -30,6 +31,7 @@ GSS_C_NO_OID, "/C=US/O=Globus/CN=test.example.org", GSS_C_NO_OID, "/O=Grid/OU=Gl
 GSS_C_NO_OID, "/C=US/O=Globus/CN=test.example.org", GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/CN=host/other.example.org", GLOBUS_FALSE
 GSS_C_NO_OID, "/C=US/O=Globus/CN=test.example.org", GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/CN=test-1.example.org", GLOBUS_FALSE
 GSS_C_NO_OID, "/C=US/O=Globus/CN=test.example.org", GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/CN=other-1.example.org", GLOBUS_FALSE
+GSS_C_NO_OID, "/C=US/O=Globus/CN=test.example.org", GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/UID=NoCommonName", GLOBUS_FALSE
 GSS_C_NO_OID, "/C=US/O=Globus/CN=test.example.org", GSS_C_NT_HOSTBASED_SERVICE, "host@test.example.org", GLOBUS_TRUE
 GSS_C_NO_OID, "/C=US/O=Globus/CN=test.example.org", GSS_C_NT_HOSTBASED_SERVICE, "ftp@test.example.org", GLOBUS_TRUE
 GSS_C_NO_OID, "/C=US/O=Globus/CN=test.example.org", GSS_C_NT_HOSTBASED_SERVICE, "test.example.org", GLOBUS_TRUE
@@ -55,6 +57,7 @@ GSS_C_NO_OID, "/C=US/O=Globus/CN=host/test.example.org", GSS_C_NO_OID, "/O=Grid/
 GSS_C_NO_OID, "/C=US/O=Globus/CN=host/test.example.org", GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/CN=host/other.example.org", GLOBUS_FALSE
 GSS_C_NO_OID, "/C=US/O=Globus/CN=host/test.example.org", GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/CN=test-1.example.org", GLOBUS_FALSE
 GSS_C_NO_OID, "/C=US/O=Globus/CN=host/test.example.org", GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/CN=other-1.example.org", GLOBUS_FALSE
+GSS_C_NO_OID, "/C=US/O=Globus/CN=host/test.example.org", GSS_C_NO_OID, "/O=Grid/OU=GlobusTest/OU=simpleCA-mactop.local/UID=NoCommonName", GLOBUS_FALSE
 GSS_C_NO_OID, "/C=US/O=Globus/CN=host/test.example.org", GSS_C_NT_HOSTBASED_SERVICE, "host@test.example.org", GLOBUS_TRUE
 GSS_C_NO_OID, "/C=US/O=Globus/CN=host/test.example.org", GSS_C_NT_HOSTBASED_SERVICE, "ftp@test.example.org", GLOBUS_TRUE
 GSS_C_NO_OID, "/C=US/O=Globus/CN=host/test.example.org", GSS_C_NT_HOSTBASED_SERVICE, "test.example.org", GLOBUS_TRUE

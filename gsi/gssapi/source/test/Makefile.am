@@ -14,10 +14,14 @@ check_DATA_real = \
         192.168.1.1.example.org.pem \
         192.168.1.1-2.example.org.pem
 
+testcred_links = testcred.link testcred-nocn.link
+
 check_DATA = $(check_DATA_real) \
         testcred.key \
         testcred.cert \
-        testcredlink \
+        $(testcred_links) \
+        testcred-nocn.key \
+        testcred-nocn.cert \
         copy_cases \
         $(THREAD_TESTS)
 
@@ -81,6 +85,8 @@ endif
 TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
+    X509_USER_CERT2=testcred-nocn.cert \
+    X509_USER_KEY2=testcred-nocn.key \
     X509_CERT_DIR=$(X509_CERT_DIR) \
     THREAD_MODELS=$(GLOBUS_THREAD_MODELS) \
     TEST_DATA_DIR=$(TEST_DATA_DIR) \
@@ -125,20 +131,19 @@ duplicate_name_test_SOURCES = duplicate_name_test.c
 indicate_mechs_test_SOURCES = indicate_mechs_test.c
 nonterminated_export_cred_test_SOURCES = nonterminated_export_cred_test.c
 
-testcred.key:
+testcred.key testcred-nocn.key:
 	umask 077; openssl genrsa 1024 > $@
-
 .key.req:
-	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -config openssl.cnf -key $< > $@
+	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -config $*.cnf -key $< > $@
 
 .req.cert:
-	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
+	umask 022; openssl x509 -req -days 365 -in $< -signkey $*.key > $@
 
-testcredlink: testcred.cert
-	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
+.cert.link:
+	linkname="`openssl x509 -hash -noout -in $<`.0"; \
 	rm -f "$$linkname"; \
-	cp testcred.cert "$$linkname"; \
-        echo "$$linkname" > testcredlink
+	cp $< "$$linkname"; \
+        echo "$$linkname" > $@
 
 EXTRA_DIST = \
         $(check_DATA_real) \
@@ -147,7 +152,9 @@ EXTRA_DIST = \
         create-thread-test \
         gssapi-thread-test-wrapper
 
-CLEANFILES = testcred.key testcred.cert testcred.req cert_chain.txt $(THREAD_TESTS)
+CLEANFILES = testcred.key testcred.cert testcred.req \
+             testcred-nocn.key testcred-nocn.cert testcred-nocn.req \
+             cert_chain.txt $(THREAD_TESTS)
 
 copy_cases:
 	if [ "$(VPATH)" != "" ]; then \
@@ -157,9 +164,11 @@ copy_cases:
         fi
 	touch $@
 clean-local:
-	@if [ -f testcredlink ]; then \
-            rm -f $$(cat testcredlink) testcredlink; \
-        fi
+	@for linkfile in $(testcred_links)""; do \
+	    if [ -f $$linkfile ]; then \
+	        rm -f $$(cat $$linkfile) $$linkfile; \
+	    fi; \
+	done
 	@if [ "$(VPATH)" != "" ]; then \
             for d in $(check_DATA_real); do \
                 if [ -f $(builddir)/$$d ]; then \
@@ -169,4 +178,4 @@ clean-local:
         fi
 	rm -f copy_cases
 
-SUFFIXES = .key .req .cert 
+SUFFIXES = .key .req .cert .link
