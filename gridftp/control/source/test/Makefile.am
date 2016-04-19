@@ -55,6 +55,7 @@ testcredlink: testcred.cert
 
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
 test_ldadd = $(GSI_DRIVER_DLPREOPEN) libtest_common.la ../libglobus_ftp_control.la $(PACKAGE_DEP_LIBS) -lltdl
+test_ldflags = -dlpreopen force
 
 check_LTLIBRARIES = libtest_common.la
 libtest_common_la_SOURCES = connect_disconnect_test.c test_common.c test_common.h
@@ -62,6 +63,7 @@ libtest_common_la_LIBADD = ../libglobus_ftp_control.la $(PACKAGE_DEP_LIBS)
 
 data_test_SOURCES = data_test.c
 data_test_LDADD = $(test_ldadd)
+data_test_LDFLAGS = $(test_ldflags)
 
 globus_ftp_control_test_SOURCES = \
     abort_test.c \
@@ -75,9 +77,16 @@ globus_ftp_control_test_SOURCES = \
     simple_dir_test.c 
 
 get_lingering_close_LDADD = $(test_ldadd)
+get_lingering_close_LDFLAGS = $(test_ldflags)
+
 globus_ftp_control_test_LDADD = $(test_ldadd)
+globus_ftp_control_test_LDFLAGS = $(test_ldflags)
+
 pipe_test_LDADD = $(test_ldadd)
+pipe_test_LDFLAGS = $(test_ldflags)
+
 test_server_LDADD = $(test_ldadd)
+test_server_LDFLAGS = $(test_ldflags)
 
 CLEANFILES = testcredgridmap testcred.cert testcred.key testcred.req get_lingering_close.sh.port
 clean-local:
