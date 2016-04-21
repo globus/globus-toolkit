@@ -1,3 +1,9 @@
+globus-gridftp-server (9.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * add -dlpreload force tests
+
+ -- Globus Toolkit <support@globus.org>  Thu, 21 Apr 2016 11:21:20 -0500
+
 globus-gridftp-server (9.8-1+gt6.@distro@) @distro@; urgency=low
 
   * Use prelinks for tests so that they run on El Capitan

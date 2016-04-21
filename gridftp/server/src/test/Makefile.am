@@ -22,6 +22,8 @@ AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(srcdir)/..
 LDADD = ../libglobus_gridftp_server.la \
         $(MODULE_DLPREOPEN) $(PACKAGE_DEP_LIBS) -lltdl
 
+LDFLAGS = -dlpreopen force
+
 testcred.key:
 	umask 077; openssl genrsa 1024 > $@
 
