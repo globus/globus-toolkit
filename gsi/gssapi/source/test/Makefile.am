@@ -1,7 +1,8 @@
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)/library
 LDADD = libgssapi_test_utils.la \
         ../library/libglobus_gssapi_gsi.la \
-        $(PACKAGE_DEP_LIBS)
+        $(PACKAGE_DEP_LIBS) \
+        -lltdl
 
 check_LTLIBRARIES = libgssapi_test_utils.la
 

@@ -1,7 +1,7 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.28
-Release:	2%{?dist}
+Version:	11.29
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -159,6 +159,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Apr 21 2016 Globus Toolkit <support@globus.org> - 11.29-1
+- add -lltdl
+
 * Thu Apr 21 2016 Globus Toolkit <support@globus.org> - 11.28-2
 - Add dependency on libtool-ltdl-devel
 

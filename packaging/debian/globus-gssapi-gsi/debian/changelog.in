@@ -1,3 +1,9 @@
+globus-gssapi-gsi (11.29-1+gt6.@distro@) @distro@; urgency=low
+
+  * add -lltdl
+
+ -- Globus Toolkit <support@globus.org>  Thu, 21 Apr 2016 10:59:25 -0500
+
 globus-gssapi-gsi (11.28-2+gt6.@distro@) @distro@; urgency=low
 
   * Add libltdl3-dev build dependency
