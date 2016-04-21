@@ -1,3 +1,9 @@
+globus-gssapi-gsi (11.28-2+gt6.@distro@) @distro@; urgency=low
+
+  * Add libltdl3-dev build dependency
+
+ -- Globus Toolkit <support@globus.org>  Thu, 21 Apr 2016 09:43:42 -0500
+
 globus-gssapi-gsi (11.28-1+gt6.@distro@) @distro@; urgency=low
 
   * Add support for certificates without a CN

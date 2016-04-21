@@ -1,7 +1,7 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
 Version:	11.28
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -49,6 +49,11 @@ BuildRequires:  pkgconfig
 BuildRequires:  perl-Test-Simple
 %endif
 BuildRequires:  openssl
+%if 0%{?suse_version} > 0
+BuildRequires: libtool
+%else
+BuildRequires: libtool-ltdl-devel
+%endif
 
 %package devel
 Summary:	Globus Toolkit - GSSAPI library Development Files
@@ -154,6 +159,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Apr 21 2016 Globus Toolkit <support@globus.org> - 11.28-2
+- Add dependency on libtool-ltdl-devel
+
 * Tue Apr 19 2016 Globus Toolkit <support@globus.org> - 11.28-1
 - Add support for certificates without a CN
 
