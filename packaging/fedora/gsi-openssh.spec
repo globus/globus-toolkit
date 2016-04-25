@@ -29,7 +29,7 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 1
+%global gsi_openssh_rel 2
 %global gsi_openssh_ver 7.1p2c
 
 Summary: An implementation of the SSH protocol with GSI authentication
@@ -37,7 +37,7 @@ Name: gsi-openssh
 Version: %{gsi_openssh_ver}
 Release: %{gsi_openssh_rel}%{?dist}
 URL: http://www.openssh.com/portable.html
-Source0: ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.1p2.tar.gz
+Source0: http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.1p2.tar.gz
 #Source2: gsisshd.pam
 #Source3: gsisshd.init
 #
@@ -427,6 +427,10 @@ fi
 %endif
 
 %changelog
+* Mon Apr 25 2016 Globus Toolkit <support@globus.org> - 7.1p2c-2
+- Change source URL
+- Create symlinks only to system-standard ssh host keys that are present
+
 * Fri Mar 11 2016 Globus Toolkit <support@globus.org> - 7.1p2c-1
 - Fixes for Globus Toolkit builds: Skip probing for specific globus funcs
 - Fixes for building kerberos/mechglue without GSI.
