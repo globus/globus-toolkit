@@ -68,12 +68,12 @@ Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-i
 ## cd ..
 ## git clone https://github.com/globus/gsi-openssh.git
 ## cd gsi-openssh
-## git checkout 7.1p2
+## git checkout tags/7.1p2c
 ## git log `cat ../changelog_last_commit`^... > ChangeLog
-## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" distprep
+## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" SHELL=$SHELL distprep
 ## rm -fr .git
 ## cd ..
-## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2.patch
+## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2c.patch
 Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.%{version}.patch
 
 License: BSD
@@ -310,11 +310,6 @@ rm $RPM_BUILD_ROOT%{_mandir}/man1/gsissh-agent.1*
 rm $RPM_BUILD_ROOT%{_mandir}/man1/gsissh-keyscan.1*
 rm $RPM_BUILD_ROOT%{_mandir}/man8/gsissh-pkcs11-helper.8*
 
-ln -sf  %{_sysconfdir}/ssh/ssh_host_dsa_key $RPM_BUILD_ROOT/%{_sysconfdir}/gsissh/ssh_host_dsa_key
-ln -sf  %{_sysconfdir}/ssh/ssh_host_dsa_key.pub $RPM_BUILD_ROOT/%{_sysconfdir}/gsissh/ssh_host_dsa_key.pub
-ln -sf  %{_sysconfdir}/ssh/ssh_host_rsa_key $RPM_BUILD_ROOT/%{_sysconfdir}/gsissh/ssh_host_rsa_key
-ln -sf  %{_sysconfdir}/ssh/ssh_host_rsa_key.pub $RPM_BUILD_ROOT/%{_sysconfdir}/gsissh/ssh_host_rsa_key.pub
-
 perl -pi -e "s|$RPM_BUILD_ROOT||g" $RPM_BUILD_ROOT%{_mandir}/man*/*
 
 rm -f README.nss.nss-keys
@@ -339,6 +334,38 @@ getent passwd gsisshd >/dev/null || \
 
 %post server
 /sbin/chkconfig --add gsisshd
+if [ -f /etc/ssh/ssh_host_dsa_key ]
+then
+	ln -sf  /etc/ssh/ssh_host_dsa_key /etc/gsissh/ssh_host_dsa_key
+fi
+if [ -f /etc/ssh/ssh_host_dsa_key.pub ]
+then
+	/bin/ln -sf  /etc/ssh/ssh_host_dsa_key.pub /etc/gsissh/ssh_host_dsa_key.pub
+fi
+if [ -f /etc/ssh/ssh_host_rsa_key ]
+then
+	/bin/ln -sf  /etc/ssh/ssh_host_rsa_key /etc/gsissh/ssh_host_rsa_key
+fi
+if [ -f /etc/ssh/ssh_host_rsa_key.pub ]
+then
+	/bin/ln -sf /etc/ssh/ssh_host_rsa_key.pub /etc/gsissh/ssh_host_rsa_key.pub
+fi
+if [ -f /etc/ssh/ssh_host_ecdsa_key ]
+then
+	/bin/ln -sf  /etc/ssh/ssh_host_ecdsa_key /etc/gsissh/ssh_host_ecdsa_key
+fi
+if [ -f /etc/ssh/ssh_host_ecdsa_key.pub ]
+then
+	/bin/ln -sf /etc/ssh/ssh_host_ecdsa_key.pub /etc/gsissh/ssh_host_ecdsa_key.pub
+fi
+if [ -f /etc/ssh/ssh_host_ed25519_key ]
+then
+	/bin/ln -sf  /etc/ssh/ssh_host_ed25519_key /etc/gsissh/ssh_host_ed25519_key
+fi
+if [ -f /etc/ssh/ssh_host_ed25519_key.pub ]
+then
+	/bin/ln -sf /etc/ssh/ssh_host_ed25519_key.pub /etc/gsissh/ssh_host_ed25519_key.pub
+fi
 
 %postun server
 /sbin/service gsisshd condrestart > /dev/null 2>&1 || :
@@ -348,6 +375,14 @@ if [ "$1" = 0 ]
 then
 	/sbin/service gsisshd stop > /dev/null 2>&1 || :
 	/sbin/chkconfig --del gsisshd
+	/bin/rm -f /etc/gsissh/ssh_host_dsa_key
+	/bin/rm -f /etc/gsissh/ssh_host_dsa_key.pub
+	/bin/rm -f /etc/gsissh/ssh_host_rsa_key
+	/bin/rm -f /etc/gsissh/ssh_host_rsa_key.pub
+	/bin/rm -f /etc/gsissh/ssh_host_ecdsa_key
+	/bin/rm -f /etc/gsissh/ssh_host_ecdsa_key.pub
+	/bin/rm -f /etc/gsissh/ssh_host_ed25519_key
+	/bin/rm -f /etc/gsissh/ssh_host_ed25519_key.pub
 fi
 
 %files
@@ -384,10 +419,6 @@ fi
 %attr(0644,root,root) %{_mandir}/man8/gsisshd.8*
 %attr(0644,root,root) %{_mandir}/man8/gsisftp-server.8*
 %attr(0600,root,root) %config(noreplace) %{_sysconfdir}/gsissh/sshd_config
-%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/gsissh/ssh_host_dsa_key
-%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/gsissh/ssh_host_dsa_key.pub
-%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/gsissh/ssh_host_rsa_key
-%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/gsissh/ssh_host_rsa_key.pub
 %attr(0644,root,root) %config(noreplace) /etc/pam.d/gsisshd
 %if 0%{?suse_version} == 0
 %attr(0755,root,root) /etc/rc.d/init.d/gsisshd
