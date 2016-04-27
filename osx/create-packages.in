@@ -1,0 +1,442 @@
+#! /bin/sh
+# This script is used to create binary tarballs, binary dmg, packages, and
+# installers. One feature that this adds, is that if an additional build tree
+# is provided, the binaries will be merged into a fat binary.
+
+# BEGIN AUTOCONF SUBSTITUTIONS
+ALL_PACKAGES="@GT_PACKAGE_LIST_SH@"
+TOOLKIT_VERSION="@PACKAGE_VERSION@"
+@GT_PACKAGE_VERSIONS_SH@
+libltdl_version="@LTDL_VERSION@"
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+# END AUTOCONF SUBSTITUTIONS
+
+exec 3>&1
+exec 4>/dev/null
+
+# Default log levels
+export ERROR_enabled=3
+export DEBUG_enabled=4
+export TRACE_enabled=4
+
+enable_log_levels()
+{
+    for level in $@; do
+        eval "export ${level}_enabled=3"
+    done
+}
+
+trace()
+{
+    echo "TRACE: ""$@" 1>&${TRACE_enabled}
+}
+debug()
+{
+    echo "DEBUG: ""$@" 1>&${DEBUG_enabled}
+}
+error()
+{
+    echo "ERROR: ""$@" 1>&${ERROR_enabled}
+}
+debug_command()
+{
+    debug "$@"
+    "$@" 1>&${DEBUG_enabled}
+}
+trace_command()
+{
+    trace "$@"
+    "$@" 1>&${TRACE_enabled}
+}
+
+enumerate_gt_relocations()
+(
+    # Enumerates the relocations in the binary named by $1 ignoring those which
+    # do not match any of the patterns in $2. The relocation ids are output
+    # to standard output.
+
+    binfile="$1"
+    rels="$2"
+
+    trace "enumerate_gt_relocations: binfile=$binfile rels=$rels"
+
+    rels_escaped="$(echo "$rels" | sed -e "s/\//\\\\\\//g" -e "s/ /|/g")"
+    otool -L "$binfile" | awk "NR==1 { next}
+        /$rels_escaped/ { print \$1 }"
+)
+
+rewrite_relocations()
+(
+    # Modifies the binary named by $1, changing relocations which match the
+    # patterns in $2 to relative paths. If $1 is not a Mach-O binary, nothing
+    # is modified
+    binfile="$1"
+    rels="$2"
+
+    debug "rewrite_relocations: binfile=$1 rels=$2"
+
+    if file -h "$binfile" | grep -q Mach-O; then
+        for lib in $(enumerate_gt_relocations "$binfile" "$rels"); do
+            libbase="$(basename "$lib")"
+            trace "rewrite_relocations: binfile=$binfile lib=$lib libbase=$libbase"
+            if [ "${libbase%.*}" = libudt ]; then
+                install_name_tool \
+                    -change "$lib" "@loader_path/../lib/globus/$libbase" \
+                    "$binfile"
+            else
+                install_name_tool \
+                    -change "$lib" "@loader_path/../lib/$libbase" \
+                    "$binfile"
+            fi
+        done
+        if basename "$binfile" | grep -vq '^lib'; then
+            install_name_tool -add_rpath "@loader_path/../lib" "$binfile" || true
+        fi
+    fi
+)
+
+rewrite_relocations_recursive()
+(
+    topdir="$1"
+    rels="$2"
+
+    debug "rewrite_relocations_recursive: topdir=$1 rels=$2"
+    find "${topdir}" \( -type f -o -type l \) -a -print | while read fn; do
+        fnarch="$(macho_file_arch "$fn")"
+        trace "rewrite_relocations_recursive: fn=$fn fnarch=$fnarch"
+        if [ -n "$fnarch" ]; then
+            rewrite_relocations "$fn" "$rels"
+        fi
+    done
+)
+
+
+macho_file_arch()
+(
+    # Prints the architecture that a Mach-O file is built for, either
+    # universal, or one of the particular architectures. If $1 is not
+    # a Mach-O file, nothing is output.
+    file -h "$1" | awk '/universal binary/ { print "universal"; exit }
+                     /Mach-O/ {print $NF; exit}'
+)
+
+install_package_to_staging_dir()
+(
+    # Stages an install of a package named "$1" built in the directories
+    # named in $2 into $3. Outputs a list of the install dirs.
+    # If "$1" is empty, then this is assumed to install the base installer
+    # Each directory in $2 must have a unique basename
+    package="$1"
+    arch_build_dirs="$2"
+    staging_dir="$3"
+
+    rm -rf "${staging_dir}"
+
+    for archbuild in $arch_build_dirs; do
+        archbuildbase="$(basename $archbuild)"
+        staging_arch_dir="${staging_dir}/${archbuildbase}"
+        make -C "$archbuild" "${package:+$package-}install" DESTDIR="${staging_arch_dir}" 1>&${TRACE_enabled} 2>&${ERROR_enabled}
+        find "${staging_arch_dir}" \( -name '*.a' -o -name '*.la' \) -a -exec rm {} +
+        echo "${staging_arch_dir}"
+    done
+)
+
+combine_arch_installs()
+(
+    # Recursively copies files from the list of directories in "$1" to the
+    # destination directory "$2". If a file is a Mach-O object, then this
+    # uses lipo to create a fat binary from the equivalently named objects
+    # in the different subdirectories.
+    #
+    arch_dirs="$1"
+    lipo_dir="$2"
+
+    # Peel off the first arch dir
+    set -- $arch_dirs
+    first_arch_dir="$1"
+    shift
+    arch_dirs="$@"
+
+    mkdir -p "$lipo_dir"
+    trace "combine_arch_installs: arch_dirs=$1 lipo_dir=$lipo_dir"
+
+    for arch_file in $(find "$first_arch_dir" \( -type f -o -type l \) -a -print); do
+        file_arch="$(macho_file_arch $arch_file)"
+        rel_filename="${arch_file#$first_arch_dir/}"
+        lipo_args="-arch $file_arch $arch_file"
+        output_file="${lipo_dir}/${rel_filename}"
+        make_univeral=0
+        trace "combine_arch_installs: file=$arch_file arch=$file_arch rel=$rel_filename"
+        if [ -n "$file_arch" ] && [ "$file_arch" != universal ]; then
+            for ad in $arch_dirs; do
+                other_filename="${ad}/${rel_filename}"
+                other_filearch="$(macho_file_arch $other_filename)"
+                trace "combine_arch_installs: other_filename=$other_filename other_arch=$other_filearch"
+                if [ -n "$other_filearch" ] && \
+                   [ "$other_filearch" != universal ]; then
+                    lipo_args="${lipo_args} -arch $other_filearch $other_filename"
+                    make_univeral=1
+                fi
+            done
+        fi
+        mkdir -p "$(dirname ${output_file})"
+        if [ "$make_univeral" -eq 0 ]; then
+            trace "combine_arch_installs: make_univeral=$make_univeral output_file=$output_file"
+            cp -a "${arch_file}" "${output_file}"
+        else
+            trace "combine_arch_installs: make_univeral=$make_univeral output_file=$output_file lipo_args=\"$lipo_args\""
+            lipo -create $lipo_args -output "${output_file}"
+        fi
+    done
+)
+
+create_dmg_installer()
+(
+    arch_builddirs="$1"
+    dmg_outdir="$2"
+
+    dmg_tmpdir=$(mktemp -d)
+    trap "rm -rf $dmg_tmpdir" 0
+
+    dmg_temp="$dmg_tmpdir/tmp"
+    dmg_temp_lipo="$dmg_temp/lipo"
+    dmg_out="${dmg_outdir}/GlobusToolkit-${TOOLKIT_VERSION}${build_number:+-build$build_number}.dmg"
+
+    staging_dmg="${dmg_tmpdir}/staging.dmg"
+
+    rm -rf "$dmg_temp"
+    mkdir -p "$dmg_temp_lipo"
+
+    arch_dirs="$(install_package_to_staging_dir "" "${arch_builddirs}" "${dmg_temp}")"
+    combine_arch_installs "$arch_dirs" "${dmg_temp_lipo}"
+    rewrite_relocations_recursive "${dmg_temp_lipo}" "${exec_prefix} ltdl openssl"
+    # Create dmg from lipod dest directory
+    rm -f "${staging_dmg}" "${dmg_out}" 
+    debug_command hdiutil create "${staging_dmg}"  -ov -volname "GlobusToolkit" -fs HFS+ -srcfolder "${dmg_temp_lipo}"
+    debug_command hdiutil convert "${staging_dmg}" -format UDZO -o "${dmg_out}"
+    rm -f "${staging_dmg}"
+)
+
+create_pkg()
+(
+    arch_builddirs="$1"
+    gt_package_name="$2"
+    gt_package_version="$3"
+    gt_package_scripts="$4"
+    package_output_dir="$5"
+    osx_package_name="${gt_package_name}-${gt_package_version}.pkg"
+    create_pkg_tmp=$(mktemp -d)
+    trap "rm -rf $create_pkg_tmp" 0
+
+    osx_package_stagedir="${create_pkg_tmp}/stage"
+    osx_package_destdir="${create_pkg_tmp}/dest"
+    pkg_namespace="org.globus"
+
+    arch_dirs="$(install_package_to_staging_dir \
+                    "$gt_package_name" \
+                    "${arch_builddirs}" \
+                    "${osx_package_stagedir}")"
+
+    combine_arch_installs "$arch_dirs" "${osx_package_destdir}"
+    rewrite_relocations_recursive "${osx_package_destdir}" "${exec_prefix} ltdl openssl"
+    if [ "$gt_package_name" = libltdl ]; then
+        pkg_namespace="org.globus.prereq"
+        osx_package_name="ltdl-${gt_package_version}.pkg"
+    fi
+    trace_command pkgbuild --root "$osx_package_destdir" \
+             --version "$gt_package_version" \
+             --identifier "${pkg_namespace}.$gt_package_name" \
+             --ownership recommended \
+             ${gt_package_scripts} \
+             "${package_output_dir}/$osx_package_name"
+    echo "${package_output_dir}/$osx_package_name" 
+)
+
+create_all_pkgs()
+(
+    arch_builddirs="$1"
+    pkg_scripts_dir="$2"
+    output_dir="$3"
+    all_pkgs="${ALL_PACKAGES}"
+    all_pkgs="${all_pkgs} libltdl"
+    
+    mkdir -p "$output_dir"
+    for pkg_name in $all_pkgs; do
+        eval pkg_ver="\$${pkg_name}_version"
+        pkg_scripts=""
+        if [ -d "${pkg_scripts_dir}/${pkg_name}" ]; then
+            pkg_scripts="--scripts ${pkg_scripts_dir}/${pkg_name}"
+        fi
+        trace_command create_pkg "${arch_builddirs}" ${pkg_name} ${pkg_ver} "${pkg_scripts}" "$output_dir"
+    done
+)
+
+create_installer()
+(
+    trace "Creating installer tarball"
+
+    toolkit_version="$1"
+    distribution_file="$2"
+    pkg_dir="$3"
+    resource_dir="$4"
+    outdir="$5"
+
+    trace_command productbuild --distribution "$distribution_file" \
+                 --package-path "$pkg_dir" \
+                 ${resource_dir:+--resources "$resource_dir"} \
+                 ${outdir}/GlobusToolkit-${toolkit_version}.pkg
+
+)
+
+create_tarball_installer()
+(
+    trace "Creating binary tarball"
+
+    arch_builddirs="$1"
+    tar_outdir="$2"
+
+    scratchdir=$(mktemp -d)
+    trap "rm -rf $scratchdir" 0
+    fatdir="${scratchdir}/lipo"
+
+    mkdir -p "${fatdir}"
+
+    output_tarball="${tar_outdir}/Globus-${TOOLKIT_VERSION}${BUILD_NUMBER:+-build${BUILD_NUMBER}}.tar.gz"
+
+    arch_dirs="$(install_package_to_staging_dir "" "${arch_builddirs}" "${scratchdir}")"
+    combine_arch_installs "${arch_dirs}" "${fatdir}"
+    rewrite_relocations_recursive "${fatdir}" "${exec_prefix} ltdl openssl"
+    # Create tar from ${fatdir} directory
+    debug "Creating tarball from ${fatdir}/${prefix}/.."
+    (cd ${fatdir}/${prefix}/.. && debug_command tar -zcf "${output_tarball}" *)
+    echo "${output_tarball}"
+)
+
+# MAIN
+#
+
+
+arch_builddirs="@abs_top_builddir@"
+resources_dir="${resources_dir:-@abs_top_srcdir@/osx/resources}"
+build_dmg=
+build_tarball=
+build_installer=
+build_package=
+first_build_dir="@abs_top_builddir@"
+verbose=0
+build_number=${BUILD_NUMBER}
+output_directory=${WORKSPACE:-$PWD}/artifacts
+
+usage()
+{
+    cat <<EOF
+Usage: $(basename $0) OPTIONS {-d | -t | -i | -p PACKAGE...}
+
+Create packages for OS X
+
+Options:
+    -d                      Create binary dmg
+    -t                      Create binary tarball
+    -i                      Create binary .pkg installer
+    -p PACKAGE              Create .pkg containing PACKAGE
+    -o OUTPUT-DIRECTORY     Create packages in OUTPUT-DIRECTORY
+    -b BUILD-NUMBER         Add BUILD-NUMBER to tarball, dmg and installer
+                            names
+    -l LOGFILE              log to LOGFILE instead of standard output
+    -v                      Increase logging verbosity
+EOF
+}
+while getopts da:tip:b:o:hv i; do
+    case "$i" in
+        l)
+            exec 3>"${OPTARG}"
+            ;;
+        d)
+            build_dmg=1
+            ;;
+        a)
+            arch_builddirs="${arch_builddirs} ${OPTARG}"
+            ;;
+        t)
+            build_tarball=1
+            ;;
+        i)
+            build_installer=1
+            ;;
+        p)
+            build_package="${build_package:+$build_package }${OPTARG}"
+            ;;
+        o)
+            output_directory="${OPTARG}"
+            ;;
+        b)
+            build_number="${OPTARG}"
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        v)
+            verbose=$(($verbose + 1))
+            ;;
+        ?)
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if ! expr "$output_directory" : "^/" > /dev/null; then
+    output_directory="${PWD}/${output_directory}"
+fi
+mkdir -p "${output_directory}"
+
+# Each -v adds to logging
+log_levels="ERROR DEBUG TRACE"
+for l in $log_levels; do
+    if [ ${verbose} -ge 0 ]; then
+        enable_log_levels $l
+        verbose=$(($verbose - 1))
+    else
+        break
+    fi
+done
+
+
+# If user asked to build particular pkg files
+for p in $build_package; do
+    eval pkg_ver="\$${p}_version"
+    pkg_scripts="${first_build_dir}/osx/scripts/${p}" 
+    if [ ! -d "${pkg_scripts}" ]; then
+        pkg_scripts=
+    fi
+
+    create_pkg \
+            "$arch_builddirs" \
+            "$p" \
+            "${pkg_ver}" \
+            "${pkg_scripts:+--scripts $pkg_scripts}" \
+            "${output_directory}"
+done
+
+if [ "$build_dmg" = 1 ]; then
+    create_dmg_installer "${arch_builddirs}" "${output_directory}"
+fi
+if [ "$build_tarball" = 1 ]; then
+    create_tarball_installer "${arch_builddirs}" "${output_directory}"
+fi
+
+if [ "$build_installer" = 1 ]; then
+    trace_command create_all_pkgs "${arch_builddirs}"  \
+                "${first_build_dir}/osx/scripts" \
+                ${output_directory}/pkgs
+
+    create_installer \
+        "${TOOLKIT_VERSION}" \
+        "${first_build_dir}/osx/distribution.xml" \
+        "${output_directory}/pkgs" \
+        "${resources_dir}" \
+        "${output_directory}"
+
+fi
