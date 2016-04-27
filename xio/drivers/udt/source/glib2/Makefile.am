@@ -20,34 +20,6 @@ else
 endif
 	export PKG_CONFIG_PATH="$(PKG_CONFIG_PATH):$(LIBFFI_PKG_CONFIG_PATH)"; \
 	export PATH="$${PATH}:$(GETTEXT_PATH)"; \
-	case $(host_os) in \
-		*darwin*) \
-			next_arch=""; \
-			for flag in $(CFLAGS); do \
-			    if [ X"$$flag" = X"-arch" ]; then \
-				next_arch=1; \
-			    elif [ X"$$next_arch" = X1 ]; then \
-			        next_arch=0; \
-			    else \
-				other_flags="$${other_flags:+$$other_flags }$$flag" ; \
-			    fi; \
-			done ; \
-			next_arch=""; \
-			for flag in $(LDFLAGS); do \
-			    if [ X"$$flag" = X"-arch" ]; then \
-				next_arch=1; \
-			    elif [ X"$$next_arch" = X1 ]; then \
-			        next_arch=0; \
-			    else \
-				other_ldflags="$${other_ldflags:+$$other_ldflags }$$flag" ; \
-			    fi; \
-			done ; \
-			    $(MKDIR_P) build/$(build_triplet); \
-			    cd build/$(build_triplet); \
-			    ../../source/configure --prefix=$(abs_builddir)/$(build_triplet) --disable-compile-warnings CFLAGS="$$other_flags" CPPFLAGS="$(CPPFLAGS) $(GETTEXT_CPPFLAGS)" LDFLAGS="$$other_ldflags $(GETTEXT_LDFLAGS)" CC="$(CC)" LD="$(LD)" --disable-dependency-tracking -q || exit 1; \
-			    $(MAKE) $(AM_MAKEFLAGS) install ; \
-			;; \
-	esac;
 	touch $@
 
 glib2-configure-stamp: glib2-unpack-stamp
