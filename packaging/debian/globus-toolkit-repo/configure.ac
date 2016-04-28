@@ -1,8 +1,8 @@
-AC_INIT([globus-toolkit-repo], [6.0.6])
+AC_INIT([globus-toolkit-repo], [6.0.7])
 
 AM_INIT_AUTOMAKE([foreign])
 
-releases="squeeze,wheezy,jessie,stretch,buster,lucid,precise,quantal,saucy,trusty,utopic,vivid,wily,xenial"
+releases="wheezy,jessie,stretch,buster,precise,trusty,wily,xenial,yakkety"
 
 AC_ARG_WITH([releases],
     [AS_HELP_STRING([--with-releases=RELEASE,...],
