@@ -1,7 +1,7 @@
 Source: globus-xio-udt-driver
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-xio-dev, libnice-dev (>= 0.1) | base-files  (<< 6.5), libselinux-dev | libnice-dev (<= 0.13) | base-files (<< 6.5), liblzma-dev | libnice-dev (<= 0.13) | base-files (<< 6.5), libglib2.0-dev (>= 2.32) | base-files (<< 6.5), libudt-dev | base-files (<<6.5), libffi-dev, libgupnp-igd-1.0-dev, base-files (>= 6.5) | python
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev, libglobus-xio-dev, libnice-dev (>= 0.1), libselinux-dev, liblzma-dev, libglib2.0-dev (>= 2.32), libudt-dev, libffi-dev, libgupnp-igd-1.0-dev, base-files (>= 6.5) | python
 Standards-Version: 3.9.2
 Section: net
 Homepage: http://www.globus.org/
