@@ -196,7 +196,7 @@ create_dmg_installer()
     arch_builddirs="$1"
     dmg_outdir="$2"
 
-    dmg_tmpdir=$(mktemp -d)
+    dmg_tmpdir=$(mktemp -d -t globus-build)
     trap "rm -rf $dmg_tmpdir" 0
 
     dmg_temp="$dmg_tmpdir/tmp"
@@ -226,7 +226,7 @@ create_pkg()
     gt_package_scripts="$4"
     package_output_dir="$5"
     osx_package_name="${gt_package_name}-${gt_package_version}.pkg"
-    create_pkg_tmp=$(mktemp -d)
+    create_pkg_tmp=$(mktemp -d -t globus-build)
     trap "rm -rf $create_pkg_tmp" 0
 
     osx_package_stagedir="${create_pkg_tmp}/stage"
@@ -296,7 +296,7 @@ create_tarball_installer()
     arch_builddirs="$1"
     tar_outdir="$2"
 
-    scratchdir=$(mktemp -d)
+    scratchdir=$(mktemp -d -t globus-build)
     trap "rm -rf $scratchdir" 0
     fatdir="${scratchdir}/lipo"
 
@@ -347,7 +347,7 @@ Options:
     -v                      Increase logging verbosity
 EOF
 }
-while getopts da:tip:b:o:hv i; do
+while getopts l:da:tip:b:o:hv i; do
     case "$i" in
         l)
             exec 3>"${OPTARG}"
