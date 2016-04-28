@@ -10,6 +10,7 @@ TOOLKIT_VERSION="@PACKAGE_VERSION@"
 libltdl_version="@LTDL_VERSION@"
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
+libdir="@libdir@"
 # END AUTOCONF SUBSTITUTIONS
 
 exec 3>&1
@@ -84,13 +85,19 @@ rewrite_relocations()
                 install_name_tool \
                     -change "$lib" "@loader_path/../lib/globus/$libbase" \
                     "$binfile"
+            elif [ "$(basename $(dirname "${binfile}") )" = "engines" ]; then
+                install_name_tool \
+                    -change "$lib" "@loader_path/../../lib/$libbase" \
+                    "$binfile"
             else
                 install_name_tool \
                     -change "$lib" "@loader_path/../lib/$libbase" \
                     "$binfile"
             fi
         done
-        if basename "$binfile" | grep -vq '^lib'; then
+        if [ "$(basename $(dirname "${binfile}") )" = "engines" ]; then
+            install_name_tool -add_rpath "@loader_path/../../lib" "$binfile" || true
+        elif basename "$binfile" | grep -vq '^lib'; then
             install_name_tool -add_rpath "@loader_path/../lib" "$binfile" || true
         fi
     fi
@@ -140,6 +147,72 @@ install_package_to_staging_dir()
         find "${staging_arch_dir}" \( -name '*.a' -o -name '*.la' \) -a -exec rm {} +
         echo "${staging_arch_dir}"
     done
+)
+
+rewrite_openssl_id()
+(
+    destdir="$1"
+    cd "${destdir}/${libdir}"
+    for dylib in libcrypto*.dylib libssl*.dylib engines/lib*.dylib; do
+        if [ -f "$dylib" ]; then
+            install_name_tool -id "${libdir}/$(basename $dylib)" "$dylib"
+        fi
+    done
+)
+
+rewrite_openssl_pcs()
+(
+    destdir="$1"
+    debug "rewrite_openssl_pcs: destdir=$destdir"
+
+    cd "${destdir}/${libdir}/pkgconfig"
+
+    for pc in libssl.pc openssl.pc libcrypto.pc; do
+        sed -e "s|^prefix=.*|prefix=${prefix}|" \
+            -e "s|^exec_prefix=.*|exec_prefix=${exec_prefix}|" \
+            -i '' \
+            $pc
+    done
+)
+
+install_ssl_to_staging_dir()
+(
+    # Stages an install of OpenSSL from "$1" into "$2". OpenSSL is assumed
+    # to have been built as a universal binary
+    ssl_root="$1"
+    output_dir="$2"
+
+    for fn in $(find "$ssl_root" -type f); do
+        dirbase="$(dirname "$fn")"
+        dirbase="${dirbase#$ssl_root}"
+        destdir="${output_dir}${prefix}/${dirbase}"
+        mkdir -p "${destdir}"
+        cp "${fn}" "${destdir}/"
+    done
+    rewrite_openssl_pcs "${output_dir}"
+    rewrite_relocations_recursive "${output_dir}" "${exec_prefix} ltdl openssl"
+    rewrite_openssl_id "${output_dir}"
+)
+create_ssl_package()
+(
+    ssl_root="$1"
+    output_dir="$2"
+
+    openssl_version="$(openssl version | awk '{print $2}')"
+
+    tempdir="$(mktemp -d -t globus-ssl)"
+    trap "rm -rf '$tempdir'" 0
+
+    install_ssl_to_staging_dir "$ssl_root" "$tempdir"
+
+    pkg_namespace="org.globus.prereq"
+    osx_package_name="openssl-${openssl_version}.pkg"
+    trace_command pkgbuild --root "${tempdir}" \
+             --version "$openssl_version" \
+             --identifier "${pkg_namespace}.openssl" \
+             --ownership recommended \
+             "${output_dir}/$osx_package_name"
+    echo "${output_dir}/$osx_package_name" 
 )
 
 combine_arch_installs()
@@ -194,7 +267,8 @@ combine_arch_installs()
 create_dmg_installer()
 (
     arch_builddirs="$1"
-    dmg_outdir="$2"
+    ssl_rootdir="$2"
+    dmg_outdir="$3"
 
     dmg_tmpdir=$(mktemp -d -t globus-build)
     trap "rm -rf $dmg_tmpdir" 0
@@ -210,6 +284,9 @@ create_dmg_installer()
 
     arch_dirs="$(install_package_to_staging_dir "" "${arch_builddirs}" "${dmg_temp}")"
     combine_arch_installs "$arch_dirs" "${dmg_temp_lipo}"
+    if [ -n "$ssl_rootdir" ]; then
+        install_ssl_to_staging_dir "$ssl_rootdir" "${dmg_temp_lipo}"
+    fi
     rewrite_relocations_recursive "${dmg_temp_lipo}" "${exec_prefix} ltdl openssl"
     # Create dmg from lipod dest directory
     rm -f "${staging_dmg}" "${dmg_out}" 
@@ -272,9 +349,45 @@ create_all_pkgs()
     done
 )
 
+update_distribution_xml()
+(
+    ssl_root="$1"
+    distribution_xml="$2"
+
+    openssl_version="$(openssl version | awk '{print $2}')"
+
+    awk < "${distribution_xml}" > "${distribution_xml}.new" "
+        /<choices-outline>/ {
+            print \"    <pkg-ref id=\\\"org.globus.prereq.openssl\\\" version=\\\"${openssl_version}\\\">openssl-${openssl_version}.pkg</pkg-ref>\";
+            print \$0;
+            print \"        <line choice=\\\"org.globus.package.openssl\\\"/>\";
+            next;
+        }
+        /<\/choices-outline>/ {
+            print \$0;
+            print \"<choice id=\\\"org.globus.package.openssl\\\" \\n\" \
+                  \"    visible=\\\"false\\\" \\n\" \
+                  \"    enabled=\\\"false\\\" \\n\" \
+                  \"    title=\\\"openssl\\\" \\n\" \
+                  \"    description=\\\"openssl\\\" \\n\" \
+                  \"    selected=\\\"true\\\" \\n\" \
+                  \"    start_selected=\\\"true\\\"> \\n\" \
+                  \"    <pkg-ref id=\\\"org.globus.prereq.openssl\\\"/>\\n\" \
+                  \"</choice>\";
+            next;
+        }
+        {
+            print \$0;
+        }
+    "
+
+
+
+)
+
 create_installer()
 (
-    trace "Creating installer tarball"
+    trace "Creating installer"
 
     toolkit_version="$1"
     distribution_file="$2"
@@ -294,7 +407,8 @@ create_tarball_installer()
     trace "Creating binary tarball"
 
     arch_builddirs="$1"
-    tar_outdir="$2"
+    ssl_rootdir="$2"
+    tar_outdir="$3"
 
     scratchdir=$(mktemp -d -t globus-build)
     trap "rm -rf $scratchdir" 0
@@ -306,9 +420,13 @@ create_tarball_installer()
 
     arch_dirs="$(install_package_to_staging_dir "" "${arch_builddirs}" "${scratchdir}")"
     combine_arch_installs "${arch_dirs}" "${fatdir}"
+    if [ -n "$ssl_rootdir" ]; then
+        install_ssl_to_staging_dir "$ssl_rootdir" "${fatdir}"
+    fi
+
     rewrite_relocations_recursive "${fatdir}" "${exec_prefix} ltdl openssl"
     # Create tar from ${fatdir} directory
-    debug "Creating tarball from ${fatdir}/${prefix}/.."
+    debug "Creating tarball from $(cd ${fatdir}/${prefix}/..; pwd)"
     (cd ${fatdir}/${prefix}/.. && debug_command tar -zcf "${output_tarball}" *)
     echo "${output_tarball}"
 )
@@ -327,6 +445,7 @@ first_build_dir="@abs_top_builddir@"
 verbose=0
 build_number=${BUILD_NUMBER}
 output_directory=${WORKSPACE:-$PWD}/artifacts
+ssl_root=
 
 usage()
 {
@@ -343,11 +462,13 @@ Options:
     -o OUTPUT-DIRECTORY     Create packages in OUTPUT-DIRECTORY
     -b BUILD-NUMBER         Add BUILD-NUMBER to tarball, dmg and installer
                             names
+    -s SSL-DIR              Include the OpenSSL distribution from SSL-DIR
+                            in the resulting packages
     -l LOGFILE              log to LOGFILE instead of standard output
     -v                      Increase logging verbosity
 EOF
 }
-while getopts l:da:tip:b:o:hv i; do
+while getopts l:da:tip:b:o:hvs: i; do
     case "$i" in
         l)
             exec 3>"${OPTARG}"
@@ -379,6 +500,9 @@ while getopts l:da:tip:b:o:hv i; do
             ;;
         v)
             verbose=$(($verbose + 1))
+            ;;
+        s)
+            ssl_root="${OPTARG}"
             ;;
         ?)
             usage
@@ -421,10 +545,10 @@ for p in $build_package; do
 done
 
 if [ "$build_dmg" = 1 ]; then
-    create_dmg_installer "${arch_builddirs}" "${output_directory}"
+    create_dmg_installer "${arch_builddirs}" "${ssl_root}" "${output_directory}" 
 fi
 if [ "$build_tarball" = 1 ]; then
-    create_tarball_installer "${arch_builddirs}" "${output_directory}"
+    create_tarball_installer "${arch_builddirs}" "${ssl_root}" "${output_directory}"
 fi
 
 if [ "$build_installer" = 1 ]; then
@@ -432,6 +556,11 @@ if [ "$build_installer" = 1 ]; then
                 "${first_build_dir}/osx/scripts" \
                 ${output_directory}/pkgs
 
+    distribution_xml="${first_build_dir}/osx/distribution.xml" 
+    if [ -n "$ssl_root" ]; then
+        create_ssl_package "$ssl_root" "${output_directory}/pkgs"
+        distribution_xml="$(update_distribution_xml "${ssl_root}" "${distribution_xml}")"
+    fi
     create_installer \
         "${TOOLKIT_VERSION}" \
         "${first_build_dir}/osx/distribution.xml" \
