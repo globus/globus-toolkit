@@ -1717,7 +1717,7 @@ globus_l_gfs_file_cksm_read_cb(
     globus_bool_t                       eof = GLOBUS_FALSE;
     char *                              md5ptr;
     unsigned char                       md[MD5_DIGEST_LENGTH];
-    char                                md5sum[MD5_DIGEST_LENGTH * 2 + 1];
+    char                                md5sum[MD5_DIGEST_LENGTH * 2 + 1] = {0};
     int                                 i;    
     GlobusGFSName(globus_l_gfs_file_cksm_read_cb);
     GlobusGFSFileDebugEnter();
@@ -1806,8 +1806,7 @@ globus_l_gfs_file_cksm_read_cb(
            md5ptr++;
            md5ptr++;
         }
-        md5ptr = '\0';
-            
+
         if(monitor->internal_cb)
         {
             monitor->internal_cb(
