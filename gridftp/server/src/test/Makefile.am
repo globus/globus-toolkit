@@ -1,5 +1,6 @@
 check_PROGRAMS = \
         cmp_alias_ent_test \
+        ipc-test \
         sharing_allowed_test
 
 check_DATA = \
@@ -11,6 +12,7 @@ check_SCRIPTS = setup-chroot-test
 
 TESTS = \
 	cmp_alias_ent_test\
+	ipc-test \
 	setup-chroot-test \
 	sharing_allowed_test
 TESTS_ENVIRONMENT = \

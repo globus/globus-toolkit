@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	9.9
+Version:	10.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -178,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon May 02 2016 Globus Toolkit <support@globus.org> - 10.0-1
+- Updates for https server support
+
 * Thu Apr 21 2016 Globus Toolkit <support@globus.org> - 9.9-1
 - add -dlpreload force tests
 
