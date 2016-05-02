@@ -11395,8 +11395,8 @@ globus_i_gfs_data_request_transfer_event(
 
     /* if is possible that events slip through here after setting to
         GLOBUS_L_GFS_DATA_COMPLETE.  This is ok because the only
-        gauretee made is that none will come after
-        GLOBUS_GFS_EVENT_TRANSFER_COMPLETE.  This is gaurenteed with
+        guarantee made is that none will come after
+        GLOBUS_GFS_EVENT_TRANSFER_COMPLETE.  This is guaranteed with
         the reference count. */
     if(pass)
     {
