@@ -1061,9 +1061,9 @@ typedef enum
 } globus_gfs_op_info_param_t;
 
 /* query op_info for parameters
- * query paramters listed in the globus_gfs_op_info_param_t enum.
+ * query parameters listed in the globus_gfs_op_info_param_t enum.
  * the varargs should be populated with variables of the correct type to hold
- * the returning paramters for the requested param type.
+ * the returning parameters for the requested param type.
  * 
 */
 globus_result_t

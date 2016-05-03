@@ -1,7 +1,7 @@
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
-Version:	11.7
-Release:	2%{?dist}
+Version:	11.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
@@ -73,6 +73,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Tue May 03 2016 Globus Toolkit <support@globus.org> - 11.8-1
+- Spelling
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 11.7-2
 - Add vendor
 

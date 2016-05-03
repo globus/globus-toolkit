@@ -1,3 +1,9 @@
+globus-common (16.4-1+gt6.@distro@) @distro@; urgency=low
+
+  * Spelling
+
+ -- Globus Toolkit <support@globus.org>  Tue, 03 May 2016 16:28:11 -0400
+
 globus-common (16.3-1+gt6.@distro@) @distro@; urgency=low
 
   * Thread pc files dlpreopen and dlopen variables

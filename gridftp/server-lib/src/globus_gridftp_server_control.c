@@ -751,7 +751,7 @@ globus_l_gsc_read_cb(
                         cmd_list, (const char *) buffer, len, server_handle);
                     if(op == NULL)
                     {
-                        res = GlobusGridFTPServerControlErrorSytem();
+                        res = GlobusGridFTPServerControlErrorSystem();
                         goto err_alloc_unlock;
                     }
 
@@ -2600,7 +2600,7 @@ globus_gridftp_server_control_init(
         1, sizeof(globus_i_gsc_server_handle_t));
     if(server_handle == NULL)
     {
-        res = GlobusGridFTPServerControlErrorSytem();
+        res = GlobusGridFTPServerControlErrorSystem();
         goto err;
     }
 
@@ -3316,7 +3316,7 @@ globus_gsc_959_command_add(
         sizeof(globus_l_gsc_cmd_ent_t));
     if(cmd_ent == NULL)
     {
-        res = GlobusGridFTPServerControlErrorSytem();
+        res = GlobusGridFTPServerControlErrorSystem();
         goto err;
     }
 
@@ -5358,7 +5358,7 @@ globus_gridftp_server_control_finished_active_connect(
             sizeof(globus_i_gsc_data_t), 1);
         if(data_obj == NULL)
         {
-            return GlobusGridFTPServerControlErrorSytem();
+            return GlobusGridFTPServerControlErrorSystem();
         }
         data_obj->first_use = GLOBUS_TRUE;
         data_obj->dir = data_dir;
@@ -5432,7 +5432,7 @@ globus_gridftp_server_control_finished_passive_connect(
             sizeof(globus_i_gsc_data_t), 1);
         if(data_obj == NULL)
         {
-            return GlobusGridFTPServerControlErrorSytem();
+            return GlobusGridFTPServerControlErrorSystem();
         }
         data_obj->first_use = GLOBUS_TRUE;
         data_obj->dir = data_dir;

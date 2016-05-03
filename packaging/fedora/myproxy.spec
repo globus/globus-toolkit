@@ -1,7 +1,7 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.17
+Version:	6.1.18
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
@@ -535,6 +535,9 @@ fi
 %endif
 
 %changelog
+* Tue May 03 2016 Globus Toolkit <support@globus.org> - 6.1.18-1
+- Spelling
+
 * Wed Mar 09 2016 Globus Toolkit <support@globus.org> - 6.1.17-1
 - Handle error returns from OCSP_parse_url
 

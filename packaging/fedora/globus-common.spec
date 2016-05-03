@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	16.3
+Version:	16.4
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Common Library
@@ -212,6 +212,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Tue May 03 2016 Globus Toolkit <support@globus.org> - 16.4-1
+- Spelling
+
 * Thu Apr 07 2016 Globus Toolkit <support@globus.org> - 16.3-1
 - Thread pc files dlpreopen and dlopen variables
 

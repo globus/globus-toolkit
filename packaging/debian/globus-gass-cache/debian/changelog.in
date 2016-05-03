@@ -1,3 +1,9 @@
+globus-gass-cache (9.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Spelling
+
+ -- Globus Toolkit <support@globus.org>  Tue, 03 May 2016 16:29:20 -0400
+
 globus-gass-cache (9.7-1+gt6.@distro@) @distro@; urgency=low
 
   * regression: bad error check

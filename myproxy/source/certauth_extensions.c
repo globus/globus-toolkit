@@ -168,7 +168,7 @@ external_callout( X509_REQ                 *request,
     if ( read( fds[2], buffer, BUF_SIZE ) > 0 ) {
       verror_put_string("%s", buffer);
     } else {
-      verror_put_string("did not recieve an error string from callout");
+      verror_put_string("did not receive an error string from callout");
     }
     goto error;
   }
@@ -190,7 +190,7 @@ external_callout( X509_REQ                 *request,
     ssl_error_to_verror();
     goto error;
   } else {
-    myproxy_debug("Recieved certificate from external callout.");
+    myproxy_debug("Received certificate from external callout.");
   }
 
   fclose( pipestream );
@@ -1005,7 +1005,7 @@ do_check(const char *callout, const X509_REQ *req, const X509 *cert)
         if ( read( fds[2], buffer, BUF_SIZE ) > 0 ) {
             verror_put_string("%s", buffer);
         } else {
-            verror_put_string("did not recieve an error string from %s",
+            verror_put_string("did not receive an error string from %s",
                               callout);
         }
         return -1;

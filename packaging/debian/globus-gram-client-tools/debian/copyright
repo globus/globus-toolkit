@@ -1,6 +1,6 @@
 Name: globus-gram-client-tools
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt6/packages/globus_gram_client_tools-11.7.tar.gz
+Source: http://toolkit.globus.org/ftppub/gt6/packages/globus_gram_client_tools-11.8.tar.gz
 
 
 Upstream-Authors: The Globus Alliance - http://www.globus.org/

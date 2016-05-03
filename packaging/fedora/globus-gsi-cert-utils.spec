@@ -1,7 +1,7 @@
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
-Version:	9.11
-Release:	2%{?dist}
+Version:	9.12
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
@@ -165,6 +165,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue May 03 2016 Globus Toolkit <support@globus.org> - 9.12-1
+- Spelling
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 9.11-2
 - Add vendor
 

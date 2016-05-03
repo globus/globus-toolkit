@@ -77,7 +77,7 @@ extern "C" {
  * @brief GASS Cache Handle
  * @ingroup globus_gass_cache
  * @details
- * Data structure used to store informations concerning an open cache
+ * Data structure used to store information concerning an open cache
  * directory. This structure MUST NOT be modified directly, but passed to
  * the globus_gass_cache functions
  */

@@ -80,7 +80,7 @@ This behavior can be overridden by specifying the <emphasis>-f</emphasis> or
 </term>
 <listitem>
 <simpara>
-    Do not print diagnostics for succesful cancel.  Implies
+    Do not print diagnostics for successful cancel.  Implies
     <emphasis>-f</emphasis>.
 </simpara>
 </listitem>
