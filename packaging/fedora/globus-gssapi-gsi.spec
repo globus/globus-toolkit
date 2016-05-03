@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	11.29
+Version:	12.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -159,6 +159,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue May 03 2016 Globus Toolkit <support@globus.org> - 12.0-1
+- Change default host verification mode to strict
+
 * Thu Apr 21 2016 Globus Toolkit <support@globus.org> - 11.29-1
 - add -lltdl
 

@@ -1,3 +1,9 @@
+globus-gssapi-gsi (12.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Change default host verification mode to strict
+
+ -- Globus Toolkit <support@globus.org>  Tue, 03 May 2016 10:29:12 -0400
+
 globus-gssapi-gsi (11.29-1+gt6.@distro@) @distro@; urgency=low
 
   * add -lltdl

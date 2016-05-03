@@ -401,12 +401,12 @@ globus_l_gsi_gssapi_activate(void)
                 1,
                 (_GGSL("Unknown GLOBUS_GSSAPI_NAME_COMPATIBILITY value: %s\n"),
                         tmp_string));
-            gss_i_name_compatibility_mode = GSS_I_COMPATIBILITY_HYBRID;
+            gss_i_name_compatibility_mode = GSS_I_COMPATIBILITY_STRICT_RFC2818;
         }
     }
     else
     {
-        gss_i_name_compatibility_mode = GSS_I_COMPATIBILITY_HYBRID;
+        gss_i_name_compatibility_mode = GSS_I_COMPATIBILITY_STRICT_RFC2818;
     }
 
     tmp_string = globus_module_getenv("GLOBUS_GSSAPI_CIPHERS");
