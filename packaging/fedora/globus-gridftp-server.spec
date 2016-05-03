@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	10.0
+Version:	10.1
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -178,6 +178,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue May 03 2016 Globus Toolkit <support@globus.org> - 10.1-1
+- Don't overwite LDFLAGS
+
 * Mon May 02 2016 Globus Toolkit <support@globus.org> - 10.0-1
 - Updates for https server support
 

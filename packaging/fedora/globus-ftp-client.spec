@@ -1,6 +1,6 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.28
+Version:	8.29
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Client Library
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue May 03 2016 Globus Toolkit <support@globus.org> - 8.29-1
+- Don't overwite LDFLAGS
+
 * Mon Apr 18 2016 Globus Toolkit <support@globus.org> - 8.28-1
 - Use prelinks for tests so that they run on El Capitan
 
