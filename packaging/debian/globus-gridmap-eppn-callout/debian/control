@@ -1,7 +1,7 @@
 Source: globus-gridmap-eppn-callout
 Priority: optional
 Maintainer: Globus Toolkit <support@globus.org>
-Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev (>= 5), libglobus-gssapi-gsi-dev (>= 9), libglobus-gss-assist-dev (>= 8), libglobus-gridmap-callout-error-dev (>= 0), libglobus-gsi-credential-dev (>= 6), pkg-config
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev (>= 5), libglobus-gssapi-gsi-dev (>= 9), libglobus-gss-assist-dev (>= 8), libglobus-gridmap-callout-error-dev (>= 0), libglobus-gsi-credential-dev (>= 6), libglobus-gsi-cert-utils-dev (>= 8), pkg-config
 Standards-Version: 3.8.4
 Section: net
 Homepage: http://www.globus.org/
