@@ -22,7 +22,7 @@ sbin_SCRIPTS = \
 pkgconfig_DATA = globus-gridftp-server.pc
 
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -DGLOBUS_BUILTIN=1
-LDFLAGS = -dlpreopen force
+AM_LDFLAGS = -dlpreopen force
 libglobus_gridftp_server_la_LIBADD = $(MODULE_LIBS) $(PACKAGE_DEP_LIBS)
 libglobus_gridftp_server_la_LDFLAGS =   \
         -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
