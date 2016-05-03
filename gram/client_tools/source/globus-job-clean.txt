@@ -53,7 +53,7 @@ OPTIONS
     Do not prompt to confirm job cancel and clean-up.
 
 *-quiet, -q*::
-    Do not print diagnostics for succesful clean-up.  Implies '-f'.
+    Do not print diagnostics for successful clean-up.  Implies '-f'.
 
 [[globus-job-clean-ENVIRONMENT]]
 ENVIRONMENT

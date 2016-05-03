@@ -96,7 +96,7 @@ This behavior can be overridden by specifying the <emphasis>-f</emphasis> or
 </term>
 <listitem>
 <simpara>
-    Do not print diagnostics for succesful clean-up.  Implies <emphasis>-f</emphasis>.
+    Do not print diagnostics for successful clean-up.  Implies <emphasis>-f</emphasis>.
 </simpara>
 </listitem>
 </varlistentry>

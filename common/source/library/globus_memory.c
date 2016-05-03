@@ -92,7 +92,7 @@ globus_l_memory_create_list(
  *
  *  @param node_count
  *          The initial number of nodes allocated with the memory
- *          management structure.  If it is exceded more will be 
+ *          management structure.  If it is exceeded more will be
  *          allocated.
  */
 globus_bool_t

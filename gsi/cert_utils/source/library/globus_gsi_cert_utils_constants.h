@@ -41,11 +41,11 @@ typedef enum
 {
     /** Success - never used */
     GLOBUS_GSI_CERT_UTILS_ERROR_SUCCESS = 0,
-    /** Failed to retreive a subcomponent of the subject */
+    /** Failed to retrieve a subcomponent of the subject */
     GLOBUS_GSI_CERT_UTILS_ERROR_GETTING_NAME_ENTRY_OF_SUBJECT = 1,
     /** A error occured while trying to copy a X.509 subject */
     GLOBUS_GSI_CERT_UTILS_ERROR_COPYING_SUBJECT = 2,
-    /** Failed to retreive a CN subcomponent of the subject */
+    /** Failed to retrieve a CN subcomponent of the subject */
     GLOBUS_GSI_CERT_UTILS_ERROR_GETTING_CN_ENTRY = 3,
     /** Failed to add a CN component to a X.509 subject name */
     GLOBUS_GSI_CERT_UTILS_ERROR_ADDING_CN_TO_SUBJECT = 4,

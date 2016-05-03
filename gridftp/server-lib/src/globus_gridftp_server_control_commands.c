@@ -245,7 +245,7 @@ globus_l_gsc_cmd_trev(
     sc = sscanf(cmd_a[2], "%d", &frequency);
     if(sc != 1)
     {
-        globus_gsc_959_finished_command(op, _FSMSL("501 Bad paramter mode.\r\n"));
+        globus_gsc_959_finished_command(op, _FSMSL("501 Bad parameter mode.\r\n"));
     }
 
     if(strcmp(event_name, "RESTART") == 0)
@@ -3366,7 +3366,7 @@ globus_i_gsc_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         3,
-        "OPTS <sp> opt-type [paramters]",
+        "OPTS <sp> opt-type [parameters]",
         NULL);
 
     globus_gsc_959_command_add(
