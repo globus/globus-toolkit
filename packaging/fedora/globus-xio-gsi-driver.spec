@@ -1,6 +1,6 @@
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	3.9
+Version:	3.10
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GSI Driver
@@ -130,6 +130,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed May 11 2016 Globus Toolkit <support@globus.org> - 3.10-1
+- Fix anonymous auth in strict mode
+
 * Tue Apr 05 2016 Globus Toolkit <support@globus.org> - 3.9-1
 - Add dlpreopen variable to uninstalled pc file
 - Propagate error back to caller when name mismatch occurs on server
