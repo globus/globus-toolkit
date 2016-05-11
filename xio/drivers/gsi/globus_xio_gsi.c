@@ -1372,7 +1372,7 @@ globus_l_xio_gsi_read_token_cb(
                     if (target_oid->length == GSS_C_NT_ANONYMOUS->length &&
                         memcmp(target_oid->elements,
                                 GSS_C_NT_ANONYMOUS->elements,
-                                target_oid->length))
+                                target_oid->length) == 0)
                     {
                         result = GLOBUS_SUCCESS;
                         equal = GLOBUS_TRUE;
