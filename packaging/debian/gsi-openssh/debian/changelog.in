@@ -1,4 +1,10 @@
-gsi-openssh (7.1p2d-2+gt6.@distro@) @distro@; urgency=low
+gsi-openssh (7.1p2e-1+gt6.@distro@) @distro@; urgency=low
+
+  * default iSSHD auditing to disabled
+
+ -- Globus Toolkit <support@globus.org>  Thu, 12 May 2016 14:18:13 -0400
+
+gsi-openssh (7.1p2d-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix configuration problem missing gss_assist functions
 

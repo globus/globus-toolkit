@@ -30,7 +30,7 @@
 %global nologin 1
 
 %global gsi_openssh_rel 1
-%global gsi_openssh_ver 7.1p2d
+%global gsi_openssh_ver 7.1p2e
 
 Summary: An implementation of the SSH protocol with GSI authentication
 Name: gsi-openssh
@@ -68,12 +68,12 @@ Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-i
 ## cd ..
 ## git clone https://github.com/globus/gsi-openssh.git
 ## cd gsi-openssh
-## git checkout tags/7.1p2d
+## git checkout tags/7.1p2e
 ## git log `cat ../changelog_last_commit`^... > ChangeLog
 ## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" SHELL=$SHELL distprep
 ## rm -fr .git
 ## cd ..
-## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2d.patch
+## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2e.patch
 Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.%{version}.patch
 
 License: BSD
@@ -427,6 +427,9 @@ fi
 %endif
 
 %changelog
+* Thu May 12 2016 Globus Toolkit <support@globus.org> - 7.1p2e-1
+- default iSSHD auditing to disabled
+
 * Mon Apr 25 2016 Globus Toolkit <support@globus.org> - 7.1p2c-2
 - Change source URL
 - Create symlinks only to system-standard ssh host keys that are present
@@ -434,7 +437,6 @@ fi
 * Fri Mar 11 2016 Globus Toolkit <support@globus.org> - 7.1p2c-1
 - Fixes for Globus Toolkit builds: Skip probing for specific globus funcs
 - Fixes for building kerberos/mechglue without GSI.
-- Disable iSSHD auditing by default in the source code itself.
 
 * Fri Mar  4 2016 Globus Toolkit <support@globus.org> - 7.1p2-1b
 - Update to 7.1p2b
