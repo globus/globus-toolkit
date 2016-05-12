@@ -1,3 +1,9 @@
+gsi-openssh (7.1p2d-2+gt6.@distro@) @distro@; urgency=low
+
+  * Fix configuration problem missing gss_assist functions
+
+ -- Globus Toolkit <support@globus.org>  Thu, 12 May 2016 10:57:24 -0400
+
 gsi-openssh (7.1p2c-2+gt6.@distro@) @distro@; urgency=low
 
   * Change source url
