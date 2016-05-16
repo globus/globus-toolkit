@@ -2492,6 +2492,27 @@ globus_l_gfs_config_misc()
     {
         globus_l_gfs_config_set("help", GLOBUS_TRUE, NULL);
     }
+
+    /* use ipc_interface and ipc_port if a listening data node */
+    if(globus_i_gfs_config_string("remote_nodes") == NULL &&
+        globus_i_gfs_config_bool("data_node"))
+    {
+        int                             port;
+        char *                          iface;
+
+        port = globus_i_gfs_config_int("ipc_port");
+        if(port > 0)
+        {
+            globus_l_gfs_config_set("port", port, NULL);
+        }
+
+        iface = globus_i_gfs_config_string("ipc_interface");
+        if(iface)
+        {
+            globus_l_gfs_config_set(
+                "control_interface", 0, globus_libc_strdup(iface));
+        }
+    }
     
     if((value = 
         globus_i_gfs_config_string("control_interface")) != GLOBUS_NULL)
@@ -2796,20 +2817,6 @@ globus_l_gfs_config_misc()
         {
             str = globus_i_gfs_config_string("deny_from");
             globus_l_gfs_config_set("ipc_deny_from", 0, str);
-        }
-    }
-
-    /* if it is a listening data node */
-    if(globus_i_gfs_config_string("remote_nodes") == NULL &&
-        globus_i_gfs_config_bool("data_node"))
-    {
-        int                             port;
-
-        port = globus_i_gfs_config_int("port");
-        if(port == 0)
-        {
-            port = globus_i_gfs_config_int("ipc_port");
-            globus_l_gfs_config_set("port", port, NULL);   
         }
     }
     
