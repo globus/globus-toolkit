@@ -1,3 +1,10 @@
+globus-gridftp-server (10.3-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix configuration for ipc_interface
+  * fix remote_node connection failing when ipc_subject isn't used
+
+ -- Globus Toolkit <support@globus.org>  Wed, 18 May 2016 12:02:35 -0500
+
 globus-gridftp-server (10.2-1+gt6.@distro@) @distro@; urgency=low
 
   * Spelling

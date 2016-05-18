@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	10.2
+Version:	10.3
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -178,6 +178,10 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Wed May 18 2016 Globus Toolkit <support@globus.org> - 10.3-1
+- fix configuration for ipc_interface
+- fix remote_node connection failing when ipc_subject isn't used
+
 * Tue May 03 2016 Globus Toolkit <support@globus.org> - 10.2-1
 - Spelling
 
