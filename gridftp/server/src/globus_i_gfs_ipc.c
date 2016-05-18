@@ -2089,7 +2089,7 @@ globus_gfs_ipc_handle_create(
         .conf_secure_ipc              = globus_gfs_config_get_bool("secure_ipc"),
         .conf_cred                    = globus_gfs_config_get("ipc_cred"),
         .conf_auth_mode_str           = strdup(globus_gfs_config_get_string("ipc_auth_mode")),
-        .conf_ipc_subject             = strdup(globus_gfs_config_get_string("ipc_subject")),
+        .conf_ipc_subject             = globus_libc_strdup(globus_gfs_config_get_string("ipc_subject")),
         .conf_ipc_connect_timeout     = globus_gfs_config_get_int("ipc_connect_timeout"),
         .conf_ipc_idle_timeout        = globus_gfs_config_get_int("ipc_idle_timeout"),
         .conf_inetd                   = globus_gfs_config_get_int("inetd")
