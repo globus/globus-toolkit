@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        18
+Release:        19
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -143,13 +143,14 @@ else
     osver=unknown
 fi
 case ${osname}:${osver} in
-    centos*:5* | sl*:5* | redhat*:5* )
+    centos*:5* | sl*:5* | redhat*:5* | springdale*:5*)
         repo=el5
         ;;
-    centos*:6* | sl*:6* | redhat*:6* )
+    centos*:6* | sl*:6* | redhat*:6* | springdale*:6*)
+)
         repo=el6
         ;;
-    centos*:7* | sl*:7* | redhat*:7* )
+    centos*:7* | sl*:7* | redhat*:7* | springdale*:7*))
         repo=el7
         ;;
     fedora*:*)
@@ -200,13 +201,13 @@ else
     osver=unknown
 fi
 case ${osname}:${osver} in
-    centos*:5* | sl*:5* | redhat*:5* )
+    centos*:5* | sl*:5* | redhat*:5* | springdale*:5*)
         repo=el5
         ;;
-    centos*:6* | sl*:6* | redhat*:6* )
+    centos*:6* | sl*:6* | redhat*:6* | springdale*:6*)
         repo=el6
         ;;
-    centos*:7* | sl*:7* | redhat*:7* )
+    centos*:7* | sl*:7* | redhat*:7* | springdale*:7*)
         repo=el7
         ;;
     fedora*:*)
@@ -239,6 +240,9 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Thu Mar 19 2016 Globus Toolkit <support@globus.org> - 6-19
+- Add springdale (rhel-compatible)
+
 * Mon Apr 06 2015 Globus Toolkit <support@globus.org> - 6-18
 - Handle update from broken versions
 
