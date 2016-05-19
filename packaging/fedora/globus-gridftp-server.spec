@@ -1,7 +1,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
 Version:	10.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -36,6 +36,7 @@ BuildRequires:	globus-gsi-credential-devel >= 6
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
+BuildRequires:  openssl
 %endif
 BuildRequires:  pkgconfig
 %if 0%{?suse_version} > 0
@@ -178,8 +179,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
-* Thu May 19 2016 Globus Toolkit <support@globus.org> - 10.4-1
+* Thu May 19 2016 Globus Toolkit <support@globus.org> - 10.4-2
 - fix broken remote_node auth without sharing
+- Add openssl build dependency
 
 * Wed May 18 2016 Globus Toolkit <support@globus.org> - 10.3-1
 - fix configuration for ipc_interface
