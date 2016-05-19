@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        19
+Release:        20
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -147,10 +147,9 @@ case ${osname}:${osver} in
         repo=el5
         ;;
     centos*:6* | sl*:6* | redhat*:6* | springdale*:6*)
-)
         repo=el6
         ;;
-    centos*:7* | sl*:7* | redhat*:7* | springdale*:7*))
+    centos*:7* | sl*:7* | redhat*:7* | springdale*:7*)
         repo=el7
         ;;
     fedora*:*)
@@ -240,7 +239,7 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
-* Thu Mar 19 2016 Globus Toolkit <support@globus.org> - 6-19
+* Thu Mar 19 2016 Globus Toolkit <support@globus.org> - 6-20
 - Add springdale (rhel-compatible)
 
 * Mon Apr 06 2015 Globus Toolkit <support@globus.org> - 6-18
