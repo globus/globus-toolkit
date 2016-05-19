@@ -4159,7 +4159,8 @@ globus_l_gfs_data_authorize(
                 
         if(!(auth_level & GLOBUS_L_GFS_AUTH_NOGRIDMAP))
         {
-            if(globus_i_gfs_config_bool("cas"))
+            if(globus_i_gfs_config_bool("cas") && 
+                (context || sharing_attempted))
             {
                 globus_bool_t           free_usr = GLOBUS_FALSE;
                 
