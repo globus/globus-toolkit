@@ -1,3 +1,9 @@
+globus-gsi-proxy-ssl (5.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix strchr of non-terminated string when displaying policy
+
+ -- Globus Toolkit <support@globus.org>  Fri, 20 May 2016 12:17:35 -0400
+
 globus-gsi-proxy-ssl (5.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Include more manpages for API

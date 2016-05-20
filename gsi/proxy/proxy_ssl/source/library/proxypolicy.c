@@ -452,26 +452,39 @@ STACK_OF(CONF_VALUE) * i2v_PROXYPOLICY(
         X509V3_add_value("    Policy:", NULL, &extlist);
 
         tmp_string = policy;
-        while(1)
+        while (policy_length > 0)
         {
-            index = (unsigned char *) strchr((char *) tmp_string, '\n');
-            if(!index)
+            int                         policy_line_length;
+
+            index = memchr(tmp_string, '\n', (size_t) policy_length);
+
+            /* Weird to indent the last line only... */
+            if (!index)
             {
-                int                     length;
                 char *                  last_string;
-                length = (policy_length - (tmp_string - policy)) + 9;
-                last_string = malloc(length);
-                BIO_snprintf(last_string, length, "%8s%s", "", (char *) tmp_string);
+
+                policy_line_length = policy_length;
+
+                last_string = malloc(policy_line_length + 9);
+                BIO_snprintf(
+                        last_string,
+                        (size_t) (policy_line_length +9),
+                        "%8s%.*s", "",
+                        policy_line_length,
+                        (char *) tmp_string);
                 X509V3_add_value(NULL, last_string, &extlist);
                 free(last_string);
-                break;
             }
-            
-            *index = '\0';
-            
-            X509V3_add_value(NULL, (char *) tmp_string, &extlist);
-            
-            tmp_string = index + 1;
+            else
+            {
+                *(index++) = '\0';
+                policy_line_length = index - tmp_string;
+                
+                X509V3_add_value(NULL, (char *) tmp_string, &extlist);
+                
+                tmp_string = index;
+            }
+            policy_length -= policy_line_length;
         }
         
         free(policy);

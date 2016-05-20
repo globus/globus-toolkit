@@ -11,7 +11,7 @@ endif
 
 name = globus-gsi-proxy-ssl
 _name = globus_gsi_proxy_ssl
-version = 5.7
+version = 5.8
 soname = 1
 
 INSTALLDIR = $(CURDIR)/debian/tmp

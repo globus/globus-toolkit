@@ -1,7 +1,7 @@
 Name:		globus-gsi-proxy-ssl
 %global _name %(tr - _ <<< %{name})
-Version:	5.7
-Release:	2%{?dist}
+Version:	5.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library
 
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Fri May 20 2016 Globus Toolkit <support@globus.org> - 5.8-1
+- Fix strchr of non-terminated string when displaying policy
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 5.7-2
 - Add vendor
 
