@@ -1,4 +1,4 @@
-myproxy-oauth (0.20-1+gt6.@distro@) @distro@; urgency=low
+myproxy-oauth (0.21-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix redirect when callback_uri contains a query
 
