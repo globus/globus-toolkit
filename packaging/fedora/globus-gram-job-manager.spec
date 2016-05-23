@@ -1,7 +1,7 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
 Version:	14.27
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -67,6 +67,9 @@ BuildRequires:	globus-gass-server-ez-devel >= 0
 BuildRequires:	globus-proxy-utils >= 5
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
+%endif
+%if %{?fedora}%{!?fedora:0} >= 24
+BuildRequires:  perl-Test
 %endif
 
 %package doc
@@ -149,6 +152,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Mon May 23 2016 Globus Toolkit <support@globus.org> - 14.27-3
+- Add perl-Test dependency for fedora 24
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 14.27-2
 - Add vendor
 
