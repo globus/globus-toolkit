@@ -53,7 +53,7 @@ $cygwinInstallProc = Start-Process -NoNewWindow `
 
 if ($InstanceType -eq "mingw32" -or $InstanceType -eq "mingw64")
 {
-    $mingw_repoview="https://dl.fedoraproject.org/pub/epel/7/x86_64/repoview"
+    $mingw_repo_m="https://dl.fedoraproject.org/pub/epel/7/x86_64/m/"
     $mingw_prereqs = `
         "${InstanceType}-gettext",`
         "${InstanceType}-glib2",`
@@ -63,10 +63,10 @@ if ($InstanceType -eq "mingw32" -or $InstanceType -eq "mingw64")
         "${InstanceType}-winpthreads"
 
     Echo "Installing additional prereqs ($mingw_prereqs) for mingw from EPEL 7"
+    Echo "Fetching x86_64/m dir index"
+    $info = Invoke-WebRequest -Uri "${mingw_repoview}"
     foreach ($prereq in $mingw_prereqs) {
-        Echo "Fetching repoview entry for $prereq"
-        $info = Invoke-WebRequest -Uri "${mingw_repoview}/${prereq}.html"
-        $href = ($info.Links | Where {$_.href.EndsWith(".rpm")}).href
+        $href = ($info.Links | Where {($_.href.StartsWith(${prereq})) -and ($_.href.EndsWith(".rpm"))}).href
         if ($href.StartsWith("http")) {
             $abs_uri = "${href}"
         }
