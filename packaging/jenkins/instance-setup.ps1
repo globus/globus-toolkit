@@ -64,20 +64,22 @@ if ($InstanceType -eq "mingw32" -or $InstanceType -eq "mingw64")
 
     Echo "Installing additional prereqs ($mingw_prereqs) for mingw from EPEL 7"
     Echo "Fetching x86_64/m dir index"
-    $info = Invoke-WebRequest -Uri "${mingw_repoview}"
+    $info = Invoke-WebRequest -Uri "${mingw_repo_m}"
     foreach ($prereq in $mingw_prereqs) {
-        $href = ($info.Links | Where {($_.href.StartsWith(${prereq})) -and ($_.href.EndsWith(".rpm"))}).href
-        if ($href.StartsWith("http")) {
-            $abs_uri = "${href}"
+        $hrefs = ($info.Links | Where {($_.href.StartsWith(${prereq})) -and ($_.href.EndsWith(".rpm"))}).href
+        foreach ($href in $hrefs) {
+            if ($href.StartsWith("http")) {
+                $abs_uri = "${href}"
+            }
+            else {
+                $abs_uri = "${mingw_repo_m}/${href}"
+            }
+            $abs_file = "C:\Windows\Temp\${prereq}.rpm"
+            Echo "Fetching ${abs_uri} and saving to ${abs_file}"
+            Invoke-WebRequest -Uri "$abs_uri" -OutFile "$abs_file"
+            $cygpath = (C:\cygwin\bin\cygpath.exe "$abs_file")
+            C:\cygwin\bin\bash.exe --login -c "/bin/rpm2cpio '${cygpath}' | (cd /; cpio -id)"
         }
-        else {
-            $abs_uri = "${mingw_repoview}/${href}"
-        }
-        $abs_file = "C:\Windows\Temp\${prereq}.rpm"
-        Echo "Fetching ${abs_uri} and saving to ${abs_file}"
-        Invoke-WebRequest -Uri "$abs_uri" -OutFile "$abs_file"
-        $cygpath = (C:\cygwin\bin\cygpath.exe "$abs_file")
-        C:\cygwin\bin\bash.exe --login -c "/bin/rpm2cpio '${cygpath}' | (cd /; cpio -id)"
     }
 }
 
