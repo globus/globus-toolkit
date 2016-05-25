@@ -9,9 +9,11 @@
 
     @MAC_INSTALLER_PKG_REFS@
     <pkg-ref id="org.globus.prereq.libltdl" version="@LTDL_VERSION@">ltdl-@LTDL_VERSION@.pkg</pkg-ref>
+    <pkg-ref id="org.globus.prereq.openssl" version="@OPENSSL_VERSION@">openssl-@OPENSSL_VERSION@.pkg</pkg-ref>
 
     <choices-outline>
         <line choice="org.globus.package.libltdl"/>
+        <line choice="org.globus.package.openssl"/>
         @MAC_INSTALLER_CHOICE_LINES@
     </choices-outline>
 
@@ -24,6 +26,15 @@
         selected="true"
         start_selected="true">
         <pkg-ref id="org.globus.prereq.libltdl"/>
+    </choice>
+    <choice id="org.globus.package.openssl"
+        visible="false"
+        enabled="false"
+        title="openssl"
+        description="openssl"
+        selected="true"
+        start_selected="true">
+        <pkg-ref id="org.globus.prereq.openssl"/>
     </choice>
     <choice
         id="org.globus.bundle.ccommonlibs"

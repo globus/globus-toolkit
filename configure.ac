@@ -350,6 +350,9 @@ if test -n "$PKG_CONFIG"; then
         PKG_CONFIG=""
     fi
 fi
+OPENSSL_VERSION=$($PKG_CONFIG --modversion openssl)
+AC_SUBST([OPENSSL_VERSION])
+
 if test x"$PKG_CONFIG" = x ; then
    AC_MSG_ERROR([Missing required pkg-config >= $pkg_config_min])
 fi

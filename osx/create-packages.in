@@ -8,6 +8,7 @@ ALL_PACKAGES="@GT_PACKAGE_LIST_SH@"
 TOOLKIT_VERSION="@PACKAGE_VERSION@"
 @GT_PACKAGE_VERSIONS_SH@
 libltdl_version="@LTDL_VERSION@"
+openssl_version="@OPENSSL_VERSION@"
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 libdir="@libdir@"
@@ -336,7 +337,7 @@ create_all_pkgs()
     pkg_scripts_dir="$2"
     output_dir="$3"
     all_pkgs="${ALL_PACKAGES}"
-    all_pkgs="${all_pkgs} libltdl"
+    all_pkgs="${all_pkgs} openssl libltdl"
     
     mkdir -p "$output_dir"
     for pkg_name in $all_pkgs; do
