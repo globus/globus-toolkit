@@ -156,6 +156,7 @@ GlobusXIODefineModule(udt) =
 
 
 static  xio_l_udt_ref_attr_t            globus_l_xio_udt_ref_attr_default;
+static char *                           globus_l_xio_udt_stunserver = NULL;
 
 static
 int
@@ -189,6 +190,8 @@ globus_l_xio_udt_ref_activate(void)
     globus_l_xio_udt_ref_attr_default.rcvtimeo = -1;
     globus_l_xio_udt_ref_attr_default.reuseaddr = XIO_UDT_BOOL_UNDEF;
     globus_l_xio_udt_ref_attr_default.port = 0;
+
+    globus_l_xio_udt_stunserver = getenv("GLOBUS_XIO_UDT_STUNSERVER");
 
     GlobusXIOUDTRefDebugExit();
     return GLOBUS_SUCCESS;
@@ -300,7 +303,12 @@ globus_l_xio_udt_ref_attr_cntl(
             out_string = va_arg(ap, char **);
             
             ice_lib_init();
-            
+
+            if(globus_l_xio_udt_stunserver)
+            {
+                stunserver = globus_l_xio_udt_stunserver;
+            }
+
             if(stunserver)
             {
                 char *                  ptr;

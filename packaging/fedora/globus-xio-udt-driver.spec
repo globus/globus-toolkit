@@ -1,6 +1,6 @@
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.20
+Version:	1.21
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
@@ -133,6 +133,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed May 25 2016 Globus Toolkit <support@globus.org> - 1.21-1
+- add GLOBUS_XIO_UDT_STUNSERVER env override
+
 * Wed Apr 27 2016 Globus Toolkit <support@globus.org> - 1.20-1
 - Don't configure glib2 during unpack
 
