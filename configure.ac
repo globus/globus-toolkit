@@ -544,7 +544,7 @@ EOF
         visible="false"
         title="packname"
         description="packname Libraries and Tools"dnl
-m4_ifdef(packname[_REQUIRES],[
+m4_ifdef(underscored_name[_REQUIRES],[
         selected="m4_expand(underscored_name[_REQUIRES])"])
         start_selected="choices@<:@'org.globus.bundle.m4_expand(underscored_name[_BUNDLE])'@:>@.selected">
         <pkg-ref id="org.globus.packname"/>
@@ -557,7 +557,7 @@ EOF
         GT_TARGETS_DIST="${GT_TARGETS_DIST:+$GT_TARGETS_DIST }packname[-dist]"
         GT_TARGETS_INSTALL="${GT_TARGETS_INSTALL:+$GT_TARGETS_INSTALL }packname[-install]"
         GT_PACKAGE_LIST_SH="${GT_PACKAGE_LIST_SH:+$GT_PACKAGE_LIST_SH }packname"
-        echo "packname[_version]=m4_expand(underscored_name[_VERSION])" >> "$GT_PACKAGE_VERSIONS_SH"
+        echo "underscored_name[_version]=m4_expand(underscored_name[_VERSION])" >> "$GT_PACKAGE_VERSIONS_SH"
         fi
     done
     GT_ALL_TARGETS_OSX_PKG="${GT_ALL_TARGETS_OSX_PKG:+$GT_ALL_TARGETS_OSX_PKG }packname[-osx-pkg]"

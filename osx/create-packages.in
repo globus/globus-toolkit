@@ -341,7 +341,8 @@ create_all_pkgs()
     
     mkdir -p "$output_dir"
     for pkg_name in $all_pkgs; do
-        eval pkg_ver="\$${pkg_name}_version"
+        pkg_name_underscored=$(echo $pkg_name | tr - _)
+        eval pkg_ver="\$${pkg_name_underscored}_version"
         pkg_scripts=""
         if [ -d "${pkg_scripts_dir}/${pkg_name}" ]; then
             pkg_scripts="--scripts ${pkg_scripts_dir}/${pkg_name}"
@@ -531,7 +532,8 @@ done
 
 # If user asked to build particular pkg files
 for p in $build_package; do
-    eval pkg_ver="\$${p}_version"
+    pkg_name_underscored=$(echo $p | tr - _)
+    eval pkg_ver="\$${pkg_name_underscored}_version"
     pkg_scripts="${first_build_dir}/osx/scripts/${p}" 
     if [ ! -d "${pkg_scripts}" ]; then
         pkg_scripts=
