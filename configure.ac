@@ -82,6 +82,7 @@ m4_define([pkgver], m4_normalize(m4_esyscmd(grep AC[_]INIT [$2][/configure.ac]))
 m4_popdef([AC_INIT])dnl
 ])
 m4_define([native_name], m4_translit([$1],[_],[-]))
+m4_define([underscored_name], m4_translit([$1],[-],[_]))
 
     m4_append([TARGETS_MACRO],[dnl
 $1-stamp_SUBDIR = $2
@@ -129,13 +130,13 @@ $1-osx-pkg: \$($1-osx-pkg)
     m4_append([GT_BUNDLES_]$4[_PACKAGES],native_name)
     m4_append([GT_PACKAGE_LIST], [$1], [ ])dnl
     m4_append([GT_ALL_STAMPS_MACRO], [$1]-stamp, [ ])dnl
-    m4_define($1[_VERSION], pkgver)
-    m4_append($1[_BUNDLE], $4)
+    m4_define(underscored_name[_VERSION], pkgver)
+    m4_append(underscored_name[_BUNDLE], $4)
     m4_append([GT_BUNDLES_]m4_translit([$4], [-], [_])[_XIO_DRIVERS],
         [ifelse([$5],[1], [$1-stamp ],[])])
     m4_append([GT_TARGETS_CLEAN_MACRO], [$1-clean], [ ])dnl
     m4_foreach([req], m4_split(m4_normalize($3)), [dnl
-        m4_append(req[_REQUIRES], [choices]@<:@'org.globus.package.$1'@:>@[.selected], [ || ])])dnl
+        m4_append(m4_translit(req,[-],[_])[_REQUIRES], [choices]@<:@'org.globus.package.$1'@:>@[.selected], [ || ])])dnl
 ])dnl
 
 GT_PACKAGE(
@@ -531,10 +532,11 @@ GT_ALL_TARGETS_DIST=""
 GT_ALL_TARGETS_INSTALL=""
 
 m4_foreach([packname], m4_split(GT_PACKAGE_LIST), [
+    m4_define([underscored_name], m4_translit(packname,[-],[_]))
     for bun in $final_enabled_bundles; do
-        if test "m4_expand(packname[_BUNDLE])" = "$bun"; then
+        if test "m4_expand(underscored_name[_BUNDLE])" = "$bun"; then
             cat <<EOF >> "$MAC_INSTALLER_PKG_REFS"
-    <pkg-ref id="org.globus.packname" version="m4_expand(packname[_VERSION])">packname[-]m4_expand(packname[_VERSION]).pkg</pkg-ref>
+    <pkg-ref id="org.globus.packname" version="m4_expand(underscored_name[_VERSION])">packname[-]m4_expand(underscored_name[_VERSION]).pkg</pkg-ref>
 EOF
             cat <<EOF >> "$MAC_INSTALLER_PACKAGE_CHOICES"
     <choice 
@@ -543,8 +545,8 @@ EOF
         title="packname"
         description="packname Libraries and Tools"dnl
 m4_ifdef(packname[_REQUIRES],[
-        selected="m4_expand(packname[_REQUIRES])"])
-        start_selected="choices@<:@'org.globus.bundle.m4_expand(packname[_BUNDLE])'@:>@.selected">
+        selected="m4_expand(underscored_name[_REQUIRES])"])
+        start_selected="choices@<:@'org.globus.bundle.m4_expand(underscored_name[_BUNDLE])'@:>@.selected">
         <pkg-ref id="org.globus.packname"/>
     </choice>
 EOF
@@ -555,7 +557,7 @@ EOF
         GT_TARGETS_DIST="${GT_TARGETS_DIST:+$GT_TARGETS_DIST }packname[-dist]"
         GT_TARGETS_INSTALL="${GT_TARGETS_INSTALL:+$GT_TARGETS_INSTALL }packname[-install]"
         GT_PACKAGE_LIST_SH="${GT_PACKAGE_LIST_SH:+$GT_PACKAGE_LIST_SH }packname"
-        echo "packname[_version]=m4_expand(packname[_VERSION])" >> "$GT_PACKAGE_VERSIONS_SH"
+        echo "packname[_version]=m4_expand(underscored_name[_VERSION])" >> "$GT_PACKAGE_VERSIONS_SH"
         fi
     done
     GT_ALL_TARGETS_OSX_PKG="${GT_ALL_TARGETS_OSX_PKG:+$GT_ALL_TARGETS_OSX_PKG }packname[-osx-pkg]"
