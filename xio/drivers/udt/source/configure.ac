@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_udt_driver],[1.21],[https://globus.atlassian.net/])
+AC_INIT([globus_xio_udt_driver],[1.22],[https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -104,7 +104,7 @@ if test X"$use_included_udt" = "X"; then
 fi
 
 if test X"$use_included_nice" = "X"; then
-    PKG_CHECK_MODULES([NICE], [nice >= 0.0.12],[],[use_included_nice=1])
+    PKG_CHECK_MODULES([NICE], [nice >= 0.0.9],[],[use_included_nice=1])
 fi
 
 UDT_DRIVER_PKG_CONFIG_PATH="${PKG_CONFIG_PATH}"
@@ -169,6 +169,55 @@ else
     AC_MSG_RESULT([$udt_has_bind2])
 fi
 
+if test X"$use_included_nice" = X1; then
+    nice_agent_gather_candidates_return=gboolean
+    have_nice_compatibility_rfc5245=yes
+    have_nice_address_ip_version=yes
+else
+    save_CXXFLAGS="$CXXFLAGS"
+    save_LIBS="$LIBS"
+    CXXFLAGS="$CXXFLAGS $NICE_CFLAGS"
+    LIBS="$NICE_LDFLAGS $LIBS"
+
+    # libnice 0.0.13 and later: nice_agent_gather_candidates returns gboolean
+    AC_MSG_CHECKING([nice_agent_gather_candidates() return type])
+    AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([
+        #include <nice/agent.h>],[
+        NiceAgent *agent;
+        guint stream_id;
+        gboolean ok = nice_agent_gather_candidates(agent, stream_id);])],
+        [nice_agent_gather_candidates_return=gboolean],
+        [nice_agent_gather_candidates_return=void])
+    AC_MSG_RESULT([$nice_agent_gather_candidates_return])
+
+    # libnice 0.0.12 and later: NICE_COMPATIBILITY_RFC5245 defined
+    AC_MSG_CHECKING([NICE_COMPATIBILITY_RFC5245])
+    AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([
+        #include <nice/agent.h>],[
+        NiceCompatibility c = NICE_COMPATIBILITY_RFC5245;])],
+        [have_nice_compatibility_rfc5245=yes],
+        [have_nice_compatibility_rfc5245=no])
+    AC_MSG_RESULT([$have_nice_compatibility_rfc5245])
+
+    # libnice 0.0.11 and later: NiceSocket is a private type
+    AC_CHECK_TYPES([NiceSocket],[],[],[#include <nice/agent.h>])
+
+    # libnice 0.1.4 and later: nice_address_ip_version
+    AC_MSG_CHECKING([nice_address_ip_version])
+    AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([
+        #include <nice/address.h>],[
+        NiceAddress addr;
+        int ipver = nice_address_ip_version(&addr);])],
+        [have_nice_address_ip_version=yes],
+        [have_nice_address_ip_version=no])
+    AC_MSG_RESULT([$have_nice_address_ip_version])
+
+    CXXFLAGS="$save_CXXFLAGS"
+    LIBS="$save_LIBS"
+fi
 
 if test x"$use_included_gettext" = x1; then
     GETTEXT_SUBDIR=gettext
@@ -180,6 +229,18 @@ fi
 
 if test "$udt_has_bind2" = yes; then
     AC_DEFINE([UDT_HAS_BIND2], [1], [Define to 1 if udt has bind() function])
+fi
+
+if test "$nice_agent_gather_candidates_return" = gboolean; then
+    AC_DEFINE([NICE_AGENT_GATHER_CANDIDATES_RETURNS_GBOOLEAN], [1], [Define to 1 if nice_agent_gather_candidates() returns boolean])
+fi
+
+if test "$have_nice_compatibility_rfc5245" = yes; then
+    AC_DEFINE([HAVE_NICE_COMPATIBILITY_RFC5245], [1], [Define to 1 if libnice defines NICE_COMPATIBILITY_RFC5245])
+fi
+
+if test "$have_nice_address_ip_version" = yes; then
+    AC_DEFINE([HAVE_NICE_ADDRESS_IP_VERSION], [1], [Define to 1 if libnice has the nice_address_ip_version function])
 fi
 
 AC_CHECK_PROGS([GZIP], [gzip])
@@ -237,7 +298,7 @@ AC_CONFIG_FILES(
         libffi/Makefile
         libnice/Makefile
         udt/Makefile
-	Makefile
+        Makefile
         version.h
 )
 AC_OUTPUT

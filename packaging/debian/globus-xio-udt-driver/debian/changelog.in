@@ -1,3 +1,9 @@
+globus-xio-udt-driver (1.22-1+gt6.@distro@) @distro@; urgency=low
+
+  * Allow building using the RHEL 6 version of libnice
+
+ -- Globus Toolkit <support@globus.org>  Thu, 02 Jun 2016 13:24:33 -0400
+
 globus-xio-udt-driver (1.21-1+gt6.@distro@) @distro@; urgency=low
 
   * add GLOBUS_XIO_UDT_STUNSERVER env override

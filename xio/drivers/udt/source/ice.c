@@ -95,7 +95,9 @@ void ice_lib_shutdown() {
 int ice_init(struct icedata *ice_data,
              const char *stun_host, unsigned int stun_port,
              int controlling) {
+#ifdef NICE_AGENT_GATHER_CANDIDATES_RETURNS_GBOOLEAN
     gboolean ok;
+#endif
     NiceAddress localaddr;
 
     if (!lib_initialized)
@@ -129,8 +131,13 @@ int ice_init(struct icedata *ice_data,
         goto error;
     }
 
+#ifdef HAVE_NICE_COMPATIBILITY_RFC5245
     ice_data->agent = nice_agent_new(ice_data->gcontext,
                                      NICE_COMPATIBILITY_RFC5245);
+#else
+    ice_data->agent = nice_agent_new(ice_data->gcontext,
+                                     NICE_COMPATIBILITY_DRAFT19);
+#endif
     if (ice_data->agent == NULL) {
         goto error;
     }
@@ -161,10 +168,14 @@ int ice_init(struct icedata *ice_data,
     nice_agent_attach_recv(ice_data->agent, ice_data->stream_id, 1,
                            ice_data->gcontext, cb_nice_recv, ice_data);
 
+#ifdef NICE_AGENT_GATHER_CANDIDATES_RETURNS_GBOOLEAN
     ok = nice_agent_gather_candidates(ice_data->agent, ice_data->stream_id);
     if (!ok) {
         goto error;
     }
+#else
+    nice_agent_gather_candidates(ice_data->agent, ice_data->stream_id);
+#endif
 
     g_debug("starting event thread");
     ice_data->gloopthread = g_thread_create(&thread_mainloop, ice_data->gloop,
@@ -243,8 +254,13 @@ int ice_get_local_data(struct icedata *ice_data, char *out, size_t outsize) {
             return ICE_FAILURE;
 
         /* only allow ipv4 until udt driver support v6 */
+#if HAVE_NICE_ADDRESS_IP_VERSION
         if(nice_address_ip_version(&c->addr) != 4)
             continue;
+#else
+        if(c->addr.s.addr.sa_family != AF_INET)
+            continue;
+#endif
 
         snprintf(p, outsize, " ");
         outsize--;
@@ -304,10 +320,17 @@ int ice_negotiate(struct icedata *ice_data, int argc, char *rdata[]) {
         }
 
         /* only allow ipv4 until udt driver support v6 */
+#if HAVE_NICE_ADDRESS_IP_VERSION
         if(nice_address_ip_version(&c->addr) != 4) {
             nice_candidate_free(c);
             continue;
         }
+#else
+        if(c->addr.s.addr.sa_family != AF_INET) {
+            nice_candidate_free(c);
+            continue;
+        }
+#endif
         
         cands = g_slist_prepend(cands, c);
     }
@@ -372,6 +395,7 @@ int ice_get_negotiated_addrs(struct icedata *ice_data,
 }
 
 
+#ifndef HAVE_NICESOCKET
 /* hack to get access to private ICE socket */
 typedef struct _NiceSocket NiceSocket;
 
@@ -387,6 +411,7 @@ struct _NiceSocket
   void (*close) (NiceSocket *sock);
   void *priv;
 };
+#endif
 
 /*
  * Duplicate the internal socket associated with the selected pair,
