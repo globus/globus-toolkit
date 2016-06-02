@@ -12,6 +12,7 @@ openssl_version="@OPENSSL_VERSION@"
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 libdir="@libdir@"
+sysconfdir="@sysconfdir@"
 # END AUTOCONF SUBSTITUTIONS
 
 exec 3>&1
@@ -144,7 +145,11 @@ install_package_to_staging_dir()
     for archbuild in $arch_build_dirs; do
         archbuildbase="$(basename $archbuild)"
         staging_arch_dir="${staging_dir}/${archbuildbase}"
-        make -C "$archbuild" "${package:+$package-}install" DESTDIR="${staging_arch_dir}" 1>&${TRACE_enabled} 2>&${ERROR_enabled}
+        if [ "$package" = gsi-openssh ]; then
+            make -C "$archbuild/gsi_openssh/source" "install-nokeys" DESTDIR="${staging_arch_dir}" 1>&${TRACE_enabled} 2>&${ERROR_enabled}
+        else
+            make -C "$archbuild" "${package:+$package-}install" DESTDIR="${staging_arch_dir}" 1>&${TRACE_enabled} 2>&${ERROR_enabled}
+        fi
         find "${staging_arch_dir}" \( -name '*.a' -o -name '*.la' \) -a -exec rm {} +
         echo "${staging_arch_dir}"
     done
@@ -321,6 +326,9 @@ create_pkg()
     if [ "$gt_package_name" = libltdl ]; then
         pkg_namespace="org.globus.prereq"
         osx_package_name="ltdl-${gt_package_version}.pkg"
+    fi
+    if [ "$gt_package_name" = gsi-openssh ]; then
+        mkdir -p "${osx_package_destdir}/${sysconfdir}/gsissh"
     fi
     trace_command pkgbuild --root "$osx_package_destdir" \
              --version "$gt_package_version" \

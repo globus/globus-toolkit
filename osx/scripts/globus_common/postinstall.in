@@ -13,6 +13,13 @@ datarootdir="@datarootdir@"
 datadir="@datadir@"
 libdir="@libdir@"
 mandir="@mandir@"
+sysagentdir=/Library/LaunchAgents
+agentname=org.globus.GLOBUS_LOCATION
+agentplist=${agentname}.plist
+
+if [ "$TARGET_LOCATION" = "/" ]; then
+    agent="${sysagentdir}/${agentplist}"
+fi
 
 l="$(echo "${TARGET_LOCATION}/$prefix" | sed -e 's!//*!/!g')"
 b="$(echo "${TARGET_LOCATION}/$bindir" | sed -e 's!//*!/!g')"
@@ -33,6 +40,27 @@ if [ "$TARGET_LOCATION" = "/" ]; then
 	EOF
     cat <<-EOF > /etc/manpaths.d/Globus
 	$m
+	EOF
+    cat <<-EOF > "${agent}"
+	<?xml version="1.0" encoding="UTF-8"?>
+	<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+	<plist version="1.0">
+	    <dict>
+	        <key>Label</key>
+	        <string>org.globus.GLOBUS_LOCATION</string>
+	        <key>ProgramArguments</key>
+	        <array>
+	            <string>/bin/launchctl</string>
+	            <string>setenv</string>
+	            <string>GLOBUS_LOCATION</string>
+	            <string>$l</string>
+	        </array>
+	        <key>RunAtLoad</key>
+	        <true/>
+	        <key>ServiceIPC</key>
+	        <false/>
+	    </dict>
+	</plist>
 	EOF
 else
     for pc in "${TARGET_LOCATION}${libdir}/pkgconfig"/*.pc; do
@@ -74,10 +102,10 @@ else
         echo "$profile_wo_globus" > "${profile}.globus"
         cat >> "${profile}.globus" <<-EOF
 	# BEGIN GLOBUS
-	PATH="\${PATH:+\$PATH:}${b}:${s}"
-	MANPATH="\${MANPATH:+\$MANPATH:}${m}"
-	GLOBUS_LOCATION="\${GLOBUS_LOCATION:-${l}}"
-	PKG_CONFIG_PATH="\${PKG_CONFIG_PATH:-/usr/lib/pkgconfig}:${p}"
+	export PATH="\${PATH:+\$PATH:}${b}:${s}"
+	export MANPATH="\${MANPATH:+\$MANPATH:}${m}"
+	export GLOBUS_LOCATION="\${GLOBUS_LOCATION:-${l}}"
+	export PKG_CONFIG_PATH="\${PKG_CONFIG_PATH:-/usr/lib/pkgconfig}:${p}"
 	# END GLOBUS
 	EOF
         mv "${profile}" "${profile}.globus.save"
@@ -138,6 +166,7 @@ for file in \$files; do
         fi
     fi
 done
+
 rm -f "${UNINSTALLER}"
 find "${l}" -depth -type d -exec rmdir {} +
 pkgutil --volume "${TARGET_LOCATION}" --regexp --forget '^org\.globus.*' > /dev/null
@@ -149,6 +178,7 @@ if [ "$TARGET_LOCATION" = "/" ]; then
     cat <<-EOF >> "${UNINSTALLER}"
 	rm -f /etc/paths.d/Globus
 	rm -f /etc/manpaths.d/Globus
+	rm -f "${agent}"
 	EOF
 else
     cat <<-EOF >> "${UNINSTALLER}"
