@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_udt_driver],[1.22],[https://globus.atlassian.net/])
+AC_INIT([globus_xio_udt_driver],[1.23],[https://globus.atlassian.net/])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -90,6 +90,7 @@ AC_ARG_WITH([udt-lib],
      fi],
     [UDT_LDFLAGS="-ludt"])
 
+NICE_VERSION_AT_LEAST_0_1_2=0
 
 PKG_PROG_PKG_CONFIG
 PKG_CONFIG="${PKG_CONFIG} --static"
@@ -104,7 +105,11 @@ if test X"$use_included_udt" = "X"; then
 fi
 
 if test X"$use_included_nice" = "X"; then
-    PKG_CHECK_MODULES([NICE], [nice >= 0.0.9],[],[use_included_nice=1])
+    PKG_CHECK_MODULES([NICE], [nice >= 0.0.9],[
+    if $PKG_CONFIG nice --atleast-version 0.1.2; then
+        NICE_VERSION_AT_LEAST_0_1_2=1
+    fi
+    ],[use_included_nice=1])
 fi
 
 UDT_DRIVER_PKG_CONFIG_PATH="${PKG_CONFIG_PATH}"
@@ -114,10 +119,15 @@ if test X"$use_included_nice" = X1; then
     UDT_DRIVER_PKG_CONFIG_PATH="${UDT_DRIVER_PKG_CONFIG_PATH}:${LIBNICE_PKG_CONFIG_PATH}"
     NICE_CFLAGS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --define-variable=prefix=\"\$(abs_builddir)/libnice\$(prefix)\" --cflags nice)"
     NICE_LIBS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --define-variable=prefix=\"\$(abs_builddir)/libnice\$(prefix)\" --libs nice)"
+    NICE_VERSION_AT_LEAST_0_1_2=1
 
     if test X"$use_included_glib2" = "X"; then
-        PKG_CHECK_MODULES([GLIB2], [glib-2.0 >= 2.30 gobject-2.0 >= 2.30 gthread-2.0 >= 2.30 gio-2.0 >= 2.30], [], [use_included_glib2=1])
+        PKG_CHECK_MODULES([GLIB2], [glib-2.0 >= 2.20 gobject-2.0 >= 2.20 gthread-2.0 >= 2.20], [], [use_included_glib2=1])
     fi
+fi
+
+if test $NICE_VERSION_AT_LEAST_0_1_2 = 1; then
+    AC_DEFINE([NICE_VERSION_AT_LEAST_0_1_2], [1], [Define if libnice is at least 0.1.2])
 fi
 
 if test X"$use_included_glib2" = X1; then
@@ -132,6 +142,11 @@ if test X"$use_included_glib2" = X1; then
     if test X"$GETTEXT" = X""; then
         use_included_gettext=1
     fi
+    AC_DEFINE([HAVE_GIO_GIO_H], [1], [Define to 1 if you have gio/gio.h])
+else
+    PKG_CHECK_MODULES([GIO], [gio-2.0 >= 2.30],,[:])
+    CPPFLAGS="$CPPFLAGS $GIO_CFLAGS"
+    AC_CHECK_HEADER([gio/gio.h], [AC_DEFINE([HAVE_GIO_GIO_H], [1], [Define to 1 if you have gio/gio.h])])
 fi
 
 if test X"$use_included_libffi" = X1; then
@@ -173,6 +188,7 @@ if test X"$use_included_nice" = X1; then
     nice_agent_gather_candidates_return=gboolean
     have_nice_compatibility_rfc5245=yes
     have_nice_address_ip_version=yes
+    have_nice_agent_get_selected_socket=yes
 else
     save_CXXFLAGS="$CXXFLAGS"
     save_LIBS="$LIBS"
@@ -215,6 +231,16 @@ else
         [have_nice_address_ip_version=no])
     AC_MSG_RESULT([$have_nice_address_ip_version])
 
+    # libnice 0.1.5 and later; nice_agent_get_selected_socket
+    AC_MSG_CHECKING([nice_agent_get_selected_socket])
+    AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([
+        #include <nice/agent.h>],[
+        GSocket *sock = nice_agent_get_selected_socket(NULL, 0, 0);])],
+        [have_nice_agent_get_selected_socket=yes],
+        [have_nice_agent_get_selected_socket=no])
+    AC_MSG_RESULT([$have_nice_agent_get_selected_socket])
+
     CXXFLAGS="$save_CXXFLAGS"
     LIBS="$save_LIBS"
 fi
@@ -241,6 +267,10 @@ fi
 
 if test "$have_nice_address_ip_version" = yes; then
     AC_DEFINE([HAVE_NICE_ADDRESS_IP_VERSION], [1], [Define to 1 if libnice has the nice_address_ip_version function])
+fi
+
+if test "$have_nice_agent_get_selected_socket" = yes; then
+    AC_DEFINE([HAVE_NICE_AGENT_GET_SELECTED_SOCKET], [1], [Define to 1 if libnice has the nice_agent_get_selected_socket function])
 fi
 
 AC_CHECK_PROGS([GZIP], [gzip])

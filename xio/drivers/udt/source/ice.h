@@ -29,7 +29,9 @@
 #endif
 
 #include <nice/agent.h>
+#if HAVE_GIO_GIO_H
 #include <gio/gio.h>
+#endif
 
 #define ICE_SUCCESS 0
 #define ICE_FAILURE -1

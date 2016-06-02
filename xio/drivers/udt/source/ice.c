@@ -394,15 +394,18 @@ int ice_get_negotiated_addrs(struct icedata *ice_data,
     return ICE_SUCCESS;
 }
 
-
-#ifndef HAVE_NICESOCKET
+#if !defined(HAVE_NICESOCKET) && !defined(HAVE_NICE_AGENT_GET_SELECTED_SOCKET)
 /* hack to get access to private ICE socket */
 typedef struct _NiceSocket NiceSocket;
 
 struct _NiceSocket
 {
   NiceAddress addr;
+#if NICE_VERSION_AT_LEAST_0_1_2
   GSocket *fileno;
+#else
+  guint fileno;
+#endif
   gint (*recv) (NiceSocket *sock, NiceAddress *from, guint len,
       gchar *buf);
   gboolean (*send) (NiceSocket *sock, const NiceAddress *to, guint len,
@@ -418,16 +421,29 @@ struct _NiceSocket
  * and set in the @sock_dup out parameter.
  */
 int ice_get_negotiated_sock(struct icedata *ice_data, int *sock_dup) {
+#if defined(HAVE_NICESOCKET) || !defined(HAVE_NICE_AGENT_GET_SELECTED_SOCKET)
     NiceSocket *nice_socket;
+#endif
     int fd;
 
     if (!ice_data->selected_pair_done)
         return ICE_FAILURE;
 
-    nice_socket = (NiceSocket *)ice_data->sockptr;
-    GSocket *gsock = nice_socket->fileno;
+#if NICE_VERSION_AT_LEAST_0_1_2
+    GSocket *gsock;
 
+#   if HAVE_NICE_AGENT_GET_SELECTED_SOCKET
+        gsock = nice_agent_get_selected_socket(
+                ice_data->agent, ice_data->stream_id, 1);
+#   else
+        nice_socket = (NiceSocket *)ice_data->sockptr;
+        gsock = nice_socket->fileno;
+#   endif
     g_object_get(G_OBJECT(gsock), "fd", &fd, NULL);
+#else
+        nice_socket = (NiceSocket *)ice_data->sockptr;
+        fd = nice_socket->fileno;
+#endif
 
     *sock_dup = dup_socket(fd);
     if (*sock_dup == -1)

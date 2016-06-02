@@ -1,3 +1,9 @@
+globus-xio-udt-driver (1.23-1+gt6.@distro@) @distro@; urgency=low
+
+  * More feature tests for libnice
+
+ -- Globus Toolkit <support@globus.org>  Thu, 02 Jun 2016 17:10:38 -0400
+
 globus-xio-udt-driver (1.22-1+gt6.@distro@) @distro@; urgency=low
 
   * Allow building using the RHEL 6 version of libnice

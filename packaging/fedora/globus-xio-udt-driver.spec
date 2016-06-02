@@ -1,6 +1,6 @@
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.22
+Version:	1.23
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
@@ -16,6 +16,11 @@ Requires:	globus-xio%{?_isa} >= 3
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 7
 Requires:       glib2%{?_isa} >= 2.32
 Requires:       libnice%{?_isa} >= 0.0.12
+%else
+%if %{?rhel}%{!?rhel:0} >= 5
+Requires:       glib2%{?_isa} >= 2.26
+Requires:       libnice%{?_isa} >= 0.0.9
+%endif
 %endif
 %if 0%{?suse_version} > 0
 Requires:       libffi43
@@ -29,6 +34,10 @@ BuildRequires:	globus-common-devel >= 14
 BuildRequires:  glib2-devel >= 2.32
 BuildRequires:  libnice-devel >= 0.0.12
 %else
+%if %{?rhel}%{!?rhel:0} >= 5
+Requires:       glib2%{?_isa} >= 2.26
+Requires:       libnice%{?_isa} >= 0.0.9
+%endif
 %if 0%{?suse_version} > 0
 BuildRequires:  gettext-tools
 %else
@@ -133,6 +142,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Jun 02 2016 Globus Toolkit <support@globus.org> - 1.23-1
+- More feature tests for libnice
+
+* Thu Jun 02 2016 Globus Toolkit <support@globus.org> - 1.22-2
+- Having packaged libnice from el.6 for el.5, and update dependencies
+
 * Thu Jun 02 2016 Globus Toolkit <support@globus.org> - 1.22-1
 - Allow building using the RHEL 6 version of libnice
 
