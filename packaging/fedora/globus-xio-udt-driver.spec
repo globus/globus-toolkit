@@ -1,7 +1,7 @@
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
 Version:	1.23
-Release:	1%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
@@ -18,7 +18,7 @@ Requires:       glib2%{?_isa} >= 2.32
 Requires:       libnice%{?_isa} >= 0.0.12
 %else
 %if %{?rhel}%{!?rhel:0} >= 5
-Requires:       glib2%{?_isa} >= 2.26
+Requires:       glib2%{?_isa} >= 2.12
 Requires:       libnice%{?_isa} >= 0.0.9
 %endif
 %endif
@@ -142,9 +142,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
-* Thu Jun 02 2016 Globus Toolkit <support@globus.org> - 1.23-2
+* Thu Jun 02 2016 Globus Toolkit <support@globus.org> - 1.23-3
 - More feature tests for libnice
-- BuildDepends for libnice/glib for el.5
+- BuildRequires for libnice/glib for el.5
+- Fix Requires for libnice/glib for el.5
 
 * Thu Jun 02 2016 Globus Toolkit <support@globus.org> - 1.22-2
 - Having packaged libnice from el.6 for el.5, and update dependencies
