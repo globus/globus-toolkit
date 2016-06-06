@@ -62,7 +62,7 @@ if [ ! -f "${unpacked_file}" ] || \
     done
     cat <<-"EOF" >"${gsissh_sourcedir}/configure.gnu"
 	#! /bin/sh
-	"${0%.gnu}" "$@" --with-gsi
+	"${0%.gnu}" "$@" --with-gsi --sysconfdir="\${prefix}/etc/gsissh"
 	EOF
     chmod a+x "${gsissh_sourcedir}/configure.gnu"
     echo "${openssh_tarball}" > "${unpacked_file}"
