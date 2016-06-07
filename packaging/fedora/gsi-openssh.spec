@@ -427,6 +427,13 @@ fi
 %endif
 
 %changelog
+* Tue Jun  7 2016 Globus Toolkit <support@globus.org> - 7.1p2f-1
+- Fix to use sshd_config from installed location for installations from the
+  source and binary tarballs.
+- DisableUsageStats now defaults to Yes in code (already defaults to Yes in the
+  supplied sshd_config). Also moved the DisableUsageStats directive to be ahead
+  of the Match directives in sshd_config.
+
 * Thu May 12 2016 Globus Toolkit <support@globus.org> - 7.1p2e-1
 - default iSSHD auditing to disabled
 
