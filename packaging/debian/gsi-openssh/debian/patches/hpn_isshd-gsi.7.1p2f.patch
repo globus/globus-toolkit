@@ -1,6 +1,6 @@
 diff -Naur openssh-7.1p2/auth2.c gsi-openssh/auth2.c
 --- openssh-7.1p2/auth2.c	2016-01-26 16:35:48.664165221 -0600
-+++ gsi-openssh/auth2.c	2016-05-12 11:48:28.805500416 -0500
++++ gsi-openssh/auth2.c	2016-06-06 15:37:43.023819907 -0500
 @@ -76,6 +76,7 @@
  extern Authmethod method_kbdint;
  extern Authmethod method_hostbased;
@@ -137,7 +137,7 @@ diff -Naur openssh-7.1p2/auth2.c gsi-openssh/auth2.c
  		    (authctxt->attempt > 1 || strcmp(method, "none") != 0))
 diff -Naur openssh-7.1p2/auth2-gss.c gsi-openssh/auth2-gss.c
 --- openssh-7.1p2/auth2-gss.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/auth2-gss.c	2016-05-12 11:48:28.802500473 -0500
++++ gsi-openssh/auth2-gss.c	2016-06-06 15:37:43.021819571 -0500
 @@ -1,7 +1,7 @@
  /* $OpenBSD: auth2-gss.c,v 1.22 2015/01/19 20:07:45 markus Exp $ */
  
@@ -344,7 +344,7 @@ diff -Naur openssh-7.1p2/auth2-gss.c gsi-openssh/auth2-gss.c
  	userauth_gssapi,
 diff -Naur openssh-7.1p2/auth.c gsi-openssh/auth.c
 --- openssh-7.1p2/auth.c	2016-01-26 16:35:48.661165392 -0600
-+++ gsi-openssh/auth.c	2016-05-12 11:48:28.802500473 -0500
++++ gsi-openssh/auth.c	2016-06-06 15:37:43.021819571 -0500
 @@ -75,6 +75,9 @@
  #include "ssherr.h"
  #include "compat.h"
@@ -420,7 +420,7 @@ diff -Naur openssh-7.1p2/auth.c gsi-openssh/auth.c
  		    get_canonical_hostname(options.use_dns), "ssh");
 diff -Naur openssh-7.1p2/auth.h gsi-openssh/auth.h
 --- openssh-7.1p2/auth.h	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/auth.h	2016-05-12 11:48:28.802500473 -0500
++++ gsi-openssh/auth.h	2016-06-06 15:37:43.021819571 -0500
 @@ -41,6 +41,9 @@
  #ifdef KRB5
  #include <krb5.h>
@@ -443,7 +443,7 @@ diff -Naur openssh-7.1p2/auth.h gsi-openssh/auth.h
  
 diff -Naur openssh-7.1p2/auth-krb5.c gsi-openssh/auth-krb5.c
 --- openssh-7.1p2/auth-krb5.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/auth-krb5.c	2016-05-12 11:48:28.801500491 -0500
++++ gsi-openssh/auth-krb5.c	2016-06-06 15:37:43.019819233 -0500
 @@ -183,8 +183,13 @@
  
  	len = strlen(authctxt->krb5_ticket_file) + 6;
@@ -493,7 +493,7 @@ diff -Naur openssh-7.1p2/auth-krb5.c gsi-openssh/auth-krb5.c
  }
 diff -Naur openssh-7.1p2/auth-pam.c gsi-openssh/auth-pam.c
 --- openssh-7.1p2/auth-pam.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/auth-pam.c	2016-05-12 11:48:28.802500473 -0500
++++ gsi-openssh/auth-pam.c	2016-06-06 15:37:43.019819233 -0500
 @@ -122,6 +122,10 @@
   */
  typedef pthread_t sp_pthread_t;
@@ -647,7 +647,7 @@ diff -Naur openssh-7.1p2/auth-pam.c gsi-openssh/auth-pam.c
  		debug("PAM: password authentication accepted for %.100s",
 diff -Naur openssh-7.1p2/auth-pam.h gsi-openssh/auth-pam.h
 --- openssh-7.1p2/auth-pam.h	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/auth-pam.h	2016-05-12 11:48:28.802500473 -0500
++++ gsi-openssh/auth-pam.h	2016-06-06 15:37:43.019819233 -0500
 @@ -46,5 +46,6 @@
  void sshpam_cleanup(void);
  int sshpam_auth_passwd(Authctxt *, const char *);
@@ -657,7 +657,7 @@ diff -Naur openssh-7.1p2/auth-pam.h gsi-openssh/auth-pam.h
  #endif /* USE_PAM */
 diff -Naur openssh-7.1p2/canohost.c gsi-openssh/canohost.c
 --- openssh-7.1p2/canohost.c	2016-01-26 16:35:08.396952957 -0600
-+++ gsi-openssh/canohost.c	2016-05-12 11:48:28.806500398 -0500
++++ gsi-openssh/canohost.c	2016-06-06 15:37:43.025820244 -0500
 @@ -16,6 +16,7 @@
  
  #include <sys/types.h>
@@ -702,7 +702,7 @@ diff -Naur openssh-7.1p2/canohost.c gsi-openssh/canohost.c
 +}
 diff -Naur openssh-7.1p2/canohost.h gsi-openssh/canohost.h
 --- openssh-7.1p2/canohost.h	2016-01-26 16:35:08.396952957 -0600
-+++ gsi-openssh/canohost.h	2016-05-12 11:48:28.806500398 -0500
++++ gsi-openssh/canohost.h	2016-06-06 15:37:43.025820244 -0500
 @@ -30,4 +30,6 @@
  int		 get_sock_port(int, int);
  void		 clear_cached_addr(void);
@@ -712,8 +712,26 @@ diff -Naur openssh-7.1p2/canohost.h gsi-openssh/canohost.h
  void		 ipv64_normalise_mapped(struct sockaddr_storage *, socklen_t *);
 diff -Naur openssh-7.1p2/ChangeLog gsi-openssh/ChangeLog
 --- openssh-7.1p2/ChangeLog	2016-01-13 19:13:01.000000000 -0600
-+++ gsi-openssh/ChangeLog	2016-05-12 11:48:50.279105070 -0500
-@@ -1,3 +1,2840 @@
++++ gsi-openssh/ChangeLog	2016-06-06 15:39:01.700056429 -0500
+@@ -1,3 +1,2858 @@
++commit 6aa62f3d29e0ea1ccd01ffba80d0d2ee0c6c0cec
++Author: Venkat Yekkirala <ysvenkat@ncsa.illinois.edu>
++Date:   Mon Jun 6 15:25:15 2016 -0500
++
++    Updated version tag for 7.1p2f
++
++commit a8a5e8b172da89b9992a1879ab68dd79d5b3b58d
++Author: Venkat Yekkirala <ysvenkat@ncsa.illinois.edu>
++Date:   Sun Jun 5 16:42:23 2016 -0500
++
++    Fix to use sshd_config from installed location.
++
++commit d44dbf46d17cac79412638dfed97bf6c1e370967
++Author: Venkat Yekkirala <ysvenkat@ncsa.illinois.edu>
++Date:   Fri May 13 20:23:33 2016 -0500
++
++    DisableUsageStats now defaults to Yes. Also moved the DisableUsageStats directive to be ahead of the Match directives in sshd_config.
++
 +commit b8d71492f03f8d7a4bd5981a74df575c34f7bdfc
 +Author: Venkat Yekkirala <ysvenkat@ncsa.illinois.edu>
 +Date:   Thu May 12 11:40:35 2016 -0500
@@ -3554,7 +3572,7 @@ diff -Naur openssh-7.1p2/ChangeLog gsi-openssh/ChangeLog
  commit c88ac102f0eb89f2eaa314cb2e2e0ca3c890c443
  Author: Damien Miller <djm@mindrot.org>
  Date:   Thu Jan 14 11:08:19 2016 +1100
-@@ -81,6 +2918,564 @@
+@@ -81,6 +2936,564 @@
      
      Upstream-ID: 0ece37069fd66bc6e4f55eb1321f93df372b65bf
  
@@ -4119,7 +4137,7 @@ diff -Naur openssh-7.1p2/ChangeLog gsi-openssh/ChangeLog
  commit e91346dc2bbf460246df2ab591b7613908c1b0ad
  Author: Damien Miller <djm@mindrot.org>
  Date:   Fri Aug 21 14:49:03 2015 +1000
-@@ -199,6 +3594,100 @@
+@@ -199,6 +3612,100 @@
      
      Upstream-ID: 35174a19b5237ea36aa3798f042bf5933b772c67
  
@@ -4220,7 +4238,7 @@ diff -Naur openssh-7.1p2/ChangeLog gsi-openssh/ChangeLog
  commit 1dc8d93ce69d6565747eb44446ed117187621b26
  Author: deraadt@openbsd.org <deraadt@openbsd.org>
  Date:   Thu Aug 6 14:53:21 2015 +0000
-@@ -771,6 +4260,15 @@
+@@ -771,6 +4278,15 @@
      
      Upstream-ID: 2bd23976305d0512e9f84d054e1fc23cd70b89f2
  
@@ -4236,7 +4254,7 @@ diff -Naur openssh-7.1p2/ChangeLog gsi-openssh/ChangeLog
  commit 7de4b03a6e4071d454b72927ffaf52949fa34545
  Author: djm@openbsd.org <djm@openbsd.org>
  Date:   Wed Jul 1 02:32:17 2015 +0000
-@@ -1938,6 +5436,15 @@
+@@ -1938,6 +5454,15 @@
      Output remote username in debug output since with Host
       and Match it's not always obvious what it will be.  bz#2368, ok djm@
  
@@ -4252,7 +4270,7 @@ diff -Naur openssh-7.1p2/ChangeLog gsi-openssh/ChangeLog
  commit 70860b6d07461906730632f9758ff1b7c98c695a
  Author: Darren Tucker <dtucker@zip.com.au>
  Date:   Fri Apr 17 10:56:13 2015 +1000
-@@ -2062,6 +5569,43 @@
+@@ -2062,6 +5587,43 @@
      correct return value in pubkey parsing, spotted by Ben Hawkes
       ok markus@
  
@@ -4296,7 +4314,7 @@ diff -Naur openssh-7.1p2/ChangeLog gsi-openssh/ChangeLog
  commit 7da2be0cb9601ed25460c83aa4d44052b967ba0f
  Author: djm@openbsd.org <djm@openbsd.org>
  Date:   Tue Mar 31 22:59:01 2015 +0000
-@@ -2258,6 +5802,31 @@
+@@ -2258,6 +5820,31 @@
      fix double-negative error message "ssh1 is not
       unsupported"
  
@@ -4328,7 +4346,7 @@ diff -Naur openssh-7.1p2/ChangeLog gsi-openssh/ChangeLog
  commit 5c27e3b6ec2db711dfcd40e6359c0bcdd0b62ea9
  Author: djm@openbsd.org <djm@openbsd.org>
  Date:   Mon Mar 23 06:06:38 2015 +0000
-@@ -2295,6 +5864,44 @@
+@@ -2295,6 +5882,44 @@
      add back the changes from rev 1.206, djm reverted this by
       mistake in rev 1.207
  
@@ -4373,7 +4391,7 @@ diff -Naur openssh-7.1p2/ChangeLog gsi-openssh/ChangeLog
  commit 4d24b3b6a4a6383e05e7da26d183b79fa8663697
  Author: Damien Miller <djm@mindrot.org>
  Date:   Fri Mar 20 09:11:59 2015 +1100
-@@ -2303,6 +5910,61 @@
+@@ -2303,6 +5928,61 @@
      
      pointed out by Christian Hesse
  
@@ -4437,7 +4455,7 @@ diff -Naur openssh-7.1p2/ChangeLog gsi-openssh/ChangeLog
  Date:   Mon Mar 16 22:49:20 2015 -0700
 diff -Naur openssh-7.1p2/ChangeLog.gssapi gsi-openssh/ChangeLog.gssapi
 --- openssh-7.1p2/ChangeLog.gssapi	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/ChangeLog.gssapi	2016-05-12 11:48:28.798500544 -0500
++++ gsi-openssh/ChangeLog.gssapi	2016-06-06 15:37:43.015818561 -0500
 @@ -0,0 +1,113 @@
 +20110101
 +  - Finally update for OpenSSH 5.6p1
@@ -4554,7 +4572,7 @@ diff -Naur openssh-7.1p2/ChangeLog.gssapi gsi-openssh/ChangeLog.gssapi
 +    <gssapi-with-mic support is Bugzilla #1008>
 diff -Naur openssh-7.1p2/clientloop.c gsi-openssh/clientloop.c
 --- openssh-7.1p2/clientloop.c	2016-01-26 16:35:08.401955257 -0600
-+++ gsi-openssh/clientloop.c	2016-05-12 11:48:28.809500343 -0500
++++ gsi-openssh/clientloop.c	2016-06-06 15:37:43.027820581 -0500
 @@ -115,6 +115,10 @@
  #include "ssherr.h"
  #include "hostfile.h"
@@ -4584,7 +4602,7 @@ diff -Naur openssh-7.1p2/clientloop.c gsi-openssh/clientloop.c
  				active_state->kex->done = 0;
 diff -Naur openssh-7.1p2/config.h.in gsi-openssh/config.h.in
 --- openssh-7.1p2/config.h.in	2016-01-13 19:13:40.000000000 -0600
-+++ gsi-openssh/config.h.in	2016-05-12 11:49:04.435844426 -0500
++++ gsi-openssh/config.h.in	2016-06-06 15:39:18.215835046 -0500
 @@ -1,5 +1,11 @@
  /* config.h.in.  Generated from configure.ac by autoheader.  */
  
@@ -4797,7 +4815,7 @@ diff -Naur openssh-7.1p2/config.h.in gsi-openssh/config.h.in
  #undef XAUTH_PATH
 diff -Naur openssh-7.1p2/configure gsi-openssh/configure
 --- openssh-7.1p2/configure	2016-01-13 19:13:37.000000000 -0600
-+++ gsi-openssh/configure	2016-05-12 11:49:04.190848942 -0500
++++ gsi-openssh/configure	2016-06-06 15:39:17.997798368 -0500
 @@ -1,12 +1,12 @@
  #! /bin/sh
  # From configure.ac Revision: 1.583 .
@@ -48743,7 +48761,7 @@ diff -Naur openssh-7.1p2/configure gsi-openssh/configure
  echo ""
 diff -Naur openssh-7.1p2/configure.ac gsi-openssh/configure.ac
 --- openssh-7.1p2/configure.ac	2016-01-26 16:35:48.667165024 -0600
-+++ gsi-openssh/configure.ac	2016-05-12 11:48:28.809500343 -0500
++++ gsi-openssh/configure.ac	2016-06-06 15:37:43.027820581 -0500
 @@ -17,8 +17,99 @@
  AC_INIT([OpenSSH], [Portable], [openssh-unix-dev@mindrot.org])
  AC_REVISION($Revision: 1.583 $)
@@ -49122,7 +49140,7 @@ diff -Naur openssh-7.1p2/configure.ac gsi-openssh/configure.ac
  echo "  Solaris process contract support: $SPC_MSG"
 diff -Naur openssh-7.1p2/contrib/redhat/gsisshd.init gsi-openssh/contrib/redhat/gsisshd.init
 --- openssh-7.1p2/contrib/redhat/gsisshd.init	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/contrib/redhat/gsisshd.init	2016-05-12 11:48:28.813500269 -0500
++++ gsi-openssh/contrib/redhat/gsisshd.init	2016-06-06 15:37:43.027820581 -0500
 @@ -0,0 +1,240 @@
 +#!/bin/bash
 +#
@@ -49366,7 +49384,7 @@ diff -Naur openssh-7.1p2/contrib/redhat/gsisshd.init gsi-openssh/contrib/redhat/
 +exit $RETVAL
 diff -Naur openssh-7.1p2/contrib/redhat/gsisshd.pam gsi-openssh/contrib/redhat/gsisshd.pam
 --- openssh-7.1p2/contrib/redhat/gsisshd.pam	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/contrib/redhat/gsisshd.pam	2016-05-12 11:48:28.813500269 -0500
++++ gsi-openssh/contrib/redhat/gsisshd.pam	2016-06-06 15:37:43.027820581 -0500
 @@ -0,0 +1,13 @@
 +#%PAM-1.0
 +auth	   required	pam_sepermit.so
@@ -49383,7 +49401,7 @@ diff -Naur openssh-7.1p2/contrib/redhat/gsisshd.pam gsi-openssh/contrib/redhat/g
 +session    include      password-auth
 diff -Naur openssh-7.1p2/gss-genr.c gsi-openssh/gss-genr.c
 --- openssh-7.1p2/gss-genr.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/gss-genr.c	2016-05-12 11:48:28.819500159 -0500
++++ gsi-openssh/gss-genr.c	2016-06-06 15:37:43.033821583 -0500
 @@ -1,7 +1,7 @@
  /* $OpenBSD: gss-genr.c,v 1.23 2015/01/20 23:14:00 deraadt Exp $ */
  
@@ -49782,7 +49800,7 @@ diff -Naur openssh-7.1p2/gss-genr.c gsi-openssh/gss-genr.c
  #endif /* GSSAPI */
 diff -Naur openssh-7.1p2/gss-serv.c gsi-openssh/gss-serv.c
 --- openssh-7.1p2/gss-serv.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/gss-serv.c	2016-05-12 11:48:28.819500159 -0500
++++ gsi-openssh/gss-serv.c	2016-06-06 15:37:43.033821583 -0500
 @@ -1,7 +1,7 @@
  /* $OpenBSD: gss-serv.c,v 1.29 2015/05/22 03:50:02 djm Exp $ */
  
@@ -50288,7 +50306,7 @@ diff -Naur openssh-7.1p2/gss-serv.c gsi-openssh/gss-serv.c
  #endif
 diff -Naur openssh-7.1p2/gss-serv-gsi.c gsi-openssh/gss-serv-gsi.c
 --- openssh-7.1p2/gss-serv-gsi.c	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/gss-serv-gsi.c	2016-05-12 11:48:28.819500159 -0500
++++ gsi-openssh/gss-serv-gsi.c	2016-06-06 15:37:43.033821583 -0500
 @@ -0,0 +1,239 @@
 +/*
 + * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
@@ -50531,7 +50549,7 @@ diff -Naur openssh-7.1p2/gss-serv-gsi.c gsi-openssh/gss-serv-gsi.c
 +#endif /* GSSAPI */
 diff -Naur openssh-7.1p2/gss-serv-krb5.c gsi-openssh/gss-serv-krb5.c
 --- openssh-7.1p2/gss-serv-krb5.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/gss-serv-krb5.c	2016-05-12 11:48:28.819500159 -0500
++++ gsi-openssh/gss-serv-krb5.c	2016-06-06 15:37:43.033821583 -0500
 @@ -1,7 +1,7 @@
  /* $OpenBSD: gss-serv-krb5.c,v 1.8 2013/07/20 01:55:13 djm Exp $ */
  
@@ -50745,7 +50763,7 @@ diff -Naur openssh-7.1p2/gss-serv-krb5.c gsi-openssh/gss-serv-krb5.c
  
 diff -Naur openssh-7.1p2/kex.c gsi-openssh/kex.c
 --- openssh-7.1p2/kex.c	2016-01-26 16:35:48.667165024 -0600
-+++ gsi-openssh/kex.c	2016-05-12 11:48:28.820500140 -0500
++++ gsi-openssh/kex.c	2016-06-06 15:37:43.033821583 -0500
 @@ -61,6 +61,10 @@
  extern int client_session_id;
  #endif
@@ -50794,7 +50812,7 @@ diff -Naur openssh-7.1p2/kex.c gsi-openssh/kex.c
  	k->kex_type = kexalg->type;
 diff -Naur openssh-7.1p2/kexgssc.c gsi-openssh/kexgssc.c
 --- openssh-7.1p2/kexgssc.c	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/kexgssc.c	2016-05-12 11:48:28.820500140 -0500
++++ gsi-openssh/kexgssc.c	2016-06-06 15:37:43.040822769 -0500
 @@ -0,0 +1,342 @@
 +/*
 + * Copyright (c) 2001-2009 Simon Wilkinson. All rights reserved.
@@ -51140,7 +51158,7 @@ diff -Naur openssh-7.1p2/kexgssc.c gsi-openssh/kexgssc.c
 +#endif /* GSSAPI */
 diff -Naur openssh-7.1p2/kexgsss.c gsi-openssh/kexgsss.c
 --- openssh-7.1p2/kexgsss.c	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/kexgsss.c	2016-05-12 11:48:28.820500140 -0500
++++ gsi-openssh/kexgsss.c	2016-06-06 15:37:43.040822769 -0500
 @@ -0,0 +1,321 @@
 +/*
 + * Copyright (c) 2001-2009 Simon Wilkinson. All rights reserved.
@@ -51465,7 +51483,7 @@ diff -Naur openssh-7.1p2/kexgsss.c gsi-openssh/kexgsss.c
 +#endif /* GSSAPI */
 diff -Naur openssh-7.1p2/kex.h gsi-openssh/kex.h
 --- openssh-7.1p2/kex.h	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/kex.h	2016-05-12 11:48:28.820500140 -0500
++++ gsi-openssh/kex.h	2016-06-06 15:37:43.033821583 -0500
 @@ -92,6 +92,9 @@
  	KEX_DH_GEX_SHA1,
  	KEX_DH_GEX_SHA256,
@@ -51503,7 +51521,7 @@ diff -Naur openssh-7.1p2/kex.h gsi-openssh/kex.h
      const BIGNUM *, const BIGNUM *, const BIGNUM *, u_char *, size_t *);
 diff -Naur openssh-7.1p2/libtool.m4 gsi-openssh/libtool.m4
 --- openssh-7.1p2/libtool.m4	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/libtool.m4	2016-05-12 11:48:28.820500140 -0500
++++ gsi-openssh/libtool.m4	2016-06-06 15:37:43.040822769 -0500
 @@ -0,0 +1,7982 @@
 +# libtool.m4 - Configure libtool for the host system. -*-Autoconf-*-
 +#
@@ -59489,7 +59507,7 @@ diff -Naur openssh-7.1p2/libtool.m4 gsi-openssh/libtool.m4
 +])# _LT_PATH_CONVERSION_FUNCTIONS
 diff -Naur openssh-7.1p2/LICENSE.globus_usage gsi-openssh/LICENSE.globus_usage
 --- openssh-7.1p2/LICENSE.globus_usage	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/LICENSE.globus_usage	2016-05-12 11:48:28.798500544 -0500
++++ gsi-openssh/LICENSE.globus_usage	2016-06-06 15:37:43.015818562 -0500
 @@ -0,0 +1,18 @@
 +/*
 + * Portions of the Usage Metrics suport code are derived from the
@@ -59511,7 +59529,7 @@ diff -Naur openssh-7.1p2/LICENSE.globus_usage gsi-openssh/LICENSE.globus_usage
 + */
 diff -Naur openssh-7.1p2/logintest.c gsi-openssh/logintest.c
 --- openssh-7.1p2/logintest.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/logintest.c	2016-05-12 11:48:28.820500140 -0500
++++ gsi-openssh/logintest.c	2016-06-06 15:37:43.043823271 -0500
 @@ -286,6 +286,7 @@
  	printf("Platform-independent login recording test driver\n");
  
@@ -59522,7 +59540,7 @@ diff -Naur openssh-7.1p2/logintest.c gsi-openssh/logintest.c
  			compile_opts_only = 1;
 diff -Naur openssh-7.1p2/ltmain.sh gsi-openssh/ltmain.sh
 --- openssh-7.1p2/ltmain.sh	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/ltmain.sh	2016-05-12 11:48:28.820500140 -0500
++++ gsi-openssh/ltmain.sh	2016-06-06 15:37:43.044823439 -0500
 @@ -0,0 +1,9655 @@
 +
 +# libtool (GNU libtool) 2.4.2
@@ -69181,7 +69199,7 @@ diff -Naur openssh-7.1p2/ltmain.sh gsi-openssh/ltmain.sh
 +
 diff -Naur openssh-7.1p2/lt~obsolete.m4 gsi-openssh/lt~obsolete.m4
 --- openssh-7.1p2/lt~obsolete.m4	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/lt~obsolete.m4	2016-05-12 11:48:28.826500026 -0500
++++ gsi-openssh/lt~obsolete.m4	2016-06-06 15:37:43.044823439 -0500
 @@ -0,0 +1,98 @@
 +# lt~obsolete.m4 -- aclocal satisfying obsolete definitions.    -*-Autoconf-*-
 +#
@@ -69283,7 +69301,7 @@ diff -Naur openssh-7.1p2/lt~obsolete.m4 gsi-openssh/lt~obsolete.m4
 +m4_ifndef([_LT_PROG_CXX],		[AC_DEFUN([_LT_PROG_CXX])])
 diff -Naur openssh-7.1p2/ltoptions.m4 gsi-openssh/ltoptions.m4
 --- openssh-7.1p2/ltoptions.m4	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/ltoptions.m4	2016-05-12 11:48:28.820500140 -0500
++++ gsi-openssh/ltoptions.m4	2016-06-06 15:37:43.044823439 -0500
 @@ -0,0 +1,384 @@
 +# Helper functions for option handling.                    -*- Autoconf -*-
 +#
@@ -69671,7 +69689,7 @@ diff -Naur openssh-7.1p2/ltoptions.m4 gsi-openssh/ltoptions.m4
 +		 [m4_define([_LTDL_TYPE], [convenience])])
 diff -Naur openssh-7.1p2/ltsugar.m4 gsi-openssh/ltsugar.m4
 --- openssh-7.1p2/ltsugar.m4	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/ltsugar.m4	2016-05-12 11:48:28.820500140 -0500
++++ gsi-openssh/ltsugar.m4	2016-06-06 15:37:43.044823439 -0500
 @@ -0,0 +1,123 @@
 +# ltsugar.m4 -- libtool m4 base layer.                         -*-Autoconf-*-
 +#
@@ -69798,7 +69816,7 @@ diff -Naur openssh-7.1p2/ltsugar.m4 gsi-openssh/ltsugar.m4
 +])
 diff -Naur openssh-7.1p2/ltversion.m4 gsi-openssh/ltversion.m4
 --- openssh-7.1p2/ltversion.m4	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/ltversion.m4	2016-05-12 11:48:28.826500026 -0500
++++ gsi-openssh/ltversion.m4	2016-06-06 15:37:43.044823439 -0500
 @@ -0,0 +1,23 @@
 +# ltversion.m4 -- version numbers			-*- Autoconf -*-
 +#
@@ -69825,7 +69843,7 @@ diff -Naur openssh-7.1p2/ltversion.m4 gsi-openssh/ltversion.m4
 +])
 diff -Naur openssh-7.1p2/Makefile.in gsi-openssh/Makefile.in
 --- openssh-7.1p2/Makefile.in	2016-01-26 16:35:48.661165392 -0600
-+++ gsi-openssh/Makefile.in	2016-05-12 11:48:28.799500526 -0500
++++ gsi-openssh/Makefile.in	2016-06-06 15:37:43.015818562 -0500
 @@ -1,7 +1,7 @@
  # $Id: Makefile.in,v 1.365 2014/08/30 06:23:07 djm Exp $
  
@@ -69849,7 +69867,7 @@ diff -Naur openssh-7.1p2/Makefile.in gsi-openssh/Makefile.in
  ASKPASS_PROGRAM=$(libexecdir)/ssh-askpass
  SFTP_SERVER=$(libexecdir)/sftp-server
  SSH_KEYSIGN=$(libexecdir)/ssh-keysign
-@@ -31,20 +33,16 @@
+@@ -31,20 +33,17 @@
  STRIP_OPT=@STRIP_OPT@
  TEST_SHELL=@TEST_SHELL@
  
@@ -69860,6 +69878,7 @@ diff -Naur openssh-7.1p2/Makefile.in gsi-openssh/Makefile.in
 -	-D_PATH_SSH_KEY_SIGN=\"$(SSH_KEYSIGN)\" \
 -	-D_PATH_SSH_PKCS11_HELPER=\"$(SSH_PKCS11_HELPER)\" \
 +PATHS= -D_PATH_SSH_ASKPASS_DEFAULT=\"$(ASKPASS_PROGRAM)\" \
++	-DGSISSHDIR="\"$(sysconfdir)\"" \
  	-D_PATH_SSH_PIDDIR=\"$(piddir)\" \
  	-D_PATH_PRIVSEP_CHROOT_DIR=\"$(PRIVSEP_PATH)\"
  
@@ -69874,7 +69893,7 @@ diff -Naur openssh-7.1p2/Makefile.in gsi-openssh/Makefile.in
  K5LIBS=@K5LIBS@
  GSSLIBS=@GSSLIBS@
  SSHLIBS=@SSHLIBS@
-@@ -84,6 +82,8 @@
+@@ -84,6 +83,8 @@
  	readpass.o rsa.o ttymodes.o xmalloc.o addrmatch.o \
  	atomicio.o key.o dispatch.o mac.o uidswap.o uuencode.o misc.o \
  	monitor_fdpass.o rijndael.o ssh-dss.o ssh-ecdsa.o ssh-rsa.o dh.o \
@@ -69883,7 +69902,7 @@ diff -Naur openssh-7.1p2/Makefile.in gsi-openssh/Makefile.in
  	msg.o progressmeter.o dns.o entropy.o gss-genr.o umac.o umac128.o \
  	ssh-pkcs11.o smult_curve25519_ref.o \
  	poly1305.o chacha.o cipher-chachapoly.o \
-@@ -105,9 +105,12 @@
+@@ -105,9 +106,12 @@
  	auth-skey.o auth-bsdauth.o auth2-hostbased.o auth2-kbdint.o \
  	auth2-none.o auth2-passwd.o auth2-pubkey.o \
  	monitor_mm.o monitor.o monitor_wrap.o auth-krb5.o \
@@ -69896,7 +69915,7 @@ diff -Naur openssh-7.1p2/Makefile.in gsi-openssh/Makefile.in
  	roaming_common.o roaming_serv.o \
  	sandbox-null.o sandbox-rlimit.o sandbox-systrace.o sandbox-darwin.o \
  	sandbox-seccomp-filter.o sandbox-capsicum.o modp_burl.o nersc.o
-@@ -185,7 +188,7 @@
+@@ -185,7 +189,7 @@
  	$(LD) -o $@ ssh-pkcs11-helper.o ssh-pkcs11.o $(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
  
  ssh-keyscan$(EXEEXT): $(LIBCOMPAT) libssh.a ssh-keyscan.o roaming_dummy.o
@@ -69905,7 +69924,7 @@ diff -Naur openssh-7.1p2/Makefile.in gsi-openssh/Makefile.in
  
  sftp-server$(EXEEXT): $(LIBCOMPAT) libssh.a sftp.o sftp-common.o sftp-server.o sftp-server-main.o
  	$(LD) -o $@ sftp-server.o sftp-common.o sftp-server-main.o $(LDFLAGS) -lssh -lopenbsd-compat $(LIBS)
-@@ -223,7 +226,7 @@
+@@ -223,7 +227,7 @@
  	$(CC) $(CFLAGS) $(CPPFLAGS) -o umac128.o -c $(srcdir)/umac.c \
  	    -DUMAC_OUTPUT_LEN=16 -Dumac_new=umac128_new \
  	    -Dumac_update=umac128_update -Dumac_final=umac128_final \
@@ -69914,7 +69933,7 @@ diff -Naur openssh-7.1p2/Makefile.in gsi-openssh/Makefile.in
  
  clean:	regressclean
  	rm -f *.o *.a $(TARGETS) logintest config.cache config.log
-@@ -285,13 +288,36 @@
+@@ -285,13 +289,36 @@
  distprep: catman-do
  	$(AUTORECONF)
  	-rm -rf autom4te.cache
@@ -69952,7 +69971,7 @@ diff -Naur openssh-7.1p2/Makefile.in gsi-openssh/Makefile.in
  
  install-files:
  	$(srcdir)/mkinstalldirs $(DESTDIR)$(bindir)
-@@ -302,35 +328,35 @@
+@@ -302,35 +329,35 @@
  	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$(mansubdir)8
  	$(srcdir)/mkinstalldirs $(DESTDIR)$(libexecdir)
  	(umask 022 ; $(srcdir)/mkinstalldirs $(DESTDIR)$(PRIVSEP_PATH))
@@ -70017,7 +70036,7 @@ diff -Naur openssh-7.1p2/Makefile.in gsi-openssh/Makefile.in
  
  install-sysconf:
  	if [ ! -d $(DESTDIR)$(sysconfdir) ]; then \
-@@ -407,30 +433,30 @@
+@@ -407,30 +434,30 @@
  	-rmdir $(DESTDIR)$(libexecdir)
  
  uninstall:
@@ -70071,7 +70090,7 @@ diff -Naur openssh-7.1p2/Makefile.in gsi-openssh/Makefile.in
  	[ -d `pwd`/regress ] || mkdir -p `pwd`/regress
 diff -Naur openssh-7.1p2/misc.c gsi-openssh/misc.c
 --- openssh-7.1p2/misc.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/misc.c	2016-05-12 11:48:28.826500026 -0500
++++ gsi-openssh/misc.c	2016-06-06 15:37:43.044823439 -0500
 @@ -160,11 +160,14 @@
  #define WHITESPACE " \t\r\n"
  #define QUOTE	"\""
@@ -70133,7 +70152,7 @@ diff -Naur openssh-7.1p2/misc.c gsi-openssh/misc.c
   * Port must be >=0 and <=65535.
 diff -Naur openssh-7.1p2/misc.h gsi-openssh/misc.h
 --- openssh-7.1p2/misc.h	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/misc.h	2016-05-12 11:48:28.826500026 -0500
++++ gsi-openssh/misc.h	2016-06-06 15:37:43.044823439 -0500
 @@ -61,6 +61,7 @@
  void	 sock_set_v6only(int);
  
@@ -70144,7 +70163,7 @@ diff -Naur openssh-7.1p2/misc.h gsi-openssh/misc.h
  typedef struct arglist arglist;
 diff -Naur openssh-7.1p2/moduli.0 gsi-openssh/moduli.0
 --- openssh-7.1p2/moduli.0	2016-01-13 19:13:03.000000000 -0600
-+++ gsi-openssh/moduli.0	2016-05-12 11:49:00.207922271 -0500
++++ gsi-openssh/moduli.0	2016-06-06 15:39:14.404193778 -0500
 @@ -1,7 +1,7 @@
 -MODULI(5)                     File Formats Manual                    MODULI(5)
 +MODULI(5)                   BSD File Formats Manual                  MODULI(5)
@@ -70192,10 +70211,10 @@ diff -Naur openssh-7.1p2/moduli.0 gsi-openssh/moduli.0
 +     2006,
  
 -OpenBSD 5.8                   September 26, 2012                   OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/monitor.c gsi-openssh/monitor.c
 --- openssh-7.1p2/monitor.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/monitor.c	2016-05-12 11:48:28.826500026 -0500
++++ gsi-openssh/monitor.c	2016-06-06 15:37:43.047823946 -0500
 @@ -157,6 +157,11 @@
  int mm_answer_gss_accept_ctx(int, Buffer *);
  int mm_answer_gss_userok(int, Buffer *);
@@ -70543,7 +70562,7 @@ diff -Naur openssh-7.1p2/monitor.c gsi-openssh/monitor.c
  
 diff -Naur openssh-7.1p2/monitor.h gsi-openssh/monitor.h
 --- openssh-7.1p2/monitor.h	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/monitor.h	2016-05-12 11:48:28.826500026 -0500
++++ gsi-openssh/monitor.h	2016-06-06 15:37:43.047823946 -0500
 @@ -65,6 +65,12 @@
  	MONITOR_REQ_PAM_FREE_CTX = 110, MONITOR_ANS_PAM_FREE_CTX = 111,
  	MONITOR_REQ_AUDIT_EVENT = 112, MONITOR_REQ_AUDIT_COMMAND = 113,
@@ -70559,7 +70578,7 @@ diff -Naur openssh-7.1p2/monitor.h gsi-openssh/monitor.h
  struct mm_master;
 diff -Naur openssh-7.1p2/monitor_wrap.c gsi-openssh/monitor_wrap.c
 --- openssh-7.1p2/monitor_wrap.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/monitor_wrap.c	2016-05-12 11:48:28.826500026 -0500
++++ gsi-openssh/monitor_wrap.c	2016-06-06 15:37:43.047823946 -0500
 @@ -1068,12 +1068,13 @@
  }
  
@@ -70705,7 +70724,7 @@ diff -Naur openssh-7.1p2/monitor_wrap.c gsi-openssh/monitor_wrap.c
  
 diff -Naur openssh-7.1p2/monitor_wrap.h gsi-openssh/monitor_wrap.h
 --- openssh-7.1p2/monitor_wrap.h	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/monitor_wrap.h	2016-05-12 11:48:28.826500026 -0500
++++ gsi-openssh/monitor_wrap.h	2016-06-06 15:37:43.047823946 -0500
 @@ -58,8 +58,14 @@
  OM_uint32 mm_ssh_gssapi_server_ctx(Gssctxt **, gss_OID);
  OM_uint32 mm_ssh_gssapi_accept_ctx(Gssctxt *,
@@ -70724,7 +70743,7 @@ diff -Naur openssh-7.1p2/monitor_wrap.h gsi-openssh/monitor_wrap.h
  #ifdef USE_PAM
 diff -Naur openssh-7.1p2/myproposal.h gsi-openssh/myproposal.h
 --- openssh-7.1p2/myproposal.h	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/myproposal.h	2016-05-12 11:48:28.829499976 -0500
++++ gsi-openssh/myproposal.h	2016-06-06 15:37:43.047823946 -0500
 @@ -115,6 +115,9 @@
  	"aes128-cbc,3des-cbc,blowfish-cbc,cast128-cbc," \
  	"aes192-cbc,aes256-cbc,arcfour,rijndael-cbc@lysator.liu.se"
@@ -70746,7 +70765,7 @@ diff -Naur openssh-7.1p2/myproposal.h gsi-openssh/myproposal.h
  	KEX_DEFAULT_PK_ALG, \
 diff -Naur openssh-7.1p2/nersc.c gsi-openssh/nersc.c
 --- openssh-7.1p2/nersc.c	2016-01-26 16:35:48.672164725 -0600
-+++ gsi-openssh/nersc.c	2016-05-12 11:48:28.829499976 -0500
++++ gsi-openssh/nersc.c	2016-06-06 15:37:43.047823946 -0500
 @@ -150,7 +150,7 @@
  #include "modp_burl_data.h"
  
@@ -70758,7 +70777,7 @@ diff -Naur openssh-7.1p2/nersc.c gsi-openssh/nersc.c
  int client_session_id;
 diff -Naur openssh-7.1p2/openbsd-compat/port-aix.c gsi-openssh/openbsd-compat/port-aix.c
 --- openssh-7.1p2/openbsd-compat/port-aix.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/openbsd-compat/port-aix.c	2016-05-12 11:48:28.829499976 -0500
++++ gsi-openssh/openbsd-compat/port-aix.c	2016-06-06 15:37:43.055825293 -0500
 @@ -50,6 +50,7 @@
  # include <login.h>
  # include <userpw.h>
@@ -70769,7 +70788,7 @@ diff -Naur openssh-7.1p2/openbsd-compat/port-aix.c gsi-openssh/openbsd-compat/po
  # include <usersec.h>
 diff -Naur openssh-7.1p2/packet.c gsi-openssh/packet.c
 --- openssh-7.1p2/packet.c	2016-01-26 16:35:08.403956177 -0600
-+++ gsi-openssh/packet.c	2016-05-12 11:48:28.839499791 -0500
++++ gsi-openssh/packet.c	2016-06-06 15:37:43.056825461 -0500
 @@ -2311,6 +2311,18 @@
  	return (void *)ssh->state->output;
  }
@@ -70791,8 +70810,8 @@ diff -Naur openssh-7.1p2/packet.c gsi-openssh/packet.c
  void *
 diff -Naur openssh-7.1p2/pathnames.c gsi-openssh/pathnames.c
 --- openssh-7.1p2/pathnames.c	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/pathnames.c	2016-05-12 11:48:28.839499791 -0500
-@@ -0,0 +1,126 @@
++++ gsi-openssh/pathnames.c	2016-06-06 15:37:43.056825461 -0500
+@@ -0,0 +1,166 @@
 +#include "includes.h"
 +#include "xmalloc.h"
 +#include "log.h"
@@ -70804,7 +70823,7 @@ diff -Naur openssh-7.1p2/pathnames.c gsi-openssh/pathnames.c
 +#define USRDIR "/usr"
 +#define BINDIR "/bin"
 +#define LIBEXEC "/libexec"
-+#define GSISSHDIR "/etc/gsissh"
++#define DEFAULT_GSISSHDIR "/etc/gsissh"
 +#define SSHDIR "/etc/ssh"
 +#define VARDIR "/var"
 +#define VARRUN "/var/run"
@@ -70877,11 +70896,7 @@ diff -Naur openssh-7.1p2/pathnames.c gsi-openssh/pathnames.c
 +    if (gl) {
 +        sshdir = compose2(gl, SSHDIR);
 +        if (access(sshdir, X_OK) < 0) {
-+            free(sshdir);
-+            sshdir = NULL;
-+        }
-+        sshdir = compose2(gl, GSISSHDIR);
-+        if (access(sshdir, X_OK) < 0) {
++            logit("%s not found.", sshdir);
 +            free(sshdir);
 +            sshdir = NULL;
 +        }
@@ -70889,8 +70904,52 @@ diff -Naur openssh-7.1p2/pathnames.c gsi-openssh/pathnames.c
 +    if (!sshdir) {
 +        sshdir = strdup(GSISSHDIR);
 +        if (access(sshdir, X_OK) < 0) {
-+            fatal("%s not found.", sshdir);
++            logit("%s not found.", sshdir);
++            free(sshdir);
++            sshdir = NULL;
 +        }
++    }
++    if ((!sshdir) && gl) {
++        sshdir = compose2(gl, GSISSHDIR);
++        if (access(sshdir, X_OK) < 0) {
++            logit("%s not found.", sshdir);
++            free(sshdir);
++            sshdir = NULL;
++        }
++    }
++    if (!sshdir) {
++        sshdir = strdup(DEFAULT_GSISSHDIR);
++        if (access(sshdir, X_OK) < 0) {
++            logit("%s not found.", sshdir);
++            free(sshdir);
++            sshdir = NULL;
++        }
++    }
++    if ((!sshdir) && gl) {
++        sshdir = compose2(gl, DEFAULT_GSISSHDIR);
++        if (access(sshdir, X_OK) < 0) {
++            logit("%s not found.", sshdir);
++            free(sshdir);
++            sshdir = NULL;
++        }
++    }
++#if defined(__APPLE__) && defined(__MACH__)
++    if (!sshdir)
++    {
++        char * home = getenv("HOME");
++        if (home)
++        {
++            sshdir = compose2(home, GSISSHDIR);
++            if (access(sshdir, X_OK) < 0) {
++                logit("%s not found.", sshdir);
++                free(sshdir);
++                sshdir = NULL;
++            }
++        }
++    }
++#endif /* APPLE && __MACH__ */
++    if (!sshdir) {
++        fatal("sshdir not found. Check your installation or set GLOBUS_LOCATION");
 +    }
 +
 +    /* lots of one time memory leaks here */
@@ -70921,7 +70980,7 @@ diff -Naur openssh-7.1p2/pathnames.c gsi-openssh/pathnames.c
 +}
 diff -Naur openssh-7.1p2/pathnames.h gsi-openssh/pathnames.h
 --- openssh-7.1p2/pathnames.h	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/pathnames.h	2016-05-12 11:48:28.839499791 -0500
++++ gsi-openssh/pathnames.h	2016-06-06 15:37:43.056825461 -0500
 @@ -12,48 +12,43 @@
   * called by a name other than "ssh" or "Secure Shell".
   */
@@ -71042,7 +71101,7 @@ diff -Naur openssh-7.1p2/pathnames.h gsi-openssh/pathnames.h
 +extern char *_PATH_STDPATH_WITH_SCP;
 diff -Naur openssh-7.1p2/pkg.m4 gsi-openssh/pkg.m4
 --- openssh-7.1p2/pkg.m4	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/pkg.m4	2016-05-12 11:48:28.839499791 -0500
++++ gsi-openssh/pkg.m4	2016-06-06 15:37:43.056825461 -0500
 @@ -0,0 +1,214 @@
 +# pkg.m4 - Macros to locate and utilise pkg-config.            -*- Autoconf -*-
 +# serial 1 (pkg-config-0.24)
@@ -71260,7 +71319,7 @@ diff -Naur openssh-7.1p2/pkg.m4 gsi-openssh/pkg.m4
 +])# PKG_CHECK_VAR
 diff -Naur openssh-7.1p2/progressmeter.c gsi-openssh/progressmeter.c
 --- openssh-7.1p2/progressmeter.c	2016-01-26 16:35:08.404956636 -0600
-+++ gsi-openssh/progressmeter.c	2016-05-12 11:48:28.839499791 -0500
++++ gsi-openssh/progressmeter.c	2016-06-06 15:37:43.056825461 -0500
 @@ -183,6 +183,7 @@
  		percent = ((float)cur_pos / end_pos) * 100;
  	else
@@ -71271,7 +71330,7 @@ diff -Naur openssh-7.1p2/progressmeter.c gsi-openssh/progressmeter.c
  
 diff -Naur openssh-7.1p2/readconf.c gsi-openssh/readconf.c
 --- openssh-7.1p2/readconf.c	2016-01-26 16:35:48.672164725 -0600
-+++ gsi-openssh/readconf.c	2016-05-12 11:48:28.839499791 -0500
++++ gsi-openssh/readconf.c	2016-06-06 15:37:43.056825461 -0500
 @@ -148,6 +148,8 @@
  	oClearAllForwardings, oNoHostAuthenticationForLocalhost,
  	oEnableSSHKeysign, oRekeyLimit, oVerifyHostKeyDNS, oConnectTimeout,
@@ -71388,7 +71447,7 @@ diff -Naur openssh-7.1p2/readconf.c gsi-openssh/readconf.c
  		if (options->hpn_buffer_size == 0)
 diff -Naur openssh-7.1p2/readconf.h gsi-openssh/readconf.h
 --- openssh-7.1p2/readconf.h	2016-01-26 16:35:48.673164673 -0600
-+++ gsi-openssh/readconf.h	2016-05-12 11:48:28.839499791 -0500
++++ gsi-openssh/readconf.h	2016-06-06 15:37:43.056825461 -0500
 @@ -45,7 +45,12 @@
  	int     challenge_response_authentication;
  					/* Try S/Key or TIS, authentication. */
@@ -71413,7 +71472,7 @@ diff -Naur openssh-7.1p2/readconf.h gsi-openssh/readconf.h
  	u_int	num_system_hostfiles;	/* Paths for /etc/ssh/ssh_known_hosts */
 diff -Naur openssh-7.1p2/scp.0 gsi-openssh/scp.0
 --- openssh-7.1p2/scp.0	2016-01-13 19:13:03.000000000 -0600
-+++ gsi-openssh/scp.0	2016-05-12 11:49:00.255921386 -0500
++++ gsi-openssh/scp.0	2016-06-06 15:39:14.447201013 -0500
 @@ -1,7 +1,7 @@
 -SCP(1)                      General Commands Manual                     SCP(1)
 +SCP(1)                    BSD General Commands Manual                   SCP(1)
@@ -71465,10 +71524,10 @@ diff -Naur openssh-7.1p2/scp.0 gsi-openssh/scp.0
 +     Tatu Ylonen M-bM-^LM-)ylo@cs.hut.fiM-bM-^LM-*
  
 -OpenBSD 5.8                      July 10, 2015                     OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/scp.c gsi-openssh/scp.c
 --- openssh-7.1p2/scp.c	2016-01-26 16:35:08.405957095 -0600
-+++ gsi-openssh/scp.c	2016-05-12 11:48:28.859499423 -0500
++++ gsi-openssh/scp.c	2016-06-06 15:37:43.077828996 -0500
 @@ -146,7 +146,7 @@
  int throughlocal = 0;
  
@@ -71509,7 +71568,7 @@ diff -Naur openssh-7.1p2/scp.c gsi-openssh/scp.c
  	exit(1);
 diff -Naur openssh-7.1p2/servconf.c gsi-openssh/servconf.c
 --- openssh-7.1p2/servconf.c	2016-01-26 16:35:48.673164673 -0600
-+++ gsi-openssh/servconf.c	2016-05-12 11:48:28.859499423 -0500
++++ gsi-openssh/servconf.c	2016-06-06 15:37:43.077828996 -0500
 @@ -75,6 +75,7 @@
  
  	/* Portable-specific options */
@@ -71543,7 +71602,7 @@ diff -Naur openssh-7.1p2/servconf.c gsi-openssh/servconf.c
  	options->chroot_directory = NULL;
  	options->authorized_keys_command = NULL;
  	options->authorized_keys_command_user = NULL;
-+	options->disable_usage_stats = 0;
++	options->disable_usage_stats = 1;
 +	options->usage_stats_targets = NULL;
  	options->revoked_keys_file = NULL;
  	options->trusted_user_ca_keys = NULL;
@@ -71808,7 +71867,7 @@ diff -Naur openssh-7.1p2/servconf.c gsi-openssh/servconf.c
  	dump_cfg_fmtint(sKbdInteractiveAuthentication,
 diff -Naur openssh-7.1p2/servconf.h gsi-openssh/servconf.h
 --- openssh-7.1p2/servconf.h	2016-01-26 16:35:48.674164628 -0600
-+++ gsi-openssh/servconf.h	2016-05-12 11:48:28.859499423 -0500
++++ gsi-openssh/servconf.h	2016-06-06 15:37:43.077828996 -0500
 @@ -115,11 +115,21 @@
  						 * /etc/passwd */
  	int     kerberos_ticket_cleanup;	/* If true, destroy ticket
@@ -71852,7 +71911,7 @@ diff -Naur openssh-7.1p2/servconf.h gsi-openssh/servconf.h
  	char   *authorized_keys_command;
 diff -Naur openssh-7.1p2/session.c gsi-openssh/session.c
 --- openssh-7.1p2/session.c	2016-01-26 16:35:48.675164575 -0600
-+++ gsi-openssh/session.c	2016-05-12 11:48:28.859499423 -0500
++++ gsi-openssh/session.c	2016-06-06 15:37:43.077828996 -0500
 @@ -138,6 +138,11 @@
  
  static int session_pty_req(Session *);
@@ -72173,7 +72232,7 @@ diff -Naur openssh-7.1p2/session.c gsi-openssh/session.c
  }
 diff -Naur openssh-7.1p2/sftp.0 gsi-openssh/sftp.0
 --- openssh-7.1p2/sftp.0	2016-01-13 19:13:04.000000000 -0600
-+++ gsi-openssh/sftp.0	2016-05-12 11:49:00.741912439 -0500
++++ gsi-openssh/sftp.0	2016-06-06 15:39:14.925281446 -0500
 @@ -1,7 +1,7 @@
 -SFTP(1)                     General Commands Manual                    SFTP(1)
 +SFTP(1)                   BSD General Commands Manual                  SFTP(1)
@@ -72394,10 +72453,10 @@ diff -Naur openssh-7.1p2/sftp.0 gsi-openssh/sftp.0
       filexfer-00.txt, January 2001, work in progress material.
  
 -OpenBSD 5.8                    January 30, 2015                    OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/sftp.c gsi-openssh/sftp.c
 --- openssh-7.1p2/sftp.c	2016-01-26 16:35:08.409958935 -0600
-+++ gsi-openssh/sftp.c	2016-05-12 11:48:28.861499387 -0500
++++ gsi-openssh/sftp.c	2016-06-06 15:37:43.077828996 -0500
 @@ -2237,7 +2237,7 @@
  	char *host = NULL, *userhost, *cp, *file2 = NULL;
  	int debug_level = 0, sshver = 2;
@@ -72418,7 +72477,7 @@ diff -Naur openssh-7.1p2/sftp.c gsi-openssh/sftp.c
  	addargs(&args, "%s", ssh_program);
 diff -Naur openssh-7.1p2/sftp-server.0 gsi-openssh/sftp-server.0
 --- openssh-7.1p2/sftp-server.0	2016-01-13 19:13:04.000000000 -0600
-+++ gsi-openssh/sftp-server.0	2016-05-12 11:49:00.671913733 -0500
++++ gsi-openssh/sftp-server.0	2016-06-06 15:39:14.855269666 -0500
 @@ -1,7 +1,7 @@
 -SFTP-SERVER(8)              System Manager's Manual             SFTP-SERVER(8)
 +SFTP-SERVER(8)            BSD System ManagerM-bM-^@M-^Ys Manual           SFTP-SERVER(8)
@@ -72478,10 +72537,10 @@ diff -Naur openssh-7.1p2/sftp-server.0 gsi-openssh/sftp-server.0
 +     Markus Friedl M-bM-^LM-)markus@openbsd.orgM-bM-^LM-*
  
 -OpenBSD 5.8                    December 11, 2014                   OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/sftp-server.c gsi-openssh/sftp-server.c
 --- openssh-7.1p2/sftp-server.c	2016-01-26 16:35:48.676164521 -0600
-+++ gsi-openssh/sftp-server.c	2016-05-12 11:48:28.861499387 -0500
++++ gsi-openssh/sftp-server.c	2016-06-06 15:37:43.077828996 -0500
 @@ -974,6 +974,13 @@
  			status = errno_to_portable(errno);
  	}
@@ -72508,7 +72567,7 @@ diff -Naur openssh-7.1p2/sftp-server.c gsi-openssh/sftp-server.c
  	pw = pwcopy(user_pw);
 diff -Naur openssh-7.1p2/ssh.0 gsi-openssh/ssh.0
 --- openssh-7.1p2/ssh.0	2016-01-13 19:13:03.000000000 -0600
-+++ gsi-openssh/ssh.0	2016-05-12 11:49:00.565915656 -0500
++++ gsi-openssh/ssh.0	2016-06-06 15:39:14.744250990 -0500
 @@ -1,7 +1,7 @@
 -SSH(1)                      General Commands Manual                     SSH(1)
 +SSH(1)                    BSD General Commands Manual                   SSH(1)
@@ -73226,10 +73285,10 @@ diff -Naur openssh-7.1p2/ssh.0 gsi-openssh/ssh.0
       versions 1.5 and 2.0.
  
 -OpenBSD 5.8                      July 20, 2015                     OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/ssh.1 gsi-openssh/ssh.1
 --- openssh-7.1p2/ssh.1	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/ssh.1	2016-05-12 11:48:28.863499349 -0500
++++ gsi-openssh/ssh.1	2016-06-06 15:37:43.084830170 -0500
 @@ -1341,8 +1341,38 @@
  explicitly, as that
  will render the X11 connection insecure (and will require the user to
@@ -73290,7 +73349,7 @@ diff -Naur openssh-7.1p2/ssh.1 gsi-openssh/ssh.1
  Additionally,
 diff -Naur openssh-7.1p2/ssh-add.0 gsi-openssh/ssh-add.0
 --- openssh-7.1p2/ssh-add.0	2016-01-13 19:13:03.000000000 -0600
-+++ gsi-openssh/ssh-add.0	2016-05-12 11:49:00.288920779 -0500
++++ gsi-openssh/ssh-add.0	2016-06-06 15:39:14.479206398 -0500
 @@ -1,7 +1,7 @@
 -SSH-ADD(1)                  General Commands Manual                 SSH-ADD(1)
 +SSH-ADD(1)                BSD General Commands Manual               SSH-ADD(1)
@@ -73371,10 +73430,10 @@ diff -Naur openssh-7.1p2/ssh-add.0 gsi-openssh/ssh-add.0
       versions 1.5 and 2.0.
  
 -OpenBSD 5.8                     March 30, 2015                     OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/ssh-add.c gsi-openssh/ssh-add.c
 --- openssh-7.1p2/ssh-add.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/ssh-add.c	2016-05-12 11:48:28.861499387 -0500
++++ gsi-openssh/ssh-add.c	2016-06-06 15:37:43.077828996 -0500
 @@ -489,6 +489,7 @@
  	sanitise_stdfd();
  
@@ -73385,7 +73444,7 @@ diff -Naur openssh-7.1p2/ssh-add.c gsi-openssh/ssh-add.c
  #ifdef WITH_OPENSSL
 diff -Naur openssh-7.1p2/ssh-agent.0 gsi-openssh/ssh-agent.0
 --- openssh-7.1p2/ssh-agent.0	2016-01-13 19:13:03.000000000 -0600
-+++ gsi-openssh/ssh-agent.0	2016-05-12 11:49:00.329920024 -0500
++++ gsi-openssh/ssh-agent.0	2016-06-06 15:39:14.510211614 -0500
 @@ -1,7 +1,7 @@
 -SSH-AGENT(1)                General Commands Manual               SSH-AGENT(1)
 +SSH-AGENT(1)              BSD General Commands Manual             SSH-AGENT(1)
@@ -73517,10 +73576,10 @@ diff -Naur openssh-7.1p2/ssh-agent.0 gsi-openssh/ssh-agent.0
       versions 1.5 and 2.0.
  
 -OpenBSD 5.8                     April 24, 2015                     OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/ssh-agent.c gsi-openssh/ssh-agent.c
 --- openssh-7.1p2/ssh-agent.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/ssh-agent.c	2016-05-12 11:48:28.863499349 -0500
++++ gsi-openssh/ssh-agent.c	2016-06-06 15:37:43.077828996 -0500
 @@ -80,6 +80,7 @@
  #include "authfd.h"
  #include "compat.h"
@@ -73539,7 +73598,7 @@ diff -Naur openssh-7.1p2/ssh-agent.c gsi-openssh/ssh-agent.c
  	while ((ch = getopt(ac, av, "cDdksE:a:t:")) != -1) {
 diff -Naur openssh-7.1p2/ssh.c gsi-openssh/ssh.c
 --- openssh-7.1p2/ssh.c	2016-01-26 16:35:08.409958935 -0600
-+++ gsi-openssh/ssh.c	2016-05-12 11:48:28.863499349 -0500
++++ gsi-openssh/ssh.c	2016-06-06 15:37:43.084830170 -0500
 @@ -463,6 +463,32 @@
  			fatal("Can't open user config file %.100s: "
  			    "%.100s", config, strerror(errno));
@@ -73596,7 +73655,7 @@ diff -Naur openssh-7.1p2/ssh.c gsi-openssh/ssh.c
  		fatal("gethostname: %s", strerror(errno));
 diff -Naur openssh-7.1p2/ssh_config gsi-openssh/ssh_config
 --- openssh-7.1p2/ssh_config	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/ssh_config	2016-05-12 11:48:28.866499293 -0500
++++ gsi-openssh/ssh_config	2016-06-06 15:37:43.084830170 -0500
 @@ -24,8 +24,10 @@
  #   RSAAuthentication yes
  #   PasswordAuthentication yes
@@ -73612,7 +73671,7 @@ diff -Naur openssh-7.1p2/ssh_config gsi-openssh/ssh_config
  #   AddressFamily any
 diff -Naur openssh-7.1p2/ssh_config.0 gsi-openssh/ssh_config.0
 --- openssh-7.1p2/ssh_config.0	2016-01-13 19:13:04.000000000 -0600
-+++ gsi-openssh/ssh_config.0	2016-05-12 11:49:01.057906623 -0500
++++ gsi-openssh/ssh_config.0	2016-06-06 15:39:15.231332935 -0500
 @@ -1,43 +1,45 @@
 -SSH_CONFIG(5)                 File Formats Manual                SSH_CONFIG(5)
 +SSH_CONFIG(5)               BSD File Formats Manual              SSH_CONFIG(5)
@@ -74591,10 +74650,10 @@ diff -Naur openssh-7.1p2/ssh_config.0 gsi-openssh/ssh_config.0
       versions 1.5 and 2.0.
  
 -OpenBSD 5.8                     August 14, 2015                    OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/ssh_config.5 gsi-openssh/ssh_config.5
 --- openssh-7.1p2/ssh_config.5	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/ssh_config.5	2016-05-12 11:48:28.866499293 -0500
++++ gsi-openssh/ssh_config.5	2016-06-06 15:37:43.084830170 -0500
 @@ -55,6 +55,12 @@
  user's configuration file
  .Pq Pa ~/.ssh/config
@@ -74668,7 +74727,7 @@ diff -Naur openssh-7.1p2/ssh_config.5 gsi-openssh/ssh_config.5
  .It Cm Protocol
 diff -Naur openssh-7.1p2/sshconnect2.c gsi-openssh/sshconnect2.c
 --- openssh-7.1p2/sshconnect2.c	2016-01-26 16:35:08.411959855 -0600
-+++ gsi-openssh/sshconnect2.c	2016-05-12 11:48:28.868499257 -0500
++++ gsi-openssh/sshconnect2.c	2016-06-06 15:37:43.091831348 -0500
 @@ -80,6 +80,7 @@
  extern char *client_version_string;
  extern char *server_version_string;
@@ -74924,7 +74983,7 @@ diff -Naur openssh-7.1p2/sshconnect2.c gsi-openssh/sshconnect2.c
  int
 diff -Naur openssh-7.1p2/sshd.0 gsi-openssh/sshd.0
 --- openssh-7.1p2/sshd.0	2016-01-13 19:13:03.000000000 -0600
-+++ gsi-openssh/sshd.0	2016-05-12 11:49:00.636914365 -0500
++++ gsi-openssh/sshd.0	2016-06-06 15:39:14.819263610 -0500
 @@ -1,7 +1,7 @@
 -SSHD(8)                     System Manager's Manual                    SSHD(8)
 +SSHD(8)                   BSD System ManagerM-bM-^@M-^Ys Manual                  SSHD(8)
@@ -75606,10 +75665,10 @@ diff -Naur openssh-7.1p2/sshd.0 gsi-openssh/sshd.0
       for privilege separation.
  
 -OpenBSD 5.8                      July 3, 2015                      OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/sshd.8 gsi-openssh/sshd.8
 --- openssh-7.1p2/sshd.8	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/sshd.8	2016-05-12 11:48:28.868499257 -0500
++++ gsi-openssh/sshd.8	2016-06-06 15:37:43.091831348 -0500
 @@ -764,6 +764,73 @@
  # A CA key, accepted for any host in *.mydomain.com or *.mydomain.org
  @cert-authority *.mydomain.org,*.mydomain.com ssh-rsa AAAAB5W...
@@ -75707,7 +75766,7 @@ diff -Naur openssh-7.1p2/sshd.8 gsi-openssh/sshd.8
  .Xr sshd_config 5 ,
 diff -Naur openssh-7.1p2/sshd.c gsi-openssh/sshd.c
 --- openssh-7.1p2/sshd.c	2016-01-26 16:35:48.676164521 -0600
-+++ gsi-openssh/sshd.c	2016-05-12 11:48:28.869499239 -0500
++++ gsi-openssh/sshd.c	2016-06-06 15:37:43.091831348 -0500
 @@ -124,8 +124,20 @@
  #include "roaming.h"
  #include "ssh-sandbox.h"
@@ -75982,7 +76041,7 @@ diff -Naur openssh-7.1p2/sshd.c gsi-openssh/sshd.c
  	kex->server = 1;
 diff -Naur openssh-7.1p2/sshd_config gsi-openssh/sshd_config
 --- openssh-7.1p2/sshd_config	2016-01-26 16:35:48.678164420 -0600
-+++ gsi-openssh/sshd_config	2016-05-12 11:48:28.869499240 -0500
++++ gsi-openssh/sshd_config	2016-06-06 15:37:43.091831348 -0500
 @@ -81,9 +81,17 @@
  #KerberosTicketCleanup yes
  #KerberosGetAFSToken no
@@ -76013,26 +76072,27 @@ diff -Naur openssh-7.1p2/sshd_config gsi-openssh/sshd_config
  #AllowAgentForwarding yes
  #AllowTcpForwarding yes
  #GatewayPorts no
-@@ -140,7 +152,7 @@
+@@ -140,7 +152,11 @@
  #NoneEnabled no
  
  # Disable sshd auditing
 -#AuditDisabled no
 +#AuditDisabled yes
++
++# Usage Metrics
++#UsageStatsTargets usage-stats.example.edu:4810
++#DisableUsageStats Yes
  
  # Example of overriding settings on a per-user basis
  #Match User anoncvs
-@@ -148,3 +160,7 @@
+@@ -148,3 +164,4 @@
  #	AllowTcpForwarding no
  #	PermitTTY no
  #	ForceCommand cvs server
 +
-+
-+# Usage Metrics
-+#UsageStatsTargets usage-stats.example.edu:4810
 diff -Naur openssh-7.1p2/sshd_config.0 gsi-openssh/sshd_config.0
 --- openssh-7.1p2/sshd_config.0	2016-01-13 19:13:04.000000000 -0600
-+++ gsi-openssh/sshd_config.0	2016-05-12 11:49:00.933908905 -0500
++++ gsi-openssh/sshd_config.0	2016-06-06 15:39:15.115313416 -0500
 @@ -1,27 +1,27 @@
 -SSHD_CONFIG(5)                File Formats Manual               SSHD_CONFIG(5)
 +SSHD_CONFIG(5)              BSD File Formats Manual             SSHD_CONFIG(5)
@@ -77033,10 +77093,10 @@ diff -Naur openssh-7.1p2/sshd_config.0 gsi-openssh/sshd_config.0
       for privilege separation.
  
 -OpenBSD 5.8                     August 14, 2015                    OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/sshd_config.5 gsi-openssh/sshd_config.5
 --- openssh-7.1p2/sshd_config.5	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/sshd_config.5	2016-05-12 11:48:28.869499240 -0500
++++ gsi-openssh/sshd_config.5	2016-06-06 15:37:43.091831348 -0500
 @@ -569,6 +569,15 @@
  See PATTERNS in
  .Xr ssh_config 5
@@ -77244,7 +77304,7 @@ diff -Naur openssh-7.1p2/sshd_config.5 gsi-openssh/sshd_config.5
  .Xr sshd 8
 diff -Naur openssh-7.1p2/ssh-globus-usage.c gsi-openssh/ssh-globus-usage.c
 --- openssh-7.1p2/ssh-globus-usage.c	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/ssh-globus-usage.c	2016-05-12 11:48:28.863499349 -0500
++++ gsi-openssh/ssh-globus-usage.c	2016-06-06 15:37:43.077828996 -0500
 @@ -0,0 +1,396 @@
 +/*
 + * Copyright 2009 The Board of Trustees of the University
@@ -77644,7 +77704,7 @@ diff -Naur openssh-7.1p2/ssh-globus-usage.c gsi-openssh/ssh-globus-usage.c
 +}
 diff -Naur openssh-7.1p2/ssh-globus-usage.h gsi-openssh/ssh-globus-usage.h
 --- openssh-7.1p2/ssh-globus-usage.h	1969-12-31 18:00:00.000000000 -0600
-+++ gsi-openssh/ssh-globus-usage.h	2016-05-12 11:48:28.863499349 -0500
++++ gsi-openssh/ssh-globus-usage.h	2016-06-06 15:37:43.077828996 -0500
 @@ -0,0 +1,48 @@
 +/*
 + * Copyright 2009 The Board of Trustees of the University
@@ -77696,7 +77756,7 @@ diff -Naur openssh-7.1p2/ssh-globus-usage.h gsi-openssh/ssh-globus-usage.h
 +#endif /* __SSH_GLOBUS_USAGE_H */
 diff -Naur openssh-7.1p2/ssh-gss.h gsi-openssh/ssh-gss.h
 --- openssh-7.1p2/ssh-gss.h	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/ssh-gss.h	2016-05-12 11:48:28.863499349 -0500
++++ gsi-openssh/ssh-gss.h	2016-06-06 15:37:43.077828996 -0500
 @@ -1,6 +1,6 @@
  /* $OpenBSD: ssh-gss.h,v 1.11 2014/02/26 20:28:44 djm Exp $ */
  /*
@@ -77833,7 +77893,7 @@ diff -Naur openssh-7.1p2/ssh-gss.h gsi-openssh/ssh-gss.h
  #endif /* _SSH_GSS_H */
 diff -Naur openssh-7.1p2/sshkey.c gsi-openssh/sshkey.c
 --- openssh-7.1p2/sshkey.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/sshkey.c	2016-05-12 11:48:28.869499240 -0500
++++ gsi-openssh/sshkey.c	2016-06-06 15:37:43.094831854 -0500
 @@ -90,6 +90,9 @@
  	    KEY_ED25519_CERT, 0, 1 },
  #ifdef WITH_OPENSSL
@@ -77846,7 +77906,7 @@ diff -Naur openssh-7.1p2/sshkey.c gsi-openssh/sshkey.c
  # ifdef OPENSSL_HAS_ECC
 diff -Naur openssh-7.1p2/ssh-keygen.0 gsi-openssh/ssh-keygen.0
 --- openssh-7.1p2/ssh-keygen.0	2016-01-13 19:13:03.000000000 -0600
-+++ gsi-openssh/ssh-keygen.0	2016-05-12 11:49:00.405918626 -0500
++++ gsi-openssh/ssh-keygen.0	2016-06-06 15:39:14.590225074 -0500
 @@ -1,7 +1,7 @@
 -SSH-KEYGEN(1)               General Commands Manual              SSH-KEYGEN(1)
 +SSH-KEYGEN(1)             BSD General Commands Manual            SSH-KEYGEN(1)
@@ -78228,10 +78288,10 @@ diff -Naur openssh-7.1p2/ssh-keygen.0 gsi-openssh/ssh-keygen.0
       versions 1.5 and 2.0.
  
 -OpenBSD 5.8                     August 20, 2015                    OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/ssh-keygen.c gsi-openssh/ssh-keygen.c
 --- openssh-7.1p2/ssh-keygen.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/ssh-keygen.c	2016-05-12 11:48:28.863499349 -0500
++++ gsi-openssh/ssh-keygen.c	2016-06-06 15:37:43.084830170 -0500
 @@ -2212,6 +2212,7 @@
  	sanitise_stdfd();
  
@@ -78242,7 +78302,7 @@ diff -Naur openssh-7.1p2/ssh-keygen.c gsi-openssh/ssh-keygen.c
  	OpenSSL_add_all_algorithms();
 diff -Naur openssh-7.1p2/sshkey.h gsi-openssh/sshkey.h
 --- openssh-7.1p2/sshkey.h	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/sshkey.h	2016-05-12 11:48:28.869499240 -0500
++++ gsi-openssh/sshkey.h	2016-06-06 15:37:43.094831854 -0500
 @@ -62,6 +62,9 @@
  	KEY_DSA_CERT,
  	KEY_ECDSA_CERT,
@@ -78255,7 +78315,7 @@ diff -Naur openssh-7.1p2/sshkey.h gsi-openssh/sshkey.h
  
 diff -Naur openssh-7.1p2/ssh-keyscan.0 gsi-openssh/ssh-keyscan.0
 --- openssh-7.1p2/ssh-keyscan.0	2016-01-13 19:13:03.000000000 -0600
-+++ gsi-openssh/ssh-keyscan.0	2016-05-12 11:49:00.439918029 -0500
++++ gsi-openssh/ssh-keyscan.0	2016-06-06 15:39:14.620230128 -0500
 @@ -1,24 +1,24 @@
 -SSH-KEYSCAN(1)              General Commands Manual             SSH-KEYSCAN(1)
 +SSH-KEYSCAN(1)            BSD General Commands Manual           SSH-KEYSCAN(1)
@@ -78334,10 +78394,10 @@ diff -Naur openssh-7.1p2/ssh-keyscan.0 gsi-openssh/ssh-keyscan.0
       key, and drops the connection as soon as it gets the key.
  
 -OpenBSD 5.8                     August 30, 2014                    OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/ssh-keyscan.c gsi-openssh/ssh-keyscan.c
 --- openssh-7.1p2/ssh-keyscan.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/ssh-keyscan.c	2016-05-12 11:48:28.863499349 -0500
++++ gsi-openssh/ssh-keyscan.c	2016-06-06 15:37:43.084830170 -0500
 @@ -44,6 +44,7 @@
  #include "log.h"
  #include "atomicio.h"
@@ -78356,7 +78416,7 @@ diff -Naur openssh-7.1p2/ssh-keyscan.c gsi-openssh/ssh-keyscan.c
  
 diff -Naur openssh-7.1p2/ssh-keysign.0 gsi-openssh/ssh-keysign.0
 --- openssh-7.1p2/ssh-keysign.0	2016-01-13 19:13:04.000000000 -0600
-+++ gsi-openssh/ssh-keysign.0	2016-05-12 11:49:00.766911980 -0500
++++ gsi-openssh/ssh-keysign.0	2016-06-06 15:39:14.970289018 -0500
 @@ -1,7 +1,7 @@
 -SSH-KEYSIGN(8)              System Manager's Manual             SSH-KEYSIGN(8)
 +SSH-KEYSIGN(8)            BSD System ManagerM-bM-^@M-^Ys Manual           SSH-KEYSIGN(8)
@@ -78398,10 +78458,10 @@ diff -Naur openssh-7.1p2/ssh-keysign.0 gsi-openssh/ssh-keysign.0
 +     Markus Friedl M-bM-^LM-)markus@openbsd.orgM-bM-^LM-*
  
 -OpenBSD 5.8                    December 7, 2013                    OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/ssh-keysign.c gsi-openssh/ssh-keysign.c
 --- openssh-7.1p2/ssh-keysign.c	2016-01-13 19:10:45.000000000 -0600
-+++ gsi-openssh/ssh-keysign.c	2016-05-12 11:48:28.863499349 -0500
++++ gsi-openssh/ssh-keysign.c	2016-06-06 15:37:43.084830170 -0500
 @@ -179,6 +179,8 @@
  	u_int32_t rnd[256];
  #endif
@@ -78413,7 +78473,7 @@ diff -Naur openssh-7.1p2/ssh-keysign.c gsi-openssh/ssh-keysign.c
  		exit(1);
 diff -Naur openssh-7.1p2/ssh-pkcs11-helper.0 gsi-openssh/ssh-pkcs11-helper.0
 --- openssh-7.1p2/ssh-pkcs11-helper.0	2016-01-13 19:13:04.000000000 -0600
-+++ gsi-openssh/ssh-pkcs11-helper.0	2016-05-12 11:49:00.794911463 -0500
++++ gsi-openssh/ssh-pkcs11-helper.0	2016-06-06 15:39:14.996293391 -0500
 @@ -1,7 +1,7 @@
 -SSH-PKCS11-HELPER(8)        System Manager's Manual       SSH-PKCS11-HELPER(8)
 +SSH-PKCS11-HELPER(8)      BSD System ManagerM-bM-^@M-^Ys Manual     SSH-PKCS11-HELPER(8)
@@ -78432,10 +78492,10 @@ diff -Naur openssh-7.1p2/ssh-pkcs11-helper.0 gsi-openssh/ssh-pkcs11-helper.0
 +     Markus Friedl M-bM-^LM-)markus@openbsd.orgM-bM-^LM-*
  
 -OpenBSD 5.8                      July 16, 2013                     OpenBSD 5.8
-+BSD                              May 12, 2016                              BSD
++BSD                              June 6, 2016                              BSD
 diff -Naur openssh-7.1p2/version.h gsi-openssh/version.h
 --- openssh-7.1p2/version.h	2016-01-26 16:35:48.678164420 -0600
-+++ gsi-openssh/version.h	2016-05-12 11:48:28.873499163 -0500
++++ gsi-openssh/version.h	2016-06-06 15:37:43.095832023 -0500
 @@ -1,5 +1,25 @@
  /* $OpenBSD: version.h,v 1.75 2015/08/21 03:45:26 djm Exp $ */
  
@@ -78457,7 +78517,7 @@ diff -Naur openssh-7.1p2/version.h gsi-openssh/version.h
 +#define MGLUE_VERSION	""
 +#endif
 +
-+#define NCSA_VERSION	" GSI_GSSAPI_20160311"
++#define NCSA_VERSION	" GSI_GSSAPI_20160606"
 +
  #define SSH_VERSION	"OpenSSH_7.1"
  

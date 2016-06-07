@@ -1,6 +1,6 @@
-The following patches are for OpenSSH 7.1p2 (ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.1p2.tar.gz) and need to be applied in the order they are desrbied below:
+The following patches are for OpenSSH 7.1p2 (ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.1p2.tar.gz) and need to be applied in the order they are described below:
 
-1. HPN patch:
+1. HPN patch (openssh-7_1_P2-hpn-14.10.diff):
 
 Expected source of patch: http://sourceforge.net/projects/hpnssh/files/HPN-SSH%2014v10%207.1p2/openssh-7_1_P2-hpn-14.10.diff
 
@@ -12,7 +12,7 @@ The HPN-SSH patch to Portable OpenSSH was constructed as follows as the patch wa
 ## git merge-base hpn-7_1_P2 V_7_1_P2 > common_ancestor
 ## git diff `cat common_ancestor` hpn-7_1_P2 > openssh-7_1_P2-hpn-14.10.diff
 
-2. ISSHD patch to HPN:
+2. ISSHD patch to HPN (hpn-isshd.v3.19.1.patch):
 
 The iSSHD patch to HPN-SSH is constructed as follows:
 ## git clone git@github.com:set-element/openssh-hpn-isshd.git
@@ -22,7 +22,7 @@ The iSSHD patch to HPN-SSH is constructed as follows:
 ## git merge-base v3.19.1 hpn-7_1_P2 > common_ancestor
 ## git diff `cat common_ancestor` v3.19.1 > hpn-isshd.v3.19.1.patch
 
-3. GSI patch to ISSHD:
+3. GSI patch to ISSHD (hpn_isshd-gsi.7.1p2f.patch):
 
 The GSI patch to be applied on top of the iSSHD patch is constructed as follows:
 ## tar xvf openssh-7.1p2.tar.gz
@@ -33,10 +33,10 @@ The GSI patch to be applied on top of the iSSHD patch is constructed as follows:
 ## cd ..
 ## git clone https://github.com/globus/gsi-openssh.git
 ## cd gsi-openssh
-## git checkout tags/7.1p2a
+## git checkout tags/7.1p2f
 ## git log `cat ../changelog_last_commit`^... > ChangeLog
 ## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" SHELL=$SHELL distprep
 ## rm -fr .git
 ## cd ..
-## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2a.patch
+## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2f.patch
 
