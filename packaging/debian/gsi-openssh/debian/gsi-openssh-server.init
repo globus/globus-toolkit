@@ -224,7 +224,7 @@ rh_status() {
 }
 
 rh_status_q() {
-	pidofproc "$SSHD" > /dev/null
+	pidofproc -p "$PID_FILE" "$SSHD" > /dev/null
 }
 
 case "$1" in
