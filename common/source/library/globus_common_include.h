@@ -167,7 +167,8 @@ extern int inet_pton(int af, const char *src, void *dst);
 
 #include <inttypes.h>
 
-#if defined(_WIN32)
+/* vsnprintf is already defined to mingw version */
+#if defined(_WIN32) && !defined(__USE_MINGW_ANSI_STDIO)
 #    define vsnprintf _vsnprintf
 #endif
 

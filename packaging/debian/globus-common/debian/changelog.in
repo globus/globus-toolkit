@@ -1,3 +1,9 @@
+globus-common (16.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * don't redefine snprintf and vsnprintf when using mingw versions
+
+ -- Globus Toolkit <support@globus.org>  Wed, 22 Jun 2016 16:52:57 -0500
+
 globus-common (16.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Spelling

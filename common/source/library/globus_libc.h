@@ -30,7 +30,10 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #define EAI_SYSTEM 11
+/* snprintf is already defined to mingw version */
+#if !defined(__USE_MINGW_ANSI_STDIO)
 #define snprintf _snprintf
+#endif
 #endif
 
 #if __GNUC__
