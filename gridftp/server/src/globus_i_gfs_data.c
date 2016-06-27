@@ -270,6 +270,7 @@ typedef struct
     int                                 last_active;
     globus_off_t                        watch_updates;
     globus_bool_t                       watch;
+    globus_bool_t                       watch_aborted;
     char *                              watch_op;
     globus_callback_handle_t            watch_handle;
     
@@ -956,14 +957,16 @@ globus_l_gfs_data_watchdog_check(
             "Forcefully terminating process.  No exit after session stop.\n");
         exit(1);
     }
-    else if(session_handle->watch)
+    else if(session_handle->watch && session_handle->watch_aborted)
     {
         if(time(NULL) > 
             session_handle->last_active + globus_l_gfs_watchdog_limit)
         {
-            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR,
-                "Forcefully terminating process.  %s stalled after %"GLOBUS_OFF_T_FORMAT" updates.\n", 
+            char * msg = globus_common_create_string(
+                "421 Forcefully terminating process.  %s stalled after %"GLOBUS_OFF_T_FORMAT" updates.\n",
                 session_handle->watch_op, session_handle->watch_updates);
+            globus_i_gfs_control_end_421(msg);
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "%s", msg);
             exit(1);
         }
     }
@@ -989,6 +992,7 @@ globus_l_gfs_data_reset_watchdog(
         session_handle->watch = operation ? GLOBUS_TRUE : GLOBUS_FALSE;
         session_handle->watch_op = operation;
         session_handle->watch_updates = 0;
+        session_handle->watch_aborted = GLOBUS_FALSE;
         
         if(session_handle->watch)
         {
@@ -11187,6 +11191,11 @@ globus_l_gfs_data_start_abort(
     globus_result_t                     result;
     GlobusGFSName(globus_l_gfs_data_start_abort);
     GlobusGFSDebugEnter();
+
+    if(op->session_handle->watch)
+    {
+        op->session_handle->watch_aborted = GLOBUS_TRUE;
+    }
 
     switch(op->state)
     {

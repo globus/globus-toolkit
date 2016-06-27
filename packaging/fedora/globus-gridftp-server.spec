@@ -1,7 +1,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	10.4
-Release:	2%{?dist}
+Version:	10.5
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -179,6 +179,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Jun 27 2016 Globus Toolkit <support@globus.org> - 10.5-1
+- Don't errantly kill a transfer due to timeout while client is still connected
+
 * Thu May 19 2016 Globus Toolkit <support@globus.org> - 10.4-2
 - fix broken remote_node auth without sharing
 - Add openssl build dependency
