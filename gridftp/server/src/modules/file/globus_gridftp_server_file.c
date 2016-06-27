@@ -19,6 +19,7 @@
 #include "globus_xio.h"
 #include "globus_xio_file_driver.h"
 #include <openssl/md5.h>
+#include <zlib.h>
 #include "version.h"
 
 #include <utime.h>
@@ -96,6 +97,9 @@ typedef void
     char *                              cksm,
     void *                              user_arg);
 
+#define POSIX_CKSM_TYPE_ADLER32 1
+#define POSIX_CKSM_TYPE_MD5     2
+
 typedef struct globus_l_gfs_file_cksm_monitor_s
 {
     globus_gfs_operation_t              op;
@@ -111,8 +115,11 @@ typedef struct globus_l_gfs_file_cksm_monitor_s
     int                                 marker_freq;
     globus_bool_t                       send_marker;
     globus_off_t                        total_bytes;
-    
+
+    unsigned char                       cksum_type;
     MD5_CTX                             mdctx;
+    uint32_t                            adler32ctx;
+
     globus_byte_t                       buffer[1];
 } globus_l_gfs_file_cksm_monitor_t;
 
@@ -1715,9 +1722,11 @@ globus_l_gfs_file_cksm_read_cb(
 {
     globus_l_gfs_file_cksm_monitor_t *  monitor;
     globus_bool_t                       eof = GLOBUS_FALSE;
+    char *                              cksmptr = NULL;
     char *                              md5ptr;
     unsigned char                       md[MD5_DIGEST_LENGTH];
     char                                md5sum[MD5_DIGEST_LENGTH * 2 + 1] = {0};
+    char                                adler32_human[2*sizeof(uint32_t)+1];
     int                                 i;    
     GlobusGFSName(globus_l_gfs_file_cksm_read_cb);
     GlobusGFSFileDebugEnter();
@@ -1748,8 +1757,15 @@ globus_l_gfs_file_cksm_read_cb(
         }
     }
     monitor->total_bytes += nbytes;
-    
-    MD5_Update(&monitor->mdctx, buffer, nbytes);
+
+    if((monitor->cksum_type & POSIX_CKSM_TYPE_MD5) == POSIX_CKSM_TYPE_MD5)
+    {
+        MD5_Update(&monitor->mdctx, buffer, nbytes);
+    }
+    if((monitor->cksum_type & POSIX_CKSM_TYPE_ADLER32) == POSIX_CKSM_TYPE_ADLER32)
+    {
+        monitor->adler32ctx = adler32(monitor->adler32ctx, buffer, nbytes);
+    }
 
     if(!eof)
     {
@@ -1791,31 +1807,47 @@ globus_l_gfs_file_cksm_read_cb(
             monitor->marker_handle = GLOBUS_NULL_HANDLE;
         }
         
-        MD5_Final(md, &monitor->mdctx);
-    
         globus_xio_register_close(
             handle,
             NULL,
             globus_l_gfs_file_close_cb,
             NULL);
-            
-        md5ptr = md5sum;
-        for(i = 0; i < MD5_DIGEST_LENGTH; i++)
+
+        if((monitor->cksum_type & POSIX_CKSM_TYPE_MD5) == POSIX_CKSM_TYPE_MD5)
         {
-           sprintf(md5ptr, "%02x", md[i]);
-           md5ptr++;
-           md5ptr++;
+            MD5_Final(md, &monitor->mdctx);
+            md5ptr = md5sum;
+            for(i = 0; i < MD5_DIGEST_LENGTH; i++)
+            {
+               sprintf(md5ptr, "%02x", md[i]);
+               md5ptr++;
+               md5ptr++;
+            }
+            md5ptr = '\0';
+            cksmptr = md5sum;
+        }
+        if((monitor->cksum_type & POSIX_CKSM_TYPE_ADLER32) == POSIX_CKSM_TYPE_ADLER32)
+        {
+            unsigned char * adler32_char = (unsigned char*)&monitor->adler32ctx;
+            char * adler32_ptr = adler32_human;
+            for (i = 0; i < sizeof(uint32_t); i++) {
+                sprintf(adler32_ptr, "%02x", adler32_char[sizeof(uint32_t)-1-i]);
+                adler32_ptr++;
+                adler32_ptr++;
+            }
+            adler32_ptr = '\0';
+            cksmptr = adler32_human;
         }
 
         if(monitor->internal_cb)
         {
             monitor->internal_cb(
-                GLOBUS_SUCCESS, md5sum, monitor->internal_cb_arg);
+                GLOBUS_SUCCESS, cksmptr, monitor->internal_cb_arg);
         }
         else
         {
             globus_gridftp_server_finished_command(
-                monitor->op, GLOBUS_SUCCESS, md5sum);
+                monitor->op, GLOBUS_SUCCESS, cksmptr);
         }   
         
         globus_free(monitor);
@@ -1918,7 +1950,8 @@ globus_l_gfs_file_open_cksm_cb(
         }
     }
     
-    MD5_Init(&monitor->mdctx);  
+    MD5_Init(&monitor->mdctx);
+    monitor->adler32ctx = adler32(0, NULL, 0);
     
     result = globus_xio_register_read(
         handle,
@@ -1983,7 +2016,13 @@ globus_l_gfs_file_cksm(
         result = GlobusGFSErrorGeneric("Invalid offset.");
         goto param_error;
     }
-        
+
+    if (strcasecmp(algorithm, "md5") && strcasecmp(algorithm, "adler32"))
+    {
+        result = GlobusGFSErrorGeneric("Unknown checksum algorithm requested.");
+        goto alg_error;
+    }
+
     result = globus_xio_attr_init(&attr);
     if(result != GLOBUS_SUCCESS)
     {
@@ -2063,6 +2102,16 @@ globus_l_gfs_file_cksm(
     monitor->internal_cb = internal_cb;
     monitor->internal_cb_arg = internal_cb_arg;
 
+    monitor->cksum_type = 0;
+    if(!strcasecmp("md5", algorithm))
+    {
+        monitor->cksum_type |= POSIX_CKSM_TYPE_MD5;
+    }
+    if(!strcasecmp("adler32", algorithm))
+    {
+        monitor->cksum_type |= POSIX_CKSM_TYPE_ADLER32;
+    }
+
     result = globus_xio_register_open(
         file_handle,
         pathname,
@@ -2096,6 +2145,7 @@ error_cntl:
     globus_xio_attr_destroy(attr);
     
 error_attr:
+alg_error:
 param_error:
     GlobusGFSFileDebugExitWithError();
     return result;
