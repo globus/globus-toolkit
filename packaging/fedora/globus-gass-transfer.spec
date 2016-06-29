@@ -1,7 +1,7 @@
 Name:		globus-gass-transfer
 %global _name %(tr - _ <<< %{name})
-Version:	8.8
-Release:	2%{?dist}
+Version:	8.9
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Transfer
 
@@ -129,6 +129,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jun 29 2016 Globus Toolkit <support@globus.org> - 8.9-1
+- fix _register_accept() not returning error when listener is closing or accept already registered
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 8.8-2
 - Add vendor
 

@@ -392,11 +392,12 @@ globus_gass_transfer_register_accept(
       case GLOBUS_GASS_TRANSFER_LISTENER_LISTENING:
       case GLOBUS_GASS_TRANSFER_LISTENER_ACCEPTING:
 	rc = GLOBUS_GASS_TRANSFER_ERROR_ALREADY_REGISTERED;
+	goto error_exit;
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSING1:
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSING2:
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSED:
 	rc = GLOBUS_GASS_TRANSFER_ERROR_DONE;
-	break;
+	goto error_exit;
     }
     
     globus_i_gass_transfer_unlock();
