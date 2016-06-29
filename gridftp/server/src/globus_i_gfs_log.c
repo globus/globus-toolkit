@@ -849,7 +849,8 @@ globus_i_gfs_log_create_transfer_event_msg(
     globus_off_t                        nbytes,
     char *                              type,
     char *                              username,
-    char *                              retransmit_str)
+    char *                              retransmit_str,
+    char *                              taskid)
 {
     char *                              transfermsg;
     GlobusGFSName(globus_i_gfs_log_create_transfer_event_msg);
@@ -864,7 +865,8 @@ globus_i_gfs_log_create_transfer_event_msg(
         "streams=%d "
         "stripes=%d "
         "remoteIP=%s "
-        "type=%s"
+        "type=%s "
+        "taskid=%s"
         "%s%s",
         username,
         fname,
@@ -875,6 +877,7 @@ globus_i_gfs_log_create_transfer_event_msg(
         stripe_count,
         dest_ip,
         type,
+        taskid ? taskid : "none",
         retransmit_str ? " retrans=" : "",
         retransmit_str ? retransmit_str : "");
 
@@ -897,7 +900,8 @@ globus_i_gfs_log_transfer(
     char *                              volume,
     char *                              type,
     char *                              username,
-    char *                              retransmit_str)
+    char *                              retransmit_str,
+    char *                              taskid)
 {
     time_t                              start_time_time;
     time_t                              end_time_time;
@@ -940,7 +944,7 @@ globus_i_gfs_log_transfer(
         win_size = tcp_bs;
     }
 
-    sprintf(out_buf,
+    snprintf(out_buf, sizeof(out_buf),
         "DATE=%04d%02d%02d%02d%02d%02d.%06d "
         "HOST=%s "
         "PROG=%s "
@@ -956,7 +960,8 @@ globus_i_gfs_log_transfer(
         "STRIPES=%d "
         "DEST=[%s] "
         "TYPE=%s "
-        "CODE=%d"
+        "CODE=%d "
+        "TASKID=%s"
         "%s%s\n",
         /* end time */
         end_tm_time.tm_year + 1900,
@@ -988,8 +993,11 @@ globus_i_gfs_log_transfer(
         dest_ip,
         type,
         code,
+        taskid ? taskid : "none",
         retransmit_str ? " retrans=" : "",
         retransmit_str ? retransmit_str : "");
+
+    out_buf[sizeof(out_buf)-1] = '\0';
 
     if(globus_l_gfs_transfer_log_file != NULL)
     {

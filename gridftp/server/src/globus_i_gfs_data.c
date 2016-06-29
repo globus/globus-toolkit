@@ -10209,7 +10209,8 @@ response_exit:
             op->bytes_transferred,
             type,
             op->session_handle->username,
-            retransmit_str);
+            retransmit_str,
+            op->session_handle->taskid);
 
         globus_gfs_log_event(
             GLOBUS_GFS_LOG_INFO,
@@ -10333,7 +10334,8 @@ response_exit:
                 "/",
                 type,
                 op->session_handle->username,
-                retransmit_str);
+                retransmit_str,
+                op->session_handle->taskid);
         }
         if(!globus_l_gfs_data_is_remote_node &&
             !globus_i_gfs_config_string("disable_usage_stats"))

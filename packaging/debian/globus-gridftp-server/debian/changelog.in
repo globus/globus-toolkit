@@ -1,3 +1,9 @@
+globus-gridftp-server (10.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * add Globus task id to transfer log
+
+ -- Globus Toolkit <support@globus.org>  Wed, 29 Jun 2016 16:35:42 -0500
+
 globus-gridftp-server (10.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Don't errantly kill a transfer due to timeout while client is still connected

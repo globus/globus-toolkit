@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	10.5
+Version:	10.6
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -179,6 +179,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Wed Jun 29 2016 Globus Toolkit <support@globus.org> - 10.6-1
+- add Globus task id to transfer log
+
 * Mon Jun 27 2016 Globus Toolkit <support@globus.org> - 10.5-1
 - Don't errantly kill a transfer due to timeout while client is still connected
 
