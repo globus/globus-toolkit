@@ -550,7 +550,6 @@ globus_l_gfs_auth_session_cb(
 
     auth_info = (globus_l_gfs_auth_info_t *) user_arg;
 
-    auth_info->instance->session_arg = reply->info.session.session_arg;
     if(reply->result != GLOBUS_SUCCESS)
     {
         tmp_str = globus_error_print_friendly(
@@ -564,6 +563,7 @@ globus_l_gfs_auth_session_cb(
     }
     else
     {
+        auth_info->instance->session_arg = reply->info.session.session_arg;
         if(auth_info->session_info->subject != NULL)
         {
             globus_gfs_log_message(

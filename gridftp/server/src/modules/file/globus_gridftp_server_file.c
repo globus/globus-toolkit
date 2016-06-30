@@ -3314,6 +3314,8 @@ globus_l_gfs_file_init(
     globus_gfs_session_info_t *         session_info)
 {
     gfs_l_file_session_t *              session_h;
+    GlobusGFSName(globus_l_gfs_file_send);
+    GlobusGFSFileDebugEnter();
 
     session_h = (gfs_l_file_session_t *) globus_calloc(
         1, sizeof(gfs_l_file_session_t));
@@ -3329,6 +3331,8 @@ globus_l_gfs_file_init(
         session_h,
         NULL,
         NULL);
+
+    GlobusGFSFileDebugExit();
 }
 
 static

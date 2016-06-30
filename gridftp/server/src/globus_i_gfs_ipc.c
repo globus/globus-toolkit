@@ -414,6 +414,9 @@ globus_l_gfs_ipc_handle_destroy(
     free(ipc->connection_info.username);
     free(ipc->connection_info.subject);
     free(ipc->connection_info.host_id);
+    free(ipc->conf_auth_mode_str);
+    free(ipc->conf_ipc_subject);
+    free(ipc->conn_subj);
 
     globus_mutex_destroy(&ipc->mutex);
     if (ipc->reply_table)
@@ -1802,8 +1805,8 @@ globus_l_gfs_ipc_server_open_cb(
             result = min_stat;
             goto error;
         }
-        
         ipc->conn_subj = globus_libc_strdup(peer_buf.value);
+        gss_release_buffer(&min_stat, &peer_buf);
     }
     
     /* send other side our session_info */

@@ -1055,7 +1055,8 @@ globus_l_gfs_data_fire_cb(
 
     if(free_session)
     {
-        if(op->session_handle->dsi->destroy_func != NULL)
+        if(op->session_handle->dsi->destroy_func != NULL &&
+            op->session_handle->session_arg)
         {
             op->session_handle->dsi->destroy_func(
                 op->session_handle->session_arg);
@@ -2761,7 +2762,7 @@ globus_l_gfs_data_brain_ready_delay_cb(
         op->session_handle->subject = globus_libc_strdup(session_info->subject);
     }
 
-    if(globus_xio_contact_parse(
+    if(!op->session_handle->client_ip && globus_xio_contact_parse(
         &parsed_contact, session_info->host_id) == GLOBUS_SUCCESS)
     {
         char                            ipaddr[100];
@@ -7411,7 +7412,8 @@ globus_l_gfs_data_destroy_cb(
     }
     if(free_session)
     {
-        if(session_handle->dsi->destroy_func != NULL)
+        if(session_handle->dsi->destroy_func != NULL &&
+            session_handle->session_arg)
         {
             session_handle->dsi->destroy_func(
                 session_handle->session_arg);
@@ -7830,6 +7832,15 @@ globus_i_gfs_data_request_passive(
         {
             goto error_op;
         }
+        /* release old dsi's session */
+        if(session_handle->dsi->destroy_func != NULL &&
+            session_handle->session_arg)
+        {
+            session_handle->dsi->destroy_func(
+                session_handle->session_arg);
+            session_handle->session_arg = NULL;
+        }
+
         session_handle->dsi = globus_l_gfs_dsi_hybrid;
         
         result = globus_l_gfs_data_operation_init(&op, session_handle);
@@ -8153,6 +8164,15 @@ globus_i_gfs_data_request_active(
         {
             goto error_op;
         }
+        /* release old dsi's session */
+        if(session_handle->dsi->destroy_func != NULL &&
+            session_handle->session_arg)
+        {
+            session_handle->dsi->destroy_func(
+                session_handle->session_arg);
+            session_handle->session_arg = NULL;
+        }
+
         session_handle->dsi = globus_l_gfs_dsi_hybrid;
         
         result = globus_l_gfs_data_operation_init(&op, session_handle);
@@ -11701,7 +11721,8 @@ globus_i_gfs_data_session_stop(
 
         if(free_session)
         {
-            if(session_handle->dsi->destroy_func != NULL)
+            if(session_handle->dsi->destroy_func != NULL &&
+                session_handle->session_arg)
             {
                 session_handle->dsi->destroy_func(session_handle->session_arg);
             }
@@ -12758,6 +12779,13 @@ globus_gridftp_server_operation_finished(
             break;
 
         case GLOBUS_GFS_OP_SESSION_START:
+            if(finished_info->result != GLOBUS_SUCCESS)
+            {
+                finished_info->info.session.session_arg = NULL;
+                /* we won't be getting a stop */
+                op->session_handle->ref--;
+                break;
+            }
             op->session_handle->session_arg =
                 (void *) finished_info->info.session.session_arg;
             finished_info->info.session.session_arg = op->session_handle;
@@ -13843,10 +13871,6 @@ globus_gridftp_server_finished_session_start(
         result,
         &finished_info);
 
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_l_gfs_free_session_handle(op->session_handle);
-    }
     GlobusGFSDebugExit();
 }
 

@@ -773,11 +773,14 @@ error_short:
 error:
     globus_mutex_unlock(&globus_l_brain_mutex);
 error_parameter:
-    globus_gfs_log_message(
-        GLOBUS_GFS_LOG_WARN,
-        "No nodes given because parameter error: %d: %d: %s\n", 
-        min_count, count,
-        globus_error_print_friendly(globus_error_peek(result)));
+    {
+        char * msg = globus_error_print_friendly(globus_error_peek(result));
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_WARN,
+            "No nodes given because parameter error: %d: %d: %s\n",
+            min_count, count, msg);
+        free(msg);
+    }
     return result;
 }
 
