@@ -562,7 +562,17 @@ globus_i_gfs_log_close(void)
     if(globus_l_gfs_log_handle != NULL)
     {
         globus_logging_flush(globus_l_gfs_log_handle);
+        /*
+            NOTE: We do not destroy this handle.  At log-close time,
+            there may be several other threads that try to subsequently
+            log:
+            - Watchdog callback for data / control channels (race condition)
+            - DSI code during shutdown or threads.
+            If they try to grab the destroyed mutex, they may deadlock.
+            Since access to the pointer is not threadsafe, we cannot simply
+            set it to NULL.
         globus_logging_destroy(globus_l_gfs_log_handle);
+        */
     }
     if(globus_l_gfs_log_file != stderr && globus_l_gfs_log_file != NULL)
     {
