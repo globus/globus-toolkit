@@ -6814,7 +6814,8 @@ globus_l_ftp_data_eb_poll(
                     done = GLOBUS_TRUE;
                 }
             }/* end while */
-            if(transfer_handle->order_data)
+            if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_READ && 
+                transfer_handle->order_data)
             {               
                 /* if we delayed any reads, add them back to the stripe's queue. */
                 while(!globus_fifo_empty(&remaining_command_q))
@@ -6825,7 +6826,8 @@ globus_l_ftp_data_eb_poll(
                 globus_fifo_destroy(&remaining_command_q);
                 globus_fifo_destroy(&remaining_conn_q);
 
-                if(none_read && checked_order && ++transfer_handle->order_waiting > transfer_handle->order_max_waiting)
+                if(none_read && checked_order && 
+                    ++transfer_handle->order_waiting > transfer_handle->order_max_waiting)
                 {
                     globus_object_t *       error;
                     error = globus_error_construct_string(
