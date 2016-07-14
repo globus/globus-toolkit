@@ -1,7 +1,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
 Version:	11.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -179,6 +179,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Jul 14 2016 Globus Toolkit <support@globus.org> - 11.0-2
+- bump aging version
+
 * Thu Jul 14 2016 Globus Toolkit <support@globus.org> - 11.0-1
 - add forced data ordering on reads to DSI interface
 
