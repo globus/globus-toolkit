@@ -766,6 +766,7 @@ typedef globus_result_t
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SENDER 0x01
 #define GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING 0x02
 #define GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH 0x04
+#define GLOBUS_GFS_DSI_DESCRIPTOR_REQUIRES_ORDERED_DATA 0x08
 
 /*
  *  globus_gfs_storage_iface_t
@@ -1221,6 +1222,32 @@ void
 globus_gridftp_server_get_sec_context(
     globus_gfs_operation_t              op,
     gss_ctx_id_t *                      context);
+
+
+/* 
+ * get/set ordered data requirement
+ * 
+ * The DSI must call this before globus_gridftp_server_begin_transfer()
+ * to set the ordered_data flag.  This will ensure that the offsets read
+ * in each data callback are in order, even when multiple streams are used. 
+ * This will result in the transfer slowing down to match the speed of the 
+ * slowest stream.  Note: in cases where the data source intentionally sends 
+ * data out of order, this will result in an aborted transfer.  However, 
+ * a DSI that needs ordered data would probably fail in such a scenario anyway.
+ *
+ * Instead of calling these functions, you can enable this setting for all
+ * transfers by setting GLOBUS_GFS_DSI_DESCRIPTOR_REQUIRES_ORDERED_DATA
+ * in the globus_gfs_storage_iface_t interface definition.
+ */
+void
+globus_gridftp_server_set_ordered_data(
+    globus_gfs_operation_t              op,
+    globus_bool_t                       ordered_data);
+
+void
+globus_gridftp_server_get_ordered_data(
+    globus_gfs_operation_t              op,
+    globus_bool_t *                     ordered_data);
 
 /*
  * get config string

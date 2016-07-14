@@ -266,7 +266,9 @@ typedef struct
     globus_xio_driver_t                 http_driver;
 
     char *                              storattr_str;
-
+    
+    globus_bool_t                       order_data;
+    
     int                                 last_active;
     globus_off_t                        watch_updates;
     globus_bool_t                       watch;
@@ -406,6 +408,7 @@ typedef struct globus_l_gfs_data_operation_s
     */
     globus_bool_t                       finished_delayed;
     globus_bool_t                       connect_failed;
+    globus_bool_t                       order_data;
 } globus_l_gfs_data_operation_t;
 
 typedef struct
@@ -5200,6 +5203,7 @@ globus_l_gfs_data_operation_init(
     globus_range_list_init(&op->stripe_range_list);
     op->recvd_bytes = 0;
     op->max_offset = -1;
+    op->order_data = session_handle->order_data;
     globus_mutex_init(&op->stat_lock, NULL);
 
     *u_op = op;
@@ -11533,7 +11537,8 @@ globus_i_gfs_data_session_start(
     session_handle->del_cred = session_info->del_cred;
     session_handle->context = context;
     session_handle->dcsc_cred = GSS_C_NO_CREDENTIAL;
-    
+    session_handle->order_data = session_handle->dsi->descriptor & 
+        GLOBUS_GFS_DSI_DESCRIPTOR_REQUIRES_ORDERED_DATA;
     result = globus_l_gfs_data_operation_init(&op, session_handle);
     if(result != GLOBUS_SUCCESS)
     {
@@ -12365,6 +12370,23 @@ globus_gridftp_server_begin_transfer(
                     {
                         GlobusGFSDebugInfo(
                             "globus_ftp_control_data_connect_read");
+                        
+                        if(op->order_data && op->data_handle->info.mode == 'E')
+                        {
+                            globus_off_t        start_off = 0;
+                            globus_off_t        start_len = 0;
+                            int                 rc;
+                            rc = globus_range_list_remove_at(
+                                op->range_list,
+                                0,
+                                &start_off,
+                                &start_len);
+                            
+                            result = globus_ftp_control_set_force_order(
+                                &op->data_handle->data_channel,
+                                GLOBUS_TRUE,
+                                start_off+start_len);
+                        }
                         result = globus_ftp_control_data_connect_read(
                             &op->data_handle->data_channel,
                             globus_l_gfs_data_begin_cb,
@@ -13178,6 +13200,32 @@ globus_gridftp_server_get_config_string(
 
     *config_string = globus_libc_strdup(
         globus_i_gfs_config_string("dsi_options"));
+
+    GlobusGFSDebugExit();
+}
+
+void
+globus_gridftp_server_set_ordered_data(
+    globus_gfs_operation_t              op,
+    globus_bool_t                       ordered_data)
+{
+    GlobusGFSName(globus_gridftp_server_set_ordered_data);
+    GlobusGFSDebugEnter();
+
+    op->order_data = ordered_data;
+
+    GlobusGFSDebugExit();
+}
+
+void
+globus_gridftp_server_get_ordered_data(
+    globus_gfs_operation_t              op,
+    globus_bool_t *                     ordered_data)
+{
+    GlobusGFSName(globus_gridftp_server_get_ordered_data);
+    GlobusGFSDebugEnter();
+
+    *ordered_data = op->order_data;
 
     GlobusGFSDebugExit();
 }

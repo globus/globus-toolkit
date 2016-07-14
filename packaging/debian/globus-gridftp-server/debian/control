@@ -1,7 +1,7 @@
 Source: globus-gridftp-server
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-gridftp-server-control-dev (>= 4), libglobus-usage-dev (>= 3), libglobus-xio-gsi-driver-dev (>= 2), libglobus-xio-dev (>= 5), libglobus-authz-dev (>= 2), libglobus-gfork-dev (>= 3), libglobus-ftp-control-dev (>= 6), libglobus-gssapi-gsi-dev (>= 10), libglobus-gss-assist-dev (>= 9), libglobus-common-dev (>= 16), globus-common-progs (>= 16), libglobus-gsi-credential-dev (>= 6), openssl, pkg-config, libltdl-dev
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-gridftp-server-control-dev (>= 4), libglobus-usage-dev (>= 3), libglobus-xio-gsi-driver-dev (>= 2), libglobus-xio-dev (>= 5), libglobus-authz-dev (>= 2), libglobus-gfork-dev (>= 3), libglobus-ftp-control-dev (>= 7), libglobus-gssapi-gsi-dev (>= 10), libglobus-gss-assist-dev (>= 9), libglobus-common-dev (>= 16), globus-common-progs (>= 16), libglobus-gsi-credential-dev (>= 6), openssl, pkg-config, libltdl-dev
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
@@ -9,7 +9,7 @@ Vcs-Browser: http://svn.nordugrid.org/trac/packaging/browser/debian/globus-gridf
 Vcs-Svn: http://svn.nordugrid.org/repos/packaging/debian/globus-gridftp-server
 Homepage: http://www.globus.org/
 
-Package: libglobus-gridftp-server6
+Package: libglobus-gridftp-server7
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libglobus-xio-gsi-driver
@@ -20,7 +20,7 @@ Description: Globus Toolkit - Globus GridFTP Server
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The libglobus-gridftp-server6 package contains:
+ The libglobus-gridftp-server7 package contains:
  Globus GridFTP Server
 
 Package: globus-gridftp-server-progs
@@ -40,7 +40,7 @@ Description: Globus Toolkit - Globus GridFTP Server Programs
 Package: libglobus-gridftp-server-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gridftp-server6 (= ${binary:Version}), ${misc:Depends}, libglobus-gridftp-server-control-dev, libglobus-usage-dev, libglobus-xio-gsi-driver-dev, libglobus-xio-dev, libglobus-authz-dev, libglobus-gfork-dev, libglobus-ftp-control-dev, libglobus-gsi-credential-dev
+Depends: libglobus-gridftp-server7 (= ${binary:Version}), ${misc:Depends}, libglobus-gridftp-server-control-dev, libglobus-usage-dev, libglobus-xio-gsi-driver-dev, libglobus-xio-dev, libglobus-authz-dev, libglobus-gfork-dev, libglobus-ftp-control-dev, libglobus-gsi-credential-dev
 Description: Globus Toolkit - Globus GridFTP Server Development Files
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
@@ -55,7 +55,7 @@ Package: libglobus-gridftp-server-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libglobus-gridftp-server6 (= ${binary:Version})
+Depends: libglobus-gridftp-server7 (= ${binary:Version})
 Description: Globus Toolkit - Globus GridFTP Server Library Debug Symbols
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

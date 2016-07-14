@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	10.6
+Version:	11.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -17,7 +17,7 @@ Requires:	globus-usage%{?_isa} >= 3
 Requires:	globus-xio%{?_isa} >= 5
 Requires:	globus-authz%{?_isa} >= 2
 Requires:	globus-gfork%{?_isa} >= 3
-Requires:	globus-ftp-control%{?_isa} >= 6
+Requires:	globus-ftp-control%{?_isa} >= 7
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:	globus-gsi-credential%{?_isa} >= 6
 Requires:       globus-xio-udt-driver%{?_isa} >= 1
@@ -28,7 +28,7 @@ BuildRequires:	globus-xio-gsi-driver-devel >= 2
 BuildRequires:	globus-xio-devel >= 5
 BuildRequires:	globus-authz-devel >= 2
 BuildRequires:	globus-gfork-devel >= 3
-BuildRequires:	globus-ftp-control-devel >= 6
+BuildRequires:	globus-ftp-control-devel >= 7
 BuildRequires:	globus-gss-assist-devel >= 9
 BuildRequires:  globus-common-progs >= 16
 BuildRequires:	globus-gsi-credential-devel >= 6
@@ -65,7 +65,7 @@ Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-xio-devel%{?_isa} >= 5
 Requires:	globus-authz-devel%{?_isa} >= 2
 Requires:	globus-gfork-devel%{?_isa} >= 3
-Requires:	globus-ftp-control-devel%{?_isa} >= 6
+Requires:	globus-ftp-control-devel%{?_isa} >= 7
 Requires:	globus-gss-assist%{?_isa} >= 9
 Requires:	globus-gsi-credential%{?_isa} >= 6
 
@@ -179,6 +179,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Jul 14 2016 Globus Toolkit <support@globus.org> - 11.0-1
+- add forced data ordering on reads to DSI interface
+
 * Wed Jun 29 2016 Globus Toolkit <support@globus.org> - 10.6-1
 - add Globus task id to transfer log
 

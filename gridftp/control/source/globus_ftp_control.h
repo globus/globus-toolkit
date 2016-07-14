@@ -750,7 +750,7 @@ typedef struct globus_i_ftp_dc_handle_s
 
     globus_netlogger_handle_t                   nl_ftp_handle;
     globus_bool_t                               nl_ftp_handle_set;
-    
+
     globus_object_t *                           connect_error;
     struct globus_ftp_control_handle_s *        whos_my_daddy;
 } globus_i_ftp_dc_handle_t;
@@ -776,8 +776,8 @@ typedef struct globus_ftp_control_handle_s
  *
  * In the case of a read, this function will return a single extent of 
  * the data. The order of the data returned is not defined in an
- * extended block mode data transfer. It is up to the user of the API
- * to re-construct the file order.
+ * extended block mode data transfer, unless the ordered_data flag is set.
+ * It is up to the user of the API to re-construct the file order.
  *
  * @param callback_arg
  *        User supplied argument to the callback function
@@ -1699,6 +1699,12 @@ globus_ftp_control_data_read_all(
     globus_size_t                               length,
     globus_ftp_control_data_callback_t          callback,
     void *                                      callback_arg);
+
+globus_result_t
+globus_ftp_control_set_force_order(
+    globus_ftp_control_handle_t *               handle,
+    globus_bool_t                               order_data,
+    globus_off_t                                starting_offset);
 
 /* this has only been tested enough for the client library and GridFTP server
  * it is very likely to not work for general usage

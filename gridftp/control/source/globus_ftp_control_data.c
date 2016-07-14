@@ -193,6 +193,12 @@ typedef struct globus_i_ftp_dc_transfer_handle_s
     globus_mutex_t *                            mutex;
     globus_i_ftp_dc_handle_t *                  whos_my_daddy;
     struct globus_ftp_control_handle_s *        control_handle;
+    
+    globus_bool_t                               order_data;
+    globus_off_t                                order_start_offset;
+    globus_off_t                                order_next_offset;
+    int                                         order_waiting;
+    int                                         order_max_waiting;
 } globus_i_ftp_dc_transfer_handle_t;
 
 typedef struct globus_l_ftp_send_eof_entry_s
@@ -3484,6 +3490,80 @@ globus_ftp_control_local_mode(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ * @brief Set data handle to return read mode E data in order
+ * @ingroup globus_ftp_control_data
+ * @details
+ * Update the FTP control handle forced data order flag.  Must be called
+ * before globus_ftp_control_data_connect_read().
+ *
+ * @param handle
+ *        A pointer to the FTP control handle to be updated
+ * @param order_data
+ *        GLOBUS_TRUE if data must be ordered, false if not.
+ * @param starting_offset
+ *        The starting offset to expect. May not be 0 for restarted transfers.
+ *
+ * Note that this may result in slower transfers, or, if 
+ * the data arrives far out of order, failed transfers.
+ */
+globus_result_t
+globus_ftp_control_set_force_order(
+    globus_ftp_control_handle_t *               handle,
+    globus_bool_t                               order_data,
+    globus_off_t                                starting_offset)
+{
+    globus_i_ftp_dc_handle_t *                  dc_handle;
+    globus_object_t *                           err;
+    static char *                               myname=
+                                      "globus_ftp_control_set_force_order";
+
+    /*
+     *  error checking
+     */
+    if(handle == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+    dc_handle = &handle->dc_handle;
+    GlobusFTPControlDataTestMagic(dc_handle);
+    if(!dc_handle->initialized)
+    {
+        err = globus_io_error_construct_not_initialized(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+    if(!dc_handle->transfer_handle)
+    {
+        err = globus_io_error_construct_not_initialized(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "transfer_handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+    globus_mutex_lock(&dc_handle->mutex);
+    {
+        dc_handle->transfer_handle->order_data = order_data;
+        dc_handle->transfer_handle->order_start_offset = starting_offset; 
+    }
+    globus_mutex_unlock(&dc_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+
+}
+
 
 /**
  * @brief Set data handle TCP buffer size
@@ -6373,6 +6453,11 @@ globus_l_ftp_data_eb_poll(
     globus_off_t                                 tmp_len;
     globus_byte_t *                              tmp_buf;
     int                                          ctr;
+    globus_fifo_t                                remaining_command_q;
+    globus_fifo_t                                remaining_conn_q;
+    globus_bool_t                                do_read;
+    globus_bool_t                                checked_order = GLOBUS_FALSE;
+    globus_bool_t                                none_read = GLOBUS_TRUE;
     globus_i_ftp_dc_transfer_handle_t *          transfer_handle;
 
     transfer_handle = dc_handle->transfer_handle;
@@ -6616,6 +6701,14 @@ globus_l_ftp_data_eb_poll(
             /*
              *  in big buffer mode this should never be entered
              */
+            if(transfer_handle->order_data)
+            {
+                globus_fifo_init(&remaining_command_q);
+                globus_fifo_init(&remaining_conn_q);
+                transfer_handle->order_max_waiting = GLOBUS_MAX(
+                    stripe->connection_count, 
+                    transfer_handle->order_max_waiting);
+            }
             while(!globus_fifo_empty(&stripe->command_q) && !done)
             {
                 globus_assert(transfer_handle->big_buffer == GLOBUS_NULL);
@@ -6653,11 +6746,10 @@ globus_l_ftp_data_eb_poll(
 
                     data_conn = (globus_ftp_data_connection_t *)
                         globus_fifo_dequeue(&stripe->free_conn_q);
-
                     /*
                      *  set the entries offset to the offset on the
                      *  data_conn.
-                     *  If use is requesting more bytes than are available
+                     *  If user is requesting more bytes than are available
                      *  on this connection set the length to bytes_ready
                      */
                     entry->whos_my_daddy = data_conn;
@@ -6667,17 +6759,51 @@ globus_l_ftp_data_eb_poll(
                         entry->length = data_conn->bytes_ready;
                     }
 
-                    /*
-                     *  register a read
-                     */
-                    res = globus_io_register_read(
-                              &data_conn->io_handle,
-                              entry->buffer,
-                              entry->length,
-                              entry->length,
-                              globus_l_ftp_eb_read_callback,
-                              (void *)entry);
-                    globus_assert(res == GLOBUS_SUCCESS);
+                    if(transfer_handle->order_data)
+                    {                        
+                        /* forcing ordered data */
+                        globus_off_t                     want_offset;
+
+                        checked_order = GLOBUS_TRUE;
+                        /* min offset is the last read offset.  if no read 
+                         * yet, set to user provided start offset. */
+                        want_offset = ((transfer_handle->order_next_offset == 0) ? 
+                            transfer_handle->order_start_offset : transfer_handle->order_next_offset);
+                        
+                        /* if this stream has the offset we want, read from it, 
+                         * otherwise queue up the read */
+                        if(data_conn->offset == want_offset)
+                        {
+                            do_read = GLOBUS_TRUE;
+                        }
+                        else
+                        {
+                            do_read = GLOBUS_FALSE;
+                            globus_fifo_enqueue(&remaining_command_q, entry);
+                            globus_fifo_enqueue(&remaining_conn_q, data_conn);
+                        }
+                    }
+                    else
+                    {
+                        do_read = GLOBUS_TRUE;
+                    }
+
+                    if(do_read)
+                    {
+                        /*
+                         *  register a read
+                         */
+                        res = globus_io_register_read(
+                                  &data_conn->io_handle,
+                                  entry->buffer,
+                                  entry->length,
+                                  entry->length,
+                                  globus_l_ftp_eb_read_callback,
+                                  (void *)entry);
+                        globus_assert(res == GLOBUS_SUCCESS);
+                        none_read = GLOBUS_FALSE;
+                        transfer_handle->order_waiting = 0;
+                    }
                 }
                 /*
                  *  if we have not hit EOF and there are no available data
@@ -6688,6 +6814,27 @@ globus_l_ftp_data_eb_poll(
                     done = GLOBUS_TRUE;
                 }
             }/* end while */
+            if(transfer_handle->order_data)
+            {               
+                /* if we delayed any reads, add them back to the stripe's queue. */
+                while(!globus_fifo_empty(&remaining_command_q))
+                {
+                    globus_fifo_enqueue(&stripe->command_q, globus_fifo_dequeue(&remaining_command_q));
+                    globus_fifo_enqueue(&stripe->free_conn_q, globus_fifo_dequeue(&remaining_conn_q));
+                }
+                globus_fifo_destroy(&remaining_command_q);
+                globus_fifo_destroy(&remaining_conn_q);
+
+                if(none_read && checked_order && ++transfer_handle->order_waiting > transfer_handle->order_max_waiting)
+                {
+                    globus_object_t *       error;
+                    error = globus_error_construct_string(
+                        GLOBUS_FTP_CONTROL_MODULE,
+                        GLOBUS_NULL,
+                        _FCSL("Ordered data flag was set, but data is too far out of order."));
+                    globus_l_ftp_control_stripes_destroy(dc_handle, error);
+                }
+            }
         }
     }
 
@@ -6934,6 +7081,8 @@ globus_l_ftp_control_stripes_create(
     transfer_handle->send_eof_ent = GLOBUS_NULL;
 
     transfer_handle->x_state = GLOBUS_FALSE;
+
+    transfer_handle->order_max_waiting = 32;
 
     transfer_handle->direction = GLOBUS_FTP_DATA_STATE_NONE;
     transfer_handle->whos_my_daddy = dc_handle;
@@ -9668,6 +9817,7 @@ globus_l_ftp_eb_read_callback(
             {
                 globus_fifo_enqueue(&stripe->free_conn_q, (void *)data_conn);
             }
+            transfer_handle->order_next_offset = offset+nbyte;
             if(dc_handle->nl_ftp_handle_set)
             {
                 char tag_str[128];

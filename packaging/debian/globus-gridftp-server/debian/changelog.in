@@ -1,3 +1,9 @@
+globus-gridftp-server (11.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * add forced data ordering on reads to DSI interface
+
+ -- Globus Toolkit <support@globus.org>  Thu, 14 Jul 2016 11:25:18 -0500
+
 globus-gridftp-server (10.6-1+gt6.@distro@) @distro@; urgency=low
 
   * add Globus task id to transfer log

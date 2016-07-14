@@ -2482,7 +2482,6 @@ globus_l_gfs_file_server_read_cb(
         buf_info->buffer = buffer;
         buf_info->offset = offset;
         buf_info->length = nbytes;
-        
         monitor->concurrency_check--;
         if(monitor->concurrency_check == 0 && !eof)
         {

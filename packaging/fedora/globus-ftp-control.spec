@@ -1,6 +1,6 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	6.10
+Version:	7.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
@@ -138,6 +138,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Jul 14 2016 Globus Toolkit <support@globus.org> - 7.0-1
+- add ability to request ordered data on reads
+
 * Mon Apr 18 2016 Globus Toolkit <support@globus.org> - 6.10-1
 - Updated version numbers
 
