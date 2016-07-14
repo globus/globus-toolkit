@@ -7082,6 +7082,10 @@ globus_l_ftp_control_stripes_create(
 
     transfer_handle->x_state = GLOBUS_FALSE;
 
+    transfer_handle->order_data = GLOBUS_FALSE;
+    transfer_handle->order_start_offset = 0;
+    transfer_handle->order_next_offset = 0;
+    transfer_handle->order_waiting = 0;
     transfer_handle->order_max_waiting = 32;
 
     transfer_handle->direction = GLOBUS_FTP_DATA_STATE_NONE;
