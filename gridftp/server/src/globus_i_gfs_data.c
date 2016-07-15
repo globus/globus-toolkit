@@ -408,7 +408,9 @@ typedef struct globus_l_gfs_data_operation_s
     */
     globus_bool_t                       finished_delayed;
     globus_bool_t                       connect_failed;
+
     globus_bool_t                       order_data;
+    globus_off_t                        order_data_start;
 } globus_l_gfs_data_operation_t;
 
 typedef struct
@@ -12373,19 +12375,10 @@ globus_gridftp_server_begin_transfer(
                         
                         if(op->order_data && op->data_handle->info.mode == 'E')
                         {
-                            globus_off_t        start_off = 0;
-                            globus_off_t        start_len = 0;
-                            int                 rc;
-                            rc = globus_range_list_remove_at(
-                                op->range_list,
-                                0,
-                                &start_off,
-                                &start_len);
-                            
                             result = globus_ftp_control_set_force_order(
                                 &op->data_handle->data_channel,
                                 GLOBUS_TRUE,
-                                start_off+start_len);
+                                op->order_data_start);
                         }
                         result = globus_ftp_control_data_connect_read(
                             &op->data_handle->data_channel,
@@ -13387,6 +13380,7 @@ globus_gridftp_server_get_write_range(
             0,
             &tmp_off,
             &tmp_len);
+        op->order_data_start = tmp_off;
     }
     if(op->data_handle->info.mode == 'S')
     {
