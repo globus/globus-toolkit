@@ -463,11 +463,17 @@ globus_l_gfs_spawn_child(
         goto error;
     }
 
+    // Make sure we are holding the XIO server across the fork: otherwise,
+    // we run the risk of forking while another thread holds this mutex.
+    // Then, we will always see a deadlock when the child attempts to
+    // register the close.
+    if (globus_l_gfs_xio_server) {globus_mutex_lock(globus_l_gfs_xio_server->mutex);}
     child_pid = fork();
     if(child_pid == 0)
     { 
         if(globus_l_gfs_xio_server)
         {
+            globus_mutex_unlock(globus_l_gfs_xio_server->mutex);
             result = globus_xio_server_register_close(
                 globus_l_gfs_xio_server, globus_l_gfs_server_close_cb, NULL);
             if(result == GLOBUS_SUCCESS)
@@ -518,11 +524,13 @@ globus_l_gfs_spawn_child(
     } 
     else if(child_pid == -1)
     {
+        if (globus_l_gfs_xio_server) {globus_mutex_unlock(globus_l_gfs_xio_server->mutex);}
         result = GlobusGFSErrorSystemError("fork", errno);
         goto child_error;
     }
     else
     { 
+        if (globus_l_gfs_xio_server) {globus_mutex_unlock(globus_l_gfs_xio_server->mutex);}
         
         globus_gfs_log_event(
             GLOBUS_GFS_LOG_INFO,
