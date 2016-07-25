@@ -1,6 +1,6 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	7.1
+Version:	7.2
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
@@ -138,6 +138,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jul 25 2016 Globus Toolkit <support@globus.org> - 7.2-1
+- add buffering to data ordering mode
+
 * Thu Jul 14 2016 Globus Toolkit <support@globus.org> - 7.1-1
 - forced data order fixes
 

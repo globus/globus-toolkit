@@ -1,3 +1,9 @@
+globus-ftp-control (7.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * add buffering to data ordering mode
+
+ -- Globus Toolkit <support@globus.org>  Mon, 25 Jul 2016 12:04:19 -0500
+
 globus-ftp-control (7.1-1+gt6.@distro@) @distro@; urgency=low
 
   * forced data order fixes
