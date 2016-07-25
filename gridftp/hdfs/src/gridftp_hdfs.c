@@ -56,7 +56,8 @@ hdfs_destroy(
  */
 static globus_gfs_storage_iface_t       globus_l_gfs_hdfs_dsi_iface = 
 {
-    GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING | GLOBUS_GFS_DSI_DESCRIPTOR_SENDER,
+    GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING | GLOBUS_GFS_DSI_DESCRIPTOR_SENDER |
+        GLOBUS_GFS_DSI_DESCRIPTOR_REQUIRES_ORDERED_DATA,
     hdfs_start,
     hdfs_destroy,
     NULL, /* list */

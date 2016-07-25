@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.60])
-AC_INIT([gridftp_hdfs], [1.3])
+AC_INIT([gridftp_hdfs], [1.4])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
@@ -42,7 +42,8 @@ AC_CHECK_FILE(${HADOOPHOME}/src/c++/libhdfs/hdfs.h, INCLUDE=["$INCLUDE -I${HADOO
 AC_CHECK_FILE(${HADOOPHOME}/build/libhdfs/libhdfs.so, LDFLAGS=["$LDFLAGS -L${HADOOPHOME}/build/libhdfs"],)
 
 # EPEL5 defaults
-PKG_CHECK_MODULES([GLOBUS_GRIDFTP_SERVER], [globus-gridftp-server globus-common])
+PKG_CHECK_MODULES([GLOBUS_GRIDFTP_SERVER], [globus-gridftp-server >= 11])
+PKG_CHECK_MODULES([GLOBUS_COMMON], [globus-common])
 
 # Checks for libraries.
 AC_CHECK_LIB([jvm], [JNI_CreateJavaVM], , [AC_MSG_ERROR(Could not find libjvm)])
