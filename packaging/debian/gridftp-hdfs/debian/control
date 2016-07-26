@@ -1,7 +1,7 @@
 Source: gridftp-hdfs
 Priority: optional
 Maintainer: Globus toolkit <supprt@globus.org>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libhdfs0-dev, libglobus-gridftp-server-dev, libglobus-common-dev, openjdk-7-jdk
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libhdfs0-dev, libglobus-gridftp-server-dev (>= 11), libglobus-common-dev, openjdk-7-jdk
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
@@ -12,7 +12,7 @@ Homepage: http://www.globus.org/
 Package: libglobus-gridftp-server-hdfs
 Section: libs
 Architecture: amd64
-Depends: ${shlibs:Depends}, ${misc:Depends}, globus-gridftp-server-progs
+Depends: ${shlibs:Depends}, ${misc:Depends}, globus-gridftp-server-progs (>= 11)
 Description: Globus Toolkit - HDFS DSI
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the

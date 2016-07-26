@@ -1,7 +1,7 @@
 Name:           gridftp-hdfs
 %global _name %(tr - _ <<< %{name})
-Version:	1.3
-Release:	3
+Version:	1.4
+Release:	1
 Vendor:	Globus Support
 Summary:        HDFS DSI plugin for GridFTP
 
@@ -26,11 +26,11 @@ BuildRequires: libhdfs
 BuildRequires: hadoop-libhdfs-devel
 Requires: hadoop-libhdfs
 %endif
-BuildRequires: globus-gridftp-server-devel
+BuildRequires: globus-gridftp-server-devel >= 11
 BuildRequires: globus-common-devel
 BuildRequires: pkgconfig
 
-Requires: globus-gridftp-server-progs
+Requires: globus-gridftp-server-progs >= 11
 Requires: xinetd
 
 Requires(preun): initscripts
@@ -100,6 +100,9 @@ fi
 %{_sysconfdir}/init.d/%{name}
 
 %changelog
+* Mon Jul 25 2016 Globus Toolkit <support@globus.org> - 1.4-1
+- enable data ordering
+
 * Fri Mar 11 2016 Globus Toolkit <support@globus.org> - 1.3-3
 - add -ldl
 
