@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        20
+Release:        21
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -170,6 +170,11 @@ if command -v zypper > /dev/null; then
         > %{_sysconfdir}/zypp/repos.d/globus-toolkit-6-stable-${repo}.repo 
     cp %{_datadir}/globus/repo/globus-toolkit-6-testing-${repo}.repo %{_sysconfdir}/zypp/repos.d
     cp %{_datadir}/globus/repo/globus-toolkit-6-unstable-${repo}.repo %{_sysconfdir}/zypp/repos.d
+elif command -v dnf > /dev/null; then
+    dnf config-manager --add-repo file://%{_datadir}/globus/repo/globus-toolkit-6-stable-${repo}.repo
+    dnf config-manager --add-repo file://%{_datadir}/globus/repo/globus-toolkit-6-testing-${repo}.repo
+    dnf config-manager --add-repo file://%{_datadir}/globus/repo/globus-toolkit-6-unstable-${repo}.repo
+    dnf config-manager --set-enabled Globus-Toolkit-6-$repo > /dev/null
 elif command -v yum-config-manager > /dev/null; then
     yum-config-manager --add-repo file://%{_datadir}/globus/repo/globus-toolkit-6-stable-${repo}.repo
     yum-config-manager --add-repo file://%{_datadir}/globus/repo/globus-toolkit-6-testing-${repo}.repo
@@ -239,6 +244,9 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Mon Aug 1 2016 Globus Toolkit <support@globus.org> - 6-21
+- Use dnf config-manager to install repo when available
+
 * Thu Mar 19 2016 Globus Toolkit <support@globus.org> - 6-20
 - Add springdale (rhel-compatible)
 
