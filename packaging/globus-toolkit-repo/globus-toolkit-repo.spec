@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        21
+Release:        22
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -128,8 +128,10 @@ rm -rf $RPM_BUILD_ROOT
 
 %posttrans
 # Can't do this here, as it deadlocks on SUSE
+# ignore errors: will fail rpm lock on newer distros, but yum/dnf on those
+# versions will automatically prompt to import on first use 
 if [ ! -f /etc/SuSE-release ]; then
-    rpm --import %{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
+    rpm --import %{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus 2>/dev/null 
 fi
 
 if [ -f /etc/redhat-release ]; then
@@ -244,6 +246,9 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Mon Aug 1 2016 Globus Toolkit <support@globus.org> - 6-22
+- ignore key import errors
+
 * Mon Aug 1 2016 Globus Toolkit <support@globus.org> - 6-21
 - Use dnf config-manager to install repo when available
 
