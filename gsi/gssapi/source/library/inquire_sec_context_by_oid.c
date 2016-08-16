@@ -156,7 +156,10 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     {
         /* figure out what object was asked for */
         
-        asn1_desired_obj = ASN1_OBJECT_new();
+        asn1_desired_obj = ASN1_OBJECT_create(
+            NID_undef,
+            desired_object->elements,
+            desired_object->length, NULL, NULL);
         if(!asn1_desired_obj)
         {
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
@@ -167,8 +170,6 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
             goto unlock_exit;
         }
 
-        asn1_desired_obj->length = ((gss_OID_desc *)desired_object)->length;
-        asn1_desired_obj->data = ((gss_OID_desc *)desired_object)->elements;
 
         found_index = -1;
 

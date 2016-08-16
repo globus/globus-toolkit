@@ -39,14 +39,15 @@ authtest_l_authz_get_authz_id_callback(void *				cb_arg,
 				       globus_gsi_authz_handle_t 	handle,
 				       globus_result_t		result);
 
+int result_count=1;
 #define check_result(pred, str) \
     do { \
         int __ok = (pred); \
         if (!__ok) { \
             fail_count++; \
         } \
-        printf("%s - %s\n", \
-                (__ok) ? "ok" : "not ok", str); \
+        printf("%s %d - %s\n", \
+                (__ok) ? "ok" : "not ok", result_count++, str); \
         ok = -1; \
     } while(0)
 

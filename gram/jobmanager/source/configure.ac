@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_job_manager],[14.27],[https://globus.atlassian.net/])
+AC_INIT([globus_gram_job_manager],[14.28],[https://github.com/globus/globus-toolkit/issues])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -175,6 +175,7 @@ AC_CONFIG_FILES([
         rvf/Makefile
         seg/Makefile
         test/Makefile
+        test/testcred.cnf
         test/client/Makefile
         test/jobmanager/failure_test/Makefile
         test/jobmanager/Makefile

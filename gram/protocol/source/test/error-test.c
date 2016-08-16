@@ -23,7 +23,6 @@ int main(int argc, char * argv[])
     int rc = 0;
     int i;
     const char * str;
-    int testno = 0;
     int fail_count=0;
 
     LTDL_SET_PRELOADED_SYMBOLS();
@@ -81,8 +80,6 @@ int main(int argc, char * argv[])
         fail_count++;
     }
 
-error_exit:
     globus_module_deactivate_all();
-out:
     return fail_count;
 }

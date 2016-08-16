@@ -288,7 +288,7 @@ release_x509(void)
         }
 
         name_tok.value = x509;
-        name_tok.length = sizeof(*x509);
+        name_tok.length = sizeof(x509);
         name_type = GLOBUS_GSS_C_NT_X509;
         
         major_status = gss_import_name(&minor_status,

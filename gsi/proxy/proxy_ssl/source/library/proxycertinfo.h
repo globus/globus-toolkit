@@ -57,8 +57,6 @@
 #include "proxypolicy.h"
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
-
-#include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <string.h>
 
@@ -87,7 +85,21 @@ extern "C" {
 #define ASN1_F_PROXYCERTINFO_NEW                         430
 #define ASN1_F_D2I_PROXYCERTINFO                         431
 
+#ifndef GLOBUS_DEPRECATED
+#define GLOBUS_DEPRECATED_IN_PROXYCERTINFO_H
+#if __GNUC__
+#   define GLOBUS_DEPRECATED(func) func __attribute__((deprecated))
+#elif defined(_MSC_VER)
+#   define GLOBUS_DEPRECATED(func)  __declspec(deprecated) func
+#else
+#   define GLOBUS_DEPRECATED(func) func
+#endif
+#endif
 
+/*
+ * The PROXYCERTINFO functions are deprecated, as OpenSSL has provided
+ * its own data structure since 0.9.8.
+ */
 /* data structures */
 
 /**
@@ -115,8 +127,11 @@ struct PROXYCERTINFO_st
 
 typedef struct PROXYCERTINFO_st PROXYCERTINFO;
 
+#ifdef DECLARE_STACK_OF
 DECLARE_STACK_OF(PROXYCERTINFO)
-DECLARE_ASN1_SET_OF(PROXYCERTINFO)
+#endif
+
+DECLARE_ASN1_FUNCTIONS(PROXYCERTINFO)
 
 /* macros */
 
@@ -135,69 +150,54 @@ DECLARE_ASN1_SET_OF(PROXYCERTINFO)
 ASN1_METHOD * PROXYCERTINFO_asn1_meth();
 #endif
 
-PROXYCERTINFO * PROXYCERTINFO_new();
-
-void PROXYCERTINFO_free(
-    PROXYCERTINFO *                     cert_info);
-
+GLOBUS_DEPRECATED(
 PROXYCERTINFO * PROXYCERTINFO_dup(
-    PROXYCERTINFO *                     cert_info);
+    PROXYCERTINFO *                     cert_info));
 
-int PROXYCERTINFO_cmp(
+GLOBUS_DEPRECATED(int PROXYCERTINFO_cmp(
     const PROXYCERTINFO *               a,
-    const PROXYCERTINFO *               b);
+    const PROXYCERTINFO *               b));
 
-int PROXYCERTINFO_print(
+GLOBUS_DEPRECATED(int PROXYCERTINFO_print(
     BIO *                               bp,
-    PROXYCERTINFO *                     cert_info);
+    PROXYCERTINFO *                     cert_info));
 
-int PROXYCERTINFO_print_fp(
+GLOBUS_DEPRECATED(int PROXYCERTINFO_print_fp(
     FILE *                              fp,
-    PROXYCERTINFO *                     cert_info);
+    PROXYCERTINFO *                     cert_info));
 
-int PROXYCERTINFO_set_policy(
+GLOBUS_DEPRECATED(int PROXYCERTINFO_set_policy(
     PROXYCERTINFO *                     cert_info,
-    PROXYPOLICY *                       policy);
+    PROXYPOLICY *                       policy));
 
-PROXYPOLICY * PROXYCERTINFO_get_policy(
-    PROXYCERTINFO *                     cert_info);
+GLOBUS_DEPRECATED(PROXYPOLICY * PROXYCERTINFO_get_policy(
+    PROXYCERTINFO *                     cert_info));
 
-int PROXYCERTINFO_set_path_length(
+GLOBUS_DEPRECATED(int PROXYCERTINFO_set_path_length(
     PROXYCERTINFO *                     cert_info,
-    long                                path_length);
+    long                                path_length));
 
-long PROXYCERTINFO_get_path_length(
-    PROXYCERTINFO *                     cert_info);
+GLOBUS_DEPRECATED(long PROXYCERTINFO_get_path_length(
+    PROXYCERTINFO *                     cert_info));
 
-int i2d_PROXYCERTINFO(
-    PROXYCERTINFO *                     cert_info,
-    unsigned char **                    a);
-
-PROXYCERTINFO * d2i_PROXYCERTINFO(
-    PROXYCERTINFO **                    cert_info,
-    unsigned char **                    a,
-    long                                length);
-
-int i2d_PROXYCERTINFO_OLD(
-    PROXYCERTINFO *                     cert_info,
-    unsigned char **                    a);
-
-PROXYCERTINFO * d2i_PROXYCERTINFO_OLD(
-    PROXYCERTINFO **                    cert_info,
-    unsigned char **                    a,
-    long                                length);
-
-X509V3_EXT_METHOD * PROXYCERTINFO_x509v3_ext_meth();
+GLOBUS_DEPRECATED(X509V3_EXT_METHOD * PROXYCERTINFO_x509v3_ext_meth());
 
 X509V3_EXT_METHOD * PROXYCERTINFO_OLD_x509v3_ext_meth();
 
-STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(
+GLOBUS_DEPRECATED(STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(
     struct v3_ext_method *              method,
     PROXYCERTINFO *                     ext,
-    STACK_OF(CONF_VALUE) *              extlist);
+    STACK_OF(CONF_VALUE) *              extlist));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef GLOBUS_DEPRECATED_IN_PROXYCERTINFO_H
+#   ifdef GLOBUS_DEPRECATED
+#       undef GLOBUS_DEPRECATED
+#   endif
+#   undef GLOBUS_DEPRECATED_IN_PROXYCERTINFO_H
 #endif
 
 #endif /* HEADER_PROXYCERTINFO_H */

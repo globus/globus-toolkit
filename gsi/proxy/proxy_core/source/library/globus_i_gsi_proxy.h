@@ -79,24 +79,36 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
         } \
     }
 
+#define GLOBUS_I_GSI_PROXY_DEBUG_PRINT_PCI(_LEVEL_, _OBJ_) \
+    { \
+        if (GLOBUS_I_GSI_PROXY_DEBUG(_LEVEL_)) \
+        { \
+            BIO *b = BIO_new_fp(globus_i_gsi_proxy_debug_fstream, BIO_NOCLOSE); \
+            const X509V3_EXT_METHOD *meth = X509V3_EXT_get_nid(NID_proxyCertInfo); \
+            meth->i2r(meth, (_OBJ_), b, 4); \
+            BIO_flush(b); \
+            BIO_free(b); \
+        } \
+    }
 #else
 
 #define GLOBUS_I_GSI_PROXY_DEBUG_FPRINTF(_LEVEL_, _MESSAGE_) {}
 #define GLOBUS_I_GSI_PROXY_DEBUG_FNPRINTF(_LEVEL_, _MESSAGE_) {}
 #define GLOBUS_I_GSI_PROXY_DEBUG_PRINT(_LEVEL_, _MESSAGE_) {}
 #define GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(_LEVEL_, _OBJ_NAME_, _OBJ_) {}
+#define GLOBUS_I_GSI_PROXY_DEBUG_PRINT_PCI(_LEVEL_, _OBJ_) {}
 
 #endif
 
 #define GLOBUS_I_GSI_PROXY_DEBUG_ENTER \
             GLOBUS_I_GSI_PROXY_DEBUG_FPRINTF( \
                 1, (globus_i_gsi_proxy_debug_fstream, \
-                    "%s entering\n", _function_name_))
+                    "%s entering\n", __func__))
 
 #define GLOBUS_I_GSI_PROXY_DEBUG_EXIT \
             GLOBUS_I_GSI_PROXY_DEBUG_FPRINTF( \
                 1, (globus_i_gsi_proxy_debug_fstream, \
-                    "%s exiting\n", _function_name_))
+                    "%s exiting\n", __func__))
 
 /* ERROR MACROS */
 
@@ -107,7 +119,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
     _RESULT_ = globus_i_gsi_proxy_openssl_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
-        _function_name_, \
+        __func__, \
         __LINE__, \
         _tmp_string_, \
         NULL); \
@@ -120,7 +132,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
     _RESULT_ = globus_i_gsi_proxy_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
-        _function_name_, \
+        __func__, \
         __LINE__, \
         _tmp_string_, \
         NULL); \
@@ -132,7 +144,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
         (_RESULT_), \
         (_ERRORTYPE_), \
         __FILE__, \
-        _function_name_, \
+        __func__, \
         __LINE__, \
         NULL, \
         NULL)
@@ -146,7 +158,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
     _RESULT_ = globus_i_gsi_proxy_openssl_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
-        _function_name_, \
+        __func__, \
         __LINE__, \
         _tmp_string_, \
         _LONG_DESC_); \
@@ -161,7 +173,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
     _RESULT_ = globus_i_gsi_proxy_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
-        _function_name_, \
+        __func__, \
         __LINE__, \
         _tmp_string_, \
         NULL, \
@@ -175,7 +187,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
         _RESULT_, \
         _ERRORTYPE_, \
         __FILE__, \
-        _function_name_, \
+        __func__, \
         __LINE__, \
         NULL, \
         _LONG_DESC_)
@@ -211,7 +223,7 @@ typedef struct globus_l_gsi_proxy_handle_attrs_s
      * The signing algorithm to use for 
      * generating the proxy certificate
      */
-    EVP_MD *                            signing_algorithm;
+    const EVP_MD *                      signing_algorithm;
     /**
      * The clock skew (in seconds) allowed 
      * for the proxy certificate.  The skew
@@ -246,7 +258,7 @@ typedef struct globus_l_gsi_proxy_handle_s
     /** Proxy handle attributes */
     globus_gsi_proxy_handle_attrs_t     attrs;
     /** The proxy cert info extension used in the operations */
-    PROXYCERTINFO *                     proxy_cert_info;    
+    PROXY_CERT_INFO_EXTENSION *         proxy_cert_info;    
     /** The number of minutes the proxy certificate is valid for */
     int                                 time_valid;
     /** The type of the generated proxy */

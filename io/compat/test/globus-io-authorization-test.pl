@@ -45,6 +45,7 @@ sub basic_func
     my $expect_failure = shift;
     my $test_name = shift;
    
+    diag("$test_prog $args");
     system("$valgrind ./$test_prog $args 1>&2");
     $rc = $?;
 
@@ -54,8 +55,9 @@ sub basic_func
 }
 
 plan tests => 5;
-chomp(my $identity = `openssl x509 -subject -in \${X509_USER_CERT-\$HOME/.globus/usercert.pem} -noout`);
-$identity =~ s/^subject= //;
+chomp(my $identity = `openssl x509 -subject -in \${X509_USER_CERT-\$HOME/.globus/usercert.pem} -noout -nameopt rfc2253,-dn_rev`);
+$identity =~ s/^subject= */\//;
+$identity =~ s/,/\//g;
 print "    Using test identity $identity\n";
 
 basic_func('self', 0, "$test_prog-self");

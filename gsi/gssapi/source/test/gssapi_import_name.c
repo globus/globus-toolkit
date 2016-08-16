@@ -532,7 +532,7 @@ import_x509(void)
         }
 
         name_tok.value = x509;
-        name_tok.length = sizeof(*x509);
+        name_tok.length = sizeof(x509);
         name_type = GLOBUS_GSS_C_NT_X509;
         
         major_status = gss_import_name(&minor_status,
@@ -646,7 +646,7 @@ import_x509_wrong_size(void)
         }
 
         name_tok.value = x509;
-        name_tok.length = sizeof(*x509) - 1;
+        name_tok.length = sizeof(x509) - 1;
         name_type = GLOBUS_GSS_C_NT_X509;
         
         major_status = gss_import_name(&minor_status,
@@ -660,7 +660,7 @@ import_x509_wrong_size(void)
             return 6;
         }
 
-        name_tok.length = sizeof(*x509) + 1;
+        name_tok.length = sizeof(x509) + 1;
         name_type = GLOBUS_GSS_C_NT_X509;
         
         major_status = gss_import_name(&minor_status,

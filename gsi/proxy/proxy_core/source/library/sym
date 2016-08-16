@@ -1,0 +1,14 @@
+GLOBUS_GSI_PROXY_CORE_7 {
+  global:
+    globus_gsi_proxy_handle_get_proxy_cert_info;
+    globus_gsi_proxy_handle_set_proxy_cert_info;
+};
+
+GLOBUS_GSI_PROXY_CORE_8 {
+  global:
+    globus_gsi_proxy_handle_get_proxy_cert_info_proxy_ssl;
+    globus_gsi_proxy_handle_set_proxy_cert_info_proxy_ssl;
+  local:
+    globus_gsi_proxy_handle_get_proxy_cert_info_openssl;
+    globus_gsi_proxy_handle_set_proxy_cert_info_openssl;
+} GLOBUS_GSI_PROXY_CORE_7;

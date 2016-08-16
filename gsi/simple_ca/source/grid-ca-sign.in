@@ -259,7 +259,8 @@ if test ${openssl_result} != 0; then
 
         subj_tmp_output=/tmp/tmp_output.$$
         ${openssl_cmd} req -noout -in $(construct_path ${INPUT_REQ_FILE}) \
-                           -subject > ${subj_tmp_output} 2>&1
+                           -subject -nameopt rfc2253,-dn_rev \
+                           > ${subj_tmp_output} 2>&1
         res=$?
         if test $res != 0; then
             echo ""
@@ -269,8 +270,8 @@ if test ${openssl_result} != 0; then
             exit 1
         fi
         
-        req_subj=`cat ${subj_tmp_output} | grep "subject=" \
-                                 | sed -e "s/subject=[ ]*//"` 
+        req_subj=`grep "^subject=" < ${subj_tmp_output} \
+                             | sed -e "s|subject= *|/|" -e "s|,|/|g"` 
         # find signed cert
         for p in ${GRID_CA_DIR}/newcerts/*.pem; do
             subj_tmp_output=/tmp/tmp_output.$$
@@ -283,7 +284,7 @@ if test ${openssl_result} != 0; then
                 echo ""
             fi
 
-            signed_subj=`cat ${subj_tmp_output} | sed -e "s/subject=[ ]*//"`
+            signed_subj="$(sed -e "s|subject= *|/|" -e "s|,|/|g" < "${subj_tmp_output}")"
 
             if test "${signed_subj}" = "${req_subj}"; then
                 SIGNED_CERT=${p}

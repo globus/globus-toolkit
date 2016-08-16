@@ -32,7 +32,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 #include "globus_ssl_locl.h"
+
+#define X509_STORE_set_check_issued(store, func) (store)->check_issued = (func)
+#endif
 
 #ifdef WIN32
 #define strcasecmp stricmp
@@ -265,6 +269,13 @@ globus_i_gsi_gss_create_and_fill_context(
     context->delegation_state = GSS_DELEGATION_START;
     context->locally_initiated = (cred_usage == GSS_C_INITIATE);
     context->ctx_flags |= GSS_I_CTX_INITIALIZED;
+#if OPENSSL_VERSION_NUMBER >= 0x10000100L
+    context->mac_read_sequence = 0;
+    context->mac_write_sequence = 0;
+    context->mac_key = NULL;
+    context->mac_iv_fixed = NULL;
+#endif
+
     globus_mutex_init(&context->mutex, NULL);
 
     /* initialize the peer_cred_handle */
@@ -442,10 +453,9 @@ globus_i_gsi_gss_create_and_fill_context(
          * globus_gsi_callback_check_issued() to handle that error if
          * the certificate in question is a proxy.
          */
-        X509_STORE * store;
-
-        store = SSL_CTX_get_cert_store(context->cred_handle->ssl_context);
-        store->check_issued = globus_gsi_callback_check_issued;
+        X509_STORE * store = SSL_CTX_get_cert_store(
+                context->cred_handle->ssl_context);
+        X509_STORE_set_check_issued(store, globus_gsi_callback_check_issued);
     }
     #endif
 
@@ -549,6 +559,10 @@ globus_i_gsi_gss_create_and_fill_context(
             major_status = GSS_S_FAILURE;
             goto free_cert_dir;   
         }
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+        /* Security level 0 is needed to use eNULL ciphers */
+        SSL_set_security_level(context->gss_ssl, 0);
+#endif
     }
     else if (globus_i_gsi_gssapi_cipher_list != NULL)
     {
@@ -955,6 +969,7 @@ globus_i_gsi_gss_handshake(
             
             /* problem! */
             
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (globus_i_gsi_gssapi_debug_fstream,
                     "disp=%d,level=%d,desc=%d,left=%d\n",
@@ -962,6 +977,7 @@ globus_i_gsi_gss_handshake(
                     context_handle->gss_ssl->s3->send_alert[0],
                     context_handle->gss_ssl->s3->send_alert[1],
                     context_handle->gss_ssl->s3->wbuf.left));
+#endif
 
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (globus_i_gsi_gssapi_debug_fstream,
@@ -1037,8 +1053,65 @@ globus_i_gsi_gss_handshake(
     if (!GSS_ERROR(major_status)) {
         if (rc > 0)
         {
-            const SSL_CIPHER *              current_cipher;
-            major_status = GSS_S_COMPLETE; 
+            const SSL_CIPHER *          current_cipher;
+            const EVP_CIPHER *          evp_cipher = NULL;
+#if OPENSSL_VERSION_NUMBER >= 0x10000100L
+            size_t                      keying_material_len = 0;
+#endif
+
+            current_cipher = SSL_get_current_cipher(context_handle->gss_ssl);
+
+#if OPENSSL_VERSION_NUMBER >= 0x10000100L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+            evp_cipher = EVP_CIPHER_CTX_cipher(
+                    context_handle->gss_ssl->enc_write_ctx);
+#else
+            evp_cipher = EVP_get_cipherbynid(
+                    SSL_CIPHER_get_cipher_nid(
+                            current_cipher));
+#endif
+            if (evp_cipher != NULL)
+            {
+                keying_material_len = EVP_CIPHER_key_length(evp_cipher);
+                context_handle->mac_key = malloc(keying_material_len);
+
+                if (context_handle->mac_key == NULL)
+                {
+                    GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                    major_status = GSS_S_FAILURE;
+                    goto exit;
+                }
+
+                SSL_export_keying_material(
+                        context_handle->gss_ssl,
+                        context_handle->mac_key,
+                        keying_material_len,
+                        "EXPERIMENTAL-GSI-MAC-KEY",
+                        strlen("EXPERIMENTAL-GSI-MAC-KEY"),
+                        NULL,
+                        0,
+                        0);
+
+                keying_material_len = EVP_CIPHER_iv_length(evp_cipher);
+                context_handle->mac_iv_fixed = malloc(keying_material_len);
+                if (context_handle->mac_iv_fixed == NULL)
+                {
+                    GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                    major_status = GSS_S_FAILURE;
+                    goto exit;
+                }
+
+                SSL_export_keying_material(
+                        context_handle->gss_ssl,
+                        context_handle->mac_iv_fixed,
+                        keying_material_len,
+                        "EXPERIMENTAL-GSI-MAC-IV-FIXED",
+                        strlen("EXPERIMENTAL-GSI-MAC-IV-FIXED"),
+                        NULL,
+                        0,
+                        0);
+            }
+#endif
 
             /*
              * Set  GSS_C_CONF_FLAG if cipher uses encryption
@@ -1049,13 +1122,24 @@ globus_i_gsi_gss_handshake(
              * if a site wants higher protection. 
              */
 
-            current_cipher = SSL_get_current_cipher(context_handle->gss_ssl);
             
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
             if ((current_cipher->algo_strength & SSL_STRONG_MASK) >= SSL_LOW) 
             {
                 context_handle->ret_flags |= GSS_C_CONF_FLAG;
             }
+#else
+            /*
+             *  We don't have access to the algorithm strength for version
+             *  >= 1.1.0, so we set the flag if the cipher is not a NULL
+             *  encryption cipher.
+             */
 
+            if (evp_cipher != NULL)
+            {
+                context_handle->ret_flags |= GSS_C_CONF_FLAG;
+            }
+#endif
             /* DEBUG BLOCK */
             if (globus_i_gsi_gssapi_debug_level >= 2)
             {
@@ -1072,13 +1156,13 @@ globus_i_gsi_gss_handshake(
                 GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
                     2, "Cipher being used:\n");
                 SSL_CIPHER_description(
-                    context_handle->gss_ssl->session->cipher,
+                    current_cipher,
                     cipher_description, 256);
                 GLOBUS_I_GSI_GSSAPI_DEBUG_FNPRINTF(
                     2, (256, "%s", cipher_description));
             }
 
-        } 
+        }
         else 
         {
             major_status = GSS_S_CONTINUE_NEEDED;
@@ -1094,7 +1178,7 @@ globus_i_gsi_gss_handshake(
  * @brief Retrieve Peer
  * @ingroup globus_i_gsi_gss_utils
  * @details
- * Called after the handshake has completed sucessfully,
+ * Called after the handshake has completed successfully,
  * and gets the subject name, so it can be returned to the
  * call of the GSSAPI init_sec_context or accept_sec_context. 
  * 
@@ -1121,9 +1205,10 @@ globus_i_gsi_gss_retrieve_peer(
     
     *minor_status = GLOBUS_SUCCESS;
 
-    if (context_handle->gss_ssl->session)
+    if (SSL_get_session(context_handle->gss_ssl) != NULL)
     {
-        peer_cert = context_handle->gss_ssl->session->peer;
+        peer_cert = SSL_get_peer_certificate(
+                context_handle->gss_ssl);
     }
 
     if(peer_cert == NULL)
@@ -1179,7 +1264,7 @@ globus_i_gsi_gss_retrieve_peer(
         }
 
         peer_buffer.value = identity_cert;
-        peer_buffer.length = sizeof(X509);
+        peer_buffer.length = sizeof(X509*);
 
         major_status = gss_import_name(
                 minor_status,
@@ -1216,6 +1301,10 @@ globus_i_gsi_gss_retrieve_peer(
     if(peer_cert_chain)
     { 
         sk_X509_pop_free(peer_cert_chain, X509_free);
+    }
+    if (peer_cert != NULL)
+    {
+        X509_free(peer_cert);
     }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
@@ -1578,7 +1667,7 @@ globus_i_gsi_gss_create_cred(
         free_identity_cert = GLOBUS_TRUE;
     }
     name_buffer.value = identity_cert;
-    name_buffer.length = sizeof(X509);
+    name_buffer.length = sizeof(X509*);
 
     major_status = gss_import_name(
             &local_minor_status,
@@ -2287,7 +2376,7 @@ globus_i_gsi_gssapi_init_ssl_context(
             B_mem = BIO_new(BIO_s_mem());
             BIO_puts(B_mem, extra_pem);
             
-            while(extra_x509 = PEM_read_bio_X509(B_mem, NULL, 0, NULL))
+            while((extra_x509 = PEM_read_bio_X509(B_mem, NULL, 0, NULL)) != NULL)
             {
                 if(!X509_STORE_add_cert(
                     SSL_CTX_get_cert_store(cred_handle->ssl_context),
@@ -2447,13 +2536,20 @@ int globus_i_gsi_gss_verify_extensions_callback(
 
     for(index = 0; index < extension_oids->count; index++)
     {
+        ASN1_OBJECT                    *oid_object;
+        const unsigned char            *elements;
+
         oid = extension_oids->elements[index];
-        if((extension_obj->length == oid.length) &&
-           !memcmp(extension_obj->data, oid.elements, extension_obj->length))
+        elements = oid.elements;
+        oid_object = d2i_ASN1_OBJECT(NULL, &elements, oid.length);
+
+        if(OBJ_obj2nid(extension_obj) == OBJ_obj2nid(oid_object))
         {
             return_val = 1;
+            ASN1_OBJECT_free(oid_object);
             goto exit;
         }
+        ASN1_OBJECT_free(oid_object);
     }
 
     return_val = 0;
@@ -2484,10 +2580,11 @@ globus_i_gsi_gssapi_get_hostname(
     for (index = 0; index < X509_NAME_entry_count(name->x509n); index++)
     {
         name_entry = X509_NAME_get_entry(name->x509n, index);
-        if (OBJ_obj2nid(name_entry->object) == common_name_NID)
+        if (OBJ_obj2nid(X509_NAME_ENTRY_get_object(name_entry)) == common_name_NID)
         {
-            length = name_entry->value->length;
-            data = name_entry->value->data;
+            ASN1_STRING *s = X509_NAME_ENTRY_get_data(name_entry);
+            length = ASN1_STRING_length(s);
+            data = ASN1_STRING_data(s);
 
             p = memchr(data, '/', length);
 

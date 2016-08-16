@@ -1,6 +1,6 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	12.1
+Version:	12.2
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -159,6 +159,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 12.2-1
+- Updates for OpenSSL 1.1.0
+
 * Tue May 03 2016 Globus Toolkit <support@globus.org> - 12.1-1
 - Spelling
 

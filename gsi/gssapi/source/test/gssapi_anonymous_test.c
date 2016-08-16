@@ -44,7 +44,6 @@ int main()
     gss_ctx_id_t                        del_accept_context;
     gss_cred_id_t                       delegated_cred;
     gss_cred_id_t                       cred_handle;
-    char *                              error_str;
     int                                 rc = EXIT_SUCCESS;
 
     printf("1..1\n");

@@ -1,3 +1,9 @@
+globus-authz (3.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * Updates for OpenSSL 1.1.0
+
+ -- Globus Toolkit <support@globus.org>  Tue, 16 Aug 2016 14:12:18 -0400
+
 globus-authz (3.12-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix authz callout load in test on mac

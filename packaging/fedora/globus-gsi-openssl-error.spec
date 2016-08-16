@@ -1,7 +1,7 @@
 Name:		globus-gsi-openssl-error
 %global _name %(tr - _ <<< %{name})
-Version:	3.5
-Release:	2%{?dist}
+Version:	3.6
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling
 
@@ -134,6 +134,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 3.6-1
+- Updates for OpenSSL 1.1.0
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 3.5-2
 - Add vendor
 

@@ -1,3 +1,9 @@
+globus-gram-protocol (12.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * Updates for OpenSSL 1.1.0
+
+ -- Globus Toolkit <support@globus.org>  Tue, 16 Aug 2016 15:41:38 -0400
+
 globus-gram-protocol (12.12-2+gt6.@distro@) @distro@; urgency=low
 
   * Add OpenSSL build dependency

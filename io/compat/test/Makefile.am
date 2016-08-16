@@ -13,22 +13,42 @@ check_SCRIPTS = \
 check_DATA = \
         testcred.key \
         testcred.cert \
-        testcredlink
+        testcred.cakey \
+        testcred.cacert \
+        testcred.link \
+        testcred.signing_policy \
+        testcred.srl
 
-testcred.key:
+# Test CA
+.cnf.cacert:
+	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+.cacert.cakey:
+
+.cacert.link:
+	linkname="`openssl x509 -hash -noout -in $<`.0"; \
+	rm -f "$$linkname"; \
+	cp $< "$$linkname"; \
+        echo "$$linkname" > $@
+
+.link.signing_policy:
+	linkname=`cat $<`; \
+	policyfile=$${linkname%.0}.signing_policy; \
+	echo "access_id_CA      X509         '/CN=ca'" > $${policyfile}; \
+	echo "pos_rights        globus        CA:sign" >> $${policyfile}; \
+	echo "cond_subjects     globus       '\"/*\"'" >> $${policyfile}; \
+	echo $${policyfile} >> $@
+
+.signing_policy.srl:
+	echo 01 > $@
+
+# Test Cert/Key
+.srl.key:
 	umask 077; openssl genrsa -out $@ 1024
-
 .key.req:
-	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< -out $@ -config openssl.cnf
+	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
 
 .req.cert:
-	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
-
-testcredlink: testcred.cert
-	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
-        rm -f "$$linkname"; \
-        cp testcred.cert "$$linkname"; \
-	echo "$$linkname" > $@
+	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
 
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS) $(GSI_DRIVER_CFLAGS)
 LDADD = ../libglobus_io.la $(PACKAGE_DEP_LIBS) $(GSI_DRIVER_DLPREOPEN) -lltdl
@@ -52,9 +72,12 @@ EXTRA_DIST = \
 	random_data.txt \
 	$(check_SCRIPTS) \
         globus-io-test-wrapper
-CLEANFILES = testcred.cert testcred.req testcred.key 
+CLEANFILES = testcred.cert testcred.req testcred.key testcred.cacert testcred.cakey testcred.srl
 clean-local:
-	if test -f testcredlink; then \
-	    rm -f $$(cat testcredlink) testcredlink; \
+	if test -f testcred.link; then \
+	    rm -f $$(cat testcred.link) testcred.link; \
 	fi
-SUFFIXES = .key .req .cert
+	if test -f testcred.signing_policy; then \
+	    rm -f $$(cat testcred.signing_policy) testcred.signing_policy; \
+	fi
+SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey

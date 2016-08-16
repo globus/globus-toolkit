@@ -1,6 +1,8 @@
 #ifndef GLOBUS_SSL_LOCL_H
 #define GLOBUS_SSL_LOCL_H
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+
 #if (OPENSSL_VERSION_NUMBER >= 0x10000000L)
 #define SSL_STRONG_MASK 0x000001fcL
 #else
@@ -51,4 +53,5 @@ int ssl_cipher_get_evp(SSL_SESSION *s, const EVP_CIPHER **enc,
 		       const EVP_MD **md, SSL_COMP **comp);
 #endif
 
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000L */
 #endif

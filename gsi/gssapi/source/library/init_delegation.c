@@ -24,7 +24,6 @@
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 #include <string.h>
-#include "proxycertinfo.h"
 
 /* Only build if we have the extended GSSAPI */
 #ifdef _HAVE_GSI_EXTENDED_GSSAPI
@@ -105,7 +104,7 @@ GSS_CALLCONV gss_init_delegation(
     gss_cred_id_desc *                  cred;
     X509 *                              cert = NULL;
     STACK_OF(X509) *                    cert_chain = NULL;
-    PROXYCERTINFO *                     pci;
+    PROXY_CERT_INFO_EXTENSION *         pci = NULL;
     globus_gsi_cert_utils_cert_type_t   cert_type;
     int                                 index;
     globus_result_t                     local_result = GLOBUS_SUCCESS;

@@ -28,47 +28,47 @@
 
 typedef struct
 {
-    globus_mutex_t			mutex;
-    globus_cond_t			cond;
-    globus_bool_t			connected;
+    globus_mutex_t                      mutex;
+    globus_cond_t                       cond;
+    globus_bool_t                       connected;
 }
 globus_l_io_authorization_test_monitor_t;
 
 static
 globus_bool_t
 globus_l_io_authorization_test_callback(
-	void *				arg,
-	globus_io_handle_t *		handle,
-	globus_result_t			result,
-	char *				identity,
-	gss_ctx_id_t 			context_handle);
+        void *                          arg,
+        globus_io_handle_t *            handle,
+        globus_result_t                 result,
+        char *                          identity,
+        gss_ctx_id_t                    context_handle);
 
 static
 void
 globus_l_io_authorization_test_connect_callback(
-	void *				arg,
-	globus_io_handle_t *		handle,
-	globus_result_t			result);
+        void *                          arg,
+        globus_io_handle_t *            handle,
+        globus_result_t                 result);
 
 int
 main(
-    int					argc,
-    char *				argv[])
+    int                                 argc,
+    char *                              argv[])
 {
-    globus_io_handle_t			listener;
-    globus_io_handle_t			server_handle;
-    globus_io_handle_t			client_handle;
-    globus_io_attr_t			attr;
-    unsigned short			port = 0;
-    globus_result_t			result;
+    globus_io_handle_t                  listener;
+    globus_io_handle_t                  server_handle;
+    globus_io_handle_t                  client_handle;
+    globus_io_attr_t                    attr;
+    unsigned short                      port = 0;
+    globus_result_t                     result;
     globus_io_secure_authorization_data_t
-					auth_data;
+                                        auth_data;
     globus_l_io_authorization_test_monitor_t
-					monitor;
-    char				greeting[] = "Hello, my friend.";
-    char 				reply_buffer[256];
-    globus_size_t			written;
-    globus_size_t			read_amt;
+                                        monitor;
+    unsigned char                       greeting[] = "Hello, my friend.";
+    unsigned char                       reply_buffer[256];
+    globus_size_t                       written;
+    globus_size_t                       read_amt;
 
     LTDL_SET_PRELOADED_SYMBOLS();
 
@@ -84,170 +84,170 @@ main(
     globus_io_secure_authorization_data_initialize(&auth_data);
     globus_io_tcpattr_init(&attr);
     globus_io_attr_set_secure_authentication_mode(
-	    &attr,
-	    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
-	    GSS_C_NO_CREDENTIAL);
+            &attr,
+            GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+            GSS_C_NO_CREDENTIAL);
 
 
     if(argc >= 2)
     {
-	if(! strcasecmp(argv[1], "self"))
-	{
-	    globus_io_attr_set_secure_authorization_mode(
-		    &attr,
-		    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
-		    &auth_data);
-	}
-	else if(argc > 2 && ! strcasecmp(argv[1], "identity") )
-	{
-	    globus_io_secure_authorization_data_set_identity(&auth_data,
-		                                             argv[2]);
-	    globus_io_attr_set_secure_authorization_mode(
-		    &attr,
-		    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
-		    &auth_data);
-	}
-	else if(! strcasecmp(argv[1], "callback"))
-	{
-	    globus_io_secure_authorization_data_set_callback(
-		    &auth_data,
-		    globus_l_io_authorization_test_callback,
-		    GLOBUS_NULL);
+        if(! strcasecmp(argv[1], "self"))
+        {
+            globus_io_attr_set_secure_authorization_mode(
+                    &attr,
+                    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
+                    &auth_data);
+        }
+        else if(argc > 2 && ! strcasecmp(argv[1], "identity") )
+        {
+            globus_io_secure_authorization_data_set_identity(&auth_data,
+                                                             argv[2]);
+            globus_io_attr_set_secure_authorization_mode(
+                    &attr,
+                    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
+                    &auth_data);
+        }
+        else if(! strcasecmp(argv[1], "callback"))
+        {
+            globus_io_secure_authorization_data_set_callback(
+                    &auth_data,
+                    globus_l_io_authorization_test_callback,
+                    GLOBUS_NULL);
 
-	    globus_io_attr_set_secure_authorization_mode(
-		    &attr,
-		    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK,
-		    &auth_data);
-	}
-	else if(! strcasecmp(argv[1], "-callback"))
-	{
-	    globus_io_secure_authorization_data_set_callback(
-		    &auth_data,
-		    globus_l_io_authorization_test_callback,
-		    (void *) 0x1);
+            globus_io_attr_set_secure_authorization_mode(
+                    &attr,
+                    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK,
+                    &auth_data);
+        }
+        else if(! strcasecmp(argv[1], "-callback"))
+        {
+            globus_io_secure_authorization_data_set_callback(
+                    &auth_data,
+                    globus_l_io_authorization_test_callback,
+                    (void *) 0x1);
 
-	    globus_io_attr_set_secure_authorization_mode(
-		    &attr,
-		    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK,
-		    &auth_data);
-	}
-	else
-	{
-	    goto no_authorization_mode;
-	}
+            globus_io_attr_set_secure_authorization_mode(
+                    &attr,
+                    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK,
+                    &auth_data);
+        }
+        else
+        {
+            goto no_authorization_mode;
+        }
     }
     else
     {
-	goto no_authorization_mode;
+        goto no_authorization_mode;
     }
 
     result = globus_io_tcp_create_listener(
-	    &port,
-	    -1,
-	    &attr,
-	    &listener);
+            &port,
+            -1,
+            &attr,
+            &listener);
 
     if(result != GLOBUS_SUCCESS)
     {
         char *msg = globus_error_print_friendly(globus_error_peek(result));
-	globus_libc_fprintf(stderr, "# Could not create listener: %s\n", msg);
+        fprintf(stderr, "# Could not create listener: %s\n", msg);
         free(msg);
 
-	goto error_exit;
+        goto error_exit;
     }
 
     result = globus_io_tcp_register_connect(
-	    "localhost",
-	    port,
-	    &attr,
-	    globus_l_io_authorization_test_connect_callback,
-	    &monitor,
-	    &client_handle);
+            "localhost",
+            port,
+            &attr,
+            globus_l_io_authorization_test_connect_callback,
+            &monitor,
+            &client_handle);
 
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("# Could not register connect\n");
-	goto error_exit;
+        printf("# Could not register connect\n");
+        goto error_exit;
     }
 
     result = globus_io_tcp_listen(&listener);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("# Could not listen for connections\n");
-	goto error_exit;
+        printf("# Could not listen for connections\n");
+        goto error_exit;
     }
     result = globus_io_tcp_accept(&listener,
-	                          &attr,
-			          &server_handle);
+                                  &attr,
+                                  &server_handle);
     if(result != GLOBUS_SUCCESS)
     {
-	if(strcasecmp(argv[1], "-callback") == 0)
-	{
-	    globus_module_deactivate_all();
-	    exit(0);
-	}
-	else
-	{
-	    globus_libc_printf("# Could not accept connection\n");
-	    goto error_exit;
-	}
+        if(strcasecmp(argv[1], "-callback") == 0)
+        {
+            globus_module_deactivate_all();
+            exit(0);
+        }
+        else
+        {
+            printf("# Could not accept connection\n");
+            goto error_exit;
+        }
     }
 
     globus_mutex_lock(&monitor.mutex);
     while(! monitor.connected)
     {
-	globus_cond_wait(&monitor.cond, &monitor.mutex);
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
 
     result = globus_io_close(&listener);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("# Could not close listener\n");
-	goto error_exit;
+        printf("# Could not close listener\n");
+        goto error_exit;
     }
 
     result = globus_io_write(&server_handle,
-			     greeting,
-		             sizeof(greeting),
-		             &written);
+                             greeting,
+                             sizeof(greeting),
+                             &written);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("# Could not write greeting\n");
-	goto error_exit;
+        printf("# Could not write greeting\n");
+        goto error_exit;
     }
     result = globus_io_close(&server_handle);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("# Could not close server\n");
-	goto error_exit;
+        printf("# Could not close server\n");
+        goto error_exit;
     }
     result = globus_io_read(&client_handle,
-	                    reply_buffer,
-		            sizeof(reply_buffer),
-		            sizeof(reply_buffer),
-		            &read_amt);
+                            reply_buffer,
+                            sizeof(reply_buffer),
+                            sizeof(reply_buffer),
+                            &read_amt);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_object_t * err;
+        globus_object_t * err;
 
-	err = globus_error_get(result);
+        err = globus_error_get(result);
 
-	if(! globus_io_eof(err))
-	{
-	    globus_libc_printf("# Could not read greeting\n");
-	    goto error_exit;
-	}
+        if(! globus_io_eof(err))
+        {
+            printf("# Could not read greeting\n");
+            goto error_exit;
+        }
     }
     result = globus_io_close(&client_handle);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("# Could not close client\n");
-	goto error_exit;
+        printf("# Could not close client\n");
+        goto error_exit;
     }
 
     if(!memcmp(greeting, reply_buffer, sizeof(greeting)) == 0)
     {
-	result = GLOBUS_FAILURE;
+        result = GLOBUS_FAILURE;
         goto error_exit;
     }
 
@@ -256,7 +256,7 @@ main(
 
 
 no_authorization_mode:
-    globus_libc_printf(
+    printf(
     "Usage: %s AUTHORIZATION\n"
     "      AUTHORIZATION is one of\n"
     "      self                 use Globus I/O's self-authorization mode\n"
@@ -275,11 +275,11 @@ error_exit:
 static
 globus_bool_t
 globus_l_io_authorization_test_callback(
-	void *				arg,
-	globus_io_handle_t *		handle,
-	globus_result_t			result,
-	char *				identity,
-	gss_ctx_id_t  			context_handle)
+        void *                          arg,
+        globus_io_handle_t *            handle,
+        globus_result_t                 result,
+        char *                          identity,
+        gss_ctx_id_t                    context_handle)
 {
     if(arg) return GLOBUS_FALSE;
     else    return GLOBUS_TRUE;
@@ -289,12 +289,12 @@ globus_l_io_authorization_test_callback(
 static
 void
 globus_l_io_authorization_test_connect_callback(
-	void *				arg,
-	globus_io_handle_t *		handle,
-	globus_result_t			result)
+        void *                          arg,
+        globus_io_handle_t *            handle,
+        globus_result_t                 result)
 {
     globus_l_io_authorization_test_monitor_t *
-					monitor;
+                                        monitor;
 
     monitor = (globus_l_io_authorization_test_monitor_t *) arg;
     if(result != GLOBUS_SUCCESS)

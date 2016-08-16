@@ -152,6 +152,5 @@ establish_failed:
     {
         gss_delete_sec_context(&release_minor_status, &accept_ctx, NULL);
     }
-auth_fail:
     return failed;
 }

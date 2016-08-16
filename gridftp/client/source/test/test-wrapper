@@ -33,14 +33,16 @@ my $server_prog = $ENV{GRIDFTP_SERVER_EXE} || "globus-gridftp-server";
 my $server_host = "localhost";
 my $subject;
 
-my $server_args = "-no-fork -no-chdir -d 0 -auth-level 4 -p 0";
+my $server_args = "-no-fork -no-chdir -no-exit -d 0 -auth-level 4 -p 0";
 
-chomp($subject = `openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert}`);
-$subject =~ s/^subject= *//;
+chomp($subject = `openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert} -nameopt rfc2253,-dn_rev`);
+$subject =~ s/^subject= */\//;
+$subject =~ s/,/\//g;
 
 print STDERR "#Subject is $subject\n";
 print STDERR "#PATH is $ENV{PATH}\n";
 print STDERR "#executing $server_prog $server_args\n";
+#$server_pid = open(SERVER, "../libtool --mode=execute valgrind --log-file=valgrind.log.%p       --trace-children=yes $server_prog $server_args |");
 $server_pid = open(SERVER, "$server_prog $server_args |");
  
 if($server_pid == -1)

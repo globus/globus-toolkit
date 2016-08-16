@@ -1,6 +1,6 @@
 Name:		globus-gsi-proxy-core
 %global _name %(tr - _ <<< %{name})
-Version:	7.9
+Version:	8.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
@@ -145,6 +145,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 8.0-1
+- Support for OpenSSL 1.1.0
+
 * Fri Dec 04 2015 Globus Toolkit <support@globus.org> - 7.9-1
 - Fix missing ;
 

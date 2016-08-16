@@ -1,3 +1,9 @@
+globus-simple-ca (4.23-1+gt6.@distro@) @distro@; urgency=low
+
+  * Updates for OpenSSL 1.1.0
+
+ -- Globus Toolkit <support@globus.org>  Tue, 16 Aug 2016 15:13:11 -0400
+
 globus-simple-ca (4.22-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix test case for ca key bits

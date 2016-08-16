@@ -23,7 +23,6 @@
 #endif
 
 #include "globus_common.h"
-#include "proxycertinfo.h"
 #include "globus_gsi_callback_constants.h"
 #include "globus_i_gsi_callback.h"
 #include "globus_gsi_system_config.h"
@@ -38,6 +37,25 @@
 #ifndef BUILD_FOR_K5CERT_ONLY
 #include "globus_oldgaa.h"
 #include "globus_oldgaa_utils.h"
+#endif
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define X509_STORE_CTX_get0_chain(ctx) (ctx)->chain
+#define X509_STORE_CTX_get0_cert(ctx) (ctx)->cert
+#define X509_get_pathlen(x509) (x509)->ex_pathlen
+#define X509_get_extension_flags(x509) (x509)->ex_flags
+#define X509_STORE_CTX_set_current_cert(ctx, x509) (ctx)->current_cert = (x509)
+#define X509_set_proxy_flag(c) (c)->ex_flags |= EXFLAG_PROXY
+typedef int (*X509_STORE_CTX_get_issuer_fn)(X509 **issuer, X509_STORE_CTX *ctx, X509 *x); /* get issuers cert from ctx */
+#define X509_OBJECT_get0_X509_CRL(o) (o)->data.crl
+#define X509_REVOKED_get0_serialNumber(r) (r)->serialNumber
+#define X509_OBJECT_new() malloc(sizeof(X509_OBJECT))
+#define X509_OBJECT_free(o) \
+    do { \
+        X509_OBJECT *otmp = (o); \
+        X509_OBJECT_free_contents(otmp); \
+        free(otmp); \
+    } while (0)
 #endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -360,11 +378,15 @@ globus_gsi_callback_X509_verify_cert(
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     /*
      * OpenSSL-0.9.6 has a  check_issued routine which
      * we want to override so we  can replace some of the checks.
      */
     context->check_issued = globus_gsi_callback_check_issued;
+#else
+    X509_STORE_set_check_issued(X509_STORE_CTX_get0_store(context), globus_gsi_callback_check_issued);
+#endif
     /*
      * If this is not set, OpenSSL-0.9.8 assumes the proxy cert 
      * as an EEC and the next level cert in the chain as a CA cert
@@ -637,7 +659,7 @@ globus_i_gsi_callback_cred_verify(
      */
     if (!preverify_ok)
     {
-        switch (x509_context->error)
+        switch (X509_STORE_CTX_get_error(x509_context))
         {
         case X509_V_ERR_PATH_LENGTH_EXCEEDED:
 
@@ -646,7 +668,6 @@ globus_i_gsi_callback_cred_verify(
 	 * So we will ignore the errors now and do our checks later
 	 * on (as explained below).
 	 */
-	#if (OPENSSL_VERSION_NUMBER >= 0x0090800fL)
         case X509_V_ERR_PROXY_PATH_LENGTH_EXCEEDED:
 
             GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(
@@ -660,8 +681,6 @@ globus_i_gsi_callback_cred_verify(
              */
             result = GLOBUS_SUCCESS;
             break;
-	#endif
-	#if (OPENSSL_VERSION_NUMBER >= 0x0090706fL)
 	/*
 	 * In the later version (097g+) OpenSSL does know about 
 	 * proxies, but not non-rfc compliant proxies, it will 
@@ -677,20 +696,9 @@ globus_i_gsi_callback_cred_verify(
 	    /*
 	     * Setting this for 098 or later versions avoid the invalid
 	     * CA error but would result in proxy path len exceeded which
-	     * is handled above. For versions less than 098 and greater
-	     * than or equal to 097g causes a seg fault in 
-	     * check_chain_extensions (line 498 in crypto/x509/x509_vfy.c)
-	     * If this flag is set, openssl assumes proxy extensions would
-	     * definitely be there and tries to access the extensions but
-	     * the extension is not there really, as it not recognized by
-	     * openssl. So openssl versions >= 097g and < 098 would
-	     * consider our proxy as an EEC and higher level proxy in the
-	     * cert chain (if any) or EEC as a CA cert and thus would throw 
-	     * as invalid CA error. We handle that error below.
-	     */
-	    #if (OPENSSL_VERSION_NUMBER >= 0x0090800fL)
-            x509_context->current_cert->ex_flags |= EXFLAG_PROXY;
-	    #endif
+	     * is handled above.
+             */
+            X509_set_proxy_flag(X509_STORE_CTX_get_current_cert(x509_context));
             result = GLOBUS_SUCCESS;
             break;
         case X509_V_ERR_INVALID_PURPOSE:
@@ -701,9 +709,7 @@ globus_i_gsi_callback_cred_verify(
              */
             result = GLOBUS_SUCCESS;
             break;
-	#endif
 
-	#if (OPENSSL_VERSION_NUMBER >= 0x0090706fL)
 	case X509_V_ERR_INVALID_CA:
 	    /*
 	     * If the previous cert in the chain is a proxy cert then
@@ -715,7 +721,7 @@ globus_i_gsi_callback_cred_verify(
 	     * proxy cert, we ignore this error.
 	     */
 	    prev_cert = sk_X509_value(
-		    x509_context->chain, x509_context->error_depth-1);
+		    X509_STORE_CTX_get0_chain(x509_context), X509_STORE_CTX_get_error_depth(x509_context)-1);
 	    result = globus_gsi_cert_utils_get_cert_type(prev_cert, &cert_type);
 	    if(result != GLOBUS_SUCCESS)
 	    {
@@ -733,7 +739,6 @@ globus_i_gsi_callback_cred_verify(
 		}
             }
 	    break;
-        #endif	
         default:
             result = (globus_result_t)GLOBUS_FAILURE;
             break;
@@ -742,12 +747,12 @@ globus_i_gsi_callback_cred_verify(
         if (result != GLOBUS_SUCCESS)
         {
 	    char *                      subject_name =
-	      X509_NAME_oneline(X509_get_subject_name(x509_context->current_cert), 0, 0);
+	      X509_NAME_oneline(X509_get_subject_name(X509_STORE_CTX_get_current_cert(x509_context)), 0, 0);
             unsigned long               issuer_hash =
-                    X509_issuer_name_hash(x509_context->current_cert);
+                    X509_issuer_name_hash(X509_STORE_CTX_get_current_cert(x509_context));
             char *                      cert_dir;
 
-            if (x509_context->error == X509_V_ERR_CERT_NOT_YET_VALID)
+            if (X509_STORE_CTX_get_error(x509_context) == X509_V_ERR_CERT_NOT_YET_VALID)
             {
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
@@ -755,7 +760,7 @@ globus_i_gsi_callback_cred_verify(
                     (_CLS("Cert with subject: %s is not yet valid"
 		     "- check clock skew between hosts."), subject_name));
             }
-            else if (x509_context->error == 
+            else if (X509_STORE_CTX_get_error(x509_context) == 
                      X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
             {
                 cert_dir = NULL;
@@ -773,7 +778,7 @@ globus_i_gsi_callback_cred_verify(
                     free(cert_dir);
                 }
             }
-            else if (x509_context->error == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN)
+            else if (X509_STORE_CTX_get_error(x509_context) == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN)
             {
                 cert_dir = NULL;
                 GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(
@@ -789,7 +794,7 @@ globus_i_gsi_callback_cred_verify(
                     free(cert_dir);
                 }
             }
-            else if (x509_context->error == X509_V_ERR_CERT_HAS_EXPIRED)
+            else if (X509_STORE_CTX_get_error(x509_context) == X509_V_ERR_CERT_HAS_EXPIRED)
             {
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
@@ -798,11 +803,10 @@ globus_i_gsi_callback_cred_verify(
             }
             else
             {
-		printf("Error is %d\n", x509_context->error);
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                    (X509_verify_cert_error_string(x509_context->error)));
+                    (X509_verify_cert_error_string(X509_STORE_CTX_get_error(x509_context))));
             }
 	
 	    OPENSSL_free(subject_name);
@@ -854,7 +858,7 @@ globus_i_gsi_callback_cred_verify(
         }        
     }
 
-    tmp_cert = X509_dup(x509_context->current_cert);
+    tmp_cert = X509_dup(X509_STORE_CTX_get_current_cert(x509_context));
 
     /* add the current cert to the callback data's cert chain */
     sk_X509_insert(callback_data->cert_chain, 
@@ -905,7 +909,7 @@ globus_i_gsi_callback_check_proxy(
      * look at the certificate to verify the proxy rules, 
      * and ca-signing-policy rules. We will also do a CRL check
      */
-    result = globus_gsi_cert_utils_get_cert_type(x509_context->current_cert,
+    result = globus_gsi_cert_utils_get_cert_type(X509_STORE_CTX_get_current_cert(x509_context),
                                                     &cert_type);
     if(result != GLOBUS_SUCCESS)
     {
@@ -951,7 +955,7 @@ globus_i_gsi_callback_check_proxy(
                 GLOBUS_GSI_CALLBACK_ERROR_LIMITED_PROXY,
                 (_CLS("Can't sign a non-limited, non-independent proxy "
                       "with a limited proxy")));
-            x509_context->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
+            X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CERT_SIGNATURE_FAILURE);
             goto exit;
         }
        
@@ -987,9 +991,8 @@ globus_i_gsi_callback_check_revoked(
 {
     X509_REVOKED *                      revoked = NULL;
     X509_CRL *                          crl = NULL;
-    X509_CRL_INFO *                     crl_info = NULL;        
-    X509_OBJECT                         x509_object;
-    int					contents_freed = 1;
+    X509_OBJECT *                       x509_object = NULL;
+    STACK_OF(X509_REVOKED) *            revoked_stack = NULL;
     int                                 i, n;
     long                                err = 0;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -1000,8 +1003,10 @@ globus_i_gsi_callback_check_revoked(
     
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
                         
+
     do
     {
+        x509_object = X509_OBJECT_new();
         /* 
          * SSLeay 0.9.0 handles CRLs but does not check them. 
          * We will check the crl for this cert, if there
@@ -1023,25 +1028,27 @@ globus_i_gsi_callback_check_revoked(
         if (X509_STORE_get_by_subject(
                 x509_context,
                 X509_LU_CRL, 
-                X509_get_issuer_name(x509_context->current_cert),
-                &x509_object))
+                X509_get_issuer_name(X509_STORE_CTX_get_current_cert(x509_context)),
+                x509_object))
         {
-            X509 *				issuer;
+            X509 *                          issuer;
+            ASN1_TIME *                     last_update;
+            ASN1_TIME *                     next_update;
             time_t                          last_time;
             int                             has_next_time;
             time_t                          next_time;
             EVP_PKEY *                      issuer_key;
+            X509_STORE_CTX_get_issuer_fn    get_issuer;
 
-            contents_freed = 0;
-
-            crl =  x509_object.data.crl;
-            crl_info = crl->crl;
-
-            has_next_time = (crl_info->nextUpdate != NULL);
+            crl = X509_OBJECT_get0_X509_CRL(x509_object);
+            next_update = X509_CRL_get_nextUpdate(crl);
+            last_update = X509_CRL_get_lastUpdate(crl);
+            has_next_time = (next_update != NULL);
             
-            globus_gsi_cert_utils_make_time(crl_info->lastUpdate, &last_time);
-            if (has_next_time) {
-                globus_gsi_cert_utils_make_time(crl_info->nextUpdate, &next_time);
+            globus_gsi_cert_utils_make_time(last_update, &last_time);
+            if (has_next_time)
+            {
+                globus_gsi_cert_utils_make_time(next_update, &next_time);
             }
 
             GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "CRL last Update: ");
@@ -1054,16 +1061,22 @@ globus_i_gsi_callback_check_revoked(
                     "%s", has_next_time ? asctime(gmtime(&next_time)) : "<not set>" ));
             GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "\n");
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+            get_issuer = x509_context->get_issuer;
+#else
+            get_issuer = X509_STORE_get_get_issuer(
+                    X509_STORE_CTX_get0_store(x509_context));
+#endif
+
             /* verify the signature on this CRL */
-        
-            if(x509_context->get_issuer(&issuer, 
+            if(get_issuer(&issuer, 
                                         x509_context, 
-                                        x509_context->current_cert) <= 0)
+                                        X509_STORE_CTX_get_current_cert(x509_context)) <= 0)
             {
                 char *                      subject_string;
 
                 subject_string = X509_NAME_oneline(
-                    X509_get_issuer_name(x509_context->current_cert),
+                    X509_get_issuer_name(X509_STORE_CTX_get_current_cert(x509_context)),
                     NULL, 0);
                 
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
@@ -1072,7 +1085,7 @@ globus_i_gsi_callback_check_revoked(
                     (_CLS("Couldn't get the issuer certificate of the CRL with "
                      "subject: %s"), subject_string));
                 OPENSSL_free(subject_string);
-                x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+                X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CRL_SIGNATURE_FAILURE);
                 goto free_X509_object;
             }
 
@@ -1084,7 +1097,7 @@ globus_i_gsi_callback_check_revoked(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
                     (_CLS("Couldn't verify that the available CRL is valid")));
-                x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+                X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CRL_SIGNATURE_FAILURE);
                 X509_free(issuer);
                 goto free_X509_object;
             }
@@ -1097,7 +1110,7 @@ globus_i_gsi_callback_check_revoked(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
                     (_CLS("Couldn't verify that the available CRL is valid")));
-                x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+                X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CRL_SIGNATURE_FAILURE);
                 EVP_PKEY_free(issuer_key);
                 goto free_X509_object;
             }
@@ -1106,14 +1119,14 @@ globus_i_gsi_callback_check_revoked(
             
             /* Check date */
 
-            i = X509_cmp_current_time(crl_info->lastUpdate);
+            i = X509_cmp_current_time(last_update);
             if (i == 0)
             {
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
                     (_CLS("In the available CRL, the thisUpdate field is not valid")));
-                x509_context->error = X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD;
+                X509_STORE_CTX_set_error(x509_context, X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD);
                 goto free_X509_object;
             }
 
@@ -1123,18 +1136,18 @@ globus_i_gsi_callback_check_revoked(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
                     (_CLS("The available CRL is not yet valid")));
-                x509_context->error = X509_V_ERR_CRL_NOT_YET_VALID;
+                X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CRL_NOT_YET_VALID);
                 goto free_X509_object;
             }
             
-            i = (has_next_time) ? X509_cmp_current_time(crl_info->nextUpdate) : 1;
+            i = (has_next_time) ? X509_cmp_current_time(next_update) : 1;
             if (i == 0)
             {
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
                     (_CLS("In the available CRL, the nextUpdate field is not valid")));
-                x509_context->error = X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD;
+                X509_STORE_CTX_set_error(x509_context, X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD);
                 goto free_X509_object;
             }
                
@@ -1146,12 +1159,27 @@ globus_i_gsi_callback_check_revoked(
             {
                 int idx;
 
-                CRYPTO_w_lock(CRYPTO_LOCK_X509_STORE);
-                idx=sk_X509_OBJECT_find(x509_context->ctx->objs, &x509_object);
-                if (idx >= 0) X509_OBJECT_free_contents(sk_X509_OBJECT_delete(x509_context->ctx->objs, idx));
-                X509_OBJECT_free_contents(&x509_object);
-                contents_freed = 1;
-                CRYPTO_w_unlock(CRYPTO_LOCK_X509_STORE);
+#               if OPENSSL_VERSION_NUMBER < 0x10100000L
+                {
+                    CRYPTO_w_lock(CRYPTO_LOCK_X509_STORE);
+                    idx=sk_X509_OBJECT_find(x509_context->ctx->objs, x509_object);
+                    if (idx >= 0) X509_OBJECT_free(sk_X509_OBJECT_delete(x509_context->ctx->objs, idx));
+                    X509_OBJECT_free(x509_object);
+                    x509_object = NULL;
+                    CRYPTO_w_unlock(CRYPTO_LOCK_X509_STORE);
+                }
+#               else
+                {
+                    STACK_OF(X509_OBJECT) *objects;
+                    X509_STORE_lock(X509_STORE_CTX_get0_store(x509_context));
+                    objects = X509_STORE_get0_objects(X509_STORE_CTX_get0_store(x509_context));
+                    idx=sk_X509_OBJECT_find(objects, x509_object);
+                    if (idx >= 0) X509_OBJECT_free(sk_X509_OBJECT_delete(objects, idx));
+                    X509_OBJECT_free(x509_object);
+                    x509_object = NULL;
+                    X509_STORE_unlock(X509_STORE_CTX_get0_store(x509_context));
+                }
+#               endif
 
                 /* OpenSSL 1.0.0 will try to reload the CRL if one with next
                  * index extension .r1 is present, but not reload if an old CRL
@@ -1172,7 +1200,7 @@ globus_i_gsi_callback_check_revoked(
                     {
                         return result;
                     }
-                    hash = X509_issuer_name_hash(x509_context->current_cert);
+                    hash = X509_issuer_name_hash(X509_STORE_CTX_get_current_cert(x509_context));
 
                     crl_path = globus_common_create_string(
                             "%s/%lx.r0", cert_dir, hash);
@@ -1211,7 +1239,11 @@ globus_i_gsi_callback_check_revoked(
                     new_crl = PEM_read_X509_CRL(crl_fp, &new_crl, NULL, NULL);
                     fclose(crl_fp);
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
                     X509_STORE_add_crl(x509_context->ctx, new_crl);
+#else
+                    X509_STORE_add_crl(X509_STORE_CTX_get0_store(x509_context), new_crl);
+#endif
                     X509_CRL_free(new_crl);
                 }
 
@@ -1224,7 +1256,7 @@ globus_i_gsi_callback_check_revoked(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
                     (_CLS("The available CRL has expired")));
-                x509_context->error = X509_V_ERR_CRL_HAS_EXPIRED;
+                X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CRL_HAS_EXPIRED);
                 goto free_X509_object;
             }
 
@@ -1233,28 +1265,32 @@ globus_i_gsi_callback_check_revoked(
              */
             recheck_crl_done = GLOBUS_TRUE;
 
-            X509_OBJECT_free_contents(&x509_object);
-            contents_freed = 1;
+            X509_OBJECT_free(x509_object);
+            x509_object = NULL;
 
             /* check if this cert is revoked */
 
-            n = sk_X509_REVOKED_num(crl_info->revoked);
+            revoked_stack = X509_CRL_get_REVOKED(crl);
+            n = sk_X509_REVOKED_num(revoked_stack);
             for (i = 0; i < n; i++)
             {
+                ASN1_INTEGER *revoked_serial_number;
+
                 revoked = (X509_REVOKED *) 
-                    sk_X509_REVOKED_value(crl_info->revoked, i);
+                    sk_X509_REVOKED_value(revoked_stack, i);
+                revoked_serial_number = X509_REVOKED_get0_serialNumber(revoked);
             
                 if(!ASN1_INTEGER_cmp(
-                    revoked->serialNumber,
-                    X509_get_serialNumber(x509_context->current_cert)))
+                    revoked_serial_number,
+                    X509_get_serialNumber(X509_STORE_CTX_get_current_cert(x509_context))))
                 {
                     char *                      subject_string;
                     long                        serial;
                 
-                    serial = ASN1_INTEGER_get(revoked->serialNumber);
+                    serial = ASN1_INTEGER_get(revoked_serial_number);
 
                     subject_string = X509_NAME_oneline(X509_get_subject_name(
-                        x509_context->current_cert), NULL, 0);
+                        X509_STORE_CTX_get_current_cert(x509_context)), NULL, 0);
                 
                     GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                         result,
@@ -1263,12 +1299,12 @@ globus_i_gsi_callback_check_revoked(
                          "Subject=%s"),
                          serial, serial, subject_string));
 
-                    x509_context->error = X509_V_ERR_CERT_REVOKED;
+                    X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CERT_REVOKED);
 
                     GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
                         2, (globus_i_gsi_callback_debug_fstream,
                             "revoked %lX\n", 
-                            ASN1_INTEGER_get(revoked->serialNumber)));
+                            ASN1_INTEGER_get(revoked_serial_number)));
 
                     OPENSSL_free(subject_string);
                 }
@@ -1293,9 +1329,9 @@ globus_i_gsi_callback_check_revoked(
 
  free_X509_object:
     
-    if(!contents_freed)
+    if (x509_object != NULL)
     {
-	X509_OBJECT_free_contents(&x509_object);
+	X509_OBJECT_free(x509_object);
     }
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
@@ -1315,8 +1351,8 @@ globus_i_gsi_callback_check_signing_policy(
     
     /* Do not need to check self signed certs against ca_policy_file */
 
-    if (X509_NAME_cmp(X509_get_subject_name(x509_context->current_cert),
-                      X509_get_issuer_name(x509_context->current_cert)) ||
+    if (X509_NAME_cmp(X509_get_subject_name(X509_STORE_CTX_get_current_cert(x509_context)),
+                      X509_get_issuer_name(X509_STORE_CTX_get_current_cert(x509_context))) ||
         callback_data->check_self_signed_policy)
     {
         result = globus_i_gsi_callback_check_gaa_auth(
@@ -1370,17 +1406,17 @@ globus_i_gsi_callback_check_gaa_auth(
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
     
     subject_name = X509_NAME_oneline(
-        X509_get_subject_name(x509_context->current_cert),
+        X509_get_subject_name(X509_STORE_CTX_get_current_cert(x509_context)),
         NULL,
         0);
     issuer_name = X509_NAME_oneline(
-        X509_get_issuer_name(x509_context->current_cert),
+        X509_get_issuer_name(X509_STORE_CTX_get_current_cert(x509_context)),
         NULL,
         0);
     
     result =
         GLOBUS_GSI_SYSCONFIG_GET_SIGNING_POLICY_FILENAME(
-            X509_get_issuer_name(x509_context->current_cert),
+            X509_get_issuer_name(X509_STORE_CTX_get_current_cert(x509_context)),
             callback_data->cert_dir,
             &ca_policy_file_path);
 
@@ -1401,7 +1437,7 @@ globus_i_gsi_callback_check_gaa_auth(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_WITH_SIGNING_POLICY,
             (_CLS("The signing policy file doesn't exist or can't be read")));
-        x509_context->error = X509_V_ERR_APPLICATION_VERIFICATION;
+        X509_STORE_CTX_set_error(x509_context, X509_V_ERR_APPLICATION_VERIFICATION);
         goto exit;
     }
 
@@ -1425,7 +1461,7 @@ globus_i_gsi_callback_check_gaa_auth(
             GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
             (_CLS("Couldn't initialize OLD GAA: "
              "Minor status=%d"), policy_db->error_code));
-        x509_context->error = X509_V_ERR_APPLICATION_VERIFICATION;
+        X509_STORE_CTX_set_error(x509_context, X509_V_ERR_APPLICATION_VERIFICATION);
         globus_mutex_unlock(&globus_l_gsi_callback_oldgaa_mutex);
         goto exit;
     }
@@ -1448,7 +1484,7 @@ globus_i_gsi_callback_check_gaa_auth(
                               &detailed_answer,  
                               policy_db,
                               NULL);
-        x509_context->error =  X509_V_ERR_APPLICATION_VERIFICATION;
+        X509_STORE_CTX_set_error(x509_context,  X509_V_ERR_APPLICATION_VERIFICATION);
         globus_mutex_unlock(&globus_l_gsi_callback_oldgaa_mutex);
         goto exit;
     }
@@ -1470,7 +1506,7 @@ globus_i_gsi_callback_check_gaa_auth(
              "in signing policy file %s"),
              issuer_name == NULL ? "NULL" : issuer_name,
              ca_policy_file_path == NULL ? "NULL" : ca_policy_file_path));
-        x509_context->error = X509_V_ERR_INVALID_PURPOSE; 
+        X509_STORE_CTX_set_error(x509_context, X509_V_ERR_INVALID_PURPOSE);
         
         oldgaa_globus_cleanup(&oldgaa_sc,
                               &rights,
@@ -1525,7 +1561,7 @@ globus_i_gsi_callback_check_gaa_auth(
              "does not match the signing policies defined in %s"),
              subject_name == NULL ? "NULL" : subject_name,
              ca_policy_file_path == NULL ? "NULL" : ca_policy_file_path));
-        x509_context->error = X509_V_ERR_INVALID_PURPOSE; 
+        X509_STORE_CTX_set_error(x509_context, X509_V_ERR_INVALID_PURPOSE);
     }
 
  exit:
@@ -1561,8 +1597,8 @@ globus_i_gsi_callback_check_critical_extensions(
 {
     ASN1_OBJECT *                       extension_object = NULL;
     X509_EXTENSION *                    extension = NULL;
-    PROXYCERTINFO *                     proxycertinfo = NULL;
-    PROXYPOLICY *                       policy = NULL;
+    PROXY_CERT_INFO_EXTENSION *         proxycertinfo = NULL;
+    PROXY_POLICY *                      policy = NULL;
     int                                 nid;
     int                                 pci_NID;
     int                                 pci_old_NID;
@@ -1574,14 +1610,14 @@ globus_i_gsi_callback_check_critical_extensions(
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
-    pci_NID = OBJ_txt2nid(PROXYCERTINFO_OID);
-    pci_old_NID = OBJ_txt2nid(PROXYCERTINFO_OLD_OID);
+    pci_NID = NID_proxyCertInfo;
+    pci_old_NID = OBJ_txt2nid("1.3.6.1.4.1.3536.1.222");
 
     while((critical_position = 
-          X509_get_ext_by_critical(x509_context->current_cert, 
+          X509_get_ext_by_critical(X509_STORE_CTX_get_current_cert(x509_context), 
                                    1, critical_position)) >= 0)
     {
-        extension = X509_get_ext(x509_context->current_cert, critical_position);
+        extension = X509_get_ext(X509_STORE_CTX_get_current_cert(x509_context), critical_position);
         if(!extension)
         {
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
@@ -1589,7 +1625,7 @@ globus_i_gsi_callback_check_critical_extensions(
                 GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
                 (_CLS("Couldn't get critical extension of "
                  "certificate being verified")));
-            x509_context->error = X509_V_ERR_CERT_REJECTED;
+            X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CERT_REJECTED);
             goto exit;
         }
 
@@ -1601,7 +1637,7 @@ globus_i_gsi_callback_check_critical_extensions(
                 GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
                 (_CLS("Couldn't get object form of X509 extension for "
                  "the certificate being verified.")));
-            x509_context->error = X509_V_ERR_CERT_REJECTED;
+            X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CERT_REJECTED);
             goto exit;
         }
 
@@ -1618,12 +1654,11 @@ globus_i_gsi_callback_check_critical_extensions(
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
                     (_CLS("Can't convert DER encoded PROXYCERTINFO "
                      "extension to internal form")));
-                x509_context->error = X509_V_ERR_CERT_REJECTED;
+                X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CERT_REJECTED);
                 goto exit;
             }
 
-            path_length = PROXYCERTINFO_get_path_length(proxycertinfo);
-
+            path_length = ASN1_INTEGER_get(proxycertinfo->pcPathLengthConstraint);
             /* ignore negative values */
             
             if(path_length > -1)
@@ -1637,7 +1672,7 @@ globus_i_gsi_callback_check_critical_extensions(
                 }
             }
 
-            policy = PROXYCERTINFO_get_policy(proxycertinfo);
+            policy = proxycertinfo->proxyPolicy;
         }
         
         if((nid != NID_basic_constraints &&
@@ -1659,7 +1694,7 @@ globus_i_gsi_callback_check_critical_extensions(
                         (_CLS("Certificate has unknown critical extension "
                          "with numeric ID: %d, "
                          "rejected during validation"), nid));
-                    x509_context->error = X509_V_ERR_CERT_REJECTED;
+                    X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CERT_REJECTED);
                     goto exit;
                 }
             }
@@ -1671,7 +1706,7 @@ globus_i_gsi_callback_check_critical_extensions(
                     (_CLS("Certificate has unknown critical extension, "
                      "with numeric ID: %d, "
                      "rejected during validation"), nid));
-                x509_context->error = X509_V_ERR_CERT_REJECTED;
+                X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CERT_REJECTED);
                 goto exit;
             }
         }
@@ -1681,7 +1716,7 @@ globus_i_gsi_callback_check_critical_extensions(
 
     if(proxycertinfo != NULL)
     {
-        PROXYCERTINFO_free(proxycertinfo);
+        PROXY_CERT_INFO_EXTENSION_free(proxycertinfo);
     }
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
@@ -1712,23 +1747,23 @@ globus_i_gsi_callback_check_path_length(
      * all we do is substract off the proxy_depth 
      */
 
-    if(x509_context->current_cert == x509_context->cert)
+    if(X509_STORE_CTX_get_current_cert(x509_context) == X509_STORE_CTX_get0_cert(x509_context))
     {
-        for (i = 0; i < sk_X509_num(x509_context->chain); i++)
+        for (i = 0; i < sk_X509_num(X509_STORE_CTX_get0_chain(x509_context)); i++)
         {
-            cert = sk_X509_value(x509_context->chain, i);
+            cert = sk_X509_value(X509_STORE_CTX_get0_chain(x509_context), i);
 
             GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
                 3, (globus_i_gsi_callback_debug_fstream,
                     "pathlen=:i=%d x=%p pl=%ld\n",
-                    i, cert, cert->ex_pathlen));
+                    i, cert, X509_get_pathlen(cert)));
 
             if (((i - callback_data->proxy_depth) > 1) && 
-                (cert->ex_pathlen != -1) &&
-                ((i - callback_data->proxy_depth) > (cert->ex_pathlen + 1)) &&
-                (cert->ex_flags & EXFLAG_BCONS))
+                (X509_get_pathlen(cert) != -1) &&
+                ((i - callback_data->proxy_depth) > (X509_get_pathlen(cert) + 1)) &&
+                (X509_get_extension_flags(cert) & EXFLAG_BCONS))
             {
-                x509_context->current_cert = cert; /* point at failing cert */
+                X509_STORE_CTX_set_current_cert(x509_context, cert); /* point at failing cert */
                 GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,

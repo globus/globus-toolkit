@@ -1,3 +1,9 @@
+globus-gsi-proxy-core (8.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Support for OpenSSL 1.1.0
+
+ -- Globus Toolkit <support@globus.org>  Tue, 16 Aug 2016 14:01:40 -0400
+
 globus-gsi-proxy-core (7.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix missing ;

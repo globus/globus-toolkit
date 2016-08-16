@@ -118,7 +118,7 @@ establish_failed:
         gss_delete_sec_context(&release_minor_status, &accept_ctx, NULL);
     }
 
-    printf("%s 1 - gssapi_context_test\n", failed == 0 ? "ok" : "not ok");
+    printf("%s 1 - wrap_test\n", failed == 0 ? "ok" : "not ok");
 
     exit(failed);
 }

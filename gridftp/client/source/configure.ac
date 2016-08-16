@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_ftp_client],[8.29],[https://globus.atlassian.net/])
+AC_INIT([globus_ftp_client],[8.30],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -106,5 +106,5 @@ AC_CONFIG_FILES(
         Doxyfile
         test/Makefile
 	version.h
-        test/openssl.cnf)
+        test/testcred.cnf)
 AC_OUTPUT

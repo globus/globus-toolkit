@@ -144,7 +144,6 @@ test1(int argc, char **argv)
 {
     globus_result_t			result;
     globus_object_t *			err = GLOBUS_NULL;
-    test_monitor_t 			monitor;
     globus_io_handle_t			handle;
     globus_io_handle_t			child_handle;
     globus_size_t			nbytes;
@@ -193,7 +192,7 @@ test1(int argc, char **argv)
             {
                 err = globus_error_get(result);
                 errstring = globus_object_printable_to_string(err);
-                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                printf("test 1 setting io attribute failed: %s\n",
                                    errstring);
                 rc = -1;
                 goto exit;
@@ -207,7 +206,7 @@ test1(int argc, char **argv)
             {
                 err = globus_error_get(result);
                 errstring = globus_object_printable_to_string(err);
-                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                printf("test 1 setting io attribute failed: %s\n",
                                    errstring);
                 rc = -1;
                 goto exit;
@@ -221,7 +220,7 @@ test1(int argc, char **argv)
             {
                 err = globus_error_get(result);
                 errstring = globus_object_printable_to_string(err);
-                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                printf("test 1 setting io attribute failed: %s\n",
                                    errstring);
                 rc = -1;
                 goto exit;
@@ -237,7 +236,7 @@ test1(int argc, char **argv)
                 {
                     err = globus_error_get(result);
                     errstring = globus_object_printable_to_string(err);
-                    globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                    printf("test 1 setting io attribute failed: %s\n",
                                        errstring);
                     rc = -1;
                     goto exit;
@@ -252,7 +251,7 @@ test1(int argc, char **argv)
                 {
                     err = globus_error_get(result);
                     errstring = globus_object_printable_to_string(err);
-                    globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                    printf("test 1 setting io attribute failed: %s\n",
                                        errstring);
                     rc = -1;
                     goto exit;
@@ -267,7 +266,7 @@ test1(int argc, char **argv)
                 {
                     err = globus_error_get(result);
                     errstring = globus_object_printable_to_string(err);
-                    globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                    printf("test 1 setting io attribute failed: %s\n",
                                        errstring);
                     rc = -1;
                     goto exit;
@@ -287,7 +286,7 @@ test1(int argc, char **argv)
             {
                 err = globus_error_get(result);
                 errstring = globus_object_printable_to_string(err);
-                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                printf("test 1 setting io attribute failed: %s\n",
                                    errstring);
                 rc = -1;
                 goto exit;
@@ -305,7 +304,7 @@ test1(int argc, char **argv)
             {
                 err = globus_error_get(result);
                 errstring = globus_object_printable_to_string(err);
-                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                printf("test 1 setting io attribute failed: %s\n",
                                    errstring);
                 rc = -1;
                 goto exit;
@@ -319,7 +318,7 @@ test1(int argc, char **argv)
             {
                 err = globus_error_get(result);
                 errstring = globus_object_printable_to_string(err);
-                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                printf("test 1 setting io attribute failed: %s\n",
                                    errstring);
                 rc = -1;
                 goto exit;
@@ -333,7 +332,7 @@ test1(int argc, char **argv)
             {
                 err = globus_error_get(result);
                 errstring = globus_object_printable_to_string(err);
-                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                printf("test 1 setting io attribute failed: %s\n",
                                    errstring);
                 rc = -1;
                 goto exit;
@@ -360,14 +359,14 @@ test1(int argc, char **argv)
         err = globus_error_get(result);
         errstring = globus_object_printable_to_string(err);
 
-	globus_libc_printf("test 1 create listener failed: %s\n",
+	printf("test 1 create listener failed: %s\n",
                            errstring);
         rc = -1;
 	goto exit;
     }
     else
     {
-        globus_libc_printf("listening on port %d\n", (int) port);
+        printf("listening on port %d\n", (int) port);
     }
 
     result = globus_io_tcp_listen(&handle);
@@ -375,7 +374,7 @@ test1(int argc, char **argv)
 	{
         err = globus_error_get(result);
         errstring = globus_object_printable_to_string(err);
-		globus_libc_printf("test 1 listen failed: %s\n", errstring);
+		printf("test 1 listen failed: %s\n", errstring);
 		goto exit;
 	}
     result = globus_io_tcp_accept(&handle,
@@ -386,22 +385,22 @@ test1(int argc, char **argv)
     {
         err = globus_error_get(result);
         errstring = globus_object_printable_to_string(err);
-	globus_libc_printf("test 1 accept failed: %s\n", errstring);
+	printf("test 1 accept failed: %s\n", errstring);
         rc = -1;
 	goto exit;
     }
     else
     {
         gss_cred_id_t cred;
-	globus_libc_printf("test 1 accept succeeded\n");
+	printf("test 1 accept succeeded\n");
 	result = globus_io_tcp_get_delegated_credential(&child_handle, &cred);
 	if(result == GLOBUS_SUCCESS && cred != GSS_C_NO_CREDENTIAL)
 	{
-	    globus_libc_printf("Delegated credential %p\n", cred);
+	    printf("Delegated credential %p\n", cred);
 	}
 	else
 	{
-	    globus_libc_printf("No delegated credential\n");
+	    printf("No delegated credential\n");
 	}
 
     }
@@ -412,7 +411,7 @@ test1(int argc, char **argv)
     {
         err = globus_error_get(result);
         errstring = globus_object_printable_to_string(err);
-	globus_libc_printf("test 1 get_local_address failed: %s\n", errstring);
+	printf("test 1 get_local_address failed: %s\n", errstring);
         rc = -1;
 	goto exit;
     }
@@ -431,7 +430,7 @@ test1(int argc, char **argv)
     {
         err = globus_error_get(result);
         errstring = globus_object_printable_to_string(err);
-	globus_libc_printf("test 1 get_remote_address failed: %s\n", errstring);
+	printf("test 1 get_remote_address failed: %s\n", errstring);
         rc = -1;
 	goto exit;
     }
@@ -458,20 +457,20 @@ test1(int argc, char **argv)
         {
             err = globus_error_get(result);
             errstring = globus_object_printable_to_string(err);
-            globus_libc_printf("test1 delegation failed: %s\n", errstring);
+            printf("test1 delegation failed: %s\n", errstring);
             rc = -1;
             goto exit;
         }
         else
         {
-            globus_libc_printf("delegated credential\n");
+            printf("delegated credential\n");
         }
 
     }
     
     /* attemp large read */
     large_buf_size = 1024*1024;
-    large_buf = (globus_byte_t *) globus_malloc(large_buf_size);
+    large_buf = malloc(large_buf_size);
 
     result = globus_io_read(&child_handle,
 		            large_buf,
@@ -483,13 +482,13 @@ test1(int argc, char **argv)
     {
         err = globus_error_get(result);
         errstring = globus_object_printable_to_string(err);
-	globus_libc_printf("test1 large read failed: %s\n",errstring);
+	printf("test1 large read failed: %s\n",errstring);
         rc = -1;
 	goto exit;
     }
     else
     {
-	globus_libc_printf("read large_block\n");
+	printf("read large_block\n");
     }
 
     if(vector)
@@ -517,30 +516,24 @@ test1(int argc, char **argv)
     {
         err = globus_error_get(result);
         errstring = globus_object_printable_to_string(err);
-	globus_libc_printf("test1 large write failed: %s\n", errstring);
+	printf("test1 large write failed: %s\n", errstring);
         rc = -1;
 	goto exit;
     }
     else
     {
-	globus_libc_printf("wrote large_block\n");
+	printf("wrote large_block\n");
     }
 
   exit:
     globus_io_tcpattr_destroy(&attr);
     globus_io_close(&child_handle);
     globus_io_close(&handle);
-    if(large_buf) 
-    {
-	globus_free(large_buf);
-    }
+    free(large_buf);
     if(err)
     {
         globus_object_free(err);
     }
-    if(errstring)
-    {
-        globus_libc_free(errstring);
-    }
+    free(errstring);
     return rc;
 }

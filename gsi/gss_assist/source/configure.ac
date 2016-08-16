@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gss_assist], [10.15],[https://globus.atlassian.net/])
+AC_INIT([globus_gss_assist], [10.16],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -85,7 +85,7 @@ AC_CONFIG_FILES([
         Doxyfile
         programs/Makefile
         test/Makefile
-        test/openssl.cnf
+        test/testcred.cnf
         version.h])
 
 AC_CONFIG_FILES(

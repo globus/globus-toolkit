@@ -35,7 +35,7 @@
         errno, \
         GLOBUS_GSI_PROXY_ERROR_ERRNO, \
         __FILE__, \
-        _function_name_, \
+        __func__, \
         __LINE__, \
         "Could not allocate enough memory: %d bytes", \
         len))
@@ -68,8 +68,6 @@ globus_gsi_proxy_handle_attrs_init(
     globus_result_t                     result;
     globus_gsi_proxy_handle_attrs_t     attrs;
     int                                 len;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_init";
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -79,7 +77,7 @@ globus_gsi_proxy_handle_attrs_init(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             (_PCSL("NULL handle attributes passed to function: %s"), 
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -125,16 +123,9 @@ globus_result_t
 globus_gsi_proxy_handle_attrs_destroy(
     globus_gsi_proxy_handle_attrs_t     handle_attrs)
 {
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_destroy";
-    
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
-    if(handle_attrs != NULL)
-    {
-        free(handle_attrs);
-        handle_attrs = NULL;
-    }
+    free(handle_attrs);
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return GLOBUS_SUCCESS;
@@ -161,15 +152,25 @@ globus_gsi_proxy_handle_attrs_set_keybits(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
     int                                 bits)
 {
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_set_keybits";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
+    if(handle_attrs == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
+            (_PCSL("NULL handle attributes passed to function: %s"), 
+             __func__));
+        goto exit;
+    }
+
     handle_attrs->key_bits = bits;
     
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return GLOBUS_SUCCESS;
+    return result;
 }
 
 /**
@@ -191,15 +192,33 @@ globus_gsi_proxy_handle_attrs_get_keybits(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
     int *                               bits)
 {
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_get_keybits";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
+    if (handle_attrs == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
+            (_PCSL("NULL handle attributes passed to function: %s"), 
+             __func__));
+        goto exit;
+    }
+    if (bits == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("NULL bits passed to function: %s"), 
+             __func__));
+        goto exit;
+    }
     *bits = handle_attrs->key_bits;
 
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return GLOBUS_SUCCESS;
+    return result;
 }
 
 /**
@@ -223,15 +242,24 @@ globus_gsi_proxy_handle_attrs_set_init_prime(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
     int                                 prime)
 {
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_set_init_prime";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
+    if (handle_attrs == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
+            (_PCSL("NULL handle attributes passed to function: %s"), 
+             __func__));
+        goto exit;
+    }
     handle_attrs->init_prime = prime;
 
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return GLOBUS_SUCCESS;
+    return result;
 }
 
 /**
@@ -256,15 +284,34 @@ globus_gsi_proxy_handle_attrs_get_init_prime(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
     int *                               prime)
 {
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_get_init_prime";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
+    if (handle_attrs == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
+            (_PCSL("NULL handle attributes passed to function: %s"), 
+             __func__));
+        goto exit;
+    }
+    if (prime == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("NULL prime passed to function: %s"), 
+             __func__));
+        goto exit;
+    }
     *prime = handle_attrs->init_prime;
     
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return GLOBUS_SUCCESS;
+
+    return result;
 }
 
 /**
@@ -288,11 +335,9 @@ globus_gsi_proxy_handle_attrs_get_init_prime(
 globus_result_t
 globus_gsi_proxy_handle_attrs_set_signing_algorithm(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
-    EVP_MD *                            algorithm)
+    const EVP_MD *                      algorithm)
 {
     globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_set_signing_algorithm";
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -302,7 +347,7 @@ globus_gsi_proxy_handle_attrs_set_signing_algorithm(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             (_PCSL("NULL handle attributes passed to function: %s"), 
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -337,30 +382,34 @@ globus_gsi_proxy_handle_attrs_set_signing_algorithm(
 globus_result_t
 globus_gsi_proxy_handle_attrs_get_signing_algorithm(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
-    EVP_MD **                           algorithm)
+    const EVP_MD **                     algorithm)
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_get_signing_algorithm";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
-    if(handle_attrs == NULL)
+    if (handle_attrs == NULL)
     {
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             (_PCSL("NULL handle attributes passed to function: %s"),
-             _function_name_));
+             __func__));
+        goto exit;
+    }
+    if (algorithm == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("NULL algorithm passed to function: %s"),
+             __func__));
         goto exit;
     }
 
     *algorithm = handle_attrs->signing_algorithm;
 
-    result = GLOBUS_SUCCESS;
-
  exit:
-    
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -387,8 +436,6 @@ globus_gsi_proxy_handle_attrs_set_clock_skew_allowable(
     int                                 skew)
 {
     globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_set_clock_skew_allowable";
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -398,7 +445,7 @@ globus_gsi_proxy_handle_attrs_set_clock_skew_allowable(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             (_PCSL("NULL handle attributes passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
     handle_attrs->clock_skew = skew;
@@ -432,26 +479,31 @@ globus_gsi_proxy_handle_attrs_get_clock_skew_allowable(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
     int *                               skew)
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_get_clock_skew_allowable";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
-    if(handle_attrs == NULL)
+    if (handle_attrs == NULL)
     {
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             (_PCSL("NULL handle attributes passed to function: %s"),
-             _function_name_));
+             __func__));
+        goto exit;
+    }
+    if (skew == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("NULL skew passed to function: %s"),
+             __func__));
         goto exit;
     }
     *skew = handle_attrs->clock_skew;
-    result = GLOBUS_SUCCESS;
 
- exit:
-    
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -477,26 +529,31 @@ globus_gsi_proxy_handle_attrs_get_key_gen_callback(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
     void                                (**callback)(int, int, void *))
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_get_key_gen_callback";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
-    if(handle_attrs == NULL)
+    if (handle_attrs == NULL)
     {
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             (_PCSL("NULL handle attributes passed to function: %s"),
-             _function_name_));
+             __func__));
+        goto exit;
+    }
+    if (callback == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("NULL callback passed to function: %s"),
+             __func__));
         goto exit;
     }
     *callback = handle_attrs->key_gen_callback;
-    result = GLOBUS_SUCCESS;
 
- exit:
-    
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -522,26 +579,22 @@ globus_gsi_proxy_handle_attrs_set_key_gen_callback(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
     void                                (*callback)(int, int, void *))
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_set_key_gen_callback";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
-    if(handle_attrs == NULL)
+    if (handle_attrs == NULL)
     {
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             (_PCSL("NULL handle attributes passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
     handle_attrs->key_gen_callback = callback;
-    result = GLOBUS_SUCCESS;
 
- exit:
-    
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -565,8 +618,6 @@ globus_gsi_proxy_handle_attrs_copy(
     globus_gsi_proxy_handle_attrs_t *   b)
 {
     globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_copy";
     
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -576,7 +627,7 @@ globus_gsi_proxy_handle_attrs_copy(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             (_PCSL("NULL handle attributes passed to function: %s"),
-             _function_name_));
+             __func__));
         goto error_exit;
     }
     if(b == NULL)
@@ -585,7 +636,7 @@ globus_gsi_proxy_handle_attrs_copy(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             (_PCSL("NULL handle attributes passed to function: %s"),
-             _function_name_));
+             __func__));
         goto error_exit;
     }
 

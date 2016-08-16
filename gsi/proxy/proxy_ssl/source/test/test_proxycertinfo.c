@@ -91,19 +91,19 @@ int main(int argc, char * argv[])
     {
 	pcinfo = PROXYCERTINFO_new();
 	instream = fopen(filename, "r");
-	ASN1_d2i_fp((char *(*)()) PROXYCERTINFO_new, 
-		    (char *(*)()) d2i_PROXYCERTINFO, 
+        ASN1_d2i_fp_of(PROXYCERTINFO, PROXYCERTINFO_new, 
+		    d2i_PROXYCERTINFO, 
 		    instream, 
-		    (unsigned char **) &pcinfo);
+		    &pcinfo);
 
 	PROXYCERTINFO_print_fp(stdout, pcinfo);
 	
         if(to_file)
         {
             FILE * outstream = fopen(out_filename, "w");
-            if(!ASN1_i2d_fp(i2d_PROXYCERTINFO, 
+            if(!ASN1_i2d_fp_of(PROXYCERTINFO, i2d_PROXYCERTINFO,
                             outstream, 
-                            (unsigned char *)pcinfo))
+                            pcinfo))
             {
                 fprintf(stderr, 
                         "Could not print the proxy cert info struct\n");
@@ -125,25 +125,27 @@ int main(int argc, char * argv[])
 	if(haspolicy)
 	{
 	    rst = PROXYPOLICY_new();
-	    PROXYPOLICY_set_policy(rst, plstring, strlen(plstring));
-	    pol_lang = ASN1_OBJECT_new();
-	    pol_lang->sn = pllang;
-	    pol_lang->ln = pllang;
-	    pol_lang->data = pllang;
-	    pol_lang->length = strlen(pllang);
-	    pol_lang->flags = 0;
+	    PROXYPOLICY_set_policy(rst, (unsigned char *) plstring, strlen(plstring));
+	    pol_lang = ASN1_OBJECT_create(NID_undef, (unsigned char *) pllang,
+                strlen(pllang), pllang, pllang);
             PROXYPOLICY_set_policy_language(rst, pol_lang);
             PROXYCERTINFO_set_policy(pcinfo, rst);
 	}
+        else
+        {
+            rst = PROXYPOLICY_new();
+            PROXYPOLICY_set_policy_language(rst, OBJ_nid2obj(NID_id_ppl_inheritAll));
+            PROXYCERTINFO_set_policy(pcinfo, rst);
+            
+        }
 
 	PROXYCERTINFO_print_fp(stdout, pcinfo);
 
         if(to_file)
         {
             FILE * outstream = fopen(out_filename, "w");
-            if(!ASN1_i2d_fp(i2d_PROXYCERTINFO, 
-                            outstream, 
-                            (unsigned char *)pcinfo))
+            if(!ASN1_i2d_fp_of(PROXYCERTINFO, i2d_PROXYCERTINFO, 
+                            outstream, pcinfo))
             {
                 fprintf(stderr, 
                         "Could not print the proxy cert info struct\n");

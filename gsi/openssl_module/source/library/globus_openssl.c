@@ -35,6 +35,7 @@ globus_l_openssl_activate(void);
 static int
 globus_l_openssl_deactivate(void);
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static unsigned long
 globus_l_openssl_thread_id(void);
     
@@ -46,6 +47,7 @@ globus_l_openssl_locking_cb(
     int                                 line);
 
 static globus_mutex_t *                 mutex_pool;
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000L */
 
 /**
  * Module descriptor static initializer.
@@ -67,7 +69,6 @@ static
 int
 globus_l_openssl_activate(void)
 {
-    int                                 i;
     int                                 pci_NID;
     int                                 pci_old_NID;
     X509V3_EXT_METHOD *                 pci_x509v3_ext_meth = NULL;
@@ -76,9 +77,11 @@ globus_l_openssl_activate(void)
     SSL_library_init();
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     mutex_pool = malloc(CRYPTO_num_locks() * sizeof(globus_mutex_t));
 
-    for(i=0;i<CRYPTO_num_locks();i++)
+    for(int i=0;i<CRYPTO_num_locks();i++)
     {
         globus_mutex_init(&(mutex_pool[i]),NULL);
     }
@@ -91,6 +94,7 @@ globus_l_openssl_activate(void)
     {
         CRYPTO_set_id_callback(globus_l_openssl_thread_id);
     }
+#endif
 
     if (OBJ_txt2nid(ANY_LANGUAGE_OID) == 0)
     {
@@ -136,13 +140,7 @@ globus_l_openssl_activate(void)
                                  PROXYCERTINFO_OLD_LN);
     }
 
-    /* this sets the pci NID in the static X509V3_EXT_METHOD struct */
-    if (X509V3_EXT_get_nid(pci_NID) == NULL)
-    {
-        pci_x509v3_ext_meth = PROXYCERTINFO_x509v3_ext_meth();
-        pci_x509v3_ext_meth->ext_nid = pci_NID;
-        X509V3_EXT_add(pci_x509v3_ext_meth);
-    }
+    assert (X509V3_EXT_get_nid(pci_NID) != NULL);
 
     if (X509V3_EXT_get_nid(pci_old_NID) == NULL)
     {
@@ -171,6 +169,7 @@ globus_l_openssl_deactivate(void)
 
     X509V3_EXT_cleanup();
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     if (CRYPTO_get_id_callback() == globus_l_openssl_thread_id)
     {
         CRYPTO_set_id_callback(NULL);
@@ -186,6 +185,7 @@ globus_l_openssl_deactivate(void)
     }
 
     free(mutex_pool);
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000L */
 
     globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
@@ -195,6 +195,7 @@ globus_l_openssl_deactivate(void)
 /* globus_l_openssl_deactivate() */
 
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 /**
  * OpenSSL locking callback
  *
@@ -232,10 +233,6 @@ globus_l_openssl_thread_id(void)
     return rc;
 }
 /* globus_l_openssl_thread_id() */
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000L */
 
-#endif
-
-
-
-
-
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

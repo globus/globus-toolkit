@@ -416,7 +416,7 @@ GSS_CALLCONV gss_import_name(
         GENERAL_NAMES                  *subject_alt_name;
         int                             idx;
 
-        if (input_name_buffer->length != sizeof(X509))
+        if (input_name_buffer->length != sizeof(X509*))
         {
             /* Invalid input */
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(

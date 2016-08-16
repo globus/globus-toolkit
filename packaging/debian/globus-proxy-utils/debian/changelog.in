@@ -1,3 +1,9 @@
+globus-proxy-utils (6.16-1+gt6.@distro@) @distro@; urgency=low
+
+  * Updates for OpenSSL 1.1.0
+
+ -- Globus Toolkit <support@globus.org>  Tue, 16 Aug 2016 14:07:26 -0400
+
 globus-proxy-utils (6.15-1+gt6.@distro@) @distro@; urgency=low
 
   * Updates for reverse lookups for backward compatibility checking

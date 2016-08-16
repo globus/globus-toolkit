@@ -21,8 +21,9 @@
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
 #include "globus_stdio_ui.h"
-#include "proxycertinfo.h"
 #include "openssl/asn1.h"
+
+#define PROXYCERTINFO_OLD_OID           "1.3.6.1.4.1.3536.1.222"
 
 #define SHORT_USAGE_FORMAT \
 "\nSyntax: %s [-help][-pwstdin][-limited][-valid H:M] ...\n"
@@ -1149,22 +1150,21 @@ globus_i_gsi_proxy_utils_print_error(
     exit(1);
 }
 
-static int 
+static
+int 
 globus_l_gsi_proxy_utils_extension_callback(
     globus_gsi_callback_data_t          callback_data,
     X509_EXTENSION *                    extension)
 {
     ASN1_OBJECT *                       extension_object = NULL;
-    int                                 nid;
-    int                                 pci_NID;
-    int                                 pci_old_NID;
+    int                                 nid = NID_undef;
+    int                                 pci_old_NID = NID_undef;
 
-    pci_NID = OBJ_txt2nid(PROXYCERTINFO_OID);
     pci_old_NID = OBJ_txt2nid(PROXYCERTINFO_OLD_OID);
     extension_object = X509_EXTENSION_get_object(extension);
     nid = OBJ_obj2nid(extension_object);
 
-    if(nid == pci_NID || nid == pci_old_NID)
+    if (nid == NID_proxyCertInfo || nid == pci_old_NID)
     {
         /* Assume that we either put it there or that it will be recognized */
         return GLOBUS_TRUE;

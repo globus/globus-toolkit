@@ -28,35 +28,53 @@
         errno, \
         GLOBUS_GSI_PROXY_ERROR_ERRNO, \
         __FILE__, \
-        _function_name_, \
+        __func__, \
         __LINE__, \
         "Could not allocate enough memory: %d bytes", \
         _LENGTH_))
 
 #include "globus_i_gsi_proxy.h"
 
-#if OPENSSL_VERSION_NUMBER < 0x0090801fL
-#define GT_D2I_DATA_CAST 
-#else
-#define GT_D2I_DATA_CAST (const unsigned char **)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define EVP_PKEY_id(k) (k)->type
 #endif
+#if OPENSSL_VERSION_NUMBER < 0x10002000L
+static
+STACK_OF(X509_EXTENSION) *
+sk_X509_EXTENSION_deep_copy(
+        STACK_OF(X509_EXTENSION) *e,
+        X509_EXTENSION *(*copy_func)(const X509_EXTENSION *),
+        void (*free_func)(X509_EXTENSION *))
+{
+    STACK_OF(X509_EXTENSION)           *newe = sk_X509_EXTENSION_new_null();
+    int                                 count = sk_X509_EXTENSION_num(e);
 
+    if (newe == NULL)
+    {
+        return NULL;
+    }
+    for (int i = 0; i < count; i++)
+    {
+        sk_X509_EXTENSION_push(newe, copy_func(sk_X509_EXTENSION_value(e, i)));
+    }
+    return newe;
+}
+#endif
+    
 /**
- * @brief Initialize Handle
+ * @brief Initialize a GSI Proxy handle
  * @ingroup globus_gsi_proxy_handle
  * @details
- * Initialize a GSI Proxy handle.
- *
  * Initialize a proxy handle which can be used in subsequent
  * operations. The handle may only be used in one sequence of
  * operations at a time.
  *
- * @param handle
+ * @param[out] handle
  *        A pointer to the handle to be initialized.  If the
  *        handle is originally NULL, space is allocated for it.
  *        Otherwise, the current values of the handle are overwritten.
  *        
- * @param handle_attrs
+ * @param[in] handle_attrs
  *        Initial attributes to be used to create this handle.
  * @return
  *        GLOBUS_SUCCESS unless an error occurred, in which case, 
@@ -71,8 +89,6 @@ globus_gsi_proxy_handle_init(
 {
     globus_gsi_proxy_handle_t           handle_i;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_init";
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -82,7 +98,7 @@ globus_gsi_proxy_handle_init(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -108,14 +124,20 @@ globus_gsi_proxy_handle_init(
     }
 
     /* create a new PCI extension */
-    if((handle_i->proxy_cert_info = PROXYCERTINFO_new()) == NULL)
+    if((handle_i->proxy_cert_info = PROXY_CERT_INFO_EXTENSION_new()) == NULL)
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-            (_PCSL("Error initializing new PROXYCERTINFO struct")));
+            (_PCSL("Error initializing new PROXY_CERT_INFO_EXTENSION struct")));
         goto free_handle;
     }
+
+    ASN1_OBJECT_free(handle_i->proxy_cert_info->proxyPolicy->policyLanguage); 
+    handle_i->proxy_cert_info->proxyPolicy->policyLanguage = NULL;
+
+    handle_i->proxy_cert_info->proxyPolicy->policyLanguage = OBJ_dup(
+            OBJ_nid2obj(NID_id_ppl_inheritAll));
     
     /* initialize the handle attributes */
     if(handle_attrs == NULL)
@@ -167,9 +189,11 @@ globus_gsi_proxy_handle_init(
 /* globus_gsi_proxy_handle_init() */
 
 /**
- * Destroy a GSI Proxy handle.
+ * @brief Destroy a GSI Proxy handle.
+ * @details
+ *     Free the memory used by a GSI proxy handle.
  *
- * @param handle
+ * @param[in] handle
  *        The handle to be destroyed.
  * @return
  *        GLOBUS_SUCCESS unless an error occurred, in which case, 
@@ -181,9 +205,6 @@ globus_result_t
 globus_gsi_proxy_handle_destroy(
     globus_gsi_proxy_handle_t           handle)
 {
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_destroy";
-
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(handle != NULL)
@@ -192,15 +213,16 @@ globus_gsi_proxy_handle_destroy(
         X509_REQ_free(handle->req);
         EVP_PKEY_free(handle->proxy_key);
         globus_gsi_proxy_handle_attrs_destroy(handle->attrs);
-        PROXYCERTINFO_free(handle->proxy_cert_info);
+        PROXY_CERT_INFO_EXTENSION_free(handle->proxy_cert_info);
         
+        free(handle->common_name);
         if (handle->extensions != NULL)
         {
             sk_X509_EXTENSION_free(handle->extensions);
         }
         
         /* free the handle struct memory */
-        globus_libc_free(handle);
+        free(handle);
         handle = NULL;
     }
 
@@ -211,14 +233,15 @@ globus_gsi_proxy_handle_destroy(
 
 
 /**
- * @brief Get Request
+ * @brief Get the certificate request from a GSI Proxy handle
  * @ingroup globus_gsi_proxy_handle
  * @details
- * Get the certificate request from a GSI Proxy handle.
+ *     Copies the certificate request associated with the proxy handle to
+ *     the req parameter.
  *
- * @param handle
+ * @param[in] handle
  *        The handle from which to get the certificate request
- * @param req
+ * @param[out] req
  *        Parameter used to return the request. It is the users responsibility
  *        to free the returned request.
  * @return
@@ -233,8 +256,7 @@ globus_gsi_proxy_handle_get_req(
     X509_REQ **                         req)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_req";
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(!handle)
@@ -277,9 +299,9 @@ globus_gsi_proxy_handle_get_req(
  * @brief Set Request
  * Set the certificate request in a GSI Proxy handle.
  *
- * @param handle
+ * @param[in] handle
  *        The handle for which to set the certificate request
- * @param req
+ * @param[in] req
  *        Request to be copied to handle.
  * @return
  *        GLOBUS_SUCCESS unless an error occurred, in which case, 
@@ -293,8 +315,7 @@ globus_gsi_proxy_handle_set_req(
     X509_REQ *                          req)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_set_req";
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(!handle)
@@ -334,16 +355,16 @@ globus_gsi_proxy_handle_set_req(
 
 
 /**
- * @brief Get/Set Private Key
+ * @brief Get the private key from a GSI Proxy handle.
  * @ingroup globus_gsi_proxy_handle
  * @details
- * Get the private key from a GSI Proxy handle.
- *
- * @param handle
+ *     Copies the private key associated with the proxy handle to the
+ *     value pointed to by the proxy_key parameter.
+ * @param[in] handle
  *        The handle from which to get the private key
- * @param proxy_key
+ * @param[in] proxy_key
  *        Parameter used to return the key. It is the users responsibility to
- *        free the returned key.
+ *        free the returned key by calling EVP_PKEY_free().
  * @return
  *        GLOBUS_SUCCESS unless an error occurred, in which case, 
  *        a globus error object ID is returned
@@ -359,8 +380,7 @@ globus_gsi_proxy_handle_get_private_key(
     unsigned char *                     der_encoded = NULL;
     unsigned char *                     tmp;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_private_key";
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(!handle)
@@ -430,8 +450,8 @@ globus_gsi_proxy_handle_get_private_key(
 
     tmp = der_encoded;
     
-    if(!d2i_PrivateKey(handle->proxy_key->type, proxy_key, 
-                       GT_D2I_DATA_CAST &tmp, length))
+    if(!d2i_PrivateKey(EVP_PKEY_id(handle->proxy_key), proxy_key, 
+                       (const unsigned char **) &tmp, length))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -453,11 +473,13 @@ globus_gsi_proxy_handle_get_private_key(
 /* globus_gsi_proxy_handle_get_private_key */
 
 /**
- * Set the private key in a GSI Proxy handle.
- *
- * @param handle
+ * @brief Set the private key in a GSI Proxy handle
+ * @details
+ *     Copies the private key pointed to by proxy_key to the 
+ *     handle.
+ * @param[in] handle
  *        The handle for which to set the private key
- * @param proxy_key
+ * @param[in] proxy_key
  *        Parameter used to pass the key
  * @return
  *        GLOBUS_SUCCESS unless an error occurred, in which case, 
@@ -468,17 +490,13 @@ globus_gsi_proxy_handle_get_private_key(
 globus_result_t
 globus_gsi_proxy_handle_set_private_key(
     globus_gsi_proxy_handle_t           handle,
-    EVP_PKEY *                          proxy_key)
+    const EVP_PKEY *                    proxy_key)
 {
-    int                                 length;
-    unsigned char *                     der_encoded = NULL;
-    unsigned char *                     tmp;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ = 
-        "globus_gsi_proxy_handle_set_private_key";
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
-    if(!handle)
+    if (!handle)
     {
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
@@ -487,55 +505,19 @@ globus_gsi_proxy_handle_set_private_key(
         goto exit;
     }
 
-    if(handle->proxy_key)
+    if (handle->proxy_key != NULL)
     {
         EVP_PKEY_free(handle->proxy_key);
         handle->proxy_key = NULL;
     }
     
-    if(proxy_key)
+    if (proxy_key != NULL)
     {
+        handle->proxy_key = ASN1_dup_of(
+                EVP_PKEY, i2d_PrivateKey, d2i_AutoPrivateKey, proxy_key);
 
-        length = i2d_PrivateKey(proxy_key, NULL);
         
-        if(length < 0)
-        {
-            GLOBUS_GSI_PROXY_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
-                (_PCSL("Couldn't convert private key from internal"
-                 "to DER encoded form")));
-            goto exit;
-            
-        }
-        
-        der_encoded = malloc(length);
-        
-        if(!der_encoded)
-        {
-            GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(length);
-            goto exit;
-        }
-        
-        tmp = der_encoded;
-        
-        length = i2d_PrivateKey(handle->proxy_key, &tmp);
-        
-        if(length < 0)
-        {
-            GLOBUS_GSI_PROXY_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
-                (_PCSL("Couldn't convert private key from internal"
-                 "to DER encoded form")));
-            goto exit;
-            
-        }
-
-        tmp = der_encoded;
-        
-        if(!d2i_PrivateKey(proxy_key->type, &handle->proxy_key, 
-                           GT_D2I_DATA_CAST &tmp, length))
+        if(handle->proxy_key == NULL)
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
@@ -545,13 +527,7 @@ globus_gsi_proxy_handle_set_private_key(
         }
     }
 
- exit:
-
-    if(der_encoded)
-    {
-        free(der_encoded);
-    }
-
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -563,9 +539,9 @@ globus_gsi_proxy_handle_set_private_key(
  * @details
  * Determine the type of proxy that will be generated when using this handle. 
  *
- * @param handle
+ * @param[in] handle
  *        The handle from which to get the type
- * @param type
+ * @param[out] type
  *        Parameter used to return the type.
  * @return
  *        GLOBUS_SUCCESS unless an error occurred, in which case, 
@@ -579,8 +555,7 @@ globus_gsi_proxy_handle_get_type(
     globus_gsi_cert_utils_cert_type_t * type)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ = 
-        "globus_gsi_proxy_handle_get_type";
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(!handle)
@@ -591,11 +566,18 @@ globus_gsi_proxy_handle_get_type(
             (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
+    if (type == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("Invalid type (NULL) passed to function")));
+        goto exit;
+    }
 
     *type = handle->type;
 
  exit:
-
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -625,8 +607,7 @@ globus_gsi_proxy_handle_set_type(
     globus_gsi_cert_utils_cert_type_t   type)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ = 
-        "globus_gsi_proxy_handle_set_type";
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(!handle)
@@ -697,15 +678,13 @@ globus_gsi_proxy_handle_set_type(
 globus_result_t
 globus_gsi_proxy_handle_set_policy(
     globus_gsi_proxy_handle_t           handle,
-    unsigned char *                     policy_data,
+    const unsigned char *               policy_data,
     int                                 policy_length,
     int                                 policy_language_NID)
 {
-    PROXYPOLICY *                       policy;
-    ASN1_OBJECT *                       policy_object;
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_set_policy";
+    PROXY_POLICY *                      policy = NULL;
+    ASN1_OBJECT *                       policy_object = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
     
@@ -714,18 +693,18 @@ globus_gsi_proxy_handle_set_policy(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), __func__));
         goto exit;
     }
     
-    policy = PROXYCERTINFO_get_policy(handle->proxy_cert_info);
-    if(!policy)
+    if (handle->proxy_cert_info->proxyPolicy == NULL)
     {
-        policy = PROXYPOLICY_new();
+        handle->proxy_cert_info->proxyPolicy = PROXY_POLICY_new();
     }
+    policy = handle->proxy_cert_info->proxyPolicy;
 
     policy_object = OBJ_nid2obj(policy_language_NID);
-    if(!policy_object)
+    if (policy_object == NULL)
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -734,7 +713,9 @@ globus_gsi_proxy_handle_set_policy(
         goto exit;
     }
 
-    if(!PROXYPOLICY_set_policy_language(policy, policy_object))
+    ASN1_OBJECT_free(policy->policyLanguage);
+    policy->policyLanguage = OBJ_dup(policy_object);
+    if (policy->policyLanguage  == NULL)
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -743,16 +724,17 @@ globus_gsi_proxy_handle_set_policy(
         goto exit;
     }
 
-    if(!PROXYPOLICY_set_policy(policy, policy_data, policy_length) &&
-       policy_data)
+    if(policy->policy)
     {
-        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYPOLICY,
-            (_PCSL("PROXYPOLICY of proxy handle could not be initialized")));
-        goto exit;
+        ASN1_OCTET_STRING_free(policy->policy);
+        policy->policy = NULL;
     }
-       
+    if(policy_data != NULL)
+    {
+        policy->policy = ASN1_OCTET_STRING_new();
+        ASN1_OCTET_STRING_set(policy->policy, policy_data, policy_length);
+
+    }
     result = GLOBUS_SUCCESS;
 
  exit:
@@ -792,9 +774,7 @@ globus_gsi_proxy_handle_get_policy(
     int *                               policy_length,
     int *                               policy_NID)
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_policy";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -803,21 +783,56 @@ globus_gsi_proxy_handle_get_policy(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), __func__));
         goto exit;
     }
 
-    *policy_data = PROXYPOLICY_get_policy(
-        PROXYCERTINFO_get_policy(handle->proxy_cert_info),
-        policy_length);
-    
-    *policy_NID = OBJ_obj2nid(PROXYPOLICY_get_policy_language(
-        PROXYCERTINFO_get_policy(handle->proxy_cert_info)));
-    
-    result = GLOBUS_SUCCESS;
+    if (policy_data == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("NULL policy_data passed to function: %s"), __func__));
+        goto exit;
+    }
+    if (policy_length == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("NULL policy_length passed to function: %s"), __func__));
+        goto exit;
+    }
+    if (policy_NID == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("NULL policy_NID passed to function: %s"), __func__));
+        goto exit;
+    }
 
- exit:
+    if (handle->proxy_cert_info->proxyPolicy->policy != NULL)
+    {
+        *policy_length = ASN1_STRING_length(
+                handle->proxy_cert_info->proxyPolicy->policy);
+        *policy_data = malloc(*policy_length + 1);
+        
+        memcpy(*policy_data,
+                ASN1_STRING_data(handle->proxy_cert_info->proxyPolicy->policy),
+                *policy_length);
+        (*policy_data)[*policy_length] = 0;
+    }
+    else
+    {
+        *policy_length = 0;
+        *policy_data = NULL;
+    }
+
+    *policy_NID = OBJ_obj2nid(
+            handle->proxy_cert_info->proxyPolicy->policyLanguage);
     
+ exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -848,9 +863,8 @@ globus_gsi_proxy_handle_add_extension(
     globus_gsi_proxy_handle_t           handle,
     X509_EXTENSION *                    ext)
 {
-   globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_add_extension";
+    globus_result_t                     result;
+
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -859,7 +873,7 @@ globus_gsi_proxy_handle_add_extension(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -879,7 +893,7 @@ globus_gsi_proxy_handle_add_extension(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-                (_PCSL("Failed to allocation new X.509 Extension stack: %s"), _function_name_));
+                (_PCSL("Failed to allocation new X.509 Extension stack: %s"), __func__));
             goto exit;
         }
     }
@@ -920,9 +934,7 @@ globus_gsi_proxy_handle_set_extensions(
     globus_gsi_proxy_handle_t           handle,
     STACK_OF(X509_EXTENSION)*           exts)
 {
-   globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_set_extensions";
+    globus_result_t                     result;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -931,7 +943,7 @@ globus_gsi_proxy_handle_set_extensions(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -946,14 +958,17 @@ globus_gsi_proxy_handle_set_extensions(
     }
     else
     {
-        handle->extensions = sk_X509_EXTENSION_dup(exts);
+        handle->extensions = sk_X509_EXTENSION_deep_copy(
+                exts,
+                (X509_EXTENSION *(*)(const X509_EXTENSION *)) X509_EXTENSION_dup,
+                X509_EXTENSION_free);
         
         if (handle->extensions == NULL)
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-                (_PCSL("Failed to duplicate X.509 Extension stack: %s"), _function_name_));
+                (_PCSL("Failed to duplicate X.509 Extension stack: %s"), __func__));
             goto exit;
         }
     }
@@ -995,9 +1010,7 @@ globus_gsi_proxy_handle_get_extensions(
     globus_gsi_proxy_handle_t           handle,
     STACK_OF(X509_EXTENSION)**          exts)
 {
-   globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_add_extension";
+    globus_result_t                     result;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -1006,7 +1019,15 @@ globus_gsi_proxy_handle_get_extensions(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), __func__));
+        goto exit;
+    }
+    if (exts == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("NULL exts passed to function: %s"), __func__));
         goto exit;
     }
     
@@ -1019,12 +1040,12 @@ globus_gsi_proxy_handle_get_extensions(
         *exts = sk_X509_EXTENSION_dup(handle->extensions);
     }
     
-    if (handle->extensions == NULL)
+    if (*exts == NULL)
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("Failed to duplicate X.509 Extension stack: %s"), _function_name_));
+            (_PCSL("Failed to duplicate X.509 Extension stack: %s"), __func__));
         goto exit;
     }
 
@@ -1061,9 +1082,7 @@ globus_gsi_proxy_handle_set_pathlen(
     globus_gsi_proxy_handle_t           handle,
     long                                pathlen)
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_set_pathlen";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -1072,11 +1091,17 @@ globus_gsi_proxy_handle_set_pathlen(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), __func__));
         goto exit;
     }
 
-    if(!PROXYCERTINFO_set_path_length(handle->proxy_cert_info, pathlen))
+    if (handle->proxy_cert_info->pcPathLengthConstraint == NULL)
+    {
+        handle->proxy_cert_info->pcPathLengthConstraint =
+            ASN1_INTEGER_new();
+    }
+
+    if (handle->proxy_cert_info->pcPathLengthConstraint == NULL)
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -1085,11 +1110,10 @@ globus_gsi_proxy_handle_set_pathlen(
              "in the proxy handle")));
         goto exit;
     }
+    ASN1_INTEGER_set(handle->proxy_cert_info->pcPathLengthConstraint, pathlen);
 
-    result = GLOBUS_SUCCESS;
 
- exit:
-
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -1119,9 +1143,7 @@ globus_gsi_proxy_handle_get_pathlen(
     globus_gsi_proxy_handle_t           handle,
     int *                               pathlen)
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_pathlen";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -1130,14 +1152,21 @@ globus_gsi_proxy_handle_get_pathlen(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), __func__));
         goto exit;
     }
-    *pathlen = PROXYCERTINFO_get_path_length(handle->proxy_cert_info);
-    result = GLOBUS_SUCCESS;
+    if (pathlen == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("NULL pathlen passed to function: %s"), __func__));
+        goto exit;
+    }
+    *pathlen = ASN1_INTEGER_get(
+            handle->proxy_cert_info->pcPathLengthConstraint);
     
- exit:
-
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -1164,9 +1193,7 @@ globus_gsi_proxy_handle_get_time_valid(
     int *                               time_valid)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_time_valid";
-    
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(handle == NULL)
@@ -1174,7 +1201,15 @@ globus_gsi_proxy_handle_get_time_valid(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), __func__));
+        goto exit;
+    }
+    if(time_valid == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("NULL time_valid passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -1208,8 +1243,6 @@ globus_gsi_proxy_handle_set_time_valid(
     int                                 time_valid)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_set_time_valid";
     
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -1218,7 +1251,7 @@ globus_gsi_proxy_handle_set_time_valid(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -1250,8 +1283,6 @@ globus_gsi_proxy_handle_clear_cert_info(
     globus_gsi_proxy_handle_t           handle)
 {
     globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_clear_cert_info";
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -1260,12 +1291,12 @@ globus_gsi_proxy_handle_clear_cert_info(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), __func__));
         goto exit;
     }
 
-    PROXYCERTINFO_free(handle->proxy_cert_info);
-    handle->proxy_cert_info = PROXYCERTINFO_new();
+    PROXY_CERT_INFO_EXTENSION_free(handle->proxy_cert_info);
+    handle->proxy_cert_info = PROXY_CERT_INFO_EXTENSION_new();
     if(handle->proxy_cert_info == NULL)
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
@@ -1274,6 +1305,11 @@ globus_gsi_proxy_handle_clear_cert_info(
             (_PCSL("PROXYCERTINFO could not be initialized")));
         goto exit;
     }
+    ASN1_OBJECT_free(handle->proxy_cert_info->proxyPolicy->policyLanguage); 
+    handle->proxy_cert_info->proxyPolicy->policyLanguage = NULL;
+
+    handle->proxy_cert_info->proxyPolicy->policyLanguage = OBJ_dup(
+            OBJ_nid2obj(NID_id_ppl_inheritAll));
 
     result = GLOBUS_SUCCESS;
 
@@ -1283,6 +1319,33 @@ globus_gsi_proxy_handle_clear_cert_info(
     return result;
 }
 /* globus_gsi_proxy_handle_clear_cert_info */
+
+#ifdef USE_SYMBOL_VERSIONS
+__asm__(".symver globus_gsi_proxy_handle_get_proxy_cert_info_proxy_ssl,"
+        "globus_gsi_proxy_handle_get_proxy_cert_info@GLOBUS_GSI_PROXY_CORE_7");
+__asm__(".symver globus_gsi_proxy_handle_set_proxy_cert_info_proxy_ssl,"
+        "globus_gsi_proxy_handle_set_proxy_cert_info@GLOBUS_GSI_PROXY_CORE_7");
+
+__asm__(".symver globus_gsi_proxy_handle_set_proxy_cert_info_openssl,"
+        "globus_gsi_proxy_handle_set_proxy_cert_info@@GLOBUS_GSI_PROXY_CORE_8");
+__asm__(".symver globus_gsi_proxy_handle_get_proxy_cert_info_openssl,"
+        "globus_gsi_proxy_handle_get_proxy_cert_info@@GLOBUS_GSI_PROXY_CORE_8");
+#else
+
+#ifdef globus_gsi_proxy_handle_set_proxy_cert_info
+#undef globus_gsi_proxy_handle_set_proxy_cert_info
+#endif
+
+#ifdef globus_gsi_proxy_handle_get_proxy_cert_info
+#undef globus_gsi_proxy_handle_get_proxy_cert_info
+#endif
+
+#define globus_gsi_proxy_handle_set_proxy_cert_info_openssl \
+        globus_gsi_proxy_handle_set_proxy_cert_info
+
+#define globus_gsi_proxy_handle_get_proxy_cert_info_openssl \
+        globus_gsi_proxy_handle_get_proxy_cert_info
+#endif
 
 /**
  * @brief Get Cert Info
@@ -1306,13 +1369,12 @@ globus_gsi_proxy_handle_clear_cert_info(
  *        pointer is invalid or if the get failed.
  */
 globus_result_t
-globus_gsi_proxy_handle_get_proxy_cert_info(
+globus_gsi_proxy_handle_get_proxy_cert_info_openssl(
     globus_gsi_proxy_handle_t           handle,
-    PROXYCERTINFO **                    pci)
+    PROXY_CERT_INFO_EXTENSION **        pci)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_proxy_cert_info";
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
     
     if(!handle)
@@ -1335,7 +1397,10 @@ globus_gsi_proxy_handle_get_proxy_cert_info(
 
     if(handle->proxy_cert_info)
     { 
-        *pci = PROXYCERTINFO_dup(handle->proxy_cert_info);
+        *pci = ASN1_dup_of(PROXY_CERT_INFO_EXTENSION,
+                i2d_PROXY_CERT_INFO_EXTENSION,
+                d2i_PROXY_CERT_INFO_EXTENSION,
+                handle->proxy_cert_info);
         if(!*pci)
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
@@ -1355,7 +1420,100 @@ globus_gsi_proxy_handle_get_proxy_cert_info(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* globus_gsi_proxy_handle_get_proxy_cert_info */
+/* globus_gsi_proxy_handle_get_proxy_cert_info_openssl() */
+
+globus_result_t
+globus_gsi_proxy_handle_get_proxy_cert_info_proxy_ssl(
+    globus_gsi_proxy_handle_t           handle,
+    PROXYCERTINFO **                    pci)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    PROXYCERTINFO                      *pci_new = NULL;
+    PROXY_CERT_INFO_EXTENSION          *pci_copy = NULL;
+
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    if (!pci)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+            (_PCSL("Invalid PROXYCERTINFO passed to function")));
+        goto exit;
+    }
+    *pci = NULL;
+    
+    if (!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("Invalid handle (NULL) passed to function")));
+        goto exit;
+    }
+
+    if(handle->proxy_cert_info)
+    {
+        pci_copy = ASN1_dup_of(
+                PROXY_CERT_INFO_EXTENSION,
+                i2d_PROXY_CERT_INFO_EXTENSION,
+                d2i_PROXY_CERT_INFO_EXTENSION,
+                handle->proxy_cert_info);
+        if (!pci_copy)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                (_PCSL("Couldn't copy PROXYCERTINFO structure")));
+            goto exit;
+        }
+        pci_new = PROXYCERTINFO_new();
+        if (pci_new == NULL)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                (_PCSL("Couldn't copy PROXYCERTINFO structure")));
+            goto exit;
+        }
+        pci_new->path_length = pci_copy->pcPathLengthConstraint;
+        pci_copy->pcPathLengthConstraint = NULL;
+
+        if (pci_new->policy == NULL)
+        {
+            pci_new->policy = PROXYPOLICY_new();
+        }
+        if (pci_new->policy == NULL)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                (_PCSL("Couldn't copy PROXYCERTINFO structure")));
+
+            goto free_pci_new_exit;
+        }
+        pci_new->policy->policy_language =
+                pci_copy->proxyPolicy->policyLanguage;
+        pci_copy->proxyPolicy->policyLanguage = NULL;
+
+        pci_new->policy->policy = pci_copy->proxyPolicy->policy;
+        pci_copy->proxyPolicy->policy = NULL;
+    }
+
+    if (result != GLOBUS_SUCCESS)
+    {
+free_pci_new_exit:
+        PROXYCERTINFO_free(pci_new);
+        pci_new = NULL;
+    }
+    PROXY_CERT_INFO_EXTENSION_free(pci_copy);
+    *pci = pci_new;
+
+ exit:
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+/* globus_gsi_proxy_handle_get_proxy_cert_info_proxy_ssl() */
 
 /**
  * @brief Set Cert Info
@@ -1374,13 +1532,12 @@ globus_gsi_proxy_handle_get_proxy_cert_info(
  * @retval GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO pci pointer is invalid or if the set failed.
  */
 globus_result_t
-globus_gsi_proxy_handle_set_proxy_cert_info(
+globus_gsi_proxy_handle_set_proxy_cert_info_openssl(
     globus_gsi_proxy_handle_t           handle,
-    PROXYCERTINFO *                     pci)
+    PROXY_CERT_INFO_EXTENSION *         pci)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_set_proxy_cert_info";
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(!handle)
@@ -1394,14 +1551,91 @@ globus_gsi_proxy_handle_set_proxy_cert_info(
 
     if(handle->proxy_cert_info)
     {
-        PROXYCERTINFO_free(handle->proxy_cert_info);
+        PROXY_CERT_INFO_EXTENSION_free(handle->proxy_cert_info);
         handle->proxy_cert_info = NULL;
     }
     
     if(pci)
     {
-        handle->proxy_cert_info = PROXYCERTINFO_dup(pci);
-        if(!handle->proxy_cert_info)
+        handle->proxy_cert_info = ASN1_dup_of(PROXY_CERT_INFO_EXTENSION,
+                i2d_PROXY_CERT_INFO_EXTENSION,
+                d2i_PROXY_CERT_INFO_EXTENSION,
+                pci);
+        if (handle->proxy_cert_info == NULL)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                (_PCSL("Couldn't copy PROXYCERTINFO")));
+            goto exit;
+        }
+    }
+    else
+    {
+        if((handle->proxy_cert_info = PROXY_CERT_INFO_EXTENSION_new()) == NULL)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                (_PCSL("Error initializing new PROXY_CERT_INFO_EXTENSION struct")));
+            goto exit;
+        }
+
+        ASN1_OBJECT_free(handle->proxy_cert_info->proxyPolicy->policyLanguage); 
+        handle->proxy_cert_info->proxyPolicy->policyLanguage = NULL;
+
+        handle->proxy_cert_info->proxyPolicy->policyLanguage = OBJ_dup(
+                OBJ_nid2obj(NID_id_ppl_inheritAll));
+    }
+
+ exit:
+
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+/* globus_gsi_proxy_handle_set_proxy_cert_info_openssl */
+
+globus_result_t
+globus_gsi_proxy_handle_set_proxy_cert_info_proxy_ssl(
+    globus_gsi_proxy_handle_t           handle,
+    PROXYCERTINFO *                     pci)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("Invalid handle (NULL) passed to function")));
+        goto exit;
+    }
+
+    if(handle->proxy_cert_info)
+    {
+        PROXY_CERT_INFO_EXTENSION_free(handle->proxy_cert_info);
+        handle->proxy_cert_info = NULL;
+    }
+    
+    if(pci)
+    {
+        PROXY_POLICY pp = 
+        {
+            .policyLanguage = pci->policy ? pci->policy->policy_language : NULL,
+            .policy = pci->policy ? pci->policy->policy : NULL,
+        };
+        PROXY_CERT_INFO_EXTENSION real_pci =
+        {
+            .pcPathLengthConstraint = pci->path_length,
+            .proxyPolicy = pci->policy ? &pp : NULL
+        };
+        handle->proxy_cert_info = ASN1_dup_of(PROXY_CERT_INFO_EXTENSION,
+                i2d_PROXY_CERT_INFO_EXTENSION,
+                d2i_PROXY_CERT_INFO_EXTENSION,
+                &real_pci);
+        if (handle->proxy_cert_info == NULL)
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
@@ -1416,7 +1650,7 @@ globus_gsi_proxy_handle_set_proxy_cert_info(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* globus_gsi_proxy_handle_set_proxy_cert_info */
+/* globus_gsi_proxy_handle_set_proxy_cert_info_proxy_ssl */
 
 /**
  * @brief Get Signing Algorithm
@@ -1436,14 +1670,28 @@ globus_gsi_proxy_handle_set_proxy_cert_info(
 globus_result_t
 globus_gsi_proxy_handle_get_signing_algorithm(
     globus_gsi_proxy_handle_t           handle,
-    EVP_MD **                           signing_algorithm)
+    const EVP_MD **                     signing_algorithm)
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_signing_algorithm";
+    globus_result_t                     result = GLOBUS_SUCCESS;
     
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("Invalid handle (NULL) passed to function")));
+        goto exit;
+    }
+    if(!signing_algorithm)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("Invalid signing_algorithm (NULL) passed to function")));
+        goto exit;
+    }
     result = globus_gsi_proxy_handle_attrs_get_signing_algorithm(
         handle->attrs,
         signing_algorithm);
@@ -1454,6 +1702,7 @@ globus_gsi_proxy_handle_get_signing_algorithm(
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
         
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -1479,12 +1728,26 @@ globus_gsi_proxy_handle_get_keybits(
     globus_gsi_proxy_handle_t           handle,
     int *                               key_bits)
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_key_bits";
-    
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("Invalid handle (NULL) passed to function")));
+        goto exit;
+    }
+    if(!key_bits)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("Invalid key_bits (NULL) passed to function")));
+        goto exit;
+    }
     result = globus_gsi_proxy_handle_attrs_get_keybits(handle->attrs,
                                                        key_bits);
     if(result != GLOBUS_SUCCESS)
@@ -1494,6 +1757,7 @@ globus_gsi_proxy_handle_get_keybits(
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
         
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -1519,12 +1783,26 @@ globus_gsi_proxy_handle_get_init_prime(
     globus_gsi_proxy_handle_t           handle,
     int *                               init_prime)
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_init_prime";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("Invalid handle (NULL) passed to function")));
+        goto exit;
+    }
+    if(!init_prime)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("Invalid init_prime (NULL) passed to function")));
+        goto exit;
+    }
     result = globus_gsi_proxy_handle_attrs_get_init_prime(handle->attrs,
                                                           init_prime);
     if(result != GLOBUS_SUCCESS)
@@ -1534,6 +1812,7 @@ globus_gsi_proxy_handle_get_init_prime(
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
 
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -1560,11 +1839,25 @@ globus_gsi_proxy_handle_get_clock_skew_allowable(
     globus_gsi_proxy_handle_t           handle,
     int *                               skew)
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_clock_skew_allowable";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("Invalid handle (NULL) passed to function")));
+        goto exit;
+    }
+    if(!skew)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("Invalid skew (NULL) passed to function")));
+        goto exit;
+    }
 
     result = globus_gsi_proxy_handle_attrs_get_clock_skew_allowable(
         handle->attrs,
@@ -1576,6 +1869,7 @@ globus_gsi_proxy_handle_get_clock_skew_allowable(
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
 
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -1599,10 +1893,24 @@ globus_gsi_proxy_handle_get_key_gen_callback(
     globus_gsi_proxy_handle_t           handle,
     void                                (**callback)(int, int, void *))
 {
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_key_gen_callback";
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("Invalid handle (NULL) passed to function")));
+        goto exit;
+    }
+    if(!callback)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("Invalid callback (NULL) passed to function")));
+        goto exit;
+    }
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     result = globus_gsi_proxy_handle_attrs_get_key_gen_callback(
@@ -1615,6 +1923,7 @@ globus_gsi_proxy_handle_get_key_gen_callback(
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
 
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 } 
@@ -1645,8 +1954,7 @@ globus_gsi_proxy_handle_get_common_name(
     char **                             common_name)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_proxy_common_name";
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
     
     if(!handle)
@@ -1706,11 +2014,10 @@ globus_gsi_proxy_handle_get_common_name(
 globus_result_t
 globus_gsi_proxy_handle_set_common_name(
     globus_gsi_proxy_handle_t           handle,
-    char *                              common_name)
+    const char *                        common_name)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_set_common_name";
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(!handle)
@@ -1768,8 +2075,7 @@ globus_gsi_proxy_handle_set_is_limited(
     globus_bool_t                       is_limited)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ = 
-        "globus_gsi_proxy_handle_set_is_limited";
+
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(!handle)
@@ -1847,14 +2153,31 @@ globus_result_t
 globus_gsi_proxy_is_limited(
     globus_gsi_proxy_handle_t           handle,
     globus_bool_t *                     is_limited)
-{    
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_is_limited";
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("Invalid handle (NULL) passed to function")));
+        goto exit;
+    }
+    if (!is_limited)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("Invalid is_limited passed to function")));
+        goto exit;
+    }
+
     *is_limited = GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(handle->type);
 
+exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return GLOBUS_SUCCESS;
+    return result;
 }

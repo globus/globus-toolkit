@@ -34,8 +34,9 @@ my $subject;
 
 my $server_args = "-no-fork -no-chdir -d 0 -auth-level 4 -p $server_port";
 
-chomp($subject = `env OPENSSL_CONF=openssl.cnf openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert}`);
-$subject =~ s/^subject= *//;
+chomp($subject = `env OPENSSL_CONF=testcred.cnf openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert} -nameopt rfc2253,-dn_rev `);
+$subject =~ s/^subject= */\//;
+$subject =~ s/,/\//g;
 
 $server_pid = open(SERVER, "$server_prog $server_args|");
  

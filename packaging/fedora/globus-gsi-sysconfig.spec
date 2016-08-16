@@ -1,6 +1,6 @@
 Name:		globus-gsi-sysconfig
 %global _name %(tr - _ <<< %{name})
-Version:	6.9
+Version:	6.10
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI System Config Library
@@ -126,6 +126,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 6.10-1
+- Updates for OpenSSL 1.1.0
+
 * Wed Nov 25 2015 Globus Toolkit <support@globus.org> - 6.9-1
 - Remove @} without matching @{
 

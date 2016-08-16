@@ -3,14 +3,22 @@ globus_gridftp_driver_test_LDADD = $(GSI_DRIVER_DLPREOPEN) -dlpreopen ../libglob
 
 check_SCRIPTS = globus_gridftp_driver_test.pl
 check_PROGRAMS = globus_gridftp_driver_test
-check_DATA = testcred.key testcred.cert testcredlink gridmap
+check_DATA = \
+        testcred.key \
+        testcred.cert \
+        testcred.cakey \
+        testcred.cacert \
+        testcred.link \
+        testcred.signing_policy \
+        testcred.srl \
+        testcred.gridmap
 
 TESTS = $(check_SCRIPTS)
 TESTS_ENVIRONMENT = \
     export X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
     X509_CERT_DIR=$(abs_builddir) \
-    GRIDMAP=$(abs_builddir)/gridmap \
+    GRIDMAP=$(abs_builddir)/testcred.gridmap \
     GRIDFTP_EXE="$(GRIDFTP_EXE)" \
     PATH="$(GRIDFTP_PATH):$(srcdir):$(abs_builddir):$${PATH}";
 LOG_COMPILER = $(LIBTOOL) --mode=execute \
@@ -21,30 +29,49 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute \
 
 EXTRA_DIST = $(check_SCRIPTS) test-wrapper
 
-testcred.key:
-	umask 077; openssl genrsa -out $@ 1024
+# Test CA
+.cnf.cacert:
+	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+.cacert.cakey:
 
+.cacert.link:
+	linkname="`openssl x509 -hash -noout -in $<`.0"; \
+	rm -f "$$linkname"; \
+	cp $< "$$linkname"; \
+        echo "$$linkname" > $@
+
+.link.signing_policy:
+	linkname=`cat $<`; \
+	policyfile=$${linkname%.0}.signing_policy; \
+	echo "access_id_CA      X509         '/CN=ca'" > $${policyfile}; \
+	echo "pos_rights        globus        CA:sign" >> $${policyfile}; \
+	echo "cond_subjects     globus       '\"/*\"'" >> $${policyfile}; \
+	echo $${policyfile} >> $@
+
+.signing_policy.srl:
+	echo 01 > $@
+
+# Test Cert/Key
+.srl.key:
+	umask 077; openssl genrsa -out $@ 1024
 .key.req:
-	printf "NA\nNA\nNA\nNA\nNA\n$$(openssl rand -base64 6)\n\n\n\n" | openssl req -new -key $< -out $@
+	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
 
 .req.cert:
-	umask 077; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key -out $@
+	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
 
-testcredlink: testcred.cert
-	linkname="`openssl x509 -hash -noout -in testcred.cert`.0"; \
-	rm -f "$$linkname"; \
-	cp testcred.cert "$$linkname" ; \
-	echo "$$linkname" > $@
+.cert.gridmap:
+	subject=`openssl x509 -subject -noout -in $< -nameopt rfc2253,-dn_rev | sed -e 's/subject= */\//' -e 's/,/\//g'` ; \
+        echo "\"$$subject\" `id -un`" > $@
 
-gridmap: testcred.cert
-	subject=`openssl x509 -subject -noout -in testcred.cert | sed -e 's/subject= *//'` ; \
-        echo "\"$$subject\" $${LOGNAME:-`id -un`}" > gridmap
-
-
-CLEANFILES = testcred.key testcred.cert testcred.req gridmap
-
+SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey .gridmap
+CLEANFILES = testcred.key testcred.cert testcred.req \
+	     testcred.cacert testcred.srl \
+	     testcred.cakey testcred.gridmap
 clean-local:
-	if [ -f testcredlink ]; then \
-	    rm -f $$(cat testcredlink) testcredlink; \
+	if [ -f testcred.link ]; then \
+            rm -f "$$(cat testcred.link)" testcred.link; \
+        fi
+	if test -f testcred.signing_policy; then \
+	    rm -f $$(cat testcred.signing_policy) testcred.signing_policy; \
 	fi
-SUFFIXES = .key .req .cert

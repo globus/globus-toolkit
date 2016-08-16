@@ -40,7 +40,6 @@ main(int argc, char **argv)
     globus_io_handle_t                  handle;
     globus_io_handle_t                  stdout_handle;
     globus_size_t                       bytes;
-    globus_size_t                       i;
     globus_byte_t                       buf[1024];
     const char *                        path = getenv("DATA_FILE");
 
@@ -76,7 +75,7 @@ main(int argc, char **argv)
     {
         error = globus_error_get(result);
         errstring = globus_object_printable_to_string(error);
-        globus_libc_printf("test failed to open %s: %s\n", path, errstring);
+        printf("test failed to open %s: %s\n", path, errstring);
         goto done;
     }
     
@@ -95,7 +94,7 @@ main(int argc, char **argv)
     {
         error = globus_error_get(result);
         errstring = globus_object_printable_to_string(error);
-        globus_libc_printf("test failed to convert stdout to io handle: %s\n",
+        printf("test failed to convert stdout to io handle: %s\n",
                            errstring);
         goto done;
     }
@@ -122,7 +121,7 @@ main(int argc, char **argv)
         else
         {
             errstring = globus_object_printable_to_string(error);
-            globus_libc_printf("test failed to read /etc/group: %s\n",
+            printf("test failed to read /etc/group: %s\n",
                                errstring);
             goto done;
 

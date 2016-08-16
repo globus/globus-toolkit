@@ -1,6 +1,6 @@
 Name:		globus-xio-gridftp-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.13
+Version:	2.14
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
@@ -139,6 +139,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 2.14-1
+- Updates for OpenSSL 1.1.0
+
 * Tue Apr 19 2016 Globus Toolkit <support@globus.org> - 2.13-1
 - Add dlpreopen force
 

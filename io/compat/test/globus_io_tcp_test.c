@@ -94,18 +94,15 @@ test_monitor_destroy(
 int
 main(int argc, char **argv)
 {
-    int					rc;
-    
     LTDL_SET_PRELOADED_SYMBOLS();
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_IO_MODULE);
 
-#if 1
     test1();				/* connect, read, write, read */
     test2();				/* connect, read, writev, read */
     test3();				/* failed connect */
-#endif
+
     test4(atoi(argv[1]));		/* connect to secure server*/
     globus_module_deactivate(GLOBUS_IO_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
@@ -223,7 +220,6 @@ void
 test1(void)
 {
     globus_result_t			result;
-    globus_object_t *			err;
     test_monitor_t 			monitor;
     globus_io_handle_t			handle;
 
@@ -259,7 +255,7 @@ test1(void)
 
     if(monitor.use_err)
     {
-	globus_libc_printf("test 1 failed connecting\n");
+	printf("test 1 failed connecting\n");
 	globus_object_free(monitor.err);
 	
 	goto finish;
@@ -294,20 +290,20 @@ test1(void)
 
     if(monitor.use_err)
     {
-	globus_libc_printf("test 1 failed reading\n");
+	printf("test 1 failed reading\n");
 	globus_object_free(monitor.err);
 	
 	goto finish;
     }
     else
     {
-	globus_libc_printf("test 1 read message:\n%s\n",
+	printf("test 1 read message:\n%s\n",
 			   test_buffer);
     }
     
     test_monitor_reset(&monitor);
 
-    globus_libc_sprintf((char *) test_buffer, "quit\n");
+    sprintf((char *) test_buffer, "quit\n");
     
     result = globus_io_register_write(&handle,
 				     test_buffer,
@@ -335,14 +331,14 @@ test1(void)
 
     if(monitor.use_err)
     {
-	globus_libc_printf("test 1 failed writing\n");
+	printf("test 1 failed writing\n");
 	globus_object_free(monitor.err);
 	
 	goto finish;
     }
     else
     {
-	globus_libc_printf("test 1 write message:\n%s\n",
+	printf("test 1 write message:\n%s\n",
 			   test_buffer);
     }
     test_monitor_reset(&monitor);
@@ -374,14 +370,14 @@ test1(void)
 
     if(monitor.use_err)
     {
-	globus_libc_printf("test 1 failed reading\n");
+	printf("test 1 failed reading\n");
 	globus_object_free(monitor.err);
 	
 	goto finish;
     }
     else
     {
-	globus_libc_printf("test 1 read message:\n%s\n",
+	printf("test 1 read message:\n%s\n",
 			   test_buffer);
     }
 
@@ -390,12 +386,14 @@ test1(void)
     result = globus_io_close(&handle);
     if(result != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(result);
+        char *msg = globus_error_print_friendly(globus_error_peek(result));
 	
-	globus_libc_printf("test 1 failed closing\n");
+	printf("test 1 failed closing\n");
+        fprintf(stderr, "Error: %s\n", msg);
+        free(msg);
     }
 
-    globus_libc_printf("test 1 successful\n");
+    printf("test 1 successful\n");
     
   finish:
     test_monitor_destroy(&monitor);
@@ -442,7 +440,6 @@ void
 test2(void)
 {
     globus_result_t			result;
-    globus_object_t *			err;
     test_monitor_t 			monitor;
     globus_io_handle_t			handle;
     globus_size_t			bytes_read;
@@ -460,7 +457,7 @@ test2(void)
 
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("test 1 failed connecting\n");
+	printf("test 1 failed connecting\n");
 	
 	goto finish;
     }
@@ -472,13 +469,13 @@ test2(void)
 			    &bytes_read);
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("test 1 failed reading\n");
+	printf("test 1 failed reading\n");
 	
 	goto finish;
     }
     else
     {
-	globus_libc_printf("test 1 read message:\n%s\n",
+	printf("test 1 read message:\n%s\n",
 			   test_buffer);
     }
     
@@ -527,14 +524,14 @@ test2(void)
 
     if(monitor.use_err)
     {
-	globus_libc_printf("test 1 failed writing\n");
+	printf("test 1 failed writing\n");
 	globus_object_free(monitor.err);
 	
 	goto finish;
     }
     else
     {
-	globus_libc_printf("test 1 wrote message:\n%s\n",
+	printf("test 1 wrote message:\n%s\n",
 			   test_buffer);
     }
     test_monitor_reset(&monitor);
@@ -566,14 +563,14 @@ test2(void)
 
     if(monitor.use_err)
     {
-	globus_libc_printf("test 1 failed reading\n");
+	printf("test 1 failed reading\n");
 	globus_object_free(monitor.err);
 	
 	goto finish;
     }
     else
     {
-	globus_libc_printf("test 1 read message:\n%s\n",
+	printf("test 1 read message:\n%s\n",
 			   test_buffer);
     }
 
@@ -582,12 +579,14 @@ test2(void)
     result = globus_io_close(&handle);
     if(result != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(result);
+        char *msg = globus_error_print_friendly(globus_error_peek(result));
 	
-	globus_libc_printf("test 1 failed closing\n");
+	printf("test 1 failed closing\n");
+        fprintf(stderr, "Error: %s\n", msg);
+        free(msg);
     }
 
-    globus_libc_printf("test 1 successful\n");
+    printf("test 1 successful\n");
     
   finish:
     test_monitor_destroy(&monitor);
@@ -597,12 +596,7 @@ void
 test3(void)
 {
     globus_result_t			result;
-    globus_object_t *			err;
-    test_monitor_t 			monitor;
     globus_io_handle_t			handle;
-    globus_size_t			bytes_read;
-    char				buf[6];
-    struct iovec			iov[6];
 
     /* simple failed connection */
     result = globus_io_tcp_connect(
@@ -613,7 +607,7 @@ test3(void)
 
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("test 3 connect aborted (success)\n");
+	printf("test 3 connect aborted (success)\n");
 	
     }
     
@@ -623,12 +617,7 @@ void
 test4(int port)
 {
     globus_result_t			result;
-    globus_object_t *			err;
-    test_monitor_t 			monitor;
     globus_io_handle_t			handle;
-    globus_size_t			bytes_read;
-    char				buf[6];
-    struct iovec			iov[6];
     globus_io_attr_t			attr;
     globus_io_secure_authorization_data_t
 					auth_data;
@@ -658,12 +647,12 @@ test4(int port)
 
     if(result != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("test 4 connect failed\n");
+	printf("test 4 connect failed\n");
 	
     }
     else
     {
-	globus_libc_printf("test 4 connect succeeded\n");
+	printf("test 4 connect succeeded\n");
 	globus_io_close(&handle);
     }
 }

@@ -25,18 +25,11 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-#if OPENSSL_VERSION_NUMBER < 0x0090801fL
-#define gt_i2d_cast (int (*)())
-#define gt_d2i_cast (char *(*)())
-#define gt_create_cast (char *(*)())
-#define gt_destroy_cast (void(*)())
-#define d2i_arg_2_cast
-#else
-#define gt_i2d_cast (i2d_of_void *)
-#define gt_d2i_cast (d2i_of_void *)
-#define gt_create_cast (void *(*)(void))
-#define gt_destroy_cast (void (*)(void *))
 #define d2i_arg_2_cast (const unsigned char **)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define PKCS12_bag_type(b) M_PKCS12_bag_type(b)
+#define PKCS12_cert_bag_type(b) M_PKCS12_cert_bag_type(b)
+#define PKCS12_SAFEBAG_get0_p8inf(bag) (bag)->value.keybag;
 #endif
 
 static int globus_l_gsi_credential_activate(void);
@@ -72,8 +65,6 @@ globus_l_gsi_credential_activate(void)
 {
     int                                 result = (int) GLOBUS_SUCCESS;
     char *                              tmp_string;
-    static char *                       _function_name_ =
-        "globus_l_gsi_credential_activate";
 
     tmp_string = globus_module_getenv("GLOBUS_GSI_CRED_DEBUG_LEVEL");
     if(tmp_string != GLOBUS_NULL)
@@ -143,8 +134,6 @@ int
 globus_l_gsi_credential_deactivate(void)
 {
     int                                 result = (int) GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_l_gsi_credential_deactivate";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
@@ -223,9 +212,6 @@ globus_gsi_cred_read(
     char *                              proxy = NULL;
     char *                              service_name = NULL;
     
-    static char *                       _function_name_ =
-        "globus_gsi_cred_read";
-
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     for(result_index = 0; result_index < 4; ++result_index)
@@ -239,7 +225,7 @@ globus_gsi_cred_read(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             results[result_index],
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            (_GCRSL("Null handle passed to function: %s"), _function_name_));
+            (_GCRSL("Null handle passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -841,9 +827,6 @@ globus_gsi_cred_read_proxy(
     BIO *                               proxy_bio = NULL;
     globus_result_t                     result;
     
-    static char *                       _function_name_ =
-        "globus_gsi_cred_read_proxy";
-
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     if(handle == NULL)
@@ -851,7 +834,7 @@ globus_gsi_cred_read_proxy(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -921,8 +904,6 @@ globus_gsi_cred_read_proxy_bio(
     unsigned char *                     save_data = NULL;
     long                                len;
     EVP_CIPHER_INFO                     cipher;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_read_proxy_bio";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
@@ -931,7 +912,7 @@ globus_gsi_cred_read_proxy_bio(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            (_GCRSL("Null handle passed to function: %s"), _function_name_));
+            (_GCRSL("Null handle passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -940,7 +921,7 @@ globus_gsi_cred_read_proxy_bio(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            (_GCRSL("Null bio variable passed to function: %s"), _function_name_));
+            (_GCRSL("Null bio variable passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -1151,9 +1132,6 @@ globus_gsi_cred_read_key(
     BIO *                               key_bio = NULL;
     globus_result_t                     result;
 
-    static char *                       _function_name_ =
-        "globus_gsi_cred_read_key";
-
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     if(handle == NULL)
@@ -1161,7 +1139,7 @@ globus_gsi_cred_read_key(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), __func__));
        goto exit;
     }
 
@@ -1237,8 +1215,6 @@ globus_gsi_cred_read_cert(
 {
     BIO *                               cert_bio = NULL;
     globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_read_cert";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
@@ -1247,7 +1223,7 @@ globus_gsi_cred_read_cert(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), __func__));
        goto exit;
     }
 
@@ -1296,8 +1272,6 @@ globus_gsi_cred_read_cert_bio(
 {
     globus_result_t                     result;
     int                                 i = 0;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_read_cert_bio";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
@@ -1306,7 +1280,7 @@ globus_gsi_cred_read_cert_bio(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), __func__));
        goto exit;
     }
 
@@ -1315,7 +1289,7 @@ globus_gsi_cred_read_cert_bio(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            (_GCRSL("Null bio variable passed to function: %s"), _function_name_));
+            (_GCRSL("Null bio variable passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -1428,15 +1402,13 @@ globus_gsi_cred_read_cert_buffer(
     char *                              subject = NULL;
     globus_gsi_cred_handle_t            handle = NULL;
     globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_read_cert_pem_buffer";
 
     if(!pem_buf)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            (_GCRSL("NULL buffer: %s"), _function_name_));
+            (_GCRSL("NULL buffer: %s"), __func__));
         goto error;
     }
 
@@ -1559,8 +1531,7 @@ globus_gsi_cred_read_pkcs12(
     PKCS8_PRIV_KEY_INFO *               pkcs8 = NULL;
     BIO *                               pkcs12_bio = NULL;
     int                                 i, j, bag_NID;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_read_pkcs12";
+
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     if(handle == NULL)
@@ -1568,7 +1539,7 @@ globus_gsi_cred_read_pkcs12(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), __func__));
        goto exit;
     }
     
@@ -1603,7 +1574,7 @@ globus_gsi_cred_read_pkcs12(
         goto exit;
     }
 
-    auth_safes = M_PKCS12_unpack_authsafes(pkcs12);
+    auth_safes = PKCS12_unpack_authsafes(pkcs12);
     
     if(!auth_safes)
     {
@@ -1624,11 +1595,11 @@ globus_gsi_cred_read_pkcs12(
         
         if(bag_NID == NID_pkcs7_data)
         {
-            pkcs12_safebags = M_PKCS12_unpack_p7data(pkcs7);
+            pkcs12_safebags = PKCS12_unpack_p7data(pkcs7);
         }
         else if(bag_NID == NID_pkcs7_encrypted)
         {
-            pkcs12_safebags = M_PKCS12_unpack_p7encdata (pkcs7, password, -1);
+            pkcs12_safebags = PKCS12_unpack_p7encdata (pkcs7, password, -1);
         }
         else
         {
@@ -1654,16 +1625,16 @@ globus_gsi_cred_read_pkcs12(
         {
             bag = sk_PKCS12_SAFEBAG_value(pkcs12_safebags, j);
             
-            if(M_PKCS12_bag_type(bag) == NID_certBag &&
-               M_PKCS12_cert_bag_type(bag) == NID_x509Certificate)
+            if(PKCS12_bag_type(bag) == NID_certBag &&
+               PKCS12_cert_bag_type(bag) == NID_x509Certificate)
             {
                 sk_X509_push(pkcs12_certs, 
-                             M_PKCS12_certbag2x509(bag));
+                             PKCS12_certbag2x509(bag));
             }
-            else if(M_PKCS12_bag_type(bag) == NID_keyBag &&
+            else if(PKCS12_bag_type(bag) == NID_keyBag &&
                     handle->key == NULL)
             {
-                pkcs8 = bag->value.keybag;
+                pkcs8 = PKCS12_SAFEBAG_get0_p8inf(bag);
                 handle->key = EVP_PKCS82PKEY(pkcs8);
                 if (!handle->key)
                 {
@@ -1675,11 +1646,11 @@ globus_gsi_cred_read_pkcs12(
                     goto exit;
                 }
             }
-            else if(M_PKCS12_bag_type(bag) == 
+            else if(PKCS12_bag_type(bag) == 
                     NID_pkcs8ShroudedKeyBag &&
                     handle->key == NULL)
             {
-                pkcs8 = M_PKCS12_decrypt_skey(bag,
+                pkcs8 = PKCS12_decrypt_skey(bag,
                                               password,
                                               strlen(password));
                 if(!pkcs8)
@@ -1798,8 +1769,6 @@ globus_gsi_cred_write(
 {
     int                                 i;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_write";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
@@ -1808,7 +1777,7 @@ globus_gsi_cred_write(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_CRED,
-            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), __func__));
         goto error_exit;
     }
     
@@ -1817,7 +1786,7 @@ globus_gsi_cred_write(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_CRED,
-            (_GCRSL("NULL bio variable passed to function: %s"), _function_name_));
+            (_GCRSL("NULL bio variable passed to function: %s"), __func__));
         goto error_exit;
     }
     
@@ -1830,8 +1799,7 @@ globus_gsi_cred_write(
         goto error_exit;
     }
     
-    if(!PEM_ASN1_write_bio(gt_i2d_cast i2d_PrivateKey, PEM_STRING_RSA,
-                           bio, (char *) handle->key,
+    if(!PEM_write_bio_PrivateKey(bio, handle->key,
                            NULL, NULL, 0, NULL, NULL))
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -1889,9 +1857,6 @@ globus_gsi_cred_write_proxy(
     FILE *                              temp_proxy_fp = NULL;
     int                                 temp_proxy_fd = -1;
     
-    static char *                       _function_name_ =
-        "globus_gsi_cred_write_proxy";
-
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     /*
@@ -1904,7 +1869,7 @@ globus_gsi_cred_write_proxy(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
-            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -2016,8 +1981,7 @@ globus_gsi_cred_get_cert_type(
     globus_gsi_cert_utils_cert_type_t * type)
 {
     globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_check_proxy";
+
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
     result = globus_gsi_cert_utils_get_cert_type(handle->cert, type);
@@ -2044,11 +2008,11 @@ globus_gsi_cred_get_cert_type(
  * with a call to PROXYCERTINFO_free.
  *
  * @param cert
- *        The X509 struct containing the PROXYCERTINFO struct
+ *        The X509 struct containing the PROXY_CERT_INFO_EXTENSION struct
  *        in its extensions
  * @param proxycertinfo
- *        The resulting PROXYCERTINFO struct.  This variable
- *        should be freed with a call to PROXYCERTINFO_free when
+ *        The resulting PROXY_CERT_INFO_EXTENSION struct.  This variable
+ *        should be freed with a call to PROXY_CERT_INFO_EXTENSION_free when
  *        no longer in use.  It will have a value of NULL if no
  *        proxycertinfo extension exists in the X509 certificate
  * @return
@@ -2058,23 +2022,19 @@ globus_gsi_cred_get_cert_type(
 globus_result_t
 globus_i_gsi_cred_get_proxycertinfo(
     X509 *                              cert,
-    PROXYCERTINFO **                    proxycertinfo)
+    PROXY_CERT_INFO_EXTENSION **        proxycertinfo)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    int                                 pci_NID;
     int                                 pci_old_NID;
     X509_EXTENSION *                    pci_extension = NULL;
     int                                 extension_loc;
-    static char *                       _function_name_ =
-        "globus_i_gsi_cred_get_proxycertinfo";
-    
+
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *proxycertinfo = NULL;
 
-    pci_NID = OBJ_txt2nid(PROXYCERTINFO_OID);
-    pci_old_NID = OBJ_txt2nid(PROXYCERTINFO_OLD_OID);
-    if(pci_NID == NID_undef || pci_old_NID == NID_undef)
+    pci_old_NID = OBJ_txt2nid("1.3.6.1.4.1.3536.1.222");
+    if(pci_old_NID == NID_undef)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
@@ -2089,16 +2049,12 @@ globus_i_gsi_cred_get_proxycertinfo(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
             (_GCRSL("NULL X509 cert parameter passed to function: %s"), 
-             _function_name_));
+             __func__));
         goto exit;
     }
 
-    if((extension_loc = X509_get_ext_by_NID(
-            cert, 
-            pci_NID, -1)) == -1 &&
-       (extension_loc = X509_get_ext_by_NID(
-           cert, 
-           pci_old_NID, -1)) == -1)
+    if ((extension_loc = X509_get_ext_by_NID(cert, NID_proxyCertInfo, -1)) == -1
+        && (extension_loc = X509_get_ext_by_NID(cert, pci_old_NID, -1)) == -1)
     {
         /* no proxycertinfo extension found in cert */
         result = GLOBUS_SUCCESS;
@@ -2139,8 +2095,7 @@ globus_i_gsi_cred_password_callback_no_prompt(
     int                                 size,
     int                                 w)
 {
-    static char *                       _function_name_ =
-        "globus_i_gsi_cred_password_callback_no_prompt";
+
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     /* current gsi implementation does not allow for a password
@@ -2167,8 +2122,6 @@ globus_l_gsi_cred_subject_cmp(
     char *                              actual_str = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 length;
-    static char *                       _function_name_ =
-        "globus_l_gsi_cred_subject_cmp";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
@@ -2421,8 +2374,6 @@ globus_l_gsi_cred_get_service(
     char *                              host;
     char *                              subject_str = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_l_gsi_cred_get_service";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 

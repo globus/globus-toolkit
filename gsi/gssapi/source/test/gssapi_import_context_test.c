@@ -35,14 +35,12 @@ int main()
     gss_buffer_desc                     accept_buffer;
     gss_OID				name_type;
     gss_OID                             mech_type;
-    gss_name_t                          target_name;
     gss_name_t                          source_name;
     gss_ctx_id_t  			init_context;
     gss_ctx_id_t  			accept_context;
     gss_ctx_id_t  			del_init_context;
     gss_ctx_id_t  			del_accept_context;
     gss_cred_id_t                       delegated_cred;
-    char *                              error_str;
     int                                 rc = 0;
 
     printf("1..1\n");
@@ -234,7 +232,6 @@ int main()
         goto fail;
     }
 
-ok:
     printf("ok 1 - gssapi_import_context_test\n");
     return 0;
 fail:

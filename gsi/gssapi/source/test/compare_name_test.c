@@ -191,7 +191,7 @@ import_names()
                         result = globus_gsi_cred_get_cert(handle, &cert);
 
                         buffer.value = cert;
-                        buffer.length = sizeof(X509);
+                        buffer.length = sizeof(X509*);
 
                         major_status = gss_import_name(&minor_status, &buffer, GLOBUS_GSS_C_NT_X509, &test_case->name1);
                         if (major_status != GSS_S_COMPLETE)
@@ -298,7 +298,7 @@ import_names()
                         result = globus_gsi_cred_get_cert(handle, &cert);
 
                         buffer.value = cert;
-                        buffer.length = sizeof(X509);
+                        buffer.length = sizeof(X509*);
 
                         major_status = gss_import_name(&minor_status, &buffer, GLOBUS_GSS_C_NT_X509, &test_case->name2);
                         if (major_status != GSS_S_COMPLETE)

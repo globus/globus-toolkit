@@ -1,3 +1,9 @@
+globus-gridftp-server (11.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Updates for OpenSSL 1.1.0
+
+ -- Globus Toolkit <support@globus.org>  Tue, 16 Aug 2016 15:48:57 -0400
+
 globus-gridftp-server (11.1-1+gt6.@distro@) @distro@; urgency=low
 
   * fix forced ordering issues

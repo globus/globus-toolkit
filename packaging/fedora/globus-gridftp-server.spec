@@ -1,6 +1,6 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	11.1
+Version:	11.2
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -179,6 +179,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 11.2-1
+- Updates for OpenSSL 1.1.0
+
 * Fri Jul 15 2016 Globus Toolkit <support@globus.org> - 11.1-1
 - fix forced ordering issues
 

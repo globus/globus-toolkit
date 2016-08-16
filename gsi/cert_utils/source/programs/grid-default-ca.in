@@ -63,7 +63,7 @@ show_default() {
 
     for x in "$@"; do
         if test -f "${x}/$DEFAULTCAHASH.0"; then
-            DEFAULT_SUBJECT=`openssl x509 -in ${x}/$DEFAULTCAHASH.0 -noout -subject | sed -e "s|subject= ||"`
+            DEFAULT_SUBJECT=`openssl x509 -in ${x}/$DEFAULTCAHASH.0 -noout -subject -nameopt rfc2253,-dn_rev| sed -e "s|subject= *|/|" -e "s|,|/|g"`
             echo
             echo "The default CA is: $DEFAULT_SUBJECT"
             echo "         Location: ${x}/$DEFAULTCAHASH.0"
@@ -91,8 +91,8 @@ ca_list() {
         for cert in ${cert_hashes}; do
             if test -r "${cert}" ; then 
                 eval "CA${index}=${cert}"
-                TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
-                eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | sed -e \"s|subject= ||\"`\""
+                TEMP_SUBJECT="$(openssl x509 -in "${cert}" -noout -subject -nameopt rfc2253,-dn_rev| sed -e "s|subject= *|/|" -e "s|,|/|g")"
+                eval "CA_SUBJECT${index}=\"${TEMP_SUBJECT}\""
                 TEMP_HASH=`echo ${cert} | sed -e  "s|.*/\([^/]*\)\.0|\1|"`
                 eval "CA_HASH${index}=$TEMP_HASH"
                 eval "echo \"$index) \${CA_HASH${index}} -  \${CA_SUBJECT${index}}\""
@@ -350,8 +350,7 @@ else
         echo 
         exit 1
     fi
-    TMP_SUBJECT=`openssl x509 -in ${CA_CERT} -noout -subject`
-    CA_SUBJECT=`echo ${TMP_SUBJECT} | sed -e "s|subject= ||"`
+    CA_SUBJECT="$(openssl x509 -in "${CA_CERT}" -noout -subject -nameopt rfc2253,-dn_rev| sed -e "s|subject= *|/|" -e "s|,|/|g")"
 fi
 
 secconfdir=`get_security_dir ${CA_CERT_DIR}`

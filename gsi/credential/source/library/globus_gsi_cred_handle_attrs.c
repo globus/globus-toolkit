@@ -34,7 +34,7 @@
             errno, \
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS, \
             __FILE__, \
-            _function_name_, \
+            __func__, \
             __LINE__, \
             "%s", \
             globus_l_gsi_cred_error_strings[ \
@@ -62,9 +62,6 @@ globus_gsi_cred_handle_attrs_init(
 {
     globus_result_t                     result;
 
-    static char *                       _function_name_ =
-        "globus_gsi_cred_handle_attrs_init";
-
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     if(handle_attrs == NULL)
@@ -73,7 +70,7 @@ globus_gsi_cred_handle_attrs_init(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             (_GCRSL("NULL handle attributes passed to function: %s"), 
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -126,9 +123,6 @@ globus_result_t
 globus_gsi_cred_handle_attrs_destroy(
     globus_gsi_cred_handle_attrs_t     handle_attrs)
 {
-    static char *                       _function_name_ =
-        "globus_gsi_cred_handle_attrs_destroy";
-
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
     if(handle_attrs != NULL)
@@ -170,9 +164,6 @@ globus_gsi_cred_handle_attrs_copy(
     int                                 index;
     globus_result_t                     result;
 
-    static char *                       _function_name_ =
-        "globus_gsi_cred_handle_attrs_copy";
-
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     if(source == NULL || dest == NULL)
@@ -180,7 +171,7 @@ globus_gsi_cred_handle_attrs_copy(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
-            (_GCRSL("NULL parameter passed to function: %s"), _function_name_));
+            (_GCRSL("NULL parameter passed to function: %s"), __func__));
         goto exit;
     }
 
@@ -246,8 +237,6 @@ globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     const char *                        ca_cert_dir)
 {
     globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_handle_attrs_set_ca_cert_dir";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
@@ -257,7 +246,7 @@ globus_gsi_cred_handle_attrs_set_ca_cert_dir(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             (_GCRSL("NULL handle attributes passed to function: %s"), 
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -298,8 +287,6 @@ globus_gsi_cred_handle_attrs_get_ca_cert_dir(
     char **                             ca_cert_dir)
 {
     globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_handle_attrs_get_ca_cert_dir";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
@@ -309,7 +296,7 @@ globus_gsi_cred_handle_attrs_get_ca_cert_dir(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             (_GCRSL("NULL handle attributes passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
     
@@ -319,7 +306,7 @@ globus_gsi_cred_handle_attrs_get_ca_cert_dir(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             (_GCRSL("NULL handle attributes passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -365,9 +352,6 @@ globus_gsi_cred_handle_attrs_set_search_order(
     int                                 index;
     globus_result_t                     result;
 
-    static char *                       _function_name_ =
-        "globus_gsi_cred_handle_attrs_set_search_order";
-
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     if(handle_attrs == NULL)
@@ -376,7 +360,7 @@ globus_gsi_cred_handle_attrs_set_search_order(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             (_GCRSL("NULL handle attributes passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
 
@@ -425,8 +409,6 @@ globus_gsi_cred_handle_attrs_get_search_order(
     int                                 size;
     int                                 index;
     globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_handle_attrs_get_search_order";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
@@ -436,7 +418,7 @@ globus_gsi_cred_handle_attrs_get_search_order(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             (_GCRSL("NULL handle attributes passed to function: %s"),
-             _function_name_));
+             __func__));
         goto exit;
     }
 

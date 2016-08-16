@@ -73,9 +73,6 @@ globus_i_gsi_cred_openssl_error_result(
     globus_object_t *                   error_object;
     globus_result_t                     result;
 
-    static char *                       _function_name_ =
-        "globus_i_gsi_cred_openssl_error_result";
-    
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     error_object = 
@@ -113,9 +110,6 @@ globus_i_gsi_cred_error_result(
 {
     globus_object_t *                   error_object;
     globus_result_t                     result;
-
-    static char *                       _function_name_ =
-        "globus_i_gsi_cred_error_result";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
@@ -156,9 +150,6 @@ globus_i_gsi_cred_error_chain_result(
     globus_object_t *                   error_object;
     globus_result_t                     result;
 
-    static char *                       _function_name_ =
-        "globus_i_gsi_credential_error_chain_result";
-    
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
     error_object =
@@ -196,8 +187,7 @@ globus_i_gsi_cred_error_join_chains_result(
     globus_object_t *                   outter_error_obj = NULL;
     globus_object_t *                   inner_error_obj = NULL;
     globus_object_t *                   temp_error_obj = NULL;
-    static char *                       _function_name_ =
-        "globus_i_gsi_cred_error_join_chains";
+
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     outter_error_obj = globus_error_get(outter_error);
@@ -227,7 +217,7 @@ globus_i_gsi_cred_error_join_chains_result(
                 NULL,
                 GLOBUS_GSI_CRED_ERROR_CREATING_ERROR_OBJ,
                 __FILE__,
-                _function_name_,
+                __func__,
                 __LINE__,
                 "Couldn't join inner and outer error chains");
     }

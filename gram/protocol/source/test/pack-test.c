@@ -404,7 +404,6 @@ int main(int argc, char *argv[])
 {
     int					not_ok = 0;
     int					rc;
-    int					test_num = 0;
 
     LTDL_SET_PRELOADED_SYMBOLS();
     printf("1..6\n");

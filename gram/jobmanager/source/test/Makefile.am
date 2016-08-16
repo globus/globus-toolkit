@@ -3,29 +3,52 @@ SUBDIRS = . client jobmanager
 check_DATA = \
         testcred.key \
         testcred.cert \
-        testcred.link
+        testcred.cakey \
+        testcred.cacert \
+        testcred.link \
+        testcred.signing_policy \
+        testcred.srl
 
-testcred.key:
-	umask 077; openssl genrsa 1024 > $@
+# Test CA
+.cnf.cacert:
+	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+.cacert.cakey:
 
-.key.req:
-	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -key $< > $@
-
-.req.cert:
-	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
-
-.cert.link:
+.cacert.link:
 	linkname="`openssl x509 -hash -noout -in $<`.0"; \
 	rm -f "$$linkname"; \
-	cp testcred.cert "$$linkname"; \
-	echo "$$linkname" > $@
+	cp $< "$$linkname"; \
+        echo "$$linkname" > $@
 
-CLEANFILES = testcred.key testcred.cert
+.link.signing_policy:
+	linkname=`cat $<`; \
+	policyfile=$${linkname%.0}.signing_policy; \
+	echo "access_id_CA      X509         '/CN=ca'" > $${policyfile}; \
+	echo "pos_rights        globus        CA:sign" >> $${policyfile}; \
+	echo "cond_subjects     globus       '\"/*\"'" >> $${policyfile}; \
+	echo $${policyfile} >> $@
+
+.signing_policy.srl:
+	echo 01 > $@
+
+# Test Cert/Key
+.srl.key:
+	umask 077; openssl genrsa -out $@ 1024
+.key.req:
+	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
+
+.req.cert:
+	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
+
+CLEANFILES = testcred.key testcred.cert testcred.cacert testcred.cakey testcred.srl
 
 clean-local:
-	@if test -r testcred.link; then \
-	    rm -f $$(cat testcred.link) testcred.link ; \
+	if [ -f testcred.link ]; then \
+            rm -f "$$(cat testcred.link)" testcred.link; \
+        fi
+	if test -f testcred.signing_policy; then \
+	    rm -f $$(cat testcred.signing_policy) testcred.signing_policy; \
 	fi
 	rm -rf .globus
 
-SUFFIXES = .req .cert .key .link
+SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey 

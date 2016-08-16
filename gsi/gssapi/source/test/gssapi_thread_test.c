@@ -54,12 +54,9 @@ int
 main()
 {
     gss_cred_id_t                       credential;
-    struct thread_arg                   thread_args[NUM_CLIENTS] = {{0}};
+    struct thread_arg                   thread_args[NUM_CLIENTS] = {{.init_done=0}};
     globus_thread_t                     thread_handle;
     int                                 i;
-    int                                 ret;
-    int                                 error;
-    int                                 thread_num = 0;
 
     LTDL_SET_PRELOADED_SYMBOLS();
 
@@ -138,7 +135,6 @@ server_func(
     void *                              arg)
 {
     struct thread_arg *                 thread_args = arg;
-    globus_bool_t                       authenticated;
     gss_ctx_id_t                        context = GSS_C_NO_CONTEXT;
     OM_uint32                           major_status, minor_status, ms;
     gss_cred_id_t                       credential;
@@ -203,8 +199,6 @@ client_func(
 {
     struct thread_arg *                 thread_args = arg;
     gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
-    int                                 connect_fd;
-    int                                 result;
     int                                 failed = 0;
     OM_uint32                           major_status, minor_status, ms;
     gss_cred_id_t                       credential;

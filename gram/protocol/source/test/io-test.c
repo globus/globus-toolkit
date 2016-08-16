@@ -154,7 +154,6 @@ unlock_error:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
-error_out:
     printf("not ok - io-test %d\n", rc);
     return rc;
 }

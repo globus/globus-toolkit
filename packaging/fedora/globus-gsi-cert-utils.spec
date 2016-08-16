@@ -1,6 +1,6 @@
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
-Version:	9.12
+Version:	9.14
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
@@ -25,7 +25,6 @@ Requires:	globus-gsi-openssl-error%{?_isa} >= 2
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-openssl-module-devel >= 3
 BuildRequires:	globus-gsi-openssl-error-devel >= 2
-BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
 BuildRequires:	openssl-devel
 BuildRequires:	doxygen
 BuildRequires:	graphviz
@@ -165,6 +164,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 9.14-1
+- Updates for OpenSSL 1.1.0
+
 * Tue May 03 2016 Globus Toolkit <support@globus.org> - 9.12-1
 - Spelling
 

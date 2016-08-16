@@ -113,7 +113,6 @@ int main()
             &cred);
     }
     
-fail:
     globus_module_deactivate_all();
     
     return failed;

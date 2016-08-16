@@ -45,7 +45,6 @@ int main()
     gss_cred_id_t                       delegated_cred;
     gss_cred_id_t                       imported_cred;
     gss_cred_id_t                       cred_handle;
-    char *                              error_str;
     int                                 rc = EXIT_SUCCESS;
 
     printf("1..1\n");
@@ -501,7 +500,6 @@ void globus_print_error(
 void internal_release_buffer(
     gss_buffer_desc *                   buffer)
 {
-    char *                              error_str = NULL;
     OM_uint32                           maj_stat, min_stat;
 
     maj_stat = gss_release_buffer(&min_stat, (gss_buffer_t) buffer);

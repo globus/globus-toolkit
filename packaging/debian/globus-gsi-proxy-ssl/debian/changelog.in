@@ -1,3 +1,9 @@
+globus-gsi-proxy-ssl (5.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Updates for OpenSSL 1.1.0 compatibility
+
+ -- Globus Toolkit <support@globus.org>  Tue, 16 Aug 2016 09:48:41 -0400
+
 globus-gsi-proxy-ssl (5.8-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix strchr of non-terminated string when displaying policy

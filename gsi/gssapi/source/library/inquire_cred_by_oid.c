@@ -145,7 +145,10 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
     }
 
     /* create the ASN1_OBJECT from the gss_OID structure */
-    desired_asn1_obj = ASN1_OBJECT_new();
+    desired_asn1_obj = ASN1_OBJECT_create(
+            NID_undef,
+            desired_object->elements,
+            desired_object->length, NULL, NULL);
     if(!desired_asn1_obj)
     {
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
@@ -156,8 +159,6 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
         goto exit;
     }
 
-    desired_asn1_obj->length = desired_object->length;
-    desired_asn1_obj->data   = desired_object->elements;
 
     /* check the extensions in the cert first */
 

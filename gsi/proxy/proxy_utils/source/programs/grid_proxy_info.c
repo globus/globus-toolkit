@@ -378,7 +378,6 @@ main(
     {
         X509_NAME *                     x509_subject = NULL;
         BIO *                           mem = BIO_new(BIO_s_mem());
-        int                             rc;
         size_t                          len;
 
         result = globus_gsi_cred_get_X509_subject_name(
@@ -393,7 +392,7 @@ main(
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
 
-        rc = X509_NAME_print_ex(mem, x509_subject, 0, XN_FLAG_RFC2253);
+        X509_NAME_print_ex(mem, x509_subject, 0, XN_FLAG_RFC2253);
         len = BIO_ctrl_pending(mem);
         subject = malloc(len+1);
         subject[len] = 0;
@@ -419,7 +418,6 @@ main(
     {
         X509_NAME *                     x509_issuer = NULL;
         BIO *                           mem = BIO_new(BIO_s_mem());
-        int                             rc;
         size_t                          len;
 
         result = globus_gsi_cred_get_X509_issuer_name(
@@ -434,7 +432,7 @@ main(
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
 
-        rc = X509_NAME_print_ex(mem, x509_issuer, 0, XN_FLAG_RFC2253);
+        X509_NAME_print_ex(mem, x509_issuer, 0, XN_FLAG_RFC2253);
         len = BIO_ctrl_pending(mem);
         issuer = malloc(len+1);
         issuer[len] = 0;
@@ -460,7 +458,6 @@ main(
     {
         X509_NAME *                     x509_identity = NULL;
         BIO *                           mem = BIO_new(BIO_s_mem());
-        int                             rc;
         size_t                          len;
 
         result = globus_gsi_cred_get_X509_identity_name(
@@ -475,7 +472,7 @@ main(
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
 
-        rc = X509_NAME_print_ex(mem, x509_identity, 0, XN_FLAG_RFC2253);
+        X509_NAME_print_ex(mem, x509_identity, 0, XN_FLAG_RFC2253);
         len = BIO_ctrl_pending(mem);
         identity = malloc(len+1);
         identity[len] = 0;

@@ -15,7 +15,7 @@
  */
 
 /**
- * @file globus_gsi_proxy.h
+ * @file globus_gsi_proxy.h Globus GSI Proxy API
  * @brief Globus GSI Proxy API
  */
 
@@ -37,22 +37,18 @@
  * certificate profile draft.
  *
  * Any program that uses Globus GSI Proxy functions must include
- * "globus_gsi_proxy.h". 
+ * ``"globus_gsi_proxy.h"``.
  *
  * We envision the API being used in the following manner:
  *
- * <TABLE>
- * <TR><TD>Delegator:</TD>                     <TD>Delegatee:</TD></TR>
- * <TR><TD></TD>                               <TD>set desired cert info extension
- *                                                 in the handle by using the handle
- *                                                 set functions.</TD></TR> 
- * <TR><TD></TD>                               <TD>#globus_gsi_proxy_create_req</TD></TR>
- * <TR><TD>#globus_gsi_proxy_inquire_req</TD>   <TD></TD></TR>
- * <TR><TD>modify cert info extension by using
- *         handle set/get/clear functions.</TD><TD></TD></TR>
- * <TR><TD>#globus_gsi_proxy_sign_req</TD>      <TD></TD></TR>
- * <TR><TD></TD>                               <TD>#globus_gsi_proxy_assemble_cred</TD></TR>
- *</TABLE>
+ * | Delegator                      | Delegatee
+ * |--------------------------------|-------------------------------------|
+ * |                                | set desired cert info extension in the handle by using the handle set  functions. |
+ * |                                | globus_gsi_proxy_create_req()       |
+ * | globus_gsi_proxy_inquire_req() |                                     |
+ * | modify cert info extension by using [handle set/get/clear functions.](@ref globus_gsi_proxy_handle)||
+ * | globus_gsi_proxy_sign_req()    |                                     |
+ * |                                | globus_gsi_proxy_assemble_cred()    |
  *
  * The API documentation is divided into the following sections
  * - @ref globus_gsi_proxy_activation
@@ -69,7 +65,8 @@
 #include "globus_error_generic.h"
 #include "globus_error_openssl.h"
 #include "openssl/evp.h"
-#include "proxycertinfo.h"
+#include "openssl/x509v3.h"
+#include "proxypolicy.h"
 #endif
 
 #ifdef __cplusplus
@@ -106,7 +103,8 @@ extern "C" {
  *
  */
 
-/** Module descriptor
+/**
+ * @brief Module descriptor
  * @ingroup globus_gsi_proxy_activation
  * @hideinitializer
  */
@@ -120,9 +118,9 @@ globus_module_descriptor_t		globus_i_gsi_proxy_module;
 		  s)
 
 /**
- * GSI Proxy Handle.
+ * @brief GSI Proxy Handle
  * @ingroup globus_gsi_proxy_handle
- *
+ * @details
  * An GSI Proxy handle is used to associate state with a group of
  * operations. Handles can have immutable
  * @ref globus_gsi_proxy_handle_attrs "attributes"
@@ -138,9 +136,9 @@ typedef struct globus_l_gsi_proxy_handle_s *
                                         globus_gsi_proxy_handle_t;
 
 /**
- * Handle Attributes.
+ * @brief Handle Attributes
  * @ingroup globus_gsi_proxy_handle_attrs
- * 
+ * @details
  * A GSI Proxy handle attributes type is used to associate immutable
  * parameter values with a @ref globus_gsi_proxy_handle handle.
  * A handle attributes object should be created with immutable parameters
@@ -155,11 +153,10 @@ globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
 
 
 /**
+ * @brief Create/Destroy/Modify a GSI Proxy Handle
  * @defgroup globus_gsi_proxy_handle Handle Management
  * @ingroup globus_gsi_proxy
- *
- * Create/Destroy/Modify a GSI Proxy Handle.
- *
+ * @details
  * Within the Globus GSI Proxy Library, all proxy operations require a
  * handle parameter. Currently, only one proxy operation may be in
  * progress at once per proxy handle.
@@ -167,8 +164,6 @@ globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
  * This section defines operations to create, modify and destroy GSI
  * Proxy handles.
  */
-
-#ifndef DOXYGEN
 
 globus_result_t
 globus_gsi_proxy_handle_init(
@@ -197,7 +192,7 @@ globus_gsi_proxy_handle_get_private_key(
 globus_result_t
 globus_gsi_proxy_handle_set_private_key(
     globus_gsi_proxy_handle_t           handle,
-    EVP_PKEY *                          proxy_key);
+    const EVP_PKEY *                    proxy_key);
 
 globus_result_t
 globus_gsi_proxy_handle_get_type(
@@ -223,7 +218,7 @@ globus_gsi_proxy_handle_set_time_valid(
 globus_result_t
 globus_gsi_proxy_handle_set_policy(
     globus_gsi_proxy_handle_t           handle,
-    unsigned char *                     policy_data,
+    const unsigned char *               policy_data,
     int                                 policy_length,
     int                                 policy_NID);
 
@@ -242,12 +237,12 @@ globus_gsi_proxy_handle_add_extension(
 globus_result_t
 globus_gsi_proxy_handle_set_extensions(
     globus_gsi_proxy_handle_t           handle,
-    STACK_OF(X509_EXTENSION)*           extensions);
+    STACK_OF(X509_EXTENSION) *          extensions);
 
 globus_result_t
 globus_gsi_proxy_handle_get_extensions(
     globus_gsi_proxy_handle_t           handle,
-    STACK_OF(X509_EXTENSION)**          extension);
+    STACK_OF(X509_EXTENSION) **         extension);
 
 globus_result_t
 globus_gsi_proxy_handle_set_pathlen(
@@ -263,15 +258,34 @@ globus_result_t
 globus_gsi_proxy_handle_clear_cert_info(
     globus_gsi_proxy_handle_t           handle);
 
+#ifdef GLOBUS_GSI_PROXY_CORE_COMPAT_0
+#include "proxycertinfo.h"
+
+#define globus_gsi_proxy_handle_get_proxy_cert_info(h,p) \
+        globus_gsi_proxy_handle_get_proxy_cert_info_proxy_ssl(h,p)
+#define globus_gsi_proxy_handle_set_proxy_cert_info(h,p) \
+        globus_gsi_proxy_handle_set_proxy_cert_info_proxy_ssl(h,p)
+
 globus_result_t
-globus_gsi_proxy_handle_get_proxy_cert_info(
+globus_gsi_proxy_handle_get_proxy_cert_info_proxy_ssl(
     globus_gsi_proxy_handle_t           handle,
     PROXYCERTINFO **                    pci);
 
 globus_result_t
-globus_gsi_proxy_handle_set_proxy_cert_info(
+globus_gsi_proxy_handle_set_proxy_cert_info_proxy_ssl(
     globus_gsi_proxy_handle_t           handle,
     PROXYCERTINFO *                     pci);
+#else
+globus_result_t
+globus_gsi_proxy_handle_get_proxy_cert_info(
+    globus_gsi_proxy_handle_t           handle,
+    PROXY_CERT_INFO_EXTENSION **        pci);
+
+globus_result_t
+globus_gsi_proxy_handle_set_proxy_cert_info(
+    globus_gsi_proxy_handle_t           handle,
+    PROXY_CERT_INFO_EXTENSION *         pci);
+#endif
 
 globus_result_t
 globus_gsi_proxy_handle_get_common_name(
@@ -281,7 +295,7 @@ globus_gsi_proxy_handle_get_common_name(
 globus_result_t
 globus_gsi_proxy_handle_set_common_name(
     globus_gsi_proxy_handle_t           handle,
-    char *                              common_name);
+    const char *                        common_name);
 
 globus_result_t
 globus_gsi_proxy_is_limited(
@@ -296,7 +310,7 @@ globus_gsi_proxy_handle_set_is_limited(
 globus_result_t
 globus_gsi_proxy_handle_get_signing_algorithm(
     globus_gsi_proxy_handle_t           handle,
-    EVP_MD **                           algorithm);
+    const EVP_MD **                     algorithm);
 
 globus_result_t
 globus_gsi_proxy_handle_get_keybits(
@@ -318,8 +332,6 @@ globus_gsi_proxy_handle_get_key_gen_callback(
     globus_gsi_proxy_handle_t           handle,
     void                                (**callback)(int, int, void *));
 
-#endif
-
 /**
  * @defgroup globus_gsi_proxy_handle_attrs Handle Attributes
  * @ingroup globus_gsi_proxy
@@ -331,9 +343,6 @@ globus_gsi_proxy_handle_get_key_gen_callback(
  *
  * @see globus_gsi_proxy_handle_t
  */
-
-#ifndef DOXYGEN
-
 
 globus_result_t
 globus_gsi_proxy_handle_attrs_init(
@@ -348,21 +357,15 @@ globus_gsi_proxy_handle_attrs_copy(
     globus_gsi_proxy_handle_attrs_t     a,
     globus_gsi_proxy_handle_attrs_t *   b);
 
-#endif
-
 /**
+ * @brief Initiate a proxy operation
  * @defgroup globus_gsi_proxy_operations Proxy Operations
  * @ingroup globus_gsi_proxy
- *
- * Initiate a proxy operation.
- *
+ * @details
  * This module contains the API functions for a user to request proxy
  * request generation, proxy request inspection and proxy request
  * signature. 
  */
-
-
-#ifndef DOXYGEN
 
 globus_result_t
 globus_gsi_proxy_create_req(
@@ -422,12 +425,12 @@ globus_gsi_proxy_handle_attrs_get_init_prime(
 globus_result_t
 globus_gsi_proxy_handle_attrs_set_signing_algorithm(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
-    EVP_MD *                            algorithm);
+    const EVP_MD *                      algorithm);
 
 globus_result_t
 globus_gsi_proxy_handle_attrs_get_signing_algorithm(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
-    EVP_MD **                           algorithm);
+    const EVP_MD **                     algorithm);
 
 globus_result_t
 globus_gsi_proxy_handle_attrs_set_clock_skew_allowable(
@@ -448,8 +451,6 @@ globus_result_t
 globus_gsi_proxy_handle_attrs_set_key_gen_callback(
     globus_gsi_proxy_handle_attrs_t     handle,
     void                                (*callback)(int,  int, void *));
-
-#endif
 
 #ifdef __cplusplus
 }

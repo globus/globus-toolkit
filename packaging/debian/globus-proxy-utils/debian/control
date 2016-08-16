@@ -1,7 +1,7 @@
 Source: globus-proxy-utils
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-gsi-proxy-ssl-dev, libglobus-gsi-credential-dev, libglobus-gsi-callback-dev, libglobus-openssl-module-dev, libglobus-gss-assist-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-proxy-core-dev, libglobus-gsi-cert-utils-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev, libglobus-gssapi-gsi-dev, openssl
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-gsi-credential-dev, libglobus-gsi-callback-dev, libglobus-openssl-module-dev, libglobus-gss-assist-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-proxy-core-dev, libglobus-gsi-cert-utils-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev, libglobus-gssapi-gsi-dev, openssl
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes

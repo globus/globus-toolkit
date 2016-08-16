@@ -1,6 +1,6 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	11.5
+Version:	11.6
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - uniform I/O interface
@@ -119,6 +119,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 11.6-1
+- Updates for OpenSSL 1.1.0
+
 * Thu Apr 07 2016 Globus Toolkit <support@globus.org> - 11.5-1
 - Use new dlpreopen variable from gsi driver to build tests for installer
 - Fix uninitialized variable reads and some warnings in io tests

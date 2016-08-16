@@ -43,7 +43,6 @@ int main()
     gss_cred_id_t                       delegated_cred;
     gss_cred_id_t                       imported_cred;
     gss_cred_id_t                       cred_handle;
-    char *                              error_str;
     globus_result_t                     result;
     globus_gsi_cert_utils_cert_type_t   cert_type;
     int                                 rc = EXIT_SUCCESS;

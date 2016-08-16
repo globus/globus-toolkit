@@ -10,6 +10,10 @@ libglobus_gsi_proxy_core_la_LIBADD = $(PACKAGE_DEP_LIBS)
 libglobus_gsi_proxy_core_la_LDFLAGS = \
 	-version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
         -no-undefined
+if USE_SYMBOL_VERSIONS
+libglobus_gsi_proxy_core_la_LDFLAGS += -Wl,--version-script,$(srcdir)/sym
+endif
+
 libglobus_gsi_proxy_core_la_SOURCES = \
 	globus_gsi_proxy.h \
 	globus_gsi_proxy.c \
@@ -47,3 +51,4 @@ install-data-local: $(DOC_STAMPS)
 			$(INSTALL) -m 644 doc/$$f $(DESTDIR)$(docdir)/$$f ; \
 		done ; \
 	fi
+EXTRA_DIST=sym

@@ -219,7 +219,9 @@ globus_l_gsi_sysconfig_activate(void)
 {
     int                                 result = (int) GLOBUS_SUCCESS;
     const char *                        random_file = NULL;
+#ifndef OPENSSL_NO_EGD
     char *                              egd_path = NULL;
+#endif
     #ifndef WIN32
     clock_t                             uptime;
     struct tms                          proc_times;
@@ -285,12 +287,15 @@ globus_l_gsi_sysconfig_activate(void)
         RAND_load_file(random_file, 1024L * 1024L);
     }
 
+#ifndef OPENSSL_NO_EGD
     egd_path = getenv("EGD_PATH");
     if(egd_path == NULL)
     {
         egd_path = DEFAULT_EGD_PATH;
     }
+
     RAND_egd(egd_path);
+#endif
     
     if(RAND_status() == 0)
     {

@@ -27,6 +27,29 @@
 #include <getopt.h>
 #endif
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+
+#define EVP_PKEY_get0_RSA(k) (k)->pkey.rsa
+
+static
+void
+RSA_get0_key(const RSA *r, const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
+{
+    if (n != NULL)
+    {
+        *n = r->n;
+    }
+    if (e != NULL)
+    {
+        *e = r->e;
+    }
+    if (e != NULL)
+    {
+        *e = r->d;
+    }
+}
+#endif
+
 static gss_OID_desc                    *GSS_C_NT_HOST_IP = &(gss_OID_desc) {
         10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02"
 };
@@ -544,8 +567,11 @@ default_cred_check(void)
     EVP_PKEY                           *privkey = NULL,
                                        *pubkey = NULL;
     globus_gsi_callback_data_t          callback_data = NULL;
+    const BIGNUM                       *pub_n = NULL;
+    const BIGNUM                       *priv_n = NULL;
     char                               *local_user = NULL;
     int                                 rc;
+    int                                 key_type = 0;
 
     result = globus_gsi_cred_handle_init(
             &handle, NULL);
@@ -681,11 +707,15 @@ default_cred_check(void)
     }
 
     pubkey = X509_PUBKEY_get(X509_get_X509_PUBKEY(x509_cert));
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    key_type = EVP_PKEY_type(pubkey->type);
+#else
+    key_type = EVP_PKEY_base_id(pubkey);
+#endif
     printf("Checking that certificate contains an RSA key... ");
-    if (EVP_PKEY_type(pubkey->type) != EVP_PKEY_RSA)
+    if (key_type != EVP_PKEY_RSA)
     {
-        printf("failed\nKey type is %d\n",
-               EVP_PKEY_type(pubkey->type));
+        printf("failed\nKey type is %d\n", key_type);
         goto out;
     }
     else
@@ -694,10 +724,15 @@ default_cred_check(void)
     }
 
     printf("Checking that private key is an RSA key... ");
-    if (EVP_PKEY_type(privkey->type) != EVP_PKEY_RSA)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    key_type = EVP_PKEY_type(privkey->type);
+#else
+    key_type = EVP_PKEY_base_id(privkey);
+#endif
+
+    if (key_type != EVP_PKEY_RSA)
     {
-        printf("failed\nPrivate key is %d\n",
-                EVP_PKEY_type(privkey->type));
+        printf("failed\nPrivate key is %d\n", key_type);
         goto out;
     }
     else
@@ -705,15 +740,17 @@ default_cred_check(void)
         printf("ok\n");
     }
 
-
     printf("Checking that public and private keys have the same modulus... ");
-    if (BN_cmp(pubkey->pkey.rsa->n, privkey->pkey.rsa->n))
+    RSA_get0_key(EVP_PKEY_get0_RSA(pubkey), &pub_n, NULL, NULL);
+    RSA_get0_key(EVP_PKEY_get0_RSA(privkey), &priv_n, NULL, NULL);
+
+    if (BN_cmp(pub_n, priv_n) != 0)
     {
         printf("failed\n"
                "Private key modulus: %s\n"
                "Public key modulus : %s\n",
-               BN_bn2hex(pubkey->pkey.rsa->n), 
-               BN_bn2hex(privkey->pkey.rsa->n));
+               BN_bn2hex(pub_n),
+               BN_bn2hex(priv_n));
         printf("Certificate and and private key don't match");
         goto out;
     }
@@ -776,10 +813,9 @@ cert_check(const char *cert_to_check, const char *cert_check_name)
     char                               *subject_name = NULL;
     X509                               *x509_cert = NULL;
     EVP_PKEY                           *pubkey = NULL;
-    gss_name_t                          cert_name = NULL;
-    gss_name_t                          check_name = NULL;
     globus_gsi_callback_data_t          callback_data = NULL;
     char                               *compat_name = NULL;
+    int                                 key_type = 0;
 
     printf("\nChecking Certificate\n"
            "====================\n");
@@ -893,7 +929,7 @@ cert_check(const char *cert_to_check, const char *cert_check_name)
                 &(gss_buffer_desc)
                 {
                     .value = x509_cert,
-                    .length = sizeof(X509)
+                    .length = sizeof(X509*)
                 },
                 GSS_C_NT_X509,
                 &x509_gss_name);
@@ -949,10 +985,14 @@ import_x509_name_fail:
 
     pubkey = X509_PUBKEY_get(X509_get_X509_PUBKEY(x509_cert));
     printf("Checking that certificate contains an RSA key... ");
-    if (EVP_PKEY_type(pubkey->type) != EVP_PKEY_RSA)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    key_type = EVP_PKEY_type(pubkey->type);
+#else
+    key_type = EVP_PKEY_base_id(pubkey);
+#endif
+    if (key_type != EVP_PKEY_RSA)
     {
-        printf("failed\nKey type is %d\n",
-               EVP_PKEY_type(pubkey->type));
+        printf("failed\nKey type is %d\n", key_type);
     }
     else
     {
@@ -1213,8 +1253,8 @@ check_service(const char *service)
 
     while (sk_SSL_CIPHER_num(ciphers) > 0)
     {
-        SSL_CIPHER *cipher = sk_SSL_CIPHER_pop(ciphers);
-        printf(" %s", cipher->name);
+        const SSL_CIPHER *cipher = sk_SSL_CIPHER_pop(ciphers);
+        printf(" %s", SSL_CIPHER_get_name(cipher));
     }
     printf("\n");
 
@@ -1226,7 +1266,6 @@ check_service(const char *service)
             peer_cert,
             cert_chain);
 
-get_fd_fail:
 handshake_fail:
 connect_fail:
 get_ssl_fail:
@@ -1302,7 +1341,7 @@ check_gridftp(char *service)
         printf("not ok\n");
         goto bad_auth;
     }
-    BIO_flush(cbio);
+    (void) BIO_flush(cbio);
     rc = BIO_read(cbio, response, sizeof response);
     if (rc < 3)
     {
@@ -1340,7 +1379,7 @@ check_gridftp(char *service)
             BIO_puts(cbio, "ADAT ");
             BIO_write(cbio, encbuf, encbufsize);
             BIO_puts(cbio, "\r\n");
-            BIO_flush(cbio);
+            (void) BIO_flush(cbio);
             free(encbuf);
 
             char rbuf[256*1024];
@@ -1363,7 +1402,7 @@ check_gridftp(char *service)
                 {
                     base64_decode(rbuf+9, offset-11, &encbuf, &encbufsize);
                     BIO_write(rbio, encbuf, encbufsize);
-                    BIO_flush(rbio);
+                    (void) BIO_flush(rbio);
                     free(encbuf);
                     rc = -1;
                 }
@@ -1384,8 +1423,8 @@ check_gridftp(char *service)
 
     while (sk_SSL_CIPHER_num(ciphers) > 0)
     {
-        SSL_CIPHER *cipher = sk_SSL_CIPHER_pop(ciphers);
-        printf(" %s", cipher->name);
+        const SSL_CIPHER *cipher = sk_SSL_CIPHER_pop(ciphers);
+        printf(" %s", SSL_CIPHER_get_name(cipher));
     }
     printf("\n");
 
@@ -1425,7 +1464,7 @@ base64_encode(
     BIO_push(base64, mem);
 
     BIO_write(base64, input, input_len);
-    BIO_flush(base64);
+    (void) BIO_flush(base64);
 
     *output_len = BIO_ctrl_pending(mem);
     *output = malloc((*output_len)+1);
@@ -1524,7 +1563,7 @@ check_service_cert_chain(
             &(gss_buffer_desc)
             {
                 .value = cert,
-                .length = sizeof(X509)
+                .length = sizeof(X509*)
             },
             GSS_C_NT_X509,
             &cert_name);

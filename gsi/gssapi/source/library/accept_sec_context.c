@@ -389,8 +389,17 @@ GSS_CALLCONV gss_accept_sec_context(
                     major_status = GSS_S_FAILURE;
                     break;
                 }
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
                 peer_digest = EVP_get_digestbynid(
                         OBJ_obj2nid(peer_cert->sig_alg->algorithm));
+#else
+                {
+                    X509_ALGOR *algor = X509_get0_tbs_sigalg(peer_cert);
+                    peer_digest = EVP_get_digestbynid(
+                            OBJ_obj2nid(algor->algorithm));
+
+                }
+#endif
 
                 local_result = globus_gsi_proxy_handle_attrs_set_signing_algorithm(
                         proxy_handle_attrs, (EVP_MD *) peer_digest);

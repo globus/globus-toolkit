@@ -1,7 +1,7 @@
 Source: globus-gsi-callback
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, libglobus-gsi-proxy-ssl-dev (>= 4), libglobus-openssl-module-dev (>= 3), libglobus-gsi-openssl-error-dev (>= 2), libglobus-gsi-cert-utils-dev (>= 8), libglobus-common-dev (>= 14), libglobus-gsi-sysconfig-dev (>= 5), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-openssl-module-dev (>= 3), libglobus-gsi-openssl-error-dev (>= 2), libglobus-gsi-cert-utils-dev (>= 8), libglobus-common-dev (>= 14), libglobus-gsi-sysconfig-dev (>= 5), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
@@ -26,7 +26,7 @@ Description: Globus Toolkit - Globus GSI Callback Library
 Package: libglobus-gsi-callback-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gsi-callback0 (= ${binary:Version}), ${misc:Depends}, libglobus-gsi-proxy-ssl-dev, libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-cert-utils-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev
+Depends: libglobus-gsi-callback0 (= ${binary:Version}), ${misc:Depends}, libglobus-openssl-module-dev, libglobus-gsi-openssl-error-dev, libglobus-gsi-cert-utils-dev, libglobus-common-dev, libglobus-gsi-sysconfig-dev
 Recommends: libglobus-gsi-callback-doc (= ${binary:Version})
 Description: Globus Toolkit - Globus GSI Callback Library Development Files
  The Globus Toolkit is an open source software toolkit used for

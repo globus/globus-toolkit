@@ -83,8 +83,14 @@ GSS_CALLCONV gss_wrap_size_limit(
     {
         #if OPENSSL_VERSION_NUMBER < 0x10000000L
         overhead = 17 + EVP_MD_size(context->gss_ssl->write_hash); 
-        #else
+        #elif OPENSSL_VERSION_NUMBER < 0x10100000L
         overhead = 17 + EVP_MD_size(context->gss_ssl->write_hash->digest); 
+        #else
+
+        overhead = 17 + EVP_MD_size(
+            EVP_get_digestbynid(
+                SSL_CIPHER_get_digest_nid(
+                    SSL_get_current_cipher(context->gss_ssl))));
         #endif
         max = req_output_size - overhead;
         *max_input_size = max;

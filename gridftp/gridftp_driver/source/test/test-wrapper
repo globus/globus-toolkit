@@ -36,8 +36,9 @@ my $subject;
 
 my $server_args = "-no-fork -no-chdir -d 0 -p $server_port $server_nosec";
 
-chomp($subject = `openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert}`);
-$subject =~ s/^subject= *//;
+chomp($subject = `openssl x509 -in testcred.cert -subject -noout -nameopt rfc2253,-dn_rev`);
+$subject =~ s/^subject= */\//;
+$subject =~ s/,/\//g;
 
 $server_pid = open(SERVER, "$server_prog $server_args |");
  

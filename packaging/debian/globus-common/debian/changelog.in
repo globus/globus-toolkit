@@ -1,3 +1,9 @@
+globus-common (16.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Updates for running thread tests without installing
+
+ -- Globus Toolkit <support@globus.org>  Tue, 16 Aug 2016 09:50:14 -0400
+
 globus-common (16.5-1+gt6.@distro@) @distro@; urgency=low
 
   * don't redefine snprintf and vsnprintf when using mingw versions

@@ -17,25 +17,21 @@
 
 #include <stdio.h>
 #include <openssl/err.h>
-#include <openssl/asn1_mac.h>
+#include <openssl/asn1t.h>
 #include <openssl/objects.h>
 
 #include "proxypolicy.h"
 
-#if OPENSSL_VERSION_NUMBER < 0x0090801fL
-#define gt_i2d_cast (int (*)())
-#define gt_d2i_cast (char *(*)())
-#define gt_create_cast (char *(*)())
-#define gt_destroy_cast (void(*)())
-#else
-#define gt_i2d_cast (i2d_of_void *)
-#define gt_d2i_cast (d2i_of_void *)
-#define gt_create_cast (void *(*)(void))
-#define gt_destroy_cast (void (*)(void *))
-#endif
+ASN1_SEQUENCE(PROXYPOLICY) =
+{
+    ASN1_SIMPLE(PROXYPOLICY, policy_language, ASN1_OBJECT),
+    ASN1_OPT(PROXYPOLICY, policy, ASN1_OCTET_STRING)
+} ASN1_SEQUENCE_END(PROXYPOLICY)
+
+IMPLEMENT_ASN1_FUNCTIONS(PROXYPOLICY)
+IMPLEMENT_ASN1_DUP_FUNCTION(PROXYPOLICY)
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
-
 /**
  * @ingroup proxypolicy
  *  
@@ -51,78 +47,15 @@ ASN1_METHOD * PROXYPOLICY_asn1_meth()
 {
     static ASN1_METHOD proxypolicy_asn1_meth =
     {
-        gt_i2d_cast     i2d_PROXYPOLICY,
-        gt_d2i_cast     d2i_PROXYPOLICY,
-        gt_create_cast  PROXYPOLICY_new,
-        gt_destroy_cast PROXYPOLICY_free
+        (i2d_of_void *) i2d_PROXYPOLICY,
+        (d2i_of_void *) d2i_PROXYPOLICY,
+        (void * (*)(void)) PROXYPOLICY_new,
+        (void (*)(void *)) PROXYPOLICY_free
     };
     return (&proxypolicy_asn1_meth);
 }
 /* PROXYPOLICY_asn1_meth() */
 #endif
-
-/**
- * @ingroup proxypolicy
- *
- * Allocates and initializes a new PROXYPOLICY structure.
- *
- * @return pointer to the new PROXYPOLICY
- */
-PROXYPOLICY * PROXYPOLICY_new()
-{
-    ASN1_CTX                            c;
-    PROXYPOLICY *                       ret;
-
-    ret = NULL;
-
-    M_ASN1_New_Malloc(ret, PROXYPOLICY);
-    ret->policy_language = OBJ_nid2obj(OBJ_txt2nid(IMPERSONATION_PROXY_OID));
-    ret->policy = NULL;
-    return (ret);
-    M_ASN1_New_Error(ASN1_F_PROXYPOLICY_NEW);
-}
-/* PROXYPOLICY_new() */
-
-
-/**
- * @ingroup proxypolicy
- *
- * Frees a PROXYPOLICY
- *
- * @param policy the proxy policy to free
- */
-void PROXYPOLICY_free(
-    PROXYPOLICY *                       policy)
-{
-    if(policy == NULL) return;
-    ASN1_OBJECT_free(policy->policy_language);
-    M_ASN1_OCTET_STRING_free(policy->policy);
-    OPENSSL_free(policy);
-}
-/* PROXYPOLICY_free() */
-
-
-/**
- * @ingroup proxypolicy
- * 
- * Makes a copy of the proxypolicy - this function
- * allocates space for a new PROXYPOLICY, so the
- * returned PROXYPOLICY must be freed when
- * its no longer needed
- *
- * @param policy the proxy policy to copy
- *
- * @return the new PROXYPOLICY
- */
-PROXYPOLICY * PROXYPOLICY_dup(
-    PROXYPOLICY *                       policy)
-{
-    return ((PROXYPOLICY *) ASN1_dup(gt_i2d_cast i2d_PROXYPOLICY,
-                                     gt_d2i_cast d2i_PROXYPOLICY,
-                                     (char *)policy));
-}
-/* PROXYPOLICY_dup() */
-
 
 /**
  * @ingroup proxypolicy
@@ -138,7 +71,7 @@ int PROXYPOLICY_cmp(
     const PROXYPOLICY *                 b)
 {
     
-    if((a->policy_language->nid != b->policy_language->nid) ||
+    if((OBJ_obj2nid(a->policy_language) != OBJ_obj2nid(b->policy_language)) ||
        ASN1_STRING_cmp((ASN1_STRING *)a->policy, (ASN1_STRING *)b->policy))
     {
         return 1;
@@ -306,86 +239,6 @@ unsigned char * PROXYPOLICY_get_policy(
     }
     
     return NULL;
-}
-
-
-/**
- * @ingroup proxypolicy
- *
- * Converts a PROXYPOLICY from its internal structure
- * to a DER encoded form
- *
- * @param a the PROXYPOLICY to convert
- * @param pp the buffer to put the DER encoding in
- *
- * @return the length of the DER encoding in bytes
- */
-int i2d_PROXYPOLICY(
-    PROXYPOLICY *                       a,
-    unsigned char **                    pp)
-{
-    M_ASN1_I2D_vars(a);
-
-    M_ASN1_I2D_len(a->policy_language, i2d_ASN1_OBJECT);
-
-    if(a->policy)
-    { 
-        M_ASN1_I2D_len(a->policy, i2d_ASN1_OCTET_STRING);
-    }
-    
-    M_ASN1_I2D_seq_total();
-    M_ASN1_I2D_put(a->policy_language, i2d_ASN1_OBJECT);
-    if(a->policy)
-    { 
-        M_ASN1_I2D_put(a->policy, i2d_ASN1_OCTET_STRING);
-    }
-    M_ASN1_I2D_finish();
-}
-
-
-/**
- * @ingroup proxypolicy
- *
- * Converts the PROXYPOLICY from its DER encoded form
- * to an internal PROXYPOLICY structure
- *
- * @param a the PROXYPOLICY struct to set
- * @param pp the DER encoding to get the PROXYPOLICY from
- * @param length the length of the DER encoding
- * 
- * @return the resulting PROXYPOLICY in its internal structure
- * form - this variable has been allocated using _new routines, 
- * so it needs to be freed once its no longer used
- */
-PROXYPOLICY * d2i_PROXYPOLICY(
-    PROXYPOLICY **                      a,
-    unsigned char **                    pp,
-    long                                length)
-{
-    M_ASN1_D2I_vars(a, PROXYPOLICY *, PROXYPOLICY_new);
-    
-    M_ASN1_D2I_Init();
-    M_ASN1_D2I_start_sequence();
-    M_ASN1_D2I_get(ret->policy_language, d2i_ASN1_OBJECT);
-
-    /* need to try getting the policy using
-     *     a) a call expecting no tags
-     *     b) a call expecting tags
-     * one of which should succeed
-     */
-    
-    M_ASN1_D2I_get_opt(ret->policy,
-                       d2i_ASN1_OCTET_STRING,
-                       V_ASN1_OCTET_STRING);
-    
-    M_ASN1_D2I_get_IMP_opt(ret->policy,
-                           d2i_ASN1_OCTET_STRING,
-                           0,
-                           V_ASN1_OCTET_STRING);
-
-    M_ASN1_D2I_Finish(a, 
-                      PROXYPOLICY_free, 
-                      ASN1_F_D2I_PROXYPOLICY);
 }
 
 

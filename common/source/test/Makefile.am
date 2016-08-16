@@ -36,5 +36,9 @@ check_PROGRAMS = \
     uuid_test
 
 TESTS = $(check_PROGRAMS)
+LOG_COMPILER = $(LIBTOOL)
+AM_LOG_FLAGS = --mode=execute \
+		$(thread_test_windows_LDFLAGS) \
+		$(thread_test_pthread_LDFLAGS)
 
 EXTRA_DIST = globus_test_tap.h thread_test.c

@@ -1,7 +1,7 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	14.27
-Release:	3%{?dist}
+Version:	14.28
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -152,6 +152,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 14.28-1
+- Updates for OpenSSL 1.1.0
+
 * Mon May 23 2016 Globus Toolkit <support@globus.org> - 14.27-3
 - Add perl-Test dependency for fedora 24
 

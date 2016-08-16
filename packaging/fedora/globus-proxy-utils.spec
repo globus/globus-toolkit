@@ -1,6 +1,6 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	6.15
+Version:	6.16
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
@@ -18,7 +18,6 @@ Requires:	openssl-libs%{?_isa}
 %if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
 Requires:	openssl%{?_isa}
 %endif
-Requires:	globus-gsi-proxy-ssl%{?_isa} >= 4
 Requires:	globus-gsi-credential%{?_isa} >= 5
 Requires:	globus-gsi-callback%{?_isa} >= 4
 Requires:	globus-openssl-module%{?_isa} >= 3
@@ -31,7 +30,6 @@ Requires:	globus-gsi-sysconfig%{?_isa} >= 5
 Requires:	globus-gssapi-gsi%{?_isa} >= 4
 
 
-BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
 BuildRequires:	globus-gsi-credential-devel >= 5
 BuildRequires:	globus-gsi-callback-devel >= 4
 BuildRequires:	globus-openssl-module-devel >= 3
@@ -101,6 +99,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 6.16-1
+- Updates for OpenSSL 1.1.0
+
 * Mon Mar 14 2016 Globus Toolkit <support@globus.org> - 6.15-1
 - Updates for reverse lookups for backward compatibility checking
 

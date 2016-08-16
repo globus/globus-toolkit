@@ -1,7 +1,7 @@
 Name:		globus-gsi-credential
 %global _name %(tr - _ <<< %{name})
-Version:	7.9
-Release:	2%{?dist}
+Version:	7.10
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Credential Library
 
@@ -25,7 +25,6 @@ BuildRequires:	openssl-devel
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gsi-sysconfig-devel >= 5
-BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -138,6 +137,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 7.10-1
+- Updates for OpenSSL 1.1.0
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 7.9-2
 - Add vendor
 

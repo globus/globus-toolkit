@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	16.5
+Version:	16.6
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Common Library
@@ -212,6 +212,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 16.6-1
+- Updates for running thread tests without installing
+
 * Wed Jun 22 2016 Globus Toolkit <support@globus.org> - 16.5-1
 - don't redefine snprintf and vsnprintf when using mingw versions
 

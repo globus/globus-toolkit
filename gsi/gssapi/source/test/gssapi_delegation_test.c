@@ -43,7 +43,6 @@ int main()
     gss_cred_id_t                       delegated_cred;
     gss_cred_id_t                       imported_cred;
     gss_cred_id_t                       cred_handle;
-    char *                              error_str;
     int                                 rc = EXIT_SUCCESS;
 
     printf("1..1\n");

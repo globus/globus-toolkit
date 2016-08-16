@@ -24,22 +24,33 @@
 #include <stdio.h>
 #include <openssl/err.h>
 #include <openssl/asn1.h>
-#include <openssl/asn1_mac.h>
+#include <openssl/asn1t.h>
 #include <openssl/x509v3.h>
+
+#define GLOBUS_DEPRECATED(x) x
 
 #include "proxycertinfo.h"
 
-#if OPENSSL_VERSION_NUMBER < 0x0090801fL
-#define gt_i2d_cast (int (*)())
-#define gt_d2i_cast (char *(*)())
-#define gt_create_cast (char *(*)())
-#define gt_destroy_cast (void(*)())
-#else
-#define gt_i2d_cast (i2d_of_void *)
-#define gt_d2i_cast (d2i_of_void *)
-#define gt_create_cast (void *(*)(void))
-#define gt_destroy_cast (void (*)(void *))
-#endif
+typedef PROXY_CERT_INFO_EXTENSION PROXYCERTINFO_OLD;
+
+ASN1_SEQUENCE(PROXYCERTINFO) =
+{
+    ASN1_OPT(PROXYCERTINFO, path_length, ASN1_INTEGER),
+    ASN1_SIMPLE(PROXYCERTINFO, policy, PROXYPOLICY)
+    
+} ASN1_SEQUENCE_END(PROXYCERTINFO)
+
+ASN1_SEQUENCE(PROXYCERTINFO_OLD) =
+{
+    ASN1_SIMPLE(PROXYCERTINFO_OLD, proxyPolicy, PROXY_POLICY),
+    ASN1_EXP_OPT(PROXYCERTINFO_OLD, pcPathLengthConstraint, ASN1_INTEGER, 1),
+} ASN1_SEQUENCE_END(PROXYCERTINFO_OLD)
+
+IMPLEMENT_ASN1_FUNCTIONS(PROXYCERTINFO)
+IMPLEMENT_ASN1_DUP_FUNCTION(PROXYCERTINFO)
+
+IMPLEMENT_ASN1_FUNCTIONS(PROXYCERTINFO_OLD)
+IMPLEMENT_ASN1_DUP_FUNCTION(PROXYCERTINFO_OLD)
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
 /** 
@@ -58,78 +69,15 @@ ASN1_METHOD * PROXYCERTINFO_asn1_meth()
 {
     static ASN1_METHOD proxycertinfo_asn1_meth =
     {
-        gt_i2d_cast i2d_PROXYCERTINFO, 
-        gt_d2i_cast d2i_PROXYCERTINFO, 
-        gt_create_cast  PROXYCERTINFO_new, 
-        gt_destroy_cast PROXYCERTINFO_free 
+        (i2d_of_void *) i2d_PROXYCERTINFO, 
+        (d2i_of_void *) d2i_PROXYCERTINFO, 
+        (void * (*)(void)) PROXYCERTINFO_new, 
+        (void (*)(void *)) PROXYCERTINFO_free 
     };
     return (&proxycertinfo_asn1_meth);
 }
 /* PROXYCERTINFO_asn1_meth() */
 #endif
-
-
-/**
- * Create a new PROXYCERTINFO.
- * @ingroup proxycertinfo
- *
- * Allocates and initializes a new PROXYCERTINFO structure.
- *
- * @return pointer to the new PROXYCERTINFO
- */
-PROXYCERTINFO * PROXYCERTINFO_new()
-{
-    PROXYCERTINFO *                     ret;
-    ASN1_CTX                            c;
-
-    ret = NULL;
-
-    M_ASN1_New_Malloc(ret, PROXYCERTINFO);
-    memset(ret, 0, sizeof(PROXYCERTINFO));
-    ret->path_length      = NULL;
-    ret->policy           = PROXYPOLICY_new();
-    return (ret);
-    M_ASN1_New_Error(ASN1_F_PROXYCERTINFO_NEW);
-}
-/* PROXYCERTINFO_new() */
-
-
-/**
- * Free a PROXYCERTINFO.
- * @ingroup proxycertinfo
- *
- * @param cert_info pointer to the PROXYCERTINFO structure
- * to be freed.
- */ 
-void PROXYCERTINFO_free(
-    PROXYCERTINFO *                     cert_info)
-{
-    if(cert_info == NULL) return;
-    ASN1_INTEGER_free(cert_info->path_length);
-    PROXYPOLICY_free(cert_info->policy);
-    OPENSSL_free(cert_info);
-}
-/* PROXYCERTINFO_free */
-
-
-/**
- * Makes a copy of a PROXYCERTINFO.
- * @ingroup proxycertinfo
- *
- * Makes a copy of a PROXYCERTINFO structure
- *
- * @param cert_info the PROXYCERTINFO structure to copy
- * 
- * @return the copied PROXYCERTINFO structure
- */
-PROXYCERTINFO * PROXYCERTINFO_dup(
-    PROXYCERTINFO *                     cert_info)
-{
-    return ((PROXYCERTINFO *) ASN1_dup(gt_i2d_cast i2d_PROXYCERTINFO,
-                                       gt_d2i_cast d2i_PROXYCERTINFO,
-                                       (char *)cert_info));
-}
-/* PROXYCERINFO_dup() */
 
 /** 
  * @ingroup proxycertinfo
@@ -343,79 +291,6 @@ long PROXYCERTINFO_get_path_length(
 /* PROXYCERTINFO_get_path_length() */
 
     
-/**
- * @ingroup proxycertinfo
- * 
- * Converts the PROXYCERTINFO structure from internal
- * format to a DER encoded ASN.1 string
- *
- * @param cert_info the PROXYCERTINFO structure to convert
- * @param pp the resulting DER encoded string
- *
- * @return the length of the DER encoded string
- */
-int i2d_PROXYCERTINFO(
-    PROXYCERTINFO *                     cert_info,
-    unsigned char **                    pp)
-{
-    M_ASN1_I2D_vars(cert_info);
-
-    if(cert_info->path_length)
-    { 
-        M_ASN1_I2D_len(cert_info->path_length, i2d_ASN1_INTEGER);
-    }
-    
-    M_ASN1_I2D_len(cert_info->policy, i2d_PROXYPOLICY);
-
-    M_ASN1_I2D_seq_total();
-    if(cert_info->path_length)
-    { 
-        M_ASN1_I2D_put(cert_info->path_length, i2d_ASN1_INTEGER);
-    }
-    M_ASN1_I2D_put(cert_info->policy, i2d_PROXYPOLICY);
-    M_ASN1_I2D_finish();
-}
-/* i2d_PROXYCERTINFO() */
-
-/**
- * @ingroup proxycertinfo
- *
- * Convert from a DER encoded ASN.1 string of a PROXYCERTINFO
- * to its internal structure
- *
- * @param cert_info the resulting PROXYCERTINFO in internal form
- * @param pp the DER encoded ASN.1 string containing
- * the PROXYCERTINFO 
- * @param length the length of the buffer
- *
- * @return the resulting PROXYCERTINFO in internal form
- */                                             
-PROXYCERTINFO * d2i_PROXYCERTINFO(
-    PROXYCERTINFO **                    cert_info,
-    unsigned char **                    pp,
-    long                                length)
-{
-    M_ASN1_D2I_vars(cert_info, PROXYCERTINFO *, PROXYCERTINFO_new);
-
-    M_ASN1_D2I_Init();
-    M_ASN1_D2I_start_sequence();
-
-    M_ASN1_D2I_get_EXP_opt(ret->path_length,
-                           d2i_ASN1_INTEGER,
-                           1);
-    
-    M_ASN1_D2I_get_opt(ret->path_length, 
-                       d2i_ASN1_INTEGER,
-                       V_ASN1_INTEGER);
-
-    M_ASN1_D2I_get(ret->policy,d2i_PROXYPOLICY);
-
-    M_ASN1_D2I_Finish(cert_info, 
-                      PROXYCERTINFO_free, 
-                      ASN1_F_D2I_PROXYCERTINFO);
-}
-/* d2i_PROXYCERTINFO() */
-
 X509V3_EXT_METHOD * PROXYCERTINFO_x509v3_ext_meth()
 {
     static X509V3_EXT_METHOD proxycertinfo_x509v3_ext_meth =
@@ -435,75 +310,6 @@ X509V3_EXT_METHOD * PROXYCERTINFO_x509v3_ext_meth()
     };
     return (&proxycertinfo_x509v3_ext_meth);
 }
-
-/**
- * @ingroup proxycertinfo
- * 
- * Converts the old PROXYCERTINFO structure from internal
- * format to a DER encoded ASN.1 string
- *
- * @param cert_info the old PROXYCERTINFO structure to convert
- * @param pp the resulting DER encoded string
- *
- * @return the length of the DER encoded string
- */
-int i2d_PROXYCERTINFO_OLD(
-    PROXYCERTINFO *                     cert_info,
-    unsigned char **                    pp)
-{
-    int                                 v1;
-
-    M_ASN1_I2D_vars(cert_info);
-    
-    v1 = 0;
-
-    M_ASN1_I2D_len(cert_info->policy,      
-                   i2d_PROXYPOLICY);
-    M_ASN1_I2D_len_EXP_opt(cert_info->path_length,      
-                           i2d_ASN1_INTEGER,
-                           1, v1);
-
-    M_ASN1_I2D_seq_total();
-    M_ASN1_I2D_put(cert_info->policy, i2d_PROXYPOLICY);
-    M_ASN1_I2D_put_EXP_opt(cert_info->path_length, i2d_ASN1_INTEGER, 1, v1);
-    M_ASN1_I2D_finish();
-}
-/* i2d_PROXYCERTINFO_OLD() */
-
-/**
- * @ingroup proxycertinfo
- *
- * Convert from a DER encoded ASN.1 string of a old PROXYCERTINFO
- * to its internal structure
- *
- * @param cert_info the resulting old PROXYCERTINFO in internal form
- * @param pp the DER encoded ASN.1 string containing
- * the old PROXYCERTINFO 
- * @param length the length of the buffer
- *
- * @return the resulting old  PROXYCERTINFO in internal form
- */                                             
-PROXYCERTINFO * d2i_PROXYCERTINFO_OLD(
-    PROXYCERTINFO **                    cert_info,
-    unsigned char **                    pp,
-    long                                length)
-{
-    M_ASN1_D2I_vars(cert_info, PROXYCERTINFO *, PROXYCERTINFO_new);
-
-    M_ASN1_D2I_Init();
-    M_ASN1_D2I_start_sequence();
-
-    M_ASN1_D2I_get(ret->policy,d2i_PROXYPOLICY);
-
-    M_ASN1_D2I_get_EXP_opt(ret->path_length,
-                           d2i_ASN1_INTEGER,
-                           1);
-
-    M_ASN1_D2I_Finish(cert_info, 
-                      PROXYCERTINFO_free, 
-                      ASN1_F_D2I_PROXYCERTINFO);
-}
-/* d2i_PROXYCERTINFO() */
 
 X509V3_EXT_METHOD * PROXYCERTINFO_OLD_x509v3_ext_meth()
 {

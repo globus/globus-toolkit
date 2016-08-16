@@ -1034,7 +1034,7 @@ globus_gram_gsi_get_dn_hash(
     gss_buffer_desc                     namebuf;
     unsigned char                       md[EVP_MAX_MD_SIZE+1];
     const EVP_MD *                      evp_md;
-    EVP_MD_CTX                          evp_ctx;
+    EVP_MD_CTX *                        evp_ctx = NULL;
     unsigned int                        mdlen;
     unsigned long                       hash_value;
 
@@ -1091,23 +1091,23 @@ globus_gram_gsi_get_dn_hash(
         goto free_namebuf_out;
     }
 
-    EVP_MD_CTX_init(&evp_ctx);
+    evp_ctx = EVP_MD_CTX_create();
 
-    if (EVP_DigestInit_ex(&evp_ctx, evp_md, NULL) != 1)
+    if (EVP_DigestInit_ex(evp_ctx, evp_md, NULL) != 1)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
         goto free_namebuf_out;
     }
 
-    if (EVP_DigestUpdate(&evp_ctx, namebuf.value, namebuf.length) != 1)
+    if (EVP_DigestUpdate(evp_ctx, namebuf.value, namebuf.length) != 1)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
         goto free_digest_out;
     }
 
-    if (EVP_DigestFinal_ex(&evp_ctx, md, &mdlen) != 1)
+    if (EVP_DigestFinal_ex(evp_ctx, md, &mdlen) != 1)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
@@ -1121,7 +1121,7 @@ globus_gram_gsi_get_dn_hash(
     *hash = hash_value;
 
 free_digest_out:
-    EVP_MD_CTX_cleanup(&evp_ctx);
+    EVP_MD_CTX_destroy(evp_ctx);
 free_namebuf_out:
     gss_release_buffer(&minor, &namebuf);
 free_name_out:

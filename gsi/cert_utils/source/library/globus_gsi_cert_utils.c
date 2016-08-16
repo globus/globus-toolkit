@@ -24,7 +24,6 @@
 #endif
 
 #include "globus_i_gsi_cert_utils.h"
-#include "proxycertinfo.h"
 #include "globus_openssl.h"
 #include "openssl/asn1.h"
 #include "openssl/x509.h"
@@ -35,6 +34,9 @@
 #include <ctype.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+#define LIMITED_PROXY_OID               "1.3.6.1.4.1.3536.1.1.1.9"
+#define PROXYCERTINFO_OLD_OID           "1.3.6.1.4.1.3536.1.222"
 
 int                               globus_i_gsi_cert_utils_debug_level = 0;
 FILE *                            globus_i_gsi_cert_utils_debug_fstream = NULL;
@@ -303,8 +305,8 @@ globus_gsi_cert_utils_get_cert_type(
     X509_NAME_ENTRY *                   new_ne = NULL;
     X509_EXTENSION *                    pci_ext = NULL;
     ASN1_STRING *                       data = NULL;
-    PROXYCERTINFO *                     pci = NULL;
-    PROXYPOLICY *                       policy = NULL;
+    PROXY_CERT_INFO_EXTENSION *         pci = NULL;
+    PROXY_POLICY *                      policy = NULL;
     ASN1_OBJECT *                       policy_lang = NULL;
     int                                 policy_nid;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -341,7 +343,7 @@ globus_gsi_cert_utils_get_cert_type(
         goto exit;
     }
 
-    if (!OBJ_cmp(ne->object, OBJ_nid2obj(NID_commonName)))
+    if (!OBJ_cmp(X509_NAME_ENTRY_get_object(ne), OBJ_nid2obj(NID_commonName)))
     {
         /* the name entry is of the type: common name */
         data = X509_NAME_ENTRY_get_data(ne);
@@ -354,7 +356,7 @@ globus_gsi_cert_utils_get_cert_type(
             *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
         }
         else if((index = X509_get_ext_by_NID(cert,
-                                             OBJ_txt2nid(PROXYCERTINFO_OID),
+                                             NID_proxyCertInfo,
                                              -1)) != -1  &&
                 (pci_ext = X509_get_ext(cert,index)) &&
                 X509_EXTENSION_get_critical(pci_ext))
@@ -369,7 +371,7 @@ globus_gsi_cert_utils_get_cert_type(
                 goto exit;
             }
             
-            if((policy = PROXYCERTINFO_get_policy(pci)) == NULL)
+            if((policy = pci->proxyPolicy) == NULL)
             {
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
@@ -378,8 +380,7 @@ globus_gsi_cert_utils_get_cert_type(
                 goto exit;
             }
 
-            if((policy_lang = PROXYPOLICY_get_policy_language(policy))
-               == NULL)
+            if((policy_lang = policy->policyLanguage) == NULL)
             {
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
@@ -391,11 +392,11 @@ globus_gsi_cert_utils_get_cert_type(
 
             policy_nid = OBJ_obj2nid(policy_lang);
             
-            if(policy_nid == OBJ_txt2nid(IMPERSONATION_PROXY_OID))
+            if (policy_nid == NID_id_ppl_inheritAll)
             {
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
             }
-            else if(policy_nid == OBJ_txt2nid(INDEPENDENT_PROXY_OID))
+            else if (policy_nid == NID_Independent)
             {
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY;
             }
@@ -409,7 +410,7 @@ globus_gsi_cert_utils_get_cert_type(
             }
             
             if(X509_get_ext_by_NID(cert,
-                                   OBJ_txt2nid(PROXYCERTINFO_OID),
+                                   NID_proxyCertInfo,
                                    index) != -1)
             { 
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
@@ -435,7 +436,7 @@ globus_gsi_cert_utils_get_cert_type(
                 goto exit;
             }
             
-            if((policy = PROXYCERTINFO_get_policy(pci)) == NULL)
+            if((policy = pci->proxyPolicy) == NULL)
             {
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
@@ -444,8 +445,7 @@ globus_gsi_cert_utils_get_cert_type(
                 goto exit;
             }
 
-            if((policy_lang = PROXYPOLICY_get_policy_language(policy))
-               == NULL)
+            if((policy_lang = policy->policyLanguage) == NULL)
             {
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
@@ -457,11 +457,11 @@ globus_gsi_cert_utils_get_cert_type(
 
             policy_nid = OBJ_obj2nid(policy_lang);
             
-            if(policy_nid == OBJ_txt2nid(IMPERSONATION_PROXY_OID))
+            if (policy_nid == NID_id_ppl_inheritAll)
             {
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
             }
-            else if(policy_nid == OBJ_txt2nid(INDEPENDENT_PROXY_OID))
+            else if (policy_nid == NID_Independent)
             {
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
             }
@@ -578,7 +578,7 @@ globus_gsi_cert_utils_get_cert_type(
 
     if(pci)
     {
-        PROXYCERTINFO_free(pci);
+        PROXY_CERT_INFO_EXTENSION_free(pci);
     }
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;

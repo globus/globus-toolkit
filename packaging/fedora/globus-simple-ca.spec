@@ -2,8 +2,8 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	4.22
-Release:	2%{?dist}
+Version:	4.23
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Simple CA
 
@@ -114,6 +114,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 4.23-1
+- Updates for OpenSSL 1.1.0
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 4.22-2
 - Add vendor
 

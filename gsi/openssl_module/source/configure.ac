@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_openssl_module],[4.6],[https://globus.atlassian.net/])
+AC_INIT([globus_openssl_module],[4.7],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -10,6 +10,9 @@ AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gsi-proxy-ssl >= 4, globu
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
 LT_INIT([dlopen win32-dll])
+
+AM_PROG_CC_C_O
+AC_PROG_CC_C99
 
 m4_include([dirt.sh])
 AC_SUBST(DIRT_TIMESTAMP)

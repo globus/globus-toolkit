@@ -91,18 +91,16 @@ struct PROXYPOLICY_st
 
 typedef struct PROXYPOLICY_st PROXYPOLICY;
 
+#ifdef DECLARE_STACK_OF
 DECLARE_STACK_OF(PROXYPOLICY)
-DECLARE_ASN1_SET_OF(PROXYPOLICY)
+#endif
+DECLARE_ASN1_FUNCTIONS(PROXYPOLICY)
 
 /* functions */
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
 ASN1_METHOD * PROXYPOLICY_asn1_meth();
 #endif
-
-PROXYPOLICY * PROXYPOLICY_new();
-
-void PROXYPOLICY_free();
 
 PROXYPOLICY * PROXYPOLICY_dup(
     PROXYPOLICY *                       policy);
@@ -134,15 +132,6 @@ int PROXYPOLICY_set_policy(
 unsigned char * PROXYPOLICY_get_policy(
     PROXYPOLICY *                       policy,
     int *                               length);
-
-int i2d_PROXYPOLICY(
-    PROXYPOLICY *                       policy,
-    unsigned char **                    a);
-
-PROXYPOLICY * d2i_PROXYPOLICY(
-    PROXYPOLICY **                      policy,
-    unsigned char **                    a,
-    long                                length);
 
 X509V3_EXT_METHOD * PROXYPOLICY_x509v3_ext_meth();
 

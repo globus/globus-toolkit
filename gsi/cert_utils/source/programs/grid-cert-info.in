@@ -217,6 +217,7 @@ while [ "X$1" != "X" ]; do
 	toprint="$toprint -enddate"
 	;;
     -rfc2253|--rfc2253)
+        rfc2253=1
         openssl_options='-nameopt rfc2253'
         ;;
     *)
@@ -226,6 +227,9 @@ while [ "X$1" != "X" ]; do
     shift
 done
 
+if [ "${rfc2253:-0}" != 1 ]; then
+    openssl_options="$openssl_options -nameopt rfc2253,-dn_rev"
+fi
 cert_format=`certificate_format "$certfile"`
 if test "$cert_format" = ""; then
     echo "Error: Cannot locate certificate" 1>&2
@@ -262,6 +266,9 @@ if test $? -ne 0 ; then
 fi
 
 subject=`echo ${subject} | sed 's%^subject=\ *%%'`
+if [ "${rfc2253:-0}" != 1 ]; then
+    subject=$(echo "${subject}" | sed -e 's|^|/|' -e 's|,|/|g')
+fi
 
 eval set -- "$toprint"
 for i in "$@"; do

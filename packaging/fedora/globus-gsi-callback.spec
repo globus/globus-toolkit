@@ -1,7 +1,7 @@
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
-Version:	5.8
-Release:	2%{?dist}
+Version:	5.9
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
@@ -18,7 +18,6 @@ Requires:	globus-common%{?_isa} >= 14
 Requires:	globus-gsi-sysconfig%{?_isa} >= 5
 
 BuildRequires:	openssl-devel
-BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
 BuildRequires:	globus-openssl-module-devel >= 3
 BuildRequires:	globus-gsi-openssl-error-devel >= 2
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
@@ -40,7 +39,6 @@ BuildRequires:  pkgconfig
 Summary:	Globus Toolkit - Globus GSI Callback Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 4
 Requires:	globus-openssl-module-devel%{?_isa} >= 3
 Requires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
 Requires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
@@ -135,6 +133,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 5.9-1
+- Updates for OpenSSL 1.1.0
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 5.8-2
 - Add vendor
 

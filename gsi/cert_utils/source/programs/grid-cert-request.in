@@ -195,8 +195,8 @@ set_non_default_ca()
         for cert in ${trusted_certs_dir}/*.0; do
             if test -r "${cert}" ; then
                 eval "CA${index}=${cert}"
-                TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
-                eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | sed -e \"s|subject= ||\"`\""
+                TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g'`
+                eval "CA_SUBJECT${index}=\"${TEMP_SUBJECT}\""
                 eval "CA_HASH${index}=`openssl x509 -in ${cert} -noout -hash`"
                 eval "echo \"$index)  \${CA_HASH${index}} - \${CA_SUBJECT${index}}\""
                 index=`expr $index + 1`
@@ -224,8 +224,8 @@ set_non_default_ca()
             echo 
             exit 1
         fi
-        TEMP_SUBJECT=`openssl x509 -in ${trusted_certs_dir}/${CA_HASH}.0 -noout -subject`
-        eval "CA_SUBJECT=\"`echo ${TEMP_SUBJECT} | sed -e \"s|subject= ||\"`\""
+        TEMP_SUBJECT=`openssl x509 -in ${trusted_certs_dir}/${CA_HASH}.0 -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g'`
+        eval "CA_SUBJECT=\"${TEMP_SUBJECT}\""
     fi
 
     echo

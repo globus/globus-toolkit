@@ -158,22 +158,8 @@ GSS_CALLCONV gss_delete_sec_context(
         (*context_handle)->gss_sslbio = NULL;
     }
 
-    if ((*context_handle)->gss_rbio)
-    {
-        BIO_free_all((*context_handle)->gss_rbio);
-        (*context_handle)->gss_rbio = NULL;
-    }
-
-    if ((*context_handle)->gss_wbio)
-    {
-        BIO_free_all((*context_handle)->gss_wbio);
-        (*context_handle)->gss_wbio = NULL;
-    }
-
     if ((*context_handle)->gss_ssl)
     {
-        (*context_handle)->gss_ssl->rbio = NULL;
-        (*context_handle)->gss_ssl->wbio = NULL;
         SSL_free((*context_handle)->gss_ssl);
         (*context_handle)->gss_ssl = NULL;
     } 
@@ -189,6 +175,10 @@ GSS_CALLCONV gss_delete_sec_context(
             ("Can't delete oid set."));
         goto exit;
     }
+#if OPENSSL_VERSION_NUMBER >= 0x10000100L
+    free((*context_handle)->mac_key);
+    free((*context_handle)->mac_iv_fixed);
+#endif
 
     globus_mutex_unlock(&(*context_handle)->mutex);
 

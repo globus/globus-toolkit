@@ -6,7 +6,11 @@ check_PROGRAMS = \
 check_DATA = \
         testcred.key \
         testcred.cert \
-        testcredlink
+        testcred.cakey \
+        testcred.cacert \
+        testcred.link \
+        testcred.signing_policy \
+        testcred.srl
 
 check_SCRIPTS = setup-chroot-test
 
@@ -26,30 +30,55 @@ LDADD = ../libglobus_gridftp_server.la \
 
 AM_LDFLAGS = -dlpreopen force
 
-testcred.key:
-	umask 077; openssl genrsa 1024 > $@
+# Test CA
+.cnf.cacert:
+	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+.cacert.cakey:
 
+.cacert.link:
+	linkname="`openssl x509 -hash -noout -in $<`.0"; \
+	rm -f "$$linkname"; \
+	cp $< "$$linkname"; \
+        echo "$$linkname" > $@; \
+	$(MKDIR_P) certificates; \
+	cp $${linkname} certificates
+
+.link.signing_policy:
+	linkname=`cat $<`; \
+	policyfile=$${linkname%.0}.signing_policy; \
+	echo "access_id_CA      X509         '/CN=ca'" > $${policyfile}; \
+	echo "pos_rights        globus        CA:sign" >> $${policyfile}; \
+	echo "cond_subjects     globus       '\"/*\"'" >> $${policyfile}; \
+	echo $${policyfile} >> $@; \
+	$(MKDIR_P) certificates; \
+	cp $${policyfile} certificates
+
+.signing_policy.srl:
+	echo 01 > $@
+
+# Test Cert/Key
+.srl.key:
+	umask 077; openssl genrsa -out $@ 1024
 .key.req:
-	printf "NA\nNA\nNA\nNA\nNA\nNA\nNA\n\n\n\n" | openssl req -new -config $(srcdir)/openssl.cnf -key $< > $@
+	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
 
 .req.cert:
-	umask 022; openssl x509 -req -days 365 -in testcred.req -signkey testcred.key > $@
+	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
 
-testcredlink: testcred.cert
-	$(MKDIR_P) certificates
-	linkname="certificates/`openssl x509 -hash -noout -in testcred.cert`.0"; \
-	rm -f "$$linkname"; \
-	cp testcred.cert "$$linkname" && \
-        echo "$$linkname" > testcredlink
 
-CLEANFILES = testcred.key testcred.cert testcred.req cert_chain.txt
+SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey
+
+CLEANFILES = testcred.key testcred.cert testcred.req \
+	     testcred.cacert testcred.srl \
+	     testcred.cakey
 
 clean-local:
-	@if [ -f testcredlink ]; then \
-            rm -f $$(cat testcredlink) testcredlink ; \
-	    rm -rf certificates; \
+	if [ -f testcred.link ]; then \
+            rm -f "$$(cat testcred.link)" testcred.link; \
         fi
+	if test -f testcred.signing_policy; then \
+	    rm -f $$(cat testcred.signing_policy) testcred.signing_policy; \
+	fi
+	rm -rf certificates
 
-SUFFIXES = .key .req .cert 
-
-EXTRA_DIST = openssl.cnf $(check_SCRIPTS)
+EXTRA_DIST = $(check_SCRIPTS)
