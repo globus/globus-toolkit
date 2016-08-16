@@ -1,5 +1,5 @@
 m4_define([globus_buildno], [m4_syscmd([
-if test -d .git ; then
+if test -e .git ; then
     git log -n 1 --pretty=format:%ct > globus-version.inc.new;
     if ! cmp globus-version.inc.new globus-version.inc > /dev/null 2>&1; then
         mv globus-version.inc.new globus-version.inc
