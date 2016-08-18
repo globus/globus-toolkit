@@ -1,3 +1,12 @@
+gsi-openssh (7.1p2f-3+gt6.@distro@) @distro@; urgency=low
+
+  * Fix for https://github.com/globus/globus-toolkit/issues/61:
+    Debian 7 package fails to detect status of gsisshd
+  * Fix for https://github.com/globus/globus-toolkit/issues/62:
+    gsisshd prints message about /etc/gsi-openssh to stderr
+
+ -- Globus Toolkit <support@globus.org>  Thu, 18 Aug 2016 10:55:01 -0400
+
 gsi-openssh (7.1p2f-2+gt6.@distro@) @distro@; urgency=low
 
   * Fix for https://github.com/globus/globus-toolkit/issues/49

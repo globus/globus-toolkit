@@ -53,7 +53,7 @@ configure-stamp: sed-stamp
 	done
 	./configure \
 	   --prefix=/usr \
-	   --sysconfdir=/etc/gsi-openssh \
+	   --sysconfdir=/etc/gsissh \
 	   --libexecdir=$(_libdir)/gsissh \
 	   --build=$(DEB_BUILD_GNU_TYPE) \
 	   --datarootdir=$(_datadir) \
