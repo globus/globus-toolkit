@@ -358,14 +358,7 @@ if test x"$PKG_CONFIG" = x ; then
    AC_MSG_ERROR([Missing required pkg-config >= $pkg_config_min])
 fi
 
-pkg_config_version="$("${PKG_CONFIG}" --version)"
-pkg_config_major="${pkg_config_version%%.*}"
-pkg_config_minor="${pkg_config_version#*.}"
-gsi_openssh_can_recurse=no
-if  test "${pkg_config_major:-0}" -gt 0 || \
-    test "${pkg_config_minor:-0}" -ge 22; then
-    gsi_openssh_can_recurse=yes
-fi
+gsi_openssh_can_recurse=yes
 
 dnl 
 if test "$HAVE_LTDL" = 1; then
