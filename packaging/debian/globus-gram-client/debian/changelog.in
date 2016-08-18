@@ -1,3 +1,9 @@
+globus-gram-client (13.15-1+gt6.@distro@) @distro@; urgency=low
+
+  * Makefile fix
+
+ -- Globus Toolkit <support@globus.org>  Thu, 18 Aug 2016 16:08:27 -0400
+
 globus-gram-client (13.14-1+gt6.@distro@) @distro@; urgency=low
 
   * Updates for OpenSSL 1.1.0

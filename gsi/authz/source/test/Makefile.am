@@ -47,6 +47,7 @@ libglobus_authz_test_callout_la_LDFLAGS = \
 .cnf.cacert:
 	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 .cacert.cakey:
+	:
 
 .cacert.link:
 	linkname="`openssl x509 -hash -noout -in $<`.0"; \

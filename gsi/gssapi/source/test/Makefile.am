@@ -148,8 +148,8 @@ testcred.cacert: testcred.cnf
 testcred-nocn.cacert: testcred-nocn.cnf
 	umask 077; openssl req -passin pass:globus -subj "/userId=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 
-testcred.cakey: testcred.cacert
-testcred-nocn.cakey: testcred-nocn.cacert
+.cacert.cakey:
+	:
 
 .cacert.link:
 	linkname="`openssl x509 -hash -noout -in $<`.0"; \

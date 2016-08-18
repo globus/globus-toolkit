@@ -11,7 +11,7 @@ endif
 
 name = globus-gram-client
 _name = globus_gram_client
-version = 13.14
+version = 13.15
 soname = 3
 
 INSTALLDIR = $(CURDIR)/debian/tmp

@@ -1,6 +1,6 @@
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	10.16
+Version:	10.17
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI Assist library
@@ -161,6 +161,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 10.17-1
+- Makefile fix
+
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 10.16-1
 - Updates for OpenSSL 1.1.0
 

@@ -1,6 +1,6 @@
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	7.3
+Version:	7.4
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
@@ -138,6 +138,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 7.4-1
+- Makefile fix
+
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 7.3-1
 - Updates for OpenSSL 1.1.0
 

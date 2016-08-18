@@ -1,6 +1,6 @@
 Name:		globus-authz
 %global _name %(tr - _ <<< %{name})
-Version:	3.13
+Version:	3.14
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus authz library
@@ -139,6 +139,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 3.14-1
+- Makefile fix
+
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 3.13-1
 - Updates for OpenSSL 1.1.0
 
