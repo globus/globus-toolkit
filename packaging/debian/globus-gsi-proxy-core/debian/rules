@@ -67,6 +67,7 @@ configure-stamp: sed-stamp
 	   --libdir='$(_libdir)' \
 	   --libexecdir='$(_datadir)/globus' \
 	   --disable-static \
+           --with-symbol-versions \
 	   --enable-doxygen
 	touch $@
 

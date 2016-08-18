@@ -108,6 +108,7 @@ autoreconf -if
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
            --includedir=%{_includedir}/globus \
+           --with-symbol-versions \
            --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
