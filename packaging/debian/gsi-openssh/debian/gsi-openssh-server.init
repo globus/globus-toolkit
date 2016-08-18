@@ -220,7 +220,7 @@ force_reload() {
 }
 
 rh_status() {
-	status_of_proc "$SSHD" $prog
+	status_of_proc -p "$PID_FILE" "$SSHD" $prog
 }
 
 rh_status_q() {
