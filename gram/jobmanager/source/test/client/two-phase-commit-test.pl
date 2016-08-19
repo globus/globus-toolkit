@@ -69,6 +69,7 @@ sub two_phase_test
     {
         sleep($timeout+5);
 
+        $ENV{HOME} = (getpwuid($<))[7];
 
         if (($mode eq 'no-commit-end'))
         {

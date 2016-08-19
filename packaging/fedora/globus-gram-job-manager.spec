@@ -1,6 +1,6 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	14.29
+Version:	14.30
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Jobmanager
@@ -152,6 +152,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Fri Aug 19 2016 Globus Toolkit <support@globus.org> - 14.30-1
+- Fix test problem in el5 mock with HOME=/builddir and root user
+
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 14.29-1
 - Makefile fix
 
