@@ -1,6 +1,6 @@
 Name:		globus-xio-gridftp-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.15
+Version:	2.16
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
@@ -139,6 +139,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 19 2016 Globus Toolkit <support@globus.org> - 2.16-1
+- don't use no-fork with root-run tests
+
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 2.15-1
 - Makefile fix
 

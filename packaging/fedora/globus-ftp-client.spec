@@ -1,6 +1,6 @@
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	8.31
+Version:	8.32
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Client Library
@@ -143,6 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 19 2016 Globus Toolkit <support@globus.org> - 8.32-1
+- Fix tests run as root
+
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 8.31-1
 - Makefile fix
 

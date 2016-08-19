@@ -1,6 +1,6 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	9.21
+Version:	9.22
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Copy
@@ -172,6 +172,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 19 2016 Globus Toolkit <support@globus.org> - 9.22-1
+- Fix tests run as root
+
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 9.21-1
 - Makefile fix
 
