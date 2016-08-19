@@ -1,6 +1,6 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	6.16
+Version:	6.17
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
@@ -99,6 +99,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 6.17-1
+- Makefile fixes
+
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 6.16-1
 - Updates for OpenSSL 1.1.0
 

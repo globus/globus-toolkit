@@ -1,3 +1,9 @@
+globus-proxy-utils (6.17-1+gt6.@distro@) @distro@; urgency=low
+
+  * Makefile fixes
+
+ -- Globus Toolkit <support@globus.org>  Thu, 18 Aug 2016 21:16:12 -0400
+
 globus-proxy-utils (6.16-1+gt6.@distro@) @distro@; urgency=low
 
   * Updates for OpenSSL 1.1.0
