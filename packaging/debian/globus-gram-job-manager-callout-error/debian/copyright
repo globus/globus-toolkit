@@ -1,6 +1,6 @@
 Name: globus-gram-job-manager-callout-error
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://www.globus.org/ftppub/gt6/packages/globus_gram_job_manager_callout_error-3.5.tar.gz
+Source: http://toolkit.globus.org/ftppub/gt6/packages/globus_gram_job_manager_callout_error-3.6.tar.gz
 
 Upstream-Authors: The Globus Alliance - http://www.globus.org/
 

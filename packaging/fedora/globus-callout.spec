@@ -1,6 +1,6 @@
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
-Version:	3.14
+Version:	3.15
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Callout Library
@@ -131,6 +131,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 3.15-1
+- Update bug report URL
+
 * Thu Apr 07 2016 Globus Toolkit <support@globus.org> - 3.14-1
 - Fix tests to run from installer on mac
 

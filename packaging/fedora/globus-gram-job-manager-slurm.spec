@@ -2,8 +2,8 @@
 
 Name:		globus-gram-job-manager-slurm
 %global _name %(tr - _ <<< %{name})
-Version:	2.7
-Release:	2%{?dist}
+Version:	2.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - SLURM Job Manager
 
@@ -135,6 +135,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-slurm-poll
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.8-1
+- Update bug report URL
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 2.7-2
 - Add vendor
 

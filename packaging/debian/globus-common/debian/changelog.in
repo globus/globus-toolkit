@@ -1,3 +1,9 @@
+globus-common (16.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update bug report URL
+
+ -- Globus Toolkit <support@globus.org>  Sat, 20 Aug 2016 09:11:21 -0400
+
 globus-common (16.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Updates for running thread tests without installing

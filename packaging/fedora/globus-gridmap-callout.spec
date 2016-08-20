@@ -1,7 +1,7 @@
 Name:		globus-gridmap-callout
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
-Release:	2%{?dist}
+Version:	1.1
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gridmap Callout
 
@@ -108,6 +108,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 1.1-1
+- Update bug report URL
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 1.0-2
 - Add vendor
 

@@ -1,3 +1,9 @@
+globus-xio-rate-driver (1.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update bug report URL
+
+ -- Globus Toolkit <support@globus.org>  Sat, 20 Aug 2016 09:11:43 -0400
+
 globus-xio-rate-driver (1.7-2+gt6.@distro@) @distro@; urgency=low
 
   * Rename binary package from libglobus-xio-rate-driver0 to

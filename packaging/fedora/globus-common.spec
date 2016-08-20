@@ -6,7 +6,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	16.6
+Version:	16.7
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Common Library
@@ -212,6 +212,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 16.7-1
+- Update bug report URL
+
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 16.6-1
 - Updates for running thread tests without installing
 

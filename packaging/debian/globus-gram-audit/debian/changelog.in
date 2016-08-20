@@ -1,3 +1,9 @@
+globus-gram-audit (4.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update bug report URL
+
+ -- Globus Toolkit <support@globus.org>  Sat, 20 Aug 2016 09:11:26 -0400
+
 globus-gram-audit (4.4-1+gt6.@distro@) @distro@; urgency=low
 
   * doxygen fixes

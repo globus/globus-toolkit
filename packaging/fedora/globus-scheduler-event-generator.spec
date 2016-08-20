@@ -1,7 +1,7 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	5.11
-Release:	2%{?dist}
+Version:	5.12
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Scheduler Event Generator
 
@@ -208,6 +208,9 @@ fi
 %{_mandir}/man3/*
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 5.12-1
+- Update bug report URL
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 5.11-2
 - Add vendor
 

@@ -2,8 +2,8 @@
 
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
-Version:	2.4
-Release:	2%{?dist}
+Version:	2.5
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Fork Job Manager
 
@@ -208,6 +208,9 @@ fi
 %{_mandir}/man8/globus-fork-starter.8.gz
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.5-1
+- Update bug report URL
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 2.4-2
 - Add vendor
 

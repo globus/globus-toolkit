@@ -1,3 +1,9 @@
+globus-gass-transfer (8.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update bug report URL
+
+ -- Globus Toolkit <support@globus.org>  Sat, 20 Aug 2016 09:11:24 -0400
+
 globus-gass-transfer (8.9-1+gt6.@distro@) @distro@; urgency=low
 
   * fix _register_accept() not returning error when listener is closing or accept already registered

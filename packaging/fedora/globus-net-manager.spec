@@ -1,7 +1,7 @@
 Name:		globus-net-manager
 %global _name %(tr - _ <<< %{name})
 Version:	0.15
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Net Manager Library
 
@@ -153,6 +153,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 0.15-2
+- Update bug report URL
+
 * Mon Apr 18 2016 Globus Toolkit <support@globus.org> - 0.15-1
 - Use prelinks for tests so that they run on El Capitan
 

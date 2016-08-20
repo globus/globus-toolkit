@@ -2,8 +2,8 @@
 
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
-Version:	2.5
-Release:	2%{?dist}
+Version:	2.6
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - SGE Job Manager
 
@@ -211,6 +211,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-sge-seg
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.6-1
+- Update bug report URL
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 2.5-2
 - Add vendor
 

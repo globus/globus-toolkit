@@ -1,7 +1,7 @@
 Name:		globus-gass-server-ez
 %global _name %(tr - _ <<< %{name})
-Version:	5.7
-Release:	2%{?dist}
+Version:	5.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Server_ez
 
@@ -116,6 +116,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 5.8-1
+- Update bug report URL
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 5.7-2
 - Add vendor
 

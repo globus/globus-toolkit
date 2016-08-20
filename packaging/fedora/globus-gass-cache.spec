@@ -1,6 +1,6 @@
 Name:		globus-gass-cache
 %global _name %(tr - _ <<< %{name})
-Version:	9.8
+Version:	9.9
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Cache
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 9.9-1
+- Update bug report URL
+
 * Tue May 03 2016 Globus Toolkit <support@globus.org> - 9.8-1
 - Spelling
 

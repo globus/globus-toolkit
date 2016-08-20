@@ -1,8 +1,8 @@
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	6.7
-Release:	2%{?dist}
+Version:	6.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
@@ -101,6 +101,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 6.8-1
+- Update bug report URL
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 6.7-2
 - Add vendor
 

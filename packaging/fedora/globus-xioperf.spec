@@ -1,7 +1,7 @@
 Name:		globus-xioperf
 %global _name %(tr - _ <<< %{name})
-Version:	4.4
-Release:	2%{?dist}
+Version:	4.5
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - XIO Performance Tool
 
@@ -69,6 +69,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/%{name}
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 4.5-1
+- Update bug report URL
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 4.4-2
 - Add vendor
 

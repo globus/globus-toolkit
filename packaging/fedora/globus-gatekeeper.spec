@@ -1,7 +1,7 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	10.10
-Release:	2%{?dist}
+Version:	10.11
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -121,6 +121,9 @@ fi
 
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 10.11-1
+- Update bug report URL
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 10.10-2
 - Add vendor
 

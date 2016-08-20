@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gatekeeper
 _name = globus_gatekeeper
-version = 10.10
+version = 10.11
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)

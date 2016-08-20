@@ -1,7 +1,7 @@
 Name:		globus-gssapi-error
 %global _name %(tr - _ <<< %{name})
-Version:	5.4
-Release:	2%{?dist}
+Version:	5.5
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI Error Library
 
@@ -126,6 +126,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 5.5-1
+- Update bug report URL
+
 * Thu Aug 06 2015 Globus Toolkit <support@globus.org> - 5.4-2
 - Add vendor
 

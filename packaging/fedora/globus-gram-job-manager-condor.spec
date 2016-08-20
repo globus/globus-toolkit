@@ -2,8 +2,8 @@
 
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
-Version:	2.5
-Release:	3%{?dist}
+Version:	2.6
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Condor Job Manager
 
@@ -107,6 +107,9 @@ fi
 %{_datadir}/globus/globus_gram_job_manager/condor.rvf
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.6-1
+- Update bug report URL
+
 * Thu Oct 22 2015 Globus Toolkit <support@globus.org> - 2.5-3
 - BuildArch: noarch
 

@@ -1,7 +1,7 @@
 Name:		globus-xio-udt-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.23
-Release:	3%{?dist}
+Version:	1.24
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
@@ -142,6 +142,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 1.24-1
+- Update bug report URL
+
 * Thu Jun 02 2016 Globus Toolkit <support@globus.org> - 1.23-3
 - More feature tests for libnice
 - BuildRequires for libnice/glib for el.5

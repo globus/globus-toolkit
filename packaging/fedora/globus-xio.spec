@@ -1,6 +1,6 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	5.12
+Version:	5.13
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO Framework
@@ -141,6 +141,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*
 
 %changelog
+* Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 5.13-1
+- Update bug report URL
+
 * Tue Apr 05 2016 Globus Toolkit <support@globus.org> - 5.12-1
 - fix test driver load problem on mac
 
