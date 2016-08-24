@@ -7,7 +7,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	16.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Common Library
 
@@ -37,6 +37,11 @@ BuildRequires:	graphviz
 %if 0%{?rhel} > 4 || 0%{?rhel} == 0
 BuildRequires:	libtool-ltdl-devel
 %endif
+%endif
+%if 0%{?suse_version} >= 1315
+BuildRequires:   autoconf
+BuildRequires:   automake
+BuildRequires:   libtool
 %endif
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
@@ -143,7 +148,7 @@ EOF
 chmod +x %{__perl_requires}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -170,6 +175,9 @@ make install DESTDIR=$RPM_BUILD_ROOT
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
 %check
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+export NO_EXTERNAL_NET=1
+%endif
 make %{?_smp_mflags} check
 
 %clean
@@ -212,6 +220,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Wed Aug 24 2016 Globus Toolkit <support@globus.org> - 16.7-2
+- SLES 12 packaging conditionals
+
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 16.7-1
 - Update bug report URL
 
