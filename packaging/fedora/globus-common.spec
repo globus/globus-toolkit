@@ -14,7 +14,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	16.7
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:		Globus Support
 Summary:	Globus Toolkit - Common Library
 
@@ -78,7 +78,7 @@ Group:		System Environment/Libraries
 %package progs
 Summary:	Globus Toolkit - Common Library Programs
 Group:		Applications/Internet
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 %if 0%{?suse_version} > 0
     %if %{suse_version} < 1140
 Requires:     perl = %{perl_version}
@@ -92,7 +92,7 @@ Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 %package devel
 Summary:	Globus Toolkit - Common Library Development Files
 Group:		Development/Libraries
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 %if 0%{?suse_version} == 0
 %if 0%{?rhel} > 4 || 0%{?rhel} == 0
 Requires:	libtool-ltdl-devel
@@ -117,7 +117,7 @@ Group:		Documentation
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:	noarch
 %endif
-Requires:	%{name} = %{version}-%{release}
+Requires:	%{mainpkg} = %{version}-%{release}
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %description %{?nmainpkg}
@@ -252,7 +252,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
-* Wed Aug 24 2016 Globus Toolkit <support@globus.org> - 16.7-3
+* Wed Aug 24 2016 Globus Toolkit <support@globus.org> - 16.7-4
 - SLES 12 packaging conditionals
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 16.7-1
