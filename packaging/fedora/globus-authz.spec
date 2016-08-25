@@ -163,7 +163,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 3.14-2
-- Makefile fix
+- Updates for SLES 12
 
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 3.14-1
 - Makefile fix
