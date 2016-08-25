@@ -7,12 +7,12 @@ Name:		globus-gfork
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	4.9
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GFork
 
 Group:		System Environment/Libraries
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -153,7 +153,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/globus-gfork.pc
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 4.9-2
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 4.9-3
 - SLES 12 packaging conditionals
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 4.9-1
@@ -194,7 +194,7 @@ rm -rf $RPM_BUILD_ROOT
 - Repackage for GT6 without GPT
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.2-7
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 3.2-6
 - Add missing build dependency
