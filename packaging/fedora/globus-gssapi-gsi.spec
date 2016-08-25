@@ -7,7 +7,7 @@ Name:		globus-gssapi-gsi
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	12.3
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -182,7 +182,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 25 Globus Toolkit <support@globus.org> - 12.3-2
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 12.3-3
 - Updates for SLES 12
 
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 12.3-1
