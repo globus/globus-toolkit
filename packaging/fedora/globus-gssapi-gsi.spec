@@ -317,7 +317,7 @@ rm -rf $RPM_BUILD_ROOT
 - openssl-libs for newer fedora
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 10.8-2
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Fri Feb 22 2013 Globus Toolkit <support@globus.org> - 10.8-1
 - GT-363: gss_get_mic/gss_verify_mic fail for some TLS ciphers with OpenSSL 1.0.1
