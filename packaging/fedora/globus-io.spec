@@ -7,7 +7,7 @@ Name:		globus-io
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	11.7
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - uniform I/O interface
 
@@ -149,7 +149,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 11.7-2
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 11.7-3
 - Updates for SLES 12
 
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 11.7-1
@@ -224,7 +224,7 @@ rm -rf $RPM_BUILD_ROOT
 - GT-470: Globus IO reports timeout error as cancellation
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 9.4-3
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 9.4-2
 - missing dependency on globus-gssapi-error
