@@ -163,7 +163,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
-* Tue Aug 25 2016 Globus Toolkit <support@globus.org> - 3.6-3
+* Tue Aug 25 2016 Globus Toolkit <support@globus.org> - 3.6-4
 - Updates for SLES 12 packaging
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 3.6-1
