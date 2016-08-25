@@ -1,6 +1,6 @@
 Name: udt
 Version: 4.11
-Release: 3g2
+Release: 3g3%{?dist}
 Vendor:	Globus Support
 Summary: UDP-based Data Transfer
 
@@ -11,6 +11,20 @@ Source:  http://sourceforge.net/projects/udt/files/udt/%{version}/udt.sdk.%{vers
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: gcc-c++
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global mainpkg lib%{_name}
+%global nmainpkg -n %{mainpkg}
+%else
+%global mainpkg %{name}
+%endif
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%description %{nmainpkg}
+UDT is a reliable UDP based application level 
+data transport protocol for distributed data 
+intensive applications over wide area high-speed networks.
+%endif
 
 %description
 UDT is a reliable UDP based application level 
@@ -46,20 +60,20 @@ install -m 0644 src/udt.h $RPM_BUILD_ROOT%{_includedir}/udt.h
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%pre
+%pre %{?nmainpkg}
 
-%post
-
-[ -x "/sbin/ldconfig" ] && /sbin/ldconfig
-
-%preun
-
-%postun
+%post %{?nmainpkg}
 
 [ -x "/sbin/ldconfig" ] && /sbin/ldconfig
 
+%preun %{?nmainpkg}
 
-%files
+%postun %{?nmainpkg}
+
+[ -x "/sbin/ldconfig" ] && /sbin/ldconfig
+
+
+%files %{?nmainpkg}
 %defattr(-,root,root,-)
 %{_libdir}/libudt.so
 
@@ -68,6 +82,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/udt.h
 
 %changelog
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 4.11-3g3
+- Updates for SLES 12
+
 * Wed May 26 2013 Globus Toolkit <support@globus.org> - 4.11-1
 - Upstream update
 
