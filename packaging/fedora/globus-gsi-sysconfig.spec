@@ -1,5 +1,5 @@
 Name:		globus-gsi-sysconfig
-%global soname 0
+%global soname 1
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %global apache_license Apache-2.0
 %else
@@ -7,7 +7,7 @@ Name:		globus-gsi-sysconfig
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.10
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
@@ -153,7 +153,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 6.10-2
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 6.10-3
 - Updates for SLES 12
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 6.10-1
