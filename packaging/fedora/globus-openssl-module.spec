@@ -7,7 +7,7 @@ Name:		globus-openssl-module
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	4.7
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper
 
@@ -28,7 +28,11 @@ Requires:	openssl%{?_isa}
 BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gsi-openssl-error-devel >= 2
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  libopenssl-devel
+%else
 BuildRequires:	openssl-devel
+%endif
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -61,7 +65,11 @@ Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 4
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
-Requires:	openssl-devel%{?_isa}
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:       libopenssl-devel
+%else
+Requires:	openssl-devel
+%endif
 
 %package doc
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper Documentation Files
