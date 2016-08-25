@@ -7,7 +7,7 @@ Name:		globus-ftp-control
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	7.4
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
 
@@ -163,7 +163,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 7.4-2
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 7.4-3
 - Updates for SLES 12
 
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 7.4-1
@@ -265,7 +265,7 @@ rm -rf $RPM_BUILD_ROOT
 - GT-428: Improve handling of hanging GridFTP server processes - prevent missing force_close callback
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 4.6-2
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Wed Mar 06 2013 Globus Toolkit <support@globus.org> - 4.6-1
 - GT-366 fix delegation bug introduced in last release.
