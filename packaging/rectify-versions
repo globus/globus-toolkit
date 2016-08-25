@@ -81,6 +81,7 @@ sub update_rpm($$)
     my ($pkgname, $allpackagemeta) = @_;
     my $package = $allpackagemeta->{$pkgname};
     my $version = $package->{VERSION};
+    my $soname = $pkgmeta->{SONAME};
     my $specfilename = "$topdir/fedora/$package->{NATIVE_NAME}.spec";
 
     if ($verbose) {print "Acting on $pkgname \n";}
@@ -181,6 +182,17 @@ sub update_rpm($$)
                 $specline =~ s/(Requires:\s*\S+\s*)>=\s*[0-9.]+/$1$requirever/;
                 $ARRAY[$index] = $specline;
                 $specfile_changed = 1;
+            }
+        }
+        elsif ($specline =~ m/(\%global\s* soname)([0-9]+)/)
+        {
+            my $globalsoname=$1;
+            my $oldsoname=$2;
+
+            if ($oldsoname ne $soname)
+            {
+                print "Updating %global soname from $oldsoname to $soname\n" if ($verbose);
+                $ARRAY[$index] = "$globalsoname $soname";
             }
         }
     }
