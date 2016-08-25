@@ -7,7 +7,7 @@ Name:		globus-gsi-callback
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	5.9
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
@@ -161,7 +161,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Tue Aug 25 2016 Globus Toolkit <support@globus.org> - 5.9-2
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 5.9-3
 - Updates for SLES 12
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 5.9-1
