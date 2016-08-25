@@ -7,7 +7,7 @@ Name:		globus-gsi-openssl-error
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	3.6
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling
 
@@ -201,7 +201,7 @@ rm -rf $RPM_BUILD_ROOT
 - openssl-libs for newer fedora
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.1-12
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 2.1-11
 - Workaround missing F18 doxygen/latex dependency
