@@ -7,7 +7,7 @@ Name:		globus-gsi-sysconfig
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.10
-Release:	5%{?dist}
+Release:	6%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
@@ -123,6 +123,7 @@ make %{?_smp_mflags}
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/grid-security
 
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
@@ -137,6 +138,7 @@ rm -rf $RPM_BUILD_ROOT
 %files %{?nmainpkg}
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
+%dir %{_sysconfdir}/grid-security
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %{_libdir}/libglobus*.so.*
 
@@ -153,7 +155,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 6.10-5
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 6.10-6
 - Updates for SLES 12
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 6.10-1
