@@ -1,18 +1,21 @@
 Name:		globus-xio-udt-driver
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	1.24
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
 Group:		System Environment/Libraries
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common%{?_isa} >= 14
-Requires:	globus-xio%{?_isa} >= 3
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 7
 Requires:       glib2%{?_isa} >= 2.32
 Requires:       libnice%{?_isa} >= 0.0.12
@@ -22,9 +25,7 @@ Requires:       glib2%{?_isa} >= 2.12
 Requires:       libnice%{?_isa} >= 0.0.9
 %endif
 %endif
-%if 0%{?suse_version} > 0
-Requires:       libffi43
-%else
+%if 0%{?suse_version} == 0
 Requires:       libffi
 %endif
 
@@ -34,7 +35,7 @@ BuildRequires:	globus-common-devel >= 14
 BuildRequires:  glib2-devel >= 2.32
 BuildRequires:  libnice-devel >= 0.0.12
 %else
-%if %{?rhel}%{!?rhel:0} >= 5
+%if %{?rhel}%{!?rhel:0} >= 5 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:       glib2-devel%{?_isa} >= 2.12
 BuildRequires:       libnice-devel%{?_isa} >= 0.0.9
 %endif
@@ -51,7 +52,7 @@ BuildRequires:  zlib-devel
 BuildRequires:  python26
 %endif
 BuildRequires:  libffi-devel
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
@@ -64,11 +65,35 @@ BuildRequires:  gupnp-igd-devel
 BuildRequires: libselinux-devel
 %endif
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global mainpkg lib%{_name}
+%global nmainpkg -n %{mainpkg}
+%else
+%global mainpkg %{name}
+%endif
+
+%if %{?nmainpkg:1}%{!?nmainpkg:0} != 0
+%package %{?nmainpkg}
+Summary:	Globus Toolkit - Globus XIO UDT Driver
+Group:		System Environment/Libraries
+%endif
+
 %package devel
 Summary:	Globus Toolkit - Globus XIO UDT Driver Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-xio-devel%{?_isa} >= 3
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%description %{?nmainpkg}
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The %{mainpkg} package contains:
+Globus XIO UDT Driver
+%endif
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -92,7 +117,7 @@ Globus XIO UDT Driver Development Files
 %setup -q -n %{_name}-%{version}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -100,7 +125,7 @@ autoreconf -if
 %endif
 
 
-%if 0%{?suse_version} > 0
+%if 0%{?suse_version} > 0 && %{?suse_version}%{!?suse_version:0} < 1315
 # SuSE 11 doesn't include libffi's pkg-config file, but the library
 # is available natively. LIBFFI_CFLAGS must be non-empty for autoconf to
 # detect it as set in the configure invocation in the glib2 source directory
@@ -125,11 +150,11 @@ find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post -p /sbin/ldconfig
+%post %{?nmainpkg} -p /sbin/ldconfig
 
-%postun -p /sbin/ldconfig
+%postun %{?nmainpkg} -p /sbin/ldconfig
 
-%files
+%files %{?nmainpkg}
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
@@ -142,6 +167,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 1.24-2
+- Updates for SLES 12
+
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 1.24-1
 - Update bug report URL
 
