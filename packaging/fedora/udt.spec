@@ -1,6 +1,6 @@
 Name: udt
 Version: 4.11
-Release: 3g3%{?dist}
+Release: 3g4%{?dist}
 Vendor:	Globus Support
 Summary: UDP-based Data Transfer
 
@@ -13,7 +13,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: gcc-c++
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%global mainpkg lib%{_name}
+%global mainpkg libudt
 %global nmainpkg -n %{mainpkg}
 %else
 %global mainpkg %{name}
@@ -82,7 +82,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/udt.h
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 4.11-3g3
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 4.11-3g4
 - Updates for SLES 12
 
 * Wed May 26 2013 Globus Toolkit <support@globus.org> - 4.11-1
