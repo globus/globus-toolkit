@@ -7,7 +7,7 @@ Name:		globus-gsi-sysconfig
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.10
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
@@ -153,7 +153,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 6.10-3
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 6.10-4
 - Updates for SLES 12
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 6.10-1
