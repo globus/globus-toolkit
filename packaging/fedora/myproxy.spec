@@ -481,7 +481,6 @@ fi
 # myproxy-server wants exactly 700 permission on its data 
 # which is just fine.
 %attr(0700,myproxy,myproxy) %dir %{_var}/lib/myproxy
-%dir %{_sysconfdir}/grid-security
 %dir %{_sysconfdir}/grid-security/myproxy
 
 %{_mandir}/man8/myproxy-server.8.gz
