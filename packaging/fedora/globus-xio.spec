@@ -9,7 +9,7 @@ Name:		globus-xio
 
 %global _name %(tr - _ <<< %{name})
 Version:	5.13
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	        Globus Support
 Summary:	Globus Toolkit - Globus XIO Framework
 
@@ -54,7 +54,7 @@ Group:		System Environment/Libraries
 %package devel
 Summary:	Globus Toolkit - Globus XIO Framework Development Files
 Group:		Development/Libraries
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
 
 %package doc
@@ -63,8 +63,7 @@ Group:		Documentation
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:	noarch
 %endif
-Requires:	%{name} = %{version}-%{release}
-Requires:	%{name} = %{version}-%{release}
+Requires:	%{mainpkg} = %{version}-%{release}
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %description %{?nmainpkg}
@@ -170,7 +169,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*/*
 
 %changelog
-* Wed Aug 24 2016 Globus Toolkit <support@globus.org> - 5.13-2
+* Wed Aug 24 2016 Globus Toolkit <support@globus.org> - 5.13-3
 - SLES 12 packaging conditionals
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 5.13-1
