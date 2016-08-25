@@ -143,9 +143,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %files devel
 %defattr(-,root,root,-)
-%{_libdir}/pkgconfig/%{name}.pc
-%{_includedir}/globus/*
+%{_includedir}/globus/*.h
 %{_libdir}/libglobus_*so
+%{_libdir}/pkgconfig/%{name}.pc
 
 
 %files doc
