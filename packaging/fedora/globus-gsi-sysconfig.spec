@@ -7,7 +7,7 @@ Name:		globus-gsi-sysconfig
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.10
-Release:	4%{?dist}
+Release:	5%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
@@ -34,7 +34,7 @@ BuildRequires:  pkgconfig
 
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%global mainpkg libglobus_openssl%{soname}
+%global mainpkg lib%{_name}%{soname}
 %global nmainpkg -n %{mainpkg}
 %else
 %global mainpkg %{name}
@@ -153,7 +153,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 6.10-4
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 6.10-5
 - Updates for SLES 12
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 6.10-1
