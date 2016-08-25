@@ -7,7 +7,7 @@ Name:		globus-gsi-openssl-error
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	3.6
-Release:	4%{?dist}
+Release:	5%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling
 
@@ -26,7 +26,11 @@ Requires:	openssl%{?_isa}
 %endif
 
 BuildRequires:	globus-common-devel >= 14
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:	libopenssl-devel
+%else
 BuildRequires:	openssl-devel
+%endif
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -60,7 +64,11 @@ Summary:	Globus Toolkit - Globus OpenSSL Error Handling Development Files
 Group:		Development/Libraries
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:	libopenssl-devel%{?_isa} 
+%else
 Requires:	openssl-devel%{?_isa} 
+%endif
 
 %package doc
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling Documentation Files
@@ -163,7 +171,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
-* Tue Aug 25 2016 Globus Toolkit <support@globus.org> - 3.6-4
+* Tue Aug 25 2016 Globus Toolkit <support@globus.org> - 3.6-5
 - Updates for SLES 12 packaging
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 3.6-1
