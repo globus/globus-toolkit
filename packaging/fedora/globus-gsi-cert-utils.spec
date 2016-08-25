@@ -32,7 +32,7 @@ BuildRequires:	globus-gsi-openssl-error-devel >= 2
 BuildRequires:  libopenssl-devel
 %else
 BuildRequires:	openssl-devel
-5endif
+%endif
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
