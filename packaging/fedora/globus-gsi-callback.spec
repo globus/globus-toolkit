@@ -161,7 +161,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* The Aug 25 2016 Globus Toolkit <support@globus.org> - 5.9-2
+* Tue Aug 25 2016 Globus Toolkit <support@globus.org> - 5.9-2
 - Updates for SLES 12
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 5.9-1
@@ -207,7 +207,7 @@ rm -rf $RPM_BUILD_ROOT
 - GT-426: memory leaks in globus-gsi-callback package
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 4.5-2
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 4.5-1
 - GT-354: Compatibility with automake 1.13
