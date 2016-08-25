@@ -1,5 +1,5 @@
 Name:		globus-gsi-credential
-%global soname 0
+%global soname 1
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %global apache_license Apache-2.0
 %else
@@ -7,7 +7,7 @@ Name:		globus-gsi-credential
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	7.10
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Credential Library
 
@@ -60,7 +60,11 @@ Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-gsi-callback-devel%{?_isa} >= 4
 Requires:	globus-openssl-module-devel%{?_isa} >= 3
 Requires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:       libopenssl-devel%{?_isa}
+%else
 Requires:	openssl-devel%{?_isa}
+%endif
 Requires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-gsi-sysconfig-devel%{?_isa} >= 5
@@ -164,7 +168,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 7.10-2
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 7.10-3
 - Updates for SLES 12
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 7.10-1
