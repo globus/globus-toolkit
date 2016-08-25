@@ -7,7 +7,7 @@ Name:		globus-gsi-openssl-error
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	3.6
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling
 
@@ -43,7 +43,7 @@ BuildRequires:  perl-Test-Simple
 %endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%global mainpkg lib%{_name}%{soname}
+%global mainpkg libglobus_openssl_error%{soname}
 %global nmainpkg -n %{mainpkg}
 %else
 %global mainpkg %{name}
@@ -163,7 +163,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
-* Tue Aug 25 2016 Globus Toolkit <support@globus.org> - 3.6-2
+* Tue Aug 25 2016 Globus Toolkit <support@globus.org> - 3.6-3
 - Updates for SLES 12 packaging
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 3.6-1
