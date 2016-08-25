@@ -183,7 +183,7 @@ rm -rf $RPM_BUILD_ROOT
 - GT-472: GridFTP server fails to detect client disconnection with piplining
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 2.9-2
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Wed Jun 05 2013 Globus Toolkit <support@globus.org> - 2.9-1
 - GT-396: fix mlst on filenames that end in a newline
