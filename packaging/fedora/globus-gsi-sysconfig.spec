@@ -199,7 +199,7 @@ rm -rf $RPM_BUILD_ROOT
 - Repackage for GT6 without GPT
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 5.3-6
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 5.3-5
 - Workaround missing F18 doxygen/latex dependency
