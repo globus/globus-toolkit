@@ -8,7 +8,7 @@ Name:		globus-gsi-proxy-ssl
 
 %global _name %(tr - _ <<< %{name})
 Version:	5.9
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library
 
@@ -52,6 +52,9 @@ Group:		System Environment/Libraries
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library Development Files
 Group:		Development/Libraries
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:	globus-common-devel%{?_isa} >= 14
+%endif
 
 %package doc
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library Documentation Files
@@ -155,7 +158,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 5.9-3
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 5.9-4
 - Updates for SLES 12 packaging
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 5.9-1
