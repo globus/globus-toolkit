@@ -7,7 +7,7 @@ Name:		globus-net-manager
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	0.15
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Net Manager Library
 
@@ -158,6 +158,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files %{?nmainpkg}
 %defattr(-,root,root,-)
+%dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %{_libdir}/lib%{_name}.so.*
 
@@ -180,7 +181,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 0.15-3
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 0.15-4
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 0.15-2
