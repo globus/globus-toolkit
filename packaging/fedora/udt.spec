@@ -1,11 +1,15 @@
 Name: udt
 Version: 4.11
-Release: 3g5%{?dist}
+Release: 3g6%{?dist}
 Vendor:	Globus Support
 Summary: UDP-based Data Transfer
 
 Group:   Development/Libraries
+%if %{?suse_version}%{!?suse_version:0} >= 1315
 License: BSD
+%else
+License: BSD-3-Clause
+%endif
 URL:     http://udt.sourceforge.net/
 Source:  http://sourceforge.net/projects/udt/files/udt/%{version}/udt.sdk.%{version}.tar.gz
 
@@ -86,7 +90,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/udt.h
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 4.11-3g4
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 4.11-3g6
 - Updates for SLES 12
 
 * Wed May 26 2013 Globus Toolkit <support@globus.org> - 4.11-1
