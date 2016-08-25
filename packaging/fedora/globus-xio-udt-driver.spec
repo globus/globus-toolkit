@@ -6,7 +6,7 @@ Name:		globus-xio-udt-driver
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	1.24
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
@@ -29,6 +29,7 @@ Requires:       libnice%{?_isa} >= 0.0.9
 Requires:       libffi
 %endif
 
+BuildRequires:	udt-devel
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-common-devel >= 14
 %if %{?fedora}%{!?fedora:0} >= 18
@@ -167,7 +168,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 1.24-2
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 1.24-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 1.24-1
