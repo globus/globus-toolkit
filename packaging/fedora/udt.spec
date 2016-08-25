@@ -1,6 +1,6 @@
 Name: udt
 Version: 4.11
-Release: 3g4%{?dist}
+Release: 3g5%{?dist}
 Vendor:	Globus Support
 Summary: UDP-based Data Transfer
 
@@ -20,6 +20,10 @@ BuildRequires: gcc-c++
 %endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
+%package %{nmainpkg}
+Group:   Development/Libraries
+Summary: UDP-based Data Transfer
+
 %description %{nmainpkg}
 UDT is a reliable UDP based application level 
 data transport protocol for distributed data 
