@@ -1,22 +1,21 @@
 Name:		globus-gss-assist
+%global soname 3
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	10.17
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-
-Requires:	globus-common >= 14
-Requires:	globus-gsi-cert-utils%{?_isa} >= 8
-Requires:	globus-gsi-sysconfig%{?_isa} >= 5
-Requires:	globus-callout%{?_isa} >= 2
-Requires:	globus-gssapi-gsi%{?_isa} >= 9
-Requires:	globus-gsi-credential%{?_isa} >= 6
 
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
 BuildRequires:	globus-gsi-sysconfig-devel >= 5
@@ -30,7 +29,7 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
@@ -40,16 +39,29 @@ BuildRequires:  pkgconfig
 BuildRequires:  perl-Test-Simple
 %endif
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global mainpkg lib%{_name}%{soname}
+%global nmainpkg -n %{mainpkg}
+%else
+%global mainpkg %{name}
+%endif
+
+%if %{?nmainpkg:1}%{!?nmainpkg:0} != 0
+%package %{?nmainpkg}
+Summary:	Globus Toolkit - GSSAPI Assist library Programs
+Group:		System Environment/Libraries
+%endif
+
 %package progs
 Summary:	Globus Toolkit - GSSAPI Assist library Programs
 Group:		Applications/Internet
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-progs >= 14
 
 %package devel
 Summary:	Globus Toolkit - GSSAPI Assist library Development Files
 Group:		Development/Libraries
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
 Requires:	globus-gsi-credential-devel%{?_isa} >= 6
 Requires:	globus-gsi-sysconfig-devel%{?_isa} >= 5
@@ -63,7 +75,18 @@ Group:		Documentation
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:	noarch
 %endif
-Requires:	%{name} = %{version}-%{release}
+Requires:	%{mainpkg} = %{version}-%{release}
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%description %{?nmainpkg}
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The %{mainpkg} package contains:
+GSSAPI Assist library
+%endif
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -105,7 +128,7 @@ GSSAPI Assist library Documentation Files
 %setup -q -n %{_name}-%{version}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -133,11 +156,11 @@ make %{_smp_mflags} check
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post -p /sbin/ldconfig
+%post %{?nmainpkg} -p /sbin/ldconfig
 
-%postun -p /sbin/ldconfig
+%postun %{?nmainpkg} -p /sbin/ldconfig
 
-%files
+%files %{?nmainpkg}
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
@@ -161,6 +184,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 10.17-2
+- Updates for SLES 12
+
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 10.17-1
 - Makefile fix
 
