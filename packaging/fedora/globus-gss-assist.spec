@@ -7,7 +7,7 @@ Name:		globus-gss-assist
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	10.17
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI Assist library
 
@@ -184,7 +184,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 10.17-2
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 10.17-3
 - Updates for SLES 12
 
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 10.17-1
@@ -255,7 +255,7 @@ rm -rf $RPM_BUILD_ROOT
 - Update Major version for globus_gss_assist_map_and_authorize_sharing
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 8.9-2
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Tue Mar 19 2013 Globus Toolkit <support@globus.org> - 8.9-1
 - Update sharing to support a full cert chain at logon
