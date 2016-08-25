@@ -8,7 +8,7 @@ Name:		globus-gsi-proxy-ssl
 
 %global _name %(tr - _ <<< %{name})
 Version:	5.9
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library
 
@@ -70,6 +70,7 @@ using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{mainpkg} package contains:
 Globus GSI Proxy SSL Library
+%endif
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -154,7 +155,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 5.9-2
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 5.9-3
 - Updates for SLES 12 packaging
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 5.9-1
