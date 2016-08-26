@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-lsf
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.7
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - LSF Job Manager
 
@@ -71,8 +71,11 @@ Requires:	%{name} = %{version}-%{release}
 Requires:	libglobus_seg_lsf = %{version}-%{release}
 %endif
 Requires:       globus-scheduler-event-generator-progs >= 4
+Requires: 	globus-gram-job-manager-scripts >= 4
 Requires(post): globus-gram-job-manager-scripts >= 4
+Requires(post): globus-scheduler-event-generator-progs >= 4
 Requires(preun): globus-gram-job-manager-scripts >= 4
+Requires(preun): globus-scheduler-event-generator-progs >= 4
 Conflicts:      %{name}-setup-poll
 
 %description
@@ -216,13 +219,17 @@ fi
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%dir %{_sysconfdir}/globus
 %config(noreplace) %{_sysconfdir}/globus/globus-lsf.conf
+%dir %{_datadir}/globus/globus_gram_job_manager
 %{_datadir}/globus/globus_gram_job_manager/lsf.rvf
-%{_sysconfdir}/globus/scheduler-event-generator/available/lsf
+%dir %{perl_vendorlib}/Globus/GRAM/JobManager
 %{perl_vendorlib}/Globus/GRAM/JobManager/lsf.pm
 
 %files setup-poll
 %defattr(-,root,root,-)
+%dir %{_sysconfdir}/grid-services
+%dir %{_sysconfdir}/grid-services/available
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-lsf-poll
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
@@ -234,12 +241,15 @@ fi
 %files setup-seg
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-lsf-seg
-%if %{?suse_version}%{!?suse_version:0} == 1315
+%dir %{_sysconfdir}/globus/scheduler-event-generator
+%dir %{_sysconfdir}/globus/scheduler-event-generator/available
+%{_sysconfdir}/globus/scheduler-event-generator/available/lsf
+%if %{?suse_version}%{!?suse_version:0} == 0
 %{_libdir}/libglobus*
 %endif
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 2.7-2
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 2.7-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.7-1
