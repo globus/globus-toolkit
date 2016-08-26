@@ -65,12 +65,12 @@ Group:		System Environment/Libraries
 %package progs
 Summary:	Globus Toolkit - Globus Gass Copy Programs
 Group:		Applications/Internet
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 
 %package devel
 Summary:	Globus Toolkit - Globus Gass Copy Development Files
 Group:		Development/Libraries
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-ftp-client-devel%{?_isa} >= 7
 Requires:	globus-common-devel%{?_isa} >= 15
 Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
@@ -84,7 +84,7 @@ Group:		Documentation
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:	noarch
 %endif
-Requires:	%{name} = %{version}-%{release}
+Requires:	%{mainpkg} = %{version}-%{release}
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %description %{?nmainpkg}
