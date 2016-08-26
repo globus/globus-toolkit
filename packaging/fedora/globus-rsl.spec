@@ -7,7 +7,7 @@ Name:		globus-rsl
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	10.11
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Resource Specification Language Library
 
@@ -58,6 +58,17 @@ Group:		Documentation
 BuildArch:	noarch
 %endif
 Requires:	%{mainpkg} = %{version}-%{release}
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%description %{?nmainpkg}
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The %{mainpkg} package contains:
+Resource Specification Language Library
+%endif
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -142,7 +153,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 10.11-2
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 10.11-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 10.11-1
