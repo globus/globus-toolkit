@@ -1,5 +1,5 @@
 Name:		globus-xio-gridftp-multicast
-%global soname 0
+
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %global apache_license Apache-2.0
 %else
@@ -7,7 +7,7 @@ Name:		globus-xio-gridftp-multicast
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	1.7
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GridFTP Multicast Driver
 
@@ -28,7 +28,7 @@ BuildRequires:  libtool >= 2.2
 BuildRequires:  pkgconfig
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%global mainpkg lib%{_name}%{soname}
+%global mainpkg libglobus_xio_gridftp_multicast_driver
 %global nmainpkg -n %{mainpkg}
 %else
 %global mainpkg %{name}
@@ -124,7 +124,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
-* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 1.7-2
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 1.7-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 1.7-1
