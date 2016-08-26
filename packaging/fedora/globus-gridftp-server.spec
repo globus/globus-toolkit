@@ -47,6 +47,13 @@ BuildRequires: libtool-ltdl-devel
 BuildRequires: fakeroot
 %endif
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global mainpkg lib%{_name}%{soname}
+%global nmainpkg -n %{mainpkg}
+%else
+%global mainpkg %{name}
+%endif
+
 %if %{?nmainpkg:1}%{!?nmainpkg:0} != 0
 %package %{?nmainpkg}
 Summary:	Globus Toolkit - Globus GridFTP Server
