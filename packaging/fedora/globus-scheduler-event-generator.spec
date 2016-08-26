@@ -1,20 +1,27 @@
 Name:		globus-scheduler-event-generator
+%global soname 0
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	5.12
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-gram-protocol%{?_isa} >= 11
-Requires:	globus-common%{?_isa} >= 14
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:	libglobus_xio_gsi_driver%{?_isa} >= 2
+%else
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
-Requires:	globus-xio%{?_isa} >= 3
+%endif
 
 BuildRequires:	globus-gram-protocol-devel >= 11
 %if 0%{?suse_version} == 0
@@ -30,7 +37,7 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
@@ -49,10 +56,23 @@ BuildRequires:       lsb
 %endif
 %endif
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global mainpkg lib%{_name}%{soname}
+%global nmainpkg -n %{mainpkg}
+%else
+%global mainpkg %{name}
+%endif
+
+%if %{?nmainpkg:1}%{!?nmainpkg:0} != 0
+%package %{?nmainpkg}
+Summary:	Globus Toolkit - Scheduler Event Generator
+Group:		System Environment/Libraries
+%endif
+
 %package progs
 Summary:	Globus Toolkit - Scheduler Event Generator Programs
 Group:		Applications/Internet
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 
 %if %{?suse_version}%{!?suse_version:0}  > 0
 Requires:       insserv
@@ -64,14 +84,18 @@ Requires:       lsb
 %endif
 %endif
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:	libglobus_xio_gsi_driver%{?_isa} >= 2
+%else
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
+%endif
 Requires(post): globus-common-progs >= 14
 Requires(preun):globus-common-progs >= 14
 
 %package devel
 Summary:	Globus Toolkit - Scheduler Event Generator Development Files
 Group:		Development/Libraries
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-gram-protocol-devel%{?_isa} >= 11
 %if 0%{?suse_version} == 0
 %if 0%{?rhel} > 4 || 0%{?rhel} == 0
@@ -88,7 +112,18 @@ Group:		Documentation
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:	noarch
 %endif
-Requires:	%{name} = %{version}-%{release}
+Requires:	%{mainpkg} = %{version}-%{release}
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%description %{?nmainpkg}
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The %{mainpkg} package contains:
+Scheduler Event Generator
+%endif
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -130,7 +165,7 @@ Scheduler Event Generator Documentation Files
 %setup -q -n %{_name}-%{version}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -162,9 +197,9 @@ make %{?_smp_mflags} check
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post -p /sbin/ldconfig
+%post %{?nmainpkg} -p /sbin/ldconfig
 
-%postun -p /sbin/ldconfig
+%postun %{?nmainpkg} -p /sbin/ldconfig
 
 %post progs
 if [ $1 -eq 1 ]; then
@@ -182,7 +217,7 @@ if [ $1 -eq 1 ]; then
     /sbin/service %{name} condrestart > /dev/null 2>&1 || :
 fi
 
-%files
+%files %{?nmainpkg}
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
@@ -208,6 +243,9 @@ fi
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 5.12-2
+- Updates for SLES 12
+
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 5.12-1
 - Update bug report URL
 

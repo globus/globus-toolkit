@@ -9,7 +9,7 @@ Name:		globus-gram-protocol
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	12.14
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Protocol Library
 
@@ -154,11 +154,11 @@ GLOBUS_HOSTNAME=localhost make %{?_smp_mflags} check
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post %{nmainpkg} -p /sbin/ldconfig
+%post %{?nmainpkg} -p /sbin/ldconfig
 
-%postun %{nmainpkg} -p /sbin/ldconfig
+%postun %{?nmainpkg} -p /sbin/ldconfig
 
-%files %{nmainpkg}
+%files %{?nmainpkg}
 %defattr(-,root,root,-)
 %dir %{perl_vendorlib}/Globus
 %dir %{perl_vendorlib}/Globus/GRAM
@@ -186,7 +186,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 12.14-3
+* Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 12.14-4
 - Updates for SLES 12
 
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 12.14-1
