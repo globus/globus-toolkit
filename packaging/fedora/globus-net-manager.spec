@@ -7,7 +7,7 @@ Name:		globus-net-manager
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	0.15
-Release:	4%{?dist}
+Release:	5%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Net Manager Library
 
@@ -43,6 +43,12 @@ BuildRequires:  python-devel
 %global mainpkg %{name}
 %endif
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global driver_package libglobus_xio_net_manager_driver
+%else
+%global driver_package globus-xio-net-manager-driver
+%endif
+
 %if %{?nmainpkg:1}%{!?nmainpkg:0} != 0
 %package %{?nmainpkg}
 Summary:	Globus Toolkit - Net Manager Library
@@ -56,13 +62,16 @@ Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 15.27
 Requires:	globus-xio-devel%{?_isa} >= 5
 
-%package -n globus-xio-net-manager-driver
+%package -n %{driver_package}
 Summary:	Globus Toolkit - Net Manager Library XIO Driver
 Group:		System Environment/Libraries
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 15.27
 Requires:	globus-xio-devel%{?_isa} >= 5
 Provides:       globus-net-manager-xio-driver
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Provides:       globus-xio-net-manager-driver
+%endif
 
 %package doc
 Summary:	Globus Toolkit - Net Manager Library Documentation Files
@@ -101,7 +110,7 @@ using the Globus Toolkit to unlock the potential of grids for their cause.
 The %{name}-devel package contains:
 Net Manager Library Development Files
 
-%description -n globus-xio-net-manager-driver
+%description -n %{driver_package}
 The Globus Toolkit is an open source software toolkit used for building Grid
 systems and applications. It is being developed by the Globus Alliance and
 many others all over the world. A growing number of projects and companies are
@@ -164,15 +173,14 @@ rm -rf $RPM_BUILD_ROOT
 
 %files devel
 %defattr(-,root,root,-)
-%{_includedir}/globus/globus_net_manager*.h
+%{_includedir}/globus/*.h
 %{_libdir}/libglobus_net_manager*.so
 %{_libdir}/pkgconfig/%{name}.pc
-
-%files -n globus-xio-net-manager-driver
-%defattr(-,root,root,-)
-%{_includedir}/globus/globus_xio_net_manager_driver.h
-%{_libdir}/libglobus_xio_net_manager_driver.so
 %{_libdir}/pkgconfig/globus-xio-net-manager-driver.pc
+
+%files -n %{driver_package}
+%defattr(-,root,root,-)
+%{_libdir}/libglobus_xio_net_manager_driver.so
 
 %files doc
 %defattr(-,root,root,-)
@@ -181,7 +189,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 0.15-4
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 0.15-5
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 0.15-2
