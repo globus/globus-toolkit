@@ -7,7 +7,7 @@ Name:		globus-scheduler-event-generator
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	5.12
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Scheduler Event Generator
 
@@ -73,6 +73,10 @@ Group:		System Environment/Libraries
 Summary:	Globus Toolkit - Scheduler Event Generator Programs
 Group:		Applications/Internet
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires(pre): %insserv_prereq %fillup_prereq
+Requires(post): %insserv_prereq %fillup_prereq
+%endif
 
 %if %{?suse_version}%{!?suse_version:0}  > 0
 Requires:       insserv
@@ -174,6 +178,9 @@ autoreconf -if
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %global default_runlevels --with-default-runlevels=235
+%global initscript_config_path %{_localstatedir}/adm/fillup-templates/sysconfig.%{name}
+%else
+%global initscript_config_path %{_sysconfdir}/sysconfig/%{name} 
 %endif
 
 %configure \
@@ -183,7 +190,7 @@ autoreconf -if
            --libexecdir=%{_datadir}/globus \
            --with-lsb \
            %{?default_runlevels} \
-           --with-initscript-config-path=/etc/sysconfig/%{name} \
+           --with-initscript-config-path=%{initscript_config_path} \
            --with-lockfile-path='${localstatedir}/lock/subsys/%{name}'
 
 make %{?_smp_mflags}
@@ -196,6 +203,7 @@ make install DESTDIR=$RPM_BUILD_ROOT
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
+sed -i -e '/Required-Start/s/:/: $remote_fs/' $RPM_BUILD_ROOT%{_sysconfdir}/init.d/globus-scheduler-event-generator
 sed -i -e 's/Required-Stop:.*/Required-Stop: $null/' $RPM_BUILD_ROOT%{_sysconfdir}/init.d/globus-scheduler-event-generator
 %endif
 
@@ -210,20 +218,33 @@ rm -rf $RPM_BUILD_ROOT
 %postun %{?nmainpkg} -p /sbin/ldconfig
 
 %post progs
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%fillup_and_insserv %{name}
+%else
 if [ $1 -eq 1 ]; then
     /sbin/chkconfig --add %{name}
 fi
+%endif
 
 %preun progs
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%stop_on_removal %{name}
+%else
 if [ $1 -eq 0 ]; then
     /sbin/chkconfig --del %{name}
     /sbin/service %{name} stop > /dev/null 2>&1 || :
 fi
+%endif
 
 %postun progs
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%restart_on_update %{name}
+%insserv_cleanup
+%else
 if [ $1 -eq 1 ]; then
     /sbin/service %{name} condrestart > /dev/null 2>&1 || :
 fi
+%endif
 
 %files %{?nmainpkg}
 %defattr(-,root,root,-)
@@ -233,7 +254,7 @@ fi
 
 %files progs
 %defattr(-,root,root,-)
-%config(noreplace) /etc/sysconfig/%{name}
+%config(noreplace) %{initscript_config_path}
 %{_sysconfdir}/init.d/%{name}
 %{_sbindir}/*
 %{_mandir}/man8/*
@@ -251,7 +272,7 @@ fi
 %{_mandir}/man3/*
 
 %changelog
-* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 5.12-3
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 5.12-4
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 5.12-1
