@@ -7,7 +7,7 @@ Name:		globus-gridftp-server
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	11.3
-Release:	5%{?dist}
+Release:	6%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -17,8 +17,13 @@ URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:	libglobus_xio_gsi_driver%{?_isa} >= 2
+Requires:       libglobus_xio_udt_driver%{?_isa} >= 1
+%else
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:       globus-xio-udt-driver%{?_isa} >= 1
+%endif
 
 BuildRequires:	globus-gridftp-server-control-devel >= 4
 BuildRequires:	globus-usage-devel >= 3
@@ -64,7 +69,12 @@ Group:		System Environment/Libraries
 Summary:	Globus Toolkit - Globus GridFTP Server Programs
 Group:		Applications/Internet
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:	libglobus_xio_gsi_driver%{?_isa} >= 2
+%else
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
+%endif
+
 
 %package devel
 Summary:	Globus Toolkit - Globus GridFTP Server Development Files
@@ -77,8 +87,8 @@ Requires:	globus-xio-devel%{?_isa} >= 5
 Requires:	globus-authz-devel%{?_isa} >= 2
 Requires:	globus-gfork-devel%{?_isa} >= 3
 Requires:	globus-ftp-control-devel%{?_isa} >= 7
-Requires:	globus-gss-assist%{?_isa} >= 9
-Requires:	globus-gsi-credential%{?_isa} >= 6
+Requires:	globus-gss-assist-devel%{?_isa} >= 9
+Requires:	globus-gsi-credential-devel%{?_isa} >= 6
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %description %{?nmainpkg}
@@ -211,7 +221,7 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
-* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 11.3-5
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 11.3-6
 - Updates for SLES 12
 
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 11.3-1
