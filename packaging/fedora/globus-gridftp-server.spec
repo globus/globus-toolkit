@@ -7,7 +7,7 @@ Name:		globus-gridftp-server
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	11.3
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -131,10 +131,15 @@ autoreconf -if
 
 export GRIDMAP=/etc/grid-security/grid-mapfile
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+global default_runlevels --with-default-runlevels=2345
+%endif
+
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
            --includedir=%{_includedir}/globus \
+           %{?default_runlevesl} \
            --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
@@ -201,7 +206,7 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
-* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 11.3-2
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 11.3-3
 - Updates for SLES 12
 
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 11.3-1
