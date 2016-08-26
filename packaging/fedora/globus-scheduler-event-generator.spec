@@ -196,8 +196,7 @@ make install DESTDIR=$RPM_BUILD_ROOT
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-sed -i -e 's/Required-Stop:.*/Required-Stop: $null/' $RPM_BUILD_ROOT%{_sysconfdi
-r}/init.d/globus-scheduler-event-generator
+sed -i -e 's/Required-Stop:.*/Required-Stop: $null/' $RPM_BUILD_ROOT%{_sysconfdir}/init.d/globus-scheduler-event-generator
 %endif
 
 %check
