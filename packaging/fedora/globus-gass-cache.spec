@@ -21,7 +21,11 @@ Requires:	openssl
 Requires:	globus-common%{?_isa} >= 14
 
 BuildRequires:	globus-common-devel >= 14
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:	libopenssl-devel
+%else
 BuildRequires:	openssl-devel
+%endif
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -50,9 +54,13 @@ Group:		System Environment/Libraries
 %package devel
 Summary:	Globus Toolkit - Globus Gass Cache Development Files
 Group:		Development/Libraries
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
-Requires:	openssl-devel%{?_isa}
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:	libopenssl-devel%{?_isa}
+%else
+BuildRequires:	openssl-devel%{?_isa}
+%endif
 
 %package doc
 Summary:	Globus Toolkit - Globus Gass Cache Documentation Files
@@ -60,7 +68,18 @@ Group:		Documentation
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:	noarch
 %endif
-Requires:	%{name} = %{version}-%{release}
+Requires:	%{mainpkg} = %{version}-%{release}
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%description %{?nmainpkg}
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The %{mainpkg} package contains:
+Globus Gass Cache
+%endif
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -93,7 +112,7 @@ Globus Gass Cache Documentation Files
 %setup -q -n %{_name}-%{version}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -119,11 +138,11 @@ find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post -p /sbin/ldconfig
+%post %{?nmainpkg} -p /sbin/ldconfig
 
-%postun -p /sbin/ldconfig
+%postun %{?nmainpkg} -p /sbin/ldconfig
 
-%files
+%files %{?nmainpkg}
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
@@ -142,6 +161,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 9.9-2
+- Updates for SLES 12
+
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 9.9-1
 - Update bug report URL
 
