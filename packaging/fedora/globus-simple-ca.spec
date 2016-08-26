@@ -8,7 +8,7 @@ Name:		globus-simple-ca
 %global apache_license ASL 2.0
 %endif
 Version:	4.23
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Simple CA
 
@@ -17,6 +17,10 @@ License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires(pre):   shadow
+%endif
 Requires:   globus-common-progs
 Requires:   openssl
 Requires(post):   openssl
@@ -119,7 +123,7 @@ fi
 %{_mandir}/man1/*
 
 %changelog
-* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 4.23-3
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 4.23-4
 - Updates for SLES 12
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 4.23-1
