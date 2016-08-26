@@ -7,7 +7,7 @@ Name:		globus-scheduler-event-generator
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	5.12
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Scheduler Event Generator
 
@@ -172,6 +172,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global default_runlevels --with-default-runlevels=235
+%endif
 
 %configure \
            --disable-static \
@@ -179,6 +182,7 @@ autoreconf -if
            --includedir=%{_includedir}/globus \
            --libexecdir=%{_datadir}/globus \
            --with-lsb \
+           %{?default_runlevels} \
            --with-initscript-config-path=/etc/sysconfig/%{name} \
            --with-lockfile-path='${localstatedir}/lock/subsys/%{name}'
 
@@ -190,6 +194,11 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+sed -i -e 's/Required-Stop:.*/Required-Stop: $null/' $RPM_BUILD_ROOT%{_sysconfdi
+r}/init.d/globus-scheduler-event-generator
+%endif
 
 %check
 make %{?_smp_mflags} check
@@ -243,7 +252,7 @@ fi
 %{_mandir}/man3/*
 
 %changelog
-* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 5.12-2
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 5.12-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 5.12-1
