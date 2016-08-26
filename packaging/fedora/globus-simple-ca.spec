@@ -2,22 +2,26 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 Version:	4.23
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-Requires:   globus-common
 Requires:   globus-common-progs
 Requires:   openssl
 Requires(post):   openssl
 Requires(post):   globus-gsi-cert-utils-progs
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
@@ -114,6 +118,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 4.23-2
+- Updates for SLES 12
+
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 4.23-1
 - Updates for OpenSSL 1.1.0
 
@@ -208,7 +215,7 @@ fi
 - license is not a dir
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 3.4-2
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Fri May 24 2013 Globus Toolkit <support@globus.org> - 3.4-1
 - Fix test for absolute path on some versions of expr
