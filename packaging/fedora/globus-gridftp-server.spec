@@ -7,7 +7,7 @@ Name:		globus-gridftp-server
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	11.3
-Release:	4%{?dist}
+Release:	5%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -132,14 +132,14 @@ autoreconf -if
 export GRIDMAP=/etc/grid-security/grid-mapfile
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%global default_runlevels --with-default-runlevels=2345
+%global default_runlevels --with-default-runlevels=235
 %endif
 
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
            --includedir=%{_includedir}/globus \
-           %{?default_runlevesl} \
+           %{?default_runlevels} \
            --libexecdir=%{_datadir}/globus
 
 make %{?_smp_mflags}
@@ -154,6 +154,11 @@ mv $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.gfork.default $RPM_BUILD_ROOT%{_sysconf
 
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+sed -i -e 's/Required-Stop:.*/Required-Stop: $network $local_fs/' $RPM_BUILD_ROOT%{_sysconfdir}/init.d/%{name}
+sed -i -e 's/Required-Stop:.*/Required-Stop: $network $local_fs/' $RPM_BUILD_ROOT%{_sysconfdir}/init.d/globus-gridftp-sshftp
+%endif
 
 %check
 make %{_smp_mflags} check
@@ -206,7 +211,7 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
-* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 11.3-4
+* Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 11.3-5
 - Updates for SLES 12
 
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 11.3-1
