@@ -1,7 +1,7 @@
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-gram-protocol
-%global soname 4
+%global soname 3
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %global apache_license Apache-2.0
 %else
@@ -9,7 +9,7 @@ Name:		globus-gram-protocol
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	12.14
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Protocol Library
 
@@ -186,7 +186,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 12.14-2
+* Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 12.14-3
 - Updates for SLES 12
 
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 12.14-1
@@ -243,7 +243,7 @@ rm -rf $RPM_BUILD_ROOT
 - Repackage for GT6 without GPT
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 11.3-8
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 11.3-7
 - Workaround missing F18 doxygen/latex dependency
