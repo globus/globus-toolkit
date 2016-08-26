@@ -1,14 +1,19 @@
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-gram-job-manager-lsf
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.7
 Release:	1%{?dist}
 Vendor:	Globus Support
-Summary:	Globus Toolkit - PBS Job Manager
+Summary:	Globus Toolkit - LSF Job Manager
 
 Group:		Applications/Internet
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -30,15 +35,21 @@ BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-scheduler-event-generator-devel >= 4
 BuildRequires:	globus-gram-protocol-devel >= 11
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%package -n libglobus_seg_lsf
+Summary:        Globus Toolkit - LSF Job Manager SEG Module
+Group:		Applications/Internet
+%endif
+
 %package setup-poll
-Summary:        Globus Toolkit - PBS Job Manager Setup Files
+Summary:        Globus Toolkit - LSF Job Manager Setup Files
 Group:		Applications/Internet
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:      noarch
@@ -51,11 +62,14 @@ requires(preun): globus-gram-job-manager-scripts >= 3.4
 Conflicts:      %{name}-setup-seg
 
 %package setup-seg
-Summary:	Globus Toolkit - PBS Job Manager Setup Files
+Summary:	Globus Toolkit - LSF Job Manager Setup Files
 Group:		Applications/Internet
 Provides:       %{name}-setup
 Provides:       globus-gram-job-manager-setup
 Requires:	%{name} = %{version}-%{release}
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:	libglobus_seg_lsf = %{version}-%{release}
+%endif
 Requires:       globus-scheduler-event-generator-progs >= 4
 Requires(post): globus-gram-job-manager-scripts >= 4
 Requires(preun): globus-gram-job-manager-scripts >= 4
@@ -68,7 +82,7 @@ many others all over the world. A growing number of projects and companies are
 using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name} package contains:
-PBS Job Manager 
+LSF Job Manager 
 
 %description setup-poll
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -77,7 +91,18 @@ many others all over the world. A growing number of projects and companies are
 using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name} package contains:
-PBS Job Manager Setup using polling to monitor job state
+LSF Job Manager Setup using polling to monitor job state
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%description -n libglobus_seg_lsf
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The libglobus_seg_lsf package contains:
+LSF Job Manager SEG Module
+%endif
 
 %description setup-seg
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -86,13 +111,13 @@ many others all over the world. A growing number of projects and companies are
 using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name} package contains:
-PBS Job Manager Setup using SEG to monitor job state
+LSF Job Manager Setup using SEG to monitor job state
 
 %prep
 %setup -q -n %{_name}-%{version}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -150,8 +175,18 @@ elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
     globus-gatekeeper-admin -E > /dev/null 2>&1 || :
 fi
 
-%post setup-seg
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%post -n libglobus_seg_lsf
 ldconfig
+
+%postun -n libglobus_seg_lsf
+ldconfig
+%endif
+
+%post setup-seg
+%if %{?suse_version}%{!?suse_version:0} == 0
+ldconfig
+%endif
 if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-lsf-seg -n jobmanager-lsf > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e lsf > /dev/null 2>&1 || :
@@ -166,7 +201,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %postun setup-seg
+%if %{?suse_version}%{!?suse_version:0} == 0
 ldconfig
+%endif
 if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-lsf-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e lsf > /dev/null 2>&1 || :
@@ -188,12 +225,23 @@ fi
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-lsf-poll
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%files libglobus_seg_lsf
+%defattr(-,root,root,-)
+%{_libdir}/libglobus*
+%endif
+
 %files setup-seg
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-lsf-seg
+%if %{?suse_version}%{!?suse_version:0} == 1315
 %{_libdir}/libglobus*
+%endif
 
 %changelog
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 2.7-2
+- Updates for SLES 12
+
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.7-1
 - Update bug report URL
 
