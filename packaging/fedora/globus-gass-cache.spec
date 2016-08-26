@@ -1,12 +1,18 @@
 Name:		globus-gass-cache
+%global soname 5
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	9.9
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Cache
 
 Group:		System Environment/Libraries
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
