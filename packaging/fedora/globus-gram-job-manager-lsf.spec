@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-lsf
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - LSF Job Manager
 
@@ -226,7 +226,7 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-lsf-poll
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%files libglobus_seg_lsf
+%files -n libglobus_seg_lsf
 %defattr(-,root,root,-)
 %{_libdir}/libglobus*
 %endif
