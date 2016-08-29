@@ -1,28 +1,27 @@
 Name:		globus-gass-cache-program
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Tools to manipulate local and remote GASS caches
 
 Group:		Applications/Internet
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-
-Requires:	globus-common%{?_isa} >= 14
-Requires:	globus-gram-client%{?_isa} >= 12
-Requires:	globus-gass-server-ez%{?_isa} >= 4
-Requires:	globus-gass-copy%{?_isa} >= 8
-Requires:	globus-gass-cache%{?_isa} >= 8
 
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gram-client-devel >= 12
 BuildRequires:	globus-gass-server-ez-devel >= 4
 BuildRequires:	globus-gass-copy-devel >= 8
 BuildRequires:	globus-gass-cache-devel >= 8
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
@@ -42,7 +41,7 @@ Tools to manipulate local and remote GASS caches
 %setup -q -n %{_name}-%{version}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -70,9 +69,13 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %{_bindir}/*
+%dir %{_datadir}/globus
 %{_datadir}/globus/globus-gass-cache-util.pl
 
 %changelog
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 6.6-2
+- Updates for SLES 12
+
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 6.6-1
 - Update bug report URL
 
