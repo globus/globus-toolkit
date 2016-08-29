@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-condor
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	4%{?dist}
+Release:	5%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Condor Job Manager
 
@@ -111,6 +111,7 @@ fi
 %dir %{perl_vendorlib}/Globus
 %dir %{perl_vendorlib}/Globus/GRAM
 %dir %{perl_vendorlib}/Globus/GRAM/JobManager
+%dir %{_datadir}/globus
 %dir %{_datadir}/globus/globus_gram_job_manager
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-condor
 %config(noreplace) %{_sysconfdir}/globus/globus-condor.conf
@@ -118,7 +119,7 @@ fi
 %{_datadir}/globus/globus_gram_job_manager/condor.rvf
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-4
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-5
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.6-1
