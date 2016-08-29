@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-pbs
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - PBS Job Manager
 
@@ -253,7 +253,7 @@ fi
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-pbs-seg
 %dir %{_sysconfdir}/globus/scheduler-event-generator
-%{_s%dir ysconfdir}/globus/scheduler-event-generator/available
+%dir %{_sysconfdir}/globus/scheduler-event-generator/available
 %{_sysconfdir}/globus/scheduler-event-generator/available/pbs
 %if %{?suse_version}%{!?suse_version:0} < 1315
 %{_libdir}/libglobus_*
@@ -261,7 +261,7 @@ fi
 
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-2
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.6-1
@@ -342,7 +342,7 @@ fi
 - Fix %%post* scripts to check for -eq 1
 - Add explicit dependencies on >= 5.2 libraries
 
-* Wed Sep 22 2011  <bester@mcs.anl.gov> - 1.1-1
+* Thu Sep 22 2011  <bester@mcs.anl.gov> - 1.1-1
 - GRAM-253
 
 * Thu Sep 22 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-4
