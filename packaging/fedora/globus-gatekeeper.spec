@@ -1,23 +1,26 @@
 Name:		globus-gatekeeper
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	10.11
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common >= 14
-Requires:	globus-gss-assist%{?_isa} >= 8
-Requires:	globus-gssapi-gsi%{?_isa} >= 9
 Requires:       psmisc
 
 %if 0%{?suse_version} > 0
 Requires:       insserv
+Requires(post): %insserv_prereq  %fillup_prereq
 %else
 %if 0%{?rhel} >= 6 || 0%{?fedora} >= 20
 Requires:       lsb-core-noarch
@@ -39,7 +42,7 @@ BuildRequires:       lsb
 %endif
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-gssapi-gsi-devel >= 9
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
@@ -60,7 +63,7 @@ Globus Gatekeeper Setup
 %setup -q -n %{_name}-%{version}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -92,20 +95,33 @@ make %{?_smp_mflags} check
 rm -rf $RPM_BUILD_ROOT
 
 %post
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%fillup_and_insserv globus-gatekeeper
+%else
 if [ $1 -eq 1 ]; then
     /sbin/chkconfig --add %{name}
 fi
+%endif
 
 %preun
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%stop_on_removal service
+%else
 if [ $1 -eq 0 ]; then
     /sbin/chkconfig --del %{name}
     /sbin/service %{name} stop > /dev/null 2>&1 || :
 fi
+%endif
 
 %postun
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%restart_on_update service
+%insserv_cleanup
+%else
 if [ $1 -eq 1 ]; then
     /sbin/service %{name} condrestart > /dev/null 2>&1 || :
 fi
+%endif
 
 %files
 %defattr(-,root,root,-)
@@ -121,6 +137,9 @@ fi
 
 
 %changelog
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 10.11-2
+- Updates for SLES 12
+
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 10.11-1
 - Update bug report URL
 
