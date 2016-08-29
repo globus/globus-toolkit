@@ -6,9 +6,9 @@ Name:		globus-gridmap-verify-myproxy-callout
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.8
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
-Summary:	Globus Toolkit - Globus gridmap myproxy callout.
+Summary:	Globus Toolkit - Globus gridmap myproxy callout
 
 Group:		System Environment/Libraries
 License:	%{apache_license}
@@ -29,7 +29,7 @@ BuildRequires:  libtool >= 2.2
 BuildRequires:  pkgconfig
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%global mainpkg lib%{_name}%{soname}
+%global mainpkg lib%{_name}
 %global nmainpkg -n %{mainpkg}
 %else
 %global mainpkg %{name}
@@ -37,7 +37,7 @@ BuildRequires:  pkgconfig
 
 %if %{?nmainpkg:1}%{!?nmainpkg:0} != 0
 %package %{?nmainpkg}
-Summary:	Globus Toolkit - Globus gridmap myproxy callout.
+Summary:	Globus Toolkit - Globus gridmap myproxy callout
 Group:		System Environment/Libraries
 %endif
 
@@ -49,7 +49,7 @@ many others all over the world. A growing number of projects and companies are
 using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{mainpkg} package contains:
-Globus gridmap myproxy callout.
+Globus gridmap myproxy callout
 %endif
 
 %description
@@ -59,7 +59,7 @@ many others all over the world. A growing number of projects and companies are
 using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name} package contains:
-Globus gridmap myproxy callout.
+Globus gridmap myproxy callout
 
 %prep
 %setup -q -n %{_name}-%{version}
@@ -107,7 +107,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libglobus_*
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.8-2
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.8-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.8-1
