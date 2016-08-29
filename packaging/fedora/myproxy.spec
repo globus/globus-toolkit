@@ -1,25 +1,25 @@
 %{!?_initddir: %global _initddir %{_initrddir}}
 Name:           myproxy
+%global soname 6
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%global libpkg libmyproxy%{soname}
+%global nlibpkg -n libmyproxy%{soname}
+%else
+%global apache_license ASL 2.0
+%global libpkg  libs
+%global nlibpkg libs
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.18
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
-License:        NCSA and BSD and ASL 2.0
+License:        NCSA and BSD and %{apache_license}
 URL:            http://grid.ncsa.illinois.edu/myproxy/
 Source0:        http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
-
-#Source1:        myproxy.init
-#Source2:        myproxy.sysconfig
-#Source3:        README.Fedora
-
-#VOMS has two alternate APIs which are the "same". vomsapi is the
-#newer though not that new. myproxy is the last software in
-#EPEL using the old vomsc.
-#Patch to go upstream myproxy though they are aware.
-#Patch0:         https://raw.githubusercontent.com/globus/globus-toolkit/globus_6_branch/myproxy.gt6.diff
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -48,9 +48,9 @@ BuildRequires:      globus-xio-devel >= 3
 BuildRequires:      globus-usage-devel >= 3
 BuildRequires:      globus-gss-assist-devel >= 8
 
-Requires:      myproxy-libs = %{version}-%{release}
+Requires:      %{libpkg} = %{version}-%{release}
 Requires:      globus-proxy-utils >= 5
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:	automake >= 1.11
 BuildRequires:	autoconf >= 2.60
 BuildRequires:	libtool >= 2.2
@@ -68,12 +68,12 @@ authority to allow users to securely obtain credentials when and where needed.
 Users run myproxy-logon to authenticate and obtain credentials, including 
 trusted CA certificates and Certificate Revocation Lists (CRLs). 
 
-%package libs
+%package %{nlibpkg}
 Summary:       Manage X.509 Public Key Infrastructure (PKI) security credentials 
 Group:         System Environment/Daemons
 Obsoletes:     myproxy < 5.1-3
 
-%description libs
+%description %{nlibpkg}
 MyProxy is open source software for managing X.509 Public Key Infrastructure 
 (PKI) security credentials (certificates and private keys). MyProxy 
 combines an online credential repository with an online certificate 
@@ -84,13 +84,9 @@ trusted CA certificates and Certificate Revocation Lists (CRLs).
 Package %{name}-libs contains runtime libs for MyProxy.
 
 %package devel
-Requires:      myproxy-libs = %{version}-%{release}
-# in .el5 and 4 this dependency is not picked up
-# automatically via pkgconfig
-%if  0%{?el4}%{?el5}
-Requires:      globus-gss-assist-devel > 8
-Requires:      globus-usage-devel >= 3
-%endif
+Requires:      %{libpkg}%{?_isa}  = %{version}-%{release}
+Requires:      globus-gss-assist-devel%{?_isa}  > 8
+Requires:      globus-usage-devel%{?_isa} >= 3
 
 Summary:       Develop X.509 Public Key Infrastructure (PKI) security credentials 
 Group:         System Environment/Daemons
@@ -118,7 +114,7 @@ Requires(preun):  aaa_base
 Requires(postun): sysconfig
 Requires(postun): aaa_base
 %endif
-Requires:         myproxy-libs = %{version}-%{release}
+Requires:         %{libpkg} = %{version}-%{release}
 Summary:          Server for X.509 Public Key Infrastructure (PKI) security credentials 
 Group:            System Environment/Daemons
 
@@ -137,7 +133,7 @@ Package %{name}-server contains the MyProxy server.
 # a load of perl dependencies.
 %package       admin
 Requires:      myproxy-server = %{version}-%{release}
-Requires:      myproxy-libs   = %{version}-%{release}
+Requires:      %{libpkg}   = %{version}-%{release}
 Requires:      myproxy = %{version}-%{release}
 Requires:      globus-gsi-cert-utils-progs >= 8
 Summary:       Server for X.509 Public Key Infrastructure (PKI) security credentials 
@@ -422,8 +418,8 @@ rm -rf $RPM_BUILD_ROOT
 %check 
 PATH=.:$PATH make check
 
-%post libs -p /sbin/ldconfig
-%postun libs -p /sbin/ldconfig
+%post %{nlibpkg} -p /sbin/ldconfig
+%postun %{nlibpkg} -p /sbin/ldconfig
 
 %pre server
 getent group myproxy >/dev/null || groupadd -r myproxy
@@ -468,7 +464,7 @@ fi
 %{_mandir}/man1/myproxy-store.1.gz
 %doc %{_defaultdocdir}/%{name}-%{version}
 
-%files libs
+%files %{nlibpkg}
 %defattr(-,root,root,-)
 %{_libdir}/libmyproxy.so.*
 
@@ -534,6 +530,9 @@ fi
 %endif
 
 %changelog
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 6.1.18-2
+- Updates for SLES 12
+
 * Tue May 03 2016 Globus Toolkit <support@globus.org> - 6.1.18-1
 - Spelling
 
@@ -645,7 +644,7 @@ fi
 - add missing dependencies
 
 * Tue Mar 05 2013 Globus Toolkit <support@globus.org> - 5.9-4
-- Add build dependency on globus-proxy-utils for %check step
+- Add build dependency on globus-proxy-utils for %%check step
 
 * Wed Feb 20 2013 Globus Toolkit <support@globus.org> - 5.9-3
 - Workaround missing F18 doxygen/latex dependency
@@ -684,7 +683,7 @@ fi
 - Update for 5.2.0 release
 
 * Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 5.5-2
-- Fix %post* scripts to check for -eq 1
+- Fix %%post* scripts to check for -eq 1
 - Add backward-compatibility aging
 
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.5-1
