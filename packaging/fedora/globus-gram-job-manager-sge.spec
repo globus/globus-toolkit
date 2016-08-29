@@ -1,14 +1,19 @@
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-gram-job-manager-sge
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
-License:	LGPL 2.1 and Apache License 2.0
+License:	LGPL 2.1 and %{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -17,7 +22,6 @@ Obsoletes:      globus-gram-job-manager-setup-sge < 4.5
 Requires:       globus-gram-job-manager-scripts >= 4
 Requires:	globus-gass-cache-program >= 4
 Requires:	globus-common-progs >= 14
-Requires:       gridengine
 %if 0%{?suse_version} > 0
     %if %{suse_version} < 1140
 Requires:     perl = %{perl_version}
@@ -36,12 +40,18 @@ BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%package -n libglobus_seg_sge
+Summary:        Globus Toolkit - SGE Job Manager SEG Module
+Group:		Applications/Internet
+%endif
 
 %package setup-poll
 Summary:        Globus Toolkit - SGE Job Manager Setup Files
@@ -87,6 +97,17 @@ using the Globus Toolkit to unlock the potential of grids for their cause.
 The %{name} package contains:
 SGE Job Manager Setup using polling to monitor job state
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%description -n libglobus_seg_sge
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The libglobus_seg_lsf package contains:
+SGE Job Manager SEG Module
+%endif
+
 %description setup-seg
 The Globus Toolkit is an open source software toolkit used for building Grid
 systems and applications. It is being developed by the Globus Alliance and
@@ -100,7 +121,7 @@ SGE Job Manager Setup using SEG to monitor job state
 %setup -q -n %{_name}-%{version}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -167,8 +188,18 @@ elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
     globus-gatekeeper-admin -E > /dev/null 2>&1 || :
 fi
 
-%post setup-seg
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%post -n libglobus_seg_lsf
 ldconfig
+
+%postun -n libglobus_seg_lsf
+ldconfig
+%endif
+
+%post setup-seg
+%if %{?suse_version}%{!?suse_version:0} == 0
+ldconfig
+%endif
 if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-sge-seg -n jobmanager-sge > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e sge > /dev/null 2>&1 || :
@@ -183,7 +214,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %postun setup-seg
+%if %{?suse_version}%{!?suse_version:0} == 0
 ldconfig
+%endif
 if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-sge-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e sge > /dev/null 2>&1 || :
@@ -197,20 +230,32 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/globus-sge.conf
 %{perl_vendorlib}/Globus/GRAM/JobManager/sge.pm
 %{_sysconfdir}/globus/scheduler-event-generator/available/sge
-%{_libdir}/libglobus*
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/*
 %{_datadir}/globus/globus_gram_job_manager/sge.rvf
 
 %files setup-poll
 %defattr(-,root,root,-)
+%dir %{_sysconfdir}/grid-services
+%dir %{_sysconfdir}/grid-services/available
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-sge-poll
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%files -n libglobus_seg_sge
+%defattr(-,root,root,-)
+%{_libdir}/libglobus*
+%endif
 
 %files setup-seg
 %defattr(-,root,root,-)
+%dir %{_sysconfdir}/grid-services
+%dir %{_sysconfdir}/grid-services/available
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-sge-seg
 
 %changelog
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-2
+- Updates for SLES 12
+
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.6-1
 - Update bug report URL
 
@@ -239,7 +284,7 @@ fi
 - Repackage for GT6 without GPT
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 1.7-2
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Tue May 21 2013 Globus Toolkit <support@globus.org> - 1.7-1
 - solves an issue where globus gets confused at midnight about running jobs
@@ -289,7 +334,7 @@ fi
 - Last sync prior to 5.2.0
 
 * Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-5
-- Fix %post* scripts to check for -eq 1
+- Fix %%post* scripts to check for -eq 1
 - Add explicit dependencies on >= 5.2 libraries
 
 * Thu Sep 22 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-4
