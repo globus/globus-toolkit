@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-sge
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - SGE Job Manager
 
@@ -104,7 +104,7 @@ systems and applications. It is being developed by the Globus Alliance and
 many others all over the world. A growing number of projects and companies are
 using the Globus Toolkit to unlock the potential of grids for their cause.
 
-The libglobus_seg_lsf package contains:
+The libglobus_seg_sge package contains:
 SGE Job Manager SEG Module
 %endif
 
@@ -189,10 +189,10 @@ elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
 fi
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%post -n libglobus_seg_lsf
+%post -n libglobus_seg_sge
 ldconfig
 
-%postun -n libglobus_seg_lsf
+%postun -n libglobus_seg_sge
 ldconfig
 %endif
 
@@ -253,7 +253,7 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-sge-seg
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-2
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.6-1
