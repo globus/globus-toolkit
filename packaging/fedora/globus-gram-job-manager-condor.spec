@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-condor
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Condor Job Manager
 
@@ -87,7 +87,7 @@ rm -rf $RPM_BUILD_ROOT
 if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-condor > /dev/null 2>&1 || :
     if [ ! -f /etc/grid-services/jobmanager ]; then
-        globus-gatekeeper-admin -e jobmanager-condor -n jobmanager
+        globus-gatekeeper-admin -e jobmanager-condor -n jobmanager || :
     fi
 fi
 
@@ -116,7 +116,7 @@ fi
 %{_datadir}/globus/globus_gram_job_manager/condor.rvf
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-2
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.6-1
