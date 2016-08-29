@@ -1,12 +1,17 @@
 Name:		globus-proxy-utils
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.17
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -18,17 +23,6 @@ Requires:	openssl-libs%{?_isa}
 %if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
 Requires:	openssl%{?_isa}
 %endif
-Requires:	globus-gsi-credential%{?_isa} >= 5
-Requires:	globus-gsi-callback%{?_isa} >= 4
-Requires:	globus-openssl-module%{?_isa} >= 3
-Requires:	globus-gss-assist%{?_isa} >= 8
-Requires:	globus-gsi-openssl-error%{?_isa} >= 2
-Requires:	globus-gsi-proxy-core%{?_isa} >= 6
-Requires:	globus-gsi-cert-utils%{?_isa} >= 8
-Requires:	globus-common%{?_isa} >= 14
-Requires:	globus-gsi-sysconfig%{?_isa} >= 5
-Requires:	globus-gssapi-gsi%{?_isa} >= 4
-
 
 BuildRequires:	globus-gsi-credential-devel >= 5
 BuildRequires:	globus-gsi-callback-devel >= 4
@@ -41,7 +35,7 @@ BuildRequires:	globus-gsi-cert-utils-devel >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gsi-sysconfig-devel >= 5
 BuildRequires:	globus-gssapi-gsi >= 4
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
@@ -65,7 +59,7 @@ Globus GSI Proxy Utility Programs
 
 %build
 # Remove files that should be replaced during bootstrap
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -99,6 +93,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 6.17-2
+- Updates for SLES 12
+
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 6.17-1
 - Makefile fixes
 
