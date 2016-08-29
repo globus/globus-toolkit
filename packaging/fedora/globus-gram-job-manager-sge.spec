@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-sge
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	5%{?dist}
+Release:	6%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - SGE Job Manager
 
@@ -229,11 +229,13 @@ fi
 
 %files
 %defattr(-,root,root,-)
+%dir %{_sysconfdir}/globus
 %config(noreplace) %{_sysconfdir}/globus/globus-sge.conf
 %dir %{perl_vendorlib}/Globus/GRAM/JobManager
 %{perl_vendorlib}/Globus/GRAM/JobManager/sge.pm
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/*
+%dir %{_datadir}/globus/globus_gram_job_manager
 %{_datadir}/globus/globus_gram_job_manager/sge.rvf
 
 %files setup-poll
@@ -259,7 +261,7 @@ fi
 %endif
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-5
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-6
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.6-1
