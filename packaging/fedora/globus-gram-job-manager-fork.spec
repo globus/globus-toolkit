@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-fork
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.5
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Fork Job Manager
 
@@ -159,9 +159,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %post setup-poll
 if [ $1 -eq 1 ]; then
-    globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager-fork
+    globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager-fork || :
     if [ ! -f /etc/grid-services/jobmanager ]; then
-        globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager
+        globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager || :
     fi
 fi
 
@@ -172,9 +172,9 @@ fi
 
 %postun setup-poll
 if [ $1 -eq 1 ]; then
-    globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager-fork
+    globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager-fork || :
     if [ ! -f /etc/grid-services/jobmanager ]; then
-        globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager
+        globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager || :
     fi
 elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
     globus-gatekeeper-admin -E > /dev/null 2>&1 || :
@@ -193,11 +193,11 @@ ldconfig
 /sbin/ldconfig
 %endif
 if [ $1 -eq 1 ]; then
-    globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager-fork
-    globus-scheduler-event-generator-admin -e fork
-    /sbin/service globus-scheduler-event-generator condrestart fork
+    globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager-fork || :
+    globus-scheduler-event-generator-admin -e fork || :
+    /sbin/service globus-scheduler-event-generator condrestart fork || :
     if [ ! -f /etc/grid-services/jobmanager ]; then
-        globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager
+        globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager || :
     fi
     if [ ! -f /var/lib/globus/globus-fork.log ]; then
         mkdir -p /var/lib/globus
@@ -222,7 +222,7 @@ if [ $1 -eq 1 ]; then
     globus-scheduler-event-generator-admin -e fork > /dev/null 2>&1 || :
     service globus-scheduler-event-generator condrestart fork > /dev/null 2>&1 || :
     if [ ! -f /etc/grid-services/jobmanager ]; then
-        globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager
+        globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager || :
     fi
 fi
 
@@ -255,7 +255,7 @@ fi
 %{_mandir}/man8/globus-fork-starter.8.gz
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.5-3
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.5-4
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.5-1
