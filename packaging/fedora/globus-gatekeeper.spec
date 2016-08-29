@@ -6,7 +6,7 @@ Name:		globus-gatekeeper
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	10.11
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -136,7 +136,7 @@ fi
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %dir /etc/grid-services
 %dir /etc/grid-services/available
-%config(noreplace) /etc/sysconfig/%{name}
+%config(noreplace) %{initscript_config_path}
 %config(noreplace) /etc/logrotate.d/%{name}
 %{_sysconfdir}/init.d/%{name}
 %{_sbindir}/*
@@ -144,7 +144,7 @@ fi
 
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 10.11-3
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 10.11-4
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 10.11-1
