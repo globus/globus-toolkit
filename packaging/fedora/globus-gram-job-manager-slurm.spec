@@ -1,14 +1,19 @@
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-gram-job-manager-slurm
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.8
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - SLURM Job Manager
 
 Group:		Applications/Internet
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -28,7 +33,7 @@ Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-gram-protocol-devel >= 11
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
@@ -70,7 +75,7 @@ SLURM Job Manager Setup using polling to monitor job state
 %setup -q -n %{_name}-%{version}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -123,18 +128,26 @@ fi
 
 %files
 %defattr(-,root,root,-)
+%dir %{perl_vendorlib}/Globus/GRAM/JobManager
 %{perl_vendorlib}/Globus/GRAM/JobManager/slurm.pm
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/*LICENSE*
+%dir %{_sysconfdir}/globus
 %config(noreplace) %{_sysconfdir}/globus/globus-slurm.conf
+%dir %{_datadir}/globus/globus_gram_job_manager
 %{_datadir}/globus/globus_gram_job_manager/slurm.rvf
 
 
 %files setup-poll
 %defattr(-,root,root,-)
+%dir %{_sysconfdir}/grid-services
+%dir %{_sysconfdir}/grid-services/available
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-slurm-poll
 
 %changelog
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.8-2
+- Updates for SLES 12
+
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.8-1
 - Update bug report URL
 

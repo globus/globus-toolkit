@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-sge
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	6%{?dist}
+Release:	7%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - SGE Job Manager
 
@@ -61,7 +61,6 @@ BuildArch:      noarch
 %endif
 Provides:       %{name}-setup
 Provides:       globus-gram-job-manager-setup
-Requires:       gridengine
 Requires:	%{name} = %{version}-%{release}
 Requires(post): globus-gram-job-manager-scripts >= 4
 Requires(preun): globus-gram-job-manager-scripts >= 4
@@ -74,7 +73,6 @@ Provides:       %{name}-setup
 Provides:       globus-gram-job-manager-setup
 Requires:	%{name} = %{version}-%{release}
 Requires:       globus-scheduler-event-generator-progs >= 4
-Requires:       gridengine
 Requires(post): globus-gram-job-manager-scripts >= 4
 Requires(post): globus-scheduler-event-generator-progs >= 4
 Requires(preun): globus-gram-job-manager-scripts >= 4
@@ -261,7 +259,7 @@ fi
 %endif
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-6
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-7
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.6-1
