@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-scripts
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.8
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
@@ -90,6 +90,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%{_datadir}/globus
 %{_datadir}/globus/globus-job-manager-script.pl
 %dir %{perl_vendorlib}/Globus
 %dir %{perl_vendorlib}/Globus/GRAM
@@ -107,7 +108,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 6.8-2
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 6.8-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 6.8-1
