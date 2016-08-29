@@ -8,7 +8,7 @@ Name:		globus-gram-audit
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	4.5
-Release:	6%{?dist}
+Release:	7%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Auditing
 
@@ -17,7 +17,7 @@ License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-%if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
+%if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildArch:      noarch
 %endif
 %if 0%{?suse_version} > 0
@@ -37,6 +37,10 @@ Requires:	crontabs
 BuildRequires:	automake >= 1.11
 BuildRequires:	autoconf >= 2.60
 BuildRequires:	libtool >= 2.2
+%endif
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+PreReq:         permissions
+Recommends:     cron
 %endif
 
 %description
@@ -75,7 +79,7 @@ make install DESTDIR=$RPM_BUILD_ROOT
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/permissions.d
 cat <<EOF > $RPM_BUILD_ROOT%{_sysconfdir}/permissions.d/globus-gram-audit
-%{_localstatedir}/lib/globus/gram-audit root:root 01733
+%{_localstatedir}/lib/globus/gram-audit/ root:root 01733
 EOF
 %endif
 
@@ -89,7 +93,7 @@ if [ $1 -eq 1 ]; then
     || :
 fi
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%set_permissions
+%set_permissions /var/lib/globus/gram-audit
 %endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
@@ -118,7 +122,7 @@ fi
 %config(noreplace) %{_sysconfdir}/permissions.d/globus-gram-audit
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 4.5-6
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 4.5-7
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 4.5-1
