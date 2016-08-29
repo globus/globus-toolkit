@@ -7,7 +7,7 @@ Name:		globus-gridmap-callout-error
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.5
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gridmap Callout Errors
 
@@ -47,7 +47,7 @@ Group:		System Environment/Libraries
 %package devel
 Summary:	Globus Toolkit - Globus Gridmap Callout Errors Development Files
 Group:		Development/Libraries
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-gssapi-error-devel%{?_isa} >= 4
 
@@ -57,7 +57,7 @@ Group:		Documentation
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:	noarch
 %endif
-Requires:	%{name} = %{version}-%{release}
+Requires:	%{mainpkg} = %{version}-%{release}
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %description %{?nmainpkg}
@@ -149,7 +149,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.5-2
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.5-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.5-1
