@@ -6,7 +6,7 @@ Name:		globus-gatekeeper
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	10.11
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -70,6 +70,12 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global default_runlevels --with-default-runlevels=235
+%global initscript_config_path %{_localstatedir}/adm/fillup-templates/sysconfig.%{name}
+%else
+%global initscript_config_path %{_sysconfdir}/sysconfig/%{name} 
+%endif
 
 %configure \
            --disable-static \
@@ -77,7 +83,8 @@ autoreconf -if
            --includedir=%{_includedir}/globus \
            --libexecdir=%{_datadir}/globus \
            --with-lsb \
-	   --with-initscript-config-path=/etc/sysconfig/globus-gatekeeper \
+           %{?default_runlevels} \
+	   --with-initscript-config-path=%{initscript_config_path} \
            --with-lockfile-path='${localstatedir}/lock/subsys/globus-gatekeeper'
 
 make %{?_smp_mflags}
@@ -137,7 +144,7 @@ fi
 
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 10.11-2
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 10.11-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 10.11-1
@@ -185,7 +192,7 @@ fi
 - Repackage for GT6 without GPT
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 9.15-2
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Mon Mar 18 2013 Globus Toolkit <support@globus.org> - 9.15-1
 - GT-354: Compatibility with automake 1.13
@@ -260,7 +267,7 @@ fi
 - GRAM-267: globus-gatekeeper uses inappropriate Default-Start in init script
 
 * Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-2
-- Fix %post* scripts to check for -eq 1
+- Fix %%post* scripts to check for -eq 1
 - Add explicit dependencies on >= 5.2 libraries
 
 * Fri Sep 23 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-1
