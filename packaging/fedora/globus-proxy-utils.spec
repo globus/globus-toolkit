@@ -6,7 +6,7 @@ Name:		globus-proxy-utils
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.17
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
@@ -34,7 +34,7 @@ BuildRequires:	globus-gsi-proxy-core-devel >= 6
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gsi-sysconfig-devel >= 5
-BuildRequires:	globus-gssapi-gsi >= 4
+BuildRequires:	globus-gssapi-gsi-devel >= 4
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
@@ -93,7 +93,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 6.17-2
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 6.17-3
 - Updates for SLES 12
 
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 6.17-1
