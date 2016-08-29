@@ -8,7 +8,7 @@ Name:		globus-gram-audit
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	4.5
-Release:	7%{?dist}
+Release:	8%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Auditing
 
@@ -93,12 +93,12 @@ if [ $1 -eq 1 ]; then
     || :
 fi
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%set_permissions /var/lib/globus/gram-audit
+%set_permissions /var/lib/globus/gram-audit/
 %endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %verifyscript
-%verify_permissions -e %{_localstatedir}/lib/globus/gram-audit
+%verify_permissions -e %{_localstatedir}/lib/globus/gram-audit/
 %endif
 
 %files
@@ -122,7 +122,7 @@ fi
 %config(noreplace) %{_sysconfdir}/permissions.d/globus-gram-audit
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 4.5-7
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 4.5-8
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 4.5-1
