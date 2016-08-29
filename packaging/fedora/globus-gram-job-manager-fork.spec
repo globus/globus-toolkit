@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-fork
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.5
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Fork Job Manager
 
@@ -73,7 +73,9 @@ Provides:       %{name}-setup
 Requires:	%{name} = %{version}-%{release}
 Requires:       globus-scheduler-event-generator-progs >= 4
 Requires(post): globus-gram-job-manager-scripts >= 4
+Requires(post): globus-scheduler-event-generator-progs >= 4
 Requires(preun): globus-gram-job-manager-scripts >= 4
+Requires(preun): globus-scheduler-event-generator-progs >= 4
 Conflicts:      %{name}-setup-poll
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 Requires:	libglobus_seg_fork = %{version}-%{release}
@@ -253,7 +255,7 @@ fi
 %{_mandir}/man8/globus-fork-starter.8.gz
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.5-2
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.5-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.5-1
