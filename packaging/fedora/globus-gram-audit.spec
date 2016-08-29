@@ -72,6 +72,12 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+cat <<EOF > /etc/permissions.d/globus-gram-audit
+%{_localstatedir}/lib/globus/gram-audit root:root 01733
+EOF
+%endif
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -81,11 +87,23 @@ if [ $1 -eq 1 ]; then
     || globus-gram-audit --create --quiet \
     || :
 fi
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%set_permissions
+%endif
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%verifyscript
+%verify_permissions -e %{_localstatedir}/lib/globus/gram-audit
+%endif
 
 %files
 %defattr(-,root,root,-)
 %dir %{_localstatedir}/lib/globus
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%verify(not mode) %dir %{_localstatedir}/lib/globus/gram-audit
+%else
 %dir %{_localstatedir}/lib/globus/gram-audit
+%endif
 %dir %{_docdir}/%{name}-%{version}
 %{_sbindir}/globus-gram-audit
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
