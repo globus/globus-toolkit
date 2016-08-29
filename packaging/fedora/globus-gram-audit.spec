@@ -8,7 +8,7 @@ Name:		globus-gram-audit
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	4.5
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Auditing
 
@@ -94,10 +94,11 @@ fi
 %{_datadir}/globus/gram-audit/*
 %{_mandir}/man8/*
 %config(noreplace) %{_sysconfdir}/cron.hourly/globus-gram-audit.cron
+%dir %{_sysconfdir}/globus
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 4.5-2
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 4.5-3
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 4.5-1
