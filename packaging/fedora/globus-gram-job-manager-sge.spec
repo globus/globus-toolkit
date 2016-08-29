@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-sge
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - SGE Job Manager
 
@@ -76,7 +76,9 @@ Requires:	%{name} = %{version}-%{release}
 Requires:       globus-scheduler-event-generator-progs >= 4
 Requires:       gridengine
 Requires(post): globus-gram-job-manager-scripts >= 4
+Requires(post): globus-scheduler-event-generator-progs >= 4
 Requires(preun): globus-gram-job-manager-scripts >= 4
+Requires(preun): globus-scheduler-event-generator-progs >= 4
 Conflicts:      %{name}-setup-poll
 
 %description
@@ -229,7 +231,6 @@ fi
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/globus/globus-sge.conf
 %{perl_vendorlib}/Globus/GRAM/JobManager/sge.pm
-%{_sysconfdir}/globus/scheduler-event-generator/available/sge
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/*
 %{_datadir}/globus/globus_gram_job_manager/sge.rvf
@@ -248,12 +249,16 @@ fi
 
 %files setup-seg
 %defattr(-,root,root,-)
-%dir %{_sysconfdir}/grid-services
-%dir %{_sysconfdir}/grid-services/available
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-sge-seg
+%dir %{_sysconfdir}/globus/scheduler-event-generator
+%dir %{_sysconfdir}/globus/scheduler-event-generator/available
+%{_sysconfdir}/globus/scheduler-event-generator/available/sge
+%if %{?suse_version}%{!?suse_version:0} == 0
+%{_libdir}/libglobus*
+%endif
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-3
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-4
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.6-1
