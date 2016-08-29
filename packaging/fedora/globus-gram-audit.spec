@@ -8,7 +8,7 @@ Name:		globus-gram-audit
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	4.5
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Auditing
 
@@ -73,7 +73,7 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-cat <<EOF > /etc/permissions.d/globus-gram-audit
+cat <<EOF > $RPM_BUILD_ROOT/etc/permissions.d/globus-gram-audit
 %{_localstatedir}/lib/globus/gram-audit root:root 01733
 EOF
 %endif
@@ -116,7 +116,7 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 4.5-3
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 4.5-4
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 4.5-1
