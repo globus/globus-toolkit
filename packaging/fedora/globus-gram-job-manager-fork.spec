@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-fork
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.5
-Release:	4%{?dist}
+Release:	5%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Fork Job Manager
 
@@ -246,16 +246,16 @@ fi
 %dir %{_sysconfdir}/globus/scheduler-event-generator
 %dir %{_sysconfdir}/globus/scheduler-event-generator/available
 %{_sysconfdir}/globus/scheduler-event-generator/available/fork
+%{_libdir}/libglobus_seg_fork.so*
 
 %files setup-seg
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-fork-seg
-%{_libdir}/libglobus_seg_fork.so*
 %{_sbindir}/globus-fork-starter
 %{_mandir}/man8/globus-fork-starter.8.gz
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.5-4
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.5-5
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.5-1
