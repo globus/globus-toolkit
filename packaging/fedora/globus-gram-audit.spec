@@ -39,7 +39,6 @@ BuildRequires:	autoconf >= 2.60
 BuildRequires:	libtool >= 2.2
 %endif
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-PreReq:         permissions
 Recommends:     cron
 %endif
 
@@ -77,10 +76,7 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/permissions.d
-cat <<EOF > $RPM_BUILD_ROOT%{_sysconfdir}/permissions.d/globus-gram-audit
-%{_localstatedir}/lib/globus/gram-audit/ root:root 01733
-EOF
+rm -rf $RPM_BUILD_ROOT%{_localstatedir}/lib/globus/gram-audit
 %endif
 
 %clean
@@ -93,20 +89,14 @@ if [ $1 -eq 1 ]; then
     || :
 fi
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%set_permissions /var/lib/globus/gram-audit/
-%endif
-
-%if %{?suse_version}%{!?suse_version:0} >= 1315
-%verifyscript
-%verify_permissions -e %{_localstatedir}/lib/globus/gram-audit/
+mkdir -p %{_localstatedir}/lib/globus
+mkdir -m 01733 -p %{_localstatedir}/lib/globus/gram-audit
 %endif
 
 %files
 %defattr(-,root,root,-)
 %dir %{_localstatedir}/lib/globus
-%if %{?suse_version}%{!?suse_version:0} >= 1315
-%verify(not mode) %dir %{_localstatedir}/lib/globus/gram-audit
-%else
+%if %{?suse_version}%{!?suse_version:0} < 1315
 %dir %{_localstatedir}/lib/globus/gram-audit
 %endif
 %dir %{_docdir}/%{name}-%{version}
@@ -119,10 +109,9 @@ fi
 %config(noreplace) %{_sysconfdir}/cron.hourly/globus-gram-audit.cron
 %dir %{_sysconfdir}/globus
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
-%config(noreplace) %{_sysconfdir}/permissions.d/globus-gram-audit
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 4.5-8
+* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 4.5-7
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 4.5-1
