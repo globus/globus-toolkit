@@ -7,7 +7,7 @@ Name:		globus-gram-job-manager
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	14.31
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -26,6 +26,7 @@ Requires:	globus-gatekeeper >= 9
 Requires:	psmisc
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:       libglobus_seg_job_manager%{?_isa} = %{version}-%{release}
 BuildRequires:	procps
 %endif
 BuildRequires:	globus-scheduler-event-generator-devel >= 4
@@ -68,6 +69,12 @@ BuildRequires:  perl-Test-Simple
 BuildRequires:  perl-Test
 %endif
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%package -n libglobus_seg_job_manager
+Summary:	Globus Toolkit - GRAM Jobmanager SEG Library
+Group:		System Environment/Libraries
+%endif
+
 %package doc
 Summary:	Globus Toolkit - GRAM Jobmanager Documentation Files
 Group:		Documentation
@@ -75,6 +82,17 @@ Group:		Documentation
 BuildArch:	noarch
 %endif
 Requires:	%{name} = %{version}-%{release}
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%description -n libglobus_seg_job_manager
+The Globus Toolkit is an open source software toolkit used for building Grid
+systems and applications. It is being developed by the Globus Alliance and
+many others all over the world. A growing number of projects and companies are
+using the Globus Toolkit to unlock the potential of grids for their cause.
+
+The libglobus_seg_job_manager package contains:
+GRAM Jobmanager SEG Library
+%endif
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -120,6 +138,10 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
 find ${RPM_BUILD_ROOT} -name 'libglobus*.la' -exec rm -vf '{}' \;
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+rm -rf ${RPM_BUILD_ROOT}%{_localstatedir}/lib/globus/gram_job_state
+rm -rf ${RPM_BUILD_ROOT}%{_localstatedir}/log/globus
+%endif
 
 %check
 make %{?_smp_mflags} check
@@ -127,20 +149,36 @@ make %{?_smp_mflags} check
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%post
+mkdir -p %{_localstatedir}/lib/globus
+[ -d %{_localstatedir}/lib/globus/gram_job_state ] || \
+    mkdir -m 1777 %{_localstatedir}/lib/globus/gram_job_state
+[ -d %{_localstatedir}/log/globus ] || \
+    mkdir -m 1777 %{_localstatedir}/log/globus
+%endif
+
 %files
 %defattr(-,root,root,-)
 %dir %{_datadir}/globus/globus_gram_job_manager
 %{_datadir}/globus/globus_gram_job_manager/*.rvf
 %dir %{_docdir}/%{name}-%{version}
 %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
+%if %{?suse_version}%{!?suse_version:0} < 1315
 %dir %{_localstatedir}/lib/globus/gram_job_state
 %dir %{_localstatedir}/log/globus
+%endif
 %config(noreplace) %{_sysconfdir}/globus/globus-gram-job-manager.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/globus-job-manager
 %{_sbindir}/*
 %{_bindir}/*
 %{_mandir}/man8/*
 %{_mandir}/man1/*
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+
+%files -n libglobus_seg_job_manager
+%defattr(-,root,root,-)
+%endif
 %{_libdir}/libglobus*.so*
 
 %files doc
@@ -148,6 +186,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 14.31-2
+- Updates for SLES 12
+
 * Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 14.31-1
 - Set test case cache dir
 
@@ -173,7 +214,7 @@ rm -rf $RPM_BUILD_ROOT
 - Convert manpage source to asciidoc
 - Fix GT-590: GT5 shows running jobs as being in pending state
 
-* Thu Apr 17 2015 Globus Toolkit <support@globus.org> - 14.25-2
+* Fri Apr 17 2015 Globus Toolkit <support@globus.org> - 14.25-2
 - Add build dependency on perl-Test-Simple
 
 * Mon Nov 03 2014 Globus Toolkit <support@globus.org> - 14.25-1
@@ -264,7 +305,7 @@ rm -rf $RPM_BUILD_ROOT
 - Repackage for GT6 without GPT
 
 * Wed Jun 26 2013 Globus Toolkit <support@globus.org> - 13.53-2
-- GT-424: New Fedora Packaging Guideline - no %_isa in BuildRequires
+- GT-424: New Fedora Packaging Guideline - no %%_isa in BuildRequires
 
 * Thu May 16 2013 Globus Toolkit <support@globus.org> - 13.53-1
 - GT-311: globus job manager is leaking memory
