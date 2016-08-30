@@ -508,7 +508,7 @@ globus_gsi_proxy_create_req(
                 goto error_exit;
             }
 
-            if (handle->proxy_cert_info->pcPathLengthConstraint) != NULL)
+            if (handle->proxy_cert_info->pcPathLengthConstraint != NULL)
             {
                 pathlen = ASN1_INTEGER_get(handle->proxy_cert_info->pcPathLengthConstraint);
                 if (pathlen > 0)
@@ -1402,7 +1402,7 @@ globus_l_gsi_proxy_sign_key(
                 goto done;
             }
 
-            if (handle->proxy_cert_info->pcPathLengthConstraint) != NULL)
+            if (handle->proxy_cert_info->pcPathLengthConstraint != NULL)
             {
                 pathlen = ASN1_INTEGER_get(handle->proxy_cert_info->pcPathLengthConstraint);
                 if (pathlen > 0)
