@@ -1,3 +1,9 @@
+globus-gsi-callback (5.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix path length constraint handling
+
+ -- Globus Toolkit <support@globus.org>  Tue, 30 Aug 2016 08:59:30 -0400
+
 globus-gsi-callback (5.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Updates for OpenSSL 1.1.0

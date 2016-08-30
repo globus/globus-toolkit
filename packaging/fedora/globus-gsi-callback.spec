@@ -6,8 +6,8 @@ Name:		globus-gsi-callback
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	5.9
-Release:	3%{?dist}
+Version:	5.10
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
@@ -161,6 +161,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 5.10-1
+- Fix path length constraint handling
+
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 5.9-3
 - Updates for SLES 12
 

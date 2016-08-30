@@ -508,22 +508,25 @@ globus_gsi_proxy_create_req(
                 goto error_exit;
             }
 
-            pathlen = ASN1_INTEGER_get(handle->proxy_cert_info->pcPathLengthConstraint);
-            if (pathlen > 0)
+            if (handle->proxy_cert_info->pcPathLengthConstraint) != NULL)
             {
-                tmp = globus_common_create_string("%s,pathlen:%d",
-                                                  value, pathlen);
-                if (!tmp)
+                pathlen = ASN1_INTEGER_get(handle->proxy_cert_info->pcPathLengthConstraint);
+                if (pathlen > 0)
                 {
-                    GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-                        result,
-                        GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-                        (_PCSL("Couldn't create PROXYCERTINFO extension")));
+                    tmp = globus_common_create_string("%s,pathlen:%d",
+                                                      value, pathlen);
+                    if (!tmp)
+                    {
+                        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                            result,
+                            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                            (_PCSL("Couldn't create PROXYCERTINFO extension")));
+                        globus_libc_free(value);
+                        goto error_exit;
+                    }
                     globus_libc_free(value);
-                    goto error_exit;
+                    value = tmp;
                 }
-                globus_libc_free(value);
-                value = tmp;
             }
 
             if (handle->proxy_cert_info->proxyPolicy->policy)
@@ -1399,22 +1402,25 @@ globus_l_gsi_proxy_sign_key(
                 goto done;
             }
 
-            pathlen = ASN1_INTEGER_get(handle->proxy_cert_info->pcPathLengthConstraint);
-            if (pathlen > 0)
+            if (handle->proxy_cert_info->pcPathLengthConstraint) != NULL)
             {
-                tmp = globus_common_create_string("%s,pathlen:%d",
-                                                  value, pathlen);
-                if (!tmp)
+                pathlen = ASN1_INTEGER_get(handle->proxy_cert_info->pcPathLengthConstraint);
+                if (pathlen > 0)
                 {
-                    GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-                        result,
-                        GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-                        (_PCSL("Couldn't create PROXYCERTINFO extension")));
+                    tmp = globus_common_create_string("%s,pathlen:%d",
+                                                      value, pathlen);
+                    if (!tmp)
+                    {
+                        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                            result,
+                            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                            (_PCSL("Couldn't create PROXYCERTINFO extension")));
+                        globus_libc_free(value);
+                        goto done;
+                    }
                     globus_libc_free(value);
-                    goto done;
+                    value = tmp;
                 }
-                globus_libc_free(value);
-                value = tmp;
             }
 
             if (handle->proxy_cert_info->proxyPolicy->policy)

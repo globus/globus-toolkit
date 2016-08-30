@@ -1657,18 +1657,18 @@ globus_i_gsi_callback_check_critical_extensions(
                 X509_STORE_CTX_set_error(x509_context, X509_V_ERR_CERT_REJECTED);
                 goto exit;
             }
-
-            path_length = ASN1_INTEGER_get(proxycertinfo->pcPathLengthConstraint);
-            /* ignore negative values */
-            
-            if(path_length > -1)
+            if (proxycertinfo->pcPathLengthConstraint != NULL)
             {
-                if(callback_data->max_proxy_depth == -1 ||
-                   callback_data->max_proxy_depth >
-                   callback_data->proxy_depth + path_length)
+                path_length = ASN1_INTEGER_get(proxycertinfo->pcPathLengthConstraint);
+                if(path_length > -1)
                 {
-                    callback_data->max_proxy_depth =
-                        callback_data->proxy_depth + path_length;
+                    if(callback_data->max_proxy_depth == -1 ||
+                       callback_data->max_proxy_depth >
+                       callback_data->proxy_depth + path_length)
+                    {
+                        callback_data->max_proxy_depth =
+                            callback_data->proxy_depth + path_length;
+                    }
                 }
             }
 

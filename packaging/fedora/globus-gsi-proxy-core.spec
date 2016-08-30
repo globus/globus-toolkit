@@ -6,8 +6,8 @@ Name:		globus-gsi-proxy-core
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	8.1
-Release:	2%{?dist}
+Version:	8.2
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
 
@@ -169,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 8.2-1
+- Fix path length constraint handling
+
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 8.1-2
 - Updates for SLES 12
 

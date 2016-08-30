@@ -81,7 +81,7 @@ sub update_rpm($$)
     my ($pkgname, $allpackagemeta) = @_;
     my $package = $allpackagemeta->{$pkgname};
     my $version = $package->{VERSION};
-    my $soname = $pkgmeta->{SONAME};
+    my $soname = $package->{SONAME};
     my $specfilename = "$topdir/fedora/$package->{NATIVE_NAME}.spec";
 
     if ($verbose) {print "Acting on $pkgname \n";}

@@ -1163,8 +1163,15 @@ globus_gsi_proxy_handle_get_pathlen(
             (_PCSL("NULL pathlen passed to function: %s"), __func__));
         goto exit;
     }
-    *pathlen = ASN1_INTEGER_get(
-            handle->proxy_cert_info->pcPathLengthConstraint);
+    if (handle->proxy_cert_info->pcPathLengthConstraint == NULL)
+    {
+        *pathlen = -1;
+    }
+    else
+    {
+        *pathlen = ASN1_INTEGER_get(
+                handle->proxy_cert_info->pcPathLengthConstraint);
+    }
     
 exit:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
