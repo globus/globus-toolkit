@@ -12,7 +12,7 @@ Name:           myproxy
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.18
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -481,6 +481,7 @@ fi
 
 %{_mandir}/man8/myproxy-server.8.gz
 %{_mandir}/man5/myproxy-server.config.5.gz
+%dir %{_datadir}/myproxy
 %{_datadir}/myproxy/myproxy-server.conf
 %{_datadir}/myproxy/myproxy-server.service
 
@@ -530,7 +531,7 @@ fi
 %endif
 
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 6.1.18-2
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 6.1.18-3
 - Updates for SLES 12
 
 * Tue May 03 2016 Globus Toolkit <support@globus.org> - 6.1.18-1
