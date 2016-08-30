@@ -51,16 +51,22 @@ fi
 if [ -n "$CONTACT_STRING" ]; then
     echo "#   Using existing GRAM service at $CONTACT_STRING"
 else
+    cachetmp=""
 
     cleanup()
     {
         if [ -n "$contact" ]; then
             globus-personal-gatekeeper -kill "$contact" > /dev/null 2>&1
         fi
+        if [ -n "$cachetmp" ]; then
+            rm -rf "$cachetmp"
+        fi
     }
+    cachetmp="$(mktemp -d)"
+    export GLOBUS_GASS_CACHE_DEFAULT="$cachetmp/$LOGNAME"
 
     echo "#   Starting personal gatekeeper"
-    contact="$(globus-personal-gatekeeper -start | sed -e 's/GRAM contact: //')"
+    contact="$(globus-personal-gatekeeper -start -cache-location "$cachetmp/\$(LOGNAME)" | sed -e 's/GRAM contact: //')"
 
     if [ "$?" != 0 ] || [ -z "$contact" ]; then
         exit 99

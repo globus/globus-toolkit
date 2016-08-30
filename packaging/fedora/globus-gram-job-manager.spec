@@ -1,30 +1,23 @@
 Name:		globus-gram-job-manager
+%global soname 0
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
-Version:	14.30
+Version:	14.31
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common >= 15
-Requires:	globus-scheduler-event-generator%{?_isa} >= 4
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
-Requires:	globus-xio%{?_isa} >= 3
-Requires:	globus-gss-assist%{?_isa} >= 8
-Requires:	libxml2%{?_isa}
-Requires:	globus-gsi-sysconfig%{?_isa} >= 5
-Requires:	globus-callout%{?_isa} >= 2
-Requires:	globus-gram-job-manager-callout-error%{?_isa} >= 2
-Requires:	globus-gram-protocol >= 11
-Requires:	globus-usage%{?_isa} >= 3
-Requires:	globus-rsl%{?_isa} >= 9
-Requires:	globus-gass-cache%{?_isa} >= 8
-Requires:	globus-gass-transfer%{?_isa} >= 7
 Requires:	globus-gram-job-manager-scripts
 Requires:	globus-gass-copy-progs >= 8
 Requires:	globus-proxy-utils >= 5
@@ -32,6 +25,9 @@ Requires:	globus-gass-cache-program >= 2
 Requires:	globus-gatekeeper >= 9
 Requires:	psmisc
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:	procps
+%endif
 BuildRequires:	globus-scheduler-event-generator-devel >= 4
 BuildRequires:	globus-xio-popen-driver-devel >= 2
 BuildRequires:	globus-xio-devel >= 3
@@ -49,7 +45,7 @@ BuildRequires:	globus-gass-transfer-devel >= 7
 BuildRequires:	globus-gram-protocol-doc >= 11
 BuildRequires:	globus-common-doc >= 14
 BuildRequires:  globus-gram-client-tools >= 10
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
@@ -103,7 +99,7 @@ GRAM Jobmanager Documentation Files
 %setup -q -n %{_name}-%{version}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -152,6 +148,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 
 %changelog
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 14.31-1
+- Set test case cache dir
+
 * Fri Aug 19 2016 Globus Toolkit <support@globus.org> - 14.30-1
 - Fix test problem in el5 mock with HOME=/builddir and root user
 
