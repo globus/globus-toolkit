@@ -3,25 +3,33 @@ Name:           myproxy
 %global soname 6
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %global apache_license Apache-2.0
+%global bsd_license BSD-4-Clause
 %global libpkg libmyproxy%{soname}
 %global nlibpkg -n libmyproxy%{soname}
 %else
 %global apache_license ASL 2.0
+%global bsd_license BSD
 %global libpkg  libs
 %global nlibpkg libs
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.18
-Release:	3%{?dist}
+Release:	5%{?dist}
 Vendor:	Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
-License:        NCSA and BSD and %{apache_license}
+License:        NCSA and %{bsd_license} and %{apache_license}
 URL:            http://grid.ncsa.illinois.edu/myproxy/
 Source0:        http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+%if 0%{?suse_version} > 0
+Requires:       insserv
+Requires(post): %insserv_prereq  %fillup_prereq
+BuildRequires:  insserv
+%endif
 
 BuildRequires:  globus-gss-assist-devel >= 8
 BuildRequires:  globus-usage-devel >= 3
@@ -72,6 +80,9 @@ trusted CA certificates and Certificate Revocation Lists (CRLs).
 Summary:       Manage X.509 Public Key Infrastructure (PKI) security credentials 
 Group:         System Environment/Daemons
 Obsoletes:     myproxy < 5.1-3
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Provides:      myproxy
+%endif
 
 %description %{nlibpkg}
 MyProxy is open source software for managing X.509 Public Key Infrastructure 
@@ -189,13 +200,14 @@ Package %{name}-libs contains runtime libs for MyProxy to use VOMS.
 
 %prep
 %setup -q -n myproxy-%{version}
-#%patch0 -p1
-#cp -p %{SOURCE1} .
-#cp -p %{SOURCE2} .
-#cp -p %{SOURCE3} .
-
 
 %build
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global initscript_config_path %{_localstatedir}/adm/fillup-templates/sysconfig.myproxy-server
+%else
+%global initscript_config_path %{_sysconfdir}/sysconfig/myproxy-server 
+%endif
+
 rm -f pkgdata/Makefile.am
 
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
@@ -280,7 +292,14 @@ mv $RPM_BUILD_ROOT%{_datadir}/%{name}/myproxy-server.config \
 
 
 mkdir -p $RPM_BUILD_ROOT%{_initddir}
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/adm/fillup-templates
+%else
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
+%endif
+
+install  -m 644 myproxy.sysconfig $RPM_BUILD_ROOT%{initscript_config_path}
+
 %if 0%{?suse_version} == 0
 install  -m 755 myproxy.init $RPM_BUILD_ROOT%{_initddir}/myproxy-server
 %else
@@ -294,12 +313,12 @@ cat <<'EOF' > $RPM_BUILD_ROOT%{_initddir}/myproxy-server
 #
 ### BEGIN INIT INFO
 # Provides: myproxy-server
-# Required-Start:  $local_fs $network $syslog
-# Required-Stop:  $local_fs $syslog
+# Required-Start:  $remote_fs $network $syslog
+# Required-Stop:  $remote_fs $syslog
 # Should-Start:  $syslog
 # Should-Stop:  $network $syslog
 # Default-Stop: 0 1 6
-# Default-Start: 2 3 4 5
+# Default-Start: 2 3 5
 # Short-Description: Startup the MyProxy server daemon
 # Description: Server for X.509 Public Key Infrastructure (PKI) security credentials
 ### END INIT INFO
@@ -405,7 +424,6 @@ esac
 EOF
 chmod 755 $RPM_BUILD_ROOT%{_initddir}/myproxy-server
 %endif
-install  -m 644 myproxy.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/myproxy-server
 mkdir -p $RPM_BUILD_ROOT%{_var}/lib/myproxy
 
 # Create a directory to hold myproxy owned host certificates.
@@ -429,18 +447,31 @@ useradd -r -g myproxy -d %{_var}/lib/myproxy -s /sbin/nologin \
 exit 0
 
 %post server
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%fillup_and_insserv myproxy-server
+%else
 /sbin/chkconfig --add myproxy-server
+%endif
 
 %preun server
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%stop_on_removal service
+%else
 if [ $1 = 0 ] ; then
     /sbin/service myproxy-server stop >/dev/null 2>&1
     /sbin/chkconfig --del myproxy-server
 fi
+%endif
 
 %postun server
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%restart_on_update service
+%insserv_cleanup
+%else
 if [ "$1" -eq "1" ] ; then
     /sbin/service myproxy-server condrestart >/dev/null 2>&1 || :
 fi
+%endif
 
 %files
 %defattr(-,root,root,-)
@@ -473,7 +504,7 @@ fi
 %{_sbindir}/myproxy-server
 %{_initddir}/myproxy-server
 %config(noreplace)    %{_sysconfdir}/myproxy-server.config
-%config(noreplace)    %{_sysconfdir}/sysconfig/myproxy-server
+%config(noreplace)    %{initscript_config_path}
 # myproxy-server wants exactly 700 permission on its data 
 # which is just fine.
 %attr(0700,myproxy,myproxy) %dir %{_var}/lib/myproxy
@@ -527,11 +558,12 @@ fi
 
 %if 0%{?suse_version} == 0
 %files voms
+%defattr(-,root,root,-)
 %{_libdir}/libmyproxy_voms.so
 %endif
 
 %changelog
-* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 6.1.18-3
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 6.1.18-5
 - Updates for SLES 12
 
 * Tue May 03 2016 Globus Toolkit <support@globus.org> - 6.1.18-1
