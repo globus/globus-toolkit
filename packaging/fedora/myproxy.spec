@@ -14,7 +14,7 @@ Name:           myproxy
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.18
-Release:	5%{?dist}
+Release:	6%{?dist}
 Vendor:	Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -113,13 +113,14 @@ trusted CA certificates and Certificate Revocation Lists (CRLs).
 Package %{name}-devel contains development files for MyProxy.
 
 %package server
-Requires(pre):    shadow-utils
 %if 0%{?suse_version} == 0
+Requires(pre):    shadow-utils
 Requires(post):   chkconfig
 Requires(preun):  chkconfig
 Requires(preun):  initscripts
 Requires(postun): initscripts
 %else
+Requires(pre):    shadow
 Requires(preun):  sysconfig
 Requires(preun):  aaa_base
 Requires(postun): sysconfig

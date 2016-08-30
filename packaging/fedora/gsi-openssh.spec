@@ -29,7 +29,7 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 1
+%global gsi_openssh_rel 2
 %global gsi_openssh_ver 7.1p2f
 
 Summary: An implementation of the SSH protocol with GSI authentication
@@ -86,7 +86,10 @@ Requires: /sbin/nologin
 %if 0%{?suse_version} == 0
 Requires: initscripts >= 5.20
 %else
-Requires: sysconfig
+Requires:       sysconfig
+Requires:       insserv
+Requires(post): %insserv_prereq  %fillup_prereq
+BuildRequires:  insserv
 %endif
 
 %if 0%{?suse_version} > 0
@@ -173,6 +176,8 @@ Requires: %{name} = %{version}-%{release}
 %if 0%{?suse_version} == 0
 Requires(post): chkconfig >= 0.9, /sbin/service
 %else
+BuildRequires:  shadow
+Requires(pre):  shadow
 Requires(post): aaa_base
 %endif
 Requires(pre): /usr/sbin/useradd
@@ -296,7 +301,7 @@ install -d $RPM_BUILD_ROOT/etc/rc.d/init.d
 install -m755 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/gsisshd
 %else
 install -d $RPM_BUILD_ROOT/etc/init.d
-install -m755 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/init.d/gsisshd
+install -m755 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/init.d/gsi-openssh-server
 %endif
 install -d $RPM_BUILD_ROOT%{_libexecdir}/gsissh
 install -m644 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.pam $RPM_BUILD_ROOT/etc/pam.d/gsisshd
@@ -332,8 +337,17 @@ getent passwd gsisshd >/dev/null || \
   -s /dev/null -r -d /var/empty/gsisshd gsisshd 2> /dev/null || :
 %endif
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%post
+chmod 4755 %{_libexecdir}/gsissh/ssh-keysign
+%endif
+
 %post server
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%fillup_and_insserv gsi-openssh-server
+%else
 /sbin/chkconfig --add gsisshd
+%endif
 if [ -f /etc/ssh/ssh_host_dsa_key ]
 then
 	ln -sf  /etc/ssh/ssh_host_dsa_key /etc/gsissh/ssh_host_dsa_key
@@ -368,13 +382,22 @@ then
 fi
 
 %postun server
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%restart_on_update service
+%insserv_cleanup
+%else
 /sbin/service gsisshd condrestart > /dev/null 2>&1 || :
+%endif
 
 %preun server
 if [ "$1" = 0 ]
 then
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%stop_on_removal service
+%else
 	/sbin/service gsisshd stop > /dev/null 2>&1 || :
 	/sbin/chkconfig --del gsisshd
+%endif
 	/bin/rm -f /etc/gsissh/ssh_host_dsa_key
 	/bin/rm -f /etc/gsissh/ssh_host_dsa_key.pub
 	/bin/rm -f /etc/gsissh/ssh_host_rsa_key
@@ -393,7 +416,11 @@ fi
 %attr(0755,root,root) %{_bindir}/gsissh-keygen
 %attr(0644,root,root) %{_mandir}/man1/gsissh-keygen.1*
 %attr(0755,root,root) %dir %{_libexecdir}/gsissh
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%attr(0755,root,root) %{_libexecdir}/gsissh/ssh-keysign
+%else
 %attr(4755,root,root) %{_libexecdir}/gsissh/ssh-keysign
+%endif
 %attr(0644,root,root) %{_mandir}/man8/gsissh-keysign.8*
 
 %files clients
@@ -411,6 +438,7 @@ fi
 
 %files server
 %defattr(-,root,root)
+%dir %attr(0711,root,root) %{_var}/empty
 %dir %attr(0711,root,root) %{_var}/empty/gsisshd
 %attr(0755,root,root) %{_sbindir}/gsisshd
 %attr(0755,root,root) %{_libexecdir}/gsissh/sftp-server
@@ -423,10 +451,13 @@ fi
 %if 0%{?suse_version} == 0
 %attr(0755,root,root) /etc/rc.d/init.d/gsisshd
 %else
-%attr(0755,root,root) /etc/init.d/gsisshd
+%attr(0755,root,root) /etc/init.d/gsi-openssh-server
 %endif
 
 %changelog
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 7.1p2f-2
+- Updates for SLES 12
+
 * Tue Jun  7 2016 Globus Toolkit <support@globus.org> - 7.1p2f-1
 - Fix to use sshd_config from installed location for installations from the
   source and binary tarballs.
