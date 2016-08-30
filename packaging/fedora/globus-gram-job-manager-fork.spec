@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-fork
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.5
-Release:	5%{?dist}
+Release:	6%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Fork Job Manager
 
@@ -241,21 +241,24 @@ fi
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-fork-poll
 
-%files -n libglobus_seg_fork
-%defattr(-,root,root,-)
-%dir %{_sysconfdir}/globus/scheduler-event-generator
-%dir %{_sysconfdir}/globus/scheduler-event-generator/available
-%{_sysconfdir}/globus/scheduler-event-generator/available/fork
-%{_libdir}/libglobus_seg_fork.so*
-
 %files setup-seg
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-fork-seg
 %{_sbindir}/globus-fork-starter
 %{_mandir}/man8/globus-fork-starter.8.gz
 
+%if %{?suse_version}%{!?suse_version:0} < 1315
+%files -n libglobus_seg_fork
+%defattr(-,root,root,-)
+%endif
+%dir %{_sysconfdir}/globus/scheduler-event-generator
+%dir %{_sysconfdir}/globus/scheduler-event-generator/available
+%{_sysconfdir}/globus/scheduler-event-generator/available/fork
+%{_libdir}/libglobus_seg_fork.so*
+
+
 %changelog
-* Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.5-5
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 2.5-6
 - Updates for SLES 12
 
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 2.5-1
