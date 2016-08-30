@@ -1140,7 +1140,7 @@ proxy_handle_set_get_pathlen_test(void)
     {
         ok = false;
     }
-    if (pathlen != 0)
+    if (pathlen != -1)
     {
         ok = false;
     }

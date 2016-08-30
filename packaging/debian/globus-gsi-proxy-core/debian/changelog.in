@@ -1,3 +1,9 @@
+globus-gsi-proxy-core (8.4-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix test case
+
+ -- Globus Toolkit <support@globus.org>  Tue, 30 Aug 2016 10:57:29 -0400
+
 globus-gsi-proxy-core (8.3-1+gt6.@distro@) @distro@; urgency=low
 
   * fix typo in previous

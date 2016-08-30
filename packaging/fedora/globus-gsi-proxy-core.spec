@@ -6,7 +6,7 @@ Name:		globus-gsi-proxy-core
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	8.3
+Version:	8.4
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
@@ -143,6 +143,9 @@ make install DESTDIR=$RPM_BUILD_ROOT
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
+%check
+make %{?_smp_mflags} check
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -169,6 +172,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 8.4-1
+- Enable tests
+- Fix test case
+
 * Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 8.3-1
 - fix typo in previous
 
