@@ -1,28 +1,30 @@
 Name:		globus-gram-client-tools
+%global soname 0
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	11.9
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
 Group:		Applications/Internet
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common-progs%{?_isa} >= 14
-Requires:	globus-gass-server-ez%{?_isa} >= 4
-Requires:	globus-gram-client%{?_isa} >= 12
-Requires:	globus-gss-assist%{?_isa} >= 8
-Requires:	globus-rsl%{?_isa} >= 9
 
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gass-server-ez-devel >= 4
 BuildRequires:	globus-gram-client-devel >= 12
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-rsl-devel >= 9
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
@@ -42,7 +44,7 @@ Job Management Tools (globusrun)
 %setup -q -n %{_name}-%{version}
 
 %build
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 # Remove files that should be replaced during bootstrap
 rm -rf autom4te.cache
 
@@ -73,6 +75,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 11.9-2
+- Updates for SLES 12
+
 * Sat Aug 20 2016 Globus Toolkit <support@globus.org> - 11.9-1
 - Update bug report URL
 
