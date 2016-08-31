@@ -1,3 +1,9 @@
+myproxy (6.1.19-1+gt6.@distro@) @distro@; urgency=low
+
+  * update myproxy debug/error msgs for accepted_peer_names type change
+
+ -- Globus Toolkit <support@globus.org>  Wed, 31 Aug 2016 11:16:14 -0400
+
 myproxy (6.1.18-1+gt6.@distro@) @distro@; urgency=low
 
   * Spelling

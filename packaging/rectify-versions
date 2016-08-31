@@ -764,7 +764,7 @@ sub update_changelog
 GetOptions('package=s' => \$package,
            'verbose' => \$verbose,
            'dryrun|n' => \$dryrun,
-           'changelog=s' => \$changelog,
+           'changelog|m=s' => \$changelog,
            'prompt-for-changelog' => \$prompt_for_changelog,
            'git-changelog' => \$git_changelog,
            'bumprelease' => \$bumprelease,

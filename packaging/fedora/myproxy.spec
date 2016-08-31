@@ -13,8 +13,8 @@ Name:           myproxy
 %global nlibpkg libs
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.18
-Release:	6%{?dist}
+Version:	6.1.19
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -564,6 +564,9 @@ fi
 %endif
 
 %changelog
+* Wed Aug 31 2016 Globus Toolkit <support@globus.org> - 6.1.19-1
+- update myproxy debug/error msgs for accepted_peer_names type change
+
 * Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 6.1.18-5
 - Updates for SLES 12
 
