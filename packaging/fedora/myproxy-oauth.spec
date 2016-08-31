@@ -1,12 +1,17 @@
 Name:		myproxy-oauth
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%global apache_license Apache-2.0
+%else
+%global apache_license ASL 2.0
+%endif
 %global _name %(tr - _ <<< %{name})
 Version:	0.21
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	MyProxy OAuth Delegation Serice
 
 Group:		System Environment/Libraries
-License:	ASL 2.0
+License:	%{apache_license}
 URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.2/stable/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -126,15 +131,22 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+%dir %{_sysconfdir}/apache2
+%dir %{_sysconfdir}/apache2/conf.d
+%dir %{_docdir}/%{name}
+%dir %{_docdir}/%{name}/apache
+%endif
 %doc %{_docdir}/%{name}/README.txt
 %doc %{_docdir}/%{name}/apache/*
 %config(noreplace) /etc/*/conf.d/wsgi-myproxy-oauth.conf
 %dir %attr(0700,myproxyoauth,myproxyoauth) /var/lib/myproxy-oauth
 /usr/share/%{name}
+
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
-* Wed Aug 31 2016 Globus Toolkit <support@globus.org> - 0.21-2
+* Wed Aug 31 2016 Globus Toolkit <support@globus.org> - 0.21-3
 - Updates for SLES 12
 
 * Thu Mar 10 2016 Globus Toolkit <support@globus.org> - 0.21-1
