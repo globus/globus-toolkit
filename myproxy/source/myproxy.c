@@ -941,14 +941,12 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
 			     "and try again.\n",
 			     peer_name, server_dn, peer_name);
        } else {
-	   verror_put_string("Server authorization failed.  Server identity\n"
-			     "(%s)\ndoes not match expected identities\n"
-			     "%s or %s.\n"
+	   verror_put_string("Server authorization failed.  Server identity "
+			     "does not match expected identity.\n"
 			     "If the server identity is acceptable, "
 			     "set\nMYPROXY_SERVER_DN=\"%s\"\n"
 			     "and try again.\n",
-			     peer_name, accepted_peer_names[0],
-			     accepted_peer_names[1], peer_name);
+			     peer_name);
        }
        goto error;
    } else if (rval == GSI_SOCKET_ERROR) {
