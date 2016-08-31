@@ -6,8 +6,8 @@ Name:		globus-gram-job-manager
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	14.31
-Release:	2%{?dist}
+Version:	14.32
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -186,6 +186,9 @@ mkdir -p %{_localstatedir}/lib/globus
 %{_mandir}/man5/*
 
 %changelog
+* Wed Aug 31 2016 Globus Toolkit <support@globus.org> - 14.32-1
+- Skip some tests as root
+
 * Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 14.31-2
 - Updates for SLES 12
 

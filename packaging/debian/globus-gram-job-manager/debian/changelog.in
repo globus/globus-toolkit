@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.32-1+gt6.@distro@) @distro@; urgency=low
+
+  * Skip some tests as root
+
+ -- Globus Toolkit <support@globus.org>  Wed, 31 Aug 2016 09:40:14 -0400
+
 globus-gram-job-manager (14.31-1+gt6.@distro@) @distro@; urgency=low
 
   * Set test case cache dir

@@ -73,6 +73,18 @@ my @test_rsls=qw(
 	error_undefined_executable.rsl
 );
 
+my @skip_as_root = qw(
+        error_invalid_cache2.rsl
+        error_invalid_cache.rsl
+        error_invalid_scratch.rsl
+        error_opening_stderr.rsl
+        error_opening_stderr2.rsl
+        error_opening_stdout.rsl
+        error_opening_stdout2.rsl
+        error_opening_stdout3.rsl
+        error_stdin_not_found.rsl
+);
+
 sub test_rsl
 {
     my $rsl_file = shift;
@@ -106,6 +118,8 @@ sub test_rsl
     SKIP: {
         skip "Skipping test for $lrm", 1,
             if (defined($lrm) && grep(/$lrm/, @lrm_skip_list));
+        skip "Skipping as root", 1,
+            if ($< == 0 && grep(/$rsl_file/, @skip_as_root));
 
         ok(submit_rsl("$testdatadir/$rsl_file", @error_list)==0, $rsl_file);
     }
