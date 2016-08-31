@@ -1,6 +1,6 @@
 Name:           globus-toolkit-repo
 Version:        6
-Release:        22
+Release:        23
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
@@ -67,6 +67,15 @@ sles11_testing_sourceurl="${repo_root}/testing/rpm/sles/11"
 sles11_unstable_baseurl="${unstable_root}/sles/11"
 sles11_unstable_sourceurl="${unstable_root}/sles/11"
 sles11_repo_type="yast2"
+
+pkg_repos="${pkg_repos:+$pkg_repos }sles12"
+sles12_stable_baseurl="${repo_root}/stable/rpm/sles/12"
+sles12_stable_sourceurl="${repo_root}/stable/rpm/sles/12"
+sles12_testing_baseurl="${repo_root}/testing/rpm/sles/12"
+sles12_testing_sourceurl="${repo_root}/testing/rpm/sles/12"
+sles12_unstable_baseurl="${unstable_root}/sles/12"
+sles12_unstable_sourceurl="${unstable_root}/sles/12"
+sles12_repo_type="yast2"
 
 echo $pkg_repos > pkg_repos
 for repo in $pkg_repos ; do
@@ -160,6 +169,9 @@ case ${osname}:${osver} in
     sles*:11*)
         repo=sles11
         ;;
+    sles*:12*)
+        repo=sles12
+        ;;
     *)
 	echo "Unsupported repo" 1>&2
 	exit 1
@@ -222,6 +234,9 @@ case ${osname}:${osver} in
     sles*:11*)
         repo=sles11
         ;;
+    sles*:12*)
+        repo=sles12
+        ;;
     *)
 	echo "Unsupported repo" 1>&2
 	exit 1
@@ -246,6 +261,9 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Wed Aug 31 2016 Globus Toolkit <support@globus.org> - 6-23
+- Updates for SLES 12
+
 * Mon Aug 1 2016 Globus Toolkit <support@globus.org> - 6-22
 - ignore key import errors
 
