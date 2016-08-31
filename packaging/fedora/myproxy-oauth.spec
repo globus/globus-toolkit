@@ -1,7 +1,7 @@
 Name:		myproxy-oauth
 %global _name %(tr - _ <<< %{name})
 Version:	0.21
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	MyProxy OAuth Delegation Serice
 
@@ -23,8 +23,10 @@ Requires:       mod_wsgi
 %else
 # Available from http://download.opensuse.org/repositories/Apache/SLE_11_SP3/Apache.repo
 Requires:       apache2 >= 2.4
-# Available from http://download.opensuse.org/repositories/Apache:/Modules/Apache_SLE_11_SP3/Apache:Modules.repo
+# Available from http://download.opensuse.org/repositories/Apache:/Modules/Apache_SLE_12_SP1/Apache:Modules.repo
 Requires:       apache2-mod_wsgi
+BuildRequires:   shadow
+Requires(pre):   shadow
 %endif
 
 %if 0%{?rhel} != 0 
@@ -132,6 +134,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Wed Aug 31 2016 Globus Toolkit <support@globus.org> - 0.21-2
+- Updates for SLES 12
+
 * Thu Mar 10 2016 Globus Toolkit <support@globus.org> - 0.21-1
 - Fix redirect when callback_uri contains a query
 
