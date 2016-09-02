@@ -7,7 +7,7 @@ Name:		globus-gsi-cert-utils
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	9.14
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
@@ -66,7 +66,6 @@ Summary:	Globus Toolkit - Globus GSI Cert Utils Library Programs
 Group:		Applications/Internet
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	openssl
-Requires:	globus-common >= 14
 Requires:	globus-common-progs >= 14
 
 %package devel
@@ -200,7 +199,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 9.14-3
+* Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 9.14-4
 - Updates for SLES 12
 
 * Tue Aug 16 2016 Globus Toolkit <support@globus.org> - 9.14-1
