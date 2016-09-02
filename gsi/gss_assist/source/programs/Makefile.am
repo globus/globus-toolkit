@@ -10,8 +10,7 @@ man_MANS =  grid-mapfile-add-entry.8 \
 EXTRA_DIST = $(man_MANS) \
         grid-mapfile-add-entry.txt \
         grid-mapfile-check-consistency.txt \
-        grid-mapfile-delete-entry.txt \
-        grid-mapfile-merge.txt
+        grid-mapfile-delete-entry.txt
 
 if BUILD_MANPAGES
 SUFFIXES = .txt .8

@@ -1,3 +1,9 @@
+globus-gss-assist (10.19-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix broken makefile
+
+ -- Globus Toolkit <support@globus.org>  Fri, 02 Sep 2016 14:29:54 -0400
+
 globus-gss-assist (10.18-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix grid-mapfile-add-entry is slow (issue #69)
