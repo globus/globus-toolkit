@@ -1,0 +1,110 @@
+GRID-MAPFILE-DELETE-ENTRY(8)
+============================
+:doctype:       manpage
+:man source:    Globus Toolkit
+:man version:   6.0
+:man manual:    Globus Commands
+
+NAME
+----
+grid-mapfile-delete-entry - Remove entries from a gridmap file
+
+SYNOPSIS
+--------
+*grid-mapfile-delete-entry* [ -help | -usage | -version | -versions ]
+
+*grid-mapfile-delete-entry* -dn 'DISTINGUISHED-NAME' -ln LOCAL-NAME...  [ -d | -dryrun ] [ -mapfile MAPFILE | -f MAPFILE ]
+
+DESCRIPTION
+-----------
+The *grid-mapfile-delete-entry* program deletes mappings from a gridmap file.
+If both the '-dn' and '-ln' options are specified, *grid-mapfile-delete-entry*
+removes entries which meet both criteria (remove entries mapping
+'DISTINGUISHED-NAME' to 'LOCAL-NAME' for each 'LOCAL-NAME' specified). If only
+'-dn' or '-ln' is specified *all* entries for the specified
+'DISTINGUISHED-NAME' or 'LOCAL-NAME' are removed.
+
+By default, *grid-mapfile-delete-entry* will modify the gridmap file named by
+the +GRIDMAP+ environment variable if present, or the file
++/etc/grid-security/grid-mapfile+ if not. This can be changed by the use of the
+'-mapfile' or '-f command-line options.
+
+Prior to modifying a gridmap file, *grid-mapfile-delete-entry* saves its
+current contents to a file with the string +.old+ appended to
+the original file name.
+
+The full set of command-line options to *grid-mapfile-delete-entry* are:
+
+*-help, -usage*::
+    Display the command-line options to *grid-mapfile-delete-entry*.
+
+*-version, -versions*::
+    Display the version number of the *grid-mapfile-delete-entry* command. The
+    second form includes more details.
+
+*-dn DISTINGUISHED-NAME*::
+    The X.509 distinguished name to remove from the gridmap file. If the '-ln'
+    option is not specified, remove all entries for this name; otherwise,
+    remove entries that match both this name and the local name.  The name
+    should be in OpenSSL's +oneline+ format.
+
+*-ln LOCAL-NAME...*::
+    The POSIX user name to remove from the gridmap file. Include multiple
+    'LOCAL-NAME' strings after the '-ln' command-line option to remove multiple
+    names from the gridmap. If the '-dn' option is not specifeid, remove all
+    entries for these names; otherwise, remove entries that match the
+    'DISTINGUISHED-NAME' and any of the 'LOCAL-NAME' values.
+
+*-d, -dryrun*::
+    Display diagnostics about what would be removed from the gridmap file, but
+    don't actually modify the file.
+
+*-mapfile MAPFILE, -f MAPFILE*::
+    Modify the gridmap file named by 'MAPFILE' instead of the
+    default.
+
+EXAMPLES
+--------
+Remove all mappings for a distinguished name:
+    
+==============================================================================
+    % grid-mapfile-delete-entry "/DC=org/DC=example/DC=grid/CN=Joe User"
+    Modifying /etc/grid-security/grid-mapfile ...
+    Deleting entry: "/DC=org/DC=example/DC=grid/CN=Joe User" juser,juser2
+    (1) entry deleted
+==============================================================================
+
+Remove the mapping between a distinguished name and a single local username:
+
+==============================================================================
+    % grid-mapfile-delete-entry "/DC=org/DC=example/DC=grid/CN=Joe User" -ln juser2
+    Modifying /etc/grid-security/grid-mapfile ...
+    Current entry: "/DC=org/DC=example/DC=grid/CN=Joe User" juser
+    (1) mapping removed: (juser2), (0) not present and ignored
+    (0) entries deleted
+==============================================================================
+
+ENVIRONMENT
+-----------
+The following environment variables affect the execution of
+*grid-mapfile-delete-entry*:
+
+
+*GRIDMAP*::
+    Path to the gridmap to modify.
+
+FILES
+-----
+The following files affect the execution of *grid-mapfile-delete-entry*:
+
+*/etc/grid-security/grid-mapfile*::
+    Path to the default gridmap to modify if +GRIDMAP+ environment variable is
+    not set.
+
+SEE ALSO
+--------
+grid-mapfile-add-entry(8), grid-mapfile-check-consistency(8)
+
+AUTHOR
+------
+Copyright (C) 1999-2016 University of Chicago

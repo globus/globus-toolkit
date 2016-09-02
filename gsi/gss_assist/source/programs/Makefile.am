@@ -1,23 +1,23 @@
 sbin_SCRIPTS = \
 	grid-mapfile-add-entry \
-	grid-mapfile-delete-entry \
-	grid-mapfile-check-consistency
+	grid-mapfile-check-consistency \
+	grid-mapfile-delete-entry
 
 man_MANS =  grid-mapfile-add-entry.8 \
-            grid-mapfile-delete-entry.8 \
-            grid-mapfile-check-consistency.8
+            grid-mapfile-check-consistency.8 \
+            grid-mapfile-delete-entry.8
 
 EXTRA_DIST = $(man_MANS) \
-        grid-mapfile-add-entry.xml \
-        grid-mapfile-delete-entry.xml \
-        grid-mapfile-check-consistency.xml \
-        replace-version.xsl 
+        grid-mapfile-add-entry.txt \
+        grid-mapfile-check-consistency.txt \
+        grid-mapfile-delete-entry.txt \
+        grid-mapfile-merge.txt
 
 if BUILD_MANPAGES
-SUFFIXES = .xml .8
+SUFFIXES = .txt .8
 
-.xml.8:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) $<
+.txt.8:
+	$(A2X) -d manpage -f manpage $<
+
 MAINTAINERCLEANFILES = $(man_MANS)
 endif

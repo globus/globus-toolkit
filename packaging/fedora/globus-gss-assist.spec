@@ -6,8 +6,8 @@ Name:		globus-gss-assist
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	10.17
-Release:	3%{?dist}
+Version:	10.18
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI Assist library
 
@@ -184,6 +184,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Sep 02 2016 Globus Toolkit <support@globus.org> - 10.18-1
+- Fix grid-mapfile-add-entry is slow (issue #69)
+
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 10.17-3
 - Updates for SLES 12
 

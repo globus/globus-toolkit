@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: grid-mapfile-check-consistency
-.\"    Author: University of Chicago
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 03/19/2010
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/02/2016
 .\"    Manual: Globus Commands
-.\"    Source: Globus Toolkit 5.0.1
+.\"    Source: Globus Toolkit 6.0
 .\"  Language: English
 .\"
-.TH "GRID\-MAPFILE\-CHECK" "8" "03/19/2010" "Globus Toolkit 5.0.1" "Globus Commands"
+.TH "GRID\-MAPFILE\-CHECK" "8" "09/02/2016" "Globus Toolkit 6\&.0" "Globus Commands"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -21,67 +30,46 @@
 .SH "NAME"
 grid-mapfile-check-consistency \- Add an entry to a grid map file
 .SH "SYNOPSIS"
-.HP \w'\fBgrid\-mapfile\-check\-consistency\fR\ 'u
-\fBgrid\-mapfile\-check\-consistency\fR [\-h] [\-help] [\-usage] [\-version]
-.HP \w'\fBgrid\-mapfile\-check\-consistency\fR\ 'u
-\fBgrid\-mapfile\-check\-consistency\fR [\-mapfile\ \fIMAPFILE\fR] | [\-f\ \fIMAPFILE\fR] 
+.sp
+\fBgrid\-mapfile\-check\-consistency\fR [ \-h | \-help | \-usage | \-version | \-versions ]
+.sp
+\fBgrid\-mapfile\-check\-consistency\fR [ \-mapfile \fIMAPFILE\fR | \-f \fIMAPFILE\fR ]
 .SH "DESCRIPTION"
+.sp
+The \fBgrid\-mapfile\-check\-consistency\fR program performs basic checks for validity of a gridmap file\&. These checks include checks for existence, duplication of entries, and valid local user names\&. If the gridmap file is valid, \fBgrid\-mapfile\-check\-consistency\fR exits with a zero exit code, otherwise it exits with a non\-zero exit code\&. In either case, it displays information about its progress as it parses and validates the gridmap file\&.
+.sp
+By default, \fBgrid\-mapfile\-check\-consistency\fR will check the gridmap file named by the GRIDMAP environment variable if present\&. If that variable is not set, it will check the file $HOME/\&.gridmap for non\-root users if present\&. If that doesn\(cqt exist or \fBgrid\-mapfile\-check\-consistency\fR is run as root, it will then check /etc/grid\-security/grid\-mapfile\&. This can be changed by the use of the \fI\-mapfile\fR or \fI\-f\fR command\-line options\&.
+.sp
+The full set of command\-line options to \fBgrid\-mapfile\-check\-consistency\fR are:
 .PP
-The
-\fBgrid\-mapfile\-check\-consistency\fR
-program performs basic checks for validity of a gridmap file\&. These checks include checks for existence, duplication of entries, and valid local user names\&. If the gridmap file is valid,
-\fBgrid\-mapfile\-check\-consistency\fR
-exits with a zero exit code, otherwise it exits with a non\-zero exit code\&. In either case, it displays information about its progress as it parses and validates the gridmap file\&.
-.PP
-By default,
-\fBgrid\-mapfile\-check\-consistency\fR
-will check the gridmap file named by the
-\fBGRIDMAP\fR
-environment variable if present\&. If that variable is not set, it will check the file
-\fB$HOME\fR/\&.gridmap
-for non\-root users if present\&. If that doesn\'t exist or
-\fBgrid\-mapfile\-check\-consistency\fR
-is run as root, it will then check
-/etc/grid\-security/grid\-mapfile\&. This can be changed by the use of the
-\fB\-mapfile\fR
-or
-\fB\-f\fR
-command\-line options\&.
-.PP
-The full set of command\-line options to
-\fBgrid\-mapfile\-check\-consistency\fR
-are:
-.PP
-\fB\-help\fR, \fB\-h\fR, \fB\-usage\fR
+\fB\-h, \-help, \-usage\fR
 .RS 4
 Display the command\-line options to
 \fBgrid\-mapfile\-check\-consistency\fR\&.
 .RE
 .PP
-\fB\-version\fR
+\fB\-version, \-versions\fR
 .RS 4
 Display the version number of the
 \fBgrid\-mapfile\-check\-consistency\fR
 command\&.
 .RE
 .PP
-\fB\-mapfile \fR\fB\fIMAPFILE\fR\fR, \fB\-f \fR\fB\fIMAPFILE\fR\fR
+\fB\-mapfile \fR\fB\fIMAPFILE\fR\fR\fB, \-f \fR\fB\fIMAPFILE\fR\fR
 .RS 4
 Check the gridmap file named by
 \fIMAPFILE\fR
 instead of the default\&.
 .RE
 .SH "EXAMPLES"
-.PP
-Check that the gridmap file in
-/etc/grid\-security
-is valid:
+.sp
+Check that the gridmap file in /etc/grid\-security is valid:
 .sp
 .if n \{\
 .RS 4
 .\}
 .nf
-% \fBgrid\-mapfile\-check\-consistency\fR \fB\-f /etc/grid\-security/grid\-mapfile\fR
+% grid\-mapfile\-check\-consistency* \-f /etc/grid\-security/grid\-mapfile
 Checking /etc/grid\-security/grid\-mapfile
 Verifying grid mapfile existence\&.\&.\&.OK
 Checking for duplicate entries\&.\&.\&.OK
@@ -90,14 +78,14 @@ Checking for valid user names\&.\&.\&.OK
 .if n \{\
 .RE
 .\}
-.PP
+.sp
 Check a gridmap file that has an invalid local user name:
 .sp
 .if n \{\
 .RS 4
 .\}
 .nf
-% \fBgrid\-mapfile\-check\-consistency\fR \fB\-f /etc/grid\-security/grid\-mapfile\fR
+grid\-mapfile\-check\-consistency \-f /etc/grid\-security/grid\-mapfile
 Checking /etc/grid\-security/grid\-mapfile
 Verifying grid mapfile existence\&.\&.\&.OK
 Checking for duplicate entries\&.\&.\&.OK
@@ -107,39 +95,34 @@ ERROR: Found 1 invalid username(s)
 .if n \{\
 .RE
 .\}
+.SH "ENVIRONMENT"
 .sp
-.SH "ENVIRONMENT VARIABLES"
-.PP
-The following environment variables affect the execution of
-\fBgrid\-mapfile\-check\-consistency\fR:
+The following environment variables affect the execution of \fBgrid\-mapfile\-check\-consistency\fR:
 .PP
 \fBGRIDMAP\fR
 .RS 4
-Path to the default gridmap to check\&.
+Path to the gridmap to check\&.
 .RE
 .SH "FILES"
+.sp
+The following files affect the execution of \fBgrid\-mapfile\-check\-consistency\fR:
 .PP
-The following files affect the execution of
-\fBgrid\-mapfile\-check\-consistency\fR:
-.PP
-\fB$HOME\fR/\&.gridmap
+\fB$HOME/\&.gridmap\fR
 .RS 4
 Path to the default gridmap to check if the
-\fBGRIDMAP\fR
+GRIDMAP
 environment variable is not set for non\-root users\&.
 .RE
 .PP
-/etc/grid\-security/grid\-mapfile
+\fB/etc/grid\-security/grid\-mapfile\fR
 .RS 4
 Path to the default gridmap to check if
-\fBGRIDMAP\fR
+GRIDMAP
 environment variable is not set and the above file does not exist\&.
 .RE
 .SH "SEE ALSO"
-.PP
-
-\fBgrid-mapfile-add-entry\fR(8),
-\fBgrid-mapfile-delete-entry\fR(8)
+.sp
+grid\-mapfile\-add\-entry(8), grid\-mapfile\-delete\-entry(8)
 .SH "AUTHOR"
-.PP
-\fBUniversity of Chicago\fR
+.sp
+Copyright \(co 1999\-2016 University of Chicago

@@ -1,7 +1,7 @@
-#!/bin/sh
+#! /usr/bin/perl
 
 # 
-# Copyright 1999-2006 University of Chicago
+# Copyright 1999-2016 University of Chicago
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,418 +16,346 @@
 # limitations under the License.
 # 
 
+use strict;
+use warnings;
+
+use Fcntl qw( SEEK_END );
+use Getopt::Long;
+
 #
 # grid-mapfile-add-entry
 #
 
-prefix="${GLOBUS_LOCATION-@prefix@}"
-exec_prefix="@exec_prefix@"
-sbindir="@sbindir@"
-bindir="@bindir@"
-includedir="@includedir@"
-datarootdir="@datarootdir@"
-datadir="@datadir@"
-libexecdir="@libexecdir@"
-sysconfdir="@sysconfdir@"
-sharedstatedir="@sharedstatedir@"
-localstatedir="@localstatedir@"
+my $PROGRAM_NAME=$0; $PROGRAM_NAME =~ s|.*/||;
+my $PROGRAM_VERSION="@VERSION@";
 
-PROGRAM_NAME=`echo $0 | sed 's|.*/||g'`
-PROGRAM_VERSION="@VERSION@"
+my $VERSION="@VERSION@";
+my $PACKAGE="@PACKAGE@";
 
-VERSION="@VERSION@"
-PACKAGE="@PACKAGE@"
+my $DIRT_TIMESTAMP="@DIRT_TIMESTAMP@";
+my $DIRT_BRANCH_ID="@DIRT_BRANCH_ID@";
 
-DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
-DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
+my $NEW_GRID_MAP_FILE;
+my $secconfdir="/etc/grid-security";
+my $GRID_MAP_FILE = $ENV{GRIDMAP} || "${secconfdir}/grid-mapfile";
+my $dryrun = 0;
 
+my $short_usage="$PROGRAM_NAME -dn DN -ln LN [-help] [-d] [-f mapfile FILE]";
 
-short_usage="$PROGRAM_NAME -dn DN -ln LN 
-[-help] [-d] [-f mapfile FILE]"
-
-long_usage() {
-    cat >&2 <<EOF
-
+sub long_usage
+{
+    print STDERR <<EOF;
 ${short_usage}
 
-    $PROGRAM_NAME adds an entry to a Grid mapfile.
+$PROGRAM_NAME adds an entry to a Grid mapfile.
 
-    Options:
-      -help, -usage           Displays help
-      -version                Displays version
-      -dn DN                  Distinguished Name (DN) to add. Remember to 
-                              quote the DN if it contains spaces.
-      -ln LN1 [LN2...]        Local login name(s) to map DN to
-      -dryrun, -d             Shows what would be done but will not add the entry
-      -mapfile FILE, -f FILE  Path of Grid map file to be used
+Options:
+  -help, -usage           Displays help
+  -version                Displays version
+  -dn DN                  Distinguished Name (DN) to add. Remember to 
+                          quote the DN if it contains spaces.
+  -ln LN1 [LN2...]        Local login name(s) to map DN to
+  -dryrun, -d             Shows what would be done but will not add the entry
+  -mapfile FILE, -f FILE  Path of Grid map file to be used
 
 EOF
 }
 
-##############################################
-Cleanup()
+sub globus_args_option_error
 {
+    print STDERR <<EOF;
+ERROR: option $1 : $2
 
-if [ -f $CONSISTENCY_CHECK ]
-then
-	rm $CONSISTENCY_CHECK
-fi
+Syntax : ${short_usage}
 
-if [ -f $GRID_MAP_FILE_COPY ]
-then
-	rm $GRID_MAP_FILE_COPY
-fi
-
-if [ -f $EXISTING_DN_ENTRIES ]
-then
-	rm $EXISTING_DN_ENTRIES
-fi
-
-if [ -f $NEW_GRID_MAP_FILE ] ; then
-        rm $NEW_GRID_MAP_FILE
-fi
-
-
-chmod 644 $GRID_MAP_FILE
-if [ $? -ne 0 ]
-then
-	echo "ERROR: Could not change mode of $GRID_MAP_FILE back to 644" >&2
-    exit 1
-fi
-
-
-}
-##############################################
-
-# Main Logic
-
-secconfdir="/etc/grid-security"
-GRID_MAP_FILE=${GRIDMAP-${secconfdir}/grid-mapfile}
-ECHO_DRYRUN=:
-
-# Parse command line arguments
-
-globus_args_option_error()
-{
-    cat 1>&2 <<-EOF
-	ERROR: option $1 : $2
-
-	Syntax : ${short_usage}
-
-	Use -help to display full usage.
-	EOF
-    exit 1
+Use -help to display full usage.
+EOF
+    exit(1);
 }
 
-while [ -n "$1" ]; do
-    case "$1" in
-	-help | -h | --help | -usage | --usage)
-	    long_usage
-	    exit 0
-	    ;;
-        -version|--version)
-            if [ "X${PROGRAM_NAME}" != "X" -a \
-                  "X${PROGRAM_VERSION}" != "X" ]; then
-                echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
-            elif [ "X${PACKAGE}" != "X" -a \
-                   "X${VERSION}" != "X" ]; then
-                echo "${PACKAGE}: ${VERSION}"
-            else
-                echo "No version information available."
-            fi
-            exit 0
-            ;;
-        -versions|--versions)
-            __AT__=@
-            if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
-                 -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
-                 "X${DIRT_TIMESTAMP}" != "X${__AT__}DIRT_TIMESTAMP${__AT__}" -a \
-                 "X${DIRT_BRANCH_ID}" != "X${__AT__}DIRT_BRANCH_ID${__AT__}" ];
-            then
-                echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
-            else
-                echo "No DiRT information available."
-            fi
-            exit 0;
-            ;;
-        -dn) 
-	    shift
-            if [ $# -ge 1 ] ; then
-		dn=$1
-                shift
-	    else
-                globus_args_option_error "-dn" "needs a DN argument"
-	    fi
-        ;;
-        -ln )
-            shift
-            if [ $# -ge 1 ] ; then
-		ln=$1
-		shift
-		if [ $# -ge 1 ] ; then
-		    while test "`echo $1 | cut -c 1`" != "-" ; do
-			ln=$ln" "$1
-			shift
-			if [ $# -eq 0 ] ; then
-			    break
-			fi
-		    done
-		fi
-	    else
-                globus_args_option_error "-ln" "needs a list of user login names"
-		exit 1
-	    fi
-	    ;;
-        -d | -dryrun )
-	    ECHO_DRYRUN=echo
-	    shift
-	    ;;
-        -f | -mapfile )
-	    opt=$1
-	    shift
-	    GRID_MAP_FILE=$1
-	    shift
-	    ;;
-        * )
-	    globus_args_option_error "$1" "unrecognized option"
-	    ;;
-    esac
-done
+my $help = 0;
+my $version = 0;
+my $versions = 0;
+my $dn;
+my @ln;
+my $lnstring;
 
-if [ "$ln" = "" ] || [ "$dn" = "" ]; then
-    cat 1>&2 <<-EOF
-	Syntax : ${short_usage}
+Getopt::Long::Configure('no_auto_abbrev');
+GetOptions(
+    "help|h|usage" => \$help,
+    "version" => \$version,
+    "versions" => \$versions,
+    "dn=s" => \$dn,
+    "ln=s{1,}" => \@ln,
+    "d|dryrun" => \$dryrun,
+    "f|mapfile=s" => \$GRID_MAP_FILE);
+$lnstring = join(" ", @ln);
+if ($help)
+{
+    &long_usage();
+    exit(0);
+}
+elsif ($version)
+{
+    print "$0: ${PROGRAM_VERSION}\n";
+    exit(0);
+}
+elsif ($versions)
+{
+    print "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})\n";
+    exit(0);
+}
 
-	Use -help to display full usage.
+if (scalar(@ln) == 0 || $dn eq '')
+{
+    print STDERR <<EOF;
+Syntax : ${short_usage}
 
-	EOF
-    exit 1
-fi
+Use -help to display full usage.
+
+EOF
+    exit(1);
+}
 
 
-secure_tmpdir="`dirname \"${GRID_MAP_FILE}\"`"
+my $secure_tmpdir=$GRID_MAP_FILE;
+if ($secure_tmpdir =~ m|/|) {
+    $secure_tmpdir =~ s|/[^/]*$||;
+} else {
+    $secure_tmpdir = ".";
+}
 
-if test ! \( -r "${secure_tmpdir}" -a -w "${secure_tmpdir}" \) ; then
-    echo "ERROR: This script requires read/write permissions in ${secure_tmpdir}" >&2
-    exit 1
-fi 
 
-GRID_MAP_FILE_COPY=${secure_tmpdir}/.mapfile.copy.$$
-NEW_GRID_MAP_FILE=${secure_tmpdir}/.new_mapfile.$$
-CONSISTENCY_CHECK=${secure_tmpdir}/.consistency_check.$$
-EXISTING_DN_ENTRIES=${secure_tmpdir}/.existing_dn_entries.$$
+if (! (-r $secure_tmpdir && -w $secure_tmpdir) )
+{
+    print STDERR "ERROR: This script requires read/write permissions in ${secure_tmpdir}";
+    exit(1);
+}
 
-trap Cleanup 1 2 3 6 9 13 15
+$NEW_GRID_MAP_FILE="${secure_tmpdir}/.new_mapfile.$$";
 
-# Verify mapfile existance
+# Verify mapfile existence
+print "Modifying $GRID_MAP_FILE ...\n";
+local(*GRID_MAP_FILE);
 
-echo "Modifying $GRID_MAP_FILE ..."
-if [ ! -f $GRID_MAP_FILE ] ; then
-    echo "$GRID_MAP_FILE does not exist... Attempting to create $GRID_MAP_FILE"
-    touch $GRID_MAP_FILE
-    if [ $? -ne 0 ] ; then
-        echo "ERROR: Could not create $GRID_MAP_FILE" >&2
-        exit 1
-    fi
-
-    chmod 644 $GRID_MAP_FILE
-    if [ $? -ne 0 ] ; then
-        echo "ERROR: Could not set proper access mode of $GRID_MAP_FILE" >&2
-        exit 1
-    fi
+if (! -f $GRID_MAP_FILE)
+{
+    umask 022;
+    open(GRID_MAP_FILE, "+>", $GRID_MAP_FILE)
+        || die "ERROR: Could not create $GRID_MAP_FILE";
+}
 else
-    if [ ! -r $GRID_MAP_FILE ] ; then
-        globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not readable."
-        exit 1
-    fi
-
-    if [ ! -w $GRID_MAP_FILE ] ; then
-        globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not writeable."
-	exit 1
-    fi
-fi
-
-if [ -z "$ln" -o -z "$dn" ] ; then
-    echo "Both the -dn and the -ln arguments must be provided"
-    cat 1>&2 <<-eof
-	syntax : ${short_usage}
-
-	use -help to display full usage.
-
-	eof
-    exit 1
-fi
-
-# Make a copy of production map file for comparison to original later
-
-cp $GRID_MAP_FILE $GRID_MAP_FILE_COPY
-if [ $? -ne 0 ] ; then
-    echo "ERROR: Could not make a copy of $GRID_MAP_FILE" >&2
-    Cleanup
-    exit 1
-fi
+{
+    open(GRID_MAP_FILE, "+<", $GRID_MAP_FILE)
+        || globus_args_option_error("-f", \"${GRID_MAP_FILE}\" is not readable.");
+}
 
 # Change mode of existing map file to read only (logical UNIX lock)
+chmod 0400, $GRID_MAP_FILE
+    || die "ERROR: Could not change mode of $GRID_MAP_FILE\n";
 
-chmod 400 $GRID_MAP_FILE
-if [ $? -ne 0 ] ; then
-    echo "ERROR: Could not change mode of $GRID_MAP_FILE" >&2
-    Cleanup
-    exit 1
-fi
+print "Verifying that Local Name(s)=($lnstring) are legitimate local accounts.\n"
+    if ($dryrun);
 
+for my $name (@ln)
+{
+    print "Checking ln(s)=$name\n" if ($dryrun);
 
-$ECHO_DRYRUN "Verifying that Local Name(s)=($ln) are legitimate local accounts."
-
-for name in $ln ; do
-    $ECHO_DRYRUN "Checking ln(s)=$name"
-    idres=`id $name 2>&1`
-    if  [ "$?" -eq 0 ] ; then
-        $ECHO_DRYRUN "Local Name=$name does exist"
+    my @s = getpwnam($name);
+    if (scalar(@s) > 0)
+    {
+        print "Local Name=$name does exist\n" if ($dryrun);
+    }
     else
-        echo "entry not added because the LN(s) is/are not legitimate"
-        $ECHO_DRYRUN "Local Name=$name does *NOT* exist"
-        $ECHO_DRYRUN "Entry *NOT* added"
-        $ECHO_DRYRUN "Result: $idres"
-        Cleanup
-        exit 1
-    fi
-done
+    {
+        my $res = $!;
+        print "entry not added because the LN(s) is/are not legitimate\n";
+        print "Local Name=$name does *NOT* exist\n" if ($dryrun);
+        print "Entry *NOT* added\n" if ($dryrun);
+        print "Result: $res\n" if ($dryrun);
+        exit(1);
+    }
+}
 
-$ECHO_DRYRUN "Local Name(s)=($ln) is/are valid. Requested entry will be added."
+print "Local Name(s)=($lnstring) is/are valid. Requested entry will be added.\n"
+    if ($dryrun);
 
-touch $NEW_GRID_MAP_FILE            
-chmod 644 $NEW_GRID_MAP_FILE
-if [ $? -ne 0 ] ; then
-    echo "ERROR: Could not set proper access mode of $NEW_GRID_MAP_FILE" >&2
-    Cleanup
-    exit 1
-fi
 
-updated_existing_dn="false"
+my $updated_existing_dn;
 
-while read line || test ! -z "${line}" ; do
-    # Check for double quote delimitor
-    delim=`echo $line | cut -c1`
-    if [ "X$delim" = "X\"" ]; then
-        # DN is double quote delimited
-        # Check for terminating double quote
-        term_check=`echo $line | cut -c2- | grep \"`
-        if [ -z "$term_check" ]; then
-            echo "The following entry is missing a closing double quote"
-            echo "$line"
-            Cleanup
-            exit 1
-        fi
-        existing_dn=`echo $line | cut -f2 -d\"`
-    else
-        # No double quote delimitor on DN
-        existing_dn=`echo $line | sed -e 's/\([^    ]*\)[   ]*.*/\1/'`
-    fi
+my $dn_already_exists=0;
+my $omitted_map = "";
+my $added_map = "";
+my @map_entries=();
+my $new_mapfile_entry="";
+my $new_grid_mapfile_data="";
+my $orig_grid_mapfile_data="";
 
-    if test ! "$dn" = "$existing_dn" ; then
-        echo $line >> $NEW_GRID_MAP_FILE
-    else
-        for name in $ln ; do
-            if test -z "`echo \"$line\" | grep \"\<$name\>\"`"; then
-                line="$line,$name"
-                added_map="$added_map $name"
+while (my $line = <GRID_MAP_FILE>)
+{
+    my $existing_dn;
+    my %existing_lns;
+
+    $orig_grid_mapfile_data .= $line;
+
+    chomp($line);
+    next if ($line eq '');
+
+    if ($line !~ m/^["][^"]*["]/ && $line !~ m/^[^"]/)
+    {
+        print "The following entry is missing a closing double quote\n";
+        print "$line\n";
+        exit(1);
+    }
+    if ($line =~ m/^"([^"]*)"\s+(.*)$/)
+    {
+        $existing_dn = $1;
+        if ($existing_dn eq $dn)
+        {
+            push(@map_entries, split(",", $2));
+            %existing_lns = map { $_ => 1 } @map_entries;
+        }
+    }
+    elsif ($line =~ m/^([^"]\S+)\s+(.*$)/)
+    {
+        $existing_dn = $1;
+        if ($existing_dn eq $dn)
+        {
+            push(@map_entries, split(",", $2));
+            %existing_lns = map { $_ => 1 } @map_entries;
+        }
+    }
+
+    if ($existing_dn eq $dn)
+    {
+        $dn_already_exists=1;
+        for my $name (@ln)
+        {
+            if (exists $existing_lns{$name})
+            {
+                $omitted_map .= " $name";
+            }
             else
-                omitted_map="$omitted_map $name"
-            fi
-        done
-        echo $line >> $NEW_GRID_MAP_FILE
-        updated_existing_dn="$line"
-    fi
-done < $GRID_MAP_FILE_COPY
+            {
+                $added_map .= " $name";
+                push(@map_entries, $name);
+            }
+        }
+    }
+    else
+    {
+        $new_grid_mapfile_data .= "$line\n";
+    }
+}
+push(@map_entries, @ln);
+if (@map_entries)
+{
+    my %seen = ();
+    my $delim="";
+    $new_mapfile_entry = "\"$dn\" ";
 
+    foreach my $entry (@map_entries) 
+    {
+        if (!exists $seen{$entry})
+        {
+            $new_mapfile_entry .= "${delim}${entry}";
+            $delim=",";
+            $seen{$entry} = 1;
+        }
+    }
+    $new_grid_mapfile_data .= "$new_mapfile_entry\n";
+}
 
 # Verify that no changes to original map file
 # during the execution of this program
+local(*CONSISTENCY_CHECK);
+open(CONSISTENCY_CHECK, "<", $GRID_MAP_FILE)
+    || die "ERROR: Unable to compare $GRID_MAP_FILE with original contents\n";
+my $consistency_check = "";
+while (<CONSISTENCY_CHECK>)
+{
+    $consistency_check .= $_;
+}
+close(CONSISTENCY_CHECK);
 
-diff $GRID_MAP_FILE_COPY $GRID_MAP_FILE > $CONSISTENCY_CHECK
-if  [ -s $CONSISTENCY_CHECK ] ; then
-    echo "ERROR: $GRID_MAP_FILE has changed since this program started" >&2
-    echo "No changes will be made." >&2
-    Cleanup
-    exit 1
+if ($orig_grid_mapfile_data ne $consistency_check)
+{
+    print STDERR "ERROR: $GRID_MAP_FILE has changed since this program started\n";
+    print STDERR "No changes will be made.\n";
+    exit(1);
+}
 else
+{
+    local(*GRID_MAP_FILE_COPY);
+    open(GRID_MAP_FILE_COPY, ">", "$GRID_MAP_FILE.old")
+        || die "ERROR: Could not create a copy of $GRID_MAP_FILE\n";
+    print GRID_MAP_FILE_COPY $orig_grid_mapfile_data;
+    close(GRID_MAP_FILE_COPY);
+
     # Restore proper permissions to original grid map file
-    chmod 644 $GRID_MAP_FILE
-    if [ $? -ne 0 ] ; then
-        echo "ERROR: Could not change mode of $GRID_MAP_FILE" >&2
-        Cleanup
-        exit 1
-    fi
+    chmod 0644, $GRID_MAP_FILE
+        || die "ERROR: Could not change mode of $GRID_MAP_FILE\n";
+}
 
-    cp $GRID_MAP_FILE_COPY $GRID_MAP_FILE.old
-    if [ $? -ne 0 ] ; then
-        echo "ERROR: Could not create a copy of $GRID_MAP_FILE" >&2
-        Cleanup
-        exit 1
-    fi
-fi
+if (!$dn_already_exists)
+{
+    if ($dryrun)
+    {
+        print "Appending new entry $new_mapfile_entry\n";
+        print "Since ( dryrun, -d ) option was used no actions were carried out";
+        exit(0);
+    }
+    seek(GRID_MAP_FILE, 0, SEEK_END);
+    print GRID_MAP_FILE "$new_mapfile_entry\n";
 
-if [ "$updated_existing_dn" = "false" ]; then
-    # format new entry of dn and ln 
-    new_ln_entry=`echo $ln | sed -e 's/ /,/g'`
-    new_mapfile_entry="\"$dn\" $new_ln_entry"
-    # Append new entry to original grid map file
-    $ECHO_DRYRUN "Appending new entry $new_mapfile_entry"
-    if [ "$ECHO_DRYRUN" = "echo" ] ; then
-        echo "Since ( dryrun, -d ) option was used no actions were carried out"
-        Cleanup
-        exit 0
-    fi
-
-    echo $new_mapfile_entry >> $GRID_MAP_FILE
-    if [ $? -ne 0 ] ; then
-        echo "ERROR: Could not add new entry to $GRID_MAP_FILE" >&2
-        Cleanup
-        exit 1
-    else
-        echo "New entry:"
-        echo "$new_mapfile_entry"
-        echo "(1) entry added"
-    fi
+    print "New entry:\n";
+    print "$new_mapfile_entry\n";
+    print "(1) entry added\n";
+}
 else
-    echo "DN $dn already exists."
+{
+    print "DN $dn already exists\n";
 
-    $ECHO_DRYRUN "Updating entry to $updated_existing_dn"
-    if [ "$ECHO_DRYRUN" = "echo" ] ; then
-        echo "Since ( dryrun, -d ) option was used no actions were carried out"
-        Cleanup
-        exit 0
-    fi
+    print "Updating entry to $new_mapfile_entry\n";
+    if ($dryrun)
+    {
+        print "Since ( dryrun, -d ) option was used no actions were carried out\n";
+        exit(0);
+    }
+    if ($added_map ne '')
+    {
+        local(*NEW_GRID_MAP_FILE);
+        open(NEW_GRID_MAP_FILE, ">", $NEW_GRID_MAP_FILE)
+            || die "Could not create temporary gridmap file $NEW_GRID_MAP_FILE\n";
+        print NEW_GRID_MAP_FILE $new_grid_mapfile_data;
+        close(NEW_GRID_MAP_FILE);
+        rename($NEW_GRID_MAP_FILE, $GRID_MAP_FILE)
+            || die "ERROR: Could not create a new $GRID_MAP_FILE\n";
+        $NEW_GRID_MAP_FILE=undef;
 
-    mv $NEW_GRID_MAP_FILE $GRID_MAP_FILE
-
-    if [ $? -ne 0 ] ; then
-        echo "ERROR: Could not create a new $GRID_MAP_FILE" >&2
-        Cleanup
+        if ($omitted_map ne '')
+        {
+            $omitted_map=", already present and ignored:$omitted_map";
+        }
+        print "(added mappings:$added_map$omitted_map)\n";
+        print "Updated entry:";
+        print "$new_mapfile_entry\n";
+        print "(1) entry modified\n";
+    }
     else
-        if test -n "$added_map" ; then
-            if test -n "$omitted_map" ; then
-                omitted_map=", already present and ignored:$omitted_map"
-            fi
-            echo "(added mappings:$added_map$omitted_map)"
-            echo "Updated entry:"
-            echo "$updated_existing_dn"
-            echo "(1) entry modified"
-        else
-            echo "No changes were made - already present and ignored:$omitted_map"
-        fi
-    fi
-fi
+    {
+        print "No changes were made - already present and ignored:$omitted_map\n"
+    }
+}
 
-cp $GRID_MAP_FILE_COPY $GRID_MAP_FILE.old
-if [ $? -ne 0 ] ; then
-    echo "ERROR: Could not create a copy of $GRID_MAP_FILE" >&2
-    Cleanup
-    exit 1
-fi
+END
+{
 
-Cleanup
+    unlink($NEW_GRID_MAP_FILE) if ($NEW_GRID_MAP_FILE && -f $NEW_GRID_MAP_FILE);
 
-exit 0
-
+    if ($GRID_MAP_FILE)
+    {
+        chmod 0644, $GRID_MAP_FILE
+            || die "ERROR: Could not change mode of $GRID_MAP_FILE back to 0644";
+    }
+}
