@@ -138,6 +138,7 @@ GSS_CALLCONV gss_get_mic(
     #if OPENSSL_VERSION_NUMBER < 0x10000000L
     hash_nid = EVP_MD_type(context->gss_ssl->write_hash);
     #elif OPENSSL_VERSION_NUMBER < 0x10100000L
+    cipher = SSL_get_current_cipher(context->gss_ssl);
     if (context->gss_ssl->write_hash->digest != NULL)
     {
         hash_nid = EVP_MD_CTX_type(context->gss_ssl->write_hash);
@@ -146,6 +147,27 @@ GSS_CALLCONV gss_get_mic(
     {
         cipher_nid = EVP_CIPHER_CTX_nid(context->gss_ssl->enc_write_ctx);
     }
+    #ifdef NID_rc4_hmac_md5
+    /* Some versions of OpenSSL use special ciphers which
+    * combine HMAC with the encryption operation:
+    * for these ssl->write_hash is NULL.
+    * If the cipher context is one of these set the
+    * hash manually.
+    */
+    if(hash == NULL)
+         {
+         EVP_CIPHER_CTX *cctx = context->gss_ssl->enc_write_ctx;
+         switch(EVP_CIPHER_CTX_nid(cctx))
+              {
+              case NID_rc4_hmac_md5:          hash = EVP_md5();
+                                              break;
+              case NID_aes_128_cbc_hmac_sha1:
+              case NID_aes_256_cbc_hmac_sha1: hash = EVP_sha1();
+                                              break;
+              }
+         }
+    #endif
+
     #else
     cipher = SSL_get_current_cipher(context->gss_ssl);
     hash_nid = SSL_CIPHER_get_digest_nid(cipher);
