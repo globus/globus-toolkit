@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.4
+Version:	12.5
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -182,6 +182,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 06 2016 Globus Toolkit <support@globus.org> - 12.5-1
+- More tweaks to get_mic/verify_mic for 1.0.1
+
 * Tue Sep 06 2016 Globus Toolkit <support@globus.org> - 12.4-1
 - Updates for mic handling without using internal openssl structs
 
