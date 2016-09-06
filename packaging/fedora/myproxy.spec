@@ -14,7 +14,7 @@ Name:           myproxy
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.19
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -81,7 +81,6 @@ Summary:       Manage X.509 Public Key Infrastructure (PKI) security credentials
 Group:         System Environment/Daemons
 Obsoletes:     myproxy < 5.1-3
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-Provides:      myproxy
 %endif
 
 %description %{nlibpkg}
@@ -564,6 +563,9 @@ fi
 %endif
 
 %changelog
+* Tue Sep 06 2016 Globus Toolkit <support@globus.org> - 6.1.19-2
+- Fix myproxy dependency
+
 * Wed Aug 31 2016 Globus Toolkit <support@globus.org> - 6.1.19-1
 - update myproxy debug/error msgs for accepted_peer_names type change
 
