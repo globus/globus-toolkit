@@ -142,6 +142,7 @@ int
 test_establish_contexts(
     gss_ctx_id_t                       *init_context,
     gss_ctx_id_t                       *accept_context,
+    OM_uint32                           flags,
     OM_uint32                          *major_status,
     OM_uint32                          *minor_status)
     
@@ -173,7 +174,7 @@ test_establish_contexts(
                 init_context,
                 GSS_C_NO_NAME,
                 GSS_C_NO_OID,
-                0,
+                flags,
                 0,
                 GSS_C_NO_CHANNEL_BINDINGS,
                 &accept_token,

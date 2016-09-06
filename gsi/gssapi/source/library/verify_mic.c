@@ -177,7 +177,14 @@ GSS_CALLCONV gss_verify_mic(
     #if OPENSSL_VERSION_NUMBER < 0x10000000L
     hash_nid = EVP_MD_type(context->gss_ssl->read_hash);
     #elif OPENSSL_VERSION_NUMBER < 0x10100000L
-    hash_nid = EVP_MD_CTX_type(context->gss_ssl->read_hash);
+    if (context->gss_ssl->read_hash->digest != NULL)
+    {
+        hash_nid = EVP_MD_CTX_type(context->gss_ssl->read_hash);
+    }
+    if (context->gss_ssl->enc_read_ctx != NULL)
+    {
+        cipher_nid = EVP_CIPHER_CTX_nid(context->gss_ssl->enc_read_ctx);
+    }
     #else
     cipher = SSL_get_current_cipher(context->gss_ssl);
     hash_nid = SSL_CIPHER_get_digest_nid(cipher);
@@ -198,12 +205,25 @@ GSS_CALLCONV gss_verify_mic(
         evp_cipher = EVP_get_cipherbynid(cipher_nid);
     }
 
-    if (hash != NULL && OPENSSL_VERSION_NUMBER < 0x10100000L)
+    if (hash != NULL)
     {
         #if OPENSSL_VERSION_NUMBER < 0x10100000L
-        mac_sec = context->gss_ssl->s3->read_mac_secret;
-        seq = context->gss_ssl->s3->read_sequence;
+        if (globus_i_backward_compatible_mic)
+        {
+            mac_sec = context->gss_ssl->s3->read_mac_secret;
+            seq = context->gss_ssl->s3->read_sequence;
+        }
+        else
         #endif
+        {
+            #if OPENSSL_VERSION_NUMBER >= 0x10000100L
+                mac_sec = context->mac_key;
+            #else
+                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                major_status = GSS_S_FAILURE;
+                goto unlock_mutex;
+            #endif
+        }
         md_size = EVP_MD_size(hash);
         if (token_buffer->length != (GSS_SSL_MESSAGE_DIGEST_PADDING + md_size))
         {
@@ -218,8 +238,20 @@ GSS_CALLCONV gss_verify_mic(
             goto exit;
         }
         
-        token_value = ((unsigned char *) token_buffer->value) + 
-                      GSS_SSL3_WRITE_SEQUENCE_SIZE;
+        if (globus_i_backward_compatible_mic)
+        {
+            token_value = ((unsigned char *) token_buffer->value) + 
+                          GSS_SSL3_WRITE_SEQUENCE_SIZE;
+        }
+        else
+        {
+            #if OPENSSL_VERSION_NUMBER >= 0x10000100L
+            token_value = ((unsigned char *) token_buffer->value) +
+                            sizeof(context_handle->mac_read_sequence);
+            #else
+                assert(OPENSSL_VERSION_NUMBER >= 0x10000100L);
+            #endif
+        }
         
         N2L(token_value, buffer_len);
 
@@ -265,52 +297,93 @@ GSS_CALLCONV gss_verify_mic(
          */    
         token_value = token_buffer->value;
         
-        seqtest = 0;
-        for (index = 0; index < GSS_SSL3_WRITE_SEQUENCE_SIZE; index++)
-        {   
-            if ((seqtest = *token_value++ - seq[index]))
-            {
-                break;      
-            }
-        }
-        
-        if (seqtest > 0)
+        if (globus_i_backward_compatible_mic)
         {
-            /* missed a token, reset the sequence number */
-            token_value = token_buffer->value;
+            seqtest = 0;
             for (index = 0; index < GSS_SSL3_WRITE_SEQUENCE_SIZE; index++)
-            {
-                seq[index] = *token_value++;
+            {   
+                if ((seqtest = *token_value++ - seq[index]))
+                {
+                    break;      
+                }
             }
-            /* increment the sequence */
+            
+            if (seqtest > 0)
+            {
+                /* missed a token, reset the sequence number */
+                token_value = token_buffer->value;
+                for (index = 0; index < GSS_SSL3_WRITE_SEQUENCE_SIZE; index++)
+                {
+                    seq[index] = *token_value++;
+                }
+                /* increment the sequence */
+                for (index = (GSS_SSL3_WRITE_SEQUENCE_SIZE - 1); index >= 0; index--)
+                {
+                    if (++seq[index]) break;
+                }
+                major_status = GSS_S_GAP_TOKEN;
+                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+                    (_GGSL("Missing write sequence at index: %d in the token"),
+                     index));
+                goto exit;
+            }
+            
+            if (seqtest < 0)
+            {
+                /* old token, may be replay too. */
+                major_status = GSS_S_OLD_TOKEN;
+                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+                    (_GGSL("Token is too old")));
+                goto exit;
+            }
+
+            /* got the correct seq number, increment the sequence */
             for (index = (GSS_SSL3_WRITE_SEQUENCE_SIZE - 1); index >= 0; index--)
             {
                 if (++seq[index]) break;
             }
-            major_status = GSS_S_GAP_TOKEN;
-            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-                (_GGSL("Missing write sequence at index: %d in the token"),
-                 index));
-            goto exit;
         }
-        
-        if (seqtest < 0)
+        else
         {
-            /* old token, may be replay too. */
-            major_status = GSS_S_OLD_TOKEN;
-            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-                (_GGSL("Token is too old")));
-            goto exit;
-        }
+            #if OPENSSL_VERSION_NUMBER >= 0x10000100L
+            uint64_t                    message_sequence = 0;
 
-        /* got the correct seq number, increment the sequence */
-        for (index = (GSS_SSL3_WRITE_SEQUENCE_SIZE - 1); index >= 0; index--)
-        {
-            if (++seq[index]) break;
+            N2U64(token_value, message_sequence);
+            if (message_sequence > context->mac_read_sequence)
+            {
+                /* missed a token, reset the sequence number */
+                context->mac_read_sequence = message_sequence+1;
+
+                major_status = GSS_S_GAP_TOKEN;
+                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+                    (_GGSL("Missing write sequence at index: %d in the token"),
+                     index));
+                goto exit;
+            }
+            else if (message_sequence < context->mac_read_sequence)
+            {
+                /* old token, may be replay too. */
+                major_status = GSS_S_OLD_TOKEN;
+                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+                    (_GGSL("Token is too old")));
+                goto exit;
+            }
+            else
+            {
+                /* got the correct seq number, increment the sequence */
+                context->mac_read_sequence++;
+            }
+            #else
+            assert(OPENSSL_VERSION_NUMBER >= 0x10000100L);
+            #endif
         }
     }
 #ifdef EVP_CIPH_GCM_MODE

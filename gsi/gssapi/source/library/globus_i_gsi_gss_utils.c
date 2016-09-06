@@ -1070,7 +1070,7 @@ globus_i_gsi_gss_handshake(
                     SSL_CIPHER_get_cipher_nid(
                             current_cipher));
 #endif
-            if (evp_cipher != NULL)
+            if (evp_cipher != NULL && EVP_CIPHER_key_length(evp_cipher) > 0)
             {
                 keying_material_len = EVP_CIPHER_key_length(evp_cipher);
                 context_handle->mac_key = malloc(keying_material_len);
@@ -1107,6 +1107,55 @@ globus_i_gsi_gss_handshake(
                         keying_material_len,
                         "EXPERIMENTAL-GSI-MAC-IV-FIXED",
                         strlen("EXPERIMENTAL-GSI-MAC-IV-FIXED"),
+                        NULL,
+                        0,
+                        0);
+            }
+            else
+            {
+                int                     hash_nid = NID_undef;
+                int                     cipher_nid = NID_undef;
+                const EVP_MD *          hash = NULL;
+                const SSL_CIPHER *      cipher = NULL;
+
+                #if OPENSSL_VERSION_NUMBER < 0x10000000L
+                hash_nid = EVP_MD_type(context_handle->gss_ssl->write_hash);
+                #elif OPENSSL_VERSION_NUMBER < 0x10100000L
+                hash_nid = EVP_MD_CTX_type(context_handle->gss_ssl->write_hash);
+                #else
+                cipher = SSL_get_current_cipher(context_handle->gss_ssl);
+                hash_nid = SSL_CIPHER_get_digest_nid(cipher);
+                if (hash_nid == NID_undef && SSL_CIPHER_is_aead(cipher))
+                {
+                    cipher_nid = SSL_CIPHER_get_cipher_nid(
+                    SSL_get_current_cipher(context_handle->gss_ssl));
+                }
+                #endif
+
+
+                if (hash_nid != NID_undef)
+                {
+                    hash = EVP_get_digestbynid(hash_nid);
+                }
+
+                if (hash != NULL)
+                {
+                    keying_material_len = EVP_MD_size(hash);
+                    context_handle->mac_key = malloc(keying_material_len);
+                }
+                if (context_handle->mac_key == NULL)
+                {
+                    GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                    major_status = GSS_S_FAILURE;
+                    goto exit;
+                }
+
+                SSL_export_keying_material(
+                        context_handle->gss_ssl,
+                        context_handle->mac_key,
+                        keying_material_len,
+                        "EXPERIMENTAL-GSI-MAC-KEY",
+                        strlen("EXPERIMENTAL-GSI-MAC-KEY"),
                         NULL,
                         0,
                         0);

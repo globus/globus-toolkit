@@ -380,47 +380,62 @@ main(int argc, char *argv[])
         TEST_CASE_INITIALIZER(out_of_order_mic_test),
         TEST_CASE_INITIALIZER(double_mic_test),
     };
+    OM_uint32                           flags[] =
+    {
+        0,
+        GSS_C_CONF_FLAG,
+    };
     size_t                              num_test_cases;
+    size_t                              num_flags;
+    size_t                              testnum = 1;
     
+    num_flags = sizeof(flags)/sizeof(flags[0]);
     num_test_cases = sizeof(test_cases)/sizeof(test_cases[0]);
 
-    printf("1..%zu\n", num_test_cases);
+    printf("1..%zu\n", num_flags * num_test_cases);
 
-    failed = test_establish_contexts(
-        &init_ctx,
-        &accept_ctx,
-        &context_major_status,
-        &context_minor_status);
-
-    if (failed != 0)
+    for (size_t f = 0; f < num_flags; f++)
     {
-        printf("Bail out! couldn't establish security context\n");
-        globus_gsi_gssapi_test_print_error(
-                stderr, context_major_status, context_minor_status);
-        failed = 99;
-        goto establish_failed;
-    }
-    
-    for (size_t i = 0; i < num_test_cases; i++)
-    {
-        int ok = test_cases[i].func();
+        failed = test_establish_contexts(
+            &init_ctx,
+            &accept_ctx,
+            flags[f],
+            &context_major_status,
+            &context_minor_status);
 
-        if (!ok)
+        if (failed != 0)
         {
-            printf("not ");
-            failed++;
+            printf("Bail out! couldn't establish security context\n");
+            globus_gsi_gssapi_test_print_error(
+                    stderr, context_major_status, context_minor_status);
+            failed = 99;
+            goto establish_failed;
         }
-        printf("ok %zu - %s\n", i+1, test_cases[i].name);
-    }
+        
+        for (size_t i = 0; i < num_test_cases; i++, testnum++)
+        {
+            int ok = test_cases[i].func();
 
-establish_failed:
-    if (init_ctx != GSS_C_NO_CONTEXT)
-    {
-        gss_delete_sec_context(&release_minor_status, &init_ctx, NULL);
-    }
-    if (accept_ctx != GSS_C_NO_CONTEXT)
-    {
-        gss_delete_sec_context(&release_minor_status, &accept_ctx, NULL);
+            if (!ok)
+            {
+                printf("not ");
+                failed++;
+            }
+            printf("ok %zu - %s (flags=%d)\n",
+                    testnum,
+                    test_cases[i].name,
+                    flags[f]);
+        }
+
+    establish_failed:
+        if (init_ctx != GSS_C_NO_CONTEXT)
+        {
+            gss_delete_sec_context(&release_minor_status, &init_ctx, NULL);
+        }
+        if (accept_ctx != GSS_C_NO_CONTEXT)
+        {
+            gss_delete_sec_context(&release_minor_status, &accept_ctx, NULL);
+        }
     }
 
     exit(failed);

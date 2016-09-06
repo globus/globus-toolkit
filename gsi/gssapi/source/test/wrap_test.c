@@ -45,6 +45,7 @@ main(int argc, char *argv[])
     rc = test_establish_contexts(
         &init_ctx,
         &accept_ctx,
+        0,
         &context_major_status,
         &context_minor_status);
 

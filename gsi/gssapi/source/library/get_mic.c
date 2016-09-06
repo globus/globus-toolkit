@@ -138,7 +138,14 @@ GSS_CALLCONV gss_get_mic(
     #if OPENSSL_VERSION_NUMBER < 0x10000000L
     hash_nid = EVP_MD_type(context->gss_ssl->write_hash);
     #elif OPENSSL_VERSION_NUMBER < 0x10100000L
-    hash_nid = EVP_MD_CTX_type(context->gss_ssl->write_hash);
+    if (context->gss_ssl->write_hash->digest != NULL)
+    {
+        hash_nid = EVP_MD_CTX_type(context->gss_ssl->write_hash);
+    }
+    if (context->gss_ssl->enc_write_ctx != NULL)
+    {
+        cipher_nid = EVP_CIPHER_CTX_nid(context->gss_ssl->enc_write_ctx);
+    }
     #else
     cipher = SSL_get_current_cipher(context->gss_ssl);
     hash_nid = SSL_CIPHER_get_digest_nid(cipher);
@@ -169,12 +176,26 @@ GSS_CALLCONV gss_get_mic(
         goto unlock_mutex;
     }
 
-    if (hash != NULL && OPENSSL_VERSION_NUMBER < 0x10100000L)
+    if (hash != NULL)
     {
         #if OPENSSL_VERSION_NUMBER < 0x10100000L
-        mac_sec = context->gss_ssl->s3->write_mac_secret;
-        seq = context->gss_ssl->s3->write_sequence;
+        if (globus_i_backward_compatible_mic)
+        {
+            mac_sec = context->gss_ssl->s3->write_mac_secret;
+            seq = context->gss_ssl->s3->write_sequence;
+        }
+        else
         #endif
+        {
+            #if OPENSSL_VERSION_NUMBER >= 0x10000100L
+                mac_sec = context->mac_key;
+            #else
+                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                major_status = GSS_S_FAILURE;
+                goto unlock_mutex;
+            #endif
+
+        }
         md_size = EVP_MD_size(hash);
         message_token->value = (char *) malloc(GSS_SSL_MESSAGE_DIGEST_PADDING 
                                                + md_size);
@@ -189,14 +210,27 @@ GSS_CALLCONV gss_get_mic(
         message_token->length = GSS_SSL_MESSAGE_DIGEST_PADDING + md_size;
         token_value = message_token->value;
         
-        for (index = 0; index < GSS_SSL3_WRITE_SEQUENCE_SIZE; ++index)
+        if (globus_i_backward_compatible_mic)
         {
-            *(token_value++) = seq[index];
-        }
+            for (index = 0; index < GSS_SSL3_WRITE_SEQUENCE_SIZE; ++index)
+            {
+                *(token_value++) = seq[index];
+            }
 
-        for (index = (GSS_SSL3_WRITE_SEQUENCE_SIZE - 1); index >= 0; --index)
+            for (index = (GSS_SSL3_WRITE_SEQUENCE_SIZE - 1); index >= 0; --index)
+            {
+                if (++seq[index]) break;
+            }
+        }
+        else
         {
-            if (++seq[index]) break;
+            #if OPENSSL_VERSION_NUMBER >= 0x10000100L
+                U642N(context_handle->mac_write_sequence, token_value);
+                token_value += sizeof(context_handle->mac_write_sequence);
+                context_handle->mac_write_sequence++;
+            #else
+            abort();
+            #endif
         }
 
         L2N(message_buffer->length, token_value);

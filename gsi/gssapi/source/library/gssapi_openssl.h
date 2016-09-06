@@ -210,6 +210,9 @@ gss_OID_desc *                          gss_nt_host_ip;
 extern
 gss_OID_desc *                          gss_nt_x509;
 
+extern
+globus_bool_t                           globus_i_backward_compatible_mic;
+
 #define GLOBUS_GSS_C_NT_HOST_IP         gss_nt_host_ip
 #define GLOBUS_GSS_C_NT_X509            gss_nt_x509
 

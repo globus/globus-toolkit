@@ -1,3 +1,9 @@
+globus-gssapi-gsi (12.4-1+gt6.@distro@) @distro@; urgency=low
+
+  * Updates for mic handling without using internal openssl structs
+
+ -- Globus Toolkit <support@globus.org>  Tue, 06 Sep 2016 14:28:54 -0400
+
 globus-gssapi-gsi (12.3-1+gt6.@distro@) @distro@; urgency=low
 
   * Makefile fix
