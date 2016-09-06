@@ -52,6 +52,8 @@ int main(int argc, char *argv[])
     char * rsl;
     char * old_job_contact;
     globus_gass_transfer_listener_t listener;
+    int ignore_job_status = 0;
+    int ignore_failure_code = 0;
 
     LTDL_SET_PRELOADED_SYMBOLS();
     printf("1..1\n");
@@ -150,6 +152,7 @@ int main(int argc, char *argv[])
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
             monitor.callback_contact,
             &monitor.job_contact);
+    fprintf(stderr, "job request result %d\n", rc);
 
     if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
     {
@@ -176,8 +179,9 @@ int main(int argc, char *argv[])
             monitor.job_contact,
             GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
             NULL,
-            &monitor.job_status,
-            &monitor.failure_code);
+            &ignore_job_status,
+            &ignore_failure_code);
+    fprintf(stderr, "job signal result %d\n", rc);
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -206,6 +210,7 @@ int main(int argc, char *argv[])
         NULL,
         &monitor.job_status,
         &monitor.failure_code);
+    fprintf(stderr, "stop manager result %d\n", rc);
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -233,6 +238,7 @@ int main(int argc, char *argv[])
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
             monitor.callback_contact,
             &monitor.job_contact);
+    fprintf(stderr, "restart request result %d\n", rc);
 
     if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
     {
@@ -255,12 +261,15 @@ int main(int argc, char *argv[])
     }
     rc = 0;
 
+    monitor.job_status = 0;
+    monitor.failure_code = 0;
     rc = globus_gram_client_job_signal(
             monitor.job_contact,
             GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
             NULL,
-            &monitor.job_status,
-            &monitor.failure_code);
+            &ignore_job_status,
+            &ignore_failure_code);
+    fprintf(stderr, "commit request result %d\n", rc);
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -269,6 +278,22 @@ int main(int argc, char *argv[])
                 globus_gram_client_error_string(rc));
         goto commit_request_failed;
     }
+
+    while (monitor.job_status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
+           monitor.job_status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+    }
+    printf("monitor.job_status=%d\nmonitor.failure_code=%d\n",
+            monitor.job_status, monitor.failure_code);
+    rc = globus_gram_client_job_signal(
+            monitor.job_contact,
+            GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
+            NULL,
+            &ignore_job_status,
+            &ignore_failure_code);
+    fprintf(stderr, "commit request result %d\n", rc);
+
 commit_end_failed:
 incorrect_size_error:
 still_streaming_check_failed2:
@@ -315,6 +340,8 @@ globus_l_state_callback(
     globus_mutex_lock(&monitor->mutex);
     if (! strcmp(monitor->job_contact, job_contact))
     {
+        fprintf(stderr, "callback:\nstate=%d\nerrorcode=%d\n\n",
+                state, errorcode);
         monitor->job_status = state;
         monitor->failure_code = errorcode;
         globus_cond_signal(&monitor->cond);

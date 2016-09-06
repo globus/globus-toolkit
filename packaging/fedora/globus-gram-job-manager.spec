@@ -6,7 +6,7 @@ Name:		globus-gram-job-manager
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	14.32
+Version:	14.33
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Jobmanager
@@ -186,6 +186,9 @@ mkdir -p %{_localstatedir}/lib/globus
 %{_mandir}/man5/*
 
 %changelog
+* Tue Sep 06 2016 Globus Toolkit <support@globus.org> - 14.33-1
+- Fix issue #71: globus-gram-job-manager test leaves process behind
+
 * Wed Aug 31 2016 Globus Toolkit <support@globus.org> - 14.32-1
 - Skip some tests as root
 
