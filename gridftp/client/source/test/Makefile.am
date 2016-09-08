@@ -97,10 +97,27 @@ check_PROGRAMS = \
 	user-auth-test \
 	restart-marker-test
 
-TESTS = $(check_SCRIPTS_run)
-AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
-LDADD = $(GSI_DRIVER_DLPREOPEN) $(PIPE_DRIVER_DLPREOPEN) libglobus_ftp_client_test.la $(top_builddir)/libglobus_ftp_client.la $(PACKAGE_DEP_LIBS) -lltdl
+AM_CPPFLAGS = -I$(top_srcdir) $(OPENSSL_CFLAGS) $(PACKAGE_DEP_CFLAGS)
+LDADD = $(GSI_DRIVER_DLPREOPEN) $(PIPE_DRIVER_DLPREOPEN) libglobus_ftp_client_test.la $(top_builddir)/libglobus_ftp_client.la $(OPENSSL_LIBS) $(PACKAGE_DEP_LIBS) -lltdl
 AM_LDFLAGS = -dlpreopen force
+
+libglobus_ftp_client_test_la_SOURCES = \
+	globus_ftp_client_test_abort_plugin.h \
+	globus_ftp_client_test_pause_plugin.h \
+	globus_ftp_client_test_restart_plugin.h \
+	globus_ftp_client_test_perf_plugin.h \
+	globus_ftp_client_test_throughput_plugin.h \
+	globus_ftp_client_test_common.h \
+	globus_ftp_client_test_abort_plugin.c \
+	globus_ftp_client_test_pause_plugin.c \
+	globus_ftp_client_test_restart_plugin.c \
+	globus_ftp_client_test_perf_plugin.c \
+	globus_ftp_client_test_throughput_plugin.c \
+	globus_ftp_client_test_common.c
+libglobus_ftp_client_test_la_LDFLAGS = $(top_builddir)/libglobus_ftp_client.la $(OPENSSL_LIBS) $(PACKAGE_DEP_LIBS) -rpath $(abs_builddir) -no-undefined
+
+if ENABLE_TESTS
+TESTS = $(check_SCRIPTS_run)
 
 TEST_PATH = $(GRIDFTP_SERVER_PATH):$${PATH}
 if CYGPATH_W_DEFINED
@@ -122,29 +139,14 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute \
 	$(PIPE_DRIVER_DLOPEN) \
 	$(srcdir)/test-wrapper
 
-libglobus_ftp_client_test_la_SOURCES = \
-	globus_ftp_client_test_abort_plugin.h \
-	globus_ftp_client_test_pause_plugin.h \
-	globus_ftp_client_test_restart_plugin.h \
-	globus_ftp_client_test_perf_plugin.h \
-	globus_ftp_client_test_throughput_plugin.h \
-	globus_ftp_client_test_common.h \
-	globus_ftp_client_test_abort_plugin.c \
-	globus_ftp_client_test_pause_plugin.c \
-	globus_ftp_client_test_restart_plugin.c \
-	globus_ftp_client_test_perf_plugin.c \
-	globus_ftp_client_test_throughput_plugin.c \
-	globus_ftp_client_test_common.c
-libglobus_ftp_client_test_la_LDFLAGS = $(top_builddir)/libglobus_ftp_client.la $(PACKAGE_DEP_LIBS) -rpath $(abs_builddir) -no-undefined
-
 # Test CA
 .cnf.cacert:
-	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+	umask 077; $(OPENSSL) req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 .cacert.cakey:
 	:
 
 .cacert.link:
-	linkname="`openssl x509 -hash -noout -in $<`.0"; \
+	linkname="`$(OPENSSL) x509 -hash -noout -in $<`.0"; \
 	rm -f "$$linkname"; \
 	cp $< "$$linkname"; \
         echo "$$linkname" > $@
@@ -162,15 +164,15 @@ libglobus_ftp_client_test_la_LDFLAGS = $(top_builddir)/libglobus_ftp_client.la $
 
 # Test Cert/Key
 .srl.key:
-	umask 077; openssl genrsa -out $@ 1024
+	umask 077; $(OPENSSL) genrsa -out $@ 1024
 .key.req:
-	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
+	$(OPENSSL) req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
 
 .req.cert:
-	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
+	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
 
 .cert.gridmap:
-	subject=`openssl x509 -subject -noout -in $< -nameopt rfc2253,-dn_rev | sed -e 's/subject= */\//' -e 's/,/\//g'` ; \
+	subject=`$(OPENSSL) x509 -subject -noout -in $< -nameopt rfc2253,-dn_rev | sed -e 's/subject= */\//' -e 's/,/\//g'` ; \
         echo "\"$$subject\" `id -un`" > $@
 CLEANFILES = testcred.key testcred.cert testcred.req \
 	     testcred.cacert testcred.srl \
@@ -183,10 +185,11 @@ clean-local:
 	if test -f testcred.signing_policy; then \
 	    rm -f $$(cat testcred.signing_policy) testcred.signing_policy; \
 	fi
+SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey .gridmap
+endif
 
 EXTRA_DIST = \
 	$(check_DATA_real) \
 	$(check_SCRIPTS) \
 	$(EXTRA_SCRIPTS)
 
-SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey .gridmap

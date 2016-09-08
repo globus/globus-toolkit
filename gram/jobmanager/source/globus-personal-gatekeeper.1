@@ -1,13 +1,13 @@
 '\" t
 .\"     Title: globus-personal-gatekeeper
-.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\"    Author: [see the "AUTHOR" section]
 .\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
-.\"      Date: 06/18/2015
-.\"    Manual: \ \&
-.\"    Source: University of Chicago
+.\"      Date: 09/08/2016
+.\"    Manual: Globus Toolkit Manual
+.\"    Source: Globus Toolkit 6
 .\"  Language: English
 .\"
-.TH "GLOBUS\-PERSONAL\-GA" "1" "06/18/2015" "University of Chicago" "\ \&"
+.TH "GLOBUS\-PERSONAL\-GA" "1" "09/08/2016" "Globus Toolkit 6" "Globus Toolkit Manual"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -82,9 +82,7 @@ Start a new personal gatekeeper process\&.
 .RS 4
 Use
 \fILRM\fR
-as the local resource manager interface\&. If not provided when starting a personal gatekeeper, the job manager will use the default
-fork
-LRM\&.
+as the local resource manager interface\&. If not provided when starting a personal gatekeeper, the job manager will use the default fork LRM\&.
 .RE
 .PP
 \fB\-auditdir \fR\fB\fIAUDIT_DIRECTORY\fR\fR
@@ -104,9 +102,7 @@ Listen for gatekeeper TCP/IP connections on the port
 Write job manager log files to
 \fIDIRECTORY\fR\&. If
 \fIDIRECTORY\fR
-is omitted, the default of
-$HOME
-will be used\&. If this option is not present, the job manager will not write any log files\&. will be used\&. If this option is not present, the job manager will not write any log files\&.
+is omitted, the default of $HOME will be used\&. If this option is not present, the job manager will not write any log files\&. will be used\&. If this option is not present, the job manager will not write any log files\&.
 .RE
 .PP
 \fB\-seg\fR
@@ -131,9 +127,16 @@ This example shows the output when starting a new personal gatekeeper which will
 .RS 4
 .\}
 .nf
-%  globus\-personal\-gatekeeper \-start \-jmtype lsf
-
-
+% globus\-personal\-gatekeeper \-start \-jmtype lsf
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
 verifying setup\&.\&.\&.
 done\&.
 GRAM contact: personal\-grid\&.example\&.org:57846:/DC=org/DC=example/CN=Joe User
@@ -149,23 +152,19 @@ This example shows the output when listing the current active personal gatekeepe
 .\}
 .nf
 %  globus\-personal\-gatekeeper \-list
-
-
 personal\-grid\&.example\&.org:57846:/DC=org/DC=example/CN=Joe User
 .fi
 .if n \{\
 .RE
 .\}
 .sp
-This example shows the output when querying the configuration directory for th eabove personal gatekeeper\&. gatekeepers\&.
+This example shows the output when querying the configuration directory for the above personal gatekeeper\&. gatekeepers\&.
 .sp
 .if n \{\
 .RS 4
 .\}
 .nf
 %  globus\-personal\-gatekeeper \-directory "personal\-grid\&.example\&.org:57846:/DC=org/DC=example/CN=Joe User"
-
-
 /home/juser/\&.globus/\&.personal\-gatekeeper\&.personal\-grid\&.example\&.org\&.1337
 .fi
 .if n \{\
@@ -177,8 +176,6 @@ This example shows the output when querying the configuration directory for th e
 .\}
 .nf
 %  globus\-personal\-gatekeeper \-kill "personal\-grid\&.example\&.org:57846:/DC=org/DC=example/CN=Joe User"
-
-
 killing gatekeeper: "personal\-grid\&.example\&.org:57846:/DC=org/DC=example/CN=Joe User"
 .fi
 .if n \{\
@@ -187,3 +184,6 @@ killing gatekeeper: "personal\-grid\&.example\&.org:57846:/DC=org/DC=example/CN=
 .SH "SEE ALSO"
 .sp
 globusrun(1), globus\-job\-manager(8), globus\-gatekeeper(8)
+.SH "AUTHOR"
+.sp
+Copyright \(co 1999\-2016 University of Chicago

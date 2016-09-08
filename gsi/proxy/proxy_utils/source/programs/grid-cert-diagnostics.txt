@@ -1,21 +1,25 @@
-= GRID-CERT-DIAGNOSTICS(1) =
+GRID-CERT-DIAGNOSTICS(1)
+========================
 :doctype:      manpage
-:man source:   globus-proxy-utils
+:man source:   Globus Toolkit
+:man version:  6
 :man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
 
-== NAME ==
+NAME
+----
 grid-cert-diagnostics - Print diagnostic information about certificates and keys
 
-[[grid-cert-diagnostics-SYNOPSIS]]
-== SYNOPSIS ==
+SYNOPSIS
+--------
 *grid-cert-diagnostics* [ -h | -help ]
 
 *grid-cert-diagnostics* [ -p ] [ -n ] [ -c CERTIFICATE [-H HOSTNAME] [-m { STRICT_GT2 | HYBRID | STRICT_RFC2818 }]]
 
 *grid-cert-diagnostics* [ -s HOST[:PORT] | -g HOST[:PORT] ] [-m { STRICT_GT2 | HYBRID | STRICT_RFC2818 }]
 
-[[grid-cert-diagnostics-DESCRIPTION]]
-== DESCRIPTION ==
+DESCRIPTION
+-----------
 The *grid-cert-diagnostics* program displays information about
 the current user's security environment, including information about
 security-related environment variables, security directory search path, personal
@@ -30,8 +34,8 @@ user's default certificate and key will be printed.
 The *grid-cert-diagnostics* program can also attempt do diagnose problems
 connecting to remote GridFTP or SSL-based services.
 
-[[grid-cert-diagnostics-OPTIONS]]
-== OPTIONS ==
+OPTIONS
+-------
 The full set of command-line options to *grid-cert-diagnostics* consists of:
 
 *-h, -help*::
@@ -67,13 +71,14 @@ The full set of command-line options to *grid-cert-diagnostics* consists of:
     initial GridFTP banner response is included in the diagnostic output.
     If the ':PORT' is omitted, the default of '2811' is used.
 
-[[grid-cert-diagnostics-EXAMPLES]]
-== EXAMPLES ==
+EXAMPLES
+--------
 In this example, we see the default mode of checking the default security
 environment for the system, without processing the user's key and certificate.
 Note the user receives a warning about a +cog.properties+
 and about an expired CA certificate.
 
+==============================================================================
     % grid-cert-diagnostics
 
     Checking Environment Variables
@@ -102,9 +107,11 @@ and about an expired CA certificate.
         globus_gsi_callback_module: Could not verify credential
         globus_gsi_callback_module: The certificate has expired:
         Credential with subject: /DC=org/DC=example/OU=grid/CN=CA has expired.
+==============================================================================
 
 In this example, we show a user with a mismatched private key and certificate:
 
+==============================================================================
     % grid-cert-diagnostics -p
 
     Checking Environment Variables
@@ -143,7 +150,8 @@ In this example, we show a user with a mismatched private key and certificate:
     6F1B63002902D6623A319E4682E7BFB0968DCE962CF218AAD95FAAD6A0BA5C42AA9AAF
     7FDD32B37C6E2B2FF0E311310AA55FFB9EAFDF5B995C7D9EEAD8D5D81F3531E0AE5
     Certificate and and private key don't match
+==============================================================================
 
-[[grid-cert-diagnostics-AUTHOR]]
-== AUTHOR ==
+AUTHOR
+------
 Copyright (C) 1999-2015 University of Chicago

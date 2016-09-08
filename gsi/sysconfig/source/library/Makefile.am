@@ -3,9 +3,9 @@ include_HEADERS = \
         globus_gsi_system_config_constants.h
 lib_LTLIBRARIES = libglobus_gsi_sysconfig.la
 
-AM_CPPFLAGS = -I$(top_builddir) -I. $(PACKAGE_DEP_CFLAGS)
+AM_CPPFLAGS = -I$(top_builddir) -I. $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS)
 
-libglobus_gsi_sysconfig_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_gsi_sysconfig_la_LIBADD = $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS)
 libglobus_gsi_sysconfig_la_LDFLAGS = \
 	-version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
         -no-undefined

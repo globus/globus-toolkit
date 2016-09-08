@@ -17,19 +17,19 @@ URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
-Requires:	openssl
-Requires:	openssl-libs%{?_isa}
-%endif
-%if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
-Requires:	openssl%{?_isa}
-%endif
-
 BuildRequires:	globus-common-devel >= 14
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-BuildRequires:	libopenssl-devel
+BuildRequires:  openssl
+BuildRequires:  libopenssl-devel
 %else
-BuildRequires:	openssl-devel
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
+%endif
 %endif
 BuildRequires:	doxygen
 BuildRequires:	graphviz
@@ -65,9 +65,16 @@ Group:		Development/Libraries
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-Requires:	libopenssl-devel%{?_isa} 
+Requires:  openssl
+Requires:  libopenssl-devel
 %else
-Requires:	openssl-devel%{?_isa} 
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:  openssl101e
+Requires:  openssl101e-devel
+%else
+Requires:  openssl
+Requires:  openssl-devel
+%endif
 %endif
 
 %package doc
@@ -124,6 +131,10 @@ Globus OpenSSL Error Handling Documentation Files
 rm -rf autom4te.cache
 
 autoreconf -if
+%endif
+
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
 %endif
 
 %configure \

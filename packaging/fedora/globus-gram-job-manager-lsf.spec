@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-lsf
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.7
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - LSF Job Manager
 
@@ -249,6 +249,9 @@ fi
 %endif
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.7-4
+- Rebuild after changes for el.5 with openssl101e
+
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 2.7-3
 - Updates for SLES 12
 

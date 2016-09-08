@@ -1,11 +1,11 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_ftp_client],[8.32],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_ftp_client],[8.33],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [6])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 15, globus-ftp-control >= 4, globus-gsi-callback >= 4, globus-gsi-credential >= 5, globus-gsi-sysconfig >= 5, globus-gssapi-gsi >= 10, globus-xio >= 3, globus-xio-popen-driver >= 2, openssl >= 0.9.8"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 15, globus-ftp-control >= 4, globus-gsi-callback >= 4, globus-gsi-credential >= 5, globus-gsi-sysconfig >= 5, globus-gssapi-gsi >= 10, globus-xio >= 3, globus-xio-popen-driver >= 2"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign parallel-tests 1.11 tar-pax])
@@ -78,6 +78,15 @@ GRIDFTP_SERVER_EXE=`$PKG_CONFIG --variable=executable globus-gridftp-server`
 AC_SUBST(GRIDFTP_SERVER_PATH)
 AC_SUBST(GRIDFTP_SERVER_EXE)
 
+PKG_CHECK_MODULES([OPENSSL], [openssl >= 1.0], 
+    [OPENSSL_PKGCONFIG="openssl >= 1.0"], 
+    [ 
+        PKG_CHECK_MODULES([OPENSSL], [openssl101e]) 
+        OPENSSL_PKGCONFIG="openssl101e" 
+    ])
+
+AC_SUBST([OPENSSL_PKGCONFIG])
+
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 PKG_CHECK_EXISTS([globus-xio-gsi-driver >= 2], [
     GSI_DRIVER_CFLAGS="$($PKG_CONFIG --cflags globus-xio-gsi-driver)"
@@ -93,6 +102,8 @@ AC_SUBST([PIPE_DRIVER_LIBS])
 AC_SUBST([PIPE_DRIVER_DLOPEN])
 AC_SUBST([PIPE_DRIVER_DLPREOPEN])
 
+AC_PATH_PROGS([OPENSSL], openssl)
+AM_CONDITIONAL([ENABLE_TESTS], [test x"$OPENSSL" != x])
 AC_PATH_PROGS([SSH_BIN], ssh, "/usr/bin/ssh") 
 
 AC_PATH_PROGS([DOXYGEN], doxygen)

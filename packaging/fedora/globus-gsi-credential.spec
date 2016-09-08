@@ -6,8 +6,8 @@ Name:		globus-gsi-credential
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	7.10
-Release:	3%{?dist}
+Version:	7.11
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Credential Library
 
@@ -21,9 +21,17 @@ BuildRequires:	globus-gsi-callback-devel >= 4
 BuildRequires:	globus-openssl-module-devel >= 3
 BuildRequires:	globus-gsi-openssl-error-devel >= 2
 %if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  openssl
 BuildRequires:  libopenssl-devel
 %else
-BuildRequires:	openssl-devel
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
+%endif
 %endif
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
 BuildRequires:	globus-common-devel >= 14
@@ -61,9 +69,16 @@ Requires:	globus-gsi-callback-devel%{?_isa} >= 4
 Requires:	globus-openssl-module-devel%{?_isa} >= 3
 Requires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-Requires:       libopenssl-devel%{?_isa}
+Requires:  openssl
+Requires:  libopenssl-devel
 %else
-Requires:	openssl-devel%{?_isa}
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:  openssl101e
+Requires:  openssl101e-devel
+%else
+Requires:  openssl
+Requires:  openssl-devel
+%endif
 %endif
 Requires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
 Requires:	globus-common-devel%{?_isa} >= 14
@@ -126,6 +141,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
 
 %configure \
            --disable-static \
@@ -168,6 +186,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 7.11-1
+- Update for el.5 openssl101e
+
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 7.10-3
 - Updates for SLES 12
 

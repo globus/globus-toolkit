@@ -6,6 +6,8 @@
 
 set -e
 
+openssl="@OPENSSL@"
+
 # catch the kill signal (ctrl-c) and do cleanup
 trap do_trap 1 2 3 6 9 13 15
 
@@ -501,7 +503,7 @@ setup_grid_security_dir()
 {
     _cadir="${1}"
     _destdir="${2}"
-    _cahash="$(openssl x509 -in "$(construct_path ${_cadir}/cacert.pem)" -noout -hash)"
+    _cahash="$("$openssl" x509 -in "$(construct_path ${_cadir}/cacert.pem)" -noout -hash)"
 
     printf "Installing new CA files to ${_destdir}... "
 
@@ -606,13 +608,13 @@ generate_ca_certificate()
 
     # create CA certificate
     if [ -n "${verbose}" ]; then
-        openssl req ${openssl_options} ${password_option} -config "$(construct_path ${_ca_ssl_conf})" \
+        "$openssl" req ${openssl_options} ${password_option} -config "$(construct_path ${_ca_ssl_conf})" \
             -x509 -days ${CA_CERT_DAYS} \
             -newkey rsa:${bits} -keyout $(construct_path ${CA_KEY_FILE}) \
             -out $(construct_path ${CA_CERT_FILE}) < ${CA_REQ_INPUT}
         RET=$?
     else
-        openssl req ${openssl_options} ${password_option} -config "$(construct_path ${_ca_ssl_conf})" \
+        "$openssl" req ${openssl_options} ${password_option} -config "$(construct_path ${_ca_ssl_conf})" \
             -x509 -days ${CA_CERT_DAYS} \
             -newkey rsa:${bits} -keyout $(construct_path ${CA_KEY_FILE}) \
             -out $(construct_path ${CA_CERT_FILE}) < ${CA_REQ_INPUT} > openssl_req.log 2>&1
@@ -823,7 +825,7 @@ readCommandLine () {
          ;;
      -openssl-help)
          shift;
-         openssl req -help;
+         "$openssl" req -help;
          exit;
          ;;
      -version|--version)
@@ -915,7 +917,7 @@ else
     echo "\${datadir}/certificates)"
 fi
 
-cahash="$(openssl x509 -in "$(construct_path ${_cadir}/cacert.pem)" -noout -hash)"
+cahash="$("$openssl" x509 -in "$(construct_path ${_cadir}/cacert.pem)" -noout -hash)"
 
 if [ -z "$nobuild" ]; then
     grid-ca-package ${backward_compatible:+-b} ${gpt_package:+-g} -cadir "${GRID_CA_DIR}"

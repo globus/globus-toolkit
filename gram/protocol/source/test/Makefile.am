@@ -26,6 +26,7 @@ check_DATA = \
         testcred.signing_policy \
         testcred.srl
 
+if ENABLE_TESTS
 TESTS = $(check_PROGRAMS)
 
 if CYGPATH_W_DEFINED
@@ -44,12 +45,12 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute $(GSI_DRIVER_LIBS) \
 
 # Test CA
 .cnf.cacert:
-	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+	umask 077; $(OPENSSL) req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 .cacert.cakey:
 	:
 
 .cacert.link:
-	linkname="`openssl x509 -hash -noout -in $<`.0"; \
+	linkname="`$(OPENSSL) x509 -hash -noout -in $<`.0"; \
 	rm -f "$$linkname"; \
 	cp $< "$$linkname"; \
         echo "$$linkname" > $@
@@ -67,14 +68,12 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute $(GSI_DRIVER_LIBS) \
 
 # Test Cert/Key
 .srl.key:
-	umask 077; openssl genrsa -out $@ 1024
+	umask 077; $(OPENSSL) genrsa -out $@ 1024
 .key.req:
-	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
+	$(OPENSSL) req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
 
 .req.cert:
-	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
-
-EXTRA_DIST = $(check_SCRIPTS) 
+	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
 
 CLEANFILES = testcred.key testcred.cert testcred.req \
 	     testcred.cacert testcred.srl \
@@ -90,3 +89,6 @@ clean-local:
 	rm -f *.valgrind *.vxml
 
 SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey .gridmap
+endif
+
+EXTRA_DIST = $(check_SCRIPTS) 

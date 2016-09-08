@@ -4,19 +4,18 @@ man_MANS = \
     globus-sh-exec.1 \
     globus-version.1
 
-man_xml_source = \
-    globus-domainname.xml \
-    globus-hostname.xml \
-    globus-sh-exec.xml \
-    globus-version.xml
+man_source = \
+    globus-domainname.txt \
+    globus-hostname.txt \
+    globus-sh-exec.txt \
+    globus-version.txt
 
-EXTRA_DIST = $(man_MANS) $(man_xml_source)
+EXTRA_DIST = $(man_MANS) $(man_source)
 
 if BUILD_MANPAGES
-SUFFIXES = .xml .1
+SUFFIXES = .txt .1
 
-.xml.1:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) $<
+.txt.1:
+	$(A2X) -d manpage -f manpage $<
 MAINTAINERCLEANFILES = $(man_MANS)
 endif

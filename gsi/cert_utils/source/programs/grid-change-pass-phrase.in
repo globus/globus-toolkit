@@ -20,6 +20,7 @@
 # Change the pass phrase on a user's private key
 #
 
+openssl="@OPENSSL@"
 prefix="${GLOBUS_LOCATION-@prefix@}"
 exec_prefix="@exec_prefix@"
 bindir="@bindir@"
@@ -60,8 +61,8 @@ ${short_usage}
 EOF
 }
 
-if ! openssl version > /dev/null 2> /dev/null; then
-    echo "Unable to locate openssl binary in $bindir or PATH" 1>&2
+if ! "$openssl" version > /dev/null 2> /dev/null; then
+    echo "Unable to locate $openssl binary in $bindir or PATH" 1>&2
     exit 1
 fi
 
@@ -191,11 +192,11 @@ fi
 umask 077
 if [ "$keyform" = pkcs12 ]; then
     rm -f ${private_key}.new
-    openssl pkcs12 -in "${private_key}" -nodes | \
+    "$openssl" pkcs12 -in "${private_key}" -nodes | \
         openssl pkcs12 -export -out ${private_key}.new
 else
     rm -f ${private_key}.new
-    openssl rsa -des3 -in ${private_key} -out ${private_key}.new
+    "$openssl" rsa -des3 -in ${private_key} -out ${private_key}.new
 fi
 
 if [ $? -eq 0 ]; then

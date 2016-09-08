@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-sge
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	7%{?dist}
+Release:	8%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - SGE Job Manager
 
@@ -259,6 +259,9 @@ fi
 %endif
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.6-8
+- Rebuild after changes for el.5 with openssl101e
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-7
 - Updates for SLES 12
 

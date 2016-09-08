@@ -7,7 +7,7 @@ Name:		globus-usage
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	4.5
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Usage Library
 
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 4.5-3
+- Rebuild after changes for el.5 with openssl101e
+
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 4.5-2
 - Update for SLES 12
 

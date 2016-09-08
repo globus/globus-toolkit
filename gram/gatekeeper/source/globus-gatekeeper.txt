@@ -1,0 +1,209 @@
+GLOBUS-GATEKEEPER(8)
+====================
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
+
+NAME
+---
+globus-gatekeeper - Authorize and execute a grid service on behalf of a user
+
+SYNOPSIS
+-------
+*globus-gatekeeper* [-help]
+
+*globus-gatekeeper* -conf 'PARAMETER_FILE'
+    [-test]
+    [-d | -debug]
+    [-inetd | -f]
+    [-p 'PORT' | -port 'PORT']
+    [-l 'LOGFILE' | -logfile 'LOGFILE']
+    [-lf 'LOG_FACILITY']
+    [-acctfile 'ACCTFILE']
+    [-e 'LIBEXECDIR']
+    [-launch_method { 'fork_and_exit' | 'fork_and_wait' | 'dont_fork' }]
+    [-grid_services 'SERVICEDIR']
+    [-globusid 'GLOBUSID']
+    [-gridmap 'GRIDMAP']
+    [-x509_cert_dir 'TRUSTED_CERT_DIR']
+    [-x509_cert_file 'TRUSTED_CERT_FILE']
+    [-x509_user_cert 'CERT_PATH']
+    [-x509_user_key 'KEY_PATH']
+    [-x509_user_proxy 'PROXY_PATH']
+    [-k]
+    [-globuskmap 'KMAP']
+    [-pidfile 'PIDFILE']
+
+DESCRIPTION
+----------
+The *globus-gatekeeper* program is a meta-server similar to
+*inetd* or*xinetd* that starts other services after authenticating a TCP
+connection using GSSAPI and mapping the client's credential to a local account.
+
+The most common use for the *globus-gatekeeper* program is to
+start instances of the
+*globus-job-manager*(8) service. A single *globus-gatekeeper*
+deployment can handle multiple different service configurations by having
+entries in the +/etc/grid-services/+ directory.
+
+Typically, users interact with the *globus-gatekeeper*
+program via client applications such as *globusrun*(1),
+*globus-job-submit*(1), or tools such as CoG jglobus or Condor-G.
+
+The full set of command-line options to *globus-gatekeeper* consists of:
+
+*-help*::
+    Display a help message to standard error and exit
+
+*-conf 'PARAMETER_FILE'*::
+    Load configuration parameters from 'PARAMETER_FILE'. The parameters in that
+    file are treated as additional command-line options.
+
+*-test*::
+    Parse the configuration file and print out the POSIX user id of
+    the *globus-gatekeeper* process, service home directory, service execution
+    directory, and X.509 subject name and then exits.
+
+*-d, -debug*::
+    Run the *globus-gatekeeper* process in the foreground.
+
+*-inetd*::
+    Flag to indicate that the *globus-gatekeeper* process was started via
+    *inetd* or a similar super-server. If this flag is set and
+    the *globus-gatekeeper* was not started via inetd, a warning will be printed
+    in the gatekeeper log.
+
+*-f*::
+    Flag to indicate that the *globus-gatekeeper* process should run in the
+    foreground. This flag has no effect when the *globus-gatekeeper* is started
+    via inetd.
+
+*-p 'PORT', -port 'PORT'*::
+    Listen for connections on the TCP/IP port 'PORT'. This option has no effect
+    if the *globus-gatekeeper* is started via inetd or a similar service. If not
+    specified and the gatekeeper is running as root, the default of
+    +2119+ is used. Otherwise, the gatekeeper defaults to an ephemeral port.
+
+*-home 'PATH'*::
+    Sets the gatekeeper deployment directory to 'PATH'. This is used to
+    interpret relative paths for accounting files, libexecdir, certificate
+    paths, and also to set the +GLOBUS_LOCATION+ environment
+    variable in the service environment. If not specified, the gatekeeper looks
+    for service executables in +/usr/sbin+, configuration in
+    +/etc+, and writes logs and accounting files to
+    +/var/log+.
+
+
+*-l 'LOGFILE', -logfile 'LOGFILE'*::
+    Write log entries to 'LOGFILE'. If 'LOGFILE' is equal to +logoff+ or
+    +LOGOFF+, then logging will be disabled, both to file and to syslog.
+
+*-lf 'LOG_FACILITY'*::
+    Open syslog using the 'LOG_FACILITY'. If not specified, +LOG_DAEMON+ will
+    be used as the default when using syslog.
+
+*<option>-acctfile 'ACCTFILE'</option>*::
+    Set the path to write accounting records to 'ACCTFILE'. If not set, records
+    will be written to the log file.
+
+*-e 'LIBEXECDIR'*::
+    Look for service executables in 'LIBEXECDIR'. If not specified, the +sbin+
+    subdirectory of the parameter to '-home' is used, or +/usr/sbin+ if that is
+    not set.
+
+*-launch_method +fork_and_exit+ | +fork_and_wait+ | +dont_fork+*::
+    Determine how to launch services. The method may be either +fork_and_exit+
+    (the service runs completely independently of the gatekeeper, which exits
+    after creating the new service process), +fork_and_wait+ (the service is
+    run in a separate process from the gatekeeper but the gatekeeper does not
+    exit until the service terminates), or +dont_fork+, where the gatekeeper
+    process becomes the service process via the *exec*()
+    system call.
+
+*-grid_services 'SERVICEDIR'*::
+    Look for service descriptions in 'SERVICEDIR'.
+
+*-globusid 'GLOBUSID'*::
+    Sets the +GLOBUSID+ environment variable to 'GLOBUSID'. This variable is
+    used to construct the gatekeeper contact string if it can not be parsed
+    from the service credential.
+
+*-gridmap 'GRIDMAP'*::
+    Use the file at 'GRIDMAP' to map GSSAPI names to POSIX user names.  
+
+*-x509_cert_dir 'TRUSTED_CERT_DIR'*::
+    Use the directory 'TRUSTED_CERT_DIR' to locate trusted CA X.509
+    certificates. The gatekeeper sets the environment variable +X509_CERT_DIR+
+    to this value.
+
+*-x509_user_cert 'CERT_PATH'*::
+    Read the service X.509 certificate from 'CERT_PATH'. The gatekeeper sets
+    the +X509_USER_CERT+ environment variable to this value.  
+
+*-x509_user_key 'KEY_PATH'*::
+    Read the private key for the service from 'KEY_PATH'. The gatekeeper sets
+    the +X509_USER_KEY+ environment variable to this value.
+
+*-x509_user_proxy 'PROXY_PATH'*::
+    Read the X.509 proxy certificate from 'PROXY_PATH'. The gatekeeper sets the
+    +X509_USER_PROXY+ environment variable to this value.
+
+*-k*::
+    Use the <command>globus-k5</command> command to acquire Kerberos 5
+    credentials before starting the service.
+
+*-globuskmap 'KMAP'*::
+    Use 'KMAP' as the path to the Grid credential to kerberos initialization
+    mapping file.
+
+*-pidfile 'PIDFILE'*::
+    Write the process id of the *globus-gatekeeper* to the file named by
+    'PIDFILE'.
+
+ENVIRONMENT
+-----------
+The following environment variables affect the execution of *globus-gatekeeper*:
+
+*X509_CERT_DIR*::
+    Directory containing X.509 trust anchors and signing policy files.
+
+*X509_USER_PROXY*::
+    Path to file containing an X.509 proxy.
+
+*X509_USER_CERT*::
+    Path to file containing an X.509 user certificate.
+
+*X509_USER_KEY*::
+    Path to file containing an X.509 user key.
+
+*GLOBUS_LOCATION*::
+    Default path to gatekeeper service files.
+
+FILES
+-----
+The following files affect the execution of *globus-gatekeeper*:
+
+*/etc/grid-services/'SERVICENAME'*::
+    Service configuration for 'SERVICENAME'.
+
+*+/etc/grid-security/grid-mapfile+*::
+    Default file mapping Grid identities to POSIX identities.
+
+*+/etc/globuskmap+*::
+    Default file mapping Grid identities to Kerberos 5 principals.
+
+*+/etc/globus-nologin+*::
+    File to disable the *globus-gatekeeper* program.  
+
+*+/var/log/globus-gatekeeper.log+*::
+    Default gatekeeper log.
+
+SEE ALSO
+--------
+*globus-k5*(8), *globusrun*(1), *globus-job-manager*(8)
+
+AUTHOR
+-----
+Copyright (C) 1999-2016 University of Chicago

@@ -399,7 +399,10 @@ while [ -n "$1" ]; do
                 jmtype="$2"
                 shift
                 ;;
-        -log*)
+        -log)
+                logdir="$HOME"
+                ;;
+        -log=*)
                 logdir=`expr "$1" : "-log=\(.*\)"`
                 if [ "$logdir" = "" ]; then
                     logdir="$HOME"
@@ -427,7 +430,11 @@ while [ -n "$1" ]; do
                 shift;
                 ;;
         *)
-                startargs="$startargs $1"
+                if [ $(expr index "$1" " ") = 0 ]; then
+		    startargs="$startargs $1"
+                else
+		    startargs="$startargs '$1'"
+                fi
                 ;;
         esac
         shift

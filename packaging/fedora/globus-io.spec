@@ -6,8 +6,8 @@ Name:		globus-io
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	11.7
-Release:	3%{?dist}
+Version:	11.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - uniform I/O interface
 
@@ -29,7 +29,6 @@ BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-gssapi-gsi-devel >= 10
 BuildRequires:	globus-gssapi-error-devel >= 4
-BuildRequires:  openssl
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:	automake >= 1.11
 BuildRequires:	autoconf >= 2.60
@@ -43,6 +42,11 @@ BuildRequires:  perl-Test-Simple
 BuildRequires: libtool
 %else
 BuildRequires: libtool-ltdl-devel
+%endif
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+%else
+BuildRequires:  openssl
 %endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
@@ -109,6 +113,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
 
 %configure \
            --disable-static \
@@ -149,6 +156,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 11.8-1
+- Update for el.5 openssl101e
+
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 11.7-3
 - Updates for SLES 12
 

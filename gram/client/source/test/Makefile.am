@@ -9,11 +9,13 @@ check_DATA = \
 
 check_PROGRAMS = activate-test callback-contact-test
 
-TESTS = $(check_PROGRAMS)
-
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)
 LDADD =  $(GLOBUS_XIO_GSI_DLPREOPEN) ../libglobus_gram_client.la $(PACKAGE_DEP_LIBS) -lltdl
 AM_LDFLAGS = -dlpreopen force
+
+
+if ENABLE_TESTS
+TESTS = $(check_PROGRAMS)
 
 X509_USER_CERT = testcred.cert
 X509_USER_KEY = testcred.key
@@ -31,12 +33,12 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute $(GLOBUS_XIO_GSI_DLOPEN)
 
 # Test CA
 .cnf.cacert:
-	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+	umask 077; $(OPENSSL) req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 .cacert.cakey:
 	:
 
 .cacert.link:
-	linkname="`openssl x509 -hash -noout -in $<`.0"; \
+	linkname="`$(OPENSSL) x509 -hash -noout -in $<`.0"; \
 	rm -f "$$linkname"; \
 	cp $< "$$linkname"; \
         echo "$$linkname" > $@
@@ -54,12 +56,12 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute $(GLOBUS_XIO_GSI_DLOPEN)
 
 # Test Cert/Key
 .srl.key:
-	umask 077; openssl genrsa -out $@ 1024
+	umask 077; $(OPENSSL) genrsa -out $@ 1024
 .key.req:
-	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
+	$(OPENSSL) req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
 
 .req.cert:
-	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
+	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
 
 CLEANFILES = testcred.key testcred.cert testcred.req \
 	     testcred.cacert testcred.srl \
@@ -73,3 +75,4 @@ clean-local:
 	    rm -f $$(cat testcred.signing_policy) testcred.signing_policy; \
 	fi
 SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey
+endif

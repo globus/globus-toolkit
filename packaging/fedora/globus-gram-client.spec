@@ -6,8 +6,8 @@ Name:		globus-gram-client
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	13.15
-Release:	2%{?dist}
+Version:	13.16
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Client Library
 
@@ -167,6 +167,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 13.16-1
+- Update for el.5 openssl101e
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 13.15-2
 - Updates for SLES 12
 

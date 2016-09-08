@@ -1,12 +1,18 @@
 [[gram5-cmd-globus-rvf-edit]]
-= GLOBUS-RVF-EDIT(8) =
-:doctype: manpage
-:man source: University of Chicago
+GLOBUS-RVF-EDIT(8)
+==================
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
 
-== NAME ==
+NAME
+----
 globus-rvf-edit - Edit a GRAM5 RSL validation file
 
-== SYNOPSIS ==
+SYNOPSIS
+--------
 **++globus-rvf-edit++** '-h' 
 
 == Description ==
@@ -33,4 +39,10 @@ of:  consists of:
 *'-f '*::
      Edit the RVF file located at ''PATH''
 
+SEE ALSO
+--------
+globus-rvf-check(8)
 
+AUTHOR
+------
+Copyright (C) 1999-2016 University of Chicago

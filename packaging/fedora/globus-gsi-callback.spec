@@ -6,7 +6,7 @@ Name:		globus-gsi-callback
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	5.10
+Version:	5.11
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Callback Library
@@ -18,9 +18,17 @@ Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  openssl
 BuildRequires:  libopenssl-devel
 %else
-BuildRequires:	openssl-devel
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
+%endif
 %endif
 BuildRequires:	globus-openssl-module-devel >= 3
 BuildRequires:	globus-gsi-openssl-error-devel >= 2
@@ -120,6 +128,10 @@ autoreconf -if
 %endif
 
 
+%if %{?rhel}%{!?rhel:0}
+export OPENSSL="$(which openssl101e)"
+%endif
+
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
@@ -161,6 +173,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 5.11-1
+- Update for el.5 openssl101e
+
 * Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 5.10-1
 - Fix path length constraint handling
 

@@ -16,6 +16,8 @@
 # limitations under the License.
 # 
 
+openssl="@OPENSSL@"
+
 find_ca_dir() {
     cahash=$1
     shift
@@ -59,7 +61,7 @@ ca_list() {
 
             for cert in ${cert_hashes}; do
                 if test -r "${cert}" ; then 
-                    TEMP_SUBJECT="$(openssl x509 -in ${cert} -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g')"
+                    TEMP_SUBJECT="$("$openssl" x509 -in ${cert} -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g')"
                     TEMP_HASH="${cert##*/}"
                     TEMP_HASH="${TEMP_HASH%.0}"
 
@@ -116,7 +118,7 @@ create_source_package_tarball()
     _cadir="${2}"
     _casubject="${3}"
     _simpleca="${4}"
-    _cahash="$(openssl x509 -hash -noout -in "${_capath}")"
+    _cahash="$("$openssl" x509 -hash -noout -in "${_capath}")"
 
     _certdir="share/certificates"
     _srcdir="globus-simple-ca-${_cahash}"
@@ -126,7 +128,7 @@ create_source_package_tarball()
     printf "Creating RPM source tarball... "
 
     while [ -z "$_pkgdir" ]; do
-        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$(openssl rand -base64 6 | tr / _)}"
+        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$("$openssl" rand -base64 6 | tr / _)}"
         rc=$?
 
         if [ $rc != 0 -o ! -d "${_pkgdir}" ]; then
@@ -344,7 +346,7 @@ create_rpm_binary_package()
     fi
     printf "Creating RPM binary..."
     while [ -z "$_pkgdir" ]; do
-        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$(openssl rand -base64 6 | tr / _)}"
+        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$("$openssl" rand -base64 6 | tr / _)}"
         rc=$?
 
         if [ $rc != 0 -o ! -d "${_pkgdir}" ]; then
@@ -387,7 +389,7 @@ create_debian_binary_package()
 
     printf "Creating debian binary..."
     while [ -z "$_pkgdir" ]; do
-        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$(openssl rand -base64 6 | tr / _)}"
+        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$("$openssl" rand -base64 6 | tr / _)}"
         rc=$?
 
         if [ $rc != 0 -o ! -d "${_pkgdir}" ]; then
@@ -413,7 +415,7 @@ create_binary_gpt_package()
     _cadir="${2}"
     _casubject="${3}"
     _simpleca="${4}"
-    _cahash="$(openssl x509 -hash -noout -in "${_capath}")"
+    _cahash="$("$openssl" x509 -hash -noout -in "${_capath}")"
     _certdir="share/certificates"
     _binary_gpt_package="globus_simple_ca_${_cahash}-1.0-noflavor_data.tar.gz"
     if [ "${backward_compatible}" = 1 ]; then
@@ -428,7 +430,7 @@ create_binary_gpt_package()
     printf "Creating binary GPT package... "
 
     while [ "$_pkgdir" = "" ]; do
-        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$(openssl rand -hex 16)}"
+        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$("$openssl" rand -hex 16)}"
         rc=$?
 
         if [ $rc != 0 ]; then
@@ -694,7 +696,7 @@ fi
 if [ -n "$cadir" ]; then
     CA_CERT_DIR="$cadir"
     CA_CERT="$CA_CERT_DIR/cacert.pem"
-    CA_SUBJECT="$(openssl x509 -in "${CA_CERT}" -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g')"
+    CA_SUBJECT="$("$openssl" x509 -in "${CA_CERT}" -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g')"
     simpleca=1
 else
     found_ca=0
@@ -736,13 +738,13 @@ else
             echo 
             exit 1
         fi
-        CA_SUBJECT="$(openssl x509 -in ${CA_CERT} -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g')"
+        CA_SUBJECT="$("$openssl" x509 -in ${CA_CERT} -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g')"
     fi
 fi
 
 if [ "$create_rpm_tarball" -eq 1 ]; then
     create_source_package_tarball "$CA_CERT" "$CA_CERT_DIR" "$CA_SUBJECT" "${simpleca}"
-    ca_cert_hash="$(openssl x509 -hash -noout -in "${CA_CERT}")"
+    ca_cert_hash="$("$openssl" x509 -hash -noout -in "${CA_CERT}")"
     source_package_tarball="globus_simple_ca_${ca_cert_hash}.tar.gz"
     if [ "$create_rpm_binary" -eq 1 ]; then
         create_rpm_binary_package "$(pwd)/${source_package_tarball}" "${ca_cert_hash}"

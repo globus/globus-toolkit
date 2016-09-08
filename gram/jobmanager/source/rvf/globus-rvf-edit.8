@@ -1,13 +1,13 @@
 '\" t
 .\"     Title: globus-rvf-edit
-.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
-.\"      Date: 02/07/2012
-.\"    Manual: University of Chicago
-.\"    Source: University of Chicago
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/08/2016
+.\"    Manual: Globus Toolkit Manual
+.\"    Source: Globus Toolkit 6
 .\"  Language: English
 .\"
-.TH "GLOBUS\-RVF\-EDIT" "8" "02/07/2012" "University of Chicago" "University of Chicago"
+.TH "GLOBUS\-RVF\-EDIT" "8" "09/08/2016" "Globus Toolkit 6" "Globus Toolkit Manual"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -30,41 +30,38 @@
 .SH "NAME"
 globus-rvf-edit \- Edit a GRAM5 RSL validation file
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-rvf\-edit\fR\ 'u
-\fBglobus\-rvf\-edit\fR [\-h]
-.HP \w'\fBglobus\-rvf\-edit\fR\ 'u
-\fBglobus\-rvf\-edit\fR [[\-s] | [\-l\ \fILRM\fR] | [\-f\ \fIPATH\fR]]
+.sp
+\fBglobus\-rvf\-edit\fR \fI\-h\fR
 .SH "DESCRIPTION"
+.sp
+The \fBglobus\-rvf\-edit\fR command is a utility which opens the default editor on a specified RSL validation file, and then, when editing completes, runs the command is a utility which opens the default editor on a specified RSL validation file, and then, when editing completes, runs the \fBglobus\-rvf\-check\fR command to verify that the RVF file syntax is correct\&. If a parse error occurs, the user will be given an option to rerun the editor or discard the modifications\&. command to verify that the RVF file syntax is correct\&. If a parse error occurs, the user will be given an option to rerun the editor or discard the modifications\&.
+.sp
+The full set of command\-line options to \fBglobus\-rvf\-edit\fR consists of: consists of:
 .PP
-The
-\fBglobus\-rvf\-edit\fR
-command is a utility which opens the default editor on a specified RSL validation file, and then, when editing completes, runs the
-\fBglobus\-rvf\-check\fR
-command to verify that the RVF file syntax is correct\&. If a parse error occurs, the user will be given an option to rerun the editor or discard the modifications\&.
-.PP
-The full set of command\-line options to
-\fBglobus\-rvf\-edit\fR
-consists of:
-.PP
-\fB\-h\fR
+\fB\fI\-h\fR\fR
 .RS 4
 Print command\-line option summary and exit
 .RE
 .PP
-\fB\-s\fR
+\fB\fI\-s\fR\fR
 .RS 4
 Edit of the site\-specific RVF file, which provides override values applicable to all LRMs installed on the system\&.
 .RE
 .PP
-\fB\-l \fR\fB\fILRM\fR\fR
+\fB\*(Aq\-l \*(Aq\fR
 .RS 4
 Edit the site\-specific LRM overrides for the LRM named by the
-\fILRM\fR
-parameter to the option\&.
+\fI\*(AqLRM\fR\*(Aq parameter to the option\&.
 .RE
 .PP
-\fB\-f \fR\fB\fIPATH\fR\fR
+\fB\*(Aq\-f \*(Aq\fR
 .RS 4
 Edit the RVF file located at
-\fIPATH\fR
+\fI\*(AqPATH\fR\*(Aq
 .RE
+.SH "SEE ALSO"
+.sp
+globus\-rvf\-check(8)
+.SH "AUTHOR"
+.sp
+Copyright \(co 1999\-2016 University of Chicago

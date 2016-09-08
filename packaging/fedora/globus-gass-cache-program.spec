@@ -6,7 +6,7 @@ Name:		globus-gass-cache-program
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.6
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Tools to manipulate local and remote GASS caches
 
@@ -73,6 +73,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/globus/globus-gass-cache-util.pl
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 6.6-3
+- Rebuild after changes for el.5 with openssl101e
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 6.6-2
 - Updates for SLES 12
 

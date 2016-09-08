@@ -10,6 +10,8 @@ use File::Temp qw(tempdir tempfile);
 require v5.8.0;
 
 my $testdir = tempdir(CLEANUP => 1);
+my $openssl = $ENV{OPENSSL} || "openssl";
+
 chdir $testdir;
 
 plan tests => 33;
@@ -148,7 +150,7 @@ sub days_test
         waitpid($pid, 0);
         ok($? == 0, "grid-ca-create -noint -days exits with 0");
 
-        my $datestring = `openssl x509 -enddate -in $testdir/datetest/cacert.pem -noout`;
+        my $datestring = `$openssl x509 -enddate -in $testdir/datetest/cacert.pem -noout`;
         @enddate = gmtime(chomp($datestring));
         ok($enddate[7] - $reference_enddate[7] < 2, "enddate match");
     }
@@ -172,7 +174,7 @@ sub pass_test
         waitpid($pid, 0);
         ok($? == 0, "grid-ca-create -noint -pass $password exits with 0");
 
-        my $stderr = `openssl rsa -in $testdir/passtest/private/cakey.pem -noout -passin pass:$password 2>&1 1>/dev/null`;
+        my $stderr = `$openssl rsa -in $testdir/passtest/private/cakey.pem -noout -passin pass:$password 2>&1 1>/dev/null`;
         ok($stderr eq '', "Check passphrase works with no output");
         ok($? == 0, "Check passphrase works with 0 exit code");
     }
@@ -195,7 +197,7 @@ sub subject_test
         close($infd);
         waitpid($pid, 0);
         ok($? == 0, "grid-ca-create -noint -subject exits with 0");
-        $subject = `openssl x509 -in $testdir/subjecttest/cacert.pem -noout -subject -nameopt rfc2253`;
+        $subject = `$openssl x509 -in $testdir/subjecttest/cacert.pem -noout -subject -nameopt rfc2253`;
         $subject =~ s/^subject= *//;
         chop($subject);
         ok($subject eq $reference_subject, "subject $subject and $reference_subject match");
@@ -221,7 +223,7 @@ sub bits_test
         waitpid($pid, 0);
         ok($? == 0, "grid-ca-create -noint -bits exits with 0");
 
-        $bits = `openssl x509 -in $bitsdir/cacert.pem -text -noout | grep -E 'RSA Public Key|Public-Key' | tr -cd 0-9`;
+        $bits = `$openssl x509 -in $bitsdir/cacert.pem -text -noout | grep -E 'RSA Public Key|Public-Key' | tr -cd 0-9`;
         ok($bits eq $reference_bits, "Bits $bits matches $reference_bits");
     }
 
@@ -239,7 +241,7 @@ sub bits_test
         waitpid($pid, 0);
         ok($? == 0, "grid-ca-create -noint -bits exits with 0");
 
-        $bits = `openssl x509 -in $bitsdir/cacert.pem -text -noout | grep -E 'RSA Public Key|Public-Key' | tr -cd 0-9`;
+        $bits = `$openssl x509 -in $bitsdir/cacert.pem -text -noout | grep -E 'RSA Public Key|Public-Key' | tr -cd 0-9`;
         ok($bits eq $reference_bits, "Bits $bits matches $reference_bits");
     }
 }

@@ -9,7 +9,7 @@ Name:		globus-xio
 
 %global _name %(tr - _ <<< %{name})
 Version:	5.13
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	        Globus Support
 Summary:	Globus Toolkit - Globus XIO Framework
 
@@ -169,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 5.13-4
+- Rebuild after changes for el.5 with openssl101e
+
 * Wed Aug 24 2016 Globus Toolkit <support@globus.org> - 5.13-3
 - SLES 12 packaging conditionals
 

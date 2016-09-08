@@ -1,8 +1,10 @@
 GLOBUS-GRIDFTP-SERVER-SETUP-CHROOT(8)
 =====================================
-:doctype:       manpage
-:man source:    University of Chicago
-:man manual:    Globus Toolkit Manual
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
 
 NAME
 ----

@@ -3,6 +3,7 @@
 my $prefix;
 my $datarootdir;
 my $datadir;
+my $openssl="@OPENSSL@";
 
 BEGIN {
     if (exists $ENV{GLOBUS_LOCATION}) {
@@ -88,7 +89,7 @@ foreach $file (<*>)
     if ($file =~ m|^([a-f0-9]+).[0-9]+$| && ! -l $file)
     {
         my $oldhash = $1;
-        my $hash = `openssl x509 -in $file -noout -hash`;
+        my $hash = `"$openssl" x509 -in $file -noout -hash`;
         chomp($hash);
 
         print ".";

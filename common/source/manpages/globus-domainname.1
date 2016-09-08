@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: globus-domainname
-.\"    Author: 
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 02/09/2012
-.\"    Manual: Globus Tookit
-.\"    Source: The Globus Alliance
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/08/2016
+.\"    Manual: Globus Toolkit Manual
+.\"    Source: Globus Toolkit 6
 .\"  Language: English
 .\"
-.TH "GLOBUS\-DOMAINNAME" "1" "02/09/2012" "The Globus Alliance" "Globus Tookit"
+.TH "GLOBUS\-DOMAINNAME" "1" "09/08/2016" "Globus Toolkit 6" "Globus Toolkit Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -19,19 +28,15 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-globus-domainname \- Print the local system\'s DNS domain name
+globus-domainname \- Print the local system\*(Aqs DNS domain name
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-domainname\fR\ 'u
-\fBglobus\-domainname\fR [\fBoptions\fR]
+.sp
+\fBglobus\-domainname\fR [ \-h | \-help ] [ \-version \-versions ]
 .SH "DESCRIPTION"
-.PP
-The
-\fBglobus\-domainname\fR
-program prints the domain name of the host it is running on\&. It uses the same algorithm as the
-\fBglobus\-hostname\fR
-command\&. Setting the
-\fBGLOBUS_HOSTNAME\fR
-environment variable will override values returned from gethostname() and gethostbyname()\&.
+.sp
+The \fBglobus\-domainname\fR program prints the domain name of the host it is running on\&. It uses the same algorithm as the \fBglobus\-hostname\fR command\&. Setting the GLOBUS_HOSTNAME environment variable will override values returned from gethostname() and gethostbyname()\&.
+.sp
+The full set of options to \fBglobus\-dommainname\fR are
 .PP
 \fB\-help\fR
 .RS 4
@@ -42,20 +47,6 @@ Show usage information and exit\&.
 .RS 4
 Show version information and exit\&.
 .RE
-.SH "EXIT STATUS"
-.PP
-\fB0\fR
-.RS 4
-Successful program execution\&.
-.RE
 .SH "AUTHOR"
-.br
-.br
-The Globus Alliance, http://www\&.globus\&.org/
-.RS 4
-Author.
-.RE
-.SH "COPYRIGHT"
-.br
-Copyright \(co 1999-2012 University of Chicago
-.br
+.sp
+Copyright \(co 1999\-2016 University of Chicago

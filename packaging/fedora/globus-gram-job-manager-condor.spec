@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-condor
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	5%{?dist}
+Release:	6%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Condor Job Manager
 
@@ -119,6 +119,9 @@ fi
 %{_datadir}/globus/globus_gram_job_manager/condor.rvf
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.6-6
+- Rebuild after changes for el.5 with openssl101e
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-5
 - Updates for SLES 12
 

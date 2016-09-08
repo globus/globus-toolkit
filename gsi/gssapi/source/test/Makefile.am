@@ -1,7 +1,8 @@
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)/library
+AM_CPPFLAGS = -I$(top_srcdir)/library $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS)
 LDADD = libgssapi_test_utils.la \
         ../library/libglobus_gssapi_gsi.la \
         $(PACKAGE_DEP_LIBS) \
+        $(OPENSSL_LIBS) \
         -lltdl
 
 check_LTLIBRARIES = libgssapi_test_utils.la
@@ -63,6 +64,7 @@ check_PROGRAMS= \
         gssapi-thread-test \
 	wrap-test
 
+if ENABLE_TESTS
 TESTS = $(check_SCRIPTS) \
         duplicate-name-test \
 	error-test \
@@ -105,7 +107,8 @@ TESTS_ENVIRONMENT = export \
 
 THREAD_TESTS-undefined $(THREAD_TESTS):
 	${srcdir}/create-thread-test "$@"
-	
+endif
+
 libgssapi_test_utils_la_SOURCES = \
         gssapi_test_utils.c \
         gssapi_test_utils.h
@@ -143,16 +146,17 @@ duplicate_name_test_SOURCES = duplicate_name_test.c
 indicate_mechs_test_SOURCES = indicate_mechs_test.c
 nonterminated_export_cred_test_SOURCES = nonterminated_export_cred_test.c
 
+if ENABLE_TESTS
 testcred.cacert: testcred.cnf
-	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+	umask 077; $(OPENSSL) req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 testcred-nocn.cacert: testcred-nocn.cnf
-	umask 077; openssl req -passin pass:globus -subj "/userId=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+	umask 077; $(OPENSSL) req -passin pass:globus -subj "/userId=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 
 .cacert.cakey:
 	:
 
 .cacert.link:
-	linkname="`openssl x509 -hash -noout -in $<`.0"; \
+	linkname="`$(OPENSSL) x509 -hash -noout -in $<`.0"; \
 	rm -f "$$linkname"; \
 	cp $< "$$linkname"; \
         echo "$$linkname" > $@
@@ -169,17 +173,17 @@ testcred-nocn.cacert: testcred-nocn.cnf
 	echo 01 > $@
 
 testcred.key testcred-nocn.key:
-	umask 077; openssl genrsa 1024 > $@
+	umask 077; $(OPENSSL) genrsa 1024 > $@
 
 testcred-nocn.req: testcred-nocn.key testcred-nocn.srl
-	openssl req -subj "/userId=test" -new -config $*.cnf -key $< > $@
+	$(OPENSSL) req -subj "/userId=test" -new -config $*.cnf -key $< > $@
 
 testcred.req: testcred.key testcred.srl
-	openssl req -subj "/CN=test" -new -config $*.cnf -key $< > $@
+	$(OPENSSL) req -subj "/CN=test" -new -config $*.cnf -key $< > $@
 
 .req.cert:
-	umask 022; openssl x509 -passin pass:globus -req -days 365 -in $< -CA $*.cacert -CAkey $*.cakey > $@
-
+	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in $< -CA $*.cacert -CAkey $*.cakey > $@
+endif
 
 EXTRA_DIST = \
         $(check_DATA_real) \

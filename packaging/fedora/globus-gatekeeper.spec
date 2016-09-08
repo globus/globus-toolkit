@@ -29,6 +29,20 @@ Requires:       lsb
 %endif
 %endif
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  openssl
+BuildRequires:  libopenssl-devel
+%else
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
+%endif
+%endif
+
 Requires(post): globus-common-progs >= 13.4
 Requires(preun):globus-common-progs >= 13.4
 %if 0%{?suse_version} > 0
@@ -75,6 +89,10 @@ autoreconf -if
 %global initscript_config_path %{_localstatedir}/adm/fillup-templates/sysconfig.%{name}
 %else
 %global initscript_config_path %{_sysconfdir}/sysconfig/%{name} 
+%endif
+
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
 %endif
 
 %configure \

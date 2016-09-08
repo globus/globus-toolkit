@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_gridftp_driver],[2.16],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_xio_gridftp_driver],[2.17],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -33,9 +33,12 @@ PKG_CHECK_EXISTS([globus-gridftp-server], [
 AC_SUBST(GRIDFTP_PATH)
 AC_SUBST(GRIDFTP_EXE)
 
-AC_PATH_PROGS([DOXYGEN], doxygen)
+AC_PATH_PROGS([OPENSSL], openssl)
+AM_CONDITIONAL([ENABLE_TESTS], [test "x$OPENSSL" != x])
 
-AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
+AC_PATH_PROGS([DOXYGEN], doxygen)
+AM_CONDITIONAL([ENABLE_DOXYGEN], [test "x$DOXYGEN" != x])
+
 AC_CONFIG_FILES(
         globus-xio-gridftp-driver-uninstalled.pc
         globus-xio-gridftp-driver.pc

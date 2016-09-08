@@ -7,7 +7,7 @@ Name:		globus-xio-gridftp-multicast
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	1.7
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GridFTP Multicast Driver
 
@@ -124,6 +124,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 1.7-4
+- Rebuild after changes for el.5 with openssl101e
+
 * Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 1.7-3
 - Updates for SLES 12
 

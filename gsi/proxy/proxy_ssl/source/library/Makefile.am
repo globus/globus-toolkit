@@ -3,9 +3,9 @@ include_HEADERS = \
 	proxypolicy.h
 lib_LTLIBRARIES = libglobus_proxy_ssl.la
 
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(srcdir)
+AM_CPPFLAGS = $(OPENSSL_CFLAGS) $(PACKAGE_DEP_CFLAGS) -I$(srcdir)
 
-libglobus_proxy_ssl_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_proxy_ssl_la_LIBADD = $(OPENSSL_LIBS) $(PACKAGE_DEP_LIBS)
 libglobus_proxy_ssl_la_LDFLAGS = \
         -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
         -no-undefined

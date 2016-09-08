@@ -6,8 +6,8 @@ Name:		globus-gsi-cert-utils
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	9.14
-Release:	4%{?dist}
+Version:	9.15
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
@@ -17,21 +17,27 @@ URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:	openssl101e
+%else
 Requires:	openssl
-Requires:	openssl-libs%{?_isa}
-%endif
-%if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
-Requires:	openssl%{?_isa}
 %endif
 
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-openssl-module-devel >= 3
 BuildRequires:	globus-gsi-openssl-error-devel >= 2
 %if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  openssl
 BuildRequires:  libopenssl-devel
 %else
-BuildRequires:	openssl-devel
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
+%endif
 %endif
 BuildRequires:	doxygen
 BuildRequires:	graphviz
@@ -65,7 +71,11 @@ Group:		System Environment/Libraries
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library Programs
 Group:		Applications/Internet
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:	openssl101e
+%else
 Requires:	openssl
+%endif
 Requires:	globus-common-progs >= 14
 
 %package devel
@@ -76,9 +86,16 @@ Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-openssl-module-devel%{?_isa} >= 3
 Requires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-Requires:       libopenssl-devel
+Requires:  openssl
+Requires:  libopenssl-devel
 %else
-Requires:	openssl-devel
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:  openssl101e
+Requires:  openssl101e-devel
+%else
+Requires:  openssl
+Requires:  openssl-devel
+%endif
 %endif
 
 %package doc
@@ -148,6 +165,10 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
+
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
@@ -199,6 +220,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 9.15-1
+- Update for el.5 openssl101e, replace docbook with asciidoc
+
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 9.14-4
 - Updates for SLES 12
 

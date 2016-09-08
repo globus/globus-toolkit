@@ -1,8 +1,10 @@
 GLOBUS-JOB-GET-OUTPUT(1)
 ========================
 :doctype:      manpage
-:man source:   University of Chicago
+:man source:   Globus Toolkit
+:man version:  6
 :man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
 
 NAME
 ----

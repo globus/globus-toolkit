@@ -1,0 +1,69 @@
+GLOBUS-GATEKEEPER-ADMIN(8)
+==========================
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
+
+NAME
+----
+globus-gatekeeper-admin - Manage globus-gatekeeper services
+
+SYNOPSIS
+--------
+
+*globus-gatekeeper-admin* [-h]
+
+*globus-gatekeeper-admin* -l [-n 'NAME']
+
+*globus-gatekeeper-admin* -e 'SERVICE' [-n 'NAME']
+
+*globus-gatekeeper-admin* -E
+
+*globus-gatekeeper-admin* -d 'SERVICE'
+
+DESCRIPTION
+-----------
+The *globus-gatekeeper-admin* program manages service entries which are used by
+the *globus-gatekeeper* to execute services. Service entries are located in the
++/etc/grid-services+ directory. The *globus-gatekeeper-admin* can list, enable,
+or disable specific services, or set a service as the default. The '-h'
+command-line option shows a brief usage message.
+
+The *-l* command-line option to *globus-gatekeeper-admin* will cause it
+to list all of the services which are available to be run by the 
+*globus-gatekeeper*. In the output, the service
+name will be followed by its status in brackets. Possible status
+strings are *ENABLED*, *DISABLED*, and *ALIAS to 'NAME'*, where
+'NAME' is another service name.
+
+If the *-n 'NAME'* is used, then only information about the service named
+'NAME' is printed.
+
+The *-e 'SERVICE'* command-line option to *globus-gatekeeper-admin* will cause
+it to enable a service so that it may be run by the *globus-gatekeeper*.
+
+If the *-n 'NAME'* option is used as well, then the service will be enabled
+with the alias 'NAME'.
+
+The *-E* command-line option to *globus-gatekeeper-admin* will cause it to
+enable a service alias with the name +jobmanager+. The
+*globus-gatekeeper-admin* program will choose the first service it finds as the
+default. To enable a particular service as the default, use the *-e* parameter
+described above with the *-n* parameter.
+
+The *-d 'SERVICE'* command-line option to *globus-gatekeeper-admin* will cause
+it to disable a service so that it may not be run by the *globus-gatekeeper*.
+All aliases to a disabled service are also disabled.
+
+FILES
+-----
+The following files affect *globus-gatekeeper-admin* execution:
+
+*/etc/grid-services*::
+    Default location of enabled gatekeeper service descriptions.
+
+AUTHOR
+------
+Copyright (C) 1999-2016 University of Chicago

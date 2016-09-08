@@ -8,8 +8,8 @@ Name:		globus-gram-protocol
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.14
-Release:	4%{?dist}
+Version:	12.15
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Protocol Library
 
@@ -47,6 +47,11 @@ BuildRequires:  pkgconfig
 BuildRequires: libtool
 %else
 BuildRequires: libtool-ltdl-devel
+%endif
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires: openssl101e
+%else
+BuildRequires: openssl
 %endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
@@ -128,6 +133,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
 
 %configure \
            --disable-static \
@@ -186,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 12.15-1
+- Update for el.5 openssl101e
+
 * Thu Aug 18 2016 Globus Toolkit <support@globus.org> - 12.14-4
 - Updates for SLES 12
 

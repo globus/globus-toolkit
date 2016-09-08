@@ -6,8 +6,8 @@ Name:		globus-net-manager
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	0.15
-Release:	5%{?dist}
+Version:	0.16
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Net Manager Library
 
@@ -189,6 +189,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 0.16-2
+- Rebuild after changes for el.5 with openssl101e
+
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 0.16-1
+- exclude tests from doc
+
 * Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 0.15-5
 - Updates for SLES 12
 

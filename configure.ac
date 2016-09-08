@@ -238,7 +238,6 @@ GT_PACKAGE([globus_gass_copy],[gass/copy/source],
     [ globus_common  globus_ftp_client  globus_ftp_control
       globus_gsi_sysconfig  globus_gass_transfer  globus_io  globus_gssapi_gsi
       globus_gssapi_error ], [gridftp])
-dnl GT_PACKAGE([globus_xio_netlogger_driver], [xio/drivers/netlog])
 GT_PACKAGE([globus_gass_cache],[gass/cache/source],
     [ globus_common ], [gram5])
 GT_PACKAGE([globus_rsl],[gram/rsl/source], [globus_common], [gram5])
@@ -256,9 +255,6 @@ GT_PACKAGE([globus_gram_job_manager_sge],
           globus_gram_protocol ], [gram5-sge])
 GT_PACKAGE([globus_gram_job_manager_scripts],
         [gram/jobmanager/scripts], [], [gram5-server])
-dnl GT_PACKAGE([globus_authz_null_callout],
-dnl         [gsi/authz_null_callout/source],
-dnl         [globus_authz], [gsi])
 GT_PACKAGE([globus_gram_job_manager_slurm],
         [gram/jobmanager/lrms/slurm/source], [], [gram5-slurm])
 GT_PACKAGE([globus_gridmap_callout_error],
@@ -267,7 +263,6 @@ GT_PACKAGE([globus_gridmap_callout_error],
 GT_PACKAGE([globus_gridmap_callout], [gsi/gridmap_callout/source],
     [ globus_common globus_gssapi_gsi globus_gss_assist
       globus_gridmap_callout_error globus_gsi_credential ], [gsi])
-dnl GT_PACKAGE([globus_xio_skeleton_driver], [xio/drivers/skeleton/source])
 GT_PACKAGE([globus_gass_server_ez],[gass/server_ez/source],
     [ globus_common  globus_gass_transfer  globus_gssapi_gsi 
       globus_gss_assist ], [gram5])
@@ -288,8 +283,6 @@ GT_PACKAGE([globus_gridmap_eppn_callout], [gsi/gridmap_eppn_callout],
     [ globus_gsi_sysconfig globus_gssapi_gsi globus_gss_assist
       globus_gridmap_callout_error globus_gsi_credential ],
     [gsi])
-dnl no spec for this one: globus_usage_tools
-dnl GT_PACKAGE([globus_usage_tools], [usage/python/tools/source], [], [usage])
 GT_PACKAGE([globus_gram_job_manager_condor],
     [gram/jobmanager/lrms/condor/source], [], [gram5-condor])
 GT_PACKAGE([globus_proxy_utils],[gsi/proxy/proxy_utils/source],
@@ -351,8 +344,6 @@ if test -n "$PKG_CONFIG"; then
         PKG_CONFIG=""
     fi
 fi
-OPENSSL_VERSION=$($PKG_CONFIG --modversion openssl)
-AC_SUBST([OPENSSL_VERSION])
 
 if test x"$PKG_CONFIG" = x ; then
    AC_MSG_ERROR([Missing required pkg-config >= $pkg_config_min])

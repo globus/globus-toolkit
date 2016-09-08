@@ -10,22 +10,6 @@ check_DATA = \
         testcred.signing_policy \
         testcred.srl
 
-X509_USER_CERT=testcred.cert
-X509_USER_KEY=testcred.key
-X509_CERT_DIR=.
-if CYGPATH_W_DEFINED
-GSI_AUTHZ_CONF=$$($(CYGPATH_W) $(abs_srcdir)/authz_test_callout.conf)
-else
-GSI_AUTHZ_CONF=$(abs_srcdir)/authz_test_callout.conf
-endif
-
-TESTS = $(check_PROGRAMS)
-TESTS_ENVIRONMENT = export \
-    X509_USER_CERT=$(X509_USER_CERT) \
-    X509_USER_KEY=$(X509_USER_KEY) \
-    X509_CERT_DIR=$(X509_CERT_DIR) \
-    GSI_AUTHZ_CONF=$(GSI_AUTHZ_CONF);
-
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)
 LDADD = $(PACKAGE_DEP_LIBS) -lltdl
 
@@ -43,14 +27,31 @@ libglobus_authz_test_callout_la_LDFLAGS = \
 	-avoid-version \
 	-rpath $(abs_builddir)
 
+
+if ENABLE_TESTS
+X509_USER_CERT=testcred.cert
+X509_USER_KEY=testcred.key
+X509_CERT_DIR=.
+if CYGPATH_W_DEFINED
+GSI_AUTHZ_CONF=$$($(CYGPATH_W) $(abs_srcdir)/authz_test_callout.conf)
+else
+GSI_AUTHZ_CONF=$(abs_srcdir)/authz_test_callout.conf
+endif
+
+TESTS = $(check_PROGRAMS)
+TESTS_ENVIRONMENT = export \
+    X509_USER_CERT=$(X509_USER_CERT) \
+    X509_USER_KEY=$(X509_USER_KEY) \
+    X509_CERT_DIR=$(X509_CERT_DIR) \
+    GSI_AUTHZ_CONF=$(GSI_AUTHZ_CONF);
 # Test CA
 .cnf.cacert:
-	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+	umask 077; $(OPENSSL) req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 .cacert.cakey:
 	:
 
 .cacert.link:
-	linkname="`openssl x509 -hash -noout -in $<`.0"; \
+	linkname="`$(OPENSSL) x509 -hash -noout -in $<`.0"; \
 	rm -f "$$linkname"; \
 	cp $< "$$linkname"; \
         echo "$$linkname" > $@
@@ -68,12 +69,12 @@ libglobus_authz_test_callout_la_LDFLAGS = \
 
 # Test Cert/Key
 .srl.key:
-	umask 077; openssl genrsa -out $@ 1024
+	umask 077; $(OPENSSL) genrsa -out $@ 1024
 .key.req:
-	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
+	$(OPENSSL) req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
 
 .req.cert:
-	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
+	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
 SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey .gridmap
 CLEANFILES = testcred.key testcred.cert testcred.req \
 	     testcred.cacert testcred.srl \
@@ -85,4 +86,6 @@ clean-local:
 	if test -f testcred.signing_policy; then \
 	    rm -f $$(cat testcred.signing_policy) testcred.signing_policy; \
 	fi
+endif
+
 EXTRA_DIST = authz_test_callout.conf

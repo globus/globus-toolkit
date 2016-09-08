@@ -12,7 +12,7 @@ bin_PROGRAMS = globus-url-copy
 pkgconfig_DATA = globus-gass-copy.pc
 check_PROGRAMS = globus-url-copy-noinst
 
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS)
 
 libglobus_gass_copy_la_SOURCES = \
 	globus_gass_copy.c   \
@@ -23,37 +23,28 @@ libglobus_gass_copy_la_SOURCES = \
 libglobus_gass_copy_la_LDFLAGS = \
         -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
         -no-undefined
-libglobus_gass_copy_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_gass_copy_la_LIBADD = $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS)
 
 globus_url_copy_SOURCES = globus_url_copy.c
 globus_url_copy_LDFLAGS = -export-dynamic -dlpreopen force
 globus_url_copy_LDADD = $(GSI_DRIVER_DLOPEN) \
                         libglobus_gass_copy.la \
-			$(PACKAGE_DEP_LIBS) -lltdl
+			$(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS) -lltdl
 globus_url_copy_noinst_SOURCES = globus_url_copy.c
 globus_url_copy_noinst_LDFLAGS = -dlpreopen force
 globus_url_copy_noinst_LDADD = $(GSI_DRIVER_DLPREOPEN) \
                         libglobus_gass_copy.la \
-			$(PACKAGE_DEP_LIBS) -lltdl
+			$(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS) -lltdl
 
-MANUAL_SOURCE = globus-url-copy.txt \
-                globus-url-copy.xml
+MANUAL_SOURCE = globus-url-copy.txt
 
 if BUILD_MANPAGES
-SUFFIXES = .xml .1
+SUFFIXES = .txt .1
+.txt.1:
+	$(A2X) -f manpage -d manpage $<
 
-if HAVE_A2X
-SUFFIXES += .txt
-.txt.xml:
-	$(A2X) -f docbook -d manpage $<
-endif
-
-.xml.1:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) `test -f $< && echo $< || echo $(srcdir)/$<` > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) `test -f $< && echo $< || echo $(srcdir)/$<`
 MAINTAINERCLEANFILES = $(man_MANS)
 endif
-
 
 DOC_STAMPS =
 if ENABLE_DOXYGEN
@@ -89,7 +80,7 @@ EXTRA_DIST = \
 	$(doc_DATA) \
         $(man_MANS) \
         $(MANUAL_SOURCE) \
-        globus-url-copy.xml
+        globus-url-copy.txt
 
 
 distuninstallcheck:

@@ -4,7 +4,7 @@ AC_INIT([globus_gram_job_manager],[14.33],[https://github.com/globus/globus-tool
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 15, globus-gsi-credential >= 5, globus-gass-cache >= 8, globus-gass-transfer >= 7, globus-gram-protocol >= 11, globus-gssapi-gsi >= 10, globus-gss-assist >= 8, globus-gsi-sysconfig >= 5, globus-callout >= 2, globus-xio >= 3, globus-xio-popen-driver >= 2, globus-rsl >= 9, globus-gram-job-manager-callout-error >= 2, globus-scheduler-event-generator >= 4, globus-usage >= 3, openssl >= 0.9.8"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 15, globus-gsi-credential >= 5, globus-gass-cache >= 8, globus-gass-transfer >= 7, globus-gram-protocol >= 11, globus-gssapi-gsi >= 10, globus-gss-assist >= 8, globus-gsi-sysconfig >= 5, globus-callout >= 2, globus-xio >= 3, globus-xio-popen-driver >= 2, globus-rsl >= 9, globus-gram-job-manager-callout-error >= 2, globus-scheduler-event-generator >= 4, globus-usage >= 3"])
 
 AC_SUBST([CLIENT_TEST_PACKAGE_DEPS], ["globus-common >= 14, globus-gram-protocol >= 11, globus-io >= 9, globus-rsl >= 9, globus-gss-assist >= 8, globus-gram-client >= 3, globus-gass-server-ez >= 2, globus-gass-transfer >= 7, globus-gssapi-gsi >= 10"])
 
@@ -17,6 +17,14 @@ AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
 
+PKG_CHECK_MODULES([OPENSSL], [openssl >= 1.0],
+    [OPENSSL_PKGCONFIG="openssl >= 1.0"],
+    [
+        PKG_CHECK_MODULES([OPENSSL], [openssl101e])
+        OPENSSL_PKGCONFIG="openssl101e"
+    ])
+
+AC_SUBST([OPENSSL_PKGCONFIG])
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 PKG_CHECK_MODULES([CLIENT_TEST_PACKAGE_DEP], $CLIENT_TEST_PACKAGE_DEPS)
 
@@ -91,8 +99,10 @@ esac
 AM_CONDITIONAL([USE_CYGPATH_W], [test "$use_cygpath_w" = "true"])
     
 
-AC_PATH_PROGS([DOXYGEN], doxygen)
+AC_PATH_PROGS([OPENSSL], [openssl])
+AM_CONDITIONAL([ENABLE_TESTS], [test "x$OPENSSL" != "x"])
 
+AC_PATH_PROGS([DOXYGEN], doxygen)
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
 if test "X$GLOBUS_VERSION" = "X"; then
@@ -106,7 +116,7 @@ AC_SUBST(GLOBUS_VERSION)
 
 AM_PATH_XML2
 if test "$ac_cv_have_libxml2" = "yes"; then
-    AC_DEFINE(HAVE_LIBXML2)
+    AC_DEFINE(HAVE_LIBXML2,  [1], [Define to 1 if you have libxml2])
 fi
 
 dnl Some preprocessor tricks to get CMSG_SPACE and co. defined in <sys/socket.h>
@@ -124,49 +134,12 @@ AC_SUBST(LOGDIR)
 eval AUDITDIR="$localstatedir/lib/globus/gram-audit"
 AC_SUBST(AUDITDIR)
 
-AC_PATH_PROG(XSLTPROC, "xsltproc")
-AC_PATH_PROG(XMLLINT, "xmllint")
-AC_MSG_CHECKING([docbook dtd])
-DOCBOOK_DTD=http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd
-docbook_dtd_available=no
-
-if test "$XMLLINT" != no; then
-    cat <<EOF | $XMLLINT --nonet --dtdvalid $DOCBOOK_DTD - > /dev/null 2>&1
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE jobtitle PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
-<jobtitle/>
-EOF
-    if test $? = 0; then
-        docbook_dtd_available=yes
-    fi
-fi
-AC_MSG_RESULT($docbook_dtd_available)
-AC_SUBST(DOCBOOK_DTD)
-
-AC_MSG_CHECKING([docbook xsl])
-MAN_XSL=http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl
-docbook_xsl_available=no
-
-if test "$XSLTPROC" != no; then
-    cat <<EOF | $XSLTPROC --nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl  - > /dev/null 2>&1
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE jobtitle PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
-<jobtitle/>
-EOF
-    if test $? = 0; then
-        docbook_xsl_available=yes
-    fi
-fi
-AC_MSG_RESULT($docbook_xsl_available)
-AC_SUBST(MAN_XSL)
 AC_PROG_LEX
 AC_PROG_YACC
 
-AM_CONDITIONAL(BUILD_MANPAGES, [
-                test "$docbook_xsl_available" != "no" && \
-                test "$docbook_dtd_available" != "no" && \
-                test "$XSLTPROC" != "no" && \
-                test "$XMLLINT" != "no"])
+AC_PATH_PROGS([A2X], [a2x a2x.py])
+AM_CONDITIONAL(BUILD_MANPAGES, [test x"$A2X" != x])
+
 AC_CONFIG_FILES([
 	globus-gram-job-manager-uninstalled.pc
 	globus-gram-job-manager.pc

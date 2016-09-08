@@ -19,14 +19,25 @@ check_DATA = \
         testcred.signing_policy \
         testcred.srl
 
+AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS) $(GSI_DRIVER_CFLAGS)
+LDADD = ../libglobus_io.la $(PACKAGE_DEP_LIBS) $(GSI_DRIVER_DLPREOPEN) -lltdl
+AM_LDFLAGS = -dlpreopen force
+
+if CYGPATH_W_DEFINED
+X509_CERT_DIR = $$($(CYGPATH_W) $(abs_builddir))
+else
+X509_CERT_DIR = $(abs_builddir)
+endif
+
+if ENABLE_TESTS
 # Test CA
 .cnf.cacert:
-	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+	umask 077; $(OPENSSL) req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 .cacert.cakey:
 	:
 
 .cacert.link:
-	linkname="`openssl x509 -hash -noout -in $<`.0"; \
+	linkname="`$(OPENSSL) x509 -hash -noout -in $<`.0"; \
 	rm -f "$$linkname"; \
 	cp $< "$$linkname"; \
         echo "$$linkname" > $@
@@ -44,22 +55,12 @@ check_DATA = \
 
 # Test Cert/Key
 .srl.key:
-	umask 077; openssl genrsa -out $@ 1024
+	umask 077; $(OPENSSL) genrsa -out $@ 1024
 .key.req:
-	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
+	$(OPENSSL) req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
 
 .req.cert:
-	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
-
-AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS) $(GSI_DRIVER_CFLAGS)
-LDADD = ../libglobus_io.la $(PACKAGE_DEP_LIBS) $(GSI_DRIVER_DLPREOPEN) -lltdl
-AM_LDFLAGS = -dlpreopen force
-
-if CYGPATH_W_DEFINED
-X509_CERT_DIR = $$($(CYGPATH_W) $(abs_builddir))
-else
-X509_CERT_DIR = $(abs_builddir)
-endif
+	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
 
 TESTS = $(check_SCRIPTS)
 TESTS_ENVIRONMENT = export \
@@ -68,12 +69,9 @@ TESTS_ENVIRONMENT = export \
     X509_CERT_DIR=$(X509_CERT_DIR);
 
 LOG_COMPILER = $(srcdir)/globus-io-test-wrapper
-
-EXTRA_DIST = \
-	random_data.txt \
-	$(check_SCRIPTS) \
-        globus-io-test-wrapper
+SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey
 CLEANFILES = testcred.cert testcred.req testcred.key testcred.cacert testcred.cakey testcred.srl
+
 clean-local:
 	if test -f testcred.link; then \
 	    rm -f $$(cat testcred.link) testcred.link; \
@@ -81,4 +79,9 @@ clean-local:
 	if test -f testcred.signing_policy; then \
 	    rm -f $$(cat testcred.signing_policy) testcred.signing_policy; \
 	fi
-SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey
+endif
+
+EXTRA_DIST = \
+	random_data.txt \
+	$(check_SCRIPTS) \
+        globus-io-test-wrapper

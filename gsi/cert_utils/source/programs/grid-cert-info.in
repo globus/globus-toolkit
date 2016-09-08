@@ -22,6 +22,8 @@
 # Easily extract information from a user's cert.
 #
 
+openssl="@OPENSSL@"
+
 prefix="${GLOBUS_LOCATION-@prefix@}"
 exec_prefix="@exec_prefix@"
 bindir="@bindir@"
@@ -114,7 +116,7 @@ certificate_format()
 }
 
 
-if ! openssl version > /dev/null 2> /dev/null; then
+if ! "$openssl" version > /dev/null 2> /dev/null; then
     echo "Unable to locate openssl binary in PATH" 1>&2
     exit 1
 fi
@@ -247,10 +249,10 @@ fi
  
 if [ "$cert_format" = pkcs12 ]; then
     echo "Credentials are in pkcs12 format, OpenSSL will prompt for p12 password"
-    cert_data="`openssl pkcs12 -nokeys -clcerts -nomacver -in ${certfile}`"
-    command_stub="openssl x509 -noout $openssl_options"
+    cert_data="`"$openssl" pkcs12 -nokeys -clcerts -nomacver -in ${certfile}`"
+    command_stub="\"$openssl\" x509 -noout $openssl_options"
 else
-    command_stub="openssl x509 -noout -in ${certfile} $openssl_options"
+    command_stub="\"$openssl\" x509 -noout -in ${certfile} $openssl_options"
 fi
 
 

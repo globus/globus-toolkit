@@ -7,8 +7,8 @@ Name:		globus-ftp-client
 %endif
 
 %global _name %(tr - _ <<< %{name})
-Version:	8.32
-Release:	2%{?dist}
+Version:	8.33
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Client Library
 
@@ -29,10 +29,25 @@ BuildRequires:	doxygen
 BuildRequires:	graphviz
 BuildRequires:	globus-gridftp-server-devel >= 0
 BuildRequires:	globus-xio-pipe-driver-devel >= 0
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  openssl
-%if "%{?rhel}" == "5"
+BuildRequires:  libopenssl-devel
+%else
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
+%endif
+%endif
+
+%if %{?rhel}%{!?rhel:0} == 5
 BuildRequires:	graphviz-gd
 %endif
+
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
@@ -126,6 +141,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
 
 %configure \
            --disable-static \
@@ -172,6 +190,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 8.33-1
+- Update for el.5 openssl101e
+
 * Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 8.32-2
 - Updates for SLES 12
 

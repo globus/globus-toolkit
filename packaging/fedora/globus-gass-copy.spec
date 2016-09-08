@@ -6,8 +6,8 @@ Name:		globus-gass-copy
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	9.22
-Release:	3%{?dist}
+Version:	9.23
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Copy
 
@@ -17,7 +17,20 @@ URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
+%if %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  openssl
+BuildRequires:  libopenssl-devel
+%else
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
+%endif
+%endif
+
 BuildRequires:	globus-ftp-client-devel >= 7
 BuildRequires:	globus-common-devel >= 15
 BuildRequires:	globus-gssapi-gsi-devel >= 9
@@ -30,7 +43,7 @@ BuildRequires:	globus-xio-gsi-driver-devel
 BuildRequires:	globus-xio-pipe-driver-devel
 BuildRequires:	doxygen
 BuildRequires:	graphviz
-%if "%{?rhel}" == "5"
+%if %{?rhel}%{!?rhel:0} == 5
 BuildRequires:	graphviz-gd
 %endif
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
@@ -144,6 +157,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
 
 %configure \
            --disable-static \
@@ -194,6 +210,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 9.23-1
+- Update for el.5 openssl101e, replace docbook with asciidoc
+
 * Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 9.22-3
 - Updates for SLES 12
 

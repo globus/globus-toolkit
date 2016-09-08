@@ -1,3 +1,9 @@
+globus-gss-assist (10.20-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update for el.5 openssl101e, replace docbook with asciidoc
+
+ -- Globus Toolkit <support@globus.org>  Thu, 08 Sep 2016 15:34:25 -0400
+
 globus-gss-assist (10.19-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix broken makefile

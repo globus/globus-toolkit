@@ -6,6 +6,12 @@ if ($ARGV[0] eq '-x')
     %values = &read_input();
     &print_xml(%values);
 }
+elsif ($ARGV[0] eq '-a')
+{
+    shift(@ARGV);
+    %values = &read_input();
+    &print_asciidoc(%values);
+}
 else
 {
     %values = &read_input();
@@ -98,6 +104,51 @@ print <<EOF;
 </refentry>
 EOF
 }
+
+sub print_asciidoc
+{
+    print <<EOF;
+RSL(5)
+======
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
+
+NAME
+----
+rsl - GRAM5 RSL Attributes
+
+DESCRIPTION
+-----------
+EOF
+    foreach(sort keys %values)
+    {
+	my $shortname;
+	my $default_value = "";
+	$shortname = lc($_);
+	$shortname =~ s/_//g;
+	next if($values{$_}{Publish} eq "false");
+        if (exists $values{$_}{Default})
+        {
+            $default_value = " [Default: <literal>" . $values{$_}{Default} . "</literal>]";
+        }
+	print <<EOF;
+
+*$_*::
+    $values{$_}{Description}$default_value
+EOF
+    }
+
+    print <<EOF;
+
+AUTHOR
+------
+Copyright (C) 1999-2016 University of Chicago
+EOF
+}
+
 
 sub read_input
 {

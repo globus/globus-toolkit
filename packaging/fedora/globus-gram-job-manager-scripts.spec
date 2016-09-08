@@ -7,8 +7,8 @@ Name:		globus-gram-job-manager-scripts
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.8
-Release:	3%{?dist}
+Version:	6.9
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
@@ -108,6 +108,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 6.9-1
+- Update for el.5 openssl101e, replace docbook with asciidoc
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 6.8-3
 - Updates for SLES 12
 

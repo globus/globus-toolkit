@@ -6,8 +6,8 @@ Name:		globus-gram-client-tools
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	11.9
-Release:	2%{?dist}
+Version:	11.10
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
@@ -75,6 +75,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 11.10-1
+- Update for el.5 openssl101e, replace docbook with asciidoc
+
 * Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 11.9-2
 - Updates for SLES 12
 

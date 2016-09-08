@@ -14,7 +14,7 @@ Name:           myproxy
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.19
-Release:	2%{?dist}
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -563,6 +563,9 @@ fi
 %endif
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 6.1.19-1
+- Rebuild after changes for el.5 with openssl101e
+
 * Tue Sep 06 2016 Globus Toolkit <support@globus.org> - 6.1.19-2
 - Fix myproxy dependency
 

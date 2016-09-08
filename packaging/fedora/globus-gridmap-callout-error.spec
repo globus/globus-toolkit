@@ -7,7 +7,7 @@ Name:		globus-gridmap-callout-error
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.5
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gridmap Callout Errors
 
@@ -149,6 +149,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.5-4
+- Rebuild after changes for el.5 with openssl101e
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.5-3
 - Updates for SLES 12
 

@@ -1,3 +1,9 @@
+globus-gram-job-manager-fork (2.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update for el.5 openssl101e, replace docbook with asciidoc
+
+ -- Globus Toolkit <support@globus.org>  Thu, 08 Sep 2016 15:52:51 -0400
+
 globus-gram-job-manager-fork (2.5-1+gt6.@distro@) @distro@; urgency=low
 
   * Update bug report URL

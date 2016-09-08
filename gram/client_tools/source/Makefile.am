@@ -32,15 +32,7 @@ MANUAL_SOURCE = globus-job-cancel.txt \
                 globus-job-run.txt \
                 globus-job-status.txt \
                 globus-job-submit.txt \
-                globusrun.txt \
-                globus-job-cancel.xml \
-                globus-job-clean.xml \
-                globus-job-get-output.xml \
-                globus-job-get-output-helper.xml \
-                globus-job-run.xml \
-                globus-job-status.xml \
-                globus-job-submit.xml \
-                globusrun.xml
+                globusrun.txt
 
 # EXTRA_DIST is used to include files in
 # a source distribution that automake fails to detect.
@@ -51,17 +43,10 @@ EXTRA_DIST = globus-job-get-output-helper \
 	     dirt.sh
 
 if BUILD_MANPAGES
-SUFFIXES = .xml .1
+SUFFIXES = .txt .1
 
-if HAVE_A2X
-SUFFIXES += .txt
-.txt.xml:
-	$(A2X) -f docbook -d manpage $<
-endif
-
-.xml.1:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) `test -f $< && echo $< || echo $(srcdir)/$<` > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) `test -f $< && echo $< || echo $(srcdir)/$<`
+.txt.1:
+	$(A2X) -f manpage -d manpage $<
 MAINTAINERCLEANFILES = $(man_MANS)
 endif
 

@@ -8,6 +8,6 @@ abs_top_builddir=@abs_top_builddir@
 Name: globus-gssapi-gsi
 Description: Globus Toolkit - GSSAPI library
 Version: @VERSION@
-Requires.private: @PACKAGE_DEPS@
+Requires.private: @PACKAGE_DEPS@, @OPENSSL_PKGCONFIG@
 Libs: ${abs_top_builddir}/library/libglobus_gssapi_gsi.la
 Cflags: -I${abs_top_srcdir}/library

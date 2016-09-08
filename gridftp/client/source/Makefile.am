@@ -16,7 +16,7 @@ lib_LTLIBRARIES = libglobus_ftp_client.la
 doc_DATA = GLOBUS_LICENSE
 pkgconfig_DATA = globus-ftp-client.pc
 
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS) 
 libglobus_ftp_client_la_SOURCES = \
 	globus_ftp_client_debug_plugin.h \
 	globus_ftp_client_restart_plugin.h \
@@ -45,7 +45,7 @@ libglobus_ftp_client_la_SOURCES = \
 libglobus_ftp_client_la_LDFLAGS = \
         -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
         -no-undefined
-libglobus_ftp_client_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_ftp_client_la_LIBADD = $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS) 
 
 
 EXTRA_DIST = \

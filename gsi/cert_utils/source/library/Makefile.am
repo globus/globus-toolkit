@@ -4,13 +4,13 @@ include_HEADERS = \
 
 lib_LTLIBRARIES = libglobus_gsi_cert_utils.la
 
-AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS)
 
 libglobus_gsi_cert_utils_la_LDFLAGS = \
     -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
     -no-undefined
 
-libglobus_gsi_cert_utils_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_gsi_cert_utils_la_LIBADD = $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS)
 libglobus_gsi_cert_utils_la_SOURCES = \
 	globus_gsi_cert_utils.h \
 	globus_gsi_cert_utils_constants.h \

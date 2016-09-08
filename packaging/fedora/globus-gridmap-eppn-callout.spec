@@ -5,8 +5,8 @@ Name:		globus-gridmap-eppn-callout
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	1.12
-Release:	2%{?dist}
+Version:	1.13
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus gridmap eppn callout
 
@@ -15,6 +15,20 @@ License:	%{apache_license}
 URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  openssl
+BuildRequires:  libopenssl-devel
+%else
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
+%endif
+%endif
 
 BuildRequires:	globus-gsi-sysconfig-devel >= 5
 BuildRequires:	globus-gss-assist-devel >= 8
@@ -73,6 +87,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
 
 %configure \
            --disable-static \
@@ -108,6 +125,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libglobus*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 1.13-1
+- Update for el.5 openssl101e
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 1.12-2
 - Updates for SLES 12
 

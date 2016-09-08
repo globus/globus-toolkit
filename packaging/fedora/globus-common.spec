@@ -13,8 +13,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	16.7
-Release:	4%{?dist}
+Version:	16.8
+Release:	2%{?dist}
 Vendor:		Globus Support
 Summary:	Globus Toolkit - Common Library
 
@@ -252,6 +252,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 16.8-2
+- Rebuild after changes for el.5 with openssl101e
+
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 16.8-1
+- Replace docbook with asciidoc
+
 * Wed Aug 24 2016 Globus Toolkit <support@globus.org> - 16.7-4
 - SLES 12 packaging conditionals
 

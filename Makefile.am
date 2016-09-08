@@ -26,14 +26,17 @@ $(GT_ONLY):
 
 RPMDIRS = BUILD BUILDROOT RPMS SOURCES SPECS SRPMS
 
-rpmbuild/.rpmmacros:
+.rpmmacros:
 	@$(MKDIR_P) rpmbuild
 	@(case `lsb_release -is`:`lsb_release -rs` in \
-		CentOS*:5|RedHat*:5*|Scientific*:5*) \
+		CentOS*:5*|RedHat*:5*|Scientific*:5*) \
 			echo "%rhel 5" \
 			;; \
-		CentOS*:6|RedHat*:6*|Scientific*:6*) \
+		CentOS*:6*|RedHat*:6*|Scientific*:6*) \
 			echo "%rhel 6" \
+			;; \
+		CentOS*:7*|RedHat*:7*|Scientific*:7*) \
+			echo "%rhel 7" \
 			;; \
 	  esac; \
 	  echo "%_topdir $(abs_builddir)/rpmbuild"; \
@@ -41,7 +44,7 @@ rpmbuild/.rpmmacros:
 	) > $@
 
 
-$(GT_ALL_TARGETS_RPM): rpmbuild/.rpmmacros
+$(GT_ALL_TARGETS_RPM): .rpmmacros
 	@for d in $(RPMDIRS); do mkdir -p rpmbuild/$$d; done
 	@cp $($@_SOURCE) rpmbuild/SOURCES
 	@HOME=$$(pwd) ac_cv_host=$(host_triplet) rpmbuild --target=$(host_triplet) -ba $($@_SPECFILE)
@@ -95,6 +98,7 @@ osx/$(PACKAGE)-$(VERSION).pkg: $(GT_TARGETS_OSX_PKG) osx/distribution.xml
 		--resources $(srcdir)/osx/resources \
 		$@
 osx-pkgs: osx/$(PACKAGE)-$(VERSION).pkg
+rpm-pkgs: $(GT_TARGETS_RPM)
 
 DOC_STAMPS =
 DOC_PHONY = 

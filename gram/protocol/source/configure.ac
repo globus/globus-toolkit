@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_protocol],[12.14],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_gram_protocol],[12.15],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -41,6 +41,8 @@ AC_SUBST([GSI_DRIVER_CFLAGS])
 AC_SUBST([GSI_DRIVER_LIBS])
 AC_SUBST([DLPREOPEN_FORCE])
 
+AC_PATH_PROGS([OPENSSL], openssl)
+AM_CONDITIONAL([ENABLE_TESTS], [test "x$OPENSSL" != x])
 AC_PATH_PROGS([PERL], perl perl5)
 
 AC_ARG_WITH([perlmoduledir],

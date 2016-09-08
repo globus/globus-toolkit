@@ -6,7 +6,7 @@ Name:		globus-gsi-proxy-core
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	8.4
+Version:	8.5
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
@@ -17,12 +17,18 @@ URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
-Requires:	openssl
-Requires:	openssl-libs%{?_isa}
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  openssl
+BuildRequires:  libopenssl-devel
+%else
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
 %endif
-%if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
-Requires:	openssl%{?_isa}
 %endif
 
 BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
@@ -68,6 +74,18 @@ Requires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
 Requires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-gsi-sysconfig-devel%{?_isa} >= 5
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:  openssl
+Requires:  libopenssl-devel
+%else
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:  openssl101e
+Requires:  openssl101e-devel
+%else
+Requires:  openssl
+Requires:  openssl-devel
+%endif
+%endif
 
 %package doc
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library Documentation Files
@@ -126,6 +144,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
 
 %configure \
            --disable-static \
@@ -172,6 +193,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 8.5-1
+- Update for el.5 openssl101e
+
 * Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 8.4-1
 - Enable tests
 - Fix test case

@@ -6,10 +6,7 @@ man_MANS = grid-ca-create.1 grid-ca-package.1 grid-ca-sign.1
 MANUALS_SOURCE = \
     grid-ca-create.txt \
     grid-ca-package.txt \
-    grid-ca-sign.txt \
-    grid-ca-create.xml \
-    grid-ca-package.xml \
-    grid-ca-sign.xml
+    grid-ca-sign.txt
 
 EXTRA_DIST = \
         dirt.sh \
@@ -21,17 +18,10 @@ EXTRA_DIST = \
         $(MANUALS_SOURCE)
 
 if BUILD_MANPAGES
-SUFFIXES = .xml .1
+SUFFIXES = .txt .1
 
-if HAVE_A2X
-SUFFIXES += .txt
-.txt.xml:
-	$(A2X) -f docbook -d manpage $<
-endif
-
-.xml.1:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) `test -f $< && echo $< || echo $(srcdir)/$<` > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) `test -f $< && echo $< || echo $(srcdir)/$<`
+.txt.1:
+	$(A2X) -f manpage -d manpage $<
 
 MAINTAINERCLEANFILES = $(man_MANS)
 endif

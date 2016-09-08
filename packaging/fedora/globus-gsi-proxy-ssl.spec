@@ -7,8 +7,8 @@ Name:		globus-gsi-proxy-ssl
 %endif
 
 %global _name %(tr - _ <<< %{name})
-Version:	5.9
-Release:	5%{?dist}
+Version:	5.10
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library
 
@@ -19,7 +19,21 @@ Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	doxygen
-BuildRequires:  openssl-devel >= 0.9.8
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  openssl
+BuildRequires:  libopenssl-devel
+%else
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
+%endif
+%endif
+
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
@@ -57,6 +71,18 @@ Group:		Development/Libraries
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 Requires:	globus-common-devel%{?_isa} >= 14
+%endif
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+Requires:  openssl
+Requires:  libopenssl-devel
+%else
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:  openssl101e
+Requires:  openssl101e-devel
+%else
+Requires:  openssl
+Requires:  openssl-devel
+%endif
 %endif
 
 %package doc
@@ -116,6 +142,10 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0}
+export OPENSSL="$(which openssl101e)"
+%endif
+
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
@@ -161,6 +191,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 5.10-1
+- Update for el.5 openssl101e
+
+* Wed Sep 07 2016 Globus Toolkit <support@globus.org> - 5.9-6
+- Update el.5 build to use OpenSSL 1.0.1e from EPEL
+
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 5.9-5
 - Updates for SLES 12 packaging
 

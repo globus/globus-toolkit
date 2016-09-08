@@ -1,0 +1,76 @@
+GLOBUS-K5(8)
+============
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
+
+NAME
+--
+globus-k5 - Acquire Kerberos Credentials for use with Grid Services
+
+SYNOPSIS
+-------
+*globus-k5* 'SERVICE-COMMAND' 'SERVICE-ARGS'...
+
+DESCRIPTION
+----------
+The *globus-k5* program is an authorization module used by the
+globus-gatekeeper program to acquire Kerberos 5 Credentials prior to executing
+a Grid Service. This may be accomplished by running *kinit* with a password
+stored in the +globuskmap+ file, using the NCSA *krb525* command, or the
+*sslk5* command to use the X509 user proxy.
+
+The arguments passed to *globus-k5* will not be used by it, but will be passed
+onto the job manager. The first parameter must be the path to the Grid Service.
+
+It is expected that the environment will contain the variables +GLOBUSID+ and
++USER+ for the Grid and local POSIX user identities.  This program is normally
+run as root, and will call seteuid() prior to executing the Grid Service. 
+
+The parameters to use and the mapping for the globus to K5 user are located in
+the globuskmap file. 
+
+=== Format of the +globuskmap+ file ===
+The globuskmap file is a line-oriented file which each line containing a
+command to run to acquire Kerberos 5 credentials for a Grid identity.  Each
+line consists of an optionally-quoted 'GLOBUSID' value followed by a
+command-line for running a process to acquire a Kerberos credential. For
+example:
+
+==============================================================================
+    "/O=Example/OU=Grid/CN=Joe User" /usr/afsws/bin/klog -principal juser -password mypasswd -cell infn.it
+==============================================================================
+
+ENVIRONMENT
+-----------
+The following variables affect the execution of *globus-k5*:
+
+*GLOBUSKMAP*::
+    Path to the globuskmap file.
+
+
+*USER*::
+    POSIX username that the service will run as.
+
+*KRB5CCNAME*::
+    Path to a Kerberos credential cache.
+
+*GLOBUS_ID*::
+    Grid identity to generate Kerberos credentials for.
+
+FILES
+-----
+The following files affect the execution of *globus-k5*:
+
+*/etc/globuskmap*::
+    Default file mapping Grid identities to Kerberos 5 principals.
+
+SEE ALSO
+--------
+*globus-k5*(8), *globus-job-manager*(8)
+
+AUTHOR
+-----
+Copyright (C) 1999-2016 University of Chicago

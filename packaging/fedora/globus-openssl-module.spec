@@ -6,8 +6,8 @@ Name:		globus-openssl-module
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	4.7
-Release:	3%{?dist}
+Version:	4.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper
 
@@ -17,22 +17,24 @@ URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
-Requires:	openssl
-Requires:	openssl-libs%{?_isa}
-%endif
-%if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
-Requires:	openssl%{?_isa}
-%endif
-
 BuildRequires:	globus-gsi-proxy-ssl-devel >= 4
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-gsi-openssl-error-devel >= 2
+
 %if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  openssl
 BuildRequires:  libopenssl-devel
 %else
-BuildRequires:	openssl-devel
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
 %endif
+%endif
+
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -65,11 +67,20 @@ Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 4
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
+
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-Requires:       libopenssl-devel
+Requires:  openssl
+Requires:  libopenssl-devel
 %else
-Requires:	openssl-devel
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:  openssl101e
+Requires:  openssl101e-devel
+%else
+Requires:  openssl
+Requires:  openssl-devel
 %endif
+%endif
+
 
 %package doc
 Summary:	Globus Toolkit - Globus OpenSSL Module Wrapper Documentation Files
@@ -128,6 +139,10 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
+
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
@@ -169,6 +184,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 4.8-1
+- Update for el.5 openssl101e
+
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 4.7-2
 - Updates for SLES 12
 

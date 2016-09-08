@@ -12,12 +12,7 @@ MANUALS_SOURCE = \
         grid-cert-request.txt \
         grid-change-pass-phrase.txt \
         grid-default-ca.txt \
-        globus-update-certificate-dir.txt \
-        grid-cert-info.xml \
-        grid-cert-request.xml \
-        grid-change-pass-phrase.xml \
-        grid-default-ca.xml \
-        globus-update-certificate-dir.xml
+        globus-update-certificate-dir.txt
 
 User_Scripts = \
 	grid-cert-info \
@@ -31,19 +26,8 @@ EXTRA_DIST = $(MANUALS_SOURCE) $(man_MANS) \
     replace-version.xsl
 
 if BUILD_MANPAGES
-SUFFIXES = .xml .1 .8
+SUFFIXES = .txt .1 .8
 
-if HAVE_A2X
-SUFFIXES += .txt
-.txt.xml:
-	$(A2X) -f docbook -d manpage $<
-endif
-
-.xml.8:
-	$(XMLLINT) --nonet --xinclude --dtdvalid $(DOCBOOK_DTD) `test -f $< && echo $< || echo $(srcdir)/$<` > /dev/null
-	$(XSLTPROC) --nonet --stringparam version "$(GLOBUS_VERSION)" --xinclude $(srcdir)/replace-version.xsl `test -f $< && echo $< || echo $(srcdir)/$<`
-.xml.1:
-	$(XMLLINT) --nonet --xinclude --dtdvalid $(DOCBOOK_DTD) `test -f $< && echo $< || echo $(srcdir)/$<` > /dev/null
-	$(XSLTPROC) --nonet --stringparam version "$(GLOBUS_VERSION)" --xinclude $(srcdir)/replace-version.xsl `test -f $< && echo $< || echo $(srcdir)/$<`
-MAINTAINERCLEANFILES = $(man_MANS)
+.txt.8 .txt.1:
+	$(A2X) -d manpage -f manpage $<
 endif

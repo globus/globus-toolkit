@@ -6,4 +6,4 @@ includedir=@includedir@
 Name: globus-gridmap-eppn-callout
 Description: Globus Toolkit - Globus gridmap ePPN callout.
 Version: @VERSION@
-Requires.private: @PACKAGE_DEPS@
+Requires.private: @PACKAGE_DEPS@, @OPENSSL_PKGCONFIG@

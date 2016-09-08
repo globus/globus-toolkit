@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_authz],[3.14],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_authz],[3.15],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -18,9 +18,12 @@ AC_SUBST(DIRT_BRANCH_ID)
 AM_CONDITIONAL([CYGPATH_W_DEFINED], [test "$CYGPATH_W" != ""])
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 
-AC_PATH_PROGS([DOXYGEN], doxygen)
+AC_PATH_PROGS([OPENSSL], openssl)
+AM_CONDITIONAL([ENABLE_TESTS], [test "x$OPENSSL" != x])
 
+AC_PATH_PROGS([DOXYGEN], doxygen)
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
+
 AC_CONFIG_FILES(
         globus-authz-uninstalled.pc
         globus-authz.pc

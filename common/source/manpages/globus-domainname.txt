@@ -1,0 +1,36 @@
+GLOBUS-DOMAINNAME(1)
+====================
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
+
+NAME
+----
+globus-domainname - Print the local system's DNS domain name
+
+SYNOPSIS
+--------
+*globus-domainname* [ -h | -help ] [ -version -versions ]
+
+DESCRIPTION
+-----------
+The *globus-domainname* program prints the
+domain name of the host it is running on. It uses the same algorithm
+as the *globus-hostname* command. Setting the
++GLOBUS_HOSTNAME+ environment variable will override
+values returned from gethostname() and gethostbyname().
+
+The full set of options to *globus-dommainname* are
+
+*-help*::
+    Show usage information and exit.
+
+*-version*::
+    Show version information and exit.
+
+AUTHOR
+------
+Copyright (C) 1999-2016 University of Chicago
+

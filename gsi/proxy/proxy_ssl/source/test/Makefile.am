@@ -7,8 +7,8 @@ check_DATA = \
 	test_pci.norm5.stdout
 check_SCRIPTS = TESTS.pl TESTS-junit.pl test_pci.pl
 
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)/library -I..
-LDADD = ../library/libglobus_proxy_ssl.la $(PACKAGE_DEP_LIBS) 
+AM_CPPFLAGS = $(OPENSSL_CFLAGS) $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)/library -I..
+LDADD = ../library/libglobus_proxy_ssl.la $(OPENSSL_LIBS) $(PACKAGE_DEP_LIBS) 
 AM_LDFLAGS = $(GPT_LDFLAGS)
 
 test_pci_SOURCES = test_proxycertinfo.c

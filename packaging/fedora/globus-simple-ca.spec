@@ -7,8 +7,8 @@ Name:		globus-simple-ca
 %else
 %global apache_license ASL 2.0
 %endif
-Version:	4.23
-Release:	4%{?dist}
+Version:	4.24
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Simple CA
 
@@ -19,13 +19,18 @@ Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-BuildRequires:   shadow
-Requires(pre):   shadow
+BuildRequires:  shadow
+Requires(pre):  shadow
 %endif
-Requires:   globus-common-progs
-Requires:   openssl
-Requires(post):   openssl
-Requires(post):   globus-gsi-cert-utils-progs
+Requires:       globus-common-progs
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:       openssl101e
+Requires(post): openssl101e
+%else
+Requires:  openssl
+Requires(post): openssl
+%endif
+Requires(post): globus-gsi-cert-utils-progs
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
@@ -34,12 +39,22 @@ BuildRequires:  libtool >= 2.2
 BuildRequires:  globus-common-progs >= 14
 BuildRequires:  globus-common-devel >= 14
 BuildRequires:  globus-gsi-cert-utils-progs
-BuildRequires:  openssl
 BuildRequires:  pkgconfig
-%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
-BuildRequires:  perl-Test-Simple
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  openssl
+BuildRequires:  libopenssl-devel
+%else
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
 %endif
-BuildArch:      noarch
+%endif
+
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -59,6 +74,13 @@ Globus Simple CA
 rm -rf autom4te.cache
 
 autoreconf -if
+%endif
+
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%global openssl openssl101e
+%else
+%global openssl openssl
 %endif
 
 %configure \
@@ -95,7 +117,7 @@ mkdir -p ${simplecadir}
 if [ ! -f ${simplecadir}/cacert.pem ] ; then
     grid-ca-create -noint -nobuild -dir "${simplecadir}"
     (umask 077; echo globus > ${simplecadir}/passwd)
-    simplecahash=`openssl x509 -hash -noout -in ${simplecadir}/cacert.pem`
+    simplecahash=`%openssl x509 -hash -noout -in ${simplecadir}/cacert.pem`
     cd $simplecadir
     grid-ca-package -cadir ${simplecadir}
     tar --strip 1 --no-same-owner -zx --exclude debian -C /etc/grid-security/certificates -f ${simplecadir}/globus_simple_ca_$simplecahash.tar.gz
@@ -124,6 +146,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 4.24-1
+- Update for el.5 openssl101e, replace docbook with asciidoc
+
 * Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 4.23-4
 - Updates for SLES 12
 

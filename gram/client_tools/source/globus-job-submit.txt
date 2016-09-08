@@ -1,14 +1,15 @@
 GLOBUS-JOB-SUBMIT(1)
 ====================
 :doctype:      manpage
-:man source:   University of Chicago
+:man source:   Globus Toolkit
+:man version:  6
 :man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
 
 NAME
 ----
 globus-job-submit - Submit a batch job using GRAM
 
-[[globus-job-submit-SYNOPSIS]]
 SYNOPSIS
 --------
 *globus-job-submit* [-dumprsl|-dryrun|-verify] [-file ARGUMENT_FILE] 'SERVICE-CONTACT' [OPTIONS] 'EXECUTABLE' 'ARGUMENT...'

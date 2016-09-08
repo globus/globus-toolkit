@@ -6,7 +6,7 @@ Name:		globus-gss-assist
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	10.19
+Version:	10.20
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI Assist library
@@ -37,6 +37,12 @@ BuildRequires:  libtool >= 2.2
 BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
+%endif
+
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+%else
+BuildRequires:  openssl
 %endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
@@ -135,6 +141,10 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
+
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
@@ -184,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 10.20-1
+- Update for el.5 openssl101e, replace docbook with asciidoc
+
 * Fri Sep 02 2016 Globus Toolkit <support@globus.org> - 10.19-1
 - Fix broken makefile
 
