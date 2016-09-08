@@ -53,10 +53,10 @@ libglobus_gridftp_server_la_SOURCES =   \
 	globus_i_gfs_control.h
 
 globus_gridftp_server_SOURCES = globus_gridftp_server.c
-globus_gridftp_server_LDADD = libglobus_gridftp_server.la $(MODULE_DLOPEN) $(PACKAGE_DEP_LIBS) -lltdl
+globus_gridftp_server_LDADD = libglobus_gridftp_server.la $(MODULE_DLOPEN) $(PACKAGE_DEP_LIBS) -lltdl -lz
 
 globus_gridftp_server_noinst_SOURCES = globus_gridftp_server.c
-globus_gridftp_server_noinst_LDADD = libglobus_gridftp_server.la $(MODULE_DLPREOPEN) $(PACKAGE_DEP_LIBS) -lltdl
+globus_gridftp_server_noinst_LDADD = libglobus_gridftp_server.la $(MODULE_DLPREOPEN) $(PACKAGE_DEP_LIBS) -lltdl -lz
 
 gfs_gfork_master_SOURCES = gfs_gfork_master.c
 gfs_gfork_master_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS) -lltdl
