@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: globus-hostname
-.\"    Author: 
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 02/09/2012
-.\"    Manual: Globus Tookit
-.\"    Source: The Globus Alliance
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/08/2016
+.\"    Manual: Globus Toolkit Manual
+.\"    Source: Globus Toolkit 6
 .\"  Language: English
 .\"
-.TH "GLOBUS\-HOSTNAME" "1" "02/09/2012" "The Globus Alliance" "Globus Tookit"
+.TH "GLOBUS\-HOSTNAME" "1" "09/08/2016" "Globus Toolkit 6" "Globus Toolkit Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -19,44 +28,25 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-globus-hostname \- globus\-hostname returns the system host name
+globus-hostname \- Print the system host name
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-hostname\fR\ 'u
-\fBglobus\-hostname\fR [\fBoptions\fR]
+.sp
+\fBglobus\-hostname\fR [ \-help | \-h ] [ \-version|\-versions ]
 .SH "DESCRIPTION"
+.sp
+\fBglobus\-hostname\fR attempts to determine a fully\-qualified name for the host it is executing on\&. It performs the same name checks that the C globus_common library uses, including checking for the GLOBUS_HOSTNAME environment variable, and optionally performing a name server lookup of the local host name\&.
+.sp
+The full set of options to \fBglobus\-hostname\fR are
 .PP
-\fBglobus\-hostname\fR
-attempts to determine a fully\-qualified name for the host it is executing on\&. It performs the same name checks that the C globus_common library uses, including checking for the
-\fBGLOBUS_HOSTNAME\fR
-environment variable, and optionally performing a name server lookup of the local host name\&.
-.PP
-Options to
-\fBglobus\-hostname\fR
-are:
-.PP
-\fB\-help\fR
+\fB\-help, \-h\fR
 .RS 4
 Show usage information and exit\&.
 .RE
 .PP
-\fB\-version\fR
+\fB\-version, \-versions\fR
 .RS 4
 Show version information and exit\&.
 .RE
-.SH "EXIT STATUS"
-.PP
-\fB0\fR
-.RS 4
-Successful program execution\&.
-.RE
 .SH "AUTHOR"
-.br
-.br
-The Globus Alliance, http://www\&.globus\&.org/
-.RS 4
-Author.
-.RE
-.SH "COPYRIGHT"
-.br
-Copyright \(co 1999-2012 University of Chicago
-.br
+.sp
+Copyright \(co 1999\-2016 University of Chicago

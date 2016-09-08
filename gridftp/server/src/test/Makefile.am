@@ -14,6 +14,7 @@ check_DATA = \
 
 check_SCRIPTS = setup-chroot-test
 
+if ENABLE_TESTS
 TESTS = \
 	cmp_alias_ent_test\
 	ipc-test \
@@ -24,20 +25,20 @@ TESTS_ENVIRONMENT = \
 	       PATH="$(abs_srcdir)/..:$$PATH";
 LOG_COMPILER = $(FAKEROOT) ../libtool --mode=execute $(MODULE_DLOPEN)
 
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -I$(srcdir)/..
+AM_CPPFLAGS = -I$(srcdir)/.. $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS) 
 LDADD = ../libglobus_gridftp_server.la \
-        $(MODULE_DLPREOPEN) $(PACKAGE_DEP_LIBS) -lltdl
+        $(MODULE_DLPREOPEN) $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS) -lltdl
 
 AM_LDFLAGS = -dlpreopen force
 
 # Test CA
 .cnf.cacert:
-	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+	umask 077; $(OPENSSL) req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 .cacert.cakey:
 	:
 
 .cacert.link:
-	linkname="`openssl x509 -hash -noout -in $<`.0"; \
+	linkname="`$(OPENSSL) x509 -hash -noout -in $<`.0"; \
 	rm -f "$$linkname"; \
 	cp $< "$$linkname"; \
         echo "$$linkname" > $@; \
@@ -59,12 +60,12 @@ AM_LDFLAGS = -dlpreopen force
 
 # Test Cert/Key
 .srl.key:
-	umask 077; openssl genrsa -out $@ 1024
+	umask 077; $(OPENSSL) genrsa -out $@ 1024
 .key.req:
-	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
+	$(OPENSSL) req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
 
 .req.cert:
-	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
+	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
 
 
 SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey
@@ -81,5 +82,6 @@ clean-local:
 	    rm -f $$(cat testcred.signing_policy) testcred.signing_policy; \
 	fi
 	rm -rf certificates
+endif
 
 EXTRA_DIST = $(check_SCRIPTS)

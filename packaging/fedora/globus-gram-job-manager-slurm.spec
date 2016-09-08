@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-slurm
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.8
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - SLURM Job Manager
 
@@ -145,6 +145,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-slurm-poll
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.8-3
+- Rebuild after changes for el.5 with openssl101e
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.8-2
 - Updates for SLES 12
 

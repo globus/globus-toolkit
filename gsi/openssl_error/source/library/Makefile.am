@@ -1,8 +1,8 @@
 include_HEADERS = globus_error_openssl.h
 lib_LTLIBRARIES = libglobus_openssl_error.la
 
-AM_CPPFLAGS = -I.. $(PACKAGE_DEP_CFLAGS)
-libglobus_openssl_error_la_LIBADD = $(PACKAGE_DEP_LIBS)
+AM_CPPFLAGS = -I.. $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS)
+libglobus_openssl_error_la_LIBADD = $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS)
 libglobus_openssl_error_la_LDFLAGS = \
     -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
     -no-undefined

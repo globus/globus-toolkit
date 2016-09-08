@@ -1,0 +1,103 @@
+GLOBUS-FORK-STARTER(8)
+======================
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
+
+NAME
+----
+globus-fork-starter - Start and monitor a fork job
+
+SYNOPSIS
+--------
+*globus-fork-starter*
+
+DESCRIPTION
+-----------
+The *globus-fork-starter* program is executes jobs specified on its standard
+input stream, recording the job state changes to a file defined in the
++/etc/globus-fork.conf+ configuration file. It runs until its standard input
+stream is closed and all jobs it is managing have terminated. The log generated
+by this program can be used by the SEG to provide job state changes and exit
+codes to the GRAM service.  The *globus-fork-starter* program is typically
+started by the fork GRAM module.
+
+The *globus-fork-starter* program expects its input to be a series of task
+definitions, separated by the newline character, each representing a separate
+job.  Each task definition contains a number of fields, separated by the colon
+character. The first field is always the literal string +100+ indicating the
+message format, the second field is a unique job tag that will be distinguish
+the reply from this program when multiple jobs are submitted.  The rest of
+fields contain attribute bindings. The supported attributes are:
+
+*directory*::
+    Working directory of the job
+
+*environment*::
+    Comma-separated list of strings defining environment variables. The form of
+    these strings is +var=value+.
+
+*count*::
+    Number of processes to start.
+
+*executable*::
+    Full path to the executable to run.
+
+*arguments*::
+    Comma-separated list of command-line arguments for the job
+
+*stdin*::
+    Full path to a file containing the input of the job.
+
+*stdout*::
+    Full path to a file to write the output of the job to.
+
+*stderr*::
+    Full path to a file to write the error stream of the job.
+
+Within each field, the following characters may be escaped by preceding them
+with the backslash character:
+- backslash (\)
+- semicolor (;)
+- comma (,)
+- equal (=)
+
+Additionally, newline can be represented within a field by using the escape
+sequence \n.
+
+For each job the *globus-fork-starter* processes, it replies
+by writing a single line to standard output. The replies again consist of
+a number of fields separated by the semicolon character.
+
+For a successful job start, the first field of the reply is the literal
++101+, the second field is the tag from the input, and the
+third field is a comma-separated list of SEG job identifiers which consist the
+concatenation of a UUID and a process id. The
+*globus-fork-starter* program will write state changes to the
+SEG log using these job identifiers.
+
+For a failure, the first field of the reply is the literal
++102+, the second field is the tag from the input, the
+third field is the integer representation of a GRAM erorr code, and the
+fourth field is an string explaining the error.
+
+ENVIRONMENT
+-----------
+The following variables affect the execution of *globus-fork-starter*
+
+*GLOBUS_LOCATION*::
+    Path to Globus Toolkit installation. This is used to locate the
+    +globus-fork.conf+ configuration file.
+
+FILES
+-----
+The following files affect the execution of *globus-fork-starter*
+
+*/etc/globus-fork.conf*::
+    Path to fork SEG configuration file.
+
+AUTHOR
+------
+Copyright (C) 1999-2016 University of Chicago

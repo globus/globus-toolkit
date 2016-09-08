@@ -7,7 +7,7 @@ Name:		globus-scheduler-event-generator
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	5.12
-Release:	4%{?dist}
+Release:	5%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Scheduler Event Generator
 
@@ -272,6 +272,9 @@ fi
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 5.12-5
+- Rebuild after changes for el.5 with openssl101e
+
 * Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 5.12-4
 - Updates for SLES 12
 

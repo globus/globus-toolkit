@@ -5,8 +5,8 @@ Name:		globus-xio-gridftp-driver
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	2.16
-Release:	2%{?dist}
+Version:	2.17
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
 
@@ -44,7 +44,12 @@ BuildRequires: libtool
 %else
 BuildRequires: libtool-ltdl-devel
 %endif
+
+%if %{?rhel}%{!?rhel:0}
+BuildRequires: openssl101e
+%else
 BuildRequires: openssl
+%endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %global mainpkg lib%{_name}
@@ -124,6 +129,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
 
 %configure \
            --disable-static \
@@ -167,6 +175,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.17-1
+- Update for el.5 openssl101e, replace docbook with asciidoc
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.16-2
 - Updates for SLES 12
 

@@ -72,9 +72,9 @@ globus_gram_streamer_LDADD = \
 	$(PACKAGE_DEP_LIBS) $(XML_LIBS)
 
 
-MANUAL_SOURCE = globus-personal-gatekeeper.xml \
-                globus-job-manager.xml \
-                rsl.xml
+MANUAL_SOURCE = globus-personal-gatekeeper.txt \
+                globus-job-manager.txt \
+                rsl.txt
 
 
 # Files which we want to put in the source package
@@ -94,8 +94,8 @@ EXTRA_DIST = dirt.sh \
 
 globus_gram_job_manager_rsl.dox: globus-gram-job-manager.rvf
 	perl $(top_srcdir)/scripts/create_rsl_documentation.pl < $< > $@
-rsl.xml: globus-gram-job-manager.rvf
-	perl $(top_srcdir)/scripts/create_rsl_documentation.pl -x < $< > $@
+rsl.txt: globus-gram-job-manager.rvf
+	perl $(top_srcdir)/scripts/create_rsl_documentation.pl -a < $< > $@
 
 install-data-hook:
 	mkdir -p $(DESTDIR)$(localstatedir)/lib/globus/gram_job_state
@@ -111,17 +111,11 @@ CLEANFILES = \
     globus_gram_job_manager_rsl.dox
 
 if BUILD_MANPAGES
-SUFFIXES = .xml .1 .5 .8
+SUFFIXES = .txt .1 .5 .8
 
-.xml.1:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) $<
-.xml.5:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) $<
-.xml.8:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) $<
+.txt.1 .txt.5 .txt.8:
+	$(A2X) -d manpage -f manpage $<
+
 MAINTAINERCLEANFILES = $(man_MANS)
 endif
 

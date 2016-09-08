@@ -1,0 +1,46 @@
+GLOBUS-SH-EXEC(1)
+=================
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
+
+NAME
+----
+globus-sh-exec - Run a shell script
+
+SYNOPSIS
+--------
+*globus-sh-exec* [ -help | -usage | -version ]
+
+*globus-sh-exec* 'COMMAND' ['ARGS'...]
+
+*globus-sh-exec* -e 'EXEC'
+
+DESCRIPTION
+-----------
+The *globus-sh-exec* command executes a shell script, setting the
+GLOBUS_SH_PERL and GLOBUS_SH environment variables to the perl and
+posix shell interpreters respectively. The 'COMMAND' script can be a
+local file or a GASS url, in which case it is downloaded by *globus-url-copy*
+before execution. The 'ARGS' parameters, if any, are passed as the command-line
+options to 'COMMAND'.
+
+The full set of options to *globus-sh-exec* are
+
+*-help, -usage*::
+    Print usage information and exit.
+
+*-version*::
+    Print version information and exit.
+
+*-list, -l*::
+    Lists the defined 'GLOBUS_SH_' variables and exits.
+
+*-exec 'EXEC', -e 'EXEC'*::
+    Run the command 'EXEC' instead of executing a separate script.
+
+AUTHOR
+------
+Copyright (C) 1999-2016 University of Chicago

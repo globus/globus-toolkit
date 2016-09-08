@@ -1,3 +1,9 @@
+globus-gssapi-gsi (12.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update for el.5 openssl101e
+
+ -- Globus Toolkit <support@globus.org>  Thu, 08 Sep 2016 13:24:51 -0400
+
 globus-gssapi-gsi (12.5-1+gt6.@distro@) @distro@; urgency=low
 
   * More tweaks to get_mic/verify_mic for 1.0.1

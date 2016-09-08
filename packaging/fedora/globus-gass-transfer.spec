@@ -7,7 +7,7 @@ Name:		globus-gass-transfer
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	8.10
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Transfer
 
@@ -155,6 +155,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 8.10-3
+- Rebuild after changes for el.5 with openssl101e
+
 * Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 8.10-2
 - Updates for SLES 12
 

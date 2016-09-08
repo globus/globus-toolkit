@@ -6,7 +6,7 @@ Name:		globus-xio-udt-driver
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	1.24
-Release:	5%{?dist}
+Release:	6%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
@@ -30,6 +30,7 @@ Requires:       libffi
 %endif
 
 BuildRequires:	gcc-c++
+BuildRequires:	udt
 BuildRequires:	udt-devel
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-common-devel >= 14
@@ -168,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 1.24-6
+- Rebuild after changes for el.5 with openssl101e
+
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 1.24-5
 - Updates for SLES 12
 

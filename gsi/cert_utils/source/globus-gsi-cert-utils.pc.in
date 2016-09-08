@@ -9,6 +9,6 @@ path=${bindir}:${sbindir}
 Name: globus-gsi-cert-utils
 Description: Globus Toolkit - Globus GSI Cert Utils Library
 Version: @PACKAGE_VERSION@
-Requires.private: @PACKAGE_DEPS@
+Requires.private: @PACKAGE_DEPS@, @OPENSSL_PKGCONFIG@
 Libs: -L${libdir} -lglobus_gsi_cert_utils
 Cflags: -I${includedir}

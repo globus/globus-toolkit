@@ -1,8 +1,10 @@
 GRID-PROXY-INIT(1)
 ==================
 :doctype:      manpage
-:man source:   University of Chicago
-:man manual:   Globus Toolkit
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
 
 NAME
 ----
@@ -163,12 +165,6 @@ The following files affect the execution of *grid-proxy-init*:
     proxy.
 *$HOME/.globus/userkey.pem*::
     Default path to the key to use to sign the new proxy.
-
-[[grid-proxy-init-COMPATIBILITY]]
-COMPATIBILITY
--------------
-For more information about proxy certificate types and their compatibility in
-GT, see http://dev.globus.org/wiki/Security/ProxyCertTypes
 
 [[grid-proxy-init-SEEALSO]]
 SEE ALSO

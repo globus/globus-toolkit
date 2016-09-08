@@ -19,18 +19,18 @@ globus_rvf_check_LDADD = \
 
 
 EXTRA_DIST = $(man_MANS) \
-    globus-rvf-edit.xml \
-    globus-rvf-check.xml \
+    globus-rvf-edit.txt \
+    globus-rvf-check.txt \
     globus_i_rvf_scanner.c \
     globus_i_rvf_scanner.h \
     globus_i_rvf_parser.c \
     globus_i_rvf_parser.h
 
 if BUILD_MANPAGES
-SUFFIXES = .xml .8
+SUFFIXES = .txt .8
 
-.xml.8:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) $<
+.txt.8:
+	$(A2X) -d manpage -f manpage $<
+
 MAINTAINERCLEANFILES = $(man_MANS)
 endif

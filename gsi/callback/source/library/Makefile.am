@@ -6,10 +6,11 @@ include_HEADERS= \
 
 lib_LTLIBRARIES = libglobus_gsi_callback.la
 
-AM_CPPFLAGS = -I.. $(PACKAGE_DEP_CFLAGS) -I$(top_srcdir)/library/oldgaa
+AM_CPPFLAGS = -I.. -I$(top_srcdir)/library/oldgaa $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS)
 
 libglobus_gsi_callback_la_LIBADD = \
 	$(PACKAGE_DEP_LIBS) \
+	$(OPENSSL_LIBS) \
 	./oldgaa/libglobus_oldgaa.la
 
 libglobus_gsi_callback_la_LDFLAGS = \

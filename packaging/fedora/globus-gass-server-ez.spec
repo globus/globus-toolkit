@@ -7,7 +7,7 @@ Name:		globus-gass-server-ez
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	5.8
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Server_ez
 
@@ -142,6 +142,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 5.8-3
+- Rebuild after changes for el.5 with openssl101e
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 5.8-2
 - Updates for SLES 12
 

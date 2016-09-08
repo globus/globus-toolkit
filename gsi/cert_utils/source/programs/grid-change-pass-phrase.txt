@@ -1,8 +1,10 @@
 GRID-CHANGE-PASS-PHRASE(1)
 =========================
-:doctype:       manpage
-:man source:    University of Chicago
-:man manual:    Globus Toolkit
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
 
 NAME
 ----

@@ -1,3 +1,9 @@
+globus-io (11.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update for el.5 openssl101e
+
+ -- Globus Toolkit <support@globus.org>  Thu, 08 Sep 2016 13:36:20 -0400
+
 globus-io (11.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Makefile fix

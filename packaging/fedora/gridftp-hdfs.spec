@@ -1,7 +1,7 @@
 Name:           gridftp-hdfs
 %global _name %(tr - _ <<< %{name})
 Version:	1.4
-Release:	1
+Release:	2
 Vendor:	Globus Support
 Summary:        HDFS DSI plugin for GridFTP
 
@@ -100,6 +100,9 @@ fi
 %{_sysconfdir}/init.d/%{name}
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 1.4-2
+- Rebuild after changes for el.5 with openssl101e
+
 * Mon Jul 25 2016 Globus Toolkit <support@globus.org> - 1.4-1
 - enable data ordering
 

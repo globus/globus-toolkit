@@ -1,9 +1,9 @@
 GLOBUS-URL-COPY(1)
 ==================
-:doctype:       manpage
-:man source:    University of Chicago
-:man manual:    Globus Toolkit Manual
-
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
 
 NAME
 ----
@@ -309,4 +309,4 @@ OPTIONS
 [[globus-url-copy-AUTHOR]]
 AUTHOR
 ------
-Copyright (C) 1999-2014 University of Chicago
+Copyright (C) 1999-2016 University of Chicago

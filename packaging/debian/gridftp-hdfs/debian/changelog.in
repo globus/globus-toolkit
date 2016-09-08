@@ -1,3 +1,9 @@
+gridftp-hdfs (1.4-2+gt6.@distro@) @distro@; urgency=low
+
+  * Rebuild after changes for el.5 with openssl101e
+
+ -- Globus Toolkit <support@globus.org>  Thu, 08 Sep 2016 16:04:19 -0400
+
 gridftp-hdfs (1.4-1+gt6.@distro@) @distro@; urgency=low
 
   * enable data ordering

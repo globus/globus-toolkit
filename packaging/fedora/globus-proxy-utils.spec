@@ -5,8 +5,8 @@ Name:		globus-proxy-utils
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.17
-Release:	3%{?dist}
+Version:	6.18
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
@@ -16,12 +16,10 @@ URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-%if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7
-Requires:	openssl
-Requires:	openssl-libs%{?_isa}
-%endif
-%if %{?fedora}%{!?fedora:0} < 19 && %{?rhel}%{!?rhel:0} < 7
-Requires:	openssl%{?_isa}
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:  openssl101e%{?_isa}
+%else
+Requires:  openssl%{?_isa}
 %endif
 
 BuildRequires:	globus-gsi-credential-devel >= 5
@@ -29,7 +27,6 @@ BuildRequires:	globus-gsi-callback-devel >= 4
 BuildRequires:	globus-openssl-module-devel >= 3
 BuildRequires:	globus-gss-assist-devel >= 8
 BuildRequires:	globus-gsi-openssl-error-devel >= 2
-BuildRequires:	openssl-devel
 BuildRequires:	globus-gsi-proxy-core-devel >= 6
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
 BuildRequires:	globus-common-devel >= 14
@@ -44,6 +41,21 @@ BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
 %endif
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  openssl
+BuildRequires:  libopenssl-devel
+%else
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
+%endif
+%endif
+
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -66,6 +78,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
 
 %configure \
            --disable-static \
@@ -93,6 +108,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 6.18-1
+- Update for el.5 openssl101e, replace docbook with asciidoc
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 6.17-3
 - Updates for SLES 12
 

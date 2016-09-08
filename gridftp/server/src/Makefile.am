@@ -21,9 +21,9 @@ sbin_SCRIPTS = \
         globus-gridftp-server-setup-chroot
 pkgconfig_DATA = globus-gridftp-server.pc
 
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) -DGLOBUS_BUILTIN=1
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS) -DGLOBUS_BUILTIN=1
 AM_LDFLAGS = -dlpreopen force
-libglobus_gridftp_server_la_LIBADD = $(MODULE_LIBS) $(PACKAGE_DEP_LIBS)
+libglobus_gridftp_server_la_LIBADD = $(MODULE_LIBS) $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS)
 libglobus_gridftp_server_la_LDFLAGS =   \
         -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
         -no-undefined
@@ -53,16 +53,16 @@ libglobus_gridftp_server_la_SOURCES =   \
 	globus_i_gfs_control.h
 
 globus_gridftp_server_SOURCES = globus_gridftp_server.c
-globus_gridftp_server_LDADD = libglobus_gridftp_server.la $(MODULE_DLOPEN) $(PACKAGE_DEP_LIBS) -lltdl
+globus_gridftp_server_LDADD = libglobus_gridftp_server.la $(MODULE_DLOPEN) $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS) -lltdl
 
 globus_gridftp_server_noinst_SOURCES = globus_gridftp_server.c
-globus_gridftp_server_noinst_LDADD = libglobus_gridftp_server.la $(MODULE_DLPREOPEN) $(PACKAGE_DEP_LIBS) -lltdl
+globus_gridftp_server_noinst_LDADD = libglobus_gridftp_server.la $(MODULE_DLPREOPEN) $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS) -lltdl
 
 gfs_gfork_master_SOURCES = gfs_gfork_master.c
-gfs_gfork_master_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS) -lltdl
+gfs_gfork_master_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS) -lltdl
 
 gfs_dynbe_client_SOURCES = gfs_dynbe_client.c
-gfs_dynbe_client_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS) -lltdl
+gfs_dynbe_client_LDADD = $(preload_links) $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS) -lltdl
 
 if LINK_WITH_CXX
 globus_gridftp_server_LINK = $(CXXLINK)
@@ -80,11 +80,11 @@ unused_SOURCES =
 EXTRA_PROGRAMS = unused
 
 if BUILD_MANPAGES
-SUFFIXES = .xml .8
+SUFFIXES = .txt .8
 
-.xml.8:
-	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
-	$(XSLTPROC) --nonet $(MAN_XSL) $<
+.txt.8:
+	$(A2X) -d manpage -f manpage $<
+
 MAINTAINERCLEANFILES = $(man_MANS)
 endif
 
@@ -94,8 +94,8 @@ EXTRA_DIST = \
     globus-gridftp-server-setup-chroot \
     $(doc_DATA) \
     $(man_MANS) \
-    globus-gridftp-server-setup-chroot.xml \
-    globus-gridftp-server.xml
+    globus-gridftp-server-setup-chroot.txt \
+    globus-gridftp-server.txt
 
 distuninstallcheck:
 	@:

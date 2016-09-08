@@ -2,12 +2,12 @@
 .\"     Title: globus-gridftp-server
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
-.\"      Date: 03/15/2016
+.\"      Date: 09/08/2016
 .\"    Manual: Globus Toolkit Manual
-.\"    Source: University of Chicago
+.\"    Source: Globus Toolkit 6
 .\"  Language: English
 .\"
-.TH "GLOBUS\-GRIDFTP\-SER" "8" "03/15/2016" "University of Chicago" "Globus Toolkit Manual"
+.TH "GLOBUS\-GRIDFTP\-SER" "8" "09/08/2016" "Globus Toolkit 6" "Globus Toolkit Manual"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -177,7 +177,21 @@ chroot_path\&.
 .PP
 \fB\-auth\-level number\fR
 .RS 4
-Add levels together to use more than one\&. 0 = Disables all authorization checks\&. 1 = Authorize identity\&. 2 = Authorize all file/resource accesses\&. 4 = Disable changing process uid to authenticated user (no setuid) \(em DO NOT use this when process is started as root\&. If not set uses level 2 for front ends and level 1 for data nodes\&. Note that levels 2 and 4 imply level 1 as well\&.
+Add levels together to use more than one\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  0 = Disables all authorization checks\&.
+  1 = Authorize identity\&.
+  2 = Authorize all file/resource accesses\&.
+  4 = Disable changing process uid to authenticated user (no setuid) \-\- DO NOT use this when process is started as root\&.
+If not set uses level 2 for front ends and level 1 for data nodes\&.  Note that levels 2 and 4 imply level 1 as well\&.
+.fi
+.if n \{\
+.RE
+.\}
 .sp
 This option can also be set in the configuration file as
 auth_level\&.

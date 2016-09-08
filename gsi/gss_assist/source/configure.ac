@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gss_assist], [10.19],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_gss_assist], [10.20],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -34,9 +34,12 @@ AC_PATH_PROGS([DOXYGEN], doxygen)
 
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
-AC_PATH_PROGS([A2X], [a2x])
+AC_PATH_PROGS([OPENSSL], [openssl])
+AM_CONDITIONAL([ENABLE_TESTS], [test "x$OPENSSL" != ""])
+
 AC_PATH_PROGS(PERL, [perl perl5])
 
+AC_PATH_PROGS([A2X], [a2x])
 AM_CONDITIONAL(BUILD_MANPAGES, [test "x$A2X" != xno])
 
 AC_CONFIG_FILES([

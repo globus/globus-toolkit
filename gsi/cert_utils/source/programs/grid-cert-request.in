@@ -37,6 +37,7 @@ printDirections ()
   return $printThis
 }
 
+openssl="@OPENSSL@"
 prefix="${GLOBUS_LOCATION-@prefix@}"
 exec_prefix="@exec_prefix@"
 bindir="@bindir@"
@@ -195,9 +196,9 @@ set_non_default_ca()
         for cert in ${trusted_certs_dir}/*.0; do
             if test -r "${cert}" ; then
                 eval "CA${index}=${cert}"
-                TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g'`
+                TEMP_SUBJECT="$("$openssl" x509 -in ${cert} -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g')"
                 eval "CA_SUBJECT${index}=\"${TEMP_SUBJECT}\""
-                eval "CA_HASH${index}=`openssl x509 -in ${cert} -noout -hash`"
+                eval "CA_HASH${index}=`"$openssl" x509 -in ${cert} -noout -hash`"
                 eval "echo \"$index)  \${CA_HASH${index}} - \${CA_SUBJECT${index}}\""
                 index=`expr $index + 1`
             fi
@@ -224,7 +225,7 @@ set_non_default_ca()
             echo 
             exit 1
         fi
-        TEMP_SUBJECT=`openssl x509 -in ${trusted_certs_dir}/${CA_HASH}.0 -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g'`
+        TEMP_SUBJECT=`"$openssl" x509 -in ${trusted_certs_dir}/${CA_HASH}.0 -noout -subject -nameopt rfc2253,-dn_rev | sed -e 's|^subject= *|/|' -e 's|,|/|g'`
         eval "CA_SUBJECT=\"${TEMP_SUBJECT}\""
     fi
 
@@ -751,7 +752,7 @@ create_certs () {
     fi
 
     if test ! -z "${INTERACTIVE}" ; then
-        openssl req -new -keyout ${KEY_FILE} -out ${REQ_OUTPUT} \
+        "$openssl" req -new -keyout ${KEY_FILE} -out ${REQ_OUTPUT} \
             -rand ${RAND_TEMP}:/var/adm/wtmp:/var/log/messages \
             -config ${used_config} ${NO_DES}
         RET=$?
@@ -759,7 +760,7 @@ create_certs () {
     else
         create_input_file "${COMMON_NAME}" "${used_config}" > ${REQ_INPUT}
 
-        openssl req -new -keyout ${KEY_FILE} \
+        "$openssl" req -new -keyout ${KEY_FILE} \
               -rand ${RAND_TEMP}:/var/adm/wtmp:/var/log/messages \
               -out ${REQ_OUTPUT} -config ${used_config} \
               ${NO_DES} < ${REQ_INPUT} 
@@ -779,7 +780,7 @@ create_certs () {
 
     if [ ${RET} -ne 0 ] ; then
         echo "Error number ${RET} was returned by " 1>&2
-        echo "   openssl"                    1>&2
+        echo "   $openssl"                    1>&2
         exit ${RET}
     fi
 
@@ -789,9 +790,9 @@ create_certs () {
     # Insert instructions into the request file
 
 
-    SUBJECT="`openssl req -text -noout < ${REQ_OUTPUT} 2>&1 |\
+    SUBJECT="("$openssl" req -text -noout < ${REQ_OUTPUT} 2>&1 |\
               grep 'Subject:' | awk -F: '{print $2}' |\
-              cut -c2- `"
+              cut -c2- )"
 
     #Convert the subject to the correct form.
     SUBJECT=`echo "/"${SUBJECT} | sed -e 's|, |/|g'`
@@ -869,7 +870,7 @@ emit_directions () {
 ###########################################################
 
 
-if ! openssl version > /dev/null 2> /dev/null; then
+if ! "$openssl" version > /dev/null 2> /dev/null; then
     echo "Unable to locate openssl binary in PATH" 1>&2
     exit 1
 fi

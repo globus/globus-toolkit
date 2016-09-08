@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_io],[11.7],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_io],[11.8],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -26,6 +26,10 @@ AM_CONDITIONAL([CYGPATH_W_DEFINED], [
         false
         ;;
     esac])
+
+AC_PATH_PROGS([OPENSSL], openssl)
+
+AM_CONDITIONAL([ENABLE_TESTS], [test x"$OPENSSL" != x])
 
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 

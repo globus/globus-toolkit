@@ -1,3 +1,9 @@
+globus-gass-copy (9.23-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update for el.5 openssl101e, replace docbook with asciidoc
+
+ -- Globus Toolkit <support@globus.org>  Thu, 08 Sep 2016 14:44:04 -0400
+
 globus-gass-copy (9.22-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix tests run as root

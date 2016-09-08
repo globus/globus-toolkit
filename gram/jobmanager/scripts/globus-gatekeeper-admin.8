@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: globus-gatekeeper-admin
-.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 12/13/2011
-.\"    Manual: University of Chicago
-.\"    Source: University of Chicago
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/08/2016
+.\"    Manual: Globus Toolkit Manual
+.\"    Source: Globus Toolkit 6
 .\"  Language: English
 .\"
-.TH "GLOBUS\-GATEKEEPER\-" "8" "12/13/2011" "University of Chicago" "University of Chicago"
+.TH "GLOBUS\-GATEKEEPER\-" "8" "09/08/2016" "Globus Toolkit 6" "Globus Toolkit Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -21,87 +30,39 @@
 .SH "NAME"
 globus-gatekeeper-admin \- Manage globus\-gatekeeper services
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-gatekeeper\-admin\fR\ 'u
+.sp
 \fBglobus\-gatekeeper\-admin\fR [\-h]
-.HP \w'\fBglobus\-gatekeeper\-admin\fR\ 'u
-\fBglobus\-gatekeeper\-admin\fR [\-l] [\-n\ \fINAME\fR]
-.HP \w'\fBglobus\-gatekeeper\-admin\fR\ 'u
-\fBglobus\-gatekeeper\-admin\fR [\-e\ \fISERVICE\fR] [\-n\ \fINAME\fR]
-.HP \w'\fBglobus\-gatekeeper\-admin\fR\ 'u
-\fBglobus\-gatekeeper\-admin\fR [\-E]
-.HP \w'\fBglobus\-gatekeeper\-admin\fR\ 'u
-\fBglobus\-gatekeeper\-admin\fR [\-d\ \fISERVICE\fR]
+.sp
+\fBglobus\-gatekeeper\-admin\fR \-l [\-n \fINAME\fR]
+.sp
+\fBglobus\-gatekeeper\-admin\fR \-e \fISERVICE\fR [\-n \fINAME\fR]
+.sp
+\fBglobus\-gatekeeper\-admin\fR \-E
+.sp
+\fBglobus\-gatekeeper\-admin\fR \-d \fISERVICE\fR
 .SH "DESCRIPTION"
-.PP
-The
-\fBglobus\-gatekeeper\-admin\fR
-program manages service entries which are used by the
-\fBglobus\-gatekeeper\fR
-to execute services\&. Service entries are located in the
-/etc/grid\-services
-directory\&. The
-\fBglobus\-gatekeeper\-admin\fR
-can list, enable, or disable specific services, or set a service as the default\&. The
-\fB\-h\fR
-command\-line option shows a brief usage message\&.
-.SS "Listing services"
-.PP
-The
-\fB\-l\fR
-command\-line option to
-\fBglobus\-gatekeeper\-admin\fR
-will cause it to list all of the services which are available to be run by the
-\fBglobus\-gatekeeper\fR\&. In the output, the service name will be followed by its status in brackets\&. Possible status strings are
-ENABLED,
-DISABLED, and
-ALIAS to \fINAME\fR, where
-\fINAME\fR
-is another service name\&.
-.PP
-If the
-\fB\-n \fR\fB\fINAME\fR\fR
-is used, then only information about the service named
-\fINAME\fR
-is printed\&.
-.SS "Enabling services"
-.PP
-The
-\fB\-e \fR\fB\fISERVICE\fR\fR
-command\-line option to
-\fBglobus\-gatekeeper\-admin\fR
-will cause it to enable a service so that it may be run by the
-\fBglobus\-gatekeeper\fR\&.
-.PP
-If the
-\fB\-n \fR\fB\fINAME\fR\fR
-option is used as well, then the service will be enabled with the alias
-\fINAME\fR\&.
-.SS "Enabling a default service"
-.PP
-The
-\fB\-E\fR
-command\-line option to
-\fBglobus\-gatekeeper\-admin\fR
-will cause it to enable a service alias with the name
-jobmanager\&. The
-\fBglobus\-gatekeeper\-admin\fR
-program will choose the first service it finds as the default\&. To enable a particular service as the default, use the
-\fB\-e\fR
-parameter described above with the
-\fB\-n\fR
-parameter\&.
-.SS "Disabling services"
-.PP
-The
-\fB\-d \fR\fB\fISERVICE\fR\fR
-command\-line option to
-\fBglobus\-gatekeeper\-admin\fR
-will cause it to disable a service so that it may not be run by the
-\fBglobus\-gatekeeper\fR\&. All aliases to a disabled service are also disabled\&.
+.sp
+The \fBglobus\-gatekeeper\-admin\fR program manages service entries which are used by the \fBglobus\-gatekeeper\fR to execute services\&. Service entries are located in the /etc/grid\-services directory\&. The \fBglobus\-gatekeeper\-admin\fR can list, enable, or disable specific services, or set a service as the default\&. The \fI\-h\fR command\-line option shows a brief usage message\&.
+.sp
+The \fB\-l\fR command\-line option to \fBglobus\-gatekeeper\-admin\fR will cause it to list all of the services which are available to be run by the \fBglobus\-gatekeeper\fR\&. In the output, the service name will be followed by its status in brackets\&. Possible status strings are \fBENABLED\fR, \fBDISABLED\fR, and \fBALIAS to \fR\fB\fINAME\fR\fR, where \fINAME\fR is another service name\&.
+.sp
+If the \fB\-n \fR\fB\fINAME\fR\fR is used, then only information about the service named \fINAME\fR is printed\&.
+.sp
+The \fB\-e \fR\fB\fISERVICE\fR\fR command\-line option to \fBglobus\-gatekeeper\-admin\fR will cause it to enable a service so that it may be run by the \fBglobus\-gatekeeper\fR\&.
+.sp
+If the \fB\-n \fR\fB\fINAME\fR\fR option is used as well, then the service will be enabled with the alias \fINAME\fR\&.
+.sp
+The \fB\-E\fR command\-line option to \fBglobus\-gatekeeper\-admin\fR will cause it to enable a service alias with the name jobmanager\&. The \fBglobus\-gatekeeper\-admin\fR program will choose the first service it finds as the default\&. To enable a particular service as the default, use the \fB\-e\fR parameter described above with the \fB\-n\fR parameter\&.
+.sp
+The \fB\-d \fR\fB\fISERVICE\fR\fR command\-line option to \fBglobus\-gatekeeper\-admin\fR will cause it to disable a service so that it may not be run by the \fBglobus\-gatekeeper\fR\&. All aliases to a disabled service are also disabled\&.
 .SH "FILES"
+.sp
+The following files affect \fBglobus\-gatekeeper\-admin\fR execution:
 .PP
-.PP
-/etc/grid\-services
+\fB/etc/grid\-services\fR
 .RS 4
 Default location of enabled gatekeeper service descriptions\&.
 .RE
+.SH "AUTHOR"
+.sp
+Copyright \(co 1999\-2016 University of Chicago

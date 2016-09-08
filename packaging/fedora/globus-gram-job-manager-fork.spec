@@ -7,8 +7,8 @@ Name:		globus-gram-job-manager-fork
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	2.5
-Release:	7%{?dist}
+Version:	2.6
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Fork Job Manager
 
@@ -258,6 +258,9 @@ fi
 
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.6-1
+- Update for el.5 openssl101e, replace docbook with asciidoc
+
 * Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 2.5-7
 - Updates for SLES 12
 

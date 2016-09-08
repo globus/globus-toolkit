@@ -7,7 +7,7 @@ Name:		globus-rsl
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	10.11
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Resource Specification Language Library
 
@@ -153,6 +153,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 10.11-4
+- Rebuild after changes for el.5 with openssl101e
+
 * Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 10.11-3
 - Updates for SLES 12
 

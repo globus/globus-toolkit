@@ -8,7 +8,7 @@ Name:		globus-gram-job-manager-pbs
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.6
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - PBS Job Manager
 
@@ -261,6 +261,9 @@ fi
 
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.6-4
+- Rebuild after changes for el.5 with openssl101e
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.6-3
 - Updates for SLES 12
 

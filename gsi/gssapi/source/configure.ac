@@ -1,11 +1,11 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gssapi_gsi],[12.5],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_gssapi_gsi],[12.6],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [8])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-openssl-module >= 3, globus-gsi-openssl-error >= 2, globus-gsi-cert-utils >= 8, globus-gsi-credential >= 5, globus-gsi-callback >= 4, globus-gsi-proxy-core >= 6, globus-gsi-sysconfig >= 5, openssl >= 0.9.8"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-openssl-module >= 3, globus-gsi-openssl-error >= 2, globus-gsi-cert-utils >= 8, globus-gsi-credential >= 5, globus-gsi-callback >= 4, globus-gsi-proxy-core >= 6, globus-gsi-sysconfig >= 5"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
@@ -37,6 +37,14 @@ case "$host" in
     ;;
 esac
 
+PKG_CHECK_MODULES([OPENSSL], [openssl >= 1.0],
+    [OPENSSL_PKGCONFIG="openssl >= 1.0"],
+    [
+        PKG_CHECK_MODULES([OPENSSL], [openssl101e])
+        OPENSSL_PKGCONFIG="openssl101e"
+    ])
+
+AC_SUBST([OPENSSL_PKGCONFIG])
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
 GLOBUS_THREAD_MODELS=$($PKG_CONFIG globus-common --variable=thread_models)
 AC_SUBST(GLOBUS_THREAD_MODELS)
@@ -66,8 +74,10 @@ fi])
 AC_SUBST([THREAD_TEST_DLPREOPEN], [$pthread_dlpreopen $windows_dlpreopen])
 AC_SUBST([THREAD_TESTS], [$thread_tests])
 
+AC_PATH_PROGS([OPENSSL], openssl)
 AC_PATH_PROGS([DOXYGEN], doxygen)
 
+AM_CONDITIONAL([ENABLE_TESTS], [test "$OPENSSL" != ""])
 AM_CONDITIONAL([ENABLE_DOXYGEN], [test "$DOXYGEN" != ""])
 
 SAVE_LIBS="$LIBS"

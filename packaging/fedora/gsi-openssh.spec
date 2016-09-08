@@ -111,7 +111,8 @@ BuildRequires: libopenssl-devel
 %else
 %if "%{?rhel}" == "5"
 BuildRequires: tcp_wrappers
-BuildRequires: openssl-devel >= 0.9.8e
+BuildRequires: openssl101e-devel
+BuildConflicts: openssl-devel
 %else
 %if "%{?rhel}" == "4"
 BuildRequires: openssl-devel

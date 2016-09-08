@@ -11,6 +11,7 @@ require v5.8.0;
 
 my $testdir = tempdir(CLEANUP => 1);
 chdir $testdir;
+my $openssl=$ENV{OPENSSL} || "openssl";
 
 plan tests => 10;
 
@@ -61,10 +62,10 @@ sub sign_tests
 
         # Try to create a cert request from the CA config
         $errfd = gensym;
-        $pid = open3($infd, $outfd, $errfd, "openssl",
+        $pid = open3($infd, $outfd, $errfd, $openssl,
             "req", "-new", "-config", "$testdir/ca/globus-user-ssl.conf",
             "-passin", "pass:globus", "-passout", "pass:globus");
-        ok($pid > 0, "openssl req -new -config $testdir/ca/globus-user-ssl.conf -passin pass:globus");
+        ok($pid > 0, "$openssl req -new -config $testdir/ca/globus-user-ssl.conf -passin pass:globus");
         local $/;
         print $infd "\n\n\n\nTester\n";
         close($infd);

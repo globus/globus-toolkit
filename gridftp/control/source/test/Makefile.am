@@ -17,64 +17,6 @@ check_DATA = \
         testcred.srl \
         testcred.gridmap
 
-TESTS = \
-    data_test \
-    pipe_test \
-    $(check_SCRIPTS)
-
-if CYGPATH_W_DEFINED
-X509_CERT_DIR = $$($(CYGPATH_W) $(abs_builddir))
-GRIDMAP = $$($(CYGPATH_W) $(abs_builddir)/testcred.gridmap)
-else
-X509_CERT_DIR = $(abs_builddir)
-GRIDMAP = $(abs_builddir)/testcred.gridmap
-endif
-
-TESTS_ENVIRONMENT = export \
-    X509_USER_CERT=testcred.cert \
-    X509_USER_KEY=testcred.key \
-    X509_CERT_DIR=$(X509_CERT_DIR) \
-    GRIDMAP=$(GRIDMAP) \
-    PATH=$${PATH}:$(abs_builddir):$(abs_srcdir);
-LOG_COMPILER = $(LIBTOOL) --mode=execute $(GSI_DRIVER_DLOPEN)
-
-
-# Test CA
-.cnf.cacert:
-	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
-.cacert.cakey:
-	:
-
-.cacert.link:
-	linkname="`openssl x509 -hash -noout -in $<`.0"; \
-	rm -f "$$linkname"; \
-	cp $< "$$linkname"; \
-        echo "$$linkname" > $@
-
-.link.signing_policy:
-	linkname=`cat $<`; \
-	policyfile=$${linkname%.0}.signing_policy; \
-	echo "access_id_CA      X509         '/CN=ca'" > $${policyfile}; \
-	echo "pos_rights        globus        CA:sign" >> $${policyfile}; \
-	echo "cond_subjects     globus       '\"/*\"'" >> $${policyfile}; \
-	echo $${policyfile} >> $@
-
-.signing_policy.srl:
-	echo 01 > $@
-
-# Test Cert/Key
-.srl.key:
-	umask 077; openssl genrsa -out $@ 1024
-.key.req:
-	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
-
-.req.cert:
-	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
-
-.cert.gridmap:
-	subject=`openssl x509 -subject -noout -in $< -nameopt rfc2253,-dn_rev | sed -e 's/subject= */\//' -e 's/,/\//g'` ; \
-        echo "\"$$subject\" `id -un`" > $@
-
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
 test_ldadd = $(GSI_DRIVER_DLPREOPEN) libtest_common.la ../libglobus_ftp_control.la $(PACKAGE_DEP_LIBS) -lltdl
 test_ldflags = -dlpreopen force
@@ -110,6 +52,65 @@ pipe_test_LDFLAGS = $(test_ldflags)
 test_server_LDADD = $(test_ldadd)
 test_server_LDFLAGS = $(test_ldflags)
 
+if ENABLE_TESTS
+TESTS = \
+    data_test \
+    pipe_test \
+    $(check_SCRIPTS)
+
+if CYGPATH_W_DEFINED
+X509_CERT_DIR = $$($(CYGPATH_W) $(abs_builddir))
+GRIDMAP = $$($(CYGPATH_W) $(abs_builddir)/testcred.gridmap)
+else
+X509_CERT_DIR = $(abs_builddir)
+GRIDMAP = $(abs_builddir)/testcred.gridmap
+endif
+
+TESTS_ENVIRONMENT = export \
+    X509_USER_CERT=testcred.cert \
+    X509_USER_KEY=testcred.key \
+    X509_CERT_DIR=$(X509_CERT_DIR) \
+    GRIDMAP=$(GRIDMAP) \
+    PATH=$${PATH}:$(abs_builddir):$(abs_srcdir);
+LOG_COMPILER = $(LIBTOOL) --mode=execute $(GSI_DRIVER_DLOPEN)
+
+
+# Test CA
+.cnf.cacert:
+	umask 077; $(OPENSSL) req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+.cacert.cakey:
+	:
+
+.cacert.link:
+	linkname="`$(OPENSSL) x509 -hash -noout -in $<`.0"; \
+	rm -f "$$linkname"; \
+	cp $< "$$linkname"; \
+        echo "$$linkname" > $@
+
+.link.signing_policy:
+	linkname=`cat $<`; \
+	policyfile=$${linkname%.0}.signing_policy; \
+	echo "access_id_CA      X509         '/CN=ca'" > $${policyfile}; \
+	echo "pos_rights        globus        CA:sign" >> $${policyfile}; \
+	echo "cond_subjects     globus       '\"/*\"'" >> $${policyfile}; \
+	echo $${policyfile} >> $@
+
+.signing_policy.srl:
+	echo 01 > $@
+
+# Test Cert/Key
+.srl.key:
+	umask 077; $(OPENSSL) genrsa -out $@ 1024
+.key.req:
+	$(OPENSSL) req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
+
+.req.cert:
+	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
+
+.cert.gridmap:
+	subject=`$(OPENSSL) x509 -subject -noout -in $< -nameopt rfc2253,-dn_rev | sed -e 's/subject= */\//' -e 's/,/\//g'` ; \
+        echo "\"$$subject\" `id -un`" > $@
+
 CLEANFILES = testcred.key testcred.cert testcred.req \
 	     testcred.cacert testcred.srl \
 	     testcred.cakey testcred.gridmap \
@@ -121,5 +122,7 @@ clean-local:
 	if test -f testcred.signing_policy; then \
 	    rm -f $$(cat testcred.signing_policy) testcred.signing_policy; \
 	fi
-EXTRA_DIST = $(check_SCRIPTS)
 SUFFIXES = .key .req .cert
+endif
+
+EXTRA_DIST = $(check_SCRIPTS)

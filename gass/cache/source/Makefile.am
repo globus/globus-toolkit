@@ -6,11 +6,11 @@ include_HEADERS = globus_gass_cache.h
 lib_LTLIBRARIES = libglobus_gass_cache.la
 pkgconfig_DATA = globus-gass-cache.pc
 
-libglobus_gass_cache_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS)
+libglobus_gass_cache_la_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS)
 libglobus_gass_cache_la_LDFLAGS = \
         -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
         -no-undefined
-libglobus_gass_cache_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_gass_cache_la_LIBADD = $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS)
 libglobus_gass_cache_la_SOURCES = \
 	globus_gass_cache.c \
 	globus_gass_cache_config.c \

@@ -13,6 +13,7 @@ check_DATA = \
         testcred.srl \
         testcred.gridmap
 
+if ENABLE_TESTS
 TESTS = $(check_SCRIPTS)
 TESTS_ENVIRONMENT = \
     export X509_USER_CERT=testcred.cert \
@@ -27,16 +28,14 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute \
 	-dlopen $(top_builddir)/libglobus_xio_gridftp_driver.la \
 	$(srcdir)/test-wrapper
 
-EXTRA_DIST = $(check_SCRIPTS) test-wrapper
-
 # Test CA
 .cnf.cacert:
-	umask 077; openssl req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
+	umask 077; $(OPENSSL) req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 .cacert.cakey:
 	:
 
 .cacert.link:
-	linkname="`openssl x509 -hash -noout -in $<`.0"; \
+	linkname="`$(OPENSSL) x509 -hash -noout -in $<`.0"; \
 	rm -f "$$linkname"; \
 	cp $< "$$linkname"; \
         echo "$$linkname" > $@
@@ -54,15 +53,15 @@ EXTRA_DIST = $(check_SCRIPTS) test-wrapper
 
 # Test Cert/Key
 .srl.key:
-	umask 077; openssl genrsa -out $@ 1024
+	umask 077; $(OPENSSL) genrsa -out $@ 1024
 .key.req:
-	openssl req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
+	$(OPENSSL) req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
 
 .req.cert:
-	umask 022; openssl x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
+	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
 
 .cert.gridmap:
-	subject=`openssl x509 -subject -noout -in $< -nameopt rfc2253,-dn_rev | sed -e 's/subject= */\//' -e 's/,/\//g'` ; \
+	subject=`$(OPENSSL) x509 -subject -noout -in $< -nameopt rfc2253,-dn_rev | sed -e 's/subject= */\//' -e 's/,/\//g'` ; \
         echo "\"$$subject\" `id -un`" > $@
 
 SUFFIXES = .key .req .cert .srl .link .signing_policy .cacert .cakey .gridmap
@@ -76,3 +75,7 @@ clean-local:
 	if test -f testcred.signing_policy; then \
 	    rm -f $$(cat testcred.signing_policy) testcred.signing_policy; \
 	fi
+endif
+
+EXTRA_DIST = $(check_SCRIPTS) test-wrapper
+

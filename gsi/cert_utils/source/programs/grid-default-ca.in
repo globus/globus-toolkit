@@ -63,7 +63,7 @@ show_default() {
 
     for x in "$@"; do
         if test -f "${x}/$DEFAULTCAHASH.0"; then
-            DEFAULT_SUBJECT=`openssl x509 -in ${x}/$DEFAULTCAHASH.0 -noout -subject -nameopt rfc2253,-dn_rev| sed -e "s|subject= *|/|" -e "s|,|/|g"`
+            DEFAULT_SUBJECT="$("$openssl" x509 -in ${x}/$DEFAULTCAHASH.0 -noout -subject -nameopt rfc2253,-dn_rev| sed -e "s|subject= *|/|" -e "s|,|/|g")"
             echo
             echo "The default CA is: $DEFAULT_SUBJECT"
             echo "         Location: ${x}/$DEFAULTCAHASH.0"
@@ -91,7 +91,7 @@ ca_list() {
         for cert in ${cert_hashes}; do
             if test -r "${cert}" ; then 
                 eval "CA${index}=${cert}"
-                TEMP_SUBJECT="$(openssl x509 -in "${cert}" -noout -subject -nameopt rfc2253,-dn_rev| sed -e "s|subject= *|/|" -e "s|,|/|g")"
+                TEMP_SUBJECT="$("$openssl" x509 -in "${cert}" -noout -subject -nameopt rfc2253,-dn_rev| sed -e "s|subject= *|/|" -e "s|,|/|g")"
                 eval "CA_SUBJECT${index}=\"${TEMP_SUBJECT}\""
                 TEMP_HASH=`echo ${cert} | sed -e  "s|.*/\([^/]*\)\.0|\1|"`
                 eval "CA_HASH${index}=$TEMP_HASH"
@@ -259,6 +259,7 @@ EOF
 # main code section
 ############################################################
 
+openssl="@OPENSSL@"
 prefix="${GLOBUS_LOCATION-@prefix@}"
 exec_prefix="@exec_prefix@"
 bindir="@bindir@"

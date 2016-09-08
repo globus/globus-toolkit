@@ -7,8 +7,8 @@ Name:		globus-gram-audit
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	4.5
-Release:	8%{?dist}
+Version:	4.6
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Auditing
 
@@ -111,6 +111,9 @@ mkdir -m 01733 -p %{_localstatedir}/lib/globus/gram-audit
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 4.6-1
+- Update for el.5 openssl101e, replace docbook with asciidoc
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 4.5-7
 - Updates for SLES 12
 

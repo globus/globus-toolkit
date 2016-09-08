@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: globus-version
-.\"    Author: 
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 02/09/2012
-.\"    Manual: Globus Tookit
-.\"    Source: The Globus Alliance
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 09/08/2016
+.\"    Manual: Globus Toolkit Manual
+.\"    Source: Globus Toolkit 6
 .\"  Language: English
 .\"
-.TH "GLOBUS\-VERSION" "1" "02/09/2012" "The Globus Alliance" "Globus Tookit"
+.TH "GLOBUS\-VERSION" "1" "09/08/2016" "Globus Toolkit 6" "Globus Toolkit Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -19,17 +28,19 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-globus-version \- Display the Globus Toolkit version\&.
+globus-version \- Display the Globus Toolkit version
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-version\fR\ 'u
-\fBglobus\-version\fR [\fBoptions\fR]
+.sp
+\fBglobus\-version\fR [OPTIONS]
 .SH "DESCRIPTION"
-.PP
-Displays the installed Globus version\&. Can also show the dirt timestamp and tag id\&.
+.sp
+The \fBglobus\-version\fR command displays the installed Globus version\&.
+.sp
+The full set of command\-line options to \fBglobus\-version\fR are:
 .PP
 \fB\-help\fR
 .RS 4
-Shows help and exists
+Print help and exit
 .RE
 .PP
 \fB\-full\fR
@@ -39,22 +50,8 @@ Show expanded version information
 .PP
 \fB\-dirt\fR
 .RS 4
-Shows dirt info and exists
-.RE
-.SH "EXIT STATUS"
-.PP
-\fB0\fR
-.RS 4
-Successful program execution\&.
+Show source code branch and timestamp
 .RE
 .SH "AUTHOR"
-.br
-.br
-The Globus Alliance, http://www\&.globus\&.org/
-.RS 4
-Author.
-.RE
-.SH "COPYRIGHT"
-.br
-Copyright \(co 1999-2012 University of Chicago
-.br
+.sp
+Copyright \(co 1999\-2016 University of Chicago

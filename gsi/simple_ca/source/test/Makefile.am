@@ -11,6 +11,7 @@ TEST_PATH = $(abs_top_builddir):$(GLOBUS_COMMON_PATH):$${PATH}
 EXTRA_DIST = $(check_SCRIPTS)
 TESTS_ENVIRONMENT = export \
     PATH=$(TEST_PATH) \
+    OPENSSL=$(OPENSSL) \
     RANDFILE=$(abs_top_builddir)/test/.rnd;
 
 CLEANFILES = .rnd

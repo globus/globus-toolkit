@@ -6,8 +6,8 @@ Name:		globus-gass-cache
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	9.9
-Release:	2%{?dist}
+Version:	9.10
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Cache
 
@@ -17,14 +17,26 @@ URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:	openssl101e
+%else
 Requires:	openssl
+%endif
 Requires:	globus-common%{?_isa} >= 14
 
 BuildRequires:	globus-common-devel >= 14
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-BuildRequires:	libopenssl-devel
+BuildRequires:  openssl
+BuildRequires:  libopenssl-devel
 %else
-BuildRequires:	openssl-devel
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+BuildRequires:  openssl-devel
+%endif
 %endif
 BuildRequires:	doxygen
 BuildRequires:	graphviz
@@ -57,9 +69,13 @@ Group:		Development/Libraries
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-BuildRequires:	libopenssl-devel%{?_isa}
+Requires:  libopenssl-devel
 %else
-BuildRequires:	openssl-devel%{?_isa}
+%if %{?rhel}%{!?rhel:0} == 5
+Requires:  openssl101e-devel
+%else
+Requires:  openssl-devel
+%endif
 %endif
 
 %package doc
@@ -119,6 +135,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
 
 %configure \
            --disable-static \
@@ -161,6 +180,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 9.10-1
+- Update for el.5 openssl101e
+
 * Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 9.9-2
 - Updates for SLES 12
 

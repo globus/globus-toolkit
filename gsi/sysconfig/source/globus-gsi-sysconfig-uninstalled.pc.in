@@ -8,6 +8,6 @@ abs_top_builddir=@abs_top_builddir@
 Name: globus-gsi-sysconfig
 Description: Globus Toolkit - Globus GSI System Config Library
 Version: @VERSION@
-Requires.private: @PACKAGE_DEPS@
+Requires.private: @PACKAGE_DEPS@, @OPENSSL_PKGCONFIG@
 Libs: ${abs_top_builddir}/library/libglobus_gsi_sysconfig.la
 Cflags: -I${abs_top_srcdir}/library

@@ -1,33 +1,51 @@
 [[gram5-cmd-globus-rvf-check]]
-= GLOBUS-RVF-CHECK(8) =
-:doctype: manpage
-:man source: University of Chicago
+GLOBUS-RVF-CHECK(8)
+===================
+:doctype:      manpage
+:man source:   Globus Toolkit
+:man version:  6
+:man manual:   Globus Toolkit Manual
+:man software: Globus Toolkit
 
-== NAME ==
+NAME
+----
 globus-rvf-check - Edit a GRAM5 RSL validation file
 
-== SYNOPSIS ==
-**++globus-rvf-check++** '-h' '-help' 
+SYNOPSIS
+--------
+*globus-rvf-check* '-h' '-help' 
 
-== Description ==
-The **++globus-rvf-check++** command is a utility which checks the
-syntax of a RSL validation file, and prints out parse errors when
-encountered. It can also parse the RVF file contents and then dump
-file's contents to stdout, after canonicalizing values and quoting. The
-exit code of  command is a utility which checks the syntax of a RSL
-validation file, and prints out parse errors when encountered. It can
-also parse the RVF file contents and then dump file's contents to
-stdout, after canonicalizing values and quoting. The exit code of
-**++globus-rvf-check++** is 0 if all files specified on the command line
-exist and have no parse errors.  is 0 if all files specified on the
-command line exist and have no parse errors. 
+DESCRIPTION
+-----------
+The *globus-rvf-check* command is a utility which checks the syntax of a RSL
+validation file, and prints out parse errors when encountered. It can also
+parse the RVF file contents and then dump file's contents to stdout, after
+canonicalizing values and quoting. The exit code of  command is a utility which
+checks the syntax of a RSL validation file, and prints out parse errors when
+encountered. It can also parse the RVF file contents and then dump file's
+contents to stdout, after canonicalizing values and quoting. The exit code of
+*globus-rvf-check* is 0 if all files specified on the command line exist and
+have no parse errors.  is 0 if all files specified on the command line exist
+and have no parse errors. 
 
-The full set of command-line options to **++globus-rvf-check++**
+The full set of command-line options to *globus-rvf-check*
 consists of:  consists of: 
 
 *'-h','-help','--help'*::
      Print command-line option summary and exit
 *'-d'*::
-     Dump the RVF contents to stdout. In the output, Each file which is parsed will be prefixed by an RVF comment which contains the input filename. If not specified, **++globus-rvf-check++** just prints a diagnostic message to standard output indicating whether the file could be parsed. just prints a diagnostic message to standard output indicating whether the file could be parsed.
+     Dump the RVF contents to stdout. In the output, Each file which is parsed
+     will be prefixed by an RVF comment which contains the input filename. If
+     not specified, *globus-rvf-check* just prints a diagnostic message to
+     standard output indicating whether the file could be parsed. just prints a
+     diagnostic message to standard output indicating whether the file could be
+     parsed.
 
 
+SEE ALSO
+--------
+globus-rvf-edit(8)
+
+AUTHOR
+------
+Copyright (C) 1999-2016 University of Chicago

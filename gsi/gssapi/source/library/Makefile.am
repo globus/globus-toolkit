@@ -51,8 +51,8 @@ libglobus_gssapi_gsi_la_SOURCES = \
 	set_sec_context_option.c \
 	globus_ssl_locl.h
 
-libglobus_gssapi_gsi_la_CPPFLAGS = -I$(top_builddir) $(PACKAGE_DEP_CFLAGS)
-libglobus_gssapi_gsi_la_LIBADD = $(PACKAGE_DEP_LIBS)
+libglobus_gssapi_gsi_la_CPPFLAGS = -I$(top_builddir) $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS)
+libglobus_gssapi_gsi_la_LIBADD = $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS)
 libglobus_gssapi_gsi_la_LDFLAGS = $(LABELFLAGS) \
 	-version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(AGE_VERSION) \
 	-no-undefined

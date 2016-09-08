@@ -6,8 +6,8 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	11.3
-Release:	6%{?dist}
+Version:	11.4
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -39,6 +39,10 @@ BuildRequires:	globus-gsi-credential-devel >= 6
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
+%endif
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+%else
 BuildRequires:  openssl
 %endif
 BuildRequires:  pkgconfig
@@ -145,6 +149,10 @@ export GRIDMAP=/etc/grid-security/grid-mapfile
 %global default_runlevels --with-default-runlevels=235
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
+
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
@@ -221,6 +229,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 11.4-1
+- Update for el.5 openssl101e, replace docbook with asciidoc
+
 * Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 11.3-6
 - Updates for SLES 12
 
