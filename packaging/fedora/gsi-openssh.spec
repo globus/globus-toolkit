@@ -29,7 +29,7 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 2
+%global gsi_openssh_rel 3
 %global gsi_openssh_ver 7.1p2f
 
 Summary: An implementation of the SSH protocol with GSI authentication
@@ -112,6 +112,8 @@ BuildRequires: libopenssl-devel
 %if "%{?rhel}" == "5"
 BuildRequires: tcp_wrappers
 BuildRequires: openssl101e-devel
+BuildRequires:  pkgconfig
+
 BuildConflicts: openssl-devel
 %else
 %if "%{?rhel}" == "4"
@@ -464,8 +466,9 @@ fi
 %endif
 
 %changelog
-* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 7.1p2f-2
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 7.1p2f-3
 - Updates for SLES 12
+- Updates for el.5 with openssl101e
 
 * Tue Jun  7 2016 Globus Toolkit <support@globus.org> - 7.1p2f-1
 - Fix to use sshd_config from installed location for installations from the
