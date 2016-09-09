@@ -204,7 +204,7 @@ sub update_rpm($$)
         my %issues = ();
         my $pkgdatadir = $package->{PACKAGE_DIR};
 
-        foreach (split(/\n/, `git log --format=oneline origin/globus_6_branch..HEAD -- $pkgdatadir`)) {
+        foreach (split(/\n/, `git log --format=oneline ..HEAD -- $pkgdatadir`)) {
             $_ = (split(/ /, $_, 2))[1];
             $issues{$_} = 1;
         }
@@ -800,7 +800,7 @@ foreach my $package_name (keys %packagelist)
 # Update debian and rpm package metadata for our desired packages
 foreach my $pkgname (keys %{$allpkgmeta})
 {
-    if ((!$package) || $pkgname eq $package) {
+    if (($package =~ /^all$/i) || $pkgname eq $package) {
         update_debian($pkgname, $allpkgmeta);
         update_rpm($pkgname, $allpkgmeta);
     }
