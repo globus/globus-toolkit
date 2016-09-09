@@ -6,7 +6,7 @@ Name:		globus-xio-udt-driver
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	1.24
-Release:	6%{?dist}
+Release:	7%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
@@ -16,22 +16,16 @@ URL:		http://toolkit.globus.org/
 Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-%if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 7
-Requires:       glib2%{?_isa} >= 2.32
-Requires:       libnice%{?_isa} >= 0.0.12
-%else
-%if %{?rhel}%{!?rhel:0} >= 5
-Requires:       glib2%{?_isa} >= 2.12
-Requires:       libnice%{?_isa} >= 0.0.9
-%endif
-%endif
-%if 0%{?suse_version} == 0
-Requires:       libffi
-%endif
-
 BuildRequires:	gcc-c++
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:	libudt
+BuildRequires:	udt-devel
+%else
 BuildRequires:	udt
 BuildRequires:	udt-devel
+%endif
+
 BuildRequires:	globus-xio-devel >= 3
 BuildRequires:	globus-common-devel >= 14
 %if %{?fedora}%{!?fedora:0} >= 18
@@ -169,7 +163,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
-* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 1.24-6
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 1.24-7
 - Rebuild after changes for el.5 with openssl101e
 
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 1.24-5
