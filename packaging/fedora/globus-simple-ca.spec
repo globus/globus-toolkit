@@ -8,7 +8,7 @@ Name:		globus-simple-ca
 %global apache_license ASL 2.0
 %endif
 Version:	4.24
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Simple CA
 
@@ -58,6 +58,7 @@ BuildRequires:  openssl-devel
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
 BuildRequires:  perl-Test-Simple
 %endif
+BuildArch:      noarch
 
 
 %description
@@ -150,7 +151,7 @@ fi
 %{_mandir}/man1/*
 
 %changelog
-* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 4.24-2
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 4.24-3
 - Update for el.5 openssl101e, replace docbook with asciidoc
 
 * Fri Aug 26 2016 Globus Toolkit <support@globus.org> - 4.23-4
