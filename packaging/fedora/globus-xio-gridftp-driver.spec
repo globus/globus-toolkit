@@ -6,7 +6,7 @@ Name:		globus-xio-gridftp-driver
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	2.17
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
 
@@ -45,7 +45,7 @@ BuildRequires: libtool
 BuildRequires: libtool-ltdl-devel
 %endif
 
-%if %{?rhel}%{!?rhel:0}
+%if %{?rhel}%{!?rhel:0} == 5
 BuildRequires: openssl101e
 %else
 BuildRequires: openssl
@@ -175,7 +175,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.17-1
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.17-2
 - Update for el.5 openssl101e, replace docbook with asciidoc
 
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 2.16-2
