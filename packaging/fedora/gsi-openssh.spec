@@ -29,7 +29,7 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 3
+%global gsi_openssh_rel 4
 %global gsi_openssh_ver 7.1p2f
 
 Summary: An implementation of the SSH protocol with GSI authentication
@@ -241,6 +241,9 @@ autoreconf
 export CFLAGS="$RPM_OPT_FLAGS"
 export OPENSSL_CFLAGS="$(pkg-config openssl101e --cflags)";
 export OPENSSL_LIBS="$(pkg-config openssl101e --libs)";
+sed -e 's/0\.22/0\.21/' < configure  > configure.new
+mv configure.new configure
+chmod a+x configure
 %else
 CFLAGS="$RPM_OPT_FLAGS"; export CFLAGS
 LIBS="-lcrypto"; export LIBS
@@ -304,7 +307,8 @@ mkdir -p -m755 $RPM_BUILD_ROOT%{_sysconfdir}/gsissh
 mkdir -p -m755 $RPM_BUILD_ROOT%{_libexecdir}/gsissh
 mkdir -p -m755 $RPM_BUILD_ROOT%{_var}/empty/gsisshd
 make install sysconfdir=%{_sysconfdir}/gsissh \
-     bindir=%{_bindir} DESTDIR=$RPM_BUILD_ROOT
+     bindir=%{_bindir} DESTDIR=$RPM_BUILD_ROOT \
+     top_builddir="$PWD"
 
 install -d $RPM_BUILD_ROOT/etc/pam.d/
 %if 0%{?suse_version} == 0
@@ -466,7 +470,7 @@ fi
 %endif
 
 %changelog
-* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 7.1p2f-3
+* Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 7.1p2f-4
 - Updates for SLES 12
 - Updates for el.5 with openssl101e
 
