@@ -6,8 +6,8 @@ Name:		globus-gsi-openssl-error
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	3.6
-Release:	5%{?dist}
+Version:	3.7
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling
 
@@ -182,6 +182,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Sep 09 2016 Globus Toolkit <support@globus.org> - 3.7-1
+- Update for el.5 openssl101e
+
 * Tue Aug 25 2016 Globus Toolkit <support@globus.org> - 3.6-5
 - Updates for SLES 12 packaging
 
