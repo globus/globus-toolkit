@@ -13,9 +13,9 @@ Name:           myproxy
 %global nlibpkg libs
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.19
-Release:	1%{?dist}
-Vendor:	Globus Support
+Version:        6.1.19
+Release:        3%{?dist}
+Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -25,7 +25,14 @@ Source0:        http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-%if 0%{?suse_version} > 0
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl
+%endif
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
 Requires:       insserv
 Requires(post): %insserv_prereq  %fillup_prereq
 BuildRequires:  insserv
@@ -34,18 +41,20 @@ BuildRequires:  insserv
 BuildRequires:  globus-gss-assist-devel >= 8
 BuildRequires:  globus-usage-devel >= 3
 BuildRequires:  pam-devel
-%if 0%{?suse_version} == 0
+
+%if %{?fedora}%{!?fedora:0} > 0 || %{?rhel}%{!?rhel:0} > 5
 BuildRequires:  voms-devel >= 1.9.12.1
 %endif
+
 BuildRequires:  cyrus-sasl-devel
-%if 0%{?suse_version} != 0
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  openldap2-devel
 %else
-%if "%{?rhel}" != "4"
 BuildRequires:  openldap-devel >= 2.3
 %endif
-%endif
-%if "%{?suse_version}" != "0"
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:      krb5-devel >= 1
 %endif
 
@@ -59,9 +68,9 @@ BuildRequires:      globus-gss-assist-devel >= 8
 Requires:      %{libpkg} = %{version}-%{release}
 Requires:      globus-proxy-utils >= 5
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
-BuildRequires:	automake >= 1.11
-BuildRequires:	autoconf >= 2.60
-BuildRequires:	libtool >= 2.2
+BuildRequires:  automake >= 1.11
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
 
@@ -79,9 +88,6 @@ trusted CA certificates and Certificate Revocation Lists (CRLs).
 %package %{nlibpkg}
 Summary:       Manage X.509 Public Key Infrastructure (PKI) security credentials 
 Group:         System Environment/Daemons
-Obsoletes:     myproxy < 5.1-3
-%if %{?suse_version}%{!?suse_version:0} >= 1315
-%endif
 
 %description %{nlibpkg}
 MyProxy is open source software for managing X.509 Public Key Infrastructure 
@@ -160,8 +166,6 @@ trusted CA certificates and Certificate Revocation Lists (CRLs).
 
 Package %{name}-admin contains the MyProxy server admin commands.
 
-
-
 %package doc
 Requires:      myproxy = %{version}-%{release}
 Summary:       Documentation for X.509 Public Key Infrastructure (PKI) security credentials 
@@ -178,14 +182,12 @@ trusted CA certificates and Certificate Revocation Lists (CRLs).
 Package %{name}-doc contains the MyProxy documentation.
 
 
-%if 0%{?suse_version} == 0
+%if %{?rhel}%{!?rhel:0} > 5 || %{?fedora}%{!?fedora:0} > 0
 %package voms
 Summary:       Manage X.509 Public Key Infrastructure (PKI) security credentials 
 Group:         System Environment/Daemons
 Obsoletes:     myproxy < 5.1-3
-%if 0%{?suse_version} == 0
 Requires:      voms-clients
-%endif
 
 %description voms
 MyProxy is open source software for managing X.509 Public Key Infrastructure 
@@ -215,16 +217,22 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
-%if 0%{?suse_version} > 0
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL=$(which openssl101e)
+%endif
+
+%if %{?fedora}%{!?fedora:0} > 0 || %{?rhel}%{!?rhel:0} > 5
 %configure --with-openldap=%{_usr} \
-                                    --without-voms \
-                                    --with-kerberos5=%{_usr} --with-sasl2=%{_usr} \
-				    --includedir=%{_usr}/include/globus
+           --with-voms=%{_usr} \
+           --with-kerberos5=%{_usr} \
+           --with-sasl2=%{_usr} \
+           --includedir=%{_usr}/include/globus
 %else
 %configure --with-openldap=%{_usr} \
-                                    --with-voms=%{_usr} \
-                                    --with-kerberos5=%{_usr} --with-sasl2=%{_usr} \
-				    --includedir=%{_usr}/include/globus
+           --without-voms \
+           --with-kerberos5=%{_usr} \
+           --with-sasl2=%{_usr} \
+           --includedir=%{_usr}/include/globus
 %endif
 make %{?_smp_mflags}
 
@@ -352,10 +360,10 @@ fi
 
 # A few sanity checks 
 if [ "$1" != "status" ]; then
-	[ ! -f $X509_USER_KEY ]  && log_failure_msg "$prog: No hostkey file"  && exit 0
-	[ ! -r $X509_USER_KEY ]  && log_failure_msg "$prog: Unable to read hostkey file $X509_USER_KEY"  && exit 0
-	[ ! -r $X509_USER_CERT ] && log_failure_msg "$prog: No hostcert file" && exit 0
-	[ ! -r $X509_USER_CERT ] && log_failure_msg "$prog: Unable to read hostcert file" && exit 0
+        [ ! -f $X509_USER_KEY ]  && log_failure_msg "$prog: No hostkey file"  && exit 0
+        [ ! -r $X509_USER_KEY ]  && log_failure_msg "$prog: Unable to read hostkey file $X509_USER_KEY"  && exit 0
+        [ ! -r $X509_USER_CERT ] && log_failure_msg "$prog: No hostcert file" && exit 0
+        [ ! -r $X509_USER_CERT ] && log_failure_msg "$prog: Unable to read hostcert file" && exit 0
 fi
 
 start() {
@@ -364,10 +372,10 @@ start() {
     X509_USER_CERT=$X509_USER_CERT X509_USER_KEY=$X509_USER_KEY start_daemon -p $PIDFILE "$exec" ${MYPROXY_OPTIONS}
     retval="$?"
     if [ "$retval" -eq 0 ]; then
-	log_success_msg "Started $prog"
-	pidofproc "$exec" > "$PIDFILE"
+        log_success_msg "Started $prog"
+        pidofproc "$exec" > "$PIDFILE"
     else
-	log_failure_msg "Error starting $prog"
+        log_failure_msg "Error starting $prog"
     fi
     return $retval
 }
@@ -397,19 +405,19 @@ case "$1" in
         ;;
     status)
         pidofproc -p $PIDFILE $prog > /dev/null
-	result="$?"
-	if [ "$result" -eq 0 ]; then
-	    log_success_msg "$prog is running"
-	else
-	    log_failure_msg "$prog is not running"
-	fi
-	exit $result
+        result="$?"
+        if [ "$result" -eq 0 ]; then
+            log_success_msg "$prog is running"
+        else
+            log_failure_msg "$prog is not running"
+        fi
+        exit $result
         ;;
     try-restart|condrestart)
         if pidofproc -p $PIDFILE $prog >/dev/null ; then
             restart
         fi
-	;;
+        ;;
     reload)
         # If config can be reloaded without restarting, implement it here,
         # remove the "exit", and add "reload" to the usage message below.
@@ -556,14 +564,14 @@ fi
 %{_libdir}/libmyproxy.so
 %{_libdir}/pkgconfig/myproxy.pc
 
-%if 0%{?suse_version} == 0
+%if %{?rhel}%{!?rhel:0} > 5 || %{?fedora}%{!?fedora:0} > 0
 %files voms
 %defattr(-,root,root,-)
 %{_libdir}/libmyproxy_voms.so
 %endif
 
 %changelog
-* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 6.1.19-1
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 6.1.19-3
 - Rebuild after changes for el.5 with openssl101e
 
 * Tue Sep 06 2016 Globus Toolkit <support@globus.org> - 6.1.19-2
@@ -641,8 +649,8 @@ fi
 - Propagate version to soname, add missing pkgconfig file, missing dependencies
 - fix from ysvenkat: Using command line to pass in the extra long username
 - http://myproxy.ncsa.uiuc.edu -> http://grid.ncsa.illinois.edu/myproxy/
-- prepare for MyProxy 6.1 release	27e6b38
-- documenting git-based procedure as I go	f2664dd
+- prepare for MyProxy 6.1 release       27e6b38
+- documenting git-based procedure as I go       f2664dd
 - prepare MyProxy 6.1 release
 
 * Mon Sep 29 2014 Globus Toolkit <support@globus.org> - 6.0-1
