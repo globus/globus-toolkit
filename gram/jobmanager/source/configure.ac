@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_job_manager],[14.33],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_gram_job_manager],[14.34],[https://github.com/globus/globus-toolkit/issues])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])

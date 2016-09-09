@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.34-1+gt6.@distro@) @distro@; urgency=low
+
+  * Updates to rebuild el.5 with openssl101e
+
+ -- Globus Toolkit <support@globus.org>  Fri, 09 Sep 2016 16:21:46 -0400
+
 globus-gram-job-manager (14.33-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix issue #71: globus-gram-job-manager test leaves process behind
