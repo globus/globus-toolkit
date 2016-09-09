@@ -234,8 +234,15 @@ sed 's!$(piddir)/sshd.pid!$(piddir)/gsisshd.pid!' -i Makefile.in
 autoreconf
 
 %build
+
+%if %{?rhel}%{!?rhel:0} == 5
+export CFLAGS="$RPM_OPT_FLAGS"
+export OPENSSL_CFLAGS="$(pkg-config openssl101e --cflags)";
+export OPENSSL_LIBS="$(pkg-config openssl101e --libs)";
+%else
 CFLAGS="$RPM_OPT_FLAGS"; export CFLAGS
 LIBS="-lcrypto"; export LIBS
+%endif
 %if %{pie}
 %ifarch s390 s390x sparc sparcv9 sparc64
 CFLAGS="$CFLAGS -fPIC"
@@ -286,7 +293,8 @@ LDFLAGS="$LDFLAGS -pie -z relro -z now"; export LDFLAGS
 %endif
 
 make SSH_PROGRAM=%{_bindir}/gsissh \
-     ASKPASS_PROGRAM=%{_libexecdir}/openssh/ssh-askpass
+     ASKPASS_PROGRAM=%{_libexecdir}/openssh/ssh-askpass \
+     top_builddir="$PWD"
 
 %install
 rm -rf $RPM_BUILD_ROOT

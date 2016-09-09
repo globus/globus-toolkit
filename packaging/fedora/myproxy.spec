@@ -14,7 +14,7 @@ Name:           myproxy
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:        6.1.19
-Release:        3%{?dist}
+Release:        4%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -219,6 +219,8 @@ autoreconf -if
 
 %if %{?rhel}%{!?rhel:0} == 5
 export OPENSSL=$(which openssl101e)
+export CFLAGS="$RPM_OPT_FLAGS $(pkg-config openssl101 --cflags)"
+export LDFLAGS="$(pkg-config openssl101e --libs-only-L --libs-only-other)"
 %endif
 
 %if %{?fedora}%{!?fedora:0} > 0 || %{?rhel}%{!?rhel:0} > 5
@@ -571,7 +573,7 @@ fi
 %endif
 
 %changelog
-* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 6.1.19-3
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 6.1.19-4
 - Rebuild after changes for el.5 with openssl101e
 
 * Tue Sep 06 2016 Globus Toolkit <support@globus.org> - 6.1.19-2
