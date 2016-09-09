@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.35-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update for el.5 openssl101e
+
+ -- Globus Toolkit <support@globus.org>  Fri, 09 Sep 2016 16:42:38 -0400
+
 globus-gram-job-manager (14.34-1+gt6.@distro@) @distro@; urgency=low
 
   * Updates to rebuild el.5 with openssl101e

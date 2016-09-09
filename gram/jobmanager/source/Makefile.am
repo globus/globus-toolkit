@@ -18,7 +18,7 @@ man_MANS = globus-personal-gatekeeper.1 rsl.5 globus-job-manager.8
 doc_DATA = GLOBUS_LICENSE
 
 libglobus_gram_job_manager_la_LIBADD = \
-	$(PACKAGE_DEP_LIBS)
+	$(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS)
 libglobus_gram_job_manager_la_SOURCES = \
 	globus_gram_job_manager.h \
         globus_gram_job_manager_config.c \
@@ -56,6 +56,7 @@ default_rvf.c: $(srcdir)/globus-gram-job-manager.rvf
 
 # Compiler flags
 AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) \
+              $(OPENSSL_CFLAGS) \
               -I$(top_srcdir) \
               -I$(top_builddir) \
               -I$(srcdir)/rvf \
@@ -63,13 +64,13 @@ AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) \
 globus_job_manager_LDADD = \
 	./libglobus_gram_job_manager.la \
 	./rvf/libglobus_rvf.la \
-	$(PACKAGE_DEP_LIBS) $(XML_LIBS)
+	$(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS) $(XML_LIBS)
 
 globus_gram_streamer_SOURCES = globus_gram_streamer.c
 globus_gram_streamer_LDADD = \
 	./libglobus_gram_job_manager.la \
 	./rvf/libglobus_rvf.la \
-	$(PACKAGE_DEP_LIBS) $(XML_LIBS)
+	$(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS) $(XML_LIBS)
 
 
 MANUAL_SOURCE = globus-personal-gatekeeper.txt \
