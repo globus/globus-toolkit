@@ -5,8 +5,8 @@ Name:		globus-gatekeeper
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	10.11
-Release:	4%{?dist}
+Version:	10.12
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -162,6 +162,9 @@ fi
 
 
 %changelog
+* Fri Sep 09 2016 Globus Toolkit <support@globus.org> - 10.12-1
+- Updates for el.5 openssl101e
+
 * Mon Aug 29 2016 Globus Toolkit <support@globus.org> - 10.11-4
 - Updates for SLES 12
 
