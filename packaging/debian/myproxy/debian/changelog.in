@@ -1,3 +1,9 @@
+myproxy (6.1.20-1+gt6.@distro@) @distro@; urgency=low
+
+  * Updates for el.5 with openssl101e
+
+ -- Globus Toolkit <support@globus.org>  Fri, 09 Sep 2016 14:56:37 -0400
+
 myproxy (6.1.19-1+gt6.@distro@) @distro@; urgency=low
 
   * update myproxy debug/error msgs for accepted_peer_names type change

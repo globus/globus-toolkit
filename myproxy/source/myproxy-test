@@ -17,6 +17,7 @@ use IPC::Open3;
 use Socket;
 
 $tmpdir = tempdir(CLEANUP => 1);
+my $openssl = $ENV{OPENSSL} || "openssl";
 
 $PROXYBITS = "-bits 2048";
 
@@ -115,9 +116,9 @@ open(SERIAL,">$privcerts/serial") ||
   die("failed to create $privcerts/serial");
 print SERIAL "01\n";
 close(SERIAL);
-&runcmd("openssl req -batch -subj '/CN=MyProxy Test CA' -config $privcerts/openssl.cnf -new -x509 -extensions v3_ca -nodes -keyout $privcerts/cakey.pem -out $privcerts/cacert.pem -days 30");
+&runcmd("$openssl req -batch -subj '/CN=MyProxy Test CA' -config $privcerts/openssl.cnf -new -x509 -extensions v3_ca -nodes -keyout $privcerts/cakey.pem -out $privcerts/cacert.pem -days 30");
 
-chomp($hash = `openssl x509 -in $privcerts/cacert.pem -hash -noout`) ;
+chomp($hash = `$openssl x509 -in $privcerts/cacert.pem -hash -noout`) ;
 mkdir("$privcerts/grid-security")  ||
  die("failed to create $privcerts/grid-security");
 copy("$privcerts/cacert.pem","$privcerts/grid-security/$hash.0") ||
@@ -129,9 +130,9 @@ print POLICY  "pos_rights              globus  CA:sign\n";
 print POLICY  "cond_subjects           globus  '\"/*\"'\n";
 close(POLICY);
 print STDERR "creating a user certificate request ", $privcerts, "\n" if ($verbose);
-&runcmd("openssl req -batch -subj '/CN=MyProxy Test User'  -config $privcerts/openssl.cnf -new -nodes -keyout $privcerts/userkey.pem -out $privcerts/usercert.csr -days 7") ;
+&runcmd("$openssl req -batch -subj '/CN=MyProxy Test User'  -config $privcerts/openssl.cnf -new -nodes -keyout $privcerts/userkey.pem -out $privcerts/usercert.csr -days 7") ;
 print STDERR "signing user certificate with by CA in ", $privcerts, "\n" if ($verbose);
-&runcmd("openssl ca -batch -days 7 -config $privcerts/openssl.cnf -policy policy_anything -out $privcerts/usercert.pem -infiles $privcerts/usercert.csr");
+&runcmd("$openssl ca -batch -days 7 -config $privcerts/openssl.cnf -policy policy_anything -out $privcerts/usercert.pem -infiles $privcerts/usercert.csr");
 chmod(oct("0600"),"$privcerts/userkey.pem","$privcerts/usercert.pem") ||
  die("failed to chmod $privcerts/userkey.pem or $privcerts/usercert.pem");
 $ENV{'X509_USER_CERT'} = "$privcerts/usercert.pem" ;
@@ -695,7 +696,7 @@ if ($exitstatus == 0) {
 # So, let's encrypt our proxy key.
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 $testkey = "$tmpdir/myproxy-test.$$.key";
-&runcmd("openssl rsa -des3 -passout stdin -in \$X509_USER_KEY -out $testkey",
+&runcmd("$openssl rsa -des3 -passout stdin -in \$X509_USER_KEY -out $testkey",
 	 $passphrase . "\n");
 chmod(0600, $testkey);
 
@@ -1865,20 +1866,20 @@ sub verifytrustroots {
 
 sub opensslsanitycheck {
   $testkey = "$tmpdir/myproxy-test.$$.key";
-  $cmd = "openssl rsa -des3 -passout stdin -in $ENV{'X509_USER_KEY'} -out $testkey";
+  $cmd = "$openssl rsa -des3 -passout stdin -in $ENV{'X509_USER_KEY'} -out $testkey";
   ($exitstatus, $output) = &runcmd($cmd, $passphrase . "\n");
   if ($exitstatus) {
-    print STDERR "openssl rsa encrypt failed:\n", $cmd, "\n", $output;
-    system("which openssl");
-    system("openssl version");
+    print STDERR "$openssl rsa encrypt failed:\n", $cmd, "\n", $output;
+    system("which $openssl");
+    system("$openssl version");
     die;
   }
-  $cmd = "openssl rsa -passin stdin -in $testkey > /dev/null";
+  $cmd = "$openssl rsa -passin stdin -in $testkey > /dev/null";
   ($exitstatus, $output) = &runcmd($cmd, $passphrase . "\n");
   if ($exitstatus) {
-    print STDERR "openssl rsa decrypt failed:\n", $cmd, "\n", $output;
-    system("which openssl");
-    system("openssl version");
+    print STDERR "$openssl rsa decrypt failed:\n", $cmd, "\n", $output;
+    system("which $openssl");
+    system("$openssl version");
     die;
   }
   unlink($testkey);
