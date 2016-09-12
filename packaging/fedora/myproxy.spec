@@ -14,7 +14,7 @@ Name:           myproxy
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.20
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -458,7 +458,7 @@ exit 0
 
 %post server
 %if %{?suse_version}%{!?suse_version:0} >= 1315
-%fillup_and_insserv myproxy-server
+%fillup_and_insserv -n myproxy-server myproxy-server
 %else
 /sbin/chkconfig --add myproxy-server
 %endif
@@ -573,7 +573,7 @@ fi
 %endif
 
 %changelog
-* Fri Sep 09 2016 Globus Toolkit <support@globus.org> - 6.1.20-1
+* Fri Sep 09 2016 Globus Toolkit <support@globus.org> - 6.1.20-2
 - Updates for el.5 with openssl101e
 
 * Tue Sep 06 2016 Globus Toolkit <support@globus.org> - 6.1.19-2
