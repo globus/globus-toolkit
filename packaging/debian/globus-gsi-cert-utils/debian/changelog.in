@@ -1,8 +1,8 @@
-globus-gsi-cert-utils (9.15-2+gt6.@distro@) @distro@; urgency=low
+globus-gsi-cert-utils (9.15-3+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e, replace docbook with asciidoc
 
- -- Globus Toolkit <support@globus.org>  Mon, 12 Sep 2016 08:12:48 -0400
+ -- Globus Toolkit <support@globus.org>  Mon, 12 Sep 2016 08:39:10 -0400
 
 globus-gsi-cert-utils (9.14-1+gt6.@distro@) @distro@; urgency=low
 

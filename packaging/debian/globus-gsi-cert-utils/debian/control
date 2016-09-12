@@ -26,7 +26,7 @@ Description: Globus Toolkit - Globus GSI Cert Utils Library
 Package: globus-gsi-cert-utils-progs
 Section: net
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, globus-common-progs
+Depends: ${shlibs:Depends}, ${misc:Depends}, globus-common-progs, openssl
 Description: Globus Toolkit - Globus GSI Cert Utils Library Programs
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
