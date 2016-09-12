@@ -1,7 +1,7 @@
 Name:           gridftp-hdfs
 %global _name %(tr - _ <<< %{name})
-Version:	1.4
-Release:	2
+Version:	1.5
+Release:	1
 Vendor:	Globus Support
 Summary:        HDFS DSI plugin for GridFTP
 
@@ -25,6 +25,12 @@ BuildRequires: libhdfs
 # Requires cloudera versions for other releases
 BuildRequires: hadoop-libhdfs-devel
 Requires: hadoop-libhdfs
+%endif
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e-devel
+BuildConflicts: openssl-devel
+%else
+BuildRequires:  openssl-devel
 %endif
 BuildRequires: globus-gridftp-server-devel >= 11
 BuildRequires: globus-common-devel
@@ -100,6 +106,9 @@ fi
 %{_sysconfdir}/init.d/%{name}
 
 %changelog
+* Mon Sep 12 2016 Globus Toolkit <support@globus.org> - 1.5-1
+- Updates for el.5 with openssl101e
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 1.4-2
 - Rebuild after changes for el.5 with openssl101e
 

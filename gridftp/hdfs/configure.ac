@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.60])
-AC_INIT([gridftp_hdfs], [1.4])
+AC_INIT([gridftp_hdfs], [1.5])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
@@ -14,6 +14,13 @@ AC_CONFIG_SRCDIR([src/gridftp_hdfs.c])
 AC_PROG_CC
 AC_PROG_CC_C99
 AC_PROG_LIBTOOL
+
+PKG_CHECK_MODULES([OPENSSL], [openssl >= 1.0],
+    [OPENSSL_PKGCONFIG="openssl >= 1.0"],
+    [
+        PKG_CHECK_MODULES([OPENSSL], [openssl101e])
+        OPENSSL_PKGCONFIG="openssl101e"
+    ])
 
 AC_ARG_WITH(logdir, 
     AC_HELP_STRING([--with-logdir=LOG], [Log directory location]),

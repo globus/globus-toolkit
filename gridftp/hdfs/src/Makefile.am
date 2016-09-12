@@ -1,9 +1,9 @@
 
 lib_LTLIBRARIES = libglobus_gridftp_server_hdfs.la
 
-AM_CPPFLAGS = -I$(JNIHDIR) -I$(JNIHDIR)/linux @INCLUDE@ $(GLOBUS_GRIDFTP_SERVER_CFLAGS)
+AM_CPPFLAGS = -I$(JNIHDIR) -I$(JNIHDIR)/linux @INCLUDE@ $(GLOBUS_GRIDFTP_SERVER_CFLAGS) $(OPENSSL_CFLAGS)
 
-libglobus_gridftp_server_hdfs_la_LDFLAGS = -lhdfs -lcrypto -lz $(GLOBUS_GRIDFTP_SERVER_LIBS) -R/usr/lib/jvm/default-java/jre/lib/amd64/server \
+libglobus_gridftp_server_hdfs_la_LDFLAGS = -lhdfs $(OPENSSL_LIBS) -lz $(GLOBUS_GRIDFTP_SERVER_LIBS) -R/usr/lib/jvm/default-java/jre/lib/amd64/server \
     -module -avoid-version -no-undefined
 libglobus_gridftp_server_hdfs_la_SOURCES = \
     gridftp_hdfs.h \
