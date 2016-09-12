@@ -7,7 +7,7 @@ Name:		globus-gridftp-server-control
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	4.2
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
@@ -48,6 +48,8 @@ BuildRequires:  pkgconfig
 %package %{?nmainpkg}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 Group:		System Environment/Libraries
+Requires:	libglobus_xio_pipe_driver%{?_isa} >= 2
+Requires:	libglobus_xio_gsi_driver%{?_isa} >= 2
 %endif
 
 %package devel
@@ -137,7 +139,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
-* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 4.2-3
+* Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 4.2-4
 - Rebuild after changes for el.5 with openssl101e
 
 * Thu Aug 25 2016 Globus Toolkit <support@globus.org> - 4.2-2
