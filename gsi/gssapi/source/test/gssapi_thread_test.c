@@ -32,6 +32,7 @@ struct thread_arg
     globus_bool_t                       accept_done;
     globus_mutex_t                      mutex;
     globus_cond_t                       cond;
+    globus_bool_t                       failed;
 };
 
 static int                              client_thread_count = 0;
@@ -138,14 +139,19 @@ server_func(
     gss_ctx_id_t                        context = GSS_C_NO_CONTEXT;
     OM_uint32                           major_status, minor_status, ms;
     gss_cred_id_t                       credential;
+    int                                 token = 0;
     
     credential = globus_gsi_gssapi_test_acquire_credential();
     globus_mutex_lock(&thread_args->mutex);
     do
     {
-        while (!thread_args->accept_token_ready)
+        while ((!thread_args->accept_token_ready) && (!thread_args->failed))
         {
             globus_cond_wait(&thread_args->cond, &thread_args->mutex);
+        }
+        if (thread_args->failed)
+        {
+            break;
         }
         thread_args->accept_token_ready = GLOBUS_FALSE;
 
@@ -175,8 +181,11 @@ server_func(
     
     if (major_status != GSS_S_COMPLETE)
     {
-	fprintf(stderr, "SERVER: Authentication failed: %s\n",
-		globus_error_print_friendly(globus_error_peek(minor_status)));
+        if (minor_status != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, "SERVER: Authentication failed: %s\n",
+                    globus_error_print_friendly(globus_error_peek(minor_status)));
+        }
     }
 
     globus_mutex_lock(&mutex);
@@ -206,6 +215,7 @@ client_func(
     credential = globus_gsi_gssapi_test_acquire_credential();
     for (int i = 0; i < ITERATIONS && !failed; i++)
     {
+        int token = 0;
         globus_mutex_lock(&thread_args->mutex);
         thread_args->init_done = GLOBUS_FALSE;
         thread_args->init_token = (gss_buffer_desc) {0};
@@ -213,6 +223,7 @@ client_func(
         thread_args->accept_token = (gss_buffer_desc) {0};
         thread_args->accept_token_ready = GLOBUS_FALSE;
         thread_args->accept_done = GLOBUS_FALSE;
+        thread_args->failed = GLOBUS_FALSE;
         context_handle = GSS_C_NO_CONTEXT;
         globus_mutex_unlock(&thread_args->mutex);
 
@@ -260,6 +271,11 @@ client_func(
         }
         while (major_status == GSS_S_CONTINUE_NEEDED);
         thread_args->init_done = GLOBUS_TRUE;
+        if (major_status != GSS_S_COMPLETE)
+        {
+            thread_args->failed = GLOBUS_TRUE;
+            globus_cond_signal(&thread_args->cond);
+        }
         while ((!thread_args->init_done) || (!thread_args->accept_done))
 	{
             globus_cond_wait(&thread_args->cond, &thread_args->mutex);

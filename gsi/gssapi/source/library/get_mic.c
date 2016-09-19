@@ -78,10 +78,7 @@ GSS_CALLCONV gss_get_mic(
     unsigned char *                     mac_sec;
     unsigned char *                     seq;
     unsigned char *                     token_value;
-    const SSL_CIPHER *                  cipher = NULL;
     EVP_MD_CTX *                        md_ctx = NULL;
-    int                                 hash_nid = NID_undef;
-    int                                 cipher_nid = NID_undef;
     const EVP_MD *                      hash = NULL;
     const EVP_CIPHER *                  evp_cipher = NULL;
     unsigned int                        md_size;
@@ -134,70 +131,18 @@ GSS_CALLCONV gss_get_mic(
             goto unlock_mutex;
         }
     }
+
+    major_status = globus_i_gss_get_hash(
+            minor_status,
+            context_handle,
+            &hash,
+            &evp_cipher);
     
-    #if OPENSSL_VERSION_NUMBER < 0x10000000L
-    hash_nid = EVP_MD_type(context->gss_ssl->write_hash);
-    #elif OPENSSL_VERSION_NUMBER < 0x10100000L
-    cipher = SSL_get_current_cipher(context->gss_ssl);
-    if (context->gss_ssl->write_hash->digest != NULL)
+    if (major_status!= GSS_S_COMPLETE)
     {
-        hash_nid = EVP_MD_CTX_type(context->gss_ssl->write_hash);
-    }
-    if (context->gss_ssl->enc_write_ctx != NULL)
-    {
-        cipher_nid = EVP_CIPHER_CTX_nid(context->gss_ssl->enc_write_ctx);
-    }
-    #ifdef NID_rc4_hmac_md5
-    /* Some versions of OpenSSL use special ciphers which
-    * combine HMAC with the encryption operation:
-    * for these ssl->write_hash is NULL.
-    * If the cipher context is one of these set the
-    * hash manually.
-    */
-    if(hash == NULL)
-         {
-         EVP_CIPHER_CTX *cctx = context->gss_ssl->enc_write_ctx;
-         switch(EVP_CIPHER_CTX_nid(cctx))
-              {
-              case NID_rc4_hmac_md5:          hash = EVP_md5();
-                                              break;
-              case NID_aes_128_cbc_hmac_sha1:
-              case NID_aes_256_cbc_hmac_sha1: hash = EVP_sha1();
-                                              break;
-              }
-         }
-    #endif
-
-    #else
-    cipher = SSL_get_current_cipher(context->gss_ssl);
-    hash_nid = SSL_CIPHER_get_digest_nid(cipher);
-    if (hash_nid == NID_undef && SSL_CIPHER_is_aead(cipher))
-    {
-        cipher_nid = SSL_CIPHER_get_cipher_nid(
-                SSL_get_current_cipher(context->gss_ssl));
-    }
-    #endif
-
-
-    if (hash_nid != NID_undef)
-    {
-        hash = EVP_get_digestbynid(hash_nid);
-    }
-
-    if (hash == NULL && cipher_nid != NID_undef)
-    {
-        evp_cipher = EVP_get_cipherbynid(cipher_nid);
-    }
-
-    if (hash == NULL && evp_cipher == NULL)
-    {
-        /* Shouldn't happen: some error occurred */
-        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
-        major_status = GSS_S_FAILURE;
-
         goto unlock_mutex;
     }
-
+    
     if (hash != NULL)
     {
         #if OPENSSL_VERSION_NUMBER < 0x10100000L

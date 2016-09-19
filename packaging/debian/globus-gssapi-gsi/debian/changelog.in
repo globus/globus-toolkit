@@ -1,3 +1,9 @@
+globus-gssapi-gsi (12.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add backward compatibility fallback in verify_mic
+
+ -- Globus Toolkit <support@globus.org>  Mon, 19 Sep 2016 16:19:58 -0400
+
 globus-gssapi-gsi (12.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e

@@ -40,6 +40,28 @@ static unsigned char ssl3_pad_1[48]={
 
 #include <time.h>
 
+static
+OM_uint32
+globus_l_gss_verify_mic_old(
+    OM_uint32 *                         minor_status,
+    const gss_ctx_id_t                  context_handle,
+    const EVP_MD *                      hash,
+    const EVP_CIPHER *                  cipher,
+    const gss_buffer_t                  message_buffer,
+    const gss_buffer_t                  token_buffer,
+    gss_qop_t *                         qop_state);
+
+static
+OM_uint32
+globus_l_gss_verify_mic_new(
+    OM_uint32 *                         minor_status,
+    const gss_ctx_id_t                  context_handle,
+    const EVP_MD *                      hash,
+    const EVP_CIPHER *                  cipher,
+    const gss_buffer_t                  message_buffer,
+    const gss_buffer_t                  token_buffer,
+    gss_qop_t *                         qop_state);
+
 /**
  * @brief Verify MIC
  * @ingroup globus_gsi_gssapi
@@ -63,15 +85,12 @@ GSS_CALLCONV gss_verify_mic(
     gss_qop_t *                         qop_state)
 {
     gss_ctx_id_desc *                   context = context_handle;
-    int                                 hash_nid = NID_undef;
-    int                                 cipher_nid = NID_undef;
     unsigned char *                     mac_sec;
     unsigned char *                     seq;
     unsigned char *                     token_value;
     EVP_MD_CTX *                        md_ctx = NULL;
     const EVP_MD *                      hash = NULL;
     const EVP_CIPHER *                  evp_cipher = NULL;
-    const SSL_CIPHER *                  cipher = NULL;
     unsigned int                        md_size;
     int                                 npad;
     int                                 index;
@@ -118,13 +137,13 @@ GSS_CALLCONV gss_verify_mic(
 
     /* lock the context mutex */    
     globus_mutex_lock(&context->mutex);
-    
+
     if(context->ctx_flags & GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION)
     {
         time_t                          current_time;
 
         current_time = time(NULL);
-        
+
         major_status = globus_i_gsi_gss_get_context_goodtill(
             &local_minor_status,
             context,
@@ -173,76 +192,94 @@ GSS_CALLCONV gss_verify_mic(
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\n");
     }
+    major_status = globus_i_gss_get_hash(
+            minor_status,
+            context_handle,
+            &hash,
+            &evp_cipher);
 
-    #if OPENSSL_VERSION_NUMBER < 0x10000000L
-    hash_nid = EVP_MD_type(context->gss_ssl->read_hash);
-    #elif OPENSSL_VERSION_NUMBER < 0x10100000L
-    if (context->gss_ssl->read_hash->digest != NULL)
+    if (major_status!= GSS_S_COMPLETE)
     {
-        hash_nid = EVP_MD_CTX_type(context->gss_ssl->read_hash);
-    }
-    if (context->gss_ssl->enc_read_ctx != NULL)
-    {
-        cipher_nid = EVP_CIPHER_CTX_nid(context->gss_ssl->enc_read_ctx);
-    }
-    #ifdef NID_rc4_hmac_md5
-    /* Some versions of OpenSSL use special ciphers which
-    * combine HMAC with the encryption operation:
-    * for these ssl->write_hash is NULL.
-    * If the cipher context is one of these set the
-    * hash manually.
-    */
-    if(hash == NULL)
-         {
-         EVP_CIPHER_CTX *cctx = context->gss_ssl->enc_read_ctx;
-         switch(EVP_CIPHER_CTX_nid(cctx))
-              {
-              case NID_rc4_hmac_md5:          hash = EVP_md5();
-                                              break;
-              case NID_aes_128_cbc_hmac_sha1:
-              case NID_aes_256_cbc_hmac_sha1: hash = EVP_sha1();
-                                              break;
-              }
-         }
-    #endif
-    #else
-    cipher = SSL_get_current_cipher(context->gss_ssl);
-    hash_nid = SSL_CIPHER_get_digest_nid(cipher);
-    if (hash_nid == NID_undef && SSL_CIPHER_is_aead(cipher))
-    {
-        cipher_nid = SSL_CIPHER_get_cipher_nid(
-                SSL_get_current_cipher(context->gss_ssl));
-    }
-    #endif
-
-    if (hash_nid != NID_undef)
-    {
-        hash = EVP_get_digestbynid(hash_nid);
+        goto unlock_mutex;
     }
 
-    if (hash == NULL && cipher_nid != NID_undef)
+    major_status = GSS_S_FAILURE;
+    if (globus_i_accept_backward_compatible_mic
+        || globus_i_backward_compatible_mic)
     {
-        evp_cipher = EVP_get_cipherbynid(cipher_nid);
+        major_status = globus_l_gss_verify_mic_old(
+                minor_status,
+                context_handle,
+                hash,
+                evp_cipher,
+                message_buffer,
+                token_buffer,
+                qop_state);
     }
+
+    /* Use new code if we're not forcing backward compatible or the hash is
+     * null. (Support for GCM was never present in the old code)
+     */
+    if ((major_status == GSS_S_FAILURE) &&
+            ((!globus_i_backward_compatible_mic) || hash == NULL))
+    {
+        major_status = globus_l_gss_verify_mic_new(
+                minor_status,
+                context_handle,
+                hash,
+                evp_cipher,
+                message_buffer,
+                token_buffer,
+                qop_state);
+    }
+
+
+unlock_mutex:
+exit:
+
+    /* unlock the context mutex */
+    globus_mutex_unlock(&context->mutex);
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    return major_status;
+}
+
+static
+OM_uint32
+globus_l_gss_verify_mic_old(
+    OM_uint32 *                         minor_status,
+    const gss_ctx_id_t                  context_handle,
+    const EVP_MD *                      hash,
+    const EVP_CIPHER *                  cipher,
+    const gss_buffer_t                  message_buffer,
+    const gss_buffer_t                  token_buffer,
+    gss_qop_t *                         qop_state)
+{
+    OM_uint32                           major_status = GSS_S_FAILURE;
+    unsigned char *                     mac_sec = NULL;
+    unsigned char *                     seq = NULL;
+    int                                 seqtest = 0;
+    int                                 md_size = 0;
+    const unsigned char *               token_value = NULL;
+    int                                 buffer_len = 0;
+    int                                 npad = 0;
+    EVP_MD_CTX *                        md_ctx = NULL;
+    unsigned char                       md[EVP_MAX_MD_SIZE] = {0};
 
     if (hash != NULL)
     {
         #if OPENSSL_VERSION_NUMBER < 0x10100000L
         if (globus_i_backward_compatible_mic)
         {
-            mac_sec = context->gss_ssl->s3->read_mac_secret;
-            seq = context->gss_ssl->s3->read_sequence;
+            mac_sec = context_handle->gss_ssl->s3->read_mac_secret;
+            seq = context_handle->gss_ssl->s3->read_sequence;
         }
-        else
         #endif
+        if (mac_sec == NULL || seq == NULL)
         {
-            #if OPENSSL_VERSION_NUMBER >= 0x10000100L
-                mac_sec = context->mac_key;
-            #else
-                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
-                major_status = GSS_S_FAILURE;
-                goto unlock_mutex;
-            #endif
+            GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+            major_status = GSS_S_FAILURE;
+            goto exit;
         }
         md_size = EVP_MD_size(hash);
         if (token_buffer->length != (GSS_SSL_MESSAGE_DIGEST_PADDING + md_size))
@@ -257,22 +294,10 @@ GSS_CALLCONV gss_verify_mic(
                  (GSS_SSL_MESSAGE_DIGEST_PADDING + md_size)));
             goto exit;
         }
-        
-        if (globus_i_backward_compatible_mic)
-        {
-            token_value = ((unsigned char *) token_buffer->value) + 
+
+        token_value = ((unsigned char *) token_buffer->value) + 
                           GSS_SSL3_WRITE_SEQUENCE_SIZE;
-        }
-        else
-        {
-            #if OPENSSL_VERSION_NUMBER >= 0x10000100L
-            token_value = ((unsigned char *) token_buffer->value) +
-                            sizeof(context_handle->mac_read_sequence);
-            #else
-                assert(OPENSSL_VERSION_NUMBER >= 0x10000100L);
-            #endif
-        }
-        
+
         N2L(token_value, buffer_len);
 
         if (message_buffer->length != buffer_len)
@@ -289,7 +314,7 @@ GSS_CALLCONV gss_verify_mic(
         }
 
         npad = (48 / md_size) * md_size;
-        
+
         md_ctx = EVP_MD_CTX_create();
         EVP_DigestInit(md_ctx, (EVP_MD *) hash);
         EVP_DigestUpdate(md_ctx, mac_sec, md_size);
@@ -300,7 +325,7 @@ GSS_CALLCONV gss_verify_mic(
                          message_buffer->length);
         EVP_DigestFinal(md_ctx, md, NULL);
         EVP_MD_CTX_destroy(md_ctx);
-        
+
         if (memcmp(md, ((unsigned char *) token_buffer->value) + 
                    GSS_SSL_MESSAGE_DIGEST_PADDING, md_size))
         {
@@ -316,103 +341,195 @@ GSS_CALLCONV gss_verify_mic(
          * Now test for consistency with the MIC
          */    
         token_value = token_buffer->value;
-        
-        if (globus_i_backward_compatible_mic)
-        {
-            seqtest = 0;
-            for (index = 0; index < GSS_SSL3_WRITE_SEQUENCE_SIZE; index++)
-            {   
-                if ((seqtest = *token_value++ - seq[index]))
-                {
-                    break;      
-                }
-            }
-            
-            if (seqtest > 0)
-            {
-                /* missed a token, reset the sequence number */
-                token_value = token_buffer->value;
-                for (index = 0; index < GSS_SSL3_WRITE_SEQUENCE_SIZE; index++)
-                {
-                    seq[index] = *token_value++;
-                }
-                /* increment the sequence */
-                for (index = (GSS_SSL3_WRITE_SEQUENCE_SIZE - 1); index >= 0; index--)
-                {
-                    if (++seq[index]) break;
-                }
-                major_status = GSS_S_GAP_TOKEN;
-                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                    minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-                    (_GGSL("Missing write sequence at index: %d in the token"),
-                     index));
-                goto exit;
-            }
-            
-            if (seqtest < 0)
-            {
-                /* old token, may be replay too. */
-                major_status = GSS_S_OLD_TOKEN;
-                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                    minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-                    (_GGSL("Token is too old")));
-                goto exit;
-            }
 
-            /* got the correct seq number, increment the sequence */
-            for (index = (GSS_SSL3_WRITE_SEQUENCE_SIZE - 1); index >= 0; index--)
+        seqtest = 0;
+        for (int i = 0; i < GSS_SSL3_WRITE_SEQUENCE_SIZE; i++)
+        {   
+            if ((seqtest = *token_value++ - seq[i]))
             {
-                if (++seq[index]) break;
+                break;      
             }
+        }
+
+        if (seqtest > 0)
+        {
+            /* missed a token, reset the sequence number */
+            token_value = token_buffer->value;
+            for (int i = 0; i < GSS_SSL3_WRITE_SEQUENCE_SIZE; i++)
+            {
+                seq[i] = *token_value++;
+            }
+            /* increment the sequence */
+            for (int i = (GSS_SSL3_WRITE_SEQUENCE_SIZE - 1); i >= 0; i--)
+            {
+                if (++seq[i]) break;
+            }
+            major_status = GSS_S_GAP_TOKEN;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+                (_GGSL("Missing write sequence at index: %d in the token"),
+                 index));
+            goto exit;
+        }
+
+        if (seqtest < 0)
+        {
+            /* old token, may be replay too. */
+            major_status = GSS_S_OLD_TOKEN;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+                (_GGSL("Token is too old")));
+            goto exit;
+        }
+
+        /* got the correct seq number, increment the sequence */
+        for (int i = (GSS_SSL3_WRITE_SEQUENCE_SIZE - 1); i >= 0; i--)
+        {
+            if (++seq[i]) break;
+        }
+        major_status = GSS_S_COMPLETE;
+    }
+
+exit:
+    return major_status;
+}
+
+static
+OM_uint32
+globus_l_gss_verify_mic_new(
+    OM_uint32 *                         minor_status,
+    const gss_ctx_id_t                  context_handle,
+    const EVP_MD *                      hash,
+    const EVP_CIPHER *                  cipher,
+    const gss_buffer_t                  message_buffer,
+    const gss_buffer_t                  token_buffer,
+    gss_qop_t *                         qop_state)
+{
+    OM_uint32                           major_status = GSS_S_FAILURE;
+    unsigned char *                     mac_sec = NULL;
+    int                                 seqtest = 0;
+    uint64_t                            message_sequence = 0;
+    int                                 md_size = 0;
+    const unsigned char *               token_value = NULL;
+    int                                 buffer_len = 0;
+    int                                 npad = 0;
+    EVP_MD_CTX *                        md_ctx = NULL;
+    unsigned char                       md[EVP_MAX_MD_SIZE] = {0};
+
+    if (hash != NULL)
+    {
+        #if OPENSSL_VERSION_NUMBER >= 0x10000100L
+        {
+            mac_sec = context_handle->mac_key;
+        }
+        #endif
+
+        if (mac_sec == NULL)
+        {
+            GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+        md_size = EVP_MD_size(hash);
+        if (token_buffer->length != (GSS_SSL_MESSAGE_DIGEST_PADDING + md_size))
+        {
+            major_status = GSS_S_DEFECTIVE_TOKEN;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+                (_GGSL("Token length of %d does not match "
+                 "size of message digest %d"),
+                 token_buffer->length, 
+                 (GSS_SSL_MESSAGE_DIGEST_PADDING + md_size)));
+            goto exit;
+        }
+
+        token_value = ((unsigned char *) token_buffer->value)
+                + sizeof(uint64_t);
+
+        N2L(token_value, buffer_len);
+
+        if (message_buffer->length != buffer_len)
+        {
+            major_status = GSS_S_DEFECTIVE_TOKEN;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+                (_GGSL("Message buffer length of %d does not match "
+                 "expected length of %d in token"),
+                 message_buffer->length,
+                 buffer_len));
+            goto exit;
+        }
+
+        npad = (48 / md_size) * md_size;
+
+        md_ctx = EVP_MD_CTX_create();
+        EVP_DigestInit(md_ctx, (EVP_MD *) hash);
+        EVP_DigestUpdate(md_ctx, mac_sec, md_size);
+        EVP_DigestUpdate(md_ctx, ssl3_pad_1, npad);
+        EVP_DigestUpdate(md_ctx, token_buffer->value, 
+                         GSS_SSL_MESSAGE_DIGEST_PADDING);
+        EVP_DigestUpdate(md_ctx, message_buffer->value, 
+                         message_buffer->length);
+        EVP_DigestFinal(md_ctx, md, NULL);
+        EVP_MD_CTX_destroy(md_ctx);
+
+        if (memcmp(md, ((unsigned char *) token_buffer->value) + 
+                   GSS_SSL_MESSAGE_DIGEST_PADDING, md_size))
+        {
+            major_status = GSS_S_BAD_SIG;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_MIC,
+                (_GGSL("Message digest and token's contents are not equal")));
+            goto exit;
+        }
+
+        /*
+         * Now test for consistency with the MIC
+         */    
+        token_value = token_buffer->value;
+
+        N2U64(token_value, message_sequence);
+        if (message_sequence > context_handle->mac_read_sequence)
+        {
+            /* missed a token, reset the sequence number */
+            context_handle->mac_read_sequence = message_sequence+1;
+
+            major_status = GSS_S_GAP_TOKEN;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+                (_GGSL("Missing write sequence at index: %d in the token"),
+                 index));
+            goto exit;
+        }
+        else if (message_sequence < context_handle->mac_read_sequence)
+        {
+            /* old token, may be replay too. */
+            major_status = GSS_S_OLD_TOKEN;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+                (_GGSL("Token is too old")));
+            goto exit;
         }
         else
         {
-            #if OPENSSL_VERSION_NUMBER >= 0x10000100L
-            uint64_t                    message_sequence = 0;
-
-            N2U64(token_value, message_sequence);
-            if (message_sequence > context->mac_read_sequence)
-            {
-                /* missed a token, reset the sequence number */
-                context->mac_read_sequence = message_sequence+1;
-
-                major_status = GSS_S_GAP_TOKEN;
-                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                    minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-                    (_GGSL("Missing write sequence at index: %d in the token"),
-                     index));
-                goto exit;
-            }
-            else if (message_sequence < context->mac_read_sequence)
-            {
-                /* old token, may be replay too. */
-                major_status = GSS_S_OLD_TOKEN;
-                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                    minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-                    (_GGSL("Token is too old")));
-                goto exit;
-            }
-            else
-            {
-                /* got the correct seq number, increment the sequence */
-                context->mac_read_sequence++;
-            }
-            #else
-            assert(OPENSSL_VERSION_NUMBER >= 0x10000100L);
-            #endif
+            /* got the correct seq number, increment the sequence */
+            context_handle->mac_read_sequence++;
         }
     }
 #ifdef EVP_CIPH_GCM_MODE
-    else if (evp_cipher != NULL
-        && EVP_CIPHER_mode(evp_cipher) == EVP_CIPH_GCM_MODE)
+    else if (cipher != NULL
+        && EVP_CIPHER_mode(cipher) == EVP_CIPH_GCM_MODE)
     {
-        size_t                          iv_len=EVP_CIPHER_iv_length(evp_cipher);
+        size_t                          iv_len=EVP_CIPHER_iv_length(cipher);
         unsigned char                   iv[iv_len];
-        unsigned char                  *intag = NULL;
+        const unsigned char            *intag = NULL;
         unsigned char                   outtag[16] = {0};
         uint64_t                        message_sequence = 0;
 
@@ -437,7 +554,7 @@ GSS_CALLCONV gss_verify_mic(
 
         /* IV is 8 byte sequence followed the first n bytes from mac_iv_fixed */
         memcpy(iv, token_buffer->value, 8);
-        memcpy(iv + 8, context->mac_iv_fixed, iv_len - 8);
+        memcpy(iv + 8, context_handle->mac_iv_fixed, iv_len - 8);
 
         token_value = token_buffer->value;
         token_value += 8;
@@ -460,9 +577,9 @@ GSS_CALLCONV gss_verify_mic(
         }
         major_status = globus_i_gssapi_gsi_gmac(
                 minor_status,
-                evp_cipher,
+                cipher,
                 iv,
-                context->mac_key,
+                context_handle->mac_key,
                 message_buffer,
                 outtag);
         /*
@@ -475,17 +592,17 @@ GSS_CALLCONV gss_verify_mic(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_MIC,
                 (_GGSL("Message digest and token's contents are not equal")));
-            goto unlock_mutex;
+            goto exit;
         }
 
         /* Check for sequence violations */
         token_value = token_buffer->value;
         N2U64(token_value, message_sequence);
 
-        if (message_sequence > context->mac_read_sequence)
+        if (message_sequence > context_handle->mac_read_sequence)
         {
             /* missed a token, reset the sequence number */
-            context->mac_read_sequence = message_sequence+1;
+            context_handle->mac_read_sequence = message_sequence+1;
 
             major_status = GSS_S_GAP_TOKEN;
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
@@ -495,7 +612,7 @@ GSS_CALLCONV gss_verify_mic(
                  index));
             goto exit;
         }
-        else if (message_sequence < context->mac_read_sequence)
+        else if (message_sequence < context_handle->mac_read_sequence)
         {
             /* old token, may be replay too. */
             major_status = GSS_S_OLD_TOKEN;
@@ -508,28 +625,16 @@ GSS_CALLCONV gss_verify_mic(
         else
         {
             /* got the correct seq number, increment the sequence */
-            context->mac_read_sequence++;
+            context_handle->mac_read_sequence++;
         }
     }
 #endif
-    else
-    {
-        /* Shouldn't happen: some error occurred */
-        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
-        major_status = GSS_S_FAILURE;
 
-        goto unlock_mutex;
-    }
-
-unlock_mutex:
 exit:
-
-    /* unlock the context mutex */
-    globus_mutex_unlock(&context->mutex);
-
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
-} 
+}
+
+
 
 /**
  * @brief Verify

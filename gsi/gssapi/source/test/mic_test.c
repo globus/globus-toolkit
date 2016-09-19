@@ -45,6 +45,12 @@ mic_test(void)
     if (get_mic_major_status != GSS_S_COMPLETE)
     {
         ok = false;
+
+        globus_gsi_gssapi_test_print_error(
+                stderr,
+                get_mic_major_status,
+                get_mic_minor_status);
+        
         goto end_test;
     }
     

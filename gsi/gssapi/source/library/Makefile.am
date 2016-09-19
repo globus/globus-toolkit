@@ -19,6 +19,7 @@ libglobus_gssapi_gsi_la_SOURCES = \
 	export_name.c \
 	export_sec_context.c \
 	get_mic.c \
+	get_hash.c \
 	gmac.c \
 	import_name.c \
 	import_sec_context.c \

@@ -87,7 +87,7 @@
 
 #define N2L(CHAR_ARRAY, LONG_VAL) \
    { \
-       unsigned char *                  _char_array_ = CHAR_ARRAY; \
+       const unsigned char *                _char_array_ = CHAR_ARRAY; \
        (LONG_VAL)  = ((*(_char_array_++)) << 24) & 0xff000000; \
        (LONG_VAL) |= ((*(_char_array_++)) << 16) & 0xff0000; \
        (LONG_VAL) |= ((*(_char_array_++)) << 8) & 0xff00; \
@@ -123,7 +123,7 @@
 
 #define N2U64(CHAR_ARRAY, U64VAL) \
     { \
-        unsigned char *             _char_array_ = CHAR_ARRAY; \
+        const unsigned char *       _char_array_ = CHAR_ARRAY; \
         uint64_t                    _u64val_ = 0; \
         _u64val_ = (((uint64_t)(*(_char_array_++))) << 56) & 0xff00000000000000; \
         _u64val_ = (((uint64_t)(*(_char_array_++))) << 48) & 0xff000000000000; \
@@ -212,6 +212,8 @@ gss_OID_desc *                          gss_nt_x509;
 
 extern
 globus_bool_t                           globus_i_backward_compatible_mic;
+extern
+globus_bool_t                           globus_i_accept_backward_compatible_mic;
 
 #define GLOBUS_GSS_C_NT_HOST_IP         gss_nt_host_ip
 #define GLOBUS_GSS_C_NT_X509            gss_nt_x509
@@ -221,6 +223,14 @@ globus_thread_once_t                    once_control;
 
 void
 globus_l_gsi_gssapi_activate_once(void);
+
+OM_uint32
+globus_i_gss_get_hash(
+    OM_uint32                          *minor_status,
+    const gss_ctx_id_t                  context_handle,
+    const EVP_MD **                     hash,
+    const EVP_CIPHER **                 cipher);
+
 
 OM_uint32
 globus_i_gssapi_gsi_gmac(

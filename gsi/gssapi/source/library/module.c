@@ -77,6 +77,8 @@ const char *                            globus_i_gsi_gssapi_cipher_list;
 globus_bool_t                           globus_i_gsi_gssapi_server_cipher_order ;
 
 globus_bool_t                           globus_i_backward_compatible_mic;
+
+globus_bool_t                           globus_i_accept_backward_compatible_mic;
 /**
  * Module descriptor static initializer.
  */
@@ -428,21 +430,28 @@ globus_l_gsi_gssapi_activate(void)
         }
     }
 
-    if (OPENSSL_VERSION_NUMBER < 0x10000100L)
+    if (OPENSSL_VERSION_NUMBER < 0x10100000L)
     {
         globus_i_backward_compatible_mic = GLOBUS_TRUE;
-    }
-    else if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-    {
-        globus_i_backward_compatible_mic = GLOBUS_FALSE;
+        globus_i_accept_backward_compatible_mic = GLOBUS_TRUE;
+
         tmp_string = globus_module_getenv(
                 "GLOBUS_GSSAPI_BACKWARD_COMPATIBLE_MIC");
         if (tmp_string != NULL
-            && (strcasecmp(tmp_string, "true") == 0 ||
-            strcasecmp(tmp_string, "yes") == 0 ||
-            strcmp(tmp_string, "1") == 0))
+            && (strcasecmp(tmp_string, "false") == 0 ||
+            strcasecmp(tmp_string, "no") == 0 ||
+            strcmp(tmp_string, "0") == 0))
         {
-            globus_i_backward_compatible_mic = GLOBUS_TRUE;
+            globus_i_backward_compatible_mic = GLOBUS_FALSE;
+        }
+        tmp_string = globus_module_getenv(
+                "GLOBUS_GSSAPI_ACCEPT_BACKWARD_COMPATIBLE_MIC");
+        if (tmp_string != NULL
+            && (strcasecmp(tmp_string, "false") == 0 ||
+            strcasecmp(tmp_string, "no") == 0 ||
+            strcmp(tmp_string, "0") == 0))
+        {
+            globus_i_accept_backward_compatible_mic = GLOBUS_FALSE;
         }
     }
 
