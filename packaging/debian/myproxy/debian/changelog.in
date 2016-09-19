@@ -1,3 +1,9 @@
+myproxy (6.1.21-1+gt6.@distro@) @distro@; urgency=low
+
+  * Do not overwrite configuration flags
+
+ -- Globus Toolkit <support@globus.org>  Mon, 19 Sep 2016 16:44:06 -0400
+
 myproxy (6.1.20-1+gt6.@distro@) @distro@; urgency=low
 
   * Updates for el.5 with openssl101e
