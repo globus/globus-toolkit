@@ -61,18 +61,20 @@ globus_i_gss_get_hash(
     * If the cipher context is one of these set the
     * hash manually.
     */
-    if(hash == NULL)
-         {
-         EVP_CIPHER_CTX *cctx = context->gss_ssl->enc_read_ctx;
-         switch(EVP_CIPHER_CTX_nid(cctx))
-              {
-              case NID_rc4_hmac_md5:          *hash = EVP_md5();
-                                              break;
-              case NID_aes_128_cbc_hmac_sha1:
-              case NID_aes_256_cbc_hmac_sha1: *hash = EVP_sha1();
-                                              break;
-              }
-         }
+    if (*hash == NULL)
+    {
+        EVP_CIPHER_CTX *cctx = context->gss_ssl->enc_read_ctx;
+        switch(EVP_CIPHER_CTX_nid(cctx))
+        {
+            case NID_rc4_hmac_md5:
+                *hash = EVP_md5();
+                break;
+            case NID_aes_128_cbc_hmac_sha1:
+            case NID_aes_256_cbc_hmac_sha1:
+                *hash = EVP_sha1();
+                break;
+        }
+    }
     #endif
     #else
     ssl_cipher = SSL_get_current_cipher(context->gss_ssl);

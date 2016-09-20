@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.7
+Version:	12.8
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -192,6 +192,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 20 2016 Globus Toolkit <support@globus.org> - 12.8-1
+- Fix hash detection
+
 * Mon Sep 19 2016 Globus Toolkit <support@globus.org> - 12.7-1
 - Add backward compatibility fallback in verify_mic
 
