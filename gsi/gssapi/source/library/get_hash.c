@@ -28,7 +28,6 @@ globus_i_gss_get_hash(
     const EVP_CIPHER **                 cipher)
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    SSL_CIPHER *                        ssl_cipher = NULL;
     gss_ctx_id_desc *                   context = context_handle;
     int                                 hash_nid = NID_undef;
     int                                 cipher_nid = NID_undef;
@@ -54,35 +53,38 @@ globus_i_gss_get_hash(
     {
         cipher_nid = EVP_CIPHER_CTX_nid(context->gss_ssl->enc_read_ctx);
     }
-    #ifdef NID_rc4_hmac_md5
-    /* Some versions of OpenSSL use special ciphers which
-    * combine HMAC with the encryption operation:
-    * for these ssl->write_hash is NULL.
-    * If the cipher context is one of these set the
-    * hash manually.
-    */
-    if (*hash == NULL)
-    {
-        EVP_CIPHER_CTX *cctx = context->gss_ssl->enc_read_ctx;
-        switch(EVP_CIPHER_CTX_nid(cctx))
+        #ifdef NID_rc4_hmac_md5
+        /* Some versions of OpenSSL use special ciphers which
+         * combine HMAC with the encryption operation:
+         * for these ssl->write_hash is NULL.
+         * If the cipher context is one of these set the
+         * hash manually.
+         */
+        if (*hash == NULL)
         {
-            case NID_rc4_hmac_md5:
-                *hash = EVP_md5();
-                break;
-            case NID_aes_128_cbc_hmac_sha1:
-            case NID_aes_256_cbc_hmac_sha1:
-                *hash = EVP_sha1();
-                break;
+            EVP_CIPHER_CTX *cctx = context->gss_ssl->enc_read_ctx;
+            switch(EVP_CIPHER_CTX_nid(cctx))
+            {
+                case NID_rc4_hmac_md5:
+                    *hash = EVP_md5();
+                    break;
+                case NID_aes_128_cbc_hmac_sha1:
+                case NID_aes_256_cbc_hmac_sha1:
+                    *hash = EVP_sha1();
+                    break;
+            }
         }
-    }
-    #endif
+        #endif
     #else
-    ssl_cipher = SSL_get_current_cipher(context->gss_ssl);
-    hash_nid = SSL_CIPHER_get_digest_nid(cipher);
-    if (hash_nid == NID_undef && SSL_CIPHER_is_aead(cipher))
     {
-        cipher_nid = SSL_CIPHER_get_cipher_nid(
-                SSL_get_current_cipher(context->gss_ssl));
+        SSL_CIPHER *                    ssl_cipher = NULL;
+
+        ssl_cipher = SSL_get_current_cipher(context->gss_ssl);
+        hash_nid = SSL_CIPHER_get_digest_nid(ssl_cipher);
+        if (hash_nid == NID_undef && SSL_CIPHER_is_aead(ssl_cipher))
+        {
+            cipher_nid = SSL_CIPHER_get_cipher_nid(ssl_cipher);
+        }
     }
     #endif
 

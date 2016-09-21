@@ -1050,26 +1050,32 @@ globus_i_gsi_gss_handshake(
         goto exit;
     }
 
-    if (!GSS_ERROR(major_status)) {
+    if (!GSS_ERROR(major_status))
+    {
         if (rc > 0)
         {
-            const SSL_CIPHER *          current_cipher;
-            const EVP_CIPHER *          evp_cipher = NULL;
-#if OPENSSL_VERSION_NUMBER >= 0x10000100L
+            const EVP_MD *          hash = NULL;
+            const EVP_CIPHER *      evp_cipher = NULL;
+            const SSL_CIPHER *      current_cipher = NULL;
+
+            #if OPENSSL_VERSION_NUMBER >= 0x10000100L
             size_t                      keying_material_len = 0;
-#endif
+            #endif
+
+            major_status = globus_i_gss_get_hash(
+                    minor_status,
+                    context_handle,
+                    &hash,
+                    &evp_cipher);
+
+            if (GSS_ERROR(major_status))
+            {
+                goto exit;
+            }
 
             current_cipher = SSL_get_current_cipher(context_handle->gss_ssl);
 
-#if OPENSSL_VERSION_NUMBER >= 0x10000100L
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-            evp_cipher = EVP_CIPHER_CTX_cipher(
-                    context_handle->gss_ssl->enc_write_ctx);
-#else
-            evp_cipher = EVP_get_cipherbynid(
-                    SSL_CIPHER_get_cipher_nid(
-                            current_cipher));
-#endif
+            #if OPENSSL_VERSION_NUMBER >= 0x10000100L
             if (evp_cipher != NULL && EVP_CIPHER_key_length(evp_cipher) > 0)
             {
                 keying_material_len = EVP_CIPHER_key_length(evp_cipher);
@@ -1113,31 +1119,6 @@ globus_i_gsi_gss_handshake(
             }
             else
             {
-                int                     hash_nid = NID_undef;
-                int                     cipher_nid = NID_undef;
-                const EVP_MD *          hash = NULL;
-                const SSL_CIPHER *      cipher = NULL;
-
-                #if OPENSSL_VERSION_NUMBER < 0x10000000L
-                hash_nid = EVP_MD_type(context_handle->gss_ssl->write_hash);
-                #elif OPENSSL_VERSION_NUMBER < 0x10100000L
-                hash_nid = EVP_MD_CTX_type(context_handle->gss_ssl->write_hash);
-                #else
-                cipher = SSL_get_current_cipher(context_handle->gss_ssl);
-                hash_nid = SSL_CIPHER_get_digest_nid(cipher);
-                if (hash_nid == NID_undef && SSL_CIPHER_is_aead(cipher))
-                {
-                    cipher_nid = SSL_CIPHER_get_cipher_nid(
-                    SSL_get_current_cipher(context_handle->gss_ssl));
-                }
-                #endif
-
-
-                if (hash_nid != NID_undef)
-                {
-                    hash = EVP_get_digestbynid(hash_nid);
-                }
-
                 if (hash != NULL)
                 {
                     keying_material_len = EVP_MD_size(hash);
@@ -1160,7 +1141,7 @@ globus_i_gsi_gss_handshake(
                         0,
                         0);
             }
-#endif
+            #endif
 
             /*
              * Set  GSS_C_CONF_FLAG if cipher uses encryption

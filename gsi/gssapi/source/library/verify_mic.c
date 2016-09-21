@@ -85,19 +85,9 @@ GSS_CALLCONV gss_verify_mic(
     gss_qop_t *                         qop_state)
 {
     gss_ctx_id_desc *                   context = context_handle;
-    unsigned char *                     mac_sec;
-    unsigned char *                     seq;
-    unsigned char *                     token_value;
-    EVP_MD_CTX *                        md_ctx = NULL;
     const EVP_MD *                      hash = NULL;
     const EVP_CIPHER *                  evp_cipher = NULL;
-    unsigned int                        md_size;
-    int                                 npad;
-    int                                 index;
-    int                                 buffer_len;
-    int                                 seqtest;
     time_t                              context_goodtill;
-    unsigned char                       md[EVP_MAX_MD_SIZE];
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
 
@@ -172,7 +162,6 @@ GSS_CALLCONV gss_verify_mic(
     /* DEBUG BLOCK */
     if (globus_i_gsi_gssapi_debug_level >= 2)
     {
-        int                             debug_index;
         unsigned char *                 debug_token_value;
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
@@ -181,7 +170,7 @@ GSS_CALLCONV gss_verify_mic(
                 token_buffer->length));
         debug_token_value = token_buffer->value;
 
-        for (debug_index = 0; 
+        for (int debug_index = 0; 
              debug_index < token_buffer->length; 
              debug_index++)
         {
@@ -368,8 +357,7 @@ globus_l_gss_verify_mic_old(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-                (_GGSL("Missing write sequence at index: %d in the token"),
-                 index));
+                (_GGSL("Gap in token sequence numbers")));
             goto exit;
         }
 
@@ -409,7 +397,6 @@ globus_l_gss_verify_mic_new(
 {
     OM_uint32                           major_status = GSS_S_FAILURE;
     unsigned char *                     mac_sec = NULL;
-    int                                 seqtest = 0;
     uint64_t                            message_sequence = 0;
     int                                 md_size = 0;
     const unsigned char *               token_value = NULL;
@@ -503,8 +490,7 @@ globus_l_gss_verify_mic_new(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-                (_GGSL("Missing write sequence at index: %d in the token"),
-                 index));
+                (_GGSL("Gap in token sequence numbers")));
             goto exit;
         }
         else if (message_sequence < context_handle->mac_read_sequence)
@@ -608,8 +594,7 @@ globus_l_gss_verify_mic_new(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-                (_GGSL("Missing write sequence at index: %d in the token"),
-                 index));
+                (_GGSL("Gap in token sequence numbers")));
             goto exit;
         }
         else if (message_sequence < context_handle->mac_read_sequence)

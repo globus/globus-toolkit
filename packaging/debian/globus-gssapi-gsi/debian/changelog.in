@@ -1,3 +1,9 @@
+globus-gssapi-gsi (12.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix bad index references
+
+ -- Globus Toolkit <support@globus.org>  Wed, 21 Sep 2016 13:29:32 -0400
+
 globus-gssapi-gsi (12.8-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix hash detection

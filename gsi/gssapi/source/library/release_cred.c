@@ -77,8 +77,6 @@ GSS_CALLCONV gss_release_cred(
 
     if((*cred_handle)->ssl_context)
     {
-        X509_STORE * store;
-
         SSL_CTX_set_cert_store((*cred_handle)->ssl_context, NULL);
         SSL_CTX_free((*cred_handle)->ssl_context);
     }
