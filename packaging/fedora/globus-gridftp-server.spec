@@ -36,6 +36,7 @@ BuildRequires:	globus-gss-assist-devel >= 9
 BuildRequires:  globus-common-progs >= 16
 BuildRequires:	globus-gsi-credential-devel >= 6
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  zlib-devel
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
