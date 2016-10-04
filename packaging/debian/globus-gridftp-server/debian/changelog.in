@@ -1,3 +1,11 @@
+globus-gridftp-server (11.5-1+gt6.@distro@) @distro@; urgency=low
+
+  * add adler32 checksum support
+  * disable threads on the daemon process
+  * fix windows directory MDTM support
+
+ -- Globus Toolkit <support@globus.org>  Tue, 04 Oct 2016 07:48:41 -0500
+
 globus-gridftp-server (11.4-1+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e, replace docbook with asciidoc

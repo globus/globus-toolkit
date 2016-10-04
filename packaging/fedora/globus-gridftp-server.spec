@@ -6,7 +6,7 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	11.4
+Version:	11.5
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -230,6 +230,11 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Oct 04 2016 Globus Toolkit <support@globus.org> - 11.5-1
+- add adler32 checksum support
+- disable threads on the daemon process
+- fix windows directory MDTM support
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 11.4-1
 - Update for el.5 openssl101e, replace docbook with asciidoc
 
