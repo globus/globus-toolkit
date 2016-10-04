@@ -28,6 +28,7 @@
 #endif
 
 #ifdef TARGET_ARCH_WIN32
+#include <time.h>
 #define S_ISLNK(x) 0
 #define lstat(x,y) stat(x,y)
 #define mkdir(x,y) mkdir(x)
@@ -1615,6 +1616,39 @@ error:
     return result;
 }
 
+#ifdef WIN32
+/* MSDN example */
+void 
+TimetToFileTime( time_t t, LPFILETIME pft )
+{
+    LONGLONG ll = Int32x32To64(t, 10000000) + 116444736000000000;
+    pft->dwLowDateTime = (DWORD) ll;
+    pft->dwHighDateTime = ll >>32;
+}
+
+static BOOL 
+settime_win(
+    const char *                        path,
+    time_t                              modtime)
+{
+    HANDLE                              hFile;
+    FILETIME                            ft;
+    BOOL                                rc;
+    hFile = CreateFile(
+        path, FILE_WRITE_ATTRIBUTES, FILE_SHARE_WRITE, 0, 
+        OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        return 1;
+    }
+
+    TimetToFileTime(modtime, &ft);
+    rc = SetFileTime(hFile, NULL, NULL, &ft);
+    CloseHandle(hFile);
+    return rc;
+}
+#endif
+
 static
 globus_result_t
 globus_l_gfs_file_utime(
@@ -1630,8 +1664,12 @@ globus_l_gfs_file_utime(
 
     ubuf.modtime = modtime;
     ubuf.actime = time(NULL);
-    
+
+#ifdef WIN32
+    rc = settime_win(pathname, modtime);
+#else   
     rc = utime(pathname, &ubuf);
+#endif
     if(rc != 0)
     {
         result = GlobusGFSErrorSystemError("utime", errno);
