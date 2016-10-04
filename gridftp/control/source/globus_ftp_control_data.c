@@ -64,7 +64,6 @@
     data_conn->close = GLOBUS_FALSE;                                  \
     data_conn->free_me = GLOBUS_FALSE;                                \
     data_conn->reusing = GLOBUS_FALSE;                                \
-    data_conn->buffering = 0;                                         \
                                                                       \
 }
 
@@ -132,7 +131,6 @@ typedef struct globus_ftp_data_connection_s
 
     /* need free_me for globus_io cancel issue */
     globus_bool_t                               free_me;
-    int                                         buffering;
 } globus_ftp_data_connection_t;
 
 /*
@@ -197,8 +195,9 @@ typedef struct globus_i_ftp_dc_transfer_handle_s
     
     globus_mutex_t                              order_mutex;
     globus_bool_t                               order_data;
+    int                                         order_ctr;
     globus_off_t                                order_next_offset;
-    int                                         order_max_buffer;
+    globus_off_t                                order_next_offset_passed;
     globus_priority_q_t                         ordered_buffer_q;
 } globus_i_ftp_dc_transfer_handle_t;
 
@@ -680,18 +679,18 @@ globus_l_ftp_control_q_compare(
     void *                              priority_1,
     void *                              priority_2)
 {
-    globus_off_t                        offset1;
-    globus_off_t                        offset2;
     int                                 rc;
-
-    offset1 = *((globus_off_t *) priority_1);
-    offset2 = *((globus_off_t *) priority_2);
+    globus_l_ftp_handle_table_entry_t * entry1;
+    globus_l_ftp_handle_table_entry_t * entry2;
     
-    if(offset1 > offset2)
+    entry1 = (globus_l_ftp_handle_table_entry_t *) priority_1;
+    entry2 = (globus_l_ftp_handle_table_entry_t *) priority_2;
+    
+    if(entry1->offset > entry2->offset || entry1->eof)
     {
         rc = 1;
     }
-    else if(offset1 < offset2)
+    else if(entry1->offset < entry2->offset || entry2->eof)
     {
         rc = -1;
     }
@@ -3592,6 +3591,7 @@ globus_ftp_control_set_force_order(
     {
         dc_handle->transfer_handle->order_data = order_data;
         dc_handle->transfer_handle->order_next_offset = starting_offset; 
+        dc_handle->transfer_handle->order_next_offset_passed = starting_offset; 
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -6492,7 +6492,6 @@ globus_l_ftp_data_eb_poll(
     globus_fifo_t                                remaining_conn_q;
     globus_bool_t                                do_read;
     globus_bool_t                                checked_order = GLOBUS_FALSE;
-    globus_bool_t                                none_read = GLOBUS_TRUE;
     globus_i_ftp_dc_transfer_handle_t *          transfer_handle;
 
     transfer_handle = dc_handle->transfer_handle;
@@ -6778,43 +6777,61 @@ globus_l_ftp_data_eb_poll(
 
                     data_conn = (globus_ftp_data_connection_t *)
                         globus_fifo_dequeue(&stripe->free_conn_q);
-                    /*
-                     *  set the entry's offset to the offset on the
-                     *  data_conn.
-                     *  If user is requesting more bytes than are available
-                     *  on this connection set the length to bytes_ready
-                     */
-                    entry->whos_my_daddy = data_conn;
-                    entry->offset = data_conn->offset;
-                    if(entry->length > data_conn->bytes_ready)
-                    {
-                        entry->length = data_conn->bytes_ready;
-                    }
 
                     if(transfer_handle->order_data)
                     {                        
                         /* forcing ordered data */
                         checked_order = GLOBUS_TRUE;
+                        
+                        /* find offset we are looking for */
+                        while(data_conn->offset != 
+                            transfer_handle->order_next_offset && 
+                            !globus_fifo_empty(&stripe->free_conn_q))
+                        {
+                            globus_fifo_enqueue(&remaining_conn_q, data_conn);
+                            data_conn = (globus_ftp_data_connection_t *)
+                                globus_fifo_dequeue(&stripe->free_conn_q);
+                        }
+
                         globus_i_ftp_control_debug_printf(9,
-                            (stderr, "w: %lld, h: %lld, b:%d, %llu\n", 
+                            (stderr, "w: %"GLOBUS_OFF_T_FORMAT", h: %"GLOBUS_OFF_T_FORMAT", %p\n", 
                                 transfer_handle->order_next_offset, 
                                 data_conn->offset,
-                                data_conn->buffering, data_conn));
+                                (void *) data_conn));
                                 
                         /* if this stream has the offset we want, 
-                         * or we can buffer, register the read, 
-                         * otherwise queue up the read */
-                        if(data_conn->offset == transfer_handle->order_next_offset 
-                            || data_conn->buffering < transfer_handle->order_max_buffer)
+                         * register the read, otherwise queue up the read */
+                        if(data_conn->offset == transfer_handle->order_next_offset) 
                         {
                             do_read = GLOBUS_TRUE;
+                            transfer_handle->order_ctr = 0;
                         }
                         else
                         {
                             do_read = GLOBUS_FALSE;
-                            globus_fifo_enqueue(&remaining_command_q, entry);
+                            done = GLOBUS_TRUE;
                             globus_fifo_enqueue(&remaining_conn_q, data_conn);
+                            
+                            /* offset not available, restore queues */
+                            globus_fifo_enqueue(&remaining_command_q, entry);
+                            while(!globus_fifo_empty(&stripe->command_q))
+                            {
+                                globus_fifo_enqueue(&remaining_command_q,
+                                    globus_fifo_dequeue(&stripe->command_q));
+                            }
+                            while(!globus_fifo_empty(&remaining_command_q))
+                            {
+                                globus_fifo_enqueue(&stripe->command_q,
+                                    globus_fifo_dequeue(&remaining_command_q));
+                            }
                         }
+
+                        while(!globus_fifo_empty(&remaining_conn_q))
+                        {
+                            globus_fifo_enqueue(&stripe->free_conn_q,
+                                globus_fifo_dequeue(&remaining_conn_q));
+                        }
+
                     }
                     else
                     {
@@ -6823,6 +6840,18 @@ globus_l_ftp_data_eb_poll(
 
                     if(do_read)
                     {
+                        /*
+                         *  set the entry's offset to the offset on the
+                         *  data_conn.
+                         *  If user is requesting more bytes than are available
+                         *  on this connection set the length to bytes_ready
+                         */
+                        entry->whos_my_daddy = data_conn;
+                        entry->offset = data_conn->offset;
+                        if(entry->length > data_conn->bytes_ready)
+                        {
+                            entry->length = data_conn->bytes_ready;
+                        }
                         /*
                          *  register a read
                          */
@@ -6834,6 +6863,8 @@ globus_l_ftp_data_eb_poll(
                                   globus_l_ftp_eb_read_callback,
                                   (void *)entry);
                         globus_assert(res == GLOBUS_SUCCESS);
+                        
+                        transfer_handle->order_next_offset += entry->length;
                     }
                 }
                 /*
@@ -6849,33 +6880,32 @@ globus_l_ftp_data_eb_poll(
                 transfer_handle->order_data)
             {
                 int                     pending_connections;
-                /* if we delayed any reads, add them back to the stripe's queue. */
-                while(!globus_fifo_empty(&remaining_command_q))
-                {
-                    globus_fifo_enqueue(&stripe->command_q, globus_fifo_dequeue(&remaining_command_q));
-                    globus_fifo_enqueue(&stripe->free_conn_q, globus_fifo_dequeue(&remaining_conn_q));
-                }
                 globus_fifo_destroy(&remaining_command_q);
                 globus_fifo_destroy(&remaining_conn_q);
                 
                 pending_connections = 
-                    globus_list_size(stripe->all_conn_list)
-                    + globus_list_size(stripe->outstanding_conn_list)
+                    stripe->total_connection_count
+                    + stripe->outstanding_connections
                     - globus_fifo_size(&stripe->free_conn_q);
                 globus_i_ftp_control_debug_printf(9,
                     (stderr, "all:%d, new:%d, idle:%d, pending:%d\n",
-                        globus_list_size(stripe->all_conn_list),
-                        globus_list_size(stripe->outstanding_conn_list),
+                        stripe->total_connection_count,
+                        stripe->outstanding_connections,
                         globus_fifo_size(&stripe->free_conn_q),
                         pending_connections));
                 if(pending_connections == 0 && checked_order)
-                {
-                    globus_object_t *       error;
-                    error = globus_error_construct_string(
-                        GLOBUS_FTP_CONTROL_MODULE,
-                        GLOBUS_NULL,
-                        _FCSL("Ordered data flag was set, but data is too far out of order."));
-                    globus_l_ftp_control_stripes_destroy(dc_handle, error);
+                {   
+                    /* give time for pending incoming connections */
+                    if(transfer_handle->order_ctr > stripe->total_connection_count * 2 + 10)
+                    {
+                        globus_object_t *       error;
+                        error = globus_error_construct_string(
+                            GLOBUS_FTP_CONTROL_MODULE,
+                            GLOBUS_NULL,
+                            _FCSL("Ordered data flag was set, but data is too far out of order."));
+                        globus_l_ftp_control_stripes_destroy(dc_handle, error);
+                    }
+                    transfer_handle->order_ctr++;
                 }
             }
         }
@@ -7129,8 +7159,9 @@ globus_l_ftp_control_stripes_create(
     globus_priority_q_init(
         &transfer_handle->ordered_buffer_q, globus_l_ftp_control_q_compare);
     transfer_handle->order_data = GLOBUS_FALSE;
+    transfer_handle->order_ctr = 0;
     transfer_handle->order_next_offset = 0;
-    transfer_handle->order_max_buffer = 3;
+    transfer_handle->order_next_offset_passed = 0;
 
     transfer_handle->direction = GLOBUS_FTP_DATA_STATE_NONE;
     transfer_handle->whos_my_daddy = dc_handle;
@@ -9710,6 +9741,96 @@ globus_l_ftp_eb_read_header_callback(
     }
 }
 
+void
+globus_l_ftp_data_order_read_cb(
+    void *                              ent)
+{
+    globus_l_ftp_handle_table_entry_t *         entry;
+    globus_i_ftp_dc_handle_t *                  dc_handle;
+    globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
+    globus_bool_t                               done = GLOBUS_FALSE;
+    int                                         rc;
+        
+    entry = (globus_l_ftp_handle_table_entry_t *) ent;
+    transfer_handle = entry->transfer_handle;
+    dc_handle = entry->dc_handle;
+    globus_mutex_lock(&transfer_handle->order_mutex);
+    {
+        /* if this entry is next, callback now */
+        if(transfer_handle->order_next_offset_passed == entry->offset && 
+            (!entry->eof && !entry->error))
+        {
+            transfer_handle->order_next_offset_passed += entry->length;
+            if(entry->callback)
+            {
+                entry->callback(
+                    entry->callback_arg,
+                    entry->dc_handle->whos_my_daddy,
+                    entry->error,
+                    entry->buffer,
+                    entry->length,
+                    entry->offset,
+                    entry->eof);
+            }
+            globus_free(entry);
+        }
+        /* else enqueue it and poll queue */
+        else
+        {       
+            rc = globus_priority_q_enqueue(
+                &transfer_handle->ordered_buffer_q,
+                (void *)entry,
+                (void *)entry);
+            globus_assert(rc == GLOBUS_SUCCESS);
+        
+            while(!done && 
+                !globus_priority_q_empty(&transfer_handle->ordered_buffer_q))
+            {
+                entry = (globus_l_ftp_handle_table_entry_t *) 
+                    globus_priority_q_first(
+                        &transfer_handle->ordered_buffer_q);
+                globus_i_ftp_control_debug_printf(9,
+                    (stderr, "bw: %"GLOBUS_OFF_T_FORMAT", bh: %"GLOBUS_OFF_T_FORMAT"\n", 
+                        transfer_handle->order_next_offset_passed,
+                        entry->offset));
+                
+                if(transfer_handle->order_next_offset_passed == entry->offset)
+                {
+                    entry = (globus_l_ftp_handle_table_entry_t *)
+                        globus_priority_q_dequeue(
+                            &transfer_handle->ordered_buffer_q);
+                    assert(entry != NULL);
+                    transfer_handle->order_next_offset_passed += entry->length;
+                    if(entry->callback)
+                    {
+                        entry->callback(
+                            entry->callback_arg,
+                            entry->dc_handle->whos_my_daddy,
+                            entry->error,
+                            entry->buffer,
+                            entry->length,
+                            entry->offset,
+                            entry->eof);
+                    }
+                    globus_free(entry);
+                }
+                else
+                {
+                    done = GLOBUS_TRUE;
+                }
+            }
+        }
+    }
+    globus_mutex_unlock(&transfer_handle->order_mutex);
+
+    globus_mutex_lock(&dc_handle->mutex);
+    {
+        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+    }
+    globus_mutex_unlock(&dc_handle->mutex);
+}
+
+
 
 void
 globus_l_ftp_eb_read_callback(
@@ -9735,6 +9856,7 @@ globus_l_ftp_eb_read_callback(
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_size_t                               nl_bytes;
     globus_bool_t                               poll;
+    globus_bool_t                               free_entry = GLOBUS_TRUE;
 
     nl_bytes = nbyte;
     entry = (globus_l_ftp_handle_table_entry_t *)arg;
@@ -9746,9 +9868,9 @@ globus_l_ftp_eb_read_callback(
     transfer_handle = stripe->whos_my_daddy;
     control_handle = dc_handle->whos_my_daddy;
         globus_i_ftp_control_debug_printf(9,
-            (stderr, "readcb:%lld, %lld\n", 
+            (stderr, "readcb: %"GLOBUS_OFF_T_FORMAT", %p\n", 
                 data_conn->offset,
-                data_conn));
+                (void *) data_conn));
 
     globus_mutex_lock(&dc_handle->mutex);
     {
@@ -9883,78 +10005,31 @@ globus_l_ftp_eb_read_callback(
                     tag_str);
             }
         }
+        if(entry->ascii_buffer != GLOBUS_NULL)
+        {
+            globus_free(entry->ascii_buffer);
+        }
+    
+        if(transfer_handle->order_data)
+        {
+            free_entry = GLOBUS_FALSE;
+            entry->offset = offset;
+            entry->length = nbyte;
+            entry->buffer = buffer;
+            entry->error = error;
+            entry->eof = eof;
+            transfer_handle->ref++;
+            res = globus_callback_register_oneshot(
+                GLOBUS_NULL,
+                GLOBUS_NULL,
+                globus_l_ftp_data_order_read_cb,
+                entry);
+            globus_assert(res == GLOBUS_SUCCESS);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
-
-    if(entry->ascii_buffer != GLOBUS_NULL)
-    {
-        globus_free(entry->ascii_buffer);
-    }
-
-    if(transfer_handle->order_data && !error)
-    {
-        globus_bool_t                   done = GLOBUS_FALSE;
-        int                             rc;
-
-        globus_mutex_lock(&transfer_handle->order_mutex);
-               
-        data_conn->buffering++;
-        entry->offset = offset;
-        entry->length = nbyte;
-        entry->buffer = buffer;
-        entry->error = error;
-        entry->eof = eof;
-        globus_i_ftp_control_debug_printf(9,
-            (stderr, "buffering: %lld, total:%d\n", 
-                offset,
-                data_conn->buffering));
-
-        rc = globus_priority_q_enqueue(
-            &transfer_handle->ordered_buffer_q,
-            (void *)entry,
-            (void *)&entry->offset);
-        globus_assert(rc == GLOBUS_SUCCESS);
-
-        while(!done && 
-            !globus_priority_q_empty(&transfer_handle->ordered_buffer_q))
-        {
-            globus_off_t                buffered_offset = 
-                *((globus_off_t *) globus_priority_q_first_priority(
-                    &transfer_handle->ordered_buffer_q));
-        globus_i_ftp_control_debug_printf(9,
-            (stderr, "bw: %lld, bh:%lld, %lld\n", 
-                transfer_handle->order_next_offset,
-                buffered_offset, data_conn));
-            if(transfer_handle->order_next_offset == buffered_offset)
-            {
-                entry = (globus_l_ftp_handle_table_entry_t *)
-                    globus_priority_q_dequeue(
-                        &transfer_handle->ordered_buffer_q);
-                assert(entry != NULL);
-                transfer_handle->order_next_offset += entry->length;
-                entry->whos_my_daddy->buffering--;
-                if(entry->callback)
-                {
-                    entry->callback(
-                        entry->callback_arg,
-                        entry->dc_handle->whos_my_daddy,
-                        entry->error,
-                        entry->buffer,
-                        entry->length,
-                        entry->offset,
-                        entry->eof);
-                }
-                globus_free(entry);
-            }
-            else
-            {
-                done = GLOBUS_TRUE;
-            }
-        }
-
-        globus_mutex_unlock(&transfer_handle->order_mutex); 
-    }
-    else
+    
+    if(free_entry)
     {
         if(entry->callback != GLOBUS_NULL)
         {
@@ -9969,7 +10044,6 @@ globus_l_ftp_eb_read_callback(
         }
         globus_free(entry);
     }
-
     globus_mutex_lock(&dc_handle->mutex);
     {
         if(eof && !error)
@@ -9991,7 +10065,6 @@ globus_l_ftp_eb_read_callback(
     {
         globus_object_free(error);
     }
-    
 }
 
 /*
