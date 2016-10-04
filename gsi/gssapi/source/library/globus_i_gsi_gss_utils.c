@@ -228,6 +228,7 @@ OM_uint32
 globus_i_gsi_gss_create_and_fill_context(
     OM_uint32 *                         minor_status,
     gss_ctx_id_desc **                  context_handle_P,
+    gss_OID                             mech,
     gss_cred_id_desc *                  cred_handle,
     const gss_cred_usage_t              cred_usage,
     OM_uint32                           req_flags)
@@ -269,6 +270,7 @@ globus_i_gsi_gss_create_and_fill_context(
     context->delegation_state = GSS_DELEGATION_START;
     context->locally_initiated = (cred_usage == GSS_C_INITIATE);
     context->ctx_flags |= GSS_I_CTX_INITIALIZED;
+    context->mech = mech;
 #if OPENSSL_VERSION_NUMBER >= 0x10000100L
     context->mac_read_sequence = 0;
     context->mac_write_sequence = 0;

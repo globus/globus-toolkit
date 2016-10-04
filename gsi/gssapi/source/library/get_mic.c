@@ -146,7 +146,7 @@ GSS_CALLCONV gss_get_mic(
     if (hash != NULL)
     {
         #if OPENSSL_VERSION_NUMBER < 0x10100000L
-        if (globus_i_backward_compatible_mic)
+        if (g_OID_equal(context->mech, gss_mech_globus_gssapi_openssl))
         {
             mac_sec = context->gss_ssl->s3->write_mac_secret;
             seq = context->gss_ssl->s3->write_sequence;
@@ -177,7 +177,7 @@ GSS_CALLCONV gss_get_mic(
         message_token->length = GSS_SSL_MESSAGE_DIGEST_PADDING + md_size;
         token_value = message_token->value;
         
-        if (globus_i_backward_compatible_mic)
+        if (g_OID_equal(context->mech, gss_mech_globus_gssapi_openssl))
         {
             for (index = 0; index < GSS_SSL3_WRITE_SEQUENCE_SIZE; ++index)
             {

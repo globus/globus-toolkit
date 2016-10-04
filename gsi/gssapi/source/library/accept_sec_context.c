@@ -66,6 +66,7 @@ GSS_CALLCONV gss_accept_sec_context(
     OM_uint32                           local_major_status;
     globus_result_t                     local_result;
     OM_uint32                           nreq_flags = 0;
+    gss_OID                             actual_mech = GSS_C_NO_OID;
     char                                dbuf[1];
     STACK_OF(X509) *                    cert_chain = NULL;
     globus_gsi_cert_utils_cert_type_t   cert_type;
@@ -115,9 +116,18 @@ GSS_CALLCONV gss_accept_sec_context(
             nreq_flags = *ret_flags;
         }
 
+        if (globus_i_backward_compatible_mic)
+        {
+            actual_mech = (gss_OID) gss_mech_globus_gssapi_openssl;
+        }
+        else
+        {
+            actual_mech = (gss_OID) gss_mech_globus_gssapi_openssl_micv2;
+        }
         major_status = globus_i_gsi_gss_create_and_fill_context(
             & local_minor_status,
             & context,
+            actual_mech,
             acceptor_cred_handle,
             GSS_C_ACCEPT,
             nreq_flags);
@@ -135,7 +145,7 @@ GSS_CALLCONV gss_accept_sec_context(
 
         if (mech_type != NULL)
         {
-            *mech_type = (gss_OID) gss_mech_globus_gssapi_openssl;
+            *mech_type = actual_mech;
         }
 
         if (ret_flags != NULL)

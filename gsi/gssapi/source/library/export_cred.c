@@ -94,8 +94,9 @@ GSS_CALLCONV gss_export_cred(
         goto exit;
     }
 
-    if(desired_mech != NULL &&
-       g_OID_equal(desired_mech, (gss_OID) gss_mech_globus_gssapi_openssl))
+    if(desired_mech != NULL
+        && (!g_OID_equal(desired_mech,  gss_mech_globus_gssapi_openssl_micv2))
+       && (!g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl_micv2)))
     {
         major_status = GSS_S_BAD_MECH;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(

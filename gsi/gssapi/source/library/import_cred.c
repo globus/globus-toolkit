@@ -122,8 +122,9 @@ GSS_CALLCONV gss_import_cred(
         goto exit;
     }
 
-    if(desired_mech != NULL &&
-        !g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl))
+    if(desired_mech != NULL
+        && (!g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl))
+        && (!g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl_micv2)))
     {
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,

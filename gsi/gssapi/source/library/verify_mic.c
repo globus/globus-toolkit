@@ -193,8 +193,8 @@ GSS_CALLCONV gss_verify_mic(
     }
 
     major_status = GSS_S_FAILURE;
-    if (globus_i_accept_backward_compatible_mic
-        || globus_i_backward_compatible_mic)
+    if (g_OID_equal(context_handle->mech, gss_mech_globus_gssapi_openssl)
+        || globus_i_accept_backward_compatible_mic)
     {
         major_status = globus_l_gss_verify_mic_old(
                 minor_status,
@@ -210,7 +210,7 @@ GSS_CALLCONV gss_verify_mic(
      * null. (Support for GCM was never present in the old code)
      */
     if ((major_status == GSS_S_FAILURE) &&
-            ((!globus_i_backward_compatible_mic) || hash == NULL))
+            (g_OID_equal(context_handle->mech, gss_mech_globus_gssapi_openssl_micv2) || hash == NULL))
     {
         major_status = globus_l_gss_verify_mic_new(
                 minor_status,
@@ -258,7 +258,7 @@ globus_l_gss_verify_mic_old(
     if (hash != NULL)
     {
         #if OPENSSL_VERSION_NUMBER < 0x10100000L
-        if (globus_i_backward_compatible_mic)
+        if (g_OID_equal(context_handle->mech, gss_mech_globus_gssapi_openssl))
         {
             mac_sec = context_handle->gss_ssl->s3->read_mac_secret;
             seq = context_handle->gss_ssl->s3->read_sequence;

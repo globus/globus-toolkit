@@ -175,6 +175,7 @@ typedef struct gss_ctx_id_desc_struct{
     OM_uint32                           req_flags;
     OM_uint32                           ctx_flags;
     int                                 cred_obtained;
+    gss_OID                             mech;
 #if OPENSSL_VERSION_NUMBER >= 0x10000100L
     /** For GCM ciphers, sequence number of next read MAC token */
     uint64_t                            mac_read_sequence;
@@ -200,6 +201,9 @@ typedef struct gss_ctx_id_desc_struct{
 
 extern
 const gss_OID_desc * const              gss_mech_globus_gssapi_openssl;
+
+extern
+const gss_OID_desc * const              gss_mech_globus_gssapi_openssl_micv2;
 
 extern
 const gss_OID_desc * const              gss_proxycertinfo_extension;
