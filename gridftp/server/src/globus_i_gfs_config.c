@@ -578,6 +578,8 @@ static globus_hashtable_t               option_table;
 static int                              globus_l_gfs_num_threads = -1;
 static char *                           globus_l_gfs_port_range = NULL;
 static globus_bool_t                    globus_l_gfs_common_loaded = GLOBUS_FALSE;
+static globus_bool_t                    globus_l_gfs_is_worker = GLOBUS_FALSE;
+
 /* for string options, setting with an int_val of 1 will free the old one */ 
 static
 int
@@ -959,6 +961,38 @@ globus_l_gfs_config_load_envs_from_file(
         {
             p++;
         }
+
+        /* parse !daemon options */
+        if((rc = sscanf(p, "%s", optionbuf)) == 1 && !globus_l_gfs_is_worker)
+        {
+            if(!strcmp(optionbuf, "inetd") || !strcmp(optionbuf, "debug") ||
+                !strcmp(optionbuf, "ssh") || !strcmp(optionbuf, "fork") )
+            {
+                p = p + strlen(optionbuf);
+                       
+                while(*p && isspace(*p))
+                {
+                    p++;
+                }
+                if(*p == '"')
+                {
+                    rc = sscanf(p, "\"%[^\"]\"", valuebuf);
+                }
+                else
+                {
+                    rc = sscanf(p, "%s", valuebuf);
+                }  
+                if(rc == 1)
+                {
+                    globus_l_gfs_is_worker = atoi(valuebuf);
+                    if(!strcmp(optionbuf, "fork"))
+                    {
+                        globus_l_gfs_is_worker = !globus_l_gfs_is_worker;
+                    }
+                }
+            }
+            continue;
+        }
         
         /* parse threads option to apply it before common activates */
         if(*p == 't' && (rc = sscanf(p, "%s", optionbuf)) == 1 && 
@@ -983,11 +1017,6 @@ globus_l_gfs_config_load_envs_from_file(
                 if(rc == 1)
                 {
                     globus_l_gfs_num_threads = atoi(valuebuf);
-                    if(globus_l_gfs_num_threads > 0)
-                    {
-                        setenv("GLOBUS_CALLBACK_POLLING_THREADS", valuebuf, 1);
-                        globus_thread_set_model("pthread");
-                    }
                 }
             }
             continue;
@@ -3002,13 +3031,13 @@ globus_i_gfs_config_init_envs(
         else if(!strcmp(argp, "threads") && tmp_argv[arg_num + 1])
         {            
             globus_l_gfs_num_threads = atoi(tmp_argv[arg_num + 1]);
-            if(globus_l_gfs_num_threads > 0)
-            {
-                setenv("GLOBUS_CALLBACK_POLLING_THREADS", 
-                    tmp_argv[arg_num + 1], 1);
-                globus_thread_set_model("pthread");
-            }
             arg_num++;
+        }
+        else if(!strcmp(argp, "inetd") || !strcmp(argp, "debug") ||
+                !strcmp(argp, "i") || !strcmp(argp, "ssh") || 
+                !strcmp(argp, "no-fork"))
+        {            
+            globus_l_gfs_is_worker = GLOBUS_TRUE;
         }
         else if(!strcmp(argp, "port-range") && tmp_argv[arg_num + 1])
         {
@@ -3095,6 +3124,16 @@ globus_i_gfs_config_init_envs(
         setenv("GLOBUS_TCP_PORT_RANGE", globus_l_gfs_port_range, 1);
         setenv("GLOBUS_UDP_PORT_RANGE", globus_l_gfs_port_range, 1);
     }
+
+    /* only enable threads for real process, not daemon */
+    if(globus_l_gfs_num_threads > 0 && globus_l_gfs_is_worker)
+    {
+        char                            nthreads[8];
+        snprintf(nthreads, sizeof(nthreads), "%d", globus_l_gfs_num_threads);
+        setenv("GLOBUS_CALLBACK_POLLING_THREADS", nthreads, 1);
+        globus_thread_set_model("pthread");
+    }
+    fprintf(stderr, "numthreads: %d, worker: %d, GCPT: %s\n", globus_l_gfs_num_threads, globus_l_gfs_is_worker, getenv("GLOBUS_CALLBACK_POLLING_THREADS"));
     
     if(local_config_file != NULL)
     {
