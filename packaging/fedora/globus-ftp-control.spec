@@ -6,7 +6,7 @@ Name:		globus-ftp-control
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	7.5
+Version:	7.6
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
@@ -163,6 +163,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Oct 04 2016 Globus Toolkit <support@globus.org> - 7.6-1
+- improve forced ordering
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 7.5-1
 - Update for el.5 openssl101e
 
