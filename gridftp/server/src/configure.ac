@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gridftp_server],[11.5],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_gridftp_server],[11.6],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -25,6 +25,11 @@ PKG_CHECK_MODULES([OPENSSL], [openssl >= 1.0],
 
 AC_SUBST([OPENSSL_PKGCONFIG])
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
+
+PKG_CHECK_MODULES([ZLIB], [zlib],,
+    AC_CHECK_LIB([z], [adler32], [ZLIB_LIBS="-lz"], 
+        AC_MSG_ERROR([zlib not found.])))
+AC_SUBST([ZLIB_LIBS])
 
 AC_ARG_WITH([preloaded-modules],
     AS_HELP_STRING([--with-preloaded-modules=MODULE,...],

@@ -1,3 +1,9 @@
+globus-gridftp-server (11.6-1+gt6.@distro@) @distro@; urgency=low
+
+  * add zlib autoconf checks and only link in file module
+
+ -- Globus Toolkit <support@globus.org>  Tue, 04 Oct 2016 16:14:37 -0500
+
 globus-gridftp-server (11.5-1+gt6.@distro@) @distro@; urgency=low
 
   * add adler32 checksum support
