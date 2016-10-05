@@ -1,3 +1,9 @@
+globus-gridftp-server (11.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix error response for MDTM/UTIME on windows
+
+ -- Globus Toolkit <support@globus.org>  Wed, 05 Oct 2016 17:12:09 -0500
+
 globus-gridftp-server (11.6-1+gt6.@distro@) @distro@; urgency=low
 
   * add zlib autoconf checks and only link in file module

@@ -1639,13 +1639,18 @@ settime_win(
         OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
     if (hFile == INVALID_HANDLE_VALUE)
     {
+        errno = GetLastError();
         return 1;
     }
 
     TimetToFileTime(modtime, &ft);
     rc = SetFileTime(hFile, NULL, NULL, &ft);
+    if (!rc)
+    {
+        errno = GetLastError();
+    }
     CloseHandle(hFile);
-    return rc;
+    return !rc;
 }
 #endif
 

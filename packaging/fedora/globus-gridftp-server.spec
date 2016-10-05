@@ -6,7 +6,7 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	11.6
+Version:	11.7
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -230,6 +230,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Wed Oct 05 2016 Globus Toolkit <support@globus.org> - 11.7-1
+- fix error response for MDTM/UTIME on windows
+
 * Tue Oct 04 2016 Globus Toolkit <support@globus.org> - 11.6-1
 - add zlib autoconf checks and only link in file module 
 
