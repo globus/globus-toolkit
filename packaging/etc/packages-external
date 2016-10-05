@@ -70,7 +70,7 @@ po=packaging/package-output; \
 udtdir=xio/external_libs/udt ; \
 mkdir -p $po $udtdir; \
 if [ ! -f $po/$udt ]; then \
-    curl -Ls http://sourceforge.net/projects/udt/files/udt/4.11/$udt \
+    curl -Ls http://toolkit.globus.org/ftppub/gt6/packages/$udt \
         -o $po/$udt; \
 fi; \
 tar -x -C $udtdir -zf $po/$udt
