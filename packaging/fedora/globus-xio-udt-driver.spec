@@ -5,8 +5,8 @@ Name:		globus-xio-udt-driver
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	1.24
-Release:	7%{?dist}
+Version:	1.25
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
@@ -163,6 +163,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Oct 05 2016 Globus Toolkit <support@globus.org> - 1.25-1
+- pull udt tarball from globus repo
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 1.24-7
 - Rebuild after changes for el.5 with openssl101e
 

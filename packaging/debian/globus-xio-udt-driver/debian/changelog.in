@@ -1,3 +1,9 @@
+globus-xio-udt-driver (1.25-1+gt6.@distro@) @distro@; urgency=low
+
+  * pull udt tarball from globus repo
+
+ -- Globus Toolkit <support@globus.org>  Wed, 05 Oct 2016 14:06:16 -0500
+
 globus-xio-udt-driver (1.24-1+gt6.@distro@) @distro@; urgency=low
 
   * Update bug report URL
