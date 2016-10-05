@@ -3133,7 +3133,6 @@ globus_i_gfs_config_init_envs(
         setenv("GLOBUS_CALLBACK_POLLING_THREADS", nthreads, 1);
         globus_thread_set_model("pthread");
     }
-    fprintf(stderr, "numthreads: %d, worker: %d, GCPT: %s\n", globus_l_gfs_num_threads, globus_l_gfs_is_worker, getenv("GLOBUS_CALLBACK_POLLING_THREADS"));
     
     if(local_config_file != NULL)
     {
