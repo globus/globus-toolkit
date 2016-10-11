@@ -9756,68 +9756,46 @@ globus_l_ftp_data_order_read_cb(
     dc_handle = entry->dc_handle;
     globus_mutex_lock(&transfer_handle->order_mutex);
     {
-        /* if this entry is next, callback now */
-        if(transfer_handle->order_next_offset_passed == entry->offset && 
-            (!entry->eof && !entry->error))
+        rc = globus_priority_q_enqueue(
+            &transfer_handle->ordered_buffer_q,
+            (void *)entry,
+            (void *)entry);
+        globus_assert(rc == GLOBUS_SUCCESS);
+    
+        while(!done && 
+            !globus_priority_q_empty(&transfer_handle->ordered_buffer_q))
         {
-            transfer_handle->order_next_offset_passed += entry->length;
-            if(entry->callback)
+            entry = (globus_l_ftp_handle_table_entry_t *) 
+                globus_priority_q_first(
+                    &transfer_handle->ordered_buffer_q);
+            globus_i_ftp_control_debug_printf(9,
+                (stderr, "bw: %"GLOBUS_OFF_T_FORMAT", bh: %"GLOBUS_OFF_T_FORMAT"\n", 
+                    transfer_handle->order_next_offset_passed,
+                    entry->offset));
+            
+            if(transfer_handle->order_next_offset_passed == entry->offset)
             {
-                entry->callback(
-                    entry->callback_arg,
-                    entry->dc_handle->whos_my_daddy,
-                    entry->error,
-                    entry->buffer,
-                    entry->length,
-                    entry->offset,
-                    entry->eof);
-            }
-            globus_free(entry);
-        }
-        /* else enqueue it and poll queue */
-        else
-        {       
-            rc = globus_priority_q_enqueue(
-                &transfer_handle->ordered_buffer_q,
-                (void *)entry,
-                (void *)entry);
-            globus_assert(rc == GLOBUS_SUCCESS);
-        
-            while(!done && 
-                !globus_priority_q_empty(&transfer_handle->ordered_buffer_q))
-            {
-                entry = (globus_l_ftp_handle_table_entry_t *) 
-                    globus_priority_q_first(
+                entry = (globus_l_ftp_handle_table_entry_t *)
+                    globus_priority_q_dequeue(
                         &transfer_handle->ordered_buffer_q);
-                globus_i_ftp_control_debug_printf(9,
-                    (stderr, "bw: %"GLOBUS_OFF_T_FORMAT", bh: %"GLOBUS_OFF_T_FORMAT"\n", 
-                        transfer_handle->order_next_offset_passed,
-                        entry->offset));
-                
-                if(transfer_handle->order_next_offset_passed == entry->offset)
+                assert(entry != NULL);
+                transfer_handle->order_next_offset_passed += entry->length;
+                if(entry->callback)
                 {
-                    entry = (globus_l_ftp_handle_table_entry_t *)
-                        globus_priority_q_dequeue(
-                            &transfer_handle->ordered_buffer_q);
-                    assert(entry != NULL);
-                    transfer_handle->order_next_offset_passed += entry->length;
-                    if(entry->callback)
-                    {
-                        entry->callback(
-                            entry->callback_arg,
-                            entry->dc_handle->whos_my_daddy,
-                            entry->error,
-                            entry->buffer,
-                            entry->length,
-                            entry->offset,
-                            entry->eof);
-                    }
-                    globus_free(entry);
+                    entry->callback(
+                        entry->callback_arg,
+                        entry->dc_handle->whos_my_daddy,
+                        entry->error,
+                        entry->buffer,
+                        entry->length,
+                        entry->offset,
+                        entry->eof);
                 }
-                else
-                {
-                    done = GLOBUS_TRUE;
-                }
+                globus_free(entry);
+            }
+            else
+            {
+                done = GLOBUS_TRUE;
             }
         }
     }
