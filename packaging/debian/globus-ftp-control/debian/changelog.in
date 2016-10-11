@@ -1,3 +1,9 @@
+globus-ftp-control (7.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * more ordered mode fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 11 Oct 2016 10:29:56 -0500
+
 globus-ftp-control (7.6-1+gt6.@distro@) @distro@; urgency=low
 
   * improve forced ordering
