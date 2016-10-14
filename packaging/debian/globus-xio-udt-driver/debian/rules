@@ -24,7 +24,6 @@ _bindir = $(_prefix)/bin
 _sbindir = $(_prefix)/sbin
 _includedir = $(_prefix)/include
 _libdir = $(_prefix)/lib/$(DEB_HOST_MULTIARCH)
-_libdir = $(_prefix)/lib
 _datadir = $(_prefix)/share
 _mandir = $(_datadir)/man
 _docdir = $(_datadir)/doc
