@@ -1,0 +1,2 @@
+#! /usr/bin/dh-exec
+etc/grid-services/available/jobmanager-sge-poll

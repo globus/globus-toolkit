@@ -1,3 +1,9 @@
+globus-gram-job-manager-sge (2.6-2+gt6.@distro@) @distro@; urgency=low
+
+  * Use dh-exec for filelists
+
+ -- Globus Toolkit <support@globus.org>  Tue, 18 Oct 2016 13:11:31 -0400
+
 globus-gram-job-manager-sge (2.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Update bug report URL

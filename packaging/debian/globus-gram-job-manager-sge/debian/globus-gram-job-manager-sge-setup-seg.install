@@ -1,0 +1,4 @@
+#! /usr/bin/dh-exec
+etc/grid-services/available/jobmanager-sge-seg
+etc/globus/scheduler-event-generator/available/sge
+usr/lib/${DEB_HOST_MULTIARCH}/libglobus_seg_sge.so
