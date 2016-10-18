@@ -1,0 +1,4 @@
+#! /usr/bin/dh-exec
+etc/grid-services/available/jobmanager-pbs-seg
+etc/globus/scheduler-event-generator/available/pbs
+usr/lib/${DEB_HOST_MULTIARCH}/libglobus_seg_pbs.so

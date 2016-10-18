@@ -1,0 +1,5 @@
+#! /usr/bin/dh-exec
+etc/globus/globus-pbs.conf
+usr/share/globus/globus_gram_job_manager/pbs.rvf
+${perl_vendorlib}/Globus/GRAM/JobManager/pbs.pm
+usr/share/doc/globus-gram-job-manager-pbs/GLOBUS_LICENSE 
