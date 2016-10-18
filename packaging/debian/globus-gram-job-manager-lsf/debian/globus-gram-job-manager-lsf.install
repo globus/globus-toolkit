@@ -1,0 +1,5 @@
+#! /usr/bin/dh-exec
+etc/globus/globus-lsf.conf
+usr/share/globus/globus_gram_job_manager/lsf.rvf
+${perl_vendorlib}/Globus/GRAM/JobManager/lsf.pm
+usr/share/doc/globus_gram_job_manager_lsf/GLOBUS_LICENSE => usr/share/doc/globus-gram-job-manager-lsf/* 
