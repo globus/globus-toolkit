@@ -1,3 +1,9 @@
+myproxy-oauth (0.22-1+gt6.@distro@) @distro@; urgency=low
+
+  * Catch exceptions and return "400 Bad Request"
+
+ -- Globus Toolkit <support@globus.org>  Tue, 18 Oct 2016 14:41:29 -0400
+
 myproxy-oauth (0.21-2+gt6.@distro@) @distro@; urgency=low
 
   * Fix redirect when callback_uri contains a query

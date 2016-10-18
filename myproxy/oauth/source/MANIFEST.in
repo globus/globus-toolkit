@@ -1,5 +1,4 @@
 include conf/*
-include pkg_data_src.gpt
 include sysconfig/myproxy-oauth
 include init/myproxy-oauth
 recursive-include myproxy *.py

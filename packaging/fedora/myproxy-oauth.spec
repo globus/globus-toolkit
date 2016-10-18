@@ -5,8 +5,8 @@ Name:		myproxy-oauth
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	0.21
-Release:	4%{?dist}
+Version:	0.22
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	MyProxy OAuth Delegation Serice
 
@@ -146,6 +146,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Tue Oct 18 2016 Globus Toolkit <support@globus.org> - 0.22-1
+- Catch exceptions and return "400 Bad Request"
+
 * Wed Aug 31 2016 Globus Toolkit <support@globus.org> - 0.21-4
 - Updates for SLES 12
 
