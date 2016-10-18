@@ -7,7 +7,7 @@ Name:		globus-ftp-control
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	7.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
 
@@ -35,6 +35,16 @@ BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+BuildRequires:  openssl
+%else
+%if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
+%else
+BuildRequires:  openssl
+%endif
+%endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %global mainpkg lib%{_name}%{soname}
@@ -117,6 +127,9 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 5
+export OPENSSL="$(which openssl101e)"
+%endif
 
 %configure \
            --disable-static \
@@ -163,8 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Tue Oct 11 2016 Globus Toolkit <support@globus.org> - 7.7-1
+* Thu Oct 13 2016 Globus Toolkit <support@globus.org> - 7.7-2
 - more ordered mode fixes
+- more updates for el.5 openssl101e
 
 * Tue Oct 04 2016 Globus Toolkit <support@globus.org> - 7.6-1
 - improve forced ordering
