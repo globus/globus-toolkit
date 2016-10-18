@@ -1,0 +1,4 @@
+#! /usr/bin/dh-exec
+etc/globus/*.conf
+${perl_vendorlib}/Globus/GRAM/JobManager/*.pm
+usr/share/doc/globus-gram-job-manager-fork/GLOBUS_LICENSE
