@@ -1,4 +1,4 @@
-globus-gram-job-manager-fork (2.6-1+gt6.@distro@) @distro@; urgency=low
+globus-gram-job-manager-fork (2.6-2+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e, replace docbook with asciidoc
 
@@ -63,7 +63,7 @@ globus-gram-job-manager-fork (1.5-4) unstable; urgency=low
 
   * *-setup-seg depends on globus-scheduler-event-generator-progs
 
- -- Globus Toolkit <support@globus.org>  Tue, 16 July 2013 08:48:45 -0400
+ -- Globus Toolkit <support@globus.org>  Tue, 16 Jul 2013 08:48:45 -0400
 
 globus-gram-job-manager-fork (1.5-3) unstable; urgency=low
 

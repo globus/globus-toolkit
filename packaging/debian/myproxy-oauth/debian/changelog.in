@@ -1,4 +1,4 @@
-myproxy-oauth (0.21-1+gt6.@distro@) @distro@; urgency=low
+myproxy-oauth (0.21-2+gt6.@distro@) @distro@; urgency=low
 
   * Fix redirect when callback_uri contains a query
 
@@ -37,67 +37,67 @@ myproxy-oauth (0.15-3+gt6.@distro@) @distro@; urgency=low
 
   * Change section from unknown to net
 
- -- Globus Toolkit <support@globus.org>  Wed, 03 September 2014 21:35:18 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 03 Sep 2014 21:35:18 -0400
 
 myproxy-oauth (0.15-2+gt6.@distro@) @distro@; urgency=low
 
   * Handle Ubuntu 14.04 apache2 configuation layout
 
- -- Globus Toolkit <support@globus.org>  Fri, 01 August 2014 13:27:42 -0400
+ -- Globus Toolkit <support@globus.org>  Fri, 01 Aug 2014 13:27:42 -0400
 
 myproxy-oauth (0.15-1+gt6.@distro@) @distro@; urgency=low
 
   * EC2-Aware public hostname
 
- -- Globus Toolkit <support@globus.org>  Thu, 31 July 2014 13:48:06 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 31 Jul 2014 13:48:06 -0400
 
 myproxy-oauth (0.14-1+gt6.@distro@) @distro@; urgency=low
 
   * Distro-tag package version
 
- -- Globus Toolkit <support@globus.org>  Mon, 02 June 2014 14:35:22 -0400
+ -- Globus Toolkit <support@globus.org>  Mon, 02 Jun 2014 14:35:22 -0400
 
 myproxy-oauth (0.14-1) unstable; urgency=low
 
   * Move to globus repo
 
- -- Globus Toolkit <support@globus.org>  Mon, 20 January 2014 09:53:11 -0500
+ -- Globus Toolkit <support@globus.org>  Mon, 20 Jan 2014 09:53:11 -0500
 
 myproxy-oauth (0.13-2) unstable; urgency=low
 
   * Fix regression on python path setting
 
- -- Globus Toolkit <support@globus.org>  Fri, 25 October 2013 13:17:59 -0400
+ -- Globus Toolkit <support@globus.org>  Fri, 25 Oct 2013 13:17:59 -0400
 
 myproxy-oauth (0.13-1) unstable; urgency=low
 
   * Fix regression on python path setting
 
- -- Globus Toolkit <support@globus.org>  Wed, 04 September 2013 15:51:46 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 04 Sep 2013 15:51:46 -0400
 
 myproxy-oauth (0.12-1) unstable; urgency=low
 
   * Fall back to pysqlite2 when sqlite3 is not available
 
- -- Globus Toolkit <support@globus.org>  Wed, 04 September 2013 14:05:27 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 04 Sep 2013 14:05:27 -0400
 
 myproxy-oauth (0.11-1) unstable; urgency=low
 
   * Removed dependency on sqlalchemy
 
- -- Globus Toolkit <support@globus.org>  Wed, 04 September 2013 12:29:59 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 04 Sep 2013 12:29:59 -0400
 
 myproxy-oauth (0.10-1) unstable; urgency=low
 
   * Removed dependency on jinja2
 
- -- Globus Toolkit <support@globus.org>  Fri, 23 August 2013 12:31:29 -0400
+ -- Globus Toolkit <support@globus.org>  Fri, 23 Aug 2013 12:31:29 -0400
 
 myproxy-oauth (0.9-1) unstable; urgency=low
 
   * Fix missing import of subprocess when SElinux is used
 
- -- Globus Toolkit <support@globus.org>  Thu, 06 June 2013 09:32:22 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 06 Jun 2013 09:32:22 -0400
 
 myproxy-oauth (0.8-1) unstable; urgency=low
 

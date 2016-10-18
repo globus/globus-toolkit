@@ -1,4 +1,4 @@
-globus-gridftp-server (11.7-1+gt6.@distro@) @distro@; urgency=low
+globus-gridftp-server (11.7-2+gt6.@distro@) @distro@; urgency=low
 
   * fix error response for MDTM/UTIME on windows
 
@@ -366,7 +366,7 @@ globus-gridftp-server (7.9-2+gt6.@distro@) @distro@; urgency=low
 
   * Set localstatedir in configure invocation to /var
 
- -- Globus Toolkit <support@globus.org>  Wed, 04 June 2014 11:12:40 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 04 Jun 2014 11:12:40 -0400
 
 globus-gridftp-server (7.9-1+gt6.@distro@) @distro@; urgency=low
 
@@ -390,7 +390,7 @@ globus-gridftp-server (7.6-2+gt6.@distro@) @distro@; urgency=low
 
   * libltdl-dev dependency
 
- -- Globus Toolkit <support@globus.org>  Thu, 24 April 2014 12:28:36 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 24 Apr 2014 12:28:36 -0400
 
 globus-gridftp-server (7.6-1+gt6.@distro@) @distro@; urgency=low
 
@@ -513,7 +513,7 @@ globus-gridftp-server (6.30-1) unstable; urgency=low
 
   * GT-408: service globus-gridftp-server status returns incorrect status on SL5
 
- -- Globus Toolkit <support@globus.org>  Mon, 03 June 2013 10:48:07 -0400
+ -- Globus Toolkit <support@globus.org>  Mon, 03 Jun 2013 10:48:07 -0400
 
 globus-gridftp-server (6.29-1) unstable; urgency=low
 

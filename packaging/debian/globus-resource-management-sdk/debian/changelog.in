@@ -1,4 +1,4 @@
-globus-resource-management-sdk (6.0-2+gt6.@distro@) @distro@; urgency=low
+globus-resource-management-sdk (6.0-3+gt6.@distro@) @distro@; urgency=low
 
   * Update XIO Driver package names
 
@@ -8,13 +8,13 @@ globus-resource-management-sdk (0.0.0-3) unstable; urgency=low
 
   * Fix rsl and credential library dependencies
 
- -- Globus Toolkit <support@globus.org>  Mon, 05 August 2013 10:45:38 -0400
+ -- Globus Toolkit <support@globus.org>  Mon, 05 Aug 2013 10:45:38 -0400
 
 globus-resource-management-sdk (0.0.0-2) unstable; urgency=low
 
   * Fix library dependencies
 
- -- Globus Toolkit <support@globus.org>  Sat, 03 August 2013 09:18:55 -0400
+ -- Globus Toolkit <support@globus.org>  Sat, 03 Aug 2013 09:18:55 -0400
 
 globus-resource-management-sdk (0.0.0) unstable; urgency=low
 

@@ -1,4 +1,4 @@
-globus-gridmap-eppn-callout (1.13-1+gt6.@distro@) @distro@; urgency=low
+globus-gridmap-eppn-callout (1.13-2+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e
 
@@ -45,7 +45,7 @@ globus-gridmap-eppn-callout (1.6-2+gt6.@distro@) @distro@; urgency=low
 
   * Don't bother trying to remove pc file
 
- -- Globus Toolkit <support@globus.org>  Mon, 25 August 2014 14:44:23 -0400
+ -- Globus Toolkit <support@globus.org>  Mon, 25 Aug 2014 14:44:23 -0400
 
 globus-gridmap-eppn-callout (1.6-1+gt6.@distro@) @distro@; urgency=low
 

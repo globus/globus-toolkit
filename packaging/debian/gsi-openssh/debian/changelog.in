@@ -1,4 +1,4 @@
-gsi-openssh (7.1p2f-3+gt6.@distro@) @distro@; urgency=low
+gsi-openssh (7.1p2f-4+gt6.@distro@) @distro@; urgency=low
 
   * Fix for https://github.com/globus/globus-toolkit/issues/61:
     Debian 7 package fails to detect status of gsisshd
@@ -67,19 +67,19 @@ gsi-openssh (5.7-2+gt6.@distro@) @distro@; urgency=low
 
   * https://globus.atlassian.net/browse/GT-492
 
- -- Globus Toolkit <support@globus.org>  Mon, 30 June 2014 13:34:35 -0400
+ -- Globus Toolkit <support@globus.org>  Mon, 30 Jun 2014 13:34:35 -0400
 
 gsi-openssh (5.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Fixes for GT6
 
- -- Globus Toolkit <support@globus.org>  Wed, 23 April 2014 13:43:00 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 23 Apr 2014 13:43:00 -0400
 
 gsi-openssh (5.7-1+gt6.@distro@) @distro@; urgency=low
 
   * update to 5.7
 
- -- Globus Toolkit <support@globus.org>  Fri, 24 January 2014 10:51:35 -0500
+ -- Globus Toolkit <support@globus.org>  Fri, 24 Jan 2014 10:51:35 -0500
 
 gsi-openssh (5.6-1) unstable; urgency=low
 

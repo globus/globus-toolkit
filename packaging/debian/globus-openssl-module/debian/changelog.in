@@ -1,4 +1,4 @@
-globus-openssl-module (4.8-1+gt6.@distro@) @distro@; urgency=low
+globus-openssl-module (4.8-2+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e
 
@@ -35,7 +35,7 @@ globus-openssl-module (4.4-3+gt6.@distro@) @distro@; urgency=low
 
   * Remove references to moved globus-update-certificate-directory script
 
- -- Globus Toolkit <support@globus.org>  Fri, 20 June 2014 14:04:32 -0400
+ -- Globus Toolkit <support@globus.org>  Fri, 20 Jun 2014 14:04:32 -0400
 
 globus-openssl-module (4.4-2+gt6.@distro@) @distro@; urgency=low
 
@@ -77,13 +77,13 @@ globus-openssl-module (4.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Missing dependency
 
- -- Globus Toolkit <support@globus.org>  Mon, 27 January 2014 15:14:45 -0500
+ -- Globus Toolkit <support@globus.org>  Mon, 27 Jan 2014 15:14:45 -0500
 
 globus-openssl-module (4.0-2+gt6.@distro@) @distro@; urgency=low
 
   * Fix doxygen packaging issue
 
- -- Globus Toolkit <support@globus.org>  Mon, 27 January 2014 14:58:45 -0500
+ -- Globus Toolkit <support@globus.org>  Mon, 27 Jan 2014 14:58:45 -0500
 
 globus-openssl-module (4.0-1+gt6.@distro@) @distro@; urgency=low
 

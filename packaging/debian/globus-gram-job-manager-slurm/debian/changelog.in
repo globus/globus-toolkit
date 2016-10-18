@@ -1,4 +1,4 @@
-globus-gram-job-manager-slurm (2.8-1+gt6.@distro@) @distro@; urgency=low
+globus-gram-job-manager-slurm (2.8-2+gt6.@distro@) @distro@; urgency=low
 
   * Update bug report URL
 
@@ -38,7 +38,7 @@ globus-gram-job-manager-slurm (2.3-3+gt6.@distro@) @distro@; urgency=low
 
   * Skip check for .pc and .la files
 
- -- Globus Toolkit <support@globus.org>  Wed, 25 June 2014 13:28:09 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 25 Jun 2014 13:28:09 -0400
 
 globus-gram-job-manager-slurm (2.3-2+gt6.@distro@) @distro@; urgency=low
 
@@ -98,4 +98,4 @@ globus-gram-job-manager-slurm (1.0-1) unstable; urgency=low
 
   * Initial packaging
 
- -- Globus Toolkit <support@globus.org>  Mon, 09 September 2013 12:42:12 -0400
+ -- Globus Toolkit <support@globus.org>  Mon, 09 Sep 2013 12:42:12 -0400

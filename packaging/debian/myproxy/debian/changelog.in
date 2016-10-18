@@ -1,4 +1,4 @@
-myproxy (6.1.21-1+gt6.@distro@) @distro@; urgency=low
+myproxy (6.1.21-2+gt6.@distro@) @distro@; urgency=low
 
   * Do not overwrite configuration flags
 
@@ -162,25 +162,25 @@ myproxy (6.0rc3-2+gt6.@distro@)) @distro@; urgency=low
 
   * Fix Source path
 
- -- Globus Toolkit <support@globus.org>  Thu, 21 August 2014 08:22:35 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 21 Aug 2014 08:22:35 -0400
 
 myproxy (6.0rc3-1+gt6.@distro@) @distro@; urgency=low
 
   * upgrade to 6.0rc3
 
- -- Globus Toolkit <support@globus.org>  Wed, 30 July 2014 14:06:08 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 30 Jul 2014 14:06:08 -0400
 
 myproxy (6.0rc2-1+gt6.@distro@) @distro@; urgency=low
 
   * upgrade to 6.0rc2
 
- -- Globus Toolkit <support@globus.org>  Wed, 30 July 2014 09:53:47 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 30 Jul 2014 09:53:47 -0400
 
 myproxy (6.0rc1-1+gt6.@distro@) @distro@; urgency=low
 
   * upgrade to 6.0rc1
 
- -- Globus Toolkit <support@globus.org>  Thu, 24 July 2014 12:49:15 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 24 Jul 2014 12:49:15 -0400
 
 myproxy (5.9-15+gt6.@distro@) @distro@; urgency=low
 
@@ -198,13 +198,13 @@ myproxy (5.9-13+gt6.@distro@) @distro@; urgency=low
 
   * Add default start and stop runlevels
 
- -- Globus Toolkit <support@globus.org>  Wed, 04 June 2014 09:51:19 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 04 Jun 2014 09:51:19 -0400
 
 myproxy (5.9-12+gt6.@distro@) @distro@; urgency=low
 
   * Add libglobus-usage-dev dependency
 
- -- Globus Toolkit <support@globus.org>  Tue, 29 April 2014 15:42:04 -0400
+ -- Globus Toolkit <support@globus.org>  Tue, 29 Apr 2014 15:42:04 -0400
 
 myproxy (5.9-11+gt6.@distro@) @distro@; urgency=low
 
@@ -222,13 +222,13 @@ myproxy (5.9-8) unstable; urgency=low
 
   * explicit "-lbsd -lpam -ldl -lssl -lcrypto"
 
- -- Globus Toolkit <support@globus.org>  Mon, 24 June 2013 12:13:46 -0400
+ -- Globus Toolkit <support@globus.org>  Mon, 24 Jun 2013 12:13:46 -0400
 
 myproxy (5.9-7) unstable; urgency=low
 
   * explicit -lssl
 
- -- Globus Toolkit <support@globus.org>  Mon, 24 June 2013 11:09:12 -0400
+ -- Globus Toolkit <support@globus.org>  Mon, 24 Jun 2013 11:09:12 -0400
 
 myproxy (5.9-6) unstable; urgency=low
 
