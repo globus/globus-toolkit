@@ -31,7 +31,7 @@ static gss_buffer_desc                  hello_buffer =
 };
 
 bool
-mic_test(void)
+mic_test_itoa(void)
 {
     OM_uint32                           get_mic_major_status = GSS_S_COMPLETE;
     OM_uint32                           get_mic_minor_status = 0;
@@ -78,6 +78,54 @@ end_test:
     return ok;
 }
 
+bool
+mic_test_atoi(void)
+{
+    OM_uint32                           get_mic_major_status = GSS_S_COMPLETE;
+    OM_uint32                           get_mic_minor_status = 0;
+    OM_uint32                           verify_mic_major_status = GSS_S_COMPLETE;
+    OM_uint32                           verify_mic_minor_status = 0;
+    OM_uint32                           release_minor_status = 0;
+    gss_buffer_desc                     mic_hello_buffer = { .value = NULL };
+    bool                                ok = true;
+
+    get_mic_major_status = gss_get_mic(
+            &get_mic_minor_status,
+            accept_ctx,
+            GSS_C_QOP_DEFAULT,
+            &hello_buffer,
+            &mic_hello_buffer);
+    if (get_mic_major_status != GSS_S_COMPLETE)
+    {
+        ok = false;
+
+        globus_gsi_gssapi_test_print_error(
+                stderr,
+                get_mic_major_status,
+                get_mic_minor_status);
+        
+        goto end_test;
+    }
+    
+    verify_mic_major_status = gss_verify_mic(
+            &verify_mic_minor_status,
+            init_ctx,
+            &hello_buffer,
+            &mic_hello_buffer,
+            NULL);
+    if (verify_mic_major_status != GSS_S_COMPLETE)
+    {
+        globus_gsi_gssapi_test_print_error(
+                stderr,
+                verify_mic_major_status,
+                verify_mic_minor_status);
+        ok = false;
+    }
+    gss_release_buffer(&release_minor_status, &mic_hello_buffer);
+end_test:
+    return ok;
+}
+
 struct test_case
 {
     bool                              (*func)(void);
@@ -94,10 +142,10 @@ main(int argc, char *argv[])
     int                                 failed = 0;
     struct test_case                    test_cases[] =
     {
-        TEST_CASE_INITIALIZER(mic_test),
+        TEST_CASE_INITIALIZER(mic_test_itoa),
+        TEST_CASE_INITIALIZER(mic_test_atoi),
     };
     size_t                              num_test_cases;
-    size_t                              testnum = 1;
     int                                 ch = 0;
     gss_OID                             mech = &gss_mech_oid_globus_gssapi_openssl;
 
@@ -133,13 +181,15 @@ main(int argc, char *argv[])
         goto establish_failed;
     }
     
-    for (size_t i = 0; i < num_test_cases; i++, testnum++)
+    for (size_t i = 0; i < num_test_cases; i++)
     {
         int ok = test_cases[i].func();
 
+        printf("test case %s returned %s\n",
+            test_cases[i].name, ok ? "ok" : "not ok");
+
         if (!ok)
         {
-            printf("not ");
             failed++;
         }
     }
