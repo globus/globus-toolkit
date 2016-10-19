@@ -39,7 +39,8 @@ check_SCRIPTS = \
         compare-name-test-hybrid.pl \
         compare-name-test-gt2.pl \
         compare-name-test-rfc2818.pl \
-        gssapi-thread-test-wrapper
+        gssapi-thread-test-wrapper \
+	mech-compatibility-test.pl
 
 check_PROGRAMS= \
         compare-name-test \
@@ -58,6 +59,7 @@ check_PROGRAMS= \
 	gssapi-module-test \
         indicate-mechs-test \
         inquire-names-for-mech-test \
+	mech-compatibility-test \
 	mic-test \
         nonterminated-export-cred-test \
         release-name-test \
@@ -131,6 +133,7 @@ gssapi_thread_test_CPPFLAGS = $(AM_CPPFLAGS)
 gssapi_import_context_test_SOURCES = gssapi_import_context_test.c
 wrap_test_SOURCES =	wrap_test.c 
 mic_test_SOURCES =	mic_test.c 
+mech_compatibility_test_SOURCES = mech_compatibility_test.c 
 gssapi_acquire_test_SOURCES =	gssapi_acquire_test.c
 gssapi_expimp_test_SOURCES =	gssapi_expimp_test.c 
 

@@ -144,7 +144,7 @@ GSS_CALLCONV gss_init_sec_context(
             actual_mech = (gss_OID) gss_mech_globus_gssapi_openssl;
         }
 #       endif
-#       if OPENSSL_VERSION_NUMBER < 0x10000100L
+#       if OPENSSL_VERSION_NUMBER >= 0x10000100L
         else if (g_OID_equal(mech_type, (gss_OID) gss_mech_globus_gssapi_openssl_micv2))
         {
             actual_mech = gss_mech_globus_gssapi_openssl_micv2;
