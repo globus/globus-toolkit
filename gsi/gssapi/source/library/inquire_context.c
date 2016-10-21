@@ -155,7 +155,7 @@ GSS_CALLCONV gss_inquire_context(
 
     if (mech_type)
     {
-        *mech_type = (gss_OID) gss_mech_globus_gssapi_openssl;
+        *mech_type = context->mech;
     }
 
     if (ctx_flags)

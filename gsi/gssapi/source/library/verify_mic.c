@@ -193,8 +193,8 @@ GSS_CALLCONV gss_verify_mic(
     }
 
     major_status = GSS_S_FAILURE;
-    if (globus_i_accept_backward_compatible_mic
-        || globus_i_backward_compatible_mic)
+    if (g_OID_equal(context_handle->mech, gss_mech_globus_gssapi_openssl)
+        || globus_i_accept_backward_compatible_mic)
     {
         major_status = globus_l_gss_verify_mic_old(
                 minor_status,
@@ -206,11 +206,8 @@ GSS_CALLCONV gss_verify_mic(
                 qop_state);
     }
 
-    /* Use new code if we're not forcing backward compatible or the hash is
-     * null. (Support for GCM was never present in the old code)
-     */
-    if ((major_status == GSS_S_FAILURE) &&
-            ((!globus_i_backward_compatible_mic) || hash == NULL))
+#if OPENSSL_VERSION_NUMBER >= 0x10000100L
+    if (major_status == GSS_S_FAILURE || major_status == GSS_S_BAD_SIG)
     {
         major_status = globus_l_gss_verify_mic_new(
                 minor_status,
@@ -221,6 +218,7 @@ GSS_CALLCONV gss_verify_mic(
                 token_buffer,
                 qop_state);
     }
+#endif
 
 
 unlock_mutex:
@@ -258,7 +256,6 @@ globus_l_gss_verify_mic_old(
     if (hash != NULL)
     {
         #if OPENSSL_VERSION_NUMBER < 0x10100000L
-        if (globus_i_backward_compatible_mic)
         {
             mac_sec = context_handle->gss_ssl->s3->read_mac_secret;
             seq = context_handle->gss_ssl->s3->read_sequence;
@@ -507,6 +504,7 @@ globus_l_gss_verify_mic_new(
         {
             /* got the correct seq number, increment the sequence */
             context_handle->mac_read_sequence++;
+            major_status = GSS_S_COMPLETE;
         }
     }
 #ifdef EVP_CIPH_GCM_MODE
@@ -611,6 +609,7 @@ globus_l_gss_verify_mic_new(
         {
             /* got the correct seq number, increment the sequence */
             context_handle->mac_read_sequence++;
+            major_status = GSS_S_COMPLETE;
         }
     }
 #endif

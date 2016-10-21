@@ -94,6 +94,52 @@ indicate_mechs_test(void)
 }
 /* indicate_mechs_test() */
 
+int
+indicate_mechs_v2_test(void)
+{
+    gss_OID_set                         oids;
+    OM_uint32                           major_status = 0;
+    OM_uint32                           minor_status = 0;
+    int                                 i;
+    static gss_OID_desc                 gssapi_mech_gsi = 
+	{10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01"};
+
+    major_status = gss_indicate_mechs(&minor_status, &oids);
+    if(GSS_ERROR(major_status))
+    {
+        globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
+        return 1;
+    }
+
+    for (i = 0; i < oids->count; i++)
+    {
+        if (oids->elements[i].length == gssapi_mech_gsi.length &&
+            memcmp(oids->elements[i].elements,
+                    gssapi_mech_gsi.elements,
+                    gssapi_mech_gsi.length) == 0)
+        {
+            break;
+        }
+    }
+
+    if (i == oids->count)
+    {
+        fprintf(stderr, "Didn't find GSI mech in OID set\n");
+        return 2;
+    }
+
+    major_status = gss_release_oid_set(&minor_status, &oids);
+
+    if (GSS_ERROR(major_status))
+    {
+        globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
+        return 3;
+    }
+
+    return 0;
+}
+/* indicate_mechs_v2_test() */
+
 int main()
 {
     int                                 i, rc = 0, failed = 0;
@@ -107,7 +153,8 @@ int main()
     test_case_t                         tests[] =
     {
         TEST_CASE(indicate_mechs_bad_params_test),
-        TEST_CASE(indicate_mechs_test)
+        TEST_CASE(indicate_mechs_test),
+        TEST_CASE(indicate_mechs_v2_test)
     };
 
     rc = globus_module_activate_array(modules, &failed_module);
@@ -126,7 +173,10 @@ int main()
         {
             failed++;
         }
-        printf("%s %s\n", rc == 0 ? "ok" : "not ok", tests[i].name);
+        printf("%s %d - %s\n",
+                rc == 0 ? "ok" : "not ok",
+                i+1,
+                tests[i].name);
     }
 
     return 0;

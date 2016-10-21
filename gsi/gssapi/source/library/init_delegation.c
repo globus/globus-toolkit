@@ -148,8 +148,9 @@ GSS_CALLCONV gss_init_delegation(
         goto exit;
     }
 
-    if(desired_mech != GSS_C_NO_OID &&
-       desired_mech != (gss_OID) gss_mech_globus_gssapi_openssl)
+    if (desired_mech != GSS_C_NO_OID
+        && (!g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl))
+        && (!g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl_micv2)))
     {
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,

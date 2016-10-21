@@ -84,6 +84,24 @@ static const gss_OID_desc gss_mech_oid_globus_gssapi_openssl =
 const gss_OID_desc * const gss_mech_globus_gssapi_openssl = 
 		&gss_mech_oid_globus_gssapi_openssl;
 
+/**
+ * define the Globus object ids
+ * This is regestered as a private enterprise
+ * via IANA
+ *  http://www.isi.edu/in-notes/iana/assignments/enterprise-numbers
+ *
+ * iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
+ * globus 3536 
+ * security 1
+ * gssapi_openssl 1
+ * micv2 1
+ */
+static const gss_OID_desc gss_mech_oid_globus_gssapi_openssl_micv2 = 
+	{10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01"};
+
+const gss_OID_desc * const gss_mech_globus_gssapi_openssl_micv2 = 
+		&gss_mech_oid_globus_gssapi_openssl_micv2;
+
 static const gss_OID_desc gss_proxycertinfo_extension_oid =
      {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x06"}; 
 const gss_OID_desc * const gss_proxycertinfo_extension = 
@@ -294,6 +312,20 @@ GSS_CALLCONV gss_indicate_mechs(
     major_status = gss_add_oid_set_member(
         &local_minor_status, 
         (const gss_OID) gss_mech_globus_gssapi_openssl,
+        &set);
+    if (GSS_ERROR(major_status))
+    {
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_OID);
+        
+        gss_release_oid_set(&local_minor_status, &set);
+        goto exit;
+    }
+    
+    major_status = gss_add_oid_set_member(
+        &local_minor_status, 
+        (const gss_OID) gss_mech_globus_gssapi_openssl_micv2,
         &set);
     if (GSS_ERROR(major_status))
     {

@@ -139,9 +139,10 @@ globus_gsi_gssapi_test_authenticate(
 }
 
 int
-test_establish_contexts(
+test_establish_contexts_with_mechs(
     gss_ctx_id_t                       *init_context,
     gss_ctx_id_t                       *accept_context,
+    const gss_OID                       init_mec_type,
     OM_uint32                           flags,
     OM_uint32                          *major_status,
     OM_uint32                          *minor_status)
@@ -173,7 +174,7 @@ test_establish_contexts(
                 GSS_C_NO_CREDENTIAL,
                 init_context,
                 GSS_C_NO_NAME,
-                GSS_C_NO_OID,
+                init_mec_type,
                 flags,
                 0,
                 GSS_C_NO_CHANNEL_BINDINGS,
@@ -252,6 +253,25 @@ accept_fail:
     }
 
     return rc;
+}
+
+
+int
+test_establish_contexts(
+    gss_ctx_id_t                       *init_context,
+    gss_ctx_id_t                       *accept_context,
+    OM_uint32                           flags,
+    OM_uint32                          *major_status,
+    OM_uint32                          *minor_status)
+    
+{
+    return test_establish_contexts_with_mechs(
+            init_context,
+            accept_context,
+            GSS_C_NO_OID,
+            flags,
+            major_status,
+            minor_status);
 }
 
 
@@ -943,7 +963,7 @@ globus_gsi_gssapi_test_print_error(
             gss_release_buffer(&minor_status2, &status_string);
         }
         if (gss_display_status(&minor_status2,
-                               major_status,
+                               minor_status,
                                GSS_C_MECH_CODE,
                                GSS_C_NO_OID,
                                &message_context,

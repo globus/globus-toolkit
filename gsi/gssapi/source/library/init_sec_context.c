@@ -55,6 +55,7 @@ GSS_CALLCONV gss_init_sec_context(
     globus_result_t                     local_result;
     int                                 rc;
     char                                cbuf[1];
+    gss_OID                             actual_mech = GSS_C_NO_OID;
     globus_gsi_cert_utils_cert_type_t   cert_type;
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
@@ -78,7 +79,7 @@ GSS_CALLCONV gss_init_sec_context(
         globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
     }
     globus_mutex_unlock(&globus_i_gssapi_activate_mutex);
-    
+
     if(req_flags & GSS_C_ANON_FLAG &&
        req_flags & GSS_C_DELEG_FLAG)
     {
@@ -126,9 +127,43 @@ GSS_CALLCONV gss_init_sec_context(
                 "GSS_C_NO_CREDENTIAL" :
                 "Credentials provided"));
 
+        if (mech_type == GSS_C_NO_OID)
+        {
+            if (globus_i_backward_compatible_mic)
+            {
+                actual_mech = (gss_OID) gss_mech_globus_gssapi_openssl;
+            }
+            else
+            {
+                actual_mech = (gss_OID) gss_mech_globus_gssapi_openssl_micv2;
+            }
+        }
+#       if OPENSSL_VERSION_NUMBER < 0x10100000L
+        else if (g_OID_equal(mech_type, (gss_OID) gss_mech_globus_gssapi_openssl))
+        {
+            actual_mech = (gss_OID) gss_mech_globus_gssapi_openssl;
+        }
+#       endif
+#       if OPENSSL_VERSION_NUMBER >= 0x10000100L
+        else if (g_OID_equal(mech_type, (gss_OID) gss_mech_globus_gssapi_openssl_micv2))
+        {
+            actual_mech = gss_mech_globus_gssapi_openssl_micv2;
+        }
+#       endif
+        else
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                (_GGSL("Invalid desired_mech passed to function")));
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+    
         major_status = 
             globus_i_gsi_gss_create_and_fill_context(&local_minor_status,
                                                      &context,
+                                                     actual_mech,
                                                      initiator_cred_handle,
                                                      GSS_C_INITIATE,
                                                      req_flags);
@@ -144,7 +179,7 @@ GSS_CALLCONV gss_init_sec_context(
 
         if (actual_mech_type != NULL)
         {
-            *actual_mech_type = (gss_OID) gss_mech_globus_gssapi_openssl;
+            *actual_mech_type = (gss_OID) actual_mech;
         }
 
         if (ret_flags != NULL)
