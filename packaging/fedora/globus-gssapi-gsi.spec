@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.9
+Version:	12.10
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -192,6 +192,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Oct 21 2016 Globus Toolkit <support@globus.org> - 12.10-1
+- Add support for new mech oid for different MIC formats
+
 * Wed Sep 21 2016 Globus Toolkit <support@globus.org> - 12.9-1
 - Fix bad index references
 
