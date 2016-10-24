@@ -1,3 +1,9 @@
+globus-gssapi-gsi (12.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix function arg mismatch
+
+ -- Globus Toolkit <support@globus.org>  Mon, 24 Oct 2016 15:54:34 -0400
+
 globus-gssapi-gsi (12.10-1+gt6.@distro@) @distro@; urgency=low
 
   * Add support for new mech oid for different MIC formats

@@ -146,6 +146,7 @@ GSS_CALLCONV gss_import_sec_context(
     major_status =
         globus_i_gsi_gss_create_and_fill_context(&local_minor_status,
                                                  &context,
+                                                 GSS_C_NO_OID,
                                                  GSS_C_NO_CREDENTIAL,
                                                  cred_usage,
                                                  GSS_C_ANON_FLAG);
