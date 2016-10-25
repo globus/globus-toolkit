@@ -116,8 +116,9 @@ GSS_CALLCONV gss_accept_sec_context(
         }
 
         major_status = globus_i_gsi_gss_create_and_fill_context(
-            & local_minor_status,
-            & context,
+            &local_minor_status,
+            &context,
+            GSS_C_NO_NAME,
             acceptor_cred_handle,
             GSS_C_ACCEPT,
             nreq_flags);

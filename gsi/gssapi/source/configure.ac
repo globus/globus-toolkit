@@ -112,6 +112,5 @@ AC_CONFIG_FILES(
         library/Makefile
         test/Makefile
         test/testcred.cnf
-        test/testcred-nocn.cnf
 )
 AC_OUTPUT

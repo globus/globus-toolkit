@@ -16,8 +16,8 @@ check_DATA_real = \
         192.168.1.1.example.org.pem \
         192.168.1.1-2.example.org.pem
 
-testcred_links = testcred.link testcred-nocn.link
-signingpolicy_links = testcred.signing_policy testcred-nocn.signing_policy
+testcred_links = testcred.link
+signingpolicy_links = testcred.signing_policy
 
 check_DATA = $(check_DATA_real) \
         testcred.cakey \
@@ -25,13 +25,14 @@ check_DATA = $(check_DATA_real) \
         testcred.key \
         testcred.cert \
         testcred.srl \
+        testcred-dns1.key \
+        testcred-dns1.cert \
+        testcred-dns2.key \
+        testcred-dns2.cert \
         $(testcred_links) \
 	$(signingpolicy_links) \
-        testcred-nocn.cakey \
-        testcred-nocn.cacert \
         testcred-nocn.key \
         testcred-nocn.cert \
-	testcred-nocn.srl \
         copy_cases \
         $(THREAD_TESTS)
 
@@ -62,6 +63,7 @@ check_PROGRAMS= \
         nonterminated-export-cred-test \
         release-name-test \
         gssapi-thread-test \
+	sni-test \
 	wrap-test
 
 if ENABLE_TESTS
@@ -83,6 +85,7 @@ TESTS = $(check_SCRIPTS) \
 	mic-test \
         nonterminated-export-cred-test \
         release-name-test \
+	sni-test \
 	wrap-test
 
 LOG_COMPILER = $(srcdir)/gssapi-test-wrapper
@@ -98,8 +101,14 @@ endif
 TESTS_ENVIRONMENT = export \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
-    X509_USER_CERT2=testcred-nocn.cert \
-    X509_USER_KEY2=testcred-nocn.key \
+    X509_USER_CERT1=testcred-dns1.cert \
+    X509_USER_KEY1=testcred-dns1.key \
+    X509_USER_CERT2=testcred-dns2.cert \
+    X509_USER_KEY2=testcred-dns2.key \
+    X509_USER_CERT=testcred.cert \
+    X509_USER_KEY=testcred.key \
+    X509_USER_CERT_NOCN=testcred-nocn.cert \
+    X509_USER_KEY_NOCN=testcred-nocn.key \
     X509_CERT_DIR=$(X509_CERT_DIR) \
     THREAD_MODELS=$(GLOBUS_THREAD_MODELS) \
     TEST_DATA_DIR=$(TEST_DATA_DIR) \
@@ -149,8 +158,6 @@ nonterminated_export_cred_test_SOURCES = nonterminated_export_cred_test.c
 if ENABLE_TESTS
 testcred.cacert: testcred.cnf
 	umask 077; $(OPENSSL) req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
-testcred-nocn.cacert: testcred-nocn.cnf
-	umask 077; $(OPENSSL) req -passin pass:globus -subj "/userId=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 
 .cacert.cakey:
 	:
@@ -172,17 +179,22 @@ testcred-nocn.cacert: testcred-nocn.cnf
 .signing_policy.srl:
 	echo 01 > $@
 
-testcred.key testcred-nocn.key:
+testcred.key testcred-nocn.key testcred-dns1.key testcred-dns2.key: testcred.srl
 	umask 077; $(OPENSSL) genrsa 1024 > $@
 
-testcred-nocn.req: testcred-nocn.key testcred-nocn.srl
-	$(OPENSSL) req -subj "/userId=test" -new -config $*.cnf -key $< > $@
+testcred-nocn.req: testcred-nocn.key
+	$(OPENSSL) req -subj "/userId=test" -new -config testcred.cnf -key $< > $@
 
 testcred.req: testcred.key testcred.srl
-	$(OPENSSL) req -subj "/CN=test" -new -config $*.cnf -key $< > $@
+	$(OPENSSL) req -subj "/CN=test" -new -config testcred.cnf -key $< > $@
+
+testcred-dns1.req: testcred-dns1.key testcred.srl
+	$(OPENSSL) req -subj "/CN=dns1" -reqexts testcred-dns1 -new -config testcred.cnf -key $< > $@
+testcred-dns2.req: testcred-dns2.key testcred.srl
+	$(OPENSSL) req -subj "/CN=dns2" -reqexts testcred-dns2 -new -config testcred.cnf -key $< > $@
 
 .req.cert:
-	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in $< -CA $*.cacert -CAkey $*.cakey > $@
+	umask 022; $(OPENSSL) x509 -extensions $* -extfile testcred.cnf -req -passin pass:globus -days 365 -CAkey testcred.cakey -CA testcred.cacert -in $< > $@
 endif
 
 EXTRA_DIST = \
@@ -196,6 +208,8 @@ CLEANFILES = testcred.key testcred.cert testcred.req \
              testcred-nocn.key testcred-nocn.cert testcred-nocn.req \
 	     testcred.cacert testcred-nocn.cacert testcred.srl \
 	     testcred.cakey testcred-nocn.cakey testcred-nocn.srl \
+	     testcred-dns1.cert testcred-dns1.key \
+	     testcred-dns2.cert testcred-dns2.key \
              cert_chain.txt $(THREAD_TESTS)
 
 copy_cases:

@@ -44,6 +44,11 @@ static const gss_OID_desc GSS_APPLICATION_WILL_HANDLE_EXTENSIONS_OID =
 const gss_OID_desc * const GSS_APPLICATION_WILL_HANDLE_EXTENSIONS =
    &GSS_APPLICATION_WILL_HANDLE_EXTENSIONS_OID;
 
+static const gss_OID_desc GSS_SNI_CREDENTIALS_OID =
+   {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x03\x04"};
+const gss_OID_desc * const GSS_SNI_CREDENTIALS =
+   &GSS_SNI_CREDENTIALS_OID;
+
 /**
  * @brief Set Security Context Option
  * @ingroup globus_gsi_gssapi_extensions
@@ -215,6 +220,20 @@ GSS_CALLCONV gss_set_sec_context_option(
         }
 
         context->ctx_flags |= GSS_I_APPLICATION_WILL_HANDLE_EXTENSIONS;
+    }
+    else if(g_OID_equal(option, GSS_SNI_CREDENTIALS))
+    {
+        if (value == GSS_C_NO_BUFFER)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                (_GGSL("Invalid buffer passed to function")));
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+        context->sni_credentials = value->value;
+        context->sni_credentials_count = value->length / sizeof(gss_cred_id_t);
     }
     else
     {
