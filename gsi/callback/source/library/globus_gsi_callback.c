@@ -49,7 +49,7 @@
 typedef int (*X509_STORE_CTX_get_issuer_fn)(X509 **issuer, X509_STORE_CTX *ctx, X509 *x); /* get issuers cert from ctx */
 #define X509_OBJECT_get0_X509_CRL(o) (o)->data.crl
 #define X509_REVOKED_get0_serialNumber(r) (r)->serialNumber
-#define X509_OBJECT_new() malloc(sizeof(X509_OBJECT))
+#define X509_OBJECT_new() calloc(1, sizeof(X509_OBJECT))
 #define X509_OBJECT_free(o) \
     do { \
         X509_OBJECT *otmp = (o); \

@@ -1,3 +1,10 @@
+globus-gsi-callback (5.12-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix crash with empty X.509 subject name
+  * Ensure that X509_OBJECT_new compatibility macro initializes the object
+
+ -- Globus Toolkit <support@globus.org>  Wed, 26 Oct 2016 09:45:15 -0400
+
 globus-gsi-callback (5.11-1+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e
