@@ -2770,22 +2770,21 @@ globus_l_gsi_gss_servername_callback(
         /* No SNI, use default credential */
         return SSL_TLSEXT_ERR_OK;
     }
-    if (servername != NULL)
-    {
-        major_status = gss_import_name(
-                &local_minor_status,
-                &(gss_buffer_desc)
-                {
-                    .value = (void *) servername,
-                    .length = strlen(servername),
-                },
-                GLOBUS_GSS_C_NT_HOST_IP,
-                &imported_name);
+    context->sni_servername = strdup(servername);
 
-        if (major_status != GSS_S_COMPLETE)
-        {
-            return SSL_TLSEXT_ERR_ALERT_FATAL;
-        }
+    major_status = gss_import_name(
+            &local_minor_status,
+            &(gss_buffer_desc)
+            {
+                .value = (void *) servername,
+                .length = strlen(servername),
+            },
+            GLOBUS_GSS_C_NT_HOST_IP,
+            &imported_name);
+
+    if (major_status != GSS_S_COMPLETE)
+    {
+        return SSL_TLSEXT_ERR_ALERT_FATAL;
     }
 
     for (size_t i = 0 ; i < context->sni_credentials_count; i++)
@@ -2804,6 +2803,11 @@ globus_l_gsi_gss_servername_callback(
             break;
         }
     }
+    gss_release_name(
+            &local_minor_status,
+            &imported_name);
+    imported_name = GSS_C_NO_NAME;
+
     if (major_status != GSS_S_COMPLETE)
     {
         return SSL_TLSEXT_ERR_ALERT_FATAL;

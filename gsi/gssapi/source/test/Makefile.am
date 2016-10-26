@@ -99,6 +99,7 @@ X509_CERT_DIR = $(abs_builddir)
 endif
 
 TESTS_ENVIRONMENT = export \
+    LIBTOOL="$(LIBTOOL)" \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
     X509_USER_CERT1=testcred-dns1.cert \

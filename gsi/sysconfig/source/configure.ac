@@ -37,6 +37,7 @@ AC_OUTPUT(
         Makefile
 	library/Makefile
         library/Doxyfile
+        test/Makefile
         globus-gsi-sysconfig.pc
         globus-gsi-sysconfig-uninstalled.pc
 	version.h

@@ -232,7 +232,8 @@ GSS_CALLCONV gss_set_sec_context_option(
             major_status = GSS_S_FAILURE;
             goto exit;
         }
-        context->sni_credentials = value->value;
+        context->sni_credentials = malloc(value->length);
+        memcpy(context->sni_credentials, value->value, value->length);
         context->sni_credentials_count = value->length / sizeof(gss_cred_id_t);
     }
     else

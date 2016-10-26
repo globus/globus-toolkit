@@ -175,6 +175,8 @@ GSS_CALLCONV gss_delete_sec_context(
             ("Can't delete oid set."));
         goto exit;
     }
+    free((*context_handle)->sni_servername);
+    free((*context_handle)->sni_credentials);
 #if OPENSSL_VERSION_NUMBER >= 0x10000100L
     free((*context_handle)->mac_key);
     free((*context_handle)->mac_iv_fixed);

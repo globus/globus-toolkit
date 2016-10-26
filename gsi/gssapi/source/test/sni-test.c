@@ -27,6 +27,10 @@ static gss_OID_desc GSS_SNI_CREDENTIALS_OID =
 gss_OID_desc * GSS_SNI_CREDENTIALS =
    &GSS_SNI_CREDENTIALS_OID;
 
+static gss_OID_desc gss_ext_server_name_oid_desc =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x09"}; 
+gss_OID_desc * gss_ext_server_name_oid =
+                &gss_ext_server_name_oid_desc;
 struct test_case
 {
     bool                              (*func)(void);
@@ -374,6 +378,18 @@ fail:
                 &ignore_minor_status,
                 &accept_generated_token);
     }
+    if (target_name != GSS_C_NO_NAME)
+    {
+        gss_release_name(
+                &minor_status,
+                &target_name);
+    }
+    if (target_name != GSS_C_NO_NAME)
+    {
+        gss_release_name(
+                &minor_status,
+                &target_name);
+    }
 
     return result;
 }
@@ -566,6 +582,18 @@ fail:
                 &ignore_minor_status,
                 &accept_generated_token);
     }
+    if (target_name != GSS_C_NO_NAME)
+    {
+        gss_release_name(
+                &minor_status,
+                &target_name);
+    }
+    if (target_name != GSS_C_NO_NAME)
+    {
+        gss_release_name(
+                &minor_status,
+                &target_name);
+    }
 
     return result;
 }
@@ -757,10 +785,232 @@ fail:
                 &ignore_minor_status,
                 &accept_generated_token);
     }
+    if (target_name != GSS_C_NO_NAME)
+    {
+        gss_release_name(
+                &minor_status,
+                &target_name);
+    }
+    if (target_name != GSS_C_NO_NAME)
+    {
+        gss_release_name(
+                &minor_status,
+                &target_name);
+    }
 
     return result;
 }
 /* init_sni_wildcard() */
+
+/**
+ * @brief Test case for SNI aware client
+ * @details
+ *     In this test case, establish a security context, with server ready for
+ *     SNI, and the client sends a name that only matches the wildcard name.
+ *     The SNI callback should respond with the wildcard credential. The server
+ *     inquires context to discover which name the client provided.
+ */
+bool
+init_sni_inquire_servername(void)
+{
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           minor_status = GLOBUS_SUCCESS;
+    gss_ctx_id_t                        init_context = GSS_C_NO_CONTEXT;
+    gss_ctx_id_t                        accept_context = GSS_C_NO_CONTEXT;
+    gss_name_t                          target_name = GSS_C_NO_NAME;
+    gss_name_t                          peer_name = GSS_C_NO_NAME;
+    gss_buffer_desc                     init_generated_token = {0};
+    gss_buffer_desc                     accept_generated_token = {0};
+    bool                                result = true;
+    int                                 name_equal = false;
+    OM_uint32                           ignore_minor_status = 0;
+    const char                         *why = "";
+    char                                wildcard_name[] = "wildcard.example.globus.org";
+
+    major_status = gss_set_sec_context_option(
+            &minor_status,
+            &accept_context,
+            GSS_SNI_CREDENTIALS,
+            &(gss_buffer_desc)
+            {
+                .value = creds,
+                .length = sizeof(creds),
+            });
+    if (major_status != GSS_S_COMPLETE)
+    {
+        why = "gss_set_sec_context_option";
+        result = false;
+
+        goto fail;
+    }
+
+    major_status = gss_import_name(
+            &minor_status,
+            &(gss_buffer_desc)
+            {
+                .value = wildcard_name,
+                .length = strlen(wildcard_name),
+            },
+            GLOBUS_GSS_C_NT_HOST_IP,
+            &target_name);
+
+    if (major_status != GSS_S_COMPLETE)
+    {
+        why = "gss_import_name";
+        result = false;
+        goto fail;
+    }
+    do
+    {
+        major_status = gss_init_sec_context(
+                &minor_status,
+                GSS_C_NO_CREDENTIAL,
+                &init_context,
+                target_name,
+                GSS_C_NO_OID,
+                0,
+                0,
+                GSS_C_NO_CHANNEL_BINDINGS,
+                &accept_generated_token,
+                NULL,
+                &init_generated_token,
+                NULL,
+                NULL);
+
+        gss_release_buffer(
+                &ignore_minor_status,
+                &accept_generated_token);
+
+        if (GSS_ERROR(major_status))
+        {
+            why = "gss_init_sec_context";
+            result = false;
+            break;
+        }
+
+        if (init_generated_token.length > 0)
+        {
+            major_status = gss_accept_sec_context(
+                    &minor_status,
+                    &accept_context,
+                    GSS_C_NO_CREDENTIAL,
+                    &init_generated_token,
+                    GSS_C_NO_CHANNEL_BINDINGS,
+                    NULL,
+                    NULL,
+                    &accept_generated_token,
+                    NULL,
+                    NULL,
+                    NULL);
+            gss_release_buffer(
+                    &ignore_minor_status,
+                    &init_generated_token);
+
+            if (GSS_ERROR(major_status))
+            {
+                why = "accept_sec_context";
+                result = false;
+            }
+        }
+    }
+    while (major_status == GSS_S_CONTINUE_NEEDED);
+
+    if (major_status == GSS_S_COMPLETE)
+    {
+        gss_buffer_set_t                data_set = NULL;
+
+        major_status = gss_inquire_sec_context_by_oid(
+                &minor_status,
+                accept_context,
+                &gss_ext_server_name_oid_desc,
+                &data_set);
+        if (major_status != GSS_S_COMPLETE)
+        {
+            why = "inquire_sec_context_by_oid";
+            result = false;
+
+            goto fail;
+        }
+
+        if (data_set->count != 1)
+        {
+            why = "data_set->count != 1";
+            result = false;
+            goto fail;
+        }
+
+        if (strncmp(data_set->elements[0].value,
+                    wildcard_name,
+                    data_set->elements[0].length) != 0)
+        {
+            why = "strncmp";
+            result = false;
+            goto fail;
+        }
+
+        gss_release_buffer_set(
+                &minor_status,
+                &data_set);
+    }
+
+fail:
+    if (major_status != GSS_S_COMPLETE)
+    {
+        globus_gsi_gssapi_test_print_error(
+                stderr,
+                major_status,
+                minor_status);
+    }
+
+    if (init_context != GSS_C_NO_CONTEXT)
+    {
+        gss_delete_sec_context(
+                &ignore_minor_status,
+                &init_context,
+                NULL);
+    }
+    if (accept_context != GSS_C_NO_CONTEXT)
+    {
+        gss_delete_sec_context(
+                &ignore_minor_status,
+                &accept_context,
+                NULL);
+    }
+    if (peer_name != GSS_C_NO_NAME)
+    {
+        gss_release_name(
+                &ignore_minor_status,
+                &peer_name);
+    }
+    if (init_generated_token.length != 0)
+    {
+        gss_release_buffer(
+                &ignore_minor_status,
+                &init_generated_token);
+    }
+    if (accept_generated_token.length != 0)
+    {
+        gss_release_buffer(
+                &ignore_minor_status,
+                &accept_generated_token);
+    }
+    if (target_name != GSS_C_NO_NAME)
+    {
+        gss_release_name(
+                &minor_status,
+                &target_name);
+    }
+    if (target_name != GSS_C_NO_NAME)
+    {
+        gss_release_name(
+                &minor_status,
+                &target_name);
+    }
+
+    return result;
+}
+/* init_sni_inquire_servername */
+
 
 /**
  * @brief Test case for SNI aware client
@@ -915,6 +1165,12 @@ fail:
                 &ignore_minor_status,
                 &accept_generated_token);
     }
+    if (target_name != GSS_C_NO_NAME)
+    {
+        gss_release_name(
+                &minor_status,
+                &target_name);
+    }
 
     return result;
 }
@@ -933,6 +1189,7 @@ main(int argc, char *argv[])
         TEST_CASE_INITIALIZER(init_no_server_sni),
         TEST_CASE_INITIALIZER(init_sni1),
         TEST_CASE_INITIALIZER(init_sni_wildcard),
+        TEST_CASE_INITIALIZER(init_sni_inquire_servername), 
         TEST_CASE_INITIALIZER(init_sni_fail),
     };
     char                               *default_cert = getenv("X509_USER_CERT");
@@ -1025,6 +1282,12 @@ main(int argc, char *argv[])
         printf("ok %zu - %s\n",
                 i+1,
                 test_cases[i].name);
+    }
+    for (size_t i = 0; i < NUM_TEST_CREDS; i++)
+    {
+        gss_release_cred(
+                &minor_status,
+                &creds[i]);
     }
 
     exit(failed);

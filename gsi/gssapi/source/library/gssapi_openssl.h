@@ -199,6 +199,7 @@ typedef struct gss_ctx_id_desc_struct{
     gss_OID_set                         extension_oids;
     gss_cred_id_t                      *sni_credentials;
     size_t                              sni_credentials_count;
+    char                               *sni_servername;
 } gss_ctx_id_desc;
 
 extern
@@ -212,6 +213,10 @@ gss_OID_desc *                          gss_nt_host_ip;
 
 extern
 gss_OID_desc *                          gss_nt_x509;
+
+extern
+const gss_OID_desc * const gss_ext_server_name_oid;
+
 
 extern
 globus_bool_t                           globus_i_backward_compatible_mic;
