@@ -168,6 +168,19 @@ globus_gss_assist_acquire_cred(
     gss_cred_usage_t,        /* cred_usage */
     gss_cred_id_t *          /* output_cred_handle */);
 
+extern
+OM_uint32
+globus_gss_assist_read_vhost_cred_dir(
+    OM_uint32                          *minor_status,
+    gss_cred_id_t                     **output_credentials_array,
+    size_t                             *output_credentials_array_size);
+
+extern OM_uint32
+globus_gss_assist_acquire_cred_dir(
+    OM_uint32 *,             /*  minor_status */
+    gss_cred_usage_t,        /* cred_usage */
+    gss_cred_id_t **         /* output_cred_handle */,
+    size_t);
 /*
  * globus_gss_assist_acquire_cred_ext, assist with the gss_acquire_cred
  */

@@ -417,13 +417,22 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
 #endif
 
 /**
- * Generate a unqiue proxy file name
+ * Generate a unique proxy file name
  * @ingroup globus_gsi_system_config_defines
  * @hideinitializer
  * See globus_gsi_sysconfig_get_unique_proxy_filename() 
  */
 #define     GLOBUS_GSI_SYSCONFIG_GET_UNIQUE_PROXY_FILENAME \
             globus_gsi_sysconfig_get_unique_proxy_filename
+
+/**
+ * Determine the location of the vhost credentials directory
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_vhost_cred_dir()
+ */
+#define GLOBUS_GSI_SYSCONFIG_GET_VHOST_CRED_DIR \
+        globus_gsi_sysconfig_get_vhost_cred_dir
 
 globus_result_t
 GLOBUS_GSI_SYSCONFIG_SET_KEY_PERMISSIONS(
@@ -531,6 +540,10 @@ GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(
 globus_result_t
 GLOBUS_GSI_SYSCONFIG_GET_UNIQUE_PROXY_FILENAME(
     char **                             unique_filename);
+
+globus_result_t
+GLOBUS_GSI_SYSCONFIG_GET_VHOST_CRED_DIR(
+    char                              **dir_name_out);
 
 #ifdef __cplusplus
 }

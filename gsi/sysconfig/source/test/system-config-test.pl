@@ -15,8 +15,10 @@
 
 use strict;
 use warnings;
-use File::Temp ':POSIX';
+
 use Fcntl ':mode';
+use File::Path;
+use File::Temp ':POSIX';
 use Test::More;
 
 my $system_config_test = "./system-config-test";
@@ -524,6 +526,73 @@ sub get_user_cert_filename_env_bad {
     }
 }
 
+sub get_vhost_cred_dir_globus_location
+{
+    my ($dirname) = File::Temp::tempdir(CLEANUP => 1);
+    my ($output, $rc, $mode);
+    my $old_dir = $ENV{X509_VHOST_CRED_DIR};
+    my $old_globus_location = $ENV{GLOBUS_LOCATION};
+    my $vhostdir = "$dirname/etc/vhosts";
+
+    File::Path::make_path($vhostdir);
+
+    delete $ENV{X509_VHOST_CRED_DIR};
+    $ENV{GLOBUS_LOCATION} = $dirname;
+    diag("GLOBUS_LOCATION=$dirname");
+
+    $output = qx($system_config_test get_vhost_cred_dir);
+    $rc = $? << 8;
+
+    chomp($output);
+    diag($output) if $output ne "";
+
+    if ($old_dir)
+    {
+        $ENV{X509_VHOST_CRED_DIR} = $old_dir;
+    }
+    else
+    {
+        delete $ENV{X509_VHOST_CRED_DIR};
+    }
+
+    if ($old_dir) {
+        $ENV{X509_VHOST_CRED_DIR} = $old_dir;
+    }
+    if ($old_globus_location) {
+        $ENV{GLOBUS_LOCATION} = $old_globus_location;
+    } else {
+        delete $ENV{GLOBUS_LOCATION};
+    }
+
+    ok($rc == 0 && $output eq $vhostdir, "get_vhost_cred_dir_globus_location");
+}
+
+sub get_vhost_cred_dir_env
+{
+    my ($dirname) = File::Temp::tempdir(CLEANUP => 1);
+    my ($output, $rc, $mode);
+    my $old_dir = $ENV{X509_VHOST_CRED_DIR};
+    
+    $ENV{X509_VHOST_CRED_DIR} = $dirname;
+    diag("X509_VHOST_CRED_DIR=$dirname");
+
+    $output = qx($system_config_test get_vhost_cred_dir);
+    $rc = $? << 8;
+
+    chomp($output);
+    diag($output) if $output ne "";
+
+    if ($old_dir)
+    {
+        $ENV{X509_VHOST_CRED_DIR} = $old_dir;
+    }
+    else
+    {
+        delete $ENV{X509_VHOST_CRED_DIR};
+    }
+    ok($dirname eq $output, "get_vhost_cred_dir");
+}
+
 my @tests = qw (
     set_key_permissions
     get_home_dir
@@ -544,6 +613,8 @@ my @tests = qw (
     get_user_cert_filename_env
     get_user_cert_filename_env_format
     get_user_cert_filename_env_bad
+    get_vhost_cred_dir_globus_location
+    get_vhost_cred_dir_env
 );
 
 plan tests => scalar(@tests);

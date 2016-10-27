@@ -29,6 +29,7 @@ libglobus_gss_assist_la_SOURCES = \
 	import_sec_context.c \
 	export_sec_context.c \
 	init.c \
+	read_vhost_cred_dir.c \
 	tokens_f.c \
 	unwrap.c \
 	wrap.c \

@@ -316,6 +316,18 @@ int main(int argc, char *argv[])
             printf("%s\n", unique_filename);
         }
     }
+    else if (strcmp(argv[1], "get_vhost_cred_dir") == 0)
+    {
+        char                           *dir_name = NULL;
+
+        result = GLOBUS_GSI_SYSCONFIG_GET_VHOST_CRED_DIR(
+                &dir_name);
+
+        if (dir_name != NULL)
+        {
+            printf("%s\n", dir_name);
+        }
+    }
     else
     {
 
