@@ -6,7 +6,7 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	11.7
+Version:	11.8
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -230,6 +230,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Oct 28 2016 Globus Toolkit <support@globus.org> - 11.8-1
+- better MFMT fix for windows directories.  prior fix resulted in MDTM not matching MFMT depending on DST.
+
 * Wed Oct 05 2016 Globus Toolkit <support@globus.org> - 11.7-1
 - fix error response for MDTM/UTIME on windows
 
