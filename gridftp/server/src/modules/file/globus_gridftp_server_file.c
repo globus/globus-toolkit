@@ -1617,40 +1617,39 @@ error:
 }
 
 #ifdef WIN32
-/* MSDN example */
-void 
-TimetToFileTime( time_t t, LPFILETIME pft )
-{
-    LONGLONG ll = Int32x32To64(t, 10000000) + 116444736000000000;
-    pft->dwLowDateTime = (DWORD) ll;
-    pft->dwHighDateTime = ll >>32;
-}
 
+/* utime on win32 does not work with directories.
+    we can work around that by opening a HANDLE with the 
+    FILE_FLAG_BACKUP_SEMANTICS flag, getting the fd from that, and calling 
+    _futime on that fd.
+
+    we could call SetFileTime() with the HANDLE, but there are quirks with 
+    DST that result in the time returned by stat() being different than the
+    set time depending on the date and current DST state.  the perl module
+    Win32-UTCFileTime documents that bit of fun.
+*/
+    
 static BOOL 
-settime_win(
+utime_win(
     const char *                        path,
-    time_t                              modtime)
+    struct utimbuf *                    ubuf)
 {
     HANDLE                              hFile;
-    FILETIME                            ft;
-    BOOL                                rc;
+    int                                 rc;
+    int                                 fd;
     hFile = CreateFile(
         path, FILE_WRITE_ATTRIBUTES, FILE_SHARE_WRITE, 0, 
         OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
     if (hFile == INVALID_HANDLE_VALUE)
     {
         errno = GetLastError();
-        return 1;
+        return -1;
     }
-
-    TimetToFileTime(modtime, &ft);
-    rc = SetFileTime(hFile, NULL, NULL, &ft);
-    if (!rc)
-    {
-        errno = GetLastError();
-    }
-    CloseHandle(hFile);
-    return !rc;
+    fd = _open_osfhandle((intptr_t) hFile, 0);
+    rc = _futime(fd, (struct _utimbuf *) ubuf);
+    /* _close closes the underlying HANDLE */
+    _close(fd);
+    return rc;
 }
 #endif
 
@@ -1671,7 +1670,7 @@ globus_l_gfs_file_utime(
     ubuf.actime = time(NULL);
 
 #ifdef WIN32
-    rc = settime_win(pathname, modtime);
+    rc = utime_win(pathname, &ubuf);
 #else   
     rc = utime(pathname, &ubuf);
 #endif
