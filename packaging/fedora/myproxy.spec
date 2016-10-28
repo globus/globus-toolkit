@@ -9,12 +9,12 @@ Name:           myproxy
 %else
 %global apache_license ASL 2.0
 %global bsd_license BSD
-%global libpkg  libs
+%global libpkg  myproxy-libs
 %global nlibpkg libs
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.21
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -65,7 +65,6 @@ BuildRequires:      globus-xio-devel >= 3
 BuildRequires:      globus-usage-devel >= 3
 BuildRequires:      globus-gss-assist-devel >= 8
 
-Requires:      %{libpkg} = %{version}-%{release}
 Requires:      globus-proxy-utils >= 5
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
@@ -131,7 +130,6 @@ Requires(preun):  aaa_base
 Requires(postun): sysconfig
 Requires(postun): aaa_base
 %endif
-Requires:         %{libpkg} = %{version}-%{release}
 Summary:          Server for X.509 Public Key Infrastructure (PKI) security credentials 
 Group:            System Environment/Daemons
 
@@ -150,7 +148,6 @@ Package %{name}-server contains the MyProxy server.
 # a load of perl dependencies.
 %package       admin
 Requires:      myproxy-server = %{version}-%{release}
-Requires:      %{libpkg}   = %{version}-%{release}
 Requires:      myproxy = %{version}-%{release}
 Requires:      globus-gsi-cert-utils-progs >= 8
 Summary:       Server for X.509 Public Key Infrastructure (PKI) security credentials 
@@ -573,6 +570,9 @@ fi
 %endif
 
 %changelog
+* Fri Oct 28 2016 Globus Toolkit <support@globus.org> - 6.1.21-2
+- Fix naming of dependency
+
 * Mon Sep 19 2016 Globus Toolkit <support@globus.org> - 6.1.21-1
 - Do not overwrite configuration flags
 
