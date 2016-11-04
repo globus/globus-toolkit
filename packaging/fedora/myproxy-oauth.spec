@@ -5,7 +5,7 @@ Name:		myproxy-oauth
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	0.22
+Version:	0.23
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	MyProxy OAuth Delegation Serice
@@ -146,6 +146,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Fri Nov 04 2016 Globus Toolkit <support@globus.org> - 0.23-1
+- Fix indent issue
+
 * Tue Oct 18 2016 Globus Toolkit <support@globus.org> - 0.22-1
 - Catch exceptions and return "400 Bad Request"
 
