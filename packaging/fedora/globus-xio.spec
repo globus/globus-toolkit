@@ -8,8 +8,8 @@ Name:		globus-xio
 
 
 %global _name %(tr - _ <<< %{name})
-Version:	5.13
-Release:	4%{?dist}
+Version:	5.14
+Release:	1%{?dist}
 Vendor:	        Globus Support
 Summary:	Globus Toolkit - Globus XIO Framework
 
@@ -169,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*/*
 
 %changelog
+* Fri Nov 04 2016 Globus Toolkit <support@globus.org> - 5.14-1
+- Don't crash when GLOBUS_TCP_PORT_RANGE has the same min and max
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 5.13-4
 - Rebuild after changes for el.5 with openssl101e
 

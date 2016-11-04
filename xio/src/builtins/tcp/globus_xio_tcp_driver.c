@@ -1311,7 +1311,7 @@ globus_l_xio_tcp_bind(
                 stop_port = tmpport;
             }
         }
-        else if(min_port != 0 && max_port != 0)
+        else if(min_port != 0 && max_port != 0 && max_port > min_port)
         {
             port = min_port + (int)(rand() % (max_port-min_port));
 
