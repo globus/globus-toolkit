@@ -281,15 +281,13 @@ globus_i_gsi_gss_create_and_fill_context(
     globus_mutex_init(&context->mutex, NULL);
 
     /* initialize the peer_cred_handle */
-    context->peer_cred_handle = malloc(sizeof(gss_cred_id_desc));
+    context->peer_cred_handle = calloc(1, sizeof(gss_cred_id_desc));
     if(context->peer_cred_handle == NULL)
     {
         GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
         major_status = GSS_S_FAILURE;
         goto free_context;
     }
-
-    memset(context->peer_cred_handle, 0, sizeof(gss_cred_id_desc));
     
     local_result = globus_gsi_cred_handle_init(
         &context->peer_cred_handle->cred_handle, NULL);
@@ -1371,7 +1369,7 @@ globus_i_gsi_gss_create_anonymous_cred(
 
     *output_cred_handle = GSS_C_NO_CREDENTIAL;
     
-    newcred = (gss_cred_id_desc*) malloc(sizeof(gss_cred_id_desc));
+    newcred = (gss_cred_id_desc*) calloc(1, sizeof(gss_cred_id_desc));
     
     if (newcred == NULL)
     {

@@ -255,6 +255,10 @@ globus_l_gss_verify_mic_old(
 
     if (hash != NULL)
     {
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (globus_i_gsi_gssapi_debug_fstream,
+                "verify_mic: verifying OLD MIC\n"));
+
         #if OPENSSL_VERSION_NUMBER < 0x10100000L
         {
             mac_sec = context_handle->gss_ssl->s3->read_mac_secret;
@@ -404,6 +408,10 @@ globus_l_gss_verify_mic_new(
 
     if (hash != NULL)
     {
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (globus_i_gsi_gssapi_debug_fstream,
+                "verify_mic: verifying MICv2\n"));
+
         #if OPENSSL_VERSION_NUMBER >= 0x10000100L
         {
             mac_sec = context_handle->mac_key;
