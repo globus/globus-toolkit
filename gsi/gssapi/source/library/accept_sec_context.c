@@ -116,14 +116,18 @@ GSS_CALLCONV gss_accept_sec_context(
             nreq_flags = *ret_flags;
         }
 
-        if (globus_i_backward_compatible_mic)
-        {
-            actual_mech = (gss_OID) gss_mech_globus_gssapi_openssl;
-        }
-        else
-        {
-            actual_mech = (gss_OID) gss_mech_globus_gssapi_openssl_micv2;
-        }
+        /* Use mech from cred */
+        actual_mech = acceptor_cred_handle->mech;
+
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+            2, (globus_i_gsi_gssapi_debug_fstream, 
+                "accept_sec_context:OID from cred:%s\n",
+                (actual_mech == GSS_C_NO_OID)? "GSS_C_NO_OID":
+                ((g_OID_equal(actual_mech, (gss_OID) gss_mech_globus_gssapi_openssl))?
+                  "OLD MECH OID":
+                 ((g_OID_equal(actual_mech, (gss_OID) gss_mech_globus_gssapi_openssl_micv2))?
+                  "MICV2 MECH OID": "UNKNOWN MECH OID"))));
+
         major_status = globus_i_gsi_gss_create_and_fill_context(
             & local_minor_status,
             & context,
