@@ -236,10 +236,10 @@ GSS_CALLCONV gss_import_cred(
 
     if(desired_mech != NULL)
     {
-        if (!g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl))
-            ((gss_cred_id_desc *) *output_cred_handle)->mech = gss_mech_globus_gssapi_openssl;
-        else if (!g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl_micv2))
-            ((gss_cred_id_desc *) *output_cred_handle)->mech = gss_mech_globus_gssapi_openssl_micv2;
+        if (g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl))
+            ((gss_cred_id_desc *) *output_cred_handle)->mech = (const gss_OID)gss_mech_globus_gssapi_openssl;
+        else if (g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl_micv2))
+            ((gss_cred_id_desc *) *output_cred_handle)->mech = (const gss_OID)gss_mech_globus_gssapi_openssl_micv2;
         else {
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,

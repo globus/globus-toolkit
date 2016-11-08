@@ -116,8 +116,9 @@ GSS_CALLCONV gss_accept_sec_context(
             nreq_flags = *ret_flags;
         }
 
-        /* Use mech from cred */
-        actual_mech = acceptor_cred_handle->mech;
+        /* Use mech from cred if available */
+        if (acceptor_cred_handle != GSS_C_NO_CREDENTIAL)
+            actual_mech = acceptor_cred_handle->mech;
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             2, (globus_i_gsi_gssapi_debug_fstream, 

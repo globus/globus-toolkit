@@ -156,7 +156,7 @@ GSS_CALLCONV gss_init_sec_context(
 #       if OPENSSL_VERSION_NUMBER >= 0x10000100L
         else if (g_OID_equal(mech_type, (gss_OID) gss_mech_globus_gssapi_openssl_micv2))
         {
-            actual_mech = gss_mech_globus_gssapi_openssl_micv2;
+            actual_mech = (const gss_OID) gss_mech_globus_gssapi_openssl_micv2;
                 GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                     2, (globus_i_gsi_gssapi_debug_fstream, 
                         "init_sec_context: MICV2 MECH OID requested\n"));

@@ -454,7 +454,7 @@ globus_l_gsi_gssapi_activate(void)
         {
             globus_i_accept_backward_compatible_mic = GLOBUS_FALSE;
         }
-    } else
+    } else {
         globus_i_backward_compatible_mic = GLOBUS_FALSE;
         globus_i_accept_backward_compatible_mic = GLOBUS_FALSE;
     }
