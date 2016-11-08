@@ -148,6 +148,9 @@ GSS_CALLCONV gss_get_mic(
         #if OPENSSL_VERSION_NUMBER < 0x10100000L
         if (g_OID_equal(context->mech, gss_mech_globus_gssapi_openssl))
         {
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (globus_i_gsi_gssapi_debug_fstream,
+                    "get_mic: OLD MIC\n"));
             mac_sec = context->gss_ssl->s3->write_mac_secret;
             seq = context->gss_ssl->s3->write_sequence;
         }
@@ -156,6 +159,9 @@ GSS_CALLCONV gss_get_mic(
         {
             #if OPENSSL_VERSION_NUMBER >= 0x10000100L
                 mac_sec = context->mac_key;
+                GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                    2, (globus_i_gsi_gssapi_debug_fstream,
+                        "get_mic: MICv2\n"));
             #else
                 GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
                 major_status = GSS_S_FAILURE;

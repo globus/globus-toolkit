@@ -105,19 +105,6 @@ GSS_CALLCONV gss_acquire_cred(
         globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
     }
     globus_mutex_unlock(&globus_i_gssapi_activate_mutex);
-    
-    if (actual_mechs != NULL)
-    {
-        major_status = gss_indicate_mechs(&local_minor_status,
-                                          actual_mechs);
-        if (GSS_ERROR(major_status))
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH);
-            goto exit;
-        }
-    }
 
     if(desired_name_P)
     {
@@ -161,6 +148,77 @@ GSS_CALLCONV gss_acquire_cred(
     if(desired_name_string)
     {
         free(desired_name_string);
+    }
+
+    /* Use new mech OID if present */
+    if (desired_mechs != NULL)
+    {
+        int present = 0;
+
+        if (desired_mechs->count > 1)
+        {
+            major_status = GSS_S_FAILURE;
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH);
+            goto error;
+        }
+
+        if ((gss_test_oid_set_member(&local_minor_status,
+                         (const gss_OID) gss_mech_globus_gssapi_openssl_micv2,
+                         desired_mechs, &present) == GSS_S_COMPLETE) && present)
+        {
+            (*output_cred_handle_P)->mech = (const gss_OID)gss_mech_globus_gssapi_openssl_micv2;
+        }
+        else if ((gss_test_oid_set_member(&local_minor_status,
+                         (const gss_OID) gss_mech_globus_gssapi_openssl,
+                         desired_mechs, &present) == GSS_S_COMPLETE) && present)
+        {
+            (*output_cred_handle_P)->mech = (const gss_OID)gss_mech_globus_gssapi_openssl;
+        }
+        else
+        {
+            major_status = GSS_S_FAILURE;
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH);
+            goto error;
+        }
+    } else if (globus_i_backward_compatible_mic)
+    {
+            (*output_cred_handle_P)->mech = (const gss_OID)gss_mech_globus_gssapi_openssl;
+    } else
+    {
+            (*output_cred_handle_P)->mech = (const gss_OID)gss_mech_globus_gssapi_openssl_micv2;
+    }
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+        2, (globus_i_gsi_gssapi_debug_fstream,
+            "acquire_cred: %s\n",
+            ((*output_cred_handle_P)->mech == GSS_C_NO_OID)? "NO MECH OID":
+            ((g_OID_equal((*output_cred_handle_P)->mech, (gss_OID) gss_mech_globus_gssapi_openssl))?
+              "OLD MECH OID":
+             ((g_OID_equal((*output_cred_handle_P)->mech, (gss_OID) gss_mech_globus_gssapi_openssl_micv2))?
+              "MICV2 MECH OID": "UNKNOWN MECH OID"))));
+    
+    if (actual_mechs != NULL)
+    {
+        if ((*output_cred_handle_P)->mech != GSS_C_NO_OID)
+        {
+            major_status = gss_create_empty_oid_set(&local_minor_status, actual_mechs);
+            if (major_status == GSS_S_COMPLETE)
+                major_status = gss_add_oid_set_member(&local_minor_status,
+                                  (*output_cred_handle_P)->mech, actual_mechs);
+        } else
+            major_status = gss_indicate_mechs(&local_minor_status,
+                                          actual_mechs);
+        if (GSS_ERROR(major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH);
+            goto error;
+        }
     }
 
     goto exit;

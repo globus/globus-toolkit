@@ -121,19 +121,6 @@ GSS_CALLCONV gss_import_cred(
         major_status = GSS_S_FAILURE;
         goto exit;
     }
-
-    if(desired_mech != NULL
-        && (!g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl))
-        && (!g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl_micv2)))
-    {
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH,
-            (_GGSL("The desired_mech: %s, is not supported"),
-             ((gss_OID_desc *)desired_mech)->elements));
-        major_status = GSS_S_BAD_MECH;
-        goto exit;
-    }
     
     if (import_buffer->length > 0)
     {
@@ -245,6 +232,23 @@ GSS_CALLCONV gss_import_cred(
             goto exit;
         }
         *time_rec = (OM_uint32) lifetime;
+    }
+
+    if(desired_mech != NULL)
+    {
+        if (g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl))
+            ((gss_cred_id_desc *) *output_cred_handle)->mech = (const gss_OID)gss_mech_globus_gssapi_openssl;
+        else if (g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl_micv2))
+            ((gss_cred_id_desc *) *output_cred_handle)->mech = (const gss_OID)gss_mech_globus_gssapi_openssl_micv2;
+        else {
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH,
+                (_GGSL("The desired_mech: %s, is not supported"),
+                 ((gss_OID_desc *)desired_mech)->elements));
+            major_status = GSS_S_BAD_MECH;
+            goto exit;
+        }
     }
         
  exit:

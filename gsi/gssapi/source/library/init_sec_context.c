@@ -132,22 +132,34 @@ GSS_CALLCONV gss_init_sec_context(
             if (globus_i_backward_compatible_mic)
             {
                 actual_mech = (gss_OID) gss_mech_globus_gssapi_openssl;
+                GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                    2, (globus_i_gsi_gssapi_debug_fstream, 
+                        "init_sec_context: no mech_type requested; using OLD MECH OID\n"));
             }
             else
             {
                 actual_mech = (gss_OID) gss_mech_globus_gssapi_openssl_micv2;
+                GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                    2, (globus_i_gsi_gssapi_debug_fstream, 
+                        "init_sec_context: no mech_type requested; using MICV2 MECH OID\n"));
             }
         }
 #       if OPENSSL_VERSION_NUMBER < 0x10100000L
         else if (g_OID_equal(mech_type, (gss_OID) gss_mech_globus_gssapi_openssl))
         {
             actual_mech = (gss_OID) gss_mech_globus_gssapi_openssl;
+                GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                    2, (globus_i_gsi_gssapi_debug_fstream, 
+                        "init_sec_context: OLD MECH OID requested\n"));
         }
 #       endif
 #       if OPENSSL_VERSION_NUMBER >= 0x10000100L
         else if (g_OID_equal(mech_type, (gss_OID) gss_mech_globus_gssapi_openssl_micv2))
         {
-            actual_mech = gss_mech_globus_gssapi_openssl_micv2;
+            actual_mech = (const gss_OID) gss_mech_globus_gssapi_openssl_micv2;
+                GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                    2, (globus_i_gsi_gssapi_debug_fstream, 
+                        "init_sec_context: MICV2 MECH OID requested\n"));
         }
 #       endif
         else

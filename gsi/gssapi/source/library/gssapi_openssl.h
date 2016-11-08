@@ -162,6 +162,7 @@ typedef struct gss_cred_id_desc_struct {
     gss_name_desc *                     globusid;
     gss_cred_usage_t                    cred_usage;
     SSL_CTX *                           ssl_context;
+    gss_OID                             mech;
 } gss_cred_id_desc;
 
 typedef struct gss_ctx_id_desc_struct{
