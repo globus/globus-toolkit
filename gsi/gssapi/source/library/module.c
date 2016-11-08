@@ -432,7 +432,6 @@ globus_l_gsi_gssapi_activate(void)
 
     if (OPENSSL_VERSION_NUMBER < 0x10100000L)
     {
-
         globus_i_backward_compatible_mic = GLOBUS_TRUE;
         globus_i_accept_backward_compatible_mic = GLOBUS_TRUE;
 
