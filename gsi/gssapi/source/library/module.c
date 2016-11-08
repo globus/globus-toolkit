@@ -76,9 +76,9 @@ const char *                            globus_i_gsi_gssapi_cipher_list;
  */
 globus_bool_t                           globus_i_gsi_gssapi_server_cipher_order ;
 
-globus_bool_t                           globus_i_backward_compatible_mic;
+globus_bool_t                           globus_i_backward_compatible_mic = GLOBUS_TRUE;
 
-globus_bool_t                           globus_i_accept_backward_compatible_mic;
+globus_bool_t                           globus_i_accept_backward_compatible_mic = GLOBUS_TRUE;
 /**
  * Module descriptor static initializer.
  */
@@ -453,6 +453,11 @@ globus_l_gsi_gssapi_activate(void)
         {
             globus_i_accept_backward_compatible_mic = GLOBUS_FALSE;
         }
+    }
+    else
+    {
+        globus_i_backward_compatible_mic = GLOBUS_FALSE;
+        globus_i_accept_backward_compatible_mic = GLOBUS_FALSE;
     }
 
     rc = globus_module_activate(GLOBUS_OPENSSL_MODULE);

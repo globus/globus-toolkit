@@ -1,3 +1,9 @@
+globus-gssapi-gsi (12.12-1+gt6.@distro@) @distro@; urgency=low
+
+  * More updates for mech negotiation
+
+ -- Globus Toolkit <support@globus.org>  Tue, 08 Nov 2016 14:14:26 -0500
+
 globus-gssapi-gsi (12.11-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix function arg mismatch

@@ -297,6 +297,22 @@ GSS_CALLCONV gss_indicate_mechs(
         goto exit;
     }
 
+    /* module activation if not already done by calling
+     * globus_module_activate
+     */
+ 
+    globus_thread_once(
+        &once_control,
+        globus_l_gsi_gssapi_activate_once);
+
+    globus_mutex_lock(&globus_i_gssapi_activate_mutex);
+    if (!globus_i_gssapi_active)
+    {
+        globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    }
+    globus_mutex_unlock(&globus_i_gssapi_activate_mutex);
+
+
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
     
     major_status = gss_create_empty_oid_set(&local_minor_status, 
@@ -308,19 +324,27 @@ GSS_CALLCONV gss_indicate_mechs(
             GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH);
         goto exit;
     }
-    
-    major_status = gss_add_oid_set_member(
-        &local_minor_status, 
-        (const gss_OID) gss_mech_globus_gssapi_openssl,
-        &set);
-    if (GSS_ERROR(major_status))
-    {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_OID);
-        
-        gss_release_oid_set(&local_minor_status, &set);
-        goto exit;
+
+    if (globus_i_backward_compatible_mic) {
+        major_status = gss_add_oid_set_member(
+            &local_minor_status, 
+            (const gss_OID) gss_mech_globus_gssapi_openssl,
+            &set);
+        if (GSS_ERROR(major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_OID);
+            
+            gss_release_oid_set(&local_minor_status, &set);
+            goto exit;
+        }
+        else
+        {
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (globus_i_gsi_gssapi_debug_fstream,
+                    "indicate_mechs: adding OLD OID\n"));
+        }
     }
     
     major_status = gss_add_oid_set_member(
