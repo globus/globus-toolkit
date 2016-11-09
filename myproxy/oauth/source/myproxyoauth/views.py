@@ -145,17 +145,17 @@ def initiate(environ, start_response):
 
                 return struct.unpack(fmt, data[offs:offs+unpack_len])
 
-	    def decode(n):
-		len = reduce(lambda x,y: long(x*256+y),
-			unpack_from("4B", n, 0))
-		return reduce(lambda x,y: long(x*256+y),
-			unpack_from(str(len)+"B", n, 4))
-	    keytuple = (decode(k.n), decode(k.e))
+            def decode(n):
+                len = reduce(lambda x,y: long(x*256+y),
+                        unpack_from("4B", n, 0))
+                return reduce(lambda x,y: long(x*256+y),
+                        unpack_from(str(len)+"B", n, 4))
+            keytuple = (decode(k.n), decode(k.e))
         except Exception, e:
             application.logger.error(str(sys.exc_info()))
             raise(e)
 
-	key = Crypto.PublicKey.RSA.construct(keytuple)
+        key = Crypto.PublicKey.RSA.construct(keytuple)
 
     method = environ['REQUEST_METHOD']
     url = url_reconstruct(environ)
@@ -191,12 +191,13 @@ def initiate(environ, start_response):
 
     status = "200 Ok"
     headers = [
-	("Content-Type", "app/x-www-form-urlencoded") ]
+        ("Content-Type", "app/x-www-form-urlencoded") ]
     start_response(status, headers)
 
     return "oauth_token=%s&oauth_callback_confirmed=true" % oauth_temp_token
-  except:
-    return bad_request(start_response, sys.exc_info())
+  except Exception, e:
+    return bad_request(start_response, e)
+
 
 @application.route('/authorize', methods=['GET'])
 def get_authorize(environ, start_response):
@@ -206,19 +207,19 @@ def get_authorize(environ, start_response):
     transactions = db_session.get_transaction(
             Transaction(temp_token=oauth_temp_token, temp_token_valid=1))
     if len(transactions) == 0:
-	status = "403 Not authorized"
-	headers = [ ("Content-Type", "text/plain") ]
-	start_response(status, headers)
-	return 'Invalid temporary token'
+        status = "403 Not authorized"
+        headers = [ ("Content-Type", "text/plain") ]
+        start_response(status, headers)
+        return 'Invalid temporary token'
 
     transaction = transactions[0]
 
     clients = db_session.get_client(Client(oauth_consumer_key=transaction.oauth_consumer_key))
     if len(clients) == 0:
-	status = "403 Not authorized"
-	headers = [ ("Content-Type", "text/plain") ]
-	start_response(status, headers)
-	return 'Unregistered client'
+        status = "403 Not authorized"
+        headers = [ ("Content-Type", "text/plain") ]
+        start_response(status, headers)
+        return 'Unregistered client'
     client = clients[0]
 
     transaction.temp_token_valid = 0
@@ -230,18 +231,18 @@ def get_authorize(environ, start_response):
     if os.path.exists(css_path):
         styles.append("static/site.css")
     res = render_template('authorize.html',
-	    client_name=client.name,
-	    client_url=client.home_url,
-	    temp_token=oauth_temp_token,
-	    retry_message="",
+            client_name=client.name,
+            client_url=client.home_url,
+            temp_token=oauth_temp_token,
+            retry_message="",
             stylesheets="\n".join(
                 [("<link rel='stylesheet' type='text/css' href='%s' >" % x) for x in styles]))
     status = "200 Ok"
     headers = [ ("Content-Type", "text/html")]
     start_response(status, headers)
     return res
-  except:
-    return bad_request(start_response, sys.exc_info())
+  except Exception, e:
+    return bad_request(start_response, e)
 
 
 @application.route('/authorize', methods=['POST'])
@@ -306,8 +307,8 @@ def post_authorize(environ, start_response):
 
     start_response(status, headers)
     return ""
-  except:
-    return bad_request(start_response, sys.exc_info())
+  except Exception, e:
+    return bad_request(start_response, e)
 
 @application.route('/token', methods=['GET'])
 def token(environ, start_response):
@@ -342,8 +343,8 @@ def token(environ, start_response):
     headers = [('Content-Type', 'app/x-www-form-urlencoded')]
     resp = start_response(status, headers)
     return "oauth_token=%s" % str(oauth_access_token)
-  except:
-    return bad_request(start_response, sys.exc_info())
+  except Exception, e:
+    return bad_request(start_response, e)
 
 @application.route('/getcert', methods=['GET'])
 def getcert(environ, start_response):
@@ -382,6 +383,6 @@ def getcert(environ, start_response):
     start_response(status, headers)
 
     return 'username=%s\n%s' % (str(transaction.username), str(transaction.certificate))
-  except:
-    return bad_request(start_response, sys.exc_info())
+  except Exception, e:
+    return bad_request(start_response, e)
 # vim: syntax=python: nospell:

@@ -1,3 +1,9 @@
+myproxy-oauth (0.24-1+gt6.@distro@) @distro@; urgency=low
+
+  * Verify all paths yield proper response or error response
+
+ -- Globus Toolkit <support@globus.org>  Wed, 09 Nov 2016 14:05:06 -0500
+
 myproxy-oauth (0.23-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix indent issue
