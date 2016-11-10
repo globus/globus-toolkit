@@ -1,3 +1,9 @@
+myproxy-oauth (0.25-1+gt6.@distro@) @distro@; urgency=low
+
+  * Python exception handling workaround for 2.5-3.x
+
+ -- Globus Toolkit <support@globus.org>  Thu, 10 Nov 2016 15:52:39 -0500
+
 myproxy-oauth (0.24-1+gt6.@distro@) @distro@; urgency=low
 
   * Verify all paths yield proper response or error response

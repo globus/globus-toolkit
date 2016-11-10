@@ -31,10 +31,10 @@ from myproxyoauth import application
 from myproxyoauth.database import db_session, Admin, Client, Transaction
 from urllib import quote
 
-def bad_request(start_response, e):
+def bad_request(start_response):
     status = "400 Bad Request"
     headers = [ ("Content-Type", "text/plain") ]
-    start_response(status, headers, e)
+    start_response(status, headers, sys.exc_info())
     return "Bad request\n"
 
 def get_template(name):
@@ -151,9 +151,9 @@ def initiate(environ, start_response):
                 return reduce(lambda x,y: long(x*256+y),
                         unpack_from(str(len)+"B", n, 4))
             keytuple = (decode(k.n), decode(k.e))
-        except Exception, e:
+        except:
             application.logger.error(str(sys.exc_info()))
-            raise(e)
+            raise
 
         key = Crypto.PublicKey.RSA.construct(keytuple)
 
@@ -165,13 +165,14 @@ def initiate(environ, start_response):
     o_server.add_signature_method(oauth.SignatureMethod_RSA_SHA1())
     try:
         o_server.verify_request(o_request, o_consumer, None)
-    except oauth.Error, e:
-        application.logger.error(str(e))
+    except:
+        e = sys.exc_info()
+        application.logger.error(str(e[1]))
         status = "403 Not authorized"
         headers = [
                 ("Content-Type", "text/plain") ]
-        start_response(status, headers, exc=e)
-        return str(e)
+        start_response(status, headers, e)
+        return str(e[1])
 
     certreq = str(request.getvalue('certreq'))
 
@@ -195,8 +196,8 @@ def initiate(environ, start_response):
     start_response(status, headers)
 
     return "oauth_token=%s&oauth_callback_confirmed=true" % oauth_temp_token
-  except Exception, e:
-    return bad_request(start_response, e)
+  except:
+    return bad_request(start_response)
 
 
 @application.route('/authorize', methods=['GET'])
@@ -241,8 +242,8 @@ def get_authorize(environ, start_response):
     headers = [ ("Content-Type", "text/html")]
     start_response(status, headers)
     return res
-  except Exception, e:
-    return bad_request(start_response, e)
+  except:
+    return bad_request(start_response)
 
 
 @application.route('/authorize', methods=['POST'])
@@ -268,8 +269,9 @@ def post_authorize(environ, start_response):
         cert = myproxy.myproxy_logon(certreq,
                 transaction.certlifetime,
                 username, passphrase, client.myproxy_server)
-    except Exception, e:
-        application.logger.debug(str(e))
+    except:
+        e = sys.exc_info()
+        application.logger.error(str(e[1]))
         status = "200 Ok"
         headers = [ ("Content-Type", "text/html") ]
         styles = ['static/oauth.css']
@@ -281,7 +283,7 @@ def post_authorize(environ, start_response):
                     client_name=client.name,
                     client_url=client.home_url,
                     temp_token=oauth_temp_token,
-                    retry_message=str(e),
+                    retry_message=str(e[1]),
                     stylesheets="\n".join(
                         [("<link rel='stylesheet' type='text/css' href='%s' >" % x) for x in styles]))
         start_response(status, headers, e)
@@ -307,8 +309,8 @@ def post_authorize(environ, start_response):
 
     start_response(status, headers)
     return ""
-  except Exception, e:
-    return bad_request(start_response, e)
+  except:
+    return bad_request(start_response)
 
 @application.route('/token', methods=['GET'])
 def token(environ, start_response):
@@ -343,8 +345,8 @@ def token(environ, start_response):
     headers = [('Content-Type', 'app/x-www-form-urlencoded')]
     resp = start_response(status, headers)
     return "oauth_token=%s" % str(oauth_access_token)
-  except Exception, e:
-    return bad_request(start_response, e)
+  except:
+    return bad_request(start_response)
 
 @application.route('/getcert', methods=['GET'])
 def getcert(environ, start_response):
@@ -383,6 +385,6 @@ def getcert(environ, start_response):
     start_response(status, headers)
 
     return 'username=%s\n%s' % (str(transaction.username), str(transaction.certificate))
-  except Exception, e:
-    return bad_request(start_response, e)
+  except:
+    return bad_request(start_response)
 # vim: syntax=python: nospell:

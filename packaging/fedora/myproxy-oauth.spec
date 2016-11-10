@@ -5,7 +5,7 @@ Name:		myproxy-oauth
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	0.24
+Version:	0.25
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	MyProxy OAuth Delegation Serice
@@ -146,6 +146,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Thu Nov 10 2016 Globus Toolkit <support@globus.org> - 0.25-1
+- Python exception handling workaround for 2.5-3.x
+
 * Wed Nov 09 2016 Globus Toolkit <support@globus.org> - 0.24-1
 - Verify all paths yield proper response or error response
 
