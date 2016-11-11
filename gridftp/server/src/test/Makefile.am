@@ -1,5 +1,6 @@
 check_PROGRAMS = \
         cmp_alias_ent_test \
+        error_response_test \
         ipc-test \
         sharing_allowed_test
 
@@ -17,6 +18,7 @@ check_SCRIPTS = setup-chroot-test
 if ENABLE_TESTS
 TESTS = \
 	cmp_alias_ent_test\
+        error_response_test \
 	ipc-test \
 	setup-chroot-test \
 	sharing_allowed_test

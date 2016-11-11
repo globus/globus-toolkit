@@ -31,6 +31,7 @@ libglobus_gridftp_server_la_SOURCES =   \
 	globus_gridftp_server.h         \
 	globus_gridftp_server_embed.h   \
 	globus_i_gridftp_server.h       \
+        globus_i_gfs_ftp_response_error.c   \
 	globus_i_gfs_log.c              \
 	globus_i_gfs_brain.c            \
 	globus_i_gfs_default_brain.c    \

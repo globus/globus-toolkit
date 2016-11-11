@@ -162,6 +162,13 @@ typedef enum globus_l_gfs_auth_level_e
     GLOBUS_L_GFS_AUTH_ALL = 0xFF
 } globus_l_gfs_auth_level_t;
 
+int
+globus_gfs_error_get_ftp_response_code(
+    globus_object_t *                   error);
+
+char *
+globus_gfs_error_get_ftp_response_message(
+    globus_object_t *                   error);
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"

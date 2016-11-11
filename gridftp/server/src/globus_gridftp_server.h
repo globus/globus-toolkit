@@ -1465,7 +1465,41 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
         __LINE__,                                                           \
         "%s",                                                               \
         (reason))                             
-        
+ 
+globus_object_t *
+globus_gfs_ftp_response_error_construct(
+    globus_module_descriptor_t *        base_source,
+    globus_object_t *                   base_cause,
+    int                                 response_code,
+    const char                         *fmt,
+    ...);
+
+globus_object_t *
+globus_gfs_ftp_response_error_initialize(
+    globus_object_t *                   error,
+    globus_module_descriptor_t *        base_source,
+    globus_object_t *                   base_cause,
+    int                                 response_code,
+    const char *                        fmt,
+    va_list                             ap);
+
+extern const globus_object_type_t
+        GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE_DEFINITION;
+
+#define GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE \
+        (&GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE_DEFINITION)
+
+
+#define GlobusGFSErrorFtpResponse(code, ...)                                \
+    globus_error_put(GlobusGFSErrorObjFtpResponse(code, __VA_ARGS__))
+
+#define GlobusGFSErrorObjFtpResponse(code, ...)                                \
+    globus_gfs_ftp_response_error_construct(                                \
+            NULL,                                                           \
+            NULL,                                                           \
+            code,                                                           \
+            __VA_ARGS__)
+
 /* 
  * 
  * IPC 
