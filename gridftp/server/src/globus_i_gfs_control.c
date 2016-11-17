@@ -1092,10 +1092,15 @@ globus_l_gfs_data_command_cb(
     }
     else
     {
+        int                             response_code = 0;
         globus_result_t                 result;
-        msg = globus_error_print_friendly(
-            globus_error_peek(reply->result));
-        
+
+        response_code = globus_gfs_error_get_ftp_response_code(
+                globus_error_peek(reply->result));
+
+        msg = globus_gfs_error_get_ftp_response_message(
+                globus_error_peek(reply->result));
+
         result = globus_i_gfs_data_virtualize_path(
             request->instance->session_arg, msg, &tmp_msg);
         if(result == GLOBUS_SUCCESS && tmp_msg != NULL)
@@ -1106,7 +1111,7 @@ globus_l_gfs_data_command_cb(
 
         tmp_msg = globus_common_create_string("Command failed : %s", msg);
         globus_free(msg);
-        msg = globus_gsc_string_to_959(500, tmp_msg, NULL);
+        msg = globus_gsc_string_to_959(response_code, tmp_msg, NULL);
         globus_gsc_959_finished_command(op, msg);
         globus_free(tmp_msg);
         globus_free(msg);
@@ -1335,11 +1340,16 @@ error_init:
     
     if(result != GLOBUS_SUCCESS)
     {
+        int                             response_code = 0;
         char *                          ftp_str;
         char *                          tmp_str;
         
-        tmp_str = globus_error_print_friendly(globus_error_peek(result));
-        ftp_str = globus_gsc_string_to_959(500, tmp_str, NULL);
+
+        response_code = globus_gfs_error_get_ftp_response_code(
+                globus_error_peek(result));
+        tmp_str = globus_gfs_error_get_ftp_response_message(
+                globus_error_peek(result));
+        ftp_str = globus_gsc_string_to_959(response_code, tmp_str, NULL);
         globus_gsc_959_finished_command(op, ftp_str);
         globus_free(tmp_str);
         globus_free(ftp_str);
@@ -1977,11 +1987,15 @@ error_init:
     
     if(result != GLOBUS_SUCCESS)
     {
+        int                             response_code = 0;
         char *                          ftp_str;
         char *                          tmp_str;
-        
-        tmp_str = globus_error_print_friendly(globus_error_peek(result));
-        ftp_str = globus_gsc_string_to_959(500, tmp_str, NULL);
+
+        response_code = globus_gfs_error_get_ftp_response_code(
+                globus_error_peek(result));
+        tmp_str = globus_gfs_error_get_ftp_response_message(
+                globus_error_peek(result));
+        ftp_str = globus_gsc_string_to_959(response_code, tmp_str, NULL);
         globus_gsc_959_finished_command(op, ftp_str);
         globus_free(tmp_str);
         globus_free(ftp_str);
