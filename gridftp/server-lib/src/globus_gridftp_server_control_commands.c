@@ -2650,9 +2650,21 @@ globus_l_gsc_data_cb(
 
     if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
-        /* TODO: evaulated error type */
-        code = 500;
-        msg = strdup(_FSMSL("Command failed."));
+        /* If the response_type is an error and the message looks like
+         * an error code, don't wrap it with "500 Command failed. : %s"
+         */
+        if (sscanf(response_msg, "%d%*[ ]", &code) == 1
+                && code >= 400
+                && code < 600)
+        {
+            msg = strdup(response_msg + 4);
+            response_msg = NULL;
+        }
+        else
+        {
+            code = 500;
+            msg = strdup(_FSMSL("Command failed."));
+        }
     }
     else
     {
