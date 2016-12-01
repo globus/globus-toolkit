@@ -133,8 +133,9 @@ BuildRequires: krb5-devel
 BuildRequires: globus-gss-assist-devel >= 8
 BuildRequires: globus-usage-devel >= 3
 BuildRequires: globus-common-progs >= 14
-BuildRequires: globus-gssapi-gsi-devel
+BuildRequires: globus-gssapi-gsi-devel >= 12.12
 BuildRequires:  pkgconfig
+Requires: globus-gssapi-gsi >= 12.12
 %if 0%{?suse_version} > 0
 BuildRequires: libtool
 %else
