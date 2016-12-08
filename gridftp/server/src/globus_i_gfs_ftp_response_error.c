@@ -178,7 +178,7 @@ globus_gfs_error_get_ftp_response_code(
     }
     else
     {
-        return 500;
+        return 0;
     }
 }
 /* globus_gfs_error_get_ftp_response_code() */

@@ -5382,6 +5382,7 @@ globus_l_gfs_data_stat_kickout(
     globus_l_gfs_data_stat_bounce_t *   bounce_info;
     globus_gfs_finished_info_t          reply;
     int                                 i;
+    int                                 code;
     GlobusGFSName(globus_l_gfs_data_stat_kickout);
     GlobusGFSDebugEnter();
 
@@ -5405,6 +5406,16 @@ globus_l_gfs_data_stat_kickout(
     reply.info.stat.uid = bounce_info->op->session_handle->uid;
     reply.info.stat.gid_count = bounce_info->op->session_handle->gid_count;
     reply.info.stat.gid_array = bounce_info->op->session_handle->gid_array;
+
+    /* pull response code from error */
+    if(bounce_info->final_stat && reply.result != GLOBUS_SUCCESS && 
+        (code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(reply.result))) != 0)
+    {
+        reply.code = code;
+        reply.msg = globus_gfs_error_get_ftp_response_message(
+            globus_error_peek(reply.result));
+    }
 
     if(bounce_info->op->callback != NULL)
     {
@@ -10429,32 +10440,41 @@ response_exit:
         globus_gfs_config_set_ptr("byte_transfer_count", str_transferred);
     }
 
-    reply.type = GLOBUS_GFS_OP_TRANSFER;
-    reply.id = op->id;
-    reply.result = op->cached_res;
-
-
-
 /* RIGHT HERE I CAN GET ANOTHER SEND/RECV.  LEAVES IN TE STATE */
     globus_assert(!op->writing ||
         (op->sent_partial_eof == 1 || op->stripe_count == 1 ||
         (op->node_ndx == 0 && op->eof_ready)));
 
+    reply.type = GLOBUS_GFS_OP_TRANSFER;
+    reply.id = op->id;
+    reply.result = op->cached_res;
 
-    /* DO NETLOGGER STUFF 
-     * XXX unless user has a message -- will only be a problem if a DSI
-     * is sending messages to the control channel, in which case they 
-     * just aren't compatible with the netlogger bottleneck reporting
-     */
-    if(op->user_msg == NULL)
+    /* pull response code from error */
+    if(result != GLOBUS_SUCCESS && 
+        (reply.code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(reply.result))) != 0)
     {
-        reply.msg = globus_l_gfs_data_get_nl_msg(op);
+        reply.msg = globus_gfs_error_get_ftp_response_message(
+            globus_error_peek(reply.result));
     }
     else
     {
-        reply.msg = op->user_msg;
+        reply.code = op->user_code;
+
+        /* DO NETLOGGER STUFF 
+         * XXX unless user has a message -- will only be a problem if a DSI
+         * is sending messages to the control channel, in which case they 
+         * just aren't compatible with the netlogger bottleneck reporting
+         */
+        if(op->user_msg == NULL)
+        {
+            reply.msg = globus_l_gfs_data_get_nl_msg(op);
+        }
+        else
+        {
+            reply.msg = op->user_msg;
+        }
     }
-    reply.code = op->user_code;
 
     /* tell the control side the finished was called */
     if(op->callback != NULL)
@@ -11835,6 +11855,7 @@ globus_gridftp_server_finished_command(
     char *                              command_data)
 {
     globus_l_gfs_data_cmd_bounce_t *    bounce;
+    int                                 code;
     GlobusGFSName(globus_gridftp_server_finished_command);
     GlobusGFSDebugEnter();
 
@@ -11885,12 +11906,25 @@ globus_gridftp_server_finished_command(
     bounce->op = op;
     bounce->reply.type = GLOBUS_GFS_OP_COMMAND;
     bounce->reply.id = op->id;
-    bounce->reply.code = op->user_code;
     bounce->reply.result = op->cached_res;
     bounce->reply.info.command.command = op->command;
     bounce->reply.info.command.checksum = globus_libc_strdup(op->cksm_response);
-    bounce->reply.msg = globus_libc_strdup(op->user_msg);
-        
+
+    /* pull response code from error */
+    if(result != GLOBUS_SUCCESS && 
+        (code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) != 0)
+    {
+        bounce->reply.code = code;
+        bounce->reply.msg = globus_gfs_error_get_ftp_response_message(
+            globus_error_peek(result));
+    }
+    else
+    {
+        bounce->reply.code = op->user_code;
+        bounce->reply.msg = globus_libc_strdup(op->user_msg);
+    }
+
     if(op->command == GLOBUS_GFS_CMD_MKD)
     {
         result = globus_i_gfs_data_virtualize_path(
@@ -12141,6 +12175,7 @@ globus_gridftp_server_finished_stat(
     int                                 i;
     char *                              base_path;
     globus_gfs_stat_info_t *            stat_info;
+    int                                 code;
     GlobusGFSName(globus_gridftp_server_finished_stat);
     GlobusGFSDebugEnter();
 
@@ -12748,10 +12783,10 @@ globus_gridftp_server_operation_finished(
         {
           case GLOBUS_GFS_OP_COMMAND:
             if(op->command == GLOBUS_GFS_CMD_CKSM)
-        {
-            globus_gridftp_server_intermediate_command(
-                op, result, finished_info->info.command.checksum);
-            return;
+            {
+                globus_gridftp_server_intermediate_command(
+                    op, result, finished_info->info.command.checksum);
+                return;
             }
             break;
           case GLOBUS_GFS_OP_STAT:
@@ -13896,6 +13931,7 @@ globus_gridftp_server_finished_session_start(
     char *                              home_dir)
 {
     globus_gfs_finished_info_t          finished_info;
+    int                                 code;
     GlobusGFSName(globus_gridftp_server_finished_session_start);
     GlobusGFSDebugEnter();
 
@@ -13907,6 +13943,16 @@ globus_gridftp_server_finished_session_start(
     finished_info.info.session.session_arg = session_arg;
     finished_info.info.session.username = username;
     finished_info.info.session.home_dir = home_dir;
+
+    /* pull response code from error */
+    if(result != GLOBUS_SUCCESS && 
+        (code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) != 0)
+    {
+        finished_info.code = code;
+        finished_info.msg = globus_gfs_error_get_ftp_response_message(
+            globus_error_peek(result));
+    }
 
     globus_gridftp_server_operation_finished(
         op,
@@ -13924,6 +13970,7 @@ globus_gridftp_server_finished_active_data(
     globus_bool_t                       bi_directional)
 {
     globus_gfs_finished_info_t          finished_info;
+    int                                 code;
     GlobusGFSName(globus_gridftp_server_finished_active_data);
     GlobusGFSDebugEnter();
 
@@ -13934,6 +13981,16 @@ globus_gridftp_server_finished_active_data(
     finished_info.result = result;
     finished_info.info.data.data_arg = data_arg;
     finished_info.info.data.bi_directional = bi_directional;
+
+    /* pull response code from error */
+    if(result != GLOBUS_SUCCESS && 
+        (code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) != 0)
+    {
+        finished_info.code = code;
+        finished_info.msg = globus_gfs_error_get_ftp_response_message(
+            globus_error_peek(result));
+    }
 
     globus_gridftp_server_operation_finished(
         op,
@@ -13953,6 +14010,7 @@ globus_gridftp_server_finished_passive_data(
     int                                 cs_count)
 {
     globus_gfs_finished_info_t          finished_info;
+    int                                 code;
     GlobusGFSName(globus_gridftp_server_finished_passive_data);
     GlobusGFSDebugEnter();
 
@@ -13965,6 +14023,16 @@ globus_gridftp_server_finished_passive_data(
     finished_info.info.data.bi_directional = bi_directional;
     finished_info.info.data.contact_strings = contact_strings;
     finished_info.info.data.cs_count = cs_count;
+
+    /* pull response code from error */
+    if(result != GLOBUS_SUCCESS && 
+        (code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) != 0)
+    {
+        finished_info.code = code;
+        finished_info.msg = globus_gfs_error_get_ftp_response_message(
+            globus_error_peek(result));
+    }
 
     globus_gridftp_server_operation_finished(
         op,
