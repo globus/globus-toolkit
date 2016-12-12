@@ -71,7 +71,7 @@ test_error_system(void)
     bool                                ok = false;
 
     errno = ENOENT;
-    err = GlobusIGFSErrorSystem(0);
+    err = globus_i_gfs_error_system(0);
 
     code = globus_gfs_error_get_ftp_response_code(err);
 
