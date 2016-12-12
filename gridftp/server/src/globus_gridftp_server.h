@@ -1372,9 +1372,6 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
         GLOBUS_GFS_DEBUG_TRACE,                                             \
         ("[%s] Exiting with error\n", _gfs_name))
 
-#define GlobusGFSErrorMemory(mem_name)                                      \
-    globus_error_put(GlobusGFSErrorObjMemory(mem_name))                               
-
 #define GlobusGFSErrorParameter(mem_name)                                   \
     globus_error_put(GlobusGFSErrorObjParameter(mem_name)) 
 
@@ -1390,17 +1387,6 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
         _gfs_name,                                                          \
         __LINE__,                                                           \
         "IPC Communication error.")
-                                                                            
-#define GlobusGFSErrorObjMemory(mem_name)                                   \
-    globus_error_construct_error(                                           \
-        GLOBUS_NULL,                                                        \
-        GLOBUS_NULL,                                                        \
-        GLOBUS_GFS_ERROR_MEMORY,                                            \
-        __FILE__,                                                           \
-        _gfs_name,                                                          \
-        __LINE__,                                                           \
-        "Memory allocation failed on %s",                                   \
-        (mem_name))                               
                                                                             
 #define GlobusGFSErrorObjParameter(param_name)                              \
     globus_error_construct_error(                                           \
@@ -1500,6 +1486,130 @@ extern const globus_object_type_t
             NULL,                                                           \
             code,                                                           \
             __VA_ARGS__)
+
+static inline
+globus_object_t *
+GlobusIGFSErrorSystem(
+    int                                 code)
+{
+    char                                msg[256];
+    globus_object_t                    *err = NULL;
+
+    msg[0] = '\0';
+#ifdef _WIN32
+    strerror_s(msg, sizeof(msg), errno);
+#else
+    strerror_r(errno, msg, sizeof(msg));
+#endif
+
+    if (code == 0)
+    {
+        switch (errno)
+        {
+#ifdef ETXTBSY
+            case ETXTBSY: code = 450; break;
+#endif
+#ifdef ECONNREFUSED
+            case ECONNREFUSED: code = 425; break;
+#endif
+#if defined(ECONNRESET)
+            case ECONNRESET: code = 426; break;
+#endif
+#if defined(ECONNABORTED)
+            case ECONNABORTED: code = 426; break;
+#endif
+            case ENOENT: code = 550; break;
+            case EACCES: code = 550; break;
+            case EPERM: code = 550; break;
+            case ENOTDIR: code = 550; break;
+            case EISDIR: code = 550; break;
+            case EROFS: code = 550; break;
+            case ESPIPE: code = 550; break;
+            case EFBIG: code = 552; break;
+            case ENOSPC: code = 552; break;
+#if defined(EDQUOT)
+            case EDQUOT: code = 552; break;
+#endif
+            case EEXIST: code = 553; break;
+            default:
+                code = 451;
+        }
+    }
+
+    if (msg[0] != 0)
+    {
+        err = globus_gfs_ftp_response_error_construct(
+            NULL,
+            NULL,
+            code,
+            "%s",
+            msg);
+    }
+    else
+    {
+        err = globus_gfs_ftp_response_error_construct(
+            NULL,
+            NULL,
+            code,
+            "Requested action aborted. Local error in processing.");
+    }
+    return err;
+}
+/* GlobusIGFSErrorSystem() */
+
+#define GlobusGFSErrorSystem() \
+    globus_error_put(GlobusIGFSErrorSystem(451))
+
+#define GlobusGFSErrorMemory(mem) \
+    globus_error_put(GlobusGFSErrorObjMemory(mem))
+#define GlobusGFSErrorObjMemory(mem) \
+    GlobusGFSErrorObjFtpResponse(451, "Out of memory.")
+
+#define GlobusGFSErrorNotImplemented() \
+    globus_error_put(GlobusGFSErrorObjNotImplemented())
+#define GlobusGFSErrorObjNotImplemented() \
+    GlobusGFSErrorObjFtpResponse(502, "Command not implemented.")
+
+#define GlobusGFSErrorParameterNotImplemented() \
+    globus_error_put(GlobusGFSErrorObjParameterNotImplemented())
+#define GlobusGFSErrorObjParameterNotImplemented() \
+    GlobusGFSErrorObjFtpResponse( \
+            504, "Command not implemented for that parameter.")
+
+#define GlobusGFSErrorPermissionDenied() \
+    globus_error_put(GlobusGFSErrorObjPermissionDenied)
+#define GlobusGFSErrorObjPermissionDenied() \
+    GlobusGFSErrorObjFtpResponse(550, "Permission denied.")
+
+#define GlobusGFSErrorNotFound() \
+    globus_error_put(GlobusGFSErrorObjNotFound())
+#define GlobusGFSErrorObjNotFound() \
+    GlobusGFSErrorObjFtpResponse(550, "No such file or directory.")
+
+#define GlobusGFSErrorTooLarge() \
+    globus_error_put(GlobusGFSErrorObjTooLarge())
+#define GlobusGFSErrorObjTooLarge() \
+    GlobusGFSErrorFtpResponse(552, "File too large.")
+
+#define GlobusGFSErrorNotDirectory() \
+    globus_error_put(GlobusGFSErrorObjNotDirectory())
+#define GlobusGFSErrorObjNotDirectory() \
+    GlobusGFSErrorObjFtpResponse(553, "Not a directory.")
+
+#define GlobusGFSErrorIsDirectory() \
+    globus_error_put(GlobusGFSErrorObjIsDirectory())
+#define GlobusGFSErrorObjIsDirectory() \
+    GlobusGFSErrorObjFtpResponse(553, "Is a directory.")
+
+#define GlobusGFSErrorAmbiguousPath() \
+    globus_error_put(GlobusGFSErrorObjAmbiguousPath())
+#define GlobusGFSErrorObjAmbiguousPath() \
+    GlobusGFSErrorObjFtpResponse(553, "File name not allowed (ambiguous).")
+
+#define GlobusGFSErrorAlreadyExists() \
+    globus_error_put(GlobusGFSErrorObjAlreadyExists())
+#define GlobusGFSErrorObjAlreadyExists() \
+    GlobusGFSErrorObjFtpResponse(553, "File exists.")
 
 /* 
  * 
