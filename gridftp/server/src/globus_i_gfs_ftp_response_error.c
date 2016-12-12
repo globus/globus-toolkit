@@ -197,7 +197,24 @@ char *
 globus_gfs_error_get_ftp_response_message(
     globus_object_t *                   error)
 {
-    return globus_error_print_friendly(error);
+    globus_object_t *                   ftp_response_error = NULL;
+    char *                              msg = NULL;
+    globus_l_gfs_ftp_response_error_t * instance_data = NULL;
+
+    ftp_response_error = globus_object_upcast(
+            error,
+            GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE);
+
+    if (ftp_response_error != NULL)
+    {
+        instance_data = globus_object_get_local_instance_data(error);
+        msg = strdup(instance_data->message);
+        return msg;
+    }
+    else
+    {
+        return NULL;
+    }
 }
 /* globus_gfs_error_get_ftp_response_message() */
 
@@ -280,17 +297,21 @@ char *
 globus_l_gridftp_server_error_printable(
     globus_object_t *                   error)
 {
-    globus_l_gfs_ftp_response_error_t * data = NULL;
-    char *                              printable = NULL;
+    globus_object_t *                   ftp_response_error = NULL;
+    char *                              msg = NULL;
+    globus_l_gfs_ftp_response_error_t * instance_data = NULL;
 
-    data = globus_object_get_local_instance_data(error);
+    ftp_response_error = globus_object_upcast(
+            error,
+            GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE);
 
-    printable = globus_common_create_string(
+    assert (ftp_response_error != NULL);
+
+    instance_data = globus_object_get_local_instance_data(error);
+    msg = globus_common_create_string(
             "%s",
-             data->message);
-
-    return printable;
-    
+            instance_data->message);
+    return msg;
 }/* globus_l_error_errno_printable */
 
 globus_object_t *

@@ -11,7 +11,7 @@ test_default_message(void)
     char                               *message = NULL;
     bool                                ok = false;
 
-    result = GlobusGFSErrorParameter("foo");
+    result = GlobusGFSErrorMemory("foo");
 
     message = globus_gfs_error_get_ftp_response_message(
             globus_error_peek(result));
@@ -106,7 +106,7 @@ test_error_multiline(void)
 
     globus_error_set_cause(err, GlobusGFSErrorObjGeneric(dupes));
 
-    msg = globus_gfs_error_get_ftp_response_message(err);
+    msg = globus_error_print_friendly(err);
     ftp_str = globus_gsc_string_to_959(globus_gfs_error_get_ftp_response_code(err), msg, NULL);
 
     p = ftp_str;
