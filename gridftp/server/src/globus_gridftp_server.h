@@ -1487,78 +1487,13 @@ extern const globus_object_type_t
             code,                                                           \
             __VA_ARGS__)
 
-static inline
 globus_object_t *
-GlobusIGFSErrorSystem(
-    int                                 code)
-{
-    char                                msg[256];
-    globus_object_t                    *err = NULL;
-
-    msg[0] = '\0';
-#ifdef _WIN32
-    strerror_s(msg, sizeof(msg), errno);
-#else
-    strerror_r(errno, msg, sizeof(msg));
-#endif
-
-    if (code == 0)
-    {
-        switch (errno)
-        {
-#ifdef ETXTBSY
-            case ETXTBSY: code = 450; break;
-#endif
-#ifdef ECONNREFUSED
-            case ECONNREFUSED: code = 425; break;
-#endif
-#if defined(ECONNRESET)
-            case ECONNRESET: code = 426; break;
-#endif
-#if defined(ECONNABORTED)
-            case ECONNABORTED: code = 426; break;
-#endif
-            case ENOENT: code = 550; break;
-            case EACCES: code = 550; break;
-            case EPERM: code = 550; break;
-            case ENOTDIR: code = 550; break;
-            case EISDIR: code = 550; break;
-            case EROFS: code = 550; break;
-            case ESPIPE: code = 550; break;
-            case EFBIG: code = 552; break;
-            case ENOSPC: code = 552; break;
-#if defined(EDQUOT)
-            case EDQUOT: code = 552; break;
-#endif
-            case EEXIST: code = 553; break;
-            default:
-                code = 451;
-        }
-    }
-
-    if (msg[0] != 0)
-    {
-        err = globus_gfs_ftp_response_error_construct(
-            NULL,
-            NULL,
-            code,
-            "%s",
-            msg);
-    }
-    else
-    {
-        err = globus_gfs_ftp_response_error_construct(
-            NULL,
-            NULL,
-            code,
-            "Requested action aborted. Local error in processing.");
-    }
-    return err;
-}
-/* GlobusIGFSErrorSystem() */
+globus_i_gfs_error_system(int code);
 
 #define GlobusGFSErrorSystem() \
-    globus_error_put(GlobusIGFSErrorSystem(451))
+    globus_error_put(GlobusGFSErrorObjSystem())
+#define GlobusGFSErrorObjSystem() \
+    globus_i_gfs_error_system(451)
 
 #define GlobusGFSErrorMemory(mem) \
     globus_error_put(GlobusGFSErrorObjMemory(mem))

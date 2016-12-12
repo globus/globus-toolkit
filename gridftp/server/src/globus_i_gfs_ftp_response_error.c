@@ -21,6 +21,7 @@
  */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
+#include "globus_i_gridftp_server_config.h"
 #include "globus_gridftp_server.h"
 #include "globus_object.h"
 #include "globus_module.h"
@@ -291,6 +292,81 @@ globus_l_gridftp_server_error_printable(
     return printable;
     
 }/* globus_l_error_errno_printable */
+
+globus_object_t *
+globus_i_gfs_error_system(
+    int                                 code)
+{
+    char                                msg[256];
+    char                               *m = msg;
+    globus_object_t                    *err = NULL;
+
+    msg[0] = '\0';
+#ifdef _WIN32
+    strerror_s(msg, sizeof(msg), errno);
+#elif defined(HAVE_DECL_STRERROR_R)
+#ifdef STRERROR_R_CHAR_P
+    m = strerror_r(errno, msg, sizeof(msg));
+#else
+    strerror_r(errno, msg, sizeof(msg));
+#endif
+#else
+    m = strerror(errno);
+#endif
+
+    if (code == 0)
+    {
+        switch (errno)
+        {
+#ifdef ETXTBSY
+            case ETXTBSY: code = 450; break;
+#endif
+#ifdef ECONNREFUSED
+            case ECONNREFUSED: code = 425; break;
+#endif
+#if defined(ECONNRESET)
+            case ECONNRESET: code = 426; break;
+#endif
+#if defined(ECONNABORTED)
+            case ECONNABORTED: code = 426; break;
+#endif
+            case ENOENT: code = 550; break;
+            case EACCES: code = 550; break;
+            case EPERM: code = 550; break;
+            case ENOTDIR: code = 550; break;
+            case EISDIR: code = 550; break;
+            case EROFS: code = 550; break;
+            case ESPIPE: code = 550; break;
+            case EFBIG: code = 552; break;
+            case ENOSPC: code = 552; break;
+#if defined(EDQUOT)
+            case EDQUOT: code = 552; break;
+#endif
+            case EEXIST: code = 553; break;
+            default:
+                code = 451;
+        }
+    }
+
+    if (msg[0] != 0)
+    {
+        err = globus_gfs_ftp_response_error_construct(
+            NULL,
+            NULL,
+            code,
+            "%s",
+            msg);
+    }
+    else
+    {
+        err = globus_gfs_ftp_response_error_construct(
+            NULL,
+            NULL,
+            code,
+            "Requested action aborted. Local error in processing.");
+    }
+    return err;
+}
 
 /**
  * Error type static initializer.
