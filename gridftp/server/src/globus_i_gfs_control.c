@@ -2236,8 +2236,8 @@ globus_l_gfs_data_transfer_cb(
         globus_result_t                 result;
         
         /* pull response code from error */
-        if((response_code = globus_gfs_error_get_ftp_response_code(
-                globus_error_peek(reply->result))) != 0)
+        if(globus_gfs_error_get_ftp_response_code(
+                globus_error_peek(reply->result)) != 0)
         {
             tmp_str = globus_gfs_error_get_ftp_response_message(
                 globus_error_peek(reply->result));
