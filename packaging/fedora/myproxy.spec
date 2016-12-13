@@ -13,8 +13,8 @@ Name:           myproxy
 %global nlibpkg libs
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.21
-Release:	2%{?dist}
+Version:	6.1.22
+Release:	1%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -26,7 +26,9 @@ Source0:        http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %if %{?rhel}%{!?rhel:0} == 5
+BuildRequires:  openssl101e
 BuildRequires:  openssl101e-devel
+BuildConflicts: openssl
 BuildConflicts: openssl-devel
 %else
 BuildRequires:  openssl
@@ -46,7 +48,9 @@ BuildRequires:  pam-devel
 BuildRequires:  voms-devel >= 1.9.12.1
 %endif
 
+%if %{?rhel}%{!?rhel:0} == 0 || %{?rhel}%{!?rhel:0} > 5
 BuildRequires:  cyrus-sasl-devel
+%endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  openldap2-devel
@@ -216,8 +220,11 @@ autoreconf -if
 
 %if %{?rhel}%{!?rhel:0} == 5
 export OPENSSL=$(which openssl101e)
-export CFLAGS="$RPM_OPT_FLAGS $(pkg-config openssl101 --cflags)"
-export LDFLAGS="$(pkg-config openssl101e --libs-only-L --libs-only-other)"
+with_kerberos5=--without-kerberos5
+with_sasl2=--without-sasl2
+%else
+with_kerberos5=--with-kerberos5=%{_usr}
+with_sasl2=--with-sasl2=%{_usr}
 %endif
 
 %if %{?fedora}%{!?fedora:0} > 0 || %{?rhel}%{!?rhel:0} > 5
@@ -227,10 +234,10 @@ export LDFLAGS="$(pkg-config openssl101e --libs-only-L --libs-only-other)"
            --with-sasl2=%{_usr} \
            --includedir=%{_usr}/include/globus
 %else
-%configure --with-openldap=%{_usr} \
+%configure --without-openldap \
            --without-voms \
-           --with-kerberos5=%{_usr} \
-           --with-sasl2=%{_usr} \
+           %{with_kerberos5} \
+           %{with_sasl2} \
            --includedir=%{_usr}/include/globus
 %endif
 make %{?_smp_mflags}
@@ -570,6 +577,9 @@ fi
 %endif
 
 %changelog
+* Tue Dec 13 2016 Globus Toolkit <support@globus.org> - 6.1.22-1
+- Check for openssl 101e for epel5
+
 * Fri Oct 28 2016 Globus Toolkit <support@globus.org> - 6.1.21-2
 - Fix naming of dependency
 

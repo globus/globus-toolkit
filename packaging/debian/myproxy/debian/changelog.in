@@ -1,3 +1,9 @@
+myproxy (6.1.22-1+gt6.@distro@) @distro@; urgency=low
+
+  * Check for openssl 101e for epel5
+
+ -- Globus Toolkit <support@globus.org>  Tue, 13 Dec 2016 07:33:07 -0500
+
 myproxy (6.1.21-2+gt6.@distro@) @distro@; urgency=low
 
   * Do not overwrite configuration flags
