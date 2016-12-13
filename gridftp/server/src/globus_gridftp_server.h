@@ -1512,7 +1512,7 @@ globus_i_gfs_error_system(int code);
             504, "Command not implemented for that parameter.")
 
 #define GlobusGFSErrorPermissionDenied() \
-    globus_error_put(GlobusGFSErrorObjPermissionDenied)
+    globus_error_put(GlobusGFSErrorObjPermissionDenied())
 #define GlobusGFSErrorObjPermissionDenied() \
     GlobusGFSErrorObjFtpResponse(550, "Permission denied.")
 
