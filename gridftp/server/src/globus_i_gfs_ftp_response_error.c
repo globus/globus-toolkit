@@ -198,6 +198,7 @@ globus_gfs_error_get_ftp_response_message(
     globus_object_t *                   error)
 {
     globus_object_t *                   ftp_response_error = NULL;
+    char *                              error_string = NULL;
     char *                              msg = NULL;
     globus_l_gfs_ftp_response_error_t * instance_data = NULL;
 
@@ -208,12 +209,17 @@ globus_gfs_error_get_ftp_response_message(
     if (ftp_response_error != NULL)
     {
         instance_data = globus_object_get_local_instance_data(error);
-        msg = strdup(instance_data->message);
+        error_string = globus_error_print_friendly(error);
+        msg = globus_common_create_string("%d %.*s",
+            instance_data->response_code,
+            (int) strlen(error_string)-1,
+            error_string);
+        free(error_string);
         return msg;
     }
     else
     {
-        return NULL;
+        return globus_error_print_friendly(error);
     }
 }
 /* globus_gfs_error_get_ftp_response_message() */

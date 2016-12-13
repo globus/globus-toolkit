@@ -46,11 +46,11 @@ bool
 test_explicit_message(void)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    const char                         *expect = "Not found";
+    const char                         *expect = "550 Not found.";
     char                               *message = NULL;
     bool                                ok = false;
 
-    result = GlobusGFSErrorFtpResponse(550, "%s", expect);
+    result = GlobusGFSErrorFtpResponse(550, "%s", expect+4);
 
     message = globus_gfs_error_get_ftp_response_message(
             globus_error_peek(result));
@@ -96,10 +96,8 @@ test_error_multiline(void)
     int                                 count=0;
 
     dupes = globus_common_create_string(
-            "Path: %s\nObjects: \"%s\", \"%s\"",
-            "/Some/Dupe/Path",
-            "18VORejiUuU0tJDGFK3itg3a_XG2-6-MSCGW3A8yFskk",
-            "1NoyxMEDtDPa2ZfWStCky6ZSgpF1rQjKQe7d2TCo0Ulg");
+            "Path: /Some/Dupe/Path",
+            "/Some/Dupe/Path");
             
     result = GlobusGFSErrorAmbiguousPath();
     err = globus_error_peek(result);
@@ -129,7 +127,7 @@ test_error_multiline(void)
             p += strlen(p);
         }
     }
-    ok = (count == 4);
+    ok = (count == 3);
     
     free(msg);
     free(dupes);

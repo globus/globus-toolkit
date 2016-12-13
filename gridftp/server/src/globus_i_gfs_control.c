@@ -2235,9 +2235,18 @@ globus_l_gfs_data_transfer_cb(
         char *                          msg;
         globus_result_t                 result;
         
-        tmp_str = globus_error_print_friendly(
-            globus_error_peek(reply->result));
-            
+        /* pull response code from error */
+        if((response_code = globus_gfs_error_get_ftp_response_code(
+                globus_error_peek(reply->result))) != 0)
+        {
+            tmp_str = globus_gfs_error_get_ftp_response_message(
+                globus_error_peek(reply->result));
+        }
+        else
+        {
+            tmp_str = globus_error_print_friendly(
+                globus_error_peek(reply->result));
+        }
         result = globus_i_gfs_data_virtualize_path(
             request->instance->session_arg, tmp_str, &msg);
         if(result == GLOBUS_SUCCESS && msg != NULL)
@@ -2245,7 +2254,6 @@ globus_l_gfs_data_transfer_cb(
             globus_free(tmp_str);
             tmp_str = msg;
         }
-
         globus_gridftp_server_control_finished_transfer(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,

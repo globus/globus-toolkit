@@ -10450,7 +10450,7 @@ response_exit:
     reply.result = op->cached_res;
 
     /* pull response code from error */
-    if(result != GLOBUS_SUCCESS && 
+    if(reply.result != GLOBUS_SUCCESS && 
         (reply.code = globus_gfs_error_get_ftp_response_code(
             globus_error_peek(reply.result))) != 0)
     {

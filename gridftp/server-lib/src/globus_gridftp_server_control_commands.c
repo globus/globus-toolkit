@@ -2678,7 +2678,8 @@ globus_l_gsc_is_response(
     const char *                            response_msg,
     int *                                   code)
 {
-    return (response_msg != NULL && sscanf(response_msg, "%d%*[ ]", code) == 1);
+    int n=0;
+    return (response_msg != NULL && sscanf(response_msg, "%d%*[ -]%n", code, &n) == 1 && n == 4);
 }
 
 /*************************************************************************
