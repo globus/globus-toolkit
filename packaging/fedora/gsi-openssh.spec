@@ -29,7 +29,7 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 1
+%global gsi_openssh_rel 2
 %global gsi_openssh_ver 7.1p2g
 
 Summary: An implementation of the SSH protocol with GSI authentication
@@ -454,7 +454,9 @@ fi
 
 %files server
 %defattr(-,root,root)
+%if 0%{?suse_version} > 0
 %dir %attr(0711,root,root) %{_var}/empty
+%endif
 %dir %attr(0711,root,root) %{_var}/empty/gsisshd
 %attr(0755,root,root) %{_sbindir}/gsisshd
 %attr(0755,root,root) %{_libexecdir}/gsissh/sftp-server
@@ -471,6 +473,9 @@ fi
 %endif
 
 %changelog
+* Tue Dec 13 2016 Globus Toolkit <support@globus.org> - 7.1p2g-2
+- Only create /var/empty for SLES
+
 * Tue Aug 30 2016 Globus Toolkit <support@globus.org> - 7.1p2f-4
 - Updates for SLES 12
 - Updates for el.5 with openssl101e
