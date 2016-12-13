@@ -1524,7 +1524,7 @@ globus_i_gfs_error_system(int code);
 #define GlobusGFSErrorTooLarge() \
     globus_error_put(GlobusGFSErrorObjTooLarge())
 #define GlobusGFSErrorObjTooLarge() \
-    GlobusGFSErrorFtpResponse(552, "File too large.")
+    GlobusGFSErrorObjFtpResponse(552, "File too large.")
 
 #define GlobusGFSErrorNotDirectory() \
     globus_error_put(GlobusGFSErrorObjNotDirectory())
