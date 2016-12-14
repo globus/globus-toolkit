@@ -6,7 +6,7 @@ Name:		globus-xio-udt-driver
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	1.25
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
@@ -58,7 +58,7 @@ BuildRequires:  pkgconfig
 %if %{?fedora}%{!?fedora:0} >= 21
 BuildRequires:  gupnp-igd-devel
 %endif
-%if %{?fedora}%{!?fedora:0} >= 22
+%if %{?fedora}%{!?fedora:0} >= 22 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires: libselinux-devel
 %endif
 
@@ -163,6 +163,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Oct 05 2016 Globus Toolkit <support@globus.org> - 1.25-2
+- Add libselinux-devel dependency for SLES 12
+
 * Wed Oct 05 2016 Globus Toolkit <support@globus.org> - 1.25-1
 - pull udt tarball from globus repo
 
