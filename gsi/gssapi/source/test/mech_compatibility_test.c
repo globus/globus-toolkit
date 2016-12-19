@@ -15,6 +15,7 @@
  */
 
 #include "gssapi_test_utils.h"
+#include <openssl/opensslv.h>
 #include <stdbool.h>
 
 static gss_OID_desc gss_mech_oid_globus_gssapi_openssl = 
@@ -161,7 +162,32 @@ main(int argc, char *argv[])
      }
     argc -= optind;
     argv += optind;
-    
+
+    {
+        char *                          backward_compatible_mic = NULL;
+        char *                          accept_backward_compatible_mic = NULL;
+
+        backward_compatible_mic = getenv(
+                "GLOBUS_GSSAPI_BACKWARD_COMPATIBLE_MIC");
+
+        accept_backward_compatible_mic = getenv(
+                "GLOBUS_GSSAPI_ACCEPT_BACKWARD_COMPATIBLE_MIC");
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+        if (backward_compatible_mic != NULL
+            && (strcmp(backward_compatible_mic, "true") == 0))
+        {
+            failed = 77;
+            goto skip;
+        }
+        else if (accept_backward_compatible_mic != NULL
+            && (strcmp(accept_backward_compatible_mic, "true") == 0))
+        {
+            failed = 77;
+            goto skip;
+        }
+#endif
+    }
+
     num_test_cases = sizeof(test_cases)/sizeof(test_cases[0]);
 
     failed = test_establish_contexts_with_mechs(
@@ -203,5 +229,6 @@ establish_failed:
     {
         gss_delete_sec_context(&release_minor_status, &accept_ctx, NULL);
     }
+skip:
     exit(failed);
 }

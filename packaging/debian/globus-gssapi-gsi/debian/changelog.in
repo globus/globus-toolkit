@@ -1,3 +1,9 @@
+globus-gssapi-gsi (12.13-1+gt6.@distro@) @distro@; urgency=low
+
+  * Skip mech v1 tests for OpenSSL >= 1.1.0
+
+ -- Globus Toolkit <support@globus.org>  Mon, 19 Dec 2016 09:48:41 -0500
+
 globus-gssapi-gsi (12.12-1+gt6.@distro@) @distro@; urgency=low
 
   * More updates for mech negotiation

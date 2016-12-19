@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.12
+Version:	12.13
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -192,6 +192,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Dec 19 2016 Globus Toolkit <support@globus.org> - 12.13-1
+- Skip mech v1 tests for OpenSSL >= 1.1.0
+
 * Tue Nov 08 2016 Globus Toolkit <support@globus.org> - 12.12-1
 - More updates for mech negotiation
 

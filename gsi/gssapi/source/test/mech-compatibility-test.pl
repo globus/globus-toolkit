@@ -15,11 +15,14 @@ sub mic_v1_v1
     $ENV{GLOBUS_GSSAPI_ACCEPT_BACKWARD_COMPATIBLE_MIC} = 'true';
 
     $output = `$test_old`;
-    $rc = $?;
+    $rc = $? >> 8;
 
     diag($output);
 
-    ok($rc == 0, "mic_v1_v1");
+    SKIP: {
+        skip "v1 mic not supported", 1 unless ($rc != 77);
+        ok($rc == 0, "mic_v1_v1");
+    }
 }
 
 sub mic_v1_v2
@@ -31,11 +34,14 @@ sub mic_v1_v2
     $ENV{GLOBUS_GSSAPI_ACCEPT_BACKWARD_COMPATIBLE_MIC} = 'true';
 
     $output = `$test_old`;
-    $rc = $?;
+    $rc = $? >> 8;
 
     diag($output);
 
-    ok($rc == 0, "mic_v1_v2");
+    SKIP: {
+        skip "v1 mic not supported", 1 unless ($rc != 77);
+        ok($rc == 0, "mic_v1_v2");
+    }
 }
 
 sub mic_v2_v1
@@ -47,11 +53,14 @@ sub mic_v2_v1
     $ENV{GLOBUS_GSSAPI_ACCEPT_BACKWARD_COMPATIBLE_MIC} = 'true';
 
     $output = `$test_new`;
-    $rc = $?;
+    $rc = $? >> 8;
 
     diag($output);
 
-    ok($rc == 0, "mic_v2_v1");
+    SKIP: {
+        skip "v1 mic not supported", 1 unless ($rc != 77);
+        ok($rc == 0, "mic_v2_v1");
+    }
 }
 
 sub mic_v2_v2
