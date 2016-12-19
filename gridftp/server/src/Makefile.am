@@ -43,8 +43,6 @@ libglobus_gridftp_server_la_SOURCES =   \
 	globus_i_gfs_acl.h              \
 	globus_i_gfs_data.c             \
 	globus_i_gfs_data.h             \
-	globus_i_gfs_http.c 		\
-	globus_i_gfs_http.h 		\
 	globus_i_gfs_cas.c              \
 	globus_i_gfs_embed.c            \
 	globus_i_gfs_ipc.c              \

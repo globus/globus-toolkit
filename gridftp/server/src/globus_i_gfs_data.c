@@ -5413,7 +5413,7 @@ globus_l_gfs_data_stat_kickout(
             globus_error_peek(reply.result))) != 0)
     {
         reply.code = code;
-        reply.msg = globus_gfs_error_get_ftp_response_message(
+        reply.msg = globus_error_print_friendly(
             globus_error_peek(reply.result));
     }
 
@@ -10454,7 +10454,7 @@ response_exit:
         (reply.code = globus_gfs_error_get_ftp_response_code(
             globus_error_peek(reply.result))) != 0)
     {
-        reply.msg = globus_gfs_error_get_ftp_response_message(
+        reply.msg = globus_error_print_friendly(
             globus_error_peek(reply.result));
     }
     else
@@ -11916,7 +11916,7 @@ globus_gridftp_server_finished_command(
             globus_error_peek(result))) != 0)
     {
         bounce->reply.code = code;
-        bounce->reply.msg = globus_gfs_error_get_ftp_response_message(
+        bounce->reply.msg = globus_error_print_friendly(
             globus_error_peek(result));
     }
     else
@@ -13950,7 +13950,7 @@ globus_gridftp_server_finished_session_start(
             globus_error_peek(result))) != 0)
     {
         finished_info.code = code;
-        finished_info.msg = globus_gfs_error_get_ftp_response_message(
+        finished_info.msg = globus_error_print_friendly(
             globus_error_peek(result));
     }
 
@@ -13988,7 +13988,7 @@ globus_gridftp_server_finished_active_data(
             globus_error_peek(result))) != 0)
     {
         finished_info.code = code;
-        finished_info.msg = globus_gfs_error_get_ftp_response_message(
+        finished_info.msg = globus_error_print_friendly(
             globus_error_peek(result));
     }
 
@@ -14030,7 +14030,7 @@ globus_gridftp_server_finished_passive_data(
             globus_error_peek(result))) != 0)
     {
         finished_info.code = code;
-        finished_info.msg = globus_gfs_error_get_ftp_response_message(
+        finished_info.msg = globus_error_print_friendly(
             globus_error_peek(result));
     }
 

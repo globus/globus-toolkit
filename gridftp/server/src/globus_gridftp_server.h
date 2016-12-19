@@ -1462,13 +1462,21 @@ globus_gfs_ftp_response_error_construct(
     ...);
 
 globus_object_t *
-globus_gfs_ftp_response_error_initialize(
+globus_gfs_ftp_response_error_v_initialize(
     globus_object_t *                   error,
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
     int                                 response_code,
     const char *                        fmt,
     va_list                             ap);
+globus_object_t *
+globus_gfs_ftp_response_error_initialize(
+    globus_object_t *                   error,
+    globus_module_descriptor_t *        base_source,
+    globus_object_t *                   base_cause,
+    int                                 response_code,
+    const char *                        fmt,
+    ...);
 
 extern const globus_object_type_t
         GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE_DEFINITION;

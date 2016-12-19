@@ -13,7 +13,7 @@ test_default_message(void)
 
     result = GlobusGFSErrorMemory("foo");
 
-    message = globus_gfs_error_get_ftp_response_message(
+    message = globus_object_printable_to_string(
             globus_error_peek(result));
 
     fprintf(stderr, "# %s %s\n", __func__, message);
@@ -46,13 +46,13 @@ bool
 test_explicit_message(void)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    const char                         *expect = "550 Not found.";
+    const char                         *expect = "Not found.";
     char                               *message = NULL;
     bool                                ok = false;
 
-    result = GlobusGFSErrorFtpResponse(550, "%s", expect+4);
+    result = GlobusGFSErrorFtpResponse(550, "%s", expect);
 
-    message = globus_gfs_error_get_ftp_response_message(
+    message = globus_object_printable_to_string(
             globus_error_peek(result));
 
     fprintf(stderr, "# %s \"%s\"\n", __func__, message);

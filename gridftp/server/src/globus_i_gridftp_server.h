@@ -165,10 +165,6 @@ int
 globus_gfs_error_get_ftp_response_code(
     globus_object_t *                   error);
 
-char *
-globus_gfs_error_get_ftp_response_message(
-    globus_object_t *                   error);
-
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"
 #include "globus_i_gfs_ipc.h"
