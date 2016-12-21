@@ -1,0 +1,18 @@
+diff -u -r udt4/src/common.h udt4.diff/src/common.h
+--- udt4/src/common.h	2013-02-20 16:35:26.000000000 +0000
++++ udt4.diff/src/common.h	2016-12-21 15:26:33.684718000 +0000
+@@ -55,10 +55,10 @@
+ 
+ #ifdef WIN32
+    // Windows compability
+-   typedef HANDLE pthread_t;
+-   typedef HANDLE pthread_mutex_t;
+-   typedef HANDLE pthread_cond_t;
+-   typedef DWORD pthread_key_t;
++#define pthread_t HANDLE
++#define pthread_mutex_t HANDLE 
++#define pthread_cond_t HANDLE
++#define pthread_key_t  DWORD
+ #endif
+ 
+ 

@@ -5,8 +5,8 @@ Name:		globus-xio-udt-driver
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	1.25
-Release:	2%{?dist}
+Version:	1.26
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO UDT Driver
 
@@ -163,6 +163,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Dec 21 2016 Globus Toolkit <support@globus.org> - 1.26-1
+- Fix build failure on mingw with gcc 5.4.0
+
 * Wed Oct 05 2016 Globus Toolkit <support@globus.org> - 1.25-2
 - Add libselinux-devel dependency for SLES 12
 

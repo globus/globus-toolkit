@@ -1,3 +1,9 @@
+globus-xio-udt-driver (1.26-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix build failure on mingw with gcc 5.4.0
+
+ -- Globus Toolkit <support@globus.org>  Wed, 21 Dec 2016 10:53:33 -0500
+
 globus-xio-udt-driver (1.25-2+gt6.@distro@) @distro@; urgency=low
 
   * Fix multiarch _libdir

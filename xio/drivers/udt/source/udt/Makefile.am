@@ -40,18 +40,24 @@ libudt_la_LIBADD = $(UDT_LIBADD)
 libudt_la_LDFLAGS = -rpath $(privlibdir) -avoid-version -no-undefined
 
 BUILT_SOURCES = $(nodist_libudt_la_SOURCES)
-$(BUILT_SOURCES): udt-unpack-stamp
+$(BUILT_SOURCES): udt-patch-stamp
 
 $(udt_tarball):
 	@$(DOWNLOAD_TO_STDOUT) $(udt_tarball_url) > $(udt_tarball).download; \
 	mv $(udt_tarball).download $(udt_tarball)
 
+udt-patch-stamp: udt-unpack-stamp
+	patch -p0 < $(srcdir)/globus_udt.diff
+	touch $@
+
 udt-unpack-stamp: $(udt_tarball)
 	$(AMTAR) -zxf $(udt_tarball)
 	touch $@
 
-CLEANFILES = udt-unpack-stamp
+CLEANFILES = udt-unpack-stamp udt-patch-stamp
 DISTCLEANFILES = $(udt_tarball)
+
+EXTRA_DIST = globus_udt.diff
 
 clean-local:
 	rm -rf udt4

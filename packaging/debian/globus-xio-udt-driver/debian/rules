@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-xio-udt-driver
 _name = globus_xio_udt_driver
-version = 1.25
+version = 1.26
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp
