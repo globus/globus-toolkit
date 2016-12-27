@@ -43,9 +43,9 @@ RSA_get0_key(const RSA *r, const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
     {
         *e = r->e;
     }
-    if (e != NULL)
+    if (d != NULL)
     {
-        *e = r->d;
+        *d = r->d;
     }
 }
 #endif
