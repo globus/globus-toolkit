@@ -554,7 +554,9 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
         goto error;
     }
     BIO_get_ssl(sbio, &ssl);
-    BIO_set_conn_int_port(sbio, &attrs->psport);
+    char chport[6];
+    snprintf(chport, sizeof(chport), "%d", attrs->psport);
+    BIO_set_conn_port(sbio, chport);
     BIO_set_conn_hostname(sbio, attrs->pshost);
     BIO_set_fd(sbio, sockfd, 0);
 

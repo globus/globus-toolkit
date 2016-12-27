@@ -14,6 +14,10 @@
 #define PEM_CALLBACK(func)	func, NULL
 #define PEM_NO_CALLBACK		NULL, NULL
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define EVP_PKEY_id(k) (k)->type
+#endif
+
 /**********************************************************************
  *
  * Constants
@@ -745,8 +749,11 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
 	reason = ERR_GET_REASON(error);
 
 	/* If this is a bad password, return a better error message */
-	if (reason == EVP_R_BAD_DECRYPT ||
-	    reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED)
+	if (reason == EVP_R_BAD_DECRYPT
+#ifdef EVP_R_NO_SIGN_FUNCTION_CONFIGURED
+	    || reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED
+#endif
+	    )
 	{
 	    verror_put_string("Bad password");
 	}
@@ -818,7 +825,7 @@ ssl_private_key_store_to_file(SSL_CREDENTIALS *creds,
        PKCS#8 private key format with a high iteration count" per the CHANGES
        file in the openssl tree */
     if (PEM_ASN1_write_bio((int (*)())i2d_PrivateKey,
-		(((creds->private_key)->type == EVP_PKEY_DSA)?
+		((EVP_PKEY_id(creds->private_key) == EVP_PKEY_DSA)?
 				PEM_STRING_DSA:PEM_STRING_RSA),
                            keybio, (void *)creds->private_key, cipher,
                                  (unsigned char *) pass_phrase,
@@ -864,8 +871,11 @@ ssl_private_key_is_encrypted(const char	*path)
 	
 	error = ERR_peek_error();
 	reason = ERR_GET_REASON(error);
-	if (reason == EVP_R_BAD_DECRYPT ||
-	    reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED) {
+	if (reason == EVP_R_BAD_DECRYPT
+#ifdef EVP_R_NO_SIGN_FUNCTION_CONFIGURED
+	    || reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED
+#endif
+	    ) {
 	    return_status = 1;		/* key is encrypted */
 	    goto cleanup;
 	} else {
@@ -938,8 +948,11 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
 	reason = ERR_GET_REASON(error);
 
 	/* If this is a bad password, return a better error message */
-	if (ERR_GET_REASON(error) == EVP_R_BAD_DECRYPT ||
-	    reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED)
+	if (ERR_GET_REASON(error) == EVP_R_BAD_DECRYPT
+#ifdef EVP_R_NO_SIGN_FUNCTION_CONFIGURED
+	    || reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED
+#endif
+	    )
 	{
 	    verror_put_string("Bad password");
 	}
@@ -1146,7 +1159,7 @@ ssl_proxy_to_pem(SSL_CREDENTIALS		*creds,
        PKCS#8 private key format with a high iteration count" per the CHANGES
        file in the openssl tree */
     if (PEM_ASN1_write_bio((int (*)())i2d_PrivateKey,
-		(((creds->private_key)->type == EVP_PKEY_DSA)?
+		((EVP_PKEY_id(creds->private_key) == EVP_PKEY_DSA)?
 				PEM_STRING_DSA:PEM_STRING_RSA),
                            bio, (void *)creds->private_key, cipher,
 				 (unsigned char *) pass_phrase,
@@ -2046,9 +2059,7 @@ ssl_sign(unsigned char *data, int length,
          SSL_CREDENTIALS *creds,
 	 unsigned char **signature, int *signature_len)
 {
-   EVP_MD_CTX ctx;
-
-   EVP_MD_CTX_init(&ctx);
+   EVP_MD_CTX *ctx = EVP_MD_CTX_create();
 
    *signature = malloc(EVP_PKEY_size(creds->private_key));
    if (*signature == NULL) {
@@ -2057,18 +2068,18 @@ ssl_sign(unsigned char *data, int length,
       return SSL_ERROR;
    }
 
-   EVP_SignInit(&ctx, EVP_sha1());
-   EVP_SignUpdate(&ctx, (void *)data, length);
-   if (EVP_SignFinal(&ctx, *signature, (unsigned int *)signature_len,
+   EVP_SignInit(ctx, EVP_sha1());
+   EVP_SignUpdate(ctx, (void *)data, length);
+   if (EVP_SignFinal(ctx, *signature, (unsigned int *)signature_len,
 		     creds->private_key) != 1) {
       verror_put_string("Creating signature (EVP_SignFinal())");
       ssl_error_to_verror();
       free(*signature);
-      EVP_MD_CTX_cleanup(&ctx);
+      EVP_MD_CTX_destroy(ctx);
       return SSL_ERROR;
    }
 
-   EVP_MD_CTX_cleanup(&ctx);
+   EVP_MD_CTX_destroy(ctx);
    return SSL_SUCCESS;
 }
 
@@ -2077,23 +2088,21 @@ ssl_verify(unsigned char *data, int length,
            SSL_CREDENTIALS *creds,
 	   unsigned char *signature, int signature_len)
 {
-   EVP_MD_CTX ctx;
+   EVP_MD_CTX *ctx = EVP_MD_CTX_create();
    EVP_PKEY *pubkey = NULL;
 
-   EVP_MD_CTX_init(&ctx);
-
-   EVP_VerifyInit(&ctx, EVP_sha1());
-   EVP_VerifyUpdate(&ctx, (void*) data, length);
+   EVP_VerifyInit(ctx, EVP_sha1());
+   EVP_VerifyUpdate(ctx, (void*) data, length);
    pubkey = X509_get_pubkey(creds->certificate);
-   if (EVP_VerifyFinal(&ctx, signature, signature_len, pubkey) != 1 ) {
+   if (EVP_VerifyFinal(ctx, signature, signature_len, pubkey) != 1 ) {
       verror_put_string("Verifying signature (EVP_VerifyFinal())");
       ssl_error_to_verror();
-      EVP_MD_CTX_cleanup(&ctx);
+      EVP_MD_CTX_destroy(ctx);
       EVP_PKEY_free(pubkey);
       return SSL_ERROR;
    }
 
-   EVP_MD_CTX_cleanup(&ctx);
+   EVP_MD_CTX_destroy(ctx);
    EVP_PKEY_free(pubkey);
    return SSL_SUCCESS;
 }
@@ -2108,7 +2117,7 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    X509                  *cert = NULL, *issuer = NULL;
    X509_LOOKUP           *lookup = NULL;
    X509_STORE            *cert_store = NULL;
-   X509_STORE_CTX        csc;
+   X509_STORE_CTX        *csc;
    SSL                   *ssl = NULL;
    SSL_CTX               *sslContext = NULL;
    globus_result_t       res;
@@ -2117,7 +2126,7 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    globus_gsi_cert_utils_cert_type_t   cert_type;
    globus_gsi_callback_data_t          callback_data = NULL;
 
-   memset(&csc, 0, sizeof(csc));
+   csc = X509_STORE_CTX_new();
    cert_store=X509_STORE_new();
    if (chain->certificate_chain != NULL) {
       for (i = 0; i < sk_X509_num(chain->certificate_chain); i++) {
@@ -2151,7 +2160,7 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
       goto end;
    }
    X509_LOOKUP_add_dir(lookup, certdir, X509_FILETYPE_PEM);
-   X509_STORE_CTX_init(&csc, cert_store, chain->certificate, NULL);
+   X509_STORE_CTX_init(csc, cert_store, chain->certificate, NULL);
    
    sslContext = SSL_CTX_new(SSLv23_server_method());
    if (sslContext == NULL) {
@@ -2171,26 +2180,29 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    }
 
    /* override the check_issued with our version */
-   csc.check_issued = globus_gsi_callback_check_issued;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+   csc->check_issued = globus_gsi_callback_check_issued;
+#else
+   X509_STORE_set_check_issued(X509_STORE_CTX_get0_store(csc), globus_gsi_callback_check_issued);
+#endif
 
-   X509_STORE_CTX_set_app_data(&csc, (void*)ssl);
+   X509_STORE_CTX_set_app_data(csc, (void*)ssl);
 
-   X509_STORE_CTX_set_depth(&csc, 100); /* allow more than 9 certs in chain */
+   X509_STORE_CTX_set_depth(csc, 100); /* allow more than 9 certs in chain */
 
 #if defined(X509_V_FLAG_ALLOW_PROXY_CERTS)
-   X509_STORE_CTX_set_flags(&csc, X509_V_FLAG_ALLOW_PROXY_CERTS);
+   X509_STORE_CTX_set_flags(csc, X509_V_FLAG_ALLOW_PROXY_CERTS);
 #endif
 
    globus_gsi_callback_data_init(&callback_data);
    globus_gsi_callback_set_cert_dir(callback_data, certdir);
    globus_gsi_callback_get_X509_STORE_callback_data_index(&callback_data_index);
-   X509_STORE_CTX_set_ex_data(&csc, callback_data_index, (void *)callback_data);
-   X509_STORE_set_verify_cb_func(&csc,
-                                     globus_gsi_callback_create_proxy_callback);
+   X509_STORE_CTX_set_ex_data(csc, callback_data_index, (void *)callback_data);
+   X509_STORE_CTX_set_verify_cb(csc, globus_gsi_callback_create_proxy_callback);
 
-   if(!X509_verify_cert(&csc)) {
+   if(!X509_verify_cert(csc)) {
       verror_put_string("X509_verify_cert() failed: %s",
-			(char *)X509_verify_cert_error_string(csc.error));
+			(char *)X509_verify_cert_error_string(X509_STORE_CTX_get_error(csc)));
       goto end;
    }
 
@@ -2215,7 +2227,7 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
            }
        }
    }
-   if (X509_STORE_CTX_get1_issuer(&issuer, &csc, cert) != 1) {
+   if (X509_STORE_CTX_get1_issuer(&issuer, csc, cert) != 1) {
        verror_put_string("X509_STORE_CTX_get1_issuer() failed");
        ssl_error_to_verror();
        goto end;
@@ -2229,7 +2241,7 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    return_status = SSL_SUCCESS;
 
 end:
-   X509_STORE_CTX_cleanup(&csc);
+   X509_STORE_CTX_free(csc);
    if (issuer)
        X509_free(issuer);
    if (ssl)

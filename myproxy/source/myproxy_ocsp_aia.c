@@ -53,8 +53,8 @@ my_aia_get(X509_EXTENSION *ext) {
 		return(NULL);
 	}
 
-	p = ext->value->data;
-	len = ext->value->length;
+	p = X509_EXTENSION_get_data(ext)->data;
+	len = X509_EXTENSION_get_data(ext)->length;
 	if (method->it) {
 		ext_str = ASN1_item_d2i(NULL, &p, len, ASN1_ITEM_ptr(method->it));
 	} else {

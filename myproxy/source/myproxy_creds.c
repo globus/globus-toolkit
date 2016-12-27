@@ -15,6 +15,18 @@
 /* Files should only be readable by me */
 #define FILE_MODE               0600
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define X509_OBJECT_get0_X509(o) (o)->data.x509
+#define X509_OBJECT_new() calloc(1, sizeof(X509_OBJECT))
+#define X509_OBJECT_free(o) \
+    do { \
+        X509_OBJECT *otmp = (o); \
+        X509_OBJECT_free_contents(otmp); \
+        free(otmp); \
+    } while (0)
+#endif
+
+
 /**********************************************************************
  *
  * Internal variables
@@ -2077,10 +2089,10 @@ myproxy_clean_crls()
     struct dirent *de = NULL;
     int return_value = -1;
 	X509_STORE *store = NULL;
-	X509_STORE_CTX ctx;
+	X509_STORE_CTX *ctx = NULL;
 	X509_LOOKUP *lookup = NULL;
-	X509_OBJECT xobj;
-	X509_CRL *x=NULL;
+	X509_OBJECT *xobj = NULL;
+	X509_CRL *x = NULL;
 	EVP_PKEY *pkey = NULL;
     BIO *in = NULL;
     char path[MAXPATHLEN];
@@ -2114,7 +2126,14 @@ myproxy_clean_crls()
     }
     ERR_clear_error();
 
-    if(!X509_STORE_CTX_init(&ctx, store, NULL, NULL)) {
+    ctx = X509_STORE_CTX_new();
+    if (!ctx) {
+        verror_put_string("X509_STORE_CTX_new() failed");
+        ssl_error_to_verror();
+        goto error;
+    }
+
+    if(!X509_STORE_CTX_init(ctx, store, NULL, NULL)) {
         verror_put_string("X509_STORE_CTX_init() failed");
         ssl_error_to_verror();
         goto error;
@@ -2139,21 +2158,22 @@ myproxy_clean_crls()
         }
         BIO_free_all(in);
         in = NULL;
-		ok = X509_STORE_get_by_subject(&ctx, X509_LU_X509, 
-					X509_CRL_get_issuer(x), &xobj);
-		if(ok <= 0) {
-			myproxy_log("CRL issuer certificate not found for %s", path);
+        xobj = X509_OBJECT_new();
+        ok = X509_STORE_get_by_subject(ctx, X509_LU_X509,
+                                       X509_CRL_get_issuer(x), xobj);
+        if(ok <= 0) {
+            myproxy_log("CRL issuer certificate not found for %s", path);
             UNLINK_CRL(path);
-		}
+        }
         if (pkey) EVP_PKEY_free(pkey);
-		pkey = X509_get_pubkey(xobj.data.x509);
-		X509_OBJECT_free_contents(&xobj);
-		if(!pkey) {
-			myproxy_log("unable to get CRL issuer public key for %s", path);
+        pkey = X509_get_pubkey(X509_OBJECT_get0_X509(xobj));
+        X509_OBJECT_free(xobj);
+        if(!pkey) {
+            myproxy_log("unable to get CRL issuer public key for %s", path);
             UNLINK_CRL(path);
-		}
-		ok = X509_CRL_verify(x, pkey);
-		EVP_PKEY_free(pkey);
+        }
+        ok = X509_CRL_verify(x, pkey);
+        EVP_PKEY_free(pkey);
         pkey = NULL;
         if (!ok) {
             myproxy_log("bad CRL signature: %s", path);
@@ -2178,7 +2198,7 @@ myproxy_clean_crls()
                 myproxy_log("CRL has expired: %s", path);
                 UNLINK_CRL(path);
             }
-		}
+        }
         X509_CRL_free(x);
         x = NULL;
     }
@@ -2192,8 +2212,8 @@ myproxy_clean_crls()
     if (x) X509_CRL_free(x);
     if (in) BIO_free_all(in);
     if (store) {
-		X509_STORE_CTX_cleanup(&ctx);
-		X509_STORE_free(store);
+        X509_STORE_CTX_free(ctx);
+        X509_STORE_free(store);
     }
 
     return return_value;

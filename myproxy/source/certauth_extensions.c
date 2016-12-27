@@ -15,6 +15,32 @@
 
 #define SECONDS_PER_HOUR (60 * 60)
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+
+#define EVP_PKEY_id(k) (k)->type
+
+#define EVP_PKEY_get0_RSA(k) (k)->pkey.rsa
+
+static
+void
+RSA_get0_key(const RSA *r, const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
+{
+    if (n != NULL)
+    {
+        *n = r->n;
+    }
+    if (e != NULL)
+    {
+        *e = r->e;
+    }
+    if (d != NULL)
+    {
+        *d = r->d;
+    }
+}
+
+#endif
+
 static int 
 read_cert_request(GSI_SOCKET *self,
 		  unsigned char **buffer,
@@ -743,7 +769,7 @@ generate_certificate( X509_REQ                 *request,
     ssl_error_to_verror();
     goto error;
   } 
-  serial = i2s_ASN1_OCTET_STRING(NULL,cert->cert_info->serialNumber);
+  serial = i2s_ASN1_OCTET_STRING(NULL, X509_get_serialNumber(cert));
   if (engine) {
       engine_used=1;
       if (lockfd != -1) close(lockfd);
@@ -1086,20 +1112,22 @@ handle_certificate(unsigned char            *input_buffer,
     goto error;
   } 
 
-  if (pkey->type != EVP_PKEY_RSA) {
+  if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA) {
       verror_put_string("Public key in certificate request is not of type RSA.");
       goto error;
   }
 
-  myproxy_debug("RSA exponent in certificate request is: %d",
-                BN_get_word(pkey->pkey.rsa->e));
-  if (BN_get_word(pkey->pkey.rsa->e) < 65537) {
-      verror_put_string("RSA public key in certificate request has weak exponent (%lu).", BN_get_word(pkey->pkey.rsa->e));
+  const BIGNUM *e;
+  RSA_get0_key(EVP_PKEY_get0_RSA(pkey), NULL, &e, NULL);
+  unsigned long exp = BN_get_word(e);
+  myproxy_debug("RSA exponent in certificate request is: %lu", exp);
+  if (exp < 65537) {
+      verror_put_string("RSA public key in certificate request has weak exponent (%lu).", exp);
       verror_put_string("RSA public key exponent must be 65537 or larger.");
       goto error;
   }
 
-  keysize = RSA_size(pkey->pkey.rsa)*8;
+  keysize = RSA_size(EVP_PKEY_get0_RSA(pkey))*8;
   myproxy_debug("RSA key in certificate request is %d bits.", keysize);
   if (server_context->min_keylen &&
       keysize < server_context->min_keylen) {

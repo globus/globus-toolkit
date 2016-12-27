@@ -520,8 +520,8 @@ line_parse_callback(void *context_arg,
             verror_put_string("Unknown or unsupported certificate_issuer_hashalg (%s)", tokens[1]);
             goto error;
         }
-		myproxy_debug("certificate_issuer_hashalg is %s\n",
-                      OBJ_nid2ln(((const EVP_MD *)context->certificate_hashalg)->type));
+        myproxy_debug("certificate_issuer_hashalg is %s\n",
+                      OBJ_nid2ln(EVP_MD_type((const EVP_MD *)context->certificate_hashalg)));
     }
     else if (strcmp(directive, "certificate_request_checker") == 0) {
 	context->certificate_request_checker = strdup(tokens[1]);
