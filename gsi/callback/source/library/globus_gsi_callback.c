@@ -1064,8 +1064,7 @@ globus_i_gsi_callback_check_revoked(
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
             get_issuer = x509_context->get_issuer;
 #else
-            get_issuer = X509_STORE_get_get_issuer(
-                    X509_STORE_CTX_get0_store(x509_context));
+            get_issuer = X509_STORE_CTX_get_get_issuer(x509_context);
 #endif
 
             /* verify the signature on this CRL */
