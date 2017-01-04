@@ -872,6 +872,7 @@ ssl_private_key_is_encrypted(const char	*path)
 	error = ERR_peek_error();
 	reason = ERR_GET_REASON(error);
 	if (reason == EVP_R_BAD_DECRYPT
+            || reason == PEM_R_BAD_PASSWORD_READ
 #ifdef EVP_R_NO_SIGN_FUNCTION_CONFIGURED
 	    || reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED
 #endif
@@ -2200,12 +2201,6 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    X509_STORE_CTX_set_ex_data(csc, callback_data_index, (void *)callback_data);
    X509_STORE_CTX_set_verify_cb(csc, globus_gsi_callback_create_proxy_callback);
 
-   if(!X509_verify_cert(csc)) {
-      verror_put_string("X509_verify_cert() failed: %s",
-			(char *)X509_verify_cert_error_string(X509_STORE_CTX_get_error(csc)));
-      goto end;
-   }
-
    /* check OCSP status of the EEC */
    if (globus_gsi_cert_utils_get_cert_type(chain->certificate,
                                            &cert_type) != GLOBUS_SUCCESS) {
@@ -2216,7 +2211,7 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
        cert = chain->certificate;
    } else {
        for (i = 0; i < sk_X509_num(chain->certificate_chain); i++) {
-           cert = (X509 *)sk_X509_value(chain->certificate_chain, i);
+           cert = sk_X509_value(chain->certificate_chain, i);
            if (globus_gsi_cert_utils_get_cert_type(cert, &cert_type)
                != GLOBUS_SUCCESS) {
                verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
@@ -2231,6 +2226,12 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
        verror_put_string("X509_STORE_CTX_get1_issuer() failed");
        ssl_error_to_verror();
        goto end;
+   }
+
+   if(!X509_verify_cert(csc)) {
+      verror_put_string("X509_verify_cert() failed: %s",
+			(char *)X509_verify_cert_error_string(X509_STORE_CTX_get_error(csc)));
+      goto end;
    }
 
    if (myproxy_ocsp_verify(cert, issuer) == 1) {
