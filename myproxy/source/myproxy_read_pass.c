@@ -58,11 +58,7 @@ read_passphrase(char				*buffer,
 	}
     }
     
-#if defined(HAVE_UI_UTIL)
     return_code = UI_UTIL_read_pw(buffer,
-#else
-    return_code = des_read_pw(buffer,
-#endif
 			      verify_buffer,
 			      buffer_len,
 			      prompt,

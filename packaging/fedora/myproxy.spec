@@ -13,7 +13,7 @@ Name:           myproxy
 %global nlibpkg libs
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.22
+Version:	6.1.23
 Release:	1%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
@@ -70,6 +70,7 @@ BuildRequires:      globus-usage-devel >= 3
 BuildRequires:      globus-gss-assist-devel >= 8
 
 Requires:      globus-proxy-utils >= 5
+Requires:      %{libpkg}%{?_isa} = %{version}-%{release}
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
@@ -122,6 +123,7 @@ Package %{name}-devel contains development files for MyProxy.
 
 %package server
 %if 0%{?suse_version} == 0
+Requires:         %{libpkg}%{?_isa} = %{version}-%{release}
 Requires(pre):    shadow-utils
 Requires(post):   chkconfig
 Requires(preun):  chkconfig
@@ -151,6 +153,7 @@ Package %{name}-server contains the MyProxy server.
 # not needed for normal operation and pull in
 # a load of perl dependencies.
 %package       admin
+Requires:      %{libpkg}%{?_isa} = %{version}-%{release}
 Requires:      myproxy-server = %{version}-%{release}
 Requires:      myproxy = %{version}-%{release}
 Requires:      globus-gsi-cert-utils-progs >= 8
@@ -577,6 +580,10 @@ fi
 %endif
 
 %changelog
+* Thu Jan 05 2017 Globus Toolkit <support@globus.org> - 6.1.23-1
+- Fixes for OpenSSL 1.1.0
+- Reintroduce explicit library dependencies
+
 * Tue Dec 13 2016 Globus Toolkit <support@globus.org> - 6.1.22-1
 - Check for openssl 101e for epel5
 

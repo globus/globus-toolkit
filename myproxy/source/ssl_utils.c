@@ -1535,10 +1535,9 @@ ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
     globus_gsi_cred_handle_destroy(cred_handle);
 
     } else {
-
-        X509			*proxy_cert = NULL;
-        int				cert_index = 0;
-        STACK			*cert_chain = NULL;
+        X509                   *proxy_cert = NULL;
+        int                     cert_index = 0;
+        STACK_OF(X509)         *cert_chain = NULL;
 
         /* Now read the certificate */
         proxy_cert = d2i_X509_bio(bio, NULL /* make new cert */);
@@ -1552,7 +1551,7 @@ ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
         cert_index++;
     
         /* Now read the certificate chain */
-        cert_chain = sk_new_null();
+        cert_chain = sk_X509_new_null();
     
         while (cert_index < number_of_certs)
         {
@@ -1567,7 +1566,7 @@ ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
                 goto error;
             }
 
-            if (sk_push(cert_chain, (char *) cert) == SSL_ERROR)
+            if (sk_X509_push(cert_chain, cert) == SSL_ERROR)
             {
                 verror_put_string("Failed unpacking certificate from buffer (building cert chain)");
                 ssl_error_to_verror();
@@ -1777,7 +1776,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     {
 	X509		*cert;
 	
-	cert = (X509 *) sk_X509_value(creds->certificate_chain, index);
+	cert = sk_X509_value(creds->certificate_chain, index);
 	
 	if (i2d_X509_bio(bio, cert) == SSL_ERROR)
 	{

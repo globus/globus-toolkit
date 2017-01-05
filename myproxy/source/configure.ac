@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([myproxy],[6.1.22])
+AC_INIT([myproxy],[6.1.23])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign])
 LT_INIT([dlopen win32-dll])
@@ -216,13 +216,6 @@ dnl
 dnl Check for OCSP
 dnl
 AC_CHECK_FUNC(OCSP_basic_verify, AC_DEFINE(HAVE_OCSP))
-dnl
-dnl Check for UI_UTIL_read_pw
-dnl
-AC_CHECK_FUNC(UI_UTIL_read_pw, AC_DEFINE(HAVE_UI_UTIL))
-dnl
-dnl Check for SASL
-dnl
 AC_ARG_WITH(sasl2,
     AS_HELP_STRING([--with-sasl2=PATH], [Build with SASL V2 support]),
 	[
