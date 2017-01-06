@@ -6,7 +6,7 @@ Name:		globus-gsi-cert-utils
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	9.15
+Version:	9.16
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
@@ -220,6 +220,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Jan 06 2017 Globus Toolkit <support@globus.org> - 9.16-1
+- Add const qualifier to avoid casting with OpensSL 1.1.0
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 9.15-1
 - Update for el.5 openssl101e, replace docbook with asciidoc
 

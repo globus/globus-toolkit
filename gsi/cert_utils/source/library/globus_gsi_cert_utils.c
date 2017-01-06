@@ -186,7 +186,7 @@ globus_l_gsi_cert_utils_deactivate(void)
  */
 globus_result_t
 globus_gsi_cert_utils_make_time(
-    ASN1_UTCTIME *                      ctm,
+    const ASN1_UTCTIME *                ctm,
     time_t *                            newtime)
 {
     char *                              str;
