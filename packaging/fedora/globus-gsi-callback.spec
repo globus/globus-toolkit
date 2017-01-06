@@ -6,7 +6,7 @@ Name:		globus-gsi-callback
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	5.12
+Version:	5.13
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Callback Library
@@ -173,6 +173,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Jan 06 2017 Globus Toolkit <support@globus.org> - 5.13-1
+- Fix crash with OpenSSL 1.1.0 with a CRL (issue #87), replace some deprecated API calls
+
 * Wed Oct 26 2016 Globus Toolkit <support@globus.org> - 5.12-1
 - Fix crash with empty X.509 subject name
 - Ensure that X509_OBJECT_new compatibility macro initializes the object

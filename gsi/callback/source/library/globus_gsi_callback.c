@@ -47,6 +47,7 @@
 #define X509_STORE_CTX_set_current_cert(ctx, x509) (ctx)->current_cert = (x509)
 #define X509_set_proxy_flag(c) (c)->ex_flags |= EXFLAG_PROXY
 typedef int (*X509_STORE_CTX_get_issuer_fn)(X509 **issuer, X509_STORE_CTX *ctx, X509 *x); /* get issuers cert from ctx */
+#define X509_STORE_CTX_get_get_issuer(c) (c)->get_issuer;
 #define X509_OBJECT_get0_X509_CRL(o) (o)->data.crl
 #define X509_REVOKED_get0_serialNumber(r) (r)->serialNumber
 #define X509_OBJECT_new() calloc(1, sizeof(X509_OBJECT))
@@ -56,6 +57,8 @@ typedef int (*X509_STORE_CTX_get_issuer_fn)(X509 **issuer, X509_STORE_CTX *ctx, 
         X509_OBJECT_free_contents(otmp); \
         free(otmp); \
     } while (0)
+#define X509_CRL_get0_nextUpdate(crl) X509_CRL_get_nextUpdate(crl)
+#define X509_CRL_get0_lastUpdate(crl) X509_CRL_get_lastUpdate(crl)
 #endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -1032,8 +1035,8 @@ globus_i_gsi_callback_check_revoked(
                 x509_object))
         {
             X509 *                          issuer;
-            ASN1_TIME *                     last_update;
-            ASN1_TIME *                     next_update;
+            const ASN1_TIME *               last_update;
+            const ASN1_TIME *               next_update;
             time_t                          last_time;
             int                             has_next_time;
             time_t                          next_time;
@@ -1041,8 +1044,8 @@ globus_i_gsi_callback_check_revoked(
             X509_STORE_CTX_get_issuer_fn    get_issuer;
 
             crl = X509_OBJECT_get0_X509_CRL(x509_object);
-            next_update = X509_CRL_get_nextUpdate(crl);
-            last_update = X509_CRL_get_lastUpdate(crl);
+            next_update = X509_CRL_get0_nextUpdate(crl);
+            last_update = X509_CRL_get0_lastUpdate(crl);
             has_next_time = (next_update != NULL);
             
             globus_gsi_cert_utils_make_time(last_update, &last_time);
@@ -1061,12 +1064,7 @@ globus_i_gsi_callback_check_revoked(
                     "%s", has_next_time ? asctime(gmtime(&next_time)) : "<not set>" ));
             GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "\n");
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-            get_issuer = x509_context->get_issuer;
-#else
-            get_issuer = X509_STORE_get_get_issuer(
-                    X509_STORE_CTX_get0_store(x509_context));
-#endif
+            get_issuer = X509_STORE_CTX_get_get_issuer(x509_context);
 
             /* verify the signature on this CRL */
             if(get_issuer(&issuer, 
@@ -1274,10 +1272,9 @@ globus_i_gsi_callback_check_revoked(
             n = sk_X509_REVOKED_num(revoked_stack);
             for (i = 0; i < n; i++)
             {
-                ASN1_INTEGER *revoked_serial_number;
+                const ASN1_INTEGER *revoked_serial_number = NULL;
 
-                revoked = (X509_REVOKED *) 
-                    sk_X509_REVOKED_value(revoked_stack, i);
+                revoked = sk_X509_REVOKED_value(revoked_stack, i);
                 revoked_serial_number = X509_REVOKED_get0_serialNumber(revoked);
             
                 if(!ASN1_INTEGER_cmp(
