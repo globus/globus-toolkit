@@ -181,7 +181,7 @@ globus_eval_path(const char * pathstring, char **bufp)
     *bufp = NULL;
 
     tmp = strdup(pathstring);
-    while (tmp != NULL && strchr(tmp, '$') != 0)
+    while (tmp != NULL && strstr(tmp, "${") != NULL)
     {
         char * end = NULL;
         if ((newtmp = strstr(tmp, "${")) != NULL)
