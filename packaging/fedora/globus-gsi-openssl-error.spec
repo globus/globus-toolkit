@@ -6,7 +6,7 @@ Name:		globus-gsi-openssl-error
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	3.7
+Version:	3.8
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling
@@ -182,6 +182,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Mon Jan 09 2017 Globus Toolkit <support@globus.org> - 3.8-1
+- Alter dependency order to avoid mixing SSL versions
+
 * Fri Sep 09 2016 Globus Toolkit <support@globus.org> - 3.7-1
 - Update for el.5 openssl101e
 
