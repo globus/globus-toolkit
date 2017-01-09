@@ -635,7 +635,6 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
         SSL_CTX_free(ctx);
     }
     if (sbio) {
-        BIO_ssl_shutdown(sbio);
         BIO_free_all(sbio);
     }
     if (return_value) {

@@ -13,7 +13,7 @@ Name:           myproxy
 %global nlibpkg libs
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.23
+Version:	6.1.24
 Release:	1%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
@@ -580,6 +580,9 @@ fi
 %endif
 
 %changelog
+* Mon Jan 09 2017 Globus Toolkit <support@globus.org> - 6.1.24-1
+- Fix crash in myproxy_bootstrap_trust() with OpenSSL 1.1.0c
+
 * Thu Jan 05 2017 Globus Toolkit <support@globus.org> - 6.1.23-1
 - Fixes for OpenSSL 1.1.0
 - Reintroduce explicit library dependencies
