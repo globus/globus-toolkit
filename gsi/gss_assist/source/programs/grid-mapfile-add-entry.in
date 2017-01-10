@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! @PERL@
 
 # 
 # Copyright 1999-2016 University of Chicago

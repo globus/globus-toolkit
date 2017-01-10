@@ -6,7 +6,7 @@ Name:		globus-gss-assist
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	10.20
+Version:	10.21
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI Assist library
@@ -194,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Jan 10 2017 Globus Toolkit <support@globus.org> - 10.21-1
+- Slow grid-mapfile-delete-entry (issue #84)
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 10.20-1
 - Update for el.5 openssl101e, replace docbook with asciidoc
 

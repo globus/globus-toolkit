@@ -1,3 +1,9 @@
+globus-gss-assist (10.21-1+gt6.@distro@) @distro@; urgency=low
+
+  * Slow grid-mapfile-delete-entry (issue #84)
+
+ -- Globus Toolkit <support@globus.org>  Tue, 10 Jan 2017 08:33:24 -0500
+
 globus-gss-assist (10.20-1+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e, replace docbook with asciidoc
