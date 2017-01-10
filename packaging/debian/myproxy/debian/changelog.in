@@ -1,3 +1,9 @@
+myproxy (6.1.25-1+gt6.@distro@) @distro@; urgency=low
+
+  * Don't call ERR_GET_REASON twice #89
+
+ -- Globus Toolkit <support@globus.org>  Tue, 10 Jan 2017 08:30:53 -0500
+
 myproxy (6.1.24-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix crash in myproxy_bootstrap_trust() with OpenSSL 1.1.0c

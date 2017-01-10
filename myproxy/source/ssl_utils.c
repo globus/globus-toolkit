@@ -872,7 +872,7 @@ ssl_private_key_is_encrypted(const char	*path)
 	error = ERR_peek_error();
 	reason = ERR_GET_REASON(error);
 	if (reason == EVP_R_BAD_DECRYPT
-            || reason == PEM_R_BAD_PASSWORD_READ
+	    || reason == PEM_R_BAD_PASSWORD_READ
 #ifdef EVP_R_NO_SIGN_FUNCTION_CONFIGURED
 	    || reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED
 #endif
@@ -949,7 +949,7 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
 	reason = ERR_GET_REASON(error);
 
 	/* If this is a bad password, return a better error message */
-	if (ERR_GET_REASON(error) == EVP_R_BAD_DECRYPT
+	if (reason == EVP_R_BAD_DECRYPT
 #ifdef EVP_R_NO_SIGN_FUNCTION_CONFIGURED
 	    || reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED
 #endif
