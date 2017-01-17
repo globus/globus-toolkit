@@ -768,6 +768,7 @@ typedef globus_result_t
 #define GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH                  (1 << 2)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_REQUIRES_ORDERED_DATA         (1 << 3)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SETS_ERROR_RESPONSES          (1 << 4)
+#define GLOBUS_GFS_DSI_DESCRIPTOR_SAFE_RDEL                     (1 << 5)
 
 /*
  *  globus_gfs_storage_iface_t
