@@ -316,12 +316,20 @@ int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
     goto end;
   }
   X509_LOOKUP_add_dir(lookup, certdir, X509_FILETYPE_PEM);
+  #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+  ctx = SSL_CTX_new(TLS_client_method());
+  #else
   ctx = SSL_CTX_new(SSLv23_client_method());
+  #endif
   if (ctx == NULL) {
     result = MYPROXY_OCSPRESULT_ERROR_OUTOFMEMORY;
     goto end;
   }
-  SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
+  #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+  SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION);
+  #else
+  SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+  #endif
   SSL_CTX_set_cert_store(ctx, store);
   SSL_CTX_set_verify(ctx,SSL_VERIFY_PEER,NULL);
 

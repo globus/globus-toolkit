@@ -544,9 +544,15 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
     }
 
     /* get trust root(s) from the myproxy-server */
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    ctx = SSL_CTX_new(TLS__client_method());
+    SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION);
+    #else
     ctx = SSL_CTX_new(SSLv23_client_method());
-    SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2 |
-			SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
+    /* No longer setting SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS since it seemed
+     * like a stop-gap measure to interoperate with broken SSL */
+    SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+    #endif
 
     if (!(sbio = BIO_new_ssl_connect(ctx))) goto error;
     if ( (sockfd = get_connected_myproxy_host_socket(

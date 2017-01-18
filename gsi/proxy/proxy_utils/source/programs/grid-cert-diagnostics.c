@@ -1206,6 +1206,11 @@ check_service(const char *service)
         ERR_print_errors_fp(stderr);
         goto ctx_new_fail;
     }
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    SSL_CTX_set_min_proto_version(ctx,TLS1_VERSION);
+    #else
+    SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3);
+    #endif
     SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
     SSL_CTX_set_verify_depth(ctx, 9);
     web = BIO_new_ssl_connect(ctx);
@@ -1308,6 +1313,11 @@ check_gridftp(char *service)
         ERR_print_errors_fp(stderr);
         goto ctx_new_fail;
     }
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    SSL_CTX_set_min_proto_version(ctx,TLS1_VERSION);
+    #else
+    SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3);
+    #endif
     SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
     SSL_CTX_set_verify_depth(ctx, 9);
 

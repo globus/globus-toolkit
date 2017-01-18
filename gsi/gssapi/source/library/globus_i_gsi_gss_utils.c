@@ -486,6 +486,8 @@ globus_i_gsi_gss_create_and_fill_context(
     {
         /* TLSv1_method is only TLSv1.0 */
         SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
+        /* No longer setting SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS since it seemed
+         * like a stop-gap measure to interoperate with broken SSL */
         SSL_set_options(context->gss_ssl,
             SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
     }
@@ -2192,7 +2194,11 @@ globus_i_gsi_gssapi_init_ssl_context(
         goto exit;
     }
 
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    SSL_CTX_set_min_proto_version(cred_handle->ssl_context,TLS1_VERSION);
+    #else
     SSL_CTX_set_options(cred_handle->ssl_context,SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3);
+    #endif
             
     SSL_CTX_set_cert_verify_callback(cred_handle->ssl_context,
                                      globus_gsi_callback_X509_verify_cert,
