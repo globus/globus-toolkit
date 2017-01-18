@@ -1351,27 +1351,27 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
 #define GlobusGFSDebugInfo(_msg)                                            \
     GlobusGFSDebugPrintf(                                                   \
         GLOBUS_GFS_DEBUG_INFO,                                              \
-        ("[%s] %s\n", _gfs_name, _msg))
+        ("[%s] %s\n", __func__, _msg))
 
 #define GlobusGFSDebugEnter()                                               \
     GlobusGFSDebugPrintf(                                                   \
         GLOBUS_GFS_DEBUG_TRACE,                                             \
-        ("[%s] Entering\n", _gfs_name))
+        ("[%s] Entering\n", __func__))
         
 #define GlobusGFSDebugExit()                                                \
     GlobusGFSDebugPrintf(                                                   \
         GLOBUS_GFS_DEBUG_TRACE,                                             \
-        ("[%s] Exiting\n", _gfs_name))
+        ("[%s] Exiting\n", __func__))
 
 #define GlobusGFSDebugState(_state)                                         \
     GlobusGFSDebugPrintf(                                                   \
         GLOBUS_GFS_DEBUG_INFO,                                             \
-        ("[%s] State: %d\n", _gfs_name, _state))
+        ("[%s] State: %d\n", __func__, _state))
 
 #define GlobusGFSDebugExitWithError()                                       \
     GlobusGFSDebugPrintf(                                                   \
         GLOBUS_GFS_DEBUG_TRACE,                                             \
-        ("[%s] Exiting with error\n", _gfs_name))
+        ("[%s] Exiting with error\n", __func__))
 
 #define GlobusGFSErrorParameter(mem_name)                                   \
     globus_error_put(GlobusGFSErrorObjParameter(mem_name)) 
@@ -1381,47 +1381,43 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
 
 #define GlobusGFSErrorObjIPC()                                              \
     globus_error_construct_error(                                           \
-        GLOBUS_NULL,                                                        \
-        GLOBUS_NULL,                                                        \
+        NULL,                                                        \
+        NULL,                                                        \
         GLOBUS_GFS_ERROR_MEMORY,                                            \
         __FILE__,                                                           \
-        _gfs_name,                                                          \
+        __func__,                                                           \
         __LINE__,                                                           \
         "IPC Communication error.")
                                                                             
 #define GlobusGFSErrorObjParameter(param_name)                              \
     globus_error_construct_error(                                           \
-        GLOBUS_NULL,                                                        \
-        GLOBUS_NULL,                                                        \
+        NULL,                                                        \
+        NULL,                                                        \
         GLOBUS_GFS_ERROR_PARAMETER,                                         \
         __FILE__,                                                           \
-        _gfs_name,                                                          \
+        __func__,                                                           \
         __LINE__,                                                           \
         "invalid parameter: %s",                                            \
         (param_name))                               
                                                                             
-#define GlobusGFSErrorSystemError(system_func, _errno)                      \
-    globus_error_put(                                                       \
-        globus_error_wrap_errno_error(                                      \
-            GLOBUS_NULL,                                                    \
-            (_errno),                                                       \
-            GLOBUS_GFS_ERROR_SYSTEM_ERROR,                                  \
-            __FILE__,                                                       \
-            _gfs_name,                                                      \
-            __LINE__,                                                       \
-            "System error in %s",                                           \
-            (system_func)))
+#define GlobusGFSErrorSystemError(system_func, system_errno)                \
+    globus_error_put(GlobusGFSErrorObjSystemError(\
+            (system_func), (system_errno)))
+#define GlobusGFSErrorObjSystemError(system_func, system_errno)             \
+        globus_i_gfs_error_system(                                          \
+                0, (system_errno),                                          \
+                "System error in %s", (system_func))
                                                                             
 #define GlobusGFSErrorWrapFailed(failed_func, result)                       \
     globus_error_put(GlobusGFSErrorObjWrapFailed(failed_func, result))
 
 #define GlobusGFSErrorObjWrapFailed(failed_func, result)                    \
     globus_error_construct_error(                                           \
-        GLOBUS_NULL,                                                        \
+        NULL,                                                        \
         globus_error_get((result)),                                         \
         GLOBUS_GFS_ERROR_WRAPPED,                                           \
         __FILE__,                                                           \
-        _gfs_name,                                                          \
+        __func__,                                                           \
         __LINE__,                                                           \
         "%s failed.",                                                       \
         (failed_func))
@@ -1431,11 +1427,11 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
 
 #define GlobusGFSErrorObjData(reason)                                       \
     globus_error_construct_error(                                           \
-        GLOBUS_NULL,                                                        \
-        GLOBUS_NULL,                                                        \
+        NULL,                                                        \
+        NULL,                                                        \
         GLOBUS_GFS_ERROR_DATA,                                              \
         __FILE__,                                                           \
-        _gfs_name,                                                          \
+        __func__,                                                           \
         __LINE__,                                                           \
         "%s",                                                               \
         (reason))
@@ -1445,11 +1441,11 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
 
 #define GlobusGFSErrorObjGeneric(reason)                                    \
     globus_error_construct_error(                                           \
-        GLOBUS_NULL,                                                        \
-        GLOBUS_NULL,                                                        \
+        NULL,                                                        \
+        NULL,                                                        \
         GLOBUS_GFS_ERROR_GENERIC,                                           \
         __FILE__,                                                           \
-        _gfs_name,                                                          \
+        __func__,                                                           \
         __LINE__,                                                           \
         "%s",                                                               \
         (reason))                             
@@ -1486,75 +1482,147 @@ extern const globus_object_type_t
         (&GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE_DEFINITION)
 
 
-#define GlobusGFSErrorFtpResponse(code, ...)                                \
-    globus_error_put(GlobusGFSErrorObjFtpResponse(code, __VA_ARGS__))
+#define GlobusGFSErrorFtpResponse(cause, code, ...)                         \
+    globus_error_put(GlobusGFSErrorObjFtpResponse(cause, code, __VA_ARGS__))
 
-#define GlobusGFSErrorObjFtpResponse(code, ...)                                \
+#define GlobusGFSErrorObjFtpResponse(cause, code, ...)                      \
     globus_gfs_ftp_response_error_construct(                                \
             NULL,                                                           \
-            NULL,                                                           \
+            cause,                                                          \
             code,                                                           \
-            __VA_ARGS__)
+            "GlobusError: v=1 c=" __VA_ARGS__)
 
 globus_object_t *
-globus_i_gfs_error_system(int code);
+globus_i_gfs_error_system(int ftp_code, int system_errno, const char *fmt, ...);
 
-#define GlobusGFSErrorSystem() \
-    globus_error_put(GlobusGFSErrorObjSystem())
-#define GlobusGFSErrorObjSystem() \
-    globus_i_gfs_error_system(451)
-
-#define GlobusGFSErrorMemory(mem) \
+#define GlobusGFSErrorMemory(mem)                                           \
     globus_error_put(GlobusGFSErrorObjMemory(mem))
-#define GlobusGFSErrorObjMemory(mem) \
-    GlobusGFSErrorObjFtpResponse(451, "Out of memory.")
+#define GlobusGFSErrorObjMemory(mem)                                        \
+    GlobusGFSErrorObjSystemError("malloc", errno)
 
-#define GlobusGFSErrorNotImplemented() \
-    globus_error_put(GlobusGFSErrorObjNotImplemented())
-#define GlobusGFSErrorObjNotImplemented() \
-    GlobusGFSErrorObjFtpResponse(502, "Command not implemented.")
+#define GlobusGFSErrorObj(cause, response_code, ...)                        \
+    GlobusGFSErrorObjFtpResponse(cause, response_code, __VA_ARGS__)
 
-#define GlobusGFSErrorParameterNotImplemented() \
-    globus_error_put(GlobusGFSErrorObjParameterNotImplemented())
-#define GlobusGFSErrorObjParameterNotImplemented() \
-    GlobusGFSErrorObjFtpResponse( \
-            504, "Command not implemented for that parameter.")
+#define GlobusGFSErrorPathNotFound(p)                                       \
+        globus_error_put(GlobusGFSErrorObjPathNotFound(NULL, p))
+#define GlobusGFSErrorObjPathNotFound(cause, p)                             \
+        GlobusGFSErrorObj((cause), 550, "PATH_NOT_FOUND"                    \
+                "%s%s%s",                                                   \
+                ((p) != NULL) ? "\nGridFTP-Path: \"" : "",                  \
+                ((p) != NULL) ? (p) : "",                                   \
+                ((p) != NULL) ? "\"" : "")
 
-#define GlobusGFSErrorPermissionDenied() \
-    globus_error_put(GlobusGFSErrorObjPermissionDenied())
-#define GlobusGFSErrorObjPermissionDenied() \
-    GlobusGFSErrorObjFtpResponse(550, "Permission denied.")
+#define GlobusGFSErrorIncorrectChecksum(computed, expected)                 \
+        globus_error_put(GlobusGFSErrorObjIncorrectChecksum(                \
+                NULL, computed, expected))
+#define GlobusGFSErrorObjIncorrectChecksum(cause, computed, expected)       \
+        GlobusGFSErrorObj(                                                  \
+                (cause),                                                    \
+                550,                                                        \
+                "INCORRECT_CHECKSUM\n"                                      \
+                "GridFTP-Computed-Checksum: %s\n"                           \
+                "GridFTP-Expected-Checksum: %s", (computed), (expected))
 
-#define GlobusGFSErrorNotFound() \
-    globus_error_put(GlobusGFSErrorObjNotFound())
-#define GlobusGFSErrorObjNotFound() \
-    GlobusGFSErrorObjFtpResponse(550, "No such file or directory.")
+#define GlobusGFSErrorMultipartUploadNotFound()                             \
+        globus_error_put(GlobusGFSErrorObjMultipartUploadNotFound(NULL))
+#define GlobusGFSErrorObjMultipartUploadNotFound(cause)                     \
+        GlobusGFSErrorObj(cause, 553, "MULTI_PART_UPLOAD_NOT_FOUND")
 
-#define GlobusGFSErrorTooLarge() \
-    globus_error_put(GlobusGFSErrorObjTooLarge())
-#define GlobusGFSErrorObjTooLarge() \
-    GlobusGFSErrorObjFtpResponse(552, "File too large.")
+#define GlobusGFSErrorAppendNotSupported()                                  \
+        globus_error_put(GlobusGFSErrorObjAppendNotSupported(NULL))
+#define GlobusGFSErrorObjAppendNotSupported(cause)                          \
+        GlobusGFSErrorObj((cause), 553, "APPEND_NOT_SUPPORTED")
 
-#define GlobusGFSErrorNotDirectory() \
-    globus_error_put(GlobusGFSErrorObjNotDirectory())
-#define GlobusGFSErrorObjNotDirectory() \
-    GlobusGFSErrorObjFtpResponse(553, "Not a directory.")
+#define GlobusGFSErrorAmbiguousPath(ambiguity)                              \
+        globus_error_put(GlobusGFSErrorObjAmbiguousPath(NULL, ambiguity))
+#define GlobusGFSErrorObjAmbiguousPath(cause, ambiguity)                    \
+        GlobusGFSErrorObj(                                                  \
+                (cause),                                                    \
+                553,                                                        \
+                "AMBIGUOUS_PATH\n"                                          \
+                "GridFTP-Path: %s",                                         \
+                (ambiguity))
 
-#define GlobusGFSErrorIsDirectory() \
-    globus_error_put(GlobusGFSErrorObjIsDirectory())
-#define GlobusGFSErrorObjIsDirectory() \
-    GlobusGFSErrorObjFtpResponse(553, "Is a directory.")
+#define GlobusGFSErrorTooBusy()                                             \
+        globus_error_put(GlobusGFSErrorObjTooBusy(NULL))
+#define GlobusGFSErrorObjTooBusy(cause)                                     \
+        GlobusGFSErrorObj((cause), 451, "TOO_BUSY")
 
-#define GlobusGFSErrorAmbiguousPath() \
-    globus_error_put(GlobusGFSErrorObjAmbiguousPath())
-#define GlobusGFSErrorObjAmbiguousPath() \
-    GlobusGFSErrorObjFtpResponse(553, "File name not allowed (ambiguous).")
+#define GlobusGFSErrorDataChannelAuthenticationFailure()                    \
+        globus_error_put(GlobusGFSErrorObjDataChannelAuthenticationFailure( \
+                NULL))
+#define GlobusGFSErrorObjDataChannelAuthenticationFailure(cause)            \
+        GlobusGFSErrorObj((cause), 425, "DATA_CHANNEL_AUTHENTICATION_FAILURE")
 
-#define GlobusGFSErrorAlreadyExists() \
-    globus_error_put(GlobusGFSErrorObjAlreadyExists())
-#define GlobusGFSErrorObjAlreadyExists() \
-    GlobusGFSErrorObjFtpResponse(553, "File exists.")
+#define GlobusGFSErrorDataChannelCommunicationFailure()                     \
+        globus_error_put(GlobusGFSErrorObjDataChannelCommunicationFailure(  \
+                NULL))
+#define GlobusGFSErrorObjDataChannelCommunicationFailure(cause)             \
+        GlobusGFSErrorObj((cause), 425, "DATA_CHANNEL_COMMUNICATION_FAILURE")
 
+#define GlobusGFSErrorLoginDenied()                                         \
+        globus_error_put(GlobusGFSErrorObjLoginDenied(NULL))
+#define GlobusGFSErrorObjLoginDenied(cause) \
+        GlobusGFSErrorObj((cause), 530, "LOGIN_DENIED")
+
+#define GlobusGFSErrorPermissionDenied()                                    \
+        globus_error_put(GlobusGFSErrorObjPermissionDenied(NULL))
+#define GlobusGFSErrorObjPermissionDenied(cause)                            \
+        GlobusGFSErrorObj((cause), 550, "PERMISSION_DENIED")
+
+#define GlobusGFSErrorQuotaExceeded()                                       \
+        globus_error_put(GlobusGFSErrorObjQuotaExceeded(NULL))
+#define GlobusGFSErrorObjQuotaExceeded(cause)                               \
+        GlobusGFSErrorObj((cause), 451, "QUOTA_EXCEEDED")
+
+#define GlobusGFSErrorNoSpaceLeft()                                         \
+        globus_error_put(GlobusGFSErrorObjNoSpaceLeft(NULL))
+#define GlobusGFSErrorObjNoSpaceLeft(cause)                                 \
+        GlobusGFSErrorObj((cause), 451, "NO_SPACE_LEFT")
+
+#define GlobusGFSErrorInvalidPathName(name)                                 \
+        globus_error_put(GlobusGFSErrorObjInvalidPathName(NULL, name))
+#define GlobusGFSErrorObjInvalidPathName(cause, name)                       \
+        GlobusGFSErrorObj((cause), 553, "INVALID_PATH_NAME\n"               \
+                "GridFTP-Path: %s", name)
+
+#define GlobusGFSErrorPathExists(name)                                      \
+        globus_error_put(GlobusGFSErrorObjPathExists(NULL, name))
+#define GlobusGFSErrorObjPathExists(cause, name)                            \
+        GlobusGFSErrorObj((cause), 553, "PATH_EXISTS\n"                     \
+                "GridFTP-Path: %s", name)
+
+#define GlobusGFSErrorIsADirectory(name)                                    \
+        globus_error_put(GlobusGFSErrorObjIsADirectory(NULL, name))
+#define GlobusGFSErrorObjIsADirectory(cause, name)                          \
+        GlobusGFSErrorObj((cause), 553, "IS_A_DIRECTORY\n"                  \
+                "GridFTP-Path: %s", name)
+
+#define GlobusGFSErrorNotADirectory(name)                                   \
+        globus_error_put(GlobusGFSErrorObjNotADirectory(NULL, name))
+#define GlobusGFSErrorObjNotADirectory(cause, name)                         \
+        GlobusGFSErrorObj((cause), 553, "NOT_A_DIRECTORY\n"                 \
+                "GridFTP-Path: %s", name)
+
+#define GlobusGFSErrorCRLError()                                            \
+        globus_error_put(GlobusGFSErrorObjCRLError(NULL))
+#define GlobusGFSErrorObjCRLError(cause)                                    \
+        GlobusGFSErrorObj((cause), 530, "CRL_ERROR")
+
+#define GlobusGFSErrorInternalError()                                       \
+        globus_error_put(GlobusGFSErrorObjInternalError(NULL))
+#define GlobusGFSErrorObjInternalError(cause)                               \
+        GlobusGFSErrorObj((cause), 500, "INTERNAL_ERROR")
+
+#define GlobusGFSErrorNotImplemented()                                      \
+        globus_error_put(GlobusGFSErrorObjNotImplemented(NULL))
+#define GlobusGFSErrorObjNotImplemented(cause)                              \
+        GlobusGFSErrorObj((cause), 500, "NOT_IMPLEMETED")
+
+#define GlobusGFSErrorConfigurationError()                                  \
+        globus_error_put(GlobusGFSErrorObjConfigurationError(NULL))
+#define GlobusGFSErrorObjConfigurationError(cause)                          \
+        GlobusGFSErrorObj((cause), 500, "CONFIGURATION_ERROR")
 /* 
  * 
  * IPC 

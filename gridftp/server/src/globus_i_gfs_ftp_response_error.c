@@ -332,75 +332,153 @@ globus_l_gridftp_server_error_printable(
 
 globus_object_t *
 globus_i_gfs_error_system(
-    int                                 code)
+    /**
+     * [in] FTP Response code. If this is 0, a reasonable value (based on
+     * system_errno) is used.
+     */
+    int                                 ftp_code,
+    /**
+     * [in] Error value. This is the errno set upon failing the system call.
+     */
+    int                                 system_errno,
+    /**
+     * [in] Unstructured error context added to the resulting error object.
+     * This is a printf-style format string, with conversion values passed
+     * as the variable arguments that follow. If this is NULL, then the 
+     * strerror() value associated with the errno is used.
+     */
+    const char *                        fmt,
+    ...)
 {
     char                                msg[256];
-    char                               *m = msg;
+    char                               *m = NULL;
+    const char                         *error_code = "INTERNAL_ERROR";
     globus_object_t                    *err = NULL;
+    va_list                             ap;
 
-    msg[0] = '\0';
+    msg[0] = 0;
+
+    if (fmt != NULL)
+    {
+        va_start(ap, fmt);
+        m = globus_common_v_create_string(fmt, ap);
+        va_end(ap);
+    }
+    else
+    {
 #ifdef _WIN32
-    strerror_s(msg, sizeof(msg), errno);
+        strerror_s(msg, sizeof(msg), system_errno);
+        m = msg;
 #elif defined(HAVE_DECL_STRERROR_R)
 #ifdef STRERROR_R_CHAR_P
-    m = strerror_r(errno, msg, sizeof(msg));
+        m = strerror_r(system_errno, msg, sizeof(msg));
 #else
-    strerror_r(errno, msg, sizeof(msg));
+        strerror_r(system_errno, msg, sizeof(msg));
+        m = msg;
 #endif
 #else
-    m = strerror(errno);
+        m = strerror(system_errno);
 #endif
+    }
 
-    if (code == 0)
+    if (ftp_code == 0)
     {
-        switch (errno)
+        switch (system_errno)
         {
 #ifdef ETXTBSY
-            case ETXTBSY: code = 450; break;
+            case ETXTBSY:
+                ftp_code = 450;
+                break;
 #endif
 #ifdef ECONNREFUSED
-            case ECONNREFUSED: code = 425; break;
+            case ECONNREFUSED:
+                ftp_code = 425;
+                error_code = "DATA_CHANNEL_COMMUNICATION_FAILURE";
+                break;
 #endif
 #if defined(ECONNRESET)
-            case ECONNRESET: code = 426; break;
+            case ECONNRESET:
+                ftp_code = 426;
+                error_code = "DATA_CHANNEL_COMMUNICATION_FAILURE";
+                break;
 #endif
 #if defined(ECONNABORTED)
-            case ECONNABORTED: code = 426; break;
+            case ECONNABORTED:
+                ftp_code = 426;
+                error_code = "DATA_CHANNEL_COMMUNICATION_FAILURE";
+                break;
 #endif
-            case ENOENT: code = 550; break;
-            case EACCES: code = 550; break;
-            case EPERM: code = 550; break;
-            case ENOTDIR: code = 550; break;
-            case EISDIR: code = 550; break;
-            case EROFS: code = 550; break;
-            case ESPIPE: code = 550; break;
-            case EFBIG: code = 552; break;
-            case ENOSPC: code = 552; break;
+            case ENOENT:
+                ftp_code = 550;
+                error_code = "PATH_NOT_FOUND";
+                break;
+            case EACCES:
+                ftp_code = 550;
+                error_code = "PERMISSION_DENIED";
+                break;
+            case EPERM:
+                ftp_code = 550;
+                break;
+            case ENOTDIR:
+                ftp_code = 550;
+                error_code = "NOT_A_DIRECTORY";
+                break;
+            case EISDIR:
+                ftp_code = 550;
+                error_code = "IS_A_DIRECTORY";
+                break;
+            case EROFS:
+                ftp_code = 550;
+                break;
+            case ESPIPE:
+                ftp_code = 550;
+                break;
+            case EFBIG:
+                ftp_code = 552;
+                break;
+            case ENOSPC:
+                ftp_code = 552;
+                error_code = "NO_SPACE_LEFT";
+                break;
 #if defined(EDQUOT)
-            case EDQUOT: code = 552; break;
+            case EDQUOT:
+                ftp_code = 552;
+                error_code = "QUOTA_EXCEEDED";
+                break;
 #endif
-            case EEXIST: code = 553; break;
+            case EEXIST:
+                ftp_code = 553;
+                error_code = "PATH_EXISTS";
+                break;
             default:
-                code = 451;
+                ftp_code = 451;
         }
     }
 
-    if (msg[0] != 0)
+    if (m != NULL)
     {
         err = globus_gfs_ftp_response_error_construct(
             NULL,
             NULL,
-            code,
-            "%s",
-            msg);
+            ftp_code,
+            "GlobusError: v=1 c=%s\nGridFTP-Errno: %d\nGridFTP-Reason: %s",
+            error_code,
+            system_errno,
+            m);
     }
     else
     {
         err = globus_gfs_ftp_response_error_construct(
             NULL,
             NULL,
-            code,
-            "Requested action aborted. Local error in processing.");
+            ftp_code,
+            "GlobusEror: v=1 c=%s\nGridFTP-Errno: %d",
+            error_code,
+            system_errno);
+    }
+    if (fmt != NULL)
+    {
+        free(m);
     }
     return err;
 }

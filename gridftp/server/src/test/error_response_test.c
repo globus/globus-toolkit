@@ -2,8 +2,6 @@
 #include "globus_i_gridftp_server.h"
 #include <stdbool.h>
 
-#define _gfs_name __func__
-
 bool
 test_default_message(void)
 {
@@ -28,16 +26,16 @@ test_default_message(void)
 bool
 test_explicit_response_code(void)
 {
-    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_object_t                    *err = NULL;
     int                                 code = 0;
     bool                                ok = false;
 
-    result = GlobusGFSErrorFtpResponse(550, "File not found");
+    err = GlobusGFSErrorObjFtpResponse(NULL, 550, "NOT_FOUND");
 
-    code = globus_gfs_error_get_ftp_response_code(
-            globus_error_peek(result));
+    code = globus_gfs_error_get_ftp_response_code(err);
 
     ok = (code == 550);
+    globus_object_free(err);
 
     return ok;
 }
@@ -45,20 +43,152 @@ test_explicit_response_code(void)
 bool
 test_explicit_message(void)
 {
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    const char                         *expect = "Not found.";
+    globus_object_t                    *err = NULL;
+    const char                         *expect = "SOME_EXTENSION_ERROR";
     char                               *message = NULL;
+    char                               *m = NULL;
     bool                                ok = false;
 
-    result = GlobusGFSErrorFtpResponse(550, "%s", expect);
+    err = GlobusGFSErrorObjFtpResponse(NULL, 550, "%s", expect);
 
-    message = globus_object_printable_to_string(
-            globus_error_peek(result));
-
+    message = globus_object_printable_to_string(err);
     fprintf(stderr, "# %s \"%s\"\n", __func__, message);
 
-    ok = (strncmp(message, expect, strlen(expect)) == 0);
+    m = strstr(message, " c=");
+    if (m != NULL)
+    {
+        m += 3;
+    }
+
+    ok = (m != NULL) && (strncmp(m, expect, strlen(expect)) == 0);
+    globus_object_free(err);
     free(message);
+
+    return ok;
+}
+
+static
+bool
+test_error_macros(void)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    bool                                ok = false;
+
+    result = GlobusGFSErrorMemory("memory");
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorPathNotFound("path");
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+    result = GlobusGFSErrorIncorrectChecksum("1", "2");
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorMultipartUploadNotFound();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorAmbiguousPath("ambiguity");
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorTooBusy();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+    result = GlobusGFSErrorDataChannelAuthenticationFailure();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+    result = GlobusGFSErrorDataChannelCommunicationFailure();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+    result = GlobusGFSErrorLoginDenied();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+    result = GlobusGFSErrorPermissionDenied();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+    result = GlobusGFSErrorQuotaExceeded();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorNoSpaceLeft();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorInvalidPathName("invalid");
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorPathExists("path");
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorIsADirectory("name");
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorNotADirectory("name");
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorCRLError();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorInternalError();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorNotImplemented();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+
+    result = GlobusGFSErrorConfigurationError();
+    if (result == GLOBUS_SUCCESS)
+    {
+        goto fail;
+    }
+    ok = true;
+fail:
 
     return ok;
 }
@@ -71,13 +201,13 @@ test_error_system(void)
     bool                                ok = false;
 
     errno = ENOENT;
-    err = globus_i_gfs_error_system(0);
+    err = globus_i_gfs_error_system(0, 0, "Unknown error");
 
     code = globus_gfs_error_get_ftp_response_code(err);
 
     fprintf(stderr, "# %s %d\n", __func__, code);
 
-    ok = (code == 550);
+    ok = (code == 451);
     globus_object_free(err);
 
     return ok;
@@ -91,21 +221,15 @@ test_error_multiline(void)
     char                               *msg = NULL;
     char                               *ftp_str = NULL;
     bool                                ok = false;
-    char                               *dupes = NULL;
     char                               *p = NULL;
     int                                 count=0;
 
-    dupes = globus_common_create_string(
-            "Path: /Some/Dupe/Path",
-            "/Some/Dupe/Path");
             
-    result = GlobusGFSErrorAmbiguousPath();
-    err = globus_error_peek(result);
-
-    globus_error_set_cause(err, GlobusGFSErrorObjGeneric(dupes));
+    err = GlobusGFSErrorObjAmbiguousPath(NULL, "/Some/Dupe/Path");
 
     msg = globus_error_print_friendly(err);
-    ftp_str = globus_gsc_string_to_959(globus_gfs_error_get_ftp_response_code(err), msg, NULL);
+    ftp_str = globus_gsc_string_to_959(
+            globus_gfs_error_get_ftp_response_code(err), msg, NULL);
 
     p = ftp_str;
 
@@ -130,7 +254,6 @@ test_error_multiline(void)
     ok = (count == 3);
     
     free(msg);
-    free(dupes);
 
     globus_object_free(err);
 
@@ -153,6 +276,7 @@ int main()
         TEST(test_default_message),
         TEST(test_explicit_response_code),
         TEST(test_explicit_message),
+        TEST(test_error_macros),
         TEST(test_error_system),
         TEST(test_error_multiline),
     };
