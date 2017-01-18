@@ -1188,7 +1188,11 @@ check_service(const char *service)
     SSL_CTX                            *ctx;
     SSL                                *ssl;
     BIO                                *web = NULL;
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    const SSL_METHOD                   *method = TLS_method();
+    #else
     const SSL_METHOD                   *method = SSLv23_method();
+    #endif
     X509                               *peer_cert = NULL;
     STACK_OF(X509)                     *cert_chain = NULL;
     STACK_OF(SSL_CIPHER)               *ciphers = NULL;
@@ -1284,7 +1288,11 @@ check_gridftp(char *service)
     SSL_CTX                            *ctx;
     SSL                                *ssl;
     BIO                                *cbio = NULL, *rbio = NULL, *wbio = NULL;
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    const SSL_METHOD                   *method = TLS_method();
+    #else
     const SSL_METHOD                   *method = SSLv23_method();
+    #endif
     X509                               *peer_cert = NULL;
     STACK_OF(X509)                     *cert_chain = NULL;
     STACK_OF(SSL_CIPHER)               *ciphers = NULL;

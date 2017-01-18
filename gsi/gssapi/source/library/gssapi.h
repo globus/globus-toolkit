@@ -300,7 +300,7 @@ typedef struct gss_channel_bindings_struct
  * @details
  * Set if you want to force SSLv3 instead of negotiating TLSv1 or SSLv3
  */
-#define GSS_C_GLOBUS_FORCE_SSL3 131072
+#define GSS_C_GLOBUS_FORCE_SSL3 131072  /* UNSUPPORTED */
 
 /**
  * @defgroup globus_gsi_gss_returned_context_flags Return Flags

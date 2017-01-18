@@ -471,54 +471,25 @@ globus_i_gsi_gss_create_and_fill_context(
         goto free_cert_dir;
     }
 
-    if ((cred_usage == GSS_C_INITIATE &&
-            SSLeay() < 0x0090708fL) ||
-            context->req_flags & GSS_C_GLOBUS_FORCE_SSL3)
-    {
-#ifndef OPENSSL_NO_SSL3_METHOD
-        /* For backward compatibility.  Older GSI GSSAPI accepters
-           will fail if we try to negotiate TLSv1, so stick with SSLv3
-           when initiating to be safe. */
-        SSL_set_ssl_method(context->gss_ssl, SSLv3_method());
-#else
-        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-            (_GGSL("OpenSSL does not support SSLv3 - use TLS")));
-        major_status = GSS_S_FAILURE;
-        goto free_cert_dir;
-#endif
-    }
-    else if (globus_i_gsi_gssapi_force_tls)
-    {
-        /* GLOBUS_GSSAPI_FORCE_TLS defined in environment. */
-        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
-            2, "Forcing TLS.\n");
+    /* "On July 1, 2015, we will update our security packages to disable SSLv3
+     * and require TLS for all secure communication." */
+    GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
+        2, "Disabling SSLv2 and SSLv3.\n");
  
-       /* openssl 1.1.0 adds a new method of setting this, deprecates old */ 
-        #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-        {
-            SSL_set_ssl_method(context->gss_ssl, TLS_method());
-            SSL_set_min_proto_version(context->gss_ssl, TLS1_VERSION);
-        }
-        #else
-        {
-            /* TLSv1_method is only TLSv1.0 */
-            SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
-            SSL_set_options(context->gss_ssl,
-                SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
-        }
-        #endif
-    }
-    else
+   /* openssl 1.1.0 adds a new method of setting this, deprecates old */ 
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
     {
-        /* Accept both SSLv3 and TLSv1. */
-        SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
+        SSL_set_ssl_method(context->gss_ssl, TLS_method());
+        SSL_set_min_proto_version(context->gss_ssl, TLS1_VERSION);
     }
-    /* Never use SSLv2. */
-    SSL_set_options(context->gss_ssl, 
-                    SSL_OP_NO_SSLv2 |
-                    SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
+    #else
+    {
+        /* TLSv1_method is only TLSv1.0 */
+        SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
+        SSL_set_options(context->gss_ssl,
+            SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+    }
+    #endif
 
     local_result = globus_gsi_callback_get_SSL_callback_data_index(&cb_index);
     if(local_result != GLOBUS_SUCCESS)
@@ -2205,7 +2176,12 @@ globus_i_gsi_gssapi_init_ssl_context(
         sk_SSL_COMP_zero(comp_methods);
     }
 #endif
+   /* openssl 1.1.0 adds a new method of setting this, deprecates old */ 
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    cred_handle->ssl_context = SSL_CTX_new(TLS_method());
+    #else
     cred_handle->ssl_context = SSL_CTX_new(SSLv23_method());
+    #endif
     if(cred_handle->ssl_context == NULL)
     {
         major_status = GSS_S_FAILURE;
@@ -2216,7 +2192,7 @@ globus_i_gsi_gssapi_init_ssl_context(
         goto exit;
     }
 
-    SSL_CTX_set_options(cred_handle->ssl_context,SSL_OP_NO_SSLv2);
+    SSL_CTX_set_options(cred_handle->ssl_context,SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3);
             
     SSL_CTX_set_cert_verify_callback(cred_handle->ssl_context,
                                      globus_gsi_callback_X509_verify_cert,

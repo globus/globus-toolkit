@@ -54,14 +54,6 @@ int                                     globus_i_gsi_gssapi_debug_level;
 FILE *                                  globus_i_gsi_gssapi_debug_fstream;
 
 /**
- * @brief Force TLSv1
- * @details
- * Optionally force use of TLSv1 if GLOBUS_GSSAPI_FORCE_TLS is defined
- * in the environment.
- */
-int                                     globus_i_gsi_gssapi_force_tls;
-
-/**
  * @brief SSL Cipher List
  * @details
  * Choose the default set of ciphers to support
@@ -237,7 +229,6 @@ globus_l_gsi_gssapi_parse_config(
     int                                 rc = GLOBUS_SUCCESS;
     const char                          conf_key_prefix[] = "GLOBUS_GSSAPI_";
     const char                         *conf_keys[] = {
-        "GLOBUS_GSSAPI_FORCE_TLS",
         "GLOBUS_GSSAPI_NAME_COMPATIBILITY",
         "GLOBUS_GSSAPI_CIPHERS",
         "GLOBUS_GSSAPI_SERVER_CIPHER_ORDER",
@@ -373,15 +364,6 @@ globus_l_gsi_gssapi_activate(void)
             rc = GLOBUS_FAILURE;
             goto debug_stderr_fail;
         }
-    }
-
-    tmp_string = globus_module_getenv("GLOBUS_GSSAPI_FORCE_TLS");
-    if(tmp_string != GLOBUS_NULL && 
-         (strcasecmp(tmp_string, "true") == 0 ||
-            strcasecmp(tmp_string, "yes") == 0 ||
-            strcmp(tmp_string, "1") == 0))
-    {
-            globus_i_gsi_gssapi_force_tls = 1;
     }
 
     tmp_string = globus_module_getenv("GLOBUS_GSSAPI_NAME_COMPATIBILITY");

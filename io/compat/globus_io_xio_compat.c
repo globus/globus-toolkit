@@ -5021,33 +5021,6 @@ globus_io_attr_set_secure_channel_mode(
             GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE);
         break;
 
-    case GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP_SSL3:
-        /*
-         * Hack to support pre-5.0.4 gatekeepers which can't export/import
-         * TLSv1 security contexts
-         */
-        result = globus_xio_attr_cntl(
-            (*attr)->attr,
-            globus_l_io_gsi_driver,
-            GLOBUS_XIO_GSI_GET_GSSAPI_REQ_FLAGS,
-            &req_flags);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error;
-        }
-        req_flags |= GSS_C_GLOBUS_FORCE_SSL3;
-
-        result = globus_xio_attr_cntl(
-            (*attr)->attr,
-            globus_l_io_gsi_driver,
-            GLOBUS_XIO_GSI_SET_GSSAPI_REQ_FLAGS,
-            req_flags);
-
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error;
-        }
-        /* FALLSTHROUGH */
       case GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP:
         result = globus_xio_attr_cntl(
             (*attr)->attr, 
