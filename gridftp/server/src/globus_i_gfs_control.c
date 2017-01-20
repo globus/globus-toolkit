@@ -811,7 +811,16 @@ globus_l_gfs_data_stat_cb(
     globus_assert(op != NULL);
     if(reply->result != GLOBUS_SUCCESS)
     {
-        tmp_str = globus_error_print_friendly(globus_error_peek(reply->result));
+        int                             ftp_code;
+        
+        /* pull response code from error */
+        if((ftp_code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(reply->result))) == 0)
+        {
+            ftp_code = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED;
+        }
+        tmp_str = globus_error_print_friendly(
+            globus_error_peek(reply->result));
         globus_gridftp_server_control_finished_resource(
             op,
             NULL,
@@ -819,7 +828,7 @@ globus_l_gfs_data_stat_cb(
             0,
             0,
             NULL,
-            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
+            ftp_code,
             tmp_str);
         globus_free(tmp_str);
     }
@@ -915,18 +924,27 @@ globus_l_gfs_request_stat(
     return;
     
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_peek(result));
-    globus_gridftp_server_control_finished_resource(
-        op,
-        NULL,
-        0,
-        0,
-        0,
-        NULL,
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
-        tmp_str);
-    globus_free(tmp_str);
-
+    {
+        int                             ftp_code;
+        
+        /* pull response code from error */
+        if((ftp_code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) == 0)
+        {
+            ftp_code = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED;
+        }
+        tmp_str = globus_error_print_friendly(globus_error_peek(result));
+        globus_gridftp_server_control_finished_resource(
+            op,
+            NULL,
+            0,
+            0,
+            0,
+            NULL,
+            ftp_code,
+            tmp_str);
+        globus_free(tmp_str);
+    }
     GlobusGFSDebugExitWithError();
 }
 
@@ -1346,21 +1364,16 @@ error_init:
     {
         char *                          ftp_str;
         char *                          tmp_str;
-        int                             response_code;
+        int                             ftp_code;
         
         /* pull response code from error */
-        if((response_code = globus_gfs_error_get_ftp_response_code(
-                globus_error_peek(result))) != 0)
+        if((ftp_code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) == 0)
         {
-            tmp_str = globus_error_print_friendly(
-                globus_error_peek(result));
+            ftp_code = 500;
         }
-        else
-        {
-            response_code = 500;
-            tmp_str = globus_error_print_friendly(globus_error_peek(result));
-        }
-        ftp_str = globus_gsc_string_to_959(response_code, tmp_str, NULL);
+        tmp_str = globus_error_print_friendly(globus_error_peek(result));
+        ftp_str = globus_gsc_string_to_959(ftp_code, tmp_str, NULL);
         globus_gsc_959_finished_command(op, ftp_str);
         globus_free(tmp_str);
         globus_free(ftp_str);
@@ -2000,22 +2013,16 @@ error_init:
     {
         char *                          ftp_str;
         char *                          tmp_str;
-        int                             response_code;
+        int                             ftp_code;
         
         /* pull response code from error */
-        if((response_code = globus_gfs_error_get_ftp_response_code(
-                globus_error_peek(result))) != 0)
+        if((ftp_code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) == 0)
         {
-            tmp_str = globus_error_print_friendly(
-                globus_error_peek(result));
+            ftp_code = 500;
         }
-        else
-        {
-            response_code = 500;
-            tmp_str = globus_error_print_friendly(globus_error_peek(result));
-        }
-        
-        ftp_str = globus_gsc_string_to_959(response_code, tmp_str, NULL);
+        tmp_str = globus_error_print_friendly(globus_error_peek(result));        
+        ftp_str = globus_gsc_string_to_959(ftp_code, tmp_str, NULL);
         globus_gsc_959_finished_command(op, ftp_str);
         globus_free(tmp_str);
         globus_free(ftp_str);
@@ -2234,19 +2241,16 @@ globus_l_gfs_data_transfer_cb(
     {
         char *                          msg;
         globus_result_t                 result;
+        int                             ftp_code;
         
         /* pull response code from error */
-        if(globus_gfs_error_get_ftp_response_code(
-                globus_error_peek(reply->result)) != 0)
+        if((ftp_code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(reply->result))) == 0)
         {
-            tmp_str = globus_error_print_friendly(
-                globus_error_peek(reply->result));
+            ftp_code = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED;
         }
-        else
-        {
-            tmp_str = globus_error_print_friendly(
-                globus_error_peek(reply->result));
-        }
+        tmp_str = globus_error_print_friendly(
+            globus_error_peek(reply->result));
         result = globus_i_gfs_data_virtualize_path(
             request->instance->session_arg, tmp_str, &msg);
         if(result == GLOBUS_SUCCESS && msg != NULL)
@@ -2255,9 +2259,7 @@ globus_l_gfs_data_transfer_cb(
             tmp_str = msg;
         }
         globus_gridftp_server_control_finished_transfer(
-            op,
-            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
-            tmp_str);
+            op, ftp_code, tmp_str);
         globus_free(tmp_str);
     }
     else
@@ -2390,12 +2392,22 @@ globus_l_gfs_request_send(
     return;
     
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_peek(result));
-    globus_gridftp_server_control_finished_transfer(
-        op,
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
-        tmp_str);
-    globus_free(tmp_str);
+    {
+        int                             ftp_code;
+        
+        /* pull response code from error */
+        if((ftp_code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) == 0)
+        {
+            ftp_code = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED;
+        }
+        tmp_str = globus_error_print_friendly(globus_error_peek(result));
+        globus_gridftp_server_control_finished_transfer(
+            op,
+            ftp_code,
+            tmp_str);
+        globus_free(tmp_str);
+    }
     GlobusGFSDebugExitWithError();
 }
 
@@ -2512,13 +2524,22 @@ globus_l_gfs_request_recv(
     return;
     
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_peek(result));
-    globus_gridftp_server_control_finished_transfer(
-        op,
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
-        tmp_str);
-    globus_free(tmp_str);
-
+    {
+        int                             ftp_code;
+        
+        /* pull response code from error */
+        if((ftp_code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) == 0)
+        {
+            ftp_code = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED;
+        }
+        tmp_str = globus_error_print_friendly(globus_error_peek(result));
+        globus_gridftp_server_control_finished_transfer(
+            op,
+            ftp_code,
+            tmp_str);
+        globus_free(tmp_str);
+    }
     GlobusGFSDebugExitWithError();
 }
 
@@ -2579,12 +2600,22 @@ globus_l_gfs_request_list(
     return;
     
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_peek(result));
-    globus_gridftp_server_control_finished_transfer(
-        op,
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
-        tmp_str);
-    globus_free(tmp_str);
+    {
+        int                             ftp_code;
+        
+        /* pull response code from error */
+        if((ftp_code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) == 0)
+        {
+            ftp_code = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED;
+        }
+        tmp_str = globus_error_print_friendly(globus_error_peek(result));
+        globus_gridftp_server_control_finished_transfer(
+            op,
+            ftp_code,
+            tmp_str);
+        globus_free(tmp_str);
+    }
     GlobusGFSDebugExitWithError();
 }
 
