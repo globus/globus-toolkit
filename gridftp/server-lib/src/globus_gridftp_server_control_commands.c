@@ -30,11 +30,8 @@ static void
 globus_l_gsc_cmd_transfer(
     globus_i_gsc_cmd_wrapper_t *            wrapper);
 
-static
-globus_bool_t
-globus_l_gsc_is_response(
-    const char *                            response_msg,
-    int *                                   code);
+#define globus_l_gsc_is_ftp_code(_code) ((_code) >= 400 && (_code) <= 599)
+
 
 /*************************************************************************
  *                      simple commands
@@ -346,9 +343,10 @@ globus_l_gsc_cmd_mdtm_cb(
         switch(response_type)
         {
             default:
-                if (globus_l_gsc_is_response(response_msg, &code))
+                if (globus_l_gsc_is_ftp_code(response_type))
                 {
-                    msg = strdup(response_msg + 4);
+                    code = response_type;
+                    msg = strdup(response_msg);
                     response_msg = NULL;
                 }
                 else
@@ -778,9 +776,10 @@ globus_l_gsc_cmd_stat_cb(
                 break;
 
             default:
-                if (globus_l_gsc_is_response(response_msg, &code))
+                if (globus_l_gsc_is_ftp_code(response_type))
                 {
-                    msg = strdup(response_msg + 4);
+                    code = response_type;
+                    msg = strdup(response_msg);
                     response_msg = NULL;
                 }
                 else
@@ -985,9 +984,10 @@ globus_l_gsc_cmd_size_cb(
                 break;
 
             default:
-                if (globus_l_gsc_is_response(response_msg, &code))
+                if (globus_l_gsc_is_ftp_code(response_type))
                 {
-                    msg = strdup(response_msg + 4);
+                    code = response_type;
+                    msg = strdup(response_msg);
                     response_msg = NULL;
                 }
                 else
@@ -1910,9 +1910,10 @@ globus_l_gsc_cmd_pasv_cb(
             break;
             
           default:
-                if (globus_l_gsc_is_response(response_msg, &err_code))
+                if (globus_l_gsc_is_ftp_code(response_type))
                 {
-                    err_msg = strdup(response_msg + 4);
+                    err_code = response_type;
+                    err_msg = strdup(response_msg);
                     response_msg = NULL;
                 }
                 else
@@ -2359,9 +2360,10 @@ globus_l_gsc_cmd_port_cb(
             break;
             
           default:
-            if (globus_l_gsc_is_response(response_msg, &code))
+            if (globus_l_gsc_is_ftp_code(response_type))
             {
-                msg = strdup(response_msg + 4);
+                code = response_type;
+                msg = strdup(response_msg);
                 response_msg = NULL;
             }
             else
@@ -2672,16 +2674,6 @@ globus_l_gsc_cmd_port(
     globus_i_gsc_command_panic(op);
 }
 
-static
-globus_bool_t
-globus_l_gsc_is_response(
-    const char *                            response_msg,
-    int *                                   code)
-{
-    int n=0;
-    return (response_msg != NULL && sscanf(response_msg, "%d%*[ -]%n", code, &n) == 1 && n == 4);
-}
-
 /*************************************************************************
  *                          transfer functions
  *                          ------------------
@@ -2703,9 +2695,10 @@ globus_l_gsc_data_cb(
 
     if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
-        if (globus_l_gsc_is_response(response_msg, &code))
+        if (globus_l_gsc_is_ftp_code(response_type))
         {
-            msg = strdup(response_msg + 4);
+            code = response_type;
+            msg = strdup(response_msg);
             response_msg = NULL;
         }
         else
