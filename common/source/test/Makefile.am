@@ -21,6 +21,7 @@ check_PROGRAMS = \
     fifo_test \
     globus_args_scan_test \
     globus_error_construct_string_test \
+    globus_error_errno_test \
     globus_libc_setenv_test \
     globus_url_test \
     handle_table_test \

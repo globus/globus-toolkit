@@ -15,7 +15,8 @@
  */
 
 
-/* Header file for globus_gridftp_server modules.  
+/**
+ * @file globus_gridftp_server.h DSI interface
  * 
  * If you are interested in writing a module for this server and want to
  * discuss it's design, or are already writing one and would like support,
@@ -139,11 +140,9 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_MIN_CUSTOM_CMD = 4096
 } globus_gfs_command_type_t;
 
-/*
- *  globus_gfs_event_type_t
- * 
- * Event types.
- * 
+/**
+ * @brief Event types
+ * @details
  * [Request] types are passed as parameters to the DSI's 
  * globus_gfs_storage_trev_t func.  Supported events must be specified
  * in the event_mask of globus_gridftp_server_begin_transfer().
@@ -767,6 +766,22 @@ typedef globus_result_t
 #define GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING                      (1 << 1)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH                  (1 << 2)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_REQUIRES_ORDERED_DATA         (1 << 3)
+/**
+ * If this flag is set, the error objects passed in DSI finished
+ * calls will be either:
+ * <dl>
+ * <dt>GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE</dt>
+ * <dd>The error object contains an FTP response code and GlobusError v1
+ * error string created by one of the GlobusGFSError() macros</dd>
+ * <dt>GLOBUS_ERROR_TYPE_ERRNO</dt>
+ * <dd>The error object (or a causal error) contains an error that directly
+ * relates to a file operation that can be mechanically translated into
+ * a GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE error</dd>
+ * <dt>Any other error type</dt>
+ * <dd>The error object will be wrapped in a GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE
+ * with the INTERNAL_ERROR error code</dd>
+ * </dl>
+ */
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SETS_ERROR_RESPONSES          (1 << 4)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SAFE_RDEL                     (1 << 5)
 
@@ -1406,7 +1421,9 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
 #define GlobusGFSErrorObjSystemError(system_func, system_errno)             \
         globus_i_gfs_error_system(                                          \
                 0, (system_errno),                                          \
-                "System error in %s", (system_func))
+                "System error%s%s",                                         \
+                (system_func) != NULL ? " in " : "",                        \
+                (system_func) != NULL ? (system_func) : "")
                                                                             
 #define GlobusGFSErrorWrapFailed(failed_func, result)                       \
     globus_error_put(GlobusGFSErrorObjWrapFailed(failed_func, result))
@@ -1609,15 +1626,24 @@ globus_i_gfs_error_system(int ftp_code, int system_errno, const char *fmt, ...);
 #define GlobusGFSErrorObjCRLError(cause)                                    \
         GlobusGFSErrorObj((cause), 530, "CRL_ERROR")
 
-#define GlobusGFSErrorInternalError()                                       \
-        globus_error_put(GlobusGFSErrorObjInternalError(NULL))
-#define GlobusGFSErrorObjInternalError(cause)                               \
-        GlobusGFSErrorObj((cause), 500, "INTERNAL_ERROR")
+#define GlobusGFSErrorInternalError(generic_string)                         \
+        globus_error_put(GlobusGFSErrorObjInternalError(                    \
+                NULL, (generic_string)))
+#define GlobusGFSErrorObjInternalError(cause, generic_string)               \
+        GlobusGFSErrorObj((cause), 500, "INTERNAL_ERROR%s%s%s",             \
+                ((generic_string) != NULL) ? "\nGridFTP-Error: " : "",      \
+                ((generic_string) != NULL) ? generic_string : "")
 
 #define GlobusGFSErrorNotImplemented()                                      \
         globus_error_put(GlobusGFSErrorObjNotImplemented(NULL))
 #define GlobusGFSErrorObjNotImplemented(cause)                              \
         GlobusGFSErrorObj((cause), 500, "NOT_IMPLEMETED")
+
+#define GlobusGFSErrorNotImplementedFeature(feature)                        \
+        globus_error_put(GlobusGFSErrorObjNotImplementedFeature(NULL, feature))
+#define GlobusGFSErrorObjNotImplementedFeature(cause, feature)              \
+        GlobusGFSErrorObj((cause), 500,                                     \
+        "NOT_IMPLEMETED\nGridFTP-Feature: %s", (feature))
 
 #define GlobusGFSErrorConfigurationError()                                  \
         globus_error_put(GlobusGFSErrorObjConfigurationError(NULL))

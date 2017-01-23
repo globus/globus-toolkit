@@ -123,6 +123,10 @@ globus_error_errno_match(
     globus_module_descriptor_t *        module,
     int                                 system_errno);
 
+int
+globus_error_errno_search(
+    globus_object_t *                   error);
+
 globus_object_t *
 globus_error_wrap_errno_error(
     globus_module_descriptor_t *        base_source,

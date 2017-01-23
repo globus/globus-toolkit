@@ -182,6 +182,32 @@ globus_l_gfs_file_cksm(
     
 static
 globus_result_t
+globus_l_gfs_file_wrap_error(
+    globus_result_t                     result,
+    const char                         *operation)
+{
+    globus_object_t                    *orig_error = globus_error_get(result);
+    globus_object_t                    *error = NULL;
+    int                                 system_errno = 0;
+
+    system_errno = globus_error_errno_search(error);
+    if (system_errno != 0)
+    {
+        error = GlobusGFSErrorObjSystemError(
+                operation, system_errno);
+    }
+    else
+    {
+        error = GlobusGFSErrorObjInternalError(NULL, operation);
+    }
+    globus_error_set_cause(error, orig_error);
+
+    return globus_error_put(error);
+}
+/* globus_l_gfs_file_wrap_error() */
+
+static
+globus_result_t
 globus_l_gfs_file_make_stack(
     globus_gfs_operation_t              op,
     globus_l_file_monitor_t *           mon,
@@ -213,8 +239,11 @@ globus_l_gfs_file_make_stack(
             stack, globus_l_gfs_file_driver);
         if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusGFSErrorWrapFailed(
-                "globus_xio_stack_push_driver", result);
+            result = globus_error_put(
+                    GlobusGFSErrorObjInternalError(
+                            globus_error_get(result),
+                            "globus_xio_stack_push_driver"));
+
             goto error_push;
         }
     }
@@ -238,8 +267,10 @@ globus_l_gfs_file_make_stack(
             }
             if(result != GLOBUS_SUCCESS)
             {
-                result = GlobusGFSErrorWrapFailed(
-                    "globus_xio_stack_push_driver", result);
+                result = globus_error_put(
+                        GlobusGFSErrorObjInternalError(
+                                globus_error_get(result),
+                                "globus_xio_stack_push_driver"));
                 goto error_push;
             }
 
@@ -260,8 +291,6 @@ globus_l_gfs_file_make_stack(
 error_push:
     return result;
 }
-
-
 
 /*
  * if priority_1 comes after priority_2, return > 0
@@ -430,8 +459,7 @@ globus_l_gfs_file_cksm_verify(
     
     if(result != GLOBUS_SUCCESS)
     {
-        monitor->finish_result = 
-            GlobusGFSErrorWrapFailed("checksum verification", result);
+        monitor->finish_result = result;
     }
     else if(strcmp(monitor->expected_cksm, cksm) != 0)
     {
@@ -1155,7 +1183,7 @@ done_fake:
                     &stat_array[i], &stat_buf, dir_entry->d_name, symlink_target, link_stat_buf.st_mode, base_error);
             
             /* set nlink to total files in dir for . entry */
-            if(check_cdir && dir_entry->d_name && 
+            if(check_cdir && 
                 dir_entry->d_name[0] == '.' && dir_entry->d_name[1] == '\0')
             {
                 check_cdir = GLOBUS_FALSE;
@@ -1492,7 +1520,6 @@ globus_l_gfs_file_delete(
         result = globus_l_gfs_file_delete_dir(pathname);
         if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusGFSErrorWrapFailed("recursion", result);
             goto error;
         }
     }
@@ -1757,8 +1784,7 @@ globus_l_gfs_file_cksm_read_cb(
         }
         else
         {
-            result = GlobusGFSErrorWrapFailed(
-                "checksum read callback", result);
+            result = globus_l_gfs_file_wrap_error(result, "read");
             goto error_read;
         }
     }        
@@ -1806,8 +1832,10 @@ globus_l_gfs_file_cksm_read_cb(
             monitor);
         if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusGFSErrorWrapFailed(
-                "globus_xio_register_read", result);
+            result = globus_error_put(
+                    GlobusGFSErrorObjInternalError(
+                            globus_error_get(result),
+                            "globus_xio_register_read"));
             goto error_register;
         }
     }
@@ -1901,8 +1929,7 @@ globus_l_gfs_file_open_cksm_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "open", result);
+        result = globus_l_gfs_file_wrap_error(result, "open");
         goto error_open;  
     }  
     
@@ -1951,8 +1978,10 @@ globus_l_gfs_file_open_cksm_cb(
             GLOBUS_XIO_FILE_SEEK_SET);
         if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusGFSErrorWrapFailed(
-                "globus_xio_handle_cntl", result);
+            result = globus_error_put(
+                    GlobusGFSErrorObjInternalError(
+                            globus_error_get(result),
+                            "globus_xio_handle_cntl"));
             goto error_seek;
         }
     }
@@ -1970,8 +1999,10 @@ globus_l_gfs_file_open_cksm_cb(
         monitor);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_xio_register_read", result);
+        result = globus_error_put(
+                GlobusGFSErrorObjInternalError(
+                    globus_error_get(result),
+                    "globus_xio_register_read"));
         goto error_register;
     }
 
@@ -2033,7 +2064,9 @@ globus_l_gfs_file_cksm(
     result = globus_xio_attr_init(&attr);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_xio_attr_init", result);
+        result = globus_error_put(
+                GlobusGFSErrorObjInternalError(
+                        globus_error_get(result), "globus_xio_attr_init"));
         goto error_attr;
     }
 
@@ -2044,7 +2077,9 @@ globus_l_gfs_file_cksm(
         O_RDONLY);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_xio_attr_init", result);
+        result = globus_error_put(
+                GlobusGFSErrorObjInternalError(
+                        globus_error_get(result), "globus_xio_attr_cntl"));
         goto error_cntl;
     }
 
@@ -2073,22 +2108,29 @@ globus_l_gfs_file_cksm(
     result = globus_xio_stack_init(&stack, NULL);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_xio_stack_init", result);
+        result = globus_error_put(
+                GlobusGFSErrorObjInternalError(
+                        globus_error_get(result), "globus_xio_stack_init"));
         goto error_stack;
     }
     
     result = globus_xio_stack_push_driver(stack, globus_l_gfs_file_driver);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_xio_stack_push_driver", result);
+        result = globus_error_put(
+                GlobusGFSErrorObjInternalError(
+                        globus_error_get(result),
+                        "globus_xio_stack_push_driver"));
         goto error_push;
     }
 
     result = globus_xio_handle_create(&file_handle, stack);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_xio_handle_create", result);
+        result = globus_error_put(
+                GlobusGFSErrorObjInternalError(
+                        globus_error_get(result),
+                        "globus_xio_handle_create"));
         goto error_create;
     }
 
@@ -2127,7 +2169,8 @@ globus_l_gfs_file_cksm(
         monitor);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_xio_register_open", result);
+        result = globus_l_gfs_file_wrap_error(
+                result, "globus_xio_register_open");
         goto error_register;
     }
 
@@ -2287,7 +2330,9 @@ globus_l_gfs_file_write_cb(
 
         if(result != GLOBUS_SUCCESS && monitor->error == NULL)
         {
-            monitor->error = GlobusGFSErrorObjWrapFailed("callback", result);
+            monitor->error = globus_error_get(
+                    globus_l_gfs_file_wrap_error(
+                            result, "callback"));
         }
         if(monitor->error != NULL)
         {
@@ -2304,8 +2349,9 @@ globus_l_gfs_file_write_cb(
                 monitor);
             if(result != GLOBUS_SUCCESS)
             {
-                monitor->error = GlobusGFSErrorObjWrapFailed(
-                    "globus_gridftp_server_register_read", result);
+                monitor->error = GlobusGFSErrorObjInternalError(
+                        globus_error_get(result),
+                        "globus_gridftp_server_register_read");
                 goto error;
             }
             
@@ -2319,8 +2365,8 @@ globus_l_gfs_file_write_cb(
         result = globus_l_gfs_file_dispatch_write(monitor);
         if(result != GLOBUS_SUCCESS)
         {
-            monitor->error = GlobusGFSErrorObjWrapFailed(
-                "globus_l_gfs_file_dispatch_write", result);
+            monitor->error = globus_error_get(result);
+
             goto error_dispatch;
         }
         
@@ -2391,8 +2437,10 @@ globus_l_gfs_file_dispatch_write(
                     GLOBUS_XIO_FILE_SEEK_SET);
                 if(result != GLOBUS_SUCCESS)
                 {
-                    result = GlobusGFSErrorWrapFailed(
-                        "globus_xio_handle_cntl", result);
+                    result = globus_error_put(
+                            GlobusGFSErrorObjInternalError(
+                                globus_error_get(result),
+                                "globus_xio_handle_cntl"));
                     goto error_seek;
                 }
             }
@@ -2407,8 +2455,10 @@ globus_l_gfs_file_dispatch_write(
                 monitor);
             if(result != GLOBUS_SUCCESS)
             {
-                result = GlobusGFSErrorWrapFailed(
-                    "globus_xio_register_write", result);
+                result = globus_error_put(
+                        GlobusGFSErrorObjInternalError(
+                            globus_error_get(result),
+                            "globus_xio_register_write"));
                 goto error_register;
             }
             
@@ -2473,8 +2523,10 @@ globus_l_gfs_file_update_concurrency(
             if(result != GLOBUS_SUCCESS)
             {
                 globus_memory_push_node(&monitor->mem, buffer);
-                result = GlobusGFSErrorWrapFailed(
-                    "globus_gridftp_server_register_read", result);
+                result = globus_error_put(
+                        GlobusGFSErrorObjInternalError(
+                            globus_error_get(result),
+                            "globus_gridftp_server_register_read"));
                 goto error_register;
             }
             
@@ -2513,7 +2565,8 @@ globus_l_gfs_file_server_read_cb(
         monitor->pending_reads--;
         if(result != GLOBUS_SUCCESS && monitor->error == NULL)
         {
-            monitor->error = GlobusGFSErrorObjWrapFailed("callback", result);
+            monitor->error = globus_error_get(
+                    globus_l_gfs_file_wrap_error(result, "read"));
         }
         if(monitor->error != NULL)
         {
@@ -2557,8 +2610,8 @@ globus_l_gfs_file_server_read_cb(
         result = globus_l_gfs_file_dispatch_write(monitor);
         if(result != GLOBUS_SUCCESS)
         {
-            monitor->error = GlobusGFSErrorObjWrapFailed(
-                "globus_l_gfs_file_dispatch_write", result);
+            monitor->error = globus_error_get(result);
+
             goto error_dispatch;
         }
 
@@ -2604,8 +2657,7 @@ globus_l_gfs_file_open_write_cb(
     monitor = (globus_l_file_monitor_t *) user_arg;
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_l_gfs_file_open_write_cb", result);
+        result = globus_l_gfs_file_wrap_error(result, "write");
         monitor->file_handle = NULL;
         goto error_open;
     }
@@ -2634,8 +2686,10 @@ globus_l_gfs_file_open_write_cb(
             if(result != GLOBUS_SUCCESS)
             {
                 globus_memory_push_node(&monitor->mem, buffer);
-                result = GlobusGFSErrorWrapFailed(
-                    "globus_gridftp_server_register_read", result);
+                result = globus_error_put(
+                        GlobusGFSErrorObjInternalError(
+                                globus_error_get(result),
+                                "globus_gridftp_server_register_read"));
                 goto error_register;
             }
             
@@ -2695,7 +2749,10 @@ globus_l_gfs_file_open(
     result = globus_xio_attr_init(&attr);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_xio_attr_init", result);
+        result = globus_error_put(
+                GlobusGFSErrorObjInternalError(
+                    globus_error_get(result),
+                    "globus_xio_attr_init"));
         goto error_attr;
     }
 
@@ -2713,7 +2770,10 @@ globus_l_gfs_file_open(
         open_flags);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_xio_attr_init", result);
+        result = globus_error_put(
+                GlobusGFSErrorObjInternalError(
+                    globus_error_get(result),
+                    "globus_xio_attr_cntl"));
         goto error_cntl;
     }
 
@@ -2775,7 +2835,10 @@ globus_l_gfs_file_open(
     result = globus_xio_stack_init(&stack, NULL);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_xio_stack_init", result);
+        result = globus_error_put(
+                GlobusGFSErrorObjInternalError(
+                    globus_error_get(result),
+                    "globus_xio_stack_init"));
         goto error_stack;
     }
     result = globus_l_gfs_file_make_stack(
@@ -2788,7 +2851,10 @@ globus_l_gfs_file_open(
     result = globus_xio_handle_create(file_handle, stack);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_xio_handle_create", result);
+        result = globus_error_put(
+                GlobusGFSErrorObjInternalError(
+                    globus_error_get(result),
+                    "globus_xio_handle_create"));
         goto error_create;
     }
     
@@ -2802,7 +2868,8 @@ globus_l_gfs_file_open(
         arg);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_xio_register_open", result);
+        result = globus_l_gfs_file_wrap_error(
+                result, "globus_xio_register_open");
         goto error_register;
     }
     
@@ -2854,8 +2921,6 @@ globus_l_gfs_file_recv(
         &monitor, block_size, optimal_count);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_l_gfs_file_monitor_init", result);
         goto error_alloc;
     }
     monitor->session = (gfs_l_file_session_t *) user_arg;
@@ -2870,8 +2935,10 @@ globus_l_gfs_file_recv(
         &monitor->utime);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_gridftp_server_get_recv_modification_time", result);
+        result = globus_error_put(
+                GlobusGFSErrorObjInternalError(
+                        globus_error_get(result),
+                        "globus_gridftp_server_get_recv_modification_time"));
         goto error_alloc;
     }
         
@@ -2901,7 +2968,6 @@ globus_l_gfs_file_recv(
         &monitor->file_handle, transfer_info->pathname, open_flags, monitor);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_l_gfs_file_open", result);
         goto error_open;
     }
     
@@ -2972,8 +3038,10 @@ globus_l_gfs_file_dispatch_read(
             
                 if(result != GLOBUS_SUCCESS)
                 {
-                    result = GlobusGFSErrorWrapFailed(
-                        "globus_xio_handle_cntl", result);
+                    result = globus_error_put(
+                            GlobusGFSErrorObjInternalError(
+                                    globus_error_get(result),
+                                    "globus_xio_handle_cntl"));
                     goto error_seek;
                 }
                 monitor->file_offset = monitor->read_offset;
@@ -3011,8 +3079,8 @@ globus_l_gfs_file_dispatch_read(
         if(result != GLOBUS_SUCCESS)
         {
             globus_list_insert(&monitor->buffer_list, buffer);
-            result = GlobusGFSErrorWrapFailed(
-                "globus_xio_register_read", result);
+            result = globus_l_gfs_file_wrap_error(
+                    result, "globus_xio_register_read");
             goto error_register;
         }
         
@@ -3050,7 +3118,8 @@ globus_l_gfs_file_server_write_cb(
 
         if(result != GLOBUS_SUCCESS && monitor->error == NULL)
         {
-            monitor->error = GlobusGFSErrorObjWrapFailed("callback", result);
+            monitor->error = globus_error_get(
+                    globus_l_gfs_file_wrap_error(result, "write"));
         }
         if(monitor->error != NULL)
         {
@@ -3060,8 +3129,7 @@ globus_l_gfs_file_server_write_cb(
         result = globus_l_gfs_file_dispatch_read(monitor);
         if(result != GLOBUS_SUCCESS)
         {
-            monitor->error = GlobusGFSErrorObjWrapFailed(
-                "globus_l_gfs_file_dispatch_read", result);
+            monitor->error = globus_error_get(result);
             goto error;
         }
         
@@ -3124,8 +3192,9 @@ globus_l_gfs_file_read_cb(
             }
             else
             {
-                monitor->error = GlobusGFSErrorObjWrapFailed(
-                    "callback", result);
+                monitor->error = globus_error_get(
+                        globus_l_gfs_file_wrap_error(
+                                result, "read"));
             }
         }
         if(monitor->error != NULL)
@@ -3147,8 +3216,10 @@ globus_l_gfs_file_read_cb(
             if(result != GLOBUS_SUCCESS)
             {
                 globus_list_insert(&monitor->buffer_list, buffer);
-                monitor->error = GlobusGFSErrorObjWrapFailed(
-                    "globus_gridftp_server_register_write", result);
+                monitor->error = globus_error_get(
+                        globus_l_gfs_file_wrap_error(
+                                result,
+                                "globus_gridftp_server_register_write"));
                 goto error;
             }
             
@@ -3172,8 +3243,8 @@ globus_l_gfs_file_read_cb(
         result = globus_l_gfs_file_dispatch_read(monitor);
         if(result != GLOBUS_SUCCESS)
         {
-            monitor->error = GlobusGFSErrorObjWrapFailed(
-                "globus_l_gfs_file_dispatch_read", result);
+            monitor->error = globus_error_get(result);
+
             goto error;
         }
        
@@ -3223,8 +3294,8 @@ globus_l_gfs_file_open_read_cb(
     monitor = (globus_l_file_monitor_t *) user_arg;
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_l_gfs_file_open_write_cb", result);
+        result = globus_l_gfs_file_wrap_error(
+                result, "read");
         monitor->file_handle = NULL;
         goto error_open;
     }
@@ -3237,8 +3308,6 @@ globus_l_gfs_file_open_read_cb(
     result = globus_l_gfs_file_dispatch_read(monitor);
     if(result != GLOBUS_SUCCESS)
     {
-        monitor->error = GlobusGFSErrorObjWrapFailed(
-            "globus_l_gfs_file_dispatch_read", result);
         goto error_dispatch;
     }
     
@@ -3290,8 +3359,6 @@ globus_l_gfs_file_send(
         &monitor, block_size, optimal_count);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_l_gfs_file_monitor_init", result);
         goto error_alloc;
     }
           
@@ -3312,7 +3379,6 @@ globus_l_gfs_file_send(
         &monitor->file_handle, transfer_info->pathname, open_flags, monitor);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_l_gfs_file_open", result);
         goto error_open;
     }
     

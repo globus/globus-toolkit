@@ -170,7 +170,7 @@ test_error_macros(void)
         goto fail;
     }
 
-    result = GlobusGFSErrorInternalError();
+    result = GlobusGFSErrorInternalError(__func__);
     if (result == GLOBUS_SUCCESS)
     {
         goto fail;
