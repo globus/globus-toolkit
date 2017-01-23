@@ -484,7 +484,6 @@ globus_i_gsi_gss_create_and_fill_context(
     }
     #else
     {
-        /* TLSv1_method is only TLSv1.0 */
         SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
         /* No longer setting SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS since it seemed
          * like a stop-gap measure to interoperate with broken SSL */
@@ -523,7 +522,7 @@ globus_i_gsi_gss_create_and_fill_context(
     if (!(context->req_flags & GSS_C_CONF_FLAG))
     {
         if(!SSL_set_cipher_list(context->gss_ssl,
-                                "eNULL:ALL:!ADH:RC4+RSA:+SSLv2"))
+                                "eNULL:ALL:!COMPLEMENTOFDEFAULT"))
         {
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                 minor_status,
@@ -2116,7 +2115,7 @@ globus_i_gsi_gss_SSL_read_bio(
  * Initialize the SSL Context for use in the SSL authentication mechanism.
  * The ssl context held by the cred handle is used to generate SSL objects
  * for the SSL handshake.  Initializing the SSL context consists of
- * setting the method to be used (SSLv3), setting the callback to perform
+ * setting the method to be used (TLS), setting the callback to perform
  * certificate verification, and finding the appropriate issuing CA's of
  * the certs used for authentication.
  *
