@@ -766,22 +766,6 @@ typedef globus_result_t
 #define GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING                      (1 << 1)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH                  (1 << 2)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_REQUIRES_ORDERED_DATA         (1 << 3)
-/**
- * If this flag is set, the error objects passed in DSI finished
- * calls will be either:
- * <dl>
- * <dt>GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE</dt>
- * <dd>The error object contains an FTP response code and GlobusError v1
- * error string created by one of the GlobusGFSError() macros</dd>
- * <dt>GLOBUS_ERROR_TYPE_ERRNO</dt>
- * <dd>The error object (or a causal error) contains an error that directly
- * relates to a file operation that can be mechanically translated into
- * a GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE error</dd>
- * <dt>Any other error type</dt>
- * <dd>The error object will be wrapped in a GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE
- * with the INTERNAL_ERROR error code</dd>
- * </dl>
- */
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SETS_ERROR_RESPONSES          (1 << 4)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SAFE_RDEL                     (1 << 5)
 

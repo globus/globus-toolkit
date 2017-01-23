@@ -2565,8 +2565,7 @@ globus_l_gfs_file_server_read_cb(
         monitor->pending_reads--;
         if(result != GLOBUS_SUCCESS && monitor->error == NULL)
         {
-            monitor->error = globus_error_get(
-                    globus_l_gfs_file_wrap_error(result, "read"));
+            monitor->error = globus_error_get(result);
         }
         if(monitor->error != NULL)
         {
@@ -3118,8 +3117,7 @@ globus_l_gfs_file_server_write_cb(
 
         if(result != GLOBUS_SUCCESS && monitor->error == NULL)
         {
-            monitor->error = globus_error_get(
-                    globus_l_gfs_file_wrap_error(result, "write"));
+            monitor->error = globus_error_get(result);
         }
         if(monitor->error != NULL)
         {
