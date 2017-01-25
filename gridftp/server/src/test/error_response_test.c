@@ -9,6 +9,7 @@ test_default_message(void)
     char                               *message = NULL;
     bool                                ok = false;
 
+    errno = ENOMEM;
     result = GlobusGFSErrorMemory("foo");
 
     message = globus_object_printable_to_string(
@@ -30,7 +31,7 @@ test_explicit_response_code(void)
     int                                 code = 0;
     bool                                ok = false;
 
-    err = GlobusGFSErrorObjFtpResponse(NULL, 550, "NOT_FOUND");
+    err = GlobusGFSErrorObjFtpResponse(NULL, 550, "NOT_FOUND", NULL);
 
     code = globus_gfs_error_get_ftp_response_code(err);
 
@@ -49,7 +50,7 @@ test_explicit_message(void)
     char                               *m = NULL;
     bool                                ok = false;
 
-    err = GlobusGFSErrorObjFtpResponse(NULL, 550, "%s", expect);
+    err = GlobusGFSErrorObjFtpResponse(NULL, 550, expect, NULL);
 
     message = globus_object_printable_to_string(err);
     fprintf(stderr, "# %s \"%s\"\n", __func__, message);
@@ -193,6 +194,7 @@ fail:
     return ok;
 }
 
+static
 bool
 test_error_system(void)
 {
@@ -213,6 +215,7 @@ test_error_system(void)
     return ok;
 }
 
+static
 bool
 test_error_multiline(void)
 {
@@ -260,6 +263,86 @@ test_error_multiline(void)
     return ok;
 }
 
+static
+bool
+test_error_response_error_code(void)
+{
+    globus_object_t                    *err = NULL;
+    const char *                        error_code = NULL;
+    bool                                ok = false;
+
+    err = GlobusGFSErrorObjFtpResponse(NULL, 550, "NOT_FOUND", NULL);
+
+    error_code = globus_gfs_error_get_ftp_response_error_code(err);
+
+    ok = (strcmp(error_code, "NOT_FOUND") == 0);
+    globus_object_free(err);
+
+    return ok;
+}
+        
+static
+bool
+test_error_response_error_code_match(void)
+{
+    globus_object_t                    *err = NULL;
+    bool                                ok = false;
+
+    err = GlobusGFSErrorObjFtpResponse(NULL, 550, "NOT_FOUND", NULL);
+
+    ok = globus_gfs_error_match_response_error_code(err, "NOT_FOUND");
+
+    globus_object_free(err);
+
+    return ok;
+}
+
+static
+bool
+test_error_response_error_code_match_null(void)
+{
+    globus_object_t                    *err = NULL;
+    bool                                ok = false;
+
+    err = GlobusGFSErrorObjFtpResponse(NULL, 550, "NOT_FOUND", NULL);
+
+    ok = !globus_gfs_error_match_response_error_code(err, NULL);
+
+    globus_object_free(err);
+
+    return ok;
+}
+
+static
+bool
+test_error_response_error_code_match_null_err(void)
+{
+    globus_object_t                    *err = NULL;
+    bool                                ok = false;
+
+    ok = !globus_gfs_error_match_response_error_code(NULL, "NOT_FOUND");
+
+    globus_object_free(err);
+
+    return ok;
+}
+
+static
+bool
+test_error_response_error_code_mismatch(void)
+{
+    globus_object_t                    *err = NULL;
+    bool                                ok = false;
+
+    err = GlobusGFSErrorObjFtpResponse(NULL, 550, "NOT_FOUND", NULL);
+
+    ok = !globus_gfs_error_match_response_error_code(err, "CHEESE");
+
+    globus_object_free(err);
+
+    return ok;
+}
+
 typedef struct
 {
     bool                              (*test_case)(void);
@@ -279,6 +362,11 @@ int main()
         TEST(test_error_macros),
         TEST(test_error_system),
         TEST(test_error_multiline),
+        TEST(test_error_response_error_code),
+        TEST(test_error_response_error_code_match),
+        TEST(test_error_response_error_code_match_null),
+        TEST(test_error_response_error_code_match_null_err),
+        TEST(test_error_response_error_code_mismatch),
     };
     size_t                              num_tests
                                       = sizeof(tests)/sizeof(tests[0]);

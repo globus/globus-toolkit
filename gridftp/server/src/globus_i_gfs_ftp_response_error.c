@@ -32,6 +32,7 @@
 typedef struct globus_l_gfs_ftp_response_error_s
 {
     int                                 response_code;
+    char *                              response_error_code;
     char *                              message;
 }
 globus_l_gfs_ftp_response_error_t;
@@ -47,8 +48,13 @@ globus_l_gfs_ftp_response_error_t;
  *        error, this parameter may be NULL.
  * @param response_code
  *        The FTP response code.
+ * @param response_error_code
+ *        If non-NULL, this is the GlobusError response code and the message
+ *        will be formatted as a v=1 message and fmt is optional. If NULL,
+ *        the fmt parameter is required to be non-NULL and the error will not
+ *        be formatted as a v=1 error.
  * @param fmt
- *        Response string format
+ *        Response string format 
  * @param ...
  *        Response string format arguments
  * @return
@@ -62,12 +68,14 @@ globus_gfs_ftp_response_error_construct(
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
     int                                 response_code,
+    const char                         *response_error_code,
     const char                         *fmt,
     ...)
 {
     globus_object_t *                   error;
     globus_object_t *                   newerror;
     va_list                             ap;
+
 
     va_start(ap, fmt);
 
@@ -78,6 +86,7 @@ globus_gfs_ftp_response_error_construct(
         base_source,
         base_cause,
         response_code,
+        response_error_code,
         fmt,
         ap);
 
@@ -106,6 +115,11 @@ globus_gfs_ftp_response_error_construct(
  *        error this parameter may be NULL.
  * @param response_code
  *        The FTP response code.
+ * @param response_error_code
+ *        If non-NULL, this is the GlobusError response code and the message
+ *        will be formatted as a v=1 message and fmt is optional. If NULL,
+ *        the fmt parameter is required to be non-NULL and the error will not
+ *        be formatted as a v=1 error.
  * @param fmt
  *        Response string format
  * @param ap
@@ -120,6 +134,7 @@ globus_gfs_ftp_response_error_initialize(
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
     int                                 response_code,
+    const char *                        response_error_code,
     const char *                        fmt,
     ...)
 {
@@ -131,6 +146,7 @@ globus_gfs_ftp_response_error_initialize(
             base_source,
             base_cause,
             response_code,
+            response_error_code,
             fmt,
             ap);
     va_end(ap);
@@ -152,6 +168,11 @@ globus_gfs_ftp_response_error_initialize(
  *        error this parameter may be NULL.
  * @param response_code
  *        The FTP response code.
+ * @param response_error_code
+ *        If non-NULL, this is the GlobusError response code and the message
+ *        will be formatted as a v=1 message and fmt is optional. If NULL,
+ *        the fmt parameter is required to be non-NULL and the error will not
+ *        be formatted as a v=1 error.
  * @param fmt
  *        Response string format
  * @param ap
@@ -166,13 +187,16 @@ globus_gfs_ftp_response_error_v_initialize(
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
     int                                 response_code,
+    const char *                        response_error_code,
     const char *                        fmt,
     va_list                             ap)
 {
     globus_l_gfs_ftp_response_error_t * instance_data = NULL;
     globus_object_t *                   this_error = NULL;
+    char *                              v1_fmt = NULL;
 
-    if ((this_error = globus_object_upcast(error, GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE)) == NULL)
+    if ((this_error = globus_object_upcast(
+                error, GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE)) == NULL)
     {
         return NULL;
     }
@@ -183,16 +207,37 @@ globus_gfs_ftp_response_error_v_initialize(
         return NULL;
     }
 
+    if (response_error_code != NULL)
+    {
+        v1_fmt = globus_common_create_string(
+                "GlobusError: v=1 c=%s%s%s",
+                response_error_code,
+                (fmt != NULL) ? "\n" : "",
+                (fmt != NULL) ? fmt : "");
+    }
+
     *instance_data = (globus_l_gfs_ftp_response_error_t)
     {
         .response_code = response_code,
-        .message = globus_common_v_create_string(fmt, ap)
+        .message = globus_common_v_create_string(
+                (v1_fmt != NULL) ? v1_fmt : fmt, ap),
     };
 
     if (instance_data->message == NULL)
     {
         free(instance_data);
         return NULL;
+    }
+
+    if (response_error_code != NULL)
+    {
+        instance_data->response_error_code = strdup(response_error_code);
+        if (instance_data->response_error_code == NULL)
+        {
+            free(instance_data->message);
+            free(instance_data);
+            return NULL;
+        }
     }
 
     globus_object_set_local_instance_data(this_error, instance_data);
@@ -235,6 +280,78 @@ globus_gfs_error_get_ftp_response_code(
 /* globus_gfs_error_get_ftp_response_code() */
 
 /**
+ * Retrieve the gridftp response_error_code from a globus_ftp_response_error
+ * object
+ * @ingroup globus_gridftp_server_error_response
+ *
+ * @param error
+ *        The error from which to retrieve the response code
+ * @return
+ *        The response error code stored in the object
+ */
+const char *
+globus_gfs_error_get_ftp_response_error_code(
+    globus_object_t *                   error)
+{
+    globus_l_gfs_ftp_response_error_t * instance_data = NULL;
+
+    error = globus_object_upcast(
+            error,
+            GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE);
+
+    if (error != NULL)
+    {
+        instance_data = globus_object_get_local_instance_data(error);
+        return instance_data->response_error_code;
+    }
+    else
+    {
+        return NULL;
+    }
+}
+/* globus_gfs_error_get_ftp_response_error_code() */
+
+/**
+ * Determine if the gridftp response_error_code matches
+ * @ingroup globus_gridftp_server_error_response
+ *
+ * @param error
+ *        The error from which to retrieve the response code
+ * @param response_error_code
+ *        The response error code string to match.
+ * @return
+ *        The response error code stored in the object
+ */
+globus_bool_t
+globus_gfs_error_match_response_error_code(
+    globus_object_t *                   error,
+    const char *                        response_error_code)
+{
+    globus_l_gfs_ftp_response_error_t * instance_data = NULL;
+
+    error = globus_object_upcast(
+            error,
+            GLOBUS_GFS_ERROR_FTP_RESPONSE_TYPE);
+
+    if (error != NULL && response_error_code != NULL)
+    {
+        instance_data = globus_object_get_local_instance_data(error);
+        if (instance_data->response_error_code != NULL)
+        {
+            if (strcmp(
+                        instance_data->response_error_code,
+                        response_error_code) == 0)
+            {
+                return GLOBUS_TRUE;
+            }
+        }
+
+    }
+    return GLOBUS_FALSE;
+}
+/* globus_gfs_error_get_ftp_response_error_code() */
+
+/**
  * Copy the instance data of a Globus FTP Response error object.
  * @ingroup globus_gridftp_server_error_response
  * 
@@ -259,16 +376,38 @@ globus_l_gridftp_server_error_copy(
     dst_instance_data = malloc(sizeof(globus_l_gfs_ftp_response_error_t));
     if (dst_instance_data == NULL)
     {
-        goto done;
+        goto dst_fail;
     }
     dst_instance_data->response_code = src_instance_data->response_code;
-    dst_instance_data->message = strdup(src_instance_data->message);
-    if (dst_instance_data->message == NULL)
+    if (src_instance_data->message != NULL)
     {
-        free(dst_instance_data);
-        dst_instance_data = NULL;
+        dst_instance_data->message = strdup(src_instance_data->message);
+        if (dst_instance_data->message == NULL)
+        {
+            goto dst_msg_fail;
+        }
     }
-done:
+    else
+    {
+        dst_instance_data->message = NULL;
+    }
+    if (src_instance_data->response_error_code != NULL)
+    {
+        dst_instance_data->response_error_code =
+                strdup(src_instance_data->response_error_code);
+        if (dst_instance_data->response_error_code == NULL)
+        {
+            free(dst_instance_data->message);
+dst_msg_fail:
+            free(dst_instance_data);
+            dst_instance_data = NULL;
+        }
+    }
+    else
+    {
+        dst_instance_data->response_error_code = NULL;
+    }
+dst_fail:
     *dst = dst_instance_data;
     return;
 }
@@ -293,6 +432,7 @@ globus_l_gridftp_server_error_free(
     if (instance_data != NULL)
     {
         free(instance_data->message);
+        free(instance_data->response_error_code);
         free(instance_data);
     }
 }
@@ -324,9 +464,8 @@ globus_l_gridftp_server_error_printable(
     assert (ftp_response_error != NULL);
 
     instance_data = globus_object_get_local_instance_data(error);
-    msg = globus_common_create_string(
-            "%s",
-            instance_data->message);
+    msg = strdup(instance_data->message);
+
     return msg;
 }/* globus_l_error_errno_printable */
 
@@ -461,8 +600,8 @@ globus_i_gfs_error_system(
             NULL,
             NULL,
             ftp_code,
-            "GlobusError: v=1 c=%s\nGridFTP-Errno: %d\nGridFTP-Reason: %s",
             error_code,
+            "GridFTP-Errno: %d\nGridFTP-Reason: %s",
             system_errno,
             m);
     }
@@ -472,8 +611,8 @@ globus_i_gfs_error_system(
             NULL,
             NULL,
             ftp_code,
-            "GlobusEror: v=1 c=%s\nGridFTP-Errno: %d",
             error_code,
+            "GridFTP-Errno: %d",
             system_errno);
     }
     if (fmt != NULL)
