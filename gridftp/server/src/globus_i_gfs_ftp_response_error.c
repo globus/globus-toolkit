@@ -491,6 +491,7 @@ globus_i_gfs_error_system(
 {
     char                                msg[256];
     char                               *m = NULL;
+    char                               *n = NULL;
     const char                         *error_code = "INTERNAL_ERROR";
     globus_object_t                    *err = NULL;
     va_list                             ap;
@@ -503,22 +504,19 @@ globus_i_gfs_error_system(
         m = globus_common_v_create_string(fmt, ap);
         va_end(ap);
     }
-    else
-    {
 #ifdef _WIN32
-        strerror_s(msg, sizeof(msg), system_errno);
-        m = msg;
+    strerror_s(msg, sizeof(msg), system_errno);
+    n = msg;
 #elif defined(HAVE_DECL_STRERROR_R)
 #ifdef STRERROR_R_CHAR_P
-        m = strerror_r(system_errno, msg, sizeof(msg));
+    n = strerror_r(system_errno, msg, sizeof(msg));
 #else
-        strerror_r(system_errno, msg, sizeof(msg));
-        m = msg;
+    strerror_r(system_errno, msg, sizeof(msg));
+    n = msg;
 #endif
 #else
-        m = strerror(system_errno);
+    n = strerror(system_errno);
 #endif
-    }
 
     if (ftp_code == 0)
     {
@@ -594,27 +592,18 @@ globus_i_gfs_error_system(
         }
     }
 
-    if (m != NULL)
-    {
-        err = globus_gfs_ftp_response_error_construct(
-            NULL,
-            NULL,
-            ftp_code,
-            error_code,
-            "GridFTP-Errno: %d\nGridFTP-Reason: %s",
-            system_errno,
-            m);
-    }
-    else
-    {
-        err = globus_gfs_ftp_response_error_construct(
-            NULL,
-            NULL,
-            ftp_code,
-            error_code,
-            "GridFTP-Errno: %d",
-            system_errno);
-    }
+    err = globus_gfs_ftp_response_error_construct(
+        NULL,
+        NULL,
+        ftp_code,
+        error_code,
+        "GridFTP-Errno: %d%s%s%s%s",
+        system_errno,
+        (m != NULL) ? "\nGridFTP-Reason: " : "",
+        (m != NULL) ? m : "",
+        (n != NULL) ? "\nGridFTP-Error-String: ": "",
+        (n != NULL) ? n : "");
+
     if (fmt != NULL)
     {
         free(m);
