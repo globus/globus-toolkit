@@ -189,6 +189,8 @@ extern globus_bool_t                    globus_i_gssapi_active;
                     "%s exiting\n", \
                     __func__))
 
+extern int                        globus_i_gsi_gssapi_min_tls_protocol;
+extern int                        globus_i_gsi_gssapi_max_tls_protocol;
 extern const char *                     globus_i_gsi_gssapi_cipher_list;
 extern globus_bool_t                    globus_i_gsi_gssapi_server_cipher_order;
 

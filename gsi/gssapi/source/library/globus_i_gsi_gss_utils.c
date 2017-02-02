@@ -471,26 +471,8 @@ globus_i_gsi_gss_create_and_fill_context(
         goto free_cert_dir;
     }
 
-    /* "On July 1, 2015, we will update our security packages to disable SSLv3
-     * and require TLS for all secure communication." */
-    GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
-        2, "Disabling SSLv2 and SSLv3.\n");
- 
-   /* openssl 1.1.0 adds a new method of setting this, deprecates old */ 
-    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-    {
-        SSL_set_ssl_method(context->gss_ssl, TLS_method());
-        SSL_set_min_proto_version(context->gss_ssl, TLS1_VERSION);
-    }
-    #else
-    {
-        SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
-        /* No longer setting SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS since it seemed
-         * like a stop-gap measure to interoperate with broken SSL */
-        SSL_set_options(context->gss_ssl,
-            SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
-    }
-    #endif
+    /* No longer setting SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS since it seemed
+     * like a stop-gap measure to interoperate with broken SSL */
 
     local_result = globus_gsi_callback_get_SSL_callback_data_index(&cb_index);
     if(local_result != GLOBUS_SUCCESS)
@@ -2193,10 +2175,44 @@ globus_i_gsi_gssapi_init_ssl_context(
         goto exit;
     }
 
+    /* "On July 1, 2015, we will update our security packages to disable SSLv3
+     * and require TLS for all secure communication." */
+    GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
+        2, "Disabling SSLv2 and SSLv3.\n");
+    /* Minimum version allowed is TLS 1.0 */
+    if (globus_i_gsi_gssapi_min_tls_protocol == 0)
+        globus_i_gsi_gssapi_min_tls_protocol = TLS1_VERSION;
+    if (globus_i_gsi_gssapi_max_tls_protocol == 0)
+        globus_i_gsi_gssapi_max_tls_protocol = TLS_MAX_VERSION;
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+        3, (globus_i_gsi_gssapi_debug_fstream,
+        "MIN_TLS_PROTOCOL: %x\n", globus_i_gsi_gssapi_min_tls_protocol));
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+        3, (globus_i_gsi_gssapi_debug_fstream,
+        "MAX_TLS_PROTOCOL: %x\n", globus_i_gsi_gssapi_max_tls_protocol));
+
+    /* openssl 1.1.0 adds a new method of setting this, deprecates old */
     #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-    SSL_CTX_set_min_proto_version(cred_handle->ssl_context,TLS1_VERSION);
+    {
+        SSL_CTX_set_min_proto_version(cred_handle->ssl_context,
+                               globus_i_gsi_gssapi_min_tls_protocol);
+        SSL_CTX_set_max_proto_version(cred_handle->ssl_context,
+                               globus_i_gsi_gssapi_max_tls_protocol);
+    }
     #else
-    SSL_CTX_set_options(cred_handle->ssl_context,SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3);
+    {
+        /* Minimum version allowed is TLS 1.0 */
+        SSL_CTX_set_options(cred_handle->ssl_context,SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3);
+        if (TLS1_VERSION < globus_i_gsi_gssapi_min_tls_protocol ||
+            TLS1_VERSION > globus_i_gsi_gssapi_max_tls_protocol)
+            SSL_CTX_set_options(cred_handle->ssl_context,SSL_OP_NO_TLSv1);
+        if (TLS1_1_VERSION < globus_i_gsi_gssapi_min_tls_protocol ||
+            TLS1_1_VERSION > globus_i_gsi_gssapi_max_tls_protocol)
+            SSL_CTX_set_options(cred_handle->ssl_context,SSL_OP_NO_TLSv1_1);
+        if (TLS1_2_VERSION < globus_i_gsi_gssapi_min_tls_protocol ||
+            TLS1_2_VERSION > globus_i_gsi_gssapi_max_tls_protocol)
+            SSL_CTX_set_options(cred_handle->ssl_context,SSL_OP_NO_TLSv1_2);
+    }
     #endif
             
     SSL_CTX_set_cert_verify_callback(cred_handle->ssl_context,
