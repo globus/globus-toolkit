@@ -79,6 +79,8 @@
 
 #include "globus_xio_http.h"
 
+#include <sqlite3.h>
+
 #define FTP_SERVICE_NAME "file"
 #define USER_NAME_MAX   64
 
@@ -227,6 +229,8 @@ typedef struct
     int                                 ref;
     globus_gfs_storage_iface_t *        dsi;
     globus_extension_handle_t           dsi_handle;
+    char *                              dsi_data;
+    char *                              dsi_data_global;
 
     char *                              mod_dsi_name;
     globus_gfs_storage_iface_t *        mod_dsi;
@@ -478,6 +482,14 @@ typedef struct
     int                                 access;
 } globus_l_gfs_alias_ent_t;
 
+typedef struct
+{
+    char *                              path;
+    char *                              username;
+    char *                              user_data;
+    char *                              global_data;
+} globus_l_gfs_share_data_t;
+
 static
 void
 globus_l_gfs_data_end_transfer_kickout(
@@ -609,6 +621,12 @@ globus_l_gfs_base64_encode(
     globus_size_t                       in_len,
     globus_byte_t *                     outbuf,
     globus_size_t *                     out_len);
+
+static
+globus_result_t
+globus_l_gfs_get_share_data(
+    char *                              id,
+    globus_l_gfs_share_data_t *         share_data);
 
 static
 globus_result_t
@@ -4031,6 +4049,8 @@ globus_l_gfs_data_authorize(
     globus_bool_t                       sharing_attempted = GLOBUS_FALSE;
     char *                              desired_user_cert = NULL;
     char *                              share_file = NULL;
+    char *                              process_username = NULL;
+    char *                              collection_db = NULL;
     GlobusGFSName(globus_l_gfs_data_authorize);
     GlobusGFSDebugEnter();
 
@@ -4042,9 +4062,10 @@ globus_l_gfs_data_authorize(
         "user=%s DN=\"%s\"",
         session_info->username,
         session_info->subject ? session_info->subject : "");
-
     auth_level = globus_i_gfs_config_int("auth_level");
     pw_file = (char *) globus_i_gfs_config_string("pw_file");
+    process_username = globus_i_gfs_config_string("process_user");
+    collection_db = globus_i_gfs_config_string("config_db");
     /* if there is a subject or del cred we are using gsi, 
         look it up in the gridmap */
     sharing_dn = globus_i_gfs_config_string("sharing_dn");
@@ -4066,7 +4087,8 @@ globus_l_gfs_data_authorize(
                 globus_size_t           cert_len = 0;
                 char *                  tmp;
                 globus_gsi_cred_handle_t tmp_cred_handle;
-                                        
+                globus_l_gfs_share_data_t share_data;
+                                                        
                 shared_user_str = 
                     session_info->username + strlen(GLOBUS_SHARING_PREFIX);
                 ptr = shared_user_str;
@@ -4081,47 +4103,6 @@ globus_l_gfs_data_authorize(
                     session_info->map_user = GLOBUS_TRUE;
                 }
 
-                if((crt_tmp = globus_i_gfs_kv_getval(ptr, "CERT", 0)) != NULL)
-                {   
-                    desired_user_cert = malloc(strlen(crt_tmp + 1));
-                    res = globus_l_gfs_base64_decode(
-                        (globus_byte_t *) crt_tmp,
-                        (globus_byte_t *) desired_user_cert, &cert_len);
-                    desired_user_cert[cert_len] = 0;
-                    globus_free(crt_tmp);
-                }
-                else
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid format for " GLOBUS_SHARING_PREFIX ". Missing CERT.");
-                }
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto pwent_error;
-                }
-                res = globus_gsi_cred_read_cert_buffer(
-                    desired_user_cert, &tmp_cred_handle, NULL, NULL, &sub_tmp);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto pwent_error;
-                }
-                
-                globus_gfs_log_message(
-                    GLOBUS_GFS_LOG_INFO,
-                    "DN %s has provided sharing credentials for DN %s.\n",
-                    session_info->subject, sub_tmp);
-
-                globus_free(session_info->subject);
-                session_info->subject = sub_tmp;
-
-                res = globus_gsi_cred_verify_cert_chain_when(
-                    tmp_cred_handle, NULL, 0);
-                globus_gsi_cred_handle_destroy(tmp_cred_handle);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto pwent_error;
-                }
-                
                 if((op->session_handle->sharing_id = 
                     globus_i_gfs_kv_getval(ptr, "ID", 1)) == NULL)
                 {
@@ -4142,6 +4123,76 @@ globus_l_gfs_data_authorize(
                     tmp++;
                 }
 
+                if (collection_db)
+                {
+                    res = globus_l_gfs_get_share_data(
+                        op->session_handle->sharing_id, &share_data);
+                    if (res != GLOBUS_SUCCESS)
+                    { 
+                        res = GlobusGFSErrorWrapFailed("Mapping collection to specified ID", res);
+                        goto pwent_error;
+                    }
+                    
+                    /* for gdrive we need this, possibly not always the case */
+                    if (!process_username)
+                    {
+                        res = GlobusGFSErrorGeneric(
+                            "Server not configured for collections.");
+                        globus_gfs_log_message(
+                            GLOBUS_GFS_LOG_ERR,
+                            "Collections require the 'process_user' configuration to be set\n");
+                        goto pwent_error;
+                    }
+                    auth_level |= GLOBUS_L_GFS_AUTH_NOGRIDMAP;
+                    op->session_handle->dsi_data = share_data.user_data;
+                    op->session_handle->dsi_data_global = share_data.global_data;
+                    usr_tmp = share_data.username;
+                    session_info->map_user = GLOBUS_FALSE;
+                }
+                else
+                {
+                    if((crt_tmp = globus_i_gfs_kv_getval(ptr, "CERT", 0)) != NULL)
+                    {   
+                        desired_user_cert = malloc(strlen(crt_tmp + 1));
+                        res = globus_l_gfs_base64_decode(
+                            (globus_byte_t *) crt_tmp,
+                            (globus_byte_t *) desired_user_cert, &cert_len);
+                        desired_user_cert[cert_len] = 0;
+                        globus_free(crt_tmp);
+                    }
+                    else
+                    {
+                        res = GlobusGFSErrorGeneric(
+                            "Invalid format for " GLOBUS_SHARING_PREFIX ". Missing CERT.");
+                    }
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        goto pwent_error;
+                    }
+                    res = globus_gsi_cred_read_cert_buffer(
+                        desired_user_cert, &tmp_cred_handle, NULL, NULL, &sub_tmp);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        goto pwent_error;
+                    }
+                    
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_INFO,
+                        "DN %s has provided sharing credentials for DN %s.\n",
+                        session_info->subject, sub_tmp);
+    
+                    globus_free(session_info->subject);
+                    session_info->subject = sub_tmp;
+    
+                    res = globus_gsi_cred_verify_cert_chain_when(
+                        tmp_cred_handle, NULL, 0);
+                    globus_gsi_cred_handle_destroy(tmp_cred_handle);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        goto pwent_error;
+                    }
+                }
+                
                 if((op->session_handle->sharing_sharee =
                     globus_i_gfs_kv_getval(ptr, "SHAREE", 1)) == NULL)
                 {
@@ -4292,6 +4343,16 @@ globus_l_gfs_data_authorize(
                 {
                     res = GlobusGFSErrorGeneric(
                         "Invalid passwd entry for current user.");
+                    goto pwent_error;
+                }
+            }
+            else if (process_username)
+            {
+                pwent = globus_l_gfs_getpwnam(process_username);
+                if(pwent == NULL)
+                {
+                    res = GlobusGFSErrorGeneric(
+                        "Configured process user is invalid.");
                     goto pwent_error;
                 }
             }
@@ -4587,7 +4648,7 @@ globus_l_gfs_data_authorize(
             globus_libc_strdup(op->session_handle->true_home);
     }
     
-    if(sharing_dn)
+    if(sharing_dn && !collection_db)
     {
         char *                      sharing_state;
         
@@ -13233,6 +13294,27 @@ globus_gridftp_server_get_config_string(
 }
 
 void
+globus_gridftp_server_get_config_data(
+    globus_gfs_operation_t              op,
+    char *                              data_id,
+    char **                             config_data)
+{
+    GlobusGFSName(globus_gridftp_server_get_config_data);
+    GlobusGFSDebugEnter();
+
+    if(op->session_handle->dsi_data)
+    {
+        *config_data = globus_libc_strdup(op->session_handle->dsi_data);
+    }
+    else
+    {
+        *config_data = NULL;
+    }
+
+    GlobusGFSDebugExit();
+}
+
+void
 globus_gridftp_server_set_ordered_data(
     globus_gfs_operation_t              op,
     globus_bool_t                       ordered_data)
@@ -15356,11 +15438,87 @@ response_exit:
 
 
 
+static
+int 
+globus_l_gfs_share_data_cb(void *cb_arg, int argc, char **argv, char **azColName)
+{
+    int                                   i;
+    globus_l_gfs_share_data_t *           share_data = cb_arg;
+    
+    if(argc != 4 || !argv[0] || !argv[1] || !argv[2] || !argv[3])
+    {
+        return -1;
+    }
 
+    share_data->path = strdup(argv[0]);
+    share_data->username = strdup(argv[1]);
+    share_data->user_data = strdup(argv[2]);
+    share_data->global_data = strdup(argv[3]);
 
+    return 0;
+}
 
+static
+globus_result_t
+globus_l_gfs_get_share_data(
+    char *                              id,
+    globus_l_gfs_share_data_t *         share_data)
+{
+    char *                              dbpath; 
+    char *                              msg;
+    int                                 rc;
+    sqlite3 *                           db;
+    globus_result_t                     result;
+    char *                              query;
 
+    GlobusGFSName(globus_l_gfs_get_share_data);
+    GlobusGFSDebugEnter();
+    
+    query = globus_common_create_string(
+        "select collection.path, user_credential.identity_id, user_credential.storage_credential, storage_type.credential "
+        "from collection inner join user_credential on collection.user_credential_id = user_credential.id "
+            "inner join storage_type on user_credential.storage_type_id = storage_type.id "
+        "where collection.id = '%s';", id);
 
+    dbpath = globus_gfs_config_get_string("config_db");
+    if (!dbpath)
+    {
+        result = GlobusGFSErrorGeneric("Configuration database is not enabled.");
+        goto error;
+    }
 
+    rc = sqlite3_open(dbpath, &db);
+    if (rc)
+    {
+        msg = globus_common_create_string(
+            "Error opening configuration database: %s", sqlite3_errmsg(db));
+        result = GlobusGFSErrorGeneric(msg);
+        goto error;
 
-
+    }
+    share_data->path = NULL;
+    rc = sqlite3_exec(db, query, globus_l_gfs_share_data_cb, share_data, &msg);
+    if (rc != SQLITE_OK)
+    {
+        result = GlobusGFSErrorGeneric(msg);
+        sqlite3_free(msg);
+        goto error;
+    }
+    if (!share_data->path)
+    {
+        GlobusGFSErrorGenericStr(result,
+            ("Collection id '%s' was not found.", id));
+        goto error;
+    }
+    
+    sqlite3_close(db);
+    free(query);
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+    
+error:
+    sqlite3_close(db);
+    free(query);
+    GlobusGFSDebugExitWithError();
+    return result;
+}

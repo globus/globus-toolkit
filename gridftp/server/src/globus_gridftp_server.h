@@ -1261,6 +1261,17 @@ globus_gridftp_server_get_config_string(
     globus_gfs_operation_t              op,
     char **                             config_string);
 
+/*
+ * get config data
+ * 
+ * This can be called to get the configuration data managed by the server.
+ * data_id can be NULL, or can be used to specify a specific set of data.
+ */ 
+void
+globus_gridftp_server_get_config_data(
+    globus_gfs_operation_t              op,
+    char *                              data_id,
+    char **                             config_data);
 
 void
 globus_gfs_data_get_file_stack_list(
