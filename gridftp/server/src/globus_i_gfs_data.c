@@ -11784,23 +11784,29 @@ globus_i_gfs_data_session_stop(
 {
     globus_bool_t                       free_session = GLOBUS_FALSE;
     globus_l_gfs_data_session_t *       session_handle;
+    int                                 waitcnt = 0;
+    int                                 maxwait = 100;
     GlobusGFSName(globus_i_gfs_data_session_stop);
     GlobusGFSDebugEnter();
 
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
     if(session_handle != NULL)
     {
-        globus_mutex_lock(&session_handle->mutex);
+        while(waitcnt < maxwait && !free_session)
         {
-            session_handle->ref--;
-            /* can't jsut free bcause we may be waiting on a force close */
-            if(session_handle->ref == 0)
+            globus_mutex_lock(&session_handle->mutex);
             {
-                free_session = GLOBUS_TRUE;
+                /* we must be the last ref */
+                if(session_handle->ref == 1)
+                {
+                    free_session = GLOBUS_TRUE;
+                }
             }
+            globus_mutex_unlock(&session_handle->mutex);
+            waitcnt++;
+            /* sleep .1 sec */
+            nanosleep((const struct timespec[]) {{0, 100000000L}}, NULL);
         }
-        globus_mutex_unlock(&session_handle->mutex);
-
         if(session_handle->watch_handle != 0)
         {
             globus_callback_unregister(session_handle->watch_handle, NULL, NULL, NULL);
@@ -11821,8 +11827,21 @@ globus_i_gfs_data_session_stop(
             }
             globus_l_gfs_free_session_handle(session_handle);
         }
+        else
+        {
+            session_handle->ref--;
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_INFO,
+                "Main thread was not able to call session_stop.\n");
+        }
+        if (waitcnt > 1)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_INFO,
+                "Called main session_stop after %d ticks.\n", waitcnt - 1);
+        }    
     }
-    
+
     if(globus_l_gfs_watchdog_limit)
     {
         globus_reltime_t                timer;
@@ -11833,7 +11852,6 @@ globus_i_gfs_data_session_stop(
             globus_l_gfs_data_watchdog_check,
             NULL);
     }
-
 
     GlobusGFSDebugExit();
 }
