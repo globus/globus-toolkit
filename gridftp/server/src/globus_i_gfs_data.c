@@ -13320,13 +13320,19 @@ globus_gridftp_server_get_config_data(
     GlobusGFSName(globus_gridftp_server_get_config_data);
     GlobusGFSDebugEnter();
 
-    if(op->session_handle->dsi_data)
+    if(!config_data || !op)
     {
-        *config_data = globus_libc_strdup(op->session_handle->dsi_data);
+        globus_gfs_log_message(GLOBUS_GFS_LOG_ERR,
+            "DSI requested data with invalid parameters.\n");
+        return;
+    }
+    if(data_id && !strcmp(data_id, "global"))
+    {
+        *config_data = globus_libc_strdup(op->session_handle->dsi_data_global);
     }
     else
     {
-        *config_data = NULL;
+        *config_data = globus_libc_strdup(op->session_handle->dsi_data);
     }
 
     GlobusGFSDebugExit();
