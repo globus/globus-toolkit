@@ -103,6 +103,34 @@ do                                                                      \
     }                                                                   \
 } while(0)
 
+#ifdef WIN32
+#define DriveLetterToWin(_p_path)                                       \
+    do                                                                  \
+    {                                                                   \
+        if(_p_path)                                                     \
+        {                                                               \
+            if(isalpha(_p_path[1]) && _p_path[2] == '/')                \
+            {                                                           \
+                _p_path[0] = _p_path[1];                                \
+                _p_path[1] = ':';                                       \
+            }                                                           \
+            else if(isalpha(_p_path[1]) && _p_path[2] == '\0')          \
+            {                                                           \
+                char                        _driveletter = _p_path[1];  \
+                free(_p_path);                                          \
+                _p_path = globus_malloc(4);                             \
+                _p_path[0] = _driveletter;                              \
+                _p_path[1] = ':';                                       \
+                _p_path[2] = '/';                                       \
+                _p_path[3] = '\0';                                      \
+            }                                                           \
+        }                                                               \
+    } while(0)
+#else
+#define DriveLetterToWin(_p_path)
+#endif
+
+
 struct passwd *                         globus_l_gfs_data_pwent = NULL;
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi = NULL;
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi_hybrid = NULL;
@@ -1190,6 +1218,104 @@ globus_i_gfs_data_virtualize_path(
     return GLOBUS_SUCCESS;
 }
 
+/* turn /a/./b/../c///d/ into /a/c/d
+ * path must begin with / */
+globus_result_t
+globus_l_gfs_normalize_path(
+    const char *                        path,
+    char **                             normalized_path)
+{
+    const char *                        in_ptr;
+    const char *                        end;
+    const char *                        next_sep;
+    char *                              out_ptr;
+    char *                              out_path;
+    globus_result_t                     res;
+    GlobusGFSName(globus_l_gfs_normalize_path);
+    GlobusGFSDebugEnter();
+
+    if(!path || path[0] != '/')
+    {
+        res = GlobusGFSErrorParameter("path");
+        goto end;
+    }
+
+    out_path = globus_malloc(strlen(path) + 4);
+    if(!out_path)
+    {
+        res = GlobusGFSErrorMemory("normalized path");
+        goto end;
+    }
+
+    out_path[0] = '/';
+    out_path[1] = '\0';
+    out_ptr = out_path;
+
+    end = path + strlen(path);
+
+    for(in_ptr = path + 1; in_ptr < end; in_ptr = next_sep + 1)
+    {
+        int                             len;
+
+        next_sep = strchr(in_ptr, '/');
+        if(next_sep == NULL)
+        {
+            next_sep = end;
+        }
+        len = next_sep - in_ptr;
+
+        switch(len)
+        {
+            case 0:
+                continue;
+                break;
+
+            case 1:
+                if(in_ptr[0] == '.')
+                {
+                    continue;
+                }
+                break;
+
+            case 2:
+                if(in_ptr[0] == '.' && in_ptr[1] == '.')
+                {
+                    while(out_ptr > out_path && *out_ptr != '/')
+                    {
+                        out_ptr--;
+                    }
+                    if(out_ptr == out_path)
+                    {
+                        out_path[1] = '\0';
+                    }
+                    else
+                    {
+                       *out_ptr = '\0';
+                    }
+
+                    continue;
+                }
+                break;
+
+            default:
+                break;
+        }
+        *out_ptr++ = '/';
+        strncpy(out_ptr, in_ptr, len);
+        out_ptr += len;
+        *out_ptr = '\0';
+    }
+
+    *normalized_path = out_path;
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+
+end:
+    GlobusGFSDebugExitWithError();
+    return res;
+}
+
+
 globus_result_t
 globus_i_gfs_get_full_path(
     const char *                            home_dir,
@@ -1206,6 +1332,7 @@ globus_i_gfs_get_full_path(
     int                                     sc;
     char *                                  slash = "/";
     char *                                  tmp_path;
+    char *                                  norm_path;
     GlobusGFSName(globus_i_gfs_get_full_path);
     GlobusGFSDebugEnter();
 
@@ -1318,125 +1445,33 @@ globus_i_gfs_get_full_path(
     }
     path[MAXPATHLEN - 1] = '\0';
 
-    {
-    char *                                  end;
-    char *                                  next_sep;
-    char *                                  out_ptr;
-    char *                                  out_path;
-    char *                                  in_ptr;
-
-    out_path = globus_malloc(strlen(path) + 4);
-    out_path[0] = '/';
-    out_path[1] = '\0';
-    out_ptr = out_path;
-    
-    end = path + strlen(path);
-    
-    for(in_ptr = path + 1; in_ptr < end; in_ptr = next_sep + 1)
-    {
-        int                                 len;
-            
-        next_sep = strchr(in_ptr, '/');
-        if(next_sep == NULL)
-        {
-            next_sep = end;
-        }
-        len = next_sep - in_ptr;
-        
-        switch(len)
-        {
-            case 0:
-                continue;
-                break;
-            
-            case 1:
-                if(in_ptr[0] == '.')
-                {
-                    continue;
-                }
-                break;
-            
-            case 2:
-                if(in_ptr[0] == '.' && in_ptr[1] == '.')
-                {
-                    while(out_ptr > out_path && *out_ptr != '/')
-                    {
-                        out_ptr--;
-                    }
-                    if(out_ptr == out_path)
-                    {
-                        out_path[1] = '\0';
-                    }
-                    else
-                    {
-                       *out_ptr = '\0';
-                    }
-    
-                    continue;
-                }
-                break;
-            
-            default:
-                break;
-        }
-        *out_ptr++ = '/';
-        strncpy(out_ptr, in_ptr, len);
-        out_ptr += len;
-        *out_ptr = '\0';
-    }
-#ifdef WIN32
-    if(isalpha(out_path[1]) && out_path[2] == '/')
-    {
-        out_path[0] = out_path[1];
-        out_path[1] = ':';
-    }
-    else if(isalpha(out_path[1]) && out_path[2] == '\0')
-    {
-        out_path[0] = out_path[1];
-        out_path[1] = ':';
-        out_path[2] = '/';
-        out_path[3] = '\0';
-    }
-#endif
-
-    strcpy(path, out_path);
-    globus_free(out_path);
-    
-    }
-
-    result = globus_i_gfs_data_check_path(
-        session_arg, path, ret_path, access_type, 1);
+    result = globus_l_gfs_normalize_path(path, &norm_path);
     if(result != GLOBUS_SUCCESS)
     {
         goto done;
     }
-#ifdef WIN32
-    /* path could have a wrong formatted chroot */
-    if(*ret_path)
+
+    DriveLetterToWin(norm_path);
+    
+    result = globus_i_gfs_data_check_path(
+        session_arg, norm_path, ret_path, access_type, 1);
+    if(result != GLOBUS_SUCCESS)
     {
-        char *  out_path = *ret_path;
-        if(isalpha(out_path[1]) && out_path[2] == '/')
-        {
-            out_path[0] = out_path[1];
-            out_path[1] = ':';
-        }
-        else if(isalpha(out_path[1]) && out_path[2] == '\0')
-        {
-            out_path[0] = out_path[1];
-            out_path[1] = ':';
-            out_path[2] = '/';
-            out_path[3] = '\0';
-        }
+        goto check_done;
     }
-#endif
+
+    DriveLetterToWin(ret_path);
+
     if(*ret_path == NULL)
     {
-        *ret_path = globus_libc_strdup(path);
+        *ret_path = globus_libc_strdup(norm_path);
     }
 
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
+check_done:
+    free(norm_path);
 done:
     GlobusGFSDebugExitWithError();
     return result;
@@ -4148,6 +4183,16 @@ globus_l_gfs_data_authorize(
                     op->session_handle->dsi_data_global = share_data.global_data;
                     usr_tmp = share_data.username;
                     session_info->map_user = GLOBUS_FALSE;
+                    res = globus_l_gfs_normalize_path(
+                        share_data.path, &op->session_handle->chroot_path);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        GlobusGFSErrorGenericStr(res,
+                            ("Collection id '%s' has an invalid path.",
+                            op->session_handle->sharing_id));
+                        goto pwent_error;
+                    }
+                    free(share_data.path);
                 }
                 else
                 {
@@ -4648,7 +4693,7 @@ globus_l_gfs_data_authorize(
             globus_libc_strdup(op->session_handle->true_home);
     }
     
-    if(sharing_dn && !collection_db)
+    if(sharing_dn)
     {
         char *                      sharing_state;
         
@@ -4657,7 +4702,6 @@ globus_l_gfs_data_authorize(
             globus_l_gfs_data_update_var_path(
                 op->session_handle, 
                 sharing_state ? sharing_state : "$HOME/.globus/sharing");
-
 
         if(!op->session_handle->sharing_state_dir)
         {
@@ -4680,87 +4724,88 @@ globus_l_gfs_data_authorize(
                 goto pwent_error;
             }
      
-            share_file = globus_common_create_string(
-                "%s/share-%s",
-                op->session_handle->sharing_state_dir,
-                op->session_handle->sharing_id);
+            if (!collection_db)
+            {
+                share_file = globus_common_create_string(
+                    "%s/share-%s",
+                    op->session_handle->sharing_state_dir,
+                    op->session_handle->sharing_id);
 
-            rc = access(share_file, F_OK);
-            
-            /* check share_file ownership and perms */
-            if(rc == 0 && stat(share_file, &statbuf) == 0)
-            {
-                /* ownership */
-                if(statbuf.st_uid != op->session_handle->uid)
-                {
-                    globus_gfs_log_message(
-                        GLOBUS_GFS_LOG_ERR,
-                        "Sharing error. Share file %s not owned by "
-                        "authenticated user %s UID %d.\n",
-                        share_file, session_info->username,
-                        op->session_handle->uid);
-            
-                    rc = -1;
-                }
-                
-                /* regular file */
-                if(!S_ISREG(statbuf.st_mode))
-                {
-                    globus_gfs_log_message(
-                        GLOBUS_GFS_LOG_ERR,
-                        "Sharing error. Share file %s is not a regular file.\n",
-                        share_file);
-            
-                    rc = -1;
-                }
-                
-                /* no group/world permissions */
-                if((statbuf.st_mode &
-                    (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH )) != 0)
-                {
-                    globus_gfs_log_message(
-                        GLOBUS_GFS_LOG_ERR,
-                        "Sharing error. Share file %s has group or world permissions set.\n",
-                        share_file);
-            
-                    rc = -1;
-                }
-            }
-        
-            if(rc == 0)
-            {
-                rc = globus_l_gfs_data_check_sharing_perms(op->session_handle);
-            }
-            
-            if(rc != 0)
-            {
-                GlobusGFSErrorGenericStr(res,
-                    ("Sharing not enabled for user '%s' from share id '%s'.",
-                    session_info->username, op->session_handle->sharing_id));
-                goto pwent_error;
-            }
-            
-            res = globus_l_gfs_data_read_share_file(share_file, &share_path);
-            if(res == GLOBUS_SUCCESS && share_path && share_path[0] == '/')
-            {
-                op->session_handle->chroot_path = share_path;
-            }
-            else
-            {
-                globus_gfs_log_message(
-                    GLOBUS_GFS_LOG_ERR,
-                    "Sharing error.  Invalid share_path or problem parsing "
-                    "share file %s.\n",
-                    share_file);
-                GlobusGFSErrorGenericStr(res,
-                    ("Sharing error for user '%s' from share id '%s'.",
-                    session_info->username, op->session_handle->sharing_id));
-                goto pwent_error;
-            }
+                rc = access(share_file, F_OK);
 
-            globus_free(share_file);
-            share_file = NULL;
-           
+                /* check share_file ownership and perms */
+                if(rc == 0 && stat(share_file, &statbuf) == 0)
+                {
+                    /* ownership */
+                    if(statbuf.st_uid != op->session_handle->uid)
+                    {
+                        globus_gfs_log_message(
+                            GLOBUS_GFS_LOG_ERR,
+                            "Sharing error. Share file %s not owned by "
+                            "authenticated user %s UID %d.\n",
+                            share_file, session_info->username,
+                            op->session_handle->uid);
+
+                        rc = -1;
+                    }
+
+                    /* regular file */
+                    if(!S_ISREG(statbuf.st_mode))
+                    {
+                        globus_gfs_log_message(
+                            GLOBUS_GFS_LOG_ERR,
+                            "Sharing error. Share file %s is not a regular file.\n",
+                            share_file);
+
+                        rc = -1;
+                    }
+
+                    /* no group/world permissions */
+                    if((statbuf.st_mode &
+                        (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH )) != 0)
+                    {
+                        globus_gfs_log_message(
+                            GLOBUS_GFS_LOG_ERR,
+                            "Sharing error. Share file %s has group or world permissions set.\n",
+                            share_file);
+
+                        rc = -1;
+                    }
+                }
+
+                if(rc == 0)
+                {
+                    rc = globus_l_gfs_data_check_sharing_perms(op->session_handle);
+                }
+
+                res = globus_l_gfs_data_read_share_file(share_file, &share_path);
+                if(res == GLOBUS_SUCCESS && share_path && share_path[0] == '/')
+                {
+                    op->session_handle->chroot_path = share_path;
+                }
+                else
+                {
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_ERR,
+                        "Sharing error.  Invalid share_path or problem parsing "
+                        "share file %s.\n",
+                        share_file);
+                    GlobusGFSErrorGenericStr(res,
+                        ("Sharing error for user '%s' from share id '%s'.",
+                        session_info->username, op->session_handle->sharing_id));
+                    goto pwent_error;
+                }
+                globus_free(share_file);
+                share_file = NULL;
+                if(rc != 0)
+                {
+                    GlobusGFSErrorGenericStr(res,
+                        ("Sharing not enabled for user '%s' from share id '%s'.",
+                        session_info->username, op->session_handle->sharing_id));
+                    goto pwent_error;
+                }
+            }
+            
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_INFO,
                 "Access allowed for sharing of user '%s' from share id '%s'.  "
