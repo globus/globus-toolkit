@@ -13392,6 +13392,10 @@ globus_gridftp_server_get_config_data(
     {
         *config_data = globus_libc_strdup(op->session_handle->dsi_data_global);
     }
+    else if(data_id && !strcmp(data_id, "data-id"))
+    {
+        *config_data = globus_libc_strdup(op->session_handle->sharing_id);
+    }
     else
     {
         *config_data = globus_libc_strdup(op->session_handle->dsi_data);
