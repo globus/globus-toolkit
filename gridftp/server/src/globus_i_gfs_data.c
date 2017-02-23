@@ -1466,6 +1466,10 @@ globus_i_gfs_get_full_path(
     {
         *ret_path = norm_path;
     }
+    else
+    {
+        free(norm_path);
+    }
 
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
