@@ -1464,7 +1464,7 @@ globus_i_gfs_get_full_path(
 
     if(*ret_path == NULL)
     {
-        *ret_path = globus_libc_strdup(norm_path);
+        *ret_path = norm_path;
     }
 
     GlobusGFSDebugExit();
@@ -1915,6 +1915,18 @@ globus_l_gfs_free_session_handle(
     if(session_handle->sharing_sharee)
     {
         globus_free(session_handle->sharing_sharee);
+    }
+    if(session_handle->dsi_data)
+    {
+        globus_free(session_handle->dsi_data);
+    }
+    if(session_handle->dsi_data_global)
+    {
+        globus_free(session_handle->dsi_data_global);
+    }
+    if(session_handle->taskid)
+    {
+        globus_free(session_handle->taskid);
     }
     if(session_handle->taskid)
     {
@@ -4181,6 +4193,7 @@ globus_l_gfs_data_authorize(
                     auth_level |= GLOBUS_L_GFS_AUTH_NOGRIDMAP;
                     op->session_handle->dsi_data = share_data.user_data;
                     op->session_handle->dsi_data_global = share_data.global_data;
+                    free(usr_tmp);
                     usr_tmp = share_data.username;
                     session_info->map_user = GLOBUS_FALSE;
                     res = globus_l_gfs_normalize_path(
