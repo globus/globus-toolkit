@@ -30,7 +30,7 @@
 %global nologin 1
 
 %global gsi_openssh_rel 2
-%global gsi_openssh_ver 7.1p2g
+%global gsi_openssh_ver 7.1p2h
 
 Summary: An implementation of the SSH protocol with GSI authentication
 Name: gsi-openssh
@@ -68,12 +68,12 @@ Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-i
 ## cd ..
 ## git clone https://github.com/globus/gsi-openssh.git
 ## cd gsi-openssh
-## git checkout tags/7.1p2g
+## git checkout tags/7.1p2h
 ## git log `cat ../changelog_last_commit`^... > ChangeLog
 ## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" SHELL=$SHELL distprep
 ## rm -fr .git
 ## cd ..
-## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2g.patch
+## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2h.patch
 Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.%{version}.patch
 
 License: BSD
