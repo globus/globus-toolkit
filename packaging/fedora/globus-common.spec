@@ -13,7 +13,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	16.9
+Version:	17.0
 Release:	1%{?dist}
 Vendor:		Globus Support
 Summary:	Globus Toolkit - Common Library
@@ -252,6 +252,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Fri Mar 03 2017 Globus Toolkit <support@globus.org> - 17.0-1
+- add additional error handling api
+
 * Fri Jan 06 2017 Globus Toolkit <support@globus.org> - 16.9-1
 - Fix crash in globus_eval_path
 

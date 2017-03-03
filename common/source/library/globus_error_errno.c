@@ -136,6 +136,11 @@ int
 globus_error_errno_get_errno(
     globus_object_t *                   error)
 {
+    error = globus_object_upcast(error, GLOBUS_ERROR_TYPE_ERRNO);
+    if (error == NULL)
+    {
+        return 0;
+    }
     return *((int *) globus_object_get_local_instance_data(error));
 }/* globus_error_errno_get_errno */
 /*@}*/
@@ -160,6 +165,11 @@ globus_error_errno_set_errno(
     globus_object_t *                   error,
     const int                           system_errno)
 {
+    error = globus_object_upcast(error, GLOBUS_ERROR_TYPE_ERRNO);
+    if (error == NULL)
+    {
+        return;
+    }
     *((int *) globus_object_get_local_instance_data(error)) = system_errno;
 }/* globus_error_errno_set_errno */
 /*@}*/
@@ -194,6 +204,7 @@ globus_error_errno_match(
     globus_module_descriptor_t *        module,
     int                                 system_errno)
 {
+    globus_object_t *                   errno_error = NULL;
     globus_module_descriptor_t *        source_module;
     int                                 current_errno;
     
@@ -202,7 +213,9 @@ globus_error_errno_match(
         return GLOBUS_FALSE;
     }
 
-    if(globus_object_get_type(error) != GLOBUS_ERROR_TYPE_ERRNO)
+    errno_error = globus_object_upcast(error, GLOBUS_ERROR_TYPE_ERRNO);
+
+    if (errno_error == NULL)
     {
         /* not our type, skip it */
         return globus_error_errno_match(
@@ -211,8 +224,8 @@ globus_error_errno_match(
             system_errno);
     }
 
-    source_module = globus_error_get_source(error);
-    current_errno = globus_error_errno_get_errno(error);
+    source_module = globus_error_get_source(errno_error);
+    current_errno = globus_error_errno_get_errno(errno_error);
     
     if(source_module == module && current_errno == system_errno)
     {
@@ -226,6 +239,47 @@ globus_error_errno_match(
             system_errno);
     }
 }/* globus_error_errno_match */
+/*@}*/
+
+/*@{*/
+/**
+ * @brief Search for an errno value in an error chain
+ * @ingroup globus_errno_error_utility  
+ * @details
+ * This function searches the error object and its causal errors for
+ * an error of type GLOBUS_ERROR_TYPE_ERRNO and returns the errno
+ * of that error. If the error and none of its causes are derived from
+ * that type, it returns 0.
+ *
+ * @param error
+ *        The error object for which to perform the check
+ * @return
+ *        This function returns 0 if no errorno is found, otherwise the
+ *        error.
+ *        
+ */
+int
+globus_error_errno_search(
+    globus_object_t *                   error)
+{
+    globus_module_descriptor_t *        source_module;
+    int                                 current_errno;
+    
+    if(error == NULL)
+    {
+        return 0;
+    }
+
+    current_errno = globus_error_errno_get_errno(error);
+
+    if (current_errno != 0)
+    {
+        return current_errno;
+    }
+
+    return globus_error_errno_search(globus_error_get_cause(error));
+}
+/* globus_error_errno_search */
 /*@}*/
 
 

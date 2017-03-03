@@ -1,3 +1,9 @@
+globus-common (17.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * add additional error handling api
+
+ -- Globus Toolkit <support@globus.org>  Fri, 03 Mar 2017 10:09:47 -0600
+
 globus-common (16.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix crash in globus_eval_path
