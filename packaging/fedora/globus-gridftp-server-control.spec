@@ -6,8 +6,8 @@ Name:		globus-gridftp-server-control
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	4.2
-Release:	4%{?dist}
+Version:	5.0
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
@@ -139,6 +139,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Fri Mar 03 2017 Globus Toolkit <support@globus.org> - 5.0-1
+- extend response_type to allow for ftp error codes
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 4.2-4
 - Rebuild after changes for el.5 with openssl101e
 

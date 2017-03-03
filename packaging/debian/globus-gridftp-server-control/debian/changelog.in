@@ -1,3 +1,9 @@
+globus-gridftp-server-control (5.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * extend response_type to allow for ftp error codes
+
+ -- Globus Toolkit <support@globus.org>  Fri, 03 Mar 2017 10:12:49 -0600
+
 globus-gridftp-server-control (4.2-1+gt6.@distro@) @distro@; urgency=low
 
   * Update bug report URL
