@@ -1,3 +1,9 @@
+gsi-openssh (7.1p2h-1+gt6.@distro@) @distro@; urgency=low
+
+  * New 7.1p2h release that fixes negotiation problem from previous
+
+ -- Globus Toolkit <support@globus.org>  Mon, 06 Mar 2017 15:21:06 -0500
+
 gsi-openssh (7.1p2g-1+gt6.@distro@) @distro@; urgency=low
 
   * New 7.1p2g release that introduces negotiation of new mechanism OID
