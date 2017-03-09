@@ -79,6 +79,7 @@ globus_l_ftp_restart_plugin_specific_t;
 		myname));\
     }
 
+static int           globus_l_ftp_client_test_restart_range = 0;
 
 static globus_bool_t globus_l_ftp_client_test_restart_plugin_activate(void);
 static globus_bool_t globus_l_ftp_client_test_restart_plugin_deactivate(void);
@@ -104,6 +105,15 @@ static
 globus_bool_t
 globus_l_ftp_client_test_restart_plugin_activate(void)
 {
+    char *                              rangecnt;
+    if(rangecnt = getenv("FTP_TEST_RESTART_AFTER_RANGE"))
+    {
+        globus_l_ftp_client_test_restart_range = atoi(rangecnt);
+        if(globus_l_ftp_client_test_restart_range < 0)
+        {
+            globus_l_ftp_client_test_restart_range = 0;
+        }
+    }
     return globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
 }
 
@@ -862,9 +872,20 @@ globus_l_ftp_client_test_restart_plugin_response(
     const globus_ftp_control_response_t *		response)
 {
     globus_l_ftp_restart_plugin_specific_t *		d;
+    globus_bool_t                                       force = GLOBUS_FALSE;
 
     d = plugin_specific;
-    if(d->next == d->when)
+    if(response->code == 111 &&
+        globus_l_ftp_client_test_restart_range > 0 &&
+        d->when == FTP_RESTART_AT_STOR_RESPONSE || 
+        d->when == FTP_RESTART_AT_RETR_RESPONSE)
+    {
+        if(--globus_l_ftp_client_test_restart_range == 0)
+        {
+            force = GLOBUS_TRUE;
+        }
+    }
+    if(d->next == d->when || force)
     {
 	fprintf(stderr,"[restart plugin]: About to restart during response (when=%d)\n",
 	       (int) d->when);
