@@ -1,3 +1,9 @@
+globus-ftp-client (8.34-1+gt6.@distro@) @distro@; urgency=low
+
+  * add FTP_TEST_RESTART_AFTER_RANGE=n to force restarts after n range markers for restart points 22 and 24 (RETR_RESPONSE and STOR_RESPONSE)
+
+ -- Globus Toolkit <support@globus.org>  Thu, 09 Mar 2017 13:00:06 -0600
+
 globus-ftp-client (8.33-1+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e
