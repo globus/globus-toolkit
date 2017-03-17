@@ -33,7 +33,6 @@ Prerequisite packages on Debian-based systems:
 * python >= 2.5
 * python-crypto >= 2.0 and python-m2crypto or python-crypto >= 2.2
 * python-openssl
-* python-openssl
 
 If you want to use this with apache2 instead of the standalone server, you'll
 also need libapache2-mod-wsgi and the apache2 server with the ssl module
