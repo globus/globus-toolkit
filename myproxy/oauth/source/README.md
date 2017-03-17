@@ -23,10 +23,10 @@ and displayed directly in a web browser. The templates are accessible at
 https://hostname/oauth/templates/, and the static files at
 https://hostname/oauth/static/.
 
-To use the service with Globus Online, Globus Online that acts here as an OAuth
-client has to be registered with the service first. To trigger the registration
-workflow, go to https://hostname/oauth/configure. A Globus Online user
-specified in the registration form will become an admin of the service.
+To use the service with Globus Online, Globus Online, that acts here as an OAuth
+client, has to be registered with the service first. To trigger the registration
+workflow, run `myproxy-oauth-setup` from the server cli. The Globus Online user
+specified in setup will become an admin of the service.
 
 Prerequisite packages on Debian-based systems:
 
