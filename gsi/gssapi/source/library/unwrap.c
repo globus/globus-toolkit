@@ -83,7 +83,7 @@ GSS_CALLCONV gss_unwrap(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             (_GGSL("Uninitialized Context")));
-        goto exit;
+        goto exit_nolock;
     }
 
     /* lock the context mutex */
@@ -321,6 +321,8 @@ GSS_CALLCONV gss_unwrap(
     /* unlock the context mutex */
     globus_mutex_unlock(&context->mutex);
     
+ exit_nolock:
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
