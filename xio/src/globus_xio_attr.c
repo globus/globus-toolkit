@@ -1176,7 +1176,14 @@ globus_i_xio_string_cntl_parser(
         globus_free(key);
     }
     
-    return globus_error_put(error);
+    if (error != GLOBUS_SUCCESS)
+    {
+        return globus_error_put(error);
+    }
+    else
+    {
+        return GLOBUS_SUCCESS;
+    }
 }
 
 globus_result_t
