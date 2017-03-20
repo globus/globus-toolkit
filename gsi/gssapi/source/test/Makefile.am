@@ -64,7 +64,8 @@ check_PROGRAMS= \
         nonterminated-export-cred-test \
         release-name-test \
         gssapi-thread-test \
-	wrap-test
+	wrap-test \
+        unwrap-null-test
 
 if ENABLE_TESTS
 TESTS = $(check_SCRIPTS) \
@@ -85,7 +86,8 @@ TESTS = $(check_SCRIPTS) \
 	mic-test \
         nonterminated-export-cred-test \
         release-name-test \
-	wrap-test
+	wrap-test \
+        unwrap-null-test
 
 LOG_COMPILER = $(srcdir)/gssapi-test-wrapper
 

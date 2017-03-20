@@ -1,3 +1,9 @@
+globus-gssapi-gsi (12.14-1+gt6.@distro@) @distro@; urgency=low
+
+  * Merge "Don't unlock unlocked mutex #91". Add Test case.
+
+ -- Globus Toolkit <support@globus.org>  Mon, 20 Mar 2017 11:17:53 -0400
+
 globus-gssapi-gsi (12.13-1+gt6.@distro@) @distro@; urgency=low
 
   * Skip mech v1 tests for OpenSSL >= 1.1.0
