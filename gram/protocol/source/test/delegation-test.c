@@ -84,6 +84,8 @@ int main()
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.credential = GSS_C_NO_CREDENTIAL;
 
+    globus_gram_protocol_set_interface("localhost");
+
     rc = globus_gram_protocol_allow_attach(
 	    &server_callback_contact,
 	    server_callback,

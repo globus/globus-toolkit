@@ -134,6 +134,14 @@ int
 globus_gram_protocol_set_credentials(gss_cred_id_t new_credentials);
 
 
+/*
+ * sets the network interface used in this module
+ */
+int
+globus_gram_protocol_set_interface(
+    const char *                        interface);
+
+
 /* 
  * sets up and registers a listener. returns port and host. user_ptr
  * must contain the read callback to be used. 
