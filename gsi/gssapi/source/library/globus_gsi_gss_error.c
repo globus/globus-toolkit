@@ -28,7 +28,7 @@
 char *
 globus_l_gsi_gssapi_error_strings[GLOBUS_GSI_GSSAPI_ERROR_LAST] =
 {
-/* 0 */   "SSLv3 handshake problems",
+/* 0 */   "SSL handshake problems",
 /* 1 */   "globusid not found",
 /* 2 */   "getting cert subject name",
 /* 3 */   "Mutual authentication failed",

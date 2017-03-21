@@ -1188,7 +1188,11 @@ check_service(const char *service)
     SSL_CTX                            *ctx;
     SSL                                *ssl;
     BIO                                *web = NULL;
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    const SSL_METHOD                   *method = TLS_method();
+    #else
     const SSL_METHOD                   *method = SSLv23_method();
+    #endif
     X509                               *peer_cert = NULL;
     STACK_OF(X509)                     *cert_chain = NULL;
     STACK_OF(SSL_CIPHER)               *ciphers = NULL;
@@ -1202,6 +1206,11 @@ check_service(const char *service)
         ERR_print_errors_fp(stderr);
         goto ctx_new_fail;
     }
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    SSL_CTX_set_min_proto_version(ctx,TLS1_VERSION);
+    #else
+    SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3);
+    #endif
     SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
     SSL_CTX_set_verify_depth(ctx, 9);
     web = BIO_new_ssl_connect(ctx);
@@ -1284,7 +1293,11 @@ check_gridftp(char *service)
     SSL_CTX                            *ctx;
     SSL                                *ssl;
     BIO                                *cbio = NULL, *rbio = NULL, *wbio = NULL;
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    const SSL_METHOD                   *method = TLS_method();
+    #else
     const SSL_METHOD                   *method = SSLv23_method();
+    #endif
     X509                               *peer_cert = NULL;
     STACK_OF(X509)                     *cert_chain = NULL;
     STACK_OF(SSL_CIPHER)               *ciphers = NULL;
@@ -1300,6 +1313,11 @@ check_gridftp(char *service)
         ERR_print_errors_fp(stderr);
         goto ctx_new_fail;
     }
+    #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    SSL_CTX_set_min_proto_version(ctx,TLS1_VERSION);
+    #else
+    SSL_CTX_set_options(ctx,SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3);
+    #endif
     SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
     SSL_CTX_set_verify_depth(ctx, 9);
 
