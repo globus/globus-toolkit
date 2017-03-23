@@ -1,3 +1,10 @@
+gsi-openssh (7.1p2i-1+gt6.@distro@) @distro@; urgency=low
+
+  * Setting GSS_C_CONF_FLAG to get around the issue of
+  * SSL_export_keying_material interop error with CentOS 6
+
+ -- Globus Toolkit <support@globus.org>  Mon, 20 Mar 2017 12:28:18 -0400
+
 gsi-openssh (7.1p2h-1+gt6.@distro@) @distro@; urgency=low
 
   * New 7.1p2h release that fixes negotiation problem from previous

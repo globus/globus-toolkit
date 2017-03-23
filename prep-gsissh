@@ -1,7 +1,7 @@
 #! /bin/sh
 
 openssh_version=7.1p2
-gsissh_version=${openssh_version}h
+gsissh_version=${openssh_version}i
 openssh_tarball=openssh-${openssh_version}.tar.gz
 Source0=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/${openssh_tarball}
 

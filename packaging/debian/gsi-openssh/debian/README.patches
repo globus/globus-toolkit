@@ -22,7 +22,7 @@ The iSSHD patch to HPN-SSH is constructed as follows:
 ## git merge-base v3.19.1 hpn-7_1_P2 > common_ancestor
 ## git diff `cat common_ancestor` v3.19.1 > hpn-isshd.v3.19.1.patch
 
-3. GSI patch to ISSHD (hpn_isshd-gsi.7.1p2f.patch):
+3. GSI patch to ISSHD (hpn_isshd-gsi.7.1p2i.patch):
 
 The GSI patch to be applied on top of the iSSHD patch is constructed as follows:
 ## tar xvf openssh-7.1p2.tar.gz
@@ -33,10 +33,10 @@ The GSI patch to be applied on top of the iSSHD patch is constructed as follows:
 ## cd ..
 ## git clone https://github.com/globus/gsi-openssh.git
 ## cd gsi-openssh
-## git checkout tags/7.1p2f
+## git checkout tags/7.1p2i
 ## git log `cat ../changelog_last_commit`^... > ChangeLog
 ## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" SHELL=$SHELL distprep
 ## rm -fr .git
 ## cd ..
-## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2f.patch
+## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2i.patch
 
