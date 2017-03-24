@@ -34,8 +34,9 @@ use FtpTestLib;
 my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 my ($dest_host, $dest_file) = setup_remote_dest();
+my @test_parallelism = (1, 3, 10);
 
-# Test #1-10. Basic functionality: Do a transfer of $testfile to/from
+# Test #1-3. Basic functionality: Do a transfer of $testfile to/from
 # localhost, varying parallelism level.
 # Compare the resulting file with the real file
 # Success if program returns 0, files compare,
@@ -58,12 +59,12 @@ sub basic_func
 
     clean_remote_file($dest_host, $dest_file);
 }
-for(my $par = 1; $par <= 10; $par++)
+foreach my $par (@test_parallelism)
 {
     push(@tests, "basic_func($par);");
 }
 
-# Test #11: Bad URL Source: Do a 3rd party transfer of a non-existent
+# Test #4: Bad URL Source: Do a 3rd party transfer of a non-existent
 # file from localhost.
 # Success if program returns 1 and no core file is generated.
 sub bad_url_src
@@ -78,7 +79,7 @@ sub bad_url_src
 }
 push(@tests, "bad_url_src");
 
-# Test #12: Bad URL: Do a 3rd party transfer of an unwritable location as the
+# Test #5: Bad URL: Do a 3rd party transfer of an unwritable location as the
 # destination
 # Success if program returns 1 and no core file is generated.
 sub bad_url_dest
@@ -91,7 +92,7 @@ sub bad_url_dest
 }
 push(@tests, "bad_url_dest");
 
-# Test #13-422: Do a transfer of $testfile to/from localhost, aborting
+# Test #6-134: Do a transfer of $testfile to/from localhost, aborting
 # at each possible position. Note that not all aborts may be reached.
 # Success if no core file is generated for all abort points. (we could use
 # a stronger measure of success here)
@@ -110,13 +111,13 @@ sub abort_test
 }
 for(my $i = 1; $i <= 43; $i++)
 {
-    for(my $j = 1; $j <= 10; $j++)
+    foreach my $j (@test_parallelism)
     {
         push(@tests, "abort_test($i, $j);");
     }
 }
 
-# Test #422-831. Restart functionality: Do a transfer of $testfile
+# Test #135-263. Restart functionality: Do a transfer of $testfile
 # to/from localhost, restarting at each plugin-possible point.
 # Compare the resulting file with the real file
 # Success if program returns 0, files compare,
@@ -142,14 +143,14 @@ sub restart_test
 }
 for(my $i = 1; $i <= 43; $i++)
 {
-    for(my $j = 1; $j <= 10; $j++)
+    foreach my $j (@test_parallelism)
     {
       push(@tests, "restart_test($i, $j);");
     }
 }
 
 
-=head2 I<perf_test> (Test 832)
+=head2 I<perf_test> (Test 264)
 
 Do an extended put of $testfile, enabling perf_plugin
 
@@ -170,7 +171,7 @@ sub perf_test
 
 push(@tests, "perf_test();");
 
-=head2 I<throughput_test> (Test 833)
+=head2 I<throughput_test> (Test 265)
 
 Do an extended put of $testfile, enabling throughput_plugin
 

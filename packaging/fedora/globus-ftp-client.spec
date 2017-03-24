@@ -7,7 +7,7 @@ Name:		globus-ftp-client
 %endif
 
 %global _name %(tr - _ <<< %{name})
-Version:	8.34
+Version:	8.35
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Client Library
@@ -190,6 +190,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Mar 24 2017 Globus Toolkit <support@globus.org> - 8.35-1
+- Remove some redundent tests to reduce test time
+
 * Thu Mar 09 2017 Globus Toolkit <support@globus.org> - 8.34-1
 - add FTP_TEST_RESTART_AFTER_RANGE=n to force restarts after n range markers for restart points 22 and 24 (RETR_RESPONSE and STOR_RESPONSE)
 

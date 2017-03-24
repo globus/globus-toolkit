@@ -43,11 +43,12 @@ my $test_data=join('', <$handle>);
 close($handle);
 my $num_bytes=length($test_data);
 
-# Test #1-10. Basic functionality: Do a get of $testfile to
+my @test_parallelism = (1, 3, 10);
+
+# Test #1-3. Basic functionality: Do a get of $testfile to
 # a new unique file name on localhost, varying parallelism level.
 # Compare the resulting file with the real file
-# Success if program returns 0, files compare,
-# and no core file is generated.
+# Success if program returns 0 and files compare.
 sub basic_func
 {
     my ($parallelism) = (shift);
@@ -66,12 +67,12 @@ sub basic_func
     ok($errors eq "", "basic_func $parallelism $command");
     unlink($tmpname);
 }
-for(my $par = 1; $par <= 10; $par++)
+foreach my $par (@test_parallelism)
 {
     push(@tests, "basic_func($par);");
 }
 
-# Test #11: Bad URL: Do a simple get of a non-existent file from localhost.
+# Test #4: Bad URL: Do a simple get of a non-existent file from localhost.
 # Success if program returns 1 and no core file is generated.
 sub bad_url
 {
@@ -84,7 +85,7 @@ sub bad_url
 }
 push(@tests, "bad_url");
 
-# Test #12-421: Do a get of $testfile from localhost, aborting at each
+# Test 5-133: Do a get of $testfile from localhost, aborting at each
 # possible position, with parallelism between 1 and 10. Note that not
 # all aborts may be reached.  Success if no core file is generated for
 # all abort points. (we could use a stronger measure of success here)
@@ -102,13 +103,13 @@ sub abort_test
 
 for(my $i = 1; $i <= 43; $i++)
 {
-    for(my $j = 1; $j <= 10 ; $j++)
+    for my $j (@test_parallelism)
     {
 	push(@tests, "abort_test($i,$j);");
     }
 }
 
-# Test #422-851. Restart functionality: Do a simple get of $testfile from
+# Test #134-262. Restart functionality: Do a simple get of $testfile from
 # localhost, restarting at each plugin-possible point.
 # Compare the resulting file with the real file
 # Success if program returns 0, files compare,
@@ -135,13 +136,13 @@ sub restart_test
 
 for(my $i = 1; $i <= 43; $i++)
 {
-    for(my $j = 1; $j <= 10; $j++)
+    foreach my $j (@test_parallelism)
     {
         push(@tests, "restart_test($i, $j);");
     }
 }
 
-=head2 I<perf_test> (Test 852)
+=head2 I<perf_test> (Test 263)
 
 Do an extended get of $testfile, enabling perf_plugin
 
@@ -162,7 +163,7 @@ sub perf_test
 
 push(@tests, "perf_test();");
 
-=head2 I<throughput_test> (Test 853)
+=head2 I<throughput_test> (Test 264)
 
 Do an extended get of $testfile, enabling throughput_plugin
 

@@ -34,8 +34,9 @@ my @todo;
 my ($proto) = setup_proto();
 my ($local_copy) = setup_local_source(1);
 my ($dest_host, $dest_file) = setup_remote_dest();
+my @test_parallelism = (1, 3, 10);
 
-# Test #1-11. Basic functionality: Do a put of $test_file to
+# Test #1-3. Basic functionality: Do a put of $test_file to
 # a new unique file name on localhost, varying parallelism level.
 # Compare the resulting file with the real file
 # Success if program returns 0, files compare,
@@ -58,12 +59,12 @@ sub basic_func
     
     clean_remote_file($dest_host, $dest_file);
 }
-for(my $par = 0; $par <= 10; $par++)
+foreach my $par (@test_parallelism)
 {
     push(@tests, "basic_func($par);");
 }
 
-# Test #12: Bad URL: Do a simple put to a bad location on the ftp server.
+# Test #4: Bad URL: Do a simple put to a bad location on the ftp server.
 # Success if program returns 1 and no core file is generated.
 sub bad_url
 {
@@ -76,7 +77,7 @@ sub bad_url
 }
 push(@tests, "bad_url");
 
-# Test #13-53: Do a simple put of $test_file to localhost, aborting
+# Test #5-45: Do a simple put of $test_file to localhost, aborting
 # at each possible position. Note that not all aborts may be reached.
 # Success if no core file is generated for all abort points. (we could use
 # a stronger measure of success here)
@@ -96,7 +97,7 @@ for(my $i = 1; $i <= 43; $i++)
     push(@tests, "abort_test($i);");
 }
 
-# Test #54-94. Restart functionality: Do a simple put of $test_file to
+# Test #46-88. Restart functionality: Do a simple put of $test_file to
 # localhost, restarting at each plugin-possible point.
 # Compare the resulting file with the real file
 # Success if program returns 0, files compare,
@@ -130,7 +131,7 @@ for(my $i = 1; $i <= 43; $i++)
 }
 
 
-=head2 I<perf_test> (Test 95)
+=head2 I<perf_test> (Test 89)
 
 Do an extended put of $testfile, enabling perf_plugin
 
@@ -151,7 +152,7 @@ sub perf_test
 
 push(@tests, "perf_test();");
 
-=head2 I<throughput_test> (Test 96)
+=head2 I<throughput_test> (Test 90)
 
 Do an extended put of $testfile, enabling throughput_plugin
 
