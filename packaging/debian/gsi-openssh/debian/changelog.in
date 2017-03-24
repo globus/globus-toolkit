@@ -1,3 +1,9 @@
+gsi-openssh (7.3p1a-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update to GSI-OpenSSH 7.3p1a
+
+ -- Globus Toolkit <support@globus.org>  Fri, 24 Mar 2017 14:33:26 -0400
+
 gsi-openssh (7.1p2i-1+gt6.@distro@) @distro@; urgency=low
 
   * Setting GSS_C_CONF_FLAG to get around the issue of

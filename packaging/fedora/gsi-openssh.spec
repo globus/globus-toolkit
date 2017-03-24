@@ -29,52 +29,54 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 2
-%global gsi_openssh_ver 7.1p2i
+%global gsi_openssh_rel 1
+%global gsi_openssh_ver 7.3p1a
 
 Summary: An implementation of the SSH protocol with GSI authentication
 Name: gsi-openssh
 Version: %{gsi_openssh_ver}
 Release: %{gsi_openssh_rel}%{?dist}
 URL: http://www.openssh.com/portable.html
-Source0: http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.1p2.tar.gz
+Source0: http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.3p1.tar.gz
 #Source2: gsisshd.pam
 #Source3: gsisshd.init
 #
-#Patch0: http://sourceforge.net/projects/hpnssh/files/HPN-SSH%2014v10%207.1p2/openssh-7_1_P2-hpn-14.10.diff
-Patch0: https://github.com/globus/gsi-openssh/releases/download/%{version}/openssh-7_1_P2-hpn-14.10.diff
+#Patch0: HPN patch (openssh-7_3_P1-hpn-14.12.patch):
+Patch0: https://github.com/globus/gsi-openssh/releases/download/%{version}/openssh-7_3_P1-hpn-14.12.patch
 ##Patch0 is the HPN-SSH patch to Portable OpenSSH and is constructed as follows if the patch isn't readily available at the above link.
 ## git clone git@github.com:rapier1/openssh-portable.git
 ## cd openssh-portable
 ## git remote add portable https://github.com/openssh/openssh-portable.git
 ## git fetch portable
-## git merge-base hpn-7_1_P2 V_7_1_P2 > common_ancestor
-## git diff `cat common_ancestor` hpn-7_1_P2 > openssh-7_1_P2-hpn-14.10.diff
+## git merge-base hpn-7_3_P1 V_7_3_P1 > common_ancestor
+## git diff `cat common_ancestor` hpn-7_3_P1 > ../openssh-7_3_P1-hpn-14.12.patch
+
 
 ##Patch1 is the iSSHD patch to HPN-SSH and is constructed as follows:
+Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-14.12-isshd.v3.19.1.patch
 ## git clone git@github.com:set-element/openssh-hpn-isshd.git
 ## cd openssh-hpn-isshd
 ## git remote add hpn https://github.com/rapier1/openssh-portable.git
 ## git fetch hpn
-## git merge-base v3.19.1 hpn-7_1_P2 > common_ancestor
-## git diff `cat common_ancestor` v3.19.1 > hpn-isshd.v3.19.1.patch
-Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-isshd.v3.19.1.patch
+## git merge-base 45285b04324c35bf4ba3e1ea400866627bd64527 hpn-7_3_P1 > common_ancestor
+## git diff `cat common_ancestor` 45285b04324c35bf4ba3e1ea400866627bd64527 > ../hpn-14.12-isshd.v3.19.1.patch
+
 ##Patch2 is the GSI patch to be applied on top of the iSSHD patch and is constructed as follows:
-## tar xvf openssh-7.1p2.tar.gz
-## cd openssh-7.1p2
-## patch -p1 --no-backup-if-mismatch < openssh-7_1_P2-hpn-14.10.diff
-## patch -p1 --no-backup-if-mismatch < hpn-isshd.v3.19.1.patch
+## tar xvf openssh-7.3p1.tar.gz
+## cd openssh-7.3p1
+## patch -p1 --no-backup-if-mismatch < ../openssh-7_3_P1-hpn-14.12.patch
+## patch -p1 --no-backup-if-mismatch < ../hpn-14.12-isshd.v3.19.1.patch
 ## grep "^commit " ChangeLog | tail -1 | cut -d' ' -f2 > ../changelog_last_commit
 ## cd ..
 ## git clone https://github.com/globus/gsi-openssh.git
 ## cd gsi-openssh
-## git checkout tags/7.1p2i
+## git checkout tags/7.3p1a
 ## git log `cat ../changelog_last_commit`^... > ChangeLog
 ## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" SHELL=$SHELL distprep
 ## rm -fr .git
 ## cd ..
-## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2i.patch
-Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.%{version}.patch
+## diff -Naur openssh-7.3p1 gsi-openssh > hpn_isshd-gsi.7.3p1a.patch
+Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.${version}.patch
 
 License: BSD
 Group: Applications/Internet
@@ -473,6 +475,9 @@ fi
 %endif
 
 %changelog
+* Fri Mar 24 2017 Globus Toolkit <support@globus.org> - 7.3p1a-1
+- Update to GSI-OpenSSH 7.3p1a
+
 * Tue Dec 13 2016 Globus Toolkit <support@globus.org> - 7.1p2g-2
 - Only create /var/empty for SLES
 

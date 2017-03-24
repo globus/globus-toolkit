@@ -1,6 +1,6 @@
 Name: gsi-openssh
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Source: http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.1p2.tar.gz
+Source: http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.3p1.tar.gz
 
 Files: ssh-globus-usage.c
 Copyright: Copyright 2009 The Board of Trustees of the University of Illinois.
