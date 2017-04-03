@@ -30,7 +30,8 @@
 %global nologin 1
 
 %global gsi_openssh_rel 1
-%global gsi_openssh_ver 7.3p1b
+%global openssh_ver     7.3p1
+%global gsi_openssh_ver 7.%{openssh_ver}b
 
 Summary: An implementation of the SSH protocol with GSI authentication
 Name: gsi-openssh
@@ -228,7 +229,7 @@ securely connect to your SSH server.
 This version of OpenSSH has been modified to support GSI authentication.
 
 %prep
-%setup -q -n openssh-7.1p2
+%setup -q -n openssh-%{openssh_ver}
 %patch0 -p1
 %patch1 -p1 -F 2
 %patch2 -p1
@@ -316,13 +317,13 @@ make install sysconfdir=%{_sysconfdir}/gsissh \
 install -d $RPM_BUILD_ROOT/etc/pam.d/
 %if 0%{?suse_version} == 0
 install -d $RPM_BUILD_ROOT/etc/rc.d/init.d
-install -m755 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/gsisshd
+install -m755 $RPM_BUILD_DIR/openssh-%{openssh_ver}2/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/gsisshd
 %else
 install -d $RPM_BUILD_ROOT/etc/init.d
-install -m755 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/init.d/gsi-openssh-server
+install -m755 $RPM_BUILD_DIR/openssh-%{openssh_ver}/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/init.d/gsi-openssh-server
 %endif
 install -d $RPM_BUILD_ROOT%{_libexecdir}/gsissh
-install -m644 $RPM_BUILD_DIR/openssh-7.1p2/contrib/redhat/gsisshd.pam $RPM_BUILD_ROOT/etc/pam.d/gsisshd
+install -m644 $RPM_BUILD_DIR/openssh-%{openssh_ver}/contrib/redhat/gsisshd.pam $RPM_BUILD_ROOT/etc/pam.d/gsisshd
 
 rm $RPM_BUILD_ROOT%{_bindir}/gsissh-add
 rm $RPM_BUILD_ROOT%{_bindir}/gsissh-agent
