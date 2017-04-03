@@ -317,7 +317,7 @@ make install sysconfdir=%{_sysconfdir}/gsissh \
 install -d $RPM_BUILD_ROOT/etc/pam.d/
 %if 0%{?suse_version} == 0
 install -d $RPM_BUILD_ROOT/etc/rc.d/init.d
-install -m755 $RPM_BUILD_DIR/openssh-%{openssh_ver}2/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/gsisshd
+install -m755 $RPM_BUILD_DIR/openssh-%{openssh_ver}/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/gsisshd
 %else
 install -d $RPM_BUILD_ROOT/etc/init.d
 install -m755 $RPM_BUILD_DIR/openssh-%{openssh_ver}/contrib/redhat/gsisshd.init $RPM_BUILD_ROOT/etc/init.d/gsi-openssh-server
