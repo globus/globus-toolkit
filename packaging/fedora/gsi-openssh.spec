@@ -76,7 +76,7 @@ Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-1
 ## rm -fr .git
 ## cd ..
 ## diff -Naur openssh-7.3p1 gsi-openssh > hpn_isshd-gsi.7.3p1b.patch
-Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.${version}.patch
+Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.%{version}.patch
 
 License: BSD
 Group: Applications/Internet
