@@ -1,7 +1,6 @@
 debian/tmp/etc/gsissh/ssh_config
 debian/tmp/usr/bin/gsiscp
 debian/tmp/usr/bin/gsisftp
-debian/tmp/usr/bin/gsislogin
 debian/tmp/usr/bin/gsissh
 debian/tmp/usr/bin/gsissh-add
 debian/tmp/usr/bin/gsissh-agent
@@ -9,7 +8,6 @@ debian/tmp/usr/bin/gsissh-keyscan
 debian/tmp/usr/lib/gsissh/ssh-pkcs11-helper
 debian/tmp/usr/share/man/man1/gsiscp.1
 debian/tmp/usr/share/man/man1/gsisftp.1
-debian/tmp/usr/share/man/man1/gsislogin.1
 debian/tmp/usr/share/man/man1/gsissh.1
 debian/tmp/usr/share/man/man1/gsissh-add.1
 debian/tmp/usr/share/man/man1/gsissh-agent.1
