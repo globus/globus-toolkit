@@ -31,7 +31,7 @@
 
 %global gsi_openssh_rel 1
 %global openssh_ver     7.3p1
-%global gsi_openssh_ver 7.%{openssh_ver}b
+%global gsi_openssh_ver %{openssh_ver}b
 
 Summary: An implementation of the SSH protocol with GSI authentication
 Name: gsi-openssh
