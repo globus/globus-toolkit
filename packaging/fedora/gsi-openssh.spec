@@ -449,8 +449,6 @@ fi
 %attr(0755,root,root) %{_bindir}/gsiscp
 %attr(0644,root,root) %{_mandir}/man1/gsiscp.1*
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/gsissh/ssh_config
-%attr(0755,root,root) %{_bindir}/gsislogin
-%attr(0644,root,root) %{_mandir}/man1/gsislogin.1*
 %attr(0644,root,root) %{_mandir}/man5/gsissh_config.5*
 %attr(0755,root,root) %{_bindir}/gsisftp
 %attr(0644,root,root) %{_mandir}/man1/gsisftp.1*
