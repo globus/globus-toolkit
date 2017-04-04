@@ -1,3 +1,9 @@
+globus-xio-pipe-driver (3.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix .pc typo
+
+ -- Globus Toolkit <support@globus.org>  Tue, 04 Apr 2017 12:22:58 -0400
+
 globus-xio-pipe-driver (3.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Update bug report URL

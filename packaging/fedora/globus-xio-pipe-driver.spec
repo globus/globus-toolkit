@@ -5,8 +5,8 @@ Name:		globus-xio-pipe-driver
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	3.9
-Release:	3%{?dist}
+Version:	3.10
+Release:	1%{?dist}
 Vendor:	        Globus Support
 Summary:	Globus Toolkit - Globus Pipe Driver
 
@@ -118,6 +118,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Apr 04 2017 Globus Toolkit <support@globus.org> - 3.10-1
+- Fix .pc typo
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 3.9-3
 - Rebuild after changes for el.5 with openssl101e
 
