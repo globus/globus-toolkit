@@ -85,7 +85,7 @@ if ($InstanceType -eq "mingw32" -or $InstanceType -eq "mingw64")
 
 Echo "Downloading JRE"
 Invoke-WebRequest `
-        -Uri "http://builds.globus.org/repo6/packages/jre-install.exe" `
+        -Uri "http://builds.globus.org/jre-install.exe" `
         -OutFile "C:\Windows\Temp\jvm-installer.exe"
 
 New-Item -Type file -Path "C:\Windows\Temp\jvm.properties" -Force `
@@ -115,7 +115,7 @@ C:\Cygwin\bin\bash --login -c "chown -R Administrator ~; chmod -R og-rw ~"
 Echo "Downloading tap-to-junit-xml"
 mkdir C:\cygwin\home\jenkins\bin
 Invoke-WebRequest `
-        -Uri "http://builds.globus.org/repo6/etc/tap-to-junit-xml" `
+        -Uri "http://builds.globus.org/gt6/etc/tap-to-junit-xml" `
         -OutFile "C:\cygwin\home\jenkins\bin\tap-to-junit-xml"
 
 C:\Cygwin\bin\bash --login -c "chown -R jenkins ~jenkins;  chmod a+x ~jenkins/bin/*; chmod -R og-rw ~jenkins;"
