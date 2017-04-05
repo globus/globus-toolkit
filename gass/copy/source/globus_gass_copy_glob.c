@@ -15,8 +15,6 @@
  */
 
 #include "globus_i_gass_copy.h"
-#include "openssl/md5.h"
-
 
 #ifndef TARGET_ARCH_WIN32
 #include <fnmatch.h>
@@ -955,7 +953,7 @@ globus_l_gass_copy_glob_parse_mlst_line(
     char *                              symlink_target = NULL;
     char *                              modify_s = NULL;
     char *                              size_s = NULL;
-    globus_gass_copy_glob_entry_t       type;
+    globus_gass_copy_glob_entry_t       type = GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN;
 
     startline = line;
     
@@ -2046,10 +2044,13 @@ globus_l_gass_copy_cksm_file(
     globus_result_t                     result;
     int                                 rc;
 
-    MD5_CTX                             mdctx;
-    char *                              md5ptr;
-    unsigned char                       md[MD5_DIGEST_LENGTH];
-    char                                md5sum[MD5_DIGEST_LENGTH * 2 + 1];
+    EVP_MD_CTX *                        mdctx;
+    const EVP_MD *                      md;
+    char *                              cksmptr;
+    unsigned char                       md_value[EVP_MAX_MD_SIZE];
+    char                                cksm_buff[CKSM_SIZE];
+    unsigned int                        md_len;
+
     char                                buf[GASS_COPY_CKSM_BUFSIZE];
 
     int                                 i;
@@ -2084,9 +2085,9 @@ globus_l_gass_copy_cksm_file(
         goto error_fd;
     }    
        
+    read_left = length;
     if(length >= 0)
     {
-        read_left = length;
         count = (read_left > GASS_COPY_CKSM_BUFSIZE) ? 
             GASS_COPY_CKSM_BUFSIZE : read_left;
     }
@@ -2121,7 +2122,34 @@ globus_l_gass_copy_cksm_file(
         goto error_seek;
     }
 
-    MD5_Init(&mdctx);        
+    OpenSSL_add_all_algorithms();
+    md = EVP_get_digestbyname(algorithm);
+    if (!md)
+    {
+        /*
+         * try again with uppercase algorithm name.
+         */
+        char *                          p;
+        char *                          alg = strdup(algorithm);
+        for(p = alg; *p != '\0'; p++)
+        {
+            *p = toupper(*p);
+        }
+        md = EVP_get_digestbyname(alg);
+        free(alg);
+    }
+    if (!md)
+    {
+        result = globus_error_put(globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL, 
+                "Unable to use checksum algorithm %s", 
+                algorithm));
+        goto error_seek;
+    }
+
+    mdctx = EVP_MD_CTX_create();
+    EVP_DigestInit_ex(mdctx, md, NULL);
 
     while((n = read(fd, buf, count)) > 0)
     {
@@ -2131,23 +2159,24 @@ globus_l_gass_copy_cksm_file(
             count = (read_left > GASS_COPY_CKSM_BUFSIZE) ? GASS_COPY_CKSM_BUFSIZE : read_left;
         }
 
-        MD5_Update(&mdctx, buf, n);
+        EVP_DigestUpdate(mdctx, buf, n);
     }
 
-    MD5_Final(md, &mdctx);
+    EVP_DigestFinal_ex(mdctx, md_value, &md_len);
+    EVP_MD_CTX_destroy(mdctx);
     
     close(fd);
         
-    md5ptr = md5sum;
-    for(i = 0; i < MD5_DIGEST_LENGTH; i++)
+    cksmptr = cksm_buff;
+    for (i = 0; i < md_len; i++)
     {
-       sprintf(md5ptr, "%02x", md[i]);
-       md5ptr++;
-       md5ptr++;
+       sprintf(cksmptr, "%02x", md_value[i]);
+       cksmptr++;
+       cksmptr++;
     }
-    *md5ptr = '\0';
+    *cksmptr = '\0';
     
-    strncpy(cksm, md5sum, sizeof(md5sum));
+    strncpy(cksm, cksm_buff, sizeof(cksm_buff));
     
     globus_url_destroy(&parsed_url);
     

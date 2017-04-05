@@ -17,6 +17,8 @@
 #ifndef GLOBUS_GASS_COPY_H
 #define GLOBUS_GASS_COPY_H
 
+#include <openssl/evp.h>
+
 /**
  * @file globus_gass_copy.h
  * @brief GASS Copy Library
@@ -99,6 +101,7 @@ globus_module_descriptor_t        globus_i_gass_copy_module;
 		     GLOBUS_GASS_COPY_MODULE, \
 		     s)
 
+#define CKSM_SIZE (EVP_MAX_MD_SIZE * 2 + 1)
 
 typedef struct globus_gass_copy_state_s globus_gass_copy_state_t;
 typedef struct globus_gass_copy_handle_s globus_gass_copy_handle_t;
@@ -190,7 +193,7 @@ typedef enum
 
 /**
  * @brief Copy Handle
- * @ingroup gobus_gass_copy
+ * @ingroup globus_gass_copy
  */
 struct globus_gass_copy_handle_s
 {
@@ -283,6 +286,21 @@ struct globus_gass_copy_handle_s
    * Run a stat check on all urls passed to globus_gass_copy_glob_expand_url
    */
   globus_bool_t                       always_stat_on_expand;
+
+  /**
+   * Flag to compare checksum on source and dest files after transfer.
+   */
+  struct globus_gass_copy_handle_s    *cksm_handle;   
+
+  /**
+   * Stored checksum of the source file
+   */
+  char                                *checksum;
+
+  /**
+   * Checksum algorithm
+   */
+  char                                *algorithm;
 };
 
 /**
@@ -389,6 +407,16 @@ globus_gass_copy_set_stat_on_expand(
     globus_gass_copy_handle_t *         handle,
     globus_bool_t                       always_stat);
 
+globus_result_t 
+globus_gass_copy_set_checksum_algo(
+    globus_gass_copy_handle_t *         handle, 
+    char                      *         algo,
+    globus_gass_copy_handle_t *         cksm_handle);
+
+globus_result_t 
+globus_gass_copy_set_checksum(
+    globus_gass_copy_handle_t *         handle, 
+    char                      *         cksm);
 
 /* find out what transfer mode will be used for a given url, so that the proper attributes may be passed to one of the copy function */
 globus_result_t
@@ -746,7 +774,6 @@ globus_gass_copy_stat(
     char *                              url,
     globus_gass_copy_attr_t *           attr,
     globus_gass_copy_glob_stat_t *      stat_info);
-
 
 #ifdef __cplusplus
 }

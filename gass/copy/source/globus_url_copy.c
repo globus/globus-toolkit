@@ -281,6 +281,8 @@ typedef struct
     char *                              list_url;
     int                                 conc_outstanding;
     globus_l_guc_handle_t **            handles;
+    globus_bool_t                       comp_checksum;
+    char *                              checksum_algo;
     
 } globus_l_guc_info_t;
 
@@ -702,6 +704,13 @@ const char * long_usage =
 "       source, or the sizes do not match.  Level 3 will perform a checksum of\n"
 "       the source and destination and transfer if the checksums do not match,\n"
 "       or the sizes do not match.  The default sync level is 2.\n"
+"  -checksum-alg <checksum algorithm>\n"
+"       Set the algorithm type to use for all checksum operations during the\n"
+"       transfer.  The default algorithm is MD5.\n"
+"  -verify-checksum\n"
+"       Specify to perform a checksum on the source and destination after each\n"
+"       file transfer and compare the two.  If they do not match, fail the\n"
+"       transfer.\n"
 "\n";
 
 /***********
@@ -832,7 +841,9 @@ enum
     arg_perms,
     arg_stripe_bs,
     arg_striped,
-    arg_num = arg_striped,
+    arg_checksum,
+    arg_checksum_algo,
+    arg_num = arg_checksum_algo,
 };
 
 #define listname(x) x##_aliases
@@ -896,6 +907,7 @@ flagdef(arg_nl_bottleneck, "-nlb","-nl-bottleneck");
 flagdef(arg_sync, "-sync","-sync");
 flagdef(arg_preserve, "-preserve", "-preserve");
 flagdef(arg_perms, "-cp","-copy-perms");
+flagdef(arg_checksum, "-verify-checksum", "-checksum");
 
 oneargdef(arg_pipelineq, "-ppq","-pipelineq", NULL, NULL);
 oneargdef(arg_list, "-list", "-list-url", NULL, NULL);
@@ -945,6 +957,7 @@ oneargdef(arg_dst_cred, "-dc", "-dst-cred", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_data_cred, "-data-cred", "-data-cred", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_sync_level, "-sync-level", "-sync-level", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_dump_only, "-do", "-dump-only", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_checksum_algo, "-checksum-alg", "-algo", GLOBUS_NULL, GLOBUS_NULL);
 
 
 static globus_args_option_descriptor_t args_options[arg_num];
@@ -1031,7 +1044,9 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_dst_cred);         	\
     setupopt(arg_data_cred);         	\
     setupopt(arg_stripe_bs);         	\
-    setupopt(arg_striped);
+    setupopt(arg_striped);              \
+    setupopt(arg_checksum);             \
+    setupopt(arg_checksum_algo);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
@@ -1921,7 +1936,14 @@ main(int argc, char **argv)
             fprintf(stderr, "%s", _GASCSL("Failed to initialize handle.\n"));
             return 1;
         }
-
+        /* associate cksm and copy handles for checksum verification */
+        if(guc_info.comp_checksum)
+        {
+            globus_gass_copy_set_checksum_algo(
+                &guc_info.handles[i]->gass_copy_handle,
+                guc_info.checksum_algo,
+                &guc_info.handles[i]->cksm_gass_copy_handle);
+        }
     }
     
     globus_mutex_init(&g_monitor.mutex, NULL);
@@ -2375,6 +2397,10 @@ globus_l_guc_info_destroy(
     {
         globus_free(guc_info->dump_only_file);
     }
+    if(guc_info->checksum_algo)
+    {
+        globus_free(guc_info->checksum_algo);
+    }
 
     /* destroy the list */
 }
@@ -2665,6 +2691,17 @@ globus_l_guc_transfer(
     /* when creating the list the urls are check for validity */
     source_io_handle = globus_l_guc_get_io_handle(src_url, fileno(stdin));
     dest_io_handle = globus_l_guc_get_io_handle(dst_url, fileno(stdout));
+
+    if(guc_info->comp_checksum) 
+    {
+        /*
+         * Associate the source checksum with the transfer handle
+         * so that the destination checksum can be verified after
+         * the successful transfer.
+         */   
+        globus_gass_copy_set_checksum(&handle->gass_copy_handle, 
+                                      transfer_info->urls->src_info->checksum);
+    }
 
     /*
      *  we must setup attrs for every gass url.  if url is not
@@ -3655,6 +3692,10 @@ globus_l_guc_parse_arguments(
     guc_info->sync_level = 2;
     guc_info->sync = GLOBUS_FALSE;
     guc_info->perms = GLOBUS_FALSE;
+    guc_info->comp_checksum = GLOBUS_FALSE;
+    guc_info->checksum_algo = GLOBUS_NULL;
+
+
     /* determine the program name */
     
     program = strrchr(argv[0],'/');
@@ -4053,6 +4094,12 @@ globus_l_guc_parse_arguments(
 	case arg_sync_level:
 	    guc_info->sync_level = atoi(instance->values[0]);
 	    break;
+	case arg_checksum:
+	    guc_info->comp_checksum = GLOBUS_TRUE;
+	    break;
+	case arg_checksum_algo:
+	    guc_info->checksum_algo = globus_libc_strdup(instance->values[0]);
+	    break;
 	case arg_dump_only:
 	    guc_info->dump_only_file = globus_libc_strdup(instance->values[0]);
 	    break;
@@ -4111,6 +4158,11 @@ globus_l_guc_parse_arguments(
     }
 
     globus_args_option_instance_list_free(&options_found);
+
+    if(guc_info->checksum_algo == GLOBUS_NULL)
+    {
+       guc_info->checksum_algo = globus_libc_strdup("MD5");
+    }
 
     if(guc_info->src_pipe_str != NULL)
     {
@@ -4899,7 +4951,6 @@ globus_l_guc_cksm_cb(
     globus_mutex_unlock(&cksm_info->monitor->mutex);   
 }
 
-#define GUC_L_CKSM_SIZE 128
 
 static
 globus_result_t
@@ -4932,7 +4983,7 @@ globus_l_guc_check_sync(
                     globus_mutex_init(&cksm_monitor.mutex, NULL);
                     globus_cond_init(&cksm_monitor.cond, NULL);
                     
-                    src_urlinfo->checksum = malloc(GUC_L_CKSM_SIZE);
+                    src_urlinfo->checksum = malloc(CKSM_SIZE);
                     src_cksm_info.urlinfo = src_urlinfo;
                     src_cksm_info.done = GLOBUS_FALSE;
                     src_cksm_info.monitor = &cksm_monitor;
@@ -4944,7 +4995,7 @@ globus_l_guc_check_sync(
                         &handle->source_gass_copy_attr,
                         0,
                         -1,
-                        "MD5",
+                        guc_info->checksum_algo,
                         src_urlinfo->checksum,
                         globus_l_guc_cksm_cb,
                         &src_cksm_info);
@@ -4957,7 +5008,7 @@ globus_l_guc_check_sync(
                     globus_ftp_client_handle_t      real_ftp_handle;
                     globus_ftp_client_handle_t      cksm_ftp_handle;
                     
-                    dest_urlinfo->checksum = malloc(GUC_L_CKSM_SIZE);
+                    dest_urlinfo->checksum = malloc(CKSM_SIZE);
                     dst_cksm_info.urlinfo = dest_urlinfo;
                     dst_cksm_info.done = GLOBUS_FALSE;
                     dst_cksm_info.monitor = &cksm_monitor;
@@ -4976,7 +5027,7 @@ globus_l_guc_check_sync(
                         &handle->dest_gass_copy_attr,
                         0,
                         -1,
-                        "MD5",
+                        guc_info->checksum_algo,
                         dest_urlinfo->checksum,
                         globus_l_guc_cksm_cb,
                         &dst_cksm_info);
@@ -5287,6 +5338,63 @@ globus_l_guc_expand_single_url(
         
         if(do_transfer)
         {
+
+            /*
+             * See if a post transfer checksum comparison has been requested
+             */   
+
+            if(guc_info->comp_checksum) 
+            {
+                if(matched_src_urlinfo->checksum == GLOBUS_NULL)
+                {
+                    /*
+                     * If a checksum hasn't been taken on the source yet, take it now.
+                     */
+    
+                    globus_l_guc_cksm_info_t    src_cksm_info;
+                    globus_l_guc_monitor_t      cksm_monitor;
+        
+                    globus_mutex_init(&cksm_monitor.mutex, NULL);
+                    globus_cond_init(&cksm_monitor.cond, NULL);
+        
+                    matched_src_urlinfo->checksum = malloc(CKSM_SIZE);
+                    src_cksm_info.urlinfo = matched_src_urlinfo;
+                    src_cksm_info.done = GLOBUS_FALSE;
+                    src_cksm_info.monitor = &cksm_monitor;
+                    src_cksm_info.error = NULL;
+        
+                    result = globus_gass_copy_cksm_async(
+                                            &handle->gass_copy_handle,
+                                            matched_src_urlinfo->url,
+                                            &handle->source_gass_copy_attr,
+                                            0,
+                                            -1,
+                                            guc_info->checksum_algo,
+                                            matched_src_urlinfo->checksum,
+                                            globus_l_guc_cksm_cb,
+                                            &src_cksm_info);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        globus_free(matched_src_urlinfo->checksum);
+                        matched_src_urlinfo->checksum = GLOBUS_NULL;
+                        goto error_checksum;
+                    }
+                    globus_mutex_lock(&cksm_monitor.mutex);
+                    while(!src_cksm_info.done)
+                    {
+                        globus_cond_wait(
+                            &cksm_monitor.cond, &cksm_monitor.mutex);
+                    }
+                    globus_mutex_unlock(&cksm_monitor.mutex);
+                    
+                    if(src_cksm_info.error)
+                    {
+                        result = globus_error_put(src_cksm_info.error);
+                        goto error_checksum;
+                    }
+                }
+            }
+    
             if(guc_info->create_dest && !guc_info->dump_only_file)
             {
                 result = globus_l_guc_create_dir(
@@ -5350,7 +5458,7 @@ error_too_many_matches:
             dst_url));                    
 error_mkdir:
 error_expand:
-
+error_checksum:
     return result;                
 }
 

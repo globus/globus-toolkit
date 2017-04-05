@@ -303,7 +303,19 @@ OPTIONS
     - Level 2 will transfer if the time stamp of the destination is older than
       the time stamp of the source.
     - Level 3 will perform a checksum of the source and destination and
-      transfer if the checksums do not match.
+      transfer if the checksums do not match.  The default algorithm used 
+      for this checksum is MD5, but other algorithms can be specified 
+      with the *-algo* parameter.
+
+*-checksum-alg CHECKSUM-ALGORITHM*::
+    Set the algorithm type to use for all checksum operations during the
+    transfer.
+
+*-verify-checksum*::
+    Perform a checksum on the source and destination after each
+    file transfer and compare the two.  If they do not match, fail the
+    transfer.  The default algorithm used for this checksum is MD5, but 
+    other algorithms can be specified with the *-checksum-alg* parameter.
 
 
 [[globus-url-copy-AUTHOR]]
