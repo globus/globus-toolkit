@@ -4559,7 +4559,7 @@ globus_l_guc_parse_arguments(
             "option -ascii and -binary are mutually exclusive");
         return -1;
     }
-    if(guc_info->data_safe & guc_info->data_private)
+    if(guc_info->data_safe && guc_info->data_private)
     {
         globus_url_copy_l_args_error(
             "option -data-channel-safe and -data-channel-private "
@@ -6025,7 +6025,6 @@ globus_l_guc_gass_attr_init(
                 NULL);
         }
 
-
         if(guc_info->data_cred != GSS_C_NO_CREDENTIAL)
         {
             globus_ftp_client_operationattr_set_data_security(
@@ -6036,7 +6035,13 @@ globus_l_guc_gass_attr_init(
             globus_ftp_client_operationattr_set_data_security(
                 ftp_attr, 'p', &auto_data);            
         }
-        
+        else if(url_info.scheme_type == GLOBUS_URL_SCHEME_SSHFTP && 
+            (guc_info->data_private || guc_info->data_safe))
+        {
+            fprintf(stderr, "\nERROR: Data protection with sshftp requires a credential. Try '-data-cred auto'.\n\n");
+            exit(EXIT_FAILURE);
+        }
+            
         if(guc_info->no_dcau)
         {
             dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
@@ -6073,7 +6078,7 @@ globus_l_guc_gass_attr_init(
                 ftp_attr,
                 GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
         }
-
+                
         if(src)
         {
             tmp_net_str = guc_info->src_net_stack_str;
