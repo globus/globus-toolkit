@@ -153,6 +153,11 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Add levels together to use more than one.\n    0 = Disables all authorization checks.\n    1 = Authorize identity. "
     "\n    2 = Authorize all file/resource accesses.\n    4 = Disable changing process uid to authenticated user (no setuid) -- DO NOT use this when process is started as root.\n"
     "If not set uses level 2 for front ends and level 1 for data nodes.  Note that levels 2 and 4 imply level 1 as well.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"process_user", "process_user", NULL, "process-user", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "User to setuid to upon login for all connections. Only applies when running as root.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"process_group", "process_group", NULL, "process-group", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Group to setgid to upon login for all connections. If unset, the default group "
+    "of process_user will be used.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_allow_from", "ipc_allow_from", NULL, "ipc-allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Only allow connections from these source ip addresses.  Specify a comma "
     "separated list of ip address fragments.  A match is any ip address that "

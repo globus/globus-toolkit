@@ -38,31 +38,7 @@
 #define realpath(x,y) strcpy(y,x)
 #define scandir(a,b,c,d) 0
 #define alphasort(x,y) 0
-#endif
-
-#ifdef TARGET_ARCH_WIN32
-#define getuid() 1
-#define getpwuid(x) 0
-#define initgroups(x,y) -1
-#define getgroups(x,y) -1
-#define setgroups(x,y) 0
-#define setgid(x) 0
-#define setuid(x) 0
-#define sync() 0
-#define fork() -1
-#define setsid() -1
-#define chroot(x) -1
-#define globus_libc_getpwnam_r(a,b,c,d,e) -1
-#define globus_libc_getpwuid_r(a,b,c,d,e) -1
-#endif
-
-#ifdef TARGET_ARCH_WIN32
-
-#define getpwnam(x) 0
-
-#define getgrgid(x) 0
 #define getgrnam(x) 0
-
 #endif
 
 
@@ -98,8 +74,13 @@ typedef void
     char *                              cksm,
     void *                              user_arg);
 
-#define POSIX_CKSM_TYPE_ADLER32 1
-#define POSIX_CKSM_TYPE_MD5     2
+
+enum
+{
+    GLOBUS_GFS_FILE_CKSM_TYPE_NONE = 0,
+    GLOBUS_GFS_FILE_CKSM_TYPE_ADLER32,
+    GLOBUS_GFS_FILE_CKSM_TYPE_MD5
+};
 
 typedef struct globus_l_gfs_file_cksm_monitor_s
 {
@@ -121,7 +102,7 @@ typedef struct globus_l_gfs_file_cksm_monitor_s
     MD5_CTX                             mdctx;
     uint32_t                            adler32ctx;
 
-    globus_byte_t                       buffer[1];
+    globus_byte_t                       buffer[];
 } globus_l_gfs_file_cksm_monitor_t;
 
 typedef struct 
@@ -158,7 +139,7 @@ typedef struct
     char *                              expected_cksm;
     char *                              expected_cksm_alg;
     time_t                              utime;
-    /* added for multicast stuff, but cold be genreally useful */
+    /* added for multicast stuff, but cold be generally useful */
     gfs_l_file_session_t *              session;
 
     globus_result_t                     finish_result;
@@ -454,15 +435,8 @@ globus_l_gfs_file_cksm_verify(
     }
     else if(strcmp(monitor->expected_cksm, cksm) != 0)
     {
-        char *                          msg = NULL;
-        msg = globus_common_create_string(
-            "Actual checksum of %s does not match expected checksum of %s.",
-            cksm, monitor->expected_cksm);
-        monitor->finish_result = GlobusGFSErrorGeneric(msg);
-        if(msg)
-        {
-            globus_free(msg);
-        }                       
+        monitor->finish_result = GlobusGFSErrorIncorrectChecksum(
+                cksm, monitor->expected_cksm);
     }
 
     globus_gridftp_server_finished_transfer(
@@ -1800,11 +1774,11 @@ globus_l_gfs_file_cksm_read_cb(
     }
     monitor->total_bytes += nbytes;
 
-    if((monitor->cksum_type & POSIX_CKSM_TYPE_MD5) == POSIX_CKSM_TYPE_MD5)
+    if(monitor->cksum_type == GLOBUS_GFS_FILE_CKSM_TYPE_MD5)
     {
         MD5_Update(&monitor->mdctx, buffer, nbytes);
     }
-    if((monitor->cksum_type & POSIX_CKSM_TYPE_ADLER32) == POSIX_CKSM_TYPE_ADLER32)
+    else if (monitor->cksum_type == GLOBUS_GFS_FILE_CKSM_TYPE_ADLER32)
     {
         monitor->adler32ctx = adler32(monitor->adler32ctx, buffer, nbytes);
     }
@@ -1855,29 +1829,20 @@ globus_l_gfs_file_cksm_read_cb(
             globus_l_gfs_file_close_cb,
             NULL);
 
-        if((monitor->cksum_type & POSIX_CKSM_TYPE_MD5) == POSIX_CKSM_TYPE_MD5)
+        if (monitor->cksum_type == GLOBUS_GFS_FILE_CKSM_TYPE_MD5)
         {
             MD5_Final(md, &monitor->mdctx);
             md5ptr = md5sum;
             for(i = 0; i < MD5_DIGEST_LENGTH; i++)
             {
-               sprintf(md5ptr, "%02x", md[i]);
-               md5ptr++;
-               md5ptr++;
+               md5ptr += sprintf(md5ptr, "%02x", md[i]);
             }
-            md5ptr = '\0';
             cksmptr = md5sum;
         }
-        if((monitor->cksum_type & POSIX_CKSM_TYPE_ADLER32) == POSIX_CKSM_TYPE_ADLER32)
+        else if (monitor->cksum_type == GLOBUS_GFS_FILE_CKSM_TYPE_ADLER32)
         {
-            unsigned char * adler32_char = (unsigned char*)&monitor->adler32ctx;
-            char * adler32_ptr = adler32_human;
-            for (i = 0; i < sizeof(uint32_t); i++) {
-                sprintf(adler32_ptr, "%02x", adler32_char[sizeof(uint32_t)-1-i]);
-                adler32_ptr++;
-                adler32_ptr++;
-            }
-            adler32_ptr = '\0';
+            snprintf(adler32_human, sizeof(adler32_human),
+                "%08x", monitor->adler32ctx);
             cksmptr = adler32_human;
         }
 
@@ -2147,11 +2112,11 @@ globus_l_gfs_file_cksm(
     monitor->cksum_type = 0;
     if(!strcasecmp("md5", algorithm))
     {
-        monitor->cksum_type |= POSIX_CKSM_TYPE_MD5;
+        monitor->cksum_type = GLOBUS_GFS_FILE_CKSM_TYPE_MD5;
     }
-    if(!strcasecmp("adler32", algorithm))
+    else if(!strcasecmp("adler32", algorithm))
     {
-        monitor->cksum_type |= POSIX_CKSM_TYPE_ADLER32;
+        monitor->cksum_type = GLOBUS_GFS_FILE_CKSM_TYPE_ADLER32;
     }
 
     result = globus_xio_register_open(

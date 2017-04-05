@@ -21,7 +21,6 @@
 #include "globus_gridftp_server.h"
 #include "globus_gridftp_server_control.h"
 #include "globus_i_gfs_acl.h"
-#include "globus_i_gfs_http.h"
 #include "globus_xio.h"
 #include "globus_xio_system.h"
 #include "globus_xio_tcp_driver.h"
@@ -161,7 +160,6 @@ typedef enum globus_l_gfs_auth_level_e
     GLOBUS_L_GFS_AUTH_DATA_NODE_PATH = 0x10,
     GLOBUS_L_GFS_AUTH_ALL = 0xFF
 } globus_l_gfs_auth_level_t;
-
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"

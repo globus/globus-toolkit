@@ -101,6 +101,34 @@ do                                                                      \
     }                                                                   \
 } while(0)
 
+#ifdef WIN32
+#define DriveLetterToWin(_p_path)                                       \
+    do                                                                  \
+    {                                                                   \
+        if(_p_path)                                                     \
+        {                                                               \
+            if(isalpha(_p_path[1]) && _p_path[2] == '/')                \
+            {                                                           \
+                _p_path[0] = _p_path[1];                                \
+                _p_path[1] = ':';                                       \
+            }                                                           \
+            else if(isalpha(_p_path[1]) && _p_path[2] == '\0')          \
+            {                                                           \
+                char                        _driveletter = _p_path[1];  \
+                free(_p_path);                                          \
+                _p_path = globus_malloc(4);                             \
+                _p_path[0] = _driveletter;                              \
+                _p_path[1] = ':';                                       \
+                _p_path[2] = '/';                                       \
+                _p_path[3] = '\0';                                      \
+            }                                                           \
+        }                                                               \
+    } while(0)
+#else
+#define DriveLetterToWin(_p_path)
+#endif
+
+
 struct passwd *                         globus_l_gfs_data_pwent = NULL;
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi = NULL;
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi_hybrid = NULL;
@@ -227,6 +255,8 @@ typedef struct
     int                                 ref;
     globus_gfs_storage_iface_t *        dsi;
     globus_extension_handle_t           dsi_handle;
+    char *                              dsi_data;
+    char *                              dsi_data_global;
 
     char *                              mod_dsi_name;
     globus_gfs_storage_iface_t *        mod_dsi;
@@ -1172,6 +1202,104 @@ globus_i_gfs_data_virtualize_path(
     return GLOBUS_SUCCESS;
 }
 
+/* turn /a/./b/../c///d/ into /a/c/d
+ * path must begin with / */
+globus_result_t
+globus_l_gfs_normalize_path(
+    const char *                        path,
+    char **                             normalized_path)
+{
+    const char *                        in_ptr;
+    const char *                        end;
+    const char *                        next_sep;
+    char *                              out_ptr;
+    char *                              out_path;
+    globus_result_t                     res;
+    GlobusGFSName(globus_l_gfs_normalize_path);
+    GlobusGFSDebugEnter();
+
+    if(!path || path[0] != '/')
+    {
+        res = GlobusGFSErrorParameter("path");
+        goto end;
+    }
+
+    out_path = globus_malloc(strlen(path) + 4);
+    if(!out_path)
+    {
+        res = GlobusGFSErrorMemory("normalized path");
+        goto end;
+    }
+
+    out_path[0] = '/';
+    out_path[1] = '\0';
+    out_ptr = out_path;
+
+    end = path + strlen(path);
+
+    for(in_ptr = path + 1; in_ptr < end; in_ptr = next_sep + 1)
+    {
+        int                             len;
+
+        next_sep = strchr(in_ptr, '/');
+        if(next_sep == NULL)
+        {
+            next_sep = end;
+        }
+        len = next_sep - in_ptr;
+
+        switch(len)
+        {
+            case 0:
+                continue;
+                break;
+
+            case 1:
+                if(in_ptr[0] == '.')
+                {
+                    continue;
+                }
+                break;
+
+            case 2:
+                if(in_ptr[0] == '.' && in_ptr[1] == '.')
+                {
+                    while(out_ptr > out_path && *out_ptr != '/')
+                    {
+                        out_ptr--;
+                    }
+                    if(out_ptr == out_path)
+                    {
+                        out_path[1] = '\0';
+                    }
+                    else
+                    {
+                       *out_ptr = '\0';
+                    }
+
+                    continue;
+                }
+                break;
+
+            default:
+                break;
+        }
+        *out_ptr++ = '/';
+        strncpy(out_ptr, in_ptr, len);
+        out_ptr += len;
+        *out_ptr = '\0';
+    }
+
+    *normalized_path = out_path;
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+
+end:
+    GlobusGFSDebugExitWithError();
+    return res;
+}
+
+
 globus_result_t
 globus_i_gfs_get_full_path(
     const char *                            home_dir,
@@ -1188,6 +1316,7 @@ globus_i_gfs_get_full_path(
     int                                     sc;
     char *                                  slash = "/";
     char *                                  tmp_path;
+    char *                                  norm_path;
     GlobusGFSName(globus_i_gfs_get_full_path);
     GlobusGFSDebugEnter();
 
@@ -1300,125 +1429,37 @@ globus_i_gfs_get_full_path(
     }
     path[MAXPATHLEN - 1] = '\0';
 
-    {
-    char *                                  end;
-    char *                                  next_sep;
-    char *                                  out_ptr;
-    char *                                  out_path;
-    char *                                  in_ptr;
-
-    out_path = globus_malloc(strlen(path) + 4);
-    out_path[0] = '/';
-    out_path[1] = '\0';
-    out_ptr = out_path;
-    
-    end = path + strlen(path);
-    
-    for(in_ptr = path + 1; in_ptr < end; in_ptr = next_sep + 1)
-    {
-        int                                 len;
-            
-        next_sep = strchr(in_ptr, '/');
-        if(next_sep == NULL)
-        {
-            next_sep = end;
-        }
-        len = next_sep - in_ptr;
-        
-        switch(len)
-        {
-            case 0:
-                continue;
-                break;
-            
-            case 1:
-                if(in_ptr[0] == '.')
-                {
-                    continue;
-                }
-                break;
-            
-            case 2:
-                if(in_ptr[0] == '.' && in_ptr[1] == '.')
-                {
-                    while(out_ptr > out_path && *out_ptr != '/')
-                    {
-                        out_ptr--;
-                    }
-                    if(out_ptr == out_path)
-                    {
-                        out_path[1] = '\0';
-                    }
-                    else
-                    {
-                       *out_ptr = '\0';
-                    }
-    
-                    continue;
-                }
-                break;
-            
-            default:
-                break;
-        }
-        *out_ptr++ = '/';
-        strncpy(out_ptr, in_ptr, len);
-        out_ptr += len;
-        *out_ptr = '\0';
-    }
-#ifdef WIN32
-    if(isalpha(out_path[1]) && out_path[2] == '/')
-    {
-        out_path[0] = out_path[1];
-        out_path[1] = ':';
-    }
-    else if(isalpha(out_path[1]) && out_path[2] == '\0')
-    {
-        out_path[0] = out_path[1];
-        out_path[1] = ':';
-        out_path[2] = '/';
-        out_path[3] = '\0';
-    }
-#endif
-
-    strcpy(path, out_path);
-    globus_free(out_path);
-    
-    }
-
-    result = globus_i_gfs_data_check_path(
-        session_arg, path, ret_path, access_type, 1);
+    result = globus_l_gfs_normalize_path(path, &norm_path);
     if(result != GLOBUS_SUCCESS)
     {
         goto done;
     }
-#ifdef WIN32
-    /* path could have a wrong formatted chroot */
-    if(*ret_path)
+
+    DriveLetterToWin(norm_path);
+    
+    result = globus_i_gfs_data_check_path(
+        session_arg, norm_path, ret_path, access_type, 1);
+    if(result != GLOBUS_SUCCESS)
     {
-        char *  out_path = *ret_path;
-        if(isalpha(out_path[1]) && out_path[2] == '/')
-        {
-            out_path[0] = out_path[1];
-            out_path[1] = ':';
-        }
-        else if(isalpha(out_path[1]) && out_path[2] == '\0')
-        {
-            out_path[0] = out_path[1];
-            out_path[1] = ':';
-            out_path[2] = '/';
-            out_path[3] = '\0';
-        }
+        goto check_done;
     }
-#endif
+
+    DriveLetterToWin(ret_path);
+
     if(*ret_path == NULL)
     {
-        *ret_path = globus_libc_strdup(path);
+        *ret_path = norm_path;
+    }
+    else
+    {
+        free(norm_path);
     }
 
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
+check_done:
+    free(norm_path);
 done:
     GlobusGFSDebugExitWithError();
     return result;
@@ -1862,6 +1903,14 @@ globus_l_gfs_free_session_handle(
     if(session_handle->sharing_sharee)
     {
         globus_free(session_handle->sharing_sharee);
+    }
+    if(session_handle->dsi_data)
+    {
+        globus_free(session_handle->dsi_data);
+    }
+    if(session_handle->dsi_data_global)
+    {
+        globus_free(session_handle->dsi_data_global);
     }
     if(session_handle->taskid)
     {
@@ -4031,6 +4080,7 @@ globus_l_gfs_data_authorize(
     globus_bool_t                       sharing_attempted = GLOBUS_FALSE;
     char *                              desired_user_cert = NULL;
     char *                              share_file = NULL;
+    char *                              process_username = NULL;
     GlobusGFSName(globus_l_gfs_data_authorize);
     GlobusGFSDebugEnter();
 
@@ -4045,6 +4095,7 @@ globus_l_gfs_data_authorize(
 
     auth_level = globus_i_gfs_config_int("auth_level");
     pw_file = (char *) globus_i_gfs_config_string("pw_file");
+    process_username = globus_i_gfs_config_string("process_user");
     /* if there is a subject or del cred we are using gsi, 
         look it up in the gridmap */
     sharing_dn = globus_i_gfs_config_string("sharing_dn");
@@ -4066,7 +4117,7 @@ globus_l_gfs_data_authorize(
                 globus_size_t           cert_len = 0;
                 char *                  tmp;
                 globus_gsi_cred_handle_t tmp_cred_handle;
-                                        
+                                                        
                 shared_user_str = 
                     session_info->username + strlen(GLOBUS_SHARING_PREFIX);
                 ptr = shared_user_str;
@@ -4079,6 +4130,26 @@ globus_l_gfs_data_authorize(
                 {
                     usr_tmp = globus_libc_strdup(GLOBUS_MAPPING_STRING);
                     session_info->map_user = GLOBUS_TRUE;
+                }
+
+                if((op->session_handle->sharing_id = 
+                    globus_i_gfs_kv_getval(ptr, "ID", 1)) == NULL)
+                {
+                    res = GlobusGFSErrorGeneric(
+                        "Invalid format for " GLOBUS_SHARING_PREFIX ". Missing ID.");
+                    goto pwent_error;
+                }
+                tmp = op->session_handle->sharing_id;
+                while(*tmp)
+                {
+                    *tmp = tolower(*tmp);
+                    if(!isxdigit(*tmp) && *tmp != '-')
+                    {
+                        res = GlobusGFSErrorGeneric(
+                            "Invalid format for " GLOBUS_SHARING_PREFIX ". Invalid character in ID.");
+                        goto pwent_error;
+                    }
+                    tmp++;
                 }
 
                 if((crt_tmp = globus_i_gfs_kv_getval(ptr, "CERT", 0)) != NULL)
@@ -4120,26 +4191,6 @@ globus_l_gfs_data_authorize(
                 if(res != GLOBUS_SUCCESS)
                 {
                     goto pwent_error;
-                }
-                
-                if((op->session_handle->sharing_id = 
-                    globus_i_gfs_kv_getval(ptr, "ID", 1)) == NULL)
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid format for " GLOBUS_SHARING_PREFIX ". Missing ID.");
-                    goto pwent_error;
-                }
-                tmp = op->session_handle->sharing_id;
-                while(*tmp)
-                {
-                    *tmp = tolower(*tmp);
-                    if(!isxdigit(*tmp) && *tmp != '-')
-                    {
-                        res = GlobusGFSErrorGeneric(
-                            "Invalid format for " GLOBUS_SHARING_PREFIX ". Invalid character in ID.");
-                        goto pwent_error;
-                    }
-                    tmp++;
                 }
 
                 if((op->session_handle->sharing_sharee =
@@ -4292,6 +4343,16 @@ globus_l_gfs_data_authorize(
                 {
                     res = GlobusGFSErrorGeneric(
                         "Invalid passwd entry for current user.");
+                    goto pwent_error;
+                }
+            }
+            else if (process_username)
+            {
+                pwent = globus_l_gfs_getpwnam(process_username);
+                if(pwent == NULL)
+                {
+                    res = GlobusGFSErrorGeneric(
+                        "Configured process user is invalid.");
                     goto pwent_error;
                 }
             }
@@ -4597,7 +4658,6 @@ globus_l_gfs_data_authorize(
                 op->session_handle, 
                 sharing_state ? sharing_state : "$HOME/.globus/sharing");
 
-
         if(!op->session_handle->sharing_state_dir)
         {
             res = GlobusGFSErrorMemory("sharing state dir");
@@ -4625,7 +4685,7 @@ globus_l_gfs_data_authorize(
                 op->session_handle->sharing_id);
 
             rc = access(share_file, F_OK);
-            
+
             /* check share_file ownership and perms */
             if(rc == 0 && stat(share_file, &statbuf) == 0)
             {
@@ -4638,10 +4698,10 @@ globus_l_gfs_data_authorize(
                         "authenticated user %s UID %d.\n",
                         share_file, session_info->username,
                         op->session_handle->uid);
-            
+
                     rc = -1;
                 }
-                
+
                 /* regular file */
                 if(!S_ISREG(statbuf.st_mode))
                 {
@@ -4649,10 +4709,10 @@ globus_l_gfs_data_authorize(
                         GLOBUS_GFS_LOG_ERR,
                         "Sharing error. Share file %s is not a regular file.\n",
                         share_file);
-            
+
                     rc = -1;
                 }
-                
+
                 /* no group/world permissions */
                 if((statbuf.st_mode &
                     (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH )) != 0)
@@ -4661,16 +4721,16 @@ globus_l_gfs_data_authorize(
                         GLOBUS_GFS_LOG_ERR,
                         "Sharing error. Share file %s has group or world permissions set.\n",
                         share_file);
-            
+
                     rc = -1;
                 }
             }
-        
+
             if(rc == 0)
             {
                 rc = globus_l_gfs_data_check_sharing_perms(op->session_handle);
             }
-            
+
             if(rc != 0)
             {
                 GlobusGFSErrorGenericStr(res,
@@ -4678,7 +4738,7 @@ globus_l_gfs_data_authorize(
                     session_info->username, op->session_handle->sharing_id));
                 goto pwent_error;
             }
-            
+
             res = globus_l_gfs_data_read_share_file(share_file, &share_path);
             if(res == GLOBUS_SUCCESS && share_path && share_path[0] == '/')
             {
@@ -4696,10 +4756,9 @@ globus_l_gfs_data_authorize(
                     session_info->username, op->session_handle->sharing_id));
                 goto pwent_error;
             }
-
             globus_free(share_file);
             share_file = NULL;
-           
+            
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_INFO,
                 "Access allowed for sharing of user '%s' from share id '%s'.  "
@@ -5382,6 +5441,7 @@ globus_l_gfs_data_stat_kickout(
     globus_l_gfs_data_stat_bounce_t *   bounce_info;
     globus_gfs_finished_info_t          reply;
     int                                 i;
+    int                                 code;
     GlobusGFSName(globus_l_gfs_data_stat_kickout);
     GlobusGFSDebugEnter();
 
@@ -5405,6 +5465,16 @@ globus_l_gfs_data_stat_kickout(
     reply.info.stat.uid = bounce_info->op->session_handle->uid;
     reply.info.stat.gid_count = bounce_info->op->session_handle->gid_count;
     reply.info.stat.gid_array = bounce_info->op->session_handle->gid_array;
+
+    /* pull response code from error */
+    if(bounce_info->final_stat && reply.result != GLOBUS_SUCCESS && 
+        (code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(reply.result))) != 0)
+    {
+        reply.code = code;
+        reply.msg = globus_error_print_friendly(
+            globus_error_peek(reply.result));
+    }
 
     if(bounce_info->op->callback != NULL)
     {
@@ -10429,32 +10499,41 @@ response_exit:
         globus_gfs_config_set_ptr("byte_transfer_count", str_transferred);
     }
 
-    reply.type = GLOBUS_GFS_OP_TRANSFER;
-    reply.id = op->id;
-    reply.result = op->cached_res;
-
-
-
 /* RIGHT HERE I CAN GET ANOTHER SEND/RECV.  LEAVES IN TE STATE */
     globus_assert(!op->writing ||
         (op->sent_partial_eof == 1 || op->stripe_count == 1 ||
         (op->node_ndx == 0 && op->eof_ready)));
 
+    reply.type = GLOBUS_GFS_OP_TRANSFER;
+    reply.id = op->id;
+    reply.result = op->cached_res;
 
-    /* DO NETLOGGER STUFF 
-     * XXX unless user has a message -- will only be a problem if a DSI
-     * is sending messages to the control channel, in which case they 
-     * just aren't compatible with the netlogger bottleneck reporting
-     */
-    if(op->user_msg == NULL)
+    /* pull response code from error */
+    if(reply.result != GLOBUS_SUCCESS && 
+        (reply.code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(reply.result))) != 0)
     {
-        reply.msg = globus_l_gfs_data_get_nl_msg(op);
+        reply.msg = globus_error_print_friendly(
+            globus_error_peek(reply.result));
     }
     else
     {
-        reply.msg = op->user_msg;
+        reply.code = op->user_code;
+
+        /* DO NETLOGGER STUFF 
+         * XXX unless user has a message -- will only be a problem if a DSI
+         * is sending messages to the control channel, in which case they 
+         * just aren't compatible with the netlogger bottleneck reporting
+         */
+        if(op->user_msg == NULL)
+        {
+            reply.msg = globus_l_gfs_data_get_nl_msg(op);
+        }
+        else
+        {
+            reply.msg = op->user_msg;
+        }
     }
-    reply.code = op->user_code;
 
     /* tell the control side the finished was called */
     if(op->callback != NULL)
@@ -11703,23 +11782,29 @@ globus_i_gfs_data_session_stop(
 {
     globus_bool_t                       free_session = GLOBUS_FALSE;
     globus_l_gfs_data_session_t *       session_handle;
+    int                                 waitcnt = 0;
+    int                                 maxwait = 100;
     GlobusGFSName(globus_i_gfs_data_session_stop);
     GlobusGFSDebugEnter();
 
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
     if(session_handle != NULL)
     {
-        globus_mutex_lock(&session_handle->mutex);
+        while(waitcnt < maxwait && !free_session)
         {
-            session_handle->ref--;
-            /* can't jsut free bcause we may be waiting on a force close */
-            if(session_handle->ref == 0)
+            globus_mutex_lock(&session_handle->mutex);
             {
-                free_session = GLOBUS_TRUE;
+                /* we must be the last ref */
+                if(session_handle->ref == 1)
+                {
+                    free_session = GLOBUS_TRUE;
+                }
             }
+            globus_mutex_unlock(&session_handle->mutex);
+            waitcnt++;
+            /* sleep .1 sec */
+            nanosleep((const struct timespec[]) {{0, 100000000L}}, NULL);
         }
-        globus_mutex_unlock(&session_handle->mutex);
-
         if(session_handle->watch_handle != 0)
         {
             globus_callback_unregister(session_handle->watch_handle, NULL, NULL, NULL);
@@ -11740,8 +11825,21 @@ globus_i_gfs_data_session_stop(
             }
             globus_l_gfs_free_session_handle(session_handle);
         }
+        else
+        {
+            session_handle->ref--;
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_INFO,
+                "Main thread was not able to call session_stop.\n");
+        }
+        if (waitcnt > 1)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_INFO,
+                "Called main session_stop after %d ticks.\n", waitcnt - 1);
+        }    
     }
-    
+
     if(globus_l_gfs_watchdog_limit)
     {
         globus_reltime_t                timer;
@@ -11752,7 +11850,6 @@ globus_i_gfs_data_session_stop(
             globus_l_gfs_data_watchdog_check,
             NULL);
     }
-
 
     GlobusGFSDebugExit();
 }
@@ -11835,6 +11932,7 @@ globus_gridftp_server_finished_command(
     char *                              command_data)
 {
     globus_l_gfs_data_cmd_bounce_t *    bounce;
+    int                                 code;
     GlobusGFSName(globus_gridftp_server_finished_command);
     GlobusGFSDebugEnter();
 
@@ -11885,12 +11983,25 @@ globus_gridftp_server_finished_command(
     bounce->op = op;
     bounce->reply.type = GLOBUS_GFS_OP_COMMAND;
     bounce->reply.id = op->id;
-    bounce->reply.code = op->user_code;
     bounce->reply.result = op->cached_res;
     bounce->reply.info.command.command = op->command;
     bounce->reply.info.command.checksum = globus_libc_strdup(op->cksm_response);
-    bounce->reply.msg = globus_libc_strdup(op->user_msg);
-        
+
+    /* pull response code from error */
+    if(result != GLOBUS_SUCCESS && 
+        (code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) != 0)
+    {
+        bounce->reply.code = code;
+        bounce->reply.msg = globus_error_print_friendly(
+            globus_error_peek(result));
+    }
+    else
+    {
+        bounce->reply.code = op->user_code;
+        bounce->reply.msg = globus_libc_strdup(op->user_msg);
+    }
+
     if(op->command == GLOBUS_GFS_CMD_MKD)
     {
         result = globus_i_gfs_data_virtualize_path(
@@ -12141,6 +12252,7 @@ globus_gridftp_server_finished_stat(
     int                                 i;
     char *                              base_path;
     globus_gfs_stat_info_t *            stat_info;
+    int                                 code;
     GlobusGFSName(globus_gridftp_server_finished_stat);
     GlobusGFSDebugEnter();
 
@@ -12748,10 +12860,10 @@ globus_gridftp_server_operation_finished(
         {
           case GLOBUS_GFS_OP_COMMAND:
             if(op->command == GLOBUS_GFS_CMD_CKSM)
-        {
-            globus_gridftp_server_intermediate_command(
-                op, result, finished_info->info.command.checksum);
-            return;
+            {
+                globus_gridftp_server_intermediate_command(
+                    op, result, finished_info->info.command.checksum);
+                return;
             }
             break;
           case GLOBUS_GFS_OP_STAT:
@@ -13193,6 +13305,21 @@ globus_gridftp_server_get_config_string(
 
     *config_string = globus_libc_strdup(
         globus_i_gfs_config_string("dsi_options"));
+
+    GlobusGFSDebugExit();
+}
+
+void
+globus_gridftp_server_get_config_data(
+    globus_gfs_operation_t              op,
+    char *                              data_id,
+    char **                             config_data)
+{
+    GlobusGFSName(globus_gridftp_server_get_config_data);
+    GlobusGFSDebugEnter();
+
+    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR,
+        "DSI config data is not supported.\n");
 
     GlobusGFSDebugExit();
 }
@@ -13896,6 +14023,7 @@ globus_gridftp_server_finished_session_start(
     char *                              home_dir)
 {
     globus_gfs_finished_info_t          finished_info;
+    int                                 code;
     GlobusGFSName(globus_gridftp_server_finished_session_start);
     GlobusGFSDebugEnter();
 
@@ -13907,6 +14035,16 @@ globus_gridftp_server_finished_session_start(
     finished_info.info.session.session_arg = session_arg;
     finished_info.info.session.username = username;
     finished_info.info.session.home_dir = home_dir;
+
+    /* pull response code from error */
+    if(result != GLOBUS_SUCCESS && 
+        (code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) != 0)
+    {
+        finished_info.code = code;
+        finished_info.msg = globus_error_print_friendly(
+            globus_error_peek(result));
+    }
 
     globus_gridftp_server_operation_finished(
         op,
@@ -13924,6 +14062,7 @@ globus_gridftp_server_finished_active_data(
     globus_bool_t                       bi_directional)
 {
     globus_gfs_finished_info_t          finished_info;
+    int                                 code;
     GlobusGFSName(globus_gridftp_server_finished_active_data);
     GlobusGFSDebugEnter();
 
@@ -13934,6 +14073,16 @@ globus_gridftp_server_finished_active_data(
     finished_info.result = result;
     finished_info.info.data.data_arg = data_arg;
     finished_info.info.data.bi_directional = bi_directional;
+
+    /* pull response code from error */
+    if(result != GLOBUS_SUCCESS && 
+        (code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) != 0)
+    {
+        finished_info.code = code;
+        finished_info.msg = globus_error_print_friendly(
+            globus_error_peek(result));
+    }
 
     globus_gridftp_server_operation_finished(
         op,
@@ -13953,6 +14102,7 @@ globus_gridftp_server_finished_passive_data(
     int                                 cs_count)
 {
     globus_gfs_finished_info_t          finished_info;
+    int                                 code;
     GlobusGFSName(globus_gridftp_server_finished_passive_data);
     GlobusGFSDebugEnter();
 
@@ -13965,6 +14115,16 @@ globus_gridftp_server_finished_passive_data(
     finished_info.info.data.bi_directional = bi_directional;
     finished_info.info.data.contact_strings = contact_strings;
     finished_info.info.data.cs_count = cs_count;
+
+    /* pull response code from error */
+    if(result != GLOBUS_SUCCESS && 
+        (code = globus_gfs_error_get_ftp_response_code(
+            globus_error_peek(result))) != 0)
+    {
+        finished_info.code = code;
+        finished_info.msg = globus_error_print_friendly(
+            globus_error_peek(result));
+    }
 
     globus_gridftp_server_operation_finished(
         op,
@@ -15285,14 +15445,4 @@ response_exit:
     GlobusGFSDebugExit();
     return result;
 }
-
-
-
-
-
-
-
-
-
-
 
