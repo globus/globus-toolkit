@@ -1444,7 +1444,7 @@ globus_i_gfs_get_full_path(
         goto check_done;
     }
 
-    DriveLetterToWin(ret_path);
+    DriveLetterToWin(*ret_path);
 
     if(*ret_path == NULL)
     {
