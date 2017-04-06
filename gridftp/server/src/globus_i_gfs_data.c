@@ -352,8 +352,6 @@ typedef struct globus_l_gfs_data_operation_s
     globus_off_t                        partial_offset;
     globus_off_t                        partial_length;
     const char *                        list_type;
-    int                                 list_depth;
-    int                                 traversal_options;
     globus_result_t                     delayed_error;
     
     char *                              user_msg;
@@ -639,6 +637,12 @@ globus_l_gfs_base64_encode(
     globus_size_t                       in_len,
     globus_byte_t *                     outbuf,
     globus_size_t *                     out_len);
+
+void
+globus_l_gfs_data_validate_stat(
+    globus_l_gfs_data_operation_t *     op,
+    globus_gfs_stat_t *                 stat_array,
+    int                                 stat_count);
 
 static
 globus_result_t
@@ -1166,7 +1170,111 @@ globus_l_gfs_data_post_transfer_event_cb(
     }
 
     return remote_data_arg;
-}    
+}
+
+typedef struct
+{
+    globus_mutex_t                      mutex;
+    globus_cond_t                       cond;
+    int                                 stat_error;
+    globus_bool_t                       done;
+} globus_l_gfs_blocking_stat_monitor_t;
+
+
+
+static
+void
+globus_l_gfs_blocking_stat_cb(
+    globus_gfs_data_reply_t *           reply,
+    void *                              user_arg)
+{
+    globus_l_gfs_blocking_stat_monitor_t *  monitor;
+    GlobusGFSName(globus_l_gfs_blocking_stat_cb);
+    GlobusGFSDebugEnter();
+
+    monitor = (globus_l_gfs_blocking_stat_monitor_t *) user_arg;
+
+    /* if the file exists */
+    globus_mutex_lock(&monitor->mutex);
+    {
+        if(reply->info.stat.stat_count == 1)
+        {
+            monitor->stat_error = reply->info.stat.stat_array[0].error;
+        }
+        monitor->done = GLOBUS_TRUE;
+        globus_cond_signal(&monitor->cond);
+    }
+    globus_mutex_lock(&monitor->mutex);
+
+    GlobusGFSDebugExit();
+}
+
+globus_result_t
+globus_i_gfs_data_check_symlink(
+    globus_l_gfs_data_session_t *       session_handle,
+    char *                              path,
+    int                                 access_type)
+{
+    globus_gfs_stat_info_t                  stat_info;
+    globus_l_gfs_blocking_stat_monitor_t    monitor;
+    globus_result_t                         result = GLOBUS_SUCCESS;
+    GlobusGFSName(globus_i_gfs_data_check_symlink);
+    GlobusGFSDebugEnter();
+    /* nothing to do here if the DSI doesn't support symlinks 
+     * and always allow deleting of invalid symlinks */
+    if(!(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_SYMLINKS) || 
+        access_type & GFS_L_SYM)
+    {
+        return GLOBUS_SUCCESS;
+    }
+    
+    globus_mutex_init(&monitor.mutex, NULL);
+    globus_cond_init(&monitor.cond, NULL);
+
+    memset(&monitor, '\0', sizeof(globus_l_gfs_blocking_stat_monitor_t));
+    memset(&stat_info, '\0', sizeof(globus_gfs_stat_info_t));
+    stat_info.pathname = path;
+    stat_info.file_only = GLOBUS_TRUE;
+    stat_info.internal = GLOBUS_TRUE;
+
+    globus_i_gfs_data_request_stat(
+        NULL,
+        session_handle,
+        0,
+        &stat_info,
+        globus_l_gfs_blocking_stat_cb,
+        &monitor);
+
+    globus_mutex_lock(&monitor.mutex);
+    {
+        while(!monitor.done)
+        {
+            globus_cond_wait(&monitor.cond, &monitor.mutex);
+        }
+    }
+    globus_mutex_unlock(&monitor.mutex);
+    
+    switch(monitor.stat_error)
+    {
+        case GLOBUS_L_SYMLINK_ERROR_ABSOLUTE:
+            result = GlobusGFSErrorUnsupportedSymlink(
+                "Absolute symlinks may not be followed.");
+            break;
+        case GLOBUS_L_SYMLINK_ERROR_ESCAPED:
+            result = globus_error_put(GlobusGFSErrorObjPermissionDenied(
+                GlobusGFSErrorObjGeneric("GridFTP-Error: Symlink path travels below /.")));
+            break;
+        default:
+            result = GLOBUS_SUCCESS;
+            break;
+    }
+
+    globus_mutex_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
+
+    return result;
+    GlobusGFSDebugExit();
+}
 
 globus_result_t
 globus_i_gfs_data_virtualize_path(
@@ -1207,7 +1315,8 @@ globus_i_gfs_data_virtualize_path(
 globus_result_t
 globus_l_gfs_normalize_path(
     const char *                        path,
-    char **                             normalized_path)
+    char **                             normalized_path,
+    globus_bool_t *                     escapes)
 {
     const char *                        in_ptr;
     const char *                        end;
@@ -1236,7 +1345,6 @@ globus_l_gfs_normalize_path(
     out_ptr = out_path;
 
     end = path + strlen(path);
-
     for(in_ptr = path + 1; in_ptr < end; in_ptr = next_sep + 1)
     {
         int                             len;
@@ -1264,6 +1372,10 @@ globus_l_gfs_normalize_path(
             case 2:
                 if(in_ptr[0] == '.' && in_ptr[1] == '.')
                 {
+                    if(out_ptr == out_path && escapes)
+                    {
+                        *escapes = GLOBUS_TRUE;
+                    }
                     while(out_ptr > out_path && *out_ptr != '/')
                     {
                         out_ptr--;
@@ -1290,7 +1402,14 @@ globus_l_gfs_normalize_path(
         *out_ptr = '\0';
     }
 
-    *normalized_path = out_path;
+    if(normalized_path)
+    {
+        *normalized_path = out_path;
+    }
+    else
+    {
+        free(out_path);
+    }
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
@@ -1429,7 +1548,7 @@ globus_i_gfs_get_full_path(
     }
     path[MAXPATHLEN - 1] = '\0';
 
-    result = globus_l_gfs_normalize_path(path, &norm_path);
+    result = globus_l_gfs_normalize_path(path, &norm_path, 0);
     if(result != GLOBUS_SUCCESS)
     {
         goto done;
@@ -1455,6 +1574,13 @@ globus_i_gfs_get_full_path(
         free(norm_path);
     }
 
+    result = globus_i_gfs_data_check_symlink(session_arg, *ret_path, access_type);
+    if(result != GLOBUS_SUCCESS)
+    {
+        free(*ret_path);
+        goto done;
+    }    
+    
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
@@ -1522,9 +1648,17 @@ globus_i_gfs_data_check_path(
             !globus_i_gfs_config_bool("rp_follow_symlinks") && 
             strcmp(start_path, "/") != 0 && 
             session_handle->dsi->realpath_func != NULL)
-        {            
-            result = session_handle->dsi->realpath_func(
-                start_path, &true_path, session_handle->session_arg);
+        {
+            /* for delete access we only want to realpath the parent dir */
+            if(access_type & GFS_L_DELETE)
+            {
+                result = GLOBUS_FAILURE;
+            }
+            else
+            {         
+                result = session_handle->dsi->realpath_func(
+                    start_path, &true_path, session_handle->session_arg);
+            }
             if(result != GLOBUS_SUCCESS)
             {
                 char *                  true_base;
@@ -1706,8 +1840,8 @@ globus_i_gfs_data_check_path(
     
             if(!allowed)
             {
-                result = GlobusGFSErrorGeneric(
-                    "Path not allowed.");
+                result = globus_error_put(GlobusGFSErrorObjPermissionDenied(
+                    GlobusGFSErrorObjGeneric("GridFTP-Error: Path not allowed.")));
                     
                 rp_list = NULL;
             }
@@ -5455,7 +5589,10 @@ globus_l_gfs_data_stat_kickout(
     {
         reply.code = 100;
     }
-        
+
+    globus_l_gfs_data_validate_stat(
+        bounce_info->op, bounce_info->stat_array, bounce_info->stat_count);
+
     reply.type = GLOBUS_GFS_OP_STAT;
     reply.id = bounce_info->op->id;
     reply.result = bounce_info->error ?
@@ -6757,6 +6894,14 @@ error_uprt:
         
         case GLOBUS_GFS_CMD_SITE_SYMLINK:
             action = GFS_ACL_ACTION_CREATE;
+            if(!(session_handle->dsi->descriptor & 
+                GLOBUS_GFS_DSI_DESCRIPTOR_SYMLINKS) ||
+                globus_i_gfs_config_int("symlink_policy") == GFS_L_SYMLINKS_NONE)
+            {
+                call = GLOBUS_FALSE;
+                result = GlobusGFSErrorUnsupportedSymlink("Symlink creation is not supported.");
+                globus_gridftp_server_finished_command(op, result, NULL);
+            }
             break;
             
         case GLOBUS_GFS_CMD_SITE_AUTHZ_ASSERT:
@@ -9008,231 +9153,15 @@ globus_l_gfs_data_list_stat_cb(
         if (!stat_info->include_path_stat || reply->info.stat.stat_count < 1)
         {
             /** MLSD or top-level error */
-        result = reply->result;
-        goto error;
-    }
-        if (!(op->traversal_options & GLOBUS_GFS_TRAVERSAL_CONTINUE)) 
-        {
-            /** MLSR failure.  We want to write out the information for
-             *  this directory and then fail. */
-            op->delayed_error = reply->result;
+            result = reply->result;
+            goto error;
         }
     }
 
     stat_array = reply->info.stat.stat_array;
     stat_count = reply->info.stat.stat_count;
     file_count = stat_count;
-    
-    if(op->list_depth != 0)
-    {
-        /** Skip the first entry if we are including the directory itself in the listing */
-        int base_entry = 0;
-           
-        /** Correct for path which pointed to a single file */     
-        if(stat_count == 1 && op->current_path && op->current_path->subpath)
-        {
-            int plen = strlen(op->current_path->subpath);
-            int nlen = strlen(stat_array[0].name);
-            if(plen > nlen && strcmp(&op->current_path->subpath[plen-nlen], stat_array[0].name) == 0)
-            {
-                op->current_path->subpath[plen-nlen-1] = '\0';
-            }    
-        }
-
-        if (stat_info->include_path_stat && stat_count > 0 && S_ISDIR(stat_array[0].mode))
-        {
-            if (op->current_path) 
-            {
-                stat_array[0].name[0] = '\0';
-            }
-            else
-            {
-                stat_array[0].name[0] = '.';
-                stat_array[0].name[1] = '\0';
-            }
-            ++base_entry;
-        }
         
-        /** Move unwanted directory entries to the end and add them to the path */
-        for (i = base_entry; i < file_count;)
-        {
-            if (S_ISDIR(stat_array[i].mode) && 
-                (stat_info->include_path_stat ||
-                    (stat_array[i].name[0] == '.' &&
-                     (stat_array[i].name[1] == '\0' || (stat_array[i].name[1] == '.' && stat_array[i].name[2] == '\0')))))
-            {
-                /** Swap with item at end */
-                /* XXX overlapping copy here */
-                memcpy(&stat_temp, &stat_array[i], sizeof(globus_gfs_stat_t));
-                memcpy(&stat_array[i], &stat_array[file_count-1], sizeof(globus_gfs_stat_t));
-                memcpy(&stat_array[file_count-1], &stat_temp, sizeof(globus_gfs_stat_t));
-                /** Decrement effective count */
-                --file_count;    
-            }
-            else
-            {
-                ++i;
-            }   
-        }
-        
-        dirlen = strlen(stat_info->pathname);
-        baselen = op->current_path ? 
-            (strlen(op->current_path->pathname) - strlen(op->current_path->subpath)) : 
-            (dirlen + 1);
-        
-        /** Add directories, minus the current (.) and parent (..), to the list
-         *  of paths to be explored.  Paths should be added at the end of the list. */
-        for (i = base_entry; i < stat_count; ++i)
-        {
-            globus_l_gfs_data_path_list_t* newpath = NULL;
-            
-            /** If we are to follow symbolic links, create a new traversal path for each */
-            if ((op->traversal_options & GLOBUS_GFS_TRAVERSAL_FOLLOW_SYMLINKS) && 
-                stat_array[i].symlink_target &&
-                stat_array[i].error != GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_INVALIDLINK) 
-            {
-                newpath = (globus_l_gfs_data_path_list_t*)globus_malloc(sizeof(globus_l_gfs_data_path_list_t));
-                if (newpath)
-                {
-                    newpath->pathname = globus_libc_strdup(stat_array[i].symlink_target);
-                    newpath->subpath = newpath->pathname;
-                }
-                else
-                {
-                    goto error;
-                }                  
-            } 
-            /** Create new traversal paths for subdirectories (ignore . and ..) */
-            else if (S_ISDIR(stat_array[i].mode) &&
-                (stat_array[i].name[0] != '.' || 
-                 (stat_array[i].name[1] != '\0' && (stat_array[i].name[1] != '.' || stat_array[i].name[2] != '\0'))))
-            {
-                newpath = (globus_l_gfs_data_path_list_t*)globus_malloc(sizeof(globus_l_gfs_data_path_list_t));
-                if (newpath)
-                {
-                    newpath->pathname = (char *)globus_malloc(dirlen + strlen(stat_array[i].name) + 2);                    
-                    sprintf(newpath->pathname, "%s/%s", stat_info->pathname, stat_array[i].name);
-                    newpath->subpath = &newpath->pathname[baselen]; 
-                }
-                else
-                {
-                    goto error;
-                }
-            }
-
-            if (newpath) 
-            {
-                /*
-                 * This section does cycle and duplicate path detection.  We only need to do
-                 * this when symbolic link traversal is on (shouldn't happen otherwise, unless
-                 * someone's done something nasty with hard links).
-                 * 
-                 * We check symbolic link targets against a set of "root paths", which are either
-                 * the base root the MLSR was started with, or other link targets.  If a root is 
-                 * entirely contained in a target, we'll already catch it, so no need to add it.
-                 * 
-                 * If the target is entirely contained in a root, then we have a cycle, and we 
-                 * mark the path as such.  
-                 * 
-                 * When expanding directories, if the parent is marked as having a cycle, we
-                 * check the subdirectory.  If the subdirectory still has a cycle, it is marked
-                 * as such--however, if it doesn't then we can avoid the cycle check for future
-                 * directory expansions below that point.
-                 *
-                 * Symbolic link targets which need to be explored AND are not links to files
-                 * are added to the root path list as well as the traveral queue.
-                 */
-                if (op->traversal_options & GLOBUS_GFS_TRAVERSAL_FOLLOW_SYMLINKS)
-                {
-                    globus_l_gfs_data_path_list_t* iter; 
-                    int newpathlen = strlen(newpath->pathname);               
-                                    
-                    newpath->has_cycle = GLOBUS_FALSE;
-                    
-                    /** For symbolic links, validate the path--we don't want any duplicated paths */
-                    if (stat_array[i].symlink_target)
-                    {
-                        for (iter = op->root_paths; iter && newpath; iter = iter->next)
-                        {
-                            int ipathlen = strlen(iter->pathname);
-                            if (strncmp(iter->pathname, newpath->pathname, ipathlen) == 0 &&
-                                (newpath->pathname[ipathlen] == '/' || newpath->pathname[ipathlen] == '\0'))
-                            {
-                                /** No good, we will/have already explored this path */
-                                globus_free(newpath->pathname);
-                                globus_free(newpath);
-                                newpath = NULL;
-                            }
-                            else if(strncmp(iter->pathname, newpath->pathname, newpathlen) == 0 &&
-                                (iter->pathname[newpathlen] == '/' || iter->pathname[newpathlen] == '\0'))
-                            {
-                                /** This target has a cycle */
-                                newpath->has_cycle = GLOBUS_TRUE;                            
-                            }
-                        }
-                    }
-                    else if (op->current_path && op->current_path->has_cycle)
-                    {
-                        /** For directory expansion of a "dangerous" item, we need to check if we've hit a cycle */
-                        for (iter = op->root_paths; iter && newpath; iter = iter->next)
-                        {
-                            if (strcmp(iter->pathname, newpath->pathname) == 0)
-                            {
-                                /** No good, we have already explored this path */
-                                globus_free(newpath->pathname);
-                                globus_free(newpath);
-                                newpath = NULL;
-                            } 
-                            else if(strncmp(iter->pathname, newpath->pathname, newpathlen) == 0 &&
-                                (iter->pathname[newpathlen] == '/' || iter->pathname[newpathlen] == '\0'))
-                            {
-                                newpath->has_cycle = GLOBUS_TRUE;
-                            }
-                        }
-                    }
-                }
-                
-                /** Add the path to the traversal list */
-                if (newpath) 
-                {
-                    if (stat_array[i].symlink_target)
-                    {
-                        globus_l_gfs_data_path_list_t** ppiter;
-                        
-                        /** Append symlink targets to the end of the traversal queue */
-                        newpath->next = NULL;                 
-                        for (ppiter = &op->path_list; *ppiter; ppiter = &((*ppiter)->next)) ;
-                        *ppiter = newpath;  
-                         
-                        /** Symbolic links to directories should be added to the root list. */
-                        if (S_ISDIR(stat_array[i].link_mode))
-                        {
-                            globus_l_gfs_data_path_list_t* newroot = NULL;
-                            newroot = (globus_l_gfs_data_path_list_t*)globus_malloc(sizeof(globus_l_gfs_data_path_list_t));
-                            if (newroot)
-                            {
-                                newroot->pathname = globus_libc_strdup(newpath->pathname);
-                                newroot->subpath = NULL;
-                                newroot->next = op->root_paths;
-                                op->root_paths = newroot; 
-                            } 
-                            else
-                            {
-                                goto error;
-                            }
-                        }
-                    } 
-                    else 
-                    {
-                        /** Prepend directory expansion targets to the head of the queue */
-                        newpath->next = op->path_list;
-                        op->path_list = newpath;
-                    }
-                }               
-            }
-        }
-    }
-    
     globus_mutex_lock(&op->stat_lock);
     if(!op->begin_called)
     {
@@ -9447,8 +9376,6 @@ globus_i_gfs_data_request_list(
     data_op->data_handle = data_handle;
     data_op->data_arg = list_info->data_arg;
     data_op->list_type = strdup(list_info->list_type);
-    data_op->list_depth = list_info->list_depth;
-    data_op->traversal_options = list_info->traversal_options;
     data_op->delayed_error = GLOBUS_SUCCESS;
     data_op->uid = getuid();
     /* XXX */
@@ -9504,34 +9431,11 @@ globus_i_gfs_data_request_list(
 
         stat_info->pathname = list_info->pathname;
         stat_info->file_only = GLOBUS_FALSE;
-        stat_info->use_symlink_info = data_op->list_depth != 0;
-        stat_info->include_path_stat = data_op->list_depth != 0;        
+        stat_info->use_symlink_info = 0;
+        stat_info->include_path_stat = 0;        
 
         data_op->info_struct = list_info;
         data_op->stat_wrapper = stat_info;
-
-        if(data_op->list_depth != 0)
-        {
-            int len;
-
-            data_op->root_paths = (globus_l_gfs_data_path_list_t*)globus_malloc(sizeof(globus_l_gfs_data_path_list_t));
-            if (!data_op->root_paths)
-            {
-                goto error_op;
-            }
-
-            /**
-            *** Trim any trailing '/'
-            **/            
-            len = strlen(stat_info->pathname);
-            if(len > 0 && stat_info->pathname[len - 1] == '/')
-            {
-                stat_info->pathname[len - 1] = '\0';
-            }
-
-            data_op->root_paths->pathname = globus_libc_strdup(stat_info->pathname);
-            data_op->root_paths->next = NULL;
-        }
 
         globus_i_gfs_data_request_stat(
             ipc_handle,
@@ -12243,6 +12147,105 @@ globus_gridftp_server_intermediate_command(
     GlobusGFSDebugExit();
 }
 
+void
+globus_l_gfs_data_validate_stat(
+    globus_l_gfs_data_operation_t *     op,
+    globus_gfs_stat_t *                 stat_array,
+    int                                 stat_count)
+{
+    globus_bool_t                       no_absolute = GLOBUS_FALSE;
+    globus_bool_t                       no_escape = GLOBUS_FALSE;
+    int                                 policy;
+    int                                 i;
+    const char *                        root = "/";
+    GlobusGFSName(globus_l_gfs_data_validate_stat);
+    GlobusGFSDebugEnter();
+
+    /* nothing to do here if the DSI doesn't support symlinks */
+    if(!(op->session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_SYMLINKS) ||
+    !(op->session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH))
+    {
+        return;
+    }
+
+    policy = globus_i_gfs_config_int("symlink_policy");
+    if(op->session_handle->sharing_id)
+    {
+        no_absolute = GLOBUS_TRUE;
+        no_escape = GLOBUS_TRUE;
+    }
+    root = op->session_handle->chroot_path ? op->session_handle->chroot_path : "/";
+
+    for(i = 0; i < stat_count; i++)
+    {
+        if(stat_array[i].symlink_target != NULL)
+        {
+            if(no_absolute && *(stat_array[i].symlink_target) == '/')
+            {
+                stat_array[i].error = GLOBUS_L_SYMLINK_ERROR_ABSOLUTE;
+                stat_array[i].mode = stat_array[i].link_mode;
+                stat_array[i].size = strlen(stat_array[i].symlink_target);
+            }
+            else if(no_escape)
+            {
+                globus_bool_t               escapes = GLOBUS_FALSE;
+                char *                      true_path = NULL;
+                char *                      tmp_path = NULL;
+                globus_gfs_stat_info_t *    stat_info;
+                int                         rootlen;
+                int                         maxlen;
+                char *                      file;
+                
+                /* get realpath of the parent dir as a base to normalize any symlinks */
+                stat_info = (globus_gfs_stat_info_t *) op->info_struct;
+                if(op->session_handle->dsi->realpath_func(
+                    stat_info->pathname, &true_path, op->session_handle->session_arg) != GLOBUS_SUCCESS)
+                {
+                    true_path = strdup(stat_info->pathname);
+                }
+
+                rootlen = strlen(root);
+                maxlen = strlen(true_path) + strlen(stat_array[i].symlink_target) + 2;
+                /* if the realpath lands out of the root altogether, this symlink is invalid */
+                if(strncmp(true_path, root, rootlen) == 0)
+                {
+                    tmp_path = malloc(maxlen);
+                    if(!stat_info->file_only)
+                    {
+                        sprintf(tmp_path, "/%s/%s", true_path + rootlen, stat_array[i].symlink_target);
+                    }
+                    else
+                    {
+                        file = strrchr(true_path + rootlen, '/');
+                        if(!file)
+                        {
+                            sprintf(tmp_path, "/%s", stat_array[i].symlink_target);
+                        }
+                        else
+                        {
+                             sprintf(tmp_path, "/%.*s/%s", 
+                                file - (true_path + rootlen), 
+                                true_path + rootlen, 
+                                stat_array[i].symlink_target);
+                        }
+                    }
+                }
+                if(!tmp_path || 
+                    globus_l_gfs_normalize_path(tmp_path, NULL, &escapes) != GLOBUS_SUCCESS 
+                    || escapes)
+                {
+                    stat_array[i].error = GLOBUS_L_SYMLINK_ERROR_ESCAPED;
+                    stat_array[i].mode = stat_array[i].link_mode;
+                    stat_array[i].size = strlen(stat_array[i].symlink_target);
+                }
+                free(tmp_path);
+                free(true_path);
+            }
+        }
+    }
+    
+    return;
+}
 void
 globus_gridftp_server_finished_stat(
     globus_gfs_operation_t              op,

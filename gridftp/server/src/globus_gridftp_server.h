@@ -768,6 +768,7 @@ typedef globus_result_t
 #define GLOBUS_GFS_DSI_DESCRIPTOR_REQUIRES_ORDERED_DATA         (1 << 3)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SETS_ERROR_RESPONSES          (1 << 4)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SAFE_RDEL                     (1 << 5)
+#define GLOBUS_GFS_DSI_DESCRIPTOR_SYMLINKS                      (1 << 6)
 
 /*
  *  globus_gfs_storage_iface_t
@@ -1641,6 +1642,14 @@ globus_i_gfs_error_system(int ftp_code, int system_errno, const char *fmt, ...);
         globus_error_put(GlobusGFSErrorObjCRLError(NULL))
 #define GlobusGFSErrorObjCRLError(cause)                                    \
         GlobusGFSErrorObj((cause), 530, "CRL_ERROR", NULL)
+
+#define GlobusGFSErrorUnsupportedSymlink(_str)                              \
+        globus_error_put(GlobusGFSErrorObjUnsupportedSymlink(NULL, (_str))) 
+#define GlobusGFSErrorObjUnsupportedSymlink(cause, _str)                    \
+        GlobusGFSErrorObj((cause), 500, "UNSUPPORTED_SYMLINK_TYPE",         \
+                "%s%s",                                                     \
+                ((_str) != NULL) ? "GridFTP-Error: " : "",                  \
+                ((_str) != NULL) ? _str : "")
 
 #define GlobusGFSErrorInternalError(generic_string)                         \
         globus_error_put(GlobusGFSErrorObjInternalError(                    \

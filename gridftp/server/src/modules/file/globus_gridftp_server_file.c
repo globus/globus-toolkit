@@ -665,16 +665,44 @@ globus_l_gfs_file_realpath(
 {
     globus_result_t                     result;
     char                                resolved[MAXPATHLEN];
-    GlobusGFSName(globus_l_gfs_file_stat);
+    char *                              ret;
+    char *                              dir_path = NULL;
+    char *                              file_ptr = NULL;
+    size_t                              len;
+    GlobusGFSName(globus_l_gfs_file_realpath);
     GlobusGFSFileDebugEnter();
     
-    if(realpath(in_path, resolved) == NULL)
+    ret = realpath(in_path, resolved);
+    if(!ret)
     {
-        result = GlobusGFSErrorSystemError("realpath", errno);
-        goto error;
+        if(errno != ENOENT)
+        {
+            result = GlobusGFSErrorSystemError("realpath", errno);
+            goto error;
+        }
+        dir_path = strdup(in_path);
+        file_ptr = strrchr(dir_path, '/');
+        if(file_ptr > dir_path)
+        {
+            *file_ptr++ = '\0';
+            ret = realpath(dir_path, resolved);
+            if(!ret)
+            {
+                free(dir_path);
+                result = GlobusGFSErrorSystemError("realpath", errno);
+                goto error;
+            }
+        }
     }
-    *out_path = globus_libc_strdup(resolved);
-
+    if(file_ptr)
+    {
+        *out_path = globus_common_create_string("%s/%s", resolved, file_ptr);
+        free(dir_path);
+    }
+    else
+    {
+        *out_path = globus_libc_strdup(resolved);
+    }
     GlobusGFSFileDebugExit();
     return GLOBUS_SUCCESS;
 
@@ -768,8 +796,9 @@ globus_l_gfs_file_stat(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     struct stat                         stat_buf;
-    struct stat                         link_stat_buf;
     globus_gfs_stat_t *                 stat_array;
+    mode_t                              link_mode;
+    int                                 nchars;
     int                                 stat_count = 0;
     int                                 total_stat_count = 0;
     DIR *                               dir;
@@ -784,37 +813,27 @@ globus_l_gfs_file_stat(
     /* lstat is the same as stat when not operating on a link */
     if(lstat(stat_info->pathname, &stat_buf) != 0)
     {
-        result = GlobusGFSErrorSystemError("stat", errno);
+        result = GlobusGFSErrorSystemError("lstat", errno);
         goto error_stat1;
     }
-    /* if this is a link we still need to stat to get the info we are 
-        interested in and then use realpath() to get the full path of 
-        the symlink target */
+    /* if this is a symlinklink we stat to get the real file info and readlink to
+     * get the symlink target */
     *symlink_target = '\0';
     if(S_ISLNK(stat_buf.st_mode))
     {
-        int stat_result = 0;
-        
-        if(stat_info->use_symlink_info)
+        link_mode = stat_buf.st_mode;
+        nchars = readlink(stat_info->pathname, symlink_target, MAXPATHLEN);
+        if (nchars <= 0 || nchars > MAXPATHLEN) 
         {
-            memset(&link_stat_buf, 0, sizeof(struct stat));
-            stat_result = stat(stat_info->pathname, &link_stat_buf);
-        } 
-        else if(stat(stat_info->pathname, &stat_buf) != 0)
-        {
-            result = GlobusGFSErrorSystemError("stat", errno);
+            result = GlobusGFSErrorSystemError(
+                "readlink", nchars < 0 ? ENAMETOOLONG : errno);
             goto error_stat1;
         }
+        symlink_target[nchars] = '\0';
         
-        if(stat_result < 0 || realpath(stat_info->pathname, symlink_target) == NULL)
+        /* if stat fails we return the link info */
+        if(stat(stat_info->pathname, &stat_buf) != 0)
         {
-            int nchars = readlink(stat_info->pathname, symlink_target, MAXPATHLEN);
-            if (nchars < 0) 
-        {
-            result = GlobusGFSErrorSystemError("realpath", errno);
-            goto error_stat1;
-        }
-            symlink_target[nchars] = '\0';
             base_error = GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_INVALIDLINK;
         }
     }    
@@ -831,7 +850,7 @@ globus_l_gfs_file_stat(
         }
         
         globus_l_gfs_file_copy_stat(
-            stat_array, &stat_buf, filename, symlink_target, link_stat_buf.st_mode, base_error);
+            stat_array, &stat_buf, filename, symlink_target, link_mode, base_error);
         stat_count = 1;
     }
     else
@@ -848,7 +867,6 @@ globus_l_gfs_file_stat(
         stat_limit_time = time(NULL) + GFS_STAT_TIME;
     
         stat_count = stat_info->include_path_stat ? 1 : 0;
-
     
         {
             if(stat_info->pathname && 
@@ -1115,44 +1133,33 @@ done_fake:
             {
                 result = GlobusGFSErrorSystemError("lstat", errno);
                 globus_free(dir_entry);
-                /* just skip invalid entries */
-                continue;
+                /* return error on any lstat failures */
+                goto error_stat1;
             }
-            /* if this is a link we still need to stat to get the info we are 
-                interested in and then use realpath() to get the full path of 
-                the symlink target */
+            /* if this is a symlink we stat to get the real file info and readlink to
+             * get the symlink target */
             *symlink_target = '\0';
             if(S_ISLNK(stat_buf.st_mode))
             {
-                int stat_result = 0;
-            
-                if(stat_info->use_symlink_info)
+                link_mode = stat_buf.st_mode;
+                nchars = readlink(path, symlink_target, MAXPATHLEN);
+                if (nchars <= 0 || nchars > MAXPATHLEN) 
                 {
-                    memset(&link_stat_buf, 0, sizeof(struct stat));
-                    stat_result = stat(path, &link_stat_buf);
+                    result = GlobusGFSErrorSystemError(
+                        "readlink", nchars < 0 ? ENAMETOOLONG : errno);
+                    goto error_stat1;
                 }
-                else if(stat(path, &stat_buf) != 0)
+                symlink_target[nchars] = '\0';
+                
+                /* if stat fails we return the link info */
+                if(stat(path, &stat_buf) != 0)
                 {
-                    globus_free(dir_entry);
-                    /* just skip invalid entries */
-                    continue;
-                }
-                if(stat_result < 0 || realpath(path, symlink_target) == NULL)
-                {
-                    int nchars = readlink(path, symlink_target, MAXPATHLEN);
-                    if (nchars < 0)
-                    {
-                        globus_free(dir_entry);
-                        /* just skip invalid entries */
-                        continue;
-                    }
-                    symlink_target[nchars] = '\0';
                     base_error = GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_INVALIDLINK;
                 }
-            }
+            }    
             
             globus_l_gfs_file_copy_stat(
-                    &stat_array[i], &stat_buf, dir_entry->d_name, symlink_target, link_stat_buf.st_mode, base_error);
+                    &stat_array[i], &stat_buf, dir_entry->d_name, symlink_target, link_mode, base_error);
             
             /* set nlink to total files in dir for . entry */
             if(check_cdir && dir_entry->d_name && 
@@ -1374,7 +1381,7 @@ globus_l_gfs_file_delete_dir(
     /* lstat is the same as stat when not operating on a link */
     if(lstat(pathname, &stat_buf) != 0)
     {
-        result = GlobusGFSErrorSystemError("stat", errno);
+        result = GlobusGFSErrorSystemError("lstat", errno);
         goto error_stat;
     }
     
@@ -1670,22 +1677,49 @@ error:
 static
 globus_result_t
 globus_l_gfs_file_symlink(
-    globus_gfs_operation_t   op,
-    const char *                        reference_path,
-    const char *                        pathname)
+    globus_gfs_operation_t              op,
+    const char *                        target,
+    const char *                        linkpath)
 {
     int                                 rc;
     globus_result_t                     result;
+    struct stat                         stat_buf;
     GlobusGFSName(globus_l_gfs_file_symlink);
     GlobusGFSFileDebugEnter();
 
-    rc = symlink(reference_path, pathname);
+    /* if linkpath exists and is not a symlink, error.
+     * else create new symlink. */
+    rc = lstat(linkpath, &stat_buf);
+    if(rc == 0)
+    {   
+        if(S_ISLNK(stat_buf.st_mode))
+        {
+            rc = unlink(linkpath);
+            if(rc != 0)
+            {
+                result = GlobusGFSErrorSystemError("unlink", errno);
+                goto error;
+            }
+        }
+        else
+        {
+            result = GlobusGFSErrorPathExists(linkpath);
+            goto error;
+        }
+    }
+    else if(errno != ENOENT)
+    {
+        result = GlobusGFSErrorSystemError("lstat", errno);
+        goto error;
+    }
+
+    rc = symlink(target, linkpath);
     if(rc != 0)
     {
         result = GlobusGFSErrorSystemError("symlink", errno);
         goto error;
     }
-    
+
     globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, NULL);
         
     GlobusGFSFileDebugExit();
@@ -3427,7 +3461,9 @@ globus_l_gfs_file_deactivate(void);
 
 static globus_gfs_storage_iface_t       globus_l_gfs_file_dsi_iface = 
 {
-    GLOBUS_GFS_DSI_DESCRIPTOR_SENDER | GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH,
+    GLOBUS_GFS_DSI_DESCRIPTOR_SENDER | 
+    GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH |
+    GLOBUS_GFS_DSI_DESCRIPTOR_SYMLINKS,
     globus_l_gfs_file_init,
     globus_l_gfs_file_destroy,
     NULL, /* list */

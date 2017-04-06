@@ -170,10 +170,19 @@ globus_i_gfs_kv_replaceval(
 char *
 globus_i_gfs_data_dsi_version();
 
-#define GFS_L_READ  1<<0
-#define GFS_L_WRITE 1<<1
-#define GFS_L_LIST  1<<2
-#define GFS_L_DIR   1<<3
-#define GFS_L_NONE  1<<4
+#define GFS_L_READ    1<<0
+#define GFS_L_WRITE   1<<1
+#define GFS_L_LIST    1<<2
+#define GFS_L_DIR     1<<3
+#define GFS_L_NONE    1<<4
+#define GFS_L_DELETE  1<<5
+#define GFS_L_SYM     1<<6
+
+#define GFS_L_SYMLINKS_NONE 0
+#define GFS_L_SYMLINKS_REL 1
+#define GFS_L_SYMLINKS_ALL 2
+
+#define GLOBUS_L_SYMLINK_ERROR_ABSOLUTE 10
+#define GLOBUS_L_SYMLINK_ERROR_ESCAPED  11
 
 #endif
