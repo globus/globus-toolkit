@@ -193,8 +193,7 @@ typedef enum globus_i_gsc_op_type_e
     GLOBUS_L_GSC_OP_TYPE_DESTROY,
     GLOBUS_L_GSC_OP_TYPE_LIST,
     GLOBUS_L_GSC_OP_TYPE_NLST,
-    GLOBUS_L_GSC_OP_TYPE_MLSD,
-    GLOBUS_L_GSC_OP_TYPE_MLSR
+    GLOBUS_L_GSC_OP_TYPE_MLSD
 } globus_i_gsc_op_type_t;
 
 typedef struct globus_i_gsc_event_data_s

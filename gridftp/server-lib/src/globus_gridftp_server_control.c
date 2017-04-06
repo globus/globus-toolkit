@@ -3023,7 +3023,7 @@ globus_gridftp_server_control_start(
     server_handle->opts.passive_only = GLOBUS_FALSE;
     server_handle->opts.layout = 0;
     server_handle->opts.block_size = 0;
-    server_handle->opts.mlsr_traversal_options = GLOBUS_GFS_TRAVERSAL_CONTINUE;
+    server_handle->opts.mlsr_traversal_options = 0;
 
     /* default state */
     server_handle->modes = globus_libc_strdup(i_attr->modes);
@@ -4015,7 +4015,14 @@ globus_i_gsc_mlsx_line_single(
                 }
                 else if(S_ISLNK(stat_info->mode)) 
                 {
-                    sprintf(tmp_ptr, "Type=slink;");
+                    if(stat_info->error)
+                    {
+                        sprintf(tmp_ptr, "Type=invalid_symlink;");
+                    }
+                    else
+                    {
+                        sprintf(tmp_ptr, "Type=slink;");
+                    }
                 }
                 else if(S_ISCHR(stat_info->mode))
                 {
@@ -4217,6 +4224,7 @@ globus_i_gsc_mlsx_line_single(
         tmp_ptr += strlen(tmp_ptr);
     }
     
+#if 0
     switch (stat_info->error) 
     {
         case GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_SUCCESS:
@@ -4230,7 +4238,8 @@ globus_i_gsc_mlsx_line_single(
             tmp_ptr += strlen(tmp_ptr);
             break;
     }
-    
+#endif
+
     if(base_path) 
     {
         if(stat_info->name[0] == '\0')
@@ -4910,9 +4919,6 @@ globus_i_gsc_list(
         case GLOBUS_L_GSC_OP_TYPE_NLST:
             fact_str = "NLST:";
             break;
-
-        case GLOBUS_L_GSC_OP_TYPE_MLSR:
-            depth = -1;
             
         case GLOBUS_L_GSC_OP_TYPE_MLSD:
         default:
@@ -5234,7 +5240,6 @@ globus_l_gsc_internal_cb_kickout(
         case GLOBUS_L_GSC_OP_TYPE_LIST:
         case GLOBUS_L_GSC_OP_TYPE_NLST:
         case GLOBUS_L_GSC_OP_TYPE_MLSD:
-        case GLOBUS_L_GSC_OP_TYPE_MLSR:
             op->transfer_cb(
                 op,
                 op->response_type,
@@ -5647,8 +5652,7 @@ globus_gridftp_server_control_begin_transfer(
         op->type != GLOBUS_L_GSC_OP_TYPE_RECV &&
         op->type != GLOBUS_L_GSC_OP_TYPE_LIST &&
         op->type != GLOBUS_L_GSC_OP_TYPE_NLST &&
-        op->type != GLOBUS_L_GSC_OP_TYPE_MLSD &&
-        op->type != GLOBUS_L_GSC_OP_TYPE_MLSR) 
+        op->type != GLOBUS_L_GSC_OP_TYPE_MLSD) 
     {
         return GlobusGridFTPServerErrorParameter("op");
     }
@@ -5698,8 +5702,7 @@ globus_gridftp_server_control_finished_transfer(
         op->type != GLOBUS_L_GSC_OP_TYPE_RECV &&
         op->type != GLOBUS_L_GSC_OP_TYPE_LIST &&
         op->type != GLOBUS_L_GSC_OP_TYPE_NLST &&
-        op->type != GLOBUS_L_GSC_OP_TYPE_MLSD &&
-        op->type != GLOBUS_L_GSC_OP_TYPE_MLSR) 
+        op->type != GLOBUS_L_GSC_OP_TYPE_MLSD) 
     {
         return GlobusGridFTPServerErrorParameter("op");
     }
@@ -5848,8 +5851,7 @@ globus_gridftp_server_control_events_enable(
         op->type != GLOBUS_L_GSC_OP_TYPE_RECV &&
         op->type != GLOBUS_L_GSC_OP_TYPE_LIST &&
         op->type != GLOBUS_L_GSC_OP_TYPE_NLST &&
-        op->type != GLOBUS_L_GSC_OP_TYPE_MLSD &&
-        op->type != GLOBUS_L_GSC_OP_TYPE_MLSR) 
+        op->type != GLOBUS_L_GSC_OP_TYPE_MLSD) 
     {
         res = GlobusGridFTPServerErrorParameter("op");
         goto error_param;

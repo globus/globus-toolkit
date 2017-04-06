@@ -1533,38 +1533,11 @@ globus_l_gsc_cmd_opts(
         }
     }
     else if(strcmp("MLST", cmd_a[1]) == 0 || 
-            strcmp("MLSD", cmd_a[1]) == 0 ||
-            strcmp("MLSR", cmd_a[1]) == 0)
-    {
-        globus_bool_t                   mlsr_options = GLOBUS_FALSE;
-        
+            strcmp("MLSD", cmd_a[1]) == 0)
+    {        
         for(tmp_ptr = cmd_a[2]; *tmp_ptr != '\0'; tmp_ptr++)
         {
             *tmp_ptr = tolower(*tmp_ptr);
-        }
-        /** Pull out specific MLSR options */
-        if(strcmp("MLSR", cmd_a[1]) == 0)
-        {
-            if(strstr(cmd_a[2], "onerror=continue"))
-            {
-                opts->mlsr_traversal_options |= GLOBUS_GFS_TRAVERSAL_CONTINUE;
-                mlsr_options = GLOBUS_TRUE;
-            } 
-            else if(strstr(cmd_a[2], "onerror=fail"))
-            {
-                opts->mlsr_traversal_options &= ~GLOBUS_GFS_TRAVERSAL_CONTINUE;
-                mlsr_options = GLOBUS_TRUE;
-            }            
-            if(strstr(cmd_a[2], "traversesymboliclinks=true"))
-            {
-                opts->mlsr_traversal_options |= GLOBUS_GFS_TRAVERSAL_FOLLOW_SYMLINKS;
-                mlsr_options = GLOBUS_TRUE;
-            } 
-            else if(strstr(cmd_a[2], "traversesymboliclinks=false"))
-            {
-                opts->mlsr_traversal_options &= ~GLOBUS_GFS_TRAVERSAL_FOLLOW_SYMLINKS;
-                mlsr_options = GLOBUS_TRUE;
-            }            
         }
         /** Parse out common options */
         tmp_ptr = opts->mlsx_fact_str;
@@ -1635,10 +1608,6 @@ globus_l_gsc_cmd_opts(
         }
         *tmp_ptr = '\0';
         msg = _FSMSL("200 OPTS Command Successful.\r\n");
-        if(tmp_ptr != opts->mlsx_fact_str || !mlsr_options)
-        {
-            *tmp_ptr = '\0';
-        }
     }
     else
     {
@@ -2769,7 +2738,6 @@ globus_l_gsc_cmd_transfer(
         case GLOBUS_L_GSC_OP_TYPE_NLST:
         case GLOBUS_L_GSC_OP_TYPE_LIST:
         case GLOBUS_L_GSC_OP_TYPE_MLSD:
-        case GLOBUS_L_GSC_OP_TYPE_MLSR:
             res = globus_i_gsc_list(
                 wrapper->op,
                 wrapper->path,
@@ -2951,10 +2919,6 @@ globus_l_gsc_cmd_stor_retr(
     else if(strcmp(cmd_a[0], "MLSD") == 0)
     {
         wrapper->type = GLOBUS_L_GSC_OP_TYPE_MLSD;
-    }
-    else if(strcmp(cmd_a[0], "MLSR") == 0)
-    {
-        wrapper->type = GLOBUS_L_GSC_OP_TYPE_MLSR;
     }
     else
     {
@@ -3383,16 +3347,6 @@ globus_i_gsc_add_commands(
 
     globus_gsc_959_command_add(
         server_handle,
-        "MLSR",
-        globus_l_gsc_cmd_stor_retr,
-        GLOBUS_GSC_COMMAND_POST_AUTH,
-        1,
-        2,
-        "MLSR [<sp> <filename>]",
-        NULL);
-
-    globus_gsc_959_command_add(
-        server_handle,
         "MLST",
         globus_l_gsc_cmd_stat,
         GLOBUS_GSC_COMMAND_POST_AUTH,
@@ -3749,5 +3703,4 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "LANG EN");    
     globus_gridftp_server_control_add_feature(server_handle, "UTF8");
     globus_gridftp_server_control_add_feature(server_handle, "MLSC");
-    globus_gridftp_server_control_add_feature(server_handle, "MLSR");
 }
