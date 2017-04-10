@@ -6,7 +6,7 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	11.8
+Version:	12.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -25,7 +25,7 @@ Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Requires:       globus-xio-udt-driver%{?_isa} >= 1
 %endif
 
-BuildRequires:	globus-gridftp-server-control-devel >= 4
+BuildRequires:	globus-gridftp-server-control-devel >= 5
 BuildRequires:	globus-usage-devel >= 3
 BuildRequires:	globus-xio-gsi-driver-devel >= 2
 BuildRequires:	globus-xio-devel >= 5
@@ -33,7 +33,7 @@ BuildRequires:	globus-authz-devel >= 2
 BuildRequires:	globus-gfork-devel >= 3
 BuildRequires:	globus-ftp-control-devel >= 7
 BuildRequires:	globus-gss-assist-devel >= 9
-BuildRequires:  globus-common-progs >= 16
+BuildRequires:  globus-common-progs >= 17
 BuildRequires:	globus-gsi-credential-devel >= 6
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  zlib-devel
@@ -85,7 +85,7 @@ Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 Summary:	Globus Toolkit - Globus GridFTP Server Development Files
 Group:		Development/Libraries
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
-Requires:	globus-gridftp-server-control-devel%{?_isa} >= 4
+Requires:	globus-gridftp-server-control-devel%{?_isa} >= 5
 Requires:	globus-usage-devel%{?_isa} >= 3
 Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-xio-devel%{?_isa} >= 5
@@ -230,6 +230,11 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Apr 10 2017 Globus Toolkit <support@globus.org> - 12.0-1
+- Fix MDTM/UTIME on windows
+- New error message format
+- Configuration database
+
 * Fri Oct 28 2016 Globus Toolkit <support@globus.org> - 11.8-1
 - better MFMT fix for windows directories.  prior fix resulted in MDTM not matching MFMT depending on DST.
 

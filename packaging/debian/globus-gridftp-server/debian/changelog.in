@@ -1,3 +1,11 @@
+globus-gridftp-server (12.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix MDTM/UTIME on windows
+  * New error message format
+  * Configuration database
+
+ -- Globus Toolkit <support@globus.org>  Mon, 10 Apr 2017 11:41:34 -0400
+
 globus-gridftp-server (11.8-1+gt6.@distro@) @distro@; urgency=low
 
   * better MFMT fix for windows directories.  prior fix resulted in MDTM not matching MFMT depending on DST.
