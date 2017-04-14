@@ -1369,8 +1369,9 @@ globus_l_xio_gsi_read_token_cb(
                                                              minor_status);
                         goto error_pass_close;
                     }
-                    if (target_oid->length == GSS_C_NT_ANONYMOUS->length &&
-                        memcmp(target_oid->elements,
+                    if (target_oid != GSS_C_NO_OID
+                        && target_oid->length == GSS_C_NT_ANONYMOUS->length
+                        && memcmp(target_oid->elements,
                                 GSS_C_NT_ANONYMOUS->elements,
                                 target_oid->length) == 0)
                     {
