@@ -474,6 +474,9 @@ fi
 %endif
 
 %changelog
+* Mon Apr 17 2017 Globus Toolkit <support@globus.org> - 7.3p1c-1
+- Update to GSI-OpenSSH 7.3p1c
+
 * Mon Apr  3 2017 Globus Toolkit <support@globus.org> - 7.3p1b-1
 - Update to GSI-OpenSSH 7.3p1b
 
