@@ -1,3 +1,9 @@
+globus-xio-gsi-driver (3.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix crash when checking for anonymous GSS name when name comparison fails
+
+ -- Globus Toolkit <support@globus.org>  Fri, 14 Apr 2017 09:47:00 -0400
+
 globus-xio-gsi-driver (3.10-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix anonymous auth in strict mode

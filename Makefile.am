@@ -59,9 +59,9 @@ $(GT_ALL_TARGETS_DEB):
 	@cd debbuild/$($@_PACKAGE_NAME) && dpkg-buildpackage -uc -us $(DPKG_BUILDPACKAGE_OPTS)
 
 $(GT_ALL_TARGETS_OSX_PKG):
-	rm -f $@
-	export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($@_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) install DESTDIR=$(abs_builddir)/osx/dest/$$(basename $@ .pkg)
-	@for filename in `find $(abs_builddir)/osx/dest/$$(basename $@ .pkg) -type f | grep -v '\.a$$'`; do \
+	rm -f $($@)
+	export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) ; cd $($($@)_SUBDIR) && $(MAKE) $(AM_MAKEFLAGS) install DESTDIR=$(abs_builddir)/osx/dest/$$(basename $($@) .pkg)
+	@for filename in `find $(abs_builddir)/osx/dest/$$(basename $($@) .pkg) -type f | grep -v '\.a$$'`; do \
 	    if file "$$filename" | grep -q Mach-O; then \
 		echo "Processing $$filename"; \
 		for lib in `otool -L "$$filename" | sed 1d | grep -E "$(libdir)|ltdl" | awk '{print $$1}'`; do \
@@ -76,14 +76,14 @@ $(GT_ALL_TARGETS_OSX_PKG):
 		fi; \
 	    fi; \
 	done
-	@find osx/dest/$$(basename $@ .pkg) \( -name '*.la' -o -name '*.a' \) -a -exec rm {} +
+	@find osx/dest/$$(basename $($@) .pkg) \( -name '*.la' -o -name '*.a' \) -a -exec rm {} +
 	@mkdir -p osx/packages
-	@pkgbuild --root $(abs_builddir)/osx/dest/$$(basename $@ .pkg) \
-            --version $($@_PACKAGE_VERSION) \
-	    --identifier org.globus.$($@_PACKAGE_NAME) \
+	@pkgbuild --root $(abs_builddir)/osx/dest/$$(basename $($@) .pkg) \
+            --version $($($@)_PACKAGE_VERSION) \
+	    --identifier org.globus.$($($@)_PACKAGE_NAME) \
             --ownership recommended \
-	    $($($@_PACKAGE_NAME)_macosx_scripts) \
-            $@
+	    $($($($@)_PACKAGE_NAME)_macosx_scripts) \
+            $($@)
 
 if !HAVE_LTDL
 LTDL_MAC_PKG = ltdl-@LTDL_VERSION@.pkg
