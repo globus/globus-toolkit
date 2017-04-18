@@ -6,7 +6,7 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.0
+Version:	12.1
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -230,6 +230,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Apr 18 2017 Globus Toolkit <support@globus.org> - 12.1-1
+- better delay for end of session ref check
+
 * Mon Apr 10 2017 Globus Toolkit <support@globus.org> - 12.0-1
 - Fix MDTM/UTIME on windows
 - New error message format

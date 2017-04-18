@@ -11802,8 +11802,11 @@ globus_i_gfs_data_session_stop(
             }
             globus_mutex_unlock(&session_handle->mutex);
             waitcnt++;
-            /* sleep .1 sec */
-            nanosleep((const struct timespec[]) {{0, 100000000L}}, NULL);
+            if(!free_session)
+            {
+                /* delay up to .1 sec */
+                globus_callback_poll(((const globus_abstime_t[]) {{0, 100000000L}}));
+            }
         }
         if(session_handle->watch_handle != 0)
         {
