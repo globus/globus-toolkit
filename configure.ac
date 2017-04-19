@@ -349,6 +349,10 @@ if test x"$PKG_CONFIG" = x ; then
    AC_MSG_ERROR([Missing required pkg-config >= $pkg_config_min])
 fi
 
+dnl This is used by the OSX package generation
+OPENSSL_VERSION=$($PKG_CONFIG --modversion openssl)
+AC_SUBST([OPENSSL_VERSION])
+
 gsi_openssh_can_recurse=yes
 
 dnl 
