@@ -341,6 +341,7 @@ globus_gass_copy_handle_init(
         handle->send_allo = GLOBUS_FALSE;
         handle->always_stat_on_expand = GLOBUS_FALSE;
         handle->cksm_handle = GLOBUS_NULL;
+        handle->checksum = GLOBUS_NULL;
         handle->algorithm = GLOBUS_NULL;
         return GLOBUS_SUCCESS;
     }

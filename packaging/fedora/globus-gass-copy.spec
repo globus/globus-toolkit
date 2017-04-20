@@ -6,7 +6,7 @@ Name:		globus-gass-copy
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	9.24
+Version:	9.25
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Copy
@@ -210,6 +210,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Apr 20 2017 Globus Toolkit <support@globus.org> - 9.25-1
+- Fix uninitialized field related crash
+
 * Fri Mar 10 2017 Globus Toolkit <support@globus.org> - 9.24-1
 - don't attempt sshftp data protection without creds
 - checksum verification based on contribution from IBM
