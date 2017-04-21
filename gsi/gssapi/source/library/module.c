@@ -54,12 +54,21 @@ int                                     globus_i_gsi_gssapi_debug_level;
 FILE *                                  globus_i_gsi_gssapi_debug_fstream;
 
 /**
- * @brief Force TLSv1
+ * @brief Minimum TLS protocol version
  * @details
- * Optionally force use of TLSv1 if GLOBUS_GSSAPI_FORCE_TLS is defined
- * in the environment.
+ * Choose the minimum TLS protocol version to support. One of TLS1_VERSION,
+ * TLS1_1_VERSION, TLS1_2_VERSION or 0 for lowest (TLS1_VERSION). SSLv3
+ * and below disallowed.
  */
-int                                     globus_i_gsi_gssapi_force_tls;
+int                               globus_i_gsi_gssapi_min_tls_protocol;
+
+/**
+ * @brief Maximum TLS protocol version
+ * @details
+ * Choose the maximum TLS protocol version to support. One of TLS1_VERSION,
+ * TLS1_1_VERSION, TLS1_2_VERSION or 0 for highest. SSLv3 and below disallowed.
+ */
+int                               globus_i_gsi_gssapi_max_tls_protocol;
 
 /**
  * @brief SSL Cipher List
@@ -237,8 +246,9 @@ globus_l_gsi_gssapi_parse_config(
     int                                 rc = GLOBUS_SUCCESS;
     const char                          conf_key_prefix[] = "GLOBUS_GSSAPI_";
     const char                         *conf_keys[] = {
-        "GLOBUS_GSSAPI_FORCE_TLS",
         "GLOBUS_GSSAPI_NAME_COMPATIBILITY",
+        "GLOBUS_GSSAPI_MIN_TLS_PROTOCOL",
+        "GLOBUS_GSSAPI_MAX_TLS_PROTOCOL",
         "GLOBUS_GSSAPI_CIPHERS",
         "GLOBUS_GSSAPI_SERVER_CIPHER_ORDER",
         "GLOBUS_GSSAPI_BACKWARD_COMPATIBLE_MIC",
@@ -375,15 +385,6 @@ globus_l_gsi_gssapi_activate(void)
         }
     }
 
-    tmp_string = globus_module_getenv("GLOBUS_GSSAPI_FORCE_TLS");
-    if(tmp_string != GLOBUS_NULL && 
-         (strcasecmp(tmp_string, "true") == 0 ||
-            strcasecmp(tmp_string, "yes") == 0 ||
-            strcmp(tmp_string, "1") == 0))
-    {
-            globus_i_gsi_gssapi_force_tls = 1;
-    }
-
     tmp_string = globus_module_getenv("GLOBUS_GSSAPI_NAME_COMPATIBILITY");
     if(tmp_string != NULL)
     {
@@ -411,6 +412,74 @@ globus_l_gsi_gssapi_activate(void)
     else
     {
         gss_i_name_compatibility_mode = GSS_I_COMPATIBILITY_STRICT_RFC2818;
+    }
+
+    tmp_string = globus_module_getenv("GLOBUS_GSSAPI_MIN_TLS_PROTOCOL");
+    if(tmp_string != NULL)
+    {
+        if (strcmp(tmp_string, "TLS1_VERSION") == 0)
+        {
+            globus_i_gsi_gssapi_min_tls_protocol = TLS1_VERSION;
+        }
+        else if (strcmp(tmp_string, "TLS1_1_VERSION") == 0)
+        {
+            globus_i_gsi_gssapi_min_tls_protocol = TLS1_1_VERSION;
+        }
+        else if (strcmp(tmp_string, "TLS1_2_VERSION") == 0)
+        {
+            globus_i_gsi_gssapi_min_tls_protocol = TLS1_2_VERSION;
+        }
+        else if (strcmp(tmp_string, "0") == 0)
+        {
+            globus_i_gsi_gssapi_min_tls_protocol = 0;
+        }
+        else
+        {
+            GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
+                1,
+                (_GGSL("Unknown GLOBUS_GSSAPI_MIN_TLS_PROTOCOL value: %s;"
+                       "defaulting to TLS1_VERSION\n"),
+                        tmp_string));
+            globus_i_gsi_gssapi_min_tls_protocol = TLS1_VERSION;
+        }
+    }
+    else
+    {
+        globus_i_gsi_gssapi_min_tls_protocol = TLS1_VERSION;
+    }
+
+    tmp_string = globus_module_getenv("GLOBUS_GSSAPI_MAX_TLS_PROTOCOL");
+    if(tmp_string != NULL)
+    {
+        if (strcmp(tmp_string, "TLS1_VERSION") == 0)
+        {
+            globus_i_gsi_gssapi_max_tls_protocol = TLS1_VERSION;
+        }
+        else if (strcmp(tmp_string, "TLS1_1_VERSION") == 0)
+        {
+            globus_i_gsi_gssapi_max_tls_protocol = TLS1_1_VERSION;
+        }
+        else if (strcmp(tmp_string, "TLS1_2_VERSION") == 0)
+        {
+            globus_i_gsi_gssapi_max_tls_protocol = TLS1_2_VERSION;
+        }
+        else if (strcmp(tmp_string, "0") == 0)
+        {
+            globus_i_gsi_gssapi_max_tls_protocol = 0;
+        }
+        else
+        {
+            GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
+                1,
+                (_GGSL("Unknown GLOBUS_GSSAPI_MIN_TLS_PROTOCOL value: %s;"
+                       "defaulting to 0 (highest)\n"),
+                        tmp_string));
+            globus_i_gsi_gssapi_max_tls_protocol = 0;
+        }
+    }
+    else
+    {
+        globus_i_gsi_gssapi_max_tls_protocol = 0;
     }
 
     tmp_string = globus_module_getenv("GLOBUS_GSSAPI_CIPHERS");

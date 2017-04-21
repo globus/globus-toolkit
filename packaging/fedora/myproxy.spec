@@ -13,7 +13,7 @@ Name:           myproxy
 %global nlibpkg libs
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.26
+Version:	6.1.27
 Release:	1%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
@@ -580,6 +580,9 @@ fi
 %endif
 
 %changelog
+* Fri Apr 21 2017 Globus Toolkit <support@globus.org> - 6.1.27-1
+- Remove legacy SSLv3 support
+
 * Thu Mar 23 2017 Globus Toolkit <support@globus.org> - 6.1.26-1
 - Fix error check
 

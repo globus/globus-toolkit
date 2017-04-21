@@ -2162,13 +2162,21 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    X509_LOOKUP_add_dir(lookup, certdir, X509_FILETYPE_PEM);
    X509_STORE_CTX_init(csc, cert_store, chain->certificate, NULL);
    
+   #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+   sslContext = SSL_CTX_new(TLS_server_method());
+   #else
    sslContext = SSL_CTX_new(SSLv23_server_method());
+   #endif
    if (sslContext == NULL) {
       verror_put_string("Initializing SSL_CTX");
       ssl_error_to_verror();
       goto end;
    }
-   SSL_CTX_set_options(sslContext, SSL_OP_NO_SSLv2);
+   #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+   SSL_CTX_set_min_proto_version(sslContext, TLS1_VERSION);
+   #else
+   SSL_CTX_set_options(sslContext, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+   #endif
 
    SSL_CTX_set_purpose(sslContext, X509_PURPOSE_ANY);
 

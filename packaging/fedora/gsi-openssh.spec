@@ -76,7 +76,7 @@ Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-1
 ## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" SHELL=$SHELL distprep
 ## rm -fr .git
 ## cd ..
-## diff -Naur openssh-7.3p1 gsi-openssh > hpn_isshd-gsi.7.3p1c.patch
+## diff -Naur openssh-7.1p2 gsi-openssh > hpn_isshd-gsi.7.1p2h.patch
 Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.%{version}.patch
 
 License: BSD
