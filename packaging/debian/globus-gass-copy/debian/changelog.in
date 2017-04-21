@@ -1,3 +1,9 @@
+globus-gass-copy (9.26-1+gt6.@distro@) @distro@; urgency=low
+
+  * remove checksum data from public handle
+
+ -- Globus Toolkit <support@globus.org>  Fri, 21 Apr 2017 10:05:54 -0500
+
 globus-gass-copy (9.25-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix uninitialized field related crash

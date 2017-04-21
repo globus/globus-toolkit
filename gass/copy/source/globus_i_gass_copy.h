@@ -244,6 +244,20 @@ struct globus_gass_copy_state_s
      */
     globus_i_gass_copy_cancel_status_t cancel;
 
+    /**
+    * Handle to compare checksum on source and dest files after transfer.
+    */
+    struct globus_gass_copy_handle_s    *cksm_handle;   
+    
+    /**
+    * Stored checksum of the source file
+    */
+    char                                *checksum;
+    
+    /**
+    * Checksum algorithm
+    */
+    char                                *algorithm;
 };
 
 globus_result_t

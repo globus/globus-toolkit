@@ -286,21 +286,6 @@ struct globus_gass_copy_handle_s
    * Run a stat check on all urls passed to globus_gass_copy_glob_expand_url
    */
   globus_bool_t                       always_stat_on_expand;
-
-  /**
-   * Flag to compare checksum on source and dest files after transfer.
-   */
-  struct globus_gass_copy_handle_s    *cksm_handle;   
-
-  /**
-   * Stored checksum of the source file
-   */
-  char                                *checksum;
-
-  /**
-   * Checksum algorithm
-   */
-  char                                *algorithm;
 };
 
 /**
