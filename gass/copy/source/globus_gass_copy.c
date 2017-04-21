@@ -2250,6 +2250,10 @@ globus_i_gass_copy_state_new(
         globus_cond_init(&((*tmp_state)->monitor.cond), GLOBUS_NULL);
         globus_mutex_init(&((*tmp_state)->mutex), GLOBUS_NULL);
     }
+    else
+    {
+        handle->state->active = GLOBUS_TRUE;
+    }
     handle->state->monitor.done = GLOBUS_FALSE;
     handle->state->monitor.err = GLOBUS_NULL;
     handle->state->monitor.use_err = GLOBUS_FALSE;
@@ -2304,12 +2308,14 @@ globus_l_gass_copy_state_free_targets(
         return GLOBUS_SUCCESS;
     }
 
+    state->active = GLOBUS_FALSE;
+
     /* clean  up the source target */
     globus_l_gass_copy_target_destroy(&(state->source));
 
     /* clean  up the destination target */
     globus_l_gass_copy_target_destroy(&(state->dest));
-
+    
     return GLOBUS_SUCCESS;
 
 } /* globus_l_gass_copy_state_free_targets() */
@@ -3565,7 +3571,7 @@ globus_l_gass_copy_ftp_get_done_callback(
             globus_l_gass_copy_generic_cancel(cancel_info);
             globus_libc_free(cancel_info);
         }
-        else if(copy_handle->state)
+        else if(copy_handle->state->active)
         {
             globus_l_gass_copy_write_from_queue(copy_handle);
         }
@@ -3631,7 +3637,7 @@ globus_l_gass_copy_ftp_put_done_callback(
             globus_l_gass_copy_generic_cancel(cancel_info);
             globus_libc_free(cancel_info);
         }
-        else if(copy_handle->state)
+        else if(copy_handle->state->active)
         {
             globus_l_gass_copy_write_from_queue(copy_handle);
         }
@@ -3758,7 +3764,7 @@ globus_l_gass_copy_generic_read_callback(
     }
     
     /* start the next write if there isn't already one outstanding */
-    if(handle->state)
+    if(handle->state->active)
 	globus_l_gass_copy_write_from_queue(handle);
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     else
@@ -3767,7 +3773,7 @@ globus_l_gass_copy_generic_read_callback(
 #endif
 
     /* if we haven't read everything from the source, read again */
-    if(handle->state)
+    if(handle->state->active)
 	globus_l_gass_copy_read_from_queue(handle);
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     else
@@ -4125,7 +4131,7 @@ globus_l_gass_copy_generic_write_callback(
     globus_libc_fprintf(stderr,
         "generic_write_callback(): calling read_from_queue()\n");
 #endif
-    if(handle->state)
+    if(handle->state->active)
 	globus_l_gass_copy_read_from_queue(handle);
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     else
@@ -4138,7 +4144,7 @@ globus_l_gass_copy_generic_write_callback(
     globus_libc_fprintf(stderr,
         "generic_write_callback(): calling write_from_queue()\n");
 #endif
-    if(handle->state)
+    if(handle->state->active)
 	globus_l_gass_copy_write_from_queue(handle);
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     else
@@ -4434,7 +4440,7 @@ globus_l_gass_copy_write_from_queue(
 /* if there are no writes to do, and no writes pending, clean up and call
  * user's callback
  */
-    if(handle->state)
+    if(handle->state->active)
     {
         globus_mutex_lock(&state->mutex);
         
@@ -4469,7 +4475,7 @@ globus_l_gass_copy_write_from_queue(
             }
     
     #ifdef GLOBUS_I_GASS_COPY_DEBUG
-            if(handle->state == GLOBUS_NULL)
+            if(!handle->state->active)
                 globus_libc_fprintf(stderr, "  handle->state == GLOBUS_NULL\n");
             globus_libc_fprintf(stderr,
                 "write_from_queue(): about to call user callback\n");
@@ -5700,7 +5706,7 @@ globus_gass_copy_register_url_to_url(
 	if (result != GLOBUS_SUCCESS)
 	{
 	    /* free the state */
-	    if(handle->state)
+	    if(handle->state->active)
 	    {
 		globus_l_gass_copy_state_free_targets(handle->state);
 	    }
@@ -6290,7 +6296,7 @@ globus_gass_copy_cancel(
         return globus_error_put(err);
     }
 
-    if(!handle->state)
+    if(!handle->state->active)
     {
         err = globus_error_construct_string(
              GLOBUS_GASS_COPY_MODULE,
@@ -6360,7 +6366,7 @@ globus_gass_copy_cancel(
 	   handle->state->source.status != GLOBUS_I_GASS_COPY_TARGET_INITIAL)
 	    source_result = globus_l_gass_copy_target_cancel(source_cancel_info);
 
-        if (handle->state != GLOBUS_NULL)
+        if (handle->state->active)
         {
             if(handle->state->dest.status != GLOBUS_I_GASS_COPY_TARGET_DONE &&
                handle->state->dest.status != GLOBUS_I_GASS_COPY_TARGET_INITIAL)

@@ -220,6 +220,11 @@ struct globus_gass_copy_state_s
     globus_i_gass_copy_target_t	dest;
 
     /**
+     * active transfer with valid targets
+     */
+    globus_bool_t                       active;
+
+    /**
      * Used for signalling from the various callback functions
      */
     globus_i_gass_copy_monitor_t        monitor;
