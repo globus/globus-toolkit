@@ -5,8 +5,8 @@ Name:		globus-gass-cache-program
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.6
-Release:	3%{?dist}
+Version:	6.7
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Tools to manipulate local and remote GASS caches
 
@@ -73,6 +73,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/globus/globus-gass-cache-util.pl
 
 %changelog
+* Fri Apr 21 2017 Globus Toolkit <support@globus.org> - 6.7-1
+- Rebuild after bad gass_copy package
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 6.6-3
 - Rebuild after changes for el.5 with openssl101e
 
