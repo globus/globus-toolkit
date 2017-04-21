@@ -10,7 +10,7 @@ Homepage: http://www.globus.org/
 Package: gsi-openssh
 Section: net
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: libglobus-gss-assist3, libglobus-usage0, ${shlibs:Depends}, ${misc:Depends}
 Description: GSI OpenSSH
  OpenSSH is a free version of SSH (Secure SHell), a program for logging
  into and executing commands on a remote machine. This package includes
