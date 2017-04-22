@@ -1,4 +1,4 @@
-globus-gssapi-gsi (12.15-1+gt6.@distro@) @distro@; urgency=low
+globus-gssapi-gsi (12.15-2+gt6.@distro@) @distro@; urgency=low
 
   * Remove legacy SSLv3 support
 
