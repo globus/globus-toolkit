@@ -1,7 +1,7 @@
 Name:		globus-gsi
 %global _name %(tr - _ <<< %{name})
 Version:	6.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Security Tools
 
@@ -42,5 +42,5 @@ mkdir "$RPM_BUILD_ROOT"
 %postun
 
 %changelog
-* Mon Jul 17 2012 Joseph Bester <bester@mcs.anl.gov> - 14.7-3
-- GT 5.2.2 New Metapackage
+* Tue Apr 25 2017 Joseph Bester <bester@mcs.anl.gov> - 6.0-2
+- Fix changelog
