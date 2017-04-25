@@ -311,7 +311,7 @@ cleanup ()
 
 
 jmtype=fork
-port=
+port=0
 docleanup=false
 startnew=false
 

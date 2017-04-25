@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.36-1+gt6.@distro@) @distro@; urgency=low
+
+  * Default to running personal gatekeeper on an ephemeral port
+
+ -- Globus Toolkit <support@globus.org>  Tue, 25 Apr 2017 17:05:46 -0400
+
 globus-gram-job-manager (14.35-1+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e
