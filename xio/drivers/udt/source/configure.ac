@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_xio_udt_driver],[1.26],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_xio_udt_driver],[1.27],[https://github.com/globus/globus-toolkit/issues])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [1])
@@ -42,11 +42,12 @@ esac
 AC_SUBST(UDT_CXXFLAGS)
 AC_SUBST(UDT_LIBADD)
 PKG_CHECK_MODULES([PACKAGE_DEP], $PACKAGE_DEPS)
-
+static_udt_option=""
 AC_ARG_WITH([static-udt],
     AS_HELP_STRING([--with-static-udt],[Build UDT library]),
     [if test "$withval" = yes; then
         use_included_udt=1
+        static_udt_option="--static"
      fi])
 
 AC_ARG_WITH([static-libnice],
@@ -93,7 +94,9 @@ AC_ARG_WITH([udt-lib],
 NICE_VERSION_AT_LEAST_0_1_2=0
 
 PKG_PROG_PKG_CONFIG
-PKG_CONFIG="${PKG_CONFIG} --static"
+if test use_included_udt = 1; then
+    PKG_CONFIG="${PKG_CONFIG} $static_udt_option"
+fi
 
 if test X"$use_included_udt" = "X"; then
     AC_CHECK_HEADER([udt.h], [AC_DEFINE([HAVE_UDT_H], [1], [Define to 1 if you have udt.h])])

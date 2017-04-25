@@ -1,3 +1,9 @@
+globus-xio-udt-driver (1.27-1+gt6.@distro@) @distro@; urgency=low
+
+  * Don't force static build
+
+ -- Globus Toolkit <support@globus.org>  Tue, 25 Apr 2017 15:01:12 -0400
+
 globus-xio-udt-driver (1.26-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix build failure on mingw with gcc 5.4.0
