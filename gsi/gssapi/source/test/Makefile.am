@@ -24,14 +24,12 @@ check_DATA = $(check_DATA_real) \
         testcred.cacert \
         testcred.key \
         testcred.cert \
-        testcred.srl \
         $(testcred_links) \
 	$(signingpolicy_links) \
         testcred-nocn.cakey \
         testcred-nocn.cacert \
         testcred-nocn.key \
         testcred-nocn.cert \
-	testcred-nocn.srl \
         copy_cases \
         $(THREAD_TESTS)
 
@@ -167,6 +165,7 @@ testcred-nocn.cacert: testcred-nocn.cnf
         echo "$$linkname" > $@
 
 .link.signing_policy:
+	echo 01 > $*.srl
 	linkname=`cat $<`; \
 	policyfile=$${linkname%.0}.signing_policy; \
 	echo "access_id_CA      X509         '/CN=ca'" > $${policyfile}; \
@@ -174,16 +173,13 @@ testcred-nocn.cacert: testcred-nocn.cnf
 	echo "cond_subjects     globus       '\"/*\"'" >> $${policyfile}; \
 	echo $${policyfile} >> $@
 
-.signing_policy.srl:
-	echo 01 > $@
-
 testcred.key testcred-nocn.key:
 	umask 077; $(OPENSSL) genrsa 1024 > $@
 
-testcred-nocn.req: testcred-nocn.key testcred-nocn.srl
+testcred-nocn.req: testcred-nocn.key testcred-nocn.signing_policy
 	$(OPENSSL) req -subj "/userId=test" -new -config $*.cnf -key $< > $@
 
-testcred.req: testcred.key testcred.srl
+testcred.req: testcred.key testcred.signing_policy
 	$(OPENSSL) req -subj "/CN=test" -new -config $*.cnf -key $< > $@
 
 .req.cert:
@@ -230,4 +226,4 @@ clean-local:
         fi
 	rm -f copy_cases
 
-SUFFIXES = .key .req .cert .cacert .cakey .link .signing_policy .srl
+SUFFIXES = .key .req .cert .cacert .cakey .link .signing_policy

@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.15
+Version:	12.16
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -192,6 +192,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Apr 27 2017 Globus Toolkit <support@globus.org> - 12.16-1
+- Address test issues: fix .srl dependency, reuse credential
+  in thread test
+
 * Fri Apr 21 2017 Globus Toolkit <support@globus.org> - 12.15-1
 - Remove legacy SSLv3 support
 

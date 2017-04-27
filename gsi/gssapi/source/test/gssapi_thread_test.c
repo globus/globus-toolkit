@@ -24,6 +24,7 @@
 
 struct thread_arg
 {
+    gss_cred_id_t                       credential;
     gss_buffer_desc                     init_token;
     globus_bool_t                       init_token_ready;
     globus_bool_t                       init_done;
@@ -80,6 +81,7 @@ main()
     for(i=0;i<NUM_CLIENTS;i++)
     {
         thread_args[i] = (struct thread_arg) {
+            .credential = credential,
             .init_token = { 0 },
             .init_token_ready = GLOBUS_FALSE,
             .accept_token = { 0 },
@@ -138,10 +140,8 @@ server_func(
     struct thread_arg *                 thread_args = arg;
     gss_ctx_id_t                        context = GSS_C_NO_CONTEXT;
     OM_uint32                           major_status, minor_status, ms;
-    gss_cred_id_t                       credential;
     int                                 token = 0;
     
-    credential = globus_gsi_gssapi_test_acquire_credential();
     globus_mutex_lock(&thread_args->mutex);
     do
     {
@@ -157,7 +157,7 @@ server_func(
 
         major_status = gss_accept_sec_context(&minor_status,
                                               &context,
-                                              credential,
+                                              thread_args->credential,
                                               &thread_args->accept_token,
                                               GSS_C_NO_CHANNEL_BINDINGS,
                                               NULL,
@@ -210,9 +210,7 @@ client_func(
     gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
     int                                 failed = 0;
     OM_uint32                           major_status, minor_status, ms;
-    gss_cred_id_t                       credential;
     
-    credential = globus_gsi_gssapi_test_acquire_credential();
     for (int i = 0; i < ITERATIONS && !failed; i++)
     {
         int token = 0;
@@ -241,7 +239,7 @@ client_func(
             }
             major_status = gss_init_sec_context(
                     &minor_status,
-                    credential,
+                    thread_args->credential,
                     &context_handle,
                     NULL, // target_name
                     GSS_C_NO_OID, // mech_type

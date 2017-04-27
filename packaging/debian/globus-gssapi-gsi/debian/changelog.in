@@ -1,3 +1,10 @@
+globus-gssapi-gsi (12.16-1+gt6.@distro@) @distro@; urgency=low
+
+  * Address test issues: fix .srl dependency, reuse credential
+    in thread test
+
+ -- Globus Toolkit <support@globus.org>  Thu, 27 Apr 2017 08:43:15 -0400
+
 globus-gssapi-gsi (12.15-2+gt6.@distro@) @distro@; urgency=low
 
   * Remove legacy SSLv3 support
