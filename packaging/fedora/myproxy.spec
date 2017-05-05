@@ -13,7 +13,7 @@ Name:           myproxy
 %global nlibpkg libs
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.27
+Version:	6.1.28
 Release:	1%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
@@ -25,14 +25,7 @@ Source0:        http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-%if %{?rhel}%{!?rhel:0} == 5
-BuildRequires:  openssl101e
-BuildRequires:  openssl101e-devel
-BuildConflicts: openssl
-BuildConflicts: openssl-devel
-%else
 BuildRequires:  openssl
-%endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 Requires:       insserv
@@ -48,9 +41,7 @@ BuildRequires:  pam-devel
 BuildRequires:  voms-devel >= 1.9.12.1
 %endif
 
-%if %{?rhel}%{!?rhel:0} == 0 || %{?rhel}%{!?rhel:0} > 5
 BuildRequires:  cyrus-sasl-devel
-%endif
 
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  openldap2-devel
@@ -221,14 +212,8 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
-%if %{?rhel}%{!?rhel:0} == 5
-export OPENSSL=$(which openssl101e)
-with_kerberos5=--without-kerberos5
-with_sasl2=--without-sasl2
-%else
 with_kerberos5=--with-kerberos5=%{_usr}
 with_sasl2=--with-sasl2=%{_usr}
-%endif
 
 %if %{?fedora}%{!?fedora:0} > 0 || %{?rhel}%{!?rhel:0} > 5
 %configure --with-openldap=%{_usr} \
@@ -580,6 +565,10 @@ fi
 %endif
 
 %changelog
+* Fri May 05 2017 Globus Toolkit <support@globus.org> - 6.1.28-1
+- Fix OpenSSL 1.1.0-related typo
+- Remove el.5 cruft from spec
+
 * Fri Apr 21 2017 Globus Toolkit <support@globus.org> - 6.1.27-1
 - Remove legacy SSLv3 support
 
