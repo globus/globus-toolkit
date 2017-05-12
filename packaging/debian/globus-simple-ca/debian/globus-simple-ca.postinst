@@ -1,5 +1,15 @@
 #! /bin/sh
 
+tempdir=
+cleanup()
+{
+    if [ -d "$tempdir" ]; then
+        rm -rf "$tempdir"
+    fi
+}
+
+trap cleanup EXIT
+
 case "$1" in
     configure)
         simplecadir=/var/lib/globus/simple_ca
@@ -9,11 +19,12 @@ case "$1" in
                 -s /bin/nologin \
                 -c "User to run the SimpleCA" simpleca
         mkdir -p ${simplecadir}
+	tempdir=$(mktemp -d)
+	cd "$tempdir"
         if [ ! -f ${simplecadir}/cacert.pem ] ; then
             grid-ca-create -noint -nobuild -dir "${simplecadir}"
             (umask 077; echo globus > ${simplecadir}/passwd)
             simplecahash=`openssl x509 -hash -noout -in ${simplecadir}/cacert.pem`
-            cd $simplecadir
             grid-ca-package -cadir ${simplecadir}
             tar --strip 1 --no-same-owner -zx --exclude debian -C /etc/grid-security/certificates -f ${simplecadir}/globus_simple_ca_$simplecahash.tar.gz
             chown -R simpleca:simpleca ${simplecadir}

@@ -1,16 +1,16 @@
-[Globus-Toolkit-6-Testing-@REPO@]
-name=Globus Toolkit 6 Testing (@REPO@)
-baseurl=@TESTING_BASEURL@
+[@REPO_SECTION_NAME@]
+name=@REPO_NAME@
+baseurl=@REPO_BASE_URL@
 failovermethod=priority
-enabled=0
+enabled=@REPO_ENABLED@
 priority=98
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
 @REPO_TYPE@
 
-[Globus-Toolkit-6-Testing-Source-@REPO@]
-name=Globus Toolkit 6 Testing (@REPO@) Source
-baseurl=@TESTING_SOURCEURL@
+[@REPO_SOURCE_SECTION_NAME@]
+name=@REPO_SOURCE_NAME@
+baseurl=@REPO_BASE_SOURCE_URL@
 failovermethod=priority
 enabled=0
 priority=98

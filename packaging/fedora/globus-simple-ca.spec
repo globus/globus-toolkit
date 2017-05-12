@@ -8,7 +8,7 @@ Name:		globus-simple-ca
 %global apache_license ASL 2.0
 %endif
 Version:	4.24
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Simple CA
 
@@ -23,13 +23,8 @@ BuildRequires:  shadow
 Requires(pre):  shadow
 %endif
 Requires:       globus-common-progs
-%if %{?rhel}%{!?rhel:0} == 5
-Requires:       openssl101e
-Requires(post): openssl101e
-%else
 Requires:  openssl
 Requires(post): openssl
-%endif
 Requires(post): globus-gsi-cert-utils-progs
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
@@ -45,14 +40,8 @@ BuildRequires:  pkgconfig
 BuildRequires:  openssl
 BuildRequires:  libopenssl-devel
 %else
-%if %{?rhel}%{!?rhel:0} == 5
-BuildRequires:  openssl101e
-BuildRequires:  openssl101e-devel
-BuildConflicts: openssl-devel
-%else
 BuildRequires:  openssl
 BuildRequires:  openssl-devel
-%endif
 %endif
 
 %if %{?fedora}%{!?fedora:0} >= 18 || %{?rhel}%{!?rhel:0} >= 6
@@ -81,12 +70,7 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
-%if %{?rhel}%{!?rhel:0} == 5
-export OPENSSL="$(which openssl101e)"
-%global openssl openssl101e
-%else
 %global openssl openssl
-%endif
 
 %configure \
            --disable-static \
@@ -120,6 +104,8 @@ exit 0
 simplecadir=%{_localstatedir}/lib/globus/simple_ca
 mkdir -p ${simplecadir}
 if [ ! -f ${simplecadir}/cacert.pem ] ; then
+    tempdir=$(mktemp -d)
+    cd "$tempdir"
     grid-ca-create -noint -nobuild -dir "${simplecadir}"
     (umask 077; echo globus > ${simplecadir}/passwd)
     simplecahash=`%openssl x509 -hash -noout -in ${simplecadir}/cacert.pem`
@@ -142,6 +128,7 @@ if [ ! -f ${simplecadir}/cacert.pem ] ; then
         cp "${simplecadir}/hostcert.pem" /etc/grid-security/hostcert.pem 
     fi
     cd -
+    rm -rf "$tempdir"
 fi
 %files
 %defattr(-,root,root,-)
@@ -151,6 +138,9 @@ fi
 %{_mandir}/man1/*
 
 %changelog
+* Fri May 12 2017 Globus Toolkit <support@globus.org> - 4.24-4
+- Stop leaving files in /
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 4.24-3
 - Update for el.5 openssl101e, replace docbook with asciidoc
 
