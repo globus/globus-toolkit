@@ -1,2 +1,0 @@
-deb http://toolkit.globus.org/ftppub/gt6/stable/deb @RELEASE@ contrib
-deb-src http://toolkit.globus.org/ftppub/gt6/stable/deb @RELEASE@ contrib

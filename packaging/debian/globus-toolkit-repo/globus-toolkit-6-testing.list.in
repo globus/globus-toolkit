@@ -1,5 +1,0 @@
-# Testing Repository contains packages that have passed automatic
-# Build and Test validation but are pending final testing and 
-# documentation updates
-# deb http://toolkit.globus.org/ftppub/gt6/testing/deb @RELEASE@ contrib
-# deb-src http://toolkit.globus.org/ftppub/gt6/testing/deb @RELEASE@ contrib

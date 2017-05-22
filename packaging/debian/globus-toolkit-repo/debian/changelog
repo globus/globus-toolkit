@@ -1,3 +1,12 @@
+globus-toolkit-repo (6.0.9) unstable; urgency=low
+
+  * Move repos to downloads.globus.org
+  * Remove precise, wily
+  * Add zesty, artful
+  * combine with equivalent rpm repo package
+
+ -- Globus Toolkit <support@globus.org>  Mon, 22 May 2017 14:48:06 -0400
+
 globus-toolkit-repo (6.0.7-1) unstable; urgency=low
 
   * Remove squeeze, lucid, quantal, saucy, utopic, vivid

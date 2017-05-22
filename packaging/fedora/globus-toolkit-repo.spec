@@ -1,12 +1,11 @@
-Name:           globus-repo
-Version:        6
-Release:        24
+Name:           globus-toolkit-repo
+Version:        6.0.9
+Release:        1
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
 License:        ASL 2.0
 URL:            http://toolkit.globus.org/toolkit
-Source0:        RPM-GPG-KEY-Globus
-Source1:        globus-repo.in
+Source0:        globus-toolkit-repo_%{version}.tar.xz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 Provides:       globus-connect-server-repo
@@ -16,65 +15,17 @@ This package installs the Globus yum repository configuration and GPG key for
 Globus Toolkit 6 and Globus Connect Server 5.
 
 %prep
-%setup -c -T
+%setup -q -n %{name}
 
 %build
-repo_root="https://downloads.globus.org/toolkit/gt6"
-stability_levels="stable testing unstable"
-oses="el6 el7 fedora sles12"
-
-bin_el6="el/6/\$basearch/"
-src_el6="el/6/SRPMS/"
-bin_el7="el/7/\$basearch/"
-src_el7="el/7/SRPMS/"
-bin_fedora="el/\$releasever/\$basearch/"
-src_fedora="el/\$releasever/SRPMS/"
-bin_sles12="sles/12"
-src_sles12="sles/12"
-repo_type_sles12="yast2"
-
-for repo in $oses ; do
-    repo_enabled=1
-    for stability in $stability_levels; do
-        initial="$(echo $stability | cut -c1 | tr '[a-z]' '[A-Z]')"
-        rest="$(echo $stability | cut -c2-)"
-        cap_stability="$initial$rest"
-
-        for repo_name in Globus-Toolkit-6 Globus-Connect-Server-5; do
-            lower_repo_name=$(echo $repo_name | tr '[A-Z]' '[a-z]')
-            REPO_SECTION_NAME="$repo_name-$cap_stability"
-            REPO_NAME="$(echo "$REPO_SECTION_NAME" | tr '-' ' ')"
-            eval "REPO_BASE_URL=$repo_root/$stability/\$bin_$repo"
-            REPO_SOURCE_SECTION_NAME="$repo_name-Source-$cap_stability"
-            REPO_SOURCE_NAME="$(echo "$REPO_SOURCE_SECTION_NAME" | tr '-' ' ')"
-            eval "REPO_BASE_SOURCE_URL=$repo_root/$stability/\$src_$repo"
-            eval "repo_type=\$repo_type_$repo"
-            if [ "$repo_type" != "" ]; then
-                REPO_TYPE="type=$repo_type"
-            else
-                REPO_TYPE=""
-            fi
-
-            sed -e "s!@REPO_SECTION_NAME@!$REPO_SECTION_NAME!g" \
-                -e "s!@REPO_NAME@!$REPO_NAME!g" \
-                -e "s!@REPO_BASE_URL@!$REPO_BASE_URL!g" \
-                -e "s!@REPO_SOURCE_SECTION_NAME@!$REPO_SOURCE_SECTION_NAME!g" \
-                -e "s!@REPO_SOURCE_NAME@!$REPO_SOURCE_NAME!g" \
-                -e "s!@REPO_BASE_SOURCE_URL@!$BASE_SOURCE_URL!g" \
-                -e "s!@REPO_TYPE@!$REPO_TYPE!g" \
-                -e "s!@REPO_ENABLED@!$repo_enabled!g" \
-                < %{SOURCE1} > $lower_repo_name-$stability-$repo.repo
-            repo_enabled=0
-        done
-    done
-done
+./globus-generate-repo -r
 
 %install
 rm -rf $RPM_BUILD_ROOT
 
 # gpg
-install -Dpm 644 %{SOURCE0} \
-  $RPM_BUILD_ROOT%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
+install -Dpm 644 RPM-GPG-KEY-Globus \
+  $RPM_BUILD_ROOT%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus 
 
 install -dm 755 $RPM_BUILD_ROOT%{_datadir}/globus/repo
 for repo in *.repo; do
@@ -188,6 +139,10 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Mon May 22 2017 Globus Toolkit <support@globus.org> - 6.0.9-1
+- Move repos to downloads.globus.org
+- Combine with equivalent deb package
+
 * Thu May  4 2017 Globus Toolkit <support@globus.org> - 6-24
 - Remove el.5
 - Move repos to s3 hosted https
@@ -202,7 +157,7 @@ fi
 * Mon Aug 1 2016 Globus Toolkit <support@globus.org> - 6-21
 - Use dnf config-manager to install repo when available
 
-* Thu Mar 19 2016 Globus Toolkit <support@globus.org> - 6-20
+* Thu May 19 2016 Globus Toolkit <support@globus.org> - 6-20
 - Add springdale (rhel-compatible)
 
 * Mon Apr 06 2015 Globus Toolkit <support@globus.org> - 6-18
