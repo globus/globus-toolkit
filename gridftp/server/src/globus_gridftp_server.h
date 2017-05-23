@@ -120,7 +120,7 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_DCSC,
     GLOBUS_GFS_CMD_SITE_CHGRP,
     GLOBUS_GFS_CMD_SITE_UTIME,
-    GLOBUS_GFS_CMD_SITE_SYMLINKFROM,
+    GLOBUS_GFS_CMD_SITE_SYMLINKFROM,    /* not used */
     GLOBUS_GFS_CMD_SITE_SYMLINK,
     GLOBUS_GFS_CMD_HTTP_PUT,
     GLOBUS_GFS_CMD_HTTP_GET,
@@ -569,7 +569,7 @@ typedef struct globus_gfs_stat_info_s
     globus_bool_t                       internal;
     /** pathname to stat */
     char *                              pathname;
-    /** whether to return symbolic link info or target info */
+    /** whether to return symbolic link info in addition to target info */
     globus_bool_t                       use_symlink_info;
     /** if pathname is a directory, should its stat info be included? */
     globus_bool_t                       include_path_stat;

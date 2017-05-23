@@ -288,8 +288,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "affect sharing logins.  Sharing logins will only follow relative symlinks that do not lead out of the "
     "shared root path.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"symlinks_allowed", "symlinks_allowed", NULL, "symlinks-allowed", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Policy for symlink creation.  Must be all, relative, or none.  The default option is none."
-    "", NULL, NULL,GLOBUS_FALSE, NULL},
+    NULL /* "Policy for symlink creation.  Must be 'all' or 'none'.  The default option is all." */, 
+    NULL, NULL,GLOBUS_FALSE, NULL},
  {"acl", "acl", NULL, "acl", "em", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "A comma separated list of ACL or event modules to load.",
     NULL, NULL,GLOBUS_FALSE, NULL}, 
@@ -535,7 +535,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     NULL /* hostname found by gethostname() */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"contact_string", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* contact string that server is listening on */, NULL, NULL,GLOBUS_TRUE, NULL},
- {"symlink_policy", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, GFS_L_SYMLINKS_NONE, NULL,
+ {"symlink_policy", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, GFS_L_SYMLINKS_ALL, NULL,
     NULL /* GFS_L_SYMLINKS_NONE = none, _REL = relative, _ALL = all */, NULL, NULL,GLOBUS_TRUE, NULL},
  {"loaded_config", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
      NULL /* placeholder so configfile check doesn't fail */, NULL, NULL,GLOBUS_FALSE, NULL},
@@ -2874,6 +2874,7 @@ globus_l_gfs_config_misc()
         }
         else if(strcasecmp(value, "none") != 0)
         {
+            pol = GFS_L_SYMLINKS_NONE;
             globus_gfs_log_message(GLOBUS_GFS_LOG_WARN, 
                 "Invalid symlinks_allowed policy.  Setting to 'none'.\n");
         }

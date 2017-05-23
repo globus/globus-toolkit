@@ -223,6 +223,7 @@ globus_gfs_ftp_response_error_v_initialize(
                 (v1_fmt != NULL) ? v1_fmt : fmt, ap),
     };
 
+    free(v1_fmt);
     if (instance_data->message == NULL)
     {
         free(instance_data);

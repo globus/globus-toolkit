@@ -873,16 +873,16 @@ globus_l_gfs_data_stat_cb(
     
     if(reply->code / 100 != 1)
     {
-    info = (globus_gfs_stat_info_t *) request->info;
-    if(info)
-    {
-        if(info->pathname)
+        info = (globus_gfs_stat_info_t *) request->info;
+        if(info)
         {
-            globus_free(info->pathname);
+            if(info->pathname)
+            {
+                globus_free(info->pathname);
+            }
+            globus_free(info);
         }
-        globus_free(info);
-    }
-    globus_l_gfs_request_info_destroy(request);
+        globus_l_gfs_request_info_destroy(request);
     }
 
     GlobusGFSDebugExit();
@@ -898,8 +898,8 @@ globus_l_gfs_request_stat(
 {
     char *                              tmp_str;
     globus_l_gfs_server_instance_t *    instance;
-    globus_gfs_stat_info_t *            stat_info;
-    globus_l_gfs_request_info_t *       request;
+    globus_gfs_stat_info_t *            stat_info = NULL;
+    globus_l_gfs_request_info_t *       request = NULL;
     globus_result_t                     result;
     GlobusGFSName(globus_l_gfs_request_stat);
     GlobusGFSDebugEnter();
@@ -916,11 +916,11 @@ globus_l_gfs_request_stat(
         goto error_init;
     }
 
-
     stat_info->file_only =
         (mask & GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY) ?
             GLOBUS_TRUE : GLOBUS_FALSE;
-
+    stat_info->use_symlink_info = GLOBUS_TRUE;
+    
     result = globus_l_gfs_get_full_path(
         instance, path, &stat_info->pathname, 
         GFS_L_LIST | (stat_info->file_only ? GFS_L_SYM : 0));
@@ -940,6 +940,9 @@ globus_l_gfs_request_stat(
     return;
     
 error_init:
+    globus_free(stat_info->pathname);
+    globus_free(stat_info);
+    globus_l_gfs_request_info_destroy(request);
     {
         int                             ftp_code;
         
@@ -1024,12 +1027,6 @@ globus_l_gfs_data_command_cb(
             info->pathname = NULL;
             globus_gsc_959_finished_command(op,
                 "350 OK. Send RNTO with destination name.\r\n");
-            break;
-          case GLOBUS_GFS_CMD_SITE_SYMLINKFROM:
-            request->instance->slfr_pathname = info->pathname;
-            info->pathname = NULL;
-            globus_gsc_959_finished_command(op,
-                "350 OK. Send SITE SYMLINKTO with symlink name.\r\n");
             break;
           case GLOBUS_GFS_CMD_CKSM:
             if(reply->code / 100 == 1)
@@ -1606,34 +1603,11 @@ globus_l_gfs_request_command(
         {
             goto err;   
         }
+        result = globus_i_gfs_modify_to_unixtime(
+            cmd_array[1], &command_info->utime_time);
+        if (result || command_info->utime_time < 0)
         {
-            char* tz;
-            struct tm modtime;
-            memset(&modtime, 0, sizeof(modtime));
-            if (sscanf(cmd_array[1], "%4d%2d%2d%2d%2d%2d", 
-                        &modtime.tm_year, &modtime.tm_mon, &modtime.tm_mday,
-                        &modtime.tm_hour, &modtime.tm_min, &modtime.tm_sec) != 6)
-            {
-                goto err;
-            }
-            modtime.tm_year -= 1900;
-            modtime.tm_mon  -= 1;
-            /* This block converts the user-specified UTC time to a Unix time
-             * value.  We have to do contortions here as there is no standard
-             * inverse of the 'gmtime' function. */
-            tz = getenv("TZ");
-            globus_libc_setenv("TZ", "UTC", 1);
-            tzset();
-            command_info->utime_time = mktime(&modtime);
-            if (tz)
-                globus_libc_setenv("TZ", tz, 1);
-            else
-                globus_libc_unsetenv("TZ");
-            tzset();
-            if (command_info->utime_time < 0)
-            {
-                goto err;
-            }                        
+            goto err;
         }
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
     }
@@ -1749,68 +1723,13 @@ globus_l_gfs_request_command(
             {
                 goto err;   
             }
+            result = globus_i_gfs_modify_to_unixtime(
+                cmd_array[2], &command_info->utime_time);
+            if (result || command_info->utime_time < 0)
             {
-                char* tz;
-                struct tm modtime;
-                memset(&modtime, 0, sizeof(modtime));
-                if (sscanf(cmd_array[2], "%4d%2d%2d%2d%2d%2d", 
-                            &modtime.tm_year, &modtime.tm_mon, &modtime.tm_mday,
-                            &modtime.tm_hour, &modtime.tm_min, &modtime.tm_sec) != 6)
-                {
-                    goto err;
-                }
-                modtime.tm_year -= 1900;
-                modtime.tm_mon  -= 1;
-                /* This block converts the user-specified UTC time to a Unix time
-                 * value.  We have to do contortions here as there is no standard
-                 * inverse of the 'gmtime' function. */
-                tz = getenv("TZ");
-                globus_libc_setenv("TZ", "UTC", 1);
-                tzset();
-                command_info->utime_time = mktime(&modtime);
-                if(tz)
-                {
-                    globus_libc_setenv("TZ", tz, 1);
-                }
-                else
-                {
-                    globus_libc_unsetenv("TZ");
-                }
-                tzset();
-                if (command_info->utime_time < 0)
-                {
-                    goto err;
-                }                        
+                goto err;
             }
             type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
-        }
-        else if(strcmp(cmd_array[1], "SYMLINKFROM") == 0)
-        {            
-            command_info->command = GLOBUS_GFS_CMD_SITE_SYMLINKFROM;
-            command_info->pathname = globus_libc_strdup(cmd_array[2]);
-            if(command_info->pathname == NULL)
-            {
-                goto err;
-            }
-            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
-        }
-        else if(strcmp(cmd_array[1], "SYMLINKTO") == 0)
-        {
-            command_info->command = GLOBUS_GFS_CMD_SITE_SYMLINK;
-            result = globus_l_gfs_get_full_path(
-                instance, cmd_array[2], &command_info->pathname,
-                GFS_L_DELETE | GFS_L_SYM | GFS_L_WRITE);
-            if(command_info->pathname == NULL)
-            {
-                goto err;
-            }
-            if(instance->slfr_pathname == NULL)
-            {
-                goto err;
-            }
-            command_info->from_pathname = instance->slfr_pathname;
-            instance->slfr_pathname = GLOBUS_NULL;
-            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
         }
         else if(strcmp(cmd_array[1], "SYMLINK") == 0)
         {
@@ -1825,6 +1744,21 @@ globus_l_gfs_request_command(
             }
             command_info->from_pathname = tmp_argstr;
             
+            tmp_argstr = globus_i_gfs_kv_getval(cmd_array[2], "MODIFY", 1);
+            if(!tmp_argstr)
+            {
+                command_info->utime_time = -1;
+            }
+            else
+            {
+                result = globus_i_gfs_modify_to_unixtime(
+                    tmp_argstr, &command_info->utime_time);
+                if (result || command_info->utime_time < 0)
+                {
+                    goto err;
+                }
+            }
+
             result = globus_l_gfs_kvstr_path(
                 instance, GFS_L_DELETE | GFS_L_SYM | GFS_L_WRITE, cmd_array[2], NULL, &tmp_argstr);
             if(result != GLOBUS_SUCCESS)
@@ -3296,7 +3230,7 @@ globus_l_gfs_add_commands(
             tmp_str = "none";
             break;
     }
-    feat_str = globus_common_create_string("SYMLINK allowed_policy=%s;", tmp_str);
+    feat_str = globus_common_create_string("SYMLINK symlink_creation_policy=%s;", tmp_str);
     result = globus_gridftp_server_control_add_feature(
         control_handle, feat_str);
     globus_free(feat_str);
@@ -3311,33 +3245,7 @@ globus_l_gfs_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         3,
         3,
-        "SITE SYMLINK <sp> target=<target path>;path=<link path>;",
-        instance);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-    result = globus_gsc_959_command_add(
-        control_handle,
-        "SITE SYMLINKFROM",
-        globus_l_gfs_request_command,
-        GLOBUS_GSC_COMMAND_POST_AUTH,
-        3,
-        3,
-        "SITE SYMLINKFROM <sp> reference-path",
-        instance);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-    result = globus_gsc_959_command_add(
-        control_handle,
-        "SITE SYMLINKTO",
-        globus_l_gfs_request_command,
-        GLOBUS_GSC_COMMAND_POST_AUTH,
-        3,
-        3,
-        "SITE SYMLINKTO <sp> link-path",
+        "SITE SYMLINK <sp> target=<target path>;path=<link path>;modify=<modification time of created symlink>;",
         instance);
     if(result != GLOBUS_SUCCESS)
     {

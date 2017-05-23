@@ -838,10 +838,15 @@ globus_l_gsc_cmd_stat_cb(
                 globus_free(stat_info->name);
             }
             stat_info->name = globus_libc_strdup(path);
-            tmp_ptr = globus_i_gsc_mlsx_line_single(
-                op->server_handle->opts.mlsx_fact_str, uid, stat_info, NULL, GLOBUS_TRUE);
+            tmp_ptr = globus_i_gsc_mlsx_line(
+               stat_info, 
+               stat_count, 
+               op->server_handle->opts.mlsx_fact_str, 
+               uid,
+               NULL,
+               GLOBUS_TRUE);
             msg =  globus_common_create_string(
-                _FSMSL("%d-status of %s\r\n %s\r\n%d End.\r\n"),
+                _FSMSL("%d-status of %s\r\n %s%d End.\r\n"),
                 code, op->path, tmp_ptr, code);
             globus_free(tmp_ptr);
         }
@@ -1584,6 +1589,41 @@ globus_l_gsc_cmd_opts(
         if(strstr(cmd_a[2], "unix.slink"))
         {
             *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXSLINK;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "unix.slink.modify"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXSLINKMODIFY;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "unix.slink.size"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXSLINKSIZE;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "unix.slink.mode"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXSLINKMODE;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "unix.slink.uid"))
+        {
+            *tmp_ptr = GLOBUS_GSX_MLSX_FACT_UNIXSLINKUID;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "unix.slink.gid"))
+        {
+            *tmp_ptr = GLOBUS_GSX_MLSX_FACT_UNIXSLINKGID;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "unix.slink.owner"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXSLINKOWNER;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "unix.slink.group"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXSLINKGROUP;
             tmp_ptr++;
         }
         if(strstr(cmd_a[2], "unique"))
@@ -3696,7 +3736,7 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "SPAS");
     globus_gridftp_server_control_add_feature(server_handle, "ESTO");
     globus_gridftp_server_control_add_feature(server_handle, "ERET");
-    globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;UNIX.owner*;UNIX.uid*;UNIX.group*;UNIX.gid*;Unique*;UNIX.slink*;X.count;");    
+    globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;UNIX.owner*;UNIX.uid*;UNIX.group*;UNIX.gid*;Unique*;UNIX.slink*;UNIX.slink.Modify*;UNIX.slink.Size*;UNIX.slink.mode*;UNIX.slink.owner*;UNIX.slink.group*;UNIX.slink.uid*;UNIX.slink.gid*;X.count;");    
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
     globus_gridftp_server_control_add_feature(server_handle, "DCAU");    

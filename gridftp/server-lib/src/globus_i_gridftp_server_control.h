@@ -120,7 +120,14 @@ typedef enum globus_i_gsc_mlsx_fact_e
     GLOBUS_GSC_MLSX_FACT_UNIXSLINK = 'L',
     GLOBUS_GSX_MLSX_FACT_UNIXUID = 'I',
     GLOBUS_GSX_MLSX_FACT_UNIXGID = 'D',
-    GLOBUS_GSC_MLSX_FACT_XCOUNT = 'N'
+    GLOBUS_GSC_MLSX_FACT_XCOUNT = 'N',
+    GLOBUS_GSC_MLSX_FACT_UNIXSLINKMODIFY = 'm',
+    GLOBUS_GSC_MLSX_FACT_UNIXSLINKSIZE = 's', 
+    GLOBUS_GSC_MLSX_FACT_UNIXSLINKMODE = 'u',
+    GLOBUS_GSX_MLSX_FACT_UNIXSLINKUID = 'i',
+    GLOBUS_GSX_MLSX_FACT_UNIXSLINKGID = 'd',
+    GLOBUS_GSC_MLSX_FACT_UNIXSLINKOWNER = 'o',
+    GLOBUS_GSC_MLSX_FACT_UNIXSLINKGROUP = 'g'
 } globus_i_gsc_mlsx_fact_t;
 
 typedef enum
@@ -215,7 +222,7 @@ typedef struct globus_i_gsc_event_data_s
 
 typedef struct globus_i_gsc_handle_opts_s
 {
-    char                                    mlsx_fact_str[16];
+    char                                    mlsx_fact_str[32];
     int                                     parallelism;
     globus_size_t                           send_buf;
     globus_size_t                           receive_buf;
@@ -599,6 +606,7 @@ globus_i_gsc_mlsx_line_single(
     const char *                        mlsx_fact_str,
     int                                 uid,
     globus_gridftp_server_control_stat_t *  stat_info,
+    globus_gridftp_server_control_stat_t *  symlink_stat_info,
     const char *                        base_path,
     globus_bool_t                       mlst);
 

@@ -3011,7 +3011,7 @@ globus_gridftp_server_control_start(
         globus_free(server_handle->types);
     }
     /* default options */
-    strcpy(server_handle->opts.mlsx_fact_str, "TMSPUOIGDQLN");
+    strcpy(server_handle->opts.mlsx_fact_str, "TMSPUOIGDQLNmsuidog");
     server_handle->opts.send_buf = 0; 
     server_handle->opts.perf_frequency = 5;
     server_handle->opts.retr_perf_frequency = 0;
@@ -3947,11 +3947,12 @@ globus_i_gsc_nlst_line(
 
 char *
 globus_i_gsc_mlsx_line_single(
-    const char *                        mlsx_fact_str,
-    int                                 uid,
+    const char *                            mlsx_fact_str,
+    int                                     uid,
     globus_gridftp_server_control_stat_t *  stat_info,
-    const char *                        base_path,
-    globus_bool_t                       mlst)
+    globus_gridftp_server_control_stat_t *  symlink_stat_info,
+    const char *                            base_path,
+    globus_bool_t                           mlst)
 {
     char *                              out_buf;
     char *                              tmp_ptr;
@@ -3968,16 +3969,28 @@ globus_i_gsc_mlsx_line_single(
     int                                 is_cdir = 0;
     int                                 cnt;
     char *                              enc_str;
+    int                                 is_slink = 0;
     GlobusGridFTPServerName(globus_i_gsc_mlsx_line_single);
 
     GlobusGridFTPServerDebugInternalEnter();
 
-    buf_len = MAXPATHLEN * 4 + 256; /* rough guess... could be a maxpathlen 
+    buf_len = MAXPATHLEN * 4 + 512; /* rough guess... could be a maxpathlen 
                                        for the path, and 3*maxpathlen for 
                                        the urlencoded link target */
     out_buf = globus_malloc(buf_len);
 
     tmp_ptr = out_buf;
+
+    if(stat_info[0].symlink_target && *(stat_info[0].symlink_target))
+    {
+        is_slink = 1;
+    }
+
+    if(S_ISLNK(stat_info[0].mode) && !symlink_stat_info)
+    {
+        symlink_stat_info=stat_info;
+    }
+
     for(fact = (char *)mlsx_fact_str; *fact != '\0'; fact++)
     {
         is_readable = 0;
@@ -3987,16 +4000,16 @@ globus_i_gsc_mlsx_line_single(
         switch(*fact)
         {
             case GLOBUS_GSC_MLSX_FACT_TYPE:
-                if(S_ISREG(stat_info->mode))
+                if(S_ISREG(stat_info[0].mode))
                 {
                     sprintf(tmp_ptr, "Type=file;"); 
                 }
-                else if(S_ISDIR(stat_info->mode))
+                else if(S_ISDIR(stat_info[0].mode))
                 {
-                    dir_ptr = strchr(stat_info->name, '/');
+                    dir_ptr = strchr(stat_info[0].name, '/');
                     if(dir_ptr == NULL)
                     {
-                        dir_ptr = stat_info->name;
+                        dir_ptr = stat_info[0].name;
                     }
 
                     if(strcmp(dir_ptr, "..") == 0)
@@ -4013,9 +4026,9 @@ globus_i_gsc_mlsx_line_single(
                         sprintf(tmp_ptr, "Type=dir;");
                     }
                 }
-                else if(S_ISLNK(stat_info->mode)) 
+                else if(S_ISLNK(stat_info[0].mode))
                 {
-                    if(stat_info->error)
+                    if(stat_info[0].error)
                     {
                         sprintf(tmp_ptr, "Type=invalid_symlink;");
                     }
@@ -4024,15 +4037,15 @@ globus_i_gsc_mlsx_line_single(
                         sprintf(tmp_ptr, "Type=slink;");
                     }
                 }
-                else if(S_ISCHR(stat_info->mode))
+                else if(S_ISCHR(stat_info[0].mode))
                 {
                     sprintf(tmp_ptr, "Type=OS.unix=chr;"); 
                 }
-                else if(S_ISBLK(stat_info->mode))
+                else if(S_ISBLK(stat_info[0].mode))
                 {
                     sprintf(tmp_ptr, "Type=OS.unix=blk;"); 
                 }
-                else if(S_ISFIFO(stat_info->mode))
+                else if(S_ISFIFO(stat_info[0].mode))
                 {
                     sprintf(tmp_ptr, "Type=OS.unix=pipe;"); 
                 }
@@ -4043,7 +4056,7 @@ globus_i_gsc_mlsx_line_single(
                 break;
 
             case GLOBUS_GSC_MLSX_FACT_MODIFY:
-                tm = gmtime(&stat_info->mtime);
+                tm = gmtime(&stat_info[0].mtime);
                 sprintf(tmp_ptr, "Modify=%04d%02d%02d%02d%02d%02d;",
                     tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
                     tm->tm_hour, tm->tm_min, tm->tm_sec);
@@ -4055,79 +4068,79 @@ globus_i_gsc_mlsx_line_single(
 
             case GLOBUS_GSC_MLSX_FACT_SIZE:
                 sprintf(tmp_ptr, 
-                    "Size=%"GLOBUS_OFF_T_FORMAT";", stat_info->size);
+                    "Size=%"GLOBUS_OFF_T_FORMAT";", stat_info[0].size);
                 break;
 
             case GLOBUS_GSC_MLSX_FACT_PERM:
                 sprintf(tmp_ptr, "Perm=");
                 tmp_ptr += 5;
-                if(uid == stat_info->uid)
+                if(uid == stat_info[0].uid)
                 {
-                    if(stat_info->mode & S_IRUSR)
+                    if(stat_info[0].mode & S_IRUSR)
                     {
                         is_readable = 1;
                     }
-                    if(stat_info->mode & S_IWUSR)
+                    if(stat_info[0].mode & S_IWUSR)
                     {
                         is_writable = 1;
                     }
-                    if(stat_info->mode & S_IXUSR)
+                    if(stat_info[0].mode & S_IXUSR)
                     {
                         is_executable = 1;
                     }
                 }
-                if(uid == stat_info->gid)
+                if(uid == stat_info[0].gid)
                 {
-                    if(stat_info->mode & S_IRGRP)
+                    if(stat_info[0].mode & S_IRGRP)
                     {
                         is_readable = 1;
                     }
-                    if(stat_info->mode & S_IWGRP)
+                    if(stat_info[0].mode & S_IWGRP)
                     {
                         is_writable = 1;
                     }
-                    if(stat_info->mode & S_IXGRP)
+                    if(stat_info[0].mode & S_IXGRP)
                     {
                         is_executable = 1;
                     }
                 }
-                if(stat_info->mode & S_IROTH)
+                if(stat_info[0].mode & S_IROTH)
                 {
                     is_readable = 1;
                 }
-                if(stat_info->mode & S_IWOTH)
+                if(stat_info[0].mode & S_IWOTH)
                 {
                     is_writable = 1;
                 }
-                if(stat_info->mode & S_IXOTH)
+                if(stat_info[0].mode & S_IXOTH)
                 {
                     is_executable = 1;
                 }
 
-                if(is_writable && S_ISREG(stat_info->mode))
+                if(is_writable && S_ISREG(stat_info[0].mode))
                 {
                     *(tmp_ptr++) = 'a';
                     *(tmp_ptr++) = 'w';
                 }
 
                 if(is_writable && is_executable && 
-                    S_ISDIR(stat_info->mode))
+                    S_ISDIR(stat_info[0].mode))
                 {
                     *(tmp_ptr++) = 'c';
                     *(tmp_ptr++) = 'f';
                     *(tmp_ptr++) = 'm';
                     *(tmp_ptr++) = 'p';
                 }
-                if(is_executable && S_ISDIR(stat_info->mode))
+                if(is_executable && S_ISDIR(stat_info[0].mode))
                 {
                     *(tmp_ptr++) = 'e';
                 }
                 if(is_readable && is_executable && 
-                    S_ISDIR(stat_info->mode))
+                    S_ISDIR(stat_info[0].mode))
                 {
                     *(tmp_ptr++) = 'l';
                 }
-                if(is_readable && S_ISREG(stat_info->mode))
+                if(is_readable && S_ISREG(stat_info[0].mode))
                 {
                     *(tmp_ptr++) = 'r';
                 }
@@ -4138,19 +4151,19 @@ globus_i_gsc_mlsx_line_single(
 
             case GLOBUS_GSC_MLSX_FACT_UNIXMODE:
                 sprintf(tmp_ptr, "UNIX.mode=%04o;", 
-                    (unsigned) (stat_info->mode & 07777));
+                    (unsigned) (stat_info[0].mode & 07777));
                 break;
 
             case GLOBUS_GSX_MLSX_FACT_UNIXUID:
-                sprintf(tmp_ptr, "UNIX.uid=%d;", stat_info->uid);
+                sprintf(tmp_ptr, "UNIX.uid=%d;", stat_info[0].uid);
                 break;
                 
             case GLOBUS_GSX_MLSX_FACT_UNIXGID:
-                sprintf(tmp_ptr, "UNIX.gid=%d;", stat_info->gid);
+                sprintf(tmp_ptr, "UNIX.gid=%d;", stat_info[0].gid);
                 break;
                 
             case GLOBUS_GSC_MLSX_FACT_UNIXOWNER:
-                pw = globus_libc_cached_getpwuid(stat_info->uid);
+                pw = globus_libc_cached_getpwuid(stat_info[0].uid);
                 enc_str = NULL;
                 if(pw)
                 {                    
@@ -4168,7 +4181,7 @@ globus_i_gsc_mlsx_line_single(
                 break;
 
             case GLOBUS_GSC_MLSX_FACT_UNIXGROUP:
-                gr = globus_libc_cached_getgrgid(stat_info->gid);
+                gr = globus_libc_cached_getgrgid(stat_info[0].gid);
                 enc_str = NULL;
                 if(gr)
                 {                    
@@ -4187,17 +4200,16 @@ globus_i_gsc_mlsx_line_single(
 
             case GLOBUS_GSC_MLSX_FACT_UNIQUE:
                 sprintf(tmp_ptr, "Unique=%lx-%lx;", 
-                    (unsigned long) stat_info->dev,
-                    (unsigned long) stat_info->ino);
+                    (unsigned long) stat_info[0].dev,
+                    (unsigned long) stat_info[0].ino);
                 break;
 
             case GLOBUS_GSC_MLSX_FACT_UNIXSLINK:
-                if(stat_info->symlink_target != NULL && 
-                    *stat_info->symlink_target != '\0')
+                if(is_slink)
                 {
                     encoded_symlink_target = NULL;
                     cnt = globus_l_gsc_mlsx_urlencode(
-                        stat_info->symlink_target, &encoded_symlink_target);
+                        stat_info[0].symlink_target, &encoded_symlink_target);
                     if(encoded_symlink_target != NULL)
                     {
                         sprintf(tmp_ptr, 
@@ -4210,10 +4222,92 @@ globus_i_gsc_mlsx_line_single(
                 }
                 break;
 
+            case GLOBUS_GSC_MLSX_FACT_UNIXSLINKMODIFY:
+                if(symlink_stat_info)
+                {
+                    tm = gmtime(&symlink_stat_info[0].mtime);
+                    sprintf(tmp_ptr, "UNIX.slink.Modify=%04d%02d%02d%02d%02d%02d;",
+                        tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+                        tm->tm_hour, tm->tm_min, tm->tm_sec);
+                }
+                break;
+
+            case GLOBUS_GSC_MLSX_FACT_UNIXSLINKSIZE:
+                if(symlink_stat_info)
+                {
+                    sprintf(tmp_ptr, 
+                        "UNIX.slink.Size=%"GLOBUS_OFF_T_FORMAT";", symlink_stat_info[0].size);
+                }
+                break;
+
+            case GLOBUS_GSC_MLSX_FACT_UNIXSLINKMODE:
+                if(symlink_stat_info)
+                {
+                    sprintf(tmp_ptr, "UNIX.slink.mode=%04o;", 
+                        (unsigned) (symlink_stat_info[0].mode & 07777));
+                }
+                break;
+
+            case GLOBUS_GSX_MLSX_FACT_UNIXSLINKUID:
+                if(symlink_stat_info)
+                {
+                    sprintf(tmp_ptr, "UNIX.slink.uid=%d;", symlink_stat_info[0].uid);
+                }
+                break;
+                
+            case GLOBUS_GSX_MLSX_FACT_UNIXSLINKGID:
+                if(symlink_stat_info)
+                {
+                    sprintf(tmp_ptr, "UNIX.slink.gid=%d;", symlink_stat_info[0].gid);
+                }
+                break;
+                
+            case GLOBUS_GSC_MLSX_FACT_UNIXSLINKOWNER:
+                if(symlink_stat_info)
+                {
+                    pw = globus_libc_cached_getpwuid(symlink_stat_info[0].uid);
+                    enc_str = NULL;
+                    if(pw)
+                    {                    
+                        cnt = globus_l_gsc_mlsx_urlencode(pw->pw_name, &enc_str);
+                    }
+                    
+                    if(enc_str)
+                    {
+                        sprintf(tmp_ptr, "UNIX.slink.owner=%s;", enc_str);
+                        if(cnt)
+                        {
+                            globus_free(enc_str);
+                        }
+                    }
+                }
+                break;
+
+            case GLOBUS_GSC_MLSX_FACT_UNIXSLINKGROUP:
+                if(symlink_stat_info)
+                {
+                    gr = globus_libc_cached_getgrgid(symlink_stat_info[0].gid);
+                    enc_str = NULL;
+                    if(gr)
+                    {                    
+                        cnt = globus_l_gsc_mlsx_urlencode(gr->gr_name, &enc_str);
+                    }
+                    
+                    if(enc_str)
+                    {
+                        sprintf(tmp_ptr, "UNIX.slink.group=%s;", enc_str);
+                        if(cnt)
+                        {
+                            globus_free(enc_str);
+                        }
+                    }
+                }
+                break;
+
             case GLOBUS_GSC_MLSX_FACT_XCOUNT:
                 if(is_cdir)
                 {
-                    sprintf(tmp_ptr, "X.count=%u;", stat_info->nlink);
+                    sprintf(tmp_ptr, "X.count=%u;", stat_info[0].nlink);
                 }
                 break;
 
@@ -4225,7 +4319,7 @@ globus_i_gsc_mlsx_line_single(
     }
     
 #if 0
-    switch (stat_info->error) 
+    switch (stat_info[0].error) 
     {
         case GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_SUCCESS:
             break;
@@ -4242,19 +4336,19 @@ globus_i_gsc_mlsx_line_single(
 
     if(base_path) 
     {
-        if(stat_info->name[0] == '\0')
+        if(stat_info[0].name[0] == '\0')
         {
             /** Don't print trailing slash if no name */
             sprintf(tmp_ptr, " %s", base_path);
         } 
         else 
         {
-            sprintf(tmp_ptr, " %s/%s", base_path, stat_info->name);
+            sprintf(tmp_ptr, " %s/%s", base_path, stat_info[0].name);
         }
     } 
     else
     {
-    sprintf(tmp_ptr, " %s", stat_info->name);
+        sprintf(tmp_ptr, " %s", stat_info[0].name);
     }
 
     GlobusGridFTPServerDebugInternalExit();
@@ -4277,6 +4371,8 @@ globus_i_gsc_mlsx_line(
     char *                              tmp_ptr;
     globus_size_t                       buf_len;
     globus_size_t                       buf_left;
+    globus_gridftp_server_control_stat_t *  symlink_ptr = NULL;
+    globus_gridftp_server_control_stat_t *  stat_ptr = NULL;
     GlobusGridFTPServerName(globus_i_gsc_mlsx_line);
 
     GlobusGridFTPServerDebugInternalEnter();
@@ -4288,10 +4384,22 @@ globus_i_gsc_mlsx_line(
     tmp_ptr = buf;
     for(ctr = 0; ctr < stat_count; ctr++)
     {
+        stat_ptr = &stat_info[ctr];
+        if(ctr + 1 < stat_count && stat_ptr->symlink_target && 
+            !(stat_ptr->error) && S_ISLNK(stat_info[ctr + 1].mode) &&
+            !strcmp(stat_ptr->name, stat_info[ctr + 1].name))
+        {
+            symlink_ptr = &stat_info[++ctr];
+        }
+        else
+        {
+            symlink_ptr = NULL;
+        }
         line = globus_i_gsc_mlsx_line_single(
                 mlsx_fact_str,
                 uid,
-                &stat_info[ctr],
+                stat_ptr,
+                symlink_ptr,
                 base_path,
                 GLOBUS_FALSE);
         if(line != NULL)

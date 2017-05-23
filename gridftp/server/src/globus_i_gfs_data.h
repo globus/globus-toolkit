@@ -167,6 +167,11 @@ globus_i_gfs_kv_replaceval(
     char *                              new_val,
     globus_bool_t                       encode);
 
+globus_result_t
+globus_i_gfs_modify_to_unixtime(
+    const char *                        modify_str,
+    time_t *                            out_time);
+
 char *
 globus_i_gfs_data_dsi_version();
 
