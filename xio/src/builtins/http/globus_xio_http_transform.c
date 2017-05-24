@@ -179,7 +179,8 @@ globus_l_xio_http_reopen(
 
     if (http_handle->pending_error)
     {
-        result = globus_error_put(http_handle->pending_error);
+        result = globus_error_put(
+            globus_object_copy(http_handle->pending_error));
         goto error_exit;
     }
 
@@ -419,7 +420,8 @@ globus_i_xio_http_read(
 
     if (http_handle->pending_error)
     {
-        result = globus_error_put(http_handle->pending_error);
+        result = globus_error_put(
+            globus_object_copy(http_handle->pending_error));
         goto error_exit;
     }
     
@@ -1406,7 +1408,8 @@ globus_i_xio_http_write(
 
     if (http_handle->pending_error)
     {
-        result = globus_error_put(http_handle->pending_error);
+        result = globus_error_put(
+            globus_object_copy(http_handle->pending_error));
     }
     else
     {
