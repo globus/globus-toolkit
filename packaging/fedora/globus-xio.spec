@@ -8,7 +8,7 @@ Name:		globus-xio
 
 
 %global _name %(tr - _ <<< %{name})
-Version:	5.15
+Version:	5.16
 Release:	1%{?dist}
 Vendor:	        Globus Support
 Summary:	Globus Toolkit - Globus XIO Framework
@@ -169,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*/*
 
 %changelog
+* Wed May 24 2017 Globus Toolkit <support@globus.org> - 5.16-1
+- Fix crash in error handling in http driver
+
 * Mon Mar 20 2017 Globus Toolkit <support@globus.org> - 5.15-1
 - Don't rely on globus_error_put(NULL) to be GLOBUS_SUCCESS
 

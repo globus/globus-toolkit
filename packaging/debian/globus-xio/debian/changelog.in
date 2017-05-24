@@ -1,3 +1,9 @@
+globus-xio (5.16-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix crash in error handling in http driver
+
+ -- Globus Toolkit <support@globus.org>  Wed, 24 May 2017 16:16:31 -0400
+
 globus-xio (5.15-1+gt6.@distro@) @distro@; urgency=low
 
   * Don't rely on globus_error_put(NULL) to be GLOBUS_SUCCESS
