@@ -846,7 +846,7 @@ globus_l_gsc_cmd_stat_cb(
                NULL,
                GLOBUS_TRUE);
             msg =  globus_common_create_string(
-                _FSMSL("%d-status of %s\r\n %s%d End.\r\n"),
+                _FSMSL("%d-status of %s\r\n%s%d End.\r\n"),
                 code, op->path, tmp_ptr, code);
             globus_free(tmp_ptr);
         }
