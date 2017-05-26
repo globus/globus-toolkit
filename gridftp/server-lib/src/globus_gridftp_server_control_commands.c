@@ -2842,7 +2842,7 @@ globus_l_gsc_cmd_stor_retr_cb(
     wrapper->path = globus_libc_strdup(path);    
 
     if(response_type == GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS &&
-        stat_count > 1)
+        stat_count > 2)
     {
         code = 550;
         msg = globus_common_create_string(
