@@ -1,5 +1,5 @@
 Name:           globus-toolkit-repo
-Version:        6.0.9
+Version:        6.0.10
 Release:        1
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
@@ -139,6 +139,9 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Fri May 25 2017 Globus Toolkit <support@globus.org> - 6.0.10-1
+- (debian) Add dependency on apt-transport-https
+
 * Mon May 22 2017 Globus Toolkit <support@globus.org> - 6.0.9-1
 - Move repos to downloads.globus.org
 - Combine with equivalent deb package
