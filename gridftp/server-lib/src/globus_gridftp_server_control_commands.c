@@ -838,6 +838,11 @@ globus_l_gsc_cmd_stat_cb(
                 globus_free(stat_info->name);
             }
             stat_info->name = globus_libc_strdup(path);
+            if(stat_count == 2)
+            {
+                globus_free(stat_info[1].name);
+                stat_info[1].name = globus_libc_strdup(path);
+            }
             tmp_ptr = globus_i_gsc_mlsx_line(
                stat_info, 
                stat_count, 
