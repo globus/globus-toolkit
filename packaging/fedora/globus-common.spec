@@ -14,7 +14,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	17.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:		Globus Support
 Summary:	Globus Toolkit - Common Library
 
@@ -207,7 +207,7 @@ make install DESTDIR=$RPM_BUILD_ROOT
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
 %check
-%if %{?suse_version}%{!?suse_version:0} >= 1315
+%if %{?suse_version}%{!?suse_version:0} >= 1315 || %{?fedora}%{!?fedora:0} >= 26
 export NO_EXTERNAL_NET=1
 %endif
 make %{?_smp_mflags} check
@@ -252,6 +252,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Mon Jun 19 2017 Globus Toolkit <support@globus.org> - 17.1-2
+- Skip network tests on fedora 26
+
 * Fri Mar 03 2017 Globus Toolkit <support@globus.org> - 17.1-1
 - Add missing file
 
