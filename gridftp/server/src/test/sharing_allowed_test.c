@@ -41,18 +41,19 @@ test_sharing_allowed(const sharing_allow_test_case_t *test_case)
     globus_l_gfs_data_session_t         session_handle = 
     {
         .username = test_case->sharing_user,
-        .gid_count = getgroups(0, NULL),
+        .gid_count = getgroups(0, NULL) + 1,
     };
-
-    TEST_ASSERT(session_handle.gid_count > 0);
 
     session_handle.gid_array = malloc(session_handle.gid_count * sizeof(gid_t));
     TEST_ASSERT(session_handle.gid_array != NULL);
 
     rc = getgroups(session_handle.gid_count, session_handle.gid_array);
-    TEST_ASSERT(rc == session_handle.gid_count);
+    if (rc < session_handle.gid_count)
+    {
+        session_handle.gid_array[session_handle.gid_count-1] = getegid();
+    }
 
-    session_handle.gid = session_handle.gid_array[0];
+    session_handle.gid = getegid();
 
     if (test_case->sharing_users_allow)
     {

@@ -6,7 +6,7 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.1
+Version:	12.2
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -230,6 +230,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Jun 20 2017 Globus Toolkit <support@globus.org> - 12.2-1
+- Fix tests when getgroups() does not return effective gid
+
 * Tue Apr 18 2017 Globus Toolkit <support@globus.org> - 12.1-1
 - better delay for end of session ref check
 
