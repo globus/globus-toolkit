@@ -1,3 +1,10 @@
+globus-gssapi-gsi (12.17-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix indicate_mechs_test when using openssl v1.1.0
+  * update to debhelper 9
+
+ -- Globus Toolkit <support@globus.org>  Wed, 21 Jun 2017 13:21:04 -0400
+
 globus-gssapi-gsi (12.16-1+gt6.@distro@) @distro@; urgency=low
 
   * Address test issues: fix .srl dependency, reuse credential

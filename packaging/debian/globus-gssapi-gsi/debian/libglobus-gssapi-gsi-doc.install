@@ -1,0 +1,4 @@
+#! /usr/bin/dh-exec
+usr/share/doc/libglobus-gssapi-gsi-dev/html
+usr/share/man/man3/globus_*.3
+usr/share/man/man3/GLOBUS_*.3

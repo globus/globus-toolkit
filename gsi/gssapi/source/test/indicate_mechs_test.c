@@ -55,9 +55,11 @@ indicate_mechs_test(void)
     OM_uint32                           major_status = 0;
     OM_uint32                           minor_status = 0;
     int                                 i;
-    static gss_OID_desc                 gssapi_mech_gsi = 
-            {9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
 
+    if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    {
+        return 77;
+    }
     major_status = gss_indicate_mechs(&minor_status, &oids);
     if(GSS_ERROR(major_status))
     {
@@ -67,6 +69,8 @@ indicate_mechs_test(void)
 
     for (i = 0; i < oids->count; i++)
     {
+    static gss_OID_desc                 gssapi_mech_gsi = 
+            {9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
         if (oids->elements[i].length == gssapi_mech_gsi.length &&
             memcmp(oids->elements[i].elements,
                     gssapi_mech_gsi.elements,
@@ -104,6 +108,10 @@ indicate_mechs_v2_test(void)
     static gss_OID_desc                 gssapi_mech_gsi = 
 	{10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01"};
 
+    if (OPENSSL_VERSION_NUMBER < 0x10001000L)
+    {
+        return 77;
+    }
     major_status = gss_indicate_mechs(&minor_status, &oids);
     if(GSS_ERROR(major_status))
     {
@@ -167,16 +175,25 @@ int main()
 
     for (i = 0; i < SIZEOF_ARRAY(tests); i++)
     {
+        const char *format = NULL;
+
         rc = (*(tests[i].func))();
 
-        if (rc != 0)
+        if (rc == 0)
+        {
+            format = "ok %d - %s\n";
+        }
+        else if (rc == 77)
+        {
+            format = "ok %d - %s # SKIP unsupported mech\n";
+        }
+        else
         {
             failed++;
+            format = "not ok %d - %s\n";
         }
-        printf("%s %d - %s\n",
-                rc == 0 ? "ok" : "not ok",
-                i+1,
-                tests[i].name);
+
+        printf(format, i + 1, tests[i].name);
     }
 
     return 0;
