@@ -1,3 +1,4 @@
+if ENABLE_TESTS
 check_DATA = \
         testcred.key \
         testcred.cert \
@@ -6,6 +7,7 @@ check_DATA = \
         testcred.link \
         testcred.signing_policy \
         testcred.srl
+endif
 
 check_PROGRAMS = activate-test callback-contact-test
 

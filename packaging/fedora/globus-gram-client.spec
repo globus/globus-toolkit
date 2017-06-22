@@ -23,11 +23,9 @@ BuildRequires:	globus-rsl-devel >= 9
 BuildRequires:	globus-io-devel >= 9
 BuildRequires:	globus-gram-protocol-doc >= 11
 BuildRequires:	globus-common-doc >= 14
+BuildRequires:	openssl
 BuildRequires:	doxygen
 BuildRequires:	graphviz
-%if "%{?rhel}" == "5"
-BuildRequires:	graphviz-gd
-%endif
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
 BuildRequires:  automake >= 1.11
 BuildRequires:  autoconf >= 2.60
@@ -167,6 +165,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Jun 22 2017 Globus Toolkit <support@globus.org> - 13.17-1
+- Fix tests makefile when openssl not present
+- Add rpm build dependency on openssl
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 13.16-1
 - Update for el.5 openssl101e
 

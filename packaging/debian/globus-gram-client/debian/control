@@ -1,13 +1,10 @@
 Source: globus-gram-client
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, libglobus-gram-protocol-dev, libglobus-common-dev, libglobus-rsl-dev, libglobus-io-dev, libglobus-gram-protocol-doc (>= 3), libglobus-common-doc, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, libltdl-dev, openssl
+Build-Depends: debhelper (>= 5), autotools-dev, libglobus-gram-protocol-dev, libglobus-common-dev, libglobus-rsl-dev, libglobus-io-dev, libglobus-gram-protocol-doc (>= 3), libglobus-common-doc, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, libltdl-dev, openssl, dh-exec
 Standards-Version: 3.9.0
 Section: net
-DM-Upload-Allowed: yes
-Vcs-Browser: http://svn.nordugrid.org/trac/packaging/browser/debian/globus-gram-client
-Vcs-Svn: http://svn.nordugrid.org/repos/packaging/debian/globus-gram-client
-Homepage: http://www.globus.org/
+Homepage: http://toolkit.globus.org/
 
 Package: libglobus-gram-client3
 Section: libs
