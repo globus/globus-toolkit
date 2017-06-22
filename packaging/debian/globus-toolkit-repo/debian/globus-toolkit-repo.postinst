@@ -31,13 +31,15 @@ list_d="/etc/apt/sources.list.d"
 case "$1" in
 configure)
     for repo in stable testing unstable; do
-        list="globus-toolkit-6-${repo}-${codename}.list"
-        if [ ! -f "${list_d}/${list}" ] || \
-           cmp -s "${list_d}/${list}" "${data}/${list}"; then
-            install -m 0644 -p "${data}/${list}" "${list_d}"
-        else
-            echo "Preserving existing ${list}."
-            echo "There are changes in ${list}.dpkg-new which you should incorporate into ${list}"
-        fi
+        for packagetype in globus-toolkit-6 globus-connect-server; do
+            list="${packagetype}-${repo}-${codename}.list"
+            if [ ! -f "${list_d}/${list}" ] || \
+                cmp -s "${list_d}/${list}" "${data}/${list}"; then
+                install -m 0644 -p "${data}/${list}" "${list_d}"
+            else
+                echo "Preserving existing ${list}."
+                echo "There are changes in ${list}.dpkg-new which you should incorporate into ${list}"
+            fi
+        done
     done
 esac

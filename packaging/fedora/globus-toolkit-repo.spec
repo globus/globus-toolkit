@@ -1,5 +1,5 @@
 Name:           globus-toolkit-repo
-Version:        6.0.11
+Version:        6.0.12
 Release:        1
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
@@ -139,6 +139,9 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Thu Jun 22 2017 Globus Toolkit <support@globus.org> - 6.0.12-1
+- (deb) Fix GCSv5 repo install
+
 * Wed May 31 2017 Globus Toolkit <support@globus.org> - 6.0.11-1
 - (rpm) Fix fedora repo path
 
