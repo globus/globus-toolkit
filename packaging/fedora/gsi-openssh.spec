@@ -43,8 +43,8 @@ Source0: http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.5p1.tar.g
 #Source3: gsisshd.init
 #
 #Patch0: https://github.com/rapier1/openssh-portable/compare/V_7_5_P1...hpn-7_5_P1
-#Patch0: https://github.com/globus/gsi-openssh/releases/download/%{version}/openssh-7_5_P1-hpn-14.13.diff
-Patch0: https://sourceforge.net/projects/hpnssh/files/HPN-SSH%2014v13%207.5p1/openssh-7_5_P1-hpn-14.13.diff
+#Patch0: https://sourceforge.net/projects/hpnssh/files/HPN-SSH%2014v13%207.5p1/openssh-7_5_P1-hpn-14.13.diff
+Patch0: https://github.com/globus/gsi-openssh/releases/download/%{version}/openssh-7_5_P1-hpn-14.13.diff
 ##Patch0 is the HPN-SSH patch to Portable OpenSSH and is constructed as follows if the patch isn't readily available at the above link.
 ## git clone git@github.com:rapier1/openssh-portable.git
 ## cd openssh-portable
