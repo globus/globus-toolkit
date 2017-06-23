@@ -123,14 +123,14 @@ if test X"$use_included_nice" = X1; then
     NICE_CFLAGS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --define-variable=prefix=\"\$(abs_builddir)/libnice\$(prefix)\" --cflags nice)"
     NICE_LIBS="\$\$(env PKG_CONFIG_PATH=\"\$(UDT_DRIVER_PKG_CONFIG_PATH)\" ${PKG_CONFIG} --define-variable=prefix=\"\$(abs_builddir)/libnice\$(prefix)\" --libs nice)"
     NICE_VERSION_AT_LEAST_0_1_2=1
-
-    if test X"$use_included_glib2" = "X"; then
-        PKG_CHECK_MODULES([GLIB2], [glib-2.0 >= 2.20 gobject-2.0 >= 2.20 gthread-2.0 >= 2.20], [], [use_included_glib2=1])
-    fi
 fi
 
 if test $NICE_VERSION_AT_LEAST_0_1_2 = 1; then
     AC_DEFINE([NICE_VERSION_AT_LEAST_0_1_2], [1], [Define if libnice is at least 0.1.2])
+fi
+
+if test X"$use_included_glib2" = "X"; then
+    PKG_CHECK_MODULES([GLIB2], [glib-2.0 >= 2.20 gobject-2.0 >= 2.20 gthread-2.0 >= 2.20], [], [use_included_glib2=1])
 fi
 
 if test X"$use_included_glib2" = X1; then

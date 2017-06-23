@@ -7,10 +7,10 @@ doc_DATA = GLOBUS_LICENSE
 lib_LTLIBRARIES = libglobus_xio_udt_driver.la
 pkgconfig_DATA = globus-xio-udt-driver.pc
 
-AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) $(UDT_CPPFLAGS) $(NICE_CFLAGS) $(GLIB_CFLAGS)
+AM_CPPFLAGS = $(PACKAGE_DEP_CFLAGS) $(UDT_CPPFLAGS) $(NICE_CFLAGS) $(GLIB2_CFLAGS)
 
 libglobus_xio_udt_driver_la_LIBADD = \
-        $(PACKAGE_DEP_LIBS) $(UDT_LDFLAGS) $(NICE_LIBS) $(GLIB_LIBS) $(LIBFFI_LIBS) -lstdc++ 
+        $(PACKAGE_DEP_LIBS) $(UDT_LDFLAGS) $(NICE_LIBS) $(GLIB2_LIBS) $(LIBFFI_LIBS) -lstdc++
 libglobus_xio_udt_driver_la_SOURCES = \
         globus_xio_udt_ref.cpp  \
         globus_xio_udt_ref.h  \
