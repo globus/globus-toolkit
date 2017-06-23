@@ -6,7 +6,7 @@ Name:		globus-gram-client
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	13.17
+Version:	13.18
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Client Library
@@ -165,6 +165,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Jun 23 2017 Globus Toolkit <support@globus.org> - 13.18-1
+- Disable network-needing tests in pbuilder environment
+
 * Thu Jun 22 2017 Globus Toolkit <support@globus.org> - 13.17-1
 - Fix tests makefile when openssl not present
 - Add rpm build dependency on openssl
