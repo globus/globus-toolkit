@@ -145,11 +145,6 @@ if test X"$use_included_glib2" = X1; then
     if test X"$GETTEXT" = X""; then
         use_included_gettext=1
     fi
-    AC_DEFINE([HAVE_GIO_GIO_H], [1], [Define to 1 if you have gio/gio.h])
-else
-    PKG_CHECK_MODULES([GIO], [gio-2.0 >= 2.30],,[:])
-    CPPFLAGS="$CPPFLAGS $GIO_CFLAGS"
-    AC_CHECK_HEADER([gio/gio.h], [AC_DEFINE([HAVE_GIO_GIO_H], [1], [Define to 1 if you have gio/gio.h])])
 fi
 
 if test X"$use_included_libffi" = X1; then

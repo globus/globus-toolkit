@@ -29,6 +29,9 @@
 
 #define GLIB_VERSION_MIN_REQUIRED GLIB_VERSION_2_30
 #include <glib.h>
+#if NICE_VERSION_AT_LEAST_0_1_2
+#include <gio/gio.h>
+#endif
 
 #include "ice.h"
 
