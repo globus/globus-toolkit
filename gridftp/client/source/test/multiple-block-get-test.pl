@@ -22,7 +22,7 @@
 #
 
 use strict;
-use POSIX;
+use File::Temp qw/:POSIX/;
 use Test::More;
 use File::Basename;
 use lib dirname($0);
@@ -44,7 +44,7 @@ my ($source_host, $source_file, $local_copy) = setup_remote_source();
 sub basic_func
 {
     my ($use_proxy) = (shift);
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($old_proxy);
 
@@ -111,7 +111,7 @@ for(my $i = 1; $i <= 43; $i++)
 # and no core file is generated.
 sub restart_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 

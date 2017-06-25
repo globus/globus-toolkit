@@ -23,7 +23,7 @@ Tests to exercise the "get" functionality of the Globus FTP client library.
 
 =cut
 use strict;
-use POSIX;
+use File::Temp qw/:POSIX/;
 use Test::More;
 use File::Basename;
 use lib dirname($0);
@@ -60,7 +60,7 @@ files compare.
 sub basic_func
 {
     my ($use_proxy) = (shift);
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
 
     if($use_proxy == 0)
@@ -147,7 +147,7 @@ program returns 0, files compare, and no core file is generated.
 =cut
 sub restart_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
@@ -196,7 +196,7 @@ DCAU with subject authorization with an invalid subject.
 =cut
 sub dcau_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($dcau, $desired_rc) = @_;
 
@@ -254,7 +254,7 @@ PROT with private protection
 =cut
 sub prot_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($prot, $desired_rc) = @_;
 
@@ -283,7 +283,7 @@ Do a simple get of $test_url, enabling perf_plugin
 =cut
 sub perf_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
 
     my $command = "$test_exec -M -s '$proto$source_host$source_file'";
@@ -309,7 +309,7 @@ Do a simple get of $test_url, enabling throughput_plugin
 =cut
 sub throughput_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
 
     my $command = "$test_exec -T -s '$proto$source_host$source_file'";
@@ -336,7 +336,7 @@ the default restart plugin to cope with them.
 =cut
 sub restart_plugin_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my $other_args;
 

@@ -10,7 +10,7 @@ use warnings;
 use strict;
 use Globus::Testing::Utilities;
 use Globus::Core::Paths;
-use POSIX;
+use File::Temp qw/:POSIX/;
 use IO::File;
 
 my $u = new Globus::Testing::Utilities(); 
@@ -30,7 +30,7 @@ sub test_gram_local
     my $rc = 0;
     my $rcx = 0;
     my $year = (localtime)[5] + 1900;
-    my $tmpfile = POSIX::tmpnam();
+    my $tmpfile = File::Temp::tmpnam();
     my $personal_gatekeeper = $Globus::Core::Paths::bindir
             . '/globus-personal-gatekeeper';
     my $arg_file;
