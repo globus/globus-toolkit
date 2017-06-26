@@ -1,0 +1,5 @@
+#! /usr/bin/dh-exec
+
+usr/include/globus/*.h
+usr/lib/*/*.so
+usr/lib/*/pkgconfig/*.pc
