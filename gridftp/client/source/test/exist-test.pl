@@ -24,7 +24,7 @@
 =cut
 
 use strict;
-use POSIX;
+use File::Temp qw/:POSIX/;
 use Test::More;
 use File::Basename;
 use lib dirname($0);
@@ -53,7 +53,7 @@ if(source_is_remote())
 }
 else
 {
-    my $emptydir = POSIX::tmpnam();
+    my $emptydir = File::Temp::tmpnam();
     my @test_dirs;
 
     if(!defined($ENV{'FTP_TEST_BACKEND'}))

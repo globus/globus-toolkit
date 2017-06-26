@@ -22,7 +22,6 @@
 #
 
 use strict;
-use POSIX;
 use Test::More;
 use FileHandle;
 use File::Basename;

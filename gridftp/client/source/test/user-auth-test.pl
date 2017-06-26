@@ -22,7 +22,7 @@
 #
 
 use strict;
-use POSIX;
+use File::Temp qw/:POSIX/;
 use Test::More;
 use File::Basename;
 use lib dirname($0);
@@ -40,7 +40,7 @@ my ($source_host, $source_file, $local_copy) = setup_remote_source();
 # and no core file is generated, or no valid proxy, and program returns 1.
 sub correct_auth
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($hostname) = ();
     unlink($tmpname);
@@ -82,7 +82,7 @@ push(@tests, "correct_auth");
 # Success if program returns 1 and no core file is generated.
 sub incorrect_auth
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($hostname) = ("googly_goodness");
     unlink($tmpname);

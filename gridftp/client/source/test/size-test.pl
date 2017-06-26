@@ -24,7 +24,6 @@ Tests to exercise the size checking of the client library.
 =cut
 
 use strict;
-use POSIX;
 use Test::More;
 use File::Basename;
 use lib dirname($0);

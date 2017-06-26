@@ -36,7 +36,8 @@ require Exporter;
 
 use strict;
 
-use POSIX ();
+use POSIX;
+use File::Temp qw/:POSIX/;
 use Carp;
 use Sys::Hostname;
 use Data::Dumper;
@@ -190,7 +191,7 @@ sub compare_local_files($$)
 {
     my($a,$b) = @_;
     my $diffs;
-    my $tmpfile = POSIX::tmpnam();
+    my $tmpfile = File::Temp::tmpnam();
     my $script =
         'binmode(STDOUT); binmode(STDIN);' .
         'while(<>) { s/\[restart plugin\].*?\n//g; print; }';
@@ -312,7 +313,7 @@ sub setup_remote_dest()
     my $dest_file;
     
     $dest_host = ($ENV{FTP_TEST_DEST_HOST} or 'localhost');
-    $dest_file = ($ENV{FTP_TEST_DEST_FILE} or POSIX::tmpnam());
+    $dest_file = ($ENV{FTP_TEST_DEST_FILE} or File::Temp::tmpnam());
 
     return ($dest_host, $dest_file);
 }
@@ -369,7 +370,7 @@ sub get_remote_file($$;$)
     my $host = shift;
     my $file = shift;
     my $user = shift;
-    my $dest = POSIX::tmpnam();
+    my $dest = File::Temp::tmpnam();
     
     push(@{$self->{staged_files}}, $dest);
     
