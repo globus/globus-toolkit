@@ -1,3 +1,9 @@
+gsi-openssh (7.5p1b-1+gt6.@distro@) @distro@; urgency=low
+
+  * Update to GSI-OpenSSH 7.5p1b
+
+ -- Globus Toolkit <support@globus.org>  Tue, 27 Jun 2017 13:07:14 -0400
+
 gsi-openssh (7.3p1c-1+gt6.@distro@) @distro@; urgency=low
 
   * Update to GSI-OpenSSH 7.3p1c

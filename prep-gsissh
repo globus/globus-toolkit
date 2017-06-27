@@ -1,18 +1,21 @@
 #! /bin/sh
 
-openssh_version=7.3p1
-gsissh_version=${openssh_version}c
+openssh_version=7.5p1
+gsissh_version=${openssh_version}b
 openssh_tarball=openssh-${openssh_version}.tar.gz
 Source0=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/${openssh_tarball}
 
 # Patch0 is the HPN-SSH patch to Portable OpenSSH
-Patch0=https://github.com/globus/gsi-openssh/releases/download/${gsissh_version}/openssh-7_3_P1-hpn-14.12.patch
+Patch0="https://github.com/globus/gsi-openssh/releases/download/${gsissh_version}/openssh-7_5_P1-hpn-14.13.diff"
 # Patch1 is the iSSHD patch to HPN-SSH
-Patch1=https://github.com/globus/gsi-openssh/releases/download/${gsissh_version}/hpn-14.12-isshd.v3.19.1.patch
+Patch1="https://github.com/globus/gsi-openssh/releases/download/${gsissh_version}/hpn-14.13-isshd.v3.19.1.patch"
 # Patch2 is the GSI patch to be applied on top of the iSSHD patch
-Patch2=https://github.com/globus/gsi-openssh/releases/download/${gsissh_version}/hpn_isshd-gsi.${gsissh_version}.patch
+Patch2="https://github.com/globus/gsi-openssh/releases/download/${gsissh_version}/hpn_isshd-gsi.7.5p1b.patch"
+##Patch3 is the OpenSSL 1.1 patch to be applied on top of the GSI patch and is constructed as follows:
+Patch3="https://github.com/globus/gsi-openssh/releases/download/${gsissh_version}/hpn_isshd-gsi_ossl.${gsissh_version}.patch"
 
-Patches="${Patch0} ${Patch1} ${Patch2}"
+
+Patches="${Patch0} ${Patch1} ${Patch2} ${Patch3}"
 Sources="${Patches} ${Source0}"
 
 package_output="$(dirname "$0")/packaging/package-output"
@@ -45,25 +48,49 @@ mkdir -p "${package_output}" "${gsissh_sourcedir}"
 for f in ${Sources}; do
     source_path="${package_output}/$(basename "${f}")"
 
+    printf "$(basename "${source_path}")..."
     if [ ! -f "${source_path}" ]; then
         download "${f}" "${source_path}"
+        printf "download result $?\n"
+    else
+        printf "already downloaded\n"
     fi
 done
+
+printf "Unpacking and patching...\n"
 
 if [ ! -f "${unpacked_file}" ] || \
    [ x$(cat "${unpacked_file}") != x"${openssh_tarball}" ]; then
     rm -rf "${gsissh_sourcedir}"
     mkdir -p "${gsissh_sourcedir}"
+    printf "openssh tarball...\n"
     gzip -dc "${package_output}/${openssh_tarball}" | \
         tar --strip 1 -C "${gsissh_sourcedir}" -xf -
+    if [ $? = 0 ]; then
+        printf "ok\n"
+    else
+        printf "not ok\n"
+    fi
     for p in ${Patches}; do
+        printf "Applying patch $(basename "$p")..."
         patchfile="${package_output}/$(basename "${p}")"
-        patch -d "${gsissh_sourcedir}" -p1 < "${patchfile}"
+        patch -s -d "${gsissh_sourcedir}" -p1 < "${patchfile}"
+        if [ $? = 0 ]; then
+            printf "ok\n"
+        else
+            printf "not ok\n"
+        fi
     done
+    printf "Creating configure.gnu..."
     cat <<-"EOF" >"${gsissh_sourcedir}/configure.gnu"
 	#! /bin/sh
 	"${0%.gnu}" "$@" --with-gsi --sysconfdir="\${prefix}/etc/gsissh"
 	EOF
+    if [ $? = 0 ]; then
+        printf "ok\n"
+    else
+        printf "not ok\n"
+    fi
     chmod a+x "${gsissh_sourcedir}/configure.gnu"
     echo "${openssh_tarball}" > "${unpacked_file}"
 fi
@@ -76,3 +103,5 @@ if [ ! -f gsi_openssh/version.m4 ] || \
 else
    rm -f gsi_openssh/version.m4.new 
 fi
+cp build-aux/ltmain.sh m4/l*.m4 gsi_openssh/source
+(cd gsi_openssh/source; aclocal; autoconf)

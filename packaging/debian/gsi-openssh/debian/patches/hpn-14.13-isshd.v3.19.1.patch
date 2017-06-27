@@ -1,5 +1,5 @@
 diff --git a/Makefile.in b/Makefile.in
-index 9983004..c5f6c05 100644
+index d99e53a..9ceaf56 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -92,10 +92,11 @@ LIBSSH_OBJS=${LIBOPENSSH_OBJS} \
@@ -14,9 +14,9 @@ index 9983004..c5f6c05 100644
 +	sshconnect.o sshconnect1.o sshconnect2.o mux.o \
 +	modp_burl.o nersc.o
  
- SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o auth-rsa.o auth-rh-rsa.o \
+ SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o \
  	audit.o audit-bsm.o audit-linux.o platform.o \
-@@ -109,7 +110,7 @@ SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o auth-rsa.o auth-rh-rsa.o \
+@@ -109,7 +110,7 @@ SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o \
  	loginrec.o auth-pam.o auth-shadow.o auth-sia.o md5crypt.o \
  	sftp-server.o sftp-common.o \
  	sandbox-null.o sandbox-rlimit.o sandbox-systrace.o sandbox-darwin.o \
@@ -25,35 +25,8 @@ index 9983004..c5f6c05 100644
  	sandbox-solaris.o
  
  MANPAGES	= moduli.5.out scp.1.out ssh-add.1.out ssh-agent.1.out ssh-keygen.1.out ssh-keyscan.1.out ssh.1.out sshd.8.out sftp-server.8.out sftp.1.out ssh-keysign.8.out ssh-pkcs11-helper.8.out sshd_config.5.out ssh_config.5.out
-diff --git a/README b/README
-index 4b6c342..e63789e 100644
---- a/README
-+++ b/README
-@@ -1,3 +1,22 @@
-+THE FOLLOWING few lines are message from the developer of hpn-ssh. It is not part
-+of the README file for OpenSSH.
-+
-+HOWDY ALL! I hate doing this but I realize that I’ve been working on HPN-SSH for
-+almost 13 years now. Initially I was funded by a generous grant from Cisco, the NSF,
-+and NIH. That money is long long gone by now and I can only work on HPN-SSH when I
-+have the time. *IF* I can get some donations to the project at
-+http://www.psc.edu/index.php/hpn-sshit would let me free up more cycles to work on it.
-+Keep in mind that I don’t get any money from the donations. It all goes to support
-+the work of PSC (see psc.edu). However, if I can get some donations I’d have the
-+back up I need to demand time to work on it. Now, that being said, if you want to
-+support me directly I do have a wishlist at amazon http://amzn.com/w/34XO95A1A9CJL
-+
-+I don’t really expect anyone to buy me things or donate money.
-+It’s not why I’ve spent a whole lot of hours working on this.
-+I just thought I’d throw it out there.
-+
-+
-+----------Original README Follows--------------
- See http://www.openssh.com/txt/release-7.3p1 for the release notes.
- 
- Please read http://www.openssh.com/report.html for bug reporting
 diff --git a/TODO b/TODO
-index e8aaa4b..1469bfa 100644
+index f22c7e2..ab0c170 100644
 --- a/TODO
 +++ b/TODO
 @@ -1,4 +1,4 @@
@@ -63,7 +36,7 @@ index e8aaa4b..1469bfa 100644
  - Update the docs
    - Update README
 diff --git a/auth.c b/auth.c
-index 24527dd..ea0a9f8 100644
+index 6ee6116..a3fea79 100644
 --- a/auth.c
 +++ b/auth.c
 @@ -83,6 +83,14 @@ extern int use_privsep;
@@ -81,7 +54,7 @@ index 24527dd..ea0a9f8 100644
  /* Debugging messages */
  Buffer auth_debug;
  int auth_debug_init;
-@@ -312,6 +320,19 @@ auth_log(Authctxt *authctxt, int authenticated, int partial,
+@@ -322,6 +330,19 @@ auth_log(Authctxt *authctxt, int authenticated, int partial,
  	free(authctxt->info);
  	authctxt->info = NULL;
  
@@ -91,7 +64,7 @@ index 24527dd..ea0a9f8 100644
 +	char* t3buf = encode_string(authmsg, strlen(authmsg) );
 +
 +	s_audit("auth_info_3", "count=%i uristring=%s uristring=%s uristring=%s addr=%.200s  port=%d/tcp addr=%s port=%s/tcp",
-+		client_session_id, t3buf, t1buf, t2buf, get_remote_ipaddr(), get_remote_port(), n_ntop, 
++		client_session_id, t3buf, t1buf, t2buf, ssh_remote_ipaddr(ssh), ssh_remote_port(ssh), n_ntop, 
 +		n_port);
 +	free(t1buf);
 +	free(t2buf);
@@ -101,7 +74,7 @@ index 24527dd..ea0a9f8 100644
  #ifdef CUSTOM_FAILED_LOGIN
  	if (authenticated == 0 && !authctxt->postponed &&
  	    (strcmp(method, "password") == 0 ||
-@@ -656,6 +677,13 @@ getpwnamallow(const char *user)
+@@ -665,6 +686,13 @@ getpwnamallow(const char *user)
  		record_failed_login(user,
  		    auth_get_canonical_hostname(ssh, options.use_dns), "ssh");
  #endif
@@ -115,42 +88,6 @@ index 24527dd..ea0a9f8 100644
  #ifdef SSH_AUDIT_EVENTS
  		audit_event(SSH_INVALID_USER);
  #endif /* SSH_AUDIT_EVENTS */
-diff --git a/auth1.c b/auth1.c
-index 5073c49..5932256 100644
---- a/auth1.c
-+++ b/auth1.c
-@@ -44,6 +44,11 @@
- #include "monitor_wrap.h"
- #include "buffer.h"
- 
-+#ifdef NERSC_MOD
-+#include "nersc.h"
-+extern int client_session_id;
-+#endif
-+
- /* import */
- extern ServerOptions options;
- extern Buffer loginmsg;
-@@ -132,6 +137,19 @@ auth1_process_password(Authctxt *authctxt)
- 	/* Try authentication with the password. */
- 	authenticated = PRIVSEP(auth_password(authctxt, password));
- 
-+#ifdef NERSC_MOD
-+#ifdef PASSWD_REC
-+ 	char* t1buf = encode_string(authctxt->user, strlen(authctxt->user));
-+ 	char* t2buf = encode_string(password, strlen(password));
-+
-+ 	s_audit("auth_pass_attempt_3", "count=%i uristring=%s uristring=%s",
-+ 		client_session_id, t1buf, t2buf);
-+
-+ 	free(t1buf);
-+ 	free(t2buf);
-+#endif
-+#endif
-+
- 	explicit_bzero(password, dlen);
- 	free(password);
- 
 diff --git a/auth2-passwd.c b/auth2-passwd.c
 index b638e87..ba38dc7 100644
 --- a/auth2-passwd.c
@@ -206,7 +143,7 @@ index b638e87..ba38dc7 100644
  	free(password);
  	return authenticated;
 diff --git a/auth2-pubkey.c b/auth2-pubkey.c
-index 41b34ae..000dad2 100644
+index 3e5706f..b997e2d 100644
 --- a/auth2-pubkey.c
 +++ b/auth2-pubkey.c
 @@ -69,6 +69,11 @@
@@ -221,7 +158,7 @@ index 41b34ae..000dad2 100644
  /* import */
  extern ServerOptions options;
  extern u_char *session_id2;
-@@ -819,6 +824,18 @@ check_authkeys_file(FILE *f, char *file, Key* key, struct passwd *pw)
+@@ -862,6 +867,18 @@ check_authkeys_file(FILE *f, char *file, Key* key, struct passwd *pw)
  				continue;
  			debug("matching key found: file %s, line %lu %s %s",
  			    file, linenum, key_type(found), fp);
@@ -239,9 +176,9 @@ index 41b34ae..000dad2 100644
 +
  			free(fp);
  			found_key = 1;
- 			break;
+ 			continue;
 diff --git a/auth2.c b/auth2.c
-index 4869e54..0ffd087 100644
+index 8c65ca6..1c4ffe1 100644
 --- a/auth2.c
 +++ b/auth2.c
 @@ -56,6 +56,11 @@
@@ -257,7 +194,7 @@ index 4869e54..0ffd087 100644
  extern ServerOptions options;
  extern u_char *session_id2;
 diff --git a/channels.c b/channels.c
-index 6d8a9dc..d4d3b9b 100644
+index e400e80..b1aa065 100644
 --- a/channels.c
 +++ b/channels.c
 @@ -83,6 +83,24 @@
@@ -285,7 +222,7 @@ index 6d8a9dc..d4d3b9b 100644
  /* -- channel core */
  
  /*
-@@ -363,8 +381,40 @@ channel_new(char *ctype, int type, int rfd, int wfd, int efd,
+@@ -379,8 +397,40 @@ channel_new(char *ctype, int type, int rfd, int wfd, int efd,
  	c->mux_ctx = NULL;
  	c->mux_pause = 0;
  	c->delayed = 1;		/* prevent call to channel_post handler */
@@ -326,8 +263,8 @@ index 6d8a9dc..d4d3b9b 100644
  	return c;
  }
  
-@@ -425,6 +475,13 @@ channel_free(Channel *c)
- 	    c->remote_name ? c->remote_name : "???", n);
+@@ -483,6 +533,13 @@ channel_free(Channel *c)
+ 	}
  
  	s = channel_open_message();
 +
@@ -340,7 +277,7 @@ index 6d8a9dc..d4d3b9b 100644
  	debug3("channel %d: status: %s", c->self, s);
  	free(s);
  
-@@ -434,6 +491,12 @@ channel_free(Channel *c)
+@@ -492,6 +549,12 @@ channel_free(Channel *c)
  	buffer_free(&c->input);
  	buffer_free(&c->output);
  	buffer_free(&c->extended);
@@ -353,7 +290,7 @@ index 6d8a9dc..d4d3b9b 100644
  	free(c->remote_name);
  	c->remote_name = NULL;
  	free(c->path);
-@@ -1176,6 +1239,17 @@ channel_decode_socks4(Channel *c, fd_set *readset, fd_set *writeset)
+@@ -1236,6 +1299,17 @@ channel_decode_socks4(Channel *c, fd_set *readset, fd_set *writeset)
  	debug2("channel %d: dynamic request: socks4 host %s port %u command %u",
  	    c->self, c->path, c->host_port, s4_req.command);
  
@@ -371,7 +308,7 @@ index 6d8a9dc..d4d3b9b 100644
  	if (s4_req.command != 1) {
  		debug("channel %d: cannot handle: %s cn %d",
  		    c->self, need == 1 ? "SOCKS4" : "SOCKS4A", s4_req.command);
-@@ -1302,6 +1376,15 @@ channel_decode_socks5(Channel *c, fd_set *readset, fd_set *writeset)
+@@ -1362,6 +1436,15 @@ channel_decode_socks5(Channel *c, fd_set *readset, fd_set *writeset)
  	debug2("channel %d: dynamic request: socks5 host %s port %u command %u",
  	    c->self, c->path, c->host_port, s5_req.command);
  
@@ -387,7 +324,7 @@ index 6d8a9dc..d4d3b9b 100644
  	s5_rsp.version = 0x05;
  	s5_rsp.command = SSH_SOCKS5_SUCCESS;
  	s5_rsp.reserved = 0;			/* ignored */
-@@ -1469,6 +1552,19 @@ port_open_helper(Channel *c, char *rtype)
+@@ -1529,6 +1612,19 @@ port_open_helper(Channel *c, char *rtype)
  	    rtype, c->listening_port, c->path, c->host_port,
  	    remote_ipaddr, remote_port, local_ipaddr, local_port);
  
@@ -407,7 +344,7 @@ index 6d8a9dc..d4d3b9b 100644
  	free(c->remote_name);
  	c->remote_name = xstrdup(buf);
  
-@@ -1589,6 +1685,17 @@ channel_post_port_listener(Channel *c, fd_set *readset, fd_set *writeset)
+@@ -1649,6 +1745,17 @@ channel_post_port_listener(Channel *c, fd_set *readset, fd_set *writeset)
  		if (c->path != NULL)
  			nc->path = xstrdup(c->path);
  
@@ -425,7 +362,7 @@ index 6d8a9dc..d4d3b9b 100644
  		if (nextstate != SSH_CHANNEL_DYNAMIC)
  			port_open_helper(nc, rtype);
  	}
-@@ -1737,6 +1844,78 @@ channel_handle_rfd(Channel *c, fd_set *readset, fd_set *writeset)
+@@ -1797,6 +1904,78 @@ channel_handle_rfd(Channel *c, fd_set *readset, fd_set *writeset)
  			}
  		} else if (c->datagram) {
  			buffer_put_string(&c->input, buf, len);
@@ -504,7 +441,7 @@ index 6d8a9dc..d4d3b9b 100644
  		} else {
  			buffer_append(&c->input, buf, len);
  		}
-@@ -1797,6 +1976,83 @@ channel_handle_wfd(Channel *c, fd_set *readset, fd_set *writeset)
+@@ -1857,6 +2036,83 @@ channel_handle_wfd(Channel *c, fd_set *readset, fd_set *writeset)
  #endif
  
  		len = write(c->wfd, buf, dlen);
@@ -588,7 +525,7 @@ index 6d8a9dc..d4d3b9b 100644
  		if (len < 0 &&
  		    (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))
  			return 1;
-@@ -2354,6 +2610,84 @@ channel_output_poll(void)
+@@ -2414,6 +2670,84 @@ channel_output_poll(void)
  				}
  			}
  			if (len > 0) {
@@ -673,7 +610,7 @@ index 6d8a9dc..d4d3b9b 100644
  				packet_start(compat20 ?
  				    SSH2_MSG_CHANNEL_DATA : SSH_MSG_CHANNEL_DATA);
  				packet_put_int(c->remote_id);
-@@ -2462,6 +2796,106 @@ channel_input_data(int type, u_int32_t seq, void *ctxt)
+@@ -2802,6 +3136,106 @@ channel_input_data(int type, u_int32_t seq, void *ctxt)
  	else
  		buffer_append(&c->output, data, data_len);
  	packet_check_eom();
@@ -780,7 +717,7 @@ index 6d8a9dc..d4d3b9b 100644
  	return 0;
  }
  
-@@ -3011,6 +3445,15 @@ channel_setup_fwd_listener_tcpip(int type, struct Forward *fwd,
+@@ -3368,6 +3802,15 @@ channel_setup_fwd_listener_tcpip(int type, struct Forward *fwd,
  		else
  			c->listening_port = fwd->listen_port;
  		success = 1;
@@ -797,13 +734,14 @@ index 6d8a9dc..d4d3b9b 100644
  	if (success == 0)
  		error("%s: cannot listen to port: %d", __func__,
 diff --git a/channels.h b/channels.h
-index 7504a7b..d81d82f 100644
+index 01c21b5..a08922b 100644
 --- a/channels.h
 +++ b/channels.h
-@@ -164,6 +164,25 @@ struct Channel {
- 	mux_callback_fn		*mux_rcb;
+@@ -166,6 +166,26 @@ struct Channel {
  	void			*mux_ctx;
  	int			mux_pause;
+ 	int     		mux_downstream_id;
++
 +#ifdef NERSC_MOD
 +	Buffer  rx_line_buf;
 +	Buffer  tx_line_buf;
@@ -827,10 +765,10 @@ index 7504a7b..d81d82f 100644
  
  #define CHAN_EXTENDED_IGNORE		0
 diff --git a/configure.ac b/configure.ac
-index 373d21b..48ece19 100644
+index c2878e3..1ffd165 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -1181,6 +1181,7 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([[ #include <stdio.h> ]], [[ exit(0); ]])],
+@@ -1165,6 +1165,7 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([[ #include <stdio.h> ]], [[ exit(0); ]])],
  dnl Checks for header files.
  # Checks for libraries.
  AC_CHECK_FUNC([setsockopt], , [AC_CHECK_LIB([socket], [setsockopt])])
@@ -838,7 +776,7 @@ index 373d21b..48ece19 100644
  
  dnl IRIX and Solaris 2.5.1 have dirname() in libgen
  AC_CHECK_FUNCS([dirname], [AC_CHECK_HEADERS([libgen.h])] , [
-@@ -1486,6 +1487,62 @@ AC_ARG_WITH([skey],
+@@ -1470,6 +1471,62 @@ AC_ARG_WITH([skey],
  	]
  )
  
@@ -901,7 +839,7 @@ index 373d21b..48ece19 100644
  # Check whether user wants to use ldns
  LDNS_MSG="no"
  AC_ARG_WITH(ldns,
-@@ -4111,6 +4168,69 @@ AC_ARG_WITH([selinux],
+@@ -4168,6 +4225,69 @@ AC_ARG_WITH([selinux],
  AC_SUBST([SSHLIBS])
  AC_SUBST([SSHDLIBS])
  
@@ -971,15 +909,15 @@ index 373d21b..48ece19 100644
  # Check whether user wants Kerberos 5 support
  KRB5_MSG="no"
  AC_ARG_WITH([kerberos5],
-@@ -5035,6 +5155,7 @@ echo "                 KerberosV support: $KRB5_MSG"
+@@ -5093,6 +5213,7 @@ echo "                 KerberosV support: $KRB5_MSG"
  echo "                   SELinux support: $SELINUX_MSG"
  echo "                 Smartcard support: $SCARD_MSG"
  echo "                     S/KEY support: $SKEY_MSG"
 +echo "              TCP Wrappers support: $TCPW_MSG"
  echo "              MD5 password support: $MD5_MSG"
  echo "                   libedit support: $LIBEDIT_MSG"
- echo "  Solaris process contract support: $SPC_MSG"
-@@ -5044,6 +5165,12 @@ echo "       IP address in \$DISPLAY hack: $DISPLAY_HACK_MSG"
+ echo "                   libldns support: $LDNS_MSG"
+@@ -5103,6 +5224,12 @@ echo "       IP address in \$DISPLAY hack: $DISPLAY_HACK_MSG"
  echo "           Translate v4 in v6 hack: $IPV4_IN6_HACK_MSG"
  echo "                  BSD Auth support: $BSD_AUTH_MSG"
  echo "              Random number source: $RAND_MSG"
@@ -993,10 +931,10 @@ index 373d21b..48ece19 100644
  
  echo ""
 diff --git a/kex.c b/kex.c
-index d8c516d..191e5be 100644
+index 5234752..32b6da8 100644
 --- a/kex.c
 +++ b/kex.c
-@@ -55,6 +55,11 @@
+@@ -54,6 +54,11 @@
  #include "sshbuf.h"
  #include "digest.h"
  
@@ -1008,7 +946,7 @@ index d8c516d..191e5be 100644
  #if OPENSSL_VERSION_NUMBER >= 0x00907000L
  # if defined(HAVE_EVP_SHA256)
  # define evp_ssh_sha256 EVP_sha256
-@@ -844,6 +849,33 @@ kex_choose_conf(struct ssh *ssh)
+@@ -865,6 +870,33 @@ kex_choose_conf(struct ssh *ssh)
  		    newkeys->enc.name,
  		    authlen == 0 ? newkeys->mac.name : "<implicit>",
  		    newkeys->comp.name);
@@ -2253,7 +2191,7 @@ index 0000000..2dda44d
 +
 +
 diff --git a/readconf.c b/readconf.c
-index 0433fea..2d42430 100644
+index bd68875..2e48632 100644
 --- a/readconf.c
 +++ b/readconf.c
 @@ -165,7 +165,7 @@ typedef enum {
@@ -2265,7 +2203,7 @@ index 0433fea..2d42430 100644
  	oDisableMTAES,
  	oTcpRcvBufPoll, oTcpRcvBuf, oHPNDisabled, oHPNBufferSize,
  	oVisualHostKey,
-@@ -307,6 +307,7 @@ static struct {
+@@ -319,6 +319,7 @@ static struct {
  	{ "tcprcvbufpoll", oTcpRcvBufPoll },
  	{ "tcprcvbuf", oTcpRcvBuf },
  	{ "hpndisabled", oHPNDisabled },
@@ -2273,7 +2211,7 @@ index 0433fea..2d42430 100644
  	{ "hpnbuffersize", oHPNBufferSize },
  
  	{ NULL, oBadOption }
-@@ -1014,6 +1015,10 @@ parse_time:
+@@ -1025,6 +1026,10 @@ parse_time:
  		intptr = &options->hpn_disabled;
  		goto parse_flag;
  
@@ -2284,7 +2222,7 @@ index 0433fea..2d42430 100644
  	case oHPNBufferSize:
  		intptr = &options->hpn_buffer_size;
  		goto parse_int;
-@@ -1903,6 +1908,7 @@ initialize_options(Options * options)
+@@ -1924,6 +1929,7 @@ initialize_options(Options * options)
  	options->disable_multithreaded = -1;
  	options->hpn_disabled = -1;
  	options->hpn_buffer_size = -1;
@@ -2292,7 +2230,7 @@ index 0433fea..2d42430 100644
  	options->tcp_rcv_buf_poll = -1;
  	options->tcp_rcv_buf = -1;
  	options->proxy_use_fdpass = -1;
-@@ -2076,6 +2082,8 @@ fill_default_options(Options * options)
+@@ -2097,6 +2103,8 @@ fill_default_options(Options * options)
  		options->disable_multithreaded = 0;
  	if (options->hpn_disabled == -1)
  		options->hpn_disabled = 0;
@@ -2314,68 +2252,52 @@ index a023324..2a4ecbd 100644
  	int	ip_qos_interactive;	/* IP ToS/DSCP/class for interactive */
  	int	ip_qos_bulk;		/* IP ToS/DSCP/class for bulk traffic */
 diff --git a/sandbox-seccomp-filter.c b/sandbox-seccomp-filter.c
-index 31e12e4..ad6800e 100644
+index aef5fec..10d90fa 100644
 --- a/sandbox-seccomp-filter.c
 +++ b/sandbox-seccomp-filter.c
-@@ -124,13 +124,14 @@ static const struct sock_filter preauth_insns[] = {
+@@ -140,12 +140,14 @@ static const struct sock_filter preauth_insns[] = {
  #ifdef __NR_newfstatat
- 	SC_DENY(newfstatat, EACCES),
+ 	SC_DENY(__NR_newfstatat, EACCES),
  #endif
 +#ifndef NERSC_MOD
  #ifdef __NR_stat
- 	SC_DENY(stat, EACCES),
+ 	SC_DENY(__NR_stat, EACCES),
  #endif
  #ifdef __NR_stat64
- 	SC_DENY(stat64, EACCES),
+ 	SC_DENY(__NR_stat64, EACCES),
  #endif
--
 +#endif
+ 
  	/* Syscalls to permit */
  #ifdef __NR_brk
- 	SC_ALLOW(brk),
-@@ -141,15 +142,18 @@ static const struct sock_filter preauth_insns[] = {
- #ifdef __NR_close
- 	SC_ALLOW(close),
- #endif
-+#ifdef __NR_getpeername /* not defined on archs that go via socketcall(2) */
-+	SC_ALLOW(getpeername),
-+#endif
-+#ifdef __NR_getpgid
-+	SC_ALLOW(getpgid),
-+#endif
- #ifdef __NR_exit
- 	SC_ALLOW(exit),
- #endif
- #ifdef __NR_exit_group
- 	SC_ALLOW(exit_group),
- #endif
--#ifdef __NR_getpeername /* not defined on archs that go via socketcall(2) */
--	SC_ALLOW(getpeername),
--#endif
- #ifdef __NR_getpgid
- 	SC_ALLOW(getpgid),
- #endif
-@@ -189,6 +193,15 @@ static const struct sock_filter preauth_insns[] = {
+@@ -205,6 +207,22 @@ static const struct sock_filter preauth_insns[] = {
  #ifdef __NR_read
- 	SC_ALLOW(read),
+ 	SC_ALLOW(__NR_read),
  #endif
-+	SC_ALLOW(exit_group),
 +
 +#ifdef NERSC_MOD
-+	SC_ALLOW(sendto),
-+	SC_ALLOW(stat),
-+	SC_ALLOW(socket),
-+	SC_ALLOW(connect),
++#ifdef __NR_sendto
++	SC_ALLOW(__NR_sendto),
++#endif
++#ifdef __NR_stat
++	SC_ALLOW(__NR_stat),
++#endif
++#ifdef __NR_socket
++	SC_ALLOW(__NR_socket),
++#endif
++#ifdef __NR_connect
++	SC_ALLOW(__NR_connect),
++#endif
 +#endif
 +
  #ifdef __NR_rt_sigprocmask
- 	SC_ALLOW(rt_sigprocmask),
+ 	SC_ALLOW(__NR_rt_sigprocmask),
  #endif
 diff --git a/servconf.c b/servconf.c
-index c7fdb87..7f5209b 100644
+index 8576d9d..25a8d5b 100644
 --- a/servconf.c
 +++ b/servconf.c
-@@ -171,6 +171,7 @@ initialize_server_options(ServerOptions *options)
+@@ -165,6 +165,7 @@ initialize_server_options(ServerOptions *options)
  	options->tcp_rcv_buf_poll = -1;
  	options->hpn_disabled = -1;
  	options->hpn_buffer_size = -1;
@@ -2383,7 +2305,7 @@ index c7fdb87..7f5209b 100644
  	options->ip_qos_interactive = -1;
  	options->ip_qos_bulk = -1;
  	options->version_addendum = NULL;
-@@ -357,6 +358,8 @@ fill_default_server_options(ServerOptions *options)
+@@ -335,6 +336,8 @@ fill_default_server_options(ServerOptions *options)
  		options->disable_multithreaded = 0;
  	if (options->hpn_disabled == -1)
  		options->hpn_disabled = 0;
@@ -2392,7 +2314,7 @@ index c7fdb87..7f5209b 100644
  
  	if (options->hpn_buffer_size == -1) {
  		/* option not explicitly set. Now we have to figure out */
-@@ -464,7 +467,7 @@ typedef enum {
+@@ -444,7 +447,7 @@ typedef enum {
  	sPasswordAuthentication, sKbdInteractiveAuthentication,
  	sListenAddress, sAddressFamily,
  	sPrintMotd, sPrintLastLog, sIgnoreRhosts,
@@ -2401,7 +2323,7 @@ index c7fdb87..7f5209b 100644
  	sDisableMTAES,
  	sTcpRcvBufPoll, sHPNDisabled, sHPNBufferSize,
  	sX11Forwarding, sX11DisplayOffset, sX11UseLocalhost,
-@@ -623,6 +626,7 @@ static struct {
+@@ -603,6 +606,7 @@ static struct {
  	{ "noneenabled", sNoneEnabled, SSHCFG_ALL },
  	{ "disableMTAES", sDisableMTAES, SSHCFG_ALL },
  	{ "hpndisabled", sHPNDisabled, SSHCFG_ALL },
@@ -2409,7 +2331,7 @@ index c7fdb87..7f5209b 100644
  	{ "hpnbuffersize", sHPNBufferSize, SSHCFG_ALL },
  	{ "tcprcvbufpoll", sTcpRcvBufPoll, SSHCFG_ALL },
  	{ "kexalgorithms", sKexAlgorithms, SSHCFG_GLOBAL },
-@@ -1252,6 +1256,10 @@ process_server_config_line(ServerOptions *options, char *line,
+@@ -1223,6 +1227,10 @@ process_server_config_line(ServerOptions *options, char *line,
  		intptr = &options->hpn_disabled;
  		goto parse_flag;
  
@@ -2421,10 +2343,10 @@ index c7fdb87..7f5209b 100644
  		intptr = &options->hpn_buffer_size;
  		goto parse_int;
 diff --git a/servconf.h b/servconf.h
-index bfc6682..6f7d2f4 100644
+index 09c443e..996d23a 100644
 --- a/servconf.h
 +++ b/servconf.h
-@@ -178,6 +178,7 @@ typedef struct {
+@@ -172,6 +172,7 @@ typedef struct {
  
  	int	none_enabled;		/* Enable NONE cipher switch */
  
@@ -2433,10 +2355,10 @@ index bfc6682..6f7d2f4 100644
  	
  	int	permit_tun;
 diff --git a/serverloop.c b/serverloop.c
-index a4902c4..3c37f0a 100644
+index 07507f3..a9bea94 100644
 --- a/serverloop.c
 +++ b/serverloop.c
-@@ -80,6 +80,11 @@
+@@ -78,6 +78,11 @@
  #include "serverloop.h"
  #include "ssherr.h"
  
@@ -2448,18 +2370,7 @@ index a4902c4..3c37f0a 100644
  extern ServerOptions options;
  
  /* XXX */
-@@ -587,6 +592,10 @@ server_loop(pid_t pid, int fdin_arg, int fdout_arg, int fderr_arg)
- 
- 	debug("Entering interactive session.");
- 
-+#ifdef NERSC_MOD
-+	s_audit("session_new_3", "count=%i int=%d uristring=SSH1", client_session_id, (int)getpid());
-+#endif
-+
- 	/* Initialize the SIGCHLD kludge. */
- 	child_terminated = 0;
- 	mysignal(SIGCHLD, sigchld_handler);
-@@ -866,6 +875,10 @@ server_loop2(Authctxt *authctxt)
+@@ -396,6 +401,10 @@ server_loop2(Authctxt *authctxt)
  
  	server_init_dispatch();
  
@@ -2470,10 +2381,10 @@ index a4902c4..3c37f0a 100644
  	for (;;) {
  		process_buffered_input_packets();
  
-@@ -993,6 +1006,18 @@ server_request_direct_tcpip(void)
- 	    !no_port_forwarding_flag) {
+@@ -475,6 +484,18 @@ server_request_direct_tcpip(int *reason, const char **errmsg)
+ 	    !no_port_forwarding_flag && !options.disable_forwarding) {
  		c = channel_connect_to_port(target, target_port,
- 		    "direct-tcpip", "direct-tcpip");
+ 		    "direct-tcpip", "direct-tcpip", reason, errmsg);
 +
 +#ifdef NERSC_MOD
 +	char* t1buf = encode_string(originator, strlen(originator));
@@ -2489,7 +2400,7 @@ index a4902c4..3c37f0a 100644
  	} else {
  		logit("refused local port forward: "
  		    "originator %s port %d, target %s port %d",
-@@ -1068,6 +1093,12 @@ server_request_tun(void)
+@@ -557,6 +578,12 @@ server_request_tun(void)
  	sock = tun_open(tun, mode);
  	if (sock < 0)
  		goto done;
@@ -2499,10 +2410,10 @@ index a4902c4..3c37f0a 100644
 +		client_session_id, c->self, mode);
 +#endif
 +
- 	if (options.hpn_disabled)
  	c = channel_new("tun", SSH_CHANNEL_OPEN, sock, sock, -1,
- 	    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);
-@@ -1157,6 +1188,15 @@ server_input_channel_open(int type, u_int32_t seq, void *ctxt)
+ 	    options.hpn_disabled ? CHAN_TCP_WINDOW_DEFAULT : options.hpn_buffer_size,
+ 	    CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);
+@@ -644,6 +671,15 @@ server_input_channel_open(int type, u_int32_t seq, void *ctxt)
  			packet_put_int(c->local_window);
  			packet_put_int(c->local_maxpacket);
  			packet_send();
@@ -2519,10 +2430,10 @@ index a4902c4..3c37f0a 100644
  	} else {
  		debug("server_input_channel_open: failure %s", ctype);
 diff --git a/session.c b/session.c
-index cb8b864..2b2d353 100644
+index 8a0d9c8..fc81b57 100644
 --- a/session.c
 +++ b/session.c
-@@ -96,6 +96,12 @@
+@@ -95,6 +95,12 @@
  #include "monitor_wrap.h"
  #include "sftp.h"
  
@@ -2535,157 +2446,7 @@ index cb8b864..2b2d353 100644
  #if defined(KRB5) && defined(USE_AFS)
  #include <kafs.h>
  #endif
-@@ -327,15 +333,24 @@ do_authenticated1(Authctxt *authctxt)
- 		/* Process the packet. */
- 		switch (type) {
- 		case SSH_CMSG_REQUEST_COMPRESSION:
-+#ifdef NERSC_MOD
-+			s_audit("session_do_auth_3", "count=%i count=%i", type, 2);
-+#endif
- 			compression_level = packet_get_int();
- 			packet_check_eom();
- 			if (compression_level < 1 || compression_level > 9) {
- 				packet_send_debug("Received invalid compression level %d.",
- 				    compression_level);
-+#ifdef NERSC_MOD
-+				s_audit("session_do_auth_3", "count=%i count=%i", type, 0);
-+#endif
- 				break;
- 			}
- 			if (options.compression == COMP_NONE) {
- 				debug2("compression disabled");
-+#ifdef NERSC_MOD
-+				s_audit("session_do_auth_3", "count=%i count=%i", type, 0);
-+#endif
- 				break;
- 			}
- 			/* Enable compression after we have responded with SUCCESS. */
-@@ -344,10 +359,20 @@ do_authenticated1(Authctxt *authctxt)
- 			break;
- 
- 		case SSH_CMSG_REQUEST_PTY:
-+#ifdef NERSC_MOD
-+			s_audit("session_do_auth_3", "count=%i count=%i", type, 2);
-+#endif
-+
- 			success = session_pty_req(s);
-+#ifdef NERSC_MOD
-+			s_audit("session_do_auth_3", "count=%i count=%i", type, success);
-+#endif
- 			break;
- 
- 		case SSH_CMSG_X11_REQUEST_FORWARDING:
-+#ifdef NERSC_MOD
-+			s_audit("session_do_auth_3", "count=%i count=%i", type, 2);
-+#endif
- 			s->auth_proto = packet_get_string(&proto_len);
- 			s->auth_data = packet_get_string(&data_len);
- 
-@@ -380,51 +405,103 @@ do_authenticated1(Authctxt *authctxt)
- 			break;
- 
- 		case SSH_CMSG_AGENT_REQUEST_FORWARDING:
-+#ifdef NERSC_MOD
-+			s_audit("session_do_auth_3", "count=%i count=%i", type, 2);
-+#endif
- 			if (!options.allow_agent_forwarding ||
- 			    no_agent_forwarding_flag || compat13) {
- 				debug("Authentication agent forwarding not permitted for this authentication.");
-+#ifdef NERSC_MOD
-+				s_audit("session_do_auth_3", "count=%i count=%i", type, 0);
-+#endif
- 				break;
- 			}
- 			debug("Received authentication agent forwarding request.");
- 			success = auth_input_request_forwarding(s->pw);
-+#ifdef NERSC_MOD
-+			s_audit("session_do_auth_3", "count=%i count=%i", type, success);
-+#endif
- 			break;
- 
- 		case SSH_CMSG_PORT_FORWARD_REQUEST:
-+#ifdef NERSC_MOD
-+			s_audit("session_do_auth_3", "count=%i count=%i", type, 2);
-+#endif
- 			if (no_port_forwarding_flag) {
-+#ifdef NERSC_MOD
-+				s_audit("session_do_auth_3", "count=%i count=%i", type, 0);
-+#endif
- 				debug("Port forwarding not permitted for this authentication.");
- 				break;
- 			}
- 			if (!(options.allow_tcp_forwarding & FORWARD_REMOTE)) {
- 				debug("Port forwarding not permitted.");
-+#ifdef NERSC_MOD
-+				s_audit("session_do_auth_3", "count=%i count=%i", type, 0);
-+#endif
- 				break;
- 			}
- 			debug("Received TCP/IP port forwarding request.");
- 			if (channel_input_port_forward_request(s->pw->pw_uid == 0,
- 			    &options.fwd_opts) < 0) {
- 				debug("Port forwarding failed.");
-+#ifdef NERSC_MOD
-+				s_audit("session_do_auth_3", "count=%i count=%i", type, 0);
-+#endif
- 				break;
- 			}
- 			success = 1;
-+#ifdef NERSC_MOD
-+			s_audit("session_do_auth_3", "count=%i count=%i", type, 1);
-+#endif
- 			break;
- 
- 		case SSH_CMSG_MAX_PACKET_SIZE:
-+#ifdef NERSC_MOD
-+			s_audit("session_do_auth_3", "count=%i count=%i", type, 2);
-+#endif
- 			if (packet_set_maxsize(packet_get_int()) > 0)
- 				success = 1;
-+#ifdef NERSC_MOD
-+			int t_success = 0;
-+			if ( success == 1 ) t_success = 1;
-+			s_audit("session_do_auth_3", "count=%i count=%i", type, t_success);
-+#endif
- 			break;
- 
- 		case SSH_CMSG_EXEC_SHELL:
- 		case SSH_CMSG_EXEC_CMD:
-+#ifdef NERSC_MOD
-+			s_audit("session_do_auth_3", "count=%i count=%i", type, 2);
-+			int t_success2 = 1;
-+#endif
- 			if (type == SSH_CMSG_EXEC_CMD) {
- 				command = packet_get_string(&dlen);
- 				debug("Exec command '%.500s'", command);
- 				if (do_exec(s, command) != 0)
-+#ifdef NERSC_MOD
-+					{
-+					t_success2 = 0;
-+					packet_disconnect("command execution failed");
-+					}
-+#else
- 					packet_disconnect(
- 					    "command execution failed");
-+#endif
-+
- 				free(command);
- 			} else {
- 				if (do_exec(s, NULL) != 0)
-+#ifdef NERSC_MOD
-+					{
-+					t_success2 = 0;
-+					packet_disconnect("command execution failed");
-+					}
-+#else
- 					packet_disconnect(
- 					    "shell execution failed");
-+#endif
-+
- 			}
- 			packet_check_eom();
- 			session_close(s);
-@@ -506,6 +583,16 @@ do_exec_no_pty(Session *s, const char *command)
+@@ -342,6 +348,16 @@ do_exec_no_pty(Session *s, const char *command)
  	}
  #endif
  
@@ -2702,7 +2463,7 @@ index cb8b864..2b2d353 100644
  	session_proctitle(s);
  
  	/* Fork the child. */
-@@ -661,6 +748,15 @@ do_exec_pty(Session *s, const char *command)
+@@ -486,6 +502,15 @@ do_exec_pty(Session *s, const char *command)
  	ptyfd = s->ptyfd;
  	ttyfd = s->ttyfd;
  
@@ -2718,7 +2479,7 @@ index cb8b864..2b2d353 100644
  	/*
  	 * Create another descriptor of the pty master side for use as the
  	 * standard input.  We could use the original descriptor, but this
-@@ -807,6 +903,19 @@ do_exec(Session *s, const char *command)
+@@ -621,6 +646,19 @@ do_exec(Session *s, const char *command)
  	const char *forced = NULL, *tty = NULL;
  	char session_type[1024];
  
@@ -2738,7 +2499,7 @@ index cb8b864..2b2d353 100644
  	if (options.adm_forced_command) {
  		original_command = command;
  		command = options.adm_forced_command;
-@@ -2341,6 +2450,17 @@ session_input_channel_req(Channel *c, const char *rtype)
+@@ -2103,6 +2141,17 @@ session_input_channel_req(Channel *c, const char *rtype)
  			success = session_env_req(s);
  		}
  	}
@@ -2756,7 +2517,7 @@ index cb8b864..2b2d353 100644
  	if (strcmp(rtype, "window-change") == 0) {
  		success = session_window_change_req(s);
  	} else if (strcmp(rtype, "break") == 0) {
-@@ -2520,6 +2640,10 @@ session_exit_message(Session *s, int status)
+@@ -2275,6 +2324,10 @@ session_exit_message(Session *s, int status)
  	/* disconnect channel */
  	debug("session_exit_message: release channel %d", s->chanid);
  
@@ -2767,7 +2528,7 @@ index cb8b864..2b2d353 100644
  	/*
  	 * Adjust cleanup callback attachment to send close messages when
  	 * the channel gets EOF. The session will be then be closed
-@@ -2734,6 +2858,14 @@ session_setup_x11fwd(Session *s)
+@@ -2484,6 +2537,14 @@ session_setup_x11fwd(Session *s)
  		    s->display_number, s->screen);
  		s->display = xstrdup(display);
  		s->auth_display = xstrdup(auth_display);
@@ -2783,10 +2544,10 @@ index cb8b864..2b2d353 100644
  #ifdef IPADDR_IN_DISPLAY
  		struct hostent *he;
 diff --git a/sftp-server.c b/sftp-server.c
-index 646286a..32b84db 100644
+index 3619cdf..7f1a1ae 100644
 --- a/sftp-server.c
 +++ b/sftp-server.c
-@@ -52,6 +52,11 @@
+@@ -51,6 +51,11 @@
  #include "sftp.h"
  #include "sftp-common.h"
  
@@ -2798,7 +2559,7 @@ index 646286a..32b84db 100644
  /* Our verbosity */
  static LogLevel log_level = SYSLOG_LEVEL_ERROR;
  
-@@ -636,6 +641,12 @@ send_statvfs(u_int32_t id, struct statvfs *st)
+@@ -635,6 +640,12 @@ send_statvfs(u_int32_t id, struct statvfs *st)
  		fatal("%s: buffer error: %s", __func__, ssh_err(r));
  	send_msg(msg);
  	sshbuf_free(msg);
@@ -2811,7 +2572,7 @@ index 646286a..32b84db 100644
  }
  
  /* parse incoming */
-@@ -712,6 +723,14 @@ process_open(u_int32_t id)
+@@ -711,6 +722,14 @@ process_open(u_int32_t id)
  	}
  	if (status != SSH2_FX_OK)
  		send_status(id, status);
@@ -2826,7 +2587,7 @@ index 646286a..32b84db 100644
  	free(name);
  }
  
-@@ -728,6 +747,11 @@ process_close(u_int32_t id)
+@@ -727,6 +746,11 @@ process_close(u_int32_t id)
  	ret = handle_close(handle);
  	status = (ret == -1) ? errno_to_portable(errno) : SSH2_FX_OK;
  	send_status(id, status);
@@ -2838,7 +2599,7 @@ index 646286a..32b84db 100644
  }
  
  static void
-@@ -837,6 +861,14 @@ process_do_stat(u_int32_t id, int do_lstat)
+@@ -836,6 +860,14 @@ process_do_stat(u_int32_t id, int do_lstat)
  	}
  	if (status != SSH2_FX_OK)
  		send_status(id, status);
@@ -2853,7 +2614,7 @@ index 646286a..32b84db 100644
  	free(name);
  }
  
-@@ -876,6 +908,11 @@ process_fstat(u_int32_t id)
+@@ -875,6 +907,11 @@ process_fstat(u_int32_t id)
  	}
  	if (status != SSH2_FX_OK)
  		send_status(id, status);
@@ -2865,7 +2626,7 @@ index 646286a..32b84db 100644
  }
  
  static struct timeval *
-@@ -1000,6 +1037,13 @@ process_fsetstat(u_int32_t id)
+@@ -999,6 +1036,13 @@ process_fsetstat(u_int32_t id)
  		}
  	}
  	send_status(id, status);
@@ -2879,7 +2640,7 @@ index 646286a..32b84db 100644
  }
  
  static void
-@@ -1029,6 +1073,13 @@ process_opendir(u_int32_t id)
+@@ -1028,6 +1072,13 @@ process_opendir(u_int32_t id)
  	}
  	if (status != SSH2_FX_OK)
  		send_status(id, status);
@@ -2893,7 +2654,7 @@ index 646286a..32b84db 100644
  	free(path);
  }
  
-@@ -1084,6 +1135,12 @@ process_readdir(u_int32_t id)
+@@ -1083,6 +1134,12 @@ process_readdir(u_int32_t id)
  		} else {
  			send_status(id, SSH2_FX_EOF);
  		}
@@ -2906,7 +2667,7 @@ index 646286a..32b84db 100644
  		free(stats);
  	}
  }
-@@ -1102,6 +1159,12 @@ process_remove(u_int32_t id)
+@@ -1101,6 +1158,12 @@ process_remove(u_int32_t id)
  	r = unlink(name);
  	status = (r == -1) ? errno_to_portable(errno) : SSH2_FX_OK;
  	send_status(id, status);
@@ -2919,7 +2680,7 @@ index 646286a..32b84db 100644
  	free(name);
  }
  
-@@ -1123,6 +1186,13 @@ process_mkdir(u_int32_t id)
+@@ -1122,6 +1185,13 @@ process_mkdir(u_int32_t id)
  	r = mkdir(name, mode);
  	status = (r == -1) ? errno_to_portable(errno) : SSH2_FX_OK;
  	send_status(id, status);
@@ -2933,7 +2694,7 @@ index 646286a..32b84db 100644
  	free(name);
  }
  
-@@ -1140,6 +1210,13 @@ process_rmdir(u_int32_t id)
+@@ -1139,6 +1209,13 @@ process_rmdir(u_int32_t id)
  	r = rmdir(name);
  	status = (r == -1) ? errno_to_portable(errno) : SSH2_FX_OK;
  	send_status(id, status);
@@ -2947,7 +2708,7 @@ index 646286a..32b84db 100644
  	free(name);
  }
  
-@@ -1167,6 +1244,13 @@ process_realpath(u_int32_t id)
+@@ -1166,6 +1243,13 @@ process_realpath(u_int32_t id)
  		s.name = s.long_name = resolvedname;
  		send_names(id, 1, &s);
  	}
@@ -2961,7 +2722,7 @@ index 646286a..32b84db 100644
  	free(path);
  }
  
-@@ -1226,6 +1310,17 @@ process_rename(u_int32_t id)
+@@ -1225,6 +1309,17 @@ process_rename(u_int32_t id)
  			status = SSH2_FX_OK;
  	}
  	send_status(id, status);
@@ -2979,7 +2740,7 @@ index 646286a..32b84db 100644
  	free(oldpath);
  	free(newpath);
  }
-@@ -1252,6 +1347,13 @@ process_readlink(u_int32_t id)
+@@ -1251,6 +1346,13 @@ process_readlink(u_int32_t id)
  		s.name = s.long_name = buf;
  		send_names(id, 1, &s);
  	}
@@ -2993,7 +2754,7 @@ index 646286a..32b84db 100644
  	free(path);
  }
  
-@@ -1271,6 +1373,17 @@ process_symlink(u_int32_t id)
+@@ -1270,6 +1372,17 @@ process_symlink(u_int32_t id)
  	r = symlink(oldpath, newpath);
  	status = (r == -1) ? errno_to_portable(errno) : SSH2_FX_OK;
  	send_status(id, status);
@@ -3011,21 +2772,23 @@ index 646286a..32b84db 100644
  	free(oldpath);
  	free(newpath);
  }
-@@ -1454,7 +1567,13 @@ process(void)
+@@ -1453,7 +1566,15 @@ process(void)
  			}
  		}
  		if (handlers[i].handler == NULL)
 +#ifdef NERSC_MOD
-+		s_audit("sftp_process_unknown_3", "count=%i int=%d uristring=%d",
-+			get_client_session_id(), (int)getppid(), type);
++		{
++			s_audit("sftp_process_unknown_3", "count=%i int=%d uristring=%d",
++				get_client_session_id(), (int)getppid(), type);
  			error("Unknown message %u", type);
++		}
 +#else
 +			error("Unknown message %u", type);
 +#endif
  	}
  	/* discard the remaining bytes from the current packet */
  	if (buf_len < sshbuf_len(iqueue)) {
-@@ -1639,7 +1758,15 @@ sftp_server_main(int argc, char **argv, struct passwd *user_pw)
+@@ -1638,7 +1759,15 @@ sftp_server_main(int argc, char **argv, struct passwd *user_pw)
  		}
  	}
  
@@ -3042,10 +2805,10 @@ index 646286a..32b84db 100644
  		memset(rset, 0, set_size);
  		memset(wset, 0, set_size);
 diff --git a/sshd.8 b/sshd.8
-index 6c521f2..c1bb64d 100644
+index 7725a69..e8c2a60 100644
 --- a/sshd.8
 +++ b/sshd.8
-@@ -880,6 +880,12 @@ the user's home directory becomes accessible.
+@@ -825,6 +825,12 @@ the user's home directory becomes accessible.
  This file should be writable only by the user, and need not be
  readable by anyone else.
  .Pp
@@ -3058,7 +2821,7 @@ index 6c521f2..c1bb64d 100644
  .It Pa /etc/hosts.equiv
  This file is for host-based authentication (see
  .Xr ssh 1 ) .
-@@ -986,6 +992,7 @@ The content of this file is not sensitive; it can be world-readable.
+@@ -929,6 +935,7 @@ The content of this file is not sensitive; it can be world-readable.
  .Xr ssh-keygen 1 ,
  .Xr ssh-keyscan 1 ,
  .Xr chroot 2 ,
@@ -3067,10 +2830,10 @@ index 6c521f2..c1bb64d 100644
  .Xr moduli 5 ,
  .Xr sshd_config 5 ,
 diff --git a/sshd.c b/sshd.c
-index f6235ff..ed436dc 100644
+index 1bff88c..ccf90ec 100644
 --- a/sshd.c
 +++ b/sshd.c
-@@ -125,6 +125,13 @@
+@@ -123,12 +123,32 @@
  #include "version.h"
  #include "ssherr.h"
  
@@ -3081,10 +2844,13 @@ index f6235ff..ed436dc 100644
 +int deny_severity;
 +#endif /* LIBWRAP */
 +
- #ifndef O_NOCTTY
- #define O_NOCTTY	0
- #endif
-@@ -135,6 +142,15 @@
++#ifndef O_NOCTTY
++#define O_NOCTTY	0
++#endif
++
+ /* Re-exec fds */
+ #define REEXEC_DEVCRYPTO_RESERVED_FD	(STDERR_FILENO + 1)
+ #define REEXEC_STARTUP_PIPE_FD		(STDERR_FILENO + 2)
  #define REEXEC_CONFIG_PASS_FD		(STDERR_FILENO + 3)
  #define REEXEC_MIN_FREE_FD		(STDERR_FILENO + 4)
  
@@ -3100,7 +2866,7 @@ index f6235ff..ed436dc 100644
  extern char *__progname;
  
  /* Server configuration options. */
-@@ -309,6 +325,20 @@ sighup_handler(int sig)
+@@ -289,6 +309,20 @@ sighup_handler(int sig)
  static void
  sighup_restart(void)
  {
@@ -3119,9 +2885,9 @@ index f6235ff..ed436dc 100644
 +#endif
 +
  	logit("Received SIGHUP; restarting.");
- 	platform_pre_restart();
- 	close_listen_socks();
-@@ -1242,6 +1272,15 @@ server_listen(void)
+ 	if (options.pid_file != NULL)
+ 		unlink(options.pid_file);
+@@ -1090,6 +1124,15 @@ server_listen(void)
  			fatal("listen on [%s]:%s: %.100s",
  			    ntop, strport, strerror(errno));
  		logit("Server listening on %s port %s.", ntop, strport);
@@ -3137,7 +2903,7 @@ index f6235ff..ed436dc 100644
  	}
  	freeaddrinfo(options.listen_addrs);
  
-@@ -1256,6 +1295,16 @@ server_listen(void)
+@@ -1104,6 +1147,16 @@ server_listen(void)
  static void
  server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
  {
@@ -3153,8 +2919,8 @@ index f6235ff..ed436dc 100644
 +#endif
  	fd_set *fdset;
  	int i, j, ret, maxfd;
- 	int key_used = 0, startups = 0;
-@@ -1294,7 +1343,27 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
+ 	int startups = 0;
+@@ -1142,7 +1195,28 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
  				FD_SET(startup_pipes[i], fdset);
  
  		/* Wait in select until there is a connection. */
@@ -3174,15 +2940,16 @@ index f6235ff..ed436dc 100644
 +			l_tv.tv_sec = 60;
 +			l_tv.tv_usec = 0;
 +
++			ret = select(maxfd+1, fdset, NULL, NULL, &l_tv);
++			
 +			s_audit("sshd_server_heartbeat_3", "count=%i", ret);
 +
-+			ret = select(maxfd+1, fdset, NULL, NULL, &l_tv);
 +#endif
 +
  		if (ret < 0 && errno != EINTR)
  			error("select: %.100s", strerror(errno));
  		if (received_sigterm) {
-@@ -1303,6 +1372,13 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
+@@ -1151,6 +1225,13 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
  			close_listen_socks();
  			if (options.pid_file != NULL)
  				unlink(options.pid_file);
@@ -3195,8 +2962,8 @@ index f6235ff..ed436dc 100644
 +#endif
  			exit(received_sigterm == SIGTERM ? 0 : 255);
  		}
- 		if (key_used && key_do_regen) {
-@@ -1820,6 +1896,20 @@ main(int ac, char **av)
+ 		if (ret < 0)
+@@ -1648,6 +1729,20 @@ main(int ac, char **av)
  		exit(1);
  	}
  
@@ -3217,7 +2984,7 @@ index f6235ff..ed436dc 100644
  	debug("sshd version %s, %s", SSH_VERSION,
  #ifdef WITH_OPENSSL
  	    SSLeay_version(SSLEAY_VERSION)
-@@ -2214,9 +2304,44 @@ main(int ac, char **av)
+@@ -1999,9 +2094,44 @@ main(int ac, char **av)
  	 */
  	remote_ip = ssh_remote_ipaddr(ssh);
  
@@ -3262,7 +3029,7 @@ index f6235ff..ed436dc 100644
  
  	/* Log the connection. */
  	laddr = get_local_ipaddr(sock_in);
-@@ -2363,6 +2488,10 @@ main(int ac, char **av)
+@@ -2132,6 +2262,10 @@ main(int ac, char **av)
  
  	do_authenticated(authctxt);
  
@@ -3273,7 +3040,7 @@ index f6235ff..ed436dc 100644
  	/* The connection has been terminated. */
  	packet_get_bytes(&ibytes, &obytes);
  	verbose("Transferred: sent %llu, received %llu bytes",
-@@ -2646,11 +2775,11 @@ do_ssh2_kex(void)
+@@ -2192,11 +2326,11 @@ do_ssh2_kex(void)
  	struct kex *kex;
  	int r;
  
@@ -3289,10 +3056,10 @@ index f6235ff..ed436dc 100644
  	    options.ciphers);
  	myproposal[PROPOSAL_ENC_ALGS_STOC] = compat_cipher_proposal(
 diff --git a/sshd_config b/sshd_config
-index 456292a..b231da9 100644
+index b8d51bf..00f2810 100644
 --- a/sshd_config
 +++ b/sshd_config
-@@ -138,6 +138,9 @@ Subsystem	sftp	/usr/libexec/sftp-server
+@@ -123,6 +123,9 @@ Subsystem	sftp	/usr/libexec/sftp-server
  # allow the use of the none cipher
  #NoneEnabled no
  
@@ -3303,12 +3070,12 @@ index 456292a..b231da9 100644
  #Match User anoncvs
  #	X11Forwarding no
 diff --git a/version.h b/version.h
-index f63674e..805bcd8 100644
+index 39750cd..13cc823 100644
 --- a/version.h
 +++ b/version.h
 @@ -5,3 +5,9 @@
  #define SSH_PORTABLE	"p1"
- #define SSH_HPN		"-hpn14v12"
+ #define SSH_HPN		"-hpn14v13"
  #define SSH_RELEASE	SSH_VERSION SSH_PORTABLE SSH_HPN
 +
 +#ifdef NERSC_MOD
