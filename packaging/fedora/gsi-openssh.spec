@@ -31,7 +31,7 @@
 
 %global gsi_openssh_rel 1
 %global openssh_ver     7.5p1
-%global gsi_openssh_ver %{openssh_ver}a
+%global gsi_openssh_ver %{openssh_ver}b
 
 Summary: An implementation of the SSH protocol with GSI authentication
 Name: gsi-openssh
@@ -70,19 +70,19 @@ Patch1: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn-1
 ## cd ..
 ## git clone https://github.com/globus/gsi-openssh.git
 ## cd gsi-openssh
-## git checkout tags/GSI-7.5p1
+## git checkout tags/GSI-7.5p1b
 ## git log `cat ../changelog_last_commit`^... > ChangeLog
 ## make -f Makefile.in MANFMT="/usr/bin/nroff -mandoc" SHELL=$SHELL distprep
 ## rm -fr .git
 ## cd ..
-## diff -Naur openssh-7.5p1 gsi-openssh > hpn_isshd-gsi.7.5p1.patch
-Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.7.5p1.patch
+## diff -Naur openssh-7.5p1 gsi-openssh > hpn_isshd-gsi.7.5p1b.patch
+Patch2: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi.7.5p1b.patch
 ##Patch3 is the OpenSSL 1.1 patch to be applied on top of the GSI patch and is constructed as follows:
 ## rm -fr gsi-openssh
 ## git clone https://github.com/globus/gsi-openssh.git
 ## cd gsi-openssh
-## git checkout tags/7.5p1a
-## git diff tags/GSI-7.5p1 > ../hpn_isshd-gsi_ossl.7.5p1a.patch
+## git checkout tags/7.5p1b
+## git diff tags/GSI-7.5p1b > ../hpn_isshd-gsi_ossl.7.5p1b.patch
 Patch3: https://github.com/globus/gsi-openssh/releases/download/%{version}/hpn_isshd-gsi_ossl.%{version}.patch
 
 License: BSD
@@ -239,6 +239,7 @@ This version of OpenSSH has been modified to support GSI authentication.
 %patch0 -p1
 %patch1 -p1 -F 2
 %patch2 -p1
+%patch3 -p1
 
 sed 's/sshd.pid/gsisshd.pid/' -i pathnames.h
 sed 's!$(piddir)/sshd.pid!$(piddir)/gsisshd.pid!' -i Makefile.in
