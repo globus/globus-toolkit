@@ -1,0 +1,3 @@
+#! /usr/bin/dh-exec
+usr/lib/*/lib*.so
+usr/share/doc/libglobus-xio-udt-driver/GLOBUS_LICENSE

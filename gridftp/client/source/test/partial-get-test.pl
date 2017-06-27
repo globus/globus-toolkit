@@ -22,7 +22,7 @@
 #
 
 use strict;
-use POSIX;
+use File::Temp qw/:POSIX/;
 use Test::More;
 use FileHandle;
 use File::Basename;
@@ -54,7 +54,7 @@ close($fh);
 sub basic_func
 {
     my ($use_proxy) = (shift);
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
 
     unlink($tmpname);
@@ -102,7 +102,7 @@ for(my $i = 1; $i <= 43; $i++)
 # and no core file is generated.
 sub restart_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 

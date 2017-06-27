@@ -7,7 +7,7 @@ Name:		globus-ftp-client
 %endif
 
 %global _name %(tr - _ <<< %{name})
-Version:	8.35
+Version:	8.36
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Client Library
@@ -34,18 +34,8 @@ BuildRequires:	globus-xio-pipe-driver-devel >= 0
 BuildRequires:  openssl
 BuildRequires:  libopenssl-devel
 %else
-%if %{?rhel}%{!?rhel:0} == 5
-BuildRequires:  openssl101e
-BuildRequires:  openssl101e-devel
-BuildConflicts: openssl-devel
-%else
 BuildRequires:  openssl
 BuildRequires:  openssl-devel
-%endif
-%endif
-
-%if %{?rhel}%{!?rhel:0} == 5
-BuildRequires:	graphviz-gd
 %endif
 
 %if %{?fedora}%{!?fedora:0} >= 19 || %{?rhel}%{!?rhel:0} >= 7 || %{?suse_version}%{!?suse_version:0} >= 1315
@@ -141,10 +131,6 @@ rm -rf autom4te.cache
 autoreconf -if
 %endif
 
-%if %{?rhel}%{!?rhel:0} == 5
-export OPENSSL="$(which openssl101e)"
-%endif
-
 %configure \
            --disable-static \
            --docdir=%{_docdir}/%{name}-%{version} \
@@ -190,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Jun 26 2017 Globus Toolkit <support@globus.org> - 8.36-1
+- Replace deprecated perl POSIX::tmpnam with File::Temp::tmpnam
+
 * Fri Mar 24 2017 Globus Toolkit <support@globus.org> - 8.35-1
 - Remove some redundent tests to reduce test time
 

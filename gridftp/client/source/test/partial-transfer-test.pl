@@ -22,7 +22,7 @@
 #
 
 use strict;
-use POSIX;
+use File::Temp qw/:POSIX/;
 use Test::More;
 use FileHandle;
 use File::Basename;
@@ -47,8 +47,8 @@ my ($dest_host, $dest_file) = setup_remote_dest();
 # is generated.
 sub basic_func
 {
-    my $tmpname = POSIX::tmpnam();
-    my $tmpname2 = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
+    my $tmpname2 = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my $newfile = new FileHandle;
     my $offset = shift;

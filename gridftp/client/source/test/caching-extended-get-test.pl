@@ -22,7 +22,7 @@
 #
 
 use strict;
-use POSIX;
+use File::Temp qw/:POSIX/;
 use Test::More;
 use File::Basename;
 use lib dirname($0);
@@ -52,7 +52,7 @@ my @test_parallelism = (1, 3, 10);
 sub basic_func
 {
     my ($parallelism) = (shift);
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
 
     unlink($tmpname);
@@ -116,7 +116,7 @@ for(my $i = 1; $i <= 43; $i++)
 # and no core file is generated.
 sub restart_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
     my ($par) = shift;
@@ -151,7 +151,7 @@ Do an extended get of $testfile, enabling perf_plugin
 =cut
 sub perf_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
 
     my $command = "$test_exec -s $proto$source_host$testfile -M";
@@ -172,7 +172,7 @@ Do an extended get of $testfile, enabling throughput_plugin
 =cut
 sub throughput_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
 
     my $command = "$test_exec -s $proto$source_host$testfile -T";

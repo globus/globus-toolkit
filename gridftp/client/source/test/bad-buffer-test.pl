@@ -20,7 +20,6 @@
 # Try reading an url by passing in a bad data buffer
 
 use strict;
-use POSIX;
 use Test::More;
 use File::Basename;
 use lib dirname($0);

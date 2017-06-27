@@ -21,7 +21,7 @@
 #
 
 use strict;
-use POSIX;
+use File::Temp qw/:POSIX/;
 use File::Basename;
 use lib dirname($0);
 use Test::More;
@@ -45,7 +45,7 @@ my ($source_host, $source_file, $local_copy) = setup_remote_source();
 sub basic_func
 {
     my ($use_proxy) = (shift);
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
 
     if($use_proxy == 0)
@@ -57,7 +57,7 @@ sub basic_func
     $errors = run_command($command, $use_proxy ? 0 : -1, $tmpname);
     if($errors eq "" && $use_proxy)
     {
-        my ($newtmp)=(POSIX::tmpnam());
+        my $newtmp = File::Temp::tmpnam();
 	system("cat \"$local_copy\" \"$local_copy\" > $newtmp");
 
 	$errors .= compare_local_files($newtmp, $tmpname);
@@ -119,7 +119,7 @@ for(my $i = 1; $i <= 43; $i++)
 # and no core file is generated.
 sub restart_test
 {
-    my $tmpname = POSIX::tmpnam();
+    my $tmpname = File::Temp::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
@@ -129,7 +129,7 @@ sub restart_test
     $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
-        my ($newtmp)=(POSIX::tmpnam());
+        my $newtmp = File::Temp::tmpnam();
         system("cat \"$local_copy\" \"$local_copy\" > $newtmp");
 
         $errors .= compare_local_files($newtmp, $tmpname);
