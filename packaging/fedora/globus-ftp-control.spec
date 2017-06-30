@@ -6,8 +6,8 @@ Name:		globus-ftp-control
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	7.7
-Release:	2%{?dist}
+Version:	7.8
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
 
@@ -176,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Jun 30 2017 Globus Toolkit <support@globus.org> - 7.8-1
+- fix hang/failure when using udt driver with local client transfer
+
 * Thu Oct 13 2016 Globus Toolkit <support@globus.org> - 7.7-2
 - more ordered mode fixes
 - more updates for el.5 openssl101e

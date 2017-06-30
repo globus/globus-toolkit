@@ -771,12 +771,6 @@ globus_i_ftp_control_create_stack(
 
         result = GLOBUS_SUCCESS;
 
-        if(dc_handle->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_NONE &&
-            strcmp(driver_ent->driver_name, "gsi") == 0)
-        {
-            continue;
-        }
-
         result = globus_xio_stack_push_driver(
             *stack, driver_ent->driver);
         if(result != GLOBUS_SUCCESS)
