@@ -1,3 +1,9 @@
+globus-ftp-control (7.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix hang/failure when using udt driver with local client transfer
+
+ -- Globus Toolkit <support@globus.org>  Fri, 30 Jun 2017 12:18:20 -0500
+
 globus-ftp-control (7.7-1+gt6.@distro@) @distro@; urgency=low
 
   * more ordered mode fixes
