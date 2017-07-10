@@ -14,7 +14,7 @@ Name:           myproxy
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.28
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -47,10 +47,6 @@ BuildRequires:  cyrus-sasl-devel
 BuildRequires:  openldap2-devel
 %else
 BuildRequires:  openldap-devel >= 2.3
-%endif
-
-%if %{?suse_version}%{!?suse_version:0} >= 1315
-BuildRequires:      krb5-devel >= 1
 %endif
 
 BuildRequires:      globus-proxy-utils >= 5
@@ -565,6 +561,9 @@ fi
 %endif
 
 %changelog
+* Mon Jul 10 2017 Globus Toolkit <support@globus.org> - 6.1.28-2
+- Remove krb5 dependency on sles.12
+
 * Fri May 05 2017 Globus Toolkit <support@globus.org> - 6.1.28-1
 - Fix OpenSSL 1.1.0-related typo
 - Remove el.5 cruft from spec
