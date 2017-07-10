@@ -14,7 +14,7 @@ Name:           myproxy
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.28
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -31,6 +31,7 @@ BuildRequires:  openssl
 Requires:       insserv
 Requires(post): %insserv_prereq  %fillup_prereq
 BuildRequires:  insserv
+BuildRequires:  shadow
 %endif
 
 BuildRequires:  globus-gss-assist-devel >= 8
@@ -562,9 +563,10 @@ fi
 %endif
 
 %changelog
-* Mon Jul 10 2017 Globus Toolkit <support@globus.org> - 6.1.28-3
+* Mon Jul 10 2017 Globus Toolkit <support@globus.org> - 6.1.28-4
 - Remove krb5 dependency on sles.12
 - Add /usr/sbin and /sbin for post scripts
+- Add shadow to BuildRequires
 
 * Fri May 05 2017 Globus Toolkit <support@globus.org> - 6.1.28-1
 - Fix OpenSSL 1.1.0-related typo
