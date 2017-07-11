@@ -1,6 +1,7 @@
-globus-ftp-client (8.36-1+gt6.@distro@) @distro@; urgency=low
+globus-ftp-client (8.36-2+gt6.@distro@) @distro@; urgency=low
 
   * Replace deprecated perl POSIX::tmpnam with File::Temp::tmpnam
+  * Fix install location
 
  -- Globus Toolkit <support@globus.org>  Mon, 26 Jun 2017 16:02:33 -0400
 

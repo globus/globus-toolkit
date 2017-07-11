@@ -2,4 +2,4 @@
 
 usr/lib/*/libglobus*.so.*
 usr/share/globus/gridftp-ssh
-usr/share/doc/libglobus-ftp-client-doc/GLOBUS_LICENSE => usr/share/doc/libglobus-ftp-client2/GLOBUS_LICENSE 
+usr/share/doc/libglobus-ftp-client-doc/GLOBUS_LICENSE => usr/share/doc/libglobus-ftp-client2/GLOBUS_LICENSE
