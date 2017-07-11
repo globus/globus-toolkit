@@ -2846,6 +2846,13 @@ globus_i_gfs_data_new_dsi(
     }
 
     *dsi_iface = new_dsi;
+    
+    /* update config based on DSI capabilities */
+    if(!(new_dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_SYMLINKS))
+    {
+        globus_gfs_config_set_int("symlink_policy", GFS_L_SYMLINKS_NONE);
+    }
+    
     return GLOBUS_SUCCESS;
     
 err:
@@ -12091,7 +12098,6 @@ globus_l_gfs_data_validate_stat(
     globus_bool_t                       check_rp = GLOBUS_TRUE;
     globus_bool_t                       check_symlinks = GLOBUS_TRUE;
     globus_bool_t                       passed = GLOBUS_FALSE;
-    globus_bool_t                       checked = GLOBUS_FALSE;
     globus_bool_t                       invalid = GLOBUS_FALSE;
     int                                 i;
     const char *                        root = "/";
@@ -12158,7 +12164,6 @@ globus_l_gfs_data_validate_stat(
         {
             op->stat_cdir_seen = GLOBUS_TRUE;
         }
-        checked = GLOBUS_FALSE;
         invalid = GLOBUS_FALSE;
         /* validate symlinks */
         if(check_symlinks && stat_array[i].symlink_target != NULL)
@@ -12237,7 +12242,7 @@ globus_l_gfs_data_validate_stat(
             }
             
             /* check if realpath violates rp */
-            if(!stat_info->file_only && !invalid)
+            if(!invalid)
             {
                 full_path = globus_common_create_string(
                     "%s%s%s", base_path, slash, stat_array[i].name);
@@ -12258,7 +12263,7 @@ globus_l_gfs_data_validate_stat(
 
         /* check entry against rp list. if symlink has been found invalid, 
             check to see if symlink should return at all */
-        if(check_rp && !checked)
+        if(check_rp)
         {
             passed = GLOBUS_FALSE;
             nam = stat_array[i].name;

@@ -327,6 +327,7 @@ globus_l_gsc_cmd_mdtm_cb(
     globus_gridftp_server_control_response_t response_type,
     char *                                  response_msg,
     char *                                  path,
+    char *                                  abs_path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
     uid_t                                   uid,
@@ -591,6 +592,7 @@ globus_l_gsc_cmd_cwd_cb(
     globus_gridftp_server_control_response_t response_type,
     char *                                  response_msg,
     char *                                  path,
+    char *                                  abs_path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
     uid_t                                   uid,
@@ -746,6 +748,7 @@ globus_l_gsc_cmd_stat_cb(
     globus_gridftp_server_control_response_t response_type,
     char *                                  response_msg,
     char *                                  path,
+    char *                                  abs_path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
     uid_t                                   uid,
@@ -820,6 +823,7 @@ globus_l_gsc_cmd_stat_cb(
                op->server_handle->opts.mlsx_fact_str, 
                uid,
                NULL,
+               abs_path,
                GLOBUS_TRUE);
             msg =  globus_common_create_string(
                _FSMSL("%d-Contents of %s\r\n%s%d End.\r\n"), 
@@ -849,6 +853,7 @@ globus_l_gsc_cmd_stat_cb(
                op->server_handle->opts.mlsx_fact_str, 
                uid,
                NULL,
+               abs_path,
                GLOBUS_TRUE);
             msg =  globus_common_create_string(
                 _FSMSL("%d-status of %s\r\n%s%d End.\r\n"),
@@ -966,6 +971,7 @@ globus_l_gsc_cmd_size_cb(
     globus_gridftp_server_control_response_t response_type,
     char *                                  response_msg,
     char *                                  path,
+    char *                                  abs_path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
     uid_t                                   uid,
@@ -2826,6 +2832,7 @@ globus_l_gsc_cmd_stor_retr_cb(
     globus_gridftp_server_control_response_t response_type,
     char *                                  response_msg,
     char *                                  path,
+    char *                                  abs_path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
     uid_t                                   uid,
@@ -3741,7 +3748,7 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "SPAS");
     globus_gridftp_server_control_add_feature(server_handle, "ESTO");
     globus_gridftp_server_control_add_feature(server_handle, "ERET");
-    globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;UNIX.owner*;UNIX.uid*;UNIX.group*;UNIX.gid*;Unique*;UNIX.slink*;UNIX.slink.Modify*;UNIX.slink.Size*;UNIX.slink.mode*;UNIX.slink.owner*;UNIX.slink.group*;UNIX.slink.uid*;UNIX.slink.gid*;X.count;");    
+    globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;UNIX.owner*;UNIX.uid*;UNIX.group*;UNIX.gid*;Unique*;UNIX.slink*;UNIX.slink.Modify*;UNIX.slink.Size*;UNIX.slink.mode*;UNIX.slink.owner*;UNIX.slink.group*;UNIX.slink.uid*;UNIX.slink.gid*;X.abspath*;X.count;");
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
     globus_gridftp_server_control_add_feature(server_handle, "DCAU");    

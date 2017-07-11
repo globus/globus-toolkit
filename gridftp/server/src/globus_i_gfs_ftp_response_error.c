@@ -550,12 +550,10 @@ globus_i_gfs_error_system(
                 ftp_code = 550;
                 error_code = "PATH_NOT_FOUND";
                 break;
+            case EPERM:
             case EACCES:
                 ftp_code = 550;
                 error_code = "PERMISSION_DENIED";
-                break;
-            case EPERM:
-                ftp_code = 550;
                 break;
             case ENOTDIR:
                 ftp_code = 550;

@@ -532,6 +532,14 @@ globus_i_gsc_op_destroy(
         {
             globus_free(op->path);
         }
+        if(op->absolute_path != NULL)
+        {
+            globus_free(op->absolute_path);
+        }
+        if(op->resolved_path != NULL)
+        {
+            globus_free(op->resolved_path);
+        }
         if(op->glob_match_str != NULL)
         {
             globus_free(op->glob_match_str);
@@ -3011,7 +3019,7 @@ globus_gridftp_server_control_start(
         globus_free(server_handle->types);
     }
     /* default options */
-    strcpy(server_handle->opts.mlsx_fact_str, "TMSPUOIGDQLNmsuidog");
+    strcpy(server_handle->opts.mlsx_fact_str, "TMSPUOIGDQLANmsuidog");
     server_handle->opts.send_buf = 0; 
     server_handle->opts.perf_frequency = 5;
     server_handle->opts.retr_perf_frequency = 0;
@@ -3952,6 +3960,7 @@ globus_i_gsc_mlsx_line_single(
     globus_gridftp_server_control_stat_t *  stat_info,
     globus_gridftp_server_control_stat_t *  symlink_stat_info,
     const char *                            base_path,
+    const char *                            absolute_path,
     globus_bool_t                           mlst)
 {
     char *                              out_buf;
@@ -4304,6 +4313,19 @@ globus_i_gsc_mlsx_line_single(
                 }
                 break;
 
+            case GLOBUS_GSC_MLSX_FACT_XABSPATH:
+                if(is_cdir && absolute_path)
+                {
+                    enc_str = NULL;
+                    cnt = globus_l_gsc_mlsx_urlencode(absolute_path, &enc_str);
+                    sprintf(tmp_ptr, "X.abspath=%s/;", enc_str);
+                    if(cnt)
+                    {
+                        globus_free(enc_str);
+                    }
+                }
+                break;
+
             case GLOBUS_GSC_MLSX_FACT_XCOUNT:
                 if(is_cdir)
                 {
@@ -4362,6 +4384,7 @@ globus_i_gsc_mlsx_line(
     const char *                        mlsx_fact_str,
     uid_t                               uid,
     const char *                        base_path,
+    const char *                        absolute_path,
     globus_bool_t                       indent)
 {
     char *                              line;
@@ -4377,8 +4400,9 @@ globus_i_gsc_mlsx_line(
 
     GlobusGridFTPServerDebugInternalEnter();
 
-    /* take a guess at the size needed, at least 1 byte for 0 stat_count */
-    buf_len = stat_count * sizeof(char) * (256 + (base_path ? strlen(base_path) : 0)) + 1;
+    /* take a guess at the size needed, will realloc if not large enough */
+    /* add 1 for an empty response */
+    buf_len = stat_count * sizeof(char) * 512 + 1;
     buf_left = buf_len;
     buf = globus_malloc(buf_len);
     tmp_ptr = buf;
@@ -4401,6 +4425,7 @@ globus_i_gsc_mlsx_line(
                 stat_ptr,
                 symlink_ptr,
                 base_path,
+                absolute_path,
                 GLOBUS_FALSE);
         if(line != NULL)
         {
@@ -5318,6 +5343,7 @@ globus_l_gsc_internal_cb_kickout(
                 op->response_type,
                 op->response_msg,
                 op->path,
+                op->absolute_path,
                 op->stat_info,
                 op->stat_count,
                 op->uid,
@@ -5866,6 +5892,30 @@ globus_gridftp_server_control_finished_transfer(
 }
 
 globus_result_t
+globus_gridftp_server_control_set_paths(
+    globus_gridftp_server_control_op_t      op,
+    const char *                            absolute_path,
+    const char *                            resolved_path)
+{
+    GlobusGridFTPServerName(globus_gridftp_server_control_set_paths);
+    GlobusGridFTPServerDebugEnter();
+
+    if (absolute_path)
+    {
+        free(op->absolute_path);
+        op->absolute_path = strdup(absolute_path);
+    }
+    if (resolved_path)
+    {
+        free(op->resolved_path);
+        op->resolved_path = strdup(resolved_path);
+    }
+    
+    GlobusGridFTPServerDebugExit();
+    return GLOBUS_SUCCESS;
+}        
+
+globus_result_t
 globus_gridftp_server_control_list_buffer_alloc(
     const char *                                fact_str,
     uid_t                                       uid,
@@ -5922,7 +5972,7 @@ globus_gridftp_server_control_list_buffer_alloc(
     else
     {
         *out_buf = (globus_byte_t *) globus_i_gsc_mlsx_line(
-            stat_info_array, stat_count, fact_str, uid, base_path, GLOBUS_FALSE);
+            stat_info_array, stat_count, fact_str, uid, base_path, NULL, GLOBUS_FALSE);
     }
 
     *out_size = strlen((char *) *out_buf);

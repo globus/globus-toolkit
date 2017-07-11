@@ -928,6 +928,8 @@ globus_l_gfs_request_stat(
     {
         goto error_init;
     }
+    globus_gridftp_server_control_set_paths(op, stat_info->pathname, NULL);
+
     globus_i_gfs_data_request_stat(
         NULL,
         instance->session_arg,
@@ -1474,7 +1476,8 @@ globus_l_gfs_request_command(
     
         command_info->command = GLOBUS_GFS_CMD_RNFR;
         result = globus_l_gfs_get_full_path(
-            instance, cmd_array[1], &command_info->pathname, GFS_L_WRITE);
+            instance, cmd_array[1], &command_info->pathname,
+            GFS_L_SYM | GFS_L_WRITE);
         if(command_info->pathname == NULL)
         {
             goto err;
