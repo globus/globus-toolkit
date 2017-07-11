@@ -23,9 +23,13 @@ override_dh_auto_configure:
 	    --datadir='$(_datadir)/globus' \
 	    --libexecdir='$(_datadir)/globus' \
 	    --disable-static \
+            --disable-net-tests \
 	    --enable-doxygen
+
+override_dh_strip:
+	dh_strip --dbg-package=libglobus-gram-client-dbg
 
 %:
 	dh $@ --with autotools-dev
 
-.PHONY: override_dh_auto_configure
+.PHONY: override_dh_auto_configure override_dh_strip

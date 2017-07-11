@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gram_client],[13.18],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_gram_client],[13.19],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -61,6 +61,20 @@ AC_HELP_STRING([--with-perlmoduledir=DIR],
 ])
 AC_SUBST(perlmoduledir)
 
+AC_ARG_ENABLE([net-tests],
+    AC_HELP_STRING(
+        [--disable-net-tests],
+        [Disable tests that require a working network]),
+    [
+        if test x$enableval != xno; then
+            enable_net_tests=yes
+        else
+            enable_net_tests=no
+        fi
+    ],
+    [enable_net_tests=yes])
+
+AM_CONDITIONAL([ENABLE_NET_TESTS], [test x$enable_net_tests = xyes])
 
 AC_CONFIG_FILES(
         globus-gram-client-uninstalled.pc

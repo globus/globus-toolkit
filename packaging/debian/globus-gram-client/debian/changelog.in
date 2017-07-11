@@ -1,3 +1,9 @@
+globus-gram-client (13.19-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add option to disable tests which require network
+
+ -- Globus Toolkit <support@globus.org>  Tue, 11 Jul 2017 03:46:25 -0400
+
 globus-gram-client (13.18-1+gt6.@distro@) @distro@; urgency=low
 
   * Disable network-needing tests in pbuilder environment

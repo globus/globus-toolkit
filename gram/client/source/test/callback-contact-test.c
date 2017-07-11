@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
     int rc = 0;
     int test_num = 0;
     int not_ok = 0;
-    const char * skip = getenv("PBUILDER_OPERATION") ? " # SKIP no-net" : "";
+    const char * skip = getenv("SKIP_NO_NET") ? " # SKIP no-net" : "";
 
     LTDL_SET_PRELOADED_SYMBOLS();
 
