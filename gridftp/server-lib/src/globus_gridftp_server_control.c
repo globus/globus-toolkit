@@ -4316,9 +4316,15 @@ globus_i_gsc_mlsx_line_single(
             case GLOBUS_GSC_MLSX_FACT_XABSPATH:
                 if(is_cdir && absolute_path)
                 {
+                    const char *        slash = "/";
+                    
                     enc_str = NULL;
+                    if(absolute_path[strlen(absolute_path) - 1] == '/')
+                    {
+                        slash = "";
+                    }
                     cnt = globus_l_gsc_mlsx_urlencode(absolute_path, &enc_str);
-                    sprintf(tmp_ptr, "X.abspath=%s/;", enc_str);
+                    sprintf(tmp_ptr, "X.abspath=%s%s;", enc_str, slash);
                     if(cnt)
                     {
                         globus_free(enc_str);
