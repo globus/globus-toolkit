@@ -6,7 +6,7 @@ Name:		globus-gridftp-server-control
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	5.0
+Version:	5.1
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server Library
@@ -139,6 +139,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Jul 13 2017 Globus Toolkit <support@globus.org> - 5.1-1
+- fix mem error on empty mlsc responses
+
 * Fri Mar 03 2017 Globus Toolkit <support@globus.org> - 5.0-1
 - extend response_type to allow for ftp error codes
 

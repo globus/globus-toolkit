@@ -4240,8 +4240,8 @@ globus_i_gsc_mlsx_line(
 
     GlobusGridFTPServerDebugInternalEnter();
 
-    /* take a guess at the size needed */
-    buf_len = stat_count * sizeof(char) * (256 + (base_path ? strlen(base_path) : 0));
+    /* take a guess at the size needed, at least 1 byte for 0 stat_count */
+    buf_len = stat_count * sizeof(char) * (256 + (base_path ? strlen(base_path) : 0)) + 1;
     buf_left = buf_len;
     buf = globus_malloc(buf_len);
     tmp_ptr = buf;
