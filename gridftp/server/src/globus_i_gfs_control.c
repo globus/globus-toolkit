@@ -919,11 +919,14 @@ globus_l_gfs_request_stat(
     stat_info->file_only =
         (mask & GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY) ?
             GLOBUS_TRUE : GLOBUS_FALSE;
-    if(!stat_info->file_only && strcmp(path, "/") != 0)
-    {
-        stat_info->use_symlink_info = GLOBUS_TRUE;
-    }
+    stat_info->use_symlink_info = GLOBUS_TRUE;
     
+    /* don't check on root path */
+    if(stat_info->file_only && strcmp(path, "/") == 0)
+    {
+        stat_info->use_symlink_info = GLOBUS_FALSE;
+    }
+
     result = globus_l_gfs_get_full_path(
         instance, path, &stat_info->pathname, 
         GFS_L_LIST | (stat_info->file_only ? GFS_L_SYM : 0));

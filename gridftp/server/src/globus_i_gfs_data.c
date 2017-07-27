@@ -1636,6 +1636,10 @@ globus_i_gfs_data_check_path(
         if(in_path[0] == '/' && in_path[1] == '\0')
         {
             start_path = globus_libc_strdup(session_handle->chroot_path);
+            if(access_type & GFS_L_WRITE)
+            {
+                disallowed = GLOBUS_TRUE;
+            }
         }
         else
         {
@@ -1648,7 +1652,7 @@ globus_i_gfs_data_check_path(
         start_path = in_path;
     }
         
-    if(!allowed)
+    if(!allowed && !disallowed)
     {
         if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH &&
             !globus_i_gfs_config_bool("rp_follow_symlinks") && 
@@ -1712,7 +1716,7 @@ globus_i_gfs_data_check_path(
             true_path = globus_libc_strdup(start_path);
         }
     }
-    else if(ret_path)
+    else if(allowed && ret_path)
     {
         if(session_handle->chroot_path)
         {
@@ -1846,9 +1850,7 @@ globus_i_gfs_data_check_path(
     
             if(!allowed)
             {
-                result = globus_error_put(GlobusGFSErrorObjPermissionDenied(
-                    GlobusGFSErrorObjGeneric("GridFTP-Error: Path not allowed.")));
-                    
+                disallowed = GLOBUS_TRUE;                    
                 rp_list = NULL;
             }
             else
@@ -1889,10 +1891,15 @@ globus_i_gfs_data_check_path(
         globus_free(true_path);
     }
 
-    
     if(is_virtual && session_handle->chroot_path)
     {
         globus_free(start_path);
+    }
+
+    if(disallowed)
+    {
+        result = globus_error_put(GlobusGFSErrorObjPermissionDenied(
+            GlobusGFSErrorObjGeneric("GridFTP-Error: Path not allowed.")));
     }
 
     GlobusGFSDebugExit();
@@ -12160,7 +12167,7 @@ globus_l_gfs_data_validate_stat(
         no_escape = GLOBUS_TRUE;
     }
     
-    if(strcmp(root, base_path) == 0)
+    if(!strcmp(root, base_path))
     {
         prune_symlink_info = GLOBUS_TRUE;
         check_symlinks = !stat_info->file_only;
