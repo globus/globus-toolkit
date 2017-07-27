@@ -12098,6 +12098,7 @@ globus_l_gfs_data_validate_stat(
     globus_bool_t                       no_escape = GLOBUS_FALSE;
     globus_bool_t                       check_rp = GLOBUS_TRUE;
     globus_bool_t                       check_symlinks = GLOBUS_TRUE;
+    globus_bool_t                       prune_symlink_info = GLOBUS_FALSE;
     globus_bool_t                       passed = GLOBUS_FALSE;
     globus_bool_t                       invalid = GLOBUS_FALSE;
     int                                 i;
@@ -12158,7 +12159,13 @@ globus_l_gfs_data_validate_stat(
         no_absolute = GLOBUS_TRUE;
         no_escape = GLOBUS_TRUE;
     }
-
+    
+    if(strcmp(root, base_path) == 0)
+    {
+        prune_symlink_info = GLOBUS_TRUE;
+        check_symlinks = !stat_info->file_only;
+    }
+    
     for(i = 0; i < stat_count; i++)
     {
         if(!op->stat_cdir_seen && !strcmp(stat_array[i].name, "."))
@@ -12306,12 +12313,17 @@ globus_l_gfs_data_validate_stat(
             pruned_stat_count++;
         }
     }
+    if(prune_symlink_info && stat_copy[0].symlink_target)
+    {
+        free(stat_copy[0].symlink_target);
+        stat_copy[0].symlink_target = NULL;
+    }
+
     stat_count = pruned_stat_count;
     if(strcmp(stat_copy[0].name, ".") == 0)
     {
         stat_copy[0].nlink = pruned_stat_count;
     }
-    
     *stat_array_out = stat_copy;
     *stat_count_out = pruned_stat_count;
     
