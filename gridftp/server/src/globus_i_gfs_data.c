@@ -1583,6 +1583,7 @@ globus_i_gfs_get_full_path(
     if(result != GLOBUS_SUCCESS)
     {
         free(*ret_path);
+        *ret_path = NULL;
         goto done;
     }    
     
@@ -12244,8 +12245,15 @@ globus_l_gfs_data_validate_stat(
             /* check if realpath violates rp */
             if(!invalid)
             {
-                full_path = globus_common_create_string(
-                    "%s%s%s", base_path, slash, stat_array[i].name);
+                if(!stat_info->file_only)
+                {
+                    full_path = globus_common_create_string(
+                        "%s%s%s", base_path, slash, stat_array[i].name);
+                }
+                else
+                {
+                    full_path = base_path;
+                }
                 if(globus_i_gfs_data_check_path(op->session_handle,
                     full_path, NULL, GFS_L_LIST, 0) != GLOBUS_SUCCESS)
                 {
@@ -12257,7 +12265,10 @@ globus_l_gfs_data_validate_stat(
                     stat_array[i].error = GLOBUS_L_SYMLINK_ERROR_ESCAPED;
                     invalid = GLOBUS_TRUE;
                 }
-                globus_free(full_path);
+                if(!stat_info->file_only)
+                {
+                    globus_free(full_path);
+                }
             }
         }
 
