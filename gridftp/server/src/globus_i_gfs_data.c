@@ -1304,14 +1304,19 @@ globus_i_gfs_data_virtualize_path(
         *ret_string = NULL;
         return GLOBUS_SUCCESS;
     }
-    
-    *ret_string = globus_malloc(
-        strlen(in_string) + strlen(session_handle->chroot_path));
-        
-    strncpy(*ret_string, in_string, tmp_ptr - in_string);
-    strcpy(*ret_string + (tmp_ptr - in_string), 
-        tmp_ptr + strlen((session_handle->chroot_path)));
-    
+    if(tmp_ptr == in_string && !strcmp(in_string, session_handle->chroot_path))
+    {
+        *ret_string = strdup("/");
+    }
+    else
+    {
+        *ret_string = globus_malloc(
+            strlen(in_string) + strlen(session_handle->chroot_path));
+            
+        strncpy(*ret_string, in_string, tmp_ptr - in_string);
+        strcpy(*ret_string + (tmp_ptr - in_string), 
+            tmp_ptr + strlen((session_handle->chroot_path)));
+    }
     return GLOBUS_SUCCESS;
 }
 

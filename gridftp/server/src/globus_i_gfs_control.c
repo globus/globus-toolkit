@@ -901,6 +901,7 @@ globus_l_gfs_request_stat(
     globus_gfs_stat_info_t *            stat_info = NULL;
     globus_l_gfs_request_info_t *       request = NULL;
     globus_result_t                     result;
+    char *                              abspath = NULL;
     GlobusGFSName(globus_l_gfs_request_stat);
     GlobusGFSDebugEnter();
 
@@ -934,8 +935,18 @@ globus_l_gfs_request_stat(
     {
         goto error_init;
     }
-    globus_gridftp_server_control_set_paths(op, stat_info->pathname, NULL);
 
+    result = globus_i_gfs_data_virtualize_path(
+        instance->session_arg, stat_info->pathname, &abspath);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_init;
+    }
+
+    globus_gridftp_server_control_set_paths(
+        op, abspath ? abspath : stat_info->pathname, NULL);
+    free(abspath);
+    
     globus_i_gfs_data_request_stat(
         NULL,
         instance->session_arg,
