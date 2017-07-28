@@ -12144,8 +12144,6 @@ globus_l_gfs_data_validate_stat(
         check_symlinks = GLOBUS_FALSE;
     }
     
-    stat_info = (globus_gfs_stat_info_t *) op->info_struct;
-
     stat_copy = (globus_gfs_stat_t *)
         globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
     if(stat_copy == NULL)
@@ -12203,42 +12201,35 @@ globus_l_gfs_data_validate_stat(
                 globus_bool_t               escapes = GLOBUS_FALSE;
                 char *                      true_path = NULL;
                 char *                      tmp_path = NULL;
-                globus_gfs_stat_info_t *    stat_info;
+                char *                      parent_path = NULL;
                 int                         maxlen;
                 char *                      file;
                 
-                /* get realpath of the parent dir as a base to normalize any symlinks */
-                stat_info = (globus_gfs_stat_info_t *) op->info_struct;
-                if(op->session_handle->dsi->realpath_func(
-                    stat_info->pathname, &true_path, op->session_handle->session_arg) != GLOBUS_SUCCESS)
+                parent_path = strdup(base_path);
+                if(stat_info->file_only)
                 {
-                    true_path = strdup(stat_info->pathname);
+                    file = strrchr(parent_path, '/');
+                    if(file != parent_path)
+                    {
+                        file[0] = '\0';
+                    }
+                    else
+                    {
+                        file[1] = '\0';
+                    }
                 }
-    
+                /* get realpath of the parent dir as a base to normalize any symlinks */
+                if(op->session_handle->dsi->realpath_func(
+                    parent_path, &true_path, op->session_handle->session_arg) != GLOBUS_SUCCESS)
+                {
+                    true_path = strdup(parent_path);
+                }
                 maxlen = strlen(true_path) + strlen(stat_array[i].symlink_target) + 2;
                 /* if the realpath lands out of the root altogether, this symlink is invalid */
                 if(strncmp(true_path, root, rootlen) == 0)
                 {
                     tmp_path = malloc(maxlen);
-                    if(!stat_info->file_only)
-                    {
-                        sprintf(tmp_path, "/%s/%s", true_path + rootlen, stat_array[i].symlink_target);
-                    }
-                    else
-                    {
-                        file = strrchr(true_path + rootlen, '/');
-                        if(!file)
-                        {
-                            sprintf(tmp_path, "/%s", stat_array[i].symlink_target);
-                        }
-                        else
-                        {
-                             sprintf(tmp_path, "/%.*s/%s", 
-                                file - (true_path + rootlen), 
-                                true_path + rootlen, 
-                                stat_array[i].symlink_target);
-                        }
-                    }
+                    sprintf(tmp_path, "/%s/%s", true_path + rootlen, stat_array[i].symlink_target);
                 }
                 if(!tmp_path || 
                     globus_l_gfs_normalize_path(tmp_path, NULL, &escapes) != GLOBUS_SUCCESS 
@@ -12254,6 +12245,7 @@ globus_l_gfs_data_validate_stat(
                 }
                 free(tmp_path);
                 free(true_path);
+                free(parent_path);
             }
             
             if(stat_array[i].error && !invalid)
