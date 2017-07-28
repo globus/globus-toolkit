@@ -12114,11 +12114,13 @@ globus_l_gfs_data_validate_stat(
     globus_bool_t                       passed = GLOBUS_FALSE;
     globus_bool_t                       invalid = GLOBUS_FALSE;
     int                                 i;
-    const char *                        root = "/";
+    const char *                        root = NULL;
+    char *                              true_root = NULL;
     int                                 pruned_stat_count = 0;
     char *                              nam;
     char *                              full_path;
     char *                              slash;
+    int                                 true_rootlen;
     int                                 rootlen;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_gfs_stat_t *                 stat_copy;
@@ -12163,6 +12165,12 @@ globus_l_gfs_data_validate_stat(
 
     root = op->session_handle->chroot_path ? op->session_handle->chroot_path : "/";
     rootlen = strlen(root);
+    if(op->session_handle->dsi->realpath_func(
+        root, &true_root, op->session_handle->session_arg) != GLOBUS_SUCCESS)
+    {
+        true_root = strdup(root);
+    }
+    true_rootlen = strlen(true_root);
 
     if(op->session_handle->sharing_id || rootlen > 1)
     {
@@ -12226,10 +12234,10 @@ globus_l_gfs_data_validate_stat(
                 }
                 maxlen = strlen(true_path) + strlen(stat_array[i].symlink_target) + 2;
                 /* if the realpath lands out of the root altogether, this symlink is invalid */
-                if(strncmp(true_path, root, rootlen) == 0)
+                if(strncmp(true_path, true_root, true_rootlen) == 0)
                 {
                     tmp_path = malloc(maxlen);
-                    sprintf(tmp_path, "/%s/%s", true_path + rootlen, stat_array[i].symlink_target);
+                    sprintf(tmp_path, "/%s/%s", true_path + true_rootlen, stat_array[i].symlink_target);
                 }
                 if(!tmp_path || 
                     globus_l_gfs_normalize_path(tmp_path, NULL, &escapes) != GLOBUS_SUCCESS 
@@ -12331,6 +12339,7 @@ globus_l_gfs_data_validate_stat(
     *stat_array_out = stat_copy;
     *stat_count_out = pruned_stat_count;
     
+    free(true_root);
 error_alloc:
     return result;
 }
