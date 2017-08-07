@@ -854,7 +854,7 @@ globus_l_gsc_cmd_stat_cb(
         msg = globus_common_create_string("%s : %s", tmp_ptr, response_msg);
         free(tmp_ptr);
     }
-    if(code >= 500)
+    if(code >= 400)
     {
         tmp_ptr = globus_gsc_string_to_959(code, msg, preline);
     }
@@ -877,7 +877,7 @@ globus_l_gsc_cmd_stat_cb(
         }
         globus_gsc_959_finished_command(op, tmp_ptr);
     }
-    if(code >= 500)
+    if(code >= 400)
     {
         globus_free(tmp_ptr);
     }
