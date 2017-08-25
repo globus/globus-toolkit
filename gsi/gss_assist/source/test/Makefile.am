@@ -3,7 +3,8 @@ check_SCRIPTS = \
 	gss-assist-auth-test.pl \
 	gss-assist-gridmap-test.pl \
         gridmap-test.pl \
-        gridmap-tools-test.pl
+        gridmap-tools-test.pl \
+	read-vhost-cred-dir-test.pl
 
 check_DATA_DIST = grid-mapfile \
        gridmap.blank_line \
@@ -15,10 +16,10 @@ check_DATA_DIST = grid-mapfile \
        gridmap.no-local-uid2
 
 check_DATA = $(check_DATA_DIST) \
-        testcred.key \
-        testcred.cert \
-        testcred.cakey \
-        testcred.cacert \
+        testcred.key testcred.cert \
+        testcred1.cert testcred1.key \
+        testcred2.cert testcred2.key \
+        testcred.cakey testcred.cacert \
         testcred.link \
         testcred.signing_policy \
         testcred.srl
@@ -30,7 +31,8 @@ check_PROGRAMS = \
 	gss-assist-impexp-accept \
 	gss-assist-gridmap \
         gridmap-test \
-        gridmap-userok
+        gridmap-userok \
+	read-vhost-cred-dir-test
 
 AM_CPPFLAGS = -I$(top_srcdir) $(PACKAGE_DEP_CFLAGS)
 LDADD = ../libglobus_gss_assist.la $(PACKAGE_DEP_LIBS)
@@ -75,21 +77,19 @@ TESTS_ENVIRONMENT = export \
 	echo 01 > $@
 
 # Test Cert/Key
-.srl.key:
+testcred.key testcred1.key testcred2.key: testcred.srl
 	umask 077; $(OPENSSL) genrsa -out $@ 1024
 .key.req:
-	$(OPENSSL) req -subj "/CN=test" -new -key $< -out $@ -config $*.cnf
+	$(OPENSSL) req -subj "/CN=$*" -new -key $< -out $@ -config testcred.cnf
 
 .req.cert:
-	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in testcred.req -CA $*.cacert -CAkey $*.cakey -out $@
-
-.cert.gridmap:
-	subject=`$(OPENSSL) x509 -subject -noout -in $< -nameopt rfc2253,-dn_rev | sed -e 's/subject= */\//' -e 's/,/\//g'` ; \
-        echo "\"$$subject\" `id -un`" > $@
+	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in $*.req -CA testcred.cacert -CAkey testcred.cakey -out $@
 
 
 CLEANFILES = \
 	testcred.key testcred.cert testcred.req \
+	testcred1.key testcred1.cert testcred1.req \
+	testcred2.key testcred2.cert testcred2.req \
 	testcred.cacert testcred.srl \
 	testcred.cakey \
 	exported_accept_context exported_init_context \
@@ -112,6 +112,7 @@ gss_assist_impexp_accept_SOURCES = gss_assist_impexp_accept.c tokens_bsd.c token
 gss_assist_gridmap_SOURCES = gss_assist_gridmap.c
 gridmap_test_SOURCES = gridmap_test.c
 gridmap_userok_SOURCES = gridmap_userok.c
+read_vhost_cred_dir_test_SOURCES = read_vhost_cred_dir_test.c
 
 EXTRA_DIST = \
         $(check_DATA_DIST) \

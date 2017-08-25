@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS=-I m4
 pkgconfigdir = $(libdir)/pkgconfig
 
-SUBDIRS = library
+SUBDIRS = library test
 
 doc_DATA = GLOBUS_LICENSE
 pkgconfig_DATA = globus-gsi-sysconfig.pc

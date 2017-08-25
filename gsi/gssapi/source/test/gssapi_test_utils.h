@@ -110,8 +110,10 @@ test_case_t;
 extern const gss_OID_desc * const globus_i_gss_mech_globus_gssapi_openssl;
 extern const gss_OID_desc * const globus_i_gss_proxycertinfo_extension;
 extern const gss_OID_desc * const globus_i_gss_ext_x509_cert_chain_oid;
+extern const gss_OID_desc * const gss_ext_alpn_oid;
 extern gss_OID_desc * globus_i_gss_nt_host_ip;
 extern gss_OID_desc * globus_i_gss_nt_x509;
+
 
 
 #ifndef GLOBUS_GSS_C_NT_HOST_IP 

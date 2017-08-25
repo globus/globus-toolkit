@@ -23,6 +23,7 @@
 
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
+#include "globus_gsi_system_config.h"
 
 #include <string.h>
 
@@ -75,10 +76,14 @@ GSS_CALLCONV gss_import_cred(
 {
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    OM_uint32                           local_minor_status;
+    OM_uint32                           local_minor_status = GLOBUS_SUCCESS;
     BIO *                               bp = NULL;
     char *                              filename = NULL;
-    FILE *                              fp;
+    FILE *                              fp = NULL;
+    FILE *                              cert_fp = NULL;
+    FILE *                              key_fp = NULL;
+    int                                 rc = 0;
+    struct stat                         st = { .st_mode = 0 };
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -165,19 +170,138 @@ GSS_CALLCONV gss_import_cred(
             memcpy(filename, p + 1, pathlen-1);
             filename[pathlen-1] = '\0';
 
-            if ((fp = fopen(filename,"r")) == NULL)
+            rc = stat(filename, &st);
+            if (rc == 0 && st.st_mode & S_IFDIR)
             {
-                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                    minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_IMPORT_FAIL,
-                    (_GGSL("Couldn't open the file: %s"),
-                     filename));
-                major_status = GSS_S_FAILURE;
-                goto exit;
+                DIR                    *dir = NULL;
+                struct dirent          *entry = NULL;
+                char                    buffer[256];
+
+                dir = opendir(filename);
+                if (dir == NULL)
+                {
+                    GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                        minor_status,
+                        GLOBUS_GSI_GSSAPI_ERROR_IMPORT_FAIL,
+                        (_GGSL("Couldn't open the dir: %s"),
+                         filename));
+                    major_status = GSS_S_FAILURE;
+                    goto exit;
+                }
+                while (((rc = globus_libc_readdir_r(dir, &entry)) == 0)
+                    && entry != NULL)
+                {
+                    const char         *end = NULL;
+                    if (((end = strstr(entry->d_name, "cert.pem")) != NULL)
+                        && strcmp(end, "cert.pem") == 0)
+                    {
+                        char            cert_path[
+                            strlen(filename) + strlen(entry->d_name) + 2];
+
+                        snprintf(
+                            cert_path,
+                            sizeof(cert_path),
+                            "%s/%s",
+                            filename,
+                            entry->d_name);
+
+                        local_result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(
+                            cert_path);
+
+                        if (local_result != GLOBUS_SUCCESS)
+                        {
+                            *minor_status = local_result;
+                            major_status = GSS_S_FAILURE;
+
+                            goto exit;
+                        }
+                        if (cert_fp == NULL)
+                        {
+                            cert_fp = fopen(cert_path, "r");
+                        }
+                    }
+                    else if (((end = strstr(entry->d_name, "key.pem")) != NULL)
+                        && strcmp(end, "key.pem") == 0)
+                    {
+                        char            key_path[
+                            strlen(filename) + strlen(entry->d_name) + 2];
+
+                        snprintf(
+                            key_path,
+                            sizeof(key_path),
+                            "%s/%s",
+                            filename,
+                            entry->d_name);
+
+                        local_result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(
+                            key_path);
+                        if (local_result != GLOBUS_SUCCESS)
+                        {
+                            *minor_status = local_result;
+                            major_status = GSS_S_FAILURE;
+
+                            goto exit;
+                        }
+                        if (key_fp == NULL)
+                        {
+                            key_fp = fopen(key_path, "r");
+                        }
+                    }
+                }
+                if (cert_fp == NULL || key_fp == NULL)
+                {
+                    GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                        minor_status,
+                        GLOBUS_GSI_GSSAPI_ERROR_IMPORT_FAIL,
+                        (_GGSL("Couldn't open the file: %s"),
+                         filename));
+                    major_status = GSS_S_FAILURE;
+                    goto exit;
+                }
+
+                bp = BIO_new(BIO_s_mem());
+                while (!feof(cert_fp))
+                {
+                    rc = fread(buffer, 1, sizeof(buffer), cert_fp);
+
+                    if (rc > 0)
+                    {
+                        BIO_write(bp, buffer, rc);
+                    }
+                }
+                while (!feof(key_fp))
+                {
+                    rc = fread(buffer, 1, sizeof(buffer), key_fp);
+
+                    if (rc > 0)
+                    {
+                        BIO_write(bp, buffer, rc);
+                    }
+                }
             }
+            else
+            {
+                local_result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(filename);
+                if (local_result != GLOBUS_SUCCESS)
+                {
+                    *minor_status = local_result;
+                    major_status = GSS_S_FAILURE;
+                    goto exit;
+                }
+                if ((fp = fopen(filename,"r")) == NULL)
+                {
+                    GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                        minor_status,
+                        GLOBUS_GSI_GSSAPI_ERROR_IMPORT_FAIL,
+                        (_GGSL("Couldn't open the file: %s"),
+                         filename));
+                    major_status = GSS_S_FAILURE;
+                    goto exit;
+                }
             
-            bp = BIO_new(BIO_s_file());
-            BIO_set_fp(bp, fp, BIO_CLOSE);
+                bp = BIO_new(BIO_s_file());
+                BIO_set_fp(bp, fp, BIO_CLOSE);
+            }
         }
         else
         {
@@ -262,6 +386,14 @@ GSS_CALLCONV gss_import_cred(
     if (bp) 
     {
         BIO_free(bp);
+    }
+    if (cert_fp != NULL)
+    {
+        fclose(cert_fp);
+    }
+    if (key_fp != NULL)
+    {
+        fclose(key_fp);
     }
     free(filename);
     return major_status;

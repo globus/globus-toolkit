@@ -574,7 +574,31 @@ typedef enum
      *      The flag currently set
      */
     /* globus_bool_t *  allow*/
-    GLOBUS_XIO_GSI_GET_ALLOW_MISSING_SIGNING_POLICY
+    GLOBUS_XIO_GSI_GET_ALLOW_MISSING_SIGNING_POLICY,
+
+    /** GlobusVarArgEnum(attr, handle)
+     * Set the directory for credentials to use when accepting a security
+     * context. This is used when a service requires different credentials
+     * based on the SNI TLS extension.
+     * @ingroup globus_xio_gsi_driver
+     *
+     * @param directory
+     *      The path to the directory containing credentials. 
+     */
+    /* const char *                   directory */
+    GLOBUS_XIO_GSI_SET_CREDENTIALS_DIR,
+
+    /** GlobusVarArgEnum(attr, handle)
+     * Set the list of application protocols to negotiate during TLS handshake.
+     * This uses tht TLS ALPN extension.
+     * @ingroup globus_xio_gsi_driver
+     *
+     * @param protocols
+     *      An array of protocol names. The array must be terminated by a
+     *      NULL pointer.
+     */
+    /* char **                  protocols */
+    GLOBUS_XIO_GSI_SET_APPLICATION_PROTOCOLS,
 } globus_xio_gsi_cmd_t;
 
 /**

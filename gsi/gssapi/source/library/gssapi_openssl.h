@@ -157,6 +157,7 @@ typedef struct gss_name_desc_struct {
     char *                              ip_name;
 } gss_name_desc;
 
+
 typedef struct gss_cred_id_desc_struct {
     globus_gsi_cred_handle_t            cred_handle;
     gss_name_desc *                     globusid;
@@ -198,6 +199,11 @@ typedef struct gss_ctx_id_desc_struct{
     int                                 locally_initiated;
     gss_delegation_state_t              delegation_state;
     gss_OID_set                         extension_oids;
+    gss_cred_id_t                      *sni_credentials;
+    size_t                              sni_credentials_count;
+    char                               *sni_servername;
+    unsigned char                      *alpn;
+    size_t                              alpn_length;
 } gss_ctx_id_desc;
 
 extern
@@ -214,6 +220,13 @@ gss_OID_desc *                          gss_nt_host_ip;
 
 extern
 gss_OID_desc *                          gss_nt_x509;
+
+extern
+const gss_OID_desc * const gss_ext_server_name_oid;
+
+extern
+const gss_OID_desc * const gss_ext_alpn_oid;
+
 
 extern
 globus_bool_t                           globus_i_backward_compatible_mic;

@@ -211,6 +211,7 @@ globus_i_gsi_gss_create_and_fill_context(
     OM_uint32 *                         minor_status,
     gss_ctx_id_desc **                  context_handle,
     gss_OID                             mech,
+    const gss_name_t                    target_name,
     gss_cred_id_desc *                  cred_handle,
     const gss_cred_usage_t              cred_usage,
     OM_uint32                           req_flags);
