@@ -504,8 +504,6 @@ typedef struct
 {
     char *                              alias;
     size_t                              alias_len;
-    char *                              realpath;
-    size_t                              realpath_len;
     int                                 access;
 } globus_l_gfs_alias_ent_t;
 
@@ -1873,15 +1871,7 @@ globus_i_gfs_data_check_path(
                 
                 if(!rp_list && ret_path)
                 {
-                    if(alias_ent->realpath)
-                    {
-                        strncpy(path, alias_ent->realpath, alias_ent->realpath_len);
-                        strcpy(path + alias_ent->realpath_len, 
-                            true_path + alias_ent->alias_len);
-            
-                        *ret_path = globus_libc_strdup(path);
-                    }
-                    else if(session_handle->chroot_path)
+                    if(session_handle->chroot_path)
                     {
                         *ret_path = globus_libc_strdup(start_path);
                     }
@@ -3382,24 +3372,6 @@ globus_l_gfs_data_update_restricted_paths(
                 }
 #endif
             }
-
-            if(alias_ent->realpath && 
-                (alias_ent->realpath[0] == '~' || strchr(alias_ent->realpath, '$')))
-            {
-                var_path = globus_l_gfs_data_update_var_path(
-                    session_handle, alias_ent->realpath);
-                    
-                globus_free(alias_ent->realpath);
-                alias_ent->realpath = var_path;               
-                alias_ent->realpath_len = strlen(alias_ent->realpath); 
-
-#ifdef WIN32
-                for(var_path = alias_ent->realpath; *var_path != '\0'; var_path++)
-                {
-                    *var_path = tolower(*var_path);
-                }
-#endif
-            }
         }
         
         if(resort)
@@ -3452,11 +3424,6 @@ globus_l_gfs_data_update_restricted_paths_symlinks(
                         new_ent->access = alias_ent->access;
                         new_ent->alias = real_path;
                         new_ent->alias_len = strlen(real_path);
-                        if(alias_ent->realpath)
-                        {
-                            new_ent->realpath = strdup(alias_ent->realpath);
-                            new_ent->realpath_len = alias_ent->realpath_len;
-                        }
                         
                         globus_list_insert(&new_list, new_ent);
                         
@@ -3609,38 +3576,15 @@ globus_l_gfs_data_parse_restricted_paths(
             ent->access = GFS_L_NONE;
         }
         
-        if((alias = strchr(ptr, ':')) != NULL)
-        {
-            *alias = '\0';
-            alias++;
-            
-            ent->alias = globus_libc_strdup(alias);
-            globus_url_string_hex_decode(ent->alias);
-            ent->alias_len = strlen(ent->alias);
-            
-            ent->realpath = globus_libc_strdup(ptr);
-            globus_url_string_hex_decode(ent->realpath);
-            ent->realpath_len = strlen(ent->realpath);
-        }
-        else
-        {
-            ent->alias = globus_libc_strdup(ptr);
-            globus_url_string_hex_decode(ent->alias);
-            ent->alias_len = strlen(ent->alias);
-            
-            ent->realpath = NULL;
-            ent->realpath_len = 0;
-        }
+        ent->alias = globus_libc_strdup(ptr);
+        globus_url_string_hex_decode(ent->alias);
+        ent->alias_len = strlen(ent->alias);
+        
         globus_free(ent_str);
 
-        if(strchr(GFS_RP_LEAD_CHARS, *ent->alias) == NULL ||
-            (ent->realpath && strchr(GFS_RP_LEAD_CHARS, *ent->alias) == NULL))
+        if(strchr(GFS_RP_LEAD_CHARS, *ent->alias) == NULL)
         {                
             globus_free(ent->alias);
-            if(ent->realpath)
-            {
-                globus_free(ent->realpath);
-            }
             globus_free(ent);
         }
         else
@@ -3648,14 +3592,7 @@ globus_l_gfs_data_parse_restricted_paths(
             if(is_virtual)
             {   
                 char *                  tmp_path;
-                
-                if(ent->realpath)
-                {
-                    globus_free(ent->realpath);
-                    ent->realpath = NULL;
-                    ent->realpath_len = 0;
-                }
-                
+
                 if(ent->alias[0] == '~')
                 {
                     tmp_path = globus_common_create_string(
@@ -3694,14 +3631,6 @@ globus_l_gfs_data_parse_restricted_paths(
                 {
                     *tmp_ptr = tolower(*tmp_ptr);
                 }
-                
-                if(ent->realpath)
-                {
-                    for(tmp_ptr = ent->realpath; *tmp_ptr != '\0'; tmp_ptr++)
-                    {
-                        *tmp_ptr = tolower(*tmp_ptr);
-                    }
-                }
 #endif
                 globus_list_insert(&tmp_list, ent);
                 
@@ -3711,11 +3640,9 @@ globus_l_gfs_data_parse_restricted_paths(
                     globus_malloc(sizeof(globus_l_gfs_alias_ent_t));
                 memcpy(new_ent, ent, sizeof(globus_l_gfs_alias_ent_t));
                 new_ent->alias = globus_libc_strdup(ent->alias);
-                new_ent->realpath = globus_libc_strdup(ent->realpath);
                 ent = new_ent;
     
-                if(!ent->realpath && ent->alias[0] == '/' &&
-                    isalpha(ent->alias[1]))
+                if(ent->alias[0] == '/' && isalpha(ent->alias[1]))
                 {
                     ent->alias[0] = ent->alias[1];
                     ent->alias[1] = ':';
@@ -3728,19 +3655,6 @@ globus_l_gfs_data_parse_restricted_paths(
                     }
                 }
                 
-                if(ent->realpath && ent->realpath[0] == '/' &&
-                    isalpha(ent->realpath[1]))
-                {
-                    ent->realpath[0] = ent->realpath[1];
-                    ent->realpath[1] = ':';
-                    if(ent->realpath[2] == 0)
-                    {
-                        ent->realpath = globus_realloc(ent->realpath, 4);
-                        ent->realpath[2] = '/';
-                        ent->realpath[3] = '\0';
-                        ent->realpath_len = 3;
-                    }
-                }
                 globus_list_insert(&tmp_list, ent);
 #endif 
             }              

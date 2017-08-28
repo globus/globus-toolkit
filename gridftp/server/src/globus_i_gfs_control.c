@@ -1457,7 +1457,8 @@ globus_l_gfs_request_command(
     {
         command_info->command = GLOBUS_GFS_CMD_MKD;
         result = globus_l_gfs_get_full_path(
-            instance, cmd_array[1], &command_info->pathname, GFS_L_WRITE);
+            instance, cmd_array[1], &command_info->pathname, 
+            GFS_L_SYM | GFS_L_WRITE);
         if(command_info->pathname == NULL)
         {
             goto err;
@@ -1468,7 +1469,8 @@ globus_l_gfs_request_command(
     {
         command_info->command = GLOBUS_GFS_CMD_RMD;
         result = globus_l_gfs_get_full_path(
-            instance, cmd_array[1], &command_info->pathname, GFS_L_WRITE);
+            instance, cmd_array[1], &command_info->pathname, 
+            GFS_L_SYM | GFS_L_WRITE);
         if(command_info->pathname == NULL)
         {
             goto err;
@@ -1522,7 +1524,8 @@ globus_l_gfs_request_command(
     {
         command_info->command = GLOBUS_GFS_CMD_RNTO;
         result = globus_l_gfs_get_full_path(
-            instance, cmd_array[1], &command_info->pathname, GFS_L_WRITE);
+            instance, cmd_array[1], &command_info->pathname, 
+            GFS_L_SYM | GFS_L_WRITE);
         if(command_info->pathname == NULL)
         {
             goto err;
@@ -1669,7 +1672,8 @@ globus_l_gfs_request_command(
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_RDEL;
             result = globus_l_gfs_get_full_path(
-                instance, cmd_array[2], &command_info->pathname, GFS_L_WRITE);
+                instance, cmd_array[2], &command_info->pathname, 
+                GFS_L_SYM | GFS_L_WRITE);
             if(command_info->pathname == NULL)
             {
                 goto err;
@@ -1722,7 +1726,8 @@ globus_l_gfs_request_command(
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_CHGRP;
             result = globus_l_gfs_get_full_path(
-                instance, cmd_array[3], &command_info->pathname, GFS_L_WRITE);
+                instance, cmd_array[3], &command_info->pathname, 
+                GFS_L_SYM | GFS_L_WRITE);
             if(command_info->pathname == NULL)
             {
                 goto err;

@@ -750,15 +750,31 @@ typedef void
  *  realpath
  *
  * This defines the function that will be called to determine a true path
- * free of symlinks or other obsfucation.  
- * if you implement this, add GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH to your 
- * globus_gfs_storage_iface_t interface definition.
+ * free of symlinks or other obsfucation.
+ * if you implement this, add GLOBUS_GFS_DSI_DESCRIPTOR_HAS_REALPATH to the  
+ * globus_gfs_storage_iface_t interface descriptor.  This is required if 
+ * GLOBUS_GFS_DSI_DESCRIPTOR_SYMLINKS is set.
  */
 
 typedef globus_result_t
 (*globus_gfs_storage_realpath_t)(
     const char *                        in_path,
     char **                             out_realpath,
+    void *                              user_arg);
+
+/*
+ *  readlink
+ *
+ * This defines the function that will be called to determine the target of 
+ * a symlink.  If implemented, add GLOBUS_GFS_DSI_DESCRIPTOR_HAS_READLINK to 
+ * the globus_gfs_storage_iface_t interface descriptor.  This is required if
+ * GLOBUS_GFS_DSI_DESCRIPTOR_SYMLINKS is set.
+ */
+
+typedef globus_result_t
+(*globus_gfs_storage_readlink_t)(
+    const char *                        in_path,
+    char **                             link_target,
     void *                              user_arg);
 
 
@@ -768,7 +784,8 @@ typedef globus_result_t
 #define GLOBUS_GFS_DSI_DESCRIPTOR_REQUIRES_ORDERED_DATA         (1 << 3)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SETS_ERROR_RESPONSES          (1 << 4)
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SAFE_RDEL                     (1 << 5)
-#define GLOBUS_GFS_DSI_DESCRIPTOR_SYMLINKS                      (1 << 6)
+#define GLOBUS_GFS_DSI_DESCRIPTOR_HAS_READLINK                  (1 << 6)
+#define GLOBUS_GFS_DSI_DESCRIPTOR_SYMLINKS                      (1 << 7)
 
 /*
  *  globus_gfs_storage_iface_t
@@ -803,6 +820,7 @@ typedef struct globus_gfs_storage_iface_s
     globus_gfs_storage_set_cred_t       set_cred_func;
     globus_gfs_storage_buffer_send_t    buffer_send_func;
     globus_gfs_storage_realpath_t       realpath_func;
+    globus_gfs_storage_readlink_t       readlink_func;
 } globus_gfs_storage_iface_t;
 
 /**
