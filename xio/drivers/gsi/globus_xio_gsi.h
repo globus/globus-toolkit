@@ -584,6 +584,7 @@ typedef enum
      *
      * @param directory
      *      The path to the directory containing credentials. 
+     * string opt: <tt>credentials_dir=<em>string</em></tt>
      */
     /* const char *                   directory */
     GLOBUS_XIO_GSI_SET_CREDENTIALS_DIR,

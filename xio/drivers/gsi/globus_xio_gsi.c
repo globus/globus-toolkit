@@ -60,6 +60,10 @@ static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
 static int                              connection_count = 0;
 static globus_mutex_t                   connection_mutex;
 
+static
+globus_result_t
+globus_l_xio_gsi_attr_destroy(
+    void *                              driver_attr);
 
 static
 globus_result_t
@@ -557,10 +561,26 @@ globus_l_xio_gsi_attr_copy(
         unsigned char                  *cp = NULL;
 
         cp = malloc(attr->alpn_list_len);
+        if (cp == NULL)
+        {
+            result = GlobusXIOErrorMemory("alpn_list");
+            globus_l_xio_gsi_attr_destroy(attr);
+            attr = NULL;
+        }
         memcpy(cp, attr->alpn_list, attr->alpn_list_len);
         attr->alpn_list = cp;
     }
-    
+    if (attr->credentials_dir != NULL)
+    {
+        attr->credentials_dir = strdup(attr->credentials_dir);
+        if (attr->credentials_dir == NULL)
+        {
+            result = GlobusXIOErrorMemory("credentials_dir");
+            globus_l_xio_gsi_attr_destroy(attr);
+            attr = NULL;
+        }
+    }
+
     *dst = attr;
 
     GlobusXIOGSIDebugExit();
@@ -3967,6 +3987,7 @@ static globus_xio_string_cntl_table_t  gsi_l_string_opts_table[] =
     {"proxy", GLOBUS_XIO_GSI_SET_PROXY_MODE, gsi_l_attr_parse_proxy},
     {"ssl_compatible", GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE, globus_xio_string_cntl_bool},
     {"application_protocols", GLOBUS_XIO_GSI_SET_APPLICATION_PROTOCOLS, globus_xio_string_cntl_string_list},
+    {"credentials_dir", GLOBUS_XIO_GSI_SET_CREDENTIALS_DIR, globus_xio_string_cntl_string},
     {NULL, 0, NULL}
 };
 
