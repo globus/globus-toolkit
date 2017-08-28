@@ -17,8 +17,11 @@ sub parse_cred_list
     my ($cert_accum, $key_accum) = ('','');
 
     chomp($count = shift @s);
-    $count =~ s/^count=//;
-    $count = int($count);
+    if ($count =~ m/^count=(\d+)/) {
+        $count = int($1);
+    } else {
+        $count = 0;
+    }
 
 
     foreach (@s) {
@@ -98,7 +101,8 @@ sub non_pem_files {
 sub single_cred {
     my $tempdir = File::Temp::tempdir(CLEANUP => 1);
     my ($in);
-    my ($cred, $credfile) = ("$tempdir/cred.pem");
+    my ($outcert, $outcertfile) = ("$tempdir/cred1/cert.pem");
+    my ($outkey, $outkeyfile) = ("$tempdir/cred1/key.pem");
     my ($cert_string, $key_string) = ('','');
     my ($output, $rc);
     my @expected_cred_list;
@@ -106,28 +110,30 @@ sub single_cred {
     my $umask = umask(077);
 
     $ENV{X509_VHOST_CRED_DIR} = $tempdir;
+    mkdir "$tempdir/cred1";
 
-    open($credfile, ">$cred");
+    open($outcertfile, ">$outcert");
 
     open($in, "<testcred.cert");
     while (<$in>) {
         $cert_string .= $_;
-        print $credfile $_;
+        print $outcertfile $_;
     }
     close($in);
+    close($outcertfile);
     chomp($cert_string);
 
+    open($outkeyfile, ">$outkey");
     open($in, "openssl pkey -in testcred.key|");
     while (<$in>) {
         $key_string .= $_;
-        print $credfile $_;
+        print $outkeyfile $_;
     }
     chomp($key_string);
     close($in);
+    close($outkeyfile);
 
     push(@expected_cred_list, {CERT => $cert_string, KEY => $key_string});
-
-    close($credfile);
 
     chomp($output = `$testprog 2>&1`);
     $rc = $? >> 8;
@@ -147,7 +153,8 @@ sub single_cred {
 sub mix_cred_and_non_pem {
     my $tempdir = File::Temp::tempdir(CLEANUP => 1);
     my ($in);
-    my ($cred, $credfile) = ("$tempdir/cred.pem");
+    my ($cert, $certfile) = ("$tempdir/cred1/cert.pem");
+    my ($key, $keyfile) = ("$tempdir/cred1/privkey.pem");
     my $junkfile;
     my ($cert_string, $key_string) = ('','');
     my ($output, $rc);
@@ -157,29 +164,31 @@ sub mix_cred_and_non_pem {
 
     $ENV{X509_VHOST_CRED_DIR} = $tempdir;
 
-    open($credfile, ">$cred");
+    mkdir "$tempdir/cred1";
 
+    open($certfile, ">$cert");
     open($in, "<testcred.cert");
     while (<$in>) {
         $cert_string .= $_;
-        print $credfile $_;
+        print $certfile $_;
     }
     close($in);
+    close($certfile);
     chomp($cert_string);
 
+    open($keyfile, ">$key");
     open($in, "openssl pkey -in testcred.key|");
     while (<$in>) {
         $key_string .= $_;
-        print $credfile $_;
+        print $keyfile $_;
     }
     chomp($key_string);
     close($in);
+    close($keyfile);
 
     push(@expected_cred_list, {CERT => $cert_string, KEY => $key_string});
 
-    close($credfile);
-
-    open($junkfile, ">$tempdir/README");
+    open($junkfile, ">$tempdir/cred1/README");
     print $junkfile "hello\n";
     close($junkfile);
 
@@ -197,7 +206,8 @@ sub mix_cred_and_non_pem {
 sub multiple_cred {
     my $tempdir = File::Temp::tempdir(CLEANUP => 1);
     my ($in);
-    my ($cred, $credfile);
+    my ($cert, $certfile);
+    my ($key, $keyfile);
     my $junkfile;
     my ($cert_string, $key_string) = ('','');
     my ($output, $rc);
@@ -208,27 +218,30 @@ sub multiple_cred {
     $ENV{X509_VHOST_CRED_DIR} = $tempdir;
 
     foreach my $name ("testcred1", "testcred2") {
-        open($credfile, ">$tempdir/$name.pem");
+        mkdir "$tempdir/$name";
+        open($certfile, ">$tempdir/$name/usercert.pem");
         open($in, "<$name.cert");
         $cert_string = '';
         $key_string = '';
         while (<$in>) {
             $cert_string .= $_;
-            print $credfile $_;
+            print $certfile $_;
         }
         close($in);
         chomp($cert_string);
+        close($certfile);
 
+        open($keyfile, ">$tempdir/$name/userkey.pem");
         open($in, "openssl pkey -in $name.key|");
         while (<$in>) {
             $key_string .= $_;
-            print $credfile $_;
+            print $keyfile $_;
         }
         chomp($key_string);
         close($in);
+        close($keyfile);
 
         push(@expected_cred_list, {CERT => $cert_string, KEY => $key_string});
-        close($credfile);
     }
     @expected_cred_list =
                 sort {$a->{CERT} cmp $b->{CERT} } @expected_cred_list;
