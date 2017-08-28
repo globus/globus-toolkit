@@ -72,6 +72,7 @@ typedef struct
     int                                 flags;
     globus_off_t                        trunc_offset;
     globus_xio_system_file_t            fd;
+    globus_xio_system_file_t            dirfd;
     globus_bool_t                       use_blocking_io;
 } globus_l_attr_t;
 
@@ -87,6 +88,7 @@ static const globus_l_attr_t            globus_l_xio_file_attr_default =
         GLOBUS_XIO_FILE_BINARY,
     0,                                  /* trunc_offset */
     GLOBUS_XIO_FILE_INVALID_HANDLE,     /* handle   */
+    GLOBUS_XIO_FILE_INVALID_HANDLE,     /* dirfd */
     GLOBUS_FALSE                        /* use_blocking_io */
 };
 
@@ -376,6 +378,17 @@ globus_l_xio_file_attr_cntl(
         out_fd = va_arg(ap, globus_xio_system_file_t *);
         *out_fd = attr->fd;
         break;
+
+      /* globus_xio_system_file_t          dirfd */
+      case GLOBUS_XIO_FILE_SET_DIR_HANDLE:
+        attr->dirfd = va_arg(ap, globus_xio_system_file_t);
+        break;
+        
+      /* globus_xio_system_file_t *        dirfd */
+      case GLOBUS_XIO_FILE_GET_DIR_HANDLE:
+        out_fd = va_arg(ap, globus_xio_system_file_t *);
+        *out_fd = attr->dirfd;
+        break;
       
       /* globus_bool_t                  use_blocking_io */
       case GLOBUS_XIO_FILE_SET_BLOCKING_IO:
@@ -585,14 +598,24 @@ globus_l_xio_file_open(
 #ifdef O_LARGEFILE
         flags |= O_LARGEFILE;
 #endif
-
-        result = globus_xio_system_file_open(
-            &handle->fd, contact_info->resource, flags, attr->mode);
-        if(result != GLOBUS_SUCCESS)
+        if(attr->dirfd != GLOBUS_XIO_FILE_INVALID_HANDLE)
         {
-            goto error_open;
+            result = globus_xio_system_file_openat(
+                &handle->fd, attr->dirfd, contact_info->resource, flags, attr->mode);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_open;
+            }
         }
-
+        else
+        {
+            result = globus_xio_system_file_open(
+                &handle->fd, contact_info->resource, flags, attr->mode);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_open;
+            }
+        }
         if(trunc_offset > 0)
         {
             result = globus_xio_system_file_truncate(

@@ -1247,6 +1247,26 @@ error_open:
 }
 
 globus_result_t
+globus_xio_system_file_openat(
+    globus_xio_system_file_t *          fd,
+    globus_xio_system_file_t            dirfd,
+    const char *                        filename,
+    int                                 flags,
+    unsigned long                       mode)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_xio_system_file_openat);
+    
+    *fd = -1;
+    GlobusXIOSystemDebugEnterFD(*fd);
+    
+    result = GlobusXIOErrorSystemResource("openat() not implemented.");
+
+    GlobusXIOSystemDebugExitWithErrorFD(*fd);
+    return result;
+}
+
+globus_result_t
 globus_xio_system_file_close(
     globus_xio_system_file_t            fd)
 {
@@ -1268,4 +1288,5 @@ error_close:
     GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
+
 #endif /* TARGET_ARCH_WIN32 */

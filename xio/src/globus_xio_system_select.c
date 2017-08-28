@@ -2268,6 +2268,56 @@ error_open:
 }
 
 globus_result_t
+globus_xio_system_file_openat(
+    globus_xio_system_file_t *          fd,
+    globus_xio_system_file_t            dirfd,
+    const char *                        filename,
+    int                                 flags,
+    unsigned long                       mode)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_xio_system_file_openat);
+    
+    *fd = -1;
+    GlobusXIOSystemDebugEnterFD(*fd);
+
+/* OSX runtime check for openat() */
+#ifdef TARGET_ARCH_DARWIN
+    if(openat == NULL)
+    {
+        result = GlobusXIOErrorSystemResource("openat() not implemented.");
+        goto error_open;
+    }
+#endif
+
+    do
+    {
+        *fd = openat(dirfd, filename, flags, mode);
+        GlobusXIOSystemUpdateErrno();
+    } while(*fd < 0 && errno == EINTR);
+
+    if(*fd < 0)
+    {
+        result = GlobusXIOErrorSystemError("open", errno);
+        goto error_open;
+    }
+        
+    /* all handles created by me are closed on exec */
+    fcntl(*fd, F_SETFD, FD_CLOEXEC);
+    
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
+        ("[%s] Opened file, %s fd=%d\n", _xio_name, filename, *fd));
+
+    GlobusXIOSystemDebugExitFD(*fd);
+    return GLOBUS_SUCCESS;
+
+error_open:
+    GlobusXIOSystemDebugExitWithErrorFD(*fd);
+    return result;
+}
+
+globus_result_t
 globus_xio_system_file_close(
     globus_xio_system_file_t            fd)
 {

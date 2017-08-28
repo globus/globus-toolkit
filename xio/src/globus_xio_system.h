@@ -179,6 +179,14 @@ globus_xio_system_file_open(
     unsigned long                       mode);
 
 globus_result_t
+globus_xio_system_file_openat(
+    globus_xio_system_file_t *          fd,
+    globus_xio_system_file_t            dirfd,
+    const char *                        filename,
+    int                                 flags,
+    unsigned long                       mode);
+
+globus_result_t
 globus_xio_system_file_close(
     globus_xio_system_file_t            fd);
     

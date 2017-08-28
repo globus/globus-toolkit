@@ -252,6 +252,30 @@ typedef enum
     /* globus_xio_system_file_t *       handle_out */
     GLOBUS_XIO_FILE_GET_HANDLE,
     
+    /** GlobusVarArgEnum(attr)
+     * Set the directory from which to open a relative pathname.
+     * @ingroup globus_xio_file_driver_cntls.
+     * 
+     * @param dir_handle
+     *      The dir handle from which to open a relative pathname.
+     *      If the pathname is not relative, this is ignored.
+     *      Note:  close() will not be called on this handle. This handle must
+     *      remain open until the open callback.
+     */
+    /* globus_xio_system_file_t         dir_handle */
+    GLOBUS_XIO_FILE_SET_DIR_HANDLE,
+    
+    /** GlobusVarArgEnum(attr)
+     * Get the dir handle set in attr.
+     * @ingroup globus_xio_file_driver_cntls
+     * 
+     * @param dir_handle_out
+     *      The dir handle (fd or HANDLE) will be stored here. If none is set,
+     *      GLOBUS_XIO_TCP_INVALID_HANDLE will be set.
+     */
+    /* globus_xio_system_file_t *       dir_handle_out */
+    GLOBUS_XIO_FILE_GET_DIR_HANDLE,
+    
     /** GlobusVarArgEnum(attr, handle)
      * Enable true blocking io when making globus_xio_read/write() calls.
      * Note: use with caution.  You can deadlock an entire app with this.
