@@ -30,6 +30,7 @@ $ENV{GLOBUS_USAGE_OPTOUT} = "1";
 $ENV{FTP_TEST_FORCE_LOCAL} = "1";
 my $server_pid;
 my $server_prog = $ENV{GRIDFTP_SERVER_EXE} || "globus-gridftp-server";
+my $server_tls = $ENV{GRIDFTP_SERVER_TLS} || 0;
 my $server_host = "localhost";
 my $subject;
 
@@ -37,6 +38,10 @@ my $server_args = "-no-chdir -no-exit -d 0 -auth-level 4 -p 0";
 if ($< != 0)
 {
     $server_args = "-no-fork $server_args";
+}
+if ($server_tls != 0)
+{
+    $server_args = "-control-tls $server_args";
 }
 
 chomp($subject = `openssl x509 -subject -noout -in \${X509_USER_CERT:-testcred.cert} -nameopt rfc2253,-dn_rev`);

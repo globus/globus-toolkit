@@ -268,6 +268,7 @@ globus_ftp_client_handleattr_init(
     i_attr->pipeline_arg = GLOBUS_NULL;
     i_attr->pipeline_done = GLOBUS_FALSE;
     i_attr->gridftp2 = GLOBUS_TRUE;
+    i_attr->tls_control = GLOBUS_FALSE;
     i_attr->clientinfo_app_name = 
         globus_libc_strdup(GLOBUS_L_FTP_CLIENT_CLIENTINFO_APPNAME);
     i_attr->clientinfo_app_ver = 
@@ -752,9 +753,81 @@ globus_ftp_client_handleattr_get_gridftp2(
  error_exit:
     return globus_error_put(err);
 }
-/* globus_ftp_client_handleattr_get_griftp2() */
+/* globus_ftp_client_handleattr_get_gridftp2() */
 /*@}*/
 
+/**
+ * @name TLS Control support
+ */
+/*@{*/
+/**
+ * Enable/Disable GridFTP2 [GFD.41] support for servers supporting
+ * it.  This currently only applies to the GET/PUT command.
+ * @ingroup globus_ftp_client_handleattr
+ *
+ *
+ * @param attr
+ *        Attribute to modify
+ * @param tls_control
+ *        Set to GLOBUS_FALSE to disable GridFTP2 support.
+ *        GridFTP2 support is enabled by default for servers that support it.
+ */
+globus_result_t
+globus_ftp_client_handleattr_set_tls_control(
+    globus_ftp_client_handleattr_t *		attr,
+    globus_bool_t				tls_control)
+{
+    globus_object_t *				err = GLOBUS_SUCCESS;
+    globus_i_ftp_client_handleattr_t *		i_attr;
+    GlobusFuncName(globus_ftp_client_handleattr_set_tls_control);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+	goto error_exit;
+    }
+    i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
+
+    i_attr->tls_control = tls_control;
+
+    return GLOBUS_SUCCESS;
+
+ error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_handleattr_set_tls_control() */
+
+globus_result_t
+globus_ftp_client_handleattr_get_tls_control(
+    const globus_ftp_client_handleattr_t *	attr,
+    globus_bool_t *				tls_control)
+{
+    const globus_i_ftp_client_handleattr_t *	i_attr;
+    globus_object_t *				err = GLOBUS_SUCCESS;
+    GlobusFuncName(globus_ftp_client_handleattr_get_tls_control);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+	goto error_exit;
+    }
+    if(tls_control == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("tls_control");
+
+	goto error_exit;
+    }
+    i_attr = *(const globus_i_ftp_client_handleattr_t **) attr;
+    (*tls_control) = i_attr->tls_control;
+
+    return GLOBUS_SUCCESS;
+ error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_handleattr_get_tls_control() */
+/*@}*/
 /**
  * @name Command Pipelining
  */
@@ -3960,6 +4033,7 @@ globus_i_ftp_client_handleattr_copy(
     dest->pipeline_arg = src->pipeline_arg;
     dest->pipeline_done = src->pipeline_done;
     dest->gridftp2 = src->gridftp2;
+    dest->tls_control = src->tls_control;
     dest->clientinfo_app_name = globus_libc_strdup(src->clientinfo_app_name);
     dest->clientinfo_app_ver = globus_libc_strdup(src->clientinfo_app_ver);
     dest->clientinfo_other = globus_libc_strdup(src->clientinfo_other);

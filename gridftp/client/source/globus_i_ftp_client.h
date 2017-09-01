@@ -212,6 +212,11 @@ typedef struct globus_i_ftp_client_handleattr_t
      */
 
     globus_bool_t				gridftp2;
+    /**
+     * Use TLS controlc hannel if supported by the server
+     */
+
+    globus_bool_t				tls_control;
 
     /** 
      * List of cached URLs.

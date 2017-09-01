@@ -6538,6 +6538,27 @@ globus_i_ftp_client_target_activate(
 	
 	if(handle->state == desired_state)
 	{
+            if (target->owner->attr.tls_control)
+            {
+                result = globus_ftp_control_use_tls(
+                    target->control_handle,
+                    &target->auth_info);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    err = globus_error_get(result);
+                    if(handle->err == GLOBUS_SUCCESS)
+                    {
+                        handle->err = globus_object_copy(err);
+                    }
+
+                    globus_i_ftp_client_plugin_notify_fault(
+                        handle,
+                        target->url_string,
+                        err);
+
+                    goto error_exit;
+                }
+            }
 	    result = globus_ftp_control_connect(
 		target->control_handle,
 		target->url.host,

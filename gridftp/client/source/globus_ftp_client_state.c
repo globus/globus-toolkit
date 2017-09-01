@@ -411,7 +411,8 @@ redo:
 		globus_ftp_control_authenticate(
 		    handle,
 		    &target->attr->auth_info,
-		    target->url.scheme_type==GLOBUS_URL_SCHEME_GSIFTP,
+		    target->url.scheme_type==GLOBUS_URL_SCHEME_GSIFTP
+                    && !target->owner->attr.tls_control,
 		    globus_i_ftp_client_response_callback,
 		    user_arg);
                                                         

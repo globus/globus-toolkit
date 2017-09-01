@@ -471,7 +471,6 @@ typedef enum globus_ftp_control_command_code_e
     GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN
 } globus_ftp_control_command_code_t;
 
-
 /**
  *  @brief Authentication Values.
  *
@@ -637,6 +636,7 @@ typedef unsigned long globus_ftp_control_auth_requirements_t;
 #define GLOBUS_FTP_CONTROL_AUTH_REQ_USER	     4
 #define GLOBUS_FTP_CONTROL_AUTH_REQ_PASS	     8
 #define GLOBUS_FTP_CONTROL_AUTH_REQ_ACCT	     16
+#define GLOBUS_FTP_CONTROL_AUTH_REQ_TLS 	     32
 
 typedef struct globus_ftp_control_rw_queue_element_s
 {
@@ -1368,13 +1368,19 @@ globus_ftp_control_connect(
     globus_ftp_control_response_callback_t	callback,
     void *					callback_arg);
 
+
+globus_result_t
+globus_ftp_control_use_tls(
+    globus_ftp_control_handle_t *		handle,
+    globus_ftp_control_auth_info_t *            auth_info);
+
 globus_result_t
 globus_ftp_control_authenticate(
-    globus_ftp_control_handle_t *		handle,
+    globus_ftp_control_handle_t *               handle,
     globus_ftp_control_auth_info_t *            auth_info,
-    globus_bool_t				use_auth,
-    globus_ftp_control_response_callback_t	callback,
-    void *					callback_arg);
+    globus_bool_t                               use_auth,
+    globus_ftp_control_response_callback_t      callback,
+    void *                                      callback_arg);
 
 globus_result_t
 globus_ftp_control_authenticate_ex(

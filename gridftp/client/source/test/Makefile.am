@@ -16,6 +16,7 @@ check_SCRIPTS_run = \
 	get-test.pl \
 	caching-get-test.pl \
 	size-test.pl \
+        tls-control-test.tls \
 	transfer-test.pl \
 	caching-transfer-test.pl \
 	caching-extended-get-test.pl \
@@ -91,6 +92,7 @@ check_PROGRAMS = \
 	get-test \
 	caching-get-test \
 	put-test \
+        tls-control-test \
 	transfer-test \
 	caching-transfer-test \
 	pipelined-transfer-test \
@@ -116,6 +118,7 @@ libglobus_ftp_client_test_la_SOURCES = \
 	globus_ftp_client_test_common.c
 libglobus_ftp_client_test_la_LDFLAGS = $(top_builddir)/libglobus_ftp_client.la $(OPENSSL_LIBS) $(PACKAGE_DEP_LIBS) -rpath $(abs_builddir) -no-undefined
 
+TEST_EXTENSIONS = .pl .tls
 if ENABLE_TESTS
 TESTS = $(check_SCRIPTS_run)
 
@@ -134,7 +137,11 @@ TESTS_ENVIRONMENT = \
     GRIDMAP="$(GRIDMAP)" \
     GRIDFTP_SERVER_EXE="$(GRIDFTP_SERVER_EXE)" \
     PATH="$(TEST_PATH)";
-LOG_COMPILER = $(LIBTOOL) --mode=execute \
+PL_LOG_COMPILER = $(LIBTOOL) --mode=execute \
+	$(GSI_DRIVER_DLOPEN) \
+	$(PIPE_DRIVER_DLOPEN) \
+	$(srcdir)/test-wrapper
+TLS_LOG_COMPILER = env GRIDFTP_SERVER_TLS=1 $(LIBTOOL) --mode=execute \
 	$(GSI_DRIVER_DLOPEN) \
 	$(PIPE_DRIVER_DLOPEN) \
 	$(srcdir)/test-wrapper

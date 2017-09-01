@@ -203,6 +203,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Comma separated list of names to treat as anonymous users when "
     "allowing anonymous access.  If not set, the default names of 'anonymous' "
     "and 'ftp' will be allowed.  Use '*' to allow any username.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"control_tls", "control_tls", NULL, "control-tls", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Wrap the control channel in a TLS connection, instead of using RFC228 FTP Security Extensions.",
+    NULL, NULL,GLOBUS_FALSE, NULL},
  {"anonymous_user", "anonymous_user", NULL, "anonymous-user", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "User to setuid to for an anonymous connection. Only applies when running as root.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"anonymous_group", "anonymous_group", NULL, "anonymous-group", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,

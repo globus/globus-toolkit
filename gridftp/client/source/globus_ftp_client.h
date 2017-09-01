@@ -564,6 +564,16 @@ globus_ftp_client_handleattr_get_gridftp2(
     globus_bool_t *				gridftp2);
 
 globus_result_t
+globus_ftp_client_handleattr_set_tls_control(
+    globus_ftp_client_handleattr_t *		attr,
+    globus_bool_t				tls_control);
+
+globus_result_t
+globus_ftp_client_handleattr_get_tls_control(
+    const globus_ftp_client_handleattr_t *	attr,
+    globus_bool_t *				tls_control);
+
+globus_result_t
 globus_ftp_client_handleattr_set_netlogger(
     globus_ftp_client_handleattr_t *		attr,
     globus_netlogger_handle_t *	                nl_handle);

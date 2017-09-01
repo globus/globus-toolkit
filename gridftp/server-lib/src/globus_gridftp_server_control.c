@@ -15,6 +15,7 @@
  */
 
 #include "globus_i_gridftp_server_control.h"
+#include "globus_xio_gsi.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -282,6 +283,7 @@ static globus_size_t                    globus_l_gsc_fake_buffer_len = 1;
 
 static globus_gridftp_server_control_attr_t globus_l_gsc_default_attr;
 static globus_xio_driver_t              globus_l_gsc_tcp_driver;
+static globus_xio_driver_t              globus_l_gsc_gsi_driver;
 static globus_xio_driver_t              globus_l_gsc_pipe_driver;
 static globus_xio_driver_t              globus_l_gsc_gssapi_ftp_driver;
 static globus_xio_driver_t              globus_l_gsc_telnet_driver;
@@ -324,6 +326,11 @@ globus_l_gsc_activate()
         return GLOBUS_FAILURE;
     }
     res = globus_xio_driver_load("tcp", &globus_l_gsc_tcp_driver);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return GLOBUS_FAILURE;
+    }
+    res = globus_xio_driver_load("gsi", &globus_l_gsc_gsi_driver);
     if(res != GLOBUS_SUCCESS)
     {
         return GLOBUS_FAILURE;
@@ -399,6 +406,7 @@ globus_l_gsc_deactivate()
         &globus_l_gsc_grent_cache, globus_l_gsc_grent_hash_destroy);
 
     globus_xio_driver_unload(globus_l_gsc_tcp_driver);
+    globus_xio_driver_unload(globus_l_gsc_gsi_driver);
     globus_xio_driver_unload(globus_l_gsc_pipe_driver);
     globus_xio_driver_unload(globus_l_gsc_telnet_driver);
     globus_xio_driver_unload(globus_l_gsc_gssapi_ftp_driver);
@@ -2873,6 +2881,30 @@ globus_gridftp_server_control_start(
                 GLOBUS_XIO_GSSAPI_ATTR_TYPE_ALLOW_CLEAR, GLOBUS_TRUE);
         }
     }
+    else if (i_attr->security & GLOBUS_GRIDFTP_SERVER_LIBRARY_TLS)
+    {
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_gsi_driver,
+                GLOBUS_XIO_GSI_FORCE_SERVER_MODE, GLOBUS_TRUE);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+        res = globus_xio_attr_cntl(
+            xio_attr, globus_l_gsc_gsi_driver,
+            GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE, GLOBUS_TRUE);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+        res = globus_xio_stack_push_driver(
+            xio_stack, globus_l_gsc_gsi_driver);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+        res = globus_xio_stack_push_driver(
+            xio_stack, globus_l_gsc_telnet_driver);
+    }
     else
     {
         res = globus_xio_stack_push_driver(
@@ -4576,6 +4608,52 @@ globus_i_gsc_authenticate(
             type = GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI;
             op->server_handle->dcau = 'A';
         }
+    }
+    else if(op->server_handle->security_type & GLOBUS_GRIDFTP_SERVER_LIBRARY_TLS)
+    {
+        gss_name_t                  peer_name = GSS_C_NO_NAME;
+
+        /* if this fails the values are just left null */
+        globus_xio_handle_cntl(
+            op->server_handle->xio_handle,
+            globus_l_gsc_gsi_driver,
+            GLOBUS_XIO_GSI_GET_CONTEXT,
+            &op->server_handle->context);
+        globus_xio_handle_cntl(
+            op->server_handle->xio_handle,
+            globus_l_gsc_gsi_driver,
+            GLOBUS_XIO_GSI_GET_CREDENTIAL,
+            &op->server_handle->cred);
+        globus_xio_handle_cntl(
+            op->server_handle->xio_handle,
+            globus_l_gsc_gsi_driver,
+            GLOBUS_XIO_GSI_GET_DELEGATED_CRED,
+            &op->server_handle->del_cred);
+        globus_xio_handle_cntl(
+            op->server_handle->xio_handle,
+            globus_l_gsc_gsi_driver,
+            GLOBUS_XIO_GSI_GET_PEER_NAME,
+            &peer_name);
+
+        if (peer_name != GSS_C_NO_NAME)
+        {
+            OM_uint32                   minor_stat = GLOBUS_SUCCESS;
+            gss_buffer_desc             buffer = {.value = NULL};
+
+            gss_display_name(&minor_stat, peer_name, &buffer, NULL);
+
+            if (buffer.value != NULL)
+            {
+                op->server_handle->subject = malloc(buffer.length + 1);
+                snprintf(
+                    op->server_handle->subject,
+                    buffer.length + 1,
+                    "%s",
+                    buffer.value);
+            }
+            gss_release_buffer(&minor_stat, &buffer);
+        }
+        op->server_handle->dcau = 'A';
     }
     /* call out to user */
     if(op->server_handle->funcs.auth_cb != NULL)
