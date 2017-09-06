@@ -1,8 +1,9 @@
-globus-xio-gsi-driver (4.0-1+gt6.@distro@) @distro@; urgency=low
+globus-xio-gsi-driver (4.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Add SNI and ALPN support via cntls
+  * Ignore error setting ALPN option
 
- -- Globus Toolkit <support@globus.org>  Tue, 05 Sep 2017 14:40:33 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 06 Sep 2017 16:14:57 -0400
 
 globus-xio-gsi-driver (3.11-1+gt6.@distro@) @distro@; urgency=low
 

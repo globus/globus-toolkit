@@ -1325,7 +1325,10 @@ globus_l_xio_gsi_read_token_cb(
                     if (!GSS_ERROR(major_status)
                         && handle->attr->alpn_list != NULL)
                     {
-                        major_status = gss_set_sec_context_option(
+                        /* Don't worry about errors here,
+                         * OpenSSL < 1.0.2 doesn't support ALPN 
+                         */
+                        gss_set_sec_context_option(
                             &minor_status,
                             &handle->context,
                             &GSS_ALPN_OID,
@@ -1720,7 +1723,10 @@ globus_l_xio_gsi_open_cb(
         if (handle->context == GSS_C_NO_CONTEXT
             && handle->attr->alpn_list != NULL)
         {
-            major_status = gss_set_sec_context_option(
+            /* Don't worry about errors here,
+             * OpenSSL < 1.0.2 doesn't support ALPN 
+             */
+            gss_set_sec_context_option(
                 &minor_status,
                 &handle->context,
                 &GSS_ALPN_OID,

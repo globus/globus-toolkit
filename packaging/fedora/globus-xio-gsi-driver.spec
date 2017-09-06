@@ -6,7 +6,7 @@ Name:		globus-xio-gsi-driver
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	4.0
+Version:	4.1
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GSI Driver
@@ -154,8 +154,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
-* Tue Sep 05 2017 Globus Toolkit <support@globus.org> - 4.0-1
+* Wed Sep 06 2017 Globus Toolkit <support@globus.org> - 4.1-1
 - Add SNI and ALPN support via cntls
+- Ignore error setting ALPN option
 
 * Fri Apr 14 2017 Globus Toolkit <support@globus.org> - 3.11-1
 - Fix crash when checking for anonymous GSS name when name comparison fails
