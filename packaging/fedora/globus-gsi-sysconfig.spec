@@ -6,7 +6,7 @@ Name:		globus-gsi-sysconfig
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	7.0
+Version:	7.1
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI System Config Library
@@ -183,6 +183,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Sep 06 2017 Globus Toolkit <support@globus.org> - 7.1-1
+- Enable c99 compiler syntax
+
 * Tue Sep 05 2017 Globus Toolkit <support@globus.org> - 7.0-1
 - Add SNI vhost cred dir support
 
