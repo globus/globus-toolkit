@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.17
+Version:	13.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -179,6 +179,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 05 2017 Globus Toolkit <support@globus.org> - 13.0-1
+- Add SNI vhost cred dir support
+- Add optional ALPN processing
+
 * Wed Jun 21 2017 Globus Toolkit <support@globus.org> - 12.17-1
 - Fix indicate_mechs_test when using openssl v1.1.0
 - Remove rhel 5 spec file conditionals

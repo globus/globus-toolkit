@@ -29,27 +29,41 @@ static gss_OID_desc gss_nt_host_ip_oid =
     { 10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02" };
 static gss_OID_desc * GLOBUS_GSS_C_NT_HOST_IP = &gss_nt_host_ip_oid;
 
+static gss_OID_desc GSS_SNI_CREDENTIALS_OID =
+   {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x03\x04"};
+
+static gss_OID_desc GSS_ALPN_OID =
+   {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x03\x05"};
+
+
+
 static globus_bool_t globus_l_xio_gsi_host_ip_supported;
 
 /* default attributes */
 static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
 {
-    GSS_C_NO_CREDENTIAL,
-    GSS_C_MUTUAL_FLAG,
-    0,
-    GSS_C_NO_OID,
-    GSS_C_NO_CHANNEL_BINDINGS,
-    GLOBUS_FALSE,
-    131072, /* 128K default read buffer */
-    GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY,
-    GSS_C_NO_NAME,
-    GLOBUS_TRUE,
-    GLOBUS_XIO_GSI_NO_AUTHORIZATION
+    .credential                         = GSS_C_NO_CREDENTIAL,
+    .req_flags                          = GSS_C_MUTUAL_FLAG,
+    .time_req                           = 0,
+    .mech_type                          = 0,
+    .channel_bindings                   = GSS_C_NO_CHANNEL_BINDINGS,
+    .wrap_tokens                        = GLOBUS_FALSE,
+    .buffer_size                        = 131072, /* 128K default read buffer */
+    .prot_level                         =
+        GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY,
+    .target_name                        = GSS_C_NO_NAME,
+    .init                               = GLOBUS_TRUE,
+    .authz_mode                         = GLOBUS_XIO_GSI_NO_AUTHORIZATION,
+    .credentials_dir                    = NULL,
 };
 
 static int                              connection_count = 0;
 static globus_mutex_t                   connection_mutex;
 
+static
+globus_result_t
+globus_l_xio_gsi_attr_destroy(
+    void *                              driver_attr);
 
 static
 globus_result_t
@@ -151,34 +165,37 @@ globus_l_xio_gsi_attr_cntl(
     int                                 cmd,
     va_list                             ap)
 {
-    globus_l_attr_t *                       attr;
-    gss_cred_id_t *                         out_cred;
-    OM_uint32 *                             out_flags;
-    OM_uint32                               minor_status;
-    OM_uint32                               major_status;
-    globus_bool_t *                         out_bool;
-    globus_xio_gsi_protection_level_t *     out_prot_level;
-    globus_xio_gsi_proxy_mode_t *           out_proxy_mode;
-    globus_xio_gsi_proxy_mode_t             proxy_mode;
-    globus_xio_gsi_delegation_mode_t *      out_delegation_mode;
-    globus_xio_gsi_delegation_mode_t        delegation_mode;
-    globus_xio_gsi_authorization_mode_t *   out_authz_mode;
-    globus_bool_t                           ssl_wrap;
-    globus_result_t                         result;
-    globus_size_t *                         out_size;
-    gss_name_t *                            out_name;
-    gss_name_t                              in_name;
-    globus_bool_t                           in_bool;
+    globus_l_attr_t *                       attr = driver_attr;
+    gss_cred_id_t *                         out_cred = NULL;
+    OM_uint32 *                             out_flags = NULL;
+    OM_uint32                               minor_status = 0;
+    OM_uint32                               major_status = GSS_S_COMPLETE;
+    globus_bool_t *                         out_bool = NULL;
+    globus_xio_gsi_protection_level_t *     out_prot_level = NULL;
+    globus_xio_gsi_proxy_mode_t *           out_proxy_mode = NULL;
+    globus_xio_gsi_proxy_mode_t             proxy_mode
+        = GLOBUS_XIO_GSI_PROXY_MODE_LIMITED;
+    globus_xio_gsi_delegation_mode_t *      out_delegation_mode = NULL;
+    globus_xio_gsi_delegation_mode_t        delegation_mode
+        = GLOBUS_XIO_GSI_DELEGATION_MODE_NONE;
+    globus_xio_gsi_authorization_mode_t *   out_authz_mode = NULL;
+    globus_bool_t                           ssl_wrap = GLOBUS_TRUE;
+    globus_result_t                         result = GLOBUS_SUCCESS;
+    globus_size_t *                         out_size = NULL;
+    const char *                            in_directory = NULL;
+    char **                                 in_protocols = NULL;
+    gss_name_t *                            out_name = NULL;
+    gss_name_t                              in_name = GSS_C_NO_NAME;
+    globus_bool_t                           in_bool = GLOBUS_TRUE;
     GlobusXIOName(globus_l_xio_gsi_attr_cntl);
     GlobusXIOGSIDebugEnter();
 
-    if(!driver_attr)
+    if (attr == NULL)
     {
         result = GlobusXIOErrorParameter("driver_attr");
         goto error_invalid;
     }    
 
-    attr = (globus_l_attr_t *) driver_attr;
     switch(cmd) 
     {
       case GLOBUS_XIO_GSI_GET_TARGET_NAME:
@@ -218,6 +235,51 @@ globus_l_xio_gsi_attr_cntl(
          */
       case GLOBUS_XIO_GSI_SET_CREDENTIAL:
         attr->credential = va_arg(ap, gss_cred_id_t);
+        break;
+
+      case GLOBUS_XIO_GSI_SET_CREDENTIALS_DIR:
+        in_directory = va_arg(ap, const char *);
+        free(attr->credentials_dir); 
+        if (in_directory == NULL)
+        {
+            attr->credentials_dir = NULL;
+        }
+        else
+        {
+            attr->credentials_dir = strdup(in_directory);
+        }
+        break;
+
+      case GLOBUS_XIO_GSI_SET_APPLICATION_PROTOCOLS:
+        in_protocols = va_arg(ap, char **);
+
+        free(attr->alpn_list);
+        if (in_protocols == NULL)
+        {
+            attr->alpn_list = NULL;
+            attr->alpn_list_len = 0;
+        }
+        else
+        {
+            size_t                      alpn_list_len = 0;
+            for (size_t i = 0; in_protocols[i] != NULL; i++)
+            {
+                alpn_list_len += 1 + strlen(in_protocols[i]);
+            }
+            attr->alpn_list = malloc(alpn_list_len);
+            for (size_t i = 0, j = 0; in_protocols[i] != NULL; i++)
+            {
+                size_t protocol_len = strlen(in_protocols[i]);
+
+                attr->alpn_list[j++] = protocol_len;
+                memcpy(
+                    &attr->alpn_list[j],
+                    in_protocols[i],
+                    protocol_len);
+                j += protocol_len;
+                attr->alpn_list_len = j;
+            }
+        }
         break;
       case GLOBUS_XIO_GSI_GET_CREDENTIAL:
         out_cred = va_arg(ap, gss_cred_id_t *);
@@ -494,7 +556,31 @@ globus_l_xio_gsi_attr_copy(
             goto error_attr;
         }
     }
-    
+    if (attr->alpn_list != NULL)
+    {
+        unsigned char                  *cp = NULL;
+
+        cp = malloc(attr->alpn_list_len);
+        if (cp == NULL)
+        {
+            result = GlobusXIOErrorMemory("alpn_list");
+            globus_l_xio_gsi_attr_destroy(attr);
+            attr = NULL;
+        }
+        memcpy(cp, attr->alpn_list, attr->alpn_list_len);
+        attr->alpn_list = cp;
+    }
+    if (attr->credentials_dir != NULL)
+    {
+        attr->credentials_dir = strdup(attr->credentials_dir);
+        if (attr->credentials_dir == NULL)
+        {
+            result = GlobusXIOErrorMemory("credentials_dir");
+            globus_l_xio_gsi_attr_destroy(attr);
+            attr = NULL;
+        }
+    }
+
     *dst = attr;
 
     GlobusXIOGSIDebugExit();
@@ -513,26 +599,25 @@ globus_result_t
 globus_l_xio_gsi_attr_destroy(
     void *                              driver_attr)
 {
-    globus_l_attr_t *                   attr;
+    globus_l_attr_t *                   attr = driver_attr;
     GlobusXIOName(globus_l_xio_gsi_attr_destroy);
     GlobusXIOGSIDebugEnter();
 
-    if(!driver_attr)
+    if (attr == NULL)
     {
         GlobusXIOGSIDebugExitWithError();
         return GlobusXIOErrorParameter("driver_attr");
     }
     
-    attr = (globus_l_attr_t *) driver_attr;
-
-    if(attr->target_name != GSS_C_NO_NAME)
+    if (attr->target_name != GSS_C_NO_NAME)
     {
         OM_uint32                       minor_status;        
         gss_release_name(&minor_status,
                          &attr->target_name);
     }
-
-    free(driver_attr);
+    free(attr->credentials_dir);
+    free(attr->alpn_list);
+    free(attr);
 
     GlobusXIOGSIDebugExit();
     return GLOBUS_SUCCESS;
@@ -736,6 +821,17 @@ globus_l_xio_gsi_handle_destroy(
     if (handle->host_name)
     {
         free(handle->host_name);
+    }
+    if (handle->cred_array != NULL)
+    {
+        for (
+            size_t i = 0;
+            i < handle->cred_array_length / sizeof(gss_cred_id_t);
+            i++)
+        {
+            gss_release_cred(&minor_status, &handle->cred_array[i]);
+        }
+        free(handle->cred_array);
     }
 
     free(handle);
@@ -1044,24 +1140,22 @@ globus_l_xio_gsi_read_token_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    globus_l_handle_t *                 handle;
-    OM_uint32                           major_status;
-    OM_uint32                           minor_status;
+    globus_l_handle_t *                 handle = user_arg;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           minor_status = GLOBUS_SUCCESS;
     gss_buffer_desc 		        output_token = GSS_C_EMPTY_BUFFER;
-    gss_buffer_desc 		        input_token;
-    globus_xio_iovec_t *                iovec;
-    int                                 iovec_count;
+    gss_buffer_desc 		        input_token = {.value = NULL};
+    globus_xio_iovec_t *                iovec = NULL;
+    int                                 iovec_count = 0;
     globus_size_t                       wait_for = 0;
     globus_size_t                       offset = 0;
     globus_size_t                       prev_offset = 0;
-    int                                 header;
+    int                                 header = 0;
     
     GlobusXIOName(globus_l_xio_gsi_read_token_cb);
     GlobusXIOGSIDebugInternalEnter();
 
-    handle = (globus_l_handle_t *) user_arg;
-
-    if(result != GLOBUS_SUCCESS)
+    if (result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailedWithMessage(result,
             "The GSI XIO driver failed to establish a secure connection. %s",
@@ -1205,18 +1299,58 @@ globus_l_xio_gsi_read_token_cb(
             }
             else
             {
-                major_status = gss_accept_sec_context(
-                    &minor_status,
-                    &handle->context,
-                    handle->attr->credential,
-                    &input_token,
-                    handle->attr->channel_bindings,
-                    &handle->peer_name,
-                    &handle->mech_used,
-                    &output_token,
-                    &handle->ret_flags,
-                    &handle->time_rec,
-                    &handle->delegated_cred);
+                if (handle->context == GSS_C_NO_CONTEXT)
+                {
+                    if (handle->attr->credentials_dir != NULL)
+                    {
+                        major_status = globus_gss_assist_read_vhost_cred_dir(
+                            &minor_status,
+                            handle->attr->credentials_dir,
+                            &handle->cred_array,
+                            &handle->cred_array_length);
+
+                        if (!GSS_ERROR(major_status))
+                        {
+                            major_status = gss_set_sec_context_option(
+                                &minor_status,
+                                &handle->context,
+                                &GSS_SNI_CREDENTIALS_OID,
+                                &(gss_buffer_desc)
+                                {
+                                    .value = handle->cred_array,
+                                    .length = handle->cred_array_length,
+                                });
+                        }
+                    }
+                    if (!GSS_ERROR(major_status)
+                        && handle->attr->alpn_list != NULL)
+                    {
+                        major_status = gss_set_sec_context_option(
+                            &minor_status,
+                            &handle->context,
+                            &GSS_ALPN_OID,
+                            &(gss_buffer_desc)
+                            {
+                                .value = handle->attr->alpn_list,
+                                .length = handle->attr->alpn_list_len,
+                            });
+                    }
+                }
+                if (!GSS_ERROR(major_status))
+                {
+                    major_status = gss_accept_sec_context(
+                        &minor_status,
+                        &handle->context,
+                        handle->attr->credential,
+                        &input_token,
+                        handle->attr->channel_bindings,
+                        &handle->peer_name,
+                        &handle->mech_used,
+                        &output_token,
+                        &handle->ret_flags,
+                        &handle->time_rec,
+                        &handle->delegated_cred);
+                }
             }
 
             GlobusXIOGSIDebugPrintf(
@@ -1263,7 +1397,7 @@ globus_l_xio_gsi_read_token_cb(
         /* get the wrap size limit and peer and local names */
         handle->done = GLOBUS_TRUE;
 
-        if(handle->attr->prot_level ==
+        if (handle->attr->prot_level ==
            GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY &&
            !(handle->ret_flags & GSS_C_CONF_FLAG))
         {
@@ -1579,23 +1713,40 @@ globus_l_xio_gsi_open_cb(
     
     if(handle->attr->init == GLOBUS_TRUE)
     {
-        OM_uint32                       major_status;
-        OM_uint32                       minor_status;
+        OM_uint32                       major_status = GSS_S_COMPLETE;
+        OM_uint32                       minor_status = GLOBUS_SUCCESS;
         gss_buffer_desc 	        output_token = GSS_C_EMPTY_BUFFER;
 
-        major_status = gss_init_sec_context(&minor_status,
-                                            handle->attr->credential,
-                                            &handle->context,
-                                            handle->attr->target_name,
-                                            handle->attr->mech_type,
-                                            handle->attr->req_flags,
-                                            handle->attr->time_req, 
-                                            handle->attr->channel_bindings,
-                                            GSS_C_NO_BUFFER,
-                                            &handle->mech_used,
-                                            &output_token,
-                                            &handle->ret_flags,
-                                            &handle->time_rec);
+        if (handle->context == GSS_C_NO_CONTEXT
+            && handle->attr->alpn_list != NULL)
+        {
+            major_status = gss_set_sec_context_option(
+                &minor_status,
+                &handle->context,
+                &GSS_ALPN_OID,
+                &(gss_buffer_desc)
+                {
+                    .value = handle->attr->alpn_list,
+                    .length = handle->attr->alpn_list_len,
+                });
+        }
+        if (!GSS_ERROR(major_status))
+        {
+            major_status = gss_init_sec_context(
+                &minor_status,
+                handle->attr->credential,
+                &handle->context,
+                handle->attr->target_name,
+                handle->attr->mech_type,
+                handle->attr->req_flags,
+                handle->attr->time_req, 
+                handle->attr->channel_bindings,
+                GSS_C_NO_BUFFER,
+                &handle->mech_used,
+                &output_token,
+                &handle->ret_flags,
+                &handle->time_rec);
+        }
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
             (_XIOSL("[%s:%d] Generated output token of length %d\n"), _xio_name,
@@ -3835,6 +3986,8 @@ static globus_xio_string_cntl_table_t  gsi_l_string_opts_table[] =
     {"auth", GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE, gsi_l_attr_parse_auth},
     {"proxy", GLOBUS_XIO_GSI_SET_PROXY_MODE, gsi_l_attr_parse_proxy},
     {"ssl_compatible", GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE, globus_xio_string_cntl_bool},
+    {"application_protocols", GLOBUS_XIO_GSI_SET_APPLICATION_PROTOCOLS, globus_xio_string_cntl_string_list},
+    {"credentials_dir", GLOBUS_XIO_GSI_SET_CREDENTIALS_DIR, globus_xio_string_cntl_string},
     {NULL, 0, NULL}
 };
 

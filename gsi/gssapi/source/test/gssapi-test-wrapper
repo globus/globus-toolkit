@@ -10,11 +10,17 @@ if [ "${1##*.}" != "pl" ]; then
         if [ -n "$VALGRIND_OPTIONS" ]; then
             valgrind="${valgrind} ${VALGRIND_OPTIONS}"
         fi
+        if [ -n "$LIBTOOL" ]; then
+            valgrind="${LIBTOOL} --mode=execute $valgrind"
+        fi
         $valgrind "$@"
+    else
+        "$@"
     fi
+else
+    "$@"
 fi
 
-$valgrind "$@"
 rc=$?
 
 exit $rc

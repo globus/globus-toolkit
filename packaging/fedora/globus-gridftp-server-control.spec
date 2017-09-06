@@ -6,7 +6,7 @@ Name:		globus-gridftp-server-control
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	5.2
+Version:	6.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server Library
@@ -139,6 +139,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Sep 06 2017 Globus Toolkit <support@globus.org> - 6.0-1
+- Add support for control channel over TLS
+
 * Mon Aug 07 2017 Globus Toolkit <support@globus.org> - 5.2-1
 - allow 400 responses to stat failures
 

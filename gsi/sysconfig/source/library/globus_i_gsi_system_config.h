@@ -95,12 +95,12 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
 #define GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER \
             GLOBUS_I_GSI_SYSCONFIG_DEBUG_FPRINTF( \
                 1, (globus_i_gsi_sysconfig_debug_fstream, \
-                    "%s entering\n", _function_name_))
+                    "%s entering\n", __func__))
 
 #define GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT \
             GLOBUS_I_GSI_SYSCONFIG_DEBUG_FPRINTF( \
                 2, (globus_i_gsi_sysconfig_debug_fstream, \
-                    "%s exiting\n", _function_name_))
+                    "%s exiting\n", __func__))
 
 /* ERROR MACROS */
 
@@ -112,7 +112,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
             globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_sysconfig_openssl_error_result(_ERRORTYPE_,  \
                                                           __FILE__, \
-                                                          _function_name_, \
+                                                          __func__, \
                                                           __LINE__, \
                                                           _tmp_str_, \
                                                           NULL); \
@@ -125,7 +125,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
             globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_sysconfig_error_result(_ERRORTYPE_, \
                                                   __FILE__, \
-                                                  _function_name_, \
+                                                  __func__, \
                                                   __LINE__, \
                                                   _tmp_str_, \
                                                   NULL); \
@@ -136,7 +136,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
     _TOP_RESULT_ = globus_i_gsi_sysconfig_error_chain_result(_TOP_RESULT_, \
                                                         _ERRORTYPE_, \
                                                         __FILE__, \
-                                                        _function_name_, \
+                                                        __func__, \
                                                         __LINE__, \
                                                         NULL, \
                                                         NULL)
@@ -150,7 +150,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
             globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_sysconfig_openssl_error_result(_ERRORTYPE_, \
                                                           __FILE__, \
-                                                          _function_name_, \
+                                                          __func__, \
                                                           __LINE__, \
                                                           _tmp_str_, \
                                                           _LONG_DESC_); \
@@ -166,7 +166,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
             globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_sysconfig_error_result(_ERRORTYPE_, \
                                                        __FILE__, \
-                                                       _function_name_, \
+                                                       __func__, \
                                                        __LINE__, \
                                                        _tmp_str_, \
                                                        _LONG_DESC_); \
@@ -179,7 +179,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
     _TOP_RESULT_ = globus_i_gsi_sysconfig_error_chain_result(_TOP_RESULT_, \
                                                              _ERRORTYPE_, \
                                                              __FILE__, \
-                                                             _function_name_, \
+                                                             __func__, \
                                                              __LINE__, \
                                                              NULL, \
                                                              _LONG_DESC_)

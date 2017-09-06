@@ -6,7 +6,7 @@ Name:		globus-gss-assist
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	10.21
+Version:	11.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI Assist library
@@ -18,10 +18,10 @@ Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
-BuildRequires:	globus-gsi-sysconfig-devel >= 5
+BuildRequires:	globus-gsi-sysconfig-devel >= 6
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-callout-devel >= 2
-BuildRequires:	globus-gssapi-gsi-devel >= 9
+BuildRequires:	globus-gssapi-gsi-devel >= 13
 BuildRequires:	globus-gsi-credential-devel >= 6
 BuildRequires:	globus-common-progs >= 14
 BuildRequires:	doxygen
@@ -70,10 +70,10 @@ Group:		Development/Libraries
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
 Requires:	globus-gsi-credential-devel%{?_isa} >= 6
-Requires:	globus-gsi-sysconfig-devel%{?_isa} >= 5
+Requires:	globus-gsi-sysconfig-devel%{?_isa} >= 6
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-callout-devel%{?_isa} >= 2
-Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+Requires:	globus-gssapi-gsi-devel%{?_isa} >= 13
 
 %package doc
 Summary:	Globus Toolkit - GSSAPI Assist library Documentation Files
@@ -194,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 05 2017 Globus Toolkit <support@globus.org> - 11.0-1
+- Add new function gss_assist_read_vhost_cred_dir() for SNI server
+
 * Tue Jan 10 2017 Globus Toolkit <support@globus.org> - 10.21-1
 - Slow grid-mapfile-delete-entry (issue #84)
 

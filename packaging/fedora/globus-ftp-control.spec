@@ -6,7 +6,7 @@ Name:		globus-ftp-control
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	7.8
+Version:	8.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
@@ -18,9 +18,9 @@ Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	globus-common-devel >= 14
-BuildRequires:	globus-gss-assist-devel >= 8
+BuildRequires:	globus-gss-assist-devel >= 11
 BuildRequires:	globus-io-devel >= 11
-BuildRequires:	globus-gssapi-gsi-devel >= 9
+BuildRequires:	globus-gssapi-gsi-devel >= 13
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 BuildRequires:  globus-xio-devel >= 3
@@ -64,9 +64,9 @@ Summary:	Globus Toolkit - GridFTP Control Library Development Files
 Group:		Development/Libraries
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
-Requires:	globus-gss-assist-devel%{?_isa} >= 8
+Requires:	globus-gss-assist-devel%{?_isa} >= 11
 Requires:	globus-io-devel%{?_isa} >= 11
-Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+Requires:	globus-gssapi-gsi-devel%{?_isa} >= 13
 Requires:       globus-xio-devel%{?_isa} >= 3
 Requires:       globus-gssapi-error-devel%{?_isa} >= 4
 
@@ -176,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 05 2017 Globus Toolkit <support@globus.org> - 8.0-1
+- Add function globus_ftp_control_use_tls() for TLS control channel
+
 * Fri Jun 30 2017 Globus Toolkit <support@globus.org> - 7.8-1
 - fix hang/failure when using udt driver with local client transfer
 

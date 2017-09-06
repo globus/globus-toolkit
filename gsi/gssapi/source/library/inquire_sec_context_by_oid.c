@@ -148,7 +148,59 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         goto unlock_exit;
     }
 
-    if(((gss_OID_desc *)desired_object)->length !=
+    if (g_OID_equal(desired_object, gss_ext_server_name_oid))
+    {
+        if (context->sni_servername != NULL)
+        {
+            major_status = gss_add_buffer_set_member(
+                &local_minor_status,
+                &(gss_buffer_desc)
+                {
+                    .value = context->sni_servername,
+                    .length = strlen(context->sni_servername),
+                },
+                data_set);
+            if(GSS_ERROR(major_status))
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_BUFFER);
+                goto unlock_exit;
+            }
+        }
+    }
+#if OPENSSL_VERSION_NUMBER >= 0x10002000L
+    else if (g_OID_equal(desired_object, gss_ext_alpn_oid))
+    {
+        if (context->alpn != NULL)
+        {
+            const unsigned char *data = NULL;
+            unsigned int len = 0;
+
+            SSL_get0_alpn_selected(context->gss_ssl, &data, &len);
+            if (len != 0)
+            {
+                major_status = gss_add_buffer_set_member(
+                    &local_minor_status,
+                    &(gss_buffer_desc)
+                    {
+                        .value = data,
+                        .length = len
+                    },
+                    data_set);
+
+                if(GSS_ERROR(major_status))
+                {
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_minor_status,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_BUFFER);
+                    goto unlock_exit;
+                }
+            }
+        }
+    }
+#endif
+    else if(((gss_OID_desc *)desired_object)->length !=
        gss_ext_x509_cert_chain_oid->length ||
        memcmp(((gss_OID_desc *)desired_object)->elements,
               gss_ext_x509_cert_chain_oid->elements,

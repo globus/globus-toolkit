@@ -6,7 +6,7 @@ Name:		globus-gsi-sysconfig
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.11
+Version:	7.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI System Config Library
@@ -183,6 +183,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 05 2017 Globus Toolkit <support@globus.org> - 7.0-1
+- Add SNI vhost cred dir support
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 6.11-1
 - Update for el.5 openssl101e
 

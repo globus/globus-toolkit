@@ -1,3 +1,9 @@
+globus-gss-assist (11.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add new function gss_assist_read_vhost_cred_dir() for SNI server
+
+ -- Globus Toolkit <support@globus.org>  Tue, 05 Sep 2017 14:39:11 -0400
+
 globus-gss-assist (10.21-1+gt6.@distro@) @distro@; urgency=low
 
   * Slow grid-mapfile-delete-entry (issue #84)

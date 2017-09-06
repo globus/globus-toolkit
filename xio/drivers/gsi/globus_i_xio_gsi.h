@@ -184,6 +184,9 @@ typedef struct
     gss_name_t                          target_name;
     globus_bool_t                       init;
     globus_xio_gsi_authorization_mode_t authz_mode;
+    char *                              credentials_dir;
+    unsigned char *                     alpn_list;
+    size_t                              alpn_list_len;
 } globus_l_attr_t;
 
 /*
@@ -226,6 +229,8 @@ typedef struct
     int                                 connection_id;
     globus_xio_driver_handle_t          xio_driver_handle;
     char *                              host_name;
+    gss_cred_id_t                      *cred_array;
+    size_t                              cred_array_length;
 } globus_l_handle_t;
 
 /*

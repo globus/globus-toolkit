@@ -6,7 +6,7 @@ Name:		globus-xio-gsi-driver
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	3.11
+Version:	4.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GSI Driver
@@ -18,9 +18,9 @@ Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	globus-gssapi-error-devel >= 4
-BuildRequires:	globus-gss-assist-devel >= 8
+BuildRequires:	globus-gss-assist-devel >= 11
 BuildRequires:	globus-xio-devel >= 3
-BuildRequires:	globus-gssapi-gsi-devel >= 9
+BuildRequires:	globus-gssapi-gsi-devel >= 13
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-doc >= 3
 BuildRequires:	doxygen
@@ -53,9 +53,9 @@ Summary:	Globus Toolkit - Globus XIO GSI Driver Development Files
 Group:		Development/Libraries
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-gssapi-error-devel%{?_isa} >= 4
-Requires:	globus-gss-assist-devel%{?_isa} >= 8
+Requires:	globus-gss-assist-devel%{?_isa} >= 11
 Requires:	globus-xio-devel%{?_isa} >= 3
-Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+Requires:	globus-gssapi-gsi-devel%{?_isa} >= 13
 
 %package doc
 Summary:	Globus Toolkit - Globus XIO GSI Driver Documentation Files
@@ -154,6 +154,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 05 2017 Globus Toolkit <support@globus.org> - 4.0-1
+- Add SNI and ALPN support via cntls
+
 * Fri Apr 14 2017 Globus Toolkit <support@globus.org> - 3.11-1
 - Fix crash when checking for anonymous GSS name when name comparison fails
 

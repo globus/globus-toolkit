@@ -282,16 +282,20 @@ globus_ftp_control_server_listen(
     globus_ftp_control_server_callback_t        callback,
     void *                                      callback_arg)
 {
+    globus_result_t                             result = GLOBUS_SUCCESS;
     globus_io_attr_t                            attr;
     globus_io_tcpattr_init(&attr);
 
-    return globus_ftp_control_server_listen_ex(
+    result = globus_ftp_control_server_listen_ex(
         server_handle,
         &attr,
         port,
         callback,
-        callback_arg
-    );
+        callback_arg);
+
+    globus_io_tcpattr_destroy(&attr);
+
+    return result;
 }
 
 /**
@@ -1025,8 +1029,8 @@ globus_ftp_control_server_accept(
     globus_ftp_control_callback_t               callback,
     void *                                      callback_arg)
 {
+    globus_io_attr_t                            listener_attr = NULL;
     globus_result_t                             rc;
-    globus_io_attr_t                            attr;
     globus_bool_t                               call_close_cb = GLOBUS_FALSE;
 
     if(handle == GLOBUS_NULL)
@@ -1087,17 +1091,16 @@ globus_ftp_control_server_accept(
     }
     globus_mutex_unlock(&(handle->cc_handle.mutex));
 
-    globus_io_tcpattr_init(&attr);
-    globus_io_attr_set_socket_oobinline(&attr, GLOBUS_TRUE);
-    globus_io_attr_set_tcp_nodelay(&attr, GLOBUS_TRUE);
+    rc = globus_io_tcp_get_attr(
+        &listener->io_handle,
+        &listener_attr);
 
     rc=globus_io_tcp_register_accept(&(listener->io_handle),
-                                     &attr,
+                                     &listener_attr,
                                      &(handle->cc_handle.io_handle),
                                      globus_l_ftp_control_accept_cb,
                                      (void *) handle);
-    
-    globus_io_tcpattr_destroy(&attr);
+    globus_io_tcpattr_destroy(&listener_attr);
     
     if(rc != GLOBUS_SUCCESS)
     {
@@ -1297,6 +1300,112 @@ globus_ftp_control_server_authenticate(
     {
         error=globus_error_get(rc);
         goto error_std;
+    }
+
+    if (auth_requirements & GLOBUS_FTP_CONTROL_AUTH_REQ_TLS)
+    {
+        globus_xio_handle_t             xio_handle = NULL;
+        OM_uint32                       maj_stat = GSS_S_COMPLETE;
+        OM_uint32                       min_stat = GSS_S_COMPLETE;
+        OM_uint32                       ctx_flags = 0;
+        gss_name_t                      src_name = GSS_C_NO_NAME;
+        gss_buffer_desc                 subject_buf = GSS_C_EMPTY_BUFFER;
+
+        rc = globus_io_handle_get_xio_handle(
+            &handle->cc_handle.io_handle,
+            &xio_handle);
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+            error = globus_error_get(rc);
+            goto error_std;
+        }
+
+        rc = globus_xio_handle_cntl(
+            xio_handle,
+            globus_io_compat_get_gsi_driver(),
+            GLOBUS_XIO_GSI_GET_CONTEXT,
+            &cc_handle->auth_info.auth_gssapi_context);
+
+        if (rc != GLOBUS_SUCCESS
+            || cc_handle->auth_info.auth_gssapi_context
+                == GSS_C_NO_CONTEXT)
+        {
+            error = globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                (rc != GLOBUS_SUCCESS) ? globus_error_get(rc) : NULL,
+                _FCSL("TLS control channel not established"));
+
+            goto error_std;
+        }
+
+        cc_handle->use_auth = GLOBUS_FALSE;
+        /*
+         * Boolean overload to indicate that authenticated but not use
+         * ENC/MIC commands
+         */
+        cc_handle->auth_info.authenticated = GLOBUS_TRUE + 1;
+
+        maj_stat = gss_inquire_context(
+            &min_stat,
+            cc_handle->auth_info.auth_gssapi_context,
+            &cc_handle->auth_info.target_name,
+            NULL,
+            NULL,
+            NULL,
+            &ctx_flags,
+            NULL,
+            NULL);
+
+        if (maj_stat != GSS_S_COMPLETE)
+        {
+            error = globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                globus_error_get(min_stat),
+                _FCSL("gss_inquire_context failed"));
+            goto error_std;
+        }
+
+        if (ctx_flags & GSS_C_CONF_FLAG)
+        {
+            cc_handle->auth_info.encrypt = GLOBUS_TRUE;
+        }
+
+        maj_stat = gss_display_name(
+            &min_stat,
+            cc_handle->auth_info.target_name,
+            &subject_buf,
+            NULL);
+
+        if (maj_stat != GSS_S_COMPLETE)
+        {
+            error = globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                NULL,
+                _FCSL("gss_display_name failed"));
+            goto error_std;
+        }
+        cc_handle->auth_info.auth_gssapi_subject
+            = malloc(subject_buf.length + 1);
+    
+        if (cc_handle->auth_info.auth_gssapi_subject == NULL)
+        {
+            gss_release_buffer(&min_stat, &subject_buf);
+           
+            error = globus_error_construct_string(
+                    GLOBUS_FTP_CONTROL_MODULE,
+                    GLOBUS_NULL,
+                    _FCSL("globus_l_ftp_control_auth_read_cb: malloc failed"));
+            goto error_std;
+        }
+
+        snprintf(
+            cc_handle->auth_info.auth_gssapi_subject,
+            subject_buf.length + 1,
+            "%s",
+            subject_buf.value);
+
+        gss_release_buffer(&min_stat, &subject_buf);
     }
 
     rc=globus_io_register_read(&cc_handle->io_handle,
@@ -1560,8 +1669,6 @@ globus_l_ftp_control_auth_read_cb(
         goto error_auth_destroy;
     }
    
-/*    cc_handle->bytes_read == 0 ? i = 1 : i = cc_handle->bytes_read; 
- */      
     cc_handle->bytes_read += nbytes;
 
     for(i = 1;i<cc_handle->bytes_read;i++)
@@ -1760,7 +1867,7 @@ globus_l_ftp_control_auth_read_cb(
                         GLOBUS_NULL);
 
                     cc_handle->auth_info.auth_gssapi_subject =
-                        globus_libc_malloc(sizeof(char)*
+                        malloc(sizeof(char)*
                                            (subject_buf.length + 1));
                     
                     if(cc_handle->auth_info.auth_gssapi_subject == GLOBUS_NULL)
@@ -1781,6 +1888,7 @@ globus_l_ftp_control_auth_read_cb(
                     cc_handle->auth_info.auth_gssapi_subject[
                         subject_buf.length] = '\0';
                     
+                    gss_release_buffer(&min_stat, &subject_buf);
 
                     if(cc_handle->auth_requirements & 
                        GLOBUS_FTP_CONTROL_AUTH_REQ_USER)

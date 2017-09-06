@@ -135,6 +135,7 @@ GSS_CALLCONV gss_accept_sec_context(
             &local_minor_status,
             &context,
             actual_mech,
+            GSS_C_NO_NAME,
             acceptor_cred_handle,
             GSS_C_ACCEPT,
             nreq_flags);

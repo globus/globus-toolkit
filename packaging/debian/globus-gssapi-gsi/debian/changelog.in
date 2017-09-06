@@ -1,3 +1,10 @@
+globus-gssapi-gsi (13.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add SNI vhost cred dir support
+  * Add optional ALPN processing
+
+ -- Globus Toolkit <support@globus.org>  Tue, 05 Sep 2017 14:38:00 -0400
+
 globus-gssapi-gsi (12.17-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix indicate_mechs_test when using openssl v1.1.0

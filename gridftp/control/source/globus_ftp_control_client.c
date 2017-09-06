@@ -298,6 +298,105 @@ globus_ftp_control_handle_destroy(
 }
 /* globus_ftp_control_handle_destroy() */
 
+globus_result_t
+globus_ftp_control_use_tls(
+    globus_ftp_control_handle_t *		handle,
+    globus_ftp_control_auth_info_t *            auth_info)
+{
+    globus_result_t                             rc = GLOBUS_SUCCESS;
+    globus_xio_attr_t                           attr = NULL;
+
+    if (auth_info->req_flags & GSS_C_ANON_FLAG)
+    {
+        rc = globus_io_attr_set_secure_authentication_mode(
+            &handle->cc_handle.io_attr,
+            GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS,
+            NULL);
+    }
+    else
+    {
+        rc = globus_io_attr_set_secure_authentication_mode(
+            &handle->cc_handle.io_attr,
+            GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
+            auth_info->credential_handle);
+    }
+    if (auth_info->auth_gssapi_subject != NULL)
+    {
+        globus_io_secure_authorization_data_t   data = NULL;
+
+        rc = globus_io_secure_authorization_data_initialize(
+            &data);
+
+        if (rc == GLOBUS_SUCCESS)
+        {
+            rc = globus_io_secure_authorization_data_set_identity(
+                &data,
+                auth_info->auth_gssapi_subject);
+        }
+        
+        if (rc == GLOBUS_SUCCESS)
+        {
+            rc = globus_io_attr_set_secure_authorization_mode(
+                &handle->cc_handle.io_attr,
+                GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
+                &data);
+        }
+        globus_io_secure_authorization_data_destroy(&data);
+    }
+    else
+    {
+        rc = globus_io_attr_set_secure_authorization_mode(
+            &handle->cc_handle.io_attr,
+            GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE,
+            NULL);
+    }
+
+    if (auth_info->req_flags & GSS_C_DELEG_FLAG)
+    {
+        /* Client requests delegation */
+        rc = globus_io_attr_set_secure_delegation_mode(
+            &handle->cc_handle.io_attr,
+            ((auth_info->req_flags
+                & GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG) != 0)
+                ? GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY
+                : GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY);
+    }
+    else
+    {
+        rc = globus_io_attr_set_secure_delegation_mode(
+            &handle->cc_handle.io_attr,
+            GLOBUS_IO_SECURE_DELEGATION_MODE_NONE);
+    }
+    if (rc == GLOBUS_SUCCESS)
+    {
+        rc = globus_io_attr_set_secure_channel_mode(
+            &handle->cc_handle.io_attr,
+            GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP);
+    }
+
+    if (rc == GLOBUS_SUCCESS)
+    {
+        rc = globus_io_attr_get_xio_attr(
+            &handle->cc_handle.io_attr,
+            &attr);
+    }
+
+    if (rc == GLOBUS_SUCCESS)
+    {
+        rc = globus_xio_attr_cntl(
+            attr,
+            globus_io_compat_get_gsi_driver(),
+            GLOBUS_XIO_GSI_SET_APPLICATION_PROTOCOLS,
+            (char *[])
+            {
+                "ftp",
+                NULL,
+            });
+    }
+    return rc;
+}
+/* globus_ftp_control_use_tls() */
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 globus_result_t
 globus_i_ftp_control_client_set_netlogger(
@@ -1759,6 +1858,19 @@ globus_ftp_control_authenticate_ex(
 
     if(use_auth == GLOBUS_FALSE)
     {
+        globus_io_secure_authentication_mode_t 
+            mode = GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE;
+
+        rc = globus_io_attr_get_secure_authentication_mode(
+            &handle->cc_handle.io_attr,
+            &mode,
+            NULL);
+
+        if (rc == GLOBUS_SUCCESS
+            && mode != GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+        {
+            handle->cc_handle.auth_info.authenticated = GLOBUS_TRUE + 1;
+        }
 
         auth_cb_arg->cmd=GLOBUS_I_FTP_USER;
 
@@ -4055,7 +4167,8 @@ globus_i_ftp_control_auth_info_destroy(
 	    
 	}
 
-	if(auth_info->auth_gssapi_context != GSS_C_NO_CONTEXT)
+	if(auth_info->authenticated == GLOBUS_TRUE
+            && auth_info->auth_gssapi_context != GSS_C_NO_CONTEXT)
 	{
 	    major_status=gss_delete_sec_context(&minor_status,
 						&(auth_info->

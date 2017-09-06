@@ -176,6 +176,7 @@ GSS_CALLCONV gss_init_sec_context(
             globus_i_gsi_gss_create_and_fill_context(&local_minor_status,
                                                      &context,
                                                      actual_mech,
+                                                     target_name,
                                                      initiator_cred_handle,
                                                      GSS_C_INITIATE,
                                                      req_flags);

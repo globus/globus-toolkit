@@ -16,18 +16,21 @@ check_DATA_real = \
         192.168.1.1.example.org.pem \
         192.168.1.1-2.example.org.pem
 
-testcred_links = testcred.link testcred-nocn.link
-signingpolicy_links = testcred.signing_policy testcred-nocn.signing_policy
+testcred_links = testcred.link
+signingpolicy_links = testcred.signing_policy
 
 check_DATA = $(check_DATA_real) \
         testcred.cakey \
         testcred.cacert \
         testcred.key \
         testcred.cert \
+        testcred.srl \
+        testcred-dns1.key \
+        testcred-dns1.cert \
+        testcred-dns2.key \
+        testcred-dns2.cert \
         $(testcred_links) \
 	$(signingpolicy_links) \
-        testcred-nocn.cakey \
-        testcred-nocn.cacert \
         testcred-nocn.key \
         testcred-nocn.cert \
         copy_cases \
@@ -38,9 +41,11 @@ check_SCRIPTS = \
         compare-name-test-gt2.pl \
         compare-name-test-rfc2818.pl \
         gssapi-thread-test-wrapper \
+        import-cred-test.pl \
 	mech-compatibility-test.pl
 
 check_PROGRAMS= \
+	alpn-test \
         compare-name-test \
         duplicate-name-test \
 	error-test \
@@ -55,6 +60,7 @@ check_PROGRAMS= \
 	gssapi-inquire-sec-ctx-by-oid-test \
 	gssapi-acquire-test \
 	gssapi-module-test \
+        import-cred-test \
         indicate-mechs-test \
         inquire-names-for-mech-test \
 	mech-compatibility-test \
@@ -62,11 +68,13 @@ check_PROGRAMS= \
         nonterminated-export-cred-test \
         release-name-test \
         gssapi-thread-test \
+	sni-test \
 	wrap-test \
         unwrap-null-test
 
 if ENABLE_TESTS
 TESTS = $(check_SCRIPTS) \
+	alpn-test \
         duplicate-name-test \
 	error-test \
         inquire-names-for-mech-test \
@@ -84,6 +92,7 @@ TESTS = $(check_SCRIPTS) \
 	mic-test \
         nonterminated-export-cred-test \
         release-name-test \
+	sni-test \
 	wrap-test \
         unwrap-null-test
 
@@ -98,10 +107,17 @@ X509_CERT_DIR = $(abs_builddir)
 endif
 
 TESTS_ENVIRONMENT = export \
+    LIBTOOL="$(LIBTOOL)" \
     X509_USER_CERT=testcred.cert \
     X509_USER_KEY=testcred.key \
-    X509_USER_CERT2=testcred-nocn.cert \
-    X509_USER_KEY2=testcred-nocn.key \
+    X509_USER_CERT1=testcred-dns1.cert \
+    X509_USER_KEY1=testcred-dns1.key \
+    X509_USER_CERT2=testcred-dns2.cert \
+    X509_USER_KEY2=testcred-dns2.key \
+    X509_USER_CERT=testcred.cert \
+    X509_USER_KEY=testcred.key \
+    X509_USER_CERT_NOCN=testcred-nocn.cert \
+    X509_USER_KEY_NOCN=testcred-nocn.key \
     X509_CERT_DIR=$(X509_CERT_DIR) \
     THREAD_MODELS=$(GLOBUS_THREAD_MODELS) \
     TEST_DATA_DIR=$(TEST_DATA_DIR) \
@@ -148,12 +164,12 @@ release_name_test_SOURCES = release_name_test.c
 duplicate_name_test_SOURCES = duplicate_name_test.c
 indicate_mechs_test_SOURCES = indicate_mechs_test.c
 nonterminated_export_cred_test_SOURCES = nonterminated_export_cred_test.c
+import_cred_test_SOURCES = import_cred_test.c
+import_cred_test_CPPFLAGS = $(AM_CPPFLAGS)
 
 if ENABLE_TESTS
 testcred.cacert: testcred.cnf
 	umask 077; $(OPENSSL) req -passout pass:globus -subj "/CN=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
-testcred-nocn.cacert: testcred-nocn.cnf
-	umask 077; $(OPENSSL) req -passin pass:globus -subj "/userId=ca" -new -x509 -extensions v3_ca -keyout $*.cakey -out $@ -config $<
 
 .cacert.cakey:
 	:
@@ -173,17 +189,26 @@ testcred-nocn.cacert: testcred-nocn.cnf
 	echo "cond_subjects     globus       '\"/*\"'" >> $${policyfile}; \
 	echo $${policyfile} >> $@
 
-testcred.key testcred-nocn.key:
+
+.signing_policy.srl:
+	echo 01 > $@
+
+testcred.key testcred-nocn.key testcred-dns1.key testcred-dns2.key:
 	umask 077; $(OPENSSL) genrsa 1024 > $@
 
-testcred-nocn.req: testcred-nocn.key testcred-nocn.signing_policy
-	$(OPENSSL) req -subj "/userId=test" -new -config $*.cnf -key $< > $@
+testcred-nocn.req: testcred-nocn.key testcred.signing_policy
+	$(OPENSSL) req -subj "/userId=test" -new -config testcred.cnf -key $< > $@
 
 testcred.req: testcred.key testcred.signing_policy
-	$(OPENSSL) req -subj "/CN=test" -new -config $*.cnf -key $< > $@
+	$(OPENSSL) req -subj "/CN=test" -new -config testcred.cnf -key $< > $@
+
+testcred-dns1.req: testcred-dns1.key testcred.signing_policy
+	$(OPENSSL) req -subj "/CN=dns1" -reqexts testcred-dns1 -new -config testcred.cnf -key $< > $@
+testcred-dns2.req: testcred-dns2.key testcred.signing_policy
+	$(OPENSSL) req -subj "/CN=dns2" -reqexts testcred-dns2 -new -config testcred.cnf -key $< > $@
 
 .req.cert:
-	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in $< -CA $*.cacert -CAkey $*.cakey > $@
+	umask 022; $(OPENSSL) x509 -extensions $* -extfile testcred.cnf -req -passin pass:globus -days 365 -CAkey testcred.cakey -CA testcred.cacert -in $< > $@
 endif
 
 EXTRA_DIST = \
@@ -197,6 +222,8 @@ CLEANFILES = testcred.key testcred.cert testcred.req \
              testcred-nocn.key testcred-nocn.cert testcred-nocn.req \
 	     testcred.cacert testcred-nocn.cacert testcred.srl \
 	     testcred.cakey testcred-nocn.cakey testcred-nocn.srl \
+	     testcred-dns1.cert testcred-dns1.key \
+	     testcred-dns2.cert testcred-dns2.key \
              cert_chain.txt $(THREAD_TESTS)
 
 copy_cases:

@@ -170,7 +170,8 @@ typedef enum globus_gsc_response_e
 typedef enum globus_gsc_security_type_e
 {
     GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE = 0x01,
-    GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI = 0x02
+    GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI = 0x02,
+    GLOBUS_GRIDFTP_SERVER_LIBRARY_TLS = 0x04
 } globus_gridftp_server_control_security_type_t;
 
 typedef enum globus_gsc_layout_e

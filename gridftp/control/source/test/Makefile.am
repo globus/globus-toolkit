@@ -1,4 +1,5 @@
 check_PROGRAMS = \
+    connect_test \
     data_test \
     get_lingering_close \
     globus_ftp_control_test \
@@ -40,6 +41,9 @@ globus_ftp_control_test_SOURCES = \
     simple_data_test.c \
     simple_dir_test.c 
 
+connect_test_LDADD = $(test_ldadd)
+connect_test_LDFLAGS = $(test_ldflags)
+
 get_lingering_close_LDADD = $(test_ldadd)
 get_lingering_close_LDFLAGS = $(test_ldflags)
 
@@ -54,6 +58,7 @@ test_server_LDFLAGS = $(test_ldflags)
 
 if ENABLE_TESTS
 TESTS = \
+    connect_test \
     data_test \
     pipe_test \
     $(check_SCRIPTS)

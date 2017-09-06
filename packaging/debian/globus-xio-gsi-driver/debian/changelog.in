@@ -1,3 +1,9 @@
+globus-xio-gsi-driver (4.0-1+gt6.@distro@) @distro@; urgency=low
+
+  * Add SNI and ALPN support via cntls
+
+ -- Globus Toolkit <support@globus.org>  Tue, 05 Sep 2017 14:40:33 -0400
+
 globus-xio-gsi-driver (3.11-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix crash when checking for anonymous GSS name when name comparison fails

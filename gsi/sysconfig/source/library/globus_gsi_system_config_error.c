@@ -77,9 +77,6 @@ globus_i_gsi_sysconfig_openssl_error_result(
     globus_object_t *                   error_object;
     globus_result_t                     result;
 
-    static char *                       _function_name_ =
-        "globus_i_gsi_sysconfig_openssl_error_result";
-    
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
     error_object = 
@@ -117,9 +114,6 @@ globus_i_gsi_sysconfig_error_result(
 {
     globus_object_t *                   error_object;
     globus_result_t                     result;
-
-    static char *                       _function_name_ =
-        "globus_i_gsi_sysconfig_error_result";
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
@@ -160,9 +154,6 @@ globus_i_gsi_sysconfig_error_chain_result(
     globus_object_t *                   error_object;
     globus_result_t                     result;
 
-    static char *                       _function_name_ =
-        "globus_i_gsi_sysconfig_error_chain_result";
-    
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
     
     error_object =
