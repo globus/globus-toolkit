@@ -181,7 +181,6 @@ testcred.cacert: testcred.cnf
         echo "$$linkname" > $@
 
 .link.signing_policy:
-	echo 01 > $*.srl
 	linkname=`cat $<`; \
 	policyfile=$${linkname%.0}.signing_policy; \
 	echo "access_id_CA      X509         '/CN=ca'" > $${policyfile}; \
@@ -196,19 +195,25 @@ testcred.cacert: testcred.cnf
 testcred.key testcred-nocn.key testcred-dns1.key testcred-dns2.key:
 	umask 077; $(OPENSSL) genrsa 1024 > $@
 
-testcred-nocn.req: testcred-nocn.key testcred.signing_policy
-	$(OPENSSL) req -subj "/userId=test" -new -config testcred.cnf -key $< > $@
-
-testcred.req: testcred.key testcred.signing_policy
+testcred.req: testcred.key
 	$(OPENSSL) req -subj "/CN=test" -new -config testcred.cnf -key $< > $@
 
-testcred-dns1.req: testcred-dns1.key testcred.signing_policy
+testcred-nocn.req: testcred-nocn.key
+	$(OPENSSL) req -subj "/userId=test" -new -config testcred.cnf -key $< > $@
+
+testcred-dns1.req: testcred-dns1.key
 	$(OPENSSL) req -subj "/CN=dns1" -reqexts testcred-dns1 -new -config testcred.cnf -key $< > $@
-testcred-dns2.req: testcred-dns2.key testcred.signing_policy
+
+testcred-dns2.req: testcred-dns2.key
 	$(OPENSSL) req -subj "/CN=dns2" -reqexts testcred-dns2 -new -config testcred.cnf -key $< > $@
 
 .req.cert:
 	umask 022; $(OPENSSL) x509 -extensions $* -extfile testcred.cnf -req -passin pass:globus -days 365 -CAkey testcred.cakey -CA testcred.cacert -in $< > $@
+
+testcred.cert: testcred.srl
+testcred-nocn.cert: testcred.cert
+testcred-dns1.cert: testcred-nocn.cert
+testcred-dns2.cert: testcred-dns1.cert
 endif
 
 EXTRA_DIST = \
