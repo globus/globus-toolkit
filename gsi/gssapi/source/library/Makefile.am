@@ -50,7 +50,8 @@ libglobus_gssapi_gsi_la_SOURCES = \
 	inquire_sec_context_by_oid.c \
 	buffer_set.c \
 	set_sec_context_option.c \
-	globus_ssl_locl.h
+	globus_ssl_locl.h \
+        read_vhost_cred_dir.c
 
 libglobus_gssapi_gsi_la_CPPFLAGS = -I$(top_builddir) $(PACKAGE_DEP_CFLAGS) $(OPENSSL_CFLAGS)
 libglobus_gssapi_gsi_la_LIBADD = $(PACKAGE_DEP_LIBS) $(OPENSSL_LIBS)

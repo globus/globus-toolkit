@@ -77,14 +77,18 @@ TESTS_ENVIRONMENT = export \
 	echo 01 > $@
 
 # Test Cert/Key
-testcred.key testcred1.key testcred2.key: testcred.srl
+testcred.key testcred1.key testcred2.key:
 	umask 077; $(OPENSSL) genrsa -out $@ 1024
+
 .key.req:
 	$(OPENSSL) req -subj "/CN=$*" -new -key $< -out $@ -config testcred.cnf
 
 .req.cert:
 	umask 022; $(OPENSSL) x509 -passin pass:globus -req -days 365 -in $*.req -CA testcred.cacert -CAkey testcred.cakey -out $@
 
+testcred.cert: testcred.srl
+testcred1.cert: testcred.cert
+testcred2.cert: testcred1.cert
 
 CLEANFILES = \
 	testcred.key testcred.cert testcred.req \

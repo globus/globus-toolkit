@@ -6,7 +6,7 @@ Name:		globus-gss-assist
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	11.0
+Version:	11.1
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI Assist library
@@ -18,7 +18,7 @@ Source:	http://toolkit.globus.org/ftppub/gt6/packages/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	globus-gsi-cert-utils-devel >= 8
-BuildRequires:	globus-gsi-sysconfig-devel >= 6
+BuildRequires:	globus-gsi-sysconfig-devel >= 7
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-callout-devel >= 2
 BuildRequires:	globus-gssapi-gsi-devel >= 13
@@ -70,7 +70,7 @@ Group:		Development/Libraries
 Requires:	%{mainpkg}%{?_isa} = %{version}-%{release}
 Requires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
 Requires:	globus-gsi-credential-devel%{?_isa} >= 6
-Requires:	globus-gsi-sysconfig-devel%{?_isa} >= 6
+Requires:	globus-gsi-sysconfig-devel%{?_isa} >= 7
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-callout-devel%{?_isa} >= 2
 Requires:	globus-gssapi-gsi-devel%{?_isa} >= 13
@@ -194,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Tue Sep 12 2017 Globus Toolkit <support@globus.org> - 11.1-1
+- race condition and dependency packaging fixes
+
 * Tue Sep 05 2017 Globus Toolkit <support@globus.org> - 11.0-1
 - Add new function gss_assist_read_vhost_cred_dir() for SNI server
 

@@ -1,3 +1,9 @@
+globus-gss-assist (11.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * race condition and dependency packaging fixes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 12 Sep 2017 16:25:40 -0400
+
 globus-gss-assist (11.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Add new function gss_assist_read_vhost_cred_dir() for SNI server
