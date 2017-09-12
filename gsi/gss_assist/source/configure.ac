@@ -5,7 +5,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
 AC_SUBST([AGE_VERSION], [8])
-AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gsi-sysconfig >= 6, globus-gsi-cert-utils >= 8, globus-gssapi-gsi >= 13, globus-callout >= 2, globus-gsi-credential >= 6"])
+AC_SUBST([PACKAGE_DEPS], ["globus-common >= 14, globus-gsi-sysconfig >= 7, globus-gsi-cert-utils >= 8, globus-gssapi-gsi >= 13, globus-callout >= 2, globus-gsi-credential >= 6"])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests tar-pax])
