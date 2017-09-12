@@ -336,6 +336,12 @@ globus_i_gsi_gssapi_get_hostname(
     OM_uint32 *                         minor_status,
     gss_name_desc *                     name);
 
+OM_uint32
+globus_i_gss_read_vhost_cred_dir(
+    OM_uint32                          *minor_status,
+    const char                         *dirname,
+    gss_cred_id_t                     **output_credentials_array,
+    size_t                             *output_credentials_array_count);
 
 typedef enum
 {

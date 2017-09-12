@@ -19,21 +19,25 @@ check_DATA_real = \
 testcred_links = testcred.link
 signingpolicy_links = testcred.signing_policy
 
-check_DATA = $(check_DATA_real) \
-        testcred.cakey \
-        testcred.cacert \
+test_creds = \
         testcred.key \
         testcred.cert \
-        testcred.srl \
         testcred-dns1.key \
         testcred-dns1.cert \
         testcred-dns2.key \
-        testcred-dns2.cert \
+        testcred-dns2.cert
+
+check_DATA = $(check_DATA_real) \
+        testcred.cakey \
+        testcred.cacert \
+        testcred.srl \
+        $(test_creds) \
         $(testcred_links) \
 	$(signingpolicy_links) \
         testcred-nocn.key \
         testcred-nocn.cert \
         copy_cases \
+        vhost_setup \
         $(THREAD_TESTS)
 
 check_SCRIPTS = \
@@ -226,6 +230,15 @@ CLEANFILES = testcred.key testcred.cert testcred.req \
 	     testcred-dns2.cert testcred-dns2.key \
              cert_chain.txt $(THREAD_TESTS)
 
+vhost_setup: $(test_creds)
+	mkdir -p vhostdir;
+	for credfile in $?; do \
+            base=$${credfile%%.*}; \
+            mkdir -p vhostdir/$${base}; \
+            cp $${credfile} vhostdir/$${base}/$${credfile}.pem;\
+        done;
+	touch $@
+
 copy_cases:
 	if [ "$(VPATH)" != "" ]; then \
             for d in $(check_DATA_real); do \
@@ -252,5 +265,6 @@ clean-local:
             done; \
         fi
 	rm -f copy_cases
+	rm -f vhostdir vhost_setup
 
 SUFFIXES = .key .req .cert .cacert .cakey .link .signing_policy

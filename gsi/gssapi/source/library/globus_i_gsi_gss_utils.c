@@ -399,16 +399,29 @@ globus_i_gsi_gss_create_and_fill_context(
     /* Set up the SNI callback if this is the accept side, and the app
      * has provided an array of credentials to use
      */
-    if (cred_usage != GSS_C_INITIATE &&
-        context->sni_credentials != NULL)
+    if (cred_usage != GSS_C_INITIATE)
     {
-        SSL_CTX_set_tlsext_servername_callback(
+        if (context->sni_credentials == NULL
+            && getenv("X509_VHOST_CRED_DIR") != NULL)
+        {
+            size_t                      sni_creds_len = 0;
+
+            globus_i_gss_read_vhost_cred_dir(
+                &local_minor_status,
+                NULL,
+                &context->sni_credentials,
+                &context->sni_credentials_count);
+        }
+        if (context->sni_credentials_count > 0)
+        {
+            SSL_CTX_set_tlsext_servername_callback(
                 context->cred_handle->ssl_context,
                 globus_l_gsi_gss_servername_callback);
 
-        SSL_CTX_set_tlsext_servername_arg(
+            SSL_CTX_set_tlsext_servername_arg(
                 context->cred_handle->ssl_context,
                 context);
+        }
     }
 #if OPENSSL_VERSION_NUMBER >= 0x10002000L
     if (cred_usage != GSS_C_INITIATE
