@@ -4774,7 +4774,9 @@ globus_ftp_control_data_read(
                           GLOBUS_NULL,
                     _FCSL("Handle not in the proper state:transfer handle == NULL"));
         }
-        else if(dc_handle->state != GLOBUS_FTP_DATA_STATE_CONNECT_READ)
+        else if(dc_handle->state != GLOBUS_FTP_DATA_STATE_CONNECT_READ && 
+            (dc_handle->state != GLOBUS_FTP_DATA_STATE_EOF ||
+                   dc_handle->transfer_handle->direction != GLOBUS_FTP_DATA_STATE_CONNECT_READ))
         {
             err = dc_handle->connect_error
                 ? globus_object_copy(dc_handle->connect_error)
