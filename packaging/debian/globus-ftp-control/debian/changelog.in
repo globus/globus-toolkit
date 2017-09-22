@@ -1,3 +1,9 @@
+globus-ftp-control (8.1-1+gt6.@distro@) @distro@; urgency=low
+
+  * reading when eof will result in callback indicating eof instead of error
+
+ -- Globus Toolkit <support@globus.org>  Fri, 22 Sep 2017 11:38:32 -0500
+
 globus-ftp-control (8.0-1+gt6.@distro@) @distro@; urgency=low
 
   * Add function globus_ftp_control_use_tls() for TLS control channel
