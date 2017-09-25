@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gass_copy],[9.27],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_gass_copy],[9.28],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -51,11 +51,14 @@ PKG_CHECK_EXISTS([globus-xio-gsi-driver >= 2], [
     GSI_DRIVER_CFLAGS="$($PKG_CONFIG --cflags globus-xio-gsi-driver)"
     GSI_DRIVER_DLOPEN="$($PKG_CONFIG --variable=dlopen globus-xio-gsi-driver)"
     GSI_DRIVER_DLPREOPEN="$($PKG_CONFIG --variable=dlpreopen globus-xio-gsi-driver)"])
+PKG_CHECK_EXISTS([globus-xio-popen-driver >= 3], [
+    POPEN_DRIVER_DLOPEN="$($PKG_CONFIG --variable=dlopen globus-xio-popen-driver)"])
 PKG_CHECK_EXISTS([globus-xio-pipe-driver >= 2], [
     PIPE_DRIVER_LIBS="$($PKG_CONFIG --variable=dlopen globus-xio-pipe-driver)"])
 AC_SUBST([GSI_DRIVER_CFLAGS])
 AC_SUBST([GSI_DRIVER_DLOPEN])
 AC_SUBST([GSI_DRIVER_DLPREOPEN])
+AC_SUBST([POPEN_DRIVER_DLOPEN])
 AC_SUBST([PIPE_DRIVER_LIBS])
 
 PKG_CHECK_EXISTS([globus-gridftp-server], [

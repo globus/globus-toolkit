@@ -6,7 +6,7 @@ Name:		globus-gass-copy
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	9.27
+Version:	9.28
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus Gass Copy
@@ -210,6 +210,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Sep 25 2017 Globus Toolkit <support@globus.org> - 9.28-1
+- add popen driver to cygwin static builds
+
 * Fri Apr 21 2017 Globus Toolkit <support@globus.org> - 9.27-1
 - prevent some race conditions
 

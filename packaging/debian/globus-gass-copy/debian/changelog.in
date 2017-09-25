@@ -1,3 +1,9 @@
+globus-gass-copy (9.28-1+gt6.@distro@) @distro@; urgency=low
+
+  * add popen driver to cygwin static builds
+
+ -- Globus Toolkit <support@globus.org>  Mon, 25 Sep 2017 15:23:16 -0500
+
 globus-gass-copy (9.27-1+gt6.@distro@) @distro@; urgency=low
 
   * prevent some race conditions

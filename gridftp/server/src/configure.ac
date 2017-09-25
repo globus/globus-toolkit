@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([globus_gridftp_server],[12.2],[https://github.com/globus/globus-toolkit/issues])
+AC_INIT([globus_gridftp_server],[12.3],[https://github.com/globus/globus-toolkit/issues])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST([MAJOR_VERSION], [${PACKAGE_VERSION%%.*}])
 AC_SUBST([MINOR_VERSION], [${PACKAGE_VERSION##*.}])
@@ -65,7 +65,7 @@ fi
 AC_PROG_CXX
 
 AC_SUBST([MODULE_DLPREOPEN], [$dlpreopen_links])
-AC_SUBST([MODULE_DLOPEN], [$dlpen_links])
+AC_SUBST([MODULE_DLOPEN], [$dlopen_links])
 
 if test "x$link_with_cxx" = x1; then
     AC_MSG_NOTICE([Linking with C++])
