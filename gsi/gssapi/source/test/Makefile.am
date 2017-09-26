@@ -229,10 +229,9 @@ EXTRA_DIST = \
 
 CLEANFILES = testcred.key testcred.cert testcred.req \
              testcred-nocn.key testcred-nocn.cert testcred-nocn.req \
-	     testcred.cacert testcred-nocn.cacert testcred.srl \
-	     testcred.cakey testcred-nocn.cakey testcred-nocn.srl \
-	     testcred-dns1.cert testcred-dns1.key \
-	     testcred-dns2.cert testcred-dns2.key \
+             testcred-dns1.cert testcred-dns1.key testcred-dns1.req \
+             testcred-dns2.cert testcred-dns2.key testcred-dns2.req \
+             testcred.cakey testcred.cacert testcred.srl \
              cert_chain.txt $(THREAD_TESTS)
 
 vhost_setup: $(test_creds)
@@ -270,6 +269,6 @@ clean-local:
             done; \
         fi
 	rm -f copy_cases
-	rm -f vhostdir vhost_setup
+	rm -rf vhostdir vhost_setup
 
 SUFFIXES = .key .req .cert .cacert .cakey .link .signing_policy
