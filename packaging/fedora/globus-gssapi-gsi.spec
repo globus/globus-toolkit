@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	13.1
+Version:	13.2
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -179,6 +179,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Sep 28 2017 Globus Toolkit <support@globus.org> - 13.2-1
+- Fix make clean rule (pull #114)
+- Fix alpn mismatch test
+
 * Tue Sep 12 2017 Globus Toolkit <support@globus.org> - 13.1-1
 - use X509_VHOST_CRED_DIR if set when accepting
 - fix race condition

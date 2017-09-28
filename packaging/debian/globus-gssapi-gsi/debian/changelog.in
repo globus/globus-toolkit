@@ -1,3 +1,10 @@
+globus-gssapi-gsi (13.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix make clean rule (pull #114)
+  * Fix alpn mismatch test
+
+ -- Globus Toolkit <support@globus.org>  Thu, 28 Sep 2017 08:52:47 -0400
+
 globus-gssapi-gsi (13.1-1+gt6.@distro@) @distro@; urgency=low
 
   * use X509_VHOST_CRED_DIR if set when accepting

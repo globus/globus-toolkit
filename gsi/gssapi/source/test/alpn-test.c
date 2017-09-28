@@ -28,7 +28,7 @@ gss_name_t                              names;
 
 static gss_OID_desc gss_ext_server_name_oid_desc =
      {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x09"}; 
-gss_OID_desc * gss_ext_server_name_oid =
+static gss_OID_desc * gss_ext_server_name_oid =
                 &gss_ext_server_name_oid_desc;
 struct test_case
 {
@@ -967,7 +967,12 @@ init_alpn_nomatch(void)
         result = true;
     }
 fail:
-    if (major_status != GSS_S_COMPLETE)
+    if (major_status != GSS_S_COMPLETE
+        && strcmp(why, "accept_sec_context") == 0)
+    {
+        result = true;
+    }
+    else if (major_status != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(
                 stderr,
