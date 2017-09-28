@@ -6,7 +6,7 @@ Name:		globus-ftp-control
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	8.1
+Version:	8.2
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
@@ -176,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Sep 22 2017 Globus Toolkit <support@globus.org> - 8.2-1
+- fix leak
+
 * Fri Sep 22 2017 Globus Toolkit <support@globus.org> - 8.1-1
 - reading when eof will result in callback indicating eof instead of error
 

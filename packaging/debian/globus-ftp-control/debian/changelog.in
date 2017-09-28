@@ -1,3 +1,9 @@
+globus-ftp-control (8.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix leak
+
+ -- Globus Toolkit <support@globus.org>  Fri, 22 Sep 2017 16:16:59 -0400
+
 globus-ftp-control (8.1-1+gt6.@distro@) @distro@; urgency=low
 
   * reading when eof will result in callback indicating eof instead of error

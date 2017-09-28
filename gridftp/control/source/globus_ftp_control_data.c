@@ -6484,8 +6484,8 @@ globus_l_ftp_data_eb_poll(
     globus_off_t                                 tmp_len;
     globus_byte_t *                              tmp_buf;
     int                                          ctr;
-    globus_fifo_t                                remaining_command_q;
-    globus_fifo_t                                remaining_conn_q;
+    globus_fifo_t                                remaining_command_q = NULL;
+    globus_fifo_t                                remaining_conn_q = NULL;
     globus_bool_t                                do_read;
     globus_bool_t                                checked_order = GLOBUS_FALSE;
     globus_i_ftp_dc_transfer_handle_t *          transfer_handle;
@@ -6876,8 +6876,6 @@ globus_l_ftp_data_eb_poll(
                 transfer_handle->order_data)
             {
                 int                     pending_connections;
-                globus_fifo_destroy(&remaining_command_q);
-                globus_fifo_destroy(&remaining_conn_q);
                 
                 pending_connections = 
                     stripe->total_connection_count
@@ -6903,6 +6901,11 @@ globus_l_ftp_data_eb_poll(
                     }
                     transfer_handle->order_ctr++;
                 }
+            }
+            if(transfer_handle->order_data)
+            {
+                globus_fifo_destroy(&remaining_command_q);
+                globus_fifo_destroy(&remaining_conn_q);
             }
         }
     }
