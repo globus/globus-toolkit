@@ -1,3 +1,9 @@
+globus-gram-job-manager-scripts (6.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * Merge #110 from ellert: Fix regex for perl 5.26 compatibility
+
+ -- Globus Toolkit <support@globus.org>  Thu, 28 Sep 2017 08:41:26 -0400
+
 globus-gram-job-manager-scripts (6.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e, replace docbook with asciidoc

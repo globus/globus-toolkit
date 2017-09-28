@@ -7,7 +7,7 @@ Name:		globus-gram-job-manager-scripts
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.9
+Version:	6.10
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
@@ -108,6 +108,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Sep 28 2017 Globus Toolkit <support@globus.org> - 6.10-1
+- Merge #110 from ellert: Fix regex for perl 5.26 compatibility
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 6.9-1
 - Update for el.5 openssl101e, replace docbook with asciidoc
 

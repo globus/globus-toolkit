@@ -37,7 +37,7 @@ sub eval_path
         my $evaluated;
         eval "\$evaluated = \${$1}";
 
-        $path =~ s/\${$varname}/$evaluated/g;
+        $path =~ s/\$\{$varname\}/$evaluated/g;
         if ($path eq $last)
         {
             die "Error evaluating $last\n";

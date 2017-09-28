@@ -13,8 +13,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	17.1
-Release:	2%{?dist}
+Version:	17.2
+Release:	1%{?dist}
 Vendor:		Globus Support
 Summary:	Globus Toolkit - Common Library
 
@@ -252,6 +252,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Thu Sep 28 2017 Globus Toolkit <support@globus.org> - 17.2-1
+- Merge #110 from ellert: Fix regex for perl 5.26 compatibility
+- Fix globus_location_test when GLOBUS_LOCATION environment is set
+
 * Mon Jun 19 2017 Globus Toolkit <support@globus.org> - 17.1-2
 - Skip network tests on fedora 26
 
