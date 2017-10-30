@@ -194,10 +194,6 @@ globus_result_t globus_gsi_cred_handle_attrs_copy(
     globus_gsi_cred_handle_attrs_t      source,
     globus_gsi_cred_handle_attrs_t *    dest);
 
-globus_result_t
-globus_gsi_cred_handle_init_ssl_context(
-    globus_gsi_cred_handle_t            cred_handle);
-
 globus_result_t globus_gsi_cred_read(
     globus_gsi_cred_handle_t            handle,
     X509_NAME *                         desired_subject);

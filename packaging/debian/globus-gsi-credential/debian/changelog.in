@@ -1,3 +1,9 @@
+globus-gsi-credential (7.12-1+gt6.@distro@) @distro@; urgency=low
+
+  * Remove prototype for non-existing function
+
+ -- Globus Toolkit <support@globus.org>  Mon, 30 Oct 2017 19:52:15 +0000
+
 globus-gsi-credential (7.11-1+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e

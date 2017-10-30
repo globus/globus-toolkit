@@ -6,7 +6,7 @@ Name:		globus-gsi-credential
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	7.11
+Version:	7.12
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Credential Library
@@ -186,6 +186,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Oct 30 2017 Globus Toolkit <support@globus.org> - 7.12-1
+- Remove prototype for non-existing function
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 7.11-1
 - Update for el.5 openssl101e
 
