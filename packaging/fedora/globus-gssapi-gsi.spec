@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	13.2
+Version:	13.3
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -179,6 +179,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Oct 30 2017 Globus Toolkit <support@globus.org> - 13.3-1
+- Allow configuration of non-root user to own credentials for root services
+
 * Thu Sep 28 2017 Globus Toolkit <support@globus.org> - 13.2-1
 - Fix make clean rule (pull #114)
 - Fix alpn mismatch test

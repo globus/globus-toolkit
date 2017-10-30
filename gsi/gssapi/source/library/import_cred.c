@@ -208,6 +208,20 @@ GSS_CALLCONV gss_import_cred(
                         local_result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(
                             cert_path);
 
+                        if (local_result != GLOBUS_SUCCESS
+                            && getuid() == 0
+                            && globus_i_gsi_gssapi_vhost_cred_owner != 0)
+                        {
+                            rc = seteuid(globus_i_gsi_gssapi_vhost_cred_owner);
+                            local_result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(
+                                cert_path);
+
+                            if (rc == GLOBUS_SUCCESS)
+                            {
+                                rc = seteuid(0);
+                                assert(rc == 0);
+                            }
+                        }
                         if (local_result != GLOBUS_SUCCESS)
                         {
                             *minor_status = local_result;
@@ -235,6 +249,20 @@ GSS_CALLCONV gss_import_cred(
 
                         local_result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(
                             key_path);
+                        if (local_result != GLOBUS_SUCCESS
+                            && getuid() == 0
+                            && globus_i_gsi_gssapi_vhost_cred_owner != 0)
+                        {
+                            rc = seteuid(globus_i_gsi_gssapi_vhost_cred_owner);
+                            local_result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(
+                                key_path);
+
+                            if (rc == 0)
+                            {
+                                rc = seteuid(0);
+                                assert(rc == 0);
+                            }
+                        }
                         if (local_result != GLOBUS_SUCCESS)
                         {
                             *minor_status = local_result;

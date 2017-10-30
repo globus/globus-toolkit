@@ -1,3 +1,9 @@
+globus-gssapi-gsi (13.3-1+gt6.@distro@) @distro@; urgency=low
+
+  * Allow configuration of non-root user to own credentials for root services
+
+ -- Globus Toolkit <support@globus.org>  Mon, 30 Oct 2017 13:46:22 +0000
+
 globus-gssapi-gsi (13.2-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix make clean rule (pull #114)
