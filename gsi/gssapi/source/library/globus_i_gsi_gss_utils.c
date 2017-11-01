@@ -1595,20 +1595,6 @@ globus_i_gsi_gss_cred_read(
 
     local_result = globus_gsi_cred_read(local_cred_handle, 
                                         (X509_NAME *) desired_subject);
-#ifndef WIN32
-    if(local_result != GLOBUS_SUCCESS
-        && getuid() == 0
-        && globus_i_gsi_gssapi_vhost_cred_owner != 0)
-    {
-        rc = seteuid(globus_i_gsi_gssapi_vhost_cred_owner);
-        local_result = globus_gsi_cred_read(local_cred_handle, 
-                                            (X509_NAME *) desired_subject);
-        if (rc == 0)
-        {
-            seteuid(0);
-        }
-    }
-#endif
     if(local_result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -2849,15 +2835,19 @@ globus_l_gsi_gss_servername_callback(
 
     if (servername == NULL)
     {
-        if (globus_gsi_cred_get_cert_type(
+        X509 *                          default_cert = NULL;
+
+        if (globus_gsi_cred_get_cert(
                 context->cred_handle->cred_handle,
-                &cert_type) == GLOBUS_SUCCESS)
+                &default_cert) == GLOBUS_SUCCESS)
         {
-            /* No SNI, use default credential */
+            /* No SNI, but we have a default credential */
+            X509_free(default_cert);
             return SSL_TLSEXT_ERR_OK;
         }
         else
         {
+            /* No SNI, pick the first one we loaded */
             credential = context->sni_credentials[0];
             goto use_any;
         }

@@ -212,15 +212,10 @@ GSS_CALLCONV gss_import_cred(
                             && getuid() == 0
                             && globus_i_gsi_gssapi_vhost_cred_owner != 0)
                         {
-                            rc = seteuid(globus_i_gsi_gssapi_vhost_cred_owner);
-                            local_result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(
-                                cert_path);
-
-                            if (rc == GLOBUS_SUCCESS)
-                            {
-                                rc = seteuid(0);
-                                assert(rc == 0);
-                            }
+                            local_result =
+                                GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE_UID(
+                                    cert_path,
+                                    globus_i_gsi_gssapi_vhost_cred_owner);
                         }
                         if (local_result != GLOBUS_SUCCESS)
                         {
@@ -253,15 +248,10 @@ GSS_CALLCONV gss_import_cred(
                             && getuid() == 0
                             && globus_i_gsi_gssapi_vhost_cred_owner != 0)
                         {
-                            rc = seteuid(globus_i_gsi_gssapi_vhost_cred_owner);
-                            local_result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(
-                                key_path);
-
-                            if (rc == 0)
-                            {
-                                rc = seteuid(0);
-                                assert(rc == 0);
-                            }
+                            local_result =
+                                GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE_UID(
+                                    key_path,
+                                    globus_i_gsi_gssapi_vhost_cred_owner);
                         }
                         if (local_result != GLOBUS_SUCCESS)
                         {
