@@ -1735,18 +1735,18 @@ globus_gsi_cred_verify_cert_chain(
     
     if (X509_STORE_load_locations(cert_store, NULL, cert_dir))
     {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        /* override the check_issued with our version */
+        cert_store->check_issued = globus_gsi_callback_check_issued;
+#else
+        X509_STORE_set_check_issued(cert_store, globus_gsi_callback_check_issued);
+#endif
+
         store_context = X509_STORE_CTX_new();
         X509_STORE_CTX_init(store_context, cert_store, cert,
                             cred_handle->cert_chain);
         X509_STORE_CTX_set_depth(store_context,
                                  GLOBUS_GSI_CALLBACK_VERIFY_DEPTH);
-
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-        /* override the check_issued with our version */
-        store_context->check_issued = globus_gsi_callback_check_issued;
-#else
-        X509_STORE_set_check_issued(X509_STORE_CTX_get0_store(store_context), globus_gsi_callback_check_issued);
-#endif
 
         globus_gsi_callback_get_X509_STORE_callback_data_index(
             &callback_data_index);
@@ -1927,18 +1927,18 @@ globus_gsi_cred_verify_cert_chain_when(
     
     if (X509_STORE_load_locations(cert_store, NULL, cert_dir))
     {
+        /* override the check_issued with our version */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        cert_store->check_issued = globus_gsi_callback_check_issued;
+#else
+        X509_STORE_set_check_issued(cert_store, globus_gsi_callback_check_issued);
+#endif
+
         store_context = X509_STORE_CTX_new();
         X509_STORE_CTX_init(store_context, cert_store, cert,
                             cred_handle->cert_chain);
         X509_STORE_CTX_set_depth(store_context,
                                  GLOBUS_GSI_CALLBACK_VERIFY_DEPTH);
-
-        /* override the check_issued with our version */
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-        store_context->check_issued = globus_gsi_callback_check_issued;
-#else
-        X509_STORE_set_check_issued(X509_STORE_CTX_get0_store(store_context), globus_gsi_callback_check_issued);
-#endif
 
         globus_gsi_callback_get_X509_STORE_callback_data_index(
             &callback_data_index);

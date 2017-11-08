@@ -6,7 +6,7 @@ Name:		globus-gsi-credential
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	7.13
+Version:	7.14
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Credential Library
@@ -186,6 +186,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Nov 08 2017 Globus Toolkit <support@globus.org> - 7.14-1
+- Fix issue with voms proxy and openssl 1.1 (#115)
+
 * Wed Nov 01 2017 Globus Toolkit <support@globus.org> - 7.13-1
 - Fix crash when cert not set.
 - Remove compatibility shims for old versions of OpenSSL
