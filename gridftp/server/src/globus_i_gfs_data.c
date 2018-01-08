@@ -594,6 +594,12 @@ globus_l_gfs_data_operation_destroy(
 
 static
 void
+globus_l_gfs_data_update_restricted_paths_symlinks_allowed(
+    globus_l_gfs_data_session_t *   session_handle,
+    globus_list_t **                rp_symlinks_list);
+
+static
+void
 globus_l_gfs_data_update_restricted_paths_symlinks(
     globus_l_gfs_data_session_t *   session_handle,
     globus_list_t **                rp_list);
@@ -1338,10 +1344,14 @@ globus_l_gfs_parse_path(
     int                                 i = 0;
 
     ppath = malloc(sizeof(globus_l_gfs_parsed_path_t));
-    ppath->nparts = 0;
+    ppath->nparts = 1;
     
     tmp_path = strdup(in_path);
     ptr = tmp_path;
+    if (*ptr == '/')
+    {
+        ptr++;
+    }      
     while(*ptr)
     {
         if(*ptr++ == '/')
@@ -1351,7 +1361,11 @@ globus_l_gfs_parse_path(
     }
     ppath->parts = malloc(ppath->nparts * sizeof(char *));
     
-    part = tmp_path + 1;
+    part = tmp_path;
+    if (*part == '/')
+    {
+        part++;
+    }      
     while((ptr = strchr(part, '/')) != NULL)
     {
         *ptr = '\0';
@@ -3060,6 +3074,8 @@ globus_l_gfs_data_brain_ready_delay_cb(
         finished_info.info.session.username = session_info->username;
 
         /* update home dir based on restricted paths */
+        globus_l_gfs_data_update_restricted_paths_symlinks_allowed(
+            op->session_handle, &globus_l_gfs_rp_symlinks);
         globus_l_gfs_data_update_restricted_paths_symlinks(
             op->session_handle, &globus_l_gfs_rp_list_base);
         globus_l_gfs_data_update_restricted_paths_symlinks(
@@ -3452,6 +3468,37 @@ globus_l_gfs_add_symlink_rp_path(
         globus_list_insert(list, new_path);
     }
     return GLOBUS_SUCCESS;
+}
+
+static
+void
+globus_l_gfs_data_update_restricted_paths_symlinks_allowed(
+    globus_l_gfs_data_session_t *   session_handle,
+    globus_list_t **                rp_symlinks_list)
+{
+    globus_list_t *                     l;
+    char *                              path;
+    char *                              var_path;
+    GlobusGFSName(globus_l_gfs_data_update_restricted_paths_symlinks_allowed);
+    GlobusGFSDebugEnter();
+    
+    for (l = *rp_symlinks_list; 
+        !globus_list_empty(l); 
+        l = globus_list_rest(l))
+    {
+        path = globus_list_first(l);
+
+        if(path[0] == '~' || strchr(path, '$'))
+        {
+            var_path = globus_l_gfs_data_update_var_path(
+                session_handle, path);
+            
+            LowerPathWin(var_path);
+            
+            globus_list_replace_first(l, var_path);            
+            globus_free(path);
+        }
+    }
 }
 
 static
@@ -12931,6 +12978,8 @@ globus_l_gfs_operation_finished_kickout(
                 op->session_handle->home_dir;
         }
 
+        globus_l_gfs_data_update_restricted_paths_symlinks_allowed(
+            op->session_handle, &globus_l_gfs_rp_symlinks);
         globus_l_gfs_data_update_restricted_paths_symlinks(
             op->session_handle, &globus_l_gfs_rp_list_base);
         globus_l_gfs_data_update_restricted_paths_symlinks(
