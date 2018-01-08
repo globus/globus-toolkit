@@ -752,7 +752,7 @@ globus_l_gfs_file_readlink(
     globus_result_t                     result;
     GlobusGFSName(globus_l_gfs_file_readlink);
     GlobusGFSFileDebugEnter();
-    
+
     dirfd = globus_l_gfs_file_open_dirfd(in_path, &filename);
     if(dirfd == -1)
     {
@@ -762,12 +762,22 @@ globus_l_gfs_file_readlink(
     nchars = readlinkat(dirfd, filename, symlink_target, MAXPATHLEN+1);
     if (nchars <= 0 || nchars > MAXPATHLEN) 
     {
-        result = GlobusGFSErrorSystemError(
-            "readlink", nchars > 0 ? ENAMETOOLONG : errno);
-        goto error_readlink;
+        if (errno == EINVAL)
+        {
+            *link_target = NULL;
+        }
+        else
+        {
+            result = GlobusGFSErrorSystemError(
+                "readlink", nchars > 0 ? ENAMETOOLONG : errno);
+            goto error_readlink;
+        }
     }
-    symlink_target[nchars] = '\0';
-    *link_target = strdup(symlink_target);
+    else
+    {
+        symlink_target[nchars] = '\0';
+        *link_target = strdup(symlink_target);
+    }
 
     close(dirfd);
     free(filename);
