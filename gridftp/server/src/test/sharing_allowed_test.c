@@ -177,6 +177,9 @@ int main()
                         my_username);
         char *bad = ":bad:";
         char *bad_list = ":bad:,:other:,:another:";
+        char *bad_user_superstring = globus_common_create_string(
+            ":bad:,%s:other:,:another:",
+            my_username);
         char *good_group = my_default_group;
         char *good_group_initial_list = 
                 globus_common_create_string("%s,:bad:,:other:,:another:",
@@ -287,6 +290,24 @@ int main()
                 .test_name = "user-allowed-end-list-not-denied",
                 .sharing_users_allow = good_user_end_list,
                 .sharing_users_deny = bad_list,
+                .sharing_groups_allow = NULL,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = true
+            },
+            {
+                .test_name = "user-superstring-in-allowed",
+                .sharing_users_allow = bad_user_superstring,
+                .sharing_users_deny = NULL,
+                .sharing_groups_allow = NULL,
+                .sharing_groups_deny = NULL,
+                .sharing_user = my_username,
+                .expected_result = false,
+            },
+            {
+                .test_name = "user-superstring-in-denied",
+                .sharing_users_allow = good_user_end_list,
+                .sharing_users_deny = bad_user_superstring,
                 .sharing_groups_allow = NULL,
                 .sharing_groups_deny = NULL,
                 .sharing_user = my_username,
