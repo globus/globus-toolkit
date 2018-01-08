@@ -237,7 +237,6 @@ typedef struct globus_i_gsc_handle_opts_s
     int                                     restart_frequency;
     globus_gsc_layout_t                     layout;
     globus_size_t                           block_size;
-    int                                     mlsr_traversal_options;
 } globus_i_gsc_handle_opts_t;
 
 typedef struct globus_i_gsc_module_func_s

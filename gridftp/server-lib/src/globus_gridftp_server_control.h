@@ -188,11 +188,6 @@ typedef enum globus_gridftp_server_control_stat_error_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_INVALIDLINK,
 } globus_gridftp_server_control_stat_error_t;
 
-typedef enum globus_gfs_traversal_options_e {
-    GLOBUS_GFS_TRAVERSAL_CONTINUE = 1,
-    GLOBUS_GFS_TRAVERSAL_FOLLOW_SYMLINKS = 2
-} globus_gfs_traversal_options_t;
-
 
 /**
  *  stat structure
