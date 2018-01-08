@@ -281,12 +281,10 @@ static const globus_l_gfs_config_option_t option_list[] =
     "By default all paths are allowed, and access control is handled by the OS. "
     "In a striped or split process configuration, this should be set on both the frontend and data nodes.", 
     NULL, NULL,GLOBUS_FALSE, NULL},
- {"rp_follow_symlinks", "rp_follow_symlinks", NULL, "rp-follow-symlinks", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Do not verify that a symlink points to an allowed path before following.  By default, symlinks are "
-    "followed only when they point to an allowed path.  By enabling this option, symlinks "
-    "will be followed even if they point to a path that is otherwise restricted.  Note that this does not "
-    "affect sharing logins.  Sharing logins will only follow relative symlinks that do not lead out of the "
-    "shared root path.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"rp_symlinks", "rp_symlinks", NULL, "restrict-paths-symlinks", "rp-symlinks", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "A comma separated list of the full paths of symlinks which may be used in restrict-paths rules. If an "
+    "optional root path is provided, the symlink will only be allowed if it points to a subdirectory of the root path.", 
+    NULL, NULL,GLOBUS_FALSE, NULL},
  {"symlinks_allowed", "symlinks_allowed", NULL, "symlinks-allowed", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* "Policy for symlink creation.  Must be 'all' or 'none'.  The default option is all." */, 
     NULL, NULL,GLOBUS_FALSE, NULL},

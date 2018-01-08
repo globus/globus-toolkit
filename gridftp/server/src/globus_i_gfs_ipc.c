@@ -62,7 +62,7 @@
  */
 #include "globus_i_gridftp_server.h"
 
-static const char * globus_l_gfs_local_version = "IPC Version 1.1";
+static const char * globus_l_gfs_local_version = "IPC Version 1.2";
 
 /* single mutex, assuming low contention, only used for handle tables,
  * not ipc
@@ -165,6 +165,7 @@ typedef struct globus_i_gfs_ipc_handle_s
 
     globus_bool_t                       requester;
     globus_gfs_session_info_t *         session_info;
+    char *                              home_dir;
     int                                 call_id;
     globus_hashtable_t                  reply_table;
     globus_gfs_ipc_iface_t *            iface;
@@ -417,6 +418,7 @@ globus_l_gfs_ipc_handle_destroy(
     free(ipc->conf_auth_mode_str);
     free(ipc->conf_ipc_subject);
     free(ipc->conn_subj);
+    free(ipc->home_dir);
 
     globus_mutex_destroy(&ipc->mutex);
     if (ipc->reply_table)
@@ -910,7 +912,12 @@ globus_l_gfs_ipc_request_ss_body_cb(
     }
     GFSDecodeString(buffer, len, reply.info.session.username);
     GFSDecodeString(buffer, len, reply.info.session.home_dir);
-          
+
+    if(reply.info.session.home_dir)
+    {
+        ipc->home_dir = globus_libc_strdup(reply.info.session.home_dir);
+    }
+
     if(ipc->open_cb)
     {
         ipc->open_cb(ipc, result, &reply, ipc->user_arg);
@@ -1562,6 +1569,11 @@ globus_gfs_ipc_reply_session(
 
         if(send_reply)
         {
+            if(reply->info.session.home_dir)
+            {
+                ipc->home_dir = globus_libc_strdup(reply->info.session.home_dir);
+            }
+
             /* pack the header */
             buffer = malloc(ipc->buffer_size);
             if(buffer == NULL)
@@ -2095,7 +2107,8 @@ globus_gfs_ipc_handle_create(
         .conf_ipc_subject             = globus_libc_strdup(globus_gfs_config_get_string("ipc_subject")),
         .conf_ipc_connect_timeout     = globus_gfs_config_get_int("ipc_connect_timeout"),
         .conf_ipc_idle_timeout        = globus_gfs_config_get_int("ipc_idle_timeout"),
-        .conf_inetd                   = globus_gfs_config_get_int("inetd")
+        .conf_inetd                   = globus_gfs_config_get_int("inetd"),
+        .home_dir                     = NULL
     };
 
     if (globus_mutex_init(&ipc->mutex, NULL) != GLOBUS_SUCCESS)
@@ -2444,7 +2457,8 @@ globus_l_gfs_ipc_handle_connect(
         .conf_ipc_subject             = subject ? strdup(subject) : NULL,
         .conf_ipc_connect_timeout     = connect_timeout,
         .conf_ipc_idle_timeout        = idle_timeout,
-        .conf_inetd                   = inetd
+        .conf_inetd                   = inetd,
+        .home_dir                     = NULL
     };
     ipc->session_info = globus_l_gfs_ipc_session_info_copy(session_info);
     if (ipc->session_info == NULL)
@@ -3472,7 +3486,7 @@ globus_l_gfs_ipc_unpack_transfer(
     }
     globus_range_list_init(&trans_info->range_list);
 
-    GFSDecodeString(buffer, len, trans_info->pathname);
+    GFSDecodePath(buffer, len, trans_info->pathname);
     GFSDecodeString(buffer, len, trans_info->module_name);
     GFSDecodeString(buffer, len, trans_info->module_args);
     GFSDecodeString(buffer, len, trans_info->list_type);    
@@ -3561,7 +3575,7 @@ globus_l_gfs_ipc_unpack_data(
     {
         data_info->contact_strings = NULL;
     }
-    GFSDecodeString(buffer, len, data_info->pathname);
+    GFSDecodePath(buffer, len, data_info->pathname);
     GFSDecodeString(buffer, len, data_info->interface);
     rc = globus_l_gfs_ipc_unpack_cred(
         ipc, buffer, len, &data_info->del_cred);
@@ -3600,8 +3614,10 @@ globus_l_gfs_ipc_unpack_stat(
     GFSDecodeChar(buffer, len, ch);
     stat_info->file_only = (globus_bool_t) ch;
     GFSDecodeChar(buffer, len, ch);
-    stat_info->internal = (globus_bool_t) ch;
-    GFSDecodeString(buffer, len, stat_info->pathname);
+    stat_info->internal = 0;
+    GFSDecodeChar(buffer, len, ch);
+    stat_info->use_symlink_info = (globus_bool_t) ch;
+    GFSDecodePath(buffer, len, stat_info->pathname);
 
     GlobusGFSDebugExit();
     return stat_info;
@@ -6524,6 +6540,8 @@ globus_gfs_ipc_request_stat(
             buffer, ipc->buffer_size, ptr, stat_info->file_only);
         GFSEncodeChar(
             buffer, ipc->buffer_size, ptr, stat_info->internal);
+        GFSEncodeChar(
+            buffer, ipc->buffer_size, ptr, stat_info->use_symlink_info);
         GFSEncodeString(
             buffer, ipc->buffer_size, ptr, stat_info->pathname);
 

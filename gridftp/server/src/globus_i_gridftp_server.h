@@ -120,13 +120,23 @@ globus_l_gfs_data_brain_ready(
     void *                              user_arg);
 
 globus_result_t
-globus_i_gfs_get_full_path(
-    const char *                            home_dir,
-    const char *                            server_cwd,
+globus_i_gfs_resolve_path(
     void *                                  session_arg,
     const char *                            in_path,
     char **                                 ret_path,
     int                                     access_type);
+
+globus_result_t
+globus_i_gfs_get_abs_path(
+    const char *                            home_dir,
+    const char *                            server_cwd,
+    const char *                            in_path,
+    char **                                 abs_path);
+
+char * 
+globus_i_gfs_clean_path(
+    const char *                        in_path,
+    int                                 alloc_len);
 
 #define GlobusGFSErrorGenericStr(_res, _fmt)                           \
 do                                                                     \

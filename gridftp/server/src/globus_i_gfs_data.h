@@ -175,13 +175,19 @@ globus_i_gfs_modify_to_unixtime(
 char *
 globus_i_gfs_data_dsi_version();
 
-#define GFS_L_READ    1<<0
-#define GFS_L_WRITE   1<<1
-#define GFS_L_LIST    1<<2
-#define GFS_L_DIR     1<<3
-#define GFS_L_NONE    1<<4
-#define GFS_L_DELETE  1<<5
-#define GFS_L_SYM     1<<6
+#define GFS_L_READ          1<<0
+#define GFS_L_WRITE         1<<1
+#define GFS_L_LIST          1<<2
+#define GFS_L_DIR           1<<3
+#define GFS_L_NONE          1<<4
+#define GFS_L_DELETE        1<<5
+#define GFS_L_SYM           1<<6
+#define GFS_L_RESOLVED      1<<7
+#define GFS_L_WALKING       1<<8
+#define GFS_L_FINAL         1<<9
+#define GFS_L_SYMLINK_ONLY  1<<10
+#define GFS_L_REQ           1<<11
+#define GFS_L_TYPE_DIR      1<<12
 
 #define GFS_L_SYMLINKS_NONE 0
 #define GFS_L_SYMLINKS_REL 1

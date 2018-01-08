@@ -386,6 +386,7 @@ globus_gfs_acl_action_to_string(
         case GFS_ACL_ACTION_DELETE:
             return "delete";
         case GFS_ACL_ACTION_WRITE:
+        case GFS_ACL_ACTION_SYMLINK:
             return "write";
         case GFS_ACL_ACTION_CREATE:
             return "create";

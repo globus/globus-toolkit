@@ -221,6 +221,28 @@ do                                                                      \
     }                                                                   \
 } while(0)
 
+#define GFSDecodePath(_buf, _len, _w)                                   \
+do                                                                      \
+{                                                                       \
+    char *                              _path;                          \
+    globus_result_t                     _res;                           \
+    GFSDecodeString(_buf, _len, _path);                                 \
+    if (_path && *_path != '/')                                         \
+    {                                                                   \
+        _res = globus_i_gfs_get_abs_path(                               \
+            ipc->home_dir, "/", _path, &_w);                            \
+        if (_res != GLOBUS_SUCCESS)                                     \
+        {                                                               \
+            goto decode_err;                                            \
+        }                                                               \
+        free(_path);                                                    \
+    }                                                                   \
+    else                                                                \
+    {                                                                   \
+        _w = _path;                                                     \
+    }                                                                   \
+} while (0)
+
 void *
 globus_i_gfs_ipc_query_op_info(
     int                                 op_info_id);

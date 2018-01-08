@@ -132,6 +132,8 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_SITE_RESTRICT = 3072,
     GLOBUS_GFS_CMD_SITE_CHROOT,
     GLOBUS_GFS_CMD_SITE_SHARING,
+    GLOBUS_GFS_CMD_SITE_SHARING_TEST,
+    GLOBUS_GFS_CMD_SITE_SHARING_DELETE,
     GLOBUS_GFS_CMD_UPAS,
     GLOBUS_GFS_CMD_UPRT,
     GLOBUS_GFS_CMD_STORATTR,
@@ -565,7 +567,7 @@ typedef struct globus_gfs_stat_info_s
 {
     /** if pathname is a directory, should stat report its info or its contents */
     globus_bool_t                       file_only;
-    /** this stat is requested internally -- bypasses authorization checks */
+    /** this stat is requested internally -- ignored over ipc */
     globus_bool_t                       internal;
     /** pathname to stat */
     char *                              pathname;
@@ -1038,7 +1040,8 @@ globus_gridftp_server_register_read(
  *
  * If the command takes a pathname, set access_type to an globus_gfs_acl_action_t
  * like one of: GFS_ACL_ACTION_READ, GFS_ACL_ACTION_WRITE, 
- * GFS_ACL_ACTION_CREATE, GFS_ACL_ACTION_DELETE, GFS_ACL_ACTION_LOOKUP.
+ * GFS_ACL_ACTION_CREATE, GFS_ACL_ACTION_DELETE, GFS_ACL_ACTION_LOOKUP, 
+ * GFS_ACL_ACTION_SYMLINK.
  *
  * The last argument will always be passed in command_info->pathname, whether
  * it is a pathname or not.
@@ -1268,6 +1271,24 @@ void
 globus_gridftp_server_get_ordered_data(
     globus_gfs_operation_t              op,
     globus_bool_t *                     ordered_data);
+
+
+/* get unresolved path requested by client
+ * 
+ * When symlinks are supported, the pathname passed with operation parameters
+ * is the resolved path all symlinks resolved.
+ * The original pathname can be accessed with this call.  For operations with
+ * multiple path parameters such as rename, other_path will correspond to the 
+ * from_pathname parameter.
+ * 
+ * The caller must free path and other_path.  other_path may be NULL when 
+ * not used for the op.
+ */
+void
+globus_gridftp_server_get_unresolved_path(
+    globus_gfs_operation_t              op,
+    char **                             path,
+    char **                             other_path);
 
 /*
  * get config string
@@ -2232,7 +2253,9 @@ typedef enum globus_gfs_acl_action_e
      * overrun acceptable limits. */
     GFS_ACL_ACTION_COMMIT,
     /* increase previously requested write limits for an object */
-    GFS_ACL_ACTION_GROW
+    GFS_ACL_ACTION_GROW,
+    /* write operations on a symlink only, not the target. */
+    GFS_ACL_ACTION_SYMLINK
 } globus_gfs_acl_action_t;
 
 /* user connection descriptor.  this provides info about the user
