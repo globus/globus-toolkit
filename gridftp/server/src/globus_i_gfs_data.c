@@ -3308,8 +3308,8 @@ globus_list_cmp_rp_ent(
         return strcmp(a_ent->ppath->parts[a_ent->ppath->nparts - 1], 
             b_ent->ppath->parts[b_ent->ppath->nparts - 1]) >= 0;
     }
-        return a_ent->ppath->nparts > b_ent->ppath->nparts;
-    }
+    
+    return a_ent->ppath->nparts > b_ent->ppath->nparts;
 }
 
 static
@@ -4294,7 +4294,7 @@ globus_l_gfs_data_authorize(
                 tmp = op->session_handle->sharing_id;
                 while(*tmp)
                 {
-                    *tmp = (*tmp);
+                    *tmp = tolower(*tmp);
                     if(!isxdigit(*tmp) && *tmp != '-')
                     {
                         res = GlobusGFSErrorGeneric(
