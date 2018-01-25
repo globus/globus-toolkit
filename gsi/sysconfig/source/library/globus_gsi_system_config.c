@@ -917,7 +917,7 @@ globus_gsi_sysconfig_check_keyfile_win32(
  *
  */
 globus_result_t
-globus_gsi_sysconfig_check_keyfile_win32(
+globus_gsi_sysconfig_check_keyfile_uid_win32(
     const char *                        filename,
     uid_t                               uid)
 {
