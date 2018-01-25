@@ -53,7 +53,7 @@ $cygwinInstallProc = Start-Process -NoNewWindow `
 
 if ($InstanceType -eq "mingw32" -or $InstanceType -eq "mingw64")
 {
-    $mingw_repo_m="https://dl.fedoraproject.org/pub/epel/7/x86_64/m/"
+    $mingw_repo_m="https://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/m/"
     $mingw_prereqs = `
         "${InstanceType}-gettext",`
         "${InstanceType}-glib2",`
