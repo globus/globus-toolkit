@@ -56,6 +56,7 @@ if ($InstanceType -eq "mingw32" -or $InstanceType -eq "mingw64")
     $mingw_repo_m="https://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/m/"
     $mingw_prereqs = `
         "${InstanceType}-gettext",`
+        "${InstanceType}-pcre",`
         "${InstanceType}-glib2",`
         "${InstanceType}-glib-networking",`
         "${InstanceType}-libffi",`
