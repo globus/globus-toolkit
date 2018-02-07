@@ -13,7 +13,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	17.3
+Version:	17.4
 Release:	1%{?dist}
 Vendor:		Globus Support
 Summary:	Globus Toolkit - Common Library
@@ -252,6 +252,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/%{name}-%{version}/html/*
 
 %changelog
+* Wed Feb 07 2018 Globus Toolkit <support@globus.org> - 17.4-1
+- win32 fix
+
 * Thu Jan 25 2018 Globus Toolkit <support@globus.org> - 17.3-1
 - use win compatible unsetenv
 
