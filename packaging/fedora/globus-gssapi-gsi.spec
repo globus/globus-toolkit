@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	13.4
+Version:	13.5
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -179,6 +179,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Jan 25 2018 Globus Toolkit <support@globus.org> - 13.5-1
+- don't check uid on win
+
 * Wed Nov 01 2017 Globus Toolkit <support@globus.org> - 13.4-1
 - Improve vhost support
 
