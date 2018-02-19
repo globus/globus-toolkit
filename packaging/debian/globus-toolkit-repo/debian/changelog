@@ -1,3 +1,9 @@
+globus-toolkit-repo (6.0.13) unstable; urgency=low
+
+  * (rpm) Fix yum install when yum-config-tools is not present
+
+ -- Globus Toolkit <support@globus.org>  Mon, 19 Feb 2018 15:27:05 -0500
+
 globus-toolkit-repo (6.0.12) unstable; urgency=low
 
   * (deb) Fix GCSv5 repo install

@@ -1,5 +1,5 @@
 Name:           globus-toolkit-repo
-Version:        6.0.12
+Version:        6.0.13
 Release:        1
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
@@ -9,6 +9,7 @@ Source0:        globus-toolkit-repo_%{version}.tar.xz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 Provides:       globus-connect-server-repo
+Obsoletes:      globus-repo
 
 %description
 This package installs the Globus yum repository configuration and GPG key for
@@ -83,6 +84,8 @@ elif command -v yum-config-manager > /dev/null; then
         yum-config-manager --add-repo file://$repofile
     done
 elif [ -d %{_sysconfdir}/yum.repos.d ] ; then
+    cp %{_datadir}/globus/repo/*-${repo}.repo %{_sysconfdir}/yum.repos.d
+elif [ -d %{_sysconfdir}/zypp/repos.d ] ; then
     cp %{_datadir}/globus/repo/*-${repo}.repo %{_sysconfdir}/zypp/repos.d
 else
     echo "Copy the Globus Repository Definition from %{_datadir}/globus/repo/ to your system's repo configuration"
@@ -139,6 +142,9 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Mon Feb 19 2018 Globus Toolkit <support@globus.org> - 6.0.13-1
+- (rpm) Fix yum install when yum-config-tools is not present
+
 * Thu Jun 22 2017 Globus Toolkit <support@globus.org> - 6.0.12-1
 - (deb) Fix GCSv5 repo install
 
