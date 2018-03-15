@@ -4080,6 +4080,336 @@ globus_l_gfs_data_session_handle_set_user(
 
 #define GLOBUS_SHARING_PREFIX ":globus-sharing:"
 
+static
+globus_result_t
+globus_l_gfs_data_parse_sharing_login(
+    globus_l_gfs_data_session_t *       session_handle,
+    globus_gfs_session_info_t *         session_info,
+    char **                             desired_user_certp)
+{
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    char *                              shared_user_str = NULL;
+    char *                              usr_tmp = NULL;
+    char *                              tmp = NULL;
+    char *                              ptr = NULL;
+    char *                              desired_user_cert = NULL;
+    globus_size_t                       cert_len = 0;
+    globus_gsi_cred_handle_t            tmp_cred_handle = NULL;
+    GlobusGFSName(__func__);
+
+    shared_user_str = session_info->username + strlen(GLOBUS_SHARING_PREFIX);
+    ptr = shared_user_str;
+
+    if ((usr_tmp = globus_i_gfs_kv_getval(ptr, "USER", 1)) != NULL)
+    {
+        session_info->map_user = GLOBUS_FALSE;
+    }
+    else
+    {
+        usr_tmp = globus_libc_strdup(GLOBUS_MAPPING_STRING);
+        session_info->map_user = GLOBUS_TRUE;
+    }
+
+    if ((session_handle->sharing_id =
+        globus_i_gfs_kv_getval(ptr, "ID", 1)) == NULL)
+    {
+        res = GlobusGFSErrorGeneric(
+            "Invalid format for " GLOBUS_SHARING_PREFIX ". Missing ID.");
+        goto error;
+    }
+    tmp = session_handle->sharing_id;
+    while(*tmp)
+    {
+        *tmp = tolower(*tmp);
+        if(!isxdigit(*tmp) && *tmp != '-')
+        {
+            res = GlobusGFSErrorGeneric(
+                "Invalid format for " GLOBUS_SHARING_PREFIX ". Invalid character in ID.");
+            goto error;
+        }
+        tmp++;
+    }
+
+    if((tmp = globus_i_gfs_kv_getval(ptr, "CERT", 0)) != NULL)
+    {
+        desired_user_cert = malloc(strlen(tmp) + 1);
+        res = globus_l_gfs_base64_decode(
+            (globus_byte_t *) tmp,
+            (globus_byte_t *) desired_user_cert,
+            &cert_len);
+        desired_user_cert[cert_len] = 0;
+        free(tmp);
+    }
+    else
+    {
+        res = GlobusGFSErrorGeneric(
+            "Invalid format for " GLOBUS_SHARING_PREFIX ". Missing CERT.");
+    }
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    res = globus_gsi_cred_read_cert_buffer(
+        desired_user_cert, &tmp_cred_handle, NULL, NULL, &tmp);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_INFO,
+        "DN %s has provided sharing credentials for DN %s.\n",
+        session_info->subject, tmp);
+
+    free(session_info->subject);
+    session_info->subject = tmp;
+
+    res = globus_gsi_cred_verify_cert_chain_when(
+        tmp_cred_handle, NULL, 0);
+    globus_gsi_cred_handle_destroy(tmp_cred_handle);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    if((session_handle->sharing_sharee =
+        globus_i_gfs_kv_getval(ptr, "SHAREE", 1)) == NULL)
+    {
+        res = GlobusGFSErrorGeneric(
+            "Invalid arguments for "
+            GLOBUS_SHARING_PREFIX
+            ". Missing SHAREE.");
+        goto error;
+    }
+
+    free(session_info->username);
+    session_info->username = usr_tmp;
+
+error:
+    *desired_user_certp = desired_user_cert;
+    return res;
+}
+/* globus_l_gfs_data_parse_sharing_login() */
+
+static
+globus_result_t
+globus_l_gfs_data_authorize_gsi(
+    globus_l_gfs_data_session_t *       session_handle,
+    const gss_ctx_id_t                  context,
+    globus_gfs_session_info_t *         session_info,
+    struct passwd **                    pwentp,
+    gid_t *                             gidp,
+    globus_bool_t *                     sharing_attemptedp)
+{
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    const char *                        sharing_dn = NULL;
+    int                                 auth_level = 0;
+    char *                              process_username = NULL;
+    struct passwd *                     pwent = NULL;
+    struct group *                      grent = NULL;
+    gid_t                               gid = 0;
+    globus_bool_t                       sharing_attempted = GLOBUS_FALSE;
+    char *                              usr = NULL;
+    char                                authz_usr[USER_NAME_MAX] = {0};
+    char *                              desired_user_cert = NULL;
+    int                                 rc = 0;
+    GlobusGFSName(__func__);
+
+    sharing_dn = globus_i_gfs_config_string("sharing_dn");
+    auth_level = globus_i_gfs_config_int("auth_level");
+    process_username = globus_i_gfs_config_string("process_user");
+
+    if(sharing_dn && !strcmp(sharing_dn, session_info->subject))
+    {
+        if(session_info->username &&
+            strncmp(session_info->username,
+                GLOBUS_SHARING_PREFIX,
+                strlen(GLOBUS_SHARING_PREFIX)) == 0)
+        {
+            res = globus_l_gfs_data_parse_sharing_login(
+                session_handle,
+                session_info,
+                &desired_user_cert);
+
+            if (res != GLOBUS_SUCCESS)
+            {
+                goto error;
+            }
+            sharing_attempted = GLOBUS_TRUE;
+        }
+    }
+
+    if(!sharing_attempted
+        && session_info->username
+        && strncmp(session_info->username,
+                GLOBUS_SHARING_PREFIX,
+                strlen(GLOBUS_SHARING_PREFIX)) == 0)
+    {
+        GlobusGFSErrorGenericStr(res,
+            ("Sharing not allowed with DN %s", session_info->subject));
+        goto error;
+    }
+
+    if (!(auth_level & GLOBUS_L_GFS_AUTH_NOGRIDMAP))
+    {
+        if(globus_i_gfs_config_bool("cas") &&
+            (context || sharing_attempted))
+        {
+            if(session_info->map_user)
+            {
+                usr = NULL;
+            }
+            else
+            {
+                usr = session_info->username;
+            }
+
+            *authz_usr = '\0';
+
+            if (sharing_attempted)
+            {
+                res = globus_gss_assist_map_and_authorize_sharing(
+                    desired_user_cert,
+                    context,
+                    usr,
+                    authz_usr,
+                    USER_NAME_MAX);
+
+                free(desired_user_cert);
+                desired_user_cert = NULL;
+            }
+            else
+            {
+                res = globus_gss_assist_map_and_authorize(
+                    context,
+                    FTP_SERVICE_NAME,
+                    usr,
+                    authz_usr,
+                    USER_NAME_MAX);
+            }
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto error;
+            }
+            /* if res=success and authz_usr is empty, assume usr is ok
+             * and some callout just didn't copy it to authz_usr */
+            if(*authz_usr != '\0')
+            {
+                usr = authz_usr;
+
+                free(session_info->username);
+                session_info->username = globus_libc_strdup(usr);
+            }
+        }
+        else
+        {
+            if(session_info->map_user)
+            {
+                rc = globus_gss_assist_gridmap(
+                    (char *) session_info->subject, &usr);
+                if(rc != 0)
+                {
+                    GlobusGFSErrorGenericStr(res,
+                        ("Gridmap lookup failure: unable to map '%s'.",
+                        session_info->subject));
+                    goto error;
+                }
+            }
+            else
+            {
+                rc = globus_gss_assist_userok(
+                    session_info->subject, session_info->username);
+                usr = globus_libc_strdup(session_info->username);
+                if(rc != 0)
+                {
+                    GlobusGFSErrorGenericStr(res,
+                        ("Gridmap lookup failure: "
+                        "unable to map '%s' to '%s'.",
+                        session_info->subject,
+                        session_info->username));
+                    goto error;
+                }
+            }
+            free(session_info->username);
+            session_info->username = usr;
+        }
+    }
+    else
+    {
+        if(session_info->map_user == GLOBUS_TRUE ||
+            session_info->username == NULL)
+        {
+            pwent = globus_l_gfs_getpwuid(getuid());
+            if(pwent == NULL)
+            {
+                res = GlobusGFSErrorGeneric(
+                    "Invalid passwd entry for current user.");
+                goto error;
+            }
+
+            free(session_info->username);
+            session_info->username = globus_libc_strdup(pwent->pw_name);
+        }
+    }
+#ifndef WIN32
+    if(pwent == NULL)
+    {
+        if(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID)
+        {
+            pwent = globus_l_gfs_getpwuid(getuid());
+            if(pwent == NULL)
+            {
+                res = GlobusGFSErrorGeneric(
+                    "Invalid passwd entry for current user.");
+                goto error;
+            }
+        }
+        else if (process_username)
+        {
+            pwent = globus_l_gfs_getpwnam(process_username);
+            if(pwent == NULL)
+            {
+                res = GlobusGFSErrorGeneric(
+                    "Configured process user is invalid.");
+                goto error;
+            }
+        }
+        else
+        {
+            pwent = globus_l_gfs_getpwnam(session_info->username);
+            if(pwent == NULL)
+            {
+                GlobusGFSErrorGenericStr(res,
+                    ("Mapped user '%s' is invalid.",
+                    session_info->username));
+                goto error;
+            }
+        }
+    }
+#endif
+    if(pwent != NULL)
+    {
+        gid = pwent->pw_gid;
+        grent = globus_l_gfs_getgrgid(gid);
+    }
+    if(grent == NULL && !(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID))
+    {
+        GlobusGFSErrorGenericStr(res,
+            ("Invalid group id assigned to user '%s'.",
+            session_info->username));
+        goto error;
+    }
+
+error:
+    *pwentp = pwent;
+    *gidp = gid;
+    *sharing_attemptedp = sharing_attempted;
+    globus_l_gfs_gr_free(grent);
+
+    return res;
+}
+/* globus_l_gfs_data_authorize_gsi() */
+
 globus_result_t
 globus_l_gfs_data_authorize_anonymous(
     globus_l_gfs_data_session_t *       session_handle,
@@ -4446,16 +4776,11 @@ globus_l_gfs_data_authorize(
     globus_result_t                     res;
     gid_t                               gid;
     char *                              pw_file;
-    char *                              usr;
-    char                                authz_usr[USER_NAME_MAX];
     struct passwd *                     pwent = NULL;
     struct group *                      grent = NULL;
     int                                 auth_level;
     char *                              chroot_dir = NULL;
-    char *                              sharing_dn = NULL;
-    char *                              shared_user_str = NULL;
     globus_bool_t                       sharing_attempted = GLOBUS_FALSE;
-    char *                              desired_user_cert = NULL;
     char *                              process_username = NULL;
     GlobusGFSName(globus_l_gfs_data_authorize);
     GlobusGFSDebugEnter();
@@ -4472,289 +4797,23 @@ globus_l_gfs_data_authorize(
     auth_level = globus_i_gfs_config_int("auth_level");
     pw_file = (char *) globus_i_gfs_config_string("pw_file");
     process_username = globus_i_gfs_config_string("process_user");
+    op->session_handle->sharing = 
+        globus_i_gfs_config_string("sharing_dn") != NULL;
+    
     /* if there is a subject or del cred we are using gsi, 
         look it up in the gridmap */
-    sharing_dn = globus_i_gfs_config_string("sharing_dn");
-    op->session_handle->sharing = (sharing_dn != NULL);
-    
     if(session_info->subject != NULL || session_info->del_cred != NULL)
     {
-        if(sharing_dn && !strcmp(sharing_dn, session_info->subject))
+        res = globus_l_gfs_data_authorize_gsi(
+            op->session_handle,
+            context,
+            session_info,
+            &pwent,
+            &gid,
+            &sharing_attempted);
+
+        if (res != GLOBUS_SUCCESS)
         {
-            if(session_info->username && 
-                strncmp(session_info->username, 
-                    GLOBUS_SHARING_PREFIX, 
-                    strlen(GLOBUS_SHARING_PREFIX)) == 0)
-            {
-                char *                  usr_tmp;
-                char *                  sub_tmp;
-                char *                  crt_tmp;
-                char *                  ptr;
-                globus_size_t           cert_len = 0;
-                char *                  tmp;
-                globus_gsi_cred_handle_t tmp_cred_handle;
-                                                        
-                shared_user_str = 
-                    session_info->username + strlen(GLOBUS_SHARING_PREFIX);
-                ptr = shared_user_str;
-                
-                if((usr_tmp = globus_i_gfs_kv_getval(ptr, "USER", 1)) != NULL)
-                {   
-                    session_info->map_user = GLOBUS_FALSE;
-                }
-                else
-                {
-                    usr_tmp = globus_libc_strdup(GLOBUS_MAPPING_STRING);
-                    session_info->map_user = GLOBUS_TRUE;
-                }
-
-                if((op->session_handle->sharing_id = 
-                    globus_i_gfs_kv_getval(ptr, "ID", 1)) == NULL)
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid format for " GLOBUS_SHARING_PREFIX ". Missing ID.");
-                    goto pwent_error;
-                }
-                tmp = op->session_handle->sharing_id;
-                while(*tmp)
-                {
-                    *tmp = tolower(*tmp);
-                    if(!isxdigit(*tmp) && *tmp != '-')
-                    {
-                        res = GlobusGFSErrorGeneric(
-                            "Invalid format for " GLOBUS_SHARING_PREFIX ". Invalid character in ID.");
-                        goto pwent_error;
-                    }
-                    tmp++;
-                }
-
-                if((crt_tmp = globus_i_gfs_kv_getval(ptr, "CERT", 0)) != NULL)
-                {   
-                    desired_user_cert = malloc(strlen(crt_tmp + 1));
-                    res = globus_l_gfs_base64_decode(
-                        (globus_byte_t *) crt_tmp,
-                        (globus_byte_t *) desired_user_cert, &cert_len);
-                    desired_user_cert[cert_len] = 0;
-                    globus_free(crt_tmp);
-                }
-                else
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid format for " GLOBUS_SHARING_PREFIX ". Missing CERT.");
-                }
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto pwent_error;
-                }
-                res = globus_gsi_cred_read_cert_buffer(
-                    desired_user_cert, &tmp_cred_handle, NULL, NULL, &sub_tmp);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto pwent_error;
-                }
-                
-                globus_gfs_log_message(
-                    GLOBUS_GFS_LOG_INFO,
-                    "DN %s has provided sharing credentials for DN %s.\n",
-                    session_info->subject, sub_tmp);
-
-                globus_free(session_info->subject);
-                session_info->subject = sub_tmp;
-
-                res = globus_gsi_cred_verify_cert_chain_when(
-                    tmp_cred_handle, NULL, 0);
-                globus_gsi_cred_handle_destroy(tmp_cred_handle);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto pwent_error;
-                }
-
-                if((op->session_handle->sharing_sharee =
-                    globus_i_gfs_kv_getval(ptr, "SHAREE", 1)) == NULL)
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid arguments for " GLOBUS_SHARING_PREFIX ". Missing SHAREE.");
-                    goto pwent_error;
-                }
-                
-                globus_free(session_info->username);
-                session_info->username = usr_tmp;
-
-                sharing_attempted = GLOBUS_TRUE;
-            }   
-        }
-
-        if(!sharing_attempted && session_info->username && 
-                strncmp(session_info->username, 
-                    GLOBUS_SHARING_PREFIX, 
-                    strlen(GLOBUS_SHARING_PREFIX)) == 0)
-        {
-            GlobusGFSErrorGenericStr(res,
-                ("Sharing not allowed with DN %s", session_info->subject));
-            goto pwent_error;
-        }
-                
-        if(!(auth_level & GLOBUS_L_GFS_AUTH_NOGRIDMAP))
-        {
-            if(globus_i_gfs_config_bool("cas") && 
-                (context || sharing_attempted))
-            {
-                globus_bool_t           free_usr = GLOBUS_FALSE;
-                
-                if(session_info->map_user)
-                {
-                    usr = NULL;
-                }
-                else
-                {
-                    usr = session_info->username;
-                }
-
-                *authz_usr = '\0';
-                
-                if(sharing_attempted)
-                {
-                    res = globus_gss_assist_map_and_authorize_sharing(
-                        desired_user_cert,
-                        context,
-                        usr,
-                        authz_usr,
-                        USER_NAME_MAX);
-                    
-                    globus_free(desired_user_cert);
-                    desired_user_cert = NULL;
-                }
-                else
-                {
-                    res = globus_gss_assist_map_and_authorize(
-                        context,
-                        FTP_SERVICE_NAME,
-                        usr,
-                        authz_usr,
-                        USER_NAME_MAX);
-                }
-                if(free_usr)
-                {
-                    globus_free(usr);
-                }
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto pwent_error;
-                }
-                /* if res=success and authz_usr is empty, assume usr is ok
-                 * and some callout just didn't copy it to authz_usr */
-                if(*authz_usr != '\0')
-                {
-                    usr = authz_usr;
-
-                    if(session_info->username)
-                    {
-                        globus_free(session_info->username);
-                    }
-                    session_info->username = globus_libc_strdup(usr);
-                }
-            }
-            else
-            {
-                if(session_info->map_user)
-                {
-                    rc = globus_gss_assist_gridmap(
-                        (char *) session_info->subject, &usr);
-                    if(rc != 0)
-                    {
-                        GlobusGFSErrorGenericStr(res,
-                            ("Gridmap lookup failure: unable to map '%s'.",
-                            session_info->subject));
-                        goto pwent_error;
-                    }
-                }
-                else
-                {
-                    rc = globus_gss_assist_userok(
-                        session_info->subject, session_info->username);
-                    usr = globus_libc_strdup(session_info->username);
-                    if(rc != 0)
-                    {
-                        GlobusGFSErrorGenericStr(res,
-                            ("Gridmap lookup failure: "
-                            "unable to map '%s' to '%s'.",
-                            session_info->subject,
-                            session_info->username));
-                        goto pwent_error;
-                    }
-                }
-                if(session_info->username)
-                {
-                    globus_free(session_info->username);
-                }
-                session_info->username = usr;
-            }
-        }
-        else
-        {
-            if(session_info->map_user == GLOBUS_TRUE ||
-                session_info->username == NULL)
-            {
-                pwent = globus_l_gfs_getpwuid(getuid());
-                if(pwent == NULL)
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid passwd entry for current user.");
-                    goto pwent_error;
-                }
-                if(session_info->username)
-                {
-                    globus_free(session_info->username);
-                }
-                session_info->username = globus_libc_strdup(pwent->pw_name);
-            }
-        }
-#ifndef WIN32
-        if(pwent == NULL)
-        {
-            if(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID)
-            {
-                pwent = globus_l_gfs_getpwuid(getuid());
-                if(pwent == NULL)
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid passwd entry for current user.");
-                    goto pwent_error;
-                }
-            }
-            else if (process_username)
-            {
-                pwent = globus_l_gfs_getpwnam(process_username);
-                if(pwent == NULL)
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Configured process user is invalid.");
-                    goto pwent_error;
-                }
-            }
-            else
-            {
-                pwent = globus_l_gfs_getpwnam(session_info->username);
-                if(pwent == NULL)
-                {
-                    GlobusGFSErrorGenericStr(res,
-                        ("Mapped user '%s' is invalid.",
-                        session_info->username));
-                    goto pwent_error;
-                }
-            }
-        }
-#endif
-        if(pwent != NULL)
-        {
-            gid = pwent->pw_gid;
-            grent = globus_l_gfs_getgrgid(gid);
-        }
-        if(grent == NULL && !(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID))
-        {
-            GlobusGFSErrorGenericStr(res,
-                ("Invalid group id assigned to user '%s'.",
-                session_info->username));
             goto pwent_error;
         }
     }
@@ -4862,7 +4921,7 @@ globus_l_gfs_data_authorize(
     globus_l_gfs_data_session_handle_set_user(
         session_info, pwent, op->session_handle);
 
-    if (sharing_dn)
+    if (op->session_handle->sharing)
     {
         res = globus_l_gfs_data_authorize_sharing_state(
             op->session_handle,
@@ -4967,10 +5026,6 @@ pwent_error:
         "DN=\"%s\"",
         session_info->subject ? session_info->subject : "");
 
-    if(desired_user_cert)
-    {
-        globus_free(desired_user_cert);
-    }
     if(pwent != NULL)
     {
         globus_l_gfs_pw_free(pwent);
