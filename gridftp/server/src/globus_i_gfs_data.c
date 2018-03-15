@@ -11673,24 +11673,6 @@ globus_i_gfs_data_session_start(
     {
         globus_l_gfs_data_authorize(op, context, session_info);
         
-        if(globus_i_gfs_config_bool("hybrid"))
-        {
-            globus_gfs_session_info_t *     session_info_copy;
-            
-            session_info_copy = (globus_gfs_session_info_t *)
-                globus_malloc(sizeof(globus_gfs_session_info_t));
-            session_info_copy->del_cred = session_info->del_cred;
-            session_info_copy->free_cred = GLOBUS_FALSE;
-            session_info_copy->map_user = session_info->map_user;
-            session_info_copy->username = globus_libc_strdup(session_info->username);
-            session_info_copy->password = globus_libc_strdup(session_info->password);
-            session_info_copy->subject = globus_libc_strdup(session_info->subject);
-            session_info_copy->cookie = globus_libc_strdup(session_info->cookie);
-            session_info_copy->host_id = globus_libc_strdup(session_info->host_id);
-            
-            session_handle->session_info_copy = session_info_copy;
-            session_handle->hybrid = GLOBUS_TRUE;
-        }
     }
     else
     {
@@ -11749,25 +11731,29 @@ globus_i_gfs_data_session_start(
             op->session_handle->home_dir = strdup("/");
         }  
 
-        if(globus_i_gfs_config_bool("hybrid"))
+    }
+    if(globus_i_gfs_config_bool("hybrid"))
+    {
+        globus_gfs_session_info_t *     session_info_copy;
+
+        session_info_copy = malloc(sizeof(globus_gfs_session_info_t));
+        *session_info_copy = (globus_gfs_session_info_t)
         {
-            globus_gfs_session_info_t *     session_info_copy;
-            
-            session_info_copy = (globus_gfs_session_info_t *)
-                globus_malloc(sizeof(globus_gfs_session_info_t));
-            session_info_copy->del_cred = session_info->del_cred;
-            session_info_copy->free_cred = GLOBUS_FALSE;
-            session_info_copy->map_user = session_info->map_user;
-            session_info_copy->username = globus_libc_strdup(session_info->username);
-            session_info_copy->password = globus_libc_strdup(session_info->password);
-            session_info_copy->subject = globus_libc_strdup(session_info->subject);
-            session_info_copy->cookie = globus_libc_strdup(session_info->cookie);
-            session_info_copy->host_id = globus_libc_strdup(session_info->host_id);
-            
-            session_handle->session_info_copy = session_info_copy;
-            session_handle->hybrid = GLOBUS_TRUE;
-        }
-        
+            .del_cred = session_info->del_cred,
+            .free_cred = GLOBUS_FALSE,
+            .map_user = session_info->map_user,
+            .username = globus_libc_strdup(session_info->username),
+            .password = globus_libc_strdup(session_info->password),
+            .subject = globus_libc_strdup(session_info->subject),
+            .cookie = globus_libc_strdup(session_info->cookie),
+            .host_id = globus_libc_strdup(session_info->host_id),
+        },
+
+        session_handle->session_info_copy = session_info_copy;
+        session_handle->hybrid = GLOBUS_TRUE;
+    }
+    if(!(globus_i_gfs_config_int("auth_level") & GLOBUS_L_GFS_AUTH_IDENTIFY))
+    {
         globus_l_gfs_data_auth_init_cb(
             NULL, GFS_ACL_ACTION_INIT, op, GLOBUS_SUCCESS);
     }
