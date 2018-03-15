@@ -3121,7 +3121,7 @@ static
 char *
 globus_l_gfs_data_update_var_path(
     globus_l_gfs_data_session_t *           session_handle,
-    char *                                  in_path)
+    const char *                            in_path)
 {
     char *                              path;
     char *                              var;
@@ -4502,11 +4502,13 @@ globus_l_gfs_data_authorize_password(
 {
     globus_result_t                     res = GLOBUS_SUCCESS;
     char *                              pw_hash = NULL;
+    const char *                        pw_file = NULL;
     gid_t                               gid = 0;
     struct passwd *                     pwent = NULL;
     struct group *                      grent = NULL;
     GlobusGFSName(__func__);
 
+    pw_file = globus_i_gfs_config_string("pw_file");
     globus_libc_lock();
 #   ifdef HAVE_FGETPWENT
     {
