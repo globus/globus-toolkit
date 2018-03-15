@@ -5914,51 +5914,22 @@ globus_i_gfs_data_request_command(
             }
             else if(strcasecmp(cmd_info->cksm_alg, "P") == 0)
             {
-                globus_size_t           dcsc_len;
-                OM_uint32               major_status; 
-                OM_uint32               minor_status;
-                gss_buffer_desc         buf; 
-                gss_cred_id_t           cred;
-                
-                dcsc_len = strlen(cmd_info->pathname);
-                buf.value = calloc(1, dcsc_len);
-                
-                rc = globus_l_gfs_base64_decode(
-                    (globus_byte_t *) cmd_info->pathname, buf.value, &dcsc_len);
-                if(rc != GLOBUS_SUCCESS)
+                gss_cred_id_t           cred = GSS_C_NO_CREDENTIAL;
+
+                result = globus_l_gfs_data_decode_passed_cred(
+                    cmd_info->pathname,
+                    &cred);
+
+                if (result == GLOBUS_SUCCESS)
                 {
-                    globus_free(buf.value);
-                    result = GlobusGFSErrorGeneric(
-                        "Invalid base64 input for credential type P.");
-                }
-                else
-                {                            
-                    buf.length = strlen(buf.value);
-                    major_status = gss_import_cred(
-                        &minor_status,
-                        &cred,
-                        GSS_C_NO_OID,
-                        0,
-                        &buf,
-                        0,
-                        NULL);
-                    globus_free(buf.value);
-                    if(major_status != GSS_S_COMPLETE)
+                    if(op->session_handle->dcsc_cred != GSS_C_NO_CREDENTIAL)
                     {
-                        result = GlobusGFSErrorWrapFailed(
-                            "Credential import", minor_status);
+                        OM_uint32   min_rc;
+                        gss_release_cred(
+                            &min_rc, &op->session_handle->dcsc_cred);
                     }
-                    else
-                    {
-                        if(op->session_handle->dcsc_cred != GSS_C_NO_CREDENTIAL)
-                        {
-                            OM_uint32   min_rc;
-                            gss_release_cred(
-                                &min_rc, &op->session_handle->dcsc_cred);
-                        }
                         
-                        op->session_handle->dcsc_cred = cred;
-                    }
+                    op->session_handle->dcsc_cred = cred;
                 }
             }
             else
