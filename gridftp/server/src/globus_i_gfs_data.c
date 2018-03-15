@@ -129,7 +129,6 @@ do                                                                      \
 #endif
 
 
-struct passwd *                         globus_l_gfs_data_pwent = NULL;
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi = NULL;
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi_hybrid = NULL;
 globus_extension_registry_t             globus_i_gfs_dsi_registry;
@@ -1764,28 +1763,16 @@ void
 globus_l_gfs_pw_free(
     struct passwd *                     pw)
 {
-    if(pw->pw_name != NULL)
+    if (pw != NULL)
     {
         free(pw->pw_name);
-    }
-    if(pw->pw_passwd != NULL)
-    {
         free(pw->pw_passwd);
-    }
-    if(pw->pw_gecos != NULL)
-    {
         free(pw->pw_gecos);
-    }
-    if(pw->pw_dir != NULL)
-    {
         free(pw->pw_dir);
-    }
-    if(pw->pw_shell != NULL)
-    {
         free(pw->pw_shell);
-    }
 
-    free(pw);
+        free(pw);
+    }
 }
 
 static
@@ -1823,24 +1810,20 @@ globus_l_gfs_gr_free(
 {
     int                                 i;
 
-    if(gr->gr_name != NULL)
+    if (gr != NULL)
     {
         free(gr->gr_name);
-    }
-    if(gr->gr_passwd != NULL)
-    {
         free(gr->gr_passwd);
-    }
-    if(gr->gr_mem != NULL)
-    {
-        for(i = 0; gr->gr_mem[i] != NULL; i++)
+        if (gr->gr_mem != NULL)
         {
-            free(gr->gr_mem[i]);
+            for(i = 0; gr->gr_mem[i] != NULL; i++)
+            {
+                free(gr->gr_mem[i]);
+            }
+            free(gr->gr_mem);
         }
-        free(gr->gr_mem);
+        free(gr);
     }
-
-    free(gr);
 }
 
 static
@@ -4180,6 +4163,91 @@ error:
 }
 /* globus_l_gfs_data_authorize_anonymous() */
 
+globus_result_t
+globus_l_gfs_data_authorize_password(
+    globus_l_gfs_data_session_t *       session_handle,
+    const globus_gfs_session_info_t *   session_info,
+    struct passwd **                    pwentp,
+    gid_t *                             gidp)
+{
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    char *                              pw_hash = NULL;
+    gid_t                               gid = 0;
+    struct passwd *                     pwent = NULL;
+    struct group *                      grent = NULL;
+    GlobusGFSName(__func__);
+
+    globus_libc_lock();
+#   ifdef HAVE_FGETPWENT
+    {
+        FILE *                          pw = fopen(pw_file, "r");
+
+        if (pw == NULL)
+        {
+            res = GlobusGFSErrorGeneric(
+                "Invalid passwd file set.");
+            goto error;
+        }
+
+        do
+        {
+            pwent = fgetpwent(pw);
+        }
+        while(pwent != NULL
+            && strcmp(pwent->pw_name, session_info->username) != 0);
+
+        fclose(pw);
+
+        if (pwent == NULL)
+        {
+            res = GlobusGFSErrorGeneric("Invalid user.");
+            goto error;
+        }
+        pwent = globus_l_gfs_pw_copy(pwent);
+        if (pwent == NULL)
+        {
+            res = GlobusGFSErrorMemory("pwent");
+            goto error;
+        }
+    }
+#   else
+    {
+        res = GlobusGFSErrorGeneric("Passwd file not supported.");
+        goto error;
+    }
+#   endif
+
+    grent = globus_l_gfs_getgrgid(pwent->pw_gid);
+    if (grent == NULL)
+    {
+        GlobusGFSErrorGenericStr(res,
+            ("Invalid group id assigned to user '%s'.",
+            session_info->username));
+        goto error;
+    }
+    pw_hash = DES_crypt(session_info->password, pwent->pw_passwd);
+    if(strcmp(pw_hash, pwent->pw_passwd) != 0)
+    {
+        res = GlobusGFSErrorGeneric("Invalid user.");
+        goto error;
+    }
+    gid = pwent->pw_gid;
+error:
+    if (res != GLOBUS_SUCCESS)
+    {
+        globus_l_gfs_pw_free(pwent);
+        pwent = NULL;
+    }
+    globus_l_gfs_gr_free(grent);
+    globus_libc_unlock();
+
+    *pwentp = pwent;
+    *gidp = gid;
+
+    return res;
+}
+/* globus_l_gfs_data_authorize_password() */
+
 static
 void
 globus_l_gfs_data_authorize(
@@ -4521,70 +4589,8 @@ globus_l_gfs_data_authorize(
     }
     else if(pw_file != NULL)
     {
-        /* if we have not yet looked it up for this user */
-        if(globus_l_gfs_data_pwent == NULL)
-        {
-#           ifdef HAVE_FGETPWENT
-            {
-                FILE * pw = fopen(pw_file, "r");
-                if(pw == NULL)
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid passwd file set.");
-                    goto pwent_error;
-                }
-
-                globus_libc_lock();
-                do
-                {
-                    pwent = fgetpwent(pw);
-                }
-                while(pwent != NULL &&
-                    strcmp(pwent->pw_name, session_info->username) != 0);
-                fclose(pw);
-
-                if(pwent == NULL)
-                {
-                    globus_libc_unlock();
-                    res = GlobusGFSErrorGeneric("Invalid user.");
-                    goto pwent_error;
-                }
-                globus_l_gfs_data_pwent = globus_l_gfs_pw_copy(pwent);
-                globus_libc_unlock();
-            }
-#           else
-            {
-                res = GlobusGFSErrorGeneric("Passwd file not supported.");
-                goto pwent_error;
-            }
-#endif
-        }
-        else
-        {
-            /* if already looked up (and setuid()) use global value */
-            if(strcmp(pwent->pw_name, session_info->username) != 0)
-            {
-                res = GlobusGFSErrorGeneric(
-                    "Invalid user for current session.");
-                goto pwent_error;
-            }
-        }
-        pwent = globus_l_gfs_pw_copy(globus_l_gfs_data_pwent);
-        grent = globus_l_gfs_getgrgid(pwent->pw_gid);
-        if(grent == NULL)
-        {
-            GlobusGFSErrorGenericStr(res,
-                ("Invalid group id assigned to user '%s'.",
-                session_info->username));
-            goto pwent_error;
-        }
-        pw_hash = DES_crypt(session_info->password, pwent->pw_passwd);
-        if(strcmp(pw_hash, pwent->pw_passwd) != 0)
-        {
-            res = GlobusGFSErrorGeneric("Invalid user.");
-            goto pwent_error;
-        }
-        gid = pwent->pw_gid;
+        res = globus_l_gfs_data_authorize_password(
+            op->session_handle, session_info, &pwent, &gid);
     }
     else
     {
@@ -4920,10 +4926,7 @@ globus_l_gfs_data_authorize(
     {
         globus_l_gfs_pw_free(pwent);
     }
-    if(grent)
-    {
-        globus_l_gfs_gr_free(grent);
-    }
+    globus_l_gfs_gr_free(grent);
 
     GlobusGFSDebugExit();
     return;
