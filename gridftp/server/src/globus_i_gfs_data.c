@@ -4097,6 +4097,89 @@ globus_l_gfs_data_session_handle_set_user(
 
 #define GLOBUS_SHARING_PREFIX ":globus-sharing:"
 
+globus_result_t
+globus_l_gfs_data_authorize_anonymous(
+    globus_l_gfs_data_session_t *       session_handle,
+    struct passwd **                    pwentp,
+    gid_t *                             gidp)
+{
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    struct passwd *                     pwent = NULL;
+    gid_t                               gid = 0;
+
+#ifndef WIN32
+    struct group *                      grent = NULL;
+
+    /* if we are root, set to anon user */
+    if(getuid() == 0)
+    {
+        const char *                    usr = NULL;
+        const char *                    grp = NULL;
+
+        usr = globus_i_gfs_config_string("anonymous_user");
+        if (usr == NULL)
+        {
+            res = GlobusGFSErrorGeneric("No anonymous user set.");
+            goto error;
+        }
+        pwent = globus_l_gfs_getpwnam(usr);
+        if (pwent == NULL)
+        {
+            res = GlobusGFSErrorGeneric("Invalid anonymous user set.");
+            goto error;
+        }
+        grp = globus_i_gfs_config_string("anonymous_group");
+        if (grp == NULL)
+        {
+            gid = pwent->pw_gid;
+        }
+        else
+        {
+            grent = globus_l_gfs_getgrnam(grp);
+            if(grent == NULL)
+            {
+                res = GlobusGFSErrorGeneric(
+                    "Invalid anonymous group set.");
+                goto error;
+            }
+            gid = grent->gr_gid;
+        }
+    }
+    /* if not root, just run as is */
+    else
+    {
+        pwent = globus_l_gfs_getpwuid(getuid());
+        if(pwent == NULL)
+        {
+            res = GlobusGFSErrorGeneric(
+                "Invalid passwd entry for current user.");
+            goto error;
+        }
+        gid = pwent->pw_gid;
+        grent = globus_l_gfs_getgrgid(pwent->pw_gid);
+        if(grent == NULL)
+        {
+            res = GlobusGFSErrorGeneric(
+                "Invalid group id assigned to current user.");
+            goto error;
+        }
+    }
+    /* since this is anonymous change the user name */
+    session_handle->real_username = globus_libc_strdup(pwent->pw_name);
+    if(session_handle->real_username == NULL)
+    {
+        res = GlobusGFSErrorMemory("real_username");
+    }
+#endif /* !WIN32 */
+
+error:
+    *pwentp = pwent;
+    *gidp = gid;
+
+    return res;
+}
+/* globus_l_gfs_data_authorize_anonymous() */
+
 static
 void
 globus_l_gfs_data_authorize(
@@ -4107,7 +4190,7 @@ globus_l_gfs_data_authorize(
     void *                              remote_data_arg = NULL;
     int                                 rc;
     globus_result_t                     res;
-    int                                 gid;
+    gid_t                               gid;
     char *                              pw_file;
     char *                              usr;
     char *                              grp;
@@ -4429,80 +4512,12 @@ globus_l_gfs_data_authorize(
     else if(globus_i_gfs_config_bool("allow_anonymous") &&
         globus_i_gfs_config_is_anonymous(session_info->username))
     {
-        /* if we are root, set to anon user */
-        if(getuid() == 0)
+        res = globus_l_gfs_data_authorize_anonymous(
+            op->session_handle, &pwent, &gid);
+        if (res != GLOBUS_SUCCESS)
         {
-            usr = globus_i_gfs_config_string("anonymous_user");
-            if(usr == NULL)
-            {
-                res = GlobusGFSErrorGeneric("No anonymous user set.");
-                goto pwent_error;
-            }
-            pwent = globus_l_gfs_getpwnam(usr);
-            if(pwent == NULL)
-            {
-                res = GlobusGFSErrorGeneric("Invalid anonymous user set.");
-                goto pwent_error;
-            }
-            grp = globus_i_gfs_config_string("anonymous_group");
-            if(grp == NULL)
-            {
-                grent = globus_l_gfs_getgrgid(pwent->pw_gid);
-                if(grent == NULL)
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid group id assigned to anonymous user.");
-                    goto pwent_error;
-                }
-            }
-            else
-            {
-                grent = globus_l_gfs_getgrnam(grp);
-                if(grent == NULL)
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid anonymous group set.");
-                    goto pwent_error;
-                }
-            }
-            gid = grent->gr_gid;
+            goto pwent_error;
         }
-        /* if not root, just run as is */
-        else
-        {
-#ifndef WIN32
-            pwent = globus_l_gfs_getpwuid(getuid());
-            if(pwent == NULL)
-            {
-                res = GlobusGFSErrorGeneric(
-                    "Invalid passwd entry for current user.");
-                goto pwent_error;
-            }
-            gid = pwent->pw_gid;
-            grent = globus_l_gfs_getgrgid(pwent->pw_gid);
-            if(grent == NULL)
-            {
-                res = GlobusGFSErrorGeneric(
-                    "Invalid group id assigned to current user.");
-                goto pwent_error;
-            }
-#endif
-        }
-#ifndef WIN32
-
-        /* since this is anonymous change the user name */
-        op->session_handle->real_username = globus_libc_strdup(pwent->pw_name);
-        if(pwent->pw_name != NULL)
-        {
-            globus_free(pwent->pw_name);
-        }
-        pwent->pw_name = strdup("anonymous");
-        if(grent->gr_name != NULL)
-        {
-            globus_free(grent->gr_name);
-        }
-        grent->gr_name = strdup("anonymous");
-#endif
     }
     else if(pw_file != NULL)
     {
