@@ -4447,14 +4447,11 @@ globus_l_gfs_data_authorize(
     gid_t                               gid;
     char *                              pw_file;
     char *                              usr;
-    char *                              grp;
-    char *                              pw_hash;
     char                                authz_usr[USER_NAME_MAX];
     struct passwd *                     pwent = NULL;
     struct group *                      grent = NULL;
     int                                 auth_level;
     char *                              chroot_dir = NULL;
-    char *                              custom_home_dir;
     char *                              sharing_dn = NULL;
     char *                              shared_user_str = NULL;
     globus_bool_t                       sharing_attempted = GLOBUS_FALSE;
@@ -5156,9 +5153,7 @@ void
 globus_i_gfs_data_init()
 {
     char *                              restrict_path;
-    int                                 rc;
     globus_result_t                     result;
-    char *                              driver;
     GlobusGFSName(globus_i_gfs_data_init);
     GlobusGFSDebugEnter();
 
@@ -11875,7 +11870,6 @@ globus_l_gfs_finished_command_kickout(
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     void *                              remote_data_arg = NULL;
     globus_l_gfs_data_operation_t *     op;
-    globus_result_t                     result;
     globus_l_gfs_data_cmd_bounce_t *    bounce;
 
     bounce = (globus_l_gfs_data_cmd_bounce_t *) user_arg;
@@ -11898,17 +11892,11 @@ globus_l_gfs_finished_command_kickout(
     {
         globus_free(bounce->reply.info.command.checksum);
     }
-    if(bounce->reply.msg)
-        {
-        globus_free(bounce->reply.msg);
-        }
-    if(bounce->reply.info.command.created_dir)
-    {
-        globus_free(bounce->reply.info.command.created_dir);
-    }
+    free(bounce->reply.msg);
+    free(bounce->reply.info.command.created_dir);
     if((bounce->reply.code / 100) == 1)
     {
-        globus_free(bounce);
+        free(bounce);
         return;
     }
     else
@@ -11927,7 +11915,7 @@ globus_l_gfs_finished_command_kickout(
     globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
     globus_l_gfs_data_operation_destroy(op);
     
-    globus_free(bounce);
+    free(bounce);
 }
 
 
@@ -12264,7 +12252,6 @@ globus_gridftp_server_finished_stat(
     int                                 i;
     char *                              base_path;
     globus_gfs_stat_info_t *            stat_info;
-    int                                 code;
     GlobusGFSName(globus_gridftp_server_finished_stat);
     GlobusGFSDebugEnter();
 
