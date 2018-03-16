@@ -2888,14 +2888,12 @@ globus_l_gfs_data_auth_init_cb(
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_l_gfs_data_operation_t *     op;
-    globus_gfs_session_info_t *         session_info;
     globus_gfs_finished_info_t          finished_info;
     globus_bool_t                       ready = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_data_auth_init_cb);
     GlobusGFSDebugEnter();
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
-    session_info = (globus_gfs_session_info_t *) op->info_struct;
 
     memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
     if(result != GLOBUS_SUCCESS)
@@ -4783,7 +4781,6 @@ globus_l_gfs_data_authorize(
     int                                 auth_level;
     char *                              chroot_dir = NULL;
     globus_bool_t                       sharing_attempted = GLOBUS_FALSE;
-    char *                              process_username = NULL;
     GlobusGFSName(globus_l_gfs_data_authorize);
     GlobusGFSDebugEnter();
 
@@ -4798,7 +4795,6 @@ globus_l_gfs_data_authorize(
 
     auth_level = globus_i_gfs_config_int("auth_level");
     pw_file = (char *) globus_i_gfs_config_string("pw_file");
-    process_username = globus_i_gfs_config_string("process_user");
     op->session_handle->sharing = 
         globus_i_gfs_config_string("sharing_dn") != NULL;
     
@@ -7632,7 +7628,6 @@ globus_i_gfs_data_request_handle_destroy(
     globus_result_t                     result;
     globus_l_gfs_data_session_t *       session_handle;
     globus_l_gfs_data_handle_t *        data_handle;
-    int                                 old_state_dbg;
     GlobusGFSName(globus_i_gfs_data_request_handle_destroy);
     GlobusGFSDebugEnter();
 
@@ -7654,7 +7649,6 @@ globus_i_gfs_data_request_handle_destroy(
 
         data_handle->destroy_requested = GLOBUS_TRUE;
 
-        old_state_dbg = data_handle->state;
         session_arg = session_handle->session_arg;
         switch(data_handle->state)
         {
@@ -9739,7 +9733,6 @@ globus_l_gfs_data_begin_cb(
     globus_gfs_event_info_t        event_reply;
     globus_gfs_event_info_t             event_info;
     globus_l_gfs_data_operation_t *     op;
-    globus_l_gfs_data_handle_state_t    last_state;
     void *                              remote_data_arg = NULL;
     GlobusGFSName(globus_l_gfs_data_begin_cb);
     GlobusGFSDebugEnter();
@@ -9748,7 +9741,6 @@ globus_l_gfs_data_begin_cb(
 
     globus_mutex_lock(&op->session_handle->mutex);
     {
-        last_state = op->state;
         switch(op->state)
         {
             case GLOBUS_L_GFS_DATA_CONNECTING:
