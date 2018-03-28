@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-ftp-control
 _name = globus_ftp_control
-version = 8.2
+version = 8.3
 soname = 1
 
 INSTALLDIR = $(CURDIR)/debian/tmp

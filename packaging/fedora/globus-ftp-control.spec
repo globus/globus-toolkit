@@ -6,7 +6,7 @@ Name:		globus-ftp-control
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	8.2
+Version:	8.3
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
@@ -176,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Wed Mar 28 2018 Globus Toolkit <support@globus.org> - 8.3-1
+- Default to host authz when using tls control channel
+
 * Fri Sep 22 2017 Globus Toolkit <support@globus.org> - 8.2-1
 - fix leak
 
