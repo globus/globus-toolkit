@@ -1,5 +1,5 @@
 Name:           globus-toolkit-repo
-Version:        6.0.13
+Version:        6.0.14
 Release:        1
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
@@ -142,6 +142,10 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Fri Apr  6 2018 Globus Toolkit <support@globus.org> - 6.0.14-1
+- (deb) Add bionic
+- (deb) remove yakkety and zesty
+
 * Mon Feb 19 2018 Globus Toolkit <support@globus.org> - 6.0.13-1
 - (rpm) Fix yum install when yum-config-tools is not present
 
