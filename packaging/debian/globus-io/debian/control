@@ -1,7 +1,7 @@
 Source: globus-io
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-xio-gsi-driver-dev (>= 2), libglobus-gss-assist-dev (>= 8), libglobus-xio-dev (>= 3), libglobus-gssapi-error-dev (>= 4), pkg-config, openssl
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-xio-gsi-driver-dev (>= 2), libglobus-gss-assist-dev (>= 8), libglobus-xio-dev (>= 3), libglobus-gssapi-error-dev (>= 4), pkg-config, openssl, libltdl-dev
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
