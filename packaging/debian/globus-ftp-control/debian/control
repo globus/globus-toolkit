@@ -1,7 +1,7 @@
 Source: globus-ftp-control
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-gss-assist-dev (>= 11), libglobus-io-dev (>= 11), libglobus-gssapi-gsi-dev, libglobus-gssapi-error-dev (>= 4), libglobus-xio-dev (>= 3), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, openssl
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 14), libglobus-gss-assist-dev (>= 11), libglobus-io-dev (>= 11), libglobus-gssapi-gsi-dev, libglobus-gssapi-error-dev (>= 4), libglobus-xio-dev (>= 3), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, openssl, libltdl-dev
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
