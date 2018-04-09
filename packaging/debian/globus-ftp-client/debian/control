@@ -1,7 +1,7 @@
 Source: globus-ftp-client
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 9), autotools-dev, quilt, libglobus-xio-popen-driver-dev (>= 2), libglobus-xio-pipe-driver-dev, libglobus-common-dev (>= 15), libglobus-ftp-control-dev (>= 4), libglobus-ftp-control-doc (>= 1), globus-gridftp-server-progs (>= 0), libglobus-gridftp-server-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, openssl, dh-exec
+Build-Depends: debhelper (>= 9), autotools-dev, quilt, libglobus-xio-popen-driver-dev (>= 2), libglobus-xio-pipe-driver-dev, libglobus-common-dev (>= 15), libglobus-ftp-control-dev (>= 4), libglobus-ftp-control-doc (>= 1), globus-gridftp-server-progs (>= 0), libglobus-gridftp-server-dev, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, openssl, dh-exec, libltdl-dev
 Standards-Version: 3.9.2
 Section: net
 DM-Upload-Allowed: yes
