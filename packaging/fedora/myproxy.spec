@@ -13,8 +13,8 @@ Name:           myproxy
 %global nlibpkg libs
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.28
-Release:	4%{?dist}
+Version:	6.1.29
+Release:	1%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -563,6 +563,9 @@ fi
 %endif
 
 %changelog
+* Wed May 02 2018 Globus Toolkit <support@globus.org> - 6.1.29-1
+- Fix -Werror=format-security errors
+
 * Mon Jul 10 2017 Globus Toolkit <support@globus.org> - 6.1.28-4
 - Remove krb5 dependency on sles.12
 - Add /usr/sbin and /sbin for post scripts

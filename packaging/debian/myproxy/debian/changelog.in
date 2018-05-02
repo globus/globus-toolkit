@@ -1,3 +1,9 @@
+myproxy (6.1.29-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix -Werror=format-security errors
+
+ -- Globus Toolkit <support@globus.org>  Wed, 02 May 2018 11:11:55 -0400
+
 myproxy (6.1.28-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix OpenSSL 1.1.0-related typo
