@@ -1,9 +1,5 @@
 # Do we want SELinux & Audit
-%if "%{?rhel}" == "4"
-%global WITH_SELINUX 0
-%else
 %global WITH_SELINUX 1
-%endif
 
 # Build position-independent executables (requires toolchain support)?
 %global pie 0
@@ -16,11 +12,7 @@
 %global gsi 1
 
 # Do we want libedit support
-%if "%{?rhel}" == "4" || "%{?rhel}" == "5"
-%global libedit 0
-%else
 %global libedit 1
-%endif
 
 # Do we want NSS tokens support
 #NSS support is broken from 5.4p1
@@ -29,7 +21,13 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 1
+%if %{?fedora}%{!?fedora:0} >= 28
+%global tcpd 0
+%else
+%global tcpd 1
+%endif
+
+%global gsi_openssh_rel 2
 %global openssh_ver     7.5p1
 %global gsi_openssh_ver %{openssh_ver}b
 
@@ -118,20 +116,11 @@ BuildRequires: pam-devel
 BuildRequires: tcpd-devel
 BuildRequires: libopenssl-devel
 %else
-%if "%{?rhel}" == "5"
-BuildRequires: tcp_wrappers
-BuildRequires: openssl101e-devel
-BuildRequires:  pkgconfig
-
-BuildConflicts: openssl-devel
-%else
-%if "%{?rhel}" == "4"
-BuildRequires: openssl-devel
-%else
+%if %{?fedora}%{!?fedora:0} < 28
+# RHEL or Fedora < 28 which deprecates tcpwrappers in place of a real firewall
 BuildRequires: tcp_wrappers-devel
+%endif
 BuildRequires: openssl-devel >= 0.9.8j
-%endif
-%endif
 %endif
 
 %if %{kerberos5}
@@ -274,7 +263,9 @@ LDFLAGS="$LDFLAGS -pie -z relro -z now"; export LDFLAGS
 	--sysconfdir=%{_sysconfdir}/gsissh \
 	--libexecdir=%{_libexecdir}/gsissh \
 	--datadir=%{_datadir}/gsissh \
+%if %{tcpd}
 	--with-tcp-wrappers \
+%endif
 	--with-default-path=/usr/local/bin:/bin:/usr/bin \
 	--with-superuser-path=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin \
 	--with-privsep-path=%{_var}/empty/gsisshd \
@@ -481,6 +472,9 @@ fi
 %endif
 
 %changelog
+* Wed May  2 2018 Globus Toolkit <support@globus.org> - 7.5p1b-2
+- Remove deprecated dependency on tcp_wrappers-devel for Fedora 28
+
 * Tue Jun 27 2017 Globus Toolkit <support@globus.org> - 7.5p1b-1
 - Update to GSI-OpenSSH 7.5p1b
 
