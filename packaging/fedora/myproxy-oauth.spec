@@ -5,7 +5,7 @@ Name:		myproxy-oauth
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	0.28
+Version:	0.29
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	MyProxy OAuth Delegation Serice
@@ -146,6 +146,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Mon May 14 2018 Globus Toolkit <support@globus.org> - 0.29-1
+- Allow newer TLS versions
+
 * Tue May 8 2018 Globus Toolkit <support@globus.org> - 0.28-1
 - Resolve packaging issue                                                      
 
