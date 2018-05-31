@@ -1,3 +1,10 @@
+globus-gridftp-server-control (6.2-1+gt6.@distro@) @distro@; urgency=low
+
+  * prevent client from requesting clear control channel
+  * CIPHERS config will now apply to control channel
+
+ -- Globus Toolkit <support@globus.org>  Thu, 31 May 2018 13:01:23 -0500
+
 globus-gridftp-server-control (6.1-1+gt6.@distro@) @distro@; urgency=low
 
   * Don't error if acquire_cred fails when vhost env is set
