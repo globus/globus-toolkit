@@ -215,6 +215,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
             }
         }
     }
+#endif
     else if (g_OID_equal(desired_object, gss_ext_tls_version_oid))
     {
         const char *tls_version = NULL;
@@ -294,7 +295,6 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
             }
         }
     }
-#endif
     else if(((gss_OID_desc *)desired_object)->length !=
        gss_ext_x509_cert_chain_oid->length ||
        memcmp(((gss_OID_desc *)desired_object)->elements,

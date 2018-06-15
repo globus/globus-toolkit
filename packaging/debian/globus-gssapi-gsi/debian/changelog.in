@@ -1,3 +1,9 @@
+globus-gssapi-gsi (13.8-1+gt6.@distro@) @distro@; urgency=low
+
+  * Fix version guard
+
+ -- Globus Toolkit <support@globus.org>  Fri, 15 Jun 2018 13:15:54 -0400
+
 globus-gssapi-gsi (13.7-1+gt6.@distro@) @distro@; urgency=low
 
   * Add context inquire OID support to get TLS version and cipher
