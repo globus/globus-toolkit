@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	13.6
+Version:	13.7
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -179,6 +179,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Jun 15 2018 Globus Toolkit <support@globus.org> - 13.7-1
+- Add context inquire OID support to get TLS version and cipher
+
 * Thu May 31 2018 Globus Toolkit <support@globus.org> - 13.6-1
 - enable ECDH ciphers for openssl < 1.1.0
 
