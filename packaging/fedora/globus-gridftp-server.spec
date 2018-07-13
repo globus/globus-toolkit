@@ -6,7 +6,7 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.6
+Version:	12.7
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -230,6 +230,10 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Fri Jul 13 2018 Globus Toolkit <support@globus.org> - 12.7-1
+- force ipc encryption if server configuration requires
+- fix old ipc bug making it hard to diagnose racy connection failures
+
 * Fri Jun 15 2018 Globus Toolkit <support@globus.org> - 12.6-1
 - win: fix path restrictions on /
 
