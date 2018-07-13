@@ -6,7 +6,7 @@ Name:		globus-gridftp-server-control
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.2
+Version:	6.3
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server Library
@@ -139,6 +139,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Fri Jul 13 2018 Globus Toolkit <support@globus.org> - 6.3-1
+- force encryption on tls control channel
+
 * Thu May 31 2018 Globus Toolkit <support@globus.org> - 6.2-1
 - prevent client from requesting clear control channel
 - CIPHERS config will now apply to control channel
