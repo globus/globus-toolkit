@@ -7,7 +7,7 @@ Name:		globus-gsi-sysconfig
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	8.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
@@ -151,7 +151,7 @@ make %{?_smp_mflags}
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/grid-security
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/grid-security/certificates
 
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
@@ -167,6 +167,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}
 %dir %{_sysconfdir}/grid-security
+%dir %{_sysconfdir}/grid-security/certificates
 %doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 %{_libdir}/libglobus*.so.*
 
@@ -183,6 +184,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Thu Jul 26 2018 Globus Toolkit <support@globus.org> - 8.1-2
+- Package /etc/grid-security/certificates
+
 * Wed Jan 24 2018 Globus Toolkit <support@globus.org> - 8.1-1
 - fix typo in windows function name
 

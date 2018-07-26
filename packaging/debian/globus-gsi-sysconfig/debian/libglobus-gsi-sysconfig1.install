@@ -1,0 +1,5 @@
+#! /usr/bin/dh-exec
+etc/grid-security
+etc/grid-security/certificates
+usr/lib/*/libglobus_gsi_sysconfig.so.*
+usr/share/doc/libglobus-gsi-sysconfig-dev/GLOBUS_LICENSE

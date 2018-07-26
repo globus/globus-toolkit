@@ -1,7 +1,7 @@
 Source: globus-gsi-sysconfig
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, libglobus-common-dev (>= 15), libglobus-openssl-module-dev (>= 3), libglobus-gsi-openssl-error-dev (>= 2), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config 
+Build-Depends: debhelper (>= 9), autotools-dev, quilt, libglobus-common-dev (>= 15), libglobus-openssl-module-dev (>= 3), libglobus-gsi-openssl-error-dev (>= 2), doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, pkg-config, dh-exec
 Standards-Version: 3.8.4
 Section: net
 DM-Upload-Allowed: yes

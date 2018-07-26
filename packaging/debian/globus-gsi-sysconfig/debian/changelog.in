@@ -1,3 +1,9 @@
+globus-gsi-sysconfig (8.1-2+gt6.@distro@) @distro@; urgency=low
+
+  * Package /etc/grid-security/certificates
+
+ -- Globus Toolkit <support@globus.org>  Thu, 26 Jul 2018 14:26:03 -0400
+
 globus-gsi-sysconfig (8.1-1+gt6.@distro@) @distro@; urgency=low
 
   * fix typo in windows function name
