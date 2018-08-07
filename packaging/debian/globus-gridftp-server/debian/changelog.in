@@ -1,3 +1,9 @@
+globus-gridftp-server (12.9-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix initscript non-lsb status return codes
+
+ -- Globus Toolkit <support@globus.org>  Tue, 07 Aug 2018 18:58:17 -0500
+
 globus-gridftp-server (12.8-1+gt6.@distro@) @distro@; urgency=low
 
   * fix daemon config parsing not catching env vars
