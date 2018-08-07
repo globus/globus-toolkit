@@ -6,7 +6,7 @@ Name:		globus-gridftp-server-control
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.3
+Version:	7.0
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server Library
@@ -139,6 +139,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Tue Aug 07 2018 Globus Toolkit <support@globus.org> - 7.0-1
+- add support for x.abspath
+
 * Fri Jul 13 2018 Globus Toolkit <support@globus.org> - 6.3-1
 - force encryption on tls control channel
 
