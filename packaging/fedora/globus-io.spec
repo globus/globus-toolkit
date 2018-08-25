@@ -6,7 +6,7 @@ Name:		globus-io
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	11.9
+Version:	11.10
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - uniform I/O interface
@@ -156,6 +156,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 11.10-1
+- use 2048 bit keys to support openssl 1.1.1
+
 * Fri Apr 21 2017 Globus Toolkit <support@globus.org> - 11.9-1
 - Remove legacy SSLv3 support
 

@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-proxy-utils
 _name = globus_proxy_utils
-version = 6.19
+version = 6.20
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)

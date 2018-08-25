@@ -5,8 +5,8 @@ Name:		globus-xio-gridftp-driver
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	2.17
-Release:	2%{?dist}
+Version:	2.18
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus XIO GridFTP Driver
 
@@ -175,6 +175,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 2.18-1
+- use 2048 bit keys to support openssl 1.1.1
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.17-2
 - Update for el.5 openssl101e, replace docbook with asciidoc
 

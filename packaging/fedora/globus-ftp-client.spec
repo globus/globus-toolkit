@@ -7,7 +7,7 @@ Name:		globus-ftp-client
 %endif
 
 %global _name %(tr - _ <<< %{name})
-Version:	8.36
+Version:	8.37
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Client Library
@@ -176,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 8.37-1
+- use 2048 bit keys to support openssl 1.1.1
+
 * Mon Jun 26 2017 Globus Toolkit <support@globus.org> - 8.36-1
 - Replace deprecated perl POSIX::tmpnam with File::Temp::tmpnam
 

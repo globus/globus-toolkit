@@ -13,7 +13,7 @@ Name:           myproxy
 %global nlibpkg libs
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.1.30
+Version:	6.1.31
 Release:	1%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
@@ -563,6 +563,9 @@ fi
 %endif
 
 %changelog
+* Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 6.1.31-1
+- use 2048 bit keys to support openssl 1.1.1
+
 * Wed Jun 20 2018 Globus Toolkit <support@globus.org> - 6.1.30-1
 - remove macro overquoting
 

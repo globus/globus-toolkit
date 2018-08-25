@@ -6,7 +6,7 @@ Name:		globus-gram-client
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	13.19
+Version:	13.20
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GRAM Client Library
@@ -165,6 +165,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 13.20-1
+- use 2048 bit keys to support openssl 1.1.1
+
 * Tue Jul 11 2017 Globus Toolkit <support@globus.org> - 13.19-1
 - Add option to disable tests which require network
 

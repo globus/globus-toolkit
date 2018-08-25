@@ -5,7 +5,7 @@ Name:		globus-proxy-utils
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	6.19
+Version:	6.20
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
@@ -108,6 +108,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 6.20-1
+- use 2048 bit keys to support openssl 1.1.1
+
 * Fri Jan 06 2017 Globus Toolkit <support@globus.org> - 6.19-1
 - Fix RSA key checking
 

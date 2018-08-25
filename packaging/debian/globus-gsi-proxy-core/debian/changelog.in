@@ -1,3 +1,9 @@
+globus-gsi-proxy-core (8.7-1+gt6.@distro@) @distro@; urgency=low
+
+  * use 2048 bit keys to support openssl 1.1.1
+
+ -- Globus Toolkit <support@globus.org>  Fri, 24 Aug 2018 21:00:32 -0500
+
 globus-gsi-proxy-core (8.6-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix missing openssl compile/link flags

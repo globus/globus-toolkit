@@ -6,7 +6,7 @@ Name:		globus-ftp-control
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	8.5
+Version:	8.6
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GridFTP Control Library
@@ -176,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 8.6-1
+- use 2048 bit keys to support openssl 1.1.1
+
 * Fri Jul 13 2018 Globus Toolkit <support@globus.org> - 8.5-1
 - force encryption on tls control channel
 

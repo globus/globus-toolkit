@@ -1,3 +1,9 @@
+globus-xio-gridftp-driver (2.18-1+gt6.@distro@) @distro@; urgency=low
+
+  * use 2048 bit keys to support openssl 1.1.1
+
+ -- Globus Toolkit <support@globus.org>  Fri, 24 Aug 2018 20:47:17 -0500
+
 globus-xio-gridftp-driver (2.17-1+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e, replace docbook with asciidoc

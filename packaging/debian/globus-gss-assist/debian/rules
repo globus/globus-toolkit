@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gss-assist
 _name = globus_gss_assist
-version = 11.1
+version = 11.2
 soname = 3
 
 INSTALLDIR = $(CURDIR)/debian/tmp

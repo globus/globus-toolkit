@@ -1,3 +1,9 @@
+globus-gram-job-manager (14.37-1+gt6.@distro@) @distro@; urgency=low
+
+  * use 2048 bit keys to support openssl 1.1.1
+
+ -- Globus Toolkit <support@globus.org>  Fri, 24 Aug 2018 20:39:55 -0500
+
 globus-gram-job-manager (14.36-1+gt6.@distro@) @distro@; urgency=low
 
   * Default to running personal gatekeeper on an ephemeral port

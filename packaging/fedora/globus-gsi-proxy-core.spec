@@ -6,7 +6,7 @@ Name:		globus-gsi-proxy-core
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	8.6
+Version:	8.7
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GSI Proxy Core Library
@@ -193,6 +193,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 8.7-1
+- use 2048 bit keys to support openssl 1.1.1
+
 * Fri Sep 09 2016 Globus Toolkit <support@globus.org> - 8.6-1
 - Fix missing openssl compile/link flags
 

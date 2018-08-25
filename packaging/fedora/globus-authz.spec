@@ -6,7 +6,7 @@ Name:		globus-authz
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	3.15
+Version:	3.16
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus authz library
@@ -171,6 +171,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/*/*
 
 %changelog
+* Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 3.16-1
+- use 2048 bit keys to support openssl 1.1.1
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 3.15-1
 - Update for el.5 openssl101e
 

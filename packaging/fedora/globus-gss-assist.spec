@@ -6,7 +6,7 @@ Name:		globus-gss-assist
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	11.1
+Version:	11.2
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI Assist library
@@ -194,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 11.2-1
+- use 2048 bit keys to support openssl 1.1.1
+
 * Tue Sep 12 2017 Globus Toolkit <support@globus.org> - 11.1-1
 - race condition and dependency packaging fixes
 
