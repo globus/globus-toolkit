@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	13.8
+Version:	13.9
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -179,6 +179,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Mon Aug 27 2018 Globus Toolkit <support@globus.org> - 13.9-1
+- Set the default minimum TLS version to 1.2.  1.0 and 1.1 are deprecated.
+- Set the maximum TLS version default to 1.2.  1.3 is not yet supported.
+- use 2048 bit keys to support openssl 1.1.1
+
 * Fri Jun 15 2018 Globus Toolkit <support@globus.org> - 13.8-1
 - Fix version guard
 
