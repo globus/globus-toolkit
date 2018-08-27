@@ -6,7 +6,7 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.10
+Version:	12.11
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -230,6 +230,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Aug 27 2018 Globus Toolkit <support@globus.org> - 12.11-1
+- log remote http connection address for legacy s3 transfers
+
 * Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 12.10-1
 - use 2048 bit keys to support openssl 1.1.1
 

@@ -1,3 +1,9 @@
+globus-gridftp-server (12.11-1+gt6.@distro@) @distro@; urgency=low
+
+  * log remote http connection address for legacy s3 transfers
+
+ -- Globus Toolkit <support@globus.org>  Mon, 27 Aug 2018 16:26:14 -0500
+
 globus-gridftp-server (12.10-1+gt6.@distro@) @distro@; urgency=low
 
   * use 2048 bit keys to support openssl 1.1.1

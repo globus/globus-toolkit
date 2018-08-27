@@ -325,6 +325,7 @@ typedef struct
     globus_off_t                        http_length;
     globus_off_t                        http_transferred;
     char *                              http_response_str;
+    char *                              http_ip;
     globus_callback_handle_t            perf_handle;
 
 } globus_l_gfs_data_handle_t;
@@ -402,6 +403,7 @@ typedef struct globus_l_gfs_data_operation_s
     globus_l_gfs_storattr_t *           storattr;
     
     char *                              http_response_str;
+    char *                              http_ip;
 
     int                                 update_interval;
     
@@ -5330,6 +5332,10 @@ globus_l_gfs_data_operation_destroy(
     {
         globus_free(op->remote_ip);
     }
+    if(op->http_ip)
+    {
+        globus_free(op->http_ip);
+    }
     if(op->list_type)
     {
         globus_free((char *) op->list_type);
@@ -8594,6 +8600,9 @@ globus_i_gfs_data_request_recv(
 
     if(!data_handle->is_mine)
     {
+        op->http_ip = data_handle->http_ip;
+        data_handle->http_ip = NULL;
+        
         op->op_info_id = globus_l_gfs_op_info_ctr++;
         if(!recv_info->op_info)
         {
@@ -8771,6 +8780,9 @@ globus_i_gfs_data_request_send(
 
     if(!data_handle->is_mine)
     {
+        op->http_ip = data_handle->http_ip;
+        data_handle->http_ip = NULL;
+        
         op->op_info_id = globus_l_gfs_op_info_ctr++;
         if(!send_info->op_info)
         {
@@ -10255,7 +10267,14 @@ response_exit:
     if(!op->data_handle->is_mine)
     {
         char *                          remote_ip = NULL;
-        remote_ip = globus_i_gfs_ipc_query_op_info(op->op_info_id);
+        if(op->http_ip)
+        {
+            remote_ip = strdup(op->http_ip);
+        }
+        else
+        {
+            remote_ip = globus_i_gfs_ipc_query_op_info(op->op_info_id);
+        }
         if(remote_ip)
         {
             op->remote_ip = remote_ip;
@@ -14675,6 +14694,12 @@ globus_i_gfs_data_http_init(
             result = globus_xio_attr_cntl(
                 *attr, 
                 gfs_l_gsi_driver, 
+                GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
+                GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY);
+            globus_assert(result == GLOBUS_SUCCESS);
+            result = globus_xio_attr_cntl(
+                *attr, 
+                gfs_l_gsi_driver, 
                 GLOBUS_XIO_GSI_SET_ANON);
             globus_assert(result == GLOBUS_SUCCESS);
             result = globus_xio_attr_cntl(
@@ -14908,6 +14933,7 @@ globus_i_gfs_data_http_get(
     int                                 http_ver;
     globus_bool_t                       eof;
     globus_bool_t                       retry = GLOBUS_FALSE;
+    char *                              ptr;
     GlobusGFSName(globus_l_gfs_data_http_get);
     GlobusGFSDebugEnter();
     
@@ -14994,7 +15020,17 @@ globus_i_gfs_data_http_get(
         return globus_i_gfs_data_http_get(
             op, path, request, offset, length, GLOBUS_FALSE);
     }
-        
+
+    globus_xio_handle_cntl(
+        handle,
+        gfs_l_tcp_driver,
+        GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+        &op->http_ip);
+    if(ptr = strrchr(op->http_ip, ':'))
+    {
+        *ptr = '\0';
+    }
+    
     /* read response, no data */
     result = globus_xio_read(
             handle,
@@ -15155,6 +15191,7 @@ globus_i_gfs_data_http_get(
             
     data_handle->http_handle = handle;
     data_handle->http_length = length;
+    data_handle->http_ip = globus_libc_strdup(op->http_ip);
     op->data_handle = data_handle;
 
     op->ref++;
@@ -15209,6 +15246,7 @@ globus_i_gfs_data_http_put(
     char *                              method;
     int                                 http_ver;
     globus_bool_t                       retry = GLOBUS_FALSE;
+    char *                              ptr;
     GlobusGFSName(globus_l_gfs_data_http_put);
     GlobusGFSDebugEnter();
     
@@ -15297,6 +15335,16 @@ globus_i_gfs_data_http_put(
     {
         result = GlobusGFSErrorWrapFailed("HTTP connection", result);
         goto response_exit;
+    }
+
+    globus_xio_handle_cntl(
+        handle,
+        gfs_l_tcp_driver,
+        GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+        &op->http_ip);
+    if(ptr = strrchr(op->http_ip, ':'))
+    {
+        *ptr = '\0';
     }
 
     if(length > 0)
@@ -15455,6 +15503,7 @@ globus_i_gfs_data_http_put(
             
     data_handle->http_handle = handle;
     data_handle->http_length = length;
+    data_handle->http_ip = globus_libc_strdup(op->http_ip);
     op->data_handle = data_handle;
     
     op->ref++;
