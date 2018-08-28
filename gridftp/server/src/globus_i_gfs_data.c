@@ -15021,12 +15021,12 @@ globus_i_gfs_data_http_get(
             op, path, request, offset, length, GLOBUS_FALSE);
     }
 
-    globus_xio_handle_cntl(
+    result = globus_xio_handle_cntl(
         handle,
         gfs_l_tcp_driver,
         GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
         &op->http_ip);
-    if(ptr = strrchr(op->http_ip, ':'))
+    if(result == GLOBUS_SUCCESS && (ptr = strrchr(op->http_ip, ':')))
     {
         *ptr = '\0';
     }
@@ -15337,12 +15337,12 @@ globus_i_gfs_data_http_put(
         goto response_exit;
     }
 
-    globus_xio_handle_cntl(
+    result = globus_xio_handle_cntl(
         handle,
         gfs_l_tcp_driver,
         GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
         &op->http_ip);
-    if(ptr = strrchr(op->http_ip, ':'))
+    if(result == GLOBUS_SUCCESS && (ptr = strrchr(op->http_ip, ':')))
     {
         *ptr = '\0';
     }
