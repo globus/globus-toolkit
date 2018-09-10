@@ -6,7 +6,7 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.12
+Version:	12.13
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -230,6 +230,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Sep 10 2018 Globus Toolkit <support@globus.org> - 12.13-1
+- Fix data_node restrict path
+
 * Tue Aug 28 2018 Globus Toolkit <support@globus.org> - 12.12-1
 - log remote http connection address for legacy s3 transfers
 

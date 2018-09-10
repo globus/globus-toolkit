@@ -8632,7 +8632,7 @@ globus_i_gfs_data_request_recv(
             session_handle,
             recv_info->pathname,
             &full_pathname,
-            GFS_L_READ);
+            GFS_L_WRITE);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed(
