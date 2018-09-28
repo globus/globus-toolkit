@@ -6,7 +6,7 @@ Name:		globus-gssapi-gsi
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	13.10
+Version:	13.11
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - GSSAPI library
@@ -140,7 +140,7 @@ autoreconf -if
            --includedir=%{_includedir}/globus \
            --libexecdir=%{_datadir}/globus
 
-make %{?_smp_mflags}
+make %{?_smp_mflags} %{?GLOBUS_FLAGS}
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -179,6 +179,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri Sep 28 2018 Globus Toolkit <support@globus.org> - 13.11-1
+- Fix leaks
+
 * Fri Aug 31 2018 Globus Toolkit <support@globus.org> - 13.10-1
 - Fix resource leak when loading cert directories
 
