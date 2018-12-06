@@ -4,7 +4,7 @@ gt6_repo_root="https://downloads.globus.org/toolkit/gt6"
 gcs5_repo_root="https://downloads.globus.org/globus-connect-server"
 stability_levels="stable testing unstable"
 rpmoses="el6 el7 fedora sles12"
-deboses="wheezy jessie stretch buster trusty xenial artful bionic"
+deboses="jessie stretch buster trusty xenial bionic cosmic"
 
 bin_el6="el/6/\$basearch/"
 src_el6="el/6/SRPMS/"

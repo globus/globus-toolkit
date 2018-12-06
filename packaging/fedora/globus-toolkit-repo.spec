@@ -1,5 +1,5 @@
 Name:           globus-toolkit-repo
-Version:        6.0.14
+Version:        6.0.15
 Release:        1
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
@@ -142,6 +142,10 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Thu Dec  6 2018 Globus Toolkit <support@globus.org> - 6.0.15-1
+- (deb) Add cosmic
+- (deb) remove wheezy and artful
+
 * Fri Apr  6 2018 Globus Toolkit <support@globus.org> - 6.0.14-1
 - (deb) Add bionic
 - (deb) remove yakkety and zesty

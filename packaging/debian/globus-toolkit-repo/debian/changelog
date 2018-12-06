@@ -1,3 +1,10 @@
+globus-toolkit-repo (6.0.15) unstable; urgency=low
+
+  * (deb) Add cosmic
+  * (deb) remove wheezy and artful
+
+ -- Globus Toolkit <support@globus.org>  Thu,  6 Dec 2018 11:26:22 -0500
+
 globus-toolkit-repo (6.0.14) unstable; urgency=low
 
   * (deb) Add bionic
