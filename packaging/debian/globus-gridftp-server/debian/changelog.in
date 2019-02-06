@@ -1,3 +1,9 @@
+globus-gridftp-server (12.14-1+gt6.@distro@) @distro@; urgency=low
+
+  * improvements for filesystems that encounter listing timeouts
+
+ -- Globus Toolkit <support@globus.org>  Wed, 06 Feb 2019 11:02:55 -0600
+
 globus-gridftp-server (12.13-1+gt6.@distro@) @distro@; urgency=low
 
   * Fix data_node restrict path
