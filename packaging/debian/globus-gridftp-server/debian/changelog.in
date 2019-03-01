@@ -1,3 +1,10 @@
+globus-gridftp-server (12.15-1+gt6.@distro@) @distro@; urgency=low
+
+  * fake stat responses when slow listings enabled
+  * win: error on un-stat()-able files in directory listing
+
+ -- Globus Toolkit <support@globus.org>  Fri, 01 Mar 2019 12:35:42 -0600
+
 globus-gridftp-server (12.14-1+gt6.@distro@) @distro@; urgency=low
 
   * improvements for filesystems that encounter listing timeouts
