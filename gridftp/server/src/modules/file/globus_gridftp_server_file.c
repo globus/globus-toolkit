@@ -1118,7 +1118,7 @@ done_fake:
                 {
                     .st_mode = S_IRWXU |
                         ((dir_entry->d_type == DT_DIR) ? S_IFDIR : S_IFREG),
-                    .st_size = -1,
+                    .st_size = 1,
                     .st_mtime = -1,
                     .st_atime = -1,
                     .st_ctime = -1,

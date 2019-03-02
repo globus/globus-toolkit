@@ -6,7 +6,7 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.15
+Version:	12.16
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -230,7 +230,7 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
-* Fri Mar 01 2019 Globus Toolkit <support@globus.org> - 12.15-1
+* Fri Mar 01 2019 Globus Toolkit <support@globus.org> - 12.16-1
 - fake stat responses when slow listings enabled
 - win: error on un-stat()-able files in directory listing
 
