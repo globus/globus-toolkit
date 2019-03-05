@@ -1,4 +1,4 @@
-globus-gridftp-server (12.16-1+gt6.@distro@) @distro@; urgency=low
+globus-gridftp-server (12.16-2+gt6.@distro@) @distro@; urgency=low
 
   * fake stat responses when slow listings enabled
   * win: error on un-stat()-able files in directory listing
