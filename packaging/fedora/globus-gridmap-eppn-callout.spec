@@ -5,7 +5,7 @@ Name:		globus-gridmap-eppn-callout
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	1.13
+Version:	1.14
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus gridmap eppn callout
@@ -125,6 +125,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libglobus*
 
 %changelog
+* Tue Mar 05 2019 Globus Toolkit <support@globus.org> - 1.14-1
+- add environment variable GLOBUS_EPPN_KEEP_DOMAIN to return full userid@domain from eppn
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 1.13-1
 - Update for el.5 openssl101e
 
