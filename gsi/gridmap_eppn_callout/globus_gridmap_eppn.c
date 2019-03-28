@@ -620,8 +620,8 @@ globus_gridmap_eppn_callout(
         {
             if(getenv("GLOBUS_EPPN_FORCE_GRIDMAP"))
             {
-                rc = globus_gss_assist_gridmap(found_identity, &tmp_identity);
-                if(rc != 0)
+                result = globus_gss_assist_gridmap(found_identity, &tmp_identity);
+                if(result != 0)
                 {
                     GLOBUS_GRIDMAP_CALLOUT_ERROR(
                         result,
@@ -653,8 +653,8 @@ globus_gridmap_eppn_callout(
         /* proceed with gridmap lookup */
         if(desired_identity == NULL)
         {
-            rc = globus_gss_assist_gridmap(subject, &found_identity);
-            if(rc != 0)
+            result = globus_gss_assist_gridmap(subject, &found_identity);
+            if(result != 0)
             {
                 GLOBUS_GRIDMAP_CALLOUT_ERROR(
                     result,
