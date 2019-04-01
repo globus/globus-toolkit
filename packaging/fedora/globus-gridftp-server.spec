@@ -6,8 +6,8 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.16
-Release:	2%{?dist}
+Version:	12.17
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -230,6 +230,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Apr 01 2019 Globus Toolkit <support@globus.org> - 12.17-1
+- send markers in stream mode when requested by 'OPTS RETR Markers=n;'
+
 * Fri Mar 01 2019 Globus Toolkit <support@globus.org> - 12.16-2
 - fake stat responses when slow listings enabled
 - win: error on un-stat()-able files in directory listing

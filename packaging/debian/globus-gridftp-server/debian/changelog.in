@@ -1,3 +1,9 @@
+globus-gridftp-server (12.17-1+gt6.@distro@) @distro@; urgency=low
+
+  * send markers in stream mode when requested by 'OPTS RETR Markers=n;'
+
+ -- Globus Toolkit <support@globus.org>  Mon, 01 Apr 2019 13:06:01 -0500
+
 globus-gridftp-server (12.16-2+gt6.@distro@) @distro@; urgency=low
 
   * fake stat responses when slow listings enabled
