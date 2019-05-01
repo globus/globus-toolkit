@@ -38,8 +38,13 @@ switch ($InstanceType)
 }
 
 Echo "Prevent IE first-run error"
+$keyPath = 'Registry::HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Internet Explorer\Main'
+if (!(Test-Path $keyPath))
+{
+    New-Item $keyPath -Force
+}
 Set-ItemProperty `
-    -Path "Registry::HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Internet Explorer\Main" `
+    -Path $keyPath `
     -Name "DisableFirstRunCustomize" `
     -Value 1
 
