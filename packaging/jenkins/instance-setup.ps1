@@ -171,5 +171,6 @@ C:\cygwin\bin\bash.exe --login -c "printf '%s\r\n' '$ip_address $public_hostname
 
 Echo "Starting OpenSSH server"
 Start-Service sshd
+Start-Service cygsshd
 
 Stop-Transcript
