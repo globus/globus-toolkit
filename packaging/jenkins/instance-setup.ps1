@@ -37,6 +37,12 @@ switch ($InstanceType)
     }
 }
 
+Echo "Prevent IE first-run error"
+Set-ItemProperty `
+    -Path "Registry::HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Internet Explorer\Main" `
+    -Name "DisableFirstRunCustomize" `
+    -Value 1
+
 Echo "Downloading Cygwin setup"
 Invoke-WebRequest `
         -Uri "https://cygwin.com/${cygwin_setup}" `
