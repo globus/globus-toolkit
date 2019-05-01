@@ -37,6 +37,17 @@ switch ($InstanceType)
     }
 }
 
+Echo "Prevent IE first-run error"
+$keyPath = 'Registry::HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Internet Explorer\Main'
+if (!(Test-Path $keyPath))
+{
+    New-Item $keyPath -Force
+}
+Set-ItemProperty `
+    -Path $keyPath `
+    -Name "DisableFirstRunCustomize" `
+    -Value 1
+
 Echo "Downloading Cygwin setup"
 Invoke-WebRequest `
         -Uri "https://cygwin.com/${cygwin_setup}" `
@@ -65,7 +76,7 @@ if ($InstanceType -eq "mingw32" -or $InstanceType -eq "mingw64")
 
     Echo "Installing additional prereqs ($mingw_prereqs) for mingw from EPEL 7"
     Echo "Fetching x86_64/m dir index"
-    $info = Invoke-WebRequest -Uri "${mingw_repo_m}" -UseBasicParsing
+    $info = Invoke-WebRequest -Uri "${mingw_repo_m}"
     foreach ($prereq in $mingw_prereqs) {
         $hrefs = ($info.Links | Where {($_.href.StartsWith(${prereq})) -and ($_.href.EndsWith(".rpm"))}).href
         foreach ($href in $hrefs) {
@@ -103,7 +114,7 @@ mkdir C:\cygwin\home\Administrator\.ssh
 
 Echo "Downloading ssh public key"
 $public_key = (Invoke-WebRequest `
-    -Uri "http://169.254.169.254/latest/meta-data/public-keys/0/openssh-key" -UseBasicParsing)
+    -Uri "http://169.254.169.254/latest/meta-data/public-keys/0/openssh-key")
 
 [IO.File]::WriteAllLines("c:\cygwin\home\jenkins\.ssh\authorized_keys", `
         $public_key.Content)
