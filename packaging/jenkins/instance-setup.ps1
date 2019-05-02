@@ -37,6 +37,17 @@ switch ($InstanceType)
     }
 }
 
+Echo "Prevent IE first-run error"
+$keyPath = 'Registry::HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Internet Explorer\Main'
+if (!(Test-Path $keyPath))
+{
+    New-Item $keyPath -Force
+}
+Set-ItemProperty `
+    -Path $keyPath `
+    -Name "DisableFirstRunCustomize" `
+    -Value 1
+
 Echo "Downloading Cygwin setup"
 Invoke-WebRequest `
         -Uri "https://cygwin.com/${cygwin_setup}" `
@@ -171,5 +182,6 @@ C:\cygwin\bin\bash.exe --login -c "printf '%s\r\n' '$ip_address $public_hostname
 
 Echo "Starting OpenSSH server"
 Start-Service sshd
+Start-Service cygsshd
 
 Stop-Transcript
