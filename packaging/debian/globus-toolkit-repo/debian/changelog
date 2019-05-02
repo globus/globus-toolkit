@@ -1,3 +1,10 @@
+globus-toolkit-repo (6.0.16) unstable; urgency=low
+
+  * (deb) Add disco
+  * (deb) remove trusty
+
+ -- Globus Toolkit <support@globus.org>  Fri, 26 Apr 2019 09:58:50 -0400
+
 globus-toolkit-repo (6.0.15) unstable; urgency=low
 
   * (deb) Add cosmic

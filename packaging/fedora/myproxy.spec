@@ -14,7 +14,7 @@ Name:           myproxy
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.31
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -34,6 +34,7 @@ BuildRequires:  insserv
 BuildRequires:  shadow
 %endif
 
+BuildRequires:  globus-gssapi-gsi-devel >= 13
 BuildRequires:  globus-gss-assist-devel >= 8
 BuildRequires:  globus-usage-devel >= 3
 BuildRequires:  pam-devel
@@ -563,6 +564,9 @@ fi
 %endif
 
 %changelog
+* Thu May 02 2019 Globus Toolkit <support@globus.org> - 6.1.31-2
+- Add globus-gssapi-gsi-devel dependency
+
 * Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 6.1.31-1
 - use 2048 bit keys to support openssl 1.1.1
 
