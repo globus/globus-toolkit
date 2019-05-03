@@ -14,7 +14,7 @@ Name:           myproxy
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.31
-Release:	3%{?dist}
+Release:	4%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -66,7 +66,7 @@ BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
-%if %{?fedora}%{!?fedora:0} >= 30
+%if %{?fedora}%{!?fedora:0} >= 28
 BuildRequires:  krb5-devel
 %endif
 
@@ -567,7 +567,7 @@ fi
 %endif
 
 %changelog
-* Thu May 02 2019 Globus Toolkit <support@globus.org> - 6.1.31-3
+* Fri May 03 2019 Globus Toolkit <support@globus.org> - 6.1.31-4
 - Add dependencies for fedora 30
 
 * Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 6.1.31-1
