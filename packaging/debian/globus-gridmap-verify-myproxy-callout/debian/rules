@@ -11,7 +11,7 @@ endif
 
 name = globus-gridmap-verify-myproxy-callout
 _name = globus_gridmap_verify_myproxy_callout
-version = 2.9
+version = 2.10
 soname = 0
 
 INSTALLDIR = $(CURDIR)/debian/tmp

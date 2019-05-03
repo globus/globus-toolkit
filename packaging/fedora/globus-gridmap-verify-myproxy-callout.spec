@@ -5,7 +5,7 @@ Name:		globus-gridmap-verify-myproxy-callout
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	2.9
+Version:	2.10
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus gridmap myproxy callout
@@ -124,6 +124,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libglobus_*
 
 %changelog
+* Fri May 03 2019 Globus Toolkit <support@globus.org> - 2.10-1
+- fix verification to allow proxy certs
+
 * Thu Sep 08 2016 Globus Toolkit <support@globus.org> - 2.9-1
 - Update for el.5 openssl101e
 

@@ -1,3 +1,9 @@
+globus-gridmap-verify-myproxy-callout (2.10-1+gt6.@distro@) @distro@; urgency=low
+
+  * fix verification to allow proxy certs
+
+ -- Globus Toolkit <support@globus.org>  Fri, 03 May 2019 15:02:13 -0500
+
 globus-gridmap-verify-myproxy-callout (2.9-1+gt6.@distro@) @distro@; urgency=low
 
   * Update for el.5 openssl101e
