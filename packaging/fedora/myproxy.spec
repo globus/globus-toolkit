@@ -14,7 +14,7 @@ Name:           myproxy
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	6.1.31
-Release:	2%{?dist}
+Release:	3%{?dist}
 Vendor: Globus Support
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -66,6 +66,9 @@ BuildRequires:  autoconf >= 2.60
 BuildRequires:  libtool >= 2.2
 %endif
 BuildRequires:  pkgconfig
+%if %{?fedora}%{!?fedora:0} >= 30
+BuildRequires:  krb5-devel
+%endif
 
 Obsoletes:     myproxy-client < 5.1-3
 Provides:      myproxy-client = %{version}-%{release}
@@ -564,8 +567,8 @@ fi
 %endif
 
 %changelog
-* Thu May 02 2019 Globus Toolkit <support@globus.org> - 6.1.31-2
-- Add globus-gssapi-gsi-devel dependency
+* Thu May 02 2019 Globus Toolkit <support@globus.org> - 6.1.31-3
+- Add dependencies for fedora 30
 
 * Fri Aug 24 2018 Globus Toolkit <support@globus.org> - 6.1.31-1
 - use 2048 bit keys to support openssl 1.1.1
