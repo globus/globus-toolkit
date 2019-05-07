@@ -1,5 +1,5 @@
 Name:           globus-toolkit-repo
-Version:        6.0.15
+Version:        6.0.16
 Release:        1
 Summary:        Globus Repository Configuration
 Group:          System Environment/Base
@@ -142,6 +142,13 @@ fi
 %{_datadir}/globus/repo/*
 
 %changelog
+* Tue May  7 2019 Globus Toolkit <support@globus.org> - 6.0.17-1
+- (deb) Add packaging pinning to our repo
+
+* Fri Apr 26 2019 Globus Toolkit <support@globus.org> - 6.0.16-1
+- (deb) Add disco
+- (deb) remove trusty
+
 * Thu Dec  6 2018 Globus Toolkit <support@globus.org> - 6.0.15-1
 - (deb) Add cosmic
 - (deb) remove wheezy and artful

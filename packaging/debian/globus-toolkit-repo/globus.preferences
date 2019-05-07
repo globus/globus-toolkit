@@ -1,0 +1,3 @@
+Package: *globus* *myproxy*
+Pin: origin "downloads.globus.org"
+Pin-Priority: 900
