@@ -5,7 +5,7 @@ Name:		myproxy-oauth
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	0.29
+Version:	0.30
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	MyProxy OAuth Delegation Serice
@@ -16,10 +16,19 @@ URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.2/stable/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:	python
 BuildArch:      noarch
 
+%if %{?fedora}%{!?fedora:0} >= 30
+BuildRequires:	python2
+Requires:	python2-pyOpenSSL
+Requires:       python2-mod_wsgi
+%global		python2 python2
+%else
+BuildRequires:	python
 Requires:	pyOpenSSL
+%global		python2 python
+%endif
+
 
 %if 0%{?suse_version} == 0
 Requires:       mod_ssl
@@ -34,26 +43,22 @@ BuildRequires:   shadow
 Requires(pre):   shadow
 %endif
 
-%if 0%{?rhel} != 0 
+%if 0%{?rhel} >= 6 
 Requires:       python-crypto
 Requires:       m2crypto
-%if %{rhel} < 6
-Requires:       python-wsgiref
-Requires:       python-json
-Requires:       python-hashlib
-Requires:       python-ssl
-Requires:       python-sqlite2
 %endif
-%else
+
 %if 0%{?suse_version} > 0
 Requires:       python-crypto
 Requires:       python-m2crypto
-%else
+%endif
+
+%if %{?fedora}%{!?fedora:0} >= 30
+Requires:       python2-crypto >= 2.2
+%endif
+
+%if %{?fedora}%{!?fedora:0} >= 28 && %{?fedora}%{!?fedora:0}  < 30
 Requires:       python-crypto >= 2.2
-%endif
-%endif
-%if 0%{?rhel} == 05
-Conflicts:      mod_python
 %endif
 
 %description
@@ -73,7 +78,7 @@ MyProxy OAuth Delegation Service
 
 %install
 rm -rf $RPM_BUILD_ROOT
-python setup.py install \
+%{python2} setup.py install \
     --install-lib /usr/share/%{name} \
     --install-scripts /usr/share/%{name} \
     --install-data %{_docdir}/%{name} \
@@ -87,17 +92,12 @@ cat > $RPM_BUILD_ROOT%{_sbindir}/myproxy-oauth-setup <<EOF
 if [ "\$(id -u)" = 0 ]; then
     idarg="-i \$(id -u myproxyoauth)"
 fi
-exec /usr/bin/env PYTHONPATH="$pythonpath" python /usr/share/%{name}/myproxy-oauth-setup "\$@" \${idarg}
+exec /usr/bin/env PYTHONPATH="$pythonpath" %{python2} /usr/share/%{name}/myproxy-oauth-setup "\$@" \${idarg}
 EOF
 chmod a+x $RPM_BUILD_ROOT%{_sbindir}/myproxy-oauth-setup
 %if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
 mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
 cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth-2.4 \
-   $RPM_BUILD_ROOT/etc/httpd/conf.d/wsgi-myproxy-oauth.conf 
-%else
-%if 0%{?rhel} == 05
-mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
-cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth-epel5 \
    $RPM_BUILD_ROOT/etc/httpd/conf.d/wsgi-myproxy-oauth.conf 
 %else
 %if 0%{?suse_version} > 0
@@ -109,7 +109,6 @@ cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth-2.4 \
 mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
 cp $RPM_BUILD_ROOT%{_docdir}/%{name}/apache/myproxy-oauth \
    $RPM_BUILD_ROOT/etc/httpd/conf.d/wsgi-myproxy-oauth.conf 
-%endif
 %endif
 %endif
 
@@ -146,6 +145,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/myproxy-oauth-setup
 
 %changelog
+* Fri May 10 2019 Globus Toolkit <support@globus.org> - 0.30-1
+- Explicitly py2
+
 * Mon May 14 2018 Globus Toolkit <support@globus.org> - 0.29-1
 - Allow newer TLS versions
 
