@@ -7,7 +7,7 @@ Name:		globus-gridftp-server
 %endif
 %global _name %(tr - _ <<< %{name})
 Version:	12.17
-Release:	1%{?dist}
+Release:	2%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -179,6 +179,14 @@ sed -i -e 's/Required-Stop:.*/Required-Stop: $network $local_fs/' $RPM_BUILD_ROO
 sed -i -e 's/Required-Stop:.*/Required-Stop: $network $local_fs/' $RPM_BUILD_ROOT%{_sysconfdir}/init.d/globus-gridftp-sshftp
 %endif
 
+%if %{?fedora}%{!?fedora:0} >= 28 || %{?rhel}%{!?rhel:0} >= 6
+# Move from /etc/init.d to /etc/rc.d/init.d to avoid errors installing
+# chkconfig on fedora 30
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/rc.d
+mv $RPM_BUILD_ROOT%{_sysconfdir}/init.d $RPM_BUILD_ROOT%{_sysconfdir}/rc.d/
+%endif
+
+
 %check
 make %{_smp_mflags} check
 
@@ -219,7 +227,11 @@ fi
 %config(noreplace) %{_sysconfdir}/gridftp.conf
 %config(noreplace) %{_sysconfdir}/gridftp.gfork
 %config(noreplace) %{_sysconfdir}/xinetd.d/gridftp
+%if %{?fedora}%{!?fedora:0} >= 28 || %{?rhel}%{!?rhel:0} >= 6
+%{_sysconfdir}/rc.d/init.d/*
+%else
 %{_sysconfdir}/init.d/*
+%endif
 %{_sbindir}/*
 %{_mandir}/man8/*
 
@@ -230,6 +242,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Wed May 22 2019 Globus Toolkit <support@globus.org> - 12.17-2
+- Move init scripts to /etc/rc.d/init.d
+
 * Mon Apr 01 2019 Globus Toolkit <support@globus.org> - 12.17-1
 - send markers in stream mode when requested by 'OPTS RETR Markers=n;'
 
