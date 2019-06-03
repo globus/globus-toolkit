@@ -1,0 +1,5 @@
+#! /usr/bin/dh-exec
+usr/sbin/*
+etc/gridftp*
+usr/share/man/man8/*
+lib/systemd/globus-gridftp-server.service
