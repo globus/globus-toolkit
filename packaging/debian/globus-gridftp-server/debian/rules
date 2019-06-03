@@ -8,10 +8,8 @@ include /usr/share/dpkg/default.mk
 # see FEATURE AREAS in dpkg-buildflags(1)
 #export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
-include /usr/share/quilt/quilt.make
-
-name = globus-gridftp-server
-_name = globus_gridftp_server
+name = globus-connect-gridftp-server
+libname = globus-gridftp-server
 version = 12.18
 soname = 6
 _prefix = /usr
@@ -26,7 +24,11 @@ export GRIDMAP=/etc/grid-security/grid-mapfile
 
 override_dh_auto_install:
 	dh_auto_install
+<<<<<<< HEAD
 	rm -rf debian/tmp/etc/init.d
+=======
+	rm -rf debian/tmp/etc/init.d/globus-gridftp-server
+>>>>>>> Systemd packaging for debian
 	mkdir -p debian/tmp/lib/systemd/system
 	cp globus-gridftp-server.service debian/tmp/lib/systemd/system
 
@@ -43,6 +45,6 @@ override_dh_auto_configure:
 	   --disable-static
 
 %:
-	dh $@ --with autotools-dev --with-systemd
+	dh $@ --with autotools-dev --with systemd
 
 .PHONY: override_dh_auto_configure override_dh_auto_install
