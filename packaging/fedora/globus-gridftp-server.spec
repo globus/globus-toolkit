@@ -185,6 +185,11 @@ rm $RPM_BUILD_ROOT%{_sysconfdir}/init.d/globus-gridftp-server
 mkdir -p $RPM_BUILD_ROOT%{_unitdir}
 cp globus-gridftp-server.service $RPM_BUILD_ROOT%{_unitdir}
 %endif
+
+%if %{?suse_version}%{!?suse_version:0} >= 1315
+sed -i -e 's/Required-Stop:.*/Required-Stop: $network $local_fs/' $RPM_BUILD_ROOT%{_sysconfdir}/init.d/globus-gridftp-sshftp
+%endif
+
 %if %{?fedora}%{!?fedora:0} >= 28 || %{?rhel}%{!?rhel:0} >= 6
 # Move from /etc/init.d to /etc/rc.d/init.d to avoid errors installing
 # chkconfig on fedora 30
