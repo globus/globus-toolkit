@@ -1,0 +1,12 @@
+[Unit]
+Description=Globus GridFTP Service
+After=network.target auditd.service
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/globus-gridftp-server -S -c /etc/gridftp.conf -C /etc/gridftp.d -pidfile /run/globus-gridftp-server.pid
+ExecReload=/bin/kill -HUP $MAINPID
+PIDFile=/run/globus-gridftp-server.pid
+
+[Install]
+WantedBy=multi-user.target

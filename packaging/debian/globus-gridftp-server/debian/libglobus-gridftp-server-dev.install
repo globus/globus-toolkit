@@ -1,0 +1,4 @@
+#! /usr/bin/dh-exec
+usr/include/globus/*.h
+usr/lib/*/libglobus_gridftp*.so
+usr/lib/*/pkgconfig/*.pc
