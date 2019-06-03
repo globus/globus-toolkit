@@ -35,7 +35,7 @@ BuildRequires:	globus-ftp-control-devel >= 7
 BuildRequires:	globus-gss-assist-devel >= 9
 BuildRequires:  globus-common-progs >= 17
 BuildRequires:	globus-gsi-credential-devel >= 6
-%if %{?rhel}%{?!rhel:0} == 0 || %{?rhel}%{?!rhel:0} >= 7
+%if %{?rhel}%{!?rhel:0} == 0 || %{?rhel}%{!?rhel:0} >= 7
 BuildRequires:	systemd
 %endif
 %if 0%{?suse_version} > 0
@@ -85,7 +85,7 @@ Requires:	libglobus_xio_gsi_driver%{?_isa} >= 2
 %else
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 %endif
-
+%{?systemd_requires}
 
 %package devel
 Summary:	Globus Toolkit - Globus GridFTP Server Development Files
@@ -180,17 +180,16 @@ mv $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.gfork.default $RPM_BUILD_ROOT%{_sysconf
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 
-%if %{?_unitdir:1}%{?!_unitdir:0} == 1
-rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/init.d
+%if %{?_unitdir:1}%{!?_unitdir:0} == 1
+rm $RPM_BUILD_ROOT%{_sysconfdir}/init.d/globus-gridftp-server
 mkdir -p $RPM_BUILD_ROOT%{_unitdir}
 cp globus-gridftp-server.service $RPM_BUILD_ROOT%{_unitdir}
-%else
+%endif
 %if %{?fedora}%{!?fedora:0} >= 28 || %{?rhel}%{!?rhel:0} >= 6
 # Move from /etc/init.d to /etc/rc.d/init.d to avoid errors installing
 # chkconfig on fedora 30
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/rc.d
 mv $RPM_BUILD_ROOT%{_sysconfdir}/init.d $RPM_BUILD_ROOT%{_sysconfdir}/rc.d/
-%endif
 %endif
 
 
@@ -212,7 +211,7 @@ rm -rf $RPM_BUILD_ROOT
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %service_add_post globus-gridftp-server.service
 %else
-%if %{?_unitdir:1}%{!?unitdir:0} == 1
+%if %{?_unitdir:1}%{!?_unitdir:0} == 1
 %systemd_post globus-gridftp-server.service
 %else
 if [ $1 -eq 1 ]; then
@@ -226,7 +225,7 @@ fi
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %service_del_preun globus-gridftp-server.service
 %else
-%if %{?_unitdir:1}%{!?unitdir:0} == 1
+%if %{?_unitdir:1}%{!?_unitdir:0} == 1
 %systemd_preun globus-gridftp-server.service
 %else
 if [ $1 -eq 0 ]; then
@@ -242,7 +241,7 @@ fi
 %if %{?suse_version}%{!?suse_version:0} >= 1315
 %service_del_postun globus-gridftp-server.service
 %else
-%if %{?_unitdir:1}%{!?unitdir:0} == 1
+%if %{?_unitdir:1}%{!?_unitdir:0} == 1
 %systemd_postun_with_restart globus-gridftp-server.service
 %else
 if [ $1 -eq 1 ]; then
@@ -263,14 +262,13 @@ fi
 %config(noreplace) %{_sysconfdir}/gridftp.conf
 %config(noreplace) %{_sysconfdir}/gridftp.gfork
 %config(noreplace) %{_sysconfdir}/xinetd.d/gridftp
-%if %{?_unitdir:1}%{?!_unitdir:0} == 1
+%if %{?_unitdir:1}%{!?_unitdir:0} == 1
 %_unitdir/globus-gridftp-server.service
-%else
+%endif
 %if %{?fedora}%{!?fedora:0} >= 28 || %{?rhel}%{!?rhel:0} >= 6
 %{_sysconfdir}/rc.d/init.d/*
 %else
 %{_sysconfdir}/init.d/*
-%endif
 %endif
 %{_sbindir}/*
 %{_mandir}/man8/*
