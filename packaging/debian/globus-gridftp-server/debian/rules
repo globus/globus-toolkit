@@ -24,7 +24,7 @@ export GRIDMAP=/etc/grid-security/grid-mapfile
 
 override_dh_auto_install:
 	dh_auto_install
-	rm -rf debian/tmp/etc/init.d
+	rm debian/tmp/etc/init.d/globus-gridftp-server
 	mkdir -p debian/tmp/lib/systemd/system
 	cp globus-gridftp-server.service debian/tmp/lib/systemd/system
 
