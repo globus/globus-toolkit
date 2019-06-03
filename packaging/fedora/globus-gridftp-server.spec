@@ -6,8 +6,8 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.17
-Release:	2%{?dist}
+Version:	12.18
+Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -242,6 +242,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Jun 03 2019 Globus Toolkit <support@globus.org> - 12.18-1
+- add simple checksum read throttling
+
 * Wed May 22 2019 Globus Toolkit <support@globus.org> - 12.17-2
 - Move init scripts to /etc/rc.d/init.d
 
