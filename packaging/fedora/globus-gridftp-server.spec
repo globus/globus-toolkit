@@ -6,7 +6,7 @@ Name:		globus-gridftp-server
 %global apache_license ASL 2.0
 %endif
 %global _name %(tr - _ <<< %{name})
-Version:	12.18
+Version:	12.19
 Release:	1%{?dist}
 Vendor:	Globus Support
 Summary:	Globus Toolkit - Globus GridFTP Server
@@ -280,6 +280,9 @@ fi
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Mon Jun 03 2019 Globus Toolkit <support@globus.org> - 12.19-1
+- Add systemd unit for globus-gridftp-server
+
 * Mon Jun 03 2019 Globus Toolkit <support@globus.org> - 12.18-1
 - add simple checksum read throttling
 
