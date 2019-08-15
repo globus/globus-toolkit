@@ -512,15 +512,27 @@ globus_l_gsi_gssapi_activate(void)
     {
         long                            buflen = -1;
         buflen = sysconf(_SC_GETPW_R_SIZE_MAX);
+	if (buflen <= 0)
+		buflen = 1024;
 
-        assert(buflen > 0);
-        char buffer[buflen];
+        char *buffer = NULL;
         struct passwd pwd = {0};
         struct passwd *res = NULL;
-        
-        rc = getpwnam_r(tmp_string, &pwd, buffer, (size_t) buflen, &res);
 
-        if (rc == 0)
+getpwnam:
+	buffer = malloc(buflen);
+	if (buffer == NULL) {
+		rc = GLOBUS_FAILURE;
+		goto buffer_malloc_fail;
+	}
+
+	rc = getpwnam_r(tmp_string, &pwd, buffer, (size_t) buflen, &res);
+	if (rc == ERANGE) {
+		free(buffer);
+		buflen += 1024;
+		goto getpwnam;
+	}
+	else if (rc == 0)
         {
             globus_i_gsi_gssapi_vhost_cred_owner = pwd.pw_uid;
         }
@@ -528,6 +540,8 @@ globus_l_gsi_gssapi_activate(void)
         {
             globus_i_gsi_gssapi_vhost_cred_owner = 0;
         }
+
+	free(buffer);
     }
 #endif
 
@@ -599,6 +613,7 @@ debug_stderr_fail:
 debug_open_fail:
 parse_conf_data_fail:
 strdup_default_data_fail:
+buffer_malloc_fail:
     free(gsi_conf_data);
 read_conf_data_fail:
     if (rc != GLOBUS_SUCCESS)
