@@ -2982,6 +2982,7 @@ globus_gridftp_server_control_start(
         goto err;
     }
 
+    server_handle->epsv_ip = i_attr->epsv_ip;
     server_handle->security_type = i_attr->security;
     globus_xio_stack_destroy(xio_stack);
     server_handle->ref = 1;
