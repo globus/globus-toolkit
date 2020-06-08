@@ -58,6 +58,7 @@ Options:
   -dryrun, -d             Shows what would be done but will not add the entry
   -mapfile FILE, -f FILE  Path of Grid map file to be used
 
+  -force                  Make modifications even if user does not exist (needed for B2STAGE)
 EOF
 }
 
@@ -88,7 +89,9 @@ GetOptions(
     "dn=s" => \$dn,
     "ln=s{1,}" => \@ln,
     "d|dryrun" => \$dryrun,
-    "f|mapfile=s" => \$GRID_MAP_FILE);
+    "f|mapfile=s" => \$GRID_MAP_FILE,
+    "force" => \$force);
+
 $lnstring = join(" ", @ln);
 if ($help)
 {
@@ -157,8 +160,10 @@ chmod 0400, $GRID_MAP_FILE
 print "Verifying that Local Name(s)=($lnstring) are legitimate local accounts.\n"
     if ($dryrun);
 
-for my $name (@ln)
+if (not $force)
 {
+ for my $name (@ln)
+  {
     print "Checking ln(s)=$name\n" if ($dryrun);
 
     my @s = getpwnam($name);
@@ -175,6 +180,7 @@ for my $name (@ln)
         print "Result: $res\n" if ($dryrun);
         exit(1);
     }
+  }
 }
 
 print "Local Name(s)=($lnstring) is/are valid. Requested entry will be added.\n"

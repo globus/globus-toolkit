@@ -1,3 +1,7 @@
+## LEXIS fork of globus-toolkit to support B2STAGE
+The default grid-mapfile-add-entry code checks that the users are unix usernames in the machine. However, in the B2STAGE scenario, users are verified using tokens and do not exist as unix usernames.
+A new option -force was added to disable this check.
+
 ## Support for open source Globus Toolkit will end as of January 2018; The Globus cloud service and Globus Connect are unaffected
  	
 The Globus team at the University of Chicago has developed and supported the open source [Globus Toolkit](https://www.globustoolkit.org) for close to 20 years. 
